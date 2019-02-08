@@ -1,12 +1,14 @@
 # morpheus-graphql
 
+## intsall
+
 ```
 npm i
 sls offline start
 
 ```
 
-# request on api/graphql
+## request on api/graphql
 
 ```graphql
 query GetUsers {
