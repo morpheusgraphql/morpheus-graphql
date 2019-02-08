@@ -1,0 +1,34 @@
+{
+    "name": "David Nalchevanidze from json",
+    "email": "just some Email",
+    "address": {
+        "houseNumber": 54,
+        "street": "just some street",
+        "city": "Hamburg"
+    },
+    "office": {
+        "houseNumber": 24,
+        "street": "völkerstrasse",
+        "city": "Hamburg"
+    },
+    "home": {
+        "houseNumber": 24,
+        "street": "völkerstrasse",
+        "city": "Hamburg"
+    },
+    "friend": {
+        "name": "David Nalchevanidze",
+        "email": "Just some Email",
+        "office": {
+            "houseNumber": 24,
+            "street": "völkerstrasse",
+            "city": "Hamburg"
+        },
+        "partner": null,
+        "address": {
+            "houseNumber": 34,
+            "street": "just some street",
+            "city": "Hamburg"
+        }
+    }
+}

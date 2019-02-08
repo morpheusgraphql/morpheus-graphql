@@ -1,0 +1,50 @@
+name: haskell-bff
+version: 0.1.0.0
+github: "githubuser/haskell-bff"
+license: BSD3
+author: "Davit Nalchevanidze"
+maintainer: "example@example.com"
+copyright: "2018 Author name here"
+
+extra-source-files:
+  - README.md
+  - ChangeLog.md
+
+description: haskell backend
+
+dependencies:
+  - base >= 4.7 && < 5
+  - serverless-haskell
+  - aeson
+  - lens
+  - bytestring
+  - containers >= 0.4.2.1 && < 0.7
+  - unordered-containers
+  - split
+  - text
+  - attoparsec
+
+library:
+  source-dirs: src
+
+executables:
+  bff:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - haskell-bff
+
+tests:
+  haskell-bff-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - haskell-bff

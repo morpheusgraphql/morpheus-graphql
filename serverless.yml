@@ -1,0 +1,26 @@
+provider:
+  name: aws
+  stage: ${opt:stage,"test"}
+  region: eu-central-1
+  runtime: nodejs8.10
+  mode: ${ opt:mode , 'online' }
+
+plugins:
+  - serverless-offline
+
+package:
+  individually: false
+  excludeDevDependencies: false
+
+custom:
+  serverless-offline:
+    resourceRoutes: true
+    port: 3000
+
+functions:
+  hsbff:
+    handler: sls/handler.bff
+    events:
+      - http:
+          path: /api/hs/graphql
+          method: POST
