@@ -3,3 +3,4 @@ haskell-bff.cabal
 ./haskell-bff-exe
 ./bff
 bff
+node_modules/
