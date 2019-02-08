@@ -1,4 +1,4 @@
-name: haskell-bff
+name: morpheus-graphql
 version: 0.1.0.0
 github: "githubuser/haskell-bff"
 license: BSD3
@@ -10,7 +10,7 @@ extra-source-files:
   - README.md
   - ChangeLog.md
 
-description: haskell backend
+description: haskell graphql
 
 dependencies:
   - base >= 4.7 && < 5
@@ -28,7 +28,7 @@ library:
   source-dirs: src
 
 executables:
-  bff:
+  api:
     main: Main.hs
     source-dirs: app
     ghc-options:
@@ -36,7 +36,7 @@ executables:
       - -rtsopts
       - -with-rtsopts=-N
     dependencies:
-      - haskell-bff
+      - morpheus-graphql
 
 tests:
   haskell-bff-test:
@@ -47,4 +47,4 @@ tests:
       - -rtsopts
       - -with-rtsopts=-N
     dependencies:
-      - haskell-bff
+      - morpheus-graphql

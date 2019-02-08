@@ -20,7 +20,7 @@ custom:
 
 functions:
   hsbff:
-    handler: haskell-bff.bff
+    handler: morpheus-graphql.api
     events:
       - http:
           path: /api/graphql

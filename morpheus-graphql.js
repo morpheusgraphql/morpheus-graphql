@@ -58,4 +58,4 @@ function wrapper(options) {
 //   executable: 'EXECUTABLENAME',
 //   arguments: ['--arg1', '--arg2'],
 // });
-exports['bff'] = wrapper({"executable":"bff","arguments":[]});
+exports['api'] = wrapper({"executable":"api","arguments":[]});
