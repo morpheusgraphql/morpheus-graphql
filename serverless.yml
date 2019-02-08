@@ -1,12 +1,13 @@
 provider:
   name: aws
-  stage: ${opt:stage,"test"}
-  region: eu-central-1
   runtime: nodejs8.10
-  mode: ${ opt:mode , 'online' }
 
 plugins:
   - serverless-offline
+  - serverless-haskell
+
+service:
+  name: morpheus-graphql
 
 package:
   individually: false
@@ -19,8 +20,8 @@ custom:
 
 functions:
   hsbff:
-    handler: sls/handler.bff
+    handler: haskell-bff.bff
     events:
       - http:
-          path: /api/hs/graphql
+          path: /api/graphql
           method: POST

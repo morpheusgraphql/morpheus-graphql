@@ -10,7 +10,7 @@ import           Data.ByteString.Lazy           ( readFile )
 import           Prelude                 hiding ( readFile )
 
 dbFolder :: String
-dbFolder = "database/"
+dbFolder = "example-data/"
 
 jsonPath :: String -> String
 jsonPath name = (dbFolder ++ name ++ ".json")
