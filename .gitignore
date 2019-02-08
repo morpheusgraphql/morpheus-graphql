@@ -2,4 +2,6 @@
 .DS_Store
 morpheus-graphql.cabal
 node_modules/
+morpheus-graphql.js
+package-lock.json
 api
