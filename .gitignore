@@ -1,5 +1,5 @@
 .stack-work/
-**/.DS_Store
+.DS_Store
 morpheus-graphql.cabal
 node_modules/
 api

@@ -12,7 +12,7 @@ import           Data.Data                      ( Data )
 import           Data.Text                      ( Text
                                                 , concat
                                                 )
-import           Data.GraphqlHS.GQLHS           ( GQLRecord
+import           Data.MorpheusGraphQL           ( GQLRecord
                                                 , GQLRoot
                                                 , GQLArgs
                                                 , Resolver(resolve)

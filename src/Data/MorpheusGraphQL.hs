@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators , FlexibleInstances , ScopedTypeVariables #-}
 
-module Data.GraphqlHS.GQLHS
+module Data.MorpheusGraphQL
     ( interpreter
     , GQLResponce
     , GQLRecord
