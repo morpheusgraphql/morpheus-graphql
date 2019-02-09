@@ -31,7 +31,7 @@ import           Data.Aeson                     ( ToJSON(..)
                                                 , FromJSON(..)
                                                 , Value(Null)
                                                 )
-import           Data.Data                      ( Data(..) )
+import           Data.Data
 import           Data.GraphqlHS.Types.Error     ( GQLError )
 
 
@@ -92,11 +92,32 @@ data GQLQueryRoot = GQLQueryRoot {
     queryBody :: GQLValue
 }
 
-data p ::-> o = Resolve (Maybe p) (Maybe o) | Some o | None deriving (Show , Generic , Data )
+data InlineResolver a b = InlineResolver (a -> b) | EmptyLambda deriving (Generic);
+
+instance Show (InlineResolver a b) where
+    show _ = "InlineResolver"
+
+instance (Data a, Data b) => Data (InlineResolver a b) where
+    gfoldl k z (InlineResolver f) = z EmptyLambda
+    gfoldl k z EmptyLambda = z EmptyLambda
+
+    gunfold k z c = case constrIndex c of
+                                 1 -> z EmptyLambda
+                                 2 -> z EmptyLambda
+    toConstr (InlineResolver _ ) = con_LambdaField
+    toConstr EmptyLambda      = con_EmptyLambda
+    dataTypeOf _ = ty_LambdaField
+
+con_LambdaField = mkConstr ty_LambdaField "LambdaField" [] Prefix
+con_EmptyLambda = mkConstr ty_LambdaField "EmptyLambda" [] Prefix
+ty_LambdaField =
+    mkDataType "Module.LambdaField" [con_LambdaField, con_EmptyLambda]
+
+data p ::-> o = Resolve (Maybe p) (Maybe o) | Inline (InlineResolver p o) | Some o | None deriving (Show , Generic , Data )
 
 instance FromJSON ( p ::->  o) where
     parseJSON _ =  pure None
- 
+
 
 instance (ToJSON o) => ToJSON ( p ::->  o) where
     toJSON (Some o) = toJSON o
