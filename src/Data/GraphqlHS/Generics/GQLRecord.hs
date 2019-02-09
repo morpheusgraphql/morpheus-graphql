@@ -85,25 +85,13 @@ arrayMap :: GQLTypeLib -> [GQLTypeLib -> GQLTypeLib] -> GQLTypeLib
 arrayMap lib []       = lib
 arrayMap lib (f : fs) = arrayMap (f lib) fs
 
-
-unwO :: (Text, IO a) -> IO (Text, a)
-unwO (text, ioa) = ioa >>= \x -> pure (text, x)
-
-mapa :: [(Text, IO a)] -> [IO (Text, a)]
-mapa = map unwO
-
-unwrapIO :: [(Text, IO a)] -> IO [(Text, a)]
-unwrapIO = sequence . mapa
-
-unwrapEval []       = Val []
-unwrapEval (f : fs) = case (f, (unwrapEval fs)) of
-    ((key, Val x), Val y) -> Val ([(key, x)] ++ y)
-    _                     -> handleError "some blue"
+unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
+unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
 wrapAsObject :: [(Text, IO (Eval GQLType))] -> IO (Eval GQLType)
 wrapAsObject x = do
-    io1 <- unwrapIO x
-    pure ((Obj . fromList) <$> (unwrapEval io1))
+    io1 <- mapM unwrapMonadTuple x
+    pure ((Obj . fromList) <$> (mapM unwrapMonadTuple io1))
 
 class GQLRecord a where
 
@@ -175,16 +163,16 @@ instance GQLRecord Bool where
     fieldType _ name = createField name "Boolean" []
 
 
-    
+
 extractEvalList :: [Eval a] -> Eval [a]
-extractEvalList  = sequence
+extractEvalList = sequence
 
 instance GQLRecord a => GQLRecord [a] where
     trans (Field _) x =  pure $ pure $ Li []
     trans query list =  do
         o <- (mapM (trans query) list)
         return $ Li <$> (extractEvalList o)
-        
+
     introspect _ = introspect (Proxy :: Proxy  a)
     fieldType _ = fieldType (Proxy :: Proxy  a)
 
