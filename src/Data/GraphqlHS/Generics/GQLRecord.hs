@@ -110,12 +110,12 @@ class GQLRecord a where
     introspect _  typeLib = do
         let typeName = (pack . show . typeOf) (undefined::a)
         case (lookup typeName typeLib) of
+            Just _ -> typeLib
             Nothing -> arrayMap (insert typeName (createType typeName gqlFields) typeLib) stack
                 where
                     fieldTypes  = getFields (Proxy :: Proxy (Rep a))
                     stack = (map snd fieldTypes)
                     gqlFields = map fst fieldTypes
-            Just _ -> typeLib
 
 getTypeInfo
     :: (GQLRecord a, Resolver p a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
