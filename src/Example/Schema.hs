@@ -20,6 +20,7 @@ import           Data.MorpheusGraphQL           ( GQLRecord
                                                 , GQLResponce
                                                 , GQLRequest
                                                 , interpreter
+                                                , InlineResolver(..)
                                                 )
 import           Data.Proxy                     ( Proxy(..) )
 import           Example.Files                  ( getJson )
@@ -70,6 +71,8 @@ getAddress cityName streetName = do
 
 emptyUser = User "" "" None None Nothing Nothing
 emptyAdress = Address "" "" 0 Nothing
+
+userRes user = user { address = Inline (InlineResolver (\x -> emptyAdress)) }
 
 rootValue = getJson "user" >>= pure . Query . fromRight emptyUser
 
