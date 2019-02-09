@@ -15,11 +15,11 @@ import           Data.Text                      ( Text
 import           Data.MorpheusGraphQL           ( GQLRecord
                                                 , GQLRoot
                                                 , GQLArgs
-                                                , (::->)(..)
+                                                , (::->)
                                                 , GQLResponce
                                                 , GQLRequest
                                                 , interpreter
-                                                , InlineResolver(..)
+                                                , resolve
                                                 )
 import           Data.Proxy                     ( Proxy(..) )
 import           Example.Files                  ( getJson )
@@ -55,7 +55,6 @@ data Query = Query {
     user:: User
 } deriving (Show,Generic,Data,GQLRoot, FromJSON )
 
-
 fetchAddress :: Text -> Text -> IO Address
 fetchAddress cityName streetName = do
     address <- getJson "address" >>= pure . fromRight (Address "" "" 0 Nothing)
@@ -66,15 +65,21 @@ fetchAddress cityName streetName = do
 addressResolver :: AddressArg -> IO Address
 addressResolver args = fetchAddress (token args) (cityID args)
 
-officeResolver :: User -> OfficeArg -> IO Address
-officeResolver user args = fetchAddress (officeID args) "some bla"
+officeResolver :: OfficeArg -> IO Address
+officeResolver args = fetchAddress (officeID args) "some bla"
 
 userResolver :: IO User
 userResolver = do
     user <- getJson "user" >>= pure . fromRight
-        (User "" "" None None Nothing Nothing)
-    return $ user { address = Inline $ InlineResolver addressResolver
-                  , office  = Inline $ InlineResolver (officeResolver user)
+        (User ""
+              ""
+              (resolve addressResolver)
+              (resolve officeResolver)
+              Nothing
+              Nothing
+        )
+    return $ user { address = resolve addressResolver
+                  , office  = resolve officeResolver
                   }
 
 rootResolver :: IO Query

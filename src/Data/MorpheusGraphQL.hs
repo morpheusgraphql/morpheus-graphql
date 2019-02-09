@@ -6,9 +6,9 @@ module Data.MorpheusGraphQL
     , GQLRecord
     , GQLRoot
     , GQLArgs
-    , (::->)(Some, None, Inline)
+    , (::->)
+    , resolve
     , GQLRequest(..)
-    , InlineResolver(..)
     )
 where
 
@@ -35,4 +35,7 @@ interpreter :: GQLRoot a => Proxy a -> a -> GQLRequest -> IO GQLResponce
 interpreter schema rootValue x = case (parseGQL . query) x of
     Val  x -> decode rootValue x
     Fail x -> pure (Fail x)
+
+resolve :: (a -> IO b) -> a ::-> b
+resolve f = Inline $ InlineResolver f
 
