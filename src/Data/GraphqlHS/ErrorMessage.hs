@@ -11,12 +11,11 @@ module Data.GraphqlHS.ErrorMessage
     )
 where
 
+import           Prelude                 hiding ( concat )
 import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
-                                                )
-import           Data.List                      ( concat
-                                                , intersperse
+                                                , concat
                                                 )
 import           Data.GraphqlHS.Types.Types     ( Eval(..)
                                                 , MetaInfo(..)
@@ -32,51 +31,31 @@ import           Data.Data                      ( dataTypeOf
 throwNewError :: Text -> [GQLError]
 throwNewError x = [GQLError { message = x, locations = [ErrorLocation 0 0] }]
 
-handleError x = Fail $ throwNewError $ pack ("Field Error: " ++ show x)
+handleError x = Fail $ throwNewError $ concat ["Field Error: ", x]
 
 unknownArgument :: Data a => a -> [Text] -> [GQLError]
-unknownArgument record list = throwNewError $ pack
-    (  "Unknown argument "
-    ++ (show $ head list)
-    ++ " on field "
-    ++ (show $ dataTypeName $ dataTypeOf $ record)
-    ++ "."
-    )
+unknownArgument record list = throwNewError $ concat
+    [ "Unknown argument "
+    , head list
+    , " on field "
+    , pack $ dataTypeName $ dataTypeOf $ record
+    , "."
+    ]
 
 requiredArgument :: MetaInfo -> [GQLError]
-requiredArgument meta =
-    throwNewError
-        $  pack
-        $  "not Found Required Argument: "
-        ++ (show $ key meta)
-        ++ "on type "
-        ++ (show $ className meta)
+requiredArgument meta = throwNewError $ concat
+    ["Required Argument: ", key meta, "not Found on type ", className meta]
 
 cannotQueryField :: Text -> Text -> [GQLError]
-cannotQueryField fieldName typeName = throwNewError $ pack
-    (  "Cannot query field "
-    ++ (show $ fieldName)
-    ++ " on type "
-    ++ (show $ typeName)
-    ++ "."
-    )
+cannotQueryField key typeName = throwNewError
+    $ concat ["Cannot query field ", key, " on type ", typeName, "."]
 
 subfieldsNotSelected :: a -> Text -> [GQLError]
-subfieldsNotSelected record key = throwNewError $ pack
-    (  "Field "
-    ++ (show key)
-    ++ " of type \"Type\" must have a selection of subfields"
-    )
+subfieldsNotSelected record key = throwNewError $ concat
+    ["Field ", key, " of type \"Type\" must have a selection of subfields"]
 
 syntaxError :: Text -> [GQLError]
-syntaxError e = throwNewError $ pack ("Syntax Error: " ++ show e)
+syntaxError e = throwNewError $ concat ["Syntax Error: ", e]
 
 semanticError :: Text -> [GQLError]
 semanticError = throwNewError
-
-notUseHead x =
-    Left
-        $  pack
-        $  "Error on "
-        ++ (show x)
-        ++ "this type has should not have Header Arguments, Pleaase create method for it"
