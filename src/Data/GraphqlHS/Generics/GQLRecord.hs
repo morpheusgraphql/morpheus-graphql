@@ -32,6 +32,7 @@ import           Data.GraphqlHS.Types.Types     ( Object
                                                 , MetaInfo(..)
                                                 , GQLType(..)
                                                 , GQLPrimitive(..)
+                                                , InlineResolver(..)
                                                 )
 import           Data.GraphqlHS.ErrorMessage    ( handleError
                                                 , subfieldsNotSelected
@@ -121,18 +122,27 @@ getTypeInfo (Some x)      = Resolve Nothing (Just x)
 getTypeInfo None          = Resolve Nothing Nothing
 getTypeInfo (Resolve x y) = Resolve x y
 
+
+
+
 resolveField
     :: (Show a, Show p, GQLRecord a, Resolver p a, GQLArgs p)
     => GQLValue
     -> p ::-> a
+    -> p ::-> a
     -> IO (Eval GQLType)
-resolveField (Query gqlArgs body) (Resolve args obj) =
+resolveField (Query gqlArgs body) (Resolve args obj) None =
     case fromArgs gqlArgs args of
         Val  x -> resolve x obj >>= trans body
         Fail x -> pure $ Fail x
+resolveField (Query gqlArgs body) (Resolve args obj) (Inline (InlineResolver f))
+    = case fromArgs gqlArgs args of
+        Val  x -> trans body (f x)
+        Fail x -> pure $ Fail x
 
 instance (Show a, Show p, GQLRecord a, Resolver p a , GQLArgs p ) => GQLRecord (p ::-> a) where
-    trans (Query args body ) field = resolveField (Query args body) (getTypeInfo field)
+   -- trans (Query args body ) field = resolveField (Query args body) (getTypeInfo field)
+    trans (Query args body ) field = resolveField (Query args body) (getTypeInfo field) field
     trans x (Some a) = trans x a
     trans x None = pure$ pure $ Prim JSNull
     introspect  _  = introspect (Proxy:: Proxy  a)
