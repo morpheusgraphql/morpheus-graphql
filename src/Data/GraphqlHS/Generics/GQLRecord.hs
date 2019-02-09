@@ -130,6 +130,7 @@ resolveField (Query gqlArgs body) (Resolve args _) (Inline (InlineResolver resol
     = case fromArgs gqlArgs args of
         Val  args -> resolver args >>= trans body
         Fail x    -> pure $ Fail x
+resolveField (Query gqlArgs body) (Resolve _ _) (Some x) = trans body x
 resolveField (Query gqlArgs body) (Resolve args _) None =
     pure $ handleError "resolver not implemented"
 
