@@ -61,8 +61,8 @@ fetchAddress cityName streetName = do
                    , street = streetName
                    }
 
-addressResolver :: AddressArg ::-> Address
-addressResolver = Resolver (\x -> fetchAddress (token x) (cityID x))
+resolveAddress :: AddressArg ::-> Address
+resolveAddress = Resolver (\x -> fetchAddress (token x) (cityID x))
 
 officeResolver :: OfficeArg -> IO Address
 officeResolver args = fetchAddress (officeID args) "some bla"
@@ -70,8 +70,8 @@ officeResolver args = fetchAddress (officeID args) "some bla"
 userResolver :: IO User
 userResolver = do
     user <- getJson "user" >>= pure . fromRight
-        (User "" "" addressResolver (Resolver officeResolver) Nothing Nothing)
-    return $ user { address = addressResolver
+        (User "" "" resolveAddress (Resolver officeResolver) Nothing Nothing)
+    return $ user { address = resolveAddress
                   , office  = Resolver officeResolver
                   }
 
