@@ -56,31 +56,32 @@ data Query = Query {
     user:: User
 } deriving (Show,Generic,Data,GQLRoot, FromJSON )
 
-instance Resolver AddressArg Address  where
-    resolve args _ = getAddress (cityID args) (token args)
 
-instance Resolver OfficeArg Address  where
-    resolve args _ = getAddress (officeID args)  ""
-
-getAddress :: Text -> Text -> IO Address
-getAddress cityName streetName = do
-    address <- getJson "address" >>= pure . fromRight emptyAdress
+fetchAddress :: Text -> Text -> IO Address
+fetchAddress cityName streetName = do
+    address <- getJson "address" >>= pure . fromRight (Address "" "" 0 Nothing)
     pure $ address { city   = concat [cityName, city address]
                    , street = streetName
                    }
 
-emptyUser = User "" "" None None Nothing Nothing
-emptyAdress = Address "" "" 0 Nothing
+addressResolver :: AddressArg -> IO Address
+addressResolver args = fetchAddress (token args) (cityID args)
 
+officeResolver :: User -> OfficeArg -> IO Address
+officeResolver user args = fetchAddress (officeID args) "some bla"
 
-addressResolver _ = Address "from my inline function" "" 0 Nothing
+userResolver :: IO User
+userResolver = do
+    user <- getJson "user" >>= pure . fromRight
+        (User "" "" None None Nothing Nothing)
+    return $ user { address = Inline $ InlineResolver addressResolver
+                  , office  = Inline $ InlineResolver (officeResolver user)
+                  }
 
-userResolver user = user { address = Inline (InlineResolver addressResolver) }
-
-rootValue =
-    getJson "user" >>= pure . Query . userResolver . fromRight emptyUser
+rootResolver :: IO Query
+rootResolver = userResolver >>= pure . Query
 
 gqlHandler :: GQLRequest -> IO GQLResponce
 gqlHandler v = do
-    x <- rootValue
+    x <- rootResolver
     interpreter (Proxy :: Proxy Query) x v

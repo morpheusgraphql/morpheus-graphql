@@ -93,7 +93,7 @@ data GQLQueryRoot = GQLQueryRoot {
     queryBody :: GQLValue
 }
 
-data InlineResolver a b = InlineResolver (a -> b) | EmptyLambda deriving (Generic);
+data InlineResolver a b = InlineResolver (a -> IO b) | EmptyLambda deriving (Generic);
 
 instance Show (InlineResolver a b) where
     show _ = "InlineResolver"

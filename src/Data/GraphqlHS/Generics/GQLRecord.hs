@@ -116,29 +116,25 @@ class GQLRecord a where
                     stack = (map snd fieldTypes)
                     gqlFields = map fst fieldTypes
 
-getTypeInfo
-    :: (GQLRecord a, Resolver p a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
+getTypeInfo :: (GQLRecord a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
 getTypeInfo (Some x)      = Resolve Nothing (Just x)
 getTypeInfo None          = Resolve Nothing Nothing
 getTypeInfo (Resolve x y) = Resolve x y
-getTypeInfo (Inline _) = Resolve Nothing Nothing
+getTypeInfo (Inline _   ) = Resolve Nothing Nothing
 
 resolveField
-    :: (Show a, Show p, GQLRecord a, Resolver p a, GQLArgs p)
+    :: (Show a, Show p, GQLRecord a, GQLArgs p)
     => GQLValue
     -> p ::-> a
     -> p ::-> a
     -> IO (Eval GQLType)
-resolveField (Query gqlArgs body) (Resolve args obj) None =
-    case fromArgs gqlArgs args of
-        Val  x -> resolve x obj >>= trans body
-        Fail x -> pure $ Fail x
-resolveField (Query gqlArgs body) (Resolve args obj) (Inline (InlineResolver f))
+resolveField (Query gqlArgs body) (Resolve args obj) None = pure $ handleError "resolver not implemented"
+resolveField (Query gqlArgs body) (Resolve args obj) (Inline (InlineResolver resolver))
     = case fromArgs gqlArgs args of
-        Val  x -> trans body (f x)
-        Fail x -> pure $ Fail x
+        Val  args -> resolver args >>= trans body
+        Fail x    -> pure $ Fail x
 
-instance (Show a, Show p, GQLRecord a, Resolver p a , GQLArgs p ) => GQLRecord (p ::-> a) where
+instance (Show a, Show p, GQLRecord a , GQLArgs p ) => GQLRecord (p ::-> a) where
    -- trans (Query args body ) field = resolveField (Query args body) (getTypeInfo field)
     trans (Query args body ) field = resolveField (Query args body) (getTypeInfo field) field
     trans x (Some a) = trans x a
