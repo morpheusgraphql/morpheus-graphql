@@ -16,6 +16,7 @@ module Data.GraphqlHS.Types.Types
     , GQLResponce
     , GQLRequest(..)
     , Arg(..)
+    , InlineResolver(InlineResolver)
     )
 where
 

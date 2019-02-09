@@ -7,8 +7,9 @@ module Data.MorpheusGraphQL
     , GQLRoot
     , GQLArgs
     , Resolver(resolve)
-    , (::->)(Some, None)
+    , (::->)(Some, None, Inline)
     , GQLRequest(..)
+    , InlineResolver(..)
     )
 where
 
@@ -23,7 +24,8 @@ import           Data.GraphqlHS.Generics.GQLArgs
 import           Data.GraphqlHS.Generics.Resolver
                                                 ( Resolver(resolve) )
 import           Data.GraphqlHS.Parser.Parser   ( parseGQL )
-import           Data.GraphqlHS.Types.Types     ( (::->)(Some, None)
+import           Data.GraphqlHS.Types.Types     ( (::->)(Some, None, Inline)
+                                                , InlineResolver(..)
                                                 , GQLResponce
                                                 , GQLRequest(..)
                                                 , Eval(..)
