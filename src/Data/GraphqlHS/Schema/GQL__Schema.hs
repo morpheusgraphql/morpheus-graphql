@@ -16,8 +16,6 @@ import           Data.Text                      ( Text(..)
                                                 )
 import           Data.GraphqlHS.Generics.GQLArgs
                                                 ( GQLArgs )
-import           Data.GraphqlHS.Generics.Resolver
-                                                ( Resolver(..) )
 import           Data.GraphqlHS.Types.Types     ( (::->)(..)
                                                 , Eval(..)
                                                 )

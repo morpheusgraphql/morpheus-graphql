@@ -6,7 +6,6 @@ module Data.MorpheusGraphQL
     , GQLRecord
     , GQLRoot
     , GQLArgs
-    , Resolver(resolve)
     , (::->)(Some, None, Inline)
     , GQLRequest(..)
     , InlineResolver(..)
@@ -21,8 +20,6 @@ import           Data.GraphqlHS.Generics.GQLRoot
                                                 ( GQLRoot(decode) )
 import           Data.GraphqlHS.Generics.GQLArgs
                                                 ( GQLArgs )
-import           Data.GraphqlHS.Generics.Resolver
-                                                ( Resolver(resolve) )
 import           Data.GraphqlHS.Parser.Parser   ( parseGQL )
 import           Data.GraphqlHS.Types.Types     ( (::->)(Some, None, Inline)
                                                 , InlineResolver(..)

@@ -37,8 +37,6 @@ import           Data.GraphqlHS.Types.Types     ( Object
 import           Data.GraphqlHS.ErrorMessage    ( handleError
                                                 , subfieldsNotSelected
                                                 )
-import           Data.GraphqlHS.Generics.Resolver
-                                                ( Resolver(..) )
 import           Data.GraphqlHS.Generics.GQLArgs
                                                 ( GQLArgs(..) )
 import           Data.GraphqlHS.Schema.GQL__Schema
@@ -128,14 +126,14 @@ resolveField
     -> p ::-> a
     -> p ::-> a
     -> IO (Eval GQLType)
-resolveField (Query gqlArgs body) (Resolve args obj) None = pure $ handleError "resolver not implemented"
-resolveField (Query gqlArgs body) (Resolve args obj) (Inline (InlineResolver resolver))
+resolveField (Query gqlArgs body) (Resolve args _) (Inline (InlineResolver resolver))
     = case fromArgs gqlArgs args of
         Val  args -> resolver args >>= trans body
         Fail x    -> pure $ Fail x
+resolveField (Query gqlArgs body) (Resolve args _) None =
+    pure $ handleError "resolver not implemented"
 
 instance (Show a, Show p, GQLRecord a , GQLArgs p ) => GQLRecord (p ::-> a) where
-   -- trans (Query args body ) field = resolveField (Query args body) (getTypeInfo field)
     trans (Query args body ) field = resolveField (Query args body) (getTypeInfo field) field
     trans x (Some a) = trans x a
     trans x None = pure$ pure $ Prim JSNull
@@ -193,9 +191,3 @@ instance GQLRecord GQL__DirectiveLocation where
     trans _ = pure . Val . Prim . JSString . pack . show
 
 instance  GQLArgs GQL__Deprication__Args;
-
-instance Resolver GQL__Deprication__Args [GQL__EnumValue] where
-    resolve args (Just values) = pure $ values
-
-instance Resolver GQL__Deprication__Args [GQL__Field] where
-    resolve args (Just fields) = pure $ fields

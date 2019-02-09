@@ -24,10 +24,14 @@ import           Data.Map                       ( Map
 import           GHC.Generics
 import           Data.Aeson                     ( ToJSON(..) )
 import           Data.Data                      ( Data )
-import           Data.GraphqlHS.Types.Types     ( (::->)(..) )
+import           Data.GraphqlHS.Types.Types     ( (::->)(..)
+                                                , InlineResolver(..)
+                                                )
 import           Data.List                      ( find )
-import           Data.GraphqlHS.Schema.GQL__TypeKind  (GQL__TypeKind(..))
-import           Data.GraphqlHS.Schema.GQL__EnumValue  (GQL__EnumValue)
+import           Data.GraphqlHS.Schema.GQL__TypeKind
+                                                ( GQL__TypeKind(..) )
+import           Data.GraphqlHS.Schema.GQL__EnumValue
+                                                ( GQL__EnumValue )
 
 data GQL__Type =  GQL__Type {
    kind :: GQL__TypeKind

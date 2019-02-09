@@ -15,7 +15,6 @@ import           Data.Text                      ( Text
 import           Data.MorpheusGraphQL           ( GQLRecord
                                                 , GQLRoot
                                                 , GQLArgs
-                                                , Resolver(resolve)
                                                 , (::->)(..)
                                                 , GQLResponce
                                                 , GQLRequest
