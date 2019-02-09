@@ -15,11 +15,10 @@ import           Data.Text                      ( Text
 import           Data.MorpheusGraphQL           ( GQLRecord
                                                 , GQLRoot
                                                 , GQLArgs
-                                                , (::->)
+                                                , (::->)(..)
                                                 , GQLResponce
                                                 , GQLRequest
                                                 , interpreter
-                                                , resolve
                                                 )
 import           Data.Proxy                     ( Proxy(..) )
 import           Example.Files                  ( getJson )
@@ -73,13 +72,13 @@ userResolver = do
     user <- getJson "user" >>= pure . fromRight
         (User ""
               ""
-              (resolve addressResolver)
-              (resolve officeResolver)
+              (Resolver addressResolver)
+              (Resolver officeResolver)
               Nothing
               Nothing
         )
-    return $ user { address = resolve addressResolver
-                  , office  = resolve officeResolver
+    return $ user { address = Resolver addressResolver
+                  , office  = Resolver officeResolver
                   }
 
 rootResolver :: IO Query

@@ -16,7 +16,6 @@ module Data.GraphqlHS.Types.Types
     , GQLResponce
     , GQLRequest(..)
     , Arg(..)
-    , InlineResolver(InlineResolver)
     )
 where
 
@@ -93,32 +92,26 @@ data GQLQueryRoot = GQLQueryRoot {
     queryBody :: GQLValue
 }
 
-data InlineResolver a b = InlineResolver (a -> IO b) | EmptyLambda deriving (Generic);
 
-instance Show (InlineResolver a b) where
-    show _ = "InlineResolver"
+data a ::-> b = TypeHolder (Maybe a) | Resolver (a -> IO b) | Some b | None deriving (Generic)
 
-instance (Data a, Data b) => Data (InlineResolver a b) where
-    gfoldl k z (InlineResolver f) = z EmptyLambda
-    gfoldl k z EmptyLambda = z EmptyLambda
+instance Show (a ::-> b) where
+    show _ = "Inline"
 
-    gunfold k z c = case constrIndex c of
-                                 1 -> z EmptyLambda
-                                 2 -> z EmptyLambda
-    toConstr (InlineResolver _ ) = con_LambdaField
-    toConstr EmptyLambda      = con_EmptyLambda
-    dataTypeOf _ = ty_LambdaField
+instance (Data a, Data b) => Data (a ::-> b) where
+    gfoldl k z _ = z None
+    gunfold k z c = z None
+    toConstr (Some _ ) = con_Some
+    toConstr _      = con_None
+    dataTypeOf _ = ty_Resolver
 
-con_LambdaField = mkConstr ty_LambdaField "LambdaField" [] Prefix
-con_EmptyLambda = mkConstr ty_LambdaField "EmptyLambda" [] Prefix
-ty_LambdaField =
-    mkDataType "Module.LambdaField" [con_LambdaField, con_EmptyLambda]
+con_Some = mkConstr ty_Resolver "Some" [] Prefix
+con_None = mkConstr ty_Resolver "None" [] Prefix
+ty_Resolver = mkDataType "Module.Resolver" [con_None, con_Some]
 
-data p ::-> o = Resolve (Maybe p) (Maybe o) | Inline (InlineResolver p o) | Some o | None deriving (Show , Generic , Data )
 
 instance FromJSON ( p ::->  o) where
     parseJSON _ =  pure None
-
 
 instance (ToJSON o) => ToJSON ( p ::->  o) where
     toJSON (Some o) = toJSON o

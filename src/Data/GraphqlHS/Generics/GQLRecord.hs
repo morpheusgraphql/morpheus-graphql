@@ -32,7 +32,6 @@ import           Data.GraphqlHS.Types.Types     ( Object
                                                 , MetaInfo(..)
                                                 , GQLType(..)
                                                 , GQLPrimitive(..)
-                                                , InlineResolver(..)
                                                 )
 import           Data.GraphqlHS.ErrorMessage    ( handleError
                                                 , subfieldsNotSelected
@@ -115,10 +114,7 @@ class GQLRecord a where
                     gqlFields = map fst fieldTypes
 
 getTypeInfo :: (GQLRecord a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
-getTypeInfo (Some x)      = Resolve Nothing (Just x)
-getTypeInfo None          = Resolve Nothing Nothing
-getTypeInfo (Resolve x y) = Resolve x y
-getTypeInfo (Inline _   ) = Resolve Nothing Nothing
+getTypeInfo _ = TypeHolder Nothing
 
 resolveField
     :: (Show a, Show p, GQLRecord a, GQLArgs p)
@@ -126,12 +122,12 @@ resolveField
     -> p ::-> a
     -> p ::-> a
     -> IO (Eval GQLType)
-resolveField (Query gqlArgs body) (Resolve args _) (Inline (InlineResolver resolver))
-    = case fromArgs gqlArgs args of
+resolveField (Query gqlArgs body) (TypeHolder args) (Resolver resolver) =
+    case fromArgs gqlArgs args of
         Val  args -> resolver args >>= trans body
         Fail x    -> pure $ Fail x
-resolveField (Query gqlArgs body) (Resolve _ _) (Some x) = trans body x
-resolveField (Query gqlArgs body) (Resolve args _) None =
+resolveField (Query gqlArgs body) _ (Some x) = trans body x
+resolveField (Query gqlArgs body) _ None =
     pure $ handleError "resolver not implemented"
 
 instance (Show a, Show p, GQLRecord a , GQLArgs p ) => GQLRecord (p ::-> a) where

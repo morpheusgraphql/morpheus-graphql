@@ -6,8 +6,7 @@ module Data.MorpheusGraphQL
     , GQLRecord
     , GQLRoot
     , GQLArgs
-    , (::->)
-    , resolve
+    , (::->)(..)
     , GQLRequest(..)
     )
 where
@@ -21,8 +20,7 @@ import           Data.GraphqlHS.Generics.GQLRoot
 import           Data.GraphqlHS.Generics.GQLArgs
                                                 ( GQLArgs )
 import           Data.GraphqlHS.Parser.Parser   ( parseGQL )
-import           Data.GraphqlHS.Types.Types     ( (::->)(Some, None, Inline)
-                                                , InlineResolver(..)
+import           Data.GraphqlHS.Types.Types     ( (::->)(Resolver)
                                                 , GQLResponce
                                                 , GQLRequest(..)
                                                 , Eval(..)
@@ -35,7 +33,3 @@ interpreter :: GQLRoot a => Proxy a -> a -> GQLRequest -> IO GQLResponce
 interpreter schema rootValue x = case (parseGQL . query) x of
     Val  x -> decode rootValue x
     Fail x -> pure (Fail x)
-
-resolve :: (a -> IO b) -> a ::-> b
-resolve f = Inline $ InlineResolver f
-
