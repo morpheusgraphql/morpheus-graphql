@@ -163,15 +163,11 @@ instance GQLRecord Bool where
     fieldType _ name = createField name "Boolean" []
 
 
-
-extractEvalList :: [Eval a] -> Eval [a]
-extractEvalList = sequence
-
 instance GQLRecord a => GQLRecord [a] where
     trans (Field _) x =  pure $ pure $ Li []
     trans query list =  do
         o <- (mapM (trans query) list)
-        return $ Li <$> (extractEvalList o)
+        return $ Li <$> (sequence o)
 
     introspect _ = introspect (Proxy :: Proxy  a)
     fieldType _ = fieldType (Proxy :: Proxy  a)
