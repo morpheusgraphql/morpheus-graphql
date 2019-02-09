@@ -72,7 +72,13 @@ getAddress cityName streetName = do
 emptyUser = User "" "" None None Nothing Nothing
 emptyAdress = Address "" "" 0 Nothing
 
-userRes user = user { address = Inline (InlineResolver (\x -> emptyAdress)) }
+userRes user = user
+    { address =
+        Inline
+            (InlineResolver
+                (\x -> Address "from my inline function" "" 0 Nothing)
+            )
+    }
 
 rootValue = getJson "user" >>= pure . Query . fromRight emptyUser
 
