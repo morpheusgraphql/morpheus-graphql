@@ -68,14 +68,12 @@ import           Data.GraphqlHS.Generics.GenericMap
                                                 )
 import           Data.Maybe                     ( fromMaybe )
 
-
 instance GQLRecord a => GenericMap  (K1 i a)  where
     transform meta gql (K1 src) = case (getField meta gql) of
         (Val field) -> case lookup (key meta) gql of
                 Nothing -> []
                 Just x -> [(key meta, trans field src)]
         _ -> []
-
 
 instance (Selector s, Typeable a , GQLRecord a) => Selectors (M1 S s (K1 R a)) where
     getFields _ = [(fieldType (Proxy:: Proxy  a) name ,introspect (Proxy:: Proxy  a))]
@@ -123,7 +121,6 @@ getTypeInfo (Some x)      = Resolve Nothing (Just x)
 getTypeInfo None          = Resolve Nothing Nothing
 getTypeInfo (Resolve x y) = Resolve x y
 
-
 resolveField
     :: (Show a, Show p, GQLRecord a, Resolver p a, GQLArgs p)
     => GQLValue
@@ -162,13 +159,10 @@ instance GQLRecord Bool where
     introspect _ = insert "Boolean" (createType "Boolean" [])
     fieldType _ name = createField name "Boolean" []
 
-
 instance GQLRecord a => GQLRecord [a] where
     trans (Field _) x =  pure $ pure $ Li []
-    trans query list =  do
-        o <- (mapM (trans query) list)
-        return $ Li <$> (sequence o)
-
+    trans query list = (mapM (trans query) list) >>= return . toList
+        where toList x = Li <$> (sequence x)
     introspect _ = introspect (Proxy :: Proxy  a)
     fieldType _ = fieldType (Proxy :: Proxy  a)
 
