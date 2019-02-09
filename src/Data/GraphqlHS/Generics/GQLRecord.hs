@@ -113,8 +113,8 @@ class GQLRecord a where
                     stack = (map snd fieldTypes)
                     gqlFields = map fst fieldTypes
 
-getTypeInfo :: (GQLRecord a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
-getTypeInfo _ = TypeHolder Nothing
+getType :: (GQLRecord a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
+getType _ = TypeHolder Nothing
 
 resolveField
     :: (Show a, Show p, GQLRecord a, GQLArgs p)
@@ -131,7 +131,7 @@ resolveField (Query gqlArgs body) _ None =
     pure $ handleError "resolver not implemented"
 
 instance (Show a, Show p, GQLRecord a , GQLArgs p ) => GQLRecord (p ::-> a) where
-    trans (Query args body ) field = resolveField (Query args body) (getTypeInfo field) field
+    trans (Query args body ) field = resolveField (Query args body) (getType field) field
     trans x (Some a) = trans x a
     trans x None = pure$ pure $ Prim JSNull
     introspect  _  = introspect (Proxy:: Proxy  a)
