@@ -72,15 +72,13 @@ getAddress cityName streetName = do
 emptyUser = User "" "" None None Nothing Nothing
 emptyAdress = Address "" "" 0 Nothing
 
-userRes user = user
-    { address =
-        Inline
-            (InlineResolver
-                (\x -> Address "from my inline function" "" 0 Nothing)
-            )
-    }
 
-rootValue = getJson "user" >>= pure . Query . fromRight emptyUser
+addressResolver _ = Address "from my inline function" "" 0 Nothing
+
+userResolver user = user { address = Inline (InlineResolver addressResolver) }
+
+rootValue =
+    getJson "user" >>= pure . Query . userResolver . fromRight emptyUser
 
 gqlHandler :: GQLRequest -> IO GQLResponce
 gqlHandler v = do

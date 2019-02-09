@@ -121,9 +121,7 @@ getTypeInfo
 getTypeInfo (Some x)      = Resolve Nothing (Just x)
 getTypeInfo None          = Resolve Nothing Nothing
 getTypeInfo (Resolve x y) = Resolve x y
-
-
-
+getTypeInfo (Inline _) = Resolve Nothing Nothing
 
 resolveField
     :: (Show a, Show p, GQLRecord a, Resolver p a, GQLArgs p)
