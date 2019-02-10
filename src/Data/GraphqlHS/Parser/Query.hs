@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.GraphqlHS.Parser.Query
-    (query)
+    ( query
+    )
 where
 
 import           Data.Text                      ( Text(..)
@@ -25,19 +26,21 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.GraphqlHS.Types.Types     ( 
-                                                  Head(..)
-                                                , Eval(..)
+import           Data.GraphqlHS.Types.Types     ( Head(..)
                                                 , Arg(..)
                                                 )
 
-import           Data.GraphqlHS.Parser.Arguments  (arguments)
-import           Data.GraphqlHS.Types.Error       ( GQLError )
-import           Data.Data                        ( Data )
-import           Data.GraphqlHS.ErrorMessage      ( syntaxError
-                                                   , semanticError
-                                                   )
-import           Data.GraphqlHS.Parser.Primitive ( token ,variable)
+import           Data.GraphqlHS.Parser.Arguments
+                                                ( arguments )
+import           Data.GraphqlHS.Types.Error     ( GQLError )
+import           Data.Data                      ( Data )
+import           Data.GraphqlHS.ErrorMessage    ( syntaxError
+                                                , semanticError
+                                                )
+import           Data.GraphqlHS.Parser.Primitive
+                                                ( token
+                                                , variable
+                                                )
 
 queryVariable :: Parser (Text, Arg)
 queryVariable = do

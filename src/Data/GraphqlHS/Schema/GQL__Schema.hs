@@ -14,18 +14,12 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
-import           Data.GraphqlHS.Generics.GQLArgs
-                                                ( GQLArgs )
-import           Data.GraphqlHS.Types.Types     ( (::->)(..)
-                                                , Eval(..)
-                                                )
 import           Data.GraphqlHS.Types.Introspection
                                                 ( GQL__Type
                                                 , emptyLib
                                                 )
 import           Data.GraphqlHS.Schema.GQL__Directive
-                                                ( GQL__Directive
-                                                )
+                                                ( GQL__Directive )
 
 import           Data.Proxy                     ( Proxy(..) )
 
@@ -43,5 +37,5 @@ initSchema types = GQL__Schema
     , queryType        = Nothing
     , mutationType     = Nothing
     , subscriptionType = Nothing
-    , directives       =  []
+    , directives       = []
     }

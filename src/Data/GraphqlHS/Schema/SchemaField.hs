@@ -19,8 +19,7 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
-import           Data.GraphqlHS.Types.Types     ( Eval(..)
-                                                , (::->)(..)
+import           Data.GraphqlHS.Types.Types     ( (::->)(..)
                                                 , GQLType
                                                 , GQLValue(..)
                                                 )
@@ -32,7 +31,7 @@ import           Data.GraphqlHS.Types.Introspection
                                                 , GQL__Type(fields)
                                                 , GQL__InputValue
                                                 )
-import          Control.Monad                   (join)
+import           Control.Monad                  ( join )
 
 
 selectFieldBykey :: Text -> GQL__Type -> Maybe GQL__Field
@@ -41,7 +40,7 @@ selectFieldBykey key gqlType = case (fields gqlType) of
     _           -> Nothing
 
 getFieldTypeByKey :: Text -> GQL__Type -> Maybe GQL__Type
-getFieldTypeByKey key gqlType = join( _type <$> selectFieldBykey key gqlType )
+getFieldTypeByKey key gqlType = join (_type <$> selectFieldBykey key gqlType)
 
 fieldArgsByKey :: Text -> GQL__Type -> Maybe [GQL__InputValue]
 fieldArgsByKey key gqlType = args <$> selectFieldBykey key gqlType
