@@ -27,13 +27,13 @@ import           Example.Files                  ( getJson )
 import           Data.Aeson                     ( FromJSON )
 import           Data.Either
 
-data AddressArg = AddressArg {
-    token:: Text,
-    cityID:: Text
+data Coord = Coord {
+    latitude :: Text,
+    longitude :: Text
 } deriving (Show,Generic,Data,GQLArgs)
 
-data OfficeArg = OfficeArg {
-    officeID:: Text
+data Zip = Zip {
+    zipcode:: Text
 } deriving (Show,Data,Generic,GQLArgs)
 
 data Address = Address {
@@ -46,8 +46,8 @@ data Address = Address {
 data User = User {
         name :: Text
         ,email :: Text
-        ,address:: AddressArg ::-> Address
-        ,office:: OfficeArg ::-> Address
+        ,address:: Coord ::-> Address
+        ,office:: Zip ::-> Address
         ,friend:: Maybe User
         ,home :: Maybe Address
 } deriving (Show,Generic,Data,GQLRecord , FromJSON )
@@ -63,13 +63,13 @@ fetchAddress cityName streetName = getJson "address"
     modify address =
         address { city = concat [cityName, city address], street = streetName }
 
-resolveAddress :: AddressArg ::-> Address
+resolveAddress :: Coord ::-> Address
 resolveAddress = Resolver resolve
-    where resolve args = fetchAddress (token args) (cityID args)
+    where resolve args = fetchAddress (latitude args) (longitude args)
 
-resolveOffice :: User -> OfficeArg ::-> Address
+resolveOffice :: User -> Zip ::-> Address
 resolveOffice user = Resolver resolve
-    where resolve args = fetchAddress (officeID args) "some bla"
+    where resolve args = fetchAddress (zipcode args) "some bla"
 
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve
