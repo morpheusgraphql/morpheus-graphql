@@ -49,9 +49,16 @@ instance Applicative EvalIO where
     (<*>) (IOVal f1) (IOVal f2) = IOVal ( f1 >>= \x-> ( x <$> f2) )
     (<*>) (IOFail x) _ = IOFail x
 
+
 instance Monad EvalIO where
-    (>>=) (IOVal x) fm = join (IOVal (fm <$> x))
+    return = IOVal . pure
     (>>=) (IOFail x) _ = IOFail x
+    (>>=) (IOVal x) f = IOVal $ do
+            v <-  x
+            case f v of
+                IOVal x -> x
+                -- TODO: Fix it 
+                -- IOFail error -> error
 
 instance Functor Eval where
     fmap f (Val x) = Val (f x)
