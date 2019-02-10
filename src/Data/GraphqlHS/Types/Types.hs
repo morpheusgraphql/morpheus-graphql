@@ -33,18 +33,35 @@ import           Data.Aeson                     ( ToJSON(..)
                                                 )
 import           Data.Data
 import           Data.GraphqlHS.Types.Error     ( GQLError )
-
+import           Control.Monad                  ( join )
 
 data Eval a = Fail [GQLError] | Val a deriving (Generic) ;
+
+data EvalIO a = IOEval (IO a)
+
+instance Functor EvalIO where
+    fmap f (IOEval vio) =  IOEval (f <$> vio)
+
+
+instance Applicative EvalIO where
+    pure x = IOEval (pure x)
+    (<*>) (IOEval f1) (IOEval f2) = IOEval ( f1 >>= \x-> ( x <$> f2) )
+
+
+instance Monad EvalIO where
+    (>>=) (IOEval x) fm = join (IOEval (fmap fm x))
 
 instance Functor Eval where
     fmap f (Val x) = Val (f x)
     fmap f (Fail x) = Fail x
 
+
+
 instance Applicative Eval where
     pure = Val
     (<*>) (Val f) x = fmap f x
     (<*>) (Fail x) _ = Fail x
+    -- (<*>) (RIO x) f = RIO (fmap f x)
 
 instance Monad Eval where
     (>>=) (Val x) fm = fm x
