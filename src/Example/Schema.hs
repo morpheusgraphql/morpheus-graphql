@@ -71,9 +71,7 @@ userResolver :: IO User
 userResolver = do
     user <- getJson "user" >>= pure . fromRight
         (User "" "" resolveAddress (Resolver officeResolver) Nothing Nothing)
-    return $ user { address = resolveAddress
-                  , office  = Resolver officeResolver
-                  }
+    return $ user { address = resolveAddress, office = Resolver officeResolver }
 
 rootResolver :: IO Query
 rootResolver = userResolver >>= pure . Query
