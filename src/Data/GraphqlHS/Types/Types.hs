@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric, DeriveAnyClass , DeriveDataTypeable , TypeOperators #-}
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass , TypeOperators #-}
 
 module Data.GraphqlHS.Types.Types
     ( GQLPrimitive(..)
@@ -16,6 +16,7 @@ module Data.GraphqlHS.Types.Types
     , GQLResponce
     , GQLRequest(..)
     , Arg(..)
+    , EvalIO(..)
     )
 where
 
@@ -108,7 +109,7 @@ data GQLQueryRoot = GQLQueryRoot {
 }
 
 
-data a ::-> b = TypeHolder (Maybe a) | Resolver (a -> IO (Eval b)) | Some b | None deriving (Generic)
+data a ::-> b = TypeHolder (Maybe a) | Resolver (a -> EvalIO b) | Some b | None deriving (Generic)
 
 instance Show (a ::-> b) where
     show _ = "Inline"
