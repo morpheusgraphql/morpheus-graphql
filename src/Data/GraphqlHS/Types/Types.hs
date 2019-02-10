@@ -49,7 +49,7 @@ instance Applicative EvalIO where
 
 
 instance Monad EvalIO where
-    (>>=) (IOEval x) fm = join (IOEval (fmap fm x))
+    (>>=) (IOEval x) fm = join (IOEval (fm <$> x))
 
 instance Functor Eval where
     fmap f (Val x) = Val (f x)
