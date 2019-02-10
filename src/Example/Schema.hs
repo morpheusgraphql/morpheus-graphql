@@ -60,8 +60,9 @@ fetchAddress :: Text -> Text -> IO (Eval Address)
 fetchAddress cityName streetName = getJson "address"
     >>= eitherToResponce modify
   where
-    modify address =
-        address { city = concat [cityName, city address], street = streetName }
+    modify address = address { city   = concat [cityName, " ", city address]
+                             , street = streetName
+                             }
 
 resolveAddress :: Coord ::-> Address
 resolveAddress = Resolver resolve
