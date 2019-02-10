@@ -37,24 +37,24 @@ import           Control.Monad                  ( join )
 
 data Eval a = Fail [GQLError] | Val a deriving (Generic) ;
 
-data EvalIO a = IOEval (IO a)
+data EvalIO a = IOVal (IO a) | IOFail [GQLError] deriving (Generic)
 
 instance Functor EvalIO where
-    fmap f (IOEval vio) =  IOEval (f <$> vio)
-
+    fmap f (IOVal vio) =  IOVal (f <$> vio)
+    fmap f (IOFail x) = IOFail x
 
 instance Applicative EvalIO where
-    pure x = IOEval (pure x)
-    (<*>) (IOEval f1) (IOEval f2) = IOEval ( f1 >>= \x-> ( x <$> f2) )
-
+    pure x = IOVal (pure x)
+    (<*>) (IOVal f1) (IOVal f2) = IOVal ( f1 >>= \x-> ( x <$> f2) )
+    (<*>) (IOFail x) _ = IOFail x
 
 instance Monad EvalIO where
-    (>>=) (IOEval x) fm = join (IOEval (fm <$> x))
+    (>>=) (IOVal x) fm = join (IOVal (fm <$> x))
+    (>>=) (IOFail x) _ = IOFail x
 
 instance Functor Eval where
     fmap f (Val x) = Val (f x)
     fmap f (Fail x) = Fail x
-
 
 
 instance Applicative Eval where
