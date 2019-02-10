@@ -64,20 +64,22 @@ fetchAddress cityName streetName = getJson "address"
         address { city = concat [cityName, city address], street = streetName }
 
 resolveAddress :: AddressArg ::-> Address
-resolveAddress = Resolver $ \x -> fetchAddress (token x) (cityID x)
+resolveAddress = Resolver resolve
+    where resolve args = fetchAddress (token args) (cityID args)
 
-officeResolver :: User -> OfficeArg ::-> Address
-officeResolver user =
-    Resolver $ \args -> fetchAddress (officeID args) "some bla"
+resolveOffice :: User -> OfficeArg ::-> Address
+resolveOffice user = Resolver resolve
+    where resolve args = fetchAddress (officeID args) "some bla"
 
-userResolver :: () -> IO (Eval User)
-userResolver _ = getJson "user" >>= eitherToResponce modify
+resolveUser :: () ::-> User
+resolveUser = Resolver resolve
   where
+    resolve _ = getJson "user" >>= eitherToResponce modify
     modify user =
-        user { address = resolveAddress, office = officeResolver user }
+        user { address = resolveAddress, office = resolveOffice user }
 
-rootResolver :: IO (Eval Query)
-rootResolver = pure $ pure $ Query { user = Resolver userResolver }
+resolveRoot :: IO (Eval Query)
+resolveRoot = pure $ pure $ Query { user = resolveUser }
 
 gqlHandler :: GQLRequest -> IO GQLResponce
-gqlHandler = interpreter (Proxy :: Proxy Query) rootResolver
+gqlHandler = interpreter (Proxy :: Proxy Query) resolveRoot
