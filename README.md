@@ -15,10 +15,10 @@ query GetUsers {
   user {
     name
     email
-    address(token: "324", cityID: "Hamburg") {
+    address(latitude: "Hi Nicas", longitude: "Dublin") {
       ...AdressDetails
     }
-    office(officeID: "hh 32 ") {
+    office(zipcode: "4134") {
       city
       street
     }
@@ -28,18 +28,18 @@ query GetUsers {
   }
 }
 
-fragment User on User {
-  address {
-    city
-  }
-}
-
 fragment AdressDetails on Address {
   houseNumber
   street
   city
   owner {
     ...User
+  }
+}
+
+fragment User on User {
+  address {
+    city
   }
 }
 ```
