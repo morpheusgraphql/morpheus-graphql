@@ -47,8 +47,3 @@ interpreter schema rootValue x = do
 eitherToResponce :: (a -> a) -> Either String a -> IO (Eval a)
 eitherToResponce f (Left  x) = pure $ handleError $ pack $ x
 eitherToResponce f (Right x) = pure $ pure (f x)
-
-(//) x y = do
-    x1 <- x
-    case x1 of
-        Val x -> pure $ Val x
