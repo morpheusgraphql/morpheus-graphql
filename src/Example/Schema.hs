@@ -64,16 +64,17 @@ fetchAddress cityName streetName = getJson "address"
         address { city = concat [cityName, city address], street = streetName }
 
 resolveAddress :: AddressArg ::-> Address
-resolveAddress = Resolver (\x -> fetchAddress (token x) (cityID x))
+resolveAddress = Resolver $ \x -> fetchAddress (token x) (cityID x)
 
-officeResolver :: OfficeArg -> IO (Eval Address)
-officeResolver args = fetchAddress (officeID args) "some bla"
+officeResolver :: User -> OfficeArg ::-> Address
+officeResolver user =
+    Resolver $ \args -> fetchAddress (officeID args) "some bla"
 
 userResolver :: () -> IO (Eval User)
 userResolver _ = getJson "user" >>= eitherToResponce modify
   where
     modify user =
-        user { address = resolveAddress, office = Resolver officeResolver }
+        user { address = resolveAddress, office = officeResolver user }
 
 rootResolver :: IO (Eval Query)
 rootResolver = pure $ pure $ Query { user = Resolver userResolver }
