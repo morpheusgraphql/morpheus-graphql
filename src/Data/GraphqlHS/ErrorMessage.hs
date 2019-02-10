@@ -8,6 +8,7 @@ module Data.GraphqlHS.ErrorMessage
     , handleError
     , semanticError
     , requiredArgument
+    , errorMessage
     )
 where
 
@@ -30,6 +31,8 @@ import           Data.Data                      ( dataTypeOf
 
 throwNewError :: Text -> [GQLError]
 throwNewError x = [GQLError { message = x, locations = [ErrorLocation 0 0] }]
+
+errorMessage = throwNewError
 
 handleError x = Fail $ throwNewError $ concat ["Field Error: ", x]
 

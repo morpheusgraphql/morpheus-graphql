@@ -10,6 +10,8 @@ module Data.MorpheusGraphQL
     , GQLRequest(..)
     , eitherToResponce
     , Eval
+    , EvalIO(..)
+    , liftIO
     )
 where
 
@@ -28,10 +30,11 @@ import           Data.GraphqlHS.Types.Types     ( (::->)(Resolver)
                                                 , GQLResponce
                                                 , GQLRequest(..)
                                                 , Eval(..)
+                                                , EvalIO(..)
                                                 )
 import           Data.Proxy                     ( Proxy )
 import           Control.Monad                  ( (>=>) )
-import           Data.GraphqlHS.ErrorMessage    ( handleError )
+import           Data.GraphqlHS.ErrorMessage    ( errorMessage )
 
 
 interpreter
@@ -40,10 +43,16 @@ interpreter schema rootValue x = do
     rv <- rootValue
     case rv of
         Val rvx -> case (parseGQL . query) x of
-            Val  x -> decode rvx x
+            Val x -> case decode rvx x of
+                IOVal  x -> x >>= pure . Val
+                IOFail x -> pure (Fail x)
             Fail x -> pure (Fail x)
         Fail x -> pure (Fail x)
 
-eitherToResponce :: (a -> a) -> Either String a -> IO (Eval a)
-eitherToResponce f (Left  x) = pure $ handleError $ pack $ x
-eitherToResponce f (Right x) = pure $ pure (f x)
+
+liftIO :: IO a -> EvalIO a
+liftIO = IOVal
+
+eitherToResponce :: (a -> a) -> Either String a -> EvalIO a
+eitherToResponce f (Left  x) = IOFail $ errorMessage $ pack $ x
+eitherToResponce f (Right x) = pure (f x)

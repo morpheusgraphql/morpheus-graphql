@@ -31,6 +31,7 @@ import           Data.GraphqlHS.Types.Types     ( Object
                                                 , MetaInfo(..)
                                                 , GQLType(..)
                                                 , GQLQueryRoot(..)
+                                                , EvalIO(..)
                                                 )
 import           Data.GraphqlHS.ErrorMessage    ( handleError
                                                 , subfieldsNotSelected
@@ -72,29 +73,29 @@ arrayMap :: GQLTypeLib -> [GQLTypeLib -> GQLTypeLib] -> GQLTypeLib
 arrayMap lib []       = lib
 arrayMap lib (f : fs) = arrayMap (f lib) fs
 
-addToRespocne :: Eval GQLType -> Eval GQLType -> Eval GQLType
+addToRespocne :: Eval GQLType -> Eval GQLType -> EvalIO GQLType
 addToRespocne (Val (Obj responce)) (Val schema) =
-    Val $ Obj (insert "__schema" schema responce)
-addToRespocne _ schema = schema
+    pure $ Obj (insert "__schema" schema responce)
+addToRespocne _ (Val x) = pure x
+
 unpackObj (Object x) = x
 
 class GQLRoot a where
 
-    decode :: a -> GQLQueryRoot  -> IO (Eval GQLType)
-    default decode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> IO (Eval GQLType)
+    decode :: a -> GQLQueryRoot  ->  EvalIO GQLType
+    default decode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> EvalIO GQLType
     decode rootValue gqlRoot =  case (validateBySchema schema "Query" (fragments gqlRoot) (queryBody gqlRoot)) of
         Val validGQL -> case (lookup "__schema" (unpackObj validGQL)) of
             Nothing -> responce
-            Just (Object x) ->  do
-                lib <-  responce
-                item <- wrapAsObject (transform initMeta x (from $ initSchema $ elems $ schema))
-                return (addToRespocne lib item)
-            where 
+          --  Just (Object x) ->  do
+          --      let item = wrapAsObject (transform initMeta x (from $ initSchema $ elems $ schema))
+          --      (addToRespocne responce item)
+            where
                 responce = wrapAsObject $ transform initMeta (unpackObj validGQL) (from rootValue)
-        Fail x -> pure (Fail x)
+        Fail x ->  IOFail x
         where
             schema = introspectRoot (Proxy :: Proxy a);
-            
+
 
 
     introspectRoot :: Proxy a  -> GQLTypeLib
