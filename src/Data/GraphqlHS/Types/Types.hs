@@ -36,32 +36,31 @@ import           Data.Data
 import           Data.GraphqlHS.Types.Error     ( GQLError )
 import           Control.Monad                  ( join )
 import           Control.Monad.Trans            ( liftIO )
+import           Control.Monad                  ( forM
+                                                , liftM
+                                                )
 
 
 data Eval a = Fail [GQLError] | Val a deriving (Generic) ;
 
-data EvalIO a = IOVal (IO (Eval a)) deriving (Generic)
+data EvalIO a = IOVal (IO a) | IOFail [GQLError] deriving (Generic)
+
 
 instance Functor EvalIO where
-    fmap f (IOVal vio) =  IOVal $ do 
-        v <- vio 
-        case v of
-          Val a -> pure $ Val (f a)
-          Fail a -> pure $ Fail a
+    fmap f (IOVal v) =  IOVal $ v >>= \x -> pure (f x)
+    fmap f (IOFail x)  = IOFail x
 
 instance Applicative EvalIO where
-    pure  = IOVal . pure. pure
-   -- (<*>) (IOVal f1) (IOVal f2) = IOVal ( f1 >>= \x-> ( x <$> f2) )
-    -- (<*>) (IOFail x) _ = IOFail x
+    pure  = IOVal . pure
+    (<*>) (IOVal f1) (IOVal f2) = IOVal ( f1 >>= \x-> ( x <$> f2) )
+    (<*>) (IOFail x) _ = IOFail x
 
 instance Monad EvalIO where
-    return = IOVal . pure .pure
-    (>>=) (IOVal x) f = IOVal $ do
-            v <-  x
-            case v of 
-                Val a -> case f a of 
-                    IOVal x -> x
-                Fail error -> pure $ Fail error
+    return = IOVal . pure
+    (>>=) (IOVal xm) fm = IOVal $ do
+        x <- xm
+        case (fm x) of
+            IOVal v -> v
 
 instance Functor Eval where
     fmap f (Val x) = Val (f x)
