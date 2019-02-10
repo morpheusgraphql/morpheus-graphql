@@ -35,8 +35,6 @@ import           Data.GraphqlHS.Types.Types     ( Object
 import           Data.GraphqlHS.ErrorMessage    ( handleError
                                                 , subfieldsNotSelected
                                                 )
-import           Data.GraphqlHS.Generics.Resolver
-                                                ( Resolver(..) )
 import           Data.GraphqlHS.Generics.GQLArgs
                                                 ( GQLArgs(..) )
 import           Data.GraphqlHS.Types.Introspection

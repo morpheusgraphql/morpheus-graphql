@@ -24,8 +24,6 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
-import           Data.GraphqlHS.Generics.Resolver
-                                                ( Resolver(..) )
 import           Data.GraphqlHS.Types.Types     ( Eval(..)
                                                 , (::->)(..)
                                                 , GQLType
@@ -80,13 +78,9 @@ validateFieldBody
 validateFieldBody typeLib frags currentType (fieldName, field) =
     case (fields currentType) of
         Some gqlVal -> case (getFieldTypeByKey fieldName currentType) of
-            Nothing ->
-                Fail $ cannotQueryField fieldName (name currentType)
+            Nothing -> Fail $ cannotQueryField fieldName (name currentType)
             Just fieldType -> do
-                value <- validateBySchema typeLib
-                                          (name fieldType)
-                                          frags
-                                          field
+                value <- validateBySchema typeLib (name fieldType) frags field
                 pure (fieldName, value)
         _ ->
             handleError $ pack $ "has not fields" ++ (show $ fields currentType)
@@ -124,7 +118,8 @@ validateHead currentType key (Head args) =
         Nothing    -> Fail $ cannotQueryField key (name currentType)
         Just field -> mapM (validateArg args) field >> Val (Head args)
 
-validateBySchema :: GQLTypeLib -> Text -> FragmentLib -> GQLValue -> Eval GQLValue
+validateBySchema
+    :: GQLTypeLib -> Text -> FragmentLib -> GQLValue -> Eval GQLValue
 validateBySchema typeLib typeName frags (Object gqlObj) = do
     extended <- concat <$> (mapM (propagateSpread frags) (toList gqlObj))
     existsType typeName typeLib

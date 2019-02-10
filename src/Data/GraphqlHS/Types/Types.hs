@@ -31,20 +31,37 @@ import           Data.Aeson                     ( ToJSON(..)
                                                 , FromJSON(..)
                                                 , Value(Null)
                                                 )
-import           Data.Data                      ( Data(..) )
+import           Data.Data
 import           Data.GraphqlHS.Types.Error     ( GQLError )
-
+import           Control.Monad                  ( join )
 
 data Eval a = Fail [GQLError] | Val a deriving (Generic) ;
+
+data EvalIO a = IOEval (IO a)
+
+instance Functor EvalIO where
+    fmap f (IOEval vio) =  IOEval (f <$> vio)
+
+
+instance Applicative EvalIO where
+    pure x = IOEval (pure x)
+    (<*>) (IOEval f1) (IOEval f2) = IOEval ( f1 >>= \x-> ( x <$> f2) )
+
+
+instance Monad EvalIO where
+    (>>=) (IOEval x) fm = join (IOEval (fm <$> x))
 
 instance Functor Eval where
     fmap f (Val x) = Val (f x)
     fmap f (Fail x) = Fail x
 
+
+
 instance Applicative Eval where
     pure = Val
     (<*>) (Val f) x = fmap f x
     (<*>) (Fail x) _ = Fail x
+    -- (<*>) (RIO x) f = RIO (fmap f x)
 
 instance Monad Eval where
     (>>=) (Val x) fm = fm x
@@ -92,11 +109,26 @@ data GQLQueryRoot = GQLQueryRoot {
     queryBody :: GQLValue
 }
 
-data p ::-> o = Resolve (Maybe p) (Maybe o) | Some o | None deriving (Show , Generic , Data )
+
+data a ::-> b = TypeHolder (Maybe a) | Resolver (a -> IO (Eval b)) | Some b | None deriving (Generic)
+
+instance Show (a ::-> b) where
+    show _ = "Inline"
+
+instance (Data a, Data b) => Data (a ::-> b) where
+    gfoldl k z _ = z None
+    gunfold k z c = z None
+    toConstr (Some _ ) = con_Some
+    toConstr _      = con_None
+    dataTypeOf _ = ty_Resolver
+
+con_Some = mkConstr ty_Resolver "Some" [] Prefix
+con_None = mkConstr ty_Resolver "None" [] Prefix
+ty_Resolver = mkDataType "Module.Resolver" [con_None, con_Some]
+
 
 instance FromJSON ( p ::->  o) where
     parseJSON _ =  pure None
- 
 
 instance (ToJSON o) => ToJSON ( p ::->  o) where
     toJSON (Some o) = toJSON o

@@ -15,24 +15,25 @@ import           Data.Text                      ( Text
 import           Data.MorpheusGraphQL           ( GQLRecord
                                                 , GQLRoot
                                                 , GQLArgs
-                                                , Resolver(resolve)
                                                 , (::->)(..)
                                                 , GQLResponce
                                                 , GQLRequest
                                                 , interpreter
+                                                , eitherToResponce
+                                                , Eval(..)
                                                 )
 import           Data.Proxy                     ( Proxy(..) )
 import           Example.Files                  ( getJson )
 import           Data.Aeson                     ( FromJSON )
 import           Data.Either
 
-data AddressArg = AddressArg {
-    token:: Text,
-    cityID:: Text
+data Coord = Coord {
+    latitude :: Text,
+    longitude :: Text
 } deriving (Show,Generic,Data,GQLArgs)
 
-data OfficeArg = OfficeArg {
-    officeID:: Text
+data Zip = Zip {
+    zipcode:: Text
 } deriving (Show,Data,Generic,GQLArgs)
 
 data Address = Address {
@@ -45,35 +46,41 @@ data Address = Address {
 data User = User {
         name :: Text
         ,email :: Text
-        ,address:: AddressArg ::-> Address
-        ,office:: OfficeArg ::-> Address
+        ,address:: Coord ::-> Address
+        ,office:: Zip ::-> Address
         ,friend:: Maybe User
         ,home :: Maybe Address
 } deriving (Show,Generic,Data,GQLRecord , FromJSON )
 
 data Query = Query {
-    user:: User
+    user:: () ::-> User
 } deriving (Show,Generic,Data,GQLRoot, FromJSON )
 
-instance Resolver AddressArg Address  where
-    resolve args _ = getAddress (cityID args) (token args)
+fetchAddress :: Text -> Text -> IO (Eval Address)
+fetchAddress cityName streetName = getJson "address"
+    >>= eitherToResponce modify
+  where
+    modify address = address { city   = concat [cityName, " ", city address]
+                             , street = streetName
+                             }
 
-instance Resolver OfficeArg Address  where
-    resolve args _ = getAddress (officeID args)  ""
+resolveAddress :: Coord ::-> Address
+resolveAddress = Resolver resolve
+    where resolve args = fetchAddress (latitude args) (longitude args)
 
-getAddress :: Text -> Text -> IO Address
-getAddress cityName streetName = do
-    address <- getJson "address" >>= pure . fromRight emptyAdress
-    pure $ address { city   = concat [cityName, city address]
-                   , street = streetName
-                   }
+resolveOffice :: User -> Zip ::-> Address
+resolveOffice user = Resolver resolve
+    where resolve args = fetchAddress (zipcode args) "some bla"
 
-emptyUser = User "" "" None None Nothing Nothing
-emptyAdress = Address "" "" 0 Nothing
+resolveUser :: () ::-> User
+resolveUser = Resolver resolve
+  where
+    resolve _ = getJson "user" >>= eitherToResponce modify
+    modify user =
+        user { address = resolveAddress, office = resolveOffice user }
 
-rootValue = getJson "user" >>= pure . Query . fromRight emptyUser
+resolveRoot :: IO (Eval Query)
+resolveRoot = pure $ pure $ Query { user = resolveUser }
 
 gqlHandler :: GQLRequest -> IO GQLResponce
-gqlHandler v = do
-    x <- rootValue
-    interpreter (Proxy :: Proxy Query) x v
+gqlHandler = interpreter (Proxy :: Proxy Query) resolveRoot

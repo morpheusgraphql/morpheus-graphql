@@ -32,12 +32,11 @@ import           Data.GraphqlHS.Types.Types     ( Object
                                                 , MetaInfo(..)
                                                 , GQLType(..)
                                                 , GQLPrimitive(..)
+                                                , Head(..)
                                                 )
 import           Data.GraphqlHS.ErrorMessage    ( handleError
                                                 , subfieldsNotSelected
                                                 )
-import           Data.GraphqlHS.Generics.Resolver
-                                                ( Resolver(..) )
 import           Data.GraphqlHS.Generics.GQLArgs
                                                 ( GQLArgs(..) )
 import           Data.GraphqlHS.Schema.GQL__Schema
@@ -115,24 +114,39 @@ class GQLRecord a where
                     stack = (map snd fieldTypes)
                     gqlFields = map fst fieldTypes
 
-getTypeInfo
-    :: (GQLRecord a, Resolver p a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
-getTypeInfo (Some x)      = Resolve Nothing (Just x)
-getTypeInfo None          = Resolve Nothing Nothing
-getTypeInfo (Resolve x y) = Resolve x y
+getType :: (GQLRecord a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
+getType _ = TypeHolder Nothing
 
 resolveField
-    :: (Show a, Show p, GQLRecord a, Resolver p a, GQLArgs p)
+    :: (Show a, Show p, GQLRecord a, GQLArgs p)
     => GQLValue
     -> p ::-> a
+    -> p ::-> a
     -> IO (Eval GQLType)
-resolveField (Query gqlArgs body) (Resolve args obj) =
+resolveField (Query gqlArgs body) (TypeHolder args) (Resolver resolver) =
     case fromArgs gqlArgs args of
-        Val  x -> resolve x obj >>= trans body
+        Val args -> do
+            resolver <- resolver args
+            case resolver of
+                Val  x -> trans body x
+                Fail x -> pure $ Fail x
+        Fail x -> pure $ Fail x
+resolveField (Query gqlArgs body) _ (Some x) = trans body x
+resolveField (Query gqlArgs body) _ None =
+    pure $ handleError "resolver not implemented"
+resolveField field (TypeHolder args) (Resolver resolver) =
+    case fromArgs Empty args of
+        Val args -> do
+            resolver <- resolver args
+            case resolver of
+                Val  x -> trans field x
+                Fail x -> pure $ Fail x
         Fail x -> pure $ Fail x
 
-instance (Show a, Show p, GQLRecord a, Resolver p a , GQLArgs p ) => GQLRecord (p ::-> a) where
-    trans (Query args body ) field = resolveField (Query args body) (getTypeInfo field)
+
+instance (Show a, Show p, GQLRecord a , GQLArgs p ) => GQLRecord (p ::-> a) where
+    trans (Query args body ) field = resolveField (Query args body) (getType field) field
+    trans x (Resolver f) = resolveField x (getType (Resolver f)) (Resolver f)
     trans x (Some a) = trans x a
     trans x None = pure$ pure $ Prim JSNull
     introspect  _  = introspect (Proxy:: Proxy  a)
@@ -189,9 +203,3 @@ instance GQLRecord GQL__DirectiveLocation where
     trans _ = pure . Val . Prim . JSString . pack . show
 
 instance  GQLArgs GQL__Deprication__Args;
-
-instance Resolver GQL__Deprication__Args [GQL__EnumValue] where
-    resolve args (Just values) = pure $ values
-
-instance Resolver GQL__Deprication__Args [GQL__Field] where
-    resolve args (Just fields) = pure $ fields
