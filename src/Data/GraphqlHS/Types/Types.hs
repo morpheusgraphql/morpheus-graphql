@@ -56,12 +56,10 @@ instance Functor Eval where
     fmap f (Val x) = Val (f x)
     fmap f (Fail x) = Fail x
 
-
 instance Applicative Eval where
     pure = Val
     (<*>) (Val f) x = fmap f x
     (<*>) (Fail x) _ = Fail x
-    -- (<*>) (RIO x) f = RIO (fmap f x)
 
 instance Monad Eval where
     (>>=) (Val x) fm = fm x
