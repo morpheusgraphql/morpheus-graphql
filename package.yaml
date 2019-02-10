@@ -23,6 +23,7 @@ dependencies:
   - split
   - text
   - attoparsec
+  - mtl
 
 library:
   source-dirs: src

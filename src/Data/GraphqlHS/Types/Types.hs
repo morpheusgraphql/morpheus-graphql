@@ -35,6 +35,8 @@ import           Data.Aeson                     ( ToJSON(..)
 import           Data.Data
 import           Data.GraphqlHS.Types.Error     ( GQLError )
 import           Control.Monad                  ( join )
+import           Control.Monad.Trans            ( liftIO )
+
 
 data Eval a = Fail [GQLError] | Val a deriving (Generic) ;
 
