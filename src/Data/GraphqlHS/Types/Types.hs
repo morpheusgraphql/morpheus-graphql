@@ -40,27 +40,28 @@ import           Control.Monad.Trans            ( liftIO )
 
 data Eval a = Fail [GQLError] | Val a deriving (Generic) ;
 
-data EvalIO a = IOVal (IO a) | IOFail [GQLError] deriving (Generic)
+data EvalIO a = IOVal (IO (Eval a)) deriving (Generic)
 
 instance Functor EvalIO where
-    fmap f (IOVal vio) =  IOVal (f <$> vio)
-    fmap f (IOFail x) = IOFail x
+    fmap f (IOVal vio) =  IOVal $ do 
+        v <- vio 
+        case v of
+          Val a -> pure $ Val (f a)
+          Fail a -> pure $ Fail a
 
 instance Applicative EvalIO where
-    pure x = IOVal (pure x)
-    (<*>) (IOVal f1) (IOVal f2) = IOVal ( f1 >>= \x-> ( x <$> f2) )
-    (<*>) (IOFail x) _ = IOFail x
-
+    pure  = IOVal . pure. pure
+   -- (<*>) (IOVal f1) (IOVal f2) = IOVal ( f1 >>= \x-> ( x <$> f2) )
+    -- (<*>) (IOFail x) _ = IOFail x
 
 instance Monad EvalIO where
-    return = IOVal . pure
-    (>>=) (IOFail x) _ = IOFail x
+    return = IOVal . pure .pure
     (>>=) (IOVal x) f = IOVal $ do
             v <-  x
-            case f v of
-                IOVal x -> x
-                -- TODO: Fix it 
-                -- IOFail error -> error
+            case v of 
+                Val a -> case f a of 
+                    IOVal x -> x
+                Fail error -> pure $ Fail error
 
 instance Functor Eval where
     fmap f (Val x) = Val (f x)
