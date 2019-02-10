@@ -93,7 +93,7 @@ data GQLQueryRoot = GQLQueryRoot {
 }
 
 
-data a ::-> b = TypeHolder (Maybe a) | Resolver (a -> IO b) | Some b | None deriving (Generic)
+data a ::-> b = TypeHolder (Maybe a) | Resolver (a -> IO (Eval b)) | Some b | None deriving (Generic)
 
 instance Show (a ::-> b) where
     show _ = "Inline"

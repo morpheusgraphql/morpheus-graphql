@@ -19,6 +19,8 @@ import           Data.MorpheusGraphQL           ( GQLRecord
                                                 , GQLResponce
                                                 , GQLRequest
                                                 , interpreter
+                                                , eitherToResponce
+                                                , Eval(..)
                                                 )
 import           Data.Proxy                     ( Proxy(..) )
 import           Example.Files                  ( getJson )
@@ -51,32 +53,30 @@ data User = User {
 } deriving (Show,Generic,Data,GQLRecord , FromJSON )
 
 data Query = Query {
-    user:: User
+    user:: () ::-> User
 } deriving (Show,Generic,Data,GQLRoot, FromJSON )
 
-fetchAddress :: Text -> Text -> IO Address
-fetchAddress cityName streetName = do
-    address <- getJson "address" >>= pure . fromRight (Address "" "" 0 Nothing)
-    pure $ address { city   = concat [cityName, city address]
-                   , street = streetName
-                   }
+fetchAddress :: Text -> Text -> IO (Eval Address)
+fetchAddress cityName streetName = getJson "address"
+    >>= eitherToResponce modify
+  where
+    modify address =
+        address { city = concat [cityName, city address], street = streetName }
 
 resolveAddress :: AddressArg ::-> Address
 resolveAddress = Resolver (\x -> fetchAddress (token x) (cityID x))
 
-officeResolver :: OfficeArg -> IO Address
+officeResolver :: OfficeArg -> IO (Eval Address)
 officeResolver args = fetchAddress (officeID args) "some bla"
 
-userResolver :: IO User
-userResolver = do
-    user <- getJson "user" >>= pure . fromRight
-        (User "" "" resolveAddress (Resolver officeResolver) Nothing Nothing)
-    return $ user { address = resolveAddress, office = Resolver officeResolver }
+userResolver :: () -> IO (Eval User)
+userResolver _ = getJson "user" >>= eitherToResponce modify
+  where
+    modify user =
+        user { address = resolveAddress, office = Resolver officeResolver }
 
-rootResolver :: IO Query
-rootResolver = userResolver >>= pure . Query
+rootResolver :: IO (Eval Query)
+rootResolver = pure $ pure $ Query { user = Resolver userResolver }
 
 gqlHandler :: GQLRequest -> IO GQLResponce
-gqlHandler v = do
-    x <- rootResolver
-    interpreter (Proxy :: Proxy Query) x v
+gqlHandler = interpreter (Proxy :: Proxy Query) rootResolver

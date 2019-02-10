@@ -32,6 +32,7 @@ import           Data.GraphqlHS.Types.Types     ( Object
                                                 , MetaInfo(..)
                                                 , GQLType(..)
                                                 , GQLPrimitive(..)
+                                                , Head(..)
                                                 )
 import           Data.GraphqlHS.ErrorMessage    ( handleError
                                                 , subfieldsNotSelected
@@ -124,14 +125,28 @@ resolveField
     -> IO (Eval GQLType)
 resolveField (Query gqlArgs body) (TypeHolder args) (Resolver resolver) =
     case fromArgs gqlArgs args of
-        Val  args -> resolver args >>= trans body
-        Fail x    -> pure $ Fail x
+        Val args -> do
+            resolver <- resolver args
+            case resolver of
+                Val  x -> trans body x
+                Fail x -> pure $ Fail x
+        Fail x -> pure $ Fail x
 resolveField (Query gqlArgs body) _ (Some x) = trans body x
 resolveField (Query gqlArgs body) _ None =
     pure $ handleError "resolver not implemented"
+resolveField field (TypeHolder args) (Resolver resolver) =
+    case fromArgs Empty args of
+        Val args -> do
+            resolver <- resolver args
+            case resolver of
+                Val  x -> trans field x
+                Fail x -> pure $ Fail x
+        Fail x -> pure $ Fail x
+
 
 instance (Show a, Show p, GQLRecord a , GQLArgs p ) => GQLRecord (p ::-> a) where
     trans (Query args body ) field = resolveField (Query args body) (getType field) field
+    trans x (Resolver f) = resolveField x (getType (Resolver f)) (Resolver f)
     trans x (Some a) = trans x a
     trans x None = pure$ pure $ Prim JSNull
     introspect  _  = introspect (Proxy:: Proxy  a)
