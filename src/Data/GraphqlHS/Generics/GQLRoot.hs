@@ -32,8 +32,7 @@ import           Data.GraphqlHS.Types.Types     ( Object
                                                 , GQLType(..)
                                                 , GQLQueryRoot(..)
                                                 , EvalIO(..)
-                                                , valToEither
-                                                --, MaybeT(..)
+                                                , failEvalIO
                                                 )
 import           Data.GraphqlHS.ErrorMessage    ( handleError
                                                 , subfieldsNotSelected
@@ -78,7 +77,7 @@ arrayMap lib (f : fs) = arrayMap (f lib) fs
 addToRespocne :: EvalIO GQLType -> EvalIO GQLType -> EvalIO GQLType
 addToRespocne lib item = do
     (Obj lib1) <- lib
-    item1 <- item
+    item1      <- item
     pure $ Obj (insert "__schema" item1 lib1)
 
 unpackObj (Object x) = x
@@ -88,13 +87,13 @@ class GQLRoot a where
     decode :: a -> GQLQueryRoot  ->  EvalIO GQLType
     default decode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> EvalIO GQLType
     decode rootValue gqlRoot =  case (validateBySchema schema "Query" (fragments gqlRoot) (queryBody gqlRoot)) of
-        Val validGQL -> case (lookup "__schema" (unpackObj validGQL)) of
+        Right validGQL -> case (lookup "__schema" (unpackObj validGQL)) of
             Nothing -> responce
             Just (Object x) ->  addToRespocne responce (item x)
             where
                 item x = wrapAsObject (transform initMeta x (from $ initSchema $ elems $ schema))
                 responce = wrapAsObject $ transform initMeta (unpackObj validGQL) (from rootValue)
-        Fail x ->  valToEither (Fail  x)
+        Left x ->  failEvalIO x
         where
             schema = introspectRoot (Proxy :: Proxy a);
 

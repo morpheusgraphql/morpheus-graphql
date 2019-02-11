@@ -17,8 +17,7 @@ module Data.GraphqlHS.Types.Types
     , GQLRequest(..)
     , Arg(..)
     , EvalIO(..)
-    , valToEither
-  --  , MaybeT(..)
+    , failEvalIO
     )
 where
 
@@ -43,32 +42,19 @@ import           Control.Monad.Trans            ( liftIO
 import           Control.Monad                  ( forM
                                                 , liftM
                                                 )
-import           Control.Monad.Trans.Except     ( ExceptT(..) , runExceptT )
+import           Control.Monad.Trans.Except     ( ExceptT(..)
+                                                , runExceptT
+                                                )
 
-valToEither :: Eval a -> EvalIO a
-valToEither (Fail x) = ExceptT $ pure $ Left x
-valToEither (Val  x) = ExceptT $ pure $ Right x
-
-data Eval a = Fail [GQLError] | Val a deriving (Generic) ;
-
+type Eval a = Either [GQLError] a ;
 type EvalIO  = ExceptT [GQLError] IO;
 
-instance Functor Eval where
-    fmap f (Val x) = Val (f x)
-    fmap f (Fail x) = Fail x
+failEvalIO :: [GQLError] -> EvalIO a
+failEvalIO = ExceptT . pure . Left
 
-instance Applicative Eval where
-    pure = Val
-    (<*>) (Val f) x = fmap f x
-    (<*>) (Fail x) _ = Fail x
-
-instance Monad Eval where
-    (>>=) (Val x) fm = fm x
-    (>>=) (Fail x) _ = Fail x
-
-instance (ToJSON a, Generic a) => ToJSON (Eval a) where
-    toJSON (Fail errors) = object ["errors" .= errors];
-    toJSON (Val d) = object ["data" .= d];
+--instance (ToJSON a, Generic a) => ToJSON (Eval a) where
+--    toJSON (Fail errors) = object ["errors" .= errors];
+--    toJSON (Val d) = object ["data" .= d];
 
 data GQLPrimitive = JSEnum Text | JSInt Int | JSBool Bool | JSString Text | JSNull  deriving (Show, Generic);
 
