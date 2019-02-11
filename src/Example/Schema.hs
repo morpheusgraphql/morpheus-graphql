@@ -42,7 +42,7 @@ data Address = Address {
         city :: Text
         ,street :: Text
         ,houseNumber :: Int
-        ,owner:: Maybe User
+       -- ,owner:: Maybe User
 } deriving (Generic,Show,GQLRecord,Data, FromJSON)
 
 data User = User {
@@ -50,7 +50,7 @@ data User = User {
         ,email :: Text
         ,address:: Coord ::-> Address
         ,office:: Zip ::-> Address
-        ,friend:: Maybe User
+      --  ,friend:: Maybe User
         ,home :: Maybe Address
 } deriving (Show,Generic,Data,GQLRecord , FromJSON )
 

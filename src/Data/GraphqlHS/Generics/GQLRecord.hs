@@ -34,6 +34,8 @@ import           Data.GraphqlHS.Types.Types     ( Object
                                                 , GQLType(..)
                                                 , GQLPrimitive(..)
                                                 , Head(..)
+                                                , valToEither
+                                               -- , MaybeT(..)
                                                 )
 import           Data.GraphqlHS.ErrorMessage    ( handleError
                                                 , subfieldsNotSelected
@@ -67,6 +69,11 @@ import           Data.GraphqlHS.Generics.GenericMap
                                                 , initMeta
                                                 )
 import           Data.Maybe                     ( fromMaybe )
+import           Control.Monad.Trans.Except
+import           Control.Monad.Trans            ( liftIO
+                                                , lift
+                                                , MonadTrans
+                                                )
 
 instance GQLRecord a => GenericMap  (K1 i a)  where
     transform meta gql (K1 src) = case (getField meta gql) of
@@ -94,7 +101,7 @@ class GQLRecord a where
     trans :: GQLValue ->  a -> EvalIO GQLType
     default trans :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => GQLValue -> a -> EvalIO GQLType
     trans (Object gql) = wrapAsObject . transform initMeta gql . from
-    trans (Field key) = \x -> IOFail $ subfieldsNotSelected x key
+    trans (Field key) = \x -> valToEither $ Fail $ subfieldsNotSelected x key
 
     fieldType :: Proxy a -> Text -> GQL__Field
     default fieldType :: (Show a, Selectors (Rep a) , Typeable a) => Proxy a -> Text -> GQL__Field
@@ -116,6 +123,8 @@ class GQLRecord a where
 getType :: (GQLRecord a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
 getType _ = TypeHolder Nothing
 
+
+
 resolveField
     :: (Show a, Show p, GQLRecord a, GQLArgs p)
     => GQLValue
@@ -123,18 +132,12 @@ resolveField
     -> p ::-> a
     -> EvalIO GQLType
 resolveField (Query gqlArgs body) (TypeHolder args) (Resolver resolver) =
-    case fromArgs gqlArgs args of
-        Val  args -> resolver args >>= trans body
-        Fail x    -> IOFail x
+    (valToEither $ fromArgs Empty args) >>= resolver >>= trans body
 resolveField (Query gqlArgs body) _ (Some x) = trans body x
 resolveField (Query gqlArgs body) _ None =
-    case handleError "resolver not implemented" of
-        Fail x -> IOFail x
+    valToEither $ handleError "resolver not implemented"
 resolveField field (TypeHolder args) (Resolver resolver) =
-    case fromArgs Empty args of
-        Val  args -> resolver args >>= trans field
-        Fail x    -> IOFail x
-
+    (valToEither $ fromArgs Empty args) >>= resolver >>= trans field
 
 instance (Show a, Show p, GQLRecord a , GQLArgs p ) => GQLRecord (p ::-> a) where
     trans (Query args body ) field = resolveField (Query args body) (getType field) field

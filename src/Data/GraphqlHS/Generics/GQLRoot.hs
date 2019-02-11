@@ -32,6 +32,8 @@ import           Data.GraphqlHS.Types.Types     ( Object
                                                 , GQLType(..)
                                                 , GQLQueryRoot(..)
                                                 , EvalIO(..)
+                                                , valToEither
+                                                --, MaybeT(..)
                                                 )
 import           Data.GraphqlHS.ErrorMessage    ( handleError
                                                 , subfieldsNotSelected
@@ -92,7 +94,7 @@ class GQLRoot a where
           --      (addToRespocne responce item)
             where
                 responce = wrapAsObject $ transform initMeta (unpackObj validGQL) (from rootValue)
-        Fail x ->  IOFail x
+        Fail x ->  valToEither (Fail  x)
         where
             schema = introspectRoot (Proxy :: Proxy a);
 

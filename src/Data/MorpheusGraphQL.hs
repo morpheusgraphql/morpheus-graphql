@@ -35,7 +35,12 @@ import           Data.GraphqlHS.Types.Types     ( (::->)(Resolver)
 import           Data.Proxy                     ( Proxy )
 import           Control.Monad                  ( (>=>) )
 import           Data.GraphqlHS.ErrorMessage    ( errorMessage )
+import           Control.Monad.Trans.Except
+import           Control.Monad.Trans            ( lift )
 
+
+bla (Left  x) = Fail x
+bla (Right x) = Val x
 
 interpreter
     :: GQLRoot a => Proxy a -> IO (Eval a) -> GQLRequest -> IO GQLResponce
@@ -43,16 +48,14 @@ interpreter schema rootValue x = do
     rv <- rootValue
     case rv of
         Val rvx -> case (parseGQL . query) x of
-            Val x -> case decode rvx x of
-                IOVal  x -> x >>= pure . Val
-                IOFail x -> pure (Fail x)
+            Val  x -> bla <$> runExceptT (decode rvx x)
             Fail x -> pure (Fail x)
         Fail x -> pure (Fail x)
 
 
 liftIO :: IO a -> EvalIO a
-liftIO = IOVal
+liftIO = lift
 
 eitherToResponce :: (a -> a) -> Either String a -> EvalIO a
-eitherToResponce f (Left  x) = IOFail $ errorMessage $ pack $ x
+eitherToResponce f (Left  x) = ExceptT $ pure $ Left $ errorMessage $ pack $ x
 eitherToResponce f (Right x) = pure (f x)

@@ -17,6 +17,8 @@ module Data.GraphqlHS.Types.Types
     , GQLRequest(..)
     , Arg(..)
     , EvalIO(..)
+    , valToEither
+  --  , MaybeT(..)
     )
 where
 
@@ -34,33 +36,64 @@ import           Data.Aeson                     ( ToJSON(..)
                                                 )
 import           Data.Data
 import           Data.GraphqlHS.Types.Error     ( GQLError )
-import           Control.Monad                  ( join )
-import           Control.Monad.Trans            ( liftIO )
+import           Control.Monad.Trans            ( liftIO
+                                                , lift
+                                                , MonadTrans
+                                                )
 import           Control.Monad                  ( forM
                                                 , liftM
                                                 )
+import           Control.Monad.Trans.Except     ( ExceptT(..) )
 
+
+valToEither :: Eval a -> EvalIO a
+valToEither (Fail x) = ExceptT $ pure $ Left x
+valToEither (Val  x) = ExceptT $ pure $ Right x
+
+-- import           Control.Applicative            ( ap )
 
 data Eval a = Fail [GQLError] | Val a deriving (Generic) ;
 
-data EvalIO a = IOVal (IO a) | IOFail [GQLError] deriving (Generic)
+--newtype MaybeT m a = MaybeT { runMaybeT :: m (Eval a) }
 
+-- instance MonadTrans MaybeT where
+--     lift = MaybeT . (fmap Val)
 
-instance Functor EvalIO where
-    fmap f (IOVal v) =  IOVal $ v >>= \x -> pure (f x)
-    fmap f (IOFail x)  = IOFail x
+-- instance Monad m => Functor (MaybeT m) where
+--     fmap = liftM
 
-instance Applicative EvalIO where
-    pure  = IOVal . pure
-    (<*>) (IOVal f1) (IOVal f2) = IOVal ( f1 >>= \x-> ( x <$> f2) )
-    (<*>) (IOFail x) _ = IOFail x
+-- instance Monad m => Applicative (MaybeT m) where
+--     pure = MaybeT . return . Val
+--     -- (<*>) = ap
 
-instance Monad EvalIO where
-    return = IOVal . pure
-    (>>=) (IOVal xm) fm = IOVal $ do
-        x <- xm
-        case (fm x) of
-            IOVal v -> v
+-- instance Monad m => Monad (MaybeT m) where
+--     return  = MaybeT . return . Val
+--     -- The signature of (>>=), specialized to MaybeT m:
+--     -- (>>=) :: MaybeT m a -> (a -> MaybeT m b) -> MaybeT m b
+--     x >>= f = MaybeT $ do maybe_value <- runMaybeT x
+--                           case maybe_value of
+--                              Fail x    -> return (Fail x)
+--                              Val value -> runMaybeT (f value)
+
+type EvalIO  = ExceptT [GQLError] IO;
+
+-- data EvalIO a = IOVal (IO a) | IOFail [GQLError] deriving (Generic)
+
+-- instance Functor EvalIO where
+--     fmap f (IOVal v) =  IOVal $ v >>= \x -> pure (f x)
+--     fmap f (IOFail x)  = IOFail x
+
+-- instance Applicative EvalIO where
+--     pure  = IOVal . pure
+--     (<*>) (IOVal f1) (IOVal f2) = IOVal ( f1 >>= \x-> ( x <$> f2) )
+--     (<*>) (IOFail x) _ = IOFail x
+
+-- instance Monad EvalIO where
+--     return = IOVal . pure
+--     (>>=) (IOVal xm) fm = IOVal $ do
+--         x <- xm
+--         case (fm x) of
+--            IOVal v -> v
 
 instance Functor Eval where
     fmap f (Val x) = Val (f x)
