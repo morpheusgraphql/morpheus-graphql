@@ -4,6 +4,7 @@
 module Data.GraphqlHS.Generics.GQLRecord
     ( GQLRecord(..)
     , wrapAsObject
+    , arrayMap
     )
 where
 

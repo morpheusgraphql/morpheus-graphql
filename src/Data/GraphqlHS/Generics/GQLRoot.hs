@@ -67,18 +67,12 @@ import           Data.GraphqlHS.Schema.GQL__Schema
 import           Data.GraphqlHS.Generics.GQLRecord
                                                 ( GQLRecord(..)
                                                 , wrapAsObject
+                                                , arrayMap
                                                 )
 import           Data.GraphqlHS.PreProcess      ( validateBySchema )
 
-arrayMap :: GQLTypeLib -> [GQLTypeLib -> GQLTypeLib] -> GQLTypeLib
-arrayMap lib []       = lib
-arrayMap lib (f : fs) = arrayMap (f lib) fs
-
-addToRespocne :: EvalIO GQLType -> EvalIO GQLType -> EvalIO GQLType
-addToRespocne lib item = do
-    (Obj lib1) <- lib
-    item1      <- item
-    pure $ Obj (insert "__schema" item1 lib1)
+addProp :: GQLType -> GQLType -> GQLType
+addProp prop (Obj obj) = Obj (insert "__schema" prop obj)
 
 unpackObj (Object x) = x
 
@@ -89,15 +83,13 @@ class GQLRoot a where
     decode rootValue gqlRoot =  case (validateBySchema schema "Query" (fragments gqlRoot) (queryBody gqlRoot)) of
         Right validGQL -> case (lookup "__schema" (unpackObj validGQL)) of
             Nothing -> responce
-            Just (Object x) ->  addToRespocne responce (item x)
+            Just x ->  (liftM2 addProp) (item x) responce
             where
-                item x = wrapAsObject (transform initMeta x (from $ initSchema $ elems $ schema))
+                item (Object x) = wrapAsObject (transform initMeta x (from $ initSchema $ elems $ schema))
                 responce = wrapAsObject $ transform initMeta (unpackObj validGQL) (from rootValue)
         Left x ->  failEvalIO x
         where
             schema = introspectRoot (Proxy :: Proxy a);
-
-
 
     introspectRoot :: Proxy a  -> GQLTypeLib
     default introspectRoot :: (Show a, Selectors (Rep a) , Typeable a) => Proxy a -> GQLTypeLib
