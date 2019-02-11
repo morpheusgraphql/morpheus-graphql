@@ -31,7 +31,9 @@ import           Data.GraphqlHS.Types.Introspection
                                                 )
 import           Data.GraphqlHS.Generics.TypeRep
                                                 ( ArgsMeta(..) )
-import           Data.GraphqlHS.ErrorMessage    ( requiredArgument )
+import           Data.GraphqlHS.ErrorMessage    ( requiredArgument
+                                                , handleError
+                                                )
 
 fixProxy :: (a -> f a) -> f a
 fixProxy f = f undefined
@@ -58,6 +60,7 @@ instance InputValue a => GToArgs  (K1 i a)  where
         case lookup (key meta) args of
             Nothing -> Fail $ requiredArgument meta
             Just (ArgValue x) -> Val $ K1 $ (decode x)
+            Just x -> handleError $ pack $ show x
 
 instance (Selector c, GToArgs f ) => GToArgs (M1 S c f) where
     gToArgs meta gql = fixProxy (\x -> M1 <$> gToArgs (meta{ key = pack $ selName x}) gql)

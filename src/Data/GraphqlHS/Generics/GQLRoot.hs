@@ -75,10 +75,11 @@ arrayMap :: GQLTypeLib -> [GQLTypeLib -> GQLTypeLib] -> GQLTypeLib
 arrayMap lib []       = lib
 arrayMap lib (f : fs) = arrayMap (f lib) fs
 
-addToRespocne :: Eval GQLType -> Eval GQLType -> EvalIO GQLType
-addToRespocne (Val (Obj responce)) (Val schema) =
-    pure $ Obj (insert "__schema" schema responce)
-addToRespocne _ (Val x) = pure x
+addToRespocne :: EvalIO GQLType -> EvalIO GQLType -> EvalIO GQLType
+addToRespocne lib item = do
+    (Obj lib1) <- lib
+    item1 <- item
+    pure $ Obj (insert "__schema" item1 lib1)
 
 unpackObj (Object x) = x
 
@@ -89,10 +90,9 @@ class GQLRoot a where
     decode rootValue gqlRoot =  case (validateBySchema schema "Query" (fragments gqlRoot) (queryBody gqlRoot)) of
         Val validGQL -> case (lookup "__schema" (unpackObj validGQL)) of
             Nothing -> responce
-          --  Just (Object x) ->  do
-          --      let item = wrapAsObject (transform initMeta x (from $ initSchema $ elems $ schema))
-          --      (addToRespocne responce item)
+            Just (Object x) ->  addToRespocne responce (item x)
             where
+                item x = wrapAsObject (transform initMeta x (from $ initSchema $ elems $ schema))
                 responce = wrapAsObject $ transform initMeta (unpackObj validGQL) (from rootValue)
         Fail x ->  valToEither (Fail  x)
         where

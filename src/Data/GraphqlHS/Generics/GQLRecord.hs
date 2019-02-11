@@ -132,7 +132,7 @@ resolveField
     -> p ::-> a
     -> EvalIO GQLType
 resolveField (Query gqlArgs body) (TypeHolder args) (Resolver resolver) =
-    (valToEither $ fromArgs Empty args) >>= resolver >>= trans body
+    (valToEither $ fromArgs gqlArgs args) >>= resolver >>= trans body
 resolveField (Query gqlArgs body) _ (Some x) = trans body x
 resolveField (Query gqlArgs body) _ None =
     valToEither $ handleError "resolver not implemented"
