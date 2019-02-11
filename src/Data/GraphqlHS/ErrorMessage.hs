@@ -8,6 +8,7 @@ module Data.GraphqlHS.ErrorMessage
     , handleError
     , semanticError
     , requiredArgument
+    , errorMessage
     )
 where
 
@@ -17,9 +18,7 @@ import           Data.Text                      ( Text(..)
                                                 , unpack
                                                 , concat
                                                 )
-import           Data.GraphqlHS.Types.Types     ( Eval(..)
-                                                , MetaInfo(..)
-                                                )
+import           Data.GraphqlHS.Types.Types     ( MetaInfo(..) )
 import           Data.GraphqlHS.Types.Error     ( GQLError(..)
                                                 , ErrorLocation(..)
                                                 )
@@ -31,7 +30,9 @@ import           Data.Data                      ( dataTypeOf
 throwNewError :: Text -> [GQLError]
 throwNewError x = [GQLError { message = x, locations = [ErrorLocation 0 0] }]
 
-handleError x = Fail $ throwNewError $ concat ["Field Error: ", x]
+errorMessage = throwNewError
+
+handleError x = Left $ throwNewError $ concat ["Field Error: ", x]
 
 unknownArgument :: Data a => a -> [Text] -> [GQLError]
 unknownArgument record list = throwNewError $ concat

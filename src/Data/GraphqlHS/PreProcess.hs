@@ -59,13 +59,13 @@ import           Data.GraphqlHS.Schema.InputValue
 existsType :: Text -> GQLTypeLib -> Eval GQL__Type
 existsType typeName typeLib = case (lookup typeName typeLib) of
     Nothing -> handleError $ pack $ "type does not exist" ++ (unpack typeName)
-    Just x  -> Val x
+    Just x  -> pure x
 
 
 validateSpread :: FragmentLib -> Text -> Eval [(Text, GQLValue)]
 validateSpread frags key = case lookup key frags of
     Nothing -> handleError $ pack $ "Fragment not found: " ++ (show key)
-    Just (Fragment _ _ (Object gqlObj)) -> Val (toList gqlObj)
+    Just (Fragment _ _ (Object gqlObj)) -> pure (toList gqlObj)
 
 
 
@@ -78,7 +78,7 @@ validateFieldBody
 validateFieldBody typeLib frags currentType (fieldName, field) =
     case (fields currentType) of
         Some gqlVal -> case (getFieldTypeByKey fieldName currentType) of
-            Nothing -> Fail $ cannotQueryField fieldName (name currentType)
+            Nothing -> Left $ cannotQueryField fieldName (name currentType)
             Just fieldType -> do
                 value <- validateBySchema typeLib (name fieldType) frags field
                 pure (fieldName, value)
@@ -105,18 +105,18 @@ propagateSpread frags (text, value     ) = pure [(text, value)]
 validateArg :: Map Text Arg -> GQL__InputValue -> Eval (Text, Text)
 validateArg requestArgs inpValue =
     case (lookup (inputValueName inpValue) requestArgs) of
-        Nothing -> Fail $ requiredArgument $ MetaInfo
+        Nothing -> Left $ requiredArgument $ MetaInfo
             { className = ""
             , cons      = ""
             , key       = (pack $ show $ inputValueName inpValue)
             }
-        Just x -> Val ("", "")
+        Just x -> pure ("", "")
 
 validateHead :: GQL__Type -> Text -> Head -> Eval Head
 validateHead currentType key (Head args) =
     case (fieldArgsByKey key currentType) of
-        Nothing    -> Fail $ cannotQueryField key (name currentType)
-        Just field -> mapM (validateArg args) field >> Val (Head args)
+        Nothing    -> Left $ cannotQueryField key (name currentType)
+        Just field -> mapM (validateArg args) field >> pure (Head args)
 
 validateBySchema
     :: GQLTypeLib -> Text -> FragmentLib -> GQLValue -> Eval GQLValue
@@ -130,6 +130,6 @@ validateBySchema typeLib typeName frags (Object gqlObj) = do
 validateBySchema typeLib typeName frags (Query head body) =
     handleError $ pack $ "all query heads shcould be handled by Fields"
 
-validateBySchema _ _ _ (Field value) = Val (Field value)
+validateBySchema _ _ _ (Field value) = pure (Field value)
 
-validateBySchema _ _ _ QNull         = Val QNull
+validateBySchema _ _ _ QNull         = pure QNull

@@ -31,7 +31,9 @@ import           Data.GraphqlHS.Types.Introspection
                                                 )
 import           Data.GraphqlHS.Generics.TypeRep
                                                 ( ArgsMeta(..) )
-import           Data.GraphqlHS.ErrorMessage    ( requiredArgument )
+import           Data.GraphqlHS.ErrorMessage    ( requiredArgument
+                                                , handleError
+                                                )
 
 fixProxy :: (a -> f a) -> f a
 fixProxy f = f undefined
@@ -56,8 +58,9 @@ instance GToArgs U1  where
 instance InputValue a => GToArgs  (K1 i a)  where
     gToArgs meta (Head args) =
         case lookup (key meta) args of
-            Nothing -> Fail $ requiredArgument meta
-            Just (ArgValue x) -> Val $ K1 $ (decode x)
+            Nothing -> Left $ requiredArgument meta
+            Just (ArgValue x) -> pure $ K1 $ (decode x)
+            Just x -> handleError $ pack $ show x
 
 instance (Selector c, GToArgs f ) => GToArgs (M1 S c f) where
     gToArgs meta gql = fixProxy (\x -> M1 <$> gToArgs (meta{ key = pack $ selName x}) gql)
@@ -81,15 +84,15 @@ class GQLArgs p where
     argsMeta _ = map (\(x,y)-> createInputValue x y) $ getMeta (Proxy :: Proxy (Rep p))
 
 instance  GQLArgs Text where
-    fromArgs _ (Just t) = Val t
-    fromArgs _ _ = Val "Nothing found"
+    fromArgs _ (Just t) = pure t
+    fromArgs _ _ = pure "Nothing found"
     argsMeta _ = []
 
 instance  GQLArgs Bool where
-    fromArgs _ (Just t) = Val t
-    fromArgs _ _ = Val False
+    fromArgs _ (Just t) = pure t
+    fromArgs _ _ = pure False
     argsMeta _ = [GQL__InputValue { name = "Boolean", description = "", _type = Nothing, defaultValue = "" }]
 
 instance  GQLArgs () where
-    fromArgs _ _ = Val ()
+    fromArgs _ _ = pure ()
     argsMeta _ = []

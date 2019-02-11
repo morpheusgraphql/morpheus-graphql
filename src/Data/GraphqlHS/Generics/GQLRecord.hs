@@ -4,6 +4,7 @@
 module Data.GraphqlHS.Generics.GQLRecord
     ( GQLRecord(..)
     , wrapAsObject
+    , arrayMap
     )
 where
 
@@ -29,10 +30,12 @@ import           Data.GraphqlHS.Types.Types     ( Object
                                                 , GQLValue(..)
                                                 , (::->)(..)
                                                 , Eval(..)
+                                                , EvalIO(..)
                                                 , MetaInfo(..)
                                                 , GQLType(..)
                                                 , GQLPrimitive(..)
                                                 , Head(..)
+                                                , failEvalIO
                                                 )
 import           Data.GraphqlHS.ErrorMessage    ( handleError
                                                 , subfieldsNotSelected
@@ -66,10 +69,15 @@ import           Data.GraphqlHS.Generics.GenericMap
                                                 , initMeta
                                                 )
 import           Data.Maybe                     ( fromMaybe )
+import           Control.Monad.Trans.Except
+import           Control.Monad.Trans            ( liftIO
+                                                , lift
+                                                , MonadTrans
+                                                )
 
 instance GQLRecord a => GenericMap  (K1 i a)  where
     transform meta gql (K1 src) = case (getField meta gql) of
-        (Val field) -> case lookup (key meta) gql of
+        (Right field) -> case lookup (key meta) gql of
                 Nothing -> []
                 Just x -> [(key meta, trans field src)]
         _ -> []
@@ -85,17 +93,15 @@ arrayMap lib (f : fs) = arrayMap (f lib) fs
 unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
-wrapAsObject :: [(Text, IO (Eval GQLType))] -> IO (Eval GQLType)
-wrapAsObject x = do
-    io1 <- mapM unwrapMonadTuple x
-    pure ((Obj . fromList) <$> (mapM unwrapMonadTuple io1))
+wrapAsObject :: [(Text, EvalIO GQLType)] -> EvalIO GQLType
+wrapAsObject x = (Obj . fromList) <$> mapM unwrapMonadTuple x
 
 class GQLRecord a where
 
-    trans :: GQLValue ->  a -> IO (Eval GQLType)
-    default trans :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => GQLValue -> a -> IO (Eval GQLType)
+    trans :: GQLValue ->  a -> EvalIO GQLType
+    default trans :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => GQLValue -> a -> EvalIO GQLType
     trans (Object gql) = wrapAsObject . transform initMeta gql . from
-    trans (Field key) = pure . \x -> Fail $ subfieldsNotSelected x key
+    trans (Field key) = \x -> failEvalIO $ subfieldsNotSelected x key
 
     fieldType :: Proxy a -> Text -> GQL__Field
     default fieldType :: (Show a, Selectors (Rep a) , Typeable a) => Proxy a -> Text -> GQL__Field
@@ -117,66 +123,53 @@ class GQLRecord a where
 getType :: (GQLRecord a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
 getType _ = TypeHolder Nothing
 
+
+
 resolveField
     :: (Show a, Show p, GQLRecord a, GQLArgs p)
     => GQLValue
     -> p ::-> a
     -> p ::-> a
-    -> IO (Eval GQLType)
+    -> EvalIO GQLType
 resolveField (Query gqlArgs body) (TypeHolder args) (Resolver resolver) =
-    case fromArgs gqlArgs args of
-        Val args -> do
-            resolver <- resolver args
-            case resolver of
-                Val  x -> trans body x
-                Fail x -> pure $ Fail x
-        Fail x -> pure $ Fail x
+    (ExceptT $ pure $ fromArgs gqlArgs args) >>= resolver >>= trans body
 resolveField (Query gqlArgs body) _ (Some x) = trans body x
-resolveField (Query gqlArgs body) _ None =
-    pure $ handleError "resolver not implemented"
+resolveField (Query gqlArgs body) _ None = ExceptT $ pure $ handleError "resolver not implemented"
 resolveField field (TypeHolder args) (Resolver resolver) =
-    case fromArgs Empty args of
-        Val args -> do
-            resolver <- resolver args
-            case resolver of
-                Val  x -> trans field x
-                Fail x -> pure $ Fail x
-        Fail x -> pure $ Fail x
-
+    (ExceptT $ pure $ fromArgs Empty args) >>= resolver >>= trans field
 
 instance (Show a, Show p, GQLRecord a , GQLArgs p ) => GQLRecord (p ::-> a) where
     trans (Query args body ) field = resolveField (Query args body) (getType field) field
     trans x (Resolver f) = resolveField x (getType (Resolver f)) (Resolver f)
     trans x (Some a) = trans x a
-    trans x None = pure$ pure $ Prim JSNull
+    trans x None = pure $ Prim JSNull
     introspect  _  = introspect (Proxy:: Proxy  a)
     fieldType _ name = (fieldType (Proxy:: Proxy  a) name ){ args = argsMeta (Proxy :: Proxy p) }
 
 instance (Show a, GQLRecord a) => GQLRecord (Maybe a) where
-    trans _ Nothing = pure $ pure $ Prim JSNull
+    trans _ Nothing = pure $ Prim JSNull
     trans query (Just value) = trans query value
     introspect  _ = introspect (Proxy:: Proxy  a)
     fieldType _ = fieldType (Proxy:: Proxy  a)
 
 instance GQLRecord Int where
-    trans _ =  pure . Val . Prim . JSInt
+    trans _ =  pure . Prim . JSInt
     introspect _ = insert "Int" (createType "Int" [])
     fieldType _ name =  createField name "Int" []
 
 instance GQLRecord Text where
-    trans _ =  pure . Val . Prim . JSString
+    trans _ =  pure . Prim . JSString
     introspect _ = insert "String" (createType "String" [])
     fieldType _  name =  createField name "String" []
 
 instance GQLRecord Bool where
-    trans _ =  pure . Val . Prim . JSBool
+    trans _ =  pure . Prim . JSBool
     introspect _ = insert "Boolean" (createType "Boolean" [])
     fieldType _ name = createField name "Boolean" []
 
 instance GQLRecord a => GQLRecord [a] where
-    trans (Field _) x =  pure $ pure $ Li []
-    trans query list = (mapM (trans query) list) >>= return . toList
-        where toList x = Li <$> (sequence x)
+    trans (Field _) x =  pure $ Li []
+    trans query list = Li <$> mapM (trans query) list
     introspect _ = introspect (Proxy :: Proxy  a)
     fieldType _ = fieldType (Proxy :: Proxy  a)
 
@@ -195,11 +188,11 @@ instance GQLRecord GQL__Directive;
 instance GQLRecord GQL__TypeKind where
     introspect _ = insert "__TypeKind" (createType "__TypeKind" [])
     fieldType _ name = createField name "__TypeKind" []
-    trans _ = pure . Val . Prim . JSString . pack . show
+    trans _ = pure . Prim . JSString . pack . show
 
 instance GQLRecord GQL__DirectiveLocation where
     introspect _  = insert "__DirectiveLocation" (createType "__DirectiveLocation" [])
     fieldType _ name = createField name "__DirectiveLocation" []
-    trans _ = pure . Val . Prim . JSString . pack . show
+    trans _ = pure . Prim . JSString . pack . show
 
 instance  GQLArgs GQL__Deprication__Args;

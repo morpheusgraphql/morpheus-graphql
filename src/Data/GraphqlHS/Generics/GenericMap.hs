@@ -22,14 +22,15 @@ import           Data.Map                       ( Map
 import           GHC.Generics
 import           Data.GraphqlHS.Types.Types     ( Object
                                                 , GQLValue(..)
-                                                , Eval(..)
+                                                , EvalIO(..)
                                                 , GQLPrimitive(JSNull)
                                                 , MetaInfo(..)
                                                 , GQLType(..)
+                                                , Eval(..)
                                                 )
 
 getField :: MetaInfo -> (Map Text GQLValue) -> Eval GQLValue
-getField meta gql = Val $ fromMaybe QNull (lookup (key meta) gql)
+getField meta gql = pure $ fromMaybe QNull (lookup (key meta) gql)
 
 -- type D1 = M1 D
 -- type C1 = M1 C
@@ -43,7 +44,7 @@ getField meta gql = Val $ fromMaybe QNull (lookup (key meta) gql)
 initMeta = MetaInfo { className = "", cons = "", key = "" }
 
 class GenericMap f where
-    transform:: MetaInfo -> Object -> (f a) -> [(Text, IO (Eval GQLType))]
+    transform:: MetaInfo -> Object -> (f a) -> [(Text, EvalIO GQLType)]
 
 instance GenericMap U1  where
     transform _ _  _ = []

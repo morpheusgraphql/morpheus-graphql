@@ -21,6 +21,8 @@ import           Data.MorpheusGraphQL           ( GQLRecord
                                                 , interpreter
                                                 , eitherToResponce
                                                 , Eval(..)
+                                                , EvalIO(..)
+                                                , liftIO
                                                 )
 import           Data.Proxy                     ( Proxy(..) )
 import           Example.Files                  ( getJson )
@@ -56,8 +58,10 @@ data Query = Query {
     user:: () ::-> User
 } deriving (Show,Generic,Data,GQLRoot, FromJSON )
 
-fetchAddress :: Text -> Text -> IO (Eval Address)
-fetchAddress cityName streetName = getJson "address"
+
+
+fetchAddress :: Text -> Text -> EvalIO Address
+fetchAddress cityName streetName = liftIO (getJson "address")
     >>= eitherToResponce modify
   where
     modify address = address { city   = concat [cityName, " ", city address]
@@ -75,7 +79,7 @@ resolveOffice user = Resolver resolve
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve
   where
-    resolve _ = getJson "user" >>= eitherToResponce modify
+    resolve _ = liftIO (getJson "user") >>= eitherToResponce modify
     modify user =
         user { address = resolveAddress, office = resolveOffice user }
 

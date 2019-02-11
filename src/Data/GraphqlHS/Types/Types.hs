@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric, DeriveAnyClass , DeriveDataTypeable , TypeOperators #-}
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass , TypeOperators #-}
 
 module Data.GraphqlHS.Types.Types
     ( GQLPrimitive(..)
@@ -16,6 +16,8 @@ module Data.GraphqlHS.Types.Types
     , GQLResponce
     , GQLRequest(..)
     , Arg(..)
+    , EvalIO(..)
+    , failEvalIO
     )
 where
 
@@ -33,43 +35,26 @@ import           Data.Aeson                     ( ToJSON(..)
                                                 )
 import           Data.Data
 import           Data.GraphqlHS.Types.Error     ( GQLError )
-import           Control.Monad                  ( join )
+import           Control.Monad.Trans            ( liftIO
+                                                , lift
+                                                , MonadTrans
+                                                )
+import           Control.Monad                  ( forM
+                                                , liftM
+                                                )
+import           Control.Monad.Trans.Except     ( ExceptT(..)
+                                                , runExceptT
+                                                )
 
-data Eval a = Fail [GQLError] | Val a deriving (Generic) ;
+type Eval a = Either [GQLError] a ;
+type EvalIO  = ExceptT [GQLError] IO;
 
-data EvalIO a = IOEval (IO a)
+failEvalIO :: [GQLError] -> EvalIO a
+failEvalIO = ExceptT . pure . Left
 
-instance Functor EvalIO where
-    fmap f (IOEval vio) =  IOEval (f <$> vio)
-
-
-instance Applicative EvalIO where
-    pure x = IOEval (pure x)
-    (<*>) (IOEval f1) (IOEval f2) = IOEval ( f1 >>= \x-> ( x <$> f2) )
-
-
-instance Monad EvalIO where
-    (>>=) (IOEval x) fm = join (IOEval (fm <$> x))
-
-instance Functor Eval where
-    fmap f (Val x) = Val (f x)
-    fmap f (Fail x) = Fail x
-
-
-
-instance Applicative Eval where
-    pure = Val
-    (<*>) (Val f) x = fmap f x
-    (<*>) (Fail x) _ = Fail x
-    -- (<*>) (RIO x) f = RIO (fmap f x)
-
-instance Monad Eval where
-    (>>=) (Val x) fm = fm x
-    (>>=) (Fail x) _ = Fail x
-
-instance (ToJSON a, Generic a) => ToJSON (Eval a) where
-    toJSON (Fail errors) = object ["errors" .= errors];
-    toJSON (Val d) = object ["data" .= d];
+--instance (ToJSON a, Generic a) => ToJSON (Eval a) where
+--    toJSON (Fail errors) = object ["errors" .= errors];
+--    toJSON (Val d) = object ["data" .= d];
 
 data GQLPrimitive = JSEnum Text | JSInt Int | JSBool Bool | JSString Text | JSNull  deriving (Show, Generic);
 
@@ -110,7 +95,7 @@ data GQLQueryRoot = GQLQueryRoot {
 }
 
 
-data a ::-> b = TypeHolder (Maybe a) | Resolver (a -> IO (Eval b)) | Some b | None deriving (Generic)
+data a ::-> b = TypeHolder (Maybe a) | Resolver (a -> EvalIO b) | Some b | None deriving (Generic)
 
 instance Show (a ::-> b) where
     show _ = "Inline"
