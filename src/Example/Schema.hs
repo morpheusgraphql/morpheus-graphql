@@ -22,12 +22,12 @@ import           Data.MorpheusGraphQL           ( GQLRecord
                                                 , eitherToResponce
                                                 , Eval(..)
                                                 , EvalIO(..)
-                                                , liftIO
                                                 )
 import           Data.Proxy                     ( Proxy(..) )
 import           Example.Files                  ( getJson )
 import           Data.Aeson                     ( FromJSON )
 import           Data.Either
+import           Control.Monad.Trans            ( lift )
 
 data Coord = Coord {
     latitude :: Text,
@@ -61,7 +61,7 @@ data Query = Query {
 
 
 fetchAddress :: Text -> Text -> EvalIO Address
-fetchAddress cityName streetName = liftIO (getJson "address")
+fetchAddress cityName streetName = lift (getJson "address")
     >>= eitherToResponce modify
   where
     modify address = address { city   = concat [cityName, " ", city address]
@@ -79,7 +79,7 @@ resolveOffice user = Resolver resolve
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve
   where
-    resolve _ = liftIO (getJson "user") >>= eitherToResponce modify
+    resolve _ = lift (getJson "user") >>= eitherToResponce modify
     modify user =
         user { address = resolveAddress, office = resolveOffice user }
 

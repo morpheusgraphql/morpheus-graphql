@@ -11,7 +11,6 @@ module Data.MorpheusGraphQL
     , eitherToResponce
     , Eval
     , EvalIO(..)
-    , liftIO
     )
 where
 
@@ -36,21 +35,17 @@ import           Data.GraphqlHS.Types.Types     ( (::->)(Resolver)
 import           Data.Proxy                     ( Proxy )
 import           Control.Monad                  ( (>=>) )
 import           Data.GraphqlHS.ErrorMessage    ( errorMessage )
-import           Control.Monad.Trans.Except
-import           Control.Monad.Trans            ( lift )
+import           Control.Monad.Trans.Except     ( runExceptT )
 
 
 interpreter
     :: GQLRoot a => Proxy a -> IO (Eval a) -> GQLRequest -> IO GQLResponce
-interpreter schema rootValue requestBody = do
+interpreter schema rootValue body = do
     root <- rootValue
-    case (parseGQL requestBody, root) of
+    case (parseGQL body, root) of
         (Left  x, _      ) -> pure (Left x)
         (Right _, Left x ) -> pure (Left x)
         (Right g, Right r) -> runExceptT (decode r g)
-
-liftIO :: IO a -> EvalIO a
-liftIO = lift
 
 eitherToResponce :: (a -> a) -> Either String a -> EvalIO a
 eitherToResponce f (Left  x) = failEvalIO $ errorMessage $ pack $ x

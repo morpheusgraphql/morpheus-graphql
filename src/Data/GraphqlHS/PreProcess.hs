@@ -68,23 +68,28 @@ validateSpread frags key = case lookup key frags of
     Nothing -> handleError $ pack $ "Fragment not found: " ++ (show key)
     Just (Fragment _ _ (Object gqlObj)) -> pure (toList gqlObj)
 
+
+
+
 -- TODO: replace all var types with Variable values
-validateArg :: Map Text Arg -> GQL__InputValue -> Eval (Text, Text)
+validateArg :: Map Text Arg -> GQL__InputValue -> Eval (Text, Arg)
 validateArg requestArgs inpValue =
-        case (lookup (inputValueName inpValue) requestArgs) of
-            Nothing -> Left $ requiredArgument $ MetaInfo
-                { className = ""
-                , cons      = ""
-                , key       = (pack $ show $ inputValueName inpValue)
-                }
-            Just x -> pure ("", "")
+    case (lookup (inputValueName inpValue) requestArgs) of
+        Nothing -> Left $ requiredArgument $ MetaInfo
+            { className = ""
+            , cons      = ""
+            , key       = (pack $ show $ inputValueName inpValue)
+            }
+        Just x -> pure (inputValueName inpValue, x)
+
+
 
 -- TODO: throw Error when gql request has more arguments al then inputType
 validateHead :: GQLQueryRoot -> GQL__Type -> Text -> Head -> Eval Head
 validateHead root currentType key (Head args) =
     case (fieldArgsByKey key currentType) of
         Nothing    -> Left $ cannotQueryField key (name currentType)
-        Just field -> mapM (validateArg args) field >> pure (Head args)
+        Just field -> mapM (validateArg args) field >>= pure . Head . fromList
 
 validateFieldBody
     :: GQLTypeLib
@@ -123,10 +128,8 @@ validateBySchema
     :: GQLTypeLib -> Text -> GQLQueryRoot -> GQLValue -> Eval GQLValue
 validateBySchema typeLib typeName root (Object gqlObj) = do
     extended <- concat <$> (mapM (propagateSpread root) (toList gqlObj))
-    existsType typeName typeLib
-        >>= \x ->
-                (Object . fromList)
-                    <$> (mapM (handleField typeLib root x) extended)
+    existsType typeName typeLib >>= \x ->
+        (Object . fromList) <$> (mapM (handleField typeLib root x) extended)
 
 validateBySchema typeLib typeName root (Query head body) =
     handleError $ pack $ "all query heads shcould be handled by Fields"
