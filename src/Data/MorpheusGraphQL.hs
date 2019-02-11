@@ -43,9 +43,8 @@ import           Control.Monad.Trans            ( lift )
 interpreter
     :: GQLRoot a => Proxy a -> IO (Eval a) -> GQLRequest -> IO GQLResponce
 interpreter schema rootValue requestBody = do
-    gql  <- (pure $ parseGQL $ query requestBody)
     root <- rootValue
-    case (gql, root) of
+    case (parseGQL requestBody, root) of
         (Left  x, _      ) -> pure (Left x)
         (Right _, Left x ) -> pure (Left x)
         (Right g, Right r) -> runExceptT (decode r g)
