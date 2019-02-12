@@ -78,7 +78,6 @@ replaceVariable root (Var key) = case (lookup key (inputVariables root)) of
             $  pack
             $  "Variable not found: "
             ++ (show key)
-            ++ (show $ inputVariables root)
     Just value -> pure $ ArgValue $ JSString value
 replaceVariable _ x = pure $ x
 
