@@ -91,7 +91,8 @@ data Fragment = Fragment {
 
 data GQLQueryRoot = GQLQueryRoot {
     fragments:: FragmentLib,
-    queryBody :: GQLValue
+    queryBody :: GQLValue,
+    inputVariables:: Map Text Text
 }
 
 

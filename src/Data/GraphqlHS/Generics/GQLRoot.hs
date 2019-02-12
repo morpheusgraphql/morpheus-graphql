@@ -80,7 +80,7 @@ class GQLRoot a where
 
     decode :: a -> GQLQueryRoot  ->  EvalIO GQLType
     default decode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> EvalIO GQLType
-    decode rootValue gqlRoot =  case (validateBySchema schema "Query" (fragments gqlRoot) (queryBody gqlRoot)) of
+    decode rootValue gqlRoot =  case (validateBySchema schema "Query" gqlRoot (queryBody gqlRoot)) of
         Right validGQL -> case (lookup "__schema" (unpackObj validGQL)) of
             Nothing -> responce
             Just x ->  (liftM2 addProp) (item x) responce

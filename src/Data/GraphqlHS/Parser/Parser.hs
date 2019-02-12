@@ -28,24 +28,33 @@ import           Control.Applicative            ( (<|>)
                                                 )
 import           Data.GraphqlHS.Types.Types     ( Eval
                                                 , GQLQueryRoot(..)
+                                                , GQLRequest(..)
                                                 )
 import           Data.GraphqlHS.Types.Error     ( GQLError )
 import           Data.GraphqlHS.ErrorMessage    ( syntaxError )
-import           Data.GraphqlHS.Parser.Query    ( query )
+import qualified Data.GraphqlHS.Parser.Query   as B
 import           Data.GraphqlHS.Parser.Body     ( body )
 import           Data.GraphqlHS.Parser.Fragment ( fragment )
 
 
 request :: Parser GQLQueryRoot
 request = do
-    queryName      <- (try (skipSpace *> query)) <|> pure ""
+    queryName      <- (try (skipSpace *> B.query)) <|> pure ""
     queryBodyValue <- body
     fragmentLib    <- fromList <$> (many fragment)
     skipSpace
     endOfInput
-    pure GQLQueryRoot { queryBody = queryBodyValue, fragments = fragmentLib }
+    pure GQLQueryRoot
+        { queryBody      = queryBodyValue
+        , fragments      = fragmentLib
+        , inputVariables = fromList []
+        }
 
-parseGQL :: Text -> Eval GQLQueryRoot
-parseGQL x = case (parseOnly request x) of
-    Right v     -> Right v
+getVariables req = case variables req of 
+    Nothing -> fromList []
+    Just vars -> vars
+
+parseGQL :: GQLRequest -> Eval GQLQueryRoot
+parseGQL requestBody = case (parseOnly request $ query requestBody) of
+    Right root     -> Right (root { inputVariables = getVariables requestBody })
     Left  error -> Left $ syntaxError $ pack $ show error
