@@ -33,6 +33,7 @@ import           Data.GraphqlHS.Types.Types     ( Eval(..)
                                                 , Fragment(..)
                                                 , MetaInfo(..)
                                                 , Arg(..)
+                                                , GQLPrimitive(..)
                                                 , GQLQueryRoot(..)
                                                 )
 import           Data.GraphqlHS.ErrorMessage    ( semanticError
@@ -69,18 +70,29 @@ validateSpread frags key = case lookup key frags of
     Just (Fragment _ _ (Object gqlObj)) -> pure (toList gqlObj)
 
 
-
-
 -- TODO: replace all var types with Variable values
-validateArg :: Map Text Arg -> GQL__InputValue -> Eval (Text, Arg)
-validateArg requestArgs inpValue =
+replaceVariable :: GQLQueryRoot -> Arg -> Eval Arg
+replaceVariable root (Var key) = case (lookup key (inputVariables root)) of
+    Nothing ->
+        handleError
+            $  pack
+            $  "Variable not found: "
+            ++ (show key)
+            ++ (show $ inputVariables root)
+    Just value -> pure $ ArgValue $ JSString value
+replaceVariable _ x = pure $ x
+
+validateArg
+    :: GQLQueryRoot -> Map Text Arg -> GQL__InputValue -> Eval (Text, Arg)
+validateArg root requestArgs inpValue =
     case (lookup (inputValueName inpValue) requestArgs) of
         Nothing -> Left $ requiredArgument $ MetaInfo
             { className = ""
             , cons      = ""
             , key       = (pack $ show $ inputValueName inpValue)
             }
-        Just x -> pure (inputValueName inpValue, x)
+        Just x -> replaceVariable root x >>= \x -> pure (key, x)
+            where key = inputValueName inpValue
 
 
 
@@ -88,8 +100,9 @@ validateArg requestArgs inpValue =
 validateHead :: GQLQueryRoot -> GQL__Type -> Text -> Head -> Eval Head
 validateHead root currentType key (Head args) =
     case (fieldArgsByKey key currentType) of
-        Nothing    -> Left $ cannotQueryField key (name currentType)
-        Just field -> mapM (validateArg args) field >>= pure . Head . fromList
+        Nothing -> Left $ cannotQueryField key (name currentType)
+        Just field ->
+            mapM (validateArg root args) field >>= pure . Head . fromList
 
 validateFieldBody
     :: GQLTypeLib
