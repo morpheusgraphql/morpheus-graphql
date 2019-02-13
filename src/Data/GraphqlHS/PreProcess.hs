@@ -142,6 +142,6 @@ validateBySchema _ _ _ x = pure x
 
 preProccessQuery :: GQLTypeLib -> GQLQueryRoot -> Eval QuerySelection
 preProccessQuery lib root =
-    validateBySchema lib root (queryBody root) ("Query", queryBody gqlRoot)
+    validateBySchema lib root lib ("Query", queryBody root)
         >>= pure
         .   snd
