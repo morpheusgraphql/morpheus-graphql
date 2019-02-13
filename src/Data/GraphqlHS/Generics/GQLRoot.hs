@@ -69,7 +69,7 @@ import           Data.GraphqlHS.Generics.GQLRecord
                                                 , wrapAsObject
                                                 , arrayMap
                                                 )
-import           Data.GraphqlHS.PreProcess      ( validateBySchema )
+import           Data.GraphqlHS.PreProcess      ( preProccessQuery )
 
 addProp :: GQLType -> GQLType -> GQLType
 addProp prop (Obj obj) = Obj (insert "__schema" prop obj)

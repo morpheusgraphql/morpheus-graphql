@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeOperators , FlexibleInstances , ScopedTypeVariables #-}
 
 module Data.GraphqlHS.PreProcess
-    ( validateBySchema
+    ( preProccessQuery
     )
 where
 
@@ -99,6 +99,7 @@ validateHead root currentType key (Arguments args) =
             mapM (validateArg root args) field >>= pure . Arguments . fromList
 
 
+
 fieldOf :: GQL__Type -> Text -> Eval GQL__Type
 fieldOf _type fieldName = case (fields _type) of
     Some gqlVal -> case (getFieldTypeByKey fieldName _type) of
@@ -141,9 +142,9 @@ validateBySchema typeLib root _parentType (_name, (Field head field)) = do
 
 validateBySchema _ _ _ x = pure x
 
-
 preProccessQuery :: GQLTypeLib -> GQLQueryRoot -> Eval QuerySelection
 preProccessQuery lib root = do
+    _type <- existsType "Query" lib
     let (SelectionSet _ body) = queryBody root
     selectors <- mapSelectors lib root body _type
     pure $ SelectionSet Empty (fromList selectors)
