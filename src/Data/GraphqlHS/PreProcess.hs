@@ -77,24 +77,21 @@ replaceVariable root (Var key) = case (M.lookup key (inputVariables root)) of
     Just value -> pure $ ArgValue $ JSString value
 replaceVariable _ x = pure $ x
 
-validateArg :: GQLQueryRoot -> Arguments -> GQL__InputValue -> Eval (Text, Arg)
-validateArg root requestArgs inpValue =
+validateArgument :: GQLQueryRoot -> Arguments -> GQL__InputValue -> Eval (Text, Arg)
+validateArgument root requestArgs inpValue =
     case (lookup (inputValueName inpValue) requestArgs) of
         Nothing -> Left $ requiredArgument $ MetaInfo
-            { className = ""
+            { className = pack $ show requestArgs
             , cons      = ""
-            , key       = (pack $ show $ inputValueName inpValue)
+            , key       = pack $ show $ inputValueName inpValue
             }
         Just x -> replaceVariable root x >>= \x -> pure (key, x)
             where key = inputValueName inpValue
 
 -- TODO: throw Error when gql request has more arguments al then inputType
 validateArguments
-    :: GQLQueryRoot -> GQL__Type -> Arguments -> Text -> Eval Arguments
-validateArguments root currentType args key =
-    case (fieldArgsByKey key currentType) of
-        Nothing    -> handleError $ pack $ "header not found: " ++ (show key)
-        Just field -> mapM (validateArg root args) field
+    :: GQLQueryRoot -> [GQL__InputValue] -> Arguments -> Eval Arguments
+validateArguments root _types args = mapM (validateArgument root args) _types
 
 fieldOf :: GQL__Type -> Text -> Eval GQL__Type
 fieldOf _type fieldName = case (getFieldTypeByKey fieldName _type) of
@@ -109,6 +106,11 @@ propagateSpread root (text, value     ) = pure [(text, value)]
 
 typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fiedType
     where fiedType field = existsType (name field) typeLib
+
+argsType :: GQL__Type -> Text -> Eval [GQL__InputValue]
+argsType currentType key = case (fieldArgsByKey key currentType) of
+    Nothing   -> handleError $ pack $ "header not found: " ++ (show key)
+    Just args -> pure args
 
 mapSelectors
     :: GQLTypeLib
@@ -130,13 +132,15 @@ validateBySchema
 validateBySchema typeLib root _parentType (_name, (SelectionSet head selectors))
     = do
         _type      <- typeBy typeLib _parentType _name
-        head'      <- validateArguments root _parentType head _name
+        _argsType  <- argsType _parentType _name
+        head'      <- validateArguments root _argsType head
         selectors' <- mapSelectors typeLib root _type selectors
         pure (_name, SelectionSet head' selectors')
 
 validateBySchema typeLib root _parentType (_name, (Field head field)) = do
-    _type <- typeBy typeLib _parentType _name
-    head' <- validateArguments root _parentType head _name
+    _type     <- typeBy typeLib _parentType _name
+    _argsType <- argsType _parentType _name
+    head'     <- validateArguments root _argsType head
     pure (_name, Field head' field)
 
 validateBySchema _ _ _ x = pure x
