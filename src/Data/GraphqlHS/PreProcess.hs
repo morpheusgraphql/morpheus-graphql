@@ -111,6 +111,10 @@ propagateSpread
 propagateSpread root (key , (Spread _)) = validateSpread (fragments root) key
 propagateSpread root (text, value     ) = pure [(text, value)]
 
+
+typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fiedType
+    where fiedType field = existsType (name field) typeLib
+
 validateBySchema
     :: GQLTypeLib
     -> GQLQueryRoot
@@ -119,14 +123,17 @@ validateBySchema
     -> Eval (Text, QuerySelection)
 validateBySchema typeLib root _parentType (_name, (SelectionSet head selectors))
     = do
-        _type      <- fieldOf _parentType _name >>= fiedType
+        _type      <- typeBy typeLib _parentType _name
         head'      <- validateHead root _type _name head
         selectors' <- mapSelectors _type
-        pure (_name, SelectionSet head (fromList selectors'))
+        pure (_name, SelectionSet head' (fromList selectors'))
   where
-    fiedType field = existsType (name field) typeLib
-    mapSelectors _type =
-        concat <$> mapM (propagateSpread root) (toList selectors) >>= mapM
+    mapSelectors _type = concat <$> mapM (propagateSpread root) (toList selectors) >>= mapM
             (validateBySchema typeLib root _type)
+
+validateBySchema typeLib root _parentType (_name, (Field head field)) = do
+    _type <- typeBy typeLib _parentType _name
+    head' <- validateHead root _type _name head
+    pure (_name, Field head' field)
 
 validateBySchema _ _ _ x = pure x

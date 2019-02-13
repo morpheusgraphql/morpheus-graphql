@@ -26,7 +26,9 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.GraphqlHS.Types.Types     ( Fragment(..) )
+import           Data.GraphqlHS.Types.Types     ( Fragment(..)
+                                                , Head(..)
+                                                )
 import           Data.GraphqlHS.ErrorMessage    ( syntaxError
                                                 , semanticError
                                                 )
