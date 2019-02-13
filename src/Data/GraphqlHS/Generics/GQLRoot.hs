@@ -25,7 +25,7 @@ import           Data.Map                       ( singleton
                                                 , elems
                                                 )
 import           GHC.Generics
-import           Data.GraphqlHS.Types.Types     ( Object
+import           Data.GraphqlHS.Types.Types     ( SelectionSet
                                                 , QuerySelection(..)
                                                 , Eval(..)
                                                 , MetaInfo(..)
@@ -74,18 +74,18 @@ import           Data.GraphqlHS.PreProcess      ( validateBySchema )
 addProp :: GQLType -> GQLType -> GQLType
 addProp prop (Obj obj) = Obj (insert "__schema" prop obj)
 
-unpackObj (Object x) = x
+unpackObj (SelectionSet _ x) = x
 
 class GQLRoot a where
 
     decode :: a -> GQLQueryRoot  ->  EvalIO GQLType
     default decode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> EvalIO GQLType
-    decode rootValue gqlRoot =  case (validateBySchema schema "Query" gqlRoot (queryBody gqlRoot)) of
+    decode rootValue gqlRoot =  case preProccessQuery schema gqlRoot of
         Right validGQL -> case (lookup "__schema" (unpackObj validGQL)) of
             Nothing -> responce
             Just x ->  (liftM2 addProp) (item x) responce
             where
-                item (Object x) = wrapAsObject (transform initMeta x (from $ initSchema $ elems $ schema))
+                item (SelectionSet _ x) = wrapAsObject (transform initMeta x (from $ initSchema $ elems $ schema))
                 responce = wrapAsObject $ transform initMeta (unpackObj validGQL) (from rootValue)
         Left x ->  failEvalIO x
         where

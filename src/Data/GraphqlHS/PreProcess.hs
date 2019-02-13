@@ -128,7 +128,8 @@ validateBySchema typeLib root _parentType (_name, (SelectionSet head selectors))
         selectors' <- mapSelectors _type
         pure (_name, SelectionSet head' (fromList selectors'))
   where
-    mapSelectors _type = concat <$> mapM (propagateSpread root) (toList selectors) >>= mapM
+    mapSelectors _type =
+        concat <$> mapM (propagateSpread root) (toList selectors) >>= mapM
             (validateBySchema typeLib root _type)
 
 validateBySchema typeLib root _parentType (_name, (Field head field)) = do
@@ -137,3 +138,10 @@ validateBySchema typeLib root _parentType (_name, (Field head field)) = do
     pure (_name, Field head' field)
 
 validateBySchema _ _ _ x = pure x
+
+
+preProccessQuery :: GQLTypeLib -> GQLQueryRoot -> Eval QuerySelection
+preProccessQuery lib root =
+    validateBySchema lib root (queryBody root) ("Query", queryBody gqlRoot)
+        >>= pure
+        .   snd
