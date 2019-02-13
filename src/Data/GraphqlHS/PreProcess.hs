@@ -89,13 +89,12 @@ validateArg root requestArgs inpValue =
             where key = inputValueName inpValue
 
 -- TODO: throw Error when gql request has more arguments al then inputType
-validateHead :: GQLQueryRoot -> GQL__Type -> Text -> Arguments -> Eval Arguments
-validateHead root currentType key args =
+validateArguments
+    :: GQLQueryRoot -> GQL__Type -> Arguments -> Text -> Eval Arguments
+validateArguments root currentType args key =
     case (fieldArgsByKey key currentType) of
-        Nothing    -> Left $ cannotQueryField key (name currentType)
+        Nothing    -> handleError $ pack $ "header not found: " ++ (show key)
         Just field -> mapM (validateArg root args) field
-
-
 
 fieldOf :: GQL__Type -> Text -> Eval GQL__Type
 fieldOf _type fieldName = case (getFieldTypeByKey fieldName _type) of
@@ -114,10 +113,10 @@ typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fiedType
 mapSelectors
     :: GQLTypeLib
     -> GQLQueryRoot
-    -> SelectionSet
     -> GQL__Type
+    -> SelectionSet
     -> Eval SelectionSet
-mapSelectors typeLib root selectors _type =
+mapSelectors typeLib root _type selectors =
     concat <$> mapM (propagateSpread root) selectors >>= mapM
         (validateBySchema typeLib root _type)
 
@@ -131,13 +130,13 @@ validateBySchema
 validateBySchema typeLib root _parentType (_name, (SelectionSet head selectors))
     = do
         _type      <- typeBy typeLib _parentType _name
-        head'      <- validateHead root _type _name head
-        selectors' <- mapSelectors typeLib root selectors _type
+        head'      <- validateArguments root _parentType head _name
+        selectors' <- mapSelectors typeLib root _type selectors
         pure (_name, SelectionSet head' selectors')
 
 validateBySchema typeLib root _parentType (_name, (Field head field)) = do
     _type <- typeBy typeLib _parentType _name
-    head' <- validateHead root _type _name head
+    head' <- validateArguments root _parentType head _name
     pure (_name, Field head' field)
 
 validateBySchema _ _ _ x = pure x
@@ -146,5 +145,5 @@ preProccessQuery :: GQLTypeLib -> GQLQueryRoot -> Eval QuerySelection
 preProccessQuery lib root = do
     _type <- existsType "Query" lib
     let (SelectionSet _ body) = queryBody root
-    selectors <- mapSelectors lib root body _type
+    selectors <- mapSelectors lib root _type body
     pure $ SelectionSet [] selectors
