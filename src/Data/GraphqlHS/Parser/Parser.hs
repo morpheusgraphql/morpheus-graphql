@@ -40,7 +40,7 @@ import           Data.GraphqlHS.Parser.Fragment ( fragment )
 request :: Parser GQLQueryRoot
 request = do
     queryName      <- (try (skipSpace *> B.query)) <|> pure ""
-    queryBodyValue <- body (fromList [])
+    queryBodyValue <- body []
     fragmentLib    <- fromList <$> (many fragment)
     skipSpace
     endOfInput

@@ -28,7 +28,7 @@ import           Control.Applicative            ( (<|>)
                                                 )
 import           Data.GraphqlHS.Types.Types     ( QuerySelection(..)
                                                 , SelectionSet
-                                                , Head(..)
+                                                , Arguments(..)
                                                 )
 import           Data.GraphqlHS.Parser.Arguments
                                                 ( arguments )
@@ -47,11 +47,11 @@ entry :: Parser (Text, QuerySelection)
 entry = do
     skipSpace
     key   <- token
-    args  <- (try arguments) <|> (pure Empty)
+    args  <- (try arguments) <|> (pure [])
     value <- (try $ body args) <|> (pure $ Field args key)
     return (key, value)
 
-body :: Head -> Parser QuerySelection
+body :: Arguments -> Parser QuerySelection
 body args =
     skipSpace
         *> char '{'

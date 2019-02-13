@@ -34,7 +34,6 @@ import           Data.GraphqlHS.Types.Types     ( SelectionSet
                                                 , MetaInfo(..)
                                                 , GQLType(..)
                                                 , GQLPrimitive(..)
-                                                , Head(..)
                                                 , failEvalIO
                                                 )
 import           Data.GraphqlHS.ErrorMessage    ( handleError
@@ -133,7 +132,8 @@ resolveField (SelectionSet gqlArgs body) (TypeHolder args) (Resolver resolver)
     = (ExceptT $ pure $ fromArgs gqlArgs args) >>= resolver >>= trans
         (SelectionSet gqlArgs body)
 resolveField (Field gqlArgs field) (TypeHolder args) (Resolver resolver) =
-    (ExceptT $ pure $ fromArgs Empty args) >>= resolver >>= trans (Field gqlArgs field)
+    (ExceptT $ pure $ fromArgs [] args) >>= resolver >>= trans
+        (Field gqlArgs field)
 resolveField query _ (Some value) = trans query value
 resolveField _ _ None = ExceptT $ pure $ handleError "resolver not implemented"
 

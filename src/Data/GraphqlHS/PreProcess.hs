@@ -6,16 +6,15 @@ module Data.GraphqlHS.PreProcess
     )
 where
 
-import           Prelude                 hiding ( lookup )
 import           Data.List                      ( find )
 import           Data.Map                       ( elems
                                                 , mapWithKey
-                                                , lookup
                                                 , toList
                                                 , Map
                                                 , fromList
                                                 , keys
                                                 )
+import qualified Data.Map                      as M
 import           GHC.Generics                   ( Generic
                                                 , Rep
                                                 )
@@ -29,7 +28,7 @@ import           Data.GraphqlHS.Types.Types     ( Eval(..)
                                                 , GQLType
                                                 , QuerySelection(..)
                                                 , SelectionSet
-                                                , Head(..)
+                                                , Arguments(..)
                                                 , FragmentLib
                                                 , Fragment(..)
                                                 , MetaInfo(..)
@@ -60,26 +59,25 @@ import           Data.GraphqlHS.Schema.InputValue
                                                 ( inputValueName )
 
 existsType :: Text -> GQLTypeLib -> Eval GQL__Type
-existsType typeName typeLib = case (lookup typeName typeLib) of
+existsType typeName typeLib = case (M.lookup typeName typeLib) of
     Nothing -> handleError $ pack $ "type does not exist" ++ (unpack typeName)
     Just x  -> pure x
 
 
 validateSpread :: FragmentLib -> Text -> Eval [(Text, QuerySelection)]
-validateSpread frags key = case lookup key frags of
+validateSpread frags key = case M.lookup key frags of
     Nothing -> handleError $ pack $ "Fragment not found: " ++ (show key)
     Just (Fragment _ _ (SelectionSet arguments gqlObj)) -> pure (toList gqlObj)
 
 
 -- TODO: replace all var types with Variable values
 replaceVariable :: GQLQueryRoot -> Arg -> Eval Arg
-replaceVariable root (Var key) = case (lookup key (inputVariables root)) of
+replaceVariable root (Var key) = case (M.lookup key (inputVariables root)) of
     Nothing    -> handleError $ pack $ "Variable not found: " ++ (show key)
     Just value -> pure $ ArgValue $ JSString value
 replaceVariable _ x = pure $ x
 
-validateArg
-    :: GQLQueryRoot -> Map Text Arg -> GQL__InputValue -> Eval (Text, Arg)
+validateArg :: GQLQueryRoot -> Arguments -> GQL__InputValue -> Eval (Text, Arg)
 validateArg root requestArgs inpValue =
     case (lookup (inputValueName inpValue) requestArgs) of
         Nothing -> Left $ requiredArgument $ MetaInfo
@@ -91,12 +89,11 @@ validateArg root requestArgs inpValue =
             where key = inputValueName inpValue
 
 -- TODO: throw Error when gql request has more arguments al then inputType
-validateHead :: GQLQueryRoot -> GQL__Type -> Text -> Head -> Eval Head
-validateHead root currentType key (Arguments args) =
+validateHead :: GQLQueryRoot -> GQL__Type -> Text -> Arguments -> Eval Arguments
+validateHead root currentType key args =
     case (fieldArgsByKey key currentType) of
-        Nothing -> Left $ cannotQueryField key (name currentType)
-        Just field ->
-            mapM (validateArg root args) field >>= pure . Arguments . fromList
+        Nothing    -> Left $ cannotQueryField key (name currentType)
+        Just field -> mapM (validateArg root args) field
 
 
 
@@ -147,4 +144,4 @@ preProccessQuery lib root = do
     _type <- existsType "Query" lib
     let (SelectionSet _ body) = queryBody root
     selectors <- mapSelectors lib root body _type
-    pure $ SelectionSet Empty (fromList selectors)
+    pure $ SelectionSet [] (fromList selectors)

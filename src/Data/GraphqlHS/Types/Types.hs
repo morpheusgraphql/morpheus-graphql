@@ -17,6 +17,7 @@ module Data.GraphqlHS.Types.Types
     , Arg(..)
     , EvalIO(..)
     , failEvalIO
+    , Arguments
     )
 where
 
@@ -65,7 +66,7 @@ instance ToJSON GQLPrimitive where
     toJSON (JSString x) = toJSON x
     toJSON JSNull = Null
 
-type Arguments = Map Text Arg ;
+type Arguments = [(Text,Arg)];
 type SelectionSet  = Map Text QuerySelection;
 
 data QuerySelection =

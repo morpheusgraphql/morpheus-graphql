@@ -26,7 +26,7 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.GraphqlHS.Types.Types     ( Head(..)
+import           Data.GraphqlHS.Types.Types     ( Arguments
                                                 , Arg(..)
                                                 )
 
@@ -52,22 +52,22 @@ queryVariable = do
     variableType <- token
     pure (variableName, Var variableType)
 
-queryHead :: Parser (Maybe Head)
-queryHead = do
+queryArguments :: Parser (Maybe Arguments)
+queryArguments = do
     skipSpace
     char '('
     skipSpace
-    parameters <- (fromList <$> (queryVariable `sepBy` (skipSpace *> char ',')))
+    parameters <- queryVariable `sepBy` (skipSpace *> char ',')
     skipSpace
     char ')'
-    pure $ Just (Arguments parameters)
+    pure $ Just parameters
 
 query :: Parser Text
 query = do
     string "query "
     skipSpace
     queryName <- token
-    variables <- (try (skipSpace *> queryHead)) <|> (pure Nothing)
+    variables <- (try (skipSpace *> queryArguments)) <|> (pure Nothing)
     pure queryName
 
 

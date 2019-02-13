@@ -9,7 +9,6 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
-import           Data.Map                       ( fromList )
 import           Data.Attoparsec.Text           ( Parser
                                                 , char
                                                 , letter
@@ -26,9 +25,7 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.GraphqlHS.Types.Types     ( Fragment(..)
-                                                , Head(..)
-                                                )
+import           Data.GraphqlHS.Types.Types     ( Fragment(..) )
 import           Data.GraphqlHS.ErrorMessage    ( syntaxError
                                                 , semanticError
                                                 )
@@ -47,6 +44,6 @@ fragment = do
     skipSpace
     targetName <- token
     skipSpace
-    fragmentBody <- body Empty
+    fragmentBody <- body []
     pure $ (name, Fragment name targetName fragmentBody)
 
