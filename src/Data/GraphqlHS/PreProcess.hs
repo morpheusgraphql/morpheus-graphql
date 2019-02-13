@@ -115,6 +115,12 @@ propagateSpread root (text, value     ) = pure [(text, value)]
 typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fiedType
     where fiedType field = existsType (name field) typeLib
 
+
+mapSelectors typeLib root selectors _type =
+    concat <$> mapM (propagateSpread root) (toList selectors) >>= mapM
+        (validateBySchema typeLib root _type)
+
+
 validateBySchema
     :: GQLTypeLib
     -> GQLQueryRoot
@@ -125,12 +131,8 @@ validateBySchema typeLib root _parentType (_name, (SelectionSet head selectors))
     = do
         _type      <- typeBy typeLib _parentType _name
         head'      <- validateHead root _type _name head
-        selectors' <- mapSelectors _type
+        selectors' <- mapSelectors typeLib root selectors _type
         pure (_name, SelectionSet head' (fromList selectors'))
-  where
-    mapSelectors _type =
-        concat <$> mapM (propagateSpread root) (toList selectors) >>= mapM
-            (validateBySchema typeLib root _type)
 
 validateBySchema typeLib root _parentType (_name, (Field head field)) = do
     _type <- typeBy typeLib _parentType _name
@@ -141,7 +143,7 @@ validateBySchema _ _ _ x = pure x
 
 
 preProccessQuery :: GQLTypeLib -> GQLQueryRoot -> Eval QuerySelection
-preProccessQuery lib root =
-    validateBySchema lib root lib ("Query", queryBody root)
-        >>= pure
-        .   snd
+preProccessQuery lib root = do
+    let (SelectionSet _ body) = queryBody root
+    selectors <- mapSelectors lib root body _type
+    pure $ SelectionSet Empty (fromList selectors)
