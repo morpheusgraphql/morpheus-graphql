@@ -23,7 +23,7 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.GraphqlHS.Types.Types     ( Head(..)
+import           Data.GraphqlHS.Types.Types     ( Arguments
                                                 , GQLPrimitive(JSEnum)
                                                 , Arg(..)
                                                 )
@@ -42,7 +42,7 @@ parameter = do
     value <- inputValue
     pure (key, value)
 
-arguments :: Parser Head
+arguments :: Parser Arguments
 arguments = do
     skipSpace
     char '('
@@ -50,4 +50,4 @@ arguments = do
     parameters <- (fromList <$> (parameter `sepBy` (skipSpace *> char ',')))
     skipSpace
     char ')'
-    pure (Arguments parameters)
+    pure parameters

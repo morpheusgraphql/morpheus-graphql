@@ -6,7 +6,6 @@ module Data.GraphqlHS.Types.Types
     , Eval(..)
     , QuerySelection(..)
     , SelectionSet
-    , Head(..)
     , (::->)(..)
     , MetaInfo(..)
     , GQLType(..)
@@ -67,11 +66,11 @@ instance ToJSON GQLPrimitive where
     toJSON JSNull = Null
 
 type Arguments = Map Text Arg ;
-data Head = Arguments Arguments | Empty deriving (Show, Generic);
 type SelectionSet  = Map Text QuerySelection;
+
 data QuerySelection =
-    SelectionSet Head SelectionSet |
-    Field Head Text |
+    SelectionSet Arguments SelectionSet |
+    Field Arguments Text |
     Spread Text |
     QNull
     deriving (Show, Generic);

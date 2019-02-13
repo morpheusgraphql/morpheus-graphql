@@ -29,7 +29,6 @@ import           Control.Applicative            ( (<|>)
 import           Data.GraphqlHS.Types.Types     ( Eval
                                                 , GQLQueryRoot(..)
                                                 , GQLRequest(..)
-                                                , Head(..)
                                                 )
 import           Data.GraphqlHS.Types.Error     ( GQLError )
 import           Data.GraphqlHS.ErrorMessage    ( syntaxError )
@@ -41,7 +40,7 @@ import           Data.GraphqlHS.Parser.Fragment ( fragment )
 request :: Parser GQLQueryRoot
 request = do
     queryName      <- (try (skipSpace *> B.query)) <|> pure ""
-    queryBodyValue <- body Empty
+    queryBodyValue <- body (fromList [])
     fragmentLib    <- fromList <$> (many fragment)
     skipSpace
     endOfInput
