@@ -58,7 +58,7 @@ failEvalIO = ExceptT . pure . Left
 
 data GQLPrimitive = JSEnum Text | JSInt Int | JSBool Bool | JSString Text | JSNull  deriving (Show, Generic);
 
-data Arg =  Var Text |ArgValue GQLPrimitive deriving (Show, Generic);
+data Arg =  Var Text | ArgValue GQLPrimitive deriving (Show, Generic);
 
 instance ToJSON GQLPrimitive where
     toJSON (JSInt x) = toJSON x

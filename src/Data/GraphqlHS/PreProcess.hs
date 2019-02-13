@@ -94,7 +94,7 @@ validateArg root requestArgs inpValue =
 
 -- TODO: throw Error when gql request has more arguments al then inputType
 validateHead :: GQLQueryRoot -> GQL__Type -> Text -> Head -> Eval Head
-validateHead root currentType key (Head args) =
+validateHead root currentType key (Arguments args) =
     case (fieldArgsByKey key currentType) of
         Nothing -> Left $ cannotQueryField key (name currentType)
         Just field ->
@@ -123,26 +123,30 @@ handleField
     -> (Text, QuerySelection)
     -> Eval (Text, QuerySelection)
 handleField typeLib root currentType (fieldName, field) = case field of
-    Query head0 body0 -> do
-        head <- validateHead root currentType fieldName head0
+    SelectionSet head0 body0 -> do
         body <- validateFieldBody typeLib root currentType (fieldName, body0)
-        pure $ (fieldName, Query head (snd body))
+        pure $ (fieldName, SelectionSet head (snd body))
     _ -> validateFieldBody typeLib root currentType (fieldName, field)
 
-propagateSpread :: GQLQueryRoot -> (Text, GQLValue) -> Eval [(Text, GQLValue)]
+
+propagateSpread
+    :: GQLQueryRoot -> (Text, QuerySelection) -> Eval [(Text, QuerySelection)]
 propagateSpread frags (key , (Spread _)) = validateSpread (fragments frags) key
 propagateSpread frags (text, value     ) = pure [(text, value)]
 
 validateBySchema
-    :: GQLTypeLib -> Text -> GQLQueryRoot -> GQLValue -> Eval GQLValue
-validateBySchema typeLib typeName root (Object gqlObj) = do
+    :: GQLTypeLib
+    -> Text
+    -> GQLQueryRoot
+    -> QuerySelection
+    -> Eval QuerySelection
+validateBySchema typeLib typeName root (SelectionSet head gqlObj) = do
     extended <- concat <$> (mapM (propagateSpread root) (toList gqlObj))
-    existsType typeName typeLib >>= \x ->
-        (Object . fromList) <$> (mapM (handleField typeLib root x) extended)
+    existsType typeName typeLib >>= \_type -> do
+        head' <- validateHead root _type fieldName head
+        body' <- fromList <$> (mapM (handleField typeLib root _type) extended)
+        pure (SelectionSet head' body')
 
-validateBySchema typeLib typeName root (Query head body) =
-    handleError $ pack $ "all query heads shcould be handled by Fields"
+validateBySchema _ _ _ (Field args value) = pure (Field args value)
 
-validateBySchema _ _ _ (Field value) = pure (Field value)
-
-validateBySchema _ _ _ QNull         = pure QNull
+validateBySchema _ _ _ QNull              = pure QNull
