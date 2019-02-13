@@ -98,11 +98,9 @@ validateHead root currentType key args =
 
 
 fieldOf :: GQL__Type -> Text -> Eval GQL__Type
-fieldOf _type fieldName = case (fields _type) of
-    Some gqlVal -> case (getFieldTypeByKey fieldName _type) of
-        Nothing    -> Left $ cannotQueryField fieldName (name _type)
-        Just ftype -> pure ftype
-    _ -> handleError $ pack $ "has not fields" ++ (show $ fields _type)
+fieldOf _type fieldName = case (getFieldTypeByKey fieldName _type) of
+    Nothing    -> Left $ cannotQueryField fieldName (name _type)
+    Just ftype -> pure ftype
 
 propagateSpread
     :: GQLQueryRoot -> (Text, QuerySelection) -> Eval [(Text, QuerySelection)]
