@@ -99,8 +99,8 @@ validateHead root currentType key (Arguments args) =
             mapM (validateArg root args) field >>= pure . Arguments . fromList
 
 
-fieldTypeOf :: GQL__Type -> Text -> Eval GQL__Type
-fieldTypeOf _type fieldName = case (fields _type) of
+fieldOf :: GQL__Type -> Text -> Eval GQL__Type
+fieldOf _type fieldName = case (fields _type) of
     Some gqlVal -> case (getFieldTypeByKey fieldName _type) of
         Nothing    -> Left $ cannotQueryField fieldName (name _type)
         Just ftype -> pure ftype
@@ -108,8 +108,8 @@ fieldTypeOf _type fieldName = case (fields _type) of
 
 propagateSpread
     :: GQLQueryRoot -> (Text, QuerySelection) -> Eval [(Text, QuerySelection)]
-propagateSpread frags (key , (Spread _)) = validateSpread (fragments frags) key
-propagateSpread frags (text, value     ) = pure [(text, value)]
+propagateSpread root (key , (Spread _)) = validateSpread (fragments root) key
+propagateSpread root (text, value     ) = pure [(text, value)]
 
 validateBySchema
     :: GQLTypeLib
@@ -117,13 +117,16 @@ validateBySchema
     -> GQL__Type
     -> (Text, QuerySelection)
     -> Eval (Text, QuerySelection)
-validateBySchema typeLib root _parentType (fieldName, (SelectionSet head selectors0))
+validateBySchema typeLib root _parentType (_name, (SelectionSet head selectors))
     = do
-        _type <- fieldTypeOf _parentType fieldName
-        existsType (name _type) typeLib >>= \_type -> do
-            head'     <- validateHead root _type fieldName head
-            selectors <- concat
-                <$> mapM (propagateSpread root) (toList selectors0)
-            selectors' <- mapM (validateBySchema typeLib root _type) selectors
-            pure (fieldName, SelectionSet head (fromList selectors'))
+        _type      <- fieldOf _parentType _name >>= fiedType
+        head'      <- validateHead root _type _name head
+        selectors' <- mapSelectors _type
+        pure (_name, SelectionSet head (fromList selectors'))
+  where
+    fiedType field = existsType (name field) typeLib
+    mapSelectors _type =
+        concat <$> mapM (propagateSpread root) (toList selectors) >>= mapM
+            (validateBySchema typeLib root _type)
+
 validateBySchema _ _ _ x = pure x
