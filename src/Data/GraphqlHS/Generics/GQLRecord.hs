@@ -8,7 +8,6 @@ module Data.GraphqlHS.Generics.GQLRecord
     )
 where
 
-import           Prelude                 hiding ( lookup )
 import           Control.Monad
 import           Data.List                      ( find )
 import           Data.Data                      ( Data
@@ -22,9 +21,9 @@ import           Data.Text                      ( Text(..)
 import           Data.Map                       ( singleton
                                                 , fromList
                                                 , insert
-                                                , lookup
                                                 , union
                                                 )
+import qualified Data.Map                      as M
 import           GHC.Generics
 import           Data.GraphqlHS.Types.Types     ( SelectionSet
                                                 , QuerySelection(..)
@@ -111,7 +110,7 @@ class GQLRecord a where
     default introspect :: (Show a, Selectors (Rep a) , Typeable a) => Proxy a -> GQLTypeLib -> GQLTypeLib
     introspect _  typeLib = do
         let typeName = (pack . show . typeOf) (undefined::a)
-        case (lookup typeName typeLib) of
+        case (M.lookup typeName typeLib) of
             Just _ -> typeLib
             Nothing -> arrayMap (insert typeName (createType typeName gqlFields) typeLib) stack
                 where

@@ -67,7 +67,7 @@ existsType typeName typeLib = case (M.lookup typeName typeLib) of
 validateSpread :: FragmentLib -> Text -> Eval [(Text, QuerySelection)]
 validateSpread frags key = case M.lookup key frags of
     Nothing -> handleError $ pack $ "Fragment not found: " ++ (show key)
-    Just (Fragment _ _ (SelectionSet arguments gqlObj)) -> pure (toList gqlObj)
+    Just (Fragment _ _ (SelectionSet arguments gqlObj)) -> pure gqlObj
 
 
 -- TODO: replace all var types with Variable values
@@ -113,9 +113,14 @@ propagateSpread root (text, value     ) = pure [(text, value)]
 typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fiedType
     where fiedType field = existsType (name field) typeLib
 
-
+mapSelectors
+    :: GQLTypeLib
+    -> GQLQueryRoot
+    -> SelectionSet
+    -> GQL__Type
+    -> Eval SelectionSet
 mapSelectors typeLib root selectors _type =
-    concat <$> mapM (propagateSpread root) (toList selectors) >>= mapM
+    concat <$> mapM (propagateSpread root) selectors >>= mapM
         (validateBySchema typeLib root _type)
 
 
@@ -130,7 +135,7 @@ validateBySchema typeLib root _parentType (_name, (SelectionSet head selectors))
         _type      <- typeBy typeLib _parentType _name
         head'      <- validateHead root _type _name head
         selectors' <- mapSelectors typeLib root selectors _type
-        pure (_name, SelectionSet head' (fromList selectors'))
+        pure (_name, SelectionSet head' selectors')
 
 validateBySchema typeLib root _parentType (_name, (Field head field)) = do
     _type <- typeBy typeLib _parentType _name
@@ -144,4 +149,4 @@ preProccessQuery lib root = do
     _type <- existsType "Query" lib
     let (SelectionSet _ body) = queryBody root
     selectors <- mapSelectors lib root body _type
-    pure $ SelectionSet [] (fromList selectors)
+    pure $ SelectionSet [] selectors

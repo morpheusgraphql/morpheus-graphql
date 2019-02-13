@@ -9,15 +9,8 @@ module Data.GraphqlHS.Generics.GenericMap
 where
 
 import           Data.Maybe                     ( fromMaybe )
-import           Prelude                 hiding ( lookup )
 import           Data.Text                      ( Text(..)
                                                 , pack
-                                                )
-import           Data.Map                       ( Map
-                                                , lookup
-                                                , singleton
-                                                , fromList
-                                                , union
                                                 )
 import           GHC.Generics
 import           Data.GraphqlHS.Types.Types     ( QuerySelection(..)
@@ -29,7 +22,7 @@ import           Data.GraphqlHS.Types.Types     ( QuerySelection(..)
                                                 , Eval(..)
                                                 )
 
-getField :: MetaInfo -> (Map Text QuerySelection) -> Eval QuerySelection
+getField :: MetaInfo -> SelectionSet -> Eval QuerySelection
 getField meta gql = pure $ fromMaybe QNull (lookup (key meta) gql)
 
 -- type D1 = M1 D

@@ -66,8 +66,9 @@ instance ToJSON GQLPrimitive where
     toJSON (JSString x) = toJSON x
     toJSON JSNull = Null
 
-type Arguments = [(Text,Arg)];
-type SelectionSet  = Map Text QuerySelection;
+type Arguments = [(Text,Arg)]
+
+type SelectionSet  = [(Text,QuerySelection)]
 
 data QuerySelection =
     SelectionSet Arguments SelectionSet |

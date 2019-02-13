@@ -6,7 +6,6 @@ module Data.GraphqlHS.Generics.GQLRoot
     )
 where
 
-import           Prelude                 hiding ( lookup )
 import           Control.Monad
 import           Data.List                      ( find )
 import           Data.Data                      ( Data
@@ -17,13 +16,8 @@ import           Data.Data                      ( Data
 import           Data.Text                      ( Text(..)
                                                 , pack
                                                 )
-import           Data.Map                       ( singleton
-                                                , fromList
-                                                , insert
-                                                , lookup
-                                                , union
-                                                , elems
-                                                )
+import qualified Data.Map                      as M
+
 import           GHC.Generics
 import           Data.GraphqlHS.Types.Types     ( SelectionSet
                                                 , QuerySelection(..)
@@ -72,7 +66,7 @@ import           Data.GraphqlHS.Generics.GQLRecord
 import           Data.GraphqlHS.PreProcess      ( preProccessQuery )
 
 addProp :: GQLType -> GQLType -> GQLType
-addProp prop (Obj obj) = Obj (insert "__schema" prop obj)
+addProp prop (Obj obj) = Obj (M.insert "__schema" prop obj)
 
 unpackObj (SelectionSet _ x) = x
 
@@ -85,7 +79,7 @@ class GQLRoot a where
             Nothing -> responce
             Just x ->  (liftM2 addProp) (item x) responce
             where
-                item (SelectionSet _ x) = wrapAsObject (transform initMeta x (from $ initSchema $ elems $ schema))
+                item (SelectionSet _ x) = wrapAsObject (transform initMeta x (from $ initSchema $ M.elems $ schema))
                 responce = wrapAsObject $ transform initMeta (unpackObj validGQL) (from rootValue)
         Left x ->  failEvalIO x
         where
@@ -95,7 +89,7 @@ class GQLRoot a where
     default introspectRoot :: (Show a, Selectors (Rep a) , Typeable a) => Proxy a -> GQLTypeLib
     introspectRoot _ = do
         let typeLib = introspect (Proxy:: Proxy GQL__Schema) emptyLib
-        arrayMap (insert "Query" (createType "Query" fields) typeLib) stack
+        arrayMap (M.insert "Query" (createType "Query" fields) typeLib) stack
                where
                    fieldTypes  = getFields (Proxy :: Proxy (Rep a))
                    stack = (map snd fieldTypes)

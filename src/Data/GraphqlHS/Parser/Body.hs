@@ -9,7 +9,6 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
-import           Data.Map                       ( fromList )
 import           Data.Attoparsec.Text           ( Parser
                                                 , char
                                                 , letter
@@ -56,8 +55,6 @@ body args =
     skipSpace
         *> char '{'
         *> skipSpace
-        *> (   (SelectionSet args . fromList)
-           <$> ((entry <|> spread) `sepBy` seperator)
-           )
+        *> (SelectionSet args <$> ((entry <|> spread) `sepBy` seperator))
         <* skipSpace
         <* char '}'
