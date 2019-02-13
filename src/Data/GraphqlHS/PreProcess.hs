@@ -136,17 +136,17 @@ propagateSpread frags (text, value     ) = pure [(text, value)]
 
 validateBySchema
     :: GQLTypeLib
-    -> Text
     -> GQLQueryRoot
-    -> QuerySelection
-    -> Eval QuerySelection
-validateBySchema typeLib typeName root (SelectionSet head gqlObj) = do
-    extended <- concat <$> (mapM (propagateSpread root) (toList gqlObj))
-    existsType typeName typeLib >>= \_type -> do
-        head' <- validateHead root _type fieldName head
-        body' <- fromList <$> (mapM (handleField typeLib root _type) extended)
-        pure (SelectionSet head' body')
-
-validateBySchema _ _ _ (Field args value) = pure (Field args value)
-
-validateBySchema _ _ _ QNull              = pure QNull
+    -> Text
+    -> (Text, QuerySelection)
+    -> Eval (Text, QuerySelection)
+validateBySchema typeLib root typeName (fieldName, (SelectionSet head gqlObj))
+    = do
+        extended <- concat <$> (mapM (propagateSpread root) (toList gqlObj))
+        existsType typeName typeLib >>= \_type -> do
+            head' <- validateHead root _type fieldName head
+            body' <-
+                fromList
+                    <$> (mapM (validateBySchema typeLib root typeName) extended)
+            pure (fieldName, SelectionSet head body')
+validateBySchema _ _ _ x = pure x
