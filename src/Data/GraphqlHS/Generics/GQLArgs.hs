@@ -54,7 +54,7 @@ instance GToArgs U1  where
     gToArgs _ _ = pure U1
 
 instance InputValue a => GToArgs  (K1 i a)  where
-    gToArgs meta (Head args) =
+    gToArgs meta (Arguments args) =
         case lookup (key meta) args of
             Nothing -> Left $ requiredArgument meta
             Just (ArgValue x) -> pure $ K1 $ (decode x)

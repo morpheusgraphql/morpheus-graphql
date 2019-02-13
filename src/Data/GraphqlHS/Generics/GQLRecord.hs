@@ -100,8 +100,8 @@ class GQLRecord a where
 
     trans :: QuerySelection ->  a -> EvalIO GQLType
     default trans :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => QuerySelection -> a -> EvalIO GQLType
-    trans (Object gql) = wrapAsObject . transform initMeta gql . from
-    trans (Field key) = \x -> failEvalIO $ subfieldsNotSelected x key
+    trans (SelectionSet args gql) = wrapAsObject . transform initMeta gql . from
+    trans (Field args key) = \x -> failEvalIO $ subfieldsNotSelected x key
 
     fieldType :: Proxy a -> Text -> GQL__Field
     default fieldType :: (Show a, Selectors (Rep a) , Typeable a) => Proxy a -> Text -> GQL__Field
@@ -123,24 +123,23 @@ class GQLRecord a where
 getType :: (GQLRecord a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
 getType _ = TypeHolder Nothing
 
-
-
 resolveField
     :: (Show a, Show p, GQLRecord a, GQLArgs p)
     => QuerySelection
     -> p ::-> a
     -> p ::-> a
     -> EvalIO GQLType
-resolveField (Query gqlArgs body) (TypeHolder args) (Resolver resolver) =
-    (ExceptT $ pure $ fromArgs gqlArgs args) >>= resolver >>= trans body
-resolveField (Query gqlArgs body) _ (Some x) = trans body x
-resolveField (Query gqlArgs body) _ None =
-    ExceptT $ pure $ handleError "resolver not implemented"
-resolveField field (TypeHolder args) (Resolver resolver) =
-    (ExceptT $ pure $ fromArgs Empty args) >>= resolver >>= trans field
+resolveField (SelectionSet gqlArgs body) (TypeHolder args) (Resolver resolver)
+    = (ExceptT $ pure $ fromArgs gqlArgs args) >>= resolver >>= trans
+        (SelectionSet gqlArgs body)
+resolveField (Field gqlArgs field) (TypeHolder args) (Resolver resolver) =
+    (ExceptT $ pure $ fromArgs Empty args) >>= resolver >>= trans (Field gqlArgs field)
+resolveField query _ (Some value) = trans query value
+resolveField _ _ None = ExceptT $ pure $ handleError "resolver not implemented"
 
 instance (Show a, Show p, GQLRecord a , GQLArgs p ) => GQLRecord (p ::-> a) where
-    trans (Query args body ) field = resolveField (Query args body) (getType field) field
+    trans (SelectionSet args body) field = resolveField (SelectionSet args body) (getType field) field
+    trans (Field args body) field = resolveField (Field args body) (getType field) field
     trans x (Resolver f) = resolveField x (getType (Resolver f)) (Resolver f)
     trans x (Some a) = trans x a
     trans x None = pure $ Prim JSNull
@@ -169,7 +168,7 @@ instance GQLRecord Bool where
     fieldType _ name = createField name "Boolean" []
 
 instance GQLRecord a => GQLRecord [a] where
-    trans (Field _) x =  pure $ Li []
+    trans (Field _ _) x =  pure $ Li []
     trans query list = Li <$> mapM (trans query) list
     introspect _ = introspect (Proxy :: Proxy  a)
     fieldType _ = fieldType (Proxy :: Proxy  a)
