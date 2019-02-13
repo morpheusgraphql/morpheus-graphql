@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.GraphqlHS.Parser.Body (body)
+module Data.GraphqlHS.Parser.Body
+    ( body
+    )
 where
 
 import           Data.Text                      ( Text(..)
@@ -24,34 +26,38 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.GraphqlHS.Types.Types     ( GQLValue(..)
-                                                , Object
-                                                ,Head(..)
+import           Data.GraphqlHS.Types.Types     ( QuerySelection(..)
+                                                , SelectionSet
+                                                , Head(..)
                                                 )
-import           Data.GraphqlHS.Parser.Arguments   ( arguments )
-import           Data.GraphqlHS.Parser.Primitive   ( token  , field , seperator )
+import           Data.GraphqlHS.Parser.Arguments
+                                                ( arguments )
+import           Data.GraphqlHS.Parser.Primitive
+                                                ( token
+                                                , seperator
+                                                )
 
-spread :: Parser (Text, GQLValue)
+spread :: Parser (Text, QuerySelection)
 spread = do
     string "..."
     key <- some (letter <|> char '_')
     return (pack key, Spread $ pack key)
 
-entry :: Parser (Text, GQLValue)
+entry :: Parser (Text, QuerySelection)
 entry = do
     skipSpace
-    key        <- token
-    args <- (try arguments) <|> (pure Empty)
-    value      <- (try body) <|> (field key)
-    case args of
-        Empty -> return (key, value)
-        x     -> return (key, Query x value)
+    key   <- token
+    args  <- (try arguments) <|> (pure Empty)
+    value <- (try $ body args) <|> (pure $ Field args key)
+    return (key, value)
 
-body :: Parser GQLValue
-body =
-   skipSpace
+body :: Head -> Parser QuerySelection
+body args =
+    skipSpace
         *> char '{'
         *> skipSpace
-        *> ( (Object . fromList) <$> (( entry <|> spread ) `sepBy` seperator))
+        *> (   (SelectionSet args . fromList)
+           <$> ((entry <|> spread) `sepBy` seperator)
+           )
         <* skipSpace
         <* char '}'

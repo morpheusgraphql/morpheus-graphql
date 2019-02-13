@@ -26,7 +26,7 @@ import           Data.Map                       ( singleton
                                                 )
 import           GHC.Generics
 import           Data.GraphqlHS.Types.Types     ( Object
-                                                , GQLValue(..)
+                                                , QuerySelection(..)
                                                 , Eval(..)
                                                 , MetaInfo(..)
                                                 , GQLType(..)

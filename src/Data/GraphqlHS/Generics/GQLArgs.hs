@@ -12,9 +12,7 @@ import           Data.Text                      ( Text(..)
                                                 )
 import           Data.Map                       ( lookup )
 import           GHC.Generics
-import           Data.GraphqlHS.Types.Types     ( Object
-                                                , GQLValue(..)
-                                                , Head(..)
+import           Data.GraphqlHS.Types.Types     ( Head(..)
                                                 , Eval(..)
                                                 , (::->)(Some, None)
                                                 , MetaInfo(..)

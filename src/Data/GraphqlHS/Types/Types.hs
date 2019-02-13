@@ -4,8 +4,8 @@
 module Data.GraphqlHS.Types.Types
     ( GQLPrimitive(..)
     , Eval(..)
-    , GQLValue(..)
-    , Object
+    , QuerySelection(..)
+    , SelectionSet
     , Head(..)
     , (::->)(..)
     , MetaInfo(..)
@@ -66,16 +66,12 @@ instance ToJSON GQLPrimitive where
     toJSON (JSString x) = toJSON x
     toJSON JSNull = Null
 
-type Args = Map Text Arg ;
-
-data Head = Head Args | Empty deriving (Show, Generic);
-
-type Object  = Map Text GQLValue;
-
-data GQLValue =
-    Query Head GQLValue |
-    Object Object |
-    Field Text |
+type Arguments = Map Text Arg ;
+data Head = Arguments Arguments | Empty deriving (Show, Generic);
+type SelectionSet  = Map Text QuerySelection;
+data QuerySelection =
+    SelectionSet Head SelectionSet |
+    Field Head Text |
     Spread Text |
     QNull
     deriving (Show, Generic);
@@ -85,13 +81,13 @@ type FragmentLib = Map Text Fragment;
 data Fragment = Fragment {
     id:: Text ,
     target :: Text ,
-    fragmentContent:: GQLValue
+    fragmentContent:: QuerySelection
 } deriving (Show, Generic)
 
 
 data GQLQueryRoot = GQLQueryRoot {
     fragments:: FragmentLib,
-    queryBody :: GQLValue,
+    queryBody :: QuerySelection,
     inputVariables:: Map Text Text
 }
 

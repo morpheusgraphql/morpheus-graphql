@@ -27,7 +27,8 @@ import           Data.Text                      ( Text(..)
 import           Data.GraphqlHS.Types.Types     ( Eval(..)
                                                 , (::->)(..)
                                                 , GQLType
-                                                , GQLValue(..)
+                                                , QuerySelection(..)
+                                                , SelectionSet
                                                 , Head(..)
                                                 , FragmentLib
                                                 , Fragment(..)
@@ -64,20 +65,16 @@ existsType typeName typeLib = case (lookup typeName typeLib) of
     Just x  -> pure x
 
 
-validateSpread :: FragmentLib -> Text -> Eval [(Text, GQLValue)]
+validateSpread :: FragmentLib -> Text -> Eval [(Text, QuerySelection)]
 validateSpread frags key = case lookup key frags of
     Nothing -> handleError $ pack $ "Fragment not found: " ++ (show key)
-    Just (Fragment _ _ (Object gqlObj)) -> pure (toList gqlObj)
+    Just (Fragment _ _ (SelectionSet gqlObj)) -> pure (toList gqlObj)
 
 
 -- TODO: replace all var types with Variable values
 replaceVariable :: GQLQueryRoot -> Arg -> Eval Arg
 replaceVariable root (Var key) = case (lookup key (inputVariables root)) of
-    Nothing ->
-        handleError
-            $  pack
-            $  "Variable not found: "
-            ++ (show key)
+    Nothing    -> handleError $ pack $ "Variable not found: " ++ (show key)
     Just value -> pure $ ArgValue $ JSString value
 replaceVariable _ x = pure $ x
 
@@ -107,8 +104,8 @@ validateFieldBody
     :: GQLTypeLib
     -> GQLQueryRoot
     -> GQL__Type
-    -> (Text, GQLValue)
-    -> Eval (Text, GQLValue)
+    -> (Text, QuerySelection)
+    -> Eval (Text, QuerySelection)
 validateFieldBody typeLib root currentType (fieldName, field) =
     case (fields currentType) of
         Some gqlVal -> case (getFieldTypeByKey fieldName currentType) of
@@ -123,8 +120,8 @@ handleField
     :: GQLTypeLib
     -> GQLQueryRoot
     -> GQL__Type
-    -> (Text, GQLValue)
-    -> Eval (Text, GQLValue)
+    -> (Text, QuerySelection)
+    -> Eval (Text, QuerySelection)
 handleField typeLib root currentType (fieldName, field) = case field of
     Query head0 body0 -> do
         head <- validateHead root currentType fieldName head0

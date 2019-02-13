@@ -20,8 +20,8 @@ import           Data.Map                       ( Map
                                                 , union
                                                 )
 import           GHC.Generics
-import           Data.GraphqlHS.Types.Types     ( Object
-                                                , GQLValue(..)
+import           Data.GraphqlHS.Types.Types     ( QuerySelection(..)
+                                                , SelectionSet
                                                 , EvalIO(..)
                                                 , GQLPrimitive(JSNull)
                                                 , MetaInfo(..)
@@ -29,7 +29,7 @@ import           Data.GraphqlHS.Types.Types     ( Object
                                                 , Eval(..)
                                                 )
 
-getField :: MetaInfo -> (Map Text GQLValue) -> Eval GQLValue
+getField :: MetaInfo -> (Map Text QuerySelection) -> Eval QuerySelection
 getField meta gql = pure $ fromMaybe QNull (lookup (key meta) gql)
 
 -- type D1 = M1 D
@@ -44,7 +44,7 @@ getField meta gql = pure $ fromMaybe QNull (lookup (key meta) gql)
 initMeta = MetaInfo { className = "", cons = "", key = "" }
 
 class GenericMap f where
-    transform:: MetaInfo -> Object -> (f a) -> [(Text, EvalIO GQLType)]
+    transform:: MetaInfo -> SelectionSet -> (f a) -> [(Text, EvalIO GQLType)]
 
 instance GenericMap U1  where
     transform _ _  _ = []

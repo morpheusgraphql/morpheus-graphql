@@ -21,7 +21,6 @@ import           Data.Text                      ( Text(..)
                                                 )
 import           Data.GraphqlHS.Types.Types     ( (::->)(..)
                                                 , GQLType
-                                                , GQLValue(..)
                                                 )
 import           Data.GraphqlHS.ErrorMessage    ( semanticError
                                                 , handleError

@@ -60,7 +60,7 @@ queryHead = do
     parameters <- (fromList <$> (queryVariable `sepBy` (skipSpace *> char ',')))
     skipSpace
     char ')'
-    pure $ Just (Head parameters)
+    pure $ Just (Arguments parameters)
 
 query :: Parser Text
 query = do

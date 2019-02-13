@@ -50,4 +50,4 @@ arguments = do
     parameters <- (fromList <$> (parameter `sepBy` (skipSpace *> char ',')))
     skipSpace
     char ')'
-    pure (Head parameters)
+    pure (Arguments parameters)

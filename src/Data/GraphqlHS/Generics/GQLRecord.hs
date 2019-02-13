@@ -26,8 +26,8 @@ import           Data.Map                       ( singleton
                                                 , union
                                                 )
 import           GHC.Generics
-import           Data.GraphqlHS.Types.Types     ( Object
-                                                , GQLValue(..)
+import           Data.GraphqlHS.Types.Types     ( SelectionSet
+                                                , QuerySelection(..)
                                                 , (::->)(..)
                                                 , Eval(..)
                                                 , EvalIO(..)
@@ -98,8 +98,8 @@ wrapAsObject x = (Obj . fromList) <$> mapM unwrapMonadTuple x
 
 class GQLRecord a where
 
-    trans :: GQLValue ->  a -> EvalIO GQLType
-    default trans :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => GQLValue -> a -> EvalIO GQLType
+    trans :: QuerySelection ->  a -> EvalIO GQLType
+    default trans :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => QuerySelection -> a -> EvalIO GQLType
     trans (Object gql) = wrapAsObject . transform initMeta gql . from
     trans (Field key) = \x -> failEvalIO $ subfieldsNotSelected x key
 
@@ -127,14 +127,15 @@ getType _ = TypeHolder Nothing
 
 resolveField
     :: (Show a, Show p, GQLRecord a, GQLArgs p)
-    => GQLValue
+    => QuerySelection
     -> p ::-> a
     -> p ::-> a
     -> EvalIO GQLType
 resolveField (Query gqlArgs body) (TypeHolder args) (Resolver resolver) =
     (ExceptT $ pure $ fromArgs gqlArgs args) >>= resolver >>= trans body
 resolveField (Query gqlArgs body) _ (Some x) = trans body x
-resolveField (Query gqlArgs body) _ None = ExceptT $ pure $ handleError "resolver not implemented"
+resolveField (Query gqlArgs body) _ None =
+    ExceptT $ pure $ handleError "resolver not implemented"
 resolveField field (TypeHolder args) (Resolver resolver) =
     (ExceptT $ pure $ fromArgs Empty args) >>= resolver >>= trans field
 
