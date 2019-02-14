@@ -20,10 +20,8 @@ import           Data.Morpheus                  ( GQLSelection
                                                 , GQLRequest
                                                 , interpreter
                                                 , eitherToResponce
-                                                , Eval(..)
                                                 , EvalIO(..)
                                                 )
-import           Data.Proxy                     ( Proxy(..) )
 import           Example.Files                  ( getJson )
 import           Data.Aeson                     ( FromJSON )
 import           Data.Either
@@ -83,8 +81,8 @@ resolveUser = Resolver resolve
     modify user =
         user { address = resolveAddress, office = resolveOffice user }
 
-resolveRoot :: IO (Eval Query)
-resolveRoot = pure $ pure $ Query { user = resolveUser }
+resolveRoot :: EvalIO Query
+resolveRoot = pure $ Query { user = resolveUser }
 
 gqlHandler :: GQLRequest -> IO GQLResponce
-gqlHandler = interpreter (Proxy :: Proxy Query) resolveRoot
+gqlHandler = interpreter resolveRoot

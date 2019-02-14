@@ -9,7 +9,6 @@ module Data.Morpheus
     , (::->)(..)
     , GQLRequest(..)
     , eitherToResponce
-    , Eval
     , EvalIO(..)
     )
 where
@@ -31,21 +30,24 @@ import           Data.GraphqlHS.Types.Types     ( (::->)(Resolver)
                                                 , Eval(..)
                                                 , EvalIO(..)
                                                 , failEvalIO
+                                                , JSType
                                                 )
 import           Data.Proxy                     ( Proxy )
 import           Control.Monad                  ( (>=>) )
 import           Data.GraphqlHS.ErrorMessage    ( errorMessage )
-import           Control.Monad.Trans.Except     ( runExceptT )
+import           Control.Monad.Trans.Except     ( runExceptT
+                                                , ExceptT(..)
+                                                )
 
 
-interpreter
-    :: GQLRoot a => Proxy a -> IO (Eval a) -> GQLRequest -> IO GQLResponce
-interpreter schema rootValue body = do
+resolve :: GQLRoot a => EvalIO a -> GQLRequest -> EvalIO JSType
+resolve rootValue body = do
     root <- rootValue
-    case (parseGQL body, root) of
-        (Left  x, _      ) -> pure (Left x)
-        (Right _, Left x ) -> pure (Left x)
-        (Right g, Right r) -> runExceptT (encode r g)
+    gql  <- ExceptT $ pure $ parseGQL body
+    encode root gql
+
+interpreter :: GQLRoot a => EvalIO a -> GQLRequest -> IO GQLResponce
+interpreter root request = runExceptT $ resolve root request
 
 eitherToResponce :: (a -> a) -> Either String a -> EvalIO a
 eitherToResponce f (Left  x) = failEvalIO $ errorMessage $ pack $ x
