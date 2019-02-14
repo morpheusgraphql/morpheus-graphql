@@ -64,10 +64,7 @@ existsType typeName typeLib = case (M.lookup typeName typeLib) of
     Just x  -> pure x
 
 
-validateSpread :: FragmentLib -> Text -> Eval [(Text, QuerySelection)]
-validateSpread frags key = case M.lookup key frags of
-    Nothing -> handleError $ pack $ "Fragment not found: " ++ (show key)
-    Just (Fragment _ _ (SelectionSet arguments gqlObj)) -> pure gqlObj
+
 
 
 -- TODO: replace all var types with Variable values
@@ -77,11 +74,12 @@ replaceVariable root (Var key) = case (M.lookup key (inputVariables root)) of
     Just value -> pure $ ArgValue $ JSString value
 replaceVariable _ x = pure $ x
 
-validateArgument :: GQLQueryRoot -> Arguments -> GQL__InputValue -> Eval (Text, Arg)
+validateArgument
+    :: GQLQueryRoot -> Arguments -> GQL__InputValue -> Eval (Text, Arg)
 validateArgument root requestArgs inpValue =
     case (lookup (inputValueName inpValue) requestArgs) of
         Nothing -> Left $ requiredArgument $ MetaInfo
-            { className = pack $ show requestArgs
+            { className = "TODO: name"
             , cons      = ""
             , key       = pack $ show $ inputValueName inpValue
             }
@@ -97,6 +95,12 @@ fieldOf :: GQL__Type -> Text -> Eval GQL__Type
 fieldOf _type fieldName = case (getFieldTypeByKey fieldName _type) of
     Nothing    -> Left $ cannotQueryField fieldName (name _type)
     Just ftype -> pure ftype
+
+
+validateSpread :: FragmentLib -> Text -> Eval [(Text, QuerySelection)]
+validateSpread frags key = case M.lookup key frags of
+    Nothing -> handleError $ pack $ "Fragment not found: " ++ (show key)
+    Just (Fragment _ _ (SelectionSet _ gqlObj)) -> pure gqlObj
 
 propagateSpread
     :: GQLQueryRoot -> (Text, QuerySelection) -> Eval [(Text, QuerySelection)]
