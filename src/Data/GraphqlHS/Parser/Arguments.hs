@@ -25,8 +25,8 @@ import           Control.Applicative            ( (<|>)
                                                 , some
                                                 )
 import           Data.GraphqlHS.Types.Types     ( Arguments
-                                                , GQLPrimitive(JSEnum)
-                                                , Arg(..)
+                                                , JSType(JSEnum)
+                                                , Argument(..)
                                                 )
 import           Data.GraphqlHS.Parser.Primitive
                                                 ( jsString
@@ -34,14 +34,14 @@ import           Data.GraphqlHS.Parser.Primitive
                                                 , variable
                                                 )
 
-inputValue :: Parser Arg
+inputValue :: Parser Argument
 inputValue =
-    ((ArgValue . JSEnum) <$> token)
+    ((Argument . JSEnum) <$> token)
         <|> skipSpace
-        *>  (ArgValue <$> jsString)
-        <|> (Var <$> variable)
+        *>  (Argument <$> jsString)
+        <|> (Variable <$> variable)
 
-parameter :: Parser (Text, Arg)
+parameter :: Parser (Text, Argument)
 parameter = do
     skipSpace
     key <- token

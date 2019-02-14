@@ -7,23 +7,23 @@ import           Data.Text                      ( Text
                                                 )
 import           Data.Attoparsec.Text
 import           Control.Applicative
-import           Data.GraphqlHS.Types.Types     (  GQLPrimitive(..)
+import           Data.GraphqlHS.Types.Types     (  JSType(..)
                                                 )
 
 replaceType :: Text -> Text
 replaceType "type" = "_type"
 replaceType x      = x
 
-boolTrue :: Parser GQLPrimitive
+boolTrue :: Parser JSType
 boolTrue = string "true" *> pure (JSBool True)
 
-boolFalse :: Parser GQLPrimitive
+boolFalse :: Parser JSType
 boolFalse = string "false" *> pure (JSBool False)
 
-jsBool :: Parser GQLPrimitive
+jsBool :: Parser JSType
 jsBool = boolTrue <|> boolFalse
 
-jsString :: Parser GQLPrimitive
+jsString :: Parser JSType
 jsString = do
     char '"'
     value <- (many (notChar '"'))

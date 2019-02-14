@@ -25,15 +25,14 @@ import           Data.Text                      ( Text(..)
                                                 )
 import           Data.GraphqlHS.Types.Types     ( Eval(..)
                                                 , (::->)(..)
-                                                , GQLType
+                                                , JSType(..)
                                                 , QuerySelection(..)
                                                 , SelectionSet
                                                 , Arguments(..)
                                                 , FragmentLib
                                                 , Fragment(..)
                                                 , MetaInfo(..)
-                                                , Arg(..)
-                                                , GQLPrimitive(..)
+                                                , Argument(..)
                                                 , GQLQueryRoot(..)
                                                 )
 import           Data.GraphqlHS.ErrorMessage    ( semanticError
@@ -68,14 +67,15 @@ existsType typeName typeLib = case (M.lookup typeName typeLib) of
 
 
 -- TODO: replace all var types with Variable values
-replaceVariable :: GQLQueryRoot -> Arg -> Eval Arg
-replaceVariable root (Var key) = case (M.lookup key (inputVariables root)) of
-    Nothing    -> handleError $ pack $ "Variable not found: " ++ (show key)
-    Just value -> pure $ ArgValue $ JSString value
+replaceVariable :: GQLQueryRoot -> Argument -> Eval Argument
+replaceVariable root (Variable key) =
+    case (M.lookup key (inputVariables root)) of
+        Nothing    -> handleError $ pack $ "Variable not found: " ++ (show key)
+        Just value -> pure $ Argument $ JSString value
 replaceVariable _ x = pure $ x
 
 validateArgument
-    :: GQLQueryRoot -> Arguments -> GQL__InputValue -> Eval (Text, Arg)
+    :: GQLQueryRoot -> Arguments -> GQL__InputValue -> Eval (Text, Argument)
 validateArgument root requestArgs inpValue =
     case (lookup (inputValueName inpValue) requestArgs) of
         Nothing -> Left $ requiredArgument $ MetaInfo

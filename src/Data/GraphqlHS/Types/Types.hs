@@ -2,19 +2,18 @@
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass , TypeOperators #-}
 
 module Data.GraphqlHS.Types.Types
-    ( GQLPrimitive(..)
-    , Eval(..)
+    ( Eval
     , QuerySelection(..)
     , SelectionSet
     , (::->)(..)
     , MetaInfo(..)
-    , GQLType(..)
+    , JSType(..)
     , GQLQueryRoot(..)
     , Fragment(..)
     , FragmentLib
     , GQLResponce
     , GQLRequest(..)
-    , Arg(..)
+    , Argument(..)
     , EvalIO(..)
     , failEvalIO
     , Arguments
@@ -56,7 +55,7 @@ data JSType =  JSObject (Map Text JSType)| JSList [JSType] |  JSEnum Text | JSIn
 
 data Argument =  Variable Text | Argument JSType deriving (Show, Generic);
 
-type Arguments = [(Text,JSType)]
+type Arguments = [(Text,Argument)]
 
 type SelectionSet  = [(Text,QuerySelection)]
 

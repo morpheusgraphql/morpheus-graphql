@@ -16,9 +16,8 @@ import           GHC.Generics
 import           Data.GraphqlHS.Types.Types     ( QuerySelection(..)
                                                 , SelectionSet
                                                 , EvalIO(..)
-                                                , GQLPrimitive(JSNull)
                                                 , MetaInfo(..)
-                                                , GQLType(..)
+                                                , JSType(..)
                                                 , Eval(..)
                                                 )
 
@@ -37,7 +36,7 @@ getField meta gql = pure $ fromMaybe QNull (lookup (key meta) gql)
 initMeta = MetaInfo { className = "", cons = "", key = "" }
 
 class GenericMap f where
-    encodeFields:: MetaInfo -> SelectionSet -> (f a) -> [(Text, EvalIO GQLType)]
+    encodeFields:: MetaInfo -> SelectionSet -> (f a) -> [(Text, EvalIO JSType)]
 
 instance GenericMap U1  where
     encodeFields _ _  _ = []
