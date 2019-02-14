@@ -3,7 +3,7 @@
 module Data.Morpheus
     ( interpreter
     , GQLResponce
-    , GQLRecord
+    , GQLSelection
     , GQLRoot
     , GQLArgs
     , (::->)(..)
@@ -18,8 +18,8 @@ import           GHC.Generics                   ( Generic )
 import           Data.Text                      ( Text
                                                 , pack
                                                 )
-import           Data.GraphqlHS.Generics.GQLRecord
-                                                ( GQLRecord )
+import           Data.GraphqlHS.Generics.GQLSelection
+                                                ( GQLSelection )
 import           Data.GraphqlHS.Generics.GQLRoot
                                                 ( GQLRoot(encode) )
 import           Data.GraphqlHS.Generics.GQLArgs
