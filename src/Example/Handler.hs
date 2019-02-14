@@ -18,13 +18,13 @@ import           Control.Lens                   ( (^.)
                                                 )
 import           Example.Schema                 ( gqlHandler )
 import           Data.Morpheus                  ( GQLRequest(..)
-                                                , GQLResponce
+                                                , GQLResponse
                                                 )
 import           Data.Maybe                     ( fromMaybe )
 
 
-toResponce :: a -> APIGatewayProxyResponse (Embedded a)
-toResponce obj = responseOK & responseBodyEmbedded ?~ obj
+toResponse :: a -> APIGatewayProxyResponse (Embedded a)
+toResponse obj = responseOK & responseBodyEmbedded ?~ obj
 
 toQuery :: APIGatewayProxyRequest (Embedded GQLRequest) -> GQLRequest
 toQuery request =
@@ -32,5 +32,5 @@ toQuery request =
 
 handler
     :: APIGatewayProxyRequest (Embedded GQLRequest)
-    -> IO (APIGatewayProxyResponse (Embedded GQLResponce))
-handler inputString = toResponce <$> (gqlHandler $ toQuery inputString)
+    -> IO (APIGatewayProxyResponse (Embedded GQLResponse))
+handler inputString = toResponse <$> (gqlHandler $ toQuery inputString)

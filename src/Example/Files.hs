@@ -9,11 +9,8 @@ import           Data.Aeson                     ( eitherDecode
 import           Data.ByteString.Lazy           ( readFile )
 import           Prelude                 hiding ( readFile )
 
-dbFolder :: String
-dbFolder = "example-data/"
-
 jsonPath :: String -> String
-jsonPath name = (dbFolder ++ name ++ ".json")
+jsonPath name = "example-data/" ++ name ++ ".json"
 
 getJson :: FromJSON a => FilePath -> IO (Either String a)
 getJson path = eitherDecode <$> readFile (jsonPath path)

@@ -2,13 +2,13 @@
 
 module Data.Morpheus
     ( interpreter
-    , GQLResponce
+    , GQLResponse
     , GQLSelection
     , GQLRoot
     , GQLArgs
     , (::->)(..)
     , GQLRequest(..)
-    , eitherToResponce
+    , eitherToResponse
     , EvalIO(..)
     )
 where
@@ -25,7 +25,7 @@ import           Data.Morpheus.Generics.GQLArgs
                                                 ( GQLArgs )
 import           Data.Morpheus.Parser.Parser   ( parseGQL )
 import           Data.Morpheus.Types.Types     ( (::->)(Resolver)
-                                                , GQLResponce
+                                                , GQLResponse
                                                 , GQLRequest(..)
                                                 , Eval(..)
                                                 , EvalIO(..)
@@ -46,9 +46,9 @@ resolve rootValue body = do
     gql  <- ExceptT $ pure $ parseGQL body
     encode root gql
 
-interpreter :: GQLRoot a => EvalIO a -> GQLRequest -> IO GQLResponce
+interpreter :: GQLRoot a => EvalIO a -> GQLRequest -> IO GQLResponse
 interpreter root request = runExceptT $ resolve root request
 
-eitherToResponce :: (a -> a) -> Either String a -> EvalIO a
-eitherToResponce f (Left  x) = failEvalIO $ errorMessage $ pack $ x
-eitherToResponce f (Right x) = pure (f x)
+eitherToResponse :: (a -> a) -> Either String a -> EvalIO a
+eitherToResponse f (Left  x) = failEvalIO $ errorMessage $ pack x
+eitherToResponse f (Right x) = pure (f x)
