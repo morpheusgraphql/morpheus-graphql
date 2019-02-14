@@ -1,7 +1,7 @@
 {-# LANGUAGE DefaultSignatures , OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables , MultiParamTypeClasses, RankNTypes , DisambiguateRecordFields , FlexibleInstances , FlexibleContexts , TypeOperators #-}
 
-module Data.GraphqlHS.Generics.GQLRoot
+module Data.Morpheus.Generics.GQLRoot
     ( GQLRoot(..)
     )
 where
@@ -19,7 +19,7 @@ import           Data.Text                      ( Text(..)
 import qualified Data.Map                      as M
 
 import           GHC.Generics
-import           Data.GraphqlHS.Types.Types     ( SelectionSet
+import           Data.Morpheus.Types.Types     ( SelectionSet
                                                 , QuerySelection(..)
                                                 , Eval(..)
                                                 , MetaInfo(..)
@@ -28,12 +28,12 @@ import           Data.GraphqlHS.Types.Types     ( SelectionSet
                                                 , EvalIO(..)
                                                 , failEvalIO
                                                 )
-import           Data.GraphqlHS.ErrorMessage    ( handleError
+import           Data.Morpheus.ErrorMessage    ( handleError
                                                 , subfieldsNotSelected
                                                 )
-import           Data.GraphqlHS.Generics.GQLArgs
+import           Data.Morpheus.Generics.GQLArgs
                                                 ( GQLArgs(..) )
-import           Data.GraphqlHS.Types.Introspection
+import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type(..)
                                                 , GQL__Field
                                                 , GQL__TypeKind(..)
@@ -45,25 +45,25 @@ import           Data.GraphqlHS.Types.Introspection
                                                 , createField
                                                 , emptyLib
                                                 )
-import           Data.GraphqlHS.Generics.TypeRep
+import           Data.Morpheus.Generics.TypeRep
                                                 ( Selectors(..) )
 import           Data.Proxy
-import           Data.GraphqlHS.Generics.GenericMap
+import           Data.Morpheus.Generics.GenericMap
                                                 ( GenericMap(..)
                                                 , getField
                                                 , initMeta
                                                 )
 import           Data.Maybe                     ( fromMaybe )
-import           Data.GraphqlHS.Schema.GQL__Schema
+import           Data.Morpheus.Schema.GQL__Schema
                                                 ( initSchema
                                                 , GQL__Schema
                                                 )
-import           Data.GraphqlHS.Generics.GQLSelection
+import           Data.Morpheus.Generics.GQLSelection
                                                 ( GQLSelection(..)
                                                 , wrapAsObject
                                                 , arrayMap
                                                 )
-import           Data.GraphqlHS.PreProcess      ( preProccessQuery )
+import           Data.Morpheus.PreProcess      ( preProccessQuery )
 
 addProp :: JSType -> JSType -> JSType
 addProp prop (JSObject obj) = JSObject (M.insert "__schema" prop obj)
@@ -74,7 +74,7 @@ class GQLRoot a where
 
     encode :: a -> GQLQueryRoot  ->  EvalIO JSType
     default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> EvalIO JSType
-    encode rootValue gqlRoot =  case preProccessQuery schema gqlRoot of
+    encode rootValue gqlRoot =  case preProcessQuery schema gqlRoot of
         Right validGQL -> case (lookup "__schema" (unpackObj validGQL)) of
             Nothing -> responce
             Just x ->  (liftM2 addProp) (item x) responce

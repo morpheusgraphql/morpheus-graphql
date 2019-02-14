@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass , TypeOperators #-}
 
-module Data.GraphqlHS.Types.Types
+module Data.Morpheus.Types.Types
     ( Eval
     , QuerySelection(..)
     , SelectionSet
@@ -33,7 +33,7 @@ import           Data.Aeson                     ( ToJSON(..)
                                                 , Value(Null)
                                                 )
 import           Data.Data
-import           Data.GraphqlHS.Types.Error     ( GQLError )
+import           Data.Morpheus.Types.Error     ( GQLError )
 import           Control.Monad.Trans            ( liftIO
                                                 , lift
                                                 , MonadTrans

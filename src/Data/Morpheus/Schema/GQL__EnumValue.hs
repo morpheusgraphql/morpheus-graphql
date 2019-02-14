@@ -1,6 +1,6 @@
 {-# LANGUAGE  DeriveGeneric , DeriveAnyClass , DeriveDataTypeable  #-}
 
-module Data.GraphqlHS.Schema.GQL__EnumValue
+module Data.Morpheus.Schema.GQL__EnumValue
   (GQL__EnumValue(..))
 where
 

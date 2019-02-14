@@ -1,7 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
-
-module Data.GraphqlHS.Parser.Fragment
-    ( fragment
+module Data.Morpheus.Parser.Arguments
+    ( arguments
     )
 where
 
@@ -9,6 +7,7 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
+import           Data.Map                       ( fromList )
 import           Data.Attoparsec.Text           ( Parser
                                                 , char
                                                 , letter
@@ -25,25 +24,39 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.GraphqlHS.Types.Types     ( Fragment(..) )
-import           Data.GraphqlHS.ErrorMessage    ( syntaxError
-                                                , semanticError
+import           Data.Morpheus.Types.Types     ( Arguments
+                                                , JSType(JSEnum)
+                                                , Argument(..)
                                                 )
-import           Data.GraphqlHS.Parser.Primitive
-                                                ( token )
-import           Data.GraphqlHS.Parser.Body     ( body )
+import           Data.Morpheus.Parser.Primitive
+                                                ( jsString
+                                                , token
+                                                , variable
+                                                )
 
-fragment :: Parser (Text, Fragment)
-fragment = do
-    skipSpace
-    string "fragment"
-    skipSpace
-    name <- token
-    skipSpace
-    string "on"
-    skipSpace
-    targetName <- token
-    skipSpace
-    fragmentBody <- body []
-    pure $ (name, Fragment name targetName fragmentBody)
+inputValue :: Parser Argument
+inputValue =
+    ((Argument . JSEnum) <$> token)
+        <|> skipSpace
+        *>  (Argument <$> jsString)
+        <|> (Variable <$> variable)
 
+parameter :: Parser (Text, Argument)
+parameter = do
+    skipSpace
+    key <- token
+    skipSpace
+    char ':'
+    skipSpace
+    value <- inputValue
+    pure (key, value)
+
+arguments :: Parser Arguments
+arguments = do
+    skipSpace
+    char '('
+    skipSpace
+    parameters <- parameter `sepBy` (skipSpace *> char ',')
+    skipSpace
+    char ')'
+    pure parameters

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.GraphqlHS.Parser.Query
+module Data.Morpheus.Parser.Query
     ( query
     )
 where
@@ -26,18 +26,17 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.GraphqlHS.Types.Types     ( Arguments
+import           Data.Morpheus.Types.Types     ( Arguments
                                                 , Argument(..)
                                                 )
-
-import           Data.GraphqlHS.Parser.Arguments
+import           Data.Morpheus.Parser.Arguments
                                                 ( arguments )
-import           Data.GraphqlHS.Types.Error     ( GQLError )
+import           Data.Morpheus.Types.Error     ( GQLError )
 import           Data.Data                      ( Data )
-import           Data.GraphqlHS.ErrorMessage    ( syntaxError
+import           Data.Morpheus.ErrorMessage    ( syntaxError
                                                 , semanticError
                                                 )
-import           Data.GraphqlHS.Parser.Primitive
+import           Data.Morpheus.Parser.Primitive
                                                 ( token
                                                 , variable
                                                 )

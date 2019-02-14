@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass , DeriveDataTypeable , TypeOperators  #-}
 
-module Data.GraphqlHS.Schema.GQL__Directive
+module Data.Morpheus.Schema.GQL__Directive
   (GQL__Directive(..))
 where
 
@@ -13,10 +13,10 @@ import           Data.Map                       ( Map
 import           GHC.Generics
 import           Data.Aeson                     ( ToJSON(..) )
 import           Data.Data                      ( Data )
-import           Data.GraphqlHS.Types.Types     ( (::->)(..) )
+import           Data.Morpheus.Types.Types     ( (::->)(..) )
 import           Data.List                      ( find )
-import           Data.GraphqlHS.Schema.GQL__DirectiveLocation  (GQL__DirectiveLocation)
-import           Data.GraphqlHS.Types.Introspection ( GQL__InputValue)
+import           Data.Morpheus.Schema.GQL__DirectiveLocation  (GQL__DirectiveLocation)
+import           Data.Morpheus.Types.Introspection ( GQL__InputValue)
 
 data  GQL__Directive  = GQL__Directive {
   name :: Text

@@ -17,14 +17,14 @@ import           GHC.Generics                   ( Generic )
 import           Data.Text                      ( Text
                                                 , pack
                                                 )
-import           Data.GraphqlHS.Generics.GQLSelection
+import           Data.Morpheus.Generics.GQLSelection
                                                 ( GQLSelection )
-import           Data.GraphqlHS.Generics.GQLRoot
+import           Data.Morpheus.Generics.GQLRoot
                                                 ( GQLRoot(encode) )
-import           Data.GraphqlHS.Generics.GQLArgs
+import           Data.Morpheus.Generics.GQLArgs
                                                 ( GQLArgs )
-import           Data.GraphqlHS.Parser.Parser   ( parseGQL )
-import           Data.GraphqlHS.Types.Types     ( (::->)(Resolver)
+import           Data.Morpheus.Parser.Parser   ( parseGQL )
+import           Data.Morpheus.Types.Types     ( (::->)(Resolver)
                                                 , GQLResponce
                                                 , GQLRequest(..)
                                                 , Eval(..)
@@ -34,7 +34,7 @@ import           Data.GraphqlHS.Types.Types     ( (::->)(Resolver)
                                                 )
 import           Data.Proxy                     ( Proxy )
 import           Control.Monad                  ( (>=>) )
-import           Data.GraphqlHS.ErrorMessage    ( errorMessage )
+import           Data.Morpheus.ErrorMessage    ( errorMessage )
 import           Control.Monad.Trans.Except     ( runExceptT
                                                 , ExceptT(..)
                                                 )
@@ -42,7 +42,7 @@ import           Control.Monad.Trans.Except     ( runExceptT
 
 resolve :: GQLRoot a => EvalIO a -> GQLRequest -> EvalIO JSType
 resolve rootValue body = do
-    root <- rootValue
+    root <- rootValues
     gql  <- ExceptT $ pure $ parseGQL body
     encode root gql
 

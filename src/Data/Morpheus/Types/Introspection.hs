@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings , DeriveGeneric, DuplicateRecordFields , DeriveAnyClass , DeriveDataTypeable , TypeOperators  #-}
 
-module Data.GraphqlHS.Types.Introspection
+module Data.Morpheus.Types.Introspection
   ( GQL__Type(..)
   , GQL__Field(..)
   , GQL__TypeKind(..)

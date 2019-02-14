@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric, DeriveDataTypeable  ,  DeriveAnyClass #-}
 
-module Data.GraphqlHS.Schema.GQL__DirectiveLocation
+module Data.Morpheus.Schema.GQL__DirectiveLocation
   (GQL__DirectiveLocation(..))
 where
 

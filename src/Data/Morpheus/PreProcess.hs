@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TypeOperators , FlexibleInstances , ScopedTypeVariables #-}
 
-module Data.GraphqlHS.PreProcess
-    ( preProccessQuery
+module Data.Morpheus.PreProcess
+    ( preProcessQuery
     )
 where
 
@@ -23,7 +23,7 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
-import           Data.GraphqlHS.Types.Types     ( Eval(..)
+import           Data.Morpheus.Types.Types     ( Eval(..)
                                                 , (::->)(..)
                                                 , JSType(..)
                                                 , QuerySelection(..)
@@ -35,26 +35,26 @@ import           Data.GraphqlHS.Types.Types     ( Eval(..)
                                                 , Argument(..)
                                                 , GQLQueryRoot(..)
                                                 )
-import           Data.GraphqlHS.ErrorMessage    ( semanticError
+import           Data.Morpheus.ErrorMessage    ( semanticError
                                                 , handleError
                                                 , cannotQueryField
                                                 , requiredArgument
                                                 )
 
 import           Data.Proxy
-import           Data.GraphqlHS.Types.Introspection
+import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type(fields, name)
                                                 , GQL__Field
                                                 , emptyLib
                                                 , GQLTypeLib
                                                 , GQL__InputValue
                                                 )
-import           Data.GraphqlHS.Schema.SchemaField
+import           Data.Morpheus.Schema.SchemaField
                                                 ( getFieldTypeByKey
                                                 , selectFieldBykey
                                                 , fieldArgsByKey
                                                 )
-import           Data.GraphqlHS.Schema.InputValue
+import           Data.Morpheus.Schema.InputValue
                                                 ( inputValueName )
 
 existsType :: Text -> GQLTypeLib -> Eval GQL__Type

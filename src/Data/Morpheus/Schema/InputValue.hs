@@ -1,16 +1,16 @@
 {-# LANGUAGE TypeOperators , FlexibleInstances , ScopedTypeVariables #-}
 
-module Data.GraphqlHS.Schema.InputValue
+module Data.Morpheus.Schema.InputValue
     (inputValueName)
 where
 
 
 import           Data.Text                      ( Text(..))
-import           Data.GraphqlHS.Types.Types     ( (::->)(..))
-import           Data.GraphqlHS.ErrorMessage    ( semanticError
+import           Data.Morpheus.Types.Types     ( (::->)(..))
+import           Data.Morpheus.ErrorMessage    ( semanticError
                                                 , handleError
                                                 )
-import           Data.GraphqlHS.Types.Introspection ( GQL__InputValue(..) )
+import           Data.Morpheus.Types.Introspection ( GQL__InputValue(..) )
 
 inputValueName :: GQL__InputValue -> Text
 inputValueName  = name

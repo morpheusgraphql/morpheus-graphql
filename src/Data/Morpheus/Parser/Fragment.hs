@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.GraphqlHS.Parser.Body
-    ( body
+module Data.Morpheus.Parser.Fragment
+    ( fragment
     )
 where
 
@@ -25,36 +25,25 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.GraphqlHS.Types.Types     ( QuerySelection(..)
-                                                , SelectionSet
-                                                , Arguments(..)
+import           Data.Morpheus.Types.Types     ( Fragment(..) )
+import           Data.Morpheus.ErrorMessage    ( syntaxError
+                                                , semanticError
                                                 )
-import           Data.GraphqlHS.Parser.Arguments
-                                                ( arguments )
-import           Data.GraphqlHS.Parser.Primitive
-                                                ( token
-                                                , seperator
-                                                )
+import           Data.Morpheus.Parser.Primitive
+                                                ( token )
+import           Data.Morpheus.Parser.Body     ( body )
 
-spread :: Parser (Text, QuerySelection)
-spread = do
-    string "..."
-    key <- some (letter <|> char '_')
-    return (pack key, Spread $ pack key)
-
-entry :: Parser (Text, QuerySelection)
-entry = do
+fragment :: Parser (Text, Fragment)
+fragment = do
     skipSpace
-    key   <- token
-    args  <- (try arguments) <|> (pure [])
-    value <- (try $ body args) <|> (pure $ Field args key)
-    return (key, value)
-
-body :: Arguments -> Parser QuerySelection
-body args =
+    string "fragment"
     skipSpace
-        *> char '{'
-        *> skipSpace
-        *> (SelectionSet args <$> ((entry <|> spread) `sepBy` seperator))
-        <* skipSpace
-        <* char '}'
+    name <- token
+    skipSpace
+    string "on"
+    skipSpace
+    targetName <- token
+    skipSpace
+    fragmentBody <- body []
+    pure $ (name, Fragment name targetName fragmentBody)
+

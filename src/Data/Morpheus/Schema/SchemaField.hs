@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators , FlexibleInstances , ScopedTypeVariables #-}
 
-module Data.GraphqlHS.Schema.SchemaField
+module Data.Morpheus.Schema.SchemaField
     ( selectFieldBykey
     , getFieldTypeByKey
     , fieldArgsByKey
@@ -19,11 +19,11 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
-import           Data.GraphqlHS.Types.Types     ( (::->)(..) )
-import           Data.GraphqlHS.ErrorMessage    ( semanticError
+import           Data.Morpheus.Types.Types     ( (::->)(..) )
+import           Data.Morpheus.ErrorMessage    ( semanticError
                                                 , handleError
                                                 )
-import           Data.GraphqlHS.Types.Introspection
+import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Field(..)
                                                 , GQL__Type(fields)
                                                 , GQL__InputValue
