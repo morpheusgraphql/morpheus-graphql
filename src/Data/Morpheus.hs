@@ -21,7 +21,7 @@ import           Data.Text                      ( Text
 import           Data.GraphqlHS.Generics.GQLRecord
                                                 ( GQLRecord )
 import           Data.GraphqlHS.Generics.GQLRoot
-                                                ( GQLRoot(decode) )
+                                                ( GQLRoot(encode) )
 import           Data.GraphqlHS.Generics.GQLArgs
                                                 ( GQLArgs )
 import           Data.GraphqlHS.Parser.Parser   ( parseGQL )
@@ -45,7 +45,7 @@ interpreter schema rootValue body = do
     case (parseGQL body, root) of
         (Left  x, _      ) -> pure (Left x)
         (Right _, Left x ) -> pure (Left x)
-        (Right g, Right r) -> runExceptT (decode r g)
+        (Right g, Right r) -> runExceptT (encode r g)
 
 eitherToResponce :: (a -> a) -> Either String a -> EvalIO a
 eitherToResponce f (Left  x) = failEvalIO $ errorMessage $ pack $ x

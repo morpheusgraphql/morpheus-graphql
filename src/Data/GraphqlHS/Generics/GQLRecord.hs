@@ -77,7 +77,7 @@ instance GQLRecord a => GenericMap  (K1 i a)  where
     transform meta gql (K1 src) = case (getField meta gql) of
         (Right field) -> case lookup (key meta) gql of
                 Nothing -> []
-                Just x -> [(key meta, trans field src)]
+                Just x -> [(key meta, encode field src)]
         _ -> []
 
 instance (Selector s, Typeable a , GQLRecord a) => Selectors (M1 S s (K1 R a)) where
@@ -96,10 +96,10 @@ wrapAsObject x = (Obj . fromList) <$> mapM unwrapMonadTuple x
 
 class GQLRecord a where
 
-    trans :: QuerySelection ->  a -> EvalIO GQLType
-    default trans :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => QuerySelection -> a -> EvalIO GQLType
-    trans (SelectionSet args gql) = wrapAsObject . transform initMeta gql . from
-    trans (Field args key) = \x -> failEvalIO $ subfieldsNotSelected x key
+    encode :: QuerySelection ->  a -> EvalIO GQLType
+    default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => QuerySelection -> a -> EvalIO GQLType
+    encode (SelectionSet args gql) = wrapAsObject . transform initMeta gql . from
+    encode (Field args key) = \x -> failEvalIO $ subfieldsNotSelected x key
 
     fieldType :: Proxy a -> Text -> GQL__Field
     default fieldType :: (Show a, Selectors (Rep a) , Typeable a) => Proxy a -> Text -> GQL__Field
@@ -121,54 +121,54 @@ class GQLRecord a where
 getType :: (GQLRecord a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
 getType _ = TypeHolder Nothing
 
-resolveField
+resolve
     :: (Show a, Show p, GQLRecord a, GQLArgs p)
     => QuerySelection
     -> p ::-> a
     -> p ::-> a
     -> EvalIO GQLType
-resolveField (SelectionSet gqlArgs body) (TypeHolder args) (Resolver resolver)
-    = (ExceptT $ pure $ fromArgs gqlArgs args) >>= resolver >>= trans
+resolve (SelectionSet gqlArgs body) (TypeHolder args) (Resolver resolver)
+    = (ExceptT $ pure $ fromArgs gqlArgs args) >>= resolver >>= encode
         (SelectionSet gqlArgs body)
-resolveField (Field gqlArgs field) (TypeHolder args) (Resolver resolver) =
-    (ExceptT $ pure $ fromArgs [] args) >>= resolver >>= trans
+resolve (Field gqlArgs field) (TypeHolder args) (Resolver resolver) =
+    (ExceptT $ pure $ fromArgs gqlArgs args) >>= resolver >>= encode
         (Field gqlArgs field)
-resolveField query _ (Some value) = trans query value
-resolveField _ _ None = ExceptT $ pure $ handleError "resolver not implemented"
+resolve query _ (Some value) = encode query value
+resolve _ _ None = ExceptT $ pure $ handleError "resolver not implemented"
 
 instance (Show a, Show p, GQLRecord a , GQLArgs p ) => GQLRecord (p ::-> a) where
-    trans (SelectionSet args body) field = resolveField (SelectionSet args body) (getType field) field
-    trans (Field args body) field = resolveField (Field args body) (getType field) field
-    trans x (Resolver f) = resolveField x (getType (Resolver f)) (Resolver f)
-    trans x (Some a) = trans x a
-    trans x None = pure $ Prim JSNull
+    encode (SelectionSet args body) field = resolve (SelectionSet args body) (getType field) field
+    encode (Field args body) field = resolve (Field args body) (getType field) field
+    encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
+    encode x (Some a) = encode x a
+    encode x None = pure $ Prim JSNull
     introspect  _  = introspect (Proxy:: Proxy  a)
     fieldType _ name = (fieldType (Proxy:: Proxy  a) name ){ args = argsMeta (Proxy :: Proxy p) }
 
 instance (Show a, GQLRecord a) => GQLRecord (Maybe a) where
-    trans _ Nothing = pure $ Prim JSNull
-    trans query (Just value) = trans query value
+    encode _ Nothing = pure $ Prim JSNull
+    encode query (Just value) = encode query value
     introspect  _ = introspect (Proxy:: Proxy  a)
     fieldType _ = fieldType (Proxy:: Proxy  a)
 
 instance GQLRecord Int where
-    trans _ =  pure . Prim . JSInt
+    encode _ =  pure . Prim . JSInt
     introspect _ = insert "Int" (createType "Int" [])
     fieldType _ name =  createField name "Int" []
 
 instance GQLRecord Text where
-    trans _ =  pure . Prim . JSString
+    encode _ =  pure . Prim . JSString
     introspect _ = insert "String" (createType "String" [])
     fieldType _  name =  createField name "String" []
 
 instance GQLRecord Bool where
-    trans _ =  pure . Prim . JSBool
+    encode _ =  pure . Prim . JSBool
     introspect _ = insert "Boolean" (createType "Boolean" [])
     fieldType _ name = createField name "Boolean" []
 
 instance GQLRecord a => GQLRecord [a] where
-    trans (Field _ _) x =  pure $ Li []
-    trans query list = Li <$> mapM (trans query) list
+    encode (Field _ _) x =  pure $ Li []
+    encode query list = Li <$> mapM (encode query) list
     introspect _ = introspect (Proxy :: Proxy  a)
     fieldType _ = fieldType (Proxy :: Proxy  a)
 
@@ -187,11 +187,11 @@ instance GQLRecord GQL__Directive;
 instance GQLRecord GQL__TypeKind where
     introspect _ = insert "__TypeKind" (createType "__TypeKind" [])
     fieldType _ name = createField name "__TypeKind" []
-    trans _ = pure . Prim . JSString . pack . show
+    encode _ = pure . Prim . JSString . pack . show
 
 instance GQLRecord GQL__DirectiveLocation where
     introspect _  = insert "__DirectiveLocation" (createType "__DirectiveLocation" [])
     fieldType _ name = createField name "__DirectiveLocation" []
-    trans _ = pure . Prim . JSString . pack . show
+    encode _ = pure . Prim . JSString . pack . show
 
 instance  GQLArgs GQL__Deprication__Args;

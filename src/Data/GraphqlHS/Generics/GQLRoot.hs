@@ -72,9 +72,9 @@ unpackObj (SelectionSet _ x) = x
 
 class GQLRoot a where
 
-    decode :: a -> GQLQueryRoot  ->  EvalIO GQLType
-    default decode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> EvalIO GQLType
-    decode rootValue gqlRoot =  case preProccessQuery schema gqlRoot of
+    encode :: a -> GQLQueryRoot  ->  EvalIO GQLType
+    default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> EvalIO GQLType
+    encode rootValue gqlRoot =  case preProccessQuery schema gqlRoot of
         Right validGQL -> case (lookup "__schema" (unpackObj validGQL)) of
             Nothing -> responce
             Just x ->  (liftM2 addProp) (item x) responce
