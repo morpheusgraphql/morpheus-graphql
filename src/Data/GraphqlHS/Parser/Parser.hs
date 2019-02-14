@@ -40,7 +40,7 @@ import           Data.GraphqlHS.Parser.Fragment ( fragment )
 request :: Parser GQLQueryRoot
 request = do
     queryName      <- (try (skipSpace *> B.query)) <|> pure ""
-    queryBodyValue <- body
+    queryBodyValue <- body []
     fragmentLib    <- fromList <$> (many fragment)
     skipSpace
     endOfInput
@@ -50,11 +50,11 @@ request = do
         , inputVariables = fromList []
         }
 
-getVariables req = case variables req of 
-    Nothing -> fromList []
+getVariables req = case variables req of
+    Nothing   -> fromList []
     Just vars -> vars
 
 parseGQL :: GQLRequest -> Eval GQLQueryRoot
 parseGQL requestBody = case (parseOnly request $ query requestBody) of
-    Right root     -> Right (root { inputVariables = getVariables requestBody })
+    Right root  -> Right (root { inputVariables = getVariables requestBody })
     Left  error -> Left $ syntaxError $ pack $ show error

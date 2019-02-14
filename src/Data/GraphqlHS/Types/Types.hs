@@ -4,9 +4,8 @@
 module Data.GraphqlHS.Types.Types
     ( GQLPrimitive(..)
     , Eval(..)
-    , GQLValue(..)
-    , Object
-    , Head(..)
+    , QuerySelection(..)
+    , SelectionSet
     , (::->)(..)
     , MetaInfo(..)
     , GQLType(..)
@@ -18,6 +17,7 @@ module Data.GraphqlHS.Types.Types
     , Arg(..)
     , EvalIO(..)
     , failEvalIO
+    , Arguments
     )
 where
 
@@ -58,7 +58,7 @@ failEvalIO = ExceptT . pure . Left
 
 data GQLPrimitive = JSEnum Text | JSInt Int | JSBool Bool | JSString Text | JSNull  deriving (Show, Generic);
 
-data Arg =  Var Text |ArgValue GQLPrimitive deriving (Show, Generic);
+data Arg =  Var Text | ArgValue GQLPrimitive deriving (Show, Generic);
 
 instance ToJSON GQLPrimitive where
     toJSON (JSInt x) = toJSON x
@@ -66,16 +66,13 @@ instance ToJSON GQLPrimitive where
     toJSON (JSString x) = toJSON x
     toJSON JSNull = Null
 
-type Args = Map Text Arg ;
+type Arguments = [(Text,Arg)]
 
-data Head = Head Args | Empty deriving (Show, Generic);
+type SelectionSet  = [(Text,QuerySelection)]
 
-type Object  = Map Text GQLValue;
-
-data GQLValue =
-    Query Head GQLValue |
-    Object Object |
-    Field Text |
+data QuerySelection =
+    SelectionSet Arguments SelectionSet |
+    Field Arguments Text |
     Spread Text |
     QNull
     deriving (Show, Generic);
@@ -85,13 +82,13 @@ type FragmentLib = Map Text Fragment;
 data Fragment = Fragment {
     id:: Text ,
     target :: Text ,
-    fragmentContent:: GQLValue
+    fragmentContent:: QuerySelection
 } deriving (Show, Generic)
 
 
 data GQLQueryRoot = GQLQueryRoot {
     fragments:: FragmentLib,
-    queryBody :: GQLValue,
+    queryBody :: QuerySelection,
     inputVariables:: Map Text Text
 }
 

@@ -2,10 +2,13 @@
 
 module Data.GraphqlHS.Parser.Primitive where
 
-import           Data.Text  (Text, pack)
-import           Data.Attoparsec.Text 
+import           Data.Text                      ( Text
+                                                , pack
+                                                )
+import           Data.Attoparsec.Text
 import           Control.Applicative
-import           Data.GraphqlHS.Types.Types     ( GQLValue(..) ,  GQLPrimitive(..) )
+import           Data.GraphqlHS.Types.Types     (  GQLPrimitive(..)
+                                                )
 
 replaceType :: Text -> Text
 replaceType "type" = "_type"
@@ -21,8 +24,8 @@ jsBool :: Parser GQLPrimitive
 jsBool = boolTrue <|> boolFalse
 
 jsString :: Parser GQLPrimitive
-jsString = do 
-    char '"' 
+jsString = do
+    char '"'
     value <- (many (notChar '"'))
     char '"'
     pure (JSString $ pack value)
@@ -33,8 +36,8 @@ token = (replaceType . pack) <$> some (letter <|> char '_')
 variable :: Parser Text
 variable = skipSpace *> char '$' *> token
 
-field :: Text -> Parser GQLValue
-field key = pure $ Field $ key
+--  field :: Text -> Parser Text
+-- field key = pure $ key
 
 seperator :: Parser Char
 seperator = char ',' <|> char ' ' <|> char '\n' <|> char '\t'

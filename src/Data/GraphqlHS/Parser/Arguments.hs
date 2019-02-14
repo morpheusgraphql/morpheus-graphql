@@ -1,5 +1,6 @@
 module Data.GraphqlHS.Parser.Arguments
-    (arguments)
+    ( arguments
+    )
 where
 
 import           Data.Text                      ( Text(..)
@@ -23,14 +24,22 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.GraphqlHS.Types.Types     ( Head(..)
+import           Data.GraphqlHS.Types.Types     ( Arguments
                                                 , GQLPrimitive(JSEnum)
                                                 , Arg(..)
                                                 )
-import           Data.GraphqlHS.Parser.Primitive ( jsString , token , variable )
+import           Data.GraphqlHS.Parser.Primitive
+                                                ( jsString
+                                                , token
+                                                , variable
+                                                )
 
 inputValue :: Parser Arg
-inputValue = ( (ArgValue . JSEnum ) <$> token) <|> skipSpace *> (ArgValue <$> jsString) <|> (Var <$> variable)
+inputValue =
+    ((ArgValue . JSEnum) <$> token)
+        <|> skipSpace
+        *>  (ArgValue <$> jsString)
+        <|> (Var <$> variable)
 
 parameter :: Parser (Text, Arg)
 parameter = do
@@ -42,12 +51,12 @@ parameter = do
     value <- inputValue
     pure (key, value)
 
-arguments :: Parser Head
+arguments :: Parser Arguments
 arguments = do
     skipSpace
     char '('
     skipSpace
-    parameters <- (fromList <$> (parameter `sepBy` (skipSpace *> char ',')))
+    parameters <- parameter `sepBy` (skipSpace *> char ',')
     skipSpace
     char ')'
-    pure (Head parameters)
+    pure parameters

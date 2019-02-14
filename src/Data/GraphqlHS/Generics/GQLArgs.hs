@@ -6,15 +6,11 @@ module Data.GraphqlHS.Generics.GQLArgs
     )
 where
 
-import           Prelude                 hiding ( lookup )
 import           Data.Text                      ( Text(..)
                                                 , pack
                                                 )
-import           Data.Map                       ( lookup )
 import           GHC.Generics
-import           Data.GraphqlHS.Types.Types     ( Object
-                                                , GQLValue(..)
-                                                , Head(..)
+import           Data.GraphqlHS.Types.Types     ( Arguments
                                                 , Eval(..)
                                                 , (::->)(Some, None)
                                                 , MetaInfo(..)
@@ -50,13 +46,13 @@ instance InputValue Bool where
     decode  (JSBool x) = x
 
 class GToArgs f where
-    gToArgs :: MetaInfo -> Head -> Eval (f a)
+    gToArgs :: MetaInfo -> Arguments -> Eval (f a)
 
 instance GToArgs U1  where
     gToArgs _ _ = pure U1
 
 instance InputValue a => GToArgs  (K1 i a)  where
-    gToArgs meta (Head args) =
+    gToArgs meta args =
         case lookup (key meta) args of
             Nothing -> Left $ requiredArgument meta
             Just (ArgValue x) -> pure $ K1 $ (decode x)
@@ -75,8 +71,8 @@ instance (GToArgs f , GToArgs g ) => GToArgs (f :*: g)  where
     gToArgs meta gql = (:*:) <$> gToArgs meta gql <*> gToArgs meta gql
 
 class GQLArgs p where
-    fromArgs :: Head -> (Maybe p) -> Eval p
-    default fromArgs :: ( Show p , Generic p, Data p , GToArgs (Rep p) ) => Head -> (Maybe p) -> Eval p
+    fromArgs :: Arguments -> (Maybe p) -> Eval p
+    default fromArgs :: ( Show p , Generic p, Data p , GToArgs (Rep p) ) => Arguments -> (Maybe p) -> Eval p
     fromArgs args _ = to <$> gToArgs initMeta args
 
     argsMeta :: Proxy p -> [GQL__InputValue]

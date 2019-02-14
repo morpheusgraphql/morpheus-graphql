@@ -17,7 +17,7 @@ import           Control.Lens                   ( (^.)
                                                 , (?~)
                                                 )
 import           Example.Schema                 ( gqlHandler )
-import           Data.MorpheusGraphQL           ( GQLRequest(..)
+import           Data.Morpheus                  ( GQLRequest(..)
                                                 , GQLResponce
                                                 )
 import           Data.Maybe                     ( fromMaybe )

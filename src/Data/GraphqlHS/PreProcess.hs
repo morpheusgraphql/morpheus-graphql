@@ -2,20 +2,19 @@
 {-# LANGUAGE TypeOperators , FlexibleInstances , ScopedTypeVariables #-}
 
 module Data.GraphqlHS.PreProcess
-    ( validateBySchema
+    ( preProccessQuery
     )
 where
 
-import           Prelude                 hiding ( lookup )
 import           Data.List                      ( find )
 import           Data.Map                       ( elems
                                                 , mapWithKey
-                                                , lookup
                                                 , toList
                                                 , Map
                                                 , fromList
                                                 , keys
                                                 )
+import qualified Data.Map                      as M
 import           GHC.Generics                   ( Generic
                                                 , Rep
                                                 )
@@ -27,8 +26,9 @@ import           Data.Text                      ( Text(..)
 import           Data.GraphqlHS.Types.Types     ( Eval(..)
                                                 , (::->)(..)
                                                 , GQLType
-                                                , GQLValue(..)
-                                                , Head(..)
+                                                , QuerySelection(..)
+                                                , SelectionSet
+                                                , Arguments(..)
                                                 , FragmentLib
                                                 , Fragment(..)
                                                 , MetaInfo(..)
@@ -59,93 +59,99 @@ import           Data.GraphqlHS.Schema.InputValue
                                                 ( inputValueName )
 
 existsType :: Text -> GQLTypeLib -> Eval GQL__Type
-existsType typeName typeLib = case (lookup typeName typeLib) of
+existsType typeName typeLib = case (M.lookup typeName typeLib) of
     Nothing -> handleError $ pack $ "type does not exist" ++ (unpack typeName)
     Just x  -> pure x
 
 
-validateSpread :: FragmentLib -> Text -> Eval [(Text, GQLValue)]
-validateSpread frags key = case lookup key frags of
-    Nothing -> handleError $ pack $ "Fragment not found: " ++ (show key)
-    Just (Fragment _ _ (Object gqlObj)) -> pure (toList gqlObj)
+
 
 
 -- TODO: replace all var types with Variable values
 replaceVariable :: GQLQueryRoot -> Arg -> Eval Arg
-replaceVariable root (Var key) = case (lookup key (inputVariables root)) of
-    Nothing ->
-        handleError
-            $  pack
-            $  "Variable not found: "
-            ++ (show key)
+replaceVariable root (Var key) = case (M.lookup key (inputVariables root)) of
+    Nothing    -> handleError $ pack $ "Variable not found: " ++ (show key)
     Just value -> pure $ ArgValue $ JSString value
 replaceVariable _ x = pure $ x
 
-validateArg
-    :: GQLQueryRoot -> Map Text Arg -> GQL__InputValue -> Eval (Text, Arg)
-validateArg root requestArgs inpValue =
+validateArgument
+    :: GQLQueryRoot -> Arguments -> GQL__InputValue -> Eval (Text, Arg)
+validateArgument root requestArgs inpValue =
     case (lookup (inputValueName inpValue) requestArgs) of
         Nothing -> Left $ requiredArgument $ MetaInfo
-            { className = ""
+            { className = "TODO: name"
             , cons      = ""
-            , key       = (pack $ show $ inputValueName inpValue)
+            , key       = pack $ show $ inputValueName inpValue
             }
         Just x -> replaceVariable root x >>= \x -> pure (key, x)
             where key = inputValueName inpValue
 
-
-
 -- TODO: throw Error when gql request has more arguments al then inputType
-validateHead :: GQLQueryRoot -> GQL__Type -> Text -> Head -> Eval Head
-validateHead root currentType key (Head args) =
-    case (fieldArgsByKey key currentType) of
-        Nothing -> Left $ cannotQueryField key (name currentType)
-        Just field ->
-            mapM (validateArg root args) field >>= pure . Head . fromList
+validateArguments
+    :: GQLQueryRoot -> [GQL__InputValue] -> Arguments -> Eval Arguments
+validateArguments root _types args = mapM (validateArgument root args) _types
 
-validateFieldBody
+fieldOf :: GQL__Type -> Text -> Eval GQL__Type
+fieldOf _type fieldName = case (getFieldTypeByKey fieldName _type) of
+    Nothing    -> Left $ cannotQueryField fieldName (name _type)
+    Just ftype -> pure ftype
+
+
+validateSpread :: FragmentLib -> Text -> Eval [(Text, QuerySelection)]
+validateSpread frags key = case M.lookup key frags of
+    Nothing -> handleError $ pack $ "Fragment not found: " ++ (show key)
+    Just (Fragment _ _ (SelectionSet _ gqlObj)) -> pure gqlObj
+
+propagateSpread
+    :: GQLQueryRoot -> (Text, QuerySelection) -> Eval [(Text, QuerySelection)]
+propagateSpread root (key , (Spread _)) = validateSpread (fragments root) key
+propagateSpread root (text, value     ) = pure [(text, value)]
+
+
+typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fiedType
+    where fiedType field = existsType (name field) typeLib
+
+argsType :: GQL__Type -> Text -> Eval [GQL__InputValue]
+argsType currentType key = case (fieldArgsByKey key currentType) of
+    Nothing   -> handleError $ pack $ "header not found: " ++ (show key)
+    Just args -> pure args
+
+mapSelectors
     :: GQLTypeLib
     -> GQLQueryRoot
     -> GQL__Type
-    -> (Text, GQLValue)
-    -> Eval (Text, GQLValue)
-validateFieldBody typeLib root currentType (fieldName, field) =
-    case (fields currentType) of
-        Some gqlVal -> case (getFieldTypeByKey fieldName currentType) of
-            Nothing -> Left $ cannotQueryField fieldName (name currentType)
-            Just fieldType -> do
-                value <- validateBySchema typeLib (name fieldType) root field
-                pure (fieldName, value)
-        _ ->
-            handleError $ pack $ "has not fields" ++ (show $ fields currentType)
+    -> SelectionSet
+    -> Eval SelectionSet
+mapSelectors typeLib root _type selectors =
+    concat <$> mapM (propagateSpread root) selectors >>= mapM
+        (validateBySchema typeLib root _type)
 
-handleField
-    :: GQLTypeLib
-    -> GQLQueryRoot
-    -> GQL__Type
-    -> (Text, GQLValue)
-    -> Eval (Text, GQLValue)
-handleField typeLib root currentType (fieldName, field) = case field of
-    Query head0 body0 -> do
-        head <- validateHead root currentType fieldName head0
-        body <- validateFieldBody typeLib root currentType (fieldName, body0)
-        pure $ (fieldName, Query head (snd body))
-    _ -> validateFieldBody typeLib root currentType (fieldName, field)
-
-propagateSpread :: GQLQueryRoot -> (Text, GQLValue) -> Eval [(Text, GQLValue)]
-propagateSpread frags (key , (Spread _)) = validateSpread (fragments frags) key
-propagateSpread frags (text, value     ) = pure [(text, value)]
 
 validateBySchema
-    :: GQLTypeLib -> Text -> GQLQueryRoot -> GQLValue -> Eval GQLValue
-validateBySchema typeLib typeName root (Object gqlObj) = do
-    extended <- concat <$> (mapM (propagateSpread root) (toList gqlObj))
-    existsType typeName typeLib >>= \x ->
-        (Object . fromList) <$> (mapM (handleField typeLib root x) extended)
+    :: GQLTypeLib
+    -> GQLQueryRoot
+    -> GQL__Type
+    -> (Text, QuerySelection)
+    -> Eval (Text, QuerySelection)
+validateBySchema typeLib root _parentType (_name, (SelectionSet head selectors))
+    = do
+        _type      <- typeBy typeLib _parentType _name
+        _argsType  <- argsType _parentType _name
+        head'      <- validateArguments root _argsType head
+        selectors' <- mapSelectors typeLib root _type selectors
+        pure (_name, SelectionSet head' selectors')
 
-validateBySchema typeLib typeName root (Query head body) =
-    handleError $ pack $ "all query heads shcould be handled by Fields"
+validateBySchema typeLib root _parentType (_name, (Field head field)) = do
+    _type     <- typeBy typeLib _parentType _name
+    _argsType <- argsType _parentType _name
+    head'     <- validateArguments root _argsType head
+    pure (_name, Field head' field)
 
-validateBySchema _ _ _ (Field value) = pure (Field value)
+validateBySchema _ _ _ x = pure x
 
-validateBySchema _ _ _ QNull         = pure QNull
+preProccessQuery :: GQLTypeLib -> GQLQueryRoot -> Eval QuerySelection
+preProccessQuery lib root = do
+    _type <- existsType "Query" lib
+    let (SelectionSet _ body) = queryBody root
+    selectors <- mapSelectors lib root _type body
+    pure $ SelectionSet [] selectors
