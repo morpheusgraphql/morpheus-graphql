@@ -42,7 +42,7 @@ import           Control.Monad.Trans.Except     ( runExceptT
 
 resolve :: GQLRoot a => EvalIO a -> GQLRequest -> EvalIO JSType
 resolve rootValue body = do
-    root <- rootValues
+    root <- rootValue
     gql  <- ExceptT $ pure $ parseGQL body
     encode root gql
 

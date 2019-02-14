@@ -19,7 +19,7 @@ import           Data.Text                      ( Text(..)
 import qualified Data.Map                      as M
 
 import           GHC.Generics
-import           Data.Morpheus.Types.Types     ( SelectionSet
+import           Data.Morpheus.Types.Types      ( SelectionSet
                                                 , QuerySelection(..)
                                                 , Eval(..)
                                                 , MetaInfo(..)
@@ -28,11 +28,10 @@ import           Data.Morpheus.Types.Types     ( SelectionSet
                                                 , EvalIO(..)
                                                 , failEvalIO
                                                 )
-import           Data.Morpheus.ErrorMessage    ( handleError
+import           Data.Morpheus.ErrorMessage     ( handleError
                                                 , subfieldsNotSelected
                                                 )
-import           Data.Morpheus.Generics.GQLArgs
-                                                ( GQLArgs(..) )
+import           Data.Morpheus.Generics.GQLArgs ( GQLArgs(..) )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type(..)
                                                 , GQL__Field
@@ -45,8 +44,7 @@ import           Data.Morpheus.Types.Introspection
                                                 , createField
                                                 , emptyLib
                                                 )
-import           Data.Morpheus.Generics.TypeRep
-                                                ( Selectors(..) )
+import           Data.Morpheus.Generics.TypeRep ( Selectors(..) )
 import           Data.Proxy
 import           Data.Morpheus.Generics.GenericMap
                                                 ( GenericMap(..)
@@ -63,7 +61,7 @@ import           Data.Morpheus.Generics.GQLSelection
                                                 , wrapAsObject
                                                 , arrayMap
                                                 )
-import           Data.Morpheus.PreProcess      ( preProccessQuery )
+import           Data.Morpheus.PreProcess       ( preProcessQuery )
 
 addProp :: JSType -> JSType -> JSType
 addProp prop (JSObject obj) = JSObject (M.insert "__schema" prop obj)

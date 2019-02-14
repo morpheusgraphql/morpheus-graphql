@@ -149,8 +149,8 @@ validateBySchema typeLib root _parentType (_name, (Field head field)) = do
 
 validateBySchema _ _ _ x = pure x
 
-preProccessQuery :: GQLTypeLib -> GQLQueryRoot -> Eval QuerySelection
-preProccessQuery lib root = do
+preProcessQuery :: GQLTypeLib -> GQLQueryRoot -> Eval QuerySelection
+preProcessQuery lib root = do
     _type <- existsType "Query" lib
     let (SelectionSet _ body) = queryBody root
     selectors <- mapSelectors lib root _type body
