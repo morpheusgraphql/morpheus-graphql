@@ -2,19 +2,18 @@
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass , TypeOperators #-}
 
 module Data.GraphqlHS.Types.Types
-    ( GQLPrimitive(..)
-    , Eval(..)
+    ( Eval
     , QuerySelection(..)
     , SelectionSet
     , (::->)(..)
     , MetaInfo(..)
-    , GQLType(..)
+    , JSType(..)
     , GQLQueryRoot(..)
     , Fragment(..)
     , FragmentLib
     , GQLResponce
     , GQLRequest(..)
-    , Arg(..)
+    , Argument(..)
     , EvalIO(..)
     , failEvalIO
     , Arguments
@@ -52,21 +51,11 @@ type EvalIO  = ExceptT [GQLError] IO;
 failEvalIO :: [GQLError] -> EvalIO a
 failEvalIO = ExceptT . pure . Left
 
---instance (ToJSON a, Generic a) => ToJSON (Eval a) where
---    toJSON (Fail errors) = object ["errors" .= errors];
---    toJSON (Val d) = object ["data" .= d];
+data JSType =  JSObject (Map Text JSType)| JSList [JSType] |  JSEnum Text | JSInt Int | JSBool Bool | JSString Text | JSNull  deriving (Show, Generic );
 
-data GQLPrimitive = JSEnum Text | JSInt Int | JSBool Bool | JSString Text | JSNull  deriving (Show, Generic);
+data Argument =  Variable Text | Argument JSType deriving (Show, Generic);
 
-data Arg =  Var Text | ArgValue GQLPrimitive deriving (Show, Generic);
-
-instance ToJSON GQLPrimitive where
-    toJSON (JSInt x) = toJSON x
-    toJSON (JSBool x) = toJSON x
-    toJSON (JSString x) = toJSON x
-    toJSON JSNull = Null
-
-type Arguments = [(Text,Arg)]
+type Arguments = [(Text,Argument)]
 
 type SelectionSet  = [(Text,QuerySelection)]
 
@@ -85,13 +74,11 @@ data Fragment = Fragment {
     fragmentContent:: QuerySelection
 } deriving (Show, Generic)
 
-
 data GQLQueryRoot = GQLQueryRoot {
     fragments:: FragmentLib,
     queryBody :: QuerySelection,
     inputVariables:: Map Text Text
 }
-
 
 data a ::-> b = TypeHolder (Maybe a) | Resolver (a -> EvalIO b) | Some b | None deriving (Generic)
 
@@ -109,7 +96,6 @@ con_Some = mkConstr ty_Resolver "Some" [] Prefix
 con_None = mkConstr ty_Resolver "None" [] Prefix
 ty_Resolver = mkDataType "Module.Resolver" [con_None, con_Some]
 
-
 instance FromJSON ( p ::->  o) where
     parseJSON _ =  pure None
 
@@ -123,14 +109,15 @@ data MetaInfo = MetaInfo {
         key ::  Text
 };
 
-data GQLType =  Obj (Map Text GQLType)| Li [GQLType] | Prim GQLPrimitive deriving (Show, Generic );
+instance ToJSON JSType where
+    toJSON (JSInt x) = toJSON x
+    toJSON (JSBool x) = toJSON x
+    toJSON (JSString x) = toJSON x
+    toJSON JSNull = Null
+    toJSON (JSObject x) = toJSON x
+    toJSON (JSList x) = toJSON x
 
-instance ToJSON GQLType where
-    toJSON (Prim x) = toJSON x
-    toJSON (Obj x) = toJSON x
-    toJSON (Li x) = toJSON x
-
-type GQLResponce = Eval GQLType;
+type GQLResponce = Eval JSType;
 
 data GQLRequest = GQLRequest {
     query:: Text

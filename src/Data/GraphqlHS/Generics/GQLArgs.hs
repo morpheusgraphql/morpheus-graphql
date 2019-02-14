@@ -14,8 +14,8 @@ import           Data.GraphqlHS.Types.Types     ( Arguments
                                                 , Eval(..)
                                                 , (::->)(Some, None)
                                                 , MetaInfo(..)
-                                                , Arg(..)
-                                                , GQLPrimitive(..)
+                                                , Argument(..)
+                                                , JSType(..)
                                                 )
 import           Data.Proxy                     ( Proxy(..) )
 import           Data.Data                      ( Typeable
@@ -37,7 +37,7 @@ fixProxy f = f undefined
 initMeta = MetaInfo { className = "", cons = "", key = "" }
 
 class InputValue a where
-    decode :: GQLPrimitive -> a
+    decode :: JSType -> a
 
 instance InputValue Text where
     decode  (JSString x) = x
@@ -55,7 +55,7 @@ instance InputValue a => GToArgs  (K1 i a)  where
     gToArgs meta args =
         case lookup (key meta) args of
             Nothing -> Left $ requiredArgument meta
-            Just (ArgValue x) -> pure $ K1 $ (decode x)
+            Just (Argument x) -> pure $ K1 $ (decode x)
             Just x -> handleError $ pack $ show x
 
 instance (Selector c, GToArgs f ) => GToArgs (M1 S c f) where

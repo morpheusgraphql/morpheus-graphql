@@ -16,9 +16,8 @@ import           GHC.Generics
 import           Data.GraphqlHS.Types.Types     ( QuerySelection(..)
                                                 , SelectionSet
                                                 , EvalIO(..)
-                                                , GQLPrimitive(JSNull)
                                                 , MetaInfo(..)
-                                                , GQLType(..)
+                                                , JSType(..)
                                                 , Eval(..)
                                                 )
 
@@ -37,19 +36,19 @@ getField meta gql = pure $ fromMaybe QNull (lookup (key meta) gql)
 initMeta = MetaInfo { className = "", cons = "", key = "" }
 
 class GenericMap f where
-    transform:: MetaInfo -> SelectionSet -> (f a) -> [(Text, EvalIO GQLType)]
+    encodeFields:: MetaInfo -> SelectionSet -> (f a) -> [(Text, EvalIO JSType)]
 
 instance GenericMap U1  where
-    transform _ _  _ = []
+    encodeFields _ _  _ = []
 
 instance (Selector s, GenericMap f) => GenericMap (M1 S s f) where
-    transform meta gql m@(M1 src) = transform (meta{ key = pack $ selName m}) gql src
+    encodeFields meta gql m@(M1 src) = encodeFields (meta{ key = pack $ selName m}) gql src
 
 instance (Datatype c, GenericMap f) => GenericMap (M1 D c f)  where
-    transform meta gql m@(M1 src) = transform (meta{ className = pack $ datatypeName m}) gql src
+    encodeFields meta gql m@(M1 src) = encodeFields (meta{ className = pack $ datatypeName m}) gql src
 
 instance (Constructor c  , GenericMap f) => GenericMap (M1 C c f)  where
-    transform meta gql m@(M1 src) =  transform (meta{ cons = pack $ conName m}) gql src
+    encodeFields meta gql m@(M1 src) =  encodeFields (meta{ cons = pack $ conName m}) gql src
 
 instance (GenericMap f , GenericMap g ) => GenericMap (f :*: g)  where
-    transform meta gql  (a :*: b) = (transform meta gql a) ++ (transform meta gql b)
+    encodeFields meta gql  (a :*: b) = (encodeFields meta gql a) ++ (encodeFields meta gql b)

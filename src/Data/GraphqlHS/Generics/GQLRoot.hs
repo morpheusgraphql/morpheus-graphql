@@ -23,7 +23,7 @@ import           Data.GraphqlHS.Types.Types     ( SelectionSet
                                                 , QuerySelection(..)
                                                 , Eval(..)
                                                 , MetaInfo(..)
-                                                , GQLType(..)
+                                                , JSType(..)
                                                 , GQLQueryRoot(..)
                                                 , EvalIO(..)
                                                 , failEvalIO
@@ -58,29 +58,29 @@ import           Data.GraphqlHS.Schema.GQL__Schema
                                                 ( initSchema
                                                 , GQL__Schema
                                                 )
-import           Data.GraphqlHS.Generics.GQLRecord
-                                                ( GQLRecord(..)
+import           Data.GraphqlHS.Generics.GQLSelection
+                                                ( GQLSelection(..)
                                                 , wrapAsObject
                                                 , arrayMap
                                                 )
 import           Data.GraphqlHS.PreProcess      ( preProccessQuery )
 
-addProp :: GQLType -> GQLType -> GQLType
-addProp prop (Obj obj) = Obj (M.insert "__schema" prop obj)
+addProp :: JSType -> JSType -> JSType
+addProp prop (JSObject obj) = JSObject (M.insert "__schema" prop obj)
 
 unpackObj (SelectionSet _ x) = x
 
 class GQLRoot a where
 
-    decode :: a -> GQLQueryRoot  ->  EvalIO GQLType
-    default decode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> EvalIO GQLType
-    decode rootValue gqlRoot =  case preProccessQuery schema gqlRoot of
+    encode :: a -> GQLQueryRoot  ->  EvalIO JSType
+    default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> EvalIO JSType
+    encode rootValue gqlRoot =  case preProccessQuery schema gqlRoot of
         Right validGQL -> case (lookup "__schema" (unpackObj validGQL)) of
             Nothing -> responce
             Just x ->  (liftM2 addProp) (item x) responce
             where
-                item (SelectionSet _ x) = wrapAsObject (transform initMeta x (from $ initSchema $ M.elems $ schema))
-                responce = wrapAsObject $ transform initMeta (unpackObj validGQL) (from rootValue)
+                item (SelectionSet _ x) = wrapAsObject (encodeFields initMeta x (from $ initSchema $ M.elems $ schema))
+                responce = wrapAsObject $ encodeFields initMeta (unpackObj validGQL) (from rootValue)
         Left x ->  failEvalIO x
         where
             schema = introspectRoot (Proxy :: Proxy a);

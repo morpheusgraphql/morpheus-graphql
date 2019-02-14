@@ -19,9 +19,7 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
-import           Data.GraphqlHS.Types.Types     ( (::->)(..)
-                                                , GQLType
-                                                )
+import           Data.GraphqlHS.Types.Types     ( (::->)(..) )
 import           Data.GraphqlHS.ErrorMessage    ( semanticError
                                                 , handleError
                                                 )

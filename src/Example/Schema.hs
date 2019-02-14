@@ -12,7 +12,7 @@ import           Data.Data                      ( Data )
 import           Data.Text                      ( Text
                                                 , concat
                                                 )
-import           Data.Morpheus                  ( GQLRecord
+import           Data.Morpheus                  ( GQLSelection
                                                 , GQLRoot
                                                 , GQLArgs
                                                 , (::->)(..)
@@ -43,7 +43,7 @@ data Address = Address {
         ,street :: Text
         ,houseNumber :: Int
         ,owner:: Maybe User
-} deriving (Generic,Show,GQLRecord,Data, FromJSON)
+} deriving (Generic,Show,GQLSelection,Data, FromJSON)
 
 data User = User {
         name :: Text
@@ -52,7 +52,7 @@ data User = User {
         ,office:: Zip ::-> Address
         ,friend:: Maybe User
         ,home :: Maybe Address
-} deriving (Show,Generic,Data,GQLRecord , FromJSON )
+} deriving (Show,Generic,Data,GQLSelection , FromJSON )
 
 data Query = Query {
     user:: () ::-> User

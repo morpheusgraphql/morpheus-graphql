@@ -27,7 +27,7 @@ import           Control.Applicative            ( (<|>)
                                                 , some
                                                 )
 import           Data.GraphqlHS.Types.Types     ( Arguments
-                                                , Arg(..)
+                                                , Argument(..)
                                                 )
 
 import           Data.GraphqlHS.Parser.Arguments
@@ -42,7 +42,7 @@ import           Data.GraphqlHS.Parser.Primitive
                                                 , variable
                                                 )
 
-queryVariable :: Parser (Text, Arg)
+queryVariable :: Parser (Text, Argument)
 queryVariable = do
     skipSpace
     variableName <- variable
@@ -50,7 +50,7 @@ queryVariable = do
     char ':'
     skipSpace
     variableType <- token
-    pure (variableName, Var variableType)
+    pure (variableName, Variable variableType)
 
 queryArguments :: Parser (Maybe Arguments)
 queryArguments = do
