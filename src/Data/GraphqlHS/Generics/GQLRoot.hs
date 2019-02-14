@@ -23,7 +23,7 @@ import           Data.GraphqlHS.Types.Types     ( SelectionSet
                                                 , QuerySelection(..)
                                                 , Eval(..)
                                                 , MetaInfo(..)
-                                                , GQLType(..)
+                                                , JSType(..)
                                                 , GQLQueryRoot(..)
                                                 , EvalIO(..)
                                                 , failEvalIO
@@ -65,15 +65,15 @@ import           Data.GraphqlHS.Generics.GQLSelection
                                                 )
 import           Data.GraphqlHS.PreProcess      ( preProccessQuery )
 
-addProp :: GQLType -> GQLType -> GQLType
-addProp prop (Obj obj) = Obj (M.insert "__schema" prop obj)
+addProp :: JSType -> JSType -> JSType
+addProp prop (JSObject obj) = JSObject (M.insert "__schema" prop obj)
 
 unpackObj (SelectionSet _ x) = x
 
 class GQLRoot a where
 
-    encode :: a -> GQLQueryRoot  ->  EvalIO GQLType
-    default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> EvalIO GQLType
+    encode :: a -> GQLQueryRoot  ->  EvalIO JSType
+    default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> EvalIO JSType
     encode rootValue gqlRoot =  case preProccessQuery schema gqlRoot of
         Right validGQL -> case (lookup "__schema" (unpackObj validGQL)) of
             Nothing -> responce

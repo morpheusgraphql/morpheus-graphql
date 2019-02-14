@@ -15,7 +15,7 @@ import           Data.GraphqlHS.Types.Types     ( Arguments
                                                 , (::->)(Some, None)
                                                 , MetaInfo(..)
                                                 , Argument(..)
-                                                , GQLPrimitive(..)
+                                                , JSType(..)
                                                 )
 import           Data.Proxy                     ( Proxy(..) )
 import           Data.Data                      ( Typeable
@@ -37,7 +37,7 @@ fixProxy f = f undefined
 initMeta = MetaInfo { className = "", cons = "", key = "" }
 
 class InputValue a where
-    decode :: GQLPrimitive -> a
+    decode :: JSType -> a
 
 instance InputValue Text where
     decode  (JSString x) = x

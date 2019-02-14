@@ -31,8 +31,7 @@ import           Data.GraphqlHS.Types.Types     ( SelectionSet
                                                 , Eval(..)
                                                 , EvalIO(..)
                                                 , MetaInfo(..)
-                                                , GQLType(..)
-                                                , GQLPrimitive(..)
+                                                , JSType(..)
                                                 , failEvalIO
                                                 )
 import           Data.GraphqlHS.ErrorMessage    ( handleError
@@ -91,13 +90,13 @@ arrayMap lib (f : fs) = arrayMap (f lib) fs
 unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
-wrapAsObject :: [(Text, EvalIO GQLType)] -> EvalIO GQLType
-wrapAsObject x = (Obj . fromList) <$> mapM unwrapMonadTuple x
+wrapAsObject :: [(Text, EvalIO JSType)] -> EvalIO JSType
+wrapAsObject x = (JSObject . fromList) <$> mapM unwrapMonadTuple x
 
 class GQLSelection a where
 
-    encode :: QuerySelection ->  a -> EvalIO GQLType
-    default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => QuerySelection -> a -> EvalIO GQLType
+    encode :: QuerySelection ->  a -> EvalIO JSType
+    default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => QuerySelection -> a -> EvalIO JSType
     encode (SelectionSet args gql) = wrapAsObject . encodeFields initMeta gql . from
     encode (Field args key) = \x -> failEvalIO $ subfieldsNotSelected x key
 
@@ -126,7 +125,7 @@ resolve
     => QuerySelection
     -> p ::-> a
     -> p ::-> a
-    -> EvalIO GQLType
+    -> EvalIO JSType
 resolve (SelectionSet gqlArgs body) (TypeHolder args) (Resolver resolver) =
     (ExceptT $ pure $ fromArgs gqlArgs args) >>= resolver >>= encode
         (SelectionSet gqlArgs body)
@@ -141,34 +140,34 @@ instance (Show a, Show p, GQLSelection a , GQLArgs p ) => GQLSelection (p ::-> a
     encode (Field args body) field = resolve (Field args body) (getType field) field
     encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
     encode x (Some a) = encode x a
-    encode x None = pure $ Prim JSNull
+    encode x None = pure $ JSNull
     introspect  _  = introspect (Proxy:: Proxy  a)
     fieldType _ name = (fieldType (Proxy:: Proxy  a) name ){ args = argsMeta (Proxy :: Proxy p) }
 
 instance (Show a, GQLSelection a) => GQLSelection (Maybe a) where
-    encode _ Nothing = pure $ Prim JSNull
+    encode _ Nothing = pure $ JSNull
     encode query (Just value) = encode query value
     introspect  _ = introspect (Proxy:: Proxy  a)
     fieldType _ = fieldType (Proxy:: Proxy  a)
 
 instance GQLSelection Int where
-    encode _ =  pure . Prim . JSInt
+    encode _ =  pure . JSInt
     introspect _ = insert "Int" (createType "Int" [])
     fieldType _ name =  createField name "Int" []
 
 instance GQLSelection Text where
-    encode _ =  pure . Prim . JSString
+    encode _ =  pure . JSString
     introspect _ = insert "String" (createType "String" [])
     fieldType _  name =  createField name "String" []
 
 instance GQLSelection Bool where
-    encode _ =  pure . Prim . JSBool
+    encode _ =  pure . JSBool
     introspect _ = insert "Boolean" (createType "Boolean" [])
     fieldType _ name = createField name "Boolean" []
 
 instance GQLSelection a => GQLSelection [a] where
-    encode (Field _ _) x =  pure $ Li []
-    encode query list = Li <$> mapM (encode query) list
+    encode (Field _ _) x =  pure $ JSList []
+    encode query list = JSList <$> mapM (encode query) list
     introspect _ = introspect (Proxy :: Proxy  a)
     fieldType _ = fieldType (Proxy :: Proxy  a)
 
@@ -187,11 +186,11 @@ instance GQLSelection GQL__Directive;
 instance GQLSelection GQL__TypeKind where
     introspect _ = insert "__TypeKind" (createType "__TypeKind" [])
     fieldType _ name = createField name "__TypeKind" []
-    encode _ = pure . Prim . JSString . pack . show
+    encode _ = pure . JSString . pack . show
 
 instance GQLSelection GQL__DirectiveLocation where
     introspect _  = insert "__DirectiveLocation" (createType "__DirectiveLocation" [])
     fieldType _ name = createField name "__DirectiveLocation" []
-    encode _ = pure . Prim . JSString . pack . show
+    encode _ = pure  . JSString . pack . show
 
 instance  GQLArgs GQL__Deprication__Args;
