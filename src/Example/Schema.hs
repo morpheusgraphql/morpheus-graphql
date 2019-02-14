@@ -16,10 +16,10 @@ import           Data.Morpheus                  ( GQLSelection
                                                 , GQLRoot
                                                 , GQLArgs
                                                 , (::->)(..)
-                                                , GQLResponce
+                                                , GQLResponse
                                                 , GQLRequest
                                                 , interpreter
-                                                , eitherToResponce
+                                                , eitherToResponse
                                                 , EvalIO(..)
                                                 )
 import           Example.Files                  ( getJson )
@@ -60,7 +60,7 @@ data Query = Query {
 
 fetchAddress :: Text -> Text -> EvalIO Address
 fetchAddress cityName streetName = lift (getJson "address")
-    >>= eitherToResponce modify
+    >>= eitherToResponse modify
   where
     modify address = address { city   = concat [cityName, " ", city address]
                              , street = streetName
@@ -77,12 +77,12 @@ resolveOffice user = Resolver resolve
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve
   where
-    resolve _ = lift (getJson "user") >>= eitherToResponce modify
+    resolve _ = lift (getJson "user") >>= eitherToResponse modify
     modify user =
         user { address = resolveAddress, office = resolveOffice user }
 
 resolveRoot :: EvalIO Query
 resolveRoot = pure $ Query { user = resolveUser }
 
-gqlHandler :: GQLRequest -> IO GQLResponce
+gqlHandler :: GQLRequest -> IO GQLResponse
 gqlHandler = interpreter resolveRoot

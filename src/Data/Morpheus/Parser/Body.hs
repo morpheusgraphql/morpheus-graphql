@@ -1,5 +1,7 @@
-module Data.GraphqlHS.Parser.Arguments
-    ( arguments
+{-# LANGUAGE OverloadedStrings #-}
+
+module Data.Morpheus.Parser.Body
+    ( body
     )
 where
 
@@ -7,7 +9,6 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
-import           Data.Map                       ( fromList )
 import           Data.Attoparsec.Text           ( Parser
                                                 , char
                                                 , letter
@@ -24,39 +25,36 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.GraphqlHS.Types.Types     ( Arguments
-                                                , JSType(JSEnum)
-                                                , Argument(..)
+import           Data.Morpheus.Types.Types     ( QuerySelection(..)
+                                                , SelectionSet
+                                                , Arguments(..)
                                                 )
-import           Data.GraphqlHS.Parser.Primitive
-                                                ( jsString
-                                                , token
-                                                , variable
+import           Data.Morpheus.Parser.Arguments
+                                                ( arguments )
+import           Data.Morpheus.Parser.Primitive
+                                                ( token
+                                                , seperator
                                                 )
 
-inputValue :: Parser Argument
-inputValue =
-    ((Argument . JSEnum) <$> token)
-        <|> skipSpace
-        *>  (Argument <$> jsString)
-        <|> (Variable <$> variable)
+spread :: Parser (Text, QuerySelection)
+spread = do
+    string "..."
+    key <- some (letter <|> char '_')
+    return (pack key, Spread $ pack key)
 
-parameter :: Parser (Text, Argument)
-parameter = do
+entry :: Parser (Text, QuerySelection)
+entry = do
     skipSpace
-    key <- token
-    skipSpace
-    char ':'
-    skipSpace
-    value <- inputValue
-    pure (key, value)
+    key   <- token
+    args  <- (try arguments) <|> (pure [])
+    value <- (try $ body args) <|> (pure $ Field args key)
+    return (key, value)
 
-arguments :: Parser Arguments
-arguments = do
+body :: Arguments -> Parser QuerySelection
+body args =
     skipSpace
-    char '('
-    skipSpace
-    parameters <- parameter `sepBy` (skipSpace *> char ',')
-    skipSpace
-    char ')'
-    pure parameters
+        *> char '{'
+        *> skipSpace
+        *> (SelectionSet args <$> ((entry <|> spread) `sepBy` seperator))
+        <* skipSpace
+        <* char '}'

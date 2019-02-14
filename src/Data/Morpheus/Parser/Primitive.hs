@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.GraphqlHS.Parser.Primitive where
+module Data.Morpheus.Parser.Primitive where
 
 import           Data.Text                      ( Text
                                                 , pack
                                                 )
 import           Data.Attoparsec.Text
 import           Control.Applicative
-import           Data.GraphqlHS.Types.Types     (  JSType(..)
+import           Data.Morpheus.Types.Types     (  JSType(..)
                                                 )
 
 replaceType :: Text -> Text

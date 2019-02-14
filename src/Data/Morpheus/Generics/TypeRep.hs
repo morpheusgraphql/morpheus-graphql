@@ -3,7 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables , MultiParamTypeClasses , FlexibleContexts , RankNTypes , ExistentialQuantification  #-}
 
-module Data.GraphqlHS.Generics.TypeRep
+module Data.Morpheus.Generics.TypeRep
     ( Selectors(..)
     , ArgsMeta(..)
     )
@@ -15,7 +15,7 @@ import           GHC.Generics
 import           Data.Text                      ( Text
                                                 , pack
                                                 )
-import           Data.GraphqlHS.Types.Introspection
+import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type(..)
                                                 , GQL__Field(..)
                                                 , GQL__TypeKind(..)

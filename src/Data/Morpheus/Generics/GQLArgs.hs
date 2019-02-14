@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators , ScopedTypeVariables, DefaultSignatures, FlexibleContexts, FlexibleInstances #-}
 
-module Data.GraphqlHS.Generics.GQLArgs
+module Data.Morpheus.Generics.GQLArgs
     ( GQLArgs(..)
     )
 where
@@ -10,7 +10,7 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 )
 import           GHC.Generics
-import           Data.GraphqlHS.Types.Types     ( Arguments
+import           Data.Morpheus.Types.Types     ( Arguments
                                                 , Eval(..)
                                                 , (::->)(Some, None)
                                                 , MetaInfo(..)
@@ -21,13 +21,13 @@ import           Data.Proxy                     ( Proxy(..) )
 import           Data.Data                      ( Typeable
                                                 , Data
                                                 )
-import           Data.GraphqlHS.Types.Introspection
+import           Data.Morpheus.Types.Introspection
                                                 ( GQL__InputValue(..)
                                                 , createInputValue
                                                 )
-import           Data.GraphqlHS.Generics.TypeRep
+import           Data.Morpheus.Generics.TypeRep
                                                 ( ArgsMeta(..) )
-import           Data.GraphqlHS.ErrorMessage    ( requiredArgument
+import           Data.Morpheus.ErrorMessage    ( requiredArgument
                                                 , handleError
                                                 )
 

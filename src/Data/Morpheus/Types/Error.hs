@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveAnyClass, DeriveGeneric, DeriveDataTypeable #-}
 
-module Data.GraphqlHS.Types.Error
+module Data.Morpheus.Types.Error
     ( GQLError(..)
     , ErrorLocation(..)
     )

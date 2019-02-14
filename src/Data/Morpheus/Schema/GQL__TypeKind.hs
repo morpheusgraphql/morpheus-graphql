@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric, DeriveDataTypeable  ,  DeriveAnyClass #-}
 
-module Data.GraphqlHS.Schema.GQL__TypeKind
+module Data.Morpheus.Schema.GQL__TypeKind
   (GQL__TypeKind(..))
 where
 

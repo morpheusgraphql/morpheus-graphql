@@ -1,7 +1,7 @@
 {-# LANGUAGE DefaultSignatures , OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables , MultiParamTypeClasses, RankNTypes , DisambiguateRecordFields , FlexibleInstances , FlexibleContexts , TypeOperators #-}
 
-module Data.GraphqlHS.Generics.GQLSelection
+module Data.Morpheus.Generics.GQLSelection
     ( GQLSelection(..)
     , wrapAsObject
     , arrayMap
@@ -25,7 +25,7 @@ import           Data.Map                       ( singleton
                                                 )
 import qualified Data.Map                      as M
 import           GHC.Generics
-import           Data.GraphqlHS.Types.Types     ( SelectionSet
+import           Data.Morpheus.Types.Types     ( SelectionSet
                                                 , QuerySelection(..)
                                                 , (::->)(..)
                                                 , Eval(..)
@@ -34,18 +34,18 @@ import           Data.GraphqlHS.Types.Types     ( SelectionSet
                                                 , JSType(..)
                                                 , failEvalIO
                                                 )
-import           Data.GraphqlHS.ErrorMessage    ( handleError
+import           Data.Morpheus.ErrorMessage    ( handleError
                                                 , subfieldsNotSelected
                                                 )
-import           Data.GraphqlHS.Generics.GQLArgs
+import           Data.Morpheus.Generics.GQLArgs
                                                 ( GQLArgs(..) )
-import           Data.GraphqlHS.Schema.GQL__Schema
+import           Data.Morpheus.Schema.GQL__Schema
                                                 ( GQL__Schema )
-import           Data.GraphqlHS.Schema.GQL__Directive
+import           Data.Morpheus.Schema.GQL__Directive
                                                 ( GQL__Directive )
-import           Data.GraphqlHS.Schema.GQL__DirectiveLocation
+import           Data.Morpheus.Schema.GQL__DirectiveLocation
                                                 ( GQL__DirectiveLocation(..) )
-import           Data.GraphqlHS.Types.Introspection
+import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type(..)
                                                 , GQL__Field(args)
                                                 , GQL__TypeKind(..)
@@ -57,10 +57,10 @@ import           Data.GraphqlHS.Types.Introspection
                                                 , createField
                                                 , emptyLib
                                                 )
-import           Data.GraphqlHS.Generics.TypeRep
+import           Data.Morpheus.Generics.TypeRep
                                                 ( Selectors(..) )
 import           Data.Proxy
-import           Data.GraphqlHS.Generics.GenericMap
+import           Data.Morpheus.Generics.GenericMap
                                                 ( GenericMap(..)
                                                 , getField
                                                 , initMeta

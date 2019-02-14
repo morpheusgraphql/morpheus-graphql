@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric ,DeriveAnyClass , DeriveDataTypeable , OverloadedStrings #-}
 
-module Data.GraphqlHS.Schema.GQL__Schema where
+module Data.Morpheus.Schema.GQL__Schema where
 
 import           Data.Aeson                     ( ToJSON(..)
                                                 , FromJSON(..)
@@ -14,11 +14,11 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
-import           Data.GraphqlHS.Types.Introspection
+import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type
                                                 , emptyLib
                                                 )
-import           Data.GraphqlHS.Schema.GQL__Directive
+import           Data.Morpheus.Schema.GQL__Directive
                                                 ( GQL__Directive )
 
 import           Data.Proxy                     ( Proxy(..) )

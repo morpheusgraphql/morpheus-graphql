@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances , FlexibleContexts , TypeOperators #-}
 
-module Data.GraphqlHS.Generics.GenericMap
+module Data.Morpheus.Generics.GenericMap
     ( GenericMap(..)
     , getField
     , initMeta
@@ -13,7 +13,7 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 )
 import           GHC.Generics
-import           Data.GraphqlHS.Types.Types     ( QuerySelection(..)
+import           Data.Morpheus.Types.Types     ( QuerySelection(..)
                                                 , SelectionSet
                                                 , EvalIO(..)
                                                 , MetaInfo(..)
@@ -28,9 +28,9 @@ getField meta gql = pure $ fromMaybe QNull (lookup (key meta) gql)
 -- type C1 = M1 C
 -- type S1 = M1 S
 -- M1 : Meta-information (constructor names, etc.)
--- D  :Datatype : Class for datatypes that represent datatypes
+-- D  :Datatype : Class for dataTypes that represent dataTypes
 -- C :Constructor :
--- S - Selector: Class for datatypes that represent records
+-- S - Selector: Class for dataTypes that represent records
 -- Rep = D1 (...)  (C1 ...) (S1 (...) :+: D1 (...)  (C1 ...) (S1 (...)
 
 initMeta = MetaInfo { className = "", cons = "", key = "" }

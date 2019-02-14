@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.GraphqlHS.ErrorMessage
+module Data.Morpheus.ErrorMessage
     ( syntaxError
     , unknownArgument
     , cannotQueryField
@@ -18,8 +18,8 @@ import           Data.Text                      ( Text(..)
                                                 , unpack
                                                 , concat
                                                 )
-import           Data.GraphqlHS.Types.Types     ( MetaInfo(..) )
-import           Data.GraphqlHS.Types.Error     ( GQLError(..)
+import           Data.Morpheus.Types.Types     ( MetaInfo(..) )
+import           Data.Morpheus.Types.Error     ( GQLError(..)
                                                 , ErrorLocation(..)
                                                 )
 import           Data.Data                      ( dataTypeOf

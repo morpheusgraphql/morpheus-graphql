@@ -2,13 +2,13 @@
 
 module Data.Morpheus
     ( interpreter
-    , GQLResponce
+    , GQLResponse
     , GQLSelection
     , GQLRoot
     , GQLArgs
     , (::->)(..)
     , GQLRequest(..)
-    , eitherToResponce
+    , eitherToResponse
     , EvalIO(..)
     )
 where
@@ -17,15 +17,15 @@ import           GHC.Generics                   ( Generic )
 import           Data.Text                      ( Text
                                                 , pack
                                                 )
-import           Data.GraphqlHS.Generics.GQLSelection
+import           Data.Morpheus.Generics.GQLSelection
                                                 ( GQLSelection )
-import           Data.GraphqlHS.Generics.GQLRoot
+import           Data.Morpheus.Generics.GQLRoot
                                                 ( GQLRoot(encode) )
-import           Data.GraphqlHS.Generics.GQLArgs
+import           Data.Morpheus.Generics.GQLArgs
                                                 ( GQLArgs )
-import           Data.GraphqlHS.Parser.Parser   ( parseGQL )
-import           Data.GraphqlHS.Types.Types     ( (::->)(Resolver)
-                                                , GQLResponce
+import           Data.Morpheus.Parser.Parser   ( parseGQL )
+import           Data.Morpheus.Types.Types     ( (::->)(Resolver)
+                                                , GQLResponse
                                                 , GQLRequest(..)
                                                 , Eval(..)
                                                 , EvalIO(..)
@@ -34,7 +34,7 @@ import           Data.GraphqlHS.Types.Types     ( (::->)(Resolver)
                                                 )
 import           Data.Proxy                     ( Proxy )
 import           Control.Monad                  ( (>=>) )
-import           Data.GraphqlHS.ErrorMessage    ( errorMessage )
+import           Data.Morpheus.ErrorMessage    ( errorMessage )
 import           Control.Monad.Trans.Except     ( runExceptT
                                                 , ExceptT(..)
                                                 )
@@ -46,9 +46,9 @@ resolve rootValue body = do
     gql  <- ExceptT $ pure $ parseGQL body
     encode root gql
 
-interpreter :: GQLRoot a => EvalIO a -> GQLRequest -> IO GQLResponce
+interpreter :: GQLRoot a => EvalIO a -> GQLRequest -> IO GQLResponse
 interpreter root request = runExceptT $ resolve root request
 
-eitherToResponce :: (a -> a) -> Either String a -> EvalIO a
-eitherToResponce f (Left  x) = failEvalIO $ errorMessage $ pack $ x
-eitherToResponce f (Right x) = pure (f x)
+eitherToResponse :: (a -> a) -> Either String a -> EvalIO a
+eitherToResponse f (Left  x) = failEvalIO $ errorMessage $ pack x
+eitherToResponse f (Right x) = pure (f x)
