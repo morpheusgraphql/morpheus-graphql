@@ -91,7 +91,7 @@ unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
 wrapAsObject :: [(Text, EvalIO JSType)] -> EvalIO JSType
-wrapAsObject x = (JSObject . fromList) <$> mapM unwrapMonadTuple x
+wrapAsObject x = JSObject . fromList <$> mapM unwrapMonadTuple x
 
 class GQLSelection a where
 

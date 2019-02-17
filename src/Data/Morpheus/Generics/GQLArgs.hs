@@ -55,7 +55,7 @@ instance InputValue a => GToArgs  (K1 i a)  where
     gToArgs meta args =
         case lookup (key meta) args of
             Nothing -> Left $ requiredArgument meta
-            Just (Argument x) -> pure $ K1 $ (decode x)
+            Just (Argument x) -> pure $ K1 $ decode x
             Just x -> handleError $ pack $ show x
 
 instance (Selector c, GToArgs f ) => GToArgs (M1 S c f) where
@@ -71,13 +71,14 @@ instance (GToArgs f , GToArgs g ) => GToArgs (f :*: g)  where
     gToArgs meta gql = (:*:) <$> gToArgs meta gql <*> gToArgs meta gql
 
 class GQLArgs p where
-    fromArgs :: Arguments -> (Maybe p) -> Eval p
-    default fromArgs :: ( Show p , Generic p, Data p , GToArgs (Rep p) ) => Arguments -> (Maybe p) -> Eval p
+    fromArgs :: Arguments -> Maybe p -> Eval p
+    default fromArgs :: ( Show p , Generic p, Data p , GToArgs (Rep p) ) => Arguments -> Maybe p -> Eval p
     fromArgs args _ = to <$> gToArgs initMeta args
 
     argsMeta :: Proxy p -> [GQL__InputValue]
     default argsMeta :: (Show p, ArgsMeta (Rep p) , Typeable p) => Proxy p -> [GQL__InputValue]
-    argsMeta _ = map (\(x,y)-> createInputValue x y) $ getMeta (Proxy :: Proxy (Rep p))
+    argsMeta _ = map mapValue $ getMeta (Proxy :: Proxy (Rep p))
+        where mapValue (x,y) = createInputValue x y
 
 instance  GQLArgs Text where
     fromArgs _ (Just t) = pure t

@@ -73,7 +73,7 @@ class GQLRoot a where
     encode :: a -> GQLQueryRoot  ->  EvalIO JSType
     default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> EvalIO JSType
     encode rootValue gqlRoot =  case preProcessQuery schema gqlRoot of
-        Right validGQL -> case (lookup "__schema" (unpackObj validGQL)) of
+        Right validGQL -> case lookup "__schema" (unpackObj validGQL) of
             Nothing -> responce
             Just x ->  (liftM2 addProp) (item x) responce
             where
@@ -90,5 +90,5 @@ class GQLRoot a where
         arrayMap (M.insert "Query" (createType "Query" fields) typeLib) stack
                where
                    fieldTypes  = getFields (Proxy :: Proxy (Rep a))
-                   stack = (map snd fieldTypes)
+                   stack = map snd fieldTypes
                    fields = map fst fieldTypes ++ [ createField "__schema" "GQL__Schema" [] ]

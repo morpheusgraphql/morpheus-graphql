@@ -23,7 +23,7 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
-import           Data.Morpheus.Types.Types     ( Eval(..)
+import           Data.Morpheus.Types.Types      ( Eval(..)
                                                 , (::->)(..)
                                                 , JSType(..)
                                                 , QuerySelection(..)
@@ -35,7 +35,7 @@ import           Data.Morpheus.Types.Types     ( Eval(..)
                                                 , Argument(..)
                                                 , GQLQueryRoot(..)
                                                 )
-import           Data.Morpheus.ErrorMessage    ( semanticError
+import           Data.Morpheus.ErrorMessage     ( semanticError
                                                 , handleError
                                                 , cannotQueryField
                                                 , requiredArgument
@@ -142,7 +142,6 @@ validateBySchema typeLib root _parentType (_name, (SelectionSet head selectors))
         pure (_name, SelectionSet head' selectors')
 
 validateBySchema typeLib root _parentType (_name, (Field head field)) = do
-    _type     <- typeBy typeLib _parentType _name
     _argsType <- argsType _parentType _name
     head'     <- validateArguments root _argsType head
     pure (_name, Field head' field)
