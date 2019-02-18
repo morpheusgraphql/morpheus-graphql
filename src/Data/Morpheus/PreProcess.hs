@@ -88,7 +88,6 @@ fieldOf _type fieldName = case getFieldTypeByKey fieldName _type of
     }
     Just fieldType -> pure fieldType
 
-
 validateSpread :: FragmentLib -> Text -> Eval [(Text, QuerySelection)]
 validateSpread frags key = case M.lookup key frags of
     Nothing -> handleError $ pack $ "Fragment not found: " ++ show key
@@ -98,7 +97,6 @@ propagateSpread
     :: GQLQueryRoot -> (Text, QuerySelection) -> Eval [(Text, QuerySelection)]
 propagateSpread root (key , Spread _) = validateSpread (fragments root) key
 propagateSpread root (text, value     ) = pure [(text, value)]
-
 
 typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fieldType
     where fieldType field = existsType (name field) typeLib
@@ -114,10 +112,9 @@ mapSelectors
     -> GQL__Type
     -> SelectionSet
     -> Eval SelectionSet
-mapSelectors typeLib root _type selectors =
-    concat <$> mapM (propagateSpread root) selectors >>= mapM
-        (validateBySchema typeLib root _type)
-
+mapSelectors typeLib root _type selectors = do
+  selectors' <- mapM (propagateSpread root) selectors
+  mapM (validateBySchema typeLib root _type) (concat selectors')
 
 validateBySchema
     :: GQLTypeLib
