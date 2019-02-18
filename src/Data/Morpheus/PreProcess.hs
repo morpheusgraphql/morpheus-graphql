@@ -7,13 +7,6 @@ module Data.Morpheus.PreProcess
 where
 
 import           Data.List                      ( find )
-import           Data.Map                       (
-                                                mapWithKey
-                                                , toList
-                                                , Map
-                                                , fromList
-                                                , keys
-                                                )
 import qualified Data.Map                      as M
 import           GHC.Generics                   ( Generic
                                                 , Rep
@@ -107,8 +100,8 @@ propagateSpread root (key , Spread _) = validateSpread (fragments root) key
 propagateSpread root (text, value     ) = pure [(text, value)]
 
 
-typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fiedType
-    where fiedType field = existsType (name field) typeLib
+typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fieldType
+    where fieldType field = existsType (name field) typeLib
 
 argsType :: GQL__Type -> Text -> Eval [GQL__InputValue]
 argsType currentType key = case fieldArgsByKey key currentType of
