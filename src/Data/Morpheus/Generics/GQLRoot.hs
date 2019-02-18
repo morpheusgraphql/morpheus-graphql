@@ -63,22 +63,27 @@ import           Data.Morpheus.Generics.GQLSelection
                                                 )
 import           Data.Morpheus.PreProcess       ( preProcessQuery )
 
-addProp :: JSType -> JSType -> JSType
-addProp prop (JSObject obj) = JSObject (M.insert "__schema" prop obj)
+setProperty :: Text -> JSType -> JSType -> JSType
+setProperty name prop (JSObject obj) = JSObject (M.insert name prop obj)
 
-unpackObj (SelectionSet _ x) = x
+getProperty :: Text -> QuerySelection -> Maybe QuerySelection
+getProperty name (SelectionSet _ sel) = lookup name sel
+
+unpackObj (SelectionSet _ sel) = sel
 
 class GQLRoot a where
 
     encode :: a -> GQLQueryRoot  ->  EvalIO JSType
     default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> EvalIO JSType
     encode rootValue gqlRoot =  case preProcessQuery schema gqlRoot of
-        Right validGQL -> case lookup "__schema" (unpackObj validGQL) of
+        Right validGQL -> case getProperty "__schema" validGQL of
             Nothing -> response
-            Just x ->  liftM2 addProp (item x) response
+            Just value ->  addSchema value response
             where
-                item (SelectionSet _ x) = wrapAsObject (encodeFields initMeta x (from $ initSchema $ M.elems $ schema))
+                item (SelectionSet _ x) = wrapAsObject (encodeFields initMeta x (from $ initSchema $ M.elems schema))
                 response = wrapAsObject $ encodeFields initMeta (unpackObj validGQL) (from rootValue)
+                addSchema value = liftM2 (setProperty "__schema") (item value)
+
         Left x ->  failEvalIO x
         where
             schema = introspectRoot (Proxy :: Proxy a);
