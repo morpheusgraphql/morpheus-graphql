@@ -74,11 +74,11 @@ class GQLRoot a where
     default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> EvalIO JSType
     encode rootValue gqlRoot =  case preProcessQuery schema gqlRoot of
         Right validGQL -> case lookup "__schema" (unpackObj validGQL) of
-            Nothing -> responce
-            Just x ->  (liftM2 addProp) (item x) responce
+            Nothing -> response
+            Just x ->  liftM2 addProp (item x) response
             where
                 item (SelectionSet _ x) = wrapAsObject (encodeFields initMeta x (from $ initSchema $ M.elems $ schema))
-                responce = wrapAsObject $ encodeFields initMeta (unpackObj validGQL) (from rootValue)
+                response = wrapAsObject $ encodeFields initMeta (unpackObj validGQL) (from rootValue)
         Left x ->  failEvalIO x
         where
             schema = introspectRoot (Proxy :: Proxy a);

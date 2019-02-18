@@ -27,13 +27,14 @@ import           Data.Aeson                     ( FromJSON )
 import           Data.Either
 import           Control.Monad.Trans            ( lift )
 
-data Coord = Coord {
+data Coordinates = Coordinates {
     latitude :: Text,
     longitude :: Text
 } deriving (Show,Generic,Data,GQLArgs)
 
-data Zip = Zip {
-    zipcode:: Text
+data Location = Location {
+    zipCode:: Text,
+    cityID:: Text
 } deriving (Show,Data,Generic,GQLArgs)
 
 data Address = Address {
@@ -46,17 +47,15 @@ data Address = Address {
 data User = User {
         name :: Text
         ,email :: Text
-        ,address:: Coord ::-> Address
-        ,office:: Zip ::-> Address
+        ,address:: Coordinates ::-> Address
+        ,office:: Location ::-> Address
         ,friend:: Maybe User
         ,home :: Maybe Address
 } deriving (Show,Generic,Data,GQLSelection , FromJSON )
 
-data Query = Query {
+newtype Query = Query {
     user:: () ::-> User
 } deriving (Show,Generic,Data,GQLRoot, FromJSON )
-
-
 
 fetchAddress :: Text -> Text -> EvalIO Address
 fetchAddress cityName streetName = lift (getJson "address")
@@ -66,13 +65,13 @@ fetchAddress cityName streetName = lift (getJson "address")
                              , street = streetName
                              }
 
-resolveAddress :: Coord ::-> Address
+resolveAddress :: Coordinates ::-> Address
 resolveAddress = Resolver resolve
     where resolve args = fetchAddress (latitude args) (longitude args)
 
-resolveOffice :: User -> Zip ::-> Address
+resolveOffice :: User -> Location ::-> Address
 resolveOffice user = Resolver resolve
-    where resolve args = fetchAddress (zipcode args) "some bla"
+    where resolve args = fetchAddress (zipCode args) "some bla"
 
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve
