@@ -33,7 +33,7 @@ import           Data.Morpheus.Parser.Arguments
                                                 ( arguments )
 import           Data.Morpheus.Parser.Primitive
                                                 ( token
-                                                , seperator
+                                                , separator
                                                 )
 
 spread :: Parser (Text, QuerySelection)
@@ -55,6 +55,6 @@ body args =
     skipSpace
         *> char '{'
         *> skipSpace
-        *> (SelectionSet args <$> ((entry <|> spread) `sepBy` seperator))
+        *> (SelectionSet args <$> ((entry <|> spread) `sepBy` separator))
         <* skipSpace
         <* char '}'

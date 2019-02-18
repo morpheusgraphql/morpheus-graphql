@@ -26,18 +26,15 @@ jsBool = boolTrue <|> boolFalse
 jsString :: Parser JSType
 jsString = do
     char '"'
-    value <- (many (notChar '"'))
+    value <- many (notChar '"')
     char '"'
-    pure (JSString $ pack value)
+    pure $ JSString $ pack value
 
 token :: Parser Text
-token = (replaceType . pack) <$> some (letter <|> char '_')
+token = replaceType . pack <$> some (letter <|> char '_')
 
 variable :: Parser Text
 variable = skipSpace *> char '$' *> token
 
---  field :: Text -> Parser Text
--- field key = pure $ key
-
-seperator :: Parser Char
-seperator = char ',' <|> char ' ' <|> char '\n' <|> char '\t'
+separator :: Parser Char
+separator = char ',' <|> char ' ' <|> char '\n' <|> char '\t'
