@@ -66,7 +66,7 @@ query = do
     string "query "
     skipSpace
     queryName <- token
-    variables <- (try (skipSpace *> queryArguments)) <|> (pure Nothing)
+    variables <- try (skipSpace *> queryArguments) <|> pure Nothing
     pure queryName
 
 

@@ -32,7 +32,7 @@ import           Control.Monad                  ( join )
 
 
 selectFieldBykey :: Text -> GQL__Type -> Maybe GQL__Field
-selectFieldBykey key gqlType = case (fields gqlType) of
+selectFieldBykey key gqlType = case fields gqlType of
     Some fields -> find (\x -> key == (name x)) fields
     _           -> Nothing
 

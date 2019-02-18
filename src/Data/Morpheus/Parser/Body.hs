@@ -46,7 +46,7 @@ entry :: Parser (Text, QuerySelection)
 entry = do
     skipSpace
     key   <- token
-    args  <- (try arguments) <|> (pure [])
+    args  <- try arguments <|> pure []
     value <- (try $ body args) <|> (pure $ Field args key)
     return (key, value)
 

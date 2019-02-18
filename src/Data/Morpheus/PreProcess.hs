@@ -62,10 +62,6 @@ existsType typeName typeLib = case (M.lookup typeName typeLib) of
     Nothing -> handleError $ pack $ "type does not exist" ++ (unpack typeName)
     Just x  -> pure x
 
-
-
-
-
 -- TODO: replace all var types with Variable values
 replaceVariable :: GQLQueryRoot -> Argument -> Eval Argument
 replaceVariable root (Variable key) =

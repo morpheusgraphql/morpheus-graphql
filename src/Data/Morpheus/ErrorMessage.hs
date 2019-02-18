@@ -39,7 +39,7 @@ unknownArgument record list = throwNewError $ concat
     [ "Unknown argument "
     , head list
     , " on field "
-    , pack $ dataTypeName $ dataTypeOf $ record
+    , pack $ dataTypeName $ dataTypeOf record
     , "."
     ]
 
