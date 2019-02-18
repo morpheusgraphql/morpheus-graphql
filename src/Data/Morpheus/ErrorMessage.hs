@@ -18,8 +18,8 @@ import           Data.Text                      ( Text(..)
                                                 , unpack
                                                 , concat
                                                 )
-import           Data.Morpheus.Types.Types     ( MetaInfo(..) )
-import           Data.Morpheus.Types.Error     ( GQLError(..)
+import           Data.Morpheus.Types.Types      ( MetaInfo(..) )
+import           Data.Morpheus.Types.Error      ( GQLError(..)
                                                 , ErrorLocation(..)
                                                 )
 import           Data.Data                      ( dataTypeOf
@@ -47,9 +47,9 @@ requiredArgument :: MetaInfo -> [GQLError]
 requiredArgument meta = throwNewError $ concat
     ["Required Argument: ", key meta, "not Found on type ", className meta]
 
-cannotQueryField :: Text -> Text -> [GQLError]
-cannotQueryField key typeName = throwNewError
-    $ concat ["Cannot query field ", key, " on type ", typeName, "."]
+cannotQueryField :: MetaInfo -> [GQLError]
+cannotQueryField meta = throwNewError $ concat
+    ["Cannot query field ", key meta, " on type ", className meta, "."]
 
 subfieldsNotSelected :: a -> Text -> [GQLError]
 subfieldsNotSelected record key = throwNewError $ concat

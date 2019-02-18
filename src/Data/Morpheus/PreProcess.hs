@@ -88,7 +88,11 @@ validateArguments root _types args = mapM (validateArgument root args) _types
 
 fieldOf :: GQL__Type -> Text -> Eval GQL__Type
 fieldOf _type fieldName = case getFieldTypeByKey fieldName _type of
-    Nothing    -> Left $ cannotQueryField fieldName (name _type)
+    Nothing    -> Left $ cannotQueryField $ MetaInfo {
+      key = fieldName
+      , cons = ""
+      , className = name _type
+    }
     Just fieldType -> pure fieldType
 
 
