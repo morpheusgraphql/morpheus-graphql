@@ -32,6 +32,8 @@ import           Data.Morpheus.ErrorMessage     ( semanticError
                                                 , handleError
                                                 , cannotQueryField
                                                 , requiredArgument
+                                                ,unknownFragment
+                                                , variableIsNotDefined
                                                 )
 
 import           Data.Proxy
@@ -58,7 +60,11 @@ existsType typeName typeLib = case M.lookup typeName typeLib of
 replaceVariable :: GQLQueryRoot -> Argument -> Eval Argument
 replaceVariable root (Variable key) =
     case M.lookup key (inputVariables root) of
-        Nothing    -> handleError $ pack $ "Variable not found: " ++ show key
+        Nothing    -> Left  $ variableIsNotDefined  $ MetaInfo {
+          className="TODO: Name",
+          cons = "",
+          key = key
+        }
         Just value -> pure $ Argument $ JSString value
 replaceVariable _ x = pure x
 
@@ -90,7 +96,11 @@ fieldOf _type fieldName = case getFieldTypeByKey fieldName _type of
 
 validateSpread :: FragmentLib -> Text -> Eval [(Text, QuerySelection)]
 validateSpread frags key = case M.lookup key frags of
-    Nothing -> handleError $ pack $ "Fragment not found: " ++ show key
+    Nothing -> Left $ unknownFragment $ MetaInfo {
+                className = ""
+                , cons      = ""
+                , key       = key
+             }
     Just (Fragment _ _ (SelectionSet _ gqlObj)) -> pure gqlObj
 
 propagateSpread

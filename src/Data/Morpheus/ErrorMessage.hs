@@ -9,6 +9,7 @@ module Data.Morpheus.ErrorMessage
     , semanticError
     , requiredArgument
     , errorMessage
+    , variableIsNotDefined
     )
 where
 
@@ -36,7 +37,7 @@ variableIsNotDefined :: MetaInfo -> [GQLError]
 variableIsNotDefined meta = errorMessage $ concat ["Variable ", key meta, " is not defined by operation ", className meta, "."]
 
 unknownFragment :: MetaInfo -> [GQLError]
-unknownFragment meta = errorMessage $ concat [ "Unknown fragment " , className meta, "."]
+unknownFragment meta = errorMessage $ concat [ "Unknown fragment " , key meta, "."]
 
 requiredArgument :: MetaInfo -> [GQLError]
 requiredArgument meta = errorMessage $ concat

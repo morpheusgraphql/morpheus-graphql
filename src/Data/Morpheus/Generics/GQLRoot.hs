@@ -28,9 +28,6 @@ import           Data.Morpheus.Types.Types      ( SelectionSet
                                                 , EvalIO(..)
                                                 , failEvalIO
                                                 )
-import           Data.Morpheus.ErrorMessage     ( handleError
-                                                , subfieldsNotSelected
-                                                )
 import           Data.Morpheus.Generics.GQLArgs ( GQLArgs(..) )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type(..)
