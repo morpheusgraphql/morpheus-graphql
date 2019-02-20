@@ -11,9 +11,6 @@ import           Data.List                      ( find )
 import           Data.Data                      ( Data )
 import           Data.Text                      ( Text(..) )
 import           Data.Morpheus.Types.Types     ( (::->)(..) )
-import           Data.Morpheus.ErrorMessage    ( semanticError
-                                                , handleError
-                                                )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Field(..)
                                                 , GQL__Type(fields)
