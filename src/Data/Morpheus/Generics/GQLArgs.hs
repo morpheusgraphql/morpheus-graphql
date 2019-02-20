@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators , ScopedTypeVariables, DefaultSignatures, FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE  ScopedTypeVariables, DefaultSignatures, FlexibleContexts #-}
 
 module Data.Morpheus.Generics.GQLArgs
     ( GQLArgs(..)
@@ -30,50 +30,20 @@ import           Data.Morpheus.Generics.TypeRep
 import           Data.Morpheus.ErrorMessage    ( requiredArgument
                                                 , handleError
                                                 )
+import Data.Morpheus.Generics.InputType        (InputType(..))
+import Data.Morpheus.Generics.GenericToArgs   (GToArgs(..))
 
-fixProxy :: (a -> f a) -> f a
-fixProxy f = f undefined
-
-initMeta = MetaInfo { className = "", cons = "", key = "" }
-
-class InputValue a where
-    decode :: JSType -> a
-
-instance InputValue Text where
-    decode  (JSString x) = x
-
-instance InputValue Bool where
-    decode  (JSBool x) = x
-
-class GToArgs f where
-    gToArgs :: MetaInfo -> Arguments -> Eval (f a)
-
-instance GToArgs U1  where
-    gToArgs _ _ = pure U1
-
-instance InputValue a => GToArgs  (K1 i a)  where
+instance InputType a => GToArgs  (K1 i a)  where
     gToArgs meta args =
         case lookup (key meta) args of
             Nothing -> Left $ requiredArgument meta
             Just (Argument x) -> pure $ K1 $ decode x
             Just x -> handleError $ pack $ show x
 
-instance (Selector c, GToArgs f ) => GToArgs (M1 S c f) where
-    gToArgs meta gql = fixProxy (\x -> M1 <$> gToArgs (meta{ key = pack $ selName x}) gql)
-
-instance (Datatype c, GToArgs f)  => GToArgs (M1 D c f)  where
-    gToArgs meta gql  = fixProxy(\x -> M1 <$> gToArgs (meta {className = pack $ datatypeName x}) gql)
-
-instance GToArgs f  => GToArgs (M1 C c f)  where
-    gToArgs meta gql  = M1 <$> gToArgs meta gql
-
-instance (GToArgs f , GToArgs g ) => GToArgs (f :*: g)  where
-    gToArgs meta gql = (:*:) <$> gToArgs meta gql <*> gToArgs meta gql
-
 class GQLArgs p where
     fromArgs :: Arguments -> Maybe p -> Eval p
     default fromArgs :: ( Show p , Generic p, Data p , GToArgs (Rep p) ) => Arguments -> Maybe p -> Eval p
-    fromArgs args _ = to <$> gToArgs initMeta args
+    fromArgs args _ = to <$> gToArgs (MetaInfo "" "" "") args
 
     argsMeta :: Proxy p -> [GQL__InputValue]
     default argsMeta :: (Show p, ArgsMeta (Rep p) , Typeable p) => Proxy p -> [GQL__InputValue]
