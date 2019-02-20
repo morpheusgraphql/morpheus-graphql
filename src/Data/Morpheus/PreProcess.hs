@@ -32,6 +32,7 @@ import           Data.Morpheus.ErrorMessage     ( semanticError
                                                 , handleError
                                                 , cannotQueryField
                                                 , requiredArgument
+                                                ,unknownFragment
                                                 )
 
 import           Data.Proxy
@@ -90,7 +91,11 @@ fieldOf _type fieldName = case getFieldTypeByKey fieldName _type of
 
 validateSpread :: FragmentLib -> Text -> Eval [(Text, QuerySelection)]
 validateSpread frags key = case M.lookup key frags of
-    Nothing -> handleError $ pack $ "Fragment not found: " ++ show key
+    Nothing -> Left $ unknownFragment $ MetaInfo {
+                className = ""
+                , cons      = ""
+                , key       = key
+             }
     Just (Fragment _ _ (SelectionSet _ gqlObj)) -> pure gqlObj
 
 propagateSpread
