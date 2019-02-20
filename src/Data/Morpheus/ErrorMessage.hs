@@ -2,7 +2,7 @@
 
 module Data.Morpheus.ErrorMessage
     ( syntaxError
-    , unknownArgument
+    , unknownFragment
     , cannotQueryField
     , subfieldsNotSelected
     , handleError
@@ -27,36 +27,31 @@ import           Data.Data                      ( dataTypeOf
                                                 , Data
                                                 )
 
-throwNewError :: Text -> [GQLError]
-throwNewError x = [GQLError { message = x, locations = [ErrorLocation 0 0] }]
+errorMessage :: Text -> [GQLError]
+errorMessage x = [GQLError { message = x, locations = [ErrorLocation 0 0] }]
 
-errorMessage = throwNewError
+handleError x = Left $ errorMessage $ concat ["Field Error: ", x]
 
-handleError x = Left $ throwNewError $ concat ["Field Error: ", x]
+variableIsNotDefined :: MetaInfo -> [GQLError]
+variableIsNotDefined meta = errorMessage $ concat ["Variable ", key meta, " is not defined by operation ", className meta, "."]
 
-unknownArgument :: Data a => a -> [Text] -> [GQLError]
-unknownArgument record list = throwNewError $ concat
-    [ "Unknown argument "
-    , head list
-    , " on field "
-    , pack $ dataTypeName $ dataTypeOf record
-    , "."
-    ]
+unknownFragment :: MetaInfo -> [GQLError]
+unknownFragment meta = errorMessage $ concat [ "Unknown fragment " , className meta, "."]
 
 requiredArgument :: MetaInfo -> [GQLError]
-requiredArgument meta = throwNewError $ concat
+requiredArgument meta = errorMessage $ concat
     ["Required Argument: ", key meta, "not Found on type ", className meta]
 
 cannotQueryField :: MetaInfo -> [GQLError]
-cannotQueryField meta = throwNewError $ concat
+cannotQueryField meta = errorMessage $ concat
     ["Cannot query field ", key meta, " on type ", className meta, "."]
 
 subfieldsNotSelected :: a -> Text -> [GQLError]
-subfieldsNotSelected record key = throwNewError $ concat
+subfieldsNotSelected record key = errorMessage $ concat
     ["Field ", key, " of type \"Type\" must have a selection of subfields"]
 
 syntaxError :: Text -> [GQLError]
-syntaxError e = throwNewError $ concat ["Syntax Error: ", e]
+syntaxError e = errorMessage $ concat ["Syntax Error: ", e]
 
 semanticError :: Text -> [GQLError]
-semanticError = throwNewError
+semanticError = errorMessage
