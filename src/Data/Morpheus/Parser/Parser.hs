@@ -41,7 +41,7 @@ request :: Parser GQLQueryRoot
 request = do
     queryName      <- (try (skipSpace *> B.query)) <|> pure ""
     queryBodyValue <- body []
-    fragmentLib    <- fromList <$> (many fragment)
+    fragmentLib    <- fromList <$> many fragment
     skipSpace
     endOfInput
     pure GQLQueryRoot
@@ -55,6 +55,6 @@ getVariables req = case variables req of
     Just vars -> vars
 
 parseGQL :: GQLRequest -> Eval GQLQueryRoot
-parseGQL requestBody = case (parseOnly request $ query requestBody) of
-    Right root  -> Right (root { inputVariables = getVariables requestBody })
+parseGQL requestBody = case parseOnly request $ query requestBody of
+    Right root  -> Right $ root { inputVariables = getVariables requestBody }
     Left  error -> Left $ syntaxError $ pack $ show error

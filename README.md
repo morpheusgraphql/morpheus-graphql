@@ -11,14 +11,14 @@ sls offline start
 ## request on api/graphql
 
 ```graphql
-query GetUsers {
+query GetUsers($office: String) {
   user {
     name
     email
-    address(latitude: "Hi Nicas", longitude: "Dublin") {
+    address(latitude: "Hi Nicas", longitude: "office") {
       ...AdressDetails
     }
-    office(zipcode: "4134") {
+    office(zipCode: "4134", cityID: "cityID") {
       city
       street
     }
@@ -38,7 +38,7 @@ fragment AdressDetails on Address {
 }
 
 fragment User on User {
-  address {
+  address(latitude: "Hi Nicas", longitude: "Dublin") {
     city
   }
 }

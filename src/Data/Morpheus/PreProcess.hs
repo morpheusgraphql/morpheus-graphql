@@ -7,13 +7,6 @@ module Data.Morpheus.PreProcess
 where
 
 import           Data.List                      ( find )
-import           Data.Map                       ( elems
-                                                , mapWithKey
-                                                , toList
-                                                , Map
-                                                , fromList
-                                                , keys
-                                                )
 import qualified Data.Map                      as M
 import           GHC.Generics                   ( Generic
                                                 , Rep
@@ -23,7 +16,7 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
-import           Data.Morpheus.Types.Types     ( Eval(..)
+import           Data.Morpheus.Types.Types      ( Eval(..)
                                                 , (::->)(..)
                                                 , JSType(..)
                                                 , QuerySelection(..)
@@ -35,7 +28,7 @@ import           Data.Morpheus.Types.Types     ( Eval(..)
                                                 , Argument(..)
                                                 , GQLQueryRoot(..)
                                                 )
-import           Data.Morpheus.ErrorMessage    ( semanticError
+import           Data.Morpheus.ErrorMessage     ( semanticError
                                                 , handleError
                                                 , cannotQueryField
                                                 , requiredArgument
@@ -51,33 +44,28 @@ import           Data.Morpheus.Types.Introspection
                                                 )
 import           Data.Morpheus.Schema.SchemaField
                                                 ( getFieldTypeByKey
-                                                , selectFieldBykey
                                                 , fieldArgsByKey
                                                 )
 import           Data.Morpheus.Schema.InputValue
                                                 ( inputValueName )
 
 existsType :: Text -> GQLTypeLib -> Eval GQL__Type
-existsType typeName typeLib = case (M.lookup typeName typeLib) of
-    Nothing -> handleError $ pack $ "type does not exist" ++ (unpack typeName)
+existsType typeName typeLib = case M.lookup typeName typeLib of
+    Nothing -> handleError $ pack $ "type does not exist" ++ unpack typeName
     Just x  -> pure x
-
-
-
-
 
 -- TODO: replace all var types with Variable values
 replaceVariable :: GQLQueryRoot -> Argument -> Eval Argument
 replaceVariable root (Variable key) =
-    case (M.lookup key (inputVariables root)) of
-        Nothing    -> handleError $ pack $ "Variable not found: " ++ (show key)
+    case M.lookup key (inputVariables root) of
+        Nothing    -> handleError $ pack $ "Variable not found: " ++ show key
         Just value -> pure $ Argument $ JSString value
-replaceVariable _ x = pure $ x
+replaceVariable _ x = pure x
 
 validateArgument
     :: GQLQueryRoot -> Arguments -> GQL__InputValue -> Eval (Text, Argument)
 validateArgument root requestArgs inpValue =
-    case (lookup (inputValueName inpValue) requestArgs) of
+    case lookup (inputValueName inpValue) requestArgs of
         Nothing -> Left $ requiredArgument $ MetaInfo
             { className = "TODO: name"
             , cons      = ""
@@ -92,28 +80,30 @@ validateArguments
 validateArguments root _types args = mapM (validateArgument root args) _types
 
 fieldOf :: GQL__Type -> Text -> Eval GQL__Type
-fieldOf _type fieldName = case (getFieldTypeByKey fieldName _type) of
-    Nothing    -> Left $ cannotQueryField fieldName (name _type)
-    Just ftype -> pure ftype
-
+fieldOf _type fieldName = case getFieldTypeByKey fieldName _type of
+    Nothing    -> Left $ cannotQueryField $ MetaInfo {
+      key = fieldName
+      , cons = ""
+      , className = name _type
+    }
+    Just fieldType -> pure fieldType
 
 validateSpread :: FragmentLib -> Text -> Eval [(Text, QuerySelection)]
 validateSpread frags key = case M.lookup key frags of
-    Nothing -> handleError $ pack $ "Fragment not found: " ++ (show key)
+    Nothing -> handleError $ pack $ "Fragment not found: " ++ show key
     Just (Fragment _ _ (SelectionSet _ gqlObj)) -> pure gqlObj
 
 propagateSpread
     :: GQLQueryRoot -> (Text, QuerySelection) -> Eval [(Text, QuerySelection)]
-propagateSpread root (key , (Spread _)) = validateSpread (fragments root) key
+propagateSpread root (key , Spread _) = validateSpread (fragments root) key
 propagateSpread root (text, value     ) = pure [(text, value)]
 
-
-typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fiedType
-    where fiedType field = existsType (name field) typeLib
+typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fieldType
+    where fieldType field = existsType (name field) typeLib
 
 argsType :: GQL__Type -> Text -> Eval [GQL__InputValue]
-argsType currentType key = case (fieldArgsByKey key currentType) of
-    Nothing   -> handleError $ pack $ "header not found: " ++ (show key)
+argsType currentType key = case fieldArgsByKey key currentType of
+    Nothing   -> handleError $ pack $ "header not found: " ++ show key
     Just args -> pure args
 
 mapSelectors
@@ -122,10 +112,9 @@ mapSelectors
     -> GQL__Type
     -> SelectionSet
     -> Eval SelectionSet
-mapSelectors typeLib root _type selectors =
-    concat <$> mapM (propagateSpread root) selectors >>= mapM
-        (validateBySchema typeLib root _type)
-
+mapSelectors typeLib root _type selectors = do
+  selectors' <- mapM (propagateSpread root) selectors
+  mapM (validateBySchema typeLib root _type) (concat selectors')
 
 validateBySchema
     :: GQLTypeLib
@@ -133,7 +122,7 @@ validateBySchema
     -> GQL__Type
     -> (Text, QuerySelection)
     -> Eval (Text, QuerySelection)
-validateBySchema typeLib root _parentType (_name, (SelectionSet head selectors))
+validateBySchema typeLib root _parentType (_name, SelectionSet head selectors)
     = do
         _type      <- typeBy typeLib _parentType _name
         _argsType  <- argsType _parentType _name
@@ -141,8 +130,7 @@ validateBySchema typeLib root _parentType (_name, (SelectionSet head selectors))
         selectors' <- mapSelectors typeLib root _type selectors
         pure (_name, SelectionSet head' selectors')
 
-validateBySchema typeLib root _parentType (_name, (Field head field)) = do
-    _type     <- typeBy typeLib _parentType _name
+validateBySchema typeLib root _parentType (_name, Field head field) = do
     _argsType <- argsType _parentType _name
     head'     <- validateArguments root _argsType head
     pure (_name, Field head' field)

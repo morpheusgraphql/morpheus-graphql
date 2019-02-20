@@ -36,7 +36,7 @@ import           Data.Morpheus.Parser.Primitive
 
 inputValue :: Parser Argument
 inputValue =
-    ((Argument . JSEnum) <$> token)
+    (Argument . JSEnum) <$> token
         <|> skipSpace
         *>  (Argument <$> jsString)
         <|> (Variable <$> variable)

@@ -36,7 +36,7 @@ getField meta gql = pure $ fromMaybe QNull (lookup (key meta) gql)
 initMeta = MetaInfo { className = "", cons = "", key = "" }
 
 class GenericMap f where
-    encodeFields:: MetaInfo -> SelectionSet -> (f a) -> [(Text, EvalIO JSType)]
+    encodeFields:: MetaInfo -> SelectionSet -> f a -> [(Text, EvalIO JSType)]
 
 instance GenericMap U1  where
     encodeFields _ _  _ = []
@@ -51,4 +51,4 @@ instance (Constructor c  , GenericMap f) => GenericMap (M1 C c f)  where
     encodeFields meta gql m@(M1 src) =  encodeFields (meta{ cons = pack $ conName m}) gql src
 
 instance (GenericMap f , GenericMap g ) => GenericMap (f :*: g)  where
-    encodeFields meta gql  (a :*: b) = (encodeFields meta gql a) ++ (encodeFields meta gql b)
+    encodeFields meta gql  (a :*: b) = encodeFields meta gql a ++ encodeFields meta gql b

@@ -45,5 +45,5 @@ fragment = do
     targetName <- token
     skipSpace
     fragmentBody <- body []
-    pure $ (name, Fragment name targetName fragmentBody)
+    pure (name, Fragment name targetName fragmentBody)
 

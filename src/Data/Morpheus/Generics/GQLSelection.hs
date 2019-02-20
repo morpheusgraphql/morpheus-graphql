@@ -73,7 +73,7 @@ import           Control.Monad.Trans            ( liftIO
                                                 )
 
 instance GQLSelection a => GenericMap  (K1 i a)  where
-    encodeFields meta gql (K1 src) = case (getField meta gql) of
+    encodeFields meta gql (K1 src) = case getField meta gql of
         (Right field) -> case lookup (key meta) gql of
                 Nothing -> []
                 Just x -> [(key meta, encode field src)]
@@ -91,7 +91,7 @@ unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
 wrapAsObject :: [(Text, EvalIO JSType)] -> EvalIO JSType
-wrapAsObject x = (JSObject . fromList) <$> mapM unwrapMonadTuple x
+wrapAsObject x = JSObject . fromList <$> mapM unwrapMonadTuple x
 
 class GQLSelection a where
 
@@ -114,7 +114,7 @@ class GQLSelection a where
             Nothing -> arrayMap (insert typeName (createType typeName gqlFields) typeLib) stack
                 where
                     fieldTypes  = getFields (Proxy :: Proxy (Rep a))
-                    stack = (map snd fieldTypes)
+                    stack = map snd fieldTypes
                     gqlFields = map fst fieldTypes
 
 getType :: (GQLSelection a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
