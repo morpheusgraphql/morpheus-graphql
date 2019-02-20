@@ -2,6 +2,8 @@ module Data.Morpheus.Generics.InputType (InputType(..)) where
 
 import           Data.Morpheus.Types.Types     (JSType(..))
 import           Data.Text                     (Text)
+import          Data.Morpheus.Generics.GenericInputType (GToInput(..))
+
 
 class InputType a where
     decode :: JSType -> a

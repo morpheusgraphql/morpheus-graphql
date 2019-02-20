@@ -16,16 +16,16 @@ fixProxy :: (a -> f a) -> f a
 fixProxy f = f undefined
 
 class GToInput f where
-    gToInput :: MetaInfo -> Arguments -> Eval (f a)
+    gToInput :: MetaInfo -> JSType -> Eval (f a)
 
 instance GToInput U1  where
     gToInput _ _ = pure U1
 
 instance (Selector c, GToInput f ) => GToInput (M1 S c f) where
-    gToInput meta gql = fixProxy (\x -> M1 <$> gToInput (meta{ key = pack $ selName x}) gql)
+    gToInput meta gql = fixProxy $ \x -> M1 <$> gToInput (meta{ key = pack $ selName x}) gql
 
 instance (Datatype c, GToInput f)  => GToInput (M1 D c f)  where
-    gToInput meta gql  = fixProxy(\x -> M1 <$> gToInput (meta {className = pack $ datatypeName x}) gql)
+    gToInput meta gql  = fixProxy $ \x -> M1 <$> gToInput (meta {className = pack $ datatypeName x}) gql
 
 instance GToInput f  => GToInput (M1 C c f)  where
     gToInput meta gql  = M1 <$> gToInput meta gql
