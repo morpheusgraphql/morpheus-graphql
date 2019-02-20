@@ -9,6 +9,7 @@ module Data.Morpheus.ErrorMessage
     , semanticError
     , requiredArgument
     , errorMessage
+    , variableIsNotDefined
     )
 where
 

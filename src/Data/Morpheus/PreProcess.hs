@@ -33,6 +33,7 @@ import           Data.Morpheus.ErrorMessage     ( semanticError
                                                 , cannotQueryField
                                                 , requiredArgument
                                                 ,unknownFragment
+                                                , variableIsNotDefined
                                                 )
 
 import           Data.Proxy
@@ -59,7 +60,11 @@ existsType typeName typeLib = case M.lookup typeName typeLib of
 replaceVariable :: GQLQueryRoot -> Argument -> Eval Argument
 replaceVariable root (Variable key) =
     case M.lookup key (inputVariables root) of
-        Nothing    -> handleError $ pack $ "Variable not found: " ++ show key
+        Nothing    -> Left  $ variableIsNotDefined  $ MetaInfo {
+          className="TODO: Name",
+          cons = "",
+          key = key
+        }
         Just value -> pure $ Argument $ JSString value
 replaceVariable _ x = pure x
 
