@@ -1,5 +1,5 @@
--- {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables , AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
 
 module Data.Morpheus.Generics.InputType
     ( GQLInput(..)
@@ -11,13 +11,16 @@ import           Data.Morpheus.Types.Types      ( JSType(..)
                                                 )
 import           Data.Text                      ( Text
                                                 , unpack
+                                                , pack
                                                 )
 import           Data.Morpheus.Generics.GenericInputType
                                                 ( GQLInputObject(..)
                                                 , GToEnum(..)
+
                                                 )
 import           GHC.Generics
 import           Data.Data
+import           Data.Morpheus.Types.Introspection (GQL__InputValue(..), createInputValue)
 
 class GQLInput a where
     decode :: JSType -> a
@@ -26,36 +29,26 @@ class GQLInput a where
    -- TODO:: write input Object Recognition
    -- decode (JSObject hashMap) to $ gToInput hashMap
 
+    typeInfo :: Proxy a -> Text -> GQL__InputValue
+    default typeInfo :: (Show a, Typeable a) => Proxy a -> Text -> GQL__InputValue
+    typeInfo _ name  = createInputValue name typeName
+             where typeName = (pack . show . typeOf) (undefined::a)
+
 instance GQLInput Text where
     decode  (JSString x) = x
+    typeInfo _ name = createInputValue name "String"
 
 instance GQLInput Bool where
     decode  (JSBool x) = x
+    typeInfo _ name = createInputValue name "Boolean"
 
 instance GQLInput Int where
     decode  (JSInt x) = x
+    typeInfo _ name = createInputValue name "Int"
 
-instance GQLInput a => GQLInput (Maybe a) where
+instance (GQLInput a , Show a, Typeable a ) => GQLInput (Maybe a) where
     decode JSNull = Nothing
     decode x = Just (decode x)
-
---instance  GQLArgs Text where
---    fromArgs _ (Just t) = pure t
---    fromArgs _ _ = pure "Nothing found"
---    argsMeta _ = []
-
---instance  GQLArgs Int where
---    fromArgs _ (Just t) = pure t
---    fromArgs _ _ = pure 0
---    argsMeta _ = [GQL__InputValue { name = "Int", description = "", _type = Nothing, defaultValue = "" }]
-
---instance  GQLArgs Bool where
---    fromArgs _ (Just t) = pure t
---    fromArgs _ _ = pure False
---    argsMeta _ = [GQL__InputValue { name = "Boolean", description = "", _type = Nothing, defaultValue = "" }]
-
---instance  GQLArgs a => GQLArgs (Maybe a) where
---    fromArgs _ (Just t) = pure t
---    argsMeta _ = argsMeta (Proxy :: Proxy a)
+    typeInfo _ name =  (typeInfo (Proxy :: Proxy a) name) { defaultValue = "Nothing" }
 
 

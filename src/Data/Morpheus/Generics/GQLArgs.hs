@@ -39,11 +39,8 @@ updateLib :: GQLTypeLib -> GQLTypeLib
 updateLib x = x
 
 instance (Selector s, Typeable t , GQLInput t) => ArgsMeta (M1 S s (K1 R t)) where
-    getMeta _ = [ (createInputValue name _type , updateLib)]
-      where
-        name = pack $ selName (undefined :: M1 S s (K1 R t) ())
-        _type = pack $ show $ typeOf (undefined::t)
-
+    getMeta _ = [ (typeInfo (Proxy:: Proxy  t) name , updateLib)]
+      where name = pack $ selName (undefined :: M1 S s (K1 R t) ())
 
 instance GQLInput a => GToArgs  (K1 i a)  where
     gToArgs meta args =
