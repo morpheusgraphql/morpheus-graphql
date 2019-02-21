@@ -29,7 +29,7 @@ import           Example.Files                  ( getJson )
 import           Data.Aeson                     ( FromJSON )
 import           Data.Either
 import           Control.Monad.Trans            ( lift )
-
+import           Data.Maybe                     (fromMaybe)
 data Coordinates = Coordinates {
     latitude :: Text,
     longitude :: Text
@@ -80,7 +80,7 @@ addressByCityID HH code = fetchAddress (pack $ "20" ++ code) "Hamburg"
 
 resolveOffice :: User -> Location ::-> Address
 resolveOffice user = Resolver resolve
-    where resolve args = addressByCityID (cityID args) (show $ zipCode args)
+    where resolve args = addressByCityID (cityID args) (show $ fromMaybe 101 (zipCode args) )
 
 
 resolveUser :: () ::-> User
