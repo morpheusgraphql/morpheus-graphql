@@ -79,7 +79,7 @@ instance GQLSelection a => GenericMap  (K1 i a)  where
                 Just x -> [(key meta, encode field src)]
         _ -> []
 
-instance (Selector s, Typeable a , GQLSelection a) => Selectors (M1 S s (K1 R a)) where
+instance (Selector s, Typeable a , GQLSelection a) => Selectors (M1 S s (K1 R a)) GQL__Field where
     getFields _ = [(fieldType (Proxy:: Proxy  a) name ,introspect (Proxy:: Proxy  a))]
         where name = pack $ selName (undefined :: M1 S s (K1 R a) ())
 
@@ -101,12 +101,12 @@ class GQLSelection a where
     encode (Field args key) = \x -> failEvalIO $ subfieldsNotSelected x key
 
     fieldType :: Proxy a -> Text -> GQL__Field
-    default fieldType :: (Show a, Selectors (Rep a) , Typeable a) => Proxy a -> Text -> GQL__Field
+    default fieldType :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> Text -> GQL__Field
     fieldType _ name  = createField name typeName []
         where typeName = (pack . show . typeOf) (undefined::a)
 
     introspect :: Proxy a -> GQLTypeLib -> GQLTypeLib
-    default introspect :: (Show a, Selectors (Rep a) , Typeable a) => Proxy a -> GQLTypeLib -> GQLTypeLib
+    default introspect :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib -> GQLTypeLib
     introspect _  typeLib = do
         let typeName = (pack . show . typeOf) (undefined::a)
         case (M.lookup typeName typeLib) of

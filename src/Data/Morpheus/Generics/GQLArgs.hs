@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE  ScopedTypeVariables, FlexibleInstances , DefaultSignatures, FlexibleContexts #-}
+{-# LANGUAGE  MultiParamTypeClasses , ScopedTypeVariables, FlexibleInstances , DefaultSignatures, FlexibleContexts #-}
 
 module Data.Morpheus.Generics.GQLArgs
     ( GQLArgs(..)
@@ -28,7 +28,7 @@ import           Data.Morpheus.Types.Introspection
                                                 , GQLTypeLib
                                                 )
 import           Data.Morpheus.Generics.TypeRep
-                                                ( ArgsMeta(..) )
+                                                ( Selectors(..) )
 import           Data.Morpheus.ErrorMessage    ( requiredArgument
                                                 , handleError
                                                 )
@@ -38,8 +38,8 @@ import Data.Morpheus.Generics.GenericToArgs   (GToArgs(..))
 updateLib :: GQLTypeLib -> GQLTypeLib
 updateLib x = x
 
-instance (Selector s, Typeable t , GQLInput t) => ArgsMeta (M1 S s (K1 R t)) where
-    getMeta _ = [ (typeInfo (Proxy:: Proxy  t) name , updateLib)]
+instance (Selector s, Typeable t , GQLInput t) => Selectors (M1 S s (K1 R t)) GQL__InputValue where
+    getFields _ = [ (typeInfo (Proxy:: Proxy  t) name , updateLib)]
       where name = pack $ selName (undefined :: M1 S s (K1 R t) ())
 
 instance GQLInput a => GToArgs  (K1 i a)  where
@@ -55,8 +55,8 @@ class GQLArgs p where
     fromArgs args _ = to <$> gToArgs (MetaInfo "" "" "") args
 
     argsMeta :: Proxy p -> [GQL__InputValue]
-    default argsMeta :: (Show p,  ArgsMeta (Rep p) , Typeable p) => Proxy p -> [GQL__InputValue]
-    argsMeta _ = map fst $ getMeta (Proxy :: Proxy (Rep p))
+    default argsMeta :: (Show p,  Selectors (Rep p) GQL__InputValue , Typeable p) => Proxy p -> [GQL__InputValue]
+    argsMeta _ = map fst $ getFields (Proxy :: Proxy (Rep p))
 
 instance  GQLArgs () where
     fromArgs _ _ = pure ()
