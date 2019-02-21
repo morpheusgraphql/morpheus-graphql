@@ -78,7 +78,7 @@ validateArgument root requestArgs inpValue =
               , cons      = ""
               , key       = pack $ show $ inputValueName inpValue
               }
-          False -> pure ("", Argument JSNull)
+          False -> pure (inputValueName inpValue, Argument JSNull)
         Just x -> replaceVariable root x >>= \x -> pure (key, x)
             where key = inputValueName inpValue
 
