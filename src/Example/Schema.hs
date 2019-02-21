@@ -12,6 +12,7 @@ import           Data.Data                      ( Data )
 import           Data.Text                      ( Text
                                                 , concat
                                                 , pack
+                                                , unpack
                                                 )
 import           Data.Morpheus                  ( GQLSelection
                                                 , GQLRoot
@@ -73,9 +74,14 @@ resolveAddress :: Coordinates ::-> Address
 resolveAddress = Resolver resolve
     where resolve args = fetchAddress (latitude args) (longitude args)
 
+addressByCityID Paris code = fetchAddress (pack $ "75" ++ code) "Paris"
+addressByCityID Berlin code = fetchAddress (pack $ "10" ++ code) "Berlin"
+addressByCityID Hamburg code = fetchAddress (pack $ "20" ++ code) "Hamburg"
+
 resolveOffice :: User -> Location ::-> Address
 resolveOffice user = Resolver resolve
-    where resolve args = fetchAddress (zipCode args) (pack $ show $ cityID args)
+    where resolve args = addressByCityID (cityID args) (unpack $ zipCode args)
+
 
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve
