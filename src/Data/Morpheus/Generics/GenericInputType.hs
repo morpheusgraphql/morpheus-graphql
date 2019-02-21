@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables , TypeOperators , FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Generics.GenericInputType (GToInput(..),GToEnum(..)) where
+module Data.Morpheus.Generics.GenericInputType (GQLInputObject(..),GToEnum(..)) where
 
 import           GHC.Generics
 import           Data.Morpheus.Types.Types     ( Arguments
@@ -17,26 +17,26 @@ import           Data.Proxy                     ( Proxy(..) )
 fixProxy :: (a -> f a) -> f a
 fixProxy f = f undefined
 
-class GToInput f where
+class GQLInputObject f where
     gToInput :: MetaInfo -> JSType -> Eval (f a)
 
-instance GToInput U1  where
+instance GQLInputObject U1  where
     gToInput _ _ = pure U1
 
-instance (Selector c, GToInput f ) => GToInput (M1 S c f) where
+instance (Selector c, GQLInputObject f ) => GQLInputObject (M1 S c f) where
     gToInput meta gql = fixProxy $ \x -> M1 <$> gToInput (meta{ key = pack $ selName x}) gql
 
-instance (Datatype c, GToInput f)  => GToInput (M1 D c f)  where
+instance (Datatype c, GQLInputObject f)  => GQLInputObject (M1 D c f)  where
     gToInput meta gql  = fixProxy $ \x -> M1 <$> gToInput (meta { className = pack $ datatypeName x }) gql
 
-instance GToInput f  => GToInput (M1 C c f)  where
+instance GQLInputObject f  => GQLInputObject (M1 C c f)  where
     gToInput meta gql  = M1 <$> gToInput meta gql
 
-instance (GToInput f , GToInput g ) => GToInput (f :*: g)  where
+instance (GQLInputObject f , GQLInputObject g ) => GQLInputObject (f :*: g)  where
     gToInput meta gql = (:*:) <$> gToInput meta gql <*> gToInput meta gql
 
 -- TODO: handle Enum
-instance (GToInput a, GToInput b) => GToInput (a :+: b) where
+instance (GQLInputObject a, GQLInputObject b) => GQLInputObject (a :+: b) where
     gToInput meta (JSEnum name) = L1 <$> gToInput meta (JSEnum name)
     -- L1 <$> (gToInput meta name)
    -- gToInput meta gql = R1 <$> (gToInput setting x)
@@ -44,7 +44,6 @@ instance (GToInput a, GToInput b) => GToInput (a :+: b) where
 -- con_Some = mkConstr ty_Resolver "Some" [] Prefix
 --   con_None = mkConstr ty_Resolver "None" [] Prefix
 --   ty_Resolver = mkDataType "Module.Resolver" [con_None, con_Some]
-
 
 class GToEnum f where
     gToEnum :: Text -> f a
@@ -61,9 +60,6 @@ instance (Selector c, GToEnum f ) => GToEnum (M1 S c f) where
 instance (Datatype c, GToEnum f)  => GToEnum (M1 D c f)  where
     gToEnum = M1 . gToEnum
     tagName _ = ""
-
---fixProxy :: (a -> f a) -> f a
---fixProxy f = f undefined
 
 instance (Constructor c  , GToEnum f) => GToEnum (M1 C c f)  where
     gToEnum = M1 . gToEnum

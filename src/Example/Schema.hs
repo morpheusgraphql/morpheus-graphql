@@ -35,7 +35,7 @@ data Coordinates = Coordinates {
     longitude :: Text
 } deriving (Show,Generic,Data,GQLArgs)
 
-data CityID = Paris | Hamburg | Berlin deriving (Show,Generic,Data,GQLInput)
+data CityID = Paris | BLN | HH deriving (Show,Generic,Data,GQLInput)
 
 data Location = Location {
     zipCode:: Text,
@@ -75,8 +75,8 @@ resolveAddress = Resolver resolve
     where resolve args = fetchAddress (latitude args) (longitude args)
 
 addressByCityID Paris code = fetchAddress (pack $ "75" ++ code) "Paris"
-addressByCityID Berlin code = fetchAddress (pack $ "10" ++ code) "Berlin"
-addressByCityID Hamburg code = fetchAddress (pack $ "20" ++ code) "Hamburg"
+addressByCityID BLN code = fetchAddress (pack $ "10" ++ code) "Berlin"
+addressByCityID HH code = fetchAddress (pack $ "20" ++ code) "Hamburg"
 
 resolveOffice :: User -> Location ::-> Address
 resolveOffice user = Resolver resolve
