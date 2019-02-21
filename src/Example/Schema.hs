@@ -38,7 +38,7 @@ data Coordinates = Coordinates {
 data CityID = Paris | BLN | HH deriving (Show,Generic,Data,GQLInput)
 
 data Location = Location {
-    zipCode:: Int,
+    zipCode:: Maybe Int,
     cityID:: CityID
 } deriving (Show,Data,Generic,GQLArgs)
 

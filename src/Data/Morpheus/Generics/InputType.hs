@@ -34,3 +34,8 @@ instance GQLInput Bool where
 
 instance GQLInput Int where
     decode  (JSInt x) = x
+
+instance GQLInput a => GQLInput (Maybe a) where
+    decode JSNull = Nothing
+    decode x = Just (decode x)
+
