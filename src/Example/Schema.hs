@@ -38,7 +38,7 @@ data Coordinates = Coordinates {
 data CityID = Paris | BLN | HH deriving (Show,Generic,Data,GQLInput)
 
 data Location = Location {
-    zipCode:: Text,
+    zipCode:: Int,
     cityID:: CityID
 } deriving (Show,Data,Generic,GQLArgs)
 
@@ -80,7 +80,7 @@ addressByCityID HH code = fetchAddress (pack $ "20" ++ code) "Hamburg"
 
 resolveOffice :: User -> Location ::-> Address
 resolveOffice user = Resolver resolve
-    where resolve args = addressByCityID (cityID args) (unpack $ zipCode args)
+    where resolve args = addressByCityID (cityID args) (show $ zipCode args)
 
 
 resolveUser :: () ::-> User

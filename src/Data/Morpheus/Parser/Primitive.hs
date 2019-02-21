@@ -23,6 +23,9 @@ boolFalse = string "false" *> pure (JSBool False)
 jsBool :: Parser JSType
 jsBool = boolTrue <|> boolFalse
 
+jsInt :: Parser JSType
+jsInt = JSInt <$> decimal
+
 jsString :: Parser JSType
 jsString = do
     char '"'

@@ -1,11 +1,21 @@
 -- {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
 
-module Data.Morpheus.Generics.InputType (GQLInput(..)) where
+module Data.Morpheus.Generics.InputType
+    ( GQLInput(..)
+    )
+where
 
-import           Data.Morpheus.Types.Types     (JSType(..),MetaInfo(..))
-import           Data.Text                     (Text,unpack)
-import           Data.Morpheus.Generics.GenericInputType (GQLInputObject(..),GToEnum(..))
+import           Data.Morpheus.Types.Types      ( JSType(..)
+                                                , MetaInfo(..)
+                                                )
+import           Data.Text                      ( Text
+                                                , unpack
+                                                )
+import           Data.Morpheus.Generics.GenericInputType
+                                                ( GQLInputObject(..)
+                                                , GToEnum(..)
+                                                )
 import           GHC.Generics
 import           Data.Data
 
@@ -21,3 +31,6 @@ instance GQLInput Text where
 
 instance GQLInput Bool where
     decode  (JSBool x) = x
+
+instance GQLInput Int where
+    decode  (JSInt x) = x
