@@ -30,10 +30,10 @@ import           Data.Morpheus.Generics.TypeRep
 import           Data.Morpheus.ErrorMessage    ( requiredArgument
                                                 , handleError
                                                 )
-import Data.Morpheus.Generics.InputType        (InputType(..))
+import Data.Morpheus.Generics.InputType        (GQLInput(..))
 import Data.Morpheus.Generics.GenericToArgs   (GToArgs(..))
 
-instance InputType a => GToArgs  (K1 i a)  where
+instance GQLInput a => GToArgs  (K1 i a)  where
     gToArgs meta args =
         case lookup (key meta) args of
             Nothing -> Left $ requiredArgument meta

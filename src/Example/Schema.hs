@@ -11,6 +11,7 @@ import           GHC.Generics                   ( Generic )
 import           Data.Data                      ( Data )
 import           Data.Text                      ( Text
                                                 , concat
+                                                , pack
                                                 )
 import           Data.Morpheus                  ( GQLSelection
                                                 , GQLRoot
@@ -21,6 +22,7 @@ import           Data.Morpheus                  ( GQLSelection
                                                 , interpreter
                                                 , eitherToResponse
                                                 , EvalIO(..)
+                                                , GQLInput
                                                 )
 import           Example.Files                  ( getJson )
 import           Data.Aeson                     ( FromJSON )
@@ -32,9 +34,11 @@ data Coordinates = Coordinates {
     longitude :: Text
 } deriving (Show,Generic,Data,GQLArgs)
 
+data CityID = Paris | Hamburg | Berlin deriving (Show,Generic,Data,GQLInput)
+
 data Location = Location {
     zipCode:: Text,
-    cityID:: Text
+    cityID:: CityID
 } deriving (Show,Data,Generic,GQLArgs)
 
 data Address = Address {
@@ -71,7 +75,7 @@ resolveAddress = Resolver resolve
 
 resolveOffice :: User -> Location ::-> Address
 resolveOffice user = Resolver resolve
-    where resolve args = fetchAddress (zipCode args) "some bla"
+    where resolve args = fetchAddress (zipCode args) (pack $ show $ cityID args)
 
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve
