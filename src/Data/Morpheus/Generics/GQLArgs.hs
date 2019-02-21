@@ -60,6 +60,10 @@ instance  GQLArgs Bool where
     fromArgs _ _ = pure False
     argsMeta _ = [GQL__InputValue { name = "Boolean", description = "", _type = Nothing, defaultValue = "" }]
 
+instance  GQLArgs (Maybe a) where
+    fromArgs _ (Just t) = pure t
+    argsMeta _ = []
+
 instance  GQLArgs () where
     fromArgs _ _ = pure ()
     argsMeta _ = []
