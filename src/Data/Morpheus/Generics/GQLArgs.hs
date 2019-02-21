@@ -25,6 +25,7 @@ import           Data.Data                      ( Typeable
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__InputValue(..)
                                                 , createInputValue
+                                                , GQLTypeLib
                                                 )
 import           Data.Morpheus.Generics.TypeRep
                                                 ( ArgsMeta(..) )
@@ -34,8 +35,15 @@ import           Data.Morpheus.ErrorMessage    ( requiredArgument
 import Data.Morpheus.Generics.InputType        (GQLInput(..))
 import Data.Morpheus.Generics.GenericToArgs   (GToArgs(..))
 
+updateLib :: GQLTypeLib -> GQLTypeLib
+updateLib x = x
+
 instance (Selector s, Typeable t , GQLInput t) => ArgsMeta (M1 S s (K1 R t)) where
-    getMeta _ = [( pack $ selName (undefined :: M1 S s (K1 R t) ()) , pack $ show $ typeOf (undefined::t) )]
+    getMeta _ = [ (createInputValue name _type , updateLib)]
+      where
+        name = pack $ selName (undefined :: M1 S s (K1 R t) ())
+        _type = pack $ show $ typeOf (undefined::t)
+
 
 instance GQLInput a => GToArgs  (K1 i a)  where
     gToArgs meta args =
@@ -51,9 +59,7 @@ class GQLArgs p where
 
     argsMeta :: Proxy p -> [GQL__InputValue]
     default argsMeta :: (Show p,  ArgsMeta (Rep p) , Typeable p) => Proxy p -> [GQL__InputValue]
-    argsMeta _ = map mapValue $ getMeta (Proxy :: Proxy (Rep p))
-        where mapValue (x,y) = createInputValue x y
-
+    argsMeta _ = map fst $ getMeta (Proxy :: Proxy (Rep p))
 
 instance  GQLArgs () where
     fromArgs _ _ = pure ()
