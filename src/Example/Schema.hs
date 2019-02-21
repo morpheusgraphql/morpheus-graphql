@@ -11,6 +11,8 @@ import           GHC.Generics                   ( Generic )
 import           Data.Data                      ( Data )
 import           Data.Text                      ( Text
                                                 , concat
+                                                , pack
+                                                , unpack
                                                 )
 import           Data.Morpheus                  ( GQLSelection
                                                 , GQLRoot
@@ -21,20 +23,23 @@ import           Data.Morpheus                  ( GQLSelection
                                                 , interpreter
                                                 , eitherToResponse
                                                 , EvalIO(..)
+                                                , GQLInput
                                                 )
 import           Example.Files                  ( getJson )
 import           Data.Aeson                     ( FromJSON )
 import           Data.Either
 import           Control.Monad.Trans            ( lift )
-
+import           Data.Maybe                     (fromMaybe)
 data Coordinates = Coordinates {
     latitude :: Text,
     longitude :: Text
 } deriving (Show,Generic,Data,GQLArgs)
 
+data CityID = Paris | BLN | HH deriving (Show,Generic,Data,GQLInput)
+
 data Location = Location {
-    zipCode:: Text,
-    cityID:: Text
+    zipCode:: Maybe Int,
+    cityID:: CityID
 } deriving (Show,Data,Generic,GQLArgs)
 
 data Address = Address {
@@ -69,9 +74,14 @@ resolveAddress :: Coordinates ::-> Address
 resolveAddress = Resolver resolve
     where resolve args = fetchAddress (latitude args) (longitude args)
 
+addressByCityID Paris code = fetchAddress (pack $ "75" ++ code) "Paris"
+addressByCityID BLN code = fetchAddress (pack $ "10" ++ code) "Berlin"
+addressByCityID HH code = fetchAddress (pack $ "20" ++ code) "Hamburg"
+
 resolveOffice :: User -> Location ::-> Address
 resolveOffice user = Resolver resolve
-    where resolve args = fetchAddress (zipCode args) "some bla"
+    where resolve args = addressByCityID (cityID args) (show $ fromMaybe 101 (zipCode args) )
+
 
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve

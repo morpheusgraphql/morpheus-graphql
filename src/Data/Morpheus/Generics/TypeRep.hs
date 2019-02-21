@@ -19,6 +19,7 @@ import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type(..)
                                                 , GQL__Field(..)
                                                 , GQL__TypeKind(..)
+                                                , GQL__InputValue
                                                 , GQLTypeLib
                                                 )
 import           Data.Data                      ( Typeable
@@ -27,7 +28,7 @@ import           Data.Data                      ( Typeable
                                                 )
 
 class  Selectors rep where
-    getFields ::  Proxy rep ->  [(GQL__Field,GQLTypeLib -> GQLTypeLib)]
+    getFields ::  Proxy rep ->  [( GQL__Field, GQLTypeLib -> GQLTypeLib )]
 
 instance Selectors f => Selectors (M1 D x f)  where
     getFields _ = getFields (Proxy :: Proxy f)
@@ -42,7 +43,7 @@ instance Selectors U1 where
     getFields _ = []
 
 class  ArgsMeta rep where
-    getMeta ::  Proxy rep ->  [(Text, Text)]
+    getMeta ::  Proxy rep ->  [( GQL__InputValue, GQLTypeLib -> GQLTypeLib )]
 
 instance ArgsMeta f => ArgsMeta (M1 D x f)  where
     getMeta _ = getMeta (Proxy :: Proxy f)
@@ -55,7 +56,4 @@ instance (ArgsMeta a, ArgsMeta b ) => ArgsMeta (a :*: b)  where
 
 instance ArgsMeta U1 where
     getMeta _ = []
-
-instance (Selector s, Typeable t ) => ArgsMeta (M1 S s (K1 R t)) where
-    getMeta _ = [( pack $ selName (undefined :: M1 S s (K1 R t) ()) , pack $ show $ typeOf (undefined::t) )]
 

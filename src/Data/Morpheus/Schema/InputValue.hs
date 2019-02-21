@@ -1,7 +1,8 @@
 {-# LANGUAGE TypeOperators , FlexibleInstances , ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Schema.InputValue
-    (inputValueName)
+    (inputValueName, isRequired )
 where
 
 
@@ -11,3 +12,6 @@ import           Data.Morpheus.Types.Introspection ( GQL__InputValue(..) )
 
 inputValueName :: GQL__InputValue -> Text
 inputValueName  = name
+
+isRequired :: GQL__InputValue -> Bool
+isRequired x = defaultValue x /= "Nothing"

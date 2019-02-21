@@ -49,7 +49,7 @@ import           Data.Morpheus.Schema.SchemaField
                                                 , fieldArgsByKey
                                                 )
 import           Data.Morpheus.Schema.InputValue
-                                                ( inputValueName )
+                                                ( inputValueName , isRequired)
 
 existsType :: Text -> GQLTypeLib -> Eval GQL__Type
 existsType typeName typeLib = case M.lookup typeName typeLib of
@@ -72,11 +72,13 @@ validateArgument
     :: GQLQueryRoot -> Arguments -> GQL__InputValue -> Eval (Text, Argument)
 validateArgument root requestArgs inpValue =
     case lookup (inputValueName inpValue) requestArgs of
-        Nothing -> Left $ requiredArgument $ MetaInfo
-            { className = "TODO: name"
-            , cons      = ""
-            , key       = pack $ show $ inputValueName inpValue
-            }
+        Nothing -> case isRequired inpValue of
+          True -> Left $ requiredArgument $ MetaInfo
+              { className = "TODO: name"
+              , cons      = ""
+              , key       = pack $ show $ inputValueName inpValue
+              }
+          False -> pure (inputValueName inpValue, Argument JSNull)
         Just x -> replaceVariable root x >>= \x -> pure (key, x)
             where key = inputValueName inpValue
 
