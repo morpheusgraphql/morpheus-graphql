@@ -39,3 +39,23 @@ instance GQLInput a => GQLInput (Maybe a) where
     decode JSNull = Nothing
     decode x = Just (decode x)
 
+--instance  GQLArgs Text where
+--    fromArgs _ (Just t) = pure t
+--    fromArgs _ _ = pure "Nothing found"
+--    argsMeta _ = []
+
+--instance  GQLArgs Int where
+--    fromArgs _ (Just t) = pure t
+--    fromArgs _ _ = pure 0
+--    argsMeta _ = [GQL__InputValue { name = "Int", description = "", _type = Nothing, defaultValue = "" }]
+
+--instance  GQLArgs Bool where
+--    fromArgs _ (Just t) = pure t
+--    fromArgs _ _ = pure False
+--    argsMeta _ = [GQL__InputValue { name = "Boolean", description = "", _type = Nothing, defaultValue = "" }]
+
+--instance  GQLArgs a => GQLArgs (Maybe a) where
+--    fromArgs _ (Just t) = pure t
+--    argsMeta _ = argsMeta (Proxy :: Proxy a)
+
+

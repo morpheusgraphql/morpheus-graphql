@@ -56,6 +56,3 @@ instance (ArgsMeta a, ArgsMeta b ) => ArgsMeta (a :*: b)  where
 instance ArgsMeta U1 where
     getMeta _ = []
 
-instance (Selector s, Typeable t ) => ArgsMeta (M1 S s (K1 R t)) where
-    getMeta _ = [( pack $ selName (undefined :: M1 S s (K1 R t) ()) , pack $ show $ typeOf (undefined::t) )]
-

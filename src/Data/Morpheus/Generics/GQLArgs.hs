@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE  ScopedTypeVariables, DefaultSignatures, FlexibleContexts #-}
+{-# LANGUAGE  ScopedTypeVariables, FlexibleInstances , DefaultSignatures, FlexibleContexts #-}
 
 module Data.Morpheus.Generics.GQLArgs
     ( GQLArgs(..)
@@ -20,6 +20,7 @@ import           Data.Morpheus.Types.Types     ( Arguments
 import           Data.Proxy                     ( Proxy(..) )
 import           Data.Data                      ( Typeable
                                                 , Data
+                                                , typeOf
                                                 )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__InputValue(..)
@@ -32,6 +33,9 @@ import           Data.Morpheus.ErrorMessage    ( requiredArgument
                                                 )
 import Data.Morpheus.Generics.InputType        (GQLInput(..))
 import Data.Morpheus.Generics.GenericToArgs   (GToArgs(..))
+
+instance (Selector s, Typeable t , GQLInput t) => ArgsMeta (M1 S s (K1 R t)) where
+    getMeta _ = [( pack $ selName (undefined :: M1 S s (K1 R t) ()) , pack $ show $ typeOf (undefined::t) )]
 
 instance GQLInput a => GToArgs  (K1 i a)  where
     gToArgs meta args =
@@ -46,23 +50,10 @@ class GQLArgs p where
     fromArgs args _ = to <$> gToArgs (MetaInfo "" "" "") args
 
     argsMeta :: Proxy p -> [GQL__InputValue]
-    default argsMeta :: (Show p, ArgsMeta (Rep p) , Typeable p) => Proxy p -> [GQL__InputValue]
+    default argsMeta :: (Show p,  ArgsMeta (Rep p) , Typeable p) => Proxy p -> [GQL__InputValue]
     argsMeta _ = map mapValue $ getMeta (Proxy :: Proxy (Rep p))
         where mapValue (x,y) = createInputValue x y
 
-instance  GQLArgs Text where
-    fromArgs _ (Just t) = pure t
-    fromArgs _ _ = pure "Nothing found"
-    argsMeta _ = []
-
-instance  GQLArgs Bool where
-    fromArgs _ (Just t) = pure t
-    fromArgs _ _ = pure False
-    argsMeta _ = [GQL__InputValue { name = "Boolean", description = "", _type = Nothing, defaultValue = "" }]
-
-instance  GQLArgs (Maybe a) where
-    fromArgs _ (Just t) = pure t
-    argsMeta _ = []
 
 instance  GQLArgs () where
     fromArgs _ _ = pure ()
