@@ -14,6 +14,8 @@ module Data.Morpheus.Types.Introspection
   , createInputValue
   , wrapListType
   , unwrapType
+  , createScalar
+  , createFieldWith
   )
 where
 
@@ -84,6 +86,16 @@ createField argname typeName args = GQL__Field
   , deprecationReason = ""
   }
 
+createFieldWith :: Text -> GQL__Type -> [GQL__InputValue] -> GQL__Field
+createFieldWith argname fieldtype args = GQL__Field
+  { name              = argname
+  , description       = "my description"
+  , args              = args
+  , _type             = Just fieldtype
+  , isDeprecated      = False
+  , deprecationReason = ""
+  }
+
 createType :: Text -> [GQL__Field] -> GQL__Type
 createType name fields = GQL__Type
   { kind          = OBJECT
@@ -96,6 +108,19 @@ createType name fields = GQL__Type
   , enumValues    = Some []
   , inputFields   = []
   }
+
+createScalar  :: Text -> GQL__Type
+createScalar name  = GQL__Type {
+  kind          = SCALAR
+  , name          = name
+  , description   = "my description"
+  , fields        = Some []
+  , ofType        = Nothing
+  , interfaces    = []
+  , possibleTypes = []
+  , enumValues    = Some []
+  , inputFields   = []
+}
 
 
 unwrapType :: GQL__Type -> Maybe GQL__Type

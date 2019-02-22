@@ -57,6 +57,8 @@ import           Data.Morpheus.Types.Introspection
                                                 , createType
                                                 , createField
                                                 , emptyLib
+                                                , createScalar
+                                                , createFieldWith
                                                 )
 import           Data.Morpheus.Generics.TypeRep
                                                 ( Selectors(..) )
@@ -157,18 +159,18 @@ instance (Show a, GQLSelection a) => GQLSelection (Maybe a) where
 
 instance GQLSelection Int where
     encode _ =  pure . JSInt
-    introspect _ = insert "Int" (createType "Int" [])
-    fieldType _ name =  createField name "Int" []
+    introspect _ = insert "Int" (createScalar "Int")
+    fieldType _ name =  createFieldWith name (createScalar "Int")  []
 
 instance GQLSelection Text where
     encode _ =  pure . JSString
-    introspect _ = insert "String" (createType "String" [])
-    fieldType _  name =  createField  name "String" []
+    introspect _ = insert "String" (createScalar "String")
+    fieldType _  name =  createFieldWith  name (createScalar "String") []
 
 instance GQLSelection Bool where
     encode _ =  pure . JSBool
-    introspect _ = insert "Boolean" (createType "Boolean" [])
-    fieldType _ name = createField  name "Boolean" []
+    introspect _ = insert "Boolean" (createScalar "Boolean")
+    fieldType _ name = createFieldWith name (createScalar "Boolean") []
 
 instance GQLSelection a => GQLSelection [a] where
     encode (Field _ _) x =  pure $ JSList []
@@ -189,12 +191,12 @@ instance GQLSelection GQL__Schema;
 instance GQLSelection GQL__Directive;
 
 instance GQLSelection GQL__TypeKind where
-    introspect _ = insert "__TypeKind" (createType "__TypeKind" [])
+    introspect _ = insert "__TypeKind" (createScalar "__TypeKind" )
     fieldType _ name = createField name "__TypeKind" []
     encode _ = pure . JSString . pack . show
 
 instance GQLSelection GQL__DirectiveLocation where
-    introspect _  = insert "__DirectiveLocation" (createType "__DirectiveLocation" [])
+    introspect _  = insert "__DirectiveLocation" (createScalar "__DirectiveLocation" )
     fieldType _ name = createField name "__DirectiveLocation" []
     encode _ = pure  . JSString . pack . show
 
