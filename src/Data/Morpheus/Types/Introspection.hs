@@ -50,6 +50,8 @@ data GQL__Deprication__Args = DepricationArgs {
   includeDeprecated:: Bool
 } deriving (Show , Data, Generic, ToJSON )
 
+
+-- TODO: fix _type to type
 data GQL__Field = GQL__Field{
   name:: Text,
   description:: Text,
@@ -58,6 +60,8 @@ data GQL__Field = GQL__Field{
   isDeprecated:: Bool,
   deprecationReason :: Text
 } deriving (Show , Data, Generic, ToJSON )
+
+-- TODO: fix _type to type
 
 data GQL__InputValue  = GQL__InputValue {
   name:: Text,
