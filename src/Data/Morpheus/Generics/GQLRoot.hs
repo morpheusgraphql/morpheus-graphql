@@ -93,4 +93,4 @@ class GQLRoot a where
                where
                    fieldTypes  = getFields (Proxy :: Proxy (Rep a))
                    stack = map snd fieldTypes
-                   fields = map fst fieldTypes ++ [ createField "__schema" "GQL__Schema" [] ]
+                   fields = map fst fieldTypes ++ [ createField "__schema" "__Schema" [] ]
