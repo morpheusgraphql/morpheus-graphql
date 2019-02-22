@@ -11,7 +11,7 @@ module Data.Morpheus.Types.Types
     , GQLQueryRoot(..)
     , Fragment(..)
     , FragmentLib
-    , GQLResponse
+    , GQLResponse(..)
     , GQLRequest(..)
     , Argument(..)
     , EvalIO(..)
@@ -117,7 +117,11 @@ instance ToJSON JSType where
     toJSON (JSObject x) = toJSON x
     toJSON (JSList x) = toJSON x
 
-type GQLResponse = Eval JSType;
+data GQLResponse = Data JSType | Errors [GQLError]  deriving (Show,Generic) ;
+
+instance ToJSON  GQLResponse where
+  toJSON (Errors _errors) = object ["errors" .= _errors];
+  toJSON (Data _data) = object ["data" .= _data];
 
 data GQLRequest = GQLRequest {
     query:: Text
