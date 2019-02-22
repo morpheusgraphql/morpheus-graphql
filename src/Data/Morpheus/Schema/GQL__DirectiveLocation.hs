@@ -26,4 +26,4 @@ data GQL__DirectiveLocation =
   | ENUM
   | ENUM_VALUE
   | INPUT_OBJECT
-  | INPUT_FIELD_DEFINITION deriving (Show , Data, Generic, ToJSON )
+  | INPUT_FIELD_DEFINITION deriving (Show , Data, Generic )

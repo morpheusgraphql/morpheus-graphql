@@ -23,4 +23,4 @@ data  GQL__Directive  = GQL__Directive {
   ,description :: Text
   ,locations:: [GQL__DirectiveLocation]
   ,args:: [GQL__InputValue]
-} deriving (Show , Data, Generic, ToJSON )
+} deriving (Show , Data, Generic )

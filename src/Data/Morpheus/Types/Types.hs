@@ -25,6 +25,7 @@ import           GHC.Generics                   ( Generic )
 import           Data.Text                      ( Text )
 import           Data.Map                       ( Map
                                                 , filter
+                                                , mapKeys
                                                 )
 import           Data.Aeson                     ( ToJSON(..)
                                                 , object
@@ -109,12 +110,15 @@ data MetaInfo = MetaInfo {
         key ::  Text
 };
 
+replaceType "_type" = "type"
+replaceType x = x
+
 instance ToJSON JSType where
     toJSON (JSInt x) = toJSON x
     toJSON (JSBool x) = toJSON x
     toJSON (JSString x) = toJSON x
     toJSON JSNull = Null
-    toJSON (JSObject x) = toJSON x
+    toJSON (JSObject x) = toJSON (mapKeys replaceType x)
     toJSON (JSList x) = toJSON x
 
 data GQLResponse = Data JSType | Errors [GQLError]  deriving (Show,Generic) ;

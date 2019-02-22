@@ -29,7 +29,7 @@ data GQL__Schema = GQL__Schema {
     , mutationType::Maybe GQL__Type
     , subscriptionType:: Maybe GQL__Type
     , directives:: [GQL__Directive]
-} deriving (Show , Data, Generic, ToJSON )
+} deriving (Show , Data, Generic )
 
 initSchema :: [GQL__Type] -> GQL__Schema
 initSchema types = GQL__Schema

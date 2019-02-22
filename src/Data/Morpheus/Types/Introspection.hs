@@ -26,7 +26,7 @@ import           Data.Map                       ( Map
                                                 , fromList
                                                 )
 import           GHC.Generics
-import           Data.Aeson                     ( ToJSON(..) )
+import           Data.Aeson
 import           Data.Data                      ( Data )
 import           Data.Morpheus.Types.Types      ( (::->)(..) )
 import           Data.Morpheus.Schema.GQL__TypeKind
@@ -44,14 +44,13 @@ data GQL__Type =  GQL__Type {
   ,possibleTypes :: [GQL__Type]
   ,enumValues:: GQL__Deprication__Args ::-> [GQL__EnumValue]
   ,inputFields:: [GQL__InputValue]
-} deriving (Show , Data, Generic, ToJSON )
+} deriving (Show , Data, Generic)
 
 data GQL__Deprication__Args = DepricationArgs {
   includeDeprecated:: Bool
-} deriving (Show , Data, Generic, ToJSON )
+} deriving (Show , Data, Generic )
 
 
--- TODO: fix _type to type
 data GQL__Field = GQL__Field{
   name:: Text,
   description:: Text,
@@ -59,16 +58,14 @@ data GQL__Field = GQL__Field{
   _type :: Maybe GQL__Type,
   isDeprecated:: Bool,
   deprecationReason :: Text
-} deriving (Show , Data, Generic, ToJSON )
-
--- TODO: fix _type to type
+} deriving (Show , Data, Generic)
 
 data GQL__InputValue  = GQL__InputValue {
   name:: Text,
   description::  Text,
   _type:: Maybe GQL__Type,
   defaultValue::  Text
-} deriving (Show , Data, Generic, ToJSON )
+} deriving (Show , Data, Generic)
 
 createInputValue :: Text -> Text -> GQL__InputValue
 createInputValue argname typeName = GQL__InputValue
