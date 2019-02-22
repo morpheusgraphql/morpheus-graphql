@@ -71,6 +71,7 @@ import           Control.Monad.Trans            ( liftIO
                                                 , lift
                                                 , MonadTrans
                                                 )
+import           Data.Morpheus.Schema.SchemaField (wrapAsListType)
 
 instance GQLSelection a => GenericMap  (K1 i a)  where
     encodeFields meta gql (K1 src) = case getField meta gql of
@@ -140,12 +141,12 @@ instance (Show a, Show p, GQLSelection a , GQLArgs p ) => GQLSelection (p ::-> a
     encode (Field args body) field = resolve (Field args body) (getType field) field
     encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
     encode x (Some a) = encode x a
-    encode x None = pure $ JSNull
+    encode x None = pure JSNull
     introspect  _  = introspect (Proxy:: Proxy  a)
     fieldType _ name = (fieldType (Proxy:: Proxy  a) name ){ args = argsMeta (Proxy :: Proxy p) }
 
 instance (Show a, GQLSelection a) => GQLSelection (Maybe a) where
-    encode _ Nothing = pure $ JSNull
+    encode _ Nothing = pure JSNull
     encode query (Just value) = encode query value
     introspect  _ = introspect (Proxy:: Proxy  a)
     fieldType _ = fieldType (Proxy:: Proxy  a)
@@ -169,7 +170,7 @@ instance GQLSelection a => GQLSelection [a] where
     encode (Field _ _) x =  pure $ JSList []
     encode query list = JSList <$> mapM (encode query) list
     introspect _ = introspect (Proxy :: Proxy  a)
-    fieldType _ = fieldType (Proxy :: Proxy  a)
+    fieldType _ = wrapAsListType <$> fieldType (Proxy :: Proxy  a)
 
 instance GQLSelection GQL__EnumValue;
 

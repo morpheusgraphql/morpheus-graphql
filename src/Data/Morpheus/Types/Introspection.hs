@@ -12,6 +12,8 @@ module Data.Morpheus.Types.Introspection
   , GQL__EnumValue(..)
   , GQL__Deprication__Args(..)
   , createInputValue
+  , wrapListType
+  , unwrapType
   )
 where
 
@@ -24,12 +26,12 @@ import           Data.Map                       ( Map
 import           GHC.Generics
 import           Data.Aeson                     ( ToJSON(..) )
 import           Data.Data                      ( Data )
-import           Data.Morpheus.Types.Types     ( (::->)(..) )
+import           Data.Morpheus.Types.Types      ( (::->)(..) )
 import           Data.Morpheus.Schema.GQL__TypeKind
                                                 ( GQL__TypeKind(..) )
 import           Data.Morpheus.Schema.GQL__EnumValue
                                                 ( GQL__EnumValue )
-
+import           Data.Maybe                     ( fromMaybe )
 data GQL__Type =  GQL__Type {
    kind :: GQL__TypeKind
   ,name :: Text
@@ -92,6 +94,25 @@ createType name fields = GQL__Type
   , interfaces    = []
   , possibleTypes = []
   , enumValues    = Some []
+  , inputFields   = []
+  }
+
+
+unwrapType :: GQL__Type -> Maybe GQL__Type
+unwrapType x = case kind x of
+  LIST -> ofType x
+  _    -> Just x
+
+wrapListType :: GQL__Type -> GQL__Type
+wrapListType contentType = GQL__Type
+  { kind          = LIST
+  , name          = ""
+  , description   = "list Type"
+  , fields        = None
+  , ofType        = Just contentType
+  , interfaces    = []
+  , possibleTypes = []
+  , enumValues    = None
   , inputFields   = []
   }
 
