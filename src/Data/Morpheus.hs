@@ -26,7 +26,7 @@ import           Data.Morpheus.Generics.GQLArgs
                                                 ( GQLArgs )
 import           Data.Morpheus.Parser.Parser   ( parseGQL )
 import           Data.Morpheus.Types.Types     ( (::->)(Resolver)
-                                                , GQLResponse
+                                                , GQLResponse(..)
                                                 , GQLRequest(..)
                                                 , Eval(..)
                                                 , EvalIO(..)
@@ -49,7 +49,11 @@ resolve rootValue body = do
     encode root gql
 
 interpreter :: GQLRoot a => EvalIO a -> GQLRequest -> IO GQLResponse
-interpreter root request = runExceptT $ resolve root request
+interpreter root request = do
+  value <- runExceptT $ resolve root request
+  case value of
+    Left x -> pure $ Errors x
+    Right x -> pure$ Data x
 
 eitherToResponse :: (a -> a) -> Either String a -> EvalIO a
 eitherToResponse f (Left  x) = failEvalIO $ errorMessage $ pack x

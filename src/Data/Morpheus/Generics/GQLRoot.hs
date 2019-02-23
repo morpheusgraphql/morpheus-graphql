@@ -86,11 +86,11 @@ class GQLRoot a where
             schema = introspectRoot (Proxy :: Proxy a);
 
     introspectRoot :: Proxy a  -> GQLTypeLib
-    default introspectRoot :: (Show a, Selectors (Rep a) , Typeable a) => Proxy a -> GQLTypeLib
+    default introspectRoot :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib
     introspectRoot _ = do
         let typeLib = introspect (Proxy:: Proxy GQL__Schema) emptyLib
         arrayMap (M.insert "Query" (createType "Query" fields) typeLib) stack
                where
                    fieldTypes  = getFields (Proxy :: Proxy (Rep a))
                    stack = map snd fieldTypes
-                   fields = map fst fieldTypes ++ [ createField "__schema" "GQL__Schema" [] ]
+                   fields = map fst fieldTypes ++ [ createField "__schema" "__Schema" [] ]

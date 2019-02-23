@@ -12,6 +12,10 @@ module Data.Morpheus.Types.Introspection
   , GQL__EnumValue(..)
   , GQL__Deprication__Args(..)
   , createInputValue
+  , wrapListType
+  , unwrapType
+  , createScalar
+  , createFieldWith
   )
 where
 
@@ -22,14 +26,14 @@ import           Data.Map                       ( Map
                                                 , fromList
                                                 )
 import           GHC.Generics
-import           Data.Aeson                     ( ToJSON(..) )
+import           Data.Aeson
 import           Data.Data                      ( Data )
-import           Data.Morpheus.Types.Types     ( (::->)(..) )
+import           Data.Morpheus.Types.Types      ( (::->)(..) )
 import           Data.Morpheus.Schema.GQL__TypeKind
                                                 ( GQL__TypeKind(..) )
 import           Data.Morpheus.Schema.GQL__EnumValue
                                                 ( GQL__EnumValue )
-
+import           Data.Maybe                     ( fromMaybe )
 data GQL__Type =  GQL__Type {
    kind :: GQL__TypeKind
   ,name :: Text
@@ -40,11 +44,12 @@ data GQL__Type =  GQL__Type {
   ,possibleTypes :: [GQL__Type]
   ,enumValues:: GQL__Deprication__Args ::-> [GQL__EnumValue]
   ,inputFields:: [GQL__InputValue]
-} deriving (Show , Data, Generic, ToJSON )
+} deriving (Show , Data, Generic)
 
 data GQL__Deprication__Args = DepricationArgs {
   includeDeprecated:: Bool
-} deriving (Show , Data, Generic, ToJSON )
+} deriving (Show , Data, Generic )
+
 
 data GQL__Field = GQL__Field{
   name:: Text,
@@ -53,14 +58,14 @@ data GQL__Field = GQL__Field{
   _type :: Maybe GQL__Type,
   isDeprecated:: Bool,
   deprecationReason :: Text
-} deriving (Show , Data, Generic, ToJSON )
+} deriving (Show , Data, Generic)
 
 data GQL__InputValue  = GQL__InputValue {
   name:: Text,
   description::  Text,
   _type:: Maybe GQL__Type,
   defaultValue::  Text
-} deriving (Show , Data, Generic, ToJSON )
+} deriving (Show , Data, Generic)
 
 createInputValue :: Text -> Text -> GQL__InputValue
 createInputValue argname typeName = GQL__InputValue
@@ -82,6 +87,16 @@ createField argname typeName args = GQL__Field
   , deprecationReason = ""
   }
 
+createFieldWith :: Text -> GQL__Type -> [GQL__InputValue] -> GQL__Field
+createFieldWith argname fieldtype args = GQL__Field
+  { name              = argname
+  , description       = "my description"
+  , args              = args
+  , _type             = Just fieldtype
+  , isDeprecated      = False
+  , deprecationReason = ""
+  }
+
 createType :: Text -> [GQL__Field] -> GQL__Type
 createType name fields = GQL__Type
   { kind          = OBJECT
@@ -92,6 +107,38 @@ createType name fields = GQL__Type
   , interfaces    = []
   , possibleTypes = []
   , enumValues    = Some []
+  , inputFields   = []
+  }
+
+createScalar  :: Text -> GQL__Type
+createScalar name  = GQL__Type {
+  kind          = SCALAR
+  , name          = name
+  , description   = "my description"
+  , fields        = Some []
+  , ofType        = Nothing
+  , interfaces    = []
+  , possibleTypes = []
+  , enumValues    = Some []
+  , inputFields   = []
+}
+
+
+unwrapType :: GQL__Type -> Maybe GQL__Type
+unwrapType x = case kind x of
+  LIST -> ofType x
+  _    -> Just x
+
+wrapListType :: GQL__Type -> GQL__Type
+wrapListType contentType = GQL__Type
+  { kind          = LIST
+  , name          = ""
+  , description   = "list Type"
+  , fields        = None
+  , ofType        = Just contentType
+  , interfaces    = []
+  , possibleTypes = []
+  , enumValues    = None
   , inputFields   = []
   }
 

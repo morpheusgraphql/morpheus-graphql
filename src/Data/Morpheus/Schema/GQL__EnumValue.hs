@@ -14,4 +14,4 @@ data  GQL__EnumValue = GQL__EnumValue{
   ,description::Text
   ,isDeprecated:: Bool
   ,deprecationReason:: Text
-} deriving (Show , Data, Generic, ToJSON )
+} deriving (Show , Data, Generic )

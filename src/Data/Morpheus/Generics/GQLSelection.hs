@@ -17,6 +17,7 @@ import           Data.Data                      ( Data
                                                 )
 import           Data.Text                      ( Text(..)
                                                 , pack
+                                                , replace
                                                 )
 import           Data.Map                       ( singleton
                                                 , fromList
@@ -56,6 +57,8 @@ import           Data.Morpheus.Types.Introspection
                                                 , createType
                                                 , createField
                                                 , emptyLib
+                                                , createScalar
+                                                , createFieldWith
                                                 )
 import           Data.Morpheus.Generics.TypeRep
                                                 ( Selectors(..) )
@@ -71,6 +74,10 @@ import           Control.Monad.Trans            ( liftIO
                                                 , lift
                                                 , MonadTrans
                                                 )
+import           Data.Morpheus.Schema.SchemaField (wrapAsListType)
+
+
+renameSystemNames = replace "GQL__" "__";
 
 instance GQLSelection a => GenericMap  (K1 i a)  where
     encodeFields meta gql (K1 src) = case getField meta gql of
@@ -79,7 +86,7 @@ instance GQLSelection a => GenericMap  (K1 i a)  where
                 Just x -> [(key meta, encode field src)]
         _ -> []
 
-instance (Selector s, Typeable a , GQLSelection a) => Selectors (M1 S s (K1 R a)) where
+instance (Selector s, Typeable a , GQLSelection a) => Selectors (M1 S s (K1 R a)) GQL__Field where
     getFields _ = [(fieldType (Proxy:: Proxy  a) name ,introspect (Proxy:: Proxy  a))]
         where name = pack $ selName (undefined :: M1 S s (K1 R a) ())
 
@@ -101,15 +108,15 @@ class GQLSelection a where
     encode (Field args key) = \x -> failEvalIO $ subfieldsNotSelected x key
 
     fieldType :: Proxy a -> Text -> GQL__Field
-    default fieldType :: (Show a, Selectors (Rep a) , Typeable a) => Proxy a -> Text -> GQL__Field
+    default fieldType :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> Text -> GQL__Field
     fieldType _ name  = createField name typeName []
-        where typeName = (pack . show . typeOf) (undefined::a)
+        where typeName = renameSystemNames $ (pack . show . typeOf) (undefined::a)
 
     introspect :: Proxy a -> GQLTypeLib -> GQLTypeLib
-    default introspect :: (Show a, Selectors (Rep a) , Typeable a) => Proxy a -> GQLTypeLib -> GQLTypeLib
+    default introspect :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib -> GQLTypeLib
     introspect _  typeLib = do
-        let typeName = (pack . show . typeOf) (undefined::a)
-        case (M.lookup typeName typeLib) of
+        let typeName = renameSystemNames $ (pack . show . typeOf) (undefined::a)
+        case M.lookup typeName typeLib of
             Just _ -> typeLib
             Nothing -> arrayMap (insert typeName (createType typeName gqlFields) typeLib) stack
                 where
@@ -140,36 +147,36 @@ instance (Show a, Show p, GQLSelection a , GQLArgs p ) => GQLSelection (p ::-> a
     encode (Field args body) field = resolve (Field args body) (getType field) field
     encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
     encode x (Some a) = encode x a
-    encode x None = pure $ JSNull
-    introspect  _  = introspect (Proxy:: Proxy  a)
+    encode x None = pure JSNull
+    introspect  _  typeLib = arrayMap typeLib  ((map snd $ argsTypes (Proxy::Proxy p)) ++ [introspect (Proxy:: Proxy  a)])
     fieldType _ name = (fieldType (Proxy:: Proxy  a) name ){ args = argsMeta (Proxy :: Proxy p) }
 
 instance (Show a, GQLSelection a) => GQLSelection (Maybe a) where
-    encode _ Nothing = pure $ JSNull
+    encode _ Nothing = pure JSNull
     encode query (Just value) = encode query value
     introspect  _ = introspect (Proxy:: Proxy  a)
     fieldType _ = fieldType (Proxy:: Proxy  a)
 
 instance GQLSelection Int where
     encode _ =  pure . JSInt
-    introspect _ = insert "Int" (createType "Int" [])
-    fieldType _ name =  createField name "Int" []
+    introspect _ = insert "Int" (createScalar "Int")
+    fieldType _ name =  createFieldWith name (createScalar "Int")  []
 
 instance GQLSelection Text where
     encode _ =  pure . JSString
-    introspect _ = insert "String" (createType "String" [])
-    fieldType _  name =  createField name "String" []
+    introspect _ = insert "String" (createScalar "String")
+    fieldType _  name =  createFieldWith  name (createScalar "String") []
 
 instance GQLSelection Bool where
     encode _ =  pure . JSBool
-    introspect _ = insert "Boolean" (createType "Boolean" [])
-    fieldType _ name = createField name "Boolean" []
+    introspect _ = insert "Boolean" (createScalar "Boolean")
+    fieldType _ name = createFieldWith name (createScalar "Boolean") []
 
 instance GQLSelection a => GQLSelection [a] where
     encode (Field _ _) x =  pure $ JSList []
     encode query list = JSList <$> mapM (encode query) list
     introspect _ = introspect (Proxy :: Proxy  a)
-    fieldType _ = fieldType (Proxy :: Proxy  a)
+    fieldType _ = wrapAsListType <$> fieldType (Proxy :: Proxy  a)
 
 instance GQLSelection GQL__EnumValue;
 
@@ -184,12 +191,12 @@ instance GQLSelection GQL__Schema;
 instance GQLSelection GQL__Directive;
 
 instance GQLSelection GQL__TypeKind where
-    introspect _ = insert "__TypeKind" (createType "__TypeKind" [])
+    introspect _ = insert "__TypeKind" (createScalar "__TypeKind" )
     fieldType _ name = createField name "__TypeKind" []
     encode _ = pure . JSString . pack . show
 
 instance GQLSelection GQL__DirectiveLocation where
-    introspect _  = insert "__DirectiveLocation" (createType "__DirectiveLocation" [])
+    introspect _  = insert "__DirectiveLocation" (createScalar "__DirectiveLocation" )
     fieldType _ name = createField name "__DirectiveLocation" []
     encode _ = pure  . JSString . pack . show
 
