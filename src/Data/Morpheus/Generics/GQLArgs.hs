@@ -26,6 +26,7 @@ import           Data.Morpheus.Types.Introspection
                                                 ( GQL__InputValue(..)
                                                 , createInputValue
                                                 , GQLTypeLib
+                                                , createType
                                                 )
 import           Data.Morpheus.Generics.TypeRep
                                                 ( Selectors(..) )
@@ -34,9 +35,13 @@ import           Data.Morpheus.ErrorMessage    ( requiredArgument
                                                 )
 import Data.Morpheus.Generics.InputType        (GQLInput(..))
 import Data.Morpheus.Generics.GenericToArgs   (GToArgs(..))
-
+import  qualified Data.Map as M
 updateLib :: GQLTypeLib -> GQLTypeLib
 updateLib x = x
+
+arrayMap :: GQLTypeLib -> [GQLTypeLib -> GQLTypeLib] -> GQLTypeLib
+arrayMap lib []       = lib
+arrayMap lib (f : fs) = arrayMap (f lib) fs
 
 instance (Selector s, Typeable t , GQLInput t) => Selectors (M1 S s (K1 R t)) GQL__InputValue where
     getFields _ = [ (typeInfo (Proxy:: Proxy  t) name , updateLib)]
@@ -58,6 +63,13 @@ class GQLArgs p where
     default argsMeta :: (Show p,  Selectors (Rep p) GQL__InputValue , Typeable p) => Proxy p -> [GQL__InputValue]
     argsMeta _ = map fst $ getFields (Proxy :: Proxy (Rep p))
 
+    argsTypes :: Proxy p -> [(GQL__InputValue,GQLTypeLib -> GQLTypeLib)]
+    default argsTypes :: (Show p,  Selectors (Rep p) GQL__InputValue , Typeable p) => Proxy p -> [(GQL__InputValue,GQLTypeLib -> GQLTypeLib)]
+    argsTypes _ = getFields (Proxy :: Proxy (Rep p))
+
 instance  GQLArgs () where
     fromArgs _ _ = pure ()
     argsMeta _ = []
+    argsTypes _ = []
+
+

@@ -148,7 +148,7 @@ instance (Show a, Show p, GQLSelection a , GQLArgs p ) => GQLSelection (p ::-> a
     encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
     encode x (Some a) = encode x a
     encode x None = pure JSNull
-    introspect  _  = introspect (Proxy:: Proxy  a)
+    introspect  _  typeLib = arrayMap typeLib  ((map snd $ argsTypes (Proxy::Proxy p)) ++ [introspect (Proxy:: Proxy  a)])
     fieldType _ name = (fieldType (Proxy:: Proxy  a) name ){ args = argsMeta (Proxy :: Proxy p) }
 
 instance (Show a, GQLSelection a) => GQLSelection (Maybe a) where
