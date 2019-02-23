@@ -36,15 +36,12 @@ import           Data.Morpheus.ErrorMessage    ( requiredArgument
 import Data.Morpheus.Generics.InputType        (GQLInput(..))
 import Data.Morpheus.Generics.GenericToArgs   (GToArgs(..))
 import  qualified Data.Map as M
+
 updateLib :: GQLTypeLib -> GQLTypeLib
 updateLib x = x
 
-arrayMap :: GQLTypeLib -> [GQLTypeLib -> GQLTypeLib] -> GQLTypeLib
-arrayMap lib []       = lib
-arrayMap lib (f : fs) = arrayMap (f lib) fs
-
 instance (Selector s, Typeable t , GQLInput t) => Selectors (M1 S s (K1 R t)) GQL__InputValue where
-    getFields _ = [ (typeInfo (Proxy:: Proxy  t) name , updateLib)]
+    getFields _ = [ (typeInfo (Proxy:: Proxy  t) name , introInput (Proxy:: Proxy  t))]
       where name = pack $ selName (undefined :: M1 S s (K1 R t) ())
 
 instance GQLInput a => GToArgs  (K1 i a)  where

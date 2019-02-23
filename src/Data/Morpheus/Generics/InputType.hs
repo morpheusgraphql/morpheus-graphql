@@ -20,7 +20,7 @@ import           Data.Morpheus.Generics.GenericInputType
                                                 )
 import           GHC.Generics
 import           Data.Data
-import           Data.Morpheus.Types.Introspection ( createType , GQLTypeLib, GQL__InputValue(..), createInputValue)
+import           Data.Morpheus.Types.Introspection ( createScalar , GQLTypeLib, GQL__InputValue(..), createInputValue)
 import           Data.Map as M
 
 class GQLInput a where
@@ -35,33 +35,33 @@ class GQLInput a where
     typeInfo _ name  = createInputValue name typeName
              where typeName = (pack . show . typeOf) (undefined::a)
 
-    intro :: Proxy a -> GQLTypeLib -> GQLTypeLib
-    default intro :: (Show a, Typeable a) => Proxy a -> GQLTypeLib -> GQLTypeLib
-    intro _  typeLib = do
+    introInput :: Proxy a -> GQLTypeLib -> GQLTypeLib
+    default introInput :: (Show a, Typeable a) => Proxy a -> GQLTypeLib -> GQLTypeLib
+    introInput _  typeLib = do
             let typeName = (pack . show . typeOf) (undefined::a)
             case M.lookup typeName typeLib of
                 Just _ -> typeLib
-                Nothing -> insert typeName (createType typeName []) typeLib
+                Nothing -> insert typeName (createScalar typeName) typeLib
 
 instance GQLInput Text where
     decode  (JSString x) = x
     typeInfo _ name = createInputValue name "String"
-    intro _  typeLib = typeLib
+    introInput _  typeLib = typeLib
 
 instance GQLInput Bool where
     decode  (JSBool x) = x
     typeInfo _ name = createInputValue name "Boolean"
-    intro _  typeLib = typeLib
+    introInput _  typeLib = typeLib
 
 instance GQLInput Int where
     decode  (JSInt x) = x
     typeInfo _ name = createInputValue name "Int"
-    intro _  typeLib = typeLib
+    introInput _  typeLib = typeLib
 
 instance (GQLInput a , Show a, Typeable a ) => GQLInput (Maybe a) where
     decode JSNull = Nothing
     decode x = Just (decode x)
     typeInfo _ name =  (typeInfo (Proxy :: Proxy a) name) { defaultValue = "Nothing" }
-    intro _  typeLib = typeLib
+    introInput _  typeLib = typeLib
 
 
