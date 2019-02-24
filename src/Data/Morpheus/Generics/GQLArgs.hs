@@ -6,10 +6,15 @@ module Data.Morpheus.Generics.GQLArgs
     )
 where
 
-import           Data.Text                      ( Text(..)
-                                                , pack
-                                                )
 import           GHC.Generics
+import qualified Data.Text  as  T
+import qualified Data.Data  as  D
+import qualified Data.Map as M
+import           Data.Morpheus.Generics.TypeRep ( Selectors(..) )
+import           Data.Proxy                     ( Proxy(..) )
+import Data.Morpheus.Generics.GQLInput        (GQLInput(..))
+import Data.Morpheus.Generics.GenericToArgs   (GToArgs(..))
+import qualified  Data.Morpheus.ErrorMessage    as Err
 import           Data.Morpheus.Types.Types     ( Arguments
                                                 , Eval(..)
                                                 , (::->)(Some, None)
@@ -17,56 +22,38 @@ import           Data.Morpheus.Types.Types     ( Arguments
                                                 , Argument(..)
                                                 , JSType(..)
                                                 )
-import           Data.Proxy                     ( Proxy(..) )
-import           Data.Data                      ( Typeable
-                                                , Data
-                                                , typeOf
-                                                )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__InputValue(..)
                                                 , createInputValue
                                                 , GQLTypeLib
                                                 , createType
                                                 )
-import           Data.Morpheus.Generics.TypeRep
-                                                ( Selectors(..) )
-import           Data.Morpheus.ErrorMessage    ( requiredArgument
-                                                , handleError
-                                                )
-import Data.Morpheus.Generics.GQLInput        (GQLInput(..))
-import Data.Morpheus.Generics.GenericToArgs   (GToArgs(..))
-import  qualified Data.Map as M
 
 updateLib :: GQLTypeLib -> GQLTypeLib
 updateLib x = x
 
-instance (Selector s, Typeable t , GQLInput t) => Selectors (M1 S s (K1 R t)) GQL__InputValue where
+instance (Selector s, D.Typeable t , GQLInput t) => Selectors (M1 S s (K1 R t)) GQL__InputValue where
     getFields _ = [ (typeInfo (Proxy:: Proxy  t) name , introInput (Proxy:: Proxy  t))]
-      where name = pack $ selName (undefined :: M1 S s (K1 R t) ())
+      where name = T.pack $ selName (undefined :: M1 S s (K1 R t) ())
 
 instance GQLInput a => GToArgs  (K1 i a)  where
     gToArgs meta args =
         case lookup (key meta) args of
-            Nothing -> Left $ requiredArgument meta
+            Nothing -> Left $ Err.requiredArgument meta
             Just (Argument x) -> pure $ K1 $ decode x
-            Just x -> handleError $ pack $ show x
+            Just x -> Err.handleError $ T.pack $ show x
 
 class GQLArgs p where
-    fromArgs :: Arguments -> Maybe p -> Eval p
-    default fromArgs :: ( Show p , Generic p, Data p , GToArgs (Rep p) ) => Arguments -> Maybe p -> Eval p
-    fromArgs args _ = to <$> gToArgs (MetaInfo "" "" "") args
+    decodeArgs :: Arguments -> Maybe p -> Eval p
+    default decodeArgs :: ( Show p , Generic p, D.Data p , GToArgs (Rep p) ) => Arguments -> Maybe p -> Eval p
+    decodeArgs args _ = to <$> gToArgs (MetaInfo "" "" "") args
 
-    argsMeta :: Proxy p -> [GQL__InputValue]
-    default argsMeta :: (Show p,  Selectors (Rep p) GQL__InputValue , Typeable p) => Proxy p -> [GQL__InputValue]
-    argsMeta _ = map fst $ getFields (Proxy :: Proxy (Rep p))
-
-    argsTypes :: Proxy p -> [(GQL__InputValue,GQLTypeLib -> GQLTypeLib)]
-    default argsTypes :: (Show p,  Selectors (Rep p) GQL__InputValue , Typeable p) => Proxy p -> [(GQL__InputValue,GQLTypeLib -> GQLTypeLib)]
-    argsTypes _ = getFields (Proxy :: Proxy (Rep p))
+    introspectArgs :: Proxy p -> [(GQL__InputValue,GQLTypeLib -> GQLTypeLib)]
+    default introspectArgs :: (Show p,  Selectors (Rep p) GQL__InputValue , D.Typeable p) => Proxy p -> [(GQL__InputValue,GQLTypeLib -> GQLTypeLib)]
+    introspectArgs _ = getFields (Proxy :: Proxy (Rep p))
 
 instance  GQLArgs () where
-    fromArgs _ _ = pure ()
-    argsMeta _ = []
-    argsTypes _ = []
+    decodeArgs _ _ = pure ()
+    introspectArgs _ = []
 
 

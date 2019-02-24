@@ -7,26 +7,13 @@ module Data.Morpheus.Generics.TypeRep
     (Selectors(..))
 where
 
-import           Data.ByteString                ( ByteString )
-import           Data.Proxy                     ( Proxy(..) )
-import           GHC.Generics
-import           Data.Text                      ( Text
-                                                , pack
-                                                )
-import           Data.Morpheus.Types.Introspection
-                                                ( GQL__Type(..)
-                                                , GQL__Field(..)
-                                                , GQL__TypeKind(..)
-                                                , GQL__InputValue
-                                                , GQLTypeLib
-                                                )
-import           Data.Data                      ( Typeable
-                                                , Data
-                                                , typeOf
-                                                )
+import              Data.Proxy                     (Proxy(..))
+import              GHC.Generics
+import  qualified   Data.Morpheus.Types.Introspection as I
+import  qualified   Data.Data                   as D
 
 class  Selectors rep t where
-    getFields ::  Proxy rep ->  [( t, GQLTypeLib -> GQLTypeLib )]
+    getFields ::  Proxy rep ->  [( t, I.GQLTypeLib -> I.GQLTypeLib )]
 
 instance Selectors f t => Selectors (M1 D x f)  t where
     getFields _ = getFields (Proxy :: Proxy f)

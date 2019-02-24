@@ -8,25 +8,17 @@ module Data.Morpheus.Generics.GQLSelection
     )
 where
 
-import           Control.Monad
-import           Data.List                      ( find )
-import           Data.Data                      ( Data
-                                                , Typeable
-                                                , typeOf
-                                                , TypeRep
-                                                )
-import           Data.Text                      ( Text(..)
-                                                , pack
-                                                , replace
-                                                )
-import           Data.Map                       ( singleton
-                                                , fromList
-                                                , insert
-                                                , union
-                                                )
-import qualified Data.Map                      as M
-import           GHC.Generics
-import           Data.Morpheus.Types.Types     ( SelectionSet
+import            GHC.Generics
+import            Control.Monad
+import            Control.Monad.Trans.Except
+import qualified  Control.Monad.Trans       as     Trans
+import qualified  Data.Data                     as D
+import qualified  Data.Text                     as T
+import qualified  Data.Map                      as M
+import            Data.Proxy
+import            Data.Maybe                     ( fromMaybe )
+import            Data.Morpheus.Schema.SchemaField (wrapAsListType)
+import            Data.Morpheus.Types.Types     ( SelectionSet
                                                 , QuerySelection(..)
                                                 , (::->)(..)
                                                 , Eval(..)
@@ -35,9 +27,7 @@ import           Data.Morpheus.Types.Types     ( SelectionSet
                                                 , JSType(..)
                                                 , failEvalIO
                                                 )
-import           Data.Morpheus.ErrorMessage    ( handleError
-                                                , subfieldsNotSelected
-                                                )
+import qualified Data.Morpheus.ErrorMessage  as Err
 import           Data.Morpheus.Generics.GQLArgs
                                                 ( GQLArgs(..) )
 import           Data.Morpheus.Schema.GQL__Schema
@@ -52,7 +42,7 @@ import           Data.Morpheus.Types.Introspection
                                                 , GQL__TypeKind(..)
                                                 , GQL__InputValue
                                                 , GQLTypeLib
-                                                , GQL__Deprication__Args
+                                                , GQL__Deprecation__Args
                                                 , GQL__EnumValue
                                                 , createType
                                                 , createField
@@ -62,22 +52,14 @@ import           Data.Morpheus.Types.Introspection
                                                 )
 import           Data.Morpheus.Generics.TypeRep
                                                 ( Selectors(..) )
-import           Data.Proxy
 import           Data.Morpheus.Generics.GenericMap
                                                 ( GenericMap(..)
                                                 , getField
                                                 , initMeta
                                                 )
-import           Data.Maybe                     ( fromMaybe )
-import           Control.Monad.Trans.Except
-import           Control.Monad.Trans            ( liftIO
-                                                , lift
-                                                , MonadTrans
-                                                )
-import           Data.Morpheus.Schema.SchemaField (wrapAsListType)
 
 
-renameSystemNames = replace "GQL__" "__";
+renameSystemNames = T.replace "GQL__" "__";
 
 instance GQLSelection a => GenericMap  (K1 i a)  where
     encodeFields meta gql (K1 src) = case getField meta gql of
@@ -86,39 +68,39 @@ instance GQLSelection a => GenericMap  (K1 i a)  where
                 Just x -> [(key meta, encode field src)]
         _ -> []
 
-instance (Selector s, Typeable a , GQLSelection a) => Selectors (M1 S s (K1 R a)) GQL__Field where
+instance (Selector s, D.Typeable a , GQLSelection a) => Selectors (M1 S s (K1 R a)) GQL__Field where
     getFields _ = [(fieldType (Proxy:: Proxy  a) name ,introspect (Proxy:: Proxy  a))]
-        where name = pack $ selName (undefined :: M1 S s (K1 R a) ())
+        where name = T.pack $ selName (undefined :: M1 S s (K1 R a) ())
 
 arrayMap :: GQLTypeLib -> [GQLTypeLib -> GQLTypeLib] -> GQLTypeLib
 arrayMap lib []       = lib
 arrayMap lib (f : fs) = arrayMap (f lib) fs
 
-unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
+unwrapMonadTuple :: Monad m => (T.Text, m a) -> m (T.Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
-wrapAsObject :: [(Text, EvalIO JSType)] -> EvalIO JSType
-wrapAsObject x = JSObject . fromList <$> mapM unwrapMonadTuple x
+wrapAsObject :: [(T.Text, EvalIO JSType)] -> EvalIO JSType
+wrapAsObject x = JSObject . M.fromList <$> mapM unwrapMonadTuple x
 
 class GQLSelection a where
 
     encode :: QuerySelection ->  a -> EvalIO JSType
-    default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => QuerySelection -> a -> EvalIO JSType
+    default encode :: ( Generic a, D.Data a, GenericMap (Rep a) , Show a) => QuerySelection -> a -> EvalIO JSType
     encode (SelectionSet args gql) = wrapAsObject . encodeFields initMeta gql . from
-    encode (Field args key) = \x -> failEvalIO $ subfieldsNotSelected x key
+    encode (Field args key) = \x -> failEvalIO $ Err.subfieldsNotSelected x key
 
-    fieldType :: Proxy a -> Text -> GQL__Field
-    default fieldType :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> Text -> GQL__Field
+    fieldType :: Proxy a -> T.Text -> GQL__Field
+    default fieldType :: (Show a, Selectors (Rep a) GQL__Field , D.Typeable a) => Proxy a -> T.Text -> GQL__Field
     fieldType _ name  = createField name typeName []
-        where typeName = renameSystemNames $ (pack . show . typeOf) (undefined::a)
+        where typeName = renameSystemNames $ (T.pack . show . D.typeOf) (undefined::a)
 
     introspect :: Proxy a -> GQLTypeLib -> GQLTypeLib
-    default introspect :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib -> GQLTypeLib
+    default introspect :: (Show a, Selectors (Rep a) GQL__Field , D.Typeable a) => Proxy a -> GQLTypeLib -> GQLTypeLib
     introspect _  typeLib = do
-        let typeName = renameSystemNames $ (pack . show . typeOf) (undefined::a)
+        let typeName = renameSystemNames $ (T.pack . show . D.typeOf) (undefined::a)
         case M.lookup typeName typeLib of
             Just _ -> typeLib
-            Nothing -> arrayMap (insert typeName (createType typeName gqlFields) typeLib) stack
+            Nothing -> arrayMap (M.insert typeName (createType typeName gqlFields) typeLib) stack
                 where
                     fieldTypes  = getFields (Proxy :: Proxy (Rep a))
                     stack = map snd fieldTypes
@@ -134,13 +116,13 @@ resolve
     -> p ::-> a
     -> EvalIO JSType
 resolve (SelectionSet gqlArgs body) (TypeHolder args) (Resolver resolver) =
-    (ExceptT $ pure $ fromArgs gqlArgs args) >>= resolver >>= encode
+    (ExceptT $ pure $ decodeArgs gqlArgs args) >>= resolver >>= encode
         (SelectionSet gqlArgs body)
 resolve (Field gqlArgs field) (TypeHolder args) (Resolver resolver) =
-    (ExceptT $ pure $ fromArgs gqlArgs args) >>= resolver >>= encode
+    (ExceptT $ pure $ decodeArgs gqlArgs args) >>= resolver >>= encode
         (Field gqlArgs field)
 resolve query _ (Some value) = encode query value
-resolve _ _ None = ExceptT $ pure $ handleError "resolver not implemented"
+resolve _ _ None = ExceptT $ pure $ Err.handleError "resolver not implemented"
 
 instance (Show a, Show p, GQLSelection a , GQLArgs p ) => GQLSelection (p ::-> a) where
     encode (SelectionSet args body) field = resolve (SelectionSet args body) (getType field) field
@@ -148,8 +130,8 @@ instance (Show a, Show p, GQLSelection a , GQLArgs p ) => GQLSelection (p ::-> a
     encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
     encode x (Some a) = encode x a
     encode x None = pure JSNull
-    introspect  _  typeLib = arrayMap typeLib  ((map snd $ argsTypes (Proxy::Proxy p)) ++ [introspect (Proxy:: Proxy  a)])
-    fieldType _ name = (fieldType (Proxy:: Proxy  a) name ){ args = argsMeta (Proxy :: Proxy p) }
+    introspect  _  typeLib = arrayMap typeLib $ (map snd $ introspectArgs (Proxy::Proxy p)) ++ [introspect (Proxy:: Proxy  a)]
+    fieldType _ name = (fieldType (Proxy:: Proxy  a) name ){ args = map fst $ introspectArgs (Proxy :: Proxy p) }
 
 instance (Show a, GQLSelection a) => GQLSelection (Maybe a) where
     encode _ Nothing = pure JSNull
@@ -159,17 +141,17 @@ instance (Show a, GQLSelection a) => GQLSelection (Maybe a) where
 
 instance GQLSelection Int where
     encode _ =  pure . JSInt
-    introspect _ = insert "Int" (createScalar "Int")
+    introspect _ = M.insert "Int" (createScalar "Int")
     fieldType _ name =  createFieldWith name (createScalar "Int")  []
 
-instance GQLSelection Text where
+instance GQLSelection T.Text where
     encode _ =  pure . JSString
-    introspect _ = insert "String" (createScalar "String")
+    introspect _ = M.insert "String" (createScalar "String")
     fieldType _  name =  createFieldWith  name (createScalar "String") []
 
 instance GQLSelection Bool where
     encode _ =  pure . JSBool
-    introspect _ = insert "Boolean" (createScalar "Boolean")
+    introspect _ = M.insert "Boolean" (createScalar "Boolean")
     fieldType _ name = createFieldWith name (createScalar "Boolean") []
 
 instance GQLSelection a => GQLSelection [a] where
@@ -178,26 +160,20 @@ instance GQLSelection a => GQLSelection [a] where
     introspect _ = introspect (Proxy :: Proxy  a)
     fieldType _ = wrapAsListType <$> fieldType (Proxy :: Proxy  a)
 
-instance GQLSelection GQL__EnumValue;
-
-instance GQLSelection GQL__Type;
-
-instance GQLSelection GQL__Field;
-
-instance GQLSelection GQL__InputValue;
-
-instance GQLSelection GQL__Schema;
-
-instance GQLSelection GQL__Directive;
+instance GQLSelection GQL__EnumValue
+instance GQLSelection GQL__Type
+instance GQLSelection GQL__Field
+instance GQLSelection GQL__InputValue
+instance GQLSelection GQL__Schema
+instance GQLSelection GQL__Directive
+instance  GQLArgs GQL__Deprecation__Args
 
 instance GQLSelection GQL__TypeKind where
-    introspect _ = insert "__TypeKind" (createScalar "__TypeKind" )
+    introspect _ = M.insert "__TypeKind" (createScalar "__TypeKind" )
     fieldType _ name = createField name "__TypeKind" []
-    encode _ = pure . JSString . pack . show
+    encode _ = pure . JSString . T.pack . show
 
 instance GQLSelection GQL__DirectiveLocation where
-    introspect _  = insert "__DirectiveLocation" (createScalar "__DirectiveLocation" )
+    introspect _  = M.insert "__DirectiveLocation" (createScalar "__DirectiveLocation" )
     fieldType _ name = createField name "__DirectiveLocation" []
-    encode _ = pure  . JSString . pack . show
-
-instance  GQLArgs GQL__Deprication__Args;
+    encode _ = pure  . JSString . T.pack . show

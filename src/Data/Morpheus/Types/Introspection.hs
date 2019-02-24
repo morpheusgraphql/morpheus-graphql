@@ -10,7 +10,7 @@ module Data.Morpheus.Types.Introspection
   , GQLTypeLib
   , emptyLib
   , GQL__EnumValue(..)
-  , GQL__Deprication__Args(..)
+  , GQL__Deprecation__Args(..)
   , createInputValue
   , wrapListType
   , unwrapType
@@ -39,18 +39,17 @@ data GQL__Type =  GQL__Type {
    kind :: GQL__TypeKind
   ,name :: Text
   ,description :: Text
-  ,fields :: GQL__Deprication__Args ::-> [GQL__Field]
+  ,fields :: GQL__Deprecation__Args ::-> [GQL__Field]
   ,ofType :: Maybe GQL__Type
   ,interfaces :: [GQL__Type]
   ,possibleTypes :: [GQL__Type]
-  ,enumValues:: GQL__Deprication__Args ::-> [GQL__EnumValue]
+  ,enumValues:: GQL__Deprecation__Args ::-> [GQL__EnumValue]
   ,inputFields:: [GQL__InputValue]
 } deriving (Show , Data, Generic)
 
-data GQL__Deprication__Args = DepricationArgs {
+data GQL__Deprecation__Args = DeprecationArgs {
   includeDeprecated:: Bool
 } deriving (Show , Data, Generic )
-
 
 data GQL__Field = GQL__Field{
   name:: Text,

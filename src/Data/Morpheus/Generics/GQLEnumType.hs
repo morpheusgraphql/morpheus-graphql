@@ -1,41 +1,36 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE  ScopedTypeVariables , AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
 
 module Data.Morpheus.Generics.GQLEnumType where
 
+import           GHC.Generics
+import qualified Data.Data as D
+import qualified Data.Map as M
+import qualified Data.Text as T
+import           Data.Proxy                     ( Proxy(..) )
+import qualified Data.Morpheus.Types.Introspection as I
+import           Data.Morpheus.Generics.GenericEnum ( GToEnum(..))
 import           Data.Morpheus.Types.Types      ( JSType(..)
                                                 , MetaInfo(..)
                                                 , GQLEnum(..)
                                                 )
-import           Data.Text                      ( Text
-                                                , unpack
-                                                , pack
-                                                )
-import           Data.Morpheus.Generics.GenericEnum ( GToEnum(..))
-import           GHC.Generics
-import           Data.Data
-import           Data.Morpheus.Types.Introspection ( createEnum , GQLTypeLib, GQL__InputValue(..), createInputValue)
-import           Data.Map as M
-import           Data.Proxy                     ( Proxy(..) )
 
-getType :: Typeable a => a -> Text
-getType = pack . show . typeOf
-
+getType :: D.Typeable a => a -> T.Text
+getType = T.pack . show . D.typeOf
 
 class GQLEnumType a where
     decodeEnum :: JSType -> a
-    default decodeEnum :: ( Show a  , Generic a, Data a , GToEnum (Rep a) ) => JSType -> a
+    default decodeEnum :: ( Show a  , Generic a, D.Data a , GToEnum (Rep a) ) => JSType -> a
     decodeEnum (JSEnum text) = to $ gToEnum text
 
-    enumType :: Proxy a -> Text -> GQL__InputValue
-    default enumType :: (Show a, Typeable a) => Proxy a -> Text -> GQL__InputValue
-    enumType _ name  = createInputValue name $ getType (undefined::a)
+    enumType :: Proxy a -> T.Text -> I.GQL__InputValue
+    default enumType :: (Show a, D.Typeable a) => Proxy a -> T.Text -> I.GQL__InputValue
+    enumType _ name  = I.createInputValue name $ getType (undefined::a)
 
-    introspectEnum :: Proxy a -> GQLTypeLib -> GQLTypeLib
-    default introspectEnum :: (Show a, Typeable a , GToEnum (Rep a) ) => Proxy a -> GQLTypeLib -> GQLTypeLib
+    introspectEnum :: Proxy a -> I.GQLTypeLib -> I.GQLTypeLib
+    default introspectEnum :: (Show a, D.Typeable a , GToEnum (Rep a) ) => Proxy a -> I.GQLTypeLib -> I.GQLTypeLib
     introspectEnum _  typeLib = do
             let typeName = getType (undefined::a)
             let tags = getTags (Proxy:: Proxy (Rep a))
             case M.lookup typeName typeLib of
                 Just _ -> typeLib
-                Nothing -> insert typeName (createEnum typeName tags) typeLib
+                Nothing -> M.insert typeName (I.createEnum typeName tags) typeLib

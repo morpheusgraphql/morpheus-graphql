@@ -27,10 +27,10 @@ getType = pack . show . typeOf
 
 class GQLInput a where
     decode :: JSType -> a
-    default decode :: ( Show a  , Generic a, Data a , GToEnum (Rep a) ) => JSType -> a
-    decode (JSEnum text) = to $ gToEnum text
-   -- TODO:: write input Object Recognition
-   -- decode (JSObject hashMap) to $ gToInput hashMap
+    -- default decode :: ( Show a  , Generic a, Data a , GToEnum (Rep a) ) => JSType -> a
+    -- TODO:: write input Object Recognition
+    -- decode (JSObject hashMap) to $ gToInput hashMap
+
     typeInfo :: Proxy a -> Text -> GQL__InputValue
     default typeInfo :: (Show a, Typeable a) => Proxy a -> Text -> GQL__InputValue
     typeInfo _ name  = createInputValue name $ getType (undefined::a)
