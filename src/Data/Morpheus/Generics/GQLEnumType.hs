@@ -11,8 +11,7 @@ import           Data.Text                      ( Text
                                                 , unpack
                                                 , pack
                                                 )
-import           Data.Morpheus.Generics.GenericInputType
-                                                ( GToEnum(..))
+import           Data.Morpheus.Generics.GenericEnum ( GToEnum(..))
 import           GHC.Generics
 import           Data.Data
 import           Data.Morpheus.Types.Introspection ( createScalar , GQLTypeLib, GQL__InputValue(..), createInputValue)

@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables , TypeOperators , FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Generics.GenericInputType (GToEnum(..)) where
+module Data.Morpheus.Generics.GenericEnum (GToEnum(..)) where
 
 import           GHC.Generics
 import           Data.Morpheus.Types.Types     ( Arguments

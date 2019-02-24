@@ -14,8 +14,7 @@ import           Data.Text                      ( Text
                                                 , unpack
                                                 , pack
                                                 )
-import           Data.Morpheus.Generics.GenericInputType
-                                                ( GToEnum(..))
+import           Data.Morpheus.Generics.GenericEnum ( GToEnum(..))
 import           GHC.Generics
 import           Data.Data
 import           Data.Morpheus.Types.Introspection ( createScalar , GQLTypeLib, GQL__InputValue(..), createInputValue)
@@ -68,8 +67,8 @@ instance (GQLInput a , Show a, Typeable a ) => GQLInput (Maybe a) where
 
 instance ( Show a, GQLEnumType a ) => GQLInput (GQLEnum a) where
     decode (JSEnum text) = GQLEnum (decodeEnum (JSEnum text))
-    typeInfo _ name =  (enumType (Proxy :: Proxy a) name) { defaultValue = "Nothing" }
-    introInput _  typeLib = typeLib
+    typeInfo _  = enumType (Proxy :: Proxy a)
+    introInput _ = introspectEnum (Proxy :: Proxy a)
 
 
 
