@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables , AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
+{-# LANGUAGE  ScopedTypeVariables , AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
 
 module Data.Morpheus.Generics.GQLInput
     ( GQLInput(..)
@@ -8,6 +8,7 @@ where
 
 import           Data.Morpheus.Types.Types      ( JSType(..)
                                                 , MetaInfo(..)
+                                                , GQLEnum(..)
                                                 )
 import           Data.Text                      ( Text
                                                 , unpack
@@ -19,9 +20,11 @@ import           GHC.Generics
 import           Data.Data
 import           Data.Morpheus.Types.Introspection ( createScalar , GQLTypeLib, GQL__InputValue(..), createInputValue)
 import           Data.Map as M
+import           Data.Morpheus.Generics.GQLEnumType (GQLEnumType(..))
 
 getType :: Typeable a => a -> Text
 getType = pack . show . typeOf
+
 
 class GQLInput a where
     decode :: JSType -> a
@@ -61,5 +64,13 @@ instance (GQLInput a , Show a, Typeable a ) => GQLInput (Maybe a) where
     decode x = Just (decode x)
     typeInfo _ name =  (typeInfo (Proxy :: Proxy a) name) { defaultValue = "Nothing" }
     introInput _  typeLib = typeLib
+
+
+instance ( Show a, GQLEnumType a ) => GQLInput (GQLEnum a) where
+    decode (JSEnum text) = GQLEnum (decodeEnum (JSEnum text))
+    typeInfo _ name =  (enumType (Proxy :: Proxy a) name) { defaultValue = "Nothing" }
+    introInput _  typeLib = typeLib
+
+
 
 

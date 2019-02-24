@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric, DeriveAnyClass , TypeOperators #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, DeriveAnyClass , TypeOperators #-}
 
 module Data.Morpheus.Types.Types
     ( Eval
@@ -17,6 +17,7 @@ module Data.Morpheus.Types.Types
     , EvalIO(..)
     , failEvalIO
     , Arguments
+    , GQLEnum(..)
     )
 where
 
@@ -48,6 +49,8 @@ import           Control.Monad.Trans.Except     ( ExceptT(..)
 
 type Eval a = Either [GQLError] a ;
 type EvalIO  = ExceptT [GQLError] IO;
+
+newtype GQLEnum a = GQLEnum { unpackEnum :: a }  deriving (Show, Generic , Data);
 
 failEvalIO :: [GQLError] -> EvalIO a
 failEvalIO = ExceptT . pure . Left

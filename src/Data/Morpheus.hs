@@ -11,6 +11,8 @@ module Data.Morpheus
     , eitherToResponse
     , EvalIO(..)
     , GQLInput
+    , GQLEnum(unpackEnum)
+    , GQLEnumType
     )
 where
 
@@ -32,6 +34,7 @@ import           Data.Morpheus.Types.Types     ( (::->)(Resolver)
                                                 , EvalIO(..)
                                                 , failEvalIO
                                                 , JSType
+                                                , GQLEnum(unpackEnum)
                                                 )
 import           Data.Proxy                     ( Proxy )
 import           Control.Monad                  ( (>=>) )
@@ -40,6 +43,7 @@ import           Control.Monad.Trans.Except     ( runExceptT
                                                 , ExceptT(..)
                                                 )
 import          Data.Morpheus.Generics.GQLInput (GQLInput)
+import          Data.Morpheus.Generics.GQLEnumType(GQLEnumType)
 
 
 resolve :: GQLRoot a => EvalIO a -> GQLRequest -> EvalIO JSType
