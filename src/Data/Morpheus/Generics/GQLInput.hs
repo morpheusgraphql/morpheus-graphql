@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables , AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
 
-module Data.Morpheus.Generics.InputType
+module Data.Morpheus.Generics.GQLInput
     ( GQLInput(..)
     )
 where

@@ -39,7 +39,7 @@ import           Data.Morpheus.ErrorMessage    ( errorMessage )
 import           Control.Monad.Trans.Except     ( runExceptT
                                                 , ExceptT(..)
                                                 )
-import          Data.Morpheus.Generics.InputType (GQLInput)
+import          Data.Morpheus.Generics.GQLInput (GQLInput)
 
 
 resolve :: GQLRoot a => EvalIO a -> GQLRequest -> EvalIO JSType

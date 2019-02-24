@@ -30,12 +30,15 @@ import           Data.Aeson                     ( FromJSON )
 import           Data.Either
 import           Control.Monad.Trans            ( lift )
 import           Data.Maybe                     (fromMaybe)
+
+data CityID = Paris | BLN | HH deriving (Show,Generic,Data)
+
+instance GQLInput CityID
+
 data Coordinates = Coordinates {
     latitude :: Text,
     longitude :: Text
 } deriving (Show,Generic,Data,GQLArgs)
-
-data CityID = Paris | BLN | HH deriving (Show,Generic,Data,GQLInput)
 
 data Location = Location {
     zipCode:: Maybe Int,
