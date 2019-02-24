@@ -24,8 +24,8 @@ import           Data.Morpheus                  ( GQLSelection
                                                 , eitherToResponse
                                                 , EvalIO(..)
                                                 , GQLInput
-                                                , GQLEnum(unpackEnum)
-                                                , GQLEnumType
+                                                , EnumOf(unpackEnum)
+                                                , GQLEnum
                                                 )
 import           Example.Files                  ( getJson )
 import           Data.Aeson                     ( FromJSON )
@@ -33,7 +33,7 @@ import           Data.Either
 import           Control.Monad.Trans            ( lift )
 import           Data.Maybe                     (fromMaybe)
 
-data CityID = Paris | BLN | HH deriving (Show,Generic,Data, GQLEnumType)
+data CityID = Paris | BLN | HH deriving (Show,Generic,Data, GQLEnum)
 
 data Coordinates = Coordinates {
     latitude :: Text,
@@ -42,7 +42,7 @@ data Coordinates = Coordinates {
 
 data Location = Location {
     zipCode:: Maybe Int,
-    cityID:: GQLEnum CityID
+    cityID:: EnumOf CityID
 } deriving (Show,Data,Generic,GQLArgs)
 
 data Address = Address {

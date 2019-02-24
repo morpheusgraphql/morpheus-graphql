@@ -17,7 +17,7 @@ module Data.Morpheus.Types.Types
     , EvalIO(..)
     , failEvalIO
     , Arguments
-    , GQLEnum(..)
+    , EnumOf(..)
     )
 where
 
@@ -50,7 +50,7 @@ import           Control.Monad.Trans.Except     ( ExceptT(..)
 type Eval a = Either [GQLError] a ;
 type EvalIO  = ExceptT [GQLError] IO;
 
-newtype GQLEnum a = GQLEnum { unpackEnum :: a }  deriving (Show, Generic , Data);
+newtype EnumOf a = EnumOf { unpackEnum :: a }  deriving (Show, Generic , Data);
 
 failEvalIO :: [GQLError] -> EvalIO a
 failEvalIO = ExceptT . pure . Left

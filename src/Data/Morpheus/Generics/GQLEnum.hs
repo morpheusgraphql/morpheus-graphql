@@ -1,6 +1,6 @@
 {-# LANGUAGE  ScopedTypeVariables , AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
 
-module Data.Morpheus.Generics.GQLEnumType where
+module Data.Morpheus.Generics.GQLEnum where
 
 import           GHC.Generics
 import qualified Data.Data as D
@@ -11,13 +11,12 @@ import qualified Data.Morpheus.Types.Introspection as I
 import           Data.Morpheus.Generics.GenericEnum ( GToEnum(..))
 import           Data.Morpheus.Types.Types      ( JSType(..)
                                                 , MetaInfo(..)
-                                                , GQLEnum(..)
                                                 )
 
 getType :: D.Typeable a => a -> T.Text
 getType = T.pack . show . D.typeOf
 
-class GQLEnumType a where
+class GQLEnum a where
     decodeEnum :: JSType -> a
     default decodeEnum :: ( Show a  , Generic a, D.Data a , GToEnum (Rep a) ) => JSType -> a
     decodeEnum (JSEnum text) = to $ gToEnum text
