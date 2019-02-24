@@ -87,7 +87,7 @@ class GQLSelection a where
     encode :: QuerySelection ->  a -> EvalIO JSType
     default encode :: ( Generic a, D.Data a, GenericMap (Rep a) , Show a) => QuerySelection -> a -> EvalIO JSType
     encode (SelectionSet args gql) = wrapAsObject . encodeFields initMeta gql . from
-    encode (Field args key) = \x -> failEvalIO $ Err.subfieldsNotSelected x key
+    encode (Field args key) = \x -> failEvalIO $ Err.subfieldsNotSelected $ MetaInfo "" "" key
 
     fieldType :: Proxy a -> T.Text -> GQL__Field
     default fieldType :: (Show a, Selectors (Rep a) GQL__Field , D.Typeable a) => Proxy a -> T.Text -> GQL__Field
@@ -141,17 +141,17 @@ instance (Show a, GQLSelection a) => GQLSelection (Maybe a) where
 
 instance GQLSelection Int where
     encode _ =  pure . JSInt
-    introspect _ = M.insert "Int" (createScalar "Int")
+    introspect _ = M.insert "Int" $ createScalar "Int"
     fieldType _ name =  createFieldWith name (createScalar "Int")  []
 
 instance GQLSelection T.Text where
     encode _ =  pure . JSString
-    introspect _ = M.insert "String" (createScalar "String")
+    introspect _ = M.insert "String" $ createScalar "String"
     fieldType _  name =  createFieldWith  name (createScalar "String") []
 
 instance GQLSelection Bool where
     encode _ =  pure . JSBool
-    introspect _ = M.insert "Boolean" (createScalar "Boolean")
+    introspect _ = M.insert "Boolean" $ createScalar "Boolean"
     fieldType _ name = createFieldWith name (createScalar "Boolean") []
 
 instance GQLSelection a => GQLSelection [a] where
