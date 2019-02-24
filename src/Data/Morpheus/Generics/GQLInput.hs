@@ -1,27 +1,29 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables , AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
+{-# LANGUAGE  ScopedTypeVariables , AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
 
-module Data.Morpheus.Generics.InputType
+module Data.Morpheus.Generics.GQLInput
     ( GQLInput(..)
     )
 where
 
 import           Data.Morpheus.Types.Types      ( JSType(..)
                                                 , MetaInfo(..)
+                                                , GQLEnum(..)
                                                 )
 import           Data.Text                      ( Text
                                                 , unpack
                                                 , pack
                                                 )
-import           Data.Morpheus.Generics.GenericInputType
-                                                ( GQLInputObject(..)
-                                                , GToEnum(..)
-
-                                                )
+import           Data.Morpheus.Generics.GenericEnum ( GToEnum(..))
 import           GHC.Generics
 import           Data.Data
 import           Data.Morpheus.Types.Introspection ( createScalar , GQLTypeLib, GQL__InputValue(..), createInputValue)
 import           Data.Map as M
+import           Data.Morpheus.Generics.GQLEnumType (GQLEnumType(..))
+
+getType :: Typeable a => a -> Text
+getType = pack . show . typeOf
+
 
 class GQLInput a where
     decode :: JSType -> a
@@ -29,16 +31,14 @@ class GQLInput a where
     decode (JSEnum text) = to $ gToEnum text
    -- TODO:: write input Object Recognition
    -- decode (JSObject hashMap) to $ gToInput hashMap
-
     typeInfo :: Proxy a -> Text -> GQL__InputValue
     default typeInfo :: (Show a, Typeable a) => Proxy a -> Text -> GQL__InputValue
-    typeInfo _ name  = createInputValue name typeName
-             where typeName = (pack . show . typeOf) (undefined::a)
+    typeInfo _ name  = createInputValue name $ getType (undefined::a)
 
     introInput :: Proxy a -> GQLTypeLib -> GQLTypeLib
     default introInput :: (Show a, Typeable a) => Proxy a -> GQLTypeLib -> GQLTypeLib
     introInput _  typeLib = do
-            let typeName = (pack . show . typeOf) (undefined::a)
+            let typeName = getType (undefined::a)
             case M.lookup typeName typeLib of
                 Just _ -> typeLib
                 Nothing -> insert typeName (createScalar typeName) typeLib
@@ -63,5 +63,13 @@ instance (GQLInput a , Show a, Typeable a ) => GQLInput (Maybe a) where
     decode x = Just (decode x)
     typeInfo _ name =  (typeInfo (Proxy :: Proxy a) name) { defaultValue = "Nothing" }
     introInput _  typeLib = typeLib
+
+
+instance ( Show a, GQLEnumType a ) => GQLInput (GQLEnum a) where
+    decode (JSEnum text) = GQLEnum (decodeEnum (JSEnum text))
+    typeInfo _  = enumType (Proxy :: Proxy a)
+    introInput _ = introspectEnum (Proxy :: Proxy a)
+
+
 
 

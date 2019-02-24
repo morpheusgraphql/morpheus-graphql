@@ -16,6 +16,7 @@ module Data.Morpheus.Types.Introspection
   , unwrapType
   , createScalar
   , createFieldWith
+  , createEnum
   )
 where
 
@@ -32,7 +33,7 @@ import           Data.Morpheus.Types.Types      ( (::->)(..) )
 import           Data.Morpheus.Schema.GQL__TypeKind
                                                 ( GQL__TypeKind(..) )
 import           Data.Morpheus.Schema.GQL__EnumValue
-                                                ( GQL__EnumValue )
+                                                ( GQL__EnumValue , createEnumValue)
 import           Data.Maybe                     ( fromMaybe )
 data GQL__Type =  GQL__Type {
    kind :: GQL__TypeKind
@@ -120,6 +121,19 @@ createScalar name  = GQL__Type {
   , interfaces    = []
   , possibleTypes = []
   , enumValues    = Some []
+  , inputFields   = []
+}
+
+createEnum  :: Text -> [Text] -> GQL__Type
+createEnum name tags = GQL__Type {
+  kind          = ENUM
+  , name          = name
+  , description   = "my description"
+  , fields        = Some []
+  , ofType        = Nothing
+  , interfaces    = []
+  , possibleTypes = []
+  , enumValues    = Some $ map createEnumValue tags
   , inputFields   = []
 }
 

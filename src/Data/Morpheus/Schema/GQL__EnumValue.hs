@@ -1,7 +1,7 @@
-{-# LANGUAGE  DeriveGeneric , DeriveAnyClass , DeriveDataTypeable  #-}
+{-# LANGUAGE  OverloadedStrings , DeriveGeneric , DeriveAnyClass , DeriveDataTypeable  #-}
 
 module Data.Morpheus.Schema.GQL__EnumValue
-  (GQL__EnumValue(..))
+  (GQL__EnumValue(..),createEnumValue)
 where
 
 import           Data.Text                      (Text)
@@ -15,3 +15,11 @@ data  GQL__EnumValue = GQL__EnumValue{
   ,isDeprecated:: Bool
   ,deprecationReason:: Text
 } deriving (Show , Data, Generic )
+
+createEnumValue :: Text -> GQL__EnumValue
+createEnumValue name = GQL__EnumValue {
+    name = name
+    ,description = ""
+    ,isDeprecated = False
+    ,deprecationReason = ""
+}

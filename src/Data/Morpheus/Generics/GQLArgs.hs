@@ -33,7 +33,7 @@ import           Data.Morpheus.Generics.TypeRep
 import           Data.Morpheus.ErrorMessage    ( requiredArgument
                                                 , handleError
                                                 )
-import Data.Morpheus.Generics.InputType        (GQLInput(..))
+import Data.Morpheus.Generics.GQLInput        (GQLInput(..))
 import Data.Morpheus.Generics.GenericToArgs   (GToArgs(..))
 import  qualified Data.Map as M
 

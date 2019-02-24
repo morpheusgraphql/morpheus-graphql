@@ -17,6 +17,7 @@ import           Data.Text                      ( Text(..)
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type
                                                 , emptyLib
+                                                , createType
                                                 )
 import           Data.Morpheus.Schema.GQL__Directive
                                                 ( GQL__Directive )
@@ -34,7 +35,7 @@ data GQL__Schema = GQL__Schema {
 initSchema :: [GQL__Type] -> GQL__Schema
 initSchema types = GQL__Schema
     { types            = types
-    , queryType        = Nothing
+    , queryType        = Just $ createType "Query" []
     , mutationType     = Nothing
     , subscriptionType = Nothing
     , directives       = []
