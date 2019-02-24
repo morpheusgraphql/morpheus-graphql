@@ -47,9 +47,9 @@ cannotQueryField :: MetaInfo -> [GQLError]
 cannotQueryField meta = errorMessage $ concat
     ["Cannot query field ", key meta, " on type ", className meta, "."]
 
-subfieldsNotSelected :: a -> Text -> [GQLError]
-subfieldsNotSelected record key = errorMessage $ concat
-    ["Field ", key, " of type \"Type\" must have a selection of subfields"]
+subfieldsNotSelected :: MetaInfo -> [GQLError]
+subfieldsNotSelected  meta = errorMessage $ concat
+    ["Field ", key meta, " of type \"", className meta ,"\" must have a selection of subfields"]
 
 syntaxError :: Text -> [GQLError]
 syntaxError e = errorMessage $ concat ["Syntax Error: ", e]

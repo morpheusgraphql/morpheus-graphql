@@ -8,7 +8,7 @@ where
 
 import           Data.Morpheus.Types.Types      ( JSType(..)
                                                 , MetaInfo(..)
-                                                , GQLEnum(..)
+                                                , EnumOf(..)
                                                 )
 import           Data.Text                      ( Text
                                                 , unpack
@@ -19,7 +19,7 @@ import           GHC.Generics
 import           Data.Data
 import           Data.Morpheus.Types.Introspection ( createScalar , GQLTypeLib, GQL__InputValue(..), createInputValue)
 import           Data.Map as M
-import           Data.Morpheus.Generics.GQLEnumType (GQLEnumType(..))
+import           Data.Morpheus.Generics.GQLEnum (GQLEnum(..))
 
 getType :: Typeable a => a -> Text
 getType = pack . show . typeOf
@@ -27,10 +27,10 @@ getType = pack . show . typeOf
 
 class GQLInput a where
     decode :: JSType -> a
-    default decode :: ( Show a  , Generic a, Data a , GToEnum (Rep a) ) => JSType -> a
-    decode (JSEnum text) = to $ gToEnum text
-   -- TODO:: write input Object Recognition
-   -- decode (JSObject hashMap) to $ gToInput hashMap
+    -- default decode :: ( Show a  , Generic a, Data a , GToEnum (Rep a) ) => JSType -> a
+    -- TODO:: write input Object Recognition
+    -- decode (JSObject hashMap) to $ gToInput hashMap
+
     typeInfo :: Proxy a -> Text -> GQL__InputValue
     default typeInfo :: (Show a, Typeable a) => Proxy a -> Text -> GQL__InputValue
     typeInfo _ name  = createInputValue name $ getType (undefined::a)
@@ -64,9 +64,8 @@ instance (GQLInput a , Show a, Typeable a ) => GQLInput (Maybe a) where
     typeInfo _ name =  (typeInfo (Proxy :: Proxy a) name) { defaultValue = "Nothing" }
     introInput _  typeLib = typeLib
 
-
-instance ( Show a, GQLEnumType a ) => GQLInput (GQLEnum a) where
-    decode (JSEnum text) = GQLEnum (decodeEnum (JSEnum text))
+instance ( Show a, GQLEnum a ) => GQLInput (EnumOf a) where
+    decode (JSEnum text) = EnumOf (decodeEnum (JSEnum text))
     typeInfo _  = enumType (Proxy :: Proxy a)
     introInput _ = introspectEnum (Proxy :: Proxy a)
 

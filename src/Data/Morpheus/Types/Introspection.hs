@@ -10,7 +10,7 @@ module Data.Morpheus.Types.Introspection
   , GQLTypeLib
   , emptyLib
   , GQL__EnumValue(..)
-  , GQL__Deprication__Args(..)
+  , GQL__Deprecation__Args(..)
   , createInputValue
   , wrapListType
   , unwrapType
@@ -29,28 +29,27 @@ import           Data.Map                       ( Map
 import           GHC.Generics
 import           Data.Aeson
 import           Data.Data                      ( Data )
-import           Data.Morpheus.Types.Types      ( (::->)(..) )
+import           Data.Morpheus.Types.Types      ( (::->)(..) , EnumOf(..) )
 import           Data.Morpheus.Schema.GQL__TypeKind
                                                 ( GQL__TypeKind(..) )
 import           Data.Morpheus.Schema.GQL__EnumValue
                                                 ( GQL__EnumValue , createEnumValue)
 import           Data.Maybe                     ( fromMaybe )
 data GQL__Type =  GQL__Type {
-   kind :: GQL__TypeKind
+   kind :: EnumOf GQL__TypeKind
   ,name :: Text
   ,description :: Text
-  ,fields :: GQL__Deprication__Args ::-> [GQL__Field]
+  ,fields :: GQL__Deprecation__Args ::-> [GQL__Field]
   ,ofType :: Maybe GQL__Type
   ,interfaces :: [GQL__Type]
   ,possibleTypes :: [GQL__Type]
-  ,enumValues:: GQL__Deprication__Args ::-> [GQL__EnumValue]
+  ,enumValues:: GQL__Deprecation__Args ::-> [GQL__EnumValue]
   ,inputFields:: [GQL__InputValue]
 } deriving (Show , Data, Generic)
 
-data GQL__Deprication__Args = DepricationArgs {
+data GQL__Deprecation__Args = DeprecationArgs {
   includeDeprecated:: Bool
 } deriving (Show , Data, Generic )
-
 
 data GQL__Field = GQL__Field{
   name:: Text,
@@ -100,7 +99,7 @@ createFieldWith argname fieldtype args = GQL__Field
 
 createType :: Text -> [GQL__Field] -> GQL__Type
 createType name fields = GQL__Type
-  { kind          = OBJECT
+  { kind          = EnumOf OBJECT
   , name          = name
   , description   = "my description"
   , fields        = Some fields
@@ -113,7 +112,7 @@ createType name fields = GQL__Type
 
 createScalar  :: Text -> GQL__Type
 createScalar name  = GQL__Type {
-  kind          = SCALAR
+  kind          = EnumOf SCALAR
   , name          = name
   , description   = "my description"
   , fields        = Some []
@@ -126,7 +125,7 @@ createScalar name  = GQL__Type {
 
 createEnum  :: Text -> [Text] -> GQL__Type
 createEnum name tags = GQL__Type {
-  kind          = ENUM
+  kind          = EnumOf ENUM
   , name          = name
   , description   = "my description"
   , fields        = Some []
@@ -140,12 +139,12 @@ createEnum name tags = GQL__Type {
 
 unwrapType :: GQL__Type -> Maybe GQL__Type
 unwrapType x = case kind x of
-  LIST -> ofType x
+  EnumOf LIST -> ofType x
   _    -> Just x
 
 wrapListType :: GQL__Type -> GQL__Type
 wrapListType contentType = GQL__Type
-  { kind          = LIST
+  { kind          = EnumOf LIST
   , name          = ""
   , description   = "list Type"
   , fields        = None

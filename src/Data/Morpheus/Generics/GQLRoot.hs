@@ -35,7 +35,6 @@ import           Data.Morpheus.Types.Introspection
                                                 , GQL__TypeKind(..)
                                                 , GQL__InputValue
                                                 , GQLTypeLib
-                                                , GQL__Deprication__Args
                                                 , GQL__EnumValue
                                                 , createType
                                                 , createField

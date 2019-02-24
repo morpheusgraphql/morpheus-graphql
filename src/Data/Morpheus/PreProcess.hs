@@ -125,8 +125,9 @@ mapSelectors
     -> SelectionSet
     -> Eval SelectionSet
 mapSelectors typeLib root _type selectors = do
-  selectors' <- mapM (propagateSpread root) selectors
-  mapM (validateBySchema typeLib root _type) (concat selectors')
+  selectors' <- concat <$> mapM (propagateSpread root) selectors
+
+  mapM (validateBySchema typeLib root _type) selectors'
 
 validateBySchema
     :: GQLTypeLib
@@ -143,6 +144,7 @@ validateBySchema typeLib root _parentType (_name, SelectionSet head selectors)
         pure (_name, SelectionSet head' selectors')
 
 validateBySchema typeLib root _parentType (_name, Field head field) = do
+    _checksIfhasType  <- typeBy typeLib _parentType _name
     _argsType <- argsType _parentType _name
     head'     <- validateArguments root _argsType head
     pure (_name, Field head' field)
