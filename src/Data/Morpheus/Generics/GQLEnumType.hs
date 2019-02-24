@@ -14,8 +14,9 @@ import           Data.Text                      ( Text
 import           Data.Morpheus.Generics.GenericEnum ( GToEnum(..))
 import           GHC.Generics
 import           Data.Data
-import           Data.Morpheus.Types.Introspection ( createScalar , GQLTypeLib, GQL__InputValue(..), createInputValue)
+import           Data.Morpheus.Types.Introspection ( createEnum , GQLTypeLib, GQL__InputValue(..), createInputValue)
 import           Data.Map as M
+import           Data.Proxy                     ( Proxy(..) )
 
 getType :: Typeable a => a -> Text
 getType = pack . show . typeOf
@@ -31,9 +32,10 @@ class GQLEnumType a where
     enumType _ name  = createInputValue name $ getType (undefined::a)
 
     introspectEnum :: Proxy a -> GQLTypeLib -> GQLTypeLib
-    default introspectEnum :: (Show a, Typeable a) => Proxy a -> GQLTypeLib -> GQLTypeLib
+    default introspectEnum :: (Show a, Typeable a , GToEnum (Rep a) ) => Proxy a -> GQLTypeLib -> GQLTypeLib
     introspectEnum _  typeLib = do
             let typeName = getType (undefined::a)
+            let tags = getTags (Proxy:: Proxy (Rep a))
             case M.lookup typeName typeLib of
                 Just _ -> typeLib
-                Nothing -> insert typeName (createScalar typeName) typeLib
+                Nothing -> insert typeName (createEnum typeName tags) typeLib
