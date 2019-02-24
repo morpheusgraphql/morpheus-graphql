@@ -48,7 +48,7 @@ data GQL__Type =  GQL__Type {
 } deriving (Show , Data, Generic)
 
 data GQL__Deprecation__Args = DeprecationArgs {
-  includeDeprecated:: Bool
+  includeDeprecated:: Maybe Bool
 } deriving (Show , Data, Generic )
 
 data GQL__Field = GQL__Field{
