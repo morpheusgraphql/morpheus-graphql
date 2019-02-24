@@ -25,6 +25,10 @@ class GQLEnum a where
     default enumType :: (Show a, D.Typeable a) => Proxy a -> T.Text -> I.GQL__InputValue
     enumType _ name  = I.createInputValue name $ getType (undefined::a)
 
+    enumFieldType :: Proxy a -> T.Text -> I.GQL__Field
+    default enumFieldType :: (Show a, D.Typeable a) => Proxy a -> T.Text -> I.GQL__Field
+    enumFieldType _ name  = I.createFieldWith name (I.createEnum  (getType (undefined::a)) []) []
+
     introspectEnum :: Proxy a -> I.GQLTypeLib -> I.GQLTypeLib
     default introspectEnum :: (Show a, D.Typeable a , GToEnum (Rep a) ) => Proxy a -> I.GQLTypeLib -> I.GQLTypeLib
     introspectEnum _  typeLib = do

@@ -26,6 +26,7 @@ import            Data.Morpheus.Types.Types     ( SelectionSet
                                                 , MetaInfo(..)
                                                 , JSType(..)
                                                 , failEvalIO
+                                                , EnumOf(..)
                                                 )
 import qualified Data.Morpheus.ErrorMessage  as Err
 import           Data.Morpheus.Generics.GQLArgs
@@ -57,7 +58,7 @@ import           Data.Morpheus.Generics.GenericMap
                                                 , getField
                                                 , initMeta
                                                 )
-
+import           Data.Morpheus.Generics.GQLEnum (GQLEnum(..))
 
 renameSystemNames = T.replace "GQL__" "__";
 
@@ -160,20 +161,17 @@ instance GQLSelection a => GQLSelection [a] where
     introspect _ = introspect (Proxy :: Proxy  a)
     fieldType _ = wrapAsListType <$> fieldType (Proxy :: Proxy  a)
 
+instance ( Show a, GQLEnum a ) => GQLSelection (EnumOf a) where
+    encode _ = pure . JSString . T.pack . show . unpackEnum
+    fieldType _  = enumFieldType (Proxy :: Proxy a)
+    introspect _ = introspectEnum (Proxy :: Proxy a)
+
 instance GQLSelection GQL__EnumValue
 instance GQLSelection GQL__Type
 instance GQLSelection GQL__Field
 instance GQLSelection GQL__InputValue
 instance GQLSelection GQL__Schema
 instance GQLSelection GQL__Directive
-instance  GQLArgs GQL__Deprecation__Args
-
-instance GQLSelection GQL__TypeKind where
-    introspect _ = M.insert "__TypeKind" (createScalar "__TypeKind" )
-    fieldType _ name = createField name "__TypeKind" []
-    encode _ = pure . JSString . T.pack . show
-
-instance GQLSelection GQL__DirectiveLocation where
-    introspect _  = M.insert "__DirectiveLocation" (createScalar "__DirectiveLocation" )
-    fieldType _ name = createField name "__DirectiveLocation" []
-    encode _ = pure  . JSString . T.pack . show
+instance GQLArgs GQL__Deprecation__Args
+instance GQLEnum GQL__TypeKind
+instance GQLEnum GQL__DirectiveLocation
