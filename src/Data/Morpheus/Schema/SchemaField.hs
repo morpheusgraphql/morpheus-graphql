@@ -21,7 +21,6 @@ import           Data.Morpheus.Types.Introspection
                                                 )
 import           Control.Monad                  ( join )
 
-
 selectFieldByKey :: Text -> GQL__Type -> Maybe GQL__Field
 selectFieldByKey key gqlType = case fields gqlType of
     Some fields -> find (\x -> key == name x) fields
