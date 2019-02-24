@@ -14,10 +14,7 @@ import           Data.Text                      ( Text
                                                 , pack
                                                 )
 import           Data.Morpheus.Generics.GenericInputType
-                                                ( GQLInputObject(..)
-                                                , GToEnum(..)
-
-                                                )
+                                                ( GToEnum(..))
 import           GHC.Generics
 import           Data.Data
 import           Data.Morpheus.Types.Introspection ( createScalar , GQLTypeLib, GQL__InputValue(..), createInputValue)
