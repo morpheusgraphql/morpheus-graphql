@@ -21,13 +21,12 @@ import            Data.Morpheus.Schema.SchemaField (wrapAsListType)
 import            Data.Morpheus.Types.Types     ( SelectionSet
                                                 , QuerySelection(..)
                                                 , (::->)(..)
-                                                , Eval(..)
-                                                , EvalIO(..)
-                                                , MetaInfo(..)
-                                                , JSType(..)
-                                                , failEvalIO
+                                                , ResolveIO(..)
+                                                , failResolveIO
                                                 , EnumOf(..)
+                                                , Validation
                                                 )
+import Data.Morpheus.Types.JSType (JSType(..))
 import qualified Data.Morpheus.ErrorMessage  as Err
 import           Data.Morpheus.Generics.GQLArgs
                                                 ( GQLArgs(..) )
@@ -51,18 +50,17 @@ import           Data.Morpheus.Types.Introspection
                                                 , createScalar
                                                 , createFieldWith
                                                 )
-import           Data.Morpheus.Generics.TypeRep
-                                                ( Selectors(..) )
-import           Data.Morpheus.Generics.GenericMap
-                                                ( GenericMap(..)
-                                                , getField
-                                                , initMeta
-                                                )
+import           Data.Morpheus.Generics.TypeRep ( Selectors(..) )
+import           Data.Morpheus.Generics.GenericMap ( GenericMap(..) )
+import           Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta)
 import           Data.Morpheus.Generics.GQLEnum (GQLEnum(..))
 
 renameSystemNames = T.replace "GQL__" "__";
 
-instance GQLSelection a => GenericMap  (K1 i a)  where
+getField :: MetaInfo -> SelectionSet -> Validation QuerySelection
+getField meta gql = pure $ fromMaybe QNull (lookup (key meta) gql)
+
+instance GQLSelection a => GenericMap (K1 i a)  where
     encodeFields meta gql (K1 src) = case getField meta gql of
         (Right field) -> case lookup (key meta) gql of
                 Nothing -> []
@@ -80,15 +78,15 @@ arrayMap lib (f : fs) = arrayMap (f lib) fs
 unwrapMonadTuple :: Monad m => (T.Text, m a) -> m (T.Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
-wrapAsObject :: [(T.Text, EvalIO JSType)] -> EvalIO JSType
+wrapAsObject :: [(T.Text, ResolveIO JSType)] -> ResolveIO JSType
 wrapAsObject x = JSObject . M.fromList <$> mapM unwrapMonadTuple x
 
 class GQLSelection a where
 
-    encode :: QuerySelection ->  a -> EvalIO JSType
-    default encode :: ( Generic a, D.Data a, GenericMap (Rep a) , Show a) => QuerySelection -> a -> EvalIO JSType
-    encode (SelectionSet args gql) = wrapAsObject . encodeFields initMeta gql . from
-    encode (Field args key) = \x -> failEvalIO $ Err.subfieldsNotSelected $ MetaInfo "" "" key
+    encode :: QuerySelection ->  a -> ResolveIO JSType
+    default encode :: ( Generic a, D.Data a, GenericMap (Rep a) , Show a) => QuerySelection -> a -> ResolveIO JSType
+    encode (SelectionSet args gql) = wrapAsObject . encodeFields initialMeta gql . from
+    encode (Field args key) = \x -> failResolveIO $ Err.subfieldsNotSelected $ MetaInfo "" "" key
 
     fieldType :: Proxy a -> T.Text -> GQL__Field
     default fieldType :: (Show a, Selectors (Rep a) GQL__Field , D.Typeable a) => Proxy a -> T.Text -> GQL__Field
@@ -115,7 +113,7 @@ resolve
     => QuerySelection
     -> p ::-> a
     -> p ::-> a
-    -> EvalIO JSType
+    -> ResolveIO JSType
 resolve (SelectionSet gqlArgs body) (TypeHolder args) (Resolver resolver) =
     (ExceptT $ pure $ decodeArgs gqlArgs args) >>= resolver >>= encode
         (SelectionSet gqlArgs body)

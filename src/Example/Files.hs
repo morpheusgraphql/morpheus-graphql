@@ -6,12 +6,11 @@ where
 import           Data.Aeson                     ( eitherDecode
                                                 , FromJSON
                                                 )
-import           Data.ByteString.Lazy           ( readFile )
-import           Prelude                 hiding ( readFile )
+import qualified Data.ByteString.Lazy as L           ( readFile )
 
 jsonPath :: String -> String
 jsonPath name = "example-data/" ++ name ++ ".json"
 
 getJson :: FromJSON a => FilePath -> IO (Either String a)
-getJson path = eitherDecode <$> readFile (jsonPath path)
+getJson path = eitherDecode <$> L.readFile (jsonPath path)
 

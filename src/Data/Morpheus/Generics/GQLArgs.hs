@@ -16,12 +16,12 @@ import Data.Morpheus.Generics.GQLInput        (GQLInput(..))
 import Data.Morpheus.Generics.GenericToArgs   (GToArgs(..))
 import qualified  Data.Morpheus.ErrorMessage    as Err
 import           Data.Morpheus.Types.Types     ( Arguments
-                                                , Eval(..)
+                                                , Validation(..)
                                                 , (::->)(Some, None)
-                                                , MetaInfo(..)
                                                 , Argument(..)
-                                                , JSType(..)
                                                 )
+import Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta)
+import Data.Morpheus.Types.JSType (JSType(..))
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__InputValue(..)
                                                 , createInputValue
@@ -44,9 +44,9 @@ instance GQLInput a => GToArgs  (K1 i a)  where
             Just x -> Err.handleError $ T.pack $ show x
 
 class GQLArgs p where
-    decodeArgs :: Arguments -> Maybe p -> Eval p
-    default decodeArgs :: ( Show p , Generic p, D.Data p , GToArgs (Rep p) ) => Arguments -> Maybe p -> Eval p
-    decodeArgs args _ = to <$> gToArgs (MetaInfo "" "" "") args
+    decodeArgs :: Arguments -> Maybe p -> Validation p
+    default decodeArgs :: ( Show p , Generic p, D.Data p , GToArgs (Rep p) ) => Arguments -> Maybe p -> Validation p
+    decodeArgs args _ = to <$> gToArgs initialMeta args
 
     introspectArgs :: Proxy p -> [(GQL__InputValue,GQLTypeLib -> GQLTypeLib)]
     default introspectArgs :: (Show p,  Selectors (Rep p) GQL__InputValue , D.Typeable p) => Proxy p -> [(GQL__InputValue,GQLTypeLib -> GQLTypeLib)]

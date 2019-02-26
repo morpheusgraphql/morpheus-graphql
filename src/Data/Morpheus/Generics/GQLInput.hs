@@ -6,10 +6,9 @@ module Data.Morpheus.Generics.GQLInput
     )
 where
 
-import           Data.Morpheus.Types.Types      ( JSType(..)
-                                                , MetaInfo(..)
-                                                , EnumOf(..)
-                                                )
+import           Data.Morpheus.Types.Types      ( EnumOf(..) )
+import Data.Morpheus.Types.JSType         (JSType(..))
+import Data.Morpheus.Types.MetaInfo         (MetaInfo(..))
 import           Data.Text                      ( Text
                                                 , unpack
                                                 , pack

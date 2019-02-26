@@ -26,7 +26,7 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.Morpheus.Types.Types     ( Eval
+import           Data.Morpheus.Types.Types     ( Validation
                                                 , GQLQueryRoot(..)
                                                 , GQLRequest(..)
                                                 )
@@ -54,7 +54,7 @@ getVariables req = case variables req of
     Nothing   -> fromList []
     Just vars -> vars
 
-parseGQL :: GQLRequest -> Eval GQLQueryRoot
+parseGQL :: GQLRequest -> Validation GQLQueryRoot
 parseGQL requestBody = case parseOnly request $ query requestBody of
     Right root  -> Right $ root { inputVariables = getVariables requestBody }
     Left  error -> Left $ syntaxError $ pack $ show error
