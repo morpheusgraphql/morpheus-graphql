@@ -49,7 +49,7 @@ import           Data.Morpheus.Schema.SchemaField
                                                 , fieldArgsByKey
                                                 )
 import           Data.Morpheus.Schema.InputValue
-                                                ( inputValueName , isRequired)
+                                                (inputValueName,inputValueMeta,isRequired)
 
 existsType :: Text -> GQLTypeLib -> Validation GQL__Type
 existsType typeName typeLib = case M.lookup typeName typeLib of
@@ -68,24 +68,26 @@ replaceVariable root (Variable key) =
         Just value -> pure $ Argument $ JSString value
 replaceVariable _ x = pure x
 
+-- ValidateTypes
+checkArgumentType :: GQLTypeLib -> Text -> Argument -> Validation Argument
+checkArgumentType typeLib typeName bla  = existsType typeName typeLib >> pure bla
+
 validateArgument
-    :: GQLQueryRoot -> Arguments -> GQL__InputValue -> Validation (Text, Argument)
-validateArgument root requestArgs inpValue =
+    :: GQLTypeLib -> GQLQueryRoot -> Arguments -> GQL__InputValue -> Validation (Text, Argument)
+validateArgument _ root requestArgs inpValue =
     case lookup (inputValueName inpValue) requestArgs of
-        Nothing -> case isRequired inpValue of
-          True -> Left $ requiredArgument $ MetaInfo
-              { className = "TODO: name"
-              , cons      = ""
-              , key       = pack $ show $ inputValueName inpValue
-              }
-          False -> pure (inputValueName inpValue, Argument JSNull)
-        Just x -> replaceVariable root x >>= \x -> pure (key, x)
-            where key = inputValueName inpValue
+        Nothing -> if  isRequired inpValue
+            then Left $ requiredArgument $ inputValueMeta inpValue
+            else pure (key, Argument JSNull)
+        Just x -> replaceVariable root x >>= validated
+    where
+       key = inputValueName inpValue
+       validated x = pure (key, x)
 
 -- TODO: throw Error when gql request has more arguments al then inputType
 validateArguments
-    :: GQLQueryRoot -> [GQL__InputValue] -> Arguments -> Validation Arguments
-validateArguments root _types args = mapM (validateArgument root args) _types
+    :: GQLTypeLib -> GQLQueryRoot -> [GQL__InputValue] -> Arguments -> Validation Arguments
+validateArguments typeLib root inputs args = mapM (validateArgument typeLib root args) inputs
 
 fieldOf :: GQL__Type -> Text -> Validation GQL__Type
 fieldOf _type fieldName = case getFieldTypeByKey fieldName _type of
@@ -139,14 +141,14 @@ validateBySchema typeLib root _parentType (_name, SelectionSet head selectors)
     = do
         _type      <- typeBy typeLib _parentType _name
         _argsType  <- argsType _parentType _name
-        head'      <- validateArguments root _argsType head
+        head'      <- validateArguments typeLib root _argsType head
         selectors' <- mapSelectors typeLib root _type selectors
         pure (_name, SelectionSet head' selectors')
 
 validateBySchema typeLib root _parentType (_name, Field head field) = do
-    _checksIfhasType  <- typeBy typeLib _parentType _name
+    _checksIfHasType  <- typeBy typeLib _parentType _name
     _argsType <- argsType _parentType _name
-    head'     <- validateArguments root _argsType head
+    head'     <- validateArguments typeLib root _argsType head
     pure (_name, Field head' field)
 
 validateBySchema _ _ _ x = pure x
