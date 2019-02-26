@@ -5,7 +5,6 @@ import           Data.Text                      ( Text(..))
 import           Data.Data                      ( Data )
 import           GHC.Generics
 
-
 data GQL__InputValue t = GQL__InputValue {
   name:: Text,
   description::  Text,

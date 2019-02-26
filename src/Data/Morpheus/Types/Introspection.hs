@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings , DeriveGeneric, DuplicateRecordFields , DeriveAnyClass , DeriveDataTypeable , TypeOperators  #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Types.Introspection
   ( GQL__Type
@@ -28,8 +28,8 @@ import           Data.Map                       ( Map
                                                 )
 import           GHC.Generics
 import           Data.Aeson
-import           Data.Data                      ( Data )
-import           Data.Morpheus.Types.Types      ( (::->)(..) , EnumOf(..) )
+import           Data.Data                      (Data)
+import           Data.Morpheus.Types.Types      (EnumOf(..))
 import           Data.Morpheus.Schema.GQL__TypeKind
                                                 ( GQL__TypeKind(..) )
 import           Data.Morpheus.Schema.GQL__EnumValue
@@ -58,16 +58,6 @@ createField argname typeName args = F.GQL__Field
   , description       = "my description"
   , args              = args
   , _type             = Just $ createType typeName []
-  , isDeprecated      = False
-  , deprecationReason = ""
-  }
-
-createFieldWith :: Text -> GQL__Type -> [I.GQL__InputValue GQL__Type] -> GQL__Field
-createFieldWith argname fieldtype args = F.GQL__Field
-  { name              = argname
-  , description       = "my description"
-  , args              = args
-  , _type             = Just fieldtype
   , isDeprecated      = False
   , deprecationReason = ""
   }
