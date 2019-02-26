@@ -7,8 +7,7 @@ import           Data.Text                      ( Text
                                                 )
 import           Data.Attoparsec.Text
 import           Control.Applicative
-import           Data.Morpheus.Types.Types     (  JSType(..)
-                                                )
+import           Data.Morpheus.Types.JSType     (  JSType(..) )
 
 replaceType :: Text -> Text
 replaceType "type" = "_type"

@@ -9,7 +9,7 @@ module Data.Morpheus
     , (::->)(..)
     , GQLRequest(..)
     , eitherToResponse
-    , EvalIO(..)
+    , ResolveIO(..)
     , GQLInput
     , EnumOf(unpackEnum)
     , GQLEnum
@@ -27,13 +27,13 @@ import           Data.Morpheus.Generics.GQLRoot
 import           Data.Morpheus.Generics.GQLArgs
                                                 ( GQLArgs )
 import           Data.Morpheus.Parser.Parser   ( parseGQL )
+import           Data.Morpheus.Types.JSType     (JSType)
 import           Data.Morpheus.Types.Types     ( (::->)(Resolver)
                                                 , GQLResponse(..)
                                                 , GQLRequest(..)
-                                                , Eval(..)
-                                                , EvalIO(..)
-                                                , failEvalIO
-                                                , JSType
+                                                , Validation(..)
+                                                , ResolveIO(..)
+                                                , failResolveIO
                                                 , EnumOf(unpackEnum)
                                                 )
 import           Data.Proxy                     ( Proxy )
@@ -46,19 +46,19 @@ import          Data.Morpheus.Generics.GQLInput (GQLInput)
 import          Data.Morpheus.Generics.GQLEnum  (GQLEnum)
 
 
-resolve :: GQLRoot a => EvalIO a -> GQLRequest -> EvalIO JSType
-resolve rootValue body = do
-    root <- rootValue
-    gql  <- ExceptT $ pure $ parseGQL body
-    encode root gql
+resolve :: GQLRoot a => ResolveIO a -> GQLRequest -> ResolveIO JSType
+resolve rootResolver body = do
+    root <- rootResolver
+    query  <- ExceptT $ pure $ parseGQL body
+    encode root query
 
-interpreter :: GQLRoot a => EvalIO a -> GQLRequest -> IO GQLResponse
-interpreter root request = do
-  value <- runExceptT $ resolve root request
+interpreter :: GQLRoot a => ResolveIO a -> GQLRequest -> IO GQLResponse
+interpreter rootResolver request = do
+  value <- runExceptT $ resolve rootResolver request
   case value of
     Left x -> pure $ Errors x
     Right x -> pure$ Data x
 
-eitherToResponse :: (a -> a) -> Either String a -> EvalIO a
-eitherToResponse f (Left  x) = failEvalIO $ errorMessage $ pack x
+eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a
+eitherToResponse f (Left  x) = failResolveIO $ errorMessage $ pack x
 eitherToResponse f (Right x) = pure (f x)

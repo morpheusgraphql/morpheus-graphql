@@ -6,11 +6,10 @@ module Example.Schema
     )
 where
 
-import           Prelude                 hiding ( concat )
 import           GHC.Generics                   ( Generic )
 import           Data.Data                      ( Data )
+import qualified Data.Text as T (concat)
 import           Data.Text                      ( Text
-                                                , concat
                                                 , pack
                                                 , unpack
                                                 )
@@ -22,7 +21,7 @@ import           Data.Morpheus                  ( GQLSelection
                                                 , GQLRequest
                                                 , interpreter
                                                 , eitherToResponse
-                                                , EvalIO(..)
+                                                , ResolveIO(..)
                                                 , GQLInput
                                                 , EnumOf(unpackEnum)
                                                 , GQLEnum
@@ -65,11 +64,11 @@ newtype Query = Query {
     user:: () ::-> User
 } deriving (Show,Generic,Data,GQLRoot, FromJSON )
 
-fetchAddress :: Text -> Text -> EvalIO Address
+fetchAddress :: Text -> Text -> ResolveIO Address
 fetchAddress cityName streetName = lift (getJson "address")
     >>= eitherToResponse modify
   where
-    modify address = address { city   = concat [cityName, " ", city address]
+    modify address = address { city   = T.concat [cityName, " ", city address]
                              , street = streetName
                              }
 
@@ -93,7 +92,7 @@ resolveUser = Resolver resolve
     modify user =
         user { address = resolveAddress, office = resolveOffice user }
 
-resolveRoot :: EvalIO Query
+resolveRoot :: ResolveIO Query
 resolveRoot = pure $ Query { user = resolveUser }
 
 gqlHandler :: GQLRequest -> IO GQLResponse

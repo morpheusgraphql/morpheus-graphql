@@ -16,18 +16,18 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
-import           Data.Morpheus.Types.Types      ( Eval(..)
+import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , (::->)(..)
-                                                , JSType(..)
                                                 , QuerySelection(..)
                                                 , SelectionSet
                                                 , Arguments(..)
                                                 , FragmentLib
                                                 , Fragment(..)
-                                                , MetaInfo(..)
                                                 , Argument(..)
                                                 , GQLQueryRoot(..)
                                                 )
+import           Data.Morpheus.Types.JSType     (JSType(..))
+import           Data.Morpheus.Types.MetaInfo   (MetaInfo(..))
 import           Data.Morpheus.ErrorMessage     ( semanticError
                                                 , handleError
                                                 , cannotQueryField
@@ -51,13 +51,13 @@ import           Data.Morpheus.Schema.SchemaField
 import           Data.Morpheus.Schema.InputValue
                                                 ( inputValueName , isRequired)
 
-existsType :: Text -> GQLTypeLib -> Eval GQL__Type
+existsType :: Text -> GQLTypeLib -> Validation GQL__Type
 existsType typeName typeLib = case M.lookup typeName typeLib of
     Nothing -> handleError $ pack $ "type does not exist" ++ unpack typeName
     Just x  -> pure x
 
 -- TODO: replace all var types with Variable values
-replaceVariable :: GQLQueryRoot -> Argument -> Eval Argument
+replaceVariable :: GQLQueryRoot -> Argument -> Validation Argument
 replaceVariable root (Variable key) =
     case M.lookup key (inputVariables root) of
         Nothing    -> Left  $ variableIsNotDefined  $ MetaInfo {
@@ -69,7 +69,7 @@ replaceVariable root (Variable key) =
 replaceVariable _ x = pure x
 
 validateArgument
-    :: GQLQueryRoot -> Arguments -> GQL__InputValue -> Eval (Text, Argument)
+    :: GQLQueryRoot -> Arguments -> GQL__InputValue -> Validation (Text, Argument)
 validateArgument root requestArgs inpValue =
     case lookup (inputValueName inpValue) requestArgs of
         Nothing -> case isRequired inpValue of
@@ -84,10 +84,10 @@ validateArgument root requestArgs inpValue =
 
 -- TODO: throw Error when gql request has more arguments al then inputType
 validateArguments
-    :: GQLQueryRoot -> [GQL__InputValue] -> Arguments -> Eval Arguments
+    :: GQLQueryRoot -> [GQL__InputValue] -> Arguments -> Validation Arguments
 validateArguments root _types args = mapM (validateArgument root args) _types
 
-fieldOf :: GQL__Type -> Text -> Eval GQL__Type
+fieldOf :: GQL__Type -> Text -> Validation GQL__Type
 fieldOf _type fieldName = case getFieldTypeByKey fieldName _type of
     Nothing    -> Left $ cannotQueryField $ MetaInfo {
       key = fieldName
@@ -96,7 +96,7 @@ fieldOf _type fieldName = case getFieldTypeByKey fieldName _type of
     }
     Just fieldType -> pure fieldType
 
-validateSpread :: FragmentLib -> Text -> Eval [(Text, QuerySelection)]
+validateSpread :: FragmentLib -> Text -> Validation [(Text, QuerySelection)]
 validateSpread frags key = case M.lookup key frags of
     Nothing -> Left $ unknownFragment $ MetaInfo {
                 className = ""
@@ -106,14 +106,14 @@ validateSpread frags key = case M.lookup key frags of
     Just (Fragment _ _ (SelectionSet _ gqlObj)) -> pure gqlObj
 
 propagateSpread
-    :: GQLQueryRoot -> (Text, QuerySelection) -> Eval [(Text, QuerySelection)]
+    :: GQLQueryRoot -> (Text, QuerySelection) -> Validation [(Text, QuerySelection)]
 propagateSpread root (key , Spread _) = validateSpread (fragments root) key
 propagateSpread root (text, value     ) = pure [(text, value)]
 
 typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fieldType
     where fieldType field = existsType (name field) typeLib
 
-argsType :: GQL__Type -> Text -> Eval [GQL__InputValue]
+argsType :: GQL__Type -> Text -> Validation [GQL__InputValue]
 argsType currentType key = case fieldArgsByKey key currentType of
     Nothing   -> handleError $ pack $ "header not found: " ++ show key
     Just args -> pure args
@@ -123,7 +123,7 @@ mapSelectors
     -> GQLQueryRoot
     -> GQL__Type
     -> SelectionSet
-    -> Eval SelectionSet
+    -> Validation SelectionSet
 mapSelectors typeLib root _type selectors = do
   selectors' <- concat <$> mapM (propagateSpread root) selectors
 
@@ -134,7 +134,7 @@ validateBySchema
     -> GQLQueryRoot
     -> GQL__Type
     -> (Text, QuerySelection)
-    -> Eval (Text, QuerySelection)
+    -> Validation (Text, QuerySelection)
 validateBySchema typeLib root _parentType (_name, SelectionSet head selectors)
     = do
         _type      <- typeBy typeLib _parentType _name
@@ -151,7 +151,7 @@ validateBySchema typeLib root _parentType (_name, Field head field) = do
 
 validateBySchema _ _ _ x = pure x
 
-preProcessQuery :: GQLTypeLib -> GQLQueryRoot -> Eval QuerySelection
+preProcessQuery :: GQLTypeLib -> GQLQueryRoot -> Validation QuerySelection
 preProcessQuery lib root = do
     _type <- existsType "Query" lib
     let (SelectionSet _ body) = queryBody root

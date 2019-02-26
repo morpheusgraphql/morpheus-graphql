@@ -9,9 +9,9 @@ import qualified Data.Text as T
 import           Data.Proxy                     ( Proxy(..) )
 import qualified Data.Morpheus.Types.Introspection as I
 import           Data.Morpheus.Generics.GenericEnum ( GToEnum(..))
-import           Data.Morpheus.Types.Types      ( JSType(..)
-                                                , MetaInfo(..)
-                                                )
+import           Data.Morpheus.Types.MetaInfo      ( MetaInfo(..) )
+import          Data.Morpheus.Types.JSType (JSType(..))
+
 
 getType :: D.Typeable a => a -> T.Text
 getType = renameSystemNames . T.pack . show . D.typeOf

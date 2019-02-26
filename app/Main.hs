@@ -1,9 +1,6 @@
-module Main
-    ( main
-    )
-where
+module Main ( main ) where
 
-import           Example.Handler                ( handler )
-import           AWSLambda.Events.APIGateway    ( apiGatewayMain )
+import AWSLambda.Events.APIGateway (apiGatewayMain)
+import Example.Handler             (handler)
 
 main = apiGatewayMain handler

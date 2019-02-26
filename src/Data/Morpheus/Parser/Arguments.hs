@@ -25,9 +25,9 @@ import           Control.Applicative            ( (<|>)
                                                 , some
                                                 )
 import           Data.Morpheus.Types.Types     ( Arguments
-                                                , JSType(JSEnum)
                                                 , Argument(..)
                                                 )
+import Data.Morpheus.Types.JSType ( JSType(JSEnum) )
 import           Data.Morpheus.Parser.Primitive
                                                 ( jsString
                                                 , token
