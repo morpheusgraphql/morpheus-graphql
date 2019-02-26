@@ -50,7 +50,9 @@ import           Data.Morpheus.Schema.SchemaField
                                                 ( getFieldTypeByKey
                                                 , fieldArgsByKey
                                                 )
+import qualified Data.Morpheus.Schema.GQL__Type as T
 import qualified Data.Morpheus.Schema.InputValue as I (name,inputValueMeta,isRequired, typeName )
+
 
 existsType :: Text -> GQLTypeLib -> Validation GQL__Type
 existsType typeName typeLib = case M.lookup typeName typeLib of
@@ -73,8 +75,8 @@ replaceVariable _ x = pure x
 checkArgumentType :: GQLTypeLib -> Text -> Argument -> Validation Argument
 checkArgumentType typeLib typeName argument  = existsType typeName typeLib >>= checkType
     where
-      checkType _type = case kind _type of
-        EnumOf ENUM -> if isEnumOf (unwrapArgument argument) (unwrapField $ enumValues _type)  then  pure argument else error
+      checkType _type = case T.kind _type of
+        EnumOf ENUM -> if isEnumOf (unwrapArgument argument) (unwrapField $ T.enumValues _type)  then  pure argument else error
         _ -> pure argument
       unwrapField (Some x) = x
       unwrapArgument  (Argument (JSEnum x)) = x
@@ -102,7 +104,7 @@ fieldOf _type fieldName = case getFieldTypeByKey fieldName _type of
     Nothing    -> Left $ cannotQueryField $ MetaInfo {
       key = fieldName
       , cons = ""
-      , className = name _type
+      , className = T.name _type
     }
     Just fieldType -> pure fieldType
 
@@ -121,7 +123,7 @@ propagateSpread root (key , Spread _) = validateSpread (fragments root) key
 propagateSpread root (text, value     ) = pure [(text, value)]
 
 typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fieldType
-    where fieldType field = existsType (name field) typeLib
+    where fieldType field = existsType (T.name field) typeLib
 
 argsType :: GQL__Type -> Text -> Validation [GQL__InputValue]
 argsType currentType key = case fieldArgsByKey key currentType of

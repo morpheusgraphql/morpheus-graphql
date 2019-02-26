@@ -13,18 +13,19 @@ import           Data.Data                      ( Data )
 import           Data.Text                      ( Text(..) )
 import           Data.Morpheus.Types.Types      ( (::->)(..) )
 import           Data.Morpheus.Types.Introspection
-                                                ( GQL__Field(..)
-                                                , GQL__Type(fields)
-                                                ,GQL__InputValue
-                                                , wrapListType
-                                                , unwrapType
+                                                (
+                                                  GQL__Field
+                                                 ,GQL__InputValue
+                                                 , GQL__Type
+                                                 , wrapListType
+                                                 , unwrapType
                                                 )
 import           Control.Monad                  ( join )
 import qualified Data.Morpheus.Schema.GQL__Field as F (GQL__Field(..))
-
+import qualified Data.Morpheus.Schema.GQL__Type as T (GQL__Type(..))
 
 selectFieldByKey :: Text -> GQL__Type -> Maybe GQL__Field
-selectFieldByKey key gqlType = case fields gqlType of
+selectFieldByKey key gqlType = case T.fields gqlType of
     Some fields -> find (\x -> key == F.name x) fields
     _           -> Nothing
 

@@ -1,16 +1,16 @@
 {-# LANGUAGE OverloadedStrings , DeriveGeneric, DuplicateRecordFields , DeriveAnyClass , DeriveDataTypeable , TypeOperators  #-}
 
 module Data.Morpheus.Types.Introspection
-  ( GQL__Type(..)
-  , GQL__Field(..)
+  ( GQL__Type
+  , GQL__Field
+  , GQL__InputValue
+  , GQL__Deprecation__Args
   , GQL__TypeKind(..)
-  , GQL__InputValue(..)
   , createType
   , createField
   , GQLTypeLib
   , emptyLib
   , GQL__EnumValue(..)
-  , GQL__Deprecation__Args(..)
   , createInputValue
   , wrapListType
   , unwrapType
@@ -34,28 +34,13 @@ import           Data.Morpheus.Schema.GQL__TypeKind
                                                 ( GQL__TypeKind(..) )
 import           Data.Morpheus.Schema.GQL__EnumValue
                                                 ( GQL__EnumValue , createEnumValue)
-import           Data.Maybe                     ( fromMaybe )
+import            Data.Maybe                     ( fromMaybe )
 import qualified  Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue(..))
 import qualified  Data.Morpheus.Schema.GQL__Field as  F (GQL__Field(..))
+import            Data.Morpheus.Schema.GQL__Type  (GQL__Type(..), GQL__Deprecation__Args)
 
 type GQL__InputValue = I.GQL__InputValue GQL__Type;
 type GQL__Field =  F.GQL__Field GQL__Type;
-
-data GQL__Type =  GQL__Type {
-   kind :: EnumOf GQL__TypeKind
-  ,name :: Text
-  ,description :: Text
-  ,fields :: GQL__Deprecation__Args ::-> [GQL__Field]
-  ,ofType :: Maybe GQL__Type
-  ,interfaces :: [GQL__Type]
-  ,possibleTypes :: [GQL__Type]
-  ,enumValues:: GQL__Deprecation__Args ::-> [GQL__EnumValue]
-  ,inputFields:: [GQL__InputValue]
-} deriving (Show , Data, Generic)
-
-data GQL__Deprecation__Args = DeprecationArgs {
-  includeDeprecated:: Maybe Bool
-} deriving (Show , Data, Generic )
 
 createInputValue :: Text -> Text -> I.GQL__InputValue GQL__Type
 createInputValue argname typeName = I.GQL__InputValue
