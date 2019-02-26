@@ -35,6 +35,12 @@ import           Data.Morpheus.Schema.GQL__TypeKind
 import           Data.Morpheus.Schema.GQL__EnumValue
                                                 ( GQL__EnumValue , createEnumValue)
 import           Data.Maybe                     ( fromMaybe )
+import qualified  Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue(..))
+import qualified  Data.Morpheus.Schema.GQL__Field as  F (GQL__Field(..))
+
+type GQL__InputValue = I.GQL__InputValue GQL__Type;
+type GQL__Field =  F.GQL__Field GQL__Type;
+
 data GQL__Type =  GQL__Type {
    kind :: EnumOf GQL__TypeKind
   ,name :: Text
@@ -51,34 +57,18 @@ data GQL__Deprecation__Args = DeprecationArgs {
   includeDeprecated:: Maybe Bool
 } deriving (Show , Data, Generic )
 
-data GQL__Field = GQL__Field{
-  name:: Text,
-  description:: Text,
-  args:: [GQL__InputValue],
-  _type :: Maybe GQL__Type,
-  isDeprecated:: Bool,
-  deprecationReason :: Text
-} deriving (Show , Data, Generic)
-
-data GQL__InputValue  = GQL__InputValue {
-  name:: Text,
-  description::  Text,
-  _type:: Maybe GQL__Type,
-  defaultValue::  Text
-} deriving (Show , Data, Generic)
-
-createInputValue :: Text -> Text -> GQL__InputValue
-createInputValue argname typeName = GQL__InputValue
+createInputValue :: Text -> Text -> I.GQL__InputValue GQL__Type
+createInputValue argname typeName = I.GQL__InputValue
   { name         = argname
   , description  = ""
   , _type        = Just $ createType typeName []
   , defaultValue = ""
   }
 
-type GQLTypeLib = Map Text GQL__Type;
+type GQLTypeLib = Map Text GQL__Type
 
-createField :: Text -> Text -> [GQL__InputValue] -> GQL__Field
-createField argname typeName args = GQL__Field
+createField :: Text -> Text -> [I.GQL__InputValue GQL__Type] -> GQL__Field
+createField argname typeName args = F.GQL__Field
   { name              = argname
   , description       = "my description"
   , args              = args
@@ -87,8 +77,8 @@ createField argname typeName args = GQL__Field
   , deprecationReason = ""
   }
 
-createFieldWith :: Text -> GQL__Type -> [GQL__InputValue] -> GQL__Field
-createFieldWith argname fieldtype args = GQL__Field
+createFieldWith :: Text -> GQL__Type -> [I.GQL__InputValue GQL__Type] -> GQL__Field
+createFieldWith argname fieldtype args = F.GQL__Field
   { name              = argname
   , description       = "my description"
   , args              = args

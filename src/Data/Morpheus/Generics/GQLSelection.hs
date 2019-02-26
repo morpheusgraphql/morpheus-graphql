@@ -38,7 +38,7 @@ import           Data.Morpheus.Schema.GQL__DirectiveLocation
                                                 ( GQL__DirectiveLocation(..) )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type(..)
-                                                , GQL__Field(args)
+                                                , GQL__Field
                                                 , GQL__TypeKind(..)
                                                 , GQL__InputValue
                                                 , GQLTypeLib
@@ -54,6 +54,8 @@ import           Data.Morpheus.Generics.TypeRep ( Selectors(..) )
 import           Data.Morpheus.Generics.GenericMap ( GenericMap(..) )
 import           Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta)
 import           Data.Morpheus.Generics.GQLEnum (GQLEnum(..))
+import qualified Data.Morpheus.Schema.GQL__Field as F (GQL__Field(..))
+
 
 renameSystemNames = T.replace "GQL__" "__";
 
@@ -130,7 +132,7 @@ instance (Show a, Show p, GQLSelection a , GQLArgs p ) => GQLSelection (p ::-> a
     encode x (Some a) = encode x a
     encode x None = pure JSNull
     introspect  _  typeLib = arrayMap typeLib $ (map snd $ introspectArgs (Proxy::Proxy p)) ++ [introspect (Proxy:: Proxy  a)]
-    fieldType _ name = (fieldType (Proxy:: Proxy  a) name ){ args = map fst $ introspectArgs (Proxy :: Proxy p) }
+    fieldType _ name = (fieldType (Proxy:: Proxy  a) name ){ F.args = map fst $ introspectArgs (Proxy :: Proxy p) }
 
 instance (Show a, GQLSelection a) => GQLSelection (Maybe a) where
     encode _ Nothing = pure JSNull

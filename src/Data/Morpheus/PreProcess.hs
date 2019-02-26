@@ -50,8 +50,7 @@ import           Data.Morpheus.Schema.SchemaField
                                                 ( getFieldTypeByKey
                                                 , fieldArgsByKey
                                                 )
-import           Data.Morpheus.Schema.InputValue
-                                                (inputValueName,inputValueMeta,isRequired)
+import qualified Data.Morpheus.Schema.InputValue as I (name,inputValueMeta,isRequired, typeName )
 
 existsType :: Text -> GQLTypeLib -> Validation GQL__Type
 existsType typeName typeLib = case M.lookup typeName typeLib of
@@ -79,18 +78,18 @@ checkArgumentType typeLib typeName argument  = existsType typeName typeLib >>= c
         _ -> pure argument
       unwrapField (Some x) = x
       unwrapArgument  (Argument (JSEnum x)) = x
-      error = Left $  requiredArgument $ MetaInfo "TODO: Name" """"
+      error = Left $  requiredArgument $ MetaInfo typeName "" ""
 
 validateArgument
     :: GQLTypeLib -> GQLQueryRoot -> Arguments -> GQL__InputValue -> Validation (Text, Argument)
 validateArgument types root requestArgs inpValue =
-    case lookup (inputValueName inpValue) requestArgs of
-        Nothing -> if  isRequired inpValue
-            then Left $ requiredArgument $ inputValueMeta inpValue
+    case lookup (I.name inpValue) requestArgs of
+        Nothing -> if  I.isRequired inpValue
+            then Left $ requiredArgument $ I.inputValueMeta inpValue
             else pure (key, Argument JSNull)
-        Just x -> replaceVariable root x >>= checkArgumentType types "CityID" >>= validated
+        Just x -> replaceVariable root x >>= checkArgumentType types  (I.typeName inpValue) >>= validated
     where
-       key = inputValueName inpValue
+       key = I.name inpValue
        validated x = pure (key, x)
 
 -- TODO: throw Error when gql request has more arguments al then inputType

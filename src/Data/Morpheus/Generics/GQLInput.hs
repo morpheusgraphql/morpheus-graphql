@@ -19,6 +19,7 @@ import           Data.Data
 import           Data.Morpheus.Types.Introspection ( createScalar , GQLTypeLib, GQL__InputValue(..), createInputValue)
 import           Data.Map as M
 import           Data.Morpheus.Generics.GQLEnum (GQLEnum(..))
+import qualified Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue(..))
 
 getType :: Typeable a => a -> Text
 getType = pack . show . typeOf
@@ -60,7 +61,7 @@ instance GQLInput Int where
 instance (GQLInput a , Show a, Typeable a ) => GQLInput (Maybe a) where
     decode JSNull = Nothing
     decode x = Just (decode x)
-    typeInfo _ name =  (typeInfo (Proxy :: Proxy a) name) { defaultValue = "Nothing" }
+    typeInfo _ name =  (typeInfo (Proxy :: Proxy a) name) { I.defaultValue = "Nothing" }
     introInput _  typeLib = typeLib
 
 instance ( Show a, GQLEnum a ) => GQLInput (EnumOf a) where
