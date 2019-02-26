@@ -25,6 +25,7 @@ import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , Fragment(..)
                                                 , Argument(..)
                                                 , GQLQueryRoot(..)
+                                                , EnumOf(..)
                                                 )
 import           Data.Morpheus.Types.JSType     (JSType(..))
 import           Data.Morpheus.Types.MetaInfo   (MetaInfo(..))
@@ -35,10 +36,11 @@ import           Data.Morpheus.ErrorMessage     ( semanticError
                                                 ,unknownFragment
                                                 , variableIsNotDefined
                                                 )
-
+import           Data.Morpheus.Schema.GQL__TypeKind (GQL__TypeKind(..))
+import           Data.Morpheus.Schema.GQL__EnumValue (isEnumOf)
 import           Data.Proxy
 import           Data.Morpheus.Types.Introspection
-                                                ( GQL__Type(fields, name)
+                                                ( GQL__Type(..)
                                                 , GQL__Field
                                                 , emptyLib
                                                 , GQLTypeLib
@@ -70,16 +72,23 @@ replaceVariable _ x = pure x
 
 -- ValidateTypes
 checkArgumentType :: GQLTypeLib -> Text -> Argument -> Validation Argument
-checkArgumentType typeLib typeName bla  = existsType typeName typeLib >> pure bla
+checkArgumentType typeLib typeName argument  = existsType typeName typeLib >>= checkType
+    where
+      checkType _type = case kind _type of
+        EnumOf ENUM -> if isEnumOf (unwrapArgument argument) (unwrapField $ enumValues _type)  then  pure argument else error
+        _ -> pure argument
+      unwrapField (Some x) = x
+      unwrapArgument  (Argument (JSEnum x)) = x
+      error = Left $  requiredArgument $ MetaInfo "TODO: Name" """"
 
 validateArgument
     :: GQLTypeLib -> GQLQueryRoot -> Arguments -> GQL__InputValue -> Validation (Text, Argument)
-validateArgument _ root requestArgs inpValue =
+validateArgument types root requestArgs inpValue =
     case lookup (inputValueName inpValue) requestArgs of
         Nothing -> if  isRequired inpValue
             then Left $ requiredArgument $ inputValueMeta inpValue
             else pure (key, Argument JSNull)
-        Just x -> replaceVariable root x >>= validated
+        Just x -> replaceVariable root x >>= checkArgumentType types "CityID" >>= validated
     where
        key = inputValueName inpValue
        validated x = pure (key, x)
