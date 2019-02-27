@@ -35,6 +35,7 @@ import           Data.Morpheus.ErrorMessage     ( semanticError
                                                 , requiredArgument
                                                 ,unknownFragment
                                                 , variableIsNotDefined
+                                                , unsupportedVariableType
                                                 )
 import           Data.Morpheus.Schema.GQL__TypeKind (GQL__TypeKind(..))
 import           Data.Morpheus.Schema.GQL__EnumValue (isEnumOf)
@@ -67,7 +68,7 @@ checkVariableType typeLib ( key, Variable typeName)  = existsType typeName typeL
        checkType _type = case T.kind _type of
             EnumOf SCALAR -> pure (key, Variable typeName)
             EnumOf INPUT_OBJECT -> pure (key, Variable typeName)
-            _ -> Left  $ variableIsNotDefined MetaInfo {
+            _ -> Left  $ unsupportedVariableType MetaInfo {
                            className= typeName,
                            cons = "",
                            key = key
