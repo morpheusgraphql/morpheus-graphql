@@ -50,12 +50,12 @@ createField :: Text -> Text -> [I.GQL__InputValue GQL__Type] -> GQL__Field
 createField name typeName args = F.createFieldWith name (createType typeName []) []
 
 
-createInputObject  :: Text -> GQL__Type
-createInputObject name  = GQL__Type {
+createInputObject  :: Text -> [GQL__Field]  -> GQL__Type
+createInputObject name fields = GQL__Type {
   kind          = EnumOf INPUT_OBJECT
   , name          = name
   , description   = ""
-  , fields        = Some []
+  , fields        = Some fields
   , ofType        = Nothing
   , interfaces    = []
   , possibleTypes = []
