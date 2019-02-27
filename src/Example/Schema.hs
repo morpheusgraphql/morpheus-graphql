@@ -35,8 +35,8 @@ import           Data.Maybe                     (fromMaybe)
 data CityID = Paris | BLN | HH deriving (Show,Generic,Data, GQLEnum)
 
 data Coordinates = Coordinates {
-    latitude :: Int,
-    longitude :: Int
+    latitude :: Text,
+    longitude :: Text
 } deriving (Show,Generic,Data,GQLInput)
 
 data LocationByCoordinates = LocationByCoordinates {
@@ -78,7 +78,7 @@ fetchAddress cityName streetName = lift (getJson "address")
 
 resolveAddress :: LocationByCoordinates ::-> Address
 resolveAddress = Resolver resolve
-    where resolve args = fetchAddress ("latitude args") ("longitude args")
+    where resolve args = fetchAddress (latitude $ coordinates args) (longitude $ coordinates args)
 
 addressByCityID Paris code = fetchAddress (pack $ "75" ++ code) "Paris"
 addressByCityID BLN code = fetchAddress (pack $ "10" ++ code) "Berlin"
