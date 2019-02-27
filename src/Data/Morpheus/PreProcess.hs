@@ -85,7 +85,7 @@ replaceVariable root (Variable key) =
           cons = "",
           key = key
         }
-        Just value -> pure $ Argument $ JSString value
+        Just value -> pure $ Argument value
 replaceVariable _ x = pure x
 
 validateEnum :: GQL__Type -> Argument -> Validation Argument

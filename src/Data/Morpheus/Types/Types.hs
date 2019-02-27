@@ -76,7 +76,7 @@ data Fragment = Fragment {
 data GQLQueryRoot = GQLQueryRoot {
     fragments:: FragmentLib,
     queryBody :: QuerySelection,
-    inputVariables:: Map Text Text
+    inputVariables:: Map Text JSType
 }
 
 data a ::-> b = TypeHolder (Maybe a) | Resolver (a -> ResolveIO b) | Some b | None deriving (Generic)
@@ -104,6 +104,9 @@ instance (ToJSON o) => ToJSON ( p ::->  o) where
 
 data GQLResponse = Data JSType | Errors [GQLError]  deriving (Show,Generic)
 
+
+
+
 instance ToJSON  GQLResponse where
   toJSON (Errors _errors) = object ["errors" .= _errors]
   toJSON (Data _data) = object ["data" .= _data]
@@ -112,5 +115,5 @@ data GQLRequest = GQLRequest {
     query:: Text
     ,operationName:: Maybe Text
     -- TODO: Make inputVariables generic JSON input
-    ,variables:: Maybe (Map Text Text)
+    ,variables:: Maybe (Map Text JSType)
 } deriving (Show,Generic,ToJSON,FromJSON)

@@ -16,6 +16,7 @@ module Data.Morpheus.Types.Introspection
   , unwrapType
   , createScalar
   , createEnum
+  , createInputObject
   )
 where
 
@@ -47,6 +48,20 @@ createInputValue name typeName = I.createInputValueWith name (createType typeNam
 
 createField :: Text -> Text -> [I.GQL__InputValue GQL__Type] -> GQL__Field
 createField name typeName args = F.createFieldWith name (createType typeName []) []
+
+
+createInputObject  :: Text -> [GQL__Field]  -> GQL__Type
+createInputObject name fields = GQL__Type {
+  kind          = EnumOf INPUT_OBJECT
+  , name          = name
+  , description   = ""
+  , fields        = Some fields
+  , ofType        = Nothing
+  , interfaces    = []
+  , possibleTypes = []
+  , enumValues    = Some []
+  , inputFields   = []
+}
 
 createType :: Text -> [GQL__Field] -> GQL__Type
 createType name fields = GQL__Type
