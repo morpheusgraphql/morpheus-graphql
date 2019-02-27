@@ -71,8 +71,8 @@ class GQLRoot a where
             Nothing -> response
             Just value ->  addSchema value response
             where
-                item (SelectionSet _ x) = wrapAsObject (encodeFields initialMeta x (from $ initSchema $ M.elems schema))
-                response = wrapAsObject $ encodeFields initialMeta (unpackObj validGQL) (from rootResolver)
+                item (SelectionSet _ x) = wrapAsObject (queryBody query) (encodeFields initialMeta x (from $ initSchema $ M.elems schema))
+                response = wrapAsObject (queryBody query) $ encodeFields initialMeta (unpackObj validGQL) (from rootResolver)
                 addSchema value = liftM2 (setProperty "__schema") (item value)
 
         Left x ->  failResolveIO x
