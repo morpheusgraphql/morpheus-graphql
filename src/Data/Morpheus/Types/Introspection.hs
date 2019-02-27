@@ -1,21 +1,20 @@
-{-# LANGUAGE OverloadedStrings , DeriveGeneric, DuplicateRecordFields , DeriveAnyClass , DeriveDataTypeable , TypeOperators  #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Types.Introspection
-  ( GQL__Type(..)
-  , GQL__Field(..)
+  ( GQL__Type
+  , GQL__Field
+  , GQL__InputValue
+  , GQL__Deprecation__Args
   , GQL__TypeKind(..)
-  , GQL__InputValue(..)
   , createType
   , createField
   , GQLTypeLib
   , emptyLib
   , GQL__EnumValue(..)
-  , GQL__Deprecation__Args(..)
   , createInputValue
   , wrapListType
   , unwrapType
   , createScalar
-  , createFieldWith
   , createEnum
   )
 where
@@ -28,80 +27,32 @@ import           Data.Map                       ( Map
                                                 )
 import           GHC.Generics
 import           Data.Aeson
-import           Data.Data                      ( Data )
-import           Data.Morpheus.Types.Types      ( (::->)(..) , EnumOf(..) )
+import           Data.Data                      (Data)
+import           Data.Morpheus.Types.Types      (EnumOf(..),(::->)(..))
 import           Data.Morpheus.Schema.GQL__TypeKind
                                                 ( GQL__TypeKind(..) )
 import           Data.Morpheus.Schema.GQL__EnumValue
                                                 ( GQL__EnumValue , createEnumValue)
-import           Data.Maybe                     ( fromMaybe )
-data GQL__Type =  GQL__Type {
-   kind :: EnumOf GQL__TypeKind
-  ,name :: Text
-  ,description :: Text
-  ,fields :: GQL__Deprecation__Args ::-> [GQL__Field]
-  ,ofType :: Maybe GQL__Type
-  ,interfaces :: [GQL__Type]
-  ,possibleTypes :: [GQL__Type]
-  ,enumValues:: GQL__Deprecation__Args ::-> [GQL__EnumValue]
-  ,inputFields:: [GQL__InputValue]
-} deriving (Show , Data, Generic)
+import            Data.Maybe                     ( fromMaybe )
+import qualified  Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue(..),createInputValueWith)
+import qualified  Data.Morpheus.Schema.GQL__Field as  F (GQL__Field(..), createFieldWith)
+import            Data.Morpheus.Schema.GQL__Type  (GQL__Type(..), GQL__Deprecation__Args)
 
-data GQL__Deprecation__Args = DeprecationArgs {
-  includeDeprecated:: Maybe Bool
-} deriving (Show , Data, Generic )
+type GQL__InputValue = I.GQL__InputValue GQL__Type;
+type GQL__Field =  F.GQL__Field GQL__Type;
+type GQLTypeLib = Map Text GQL__Type
 
-data GQL__Field = GQL__Field{
-  name:: Text,
-  description:: Text,
-  args:: [GQL__InputValue],
-  _type :: Maybe GQL__Type,
-  isDeprecated:: Bool,
-  deprecationReason :: Text
-} deriving (Show , Data, Generic)
+createInputValue :: Text -> Text -> I.GQL__InputValue GQL__Type
+createInputValue name typeName = I.createInputValueWith name (createType typeName [])
 
-data GQL__InputValue  = GQL__InputValue {
-  name:: Text,
-  description::  Text,
-  _type:: Maybe GQL__Type,
-  defaultValue::  Text
-} deriving (Show , Data, Generic)
-
-createInputValue :: Text -> Text -> GQL__InputValue
-createInputValue argname typeName = GQL__InputValue
-  { name         = argname
-  , description  = ""
-  , _type        = Just $ createType typeName []
-  , defaultValue = ""
-  }
-
-type GQLTypeLib = Map Text GQL__Type;
-
-createField :: Text -> Text -> [GQL__InputValue] -> GQL__Field
-createField argname typeName args = GQL__Field
-  { name              = argname
-  , description       = "my description"
-  , args              = args
-  , _type             = Just $ createType typeName []
-  , isDeprecated      = False
-  , deprecationReason = ""
-  }
-
-createFieldWith :: Text -> GQL__Type -> [GQL__InputValue] -> GQL__Field
-createFieldWith argname fieldtype args = GQL__Field
-  { name              = argname
-  , description       = "my description"
-  , args              = args
-  , _type             = Just fieldtype
-  , isDeprecated      = False
-  , deprecationReason = ""
-  }
+createField :: Text -> Text -> [I.GQL__InputValue GQL__Type] -> GQL__Field
+createField name typeName args = F.createFieldWith name (createType typeName []) []
 
 createType :: Text -> [GQL__Field] -> GQL__Type
 createType name fields = GQL__Type
   { kind          = EnumOf OBJECT
   , name          = name
-  , description   = "my description"
+  , description   = ""
   , fields        = Some fields
   , ofType        = Nothing
   , interfaces    = []
@@ -114,7 +65,7 @@ createScalar  :: Text -> GQL__Type
 createScalar name  = GQL__Type {
   kind          = EnumOf SCALAR
   , name          = name
-  , description   = "my description"
+  , description   = ""
   , fields        = Some []
   , ofType        = Nothing
   , interfaces    = []
@@ -127,7 +78,7 @@ createEnum  :: Text -> [Text] -> GQL__Type
 createEnum name tags = GQL__Type {
   kind          = EnumOf ENUM
   , name          = name
-  , description   = "my description"
+  , description   = ""
   , fields        = Some []
   , ofType        = Nothing
   , interfaces    = []
@@ -146,7 +97,7 @@ wrapListType :: GQL__Type -> GQL__Type
 wrapListType contentType = GQL__Type
   { kind          = EnumOf LIST
   , name          = ""
-  , description   = "list Type"
+  , description   = ""
   , fields        = None
   , ofType        = Just contentType
   , interfaces    = []

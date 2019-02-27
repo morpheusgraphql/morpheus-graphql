@@ -25,6 +25,7 @@ import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , Fragment(..)
                                                 , Argument(..)
                                                 , GQLQueryRoot(..)
+                                                , EnumOf(..)
                                                 )
 import           Data.Morpheus.Types.JSType     (JSType(..))
 import           Data.Morpheus.Types.MetaInfo   (MetaInfo(..))
@@ -35,10 +36,11 @@ import           Data.Morpheus.ErrorMessage     ( semanticError
                                                 ,unknownFragment
                                                 , variableIsNotDefined
                                                 )
-
+import           Data.Morpheus.Schema.GQL__TypeKind (GQL__TypeKind(..))
+import           Data.Morpheus.Schema.GQL__EnumValue (isEnumOf)
 import           Data.Proxy
 import           Data.Morpheus.Types.Introspection
-                                                ( GQL__Type(fields, name)
+                                                ( GQL__Type(..)
                                                 , GQL__Field
                                                 , emptyLib
                                                 , GQLTypeLib
@@ -48,8 +50,9 @@ import           Data.Morpheus.Schema.SchemaField
                                                 ( getFieldTypeByKey
                                                 , fieldArgsByKey
                                                 )
-import           Data.Morpheus.Schema.InputValue
-                                                ( inputValueName , isRequired)
+import qualified Data.Morpheus.Schema.GQL__Type as T
+import qualified Data.Morpheus.Schema.InputValue as I (name,inputValueMeta,isRequired, typeName )
+
 
 existsType :: Text -> GQLTypeLib -> Validation GQL__Type
 existsType typeName typeLib = case M.lookup typeName typeLib of
@@ -68,31 +71,40 @@ replaceVariable root (Variable key) =
         Just value -> pure $ Argument $ JSString value
 replaceVariable _ x = pure x
 
+-- ValidateTypes
+checkArgumentType :: GQLTypeLib -> Text -> Argument -> Validation Argument
+checkArgumentType typeLib typeName argument  = existsType typeName typeLib >>= checkType
+    where
+      checkType _type = case T.kind _type of
+        EnumOf ENUM -> if isEnumOf (unwrapArgument argument) (unwrapField $ T.enumValues _type)  then  pure argument else error
+        _ -> pure argument
+      unwrapField (Some x) = x
+      unwrapArgument  (Argument (JSEnum x)) = x
+      error = Left $  requiredArgument $ MetaInfo typeName "" ""
+
 validateArgument
-    :: GQLQueryRoot -> Arguments -> GQL__InputValue -> Validation (Text, Argument)
-validateArgument root requestArgs inpValue =
-    case lookup (inputValueName inpValue) requestArgs of
-        Nothing -> case isRequired inpValue of
-          True -> Left $ requiredArgument $ MetaInfo
-              { className = "TODO: name"
-              , cons      = ""
-              , key       = pack $ show $ inputValueName inpValue
-              }
-          False -> pure (inputValueName inpValue, Argument JSNull)
-        Just x -> replaceVariable root x >>= \x -> pure (key, x)
-            where key = inputValueName inpValue
+    :: GQLTypeLib -> GQLQueryRoot -> Arguments -> GQL__InputValue -> Validation (Text, Argument)
+validateArgument types root requestArgs inpValue =
+    case lookup (I.name inpValue) requestArgs of
+        Nothing -> if  I.isRequired inpValue
+            then Left $ requiredArgument $ I.inputValueMeta inpValue
+            else pure (key, Argument JSNull)
+        Just x -> replaceVariable root x >>= checkArgumentType types  (I.typeName inpValue) >>= validated
+    where
+       key = I.name inpValue
+       validated x = pure (key, x)
 
 -- TODO: throw Error when gql request has more arguments al then inputType
 validateArguments
-    :: GQLQueryRoot -> [GQL__InputValue] -> Arguments -> Validation Arguments
-validateArguments root _types args = mapM (validateArgument root args) _types
+    :: GQLTypeLib -> GQLQueryRoot -> [GQL__InputValue] -> Arguments -> Validation Arguments
+validateArguments typeLib root inputs args = mapM (validateArgument typeLib root args) inputs
 
 fieldOf :: GQL__Type -> Text -> Validation GQL__Type
 fieldOf _type fieldName = case getFieldTypeByKey fieldName _type of
     Nothing    -> Left $ cannotQueryField $ MetaInfo {
       key = fieldName
       , cons = ""
-      , className = name _type
+      , className = T.name _type
     }
     Just fieldType -> pure fieldType
 
@@ -111,7 +123,7 @@ propagateSpread root (key , Spread _) = validateSpread (fragments root) key
 propagateSpread root (text, value     ) = pure [(text, value)]
 
 typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fieldType
-    where fieldType field = existsType (name field) typeLib
+    where fieldType field = existsType (T.name field) typeLib
 
 argsType :: GQL__Type -> Text -> Validation [GQL__InputValue]
 argsType currentType key = case fieldArgsByKey key currentType of
@@ -139,14 +151,14 @@ validateBySchema typeLib root _parentType (_name, SelectionSet head selectors)
     = do
         _type      <- typeBy typeLib _parentType _name
         _argsType  <- argsType _parentType _name
-        head'      <- validateArguments root _argsType head
+        head'      <- validateArguments typeLib root _argsType head
         selectors' <- mapSelectors typeLib root _type selectors
         pure (_name, SelectionSet head' selectors')
 
 validateBySchema typeLib root _parentType (_name, Field head field) = do
-    _checksIfhasType  <- typeBy typeLib _parentType _name
+    _checksIfHasType  <- typeBy typeLib _parentType _name
     _argsType <- argsType _parentType _name
-    head'     <- validateArguments root _argsType head
+    head'     <- validateArguments typeLib root _argsType head
     pure (_name, Field head' field)
 
 validateBySchema _ _ _ x = pure x
