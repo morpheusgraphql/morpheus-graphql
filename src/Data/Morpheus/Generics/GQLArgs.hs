@@ -40,7 +40,7 @@ instance GQLInput a => GToArgs  (K1 i a)  where
     gToArgs meta args =
         case lookup (key meta) args of
             Nothing -> Left $ Err.requiredArgument meta
-            Just (Argument x) -> pure $ K1 $ decode x
+            Just (Argument x) -> K1 <$> decode x
             Just x -> Err.handleError $ T.pack $ show x
 
 class GQLArgs p where
