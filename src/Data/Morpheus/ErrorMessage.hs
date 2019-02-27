@@ -10,7 +10,8 @@ module Data.Morpheus.ErrorMessage
     , requiredArgument
     , errorMessage
     , variableIsNotDefined
-    , unsupportedVariableType
+    , unsupportedArgumentType
+    , invalidEnumOption
     )
 where
 
@@ -33,9 +34,11 @@ errorMessage x = [GQLError { message = x, locations = [ErrorLocation 0 0] }]
 
 handleError x = Left $ errorMessage $ T.concat ["Field Error: ", x]
 
-unsupportedVariableType :: MetaInfo -> [GQLError]
-unsupportedVariableType meta = errorMessage $ T.concat ["query argument \"", key meta, "\" has unsuported type \"", className meta, "\"."]
+invalidEnumOption :: MetaInfo -> [GQLError]
+invalidEnumOption meta = errorMessage $ T.concat ["Invalid Option \"", key meta, "\" on Enum \"", className meta, "\"."]
 
+unsupportedArgumentType :: MetaInfo -> [GQLError]
+unsupportedArgumentType meta = errorMessage $ T.concat ["Argument \"", key meta, "\" has unsuported type \"", className meta, "\"."]
 
 variableIsNotDefined :: MetaInfo -> [GQLError]
 variableIsNotDefined meta = errorMessage $ T.concat ["Variable \"", key meta, "\" is not defined by operation \"", className meta, "\"."]
