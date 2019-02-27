@@ -16,7 +16,7 @@ import           Data.Text                      ( Text
 import           Data.Morpheus.Generics.GenericEnum ( GToEnum(..))
 import           GHC.Generics
 import           Data.Data
-import           Data.Morpheus.Types.Introspection ( createScalar , GQLTypeLib, GQL__InputValue(..), createInputValue)
+import           Data.Morpheus.Types.Introspection ( createInputObject , createScalar , GQLTypeLib, GQL__InputValue(..), createInputValue)
 import qualified Data.Map as M
 import           Data.Morpheus.Generics.GQLEnum (GQLEnum(..))
 import qualified Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue(..))
@@ -48,7 +48,7 @@ class GQLInput a where
             let typeName = getType (undefined::a)
             case M.lookup typeName typeLib of
                 Just _ -> typeLib
-                Nothing -> M.insert typeName (createScalar typeName) typeLib
+                Nothing -> M.insert typeName (createInputObject typeName) typeLib
 
 instance GQLInput Text where
     decode  (JSString x) = pure x
