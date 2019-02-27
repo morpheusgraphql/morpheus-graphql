@@ -44,7 +44,7 @@ type GQL__Field =  F.GQL__Field GQL__Type;
 type GQLTypeLib = Map Text GQL__Type
 
 createInputValue :: Text -> Text -> I.GQL__InputValue GQL__Type
-createInputValue name typeName = I.createInputValueWith name (createType typeName [])
+createInputValue name typeName = I.createInputValueWith name (createInputObject typeName [])
 
 createField :: Text -> Text -> [I.GQL__InputValue GQL__Type] -> GQL__Field
 createField name typeName args = F.createFieldWith name (createType typeName []) []
