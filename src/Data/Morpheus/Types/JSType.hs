@@ -5,12 +5,14 @@ module Data.Morpheus.Types.JSType where
 import           Data.Map                       ( Map
                                                 , filter
                                                 , mapKeys
+                                                , fromList
                                                 )
 import           Data.Aeson                      ( ToJSON(..)
                                                 , FromJSON(..)
                                                 , Value(..))
 import qualified Data.Text                   as T ( Text )
 import           GHC.Generics                   ( Generic )
+import          Data.HashMap.Strict             (toList)
 
 
 replaceType :: T.Text -> T.Text
@@ -27,7 +29,13 @@ instance ToJSON JSType where
     toJSON (JSObject x) = toJSON (mapKeys replaceType x)
     toJSON (JSList x) = toJSON x
 
+replace (key, val ) = (key, replaceValue val )
+
+replaceValue :: Value -> JSType
+replaceValue (Bool v) = JSBool v
+replaceValue (Number v) = JSInt 0 -- TODO: fix number from 0 to actual value
+replaceValue (String v) = JSString v
+replaceValue (Object v) = JSObject $ fromList $ map replace (toList v)
+
 instance FromJSON JSType where
-    parseJSON (Bool v) = pure $ JSBool v
-    parseJSON (Number v) = pure $ JSInt 0 -- TODO: fix number from 0 to actual value
-    parseJSON (String v) = pure $ JSString v
+    parseJSON = pure . replaceValue
