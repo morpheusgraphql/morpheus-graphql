@@ -71,7 +71,9 @@ class GQLQuery a where
             Nothing -> response
             Just value ->  addSchema value response
             where
-                item (SelectionSet _ x) = wrapAsObject (queryBody query) (encodeFields initialMeta x (from $ initSchema $ M.elems schema))
+                item (SelectionSet _ x) = wrapAsObject (queryBody query)
+                    $ encodeFields initialMeta x
+                    $ from $ initSchema $ M.elems schema
                 response = wrapAsObject (queryBody query) $ encodeFields initialMeta (unpackObj validGQL) (from rootResolver)
                 addSchema value = liftM2 (setProperty "__schema") (item value)
 
@@ -81,10 +83,10 @@ class GQLQuery a where
 
     introspectRoot :: Proxy a  -> GQLTypeLib
     default introspectRoot :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib
-    introspectRoot _ = do
-        let typeLib = introspect (Proxy:: Proxy GQL__Schema) emptyLib
-        arrayMap (M.insert "Query" (createType "Query" fields) typeLib) stack
-               where
-                   fieldTypes  = getFields (Proxy :: Proxy (Rep a))
-                   stack = map snd fieldTypes
-                   fields = map fst fieldTypes ++ [ createField "__schema" "__Schema" [] ]
+    introspectRoot _ = arrayMap addType stack
+       where
+         typeLib = introspect (Proxy:: Proxy GQL__Schema) emptyLib
+         addType = M.insert "Query" (createType "Query" fields) typeLib
+         fieldTypes  = getFields (Proxy :: Proxy (Rep a))
+         stack = map snd fieldTypes
+         fields = map fst fieldTypes ++ [ createField "__schema" "__Schema" [] ]
