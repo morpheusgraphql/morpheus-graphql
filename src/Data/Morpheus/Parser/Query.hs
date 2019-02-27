@@ -51,7 +51,7 @@ queryVariable = do
     variableType <- token
     pure (variableName, Variable variableType)
 
-queryArguments :: Parser (Maybe Arguments)
+queryArguments :: Parser Arguments
 queryArguments = do
     skipSpace
     char '('
@@ -59,14 +59,14 @@ queryArguments = do
     parameters <- queryVariable `sepBy` (skipSpace *> char ',')
     skipSpace
     char ')'
-    pure $ Just parameters
+    pure parameters
 
-query :: Parser Text
+query :: Parser  (Text,Arguments)
 query = do
     string "query "
     skipSpace
     queryName <- token
-    variables <- try (skipSpace *> queryArguments) <|> pure Nothing
-    pure queryName
+    variables <- try (skipSpace *> queryArguments) <|> pure []
+    pure (queryName, variables)
 
 

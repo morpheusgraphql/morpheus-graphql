@@ -53,11 +53,26 @@ import           Data.Morpheus.Schema.SchemaField
 import qualified Data.Morpheus.Schema.GQL__Type as T
 import qualified Data.Morpheus.Schema.InputValue as I (name,inputValueMeta,isRequired, typeName )
 
-
 existsType :: Text -> GQLTypeLib -> Validation GQL__Type
 existsType typeName typeLib = case M.lookup typeName typeLib of
     Nothing -> handleError $ pack $ "type does not exist" ++ unpack typeName
     Just x  -> pure x
+
+checkQueryVariables :: GQLTypeLib  -> GQLQueryRoot -> [(Text,Argument)] -> Validation [(Text,Argument)]
+checkQueryVariables typeLib root = mapM (checkVariableType  typeLib)
+
+checkVariableType :: GQLTypeLib -> (Text,Argument) -> Validation (Text,Argument)
+checkVariableType typeLib ( key, Variable typeName)  = existsType typeName typeLib >>= checkType
+    where
+       checkType _type = case T.kind _type of
+            EnumOf SCALAR -> pure (key, Variable typeName)
+            EnumOf INPUT_OBJECT -> pure (key, Variable typeName)
+            _ -> Left  $ variableIsNotDefined MetaInfo {
+                           className= typeName,
+                           cons = "",
+                           key = key
+            }
+
 
 -- TODO: replace all var types with Variable values
 replaceVariable :: GQLQueryRoot -> Argument -> Validation Argument
@@ -166,6 +181,7 @@ validateBySchema _ _ _ x = pure x
 preProcessQuery :: GQLTypeLib -> GQLQueryRoot -> Validation QuerySelection
 preProcessQuery lib root = do
     _type <- existsType "Query" lib
-    let (SelectionSet _ body) = queryBody root
+    let (SelectionSet args body) = queryBody root
+    variable <- checkQueryVariables lib root args
     selectors <- mapSelectors lib root _type body
     pure $ SelectionSet [] selectors
