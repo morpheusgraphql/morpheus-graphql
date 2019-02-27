@@ -17,25 +17,26 @@ import           Data.Morpheus.Generics.GenericEnum ( GToEnum(..))
 import           GHC.Generics
 import           Data.Data
 import           Data.Morpheus.Types.Introspection ( createScalar , GQLTypeLib, GQL__InputValue(..), createInputValue)
-import           Data.Map as M
+import qualified Data.Map as M
 import           Data.Morpheus.Generics.GQLEnum (GQLEnum(..))
 import qualified Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue(..))
 import           Data.Morpheus.Generics.GenericInputObject (GFromInput(..))
 import Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta)
+import qualified  Data.Morpheus.ErrorMessage    as Err
 
 getType :: Typeable a => a -> Text
 getType = pack . show . typeOf
 
+instance GQLInput a => GFromInput  (K1 i a)  where
+    gFromInput meta inputObj = case lookup (key meta) inputObj of
+            Nothing -> Left $ Err.requiredArgument meta
+            Just x -> K1 <$> decode x
 
 class GQLInput a where
     -- TODO:: write input Object Recognition
     decode :: JSType -> Validation a
     default decode :: ( Show a  , Generic a, Data a , GFromInput (Rep a) ) => JSType -> Validation a
     decode (JSObject hashMap) = to <$> gFromInput initialMeta (M.toList hashMap )
-
-    --decodeArgs :: JSType -> Maybe p -> Validation p
-    --default decodeArgs :: ( Show p , Generic p, D.Data p , GToArgs (Rep p) ) => Arguments -> Maybe p -> Validation p
-    --decodeArgs args _ = to <$> gToArgs initialMeta args
 
     typeInfo :: Proxy a -> Text -> GQL__InputValue
     default typeInfo :: (Show a, Typeable a) => Proxy a -> Text -> GQL__InputValue
@@ -47,7 +48,7 @@ class GQLInput a where
             let typeName = getType (undefined::a)
             case M.lookup typeName typeLib of
                 Just _ -> typeLib
-                Nothing -> insert typeName (createScalar typeName) typeLib
+                Nothing -> M.insert typeName (createScalar typeName) typeLib
 
 instance GQLInput Text where
     decode  (JSString x) = pure x
