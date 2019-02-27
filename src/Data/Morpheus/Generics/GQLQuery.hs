@@ -1,8 +1,8 @@
 {-# LANGUAGE DefaultSignatures , OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables , MultiParamTypeClasses, RankNTypes , DisambiguateRecordFields , FlexibleInstances , FlexibleContexts , TypeOperators #-}
 
-module Data.Morpheus.Generics.GQLRoot
-    ( GQLRoot(..)
+module Data.Morpheus.Generics.GQLQuery
+    ( GQLQuery(..)
     )
 where
 
@@ -62,7 +62,7 @@ getProperty name (SelectionSet _ sel) = lookup name sel
 
 unpackObj (SelectionSet _ sel) = sel
 
-class GQLRoot a where
+class GQLQuery a where
 
     encode :: a -> GQLQueryRoot  ->  ResolveIO JSType
     default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> ResolveIO JSType
