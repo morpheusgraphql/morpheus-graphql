@@ -48,13 +48,12 @@ import           Data.Morpheus.Types.Introspection
                                                 , createField
                                                 , emptyLib
                                                 , createScalar
-                                                , createFieldWith
                                                 )
 import           Data.Morpheus.Generics.TypeRep ( Selectors(..) )
 import           Data.Morpheus.Generics.GenericMap ( GenericMap(..) )
 import           Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta)
 import           Data.Morpheus.Generics.GQLEnum (GQLEnum(..))
-import qualified Data.Morpheus.Schema.GQL__Field as F (GQL__Field(..))
+import qualified Data.Morpheus.Schema.GQL__Field as F (GQL__Field(..), createFieldWith)
 
 
 renameSystemNames = T.replace "GQL__" "__";
@@ -131,7 +130,10 @@ instance (Show a, Show p, GQLSelection a , GQLArgs p ) => GQLSelection (p ::-> a
     encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
     encode x (Some a) = encode x a
     encode x None = pure JSNull
-    introspect  _  typeLib = arrayMap typeLib $ (map snd $ introspectArgs (Proxy::Proxy p)) ++ [introspect (Proxy:: Proxy  a)]
+    introspect  _  typeLib = arrayMap typeLib $ args ++ fields
+      where
+        args = map snd $ introspectArgs (Proxy::Proxy p)
+        fields = [introspect (Proxy:: Proxy  a)]
     fieldType _ name = (fieldType (Proxy:: Proxy  a) name ){ F.args = map fst $ introspectArgs (Proxy :: Proxy p) }
 
 instance (Show a, GQLSelection a) => GQLSelection (Maybe a) where
@@ -143,17 +145,17 @@ instance (Show a, GQLSelection a) => GQLSelection (Maybe a) where
 instance GQLSelection Int where
     encode _ =  pure . JSInt
     introspect _ = M.insert "Int" $ createScalar "Int"
-    fieldType _ name =  createFieldWith name (createScalar "Int")  []
+    fieldType _ name =  F.createFieldWith name (createScalar "Int")  []
 
 instance GQLSelection T.Text where
     encode _ =  pure . JSString
     introspect _ = M.insert "String" $ createScalar "String"
-    fieldType _  name =  createFieldWith  name (createScalar "String") []
+    fieldType _  name =  F.createFieldWith  name (createScalar "String") []
 
 instance GQLSelection Bool where
     encode _ =  pure . JSBool
     introspect _ = M.insert "Boolean" $ createScalar "Boolean"
-    fieldType _ name = createFieldWith name (createScalar "Boolean") []
+    fieldType _ name = F.createFieldWith name (createScalar "Boolean") []
 
 instance GQLSelection a => GQLSelection [a] where
     encode (Field _ _) x =  pure $ JSList []

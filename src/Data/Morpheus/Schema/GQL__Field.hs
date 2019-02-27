@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE DeriveDataTypeable , DeriveGeneric #-}
 
 module Data.Morpheus.Schema.GQL__Field where
