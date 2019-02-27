@@ -35,6 +35,8 @@ import           Data.Morpheus.ErrorMessage     ( semanticError
                                                 , requiredArgument
                                                 ,unknownFragment
                                                 , variableIsNotDefined
+                                                , unsupportedArgumentType
+                                                , invalidEnumOption
                                                 )
 import           Data.Morpheus.Schema.GQL__TypeKind (GQL__TypeKind(..))
 import           Data.Morpheus.Schema.GQL__EnumValue (isEnumOf)
@@ -53,11 +55,26 @@ import           Data.Morpheus.Schema.SchemaField
 import qualified Data.Morpheus.Schema.GQL__Type as T
 import qualified Data.Morpheus.Schema.InputValue as I (name,inputValueMeta,isRequired, typeName )
 
-
 existsType :: Text -> GQLTypeLib -> Validation GQL__Type
 existsType typeName typeLib = case M.lookup typeName typeLib of
     Nothing -> handleError $ pack $ "type does not exist" ++ unpack typeName
     Just x  -> pure x
+
+checkQueryVariables :: GQLTypeLib  -> GQLQueryRoot -> [(Text,Argument)] -> Validation [(Text,Argument)]
+checkQueryVariables typeLib root = mapM (checkVariableType  typeLib)
+
+checkVariableType :: GQLTypeLib -> (Text,Argument) -> Validation (Text,Argument)
+checkVariableType typeLib ( key, Variable typeName)  = existsType typeName typeLib >>= checkType
+    where
+       checkType _type = case T.kind _type of
+            EnumOf SCALAR -> pure (key, Variable typeName)
+            EnumOf INPUT_OBJECT -> pure (key, Variable typeName)
+            _ -> Left  $ unsupportedArgumentType MetaInfo {
+                           className= typeName,
+                           cons = "",
+                           key = key
+            }
+
 
 -- TODO: replace all var types with Variable values
 replaceVariable :: GQLQueryRoot -> Argument -> Validation Argument
@@ -71,16 +88,18 @@ replaceVariable root (Variable key) =
         Just value -> pure $ Argument $ JSString value
 replaceVariable _ x = pure x
 
--- ValidateTypes
+validateEnum :: GQL__Type -> Argument -> Validation Argument
+validateEnum _type (Argument (JSEnum argument)) = if isEnumOf argument (unwrapField $ T.enumValues _type)  then  pure (Argument (JSEnum argument)) else error
+  where   unwrapField (Some x) = x
+          error = Left $  invalidEnumOption $ MetaInfo (T.name _type) "" argument
+
+-- TODO: Validate other Types , INPUT_OBJECT
 checkArgumentType :: GQLTypeLib -> Text -> Argument -> Validation Argument
 checkArgumentType typeLib typeName argument  = existsType typeName typeLib >>= checkType
     where
       checkType _type = case T.kind _type of
-        EnumOf ENUM -> if isEnumOf (unwrapArgument argument) (unwrapField $ T.enumValues _type)  then  pure argument else error
+        EnumOf ENUM -> validateEnum _type argument
         _ -> pure argument
-      unwrapField (Some x) = x
-      unwrapArgument  (Argument (JSEnum x)) = x
-      error = Left $  requiredArgument $ MetaInfo typeName "" ""
 
 validateArgument
     :: GQLTypeLib -> GQLQueryRoot -> Arguments -> GQL__InputValue -> Validation (Text, Argument)
@@ -166,6 +185,7 @@ validateBySchema _ _ _ x = pure x
 preProcessQuery :: GQLTypeLib -> GQLQueryRoot -> Validation QuerySelection
 preProcessQuery lib root = do
     _type <- existsType "Query" lib
-    let (SelectionSet _ body) = queryBody root
+    let (SelectionSet args body) = queryBody root
+    variable <- checkQueryVariables lib root args
     selectors <- mapSelectors lib root _type body
     pure $ SelectionSet [] selectors

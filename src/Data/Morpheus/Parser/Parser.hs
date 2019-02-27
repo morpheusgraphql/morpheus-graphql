@@ -39,8 +39,8 @@ import           Data.Morpheus.Parser.Fragment ( fragment )
 
 request :: Parser GQLQueryRoot
 request = do
-    queryName      <- (try (skipSpace *> B.query)) <|> pure ""
-    queryBodyValue <- body []
+    (queryName, args) <- (try (skipSpace *> B.query)) <|> pure ("",[])
+    queryBodyValue <- body args
     fragmentLib    <- fromList <$> many fragment
     skipSpace
     endOfInput
