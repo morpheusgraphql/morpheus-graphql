@@ -98,11 +98,8 @@ resolveUser = Resolver resolve
     modify user =
         user { address = resolveAddress, office = resolveOffice user }
 
-resolveRoot :: GQLRoot Query NoMutation
-resolveRoot = GQLRoot {
-    queryResolver = pure $ Query { user = resolveUser }
-    ,mutationResolver = pure NoMutation
-}
-
 gqlHandler :: GQLRequest -> IO GQLResponse
-gqlHandler = interpreter resolveRoot
+gqlHandler = interpreter GQLRoot {
+   queryResolver = pure $ Query { user = resolveUser }
+   ,mutationResolver = pure NoMutation
+}
