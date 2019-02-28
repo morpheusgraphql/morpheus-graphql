@@ -80,7 +80,6 @@ class GQLMutation a where
 
 data NoMutation = NoMutation
 
-
 instance GQLMutation NoMutation where
   encodeMutation _ _ _ = pure JSNull
   mutationSchema _  = emptyLib

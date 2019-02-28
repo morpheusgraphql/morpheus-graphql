@@ -68,13 +68,14 @@ validate schema root = case preProcessQuery schema root of
 
 resolve :: (GQLQuery a , GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO JSType
 resolve rootResolver body = do
-    let queryRoot = queryResolver rootResolver
-    let mutationRoot = mutationResolver rootResolver
-    rootGQL  <- ExceptT $ pure $ parseGQL body
-    queryBody <- validate (schema queryRoot mutationRoot) rootGQL
-    case  queryBody of
-      QueryOperator name query -> encodeQuery queryRoot (schema queryRoot mutationRoot) query
-      MutationOperator name mutation -> encodeMutation mutationRoot (schema queryRoot mutationRoot) mutation
+    rootGQL  <- ExceptT $ pure (parseGQL body >>= preProcessQuery gqlSchema)
+    case  rootGQL of
+      QueryOperator name query -> encodeQuery queryRes gqlSchema query
+      MutationOperator name mutation -> encodeMutation mutationRes gqlSchema mutation
+    where
+      gqlSchema = schema queryRes mutationRes
+      queryRes = queryResolver rootResolver
+      mutationRes = mutationResolver rootResolver
 
 interpreter :: (GQLQuery a , GQLMutation b)=> GQLRoot a b -> GQLRequest -> IO GQLResponse
 interpreter rootResolver request = do
