@@ -76,14 +76,14 @@ class GQLQuery a where
 
         Left x ->  failResolveIO x
         where
-            schema = introspectRoot (Proxy :: Proxy a);
+            schema = introspectQuery (Proxy :: Proxy a);
 
-    introspectRoot :: Proxy a  -> GQLTypeLib
-    default introspectRoot :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib
-    introspectRoot _ = resolveTypes addType stack
+    introspectQuery :: Proxy a  -> GQLTypeLib
+    default introspectQuery :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib
+    introspectQuery _ = resolveTypes typeLib stack
        where
-         typeLib = introspect (Proxy:: Proxy GQL__Schema) emptyLib
-         addType = M.insert "Query" (createType "Query" fields) typeLib
+         typeLib = introspect (Proxy:: Proxy GQL__Schema) queryType
+         queryType = M.fromList [("Query" , createType "Query" fields)]
          fieldTypes  = getFields (Proxy :: Proxy (Rep a))
          stack = map snd fieldTypes
          fields = map fst fieldTypes ++ [ createField "__schema" "__Schema" [] ]

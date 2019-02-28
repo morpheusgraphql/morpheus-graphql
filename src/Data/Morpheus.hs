@@ -13,6 +13,8 @@ module Data.Morpheus
     , GQLInput
     , EnumOf(unpackEnum)
     , GQLEnum
+    , GQLRoot(..)
+    , NoMutation(..)
     )
 where
 
@@ -44,18 +46,23 @@ import           Control.Monad.Trans.Except     ( runExceptT
                                                 )
 import          Data.Morpheus.Generics.GQLInput (GQLInput)
 import          Data.Morpheus.Generics.GQLEnum  (GQLEnum)
+import          Data.Morpheus.Generics.GQLMutation (GQLMutation,NoMutation(..))
 
+data GQLRoot a b = GQLRoot {
+  queryResolver :: ResolveIO a,
+  mutationResolver:: ResolveIO b
+}
 
 -- generateSchema :: q -> m -> GQLTypeLib
 -- generateSchema _ _ = introspect (Proxy:: Proxy GQL__Schema) emptyLib $ introspectRoot(Proxy:: Proxy q ) $ introspectRoot(Proxy:: Proxy q )
 
-resolve :: GQLQuery a => ResolveIO a -> GQLRequest -> ResolveIO JSType
+resolve :: (GQLQuery a , GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO JSType
 resolve rootResolver body = do
-    root <- rootResolver
+    root <- queryResolver rootResolver
     query  <- ExceptT $ pure $ parseGQL body
     encode root query
 
-interpreter :: GQLQuery a => ResolveIO a -> GQLRequest -> IO GQLResponse
+interpreter :: (GQLQuery a , GQLMutation b)=> GQLRoot a b -> GQLRequest -> IO GQLResponse
 interpreter rootResolver request = do
   value <- runExceptT $ resolve rootResolver request
   case value of

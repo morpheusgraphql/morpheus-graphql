@@ -1,7 +1,7 @@
 {-# LANGUAGE DefaultSignatures , OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables , MultiParamTypeClasses, RankNTypes , DisambiguateRecordFields , FlexibleInstances , FlexibleContexts , TypeOperators #-}
 
-module Data.Morpheus.Generics.GQLMutation (GQLMutation(..)) where
+module Data.Morpheus.Generics.GQLMutation (GQLMutation(..),NoMutation(..)) where
 
 
 import           Control.Monad
@@ -66,13 +66,20 @@ class GQLMutation a where
     encode rootResolver query =  case preProcessQuery schema query of
         Right validGQL -> wrapAsObject $ encodeFields initialMeta (unpackObj validGQL) $ from rootResolver
         Left x ->  failResolveIO x
-        where schema = introspectRoot (Proxy :: Proxy a);
+        where schema = introspectMutation (Proxy :: Proxy a);
 
-    introspectRoot :: Proxy a  -> GQLTypeLib
-    default introspectRoot :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib
-    introspectRoot _ = resolveTypes mutationType types
+    introspectMutation :: Proxy a  -> GQLTypeLib
+    default introspectMutation :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib
+    introspectMutation _ = resolveTypes mutationType types
        where
          mutationType = M.fromList [("Mutation", createType "Mutation" fields)]
          fieldTypes  = getFields (Proxy :: Proxy (Rep a))
          types = map snd fieldTypes
          fields = map fst fieldTypes
+
+data NoMutation = NoMutation
+
+
+instance GQLMutation NoMutation where
+  encode _ _ = pure JSNull
+  introspectMutation _ = emptyLib

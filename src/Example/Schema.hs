@@ -25,6 +25,8 @@ import           Data.Morpheus                  ( GQLSelection
                                                 , GQLInput
                                                 , EnumOf(unpackEnum)
                                                 , GQLEnum
+                                                , GQLRoot(..)
+                                                , NoMutation(..)
                                                 )
 import           Example.Files                  ( getJson )
 import           Data.Aeson                     ( FromJSON )
@@ -96,8 +98,11 @@ resolveUser = Resolver resolve
     modify user =
         user { address = resolveAddress, office = resolveOffice user }
 
-resolveRoot :: ResolveIO Query
-resolveRoot = pure $ Query { user = resolveUser }
+resolveRoot :: GQLRoot Query NoMutation
+resolveRoot = GQLRoot {
+    queryResolver = pure $ Query { user = resolveUser }
+    ,mutationResolver = pure NoMutation
+}
 
 gqlHandler :: GQLRequest -> IO GQLResponse
 gqlHandler = interpreter resolveRoot
