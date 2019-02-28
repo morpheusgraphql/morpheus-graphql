@@ -61,12 +61,11 @@ unpackObj (SelectionSet _ sel) = sel
 
 class GQLMutation a where
 
-    encodeMutation :: a -> GQLQueryRoot  ->  ResolveIO JSType
-    default encodeMutation :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> ResolveIO JSType
-    encodeMutation rootResolver query =  case preProcessQuery schema query of
+    encodeMutation :: a -> GQLTypeLib -> GQLQueryRoot -> ResolveIO JSType
+    default encodeMutation :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLTypeLib ->  GQLQueryRoot -> ResolveIO JSType
+    encodeMutation rootResolver schema query =  case preProcessQuery schema query of
         Right validGQL -> wrapAsObject $ encodeFields initialMeta (unpackObj validGQL) $ from rootResolver
         Left x ->  failResolveIO x
-        where schema = introspectMutation (Proxy :: Proxy a);
 
     mutationSchema :: a -> GQLTypeLib
     default mutationSchema :: (Generic a, Data a) => a -> GQLTypeLib
@@ -85,6 +84,6 @@ data NoMutation = NoMutation
 
 
 instance GQLMutation NoMutation where
-  encodeMutation _ _ = pure JSNull
+  encodeMutation _ _ _ = pure JSNull
   mutationSchema _  = emptyLib
   introspectMutation _ = emptyLib
