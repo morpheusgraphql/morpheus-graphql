@@ -52,8 +52,8 @@ import          Data.Morpheus.Types.Introspection (GQLTypeLib)
 
 
 data GQLRoot a b = GQLRoot {
-  queryResolver :: ResolveIO a,
-  mutationResolver:: ResolveIO b
+  queryResolver :: a,
+  mutationResolver:: b
 }
 
 schema :: ( GQLQuery a , GQLMutation b ) =>  a -> b -> GQLTypeLib
@@ -61,8 +61,8 @@ schema query mutation  = querySchema query $ mutationSchema mutation
 
 resolve :: (GQLQuery a , GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO JSType
 resolve rootResolver body = do
-    queryRoot <- queryResolver rootResolver
-    mutationRoot <- mutationResolver rootResolver
+    let queryRoot = queryResolver rootResolver
+    let mutationRoot = mutationResolver rootResolver
     query  <- ExceptT $ pure $ parseGQL body
     encodeQuery queryRoot (schema queryRoot mutationRoot) query
 

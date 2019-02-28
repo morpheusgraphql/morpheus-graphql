@@ -112,10 +112,10 @@ createUserMutation = Resolver resolve
 
 gqlHandler :: GQLRequest -> IO GQLResponse
 gqlHandler = interpreter GQLRoot {
-   queryResolver = pure $ Query {
+   queryResolver = Query {
       user = resolveUser
    }
-   ,mutationResolver = pure $ Mutation {
+   ,mutationResolver = Mutation {
       createUser = createUserMutation
    }
 }
