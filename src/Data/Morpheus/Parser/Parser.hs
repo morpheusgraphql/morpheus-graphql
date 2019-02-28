@@ -36,7 +36,7 @@ import qualified Data.Morpheus.Parser.Query   as Q
 import           Data.Morpheus.Parser.Body     ( body )
 import           Data.Morpheus.Parser.Fragment ( fragment )
 import qualified Data.Morpheus.Parser.Mutation as M
-
+import           Data.Maybe (fromMaybe)
 request :: Parser GQLQueryRoot
 request = do
     queryValue <- Q.query <|> M.mutation
@@ -49,9 +49,7 @@ request = do
         , inputVariables = fromList []
         }
 
-getVariables req = case variables req of
-    Nothing   -> fromList []
-    Just vars -> vars
+getVariables = fromMaybe (fromList []) . variables
 
 parseGQL :: GQLRequest -> Validation GQLQueryRoot
 parseGQL requestBody = case parseOnly request $ query requestBody of

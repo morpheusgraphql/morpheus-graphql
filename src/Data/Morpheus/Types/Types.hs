@@ -16,6 +16,7 @@ module Data.Morpheus.Types.Types
     , failResolveIO
     , Arguments
     , EnumOf(..)
+    , GQLOperator(..)
     )
 where
 
@@ -65,6 +66,8 @@ data QuerySelection =
     QNull
     deriving (Show, Generic)
 
+data GQLOperator = QueryOperator Text QuerySelection | MutationOperator Text QuerySelection
+
 type FragmentLib = Map Text Fragment
 
 data Fragment = Fragment {
@@ -75,7 +78,7 @@ data Fragment = Fragment {
 
 data GQLQueryRoot = GQLQueryRoot {
     fragments:: FragmentLib,
-    queryBody :: QuerySelection,
+    queryBody :: GQLOperator,
     inputVariables:: Map Text JSType
 }
 

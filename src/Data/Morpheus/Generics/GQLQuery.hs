@@ -51,7 +51,6 @@ import           Data.Morpheus.Generics.GQLSelection
                                                 ( GQLSelection(..)
                                                 , wrapAsObject
                                                 )
-import           Data.Morpheus.PreProcess       ( preProcessQuery )
 
 setProperty :: Text -> JSType -> JSType -> JSType
 setProperty name prop (JSObject obj) = JSObject (M.insert name prop obj)
@@ -63,17 +62,15 @@ unpackObj (SelectionSet _ sel) = sel
 
 class GQLQuery a where
 
-    encodeQuery :: a -> GQLTypeLib -> GQLQueryRoot  ->  ResolveIO JSType
-    default encodeQuery :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLTypeLib -> GQLQueryRoot -> ResolveIO JSType
-    encodeQuery rootResolver schema query =  case preProcessQuery schema query of
-        Right validGQL -> case getProperty "__schema" validGQL of
+    encodeQuery :: a -> GQLTypeLib -> QuerySelection  ->  ResolveIO JSType
+    default encodeQuery :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
+    encodeQuery rootResolver schema query = case getProperty "__schema" query of
             Nothing -> response
             Just value ->  addSchema value response
             where
                 item (SelectionSet _ x) = wrapAsObject $ encodeFields initialMeta x $ from $ initSchema $ M.elems schema
-                response = wrapAsObject $ encodeFields initialMeta (unpackObj validGQL) $ from rootResolver
+                response = wrapAsObject $ encodeFields initialMeta (unpackObj query) $ from rootResolver
                 addSchema  = liftM2 (setProperty "__schema") . item
-        Left x ->  failResolveIO x
 
     querySchema :: a -> GQLTypeLib -> GQLTypeLib
     default querySchema :: (Generic a, Data a) => a -> GQLTypeLib -> GQLTypeLib

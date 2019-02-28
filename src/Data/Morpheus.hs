@@ -38,6 +38,8 @@ import           Data.Morpheus.Types.Types     ( (::->)(Resolver)
                                                 , ResolveIO(..)
                                                 , failResolveIO
                                                 , EnumOf(unpackEnum)
+                                                , GQLOperator(..)
+                                                , GQLQueryRoot(..)
                                                 )
 import           Data.Proxy                     ( Proxy )
 import           Control.Monad                  ( (>=>) )
@@ -49,6 +51,7 @@ import          Data.Morpheus.Generics.GQLInput (GQLInput)
 import          Data.Morpheus.Generics.GQLEnum  (GQLEnum)
 import          Data.Morpheus.Generics.GQLMutation (GQLMutation(..),NoMutation(..))
 import          Data.Morpheus.Types.Introspection (GQLTypeLib)
+import           Data.Morpheus.PreProcess       ( preProcessQuery )
 
 
 data GQLRoot a b = GQLRoot {
@@ -59,12 +62,19 @@ data GQLRoot a b = GQLRoot {
 schema :: ( GQLQuery a , GQLMutation b ) =>  a -> b -> GQLTypeLib
 schema query mutation  = querySchema query $ mutationSchema mutation
 
+validate schema root = case preProcessQuery schema root of
+        Right validGQL -> pure  validGQL
+        Left x ->  failResolveIO x
+
 resolve :: (GQLQuery a , GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO JSType
 resolve rootResolver body = do
     let queryRoot = queryResolver rootResolver
     let mutationRoot = mutationResolver rootResolver
-    query  <- ExceptT $ pure $ parseGQL body
-    encodeQuery queryRoot (schema queryRoot mutationRoot) query
+    rootGQL  <- ExceptT $ pure $ parseGQL body
+    queryBody <- validate (schema queryRoot mutationRoot) rootGQL
+    case  queryBody of
+      QueryOperator name query -> encodeQuery queryRoot (schema queryRoot mutationRoot) query
+      MutationOperator name mutation -> encodeMutation mutationRoot (schema queryRoot mutationRoot) mutation
 
 interpreter :: (GQLQuery a , GQLMutation b)=> GQLRoot a b -> GQLRequest -> IO GQLResponse
 interpreter rootResolver request = do

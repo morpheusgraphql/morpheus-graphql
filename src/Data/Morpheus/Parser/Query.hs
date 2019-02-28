@@ -30,6 +30,7 @@ import           Data.Text                      (Text)
 import           Data.Morpheus.Types.Types     ( QuerySelection(..)
                                                 , SelectionSet
                                                 , Arguments(..)
+                                                , GQLOperator(..)
                                                 )
 import           Data.Morpheus.Parser.Body     ( body )
 
@@ -41,8 +42,8 @@ queryHead = do
     variables <- try (skipSpace *> rootHeadArguments) <|> pure []
     pure (queryName, variables)
 
-
-query:: Parser QuerySelection
+query:: Parser GQLOperator
 query = do
-  (queryName, args) <- (try (skipSpace *> queryHead)) <|> pure ("",[])
-  body args
+  (queryName, args) <- try (skipSpace *> queryHead) <|> pure ("",[])
+  selection <- body args
+  pure $ QueryOperator queryName selection
