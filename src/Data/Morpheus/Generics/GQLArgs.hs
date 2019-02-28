@@ -27,7 +27,7 @@ import           Data.Morpheus.Types.Introspection
                                                 , GQLTypeLib
                                                 , createType
                                                 )
-import Data.Morpheus.Generics.GRecord           (GRecord(..))
+import Data.Morpheus.Generics.GDecode           (GDecode(..))
 
 updateLib :: GQLTypeLib -> GQLTypeLib
 updateLib x = x
@@ -37,7 +37,7 @@ instance (Selector s, D.Typeable t , GQLInput t) => Selectors (M1 S s (K1 R t)) 
       where name = T.pack $ selName (undefined :: M1 S s (K1 R t) ())
 
 
-instance GQLInput a => GRecord Arguments (K1 i a)  where
+instance GQLInput a => GDecode Arguments (K1 i a)  where
     gDecode meta args =
         case lookup (key meta) args of
             Nothing -> Left $ Err.requiredArgument meta
@@ -46,7 +46,7 @@ instance GQLInput a => GRecord Arguments (K1 i a)  where
 
 class GQLArgs p where
     decodeArgs :: Arguments -> Maybe p -> Validation p
-    default decodeArgs :: ( Show p , Generic p, D.Data p , GRecord Arguments (Rep p) ) => Arguments -> Maybe p -> Validation p
+    default decodeArgs :: ( Show p , Generic p, D.Data p , GDecode Arguments (Rep p) ) => Arguments -> Maybe p -> Validation p
     decodeArgs args _ = to <$> gDecode initialMeta args
 
     introspectArgs :: Proxy p -> [(GQL__InputValue,GQLTypeLib -> GQLTypeLib)]
