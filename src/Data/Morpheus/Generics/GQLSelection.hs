@@ -79,8 +79,8 @@ arrayMap lib (f : fs) = arrayMap (f lib) fs
 unwrapMonadTuple :: Monad m => (T.Text, m a) -> m (T.Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
-wrapAsObject :: QuerySelection  -> [(T.Text, ResolveIO JSType)] -> ResolveIO JSType
-wrapAsObject (SelectionSet _ gql) x = JSObject . M.fromList . orderList gql <$> mapM unwrapMonadTuple x
+wrapAsObject ::   [(T.Text, ResolveIO JSType)] -> ResolveIO JSType
+wrapAsObject x = JSObject . M.fromList  <$> mapM unwrapMonadTuple x
 
 findIn:: [(T.Text,JSType)] -> (T.Text,QuerySelection) -> (T.Text,JSType)
 findIn x (key,_) = ( key,  fromMaybe  JSNull $ lookup key x )
@@ -92,7 +92,7 @@ class GQLSelection a where
 
     encode :: QuerySelection ->  a -> ResolveIO JSType
     default encode :: ( Generic a, D.Data a, GenericMap (Rep a) , Show a) => QuerySelection -> a -> ResolveIO JSType
-    encode (SelectionSet args gql) = wrapAsObject (SelectionSet args gql) . encodeFields initialMeta gql . from
+    encode (SelectionSet args gql) = wrapAsObject . encodeFields initialMeta gql . from
     encode (Field args key) = \x -> failResolveIO $ Err.subfieldsNotSelected $ MetaInfo "" "" key
 
     fieldType :: Proxy a -> T.Text -> GQL__Field

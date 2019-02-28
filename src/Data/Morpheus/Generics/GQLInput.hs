@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE  ScopedTypeVariables , AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
+{-# LANGUAGE  MultiParamTypeClasses ,ScopedTypeVariables ,FlexibleInstances , AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
 
 module Data.Morpheus.Generics.GQLInput
     ( GQLInput(..)
@@ -20,7 +20,7 @@ import           Data.Morpheus.Types.Introspection (GQL__Field, createInputObjec
 import qualified Data.Map as M
 import           Data.Morpheus.Generics.GQLEnum (GQLEnum(..))
 import qualified Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue(..))
-import           Data.Morpheus.Generics.GenericInputObject (GFromInput(..))
+import           Data.Morpheus.Generics.GRecord (GRecord(..))
 import Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta)
 import qualified  Data.Morpheus.ErrorMessage    as Err
 import           Data.Morpheus.Generics.TypeRep ( Selectors(..) )
@@ -28,11 +28,10 @@ import           Data.Morpheus.Generics.TypeRep ( Selectors(..) )
 getType :: Typeable a => a -> Text
 getType = pack . show . typeOf
 
-instance GQLInput a => GFromInput  (K1 i a)  where
-    gFromInput meta inputObj = case lookup (key meta) inputObj of
+instance GQLInput a => GRecord JSType (K1 i a)  where
+    gDecode meta (JSObject x) = case lookup (key meta) (M.toList x) of
             Nothing -> Left $ Err.requiredArgument meta
             Just x -> K1 <$> decode x
-
 
 arrayMap :: GQLTypeLib -> [GQLTypeLib -> GQLTypeLib] -> GQLTypeLib
 arrayMap lib []       = lib
@@ -41,8 +40,8 @@ arrayMap lib (f : fs) = arrayMap (f lib) fs
 class GQLInput a where
     -- TODO:: write input Object Recognition
     decode :: JSType -> Validation a
-    default decode :: ( Show a  , Generic a, Data a , GFromInput (Rep a) ) => JSType -> Validation a
-    decode (JSObject hashMap) = to <$> gFromInput initialMeta (M.toList hashMap )
+    default decode :: ( Show a  , Generic a, Data a , GRecord JSType (Rep a) ) => JSType -> Validation a
+    decode (JSObject x) = to <$> gDecode initialMeta (JSObject x)
 
     typeInfo :: Proxy a -> Text -> GQL__InputValue
     default typeInfo :: (Show a, Typeable a) => Proxy a -> Text -> GQL__InputValue
