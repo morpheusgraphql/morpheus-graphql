@@ -14,6 +14,7 @@ module Data.Morpheus
     , EnumOf(unpackEnum)
     , GQLEnum
     , GQLRoot(..)
+    , GQLMutation(..)
     , NoMutation(..)
     )
 where
