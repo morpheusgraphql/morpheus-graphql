@@ -26,7 +26,7 @@ import           Data.Text                      ( Text
 import           Data.Morpheus.Generics.GQLSelection
                                                 ( GQLSelection )
 import           Data.Morpheus.Generics.GQLQuery
-                                                ( GQLQuery(encode) )
+                                                ( GQLQuery(..) )
 import           Data.Morpheus.Generics.GQLArgs
                                                 ( GQLArgs )
 import           Data.Morpheus.Parser.Parser   ( parseGQL )
@@ -47,21 +47,24 @@ import           Control.Monad.Trans.Except     ( runExceptT
                                                 )
 import          Data.Morpheus.Generics.GQLInput (GQLInput)
 import          Data.Morpheus.Generics.GQLEnum  (GQLEnum)
-import          Data.Morpheus.Generics.GQLMutation (GQLMutation,NoMutation(..))
+import          Data.Morpheus.Generics.GQLMutation (GQLMutation(..),NoMutation(..))
+import          Data.Morpheus.Types.Introspection (GQLTypeLib)
+
 
 data GQLRoot a b = GQLRoot {
   queryResolver :: ResolveIO a,
   mutationResolver:: ResolveIO b
 }
 
--- generateSchema :: q -> m -> GQLTypeLib
--- generateSchema _ _ = introspect (Proxy:: Proxy GQL__Schema) emptyLib $ introspectRoot(Proxy:: Proxy q ) $ introspectRoot(Proxy:: Proxy q )
+schema :: ( GQLQuery a , GQLMutation b ) =>  a -> b -> GQLTypeLib
+schema query mutation  = querySchema query $ mutationSchema mutation
 
 resolve :: (GQLQuery a , GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO JSType
 resolve rootResolver body = do
-    root <- queryResolver rootResolver
+    queryRoot <- queryResolver rootResolver
+    mutationRoot <- mutationResolver rootResolver
     query  <- ExceptT $ pure $ parseGQL body
-    encode root query
+    encodeQuery queryRoot (schema queryRoot mutationRoot) query
 
 interpreter :: (GQLQuery a , GQLMutation b)=> GQLRoot a b -> GQLRequest -> IO GQLResponse
 interpreter rootResolver request = do

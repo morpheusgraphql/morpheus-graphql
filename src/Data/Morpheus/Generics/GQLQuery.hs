@@ -63,9 +63,9 @@ unpackObj (SelectionSet _ sel) = sel
 
 class GQLQuery a where
 
-    encode :: a -> GQLQueryRoot  ->  ResolveIO JSType
-    default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> ResolveIO JSType
-    encode rootResolver query =  case preProcessQuery schema query of
+    encodeQuery :: a -> GQLTypeLib -> GQLQueryRoot  ->  ResolveIO JSType
+    default encodeQuery :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLTypeLib -> GQLQueryRoot -> ResolveIO JSType
+    encodeQuery rootResolver schema query =  case preProcessQuery schema query of
         Right validGQL -> case getProperty "__schema" validGQL of
             Nothing -> response
             Just value ->  addSchema value response
@@ -73,14 +73,15 @@ class GQLQuery a where
                 item (SelectionSet _ x) = wrapAsObject $ encodeFields initialMeta x $ from $ initSchema $ M.elems schema
                 response = wrapAsObject $ encodeFields initialMeta (unpackObj validGQL) $ from rootResolver
                 addSchema  = liftM2 (setProperty "__schema") . item
-
         Left x ->  failResolveIO x
-        where
-            schema = introspectQuery (Proxy :: Proxy a);
 
-    introspectQuery :: Proxy a  -> GQLTypeLib
-    default introspectQuery :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib
-    introspectQuery _ = resolveTypes typeLib stack
+    querySchema :: a -> GQLTypeLib -> GQLTypeLib
+    default querySchema :: (Generic a, Data a) => a -> GQLTypeLib -> GQLTypeLib
+    querySchema _ = introspectQuery (Proxy :: Proxy a)
+
+    introspectQuery :: Proxy a  -> GQLTypeLib -> GQLTypeLib
+    default introspectQuery :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib -> GQLTypeLib
+    introspectQuery _ typeLib = resolveTypes typeLib stack
        where
          typeLib = introspect (Proxy:: Proxy GQL__Schema) queryType
          queryType = M.fromList [("Query" , createType "Query" fields)]
