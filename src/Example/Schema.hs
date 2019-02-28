@@ -14,7 +14,7 @@ import           Data.Text                      ( Text
                                                 , unpack
                                                 )
 import           Data.Morpheus                  ( GQLSelection
-                                                , GQLRoot
+                                                , GQLQuery
                                                 , GQLArgs
                                                 , (::->)(..)
                                                 , GQLResponse
@@ -66,7 +66,7 @@ data User = User {
 
 newtype Query = Query {
     user:: () ::-> User
-} deriving (Show,Generic,Data,GQLRoot, FromJSON )
+} deriving (Show,Generic,Data, GQLQuery , FromJSON )
 
 fetchAddress :: Text -> Text -> ResolveIO Address
 fetchAddress cityName streetName = lift (getJson "address")

@@ -4,7 +4,7 @@ module Data.Morpheus
     ( interpreter
     , GQLResponse
     , GQLSelection
-    , GQLRoot
+    , GQLQuery
     , GQLArgs
     , (::->)(..)
     , GQLRequest(..)
@@ -22,8 +22,8 @@ import           Data.Text                      ( Text
                                                 )
 import           Data.Morpheus.Generics.GQLSelection
                                                 ( GQLSelection )
-import           Data.Morpheus.Generics.GQLRoot
-                                                ( GQLRoot(encode) )
+import           Data.Morpheus.Generics.GQLQuery
+                                                ( GQLQuery(encode) )
 import           Data.Morpheus.Generics.GQLArgs
                                                 ( GQLArgs )
 import           Data.Morpheus.Parser.Parser   ( parseGQL )
@@ -46,13 +46,13 @@ import          Data.Morpheus.Generics.GQLInput (GQLInput)
 import          Data.Morpheus.Generics.GQLEnum  (GQLEnum)
 
 
-resolve :: GQLRoot a => ResolveIO a -> GQLRequest -> ResolveIO JSType
+resolve :: GQLQuery a => ResolveIO a -> GQLRequest -> ResolveIO JSType
 resolve rootResolver body = do
     root <- rootResolver
     query  <- ExceptT $ pure $ parseGQL body
     encode root query
 
-interpreter :: GQLRoot a => ResolveIO a -> GQLRequest -> IO GQLResponse
+interpreter :: GQLQuery a => ResolveIO a -> GQLRequest -> IO GQLResponse
 interpreter rootResolver request = do
   value <- runExceptT $ resolve rootResolver request
   case value of

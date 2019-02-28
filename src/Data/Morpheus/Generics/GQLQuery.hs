@@ -1,8 +1,8 @@
 {-# LANGUAGE DefaultSignatures , OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables , MultiParamTypeClasses, RankNTypes , DisambiguateRecordFields , FlexibleInstances , FlexibleContexts , TypeOperators #-}
 
-module Data.Morpheus.Generics.GQLRoot
-    ( GQLRoot(..)
+module Data.Morpheus.Generics.GQLQuery
+    ( GQLQuery(..)
     )
 where
 
@@ -39,7 +39,7 @@ import           Data.Morpheus.Types.Introspection
                                                 , createField
                                                 , emptyLib
                                                 )
-import           Data.Morpheus.Generics.TypeRep ( Selectors(..) )
+import           Data.Morpheus.Generics.TypeRep ( Selectors(..) , resolveTypes )
 import           Data.Proxy
 import           Data.Morpheus.Generics.GenericMap ( GenericMap(..) )
 import           Data.Maybe                     ( fromMaybe )
@@ -50,7 +50,6 @@ import           Data.Morpheus.Schema.GQL__Schema
 import           Data.Morpheus.Generics.GQLSelection
                                                 ( GQLSelection(..)
                                                 , wrapAsObject
-                                                , arrayMap
                                                 )
 import           Data.Morpheus.PreProcess       ( preProcessQuery )
 
@@ -62,7 +61,7 @@ getProperty name (SelectionSet _ sel) = lookup name sel
 
 unpackObj (SelectionSet _ sel) = sel
 
-class GQLRoot a where
+class GQLQuery a where
 
     encode :: a -> GQLQueryRoot  ->  ResolveIO JSType
     default encode :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLQueryRoot -> ResolveIO JSType
@@ -71,9 +70,9 @@ class GQLRoot a where
             Nothing -> response
             Just value ->  addSchema value response
             where
-                item (SelectionSet _ x) = wrapAsObject (encodeFields initialMeta x (from $ initSchema $ M.elems schema))
-                response = wrapAsObject $ encodeFields initialMeta (unpackObj validGQL) (from rootResolver)
-                addSchema value = liftM2 (setProperty "__schema") (item value)
+                item (SelectionSet _ x) = wrapAsObject $ encodeFields initialMeta x $ from $ initSchema $ M.elems schema
+                response = wrapAsObject $ encodeFields initialMeta (unpackObj validGQL) $ from rootResolver
+                addSchema  = liftM2 (setProperty "__schema") . item
 
         Left x ->  failResolveIO x
         where
@@ -81,10 +80,10 @@ class GQLRoot a where
 
     introspectRoot :: Proxy a  -> GQLTypeLib
     default introspectRoot :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib
-    introspectRoot _ = do
-        let typeLib = introspect (Proxy:: Proxy GQL__Schema) emptyLib
-        arrayMap (M.insert "Query" (createType "Query" fields) typeLib) stack
-               where
-                   fieldTypes  = getFields (Proxy :: Proxy (Rep a))
-                   stack = map snd fieldTypes
-                   fields = map fst fieldTypes ++ [ createField "__schema" "__Schema" [] ]
+    introspectRoot _ = resolveTypes addType stack
+       where
+         typeLib = introspect (Proxy:: Proxy GQL__Schema) emptyLib
+         addType = M.insert "Query" (createType "Query" fields) typeLib
+         fieldTypes  = getFields (Proxy :: Proxy (Rep a))
+         stack = map snd fieldTypes
+         fields = map fst fieldTypes ++ [ createField "__schema" "__Schema" [] ]

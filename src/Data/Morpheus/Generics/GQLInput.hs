@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE  ScopedTypeVariables , AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
+{-# LANGUAGE  MultiParamTypeClasses ,ScopedTypeVariables ,FlexibleInstances , AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
 
 module Data.Morpheus.Generics.GQLInput
     ( GQLInput(..)
@@ -13,36 +13,32 @@ import           Data.Text                      ( Text
                                                 , unpack
                                                 , pack
                                                 )
-import           Data.Morpheus.Generics.GenericEnum ( GToEnum(..))
 import           GHC.Generics
 import           Data.Data
 import           Data.Morpheus.Types.Introspection (GQL__Field, createInputObject , createScalar , GQLTypeLib, GQL__InputValue(..), createInputValue)
 import qualified Data.Map as M
 import           Data.Morpheus.Generics.GQLEnum (GQLEnum(..))
 import qualified Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue(..))
-import           Data.Morpheus.Generics.GenericInputObject (GFromInput(..))
+import           Data.Morpheus.Generics.GDecode (GDecode(..))
 import Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta)
 import qualified  Data.Morpheus.ErrorMessage    as Err
-import           Data.Morpheus.Generics.TypeRep ( Selectors(..) )
+import           Data.Morpheus.Generics.TypeRep ( Selectors(..) , resolveTypes )
 
 getType :: Typeable a => a -> Text
 getType = pack . show . typeOf
 
-instance GQLInput a => GFromInput  (K1 i a)  where
-    gFromInput meta inputObj = case lookup (key meta) inputObj of
+instance GQLInput a => GDecode JSType (K1 i a)  where
+    gDecode meta (JSObject x) = case lookup (key meta) (M.toList x) of
             Nothing -> Left $ Err.requiredArgument meta
             Just x -> K1 <$> decode x
 
 
-arrayMap :: GQLTypeLib -> [GQLTypeLib -> GQLTypeLib] -> GQLTypeLib
-arrayMap lib []       = lib
-arrayMap lib (f : fs) = arrayMap (f lib) fs
 
 class GQLInput a where
     -- TODO:: write input Object Recognition
     decode :: JSType -> Validation a
-    default decode :: ( Show a  , Generic a, Data a , GFromInput (Rep a) ) => JSType -> Validation a
-    decode (JSObject hashMap) = to <$> gFromInput initialMeta (M.toList hashMap )
+    default decode :: ( Show a  , Generic a, Data a , GDecode JSType (Rep a) ) => JSType -> Validation a
+    decode (JSObject x) = to <$> gDecode initialMeta (JSObject x)
 
     typeInfo :: Proxy a -> Text -> GQL__InputValue
     default typeInfo :: (Show a, Typeable a) => Proxy a -> Text -> GQL__InputValue
@@ -50,15 +46,15 @@ class GQLInput a where
 
     introInput :: Proxy a -> GQLTypeLib -> GQLTypeLib
     default introInput :: (Show a, Typeable a, Selectors (Rep a) GQL__Field  ) => Proxy a -> GQLTypeLib -> GQLTypeLib
-    introInput _  typeLib = do
-            let typeName = getType (undefined::a)
-            case M.lookup typeName typeLib of
+    introInput _  typeLib = case M.lookup typeName typeLib of
                 Just _ -> typeLib
-                Nothing -> arrayMap (M.insert typeName (createInputObject typeName gqlFields) typeLib) stack
-                    where
-                       fieldTypes  = getFields (Proxy :: Proxy (Rep a))
-                       stack = map snd fieldTypes
-                       gqlFields = map fst fieldTypes
+                Nothing -> addType
+       where
+          addType = resolveTypes (M.insert typeName (createInputObject typeName gqlFields) typeLib) stack
+          typeName = getType (undefined::a)
+          fieldTypes  = getFields (Proxy :: Proxy (Rep a))
+          stack = map snd fieldTypes
+          gqlFields = map fst fieldTypes
 
 instance GQLInput Text where
     decode  (JSString x) = pure x
