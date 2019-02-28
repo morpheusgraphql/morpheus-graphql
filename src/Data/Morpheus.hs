@@ -46,6 +46,9 @@ import          Data.Morpheus.Generics.GQLInput (GQLInput)
 import          Data.Morpheus.Generics.GQLEnum  (GQLEnum)
 
 
+-- generateSchema :: q -> m -> GQLTypeLib
+-- generateSchema _ _ = introspect (Proxy:: Proxy GQL__Schema) emptyLib $ introspectRoot(Proxy:: Proxy q ) $ introspectRoot(Proxy:: Proxy q )
+
 resolve :: GQLQuery a => ResolveIO a -> GQLRequest -> ResolveIO JSType
 resolve rootResolver body = do
     root <- rootResolver
