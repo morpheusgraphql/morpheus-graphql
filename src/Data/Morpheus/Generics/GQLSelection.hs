@@ -4,7 +4,6 @@
 module Data.Morpheus.Generics.GQLSelection
     ( GQLSelection(..)
     , wrapAsObject
-    , arrayMap
     )
 where
 
@@ -49,7 +48,7 @@ import           Data.Morpheus.Types.Introspection
                                                 , emptyLib
                                                 , createScalar
                                                 )
-import           Data.Morpheus.Generics.TypeRep ( Selectors(..) )
+import           Data.Morpheus.Generics.TypeRep ( Selectors(..) , resolveTypes )
 import           Data.Morpheus.Generics.GenericMap ( GenericMap(..) )
 import           Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta)
 import           Data.Morpheus.Generics.GQLEnum (GQLEnum(..))
@@ -71,10 +70,6 @@ instance GQLSelection a => GenericMap (K1 i a)  where
 instance (Selector s, D.Typeable a , GQLSelection a) => Selectors (M1 S s (K1 R a)) GQL__Field where
     getFields _ = [(fieldType (Proxy:: Proxy  a) name ,introspect (Proxy:: Proxy  a))]
         where name = T.pack $ selName (undefined :: M1 S s (K1 R a) ())
-
-arrayMap :: GQLTypeLib -> [GQLTypeLib -> GQLTypeLib] -> GQLTypeLib
-arrayMap lib []       = lib
-arrayMap lib (f : fs) = arrayMap (f lib) fs
 
 unwrapMonadTuple :: Monad m => (T.Text, m a) -> m (T.Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
@@ -106,7 +101,7 @@ class GQLSelection a where
         let typeName = renameSystemNames $ (T.pack . show . D.typeOf) (undefined::a)
         case M.lookup typeName typeLib of
             Just _ -> typeLib
-            Nothing -> arrayMap (M.insert typeName (createType typeName gqlFields) typeLib) stack
+            Nothing -> resolveTypes (M.insert typeName (createType typeName gqlFields) typeLib) stack
                 where
                     fieldTypes  = getFields (Proxy :: Proxy (Rep a))
                     stack = map snd fieldTypes
@@ -136,7 +131,7 @@ instance (Show a, Show p, GQLSelection a , GQLArgs p ) => GQLSelection (p ::-> a
     encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
     encode x (Some a) = encode x a
     encode x None = pure JSNull
-    introspect  _  typeLib = arrayMap typeLib $ args ++ fields
+    introspect  _  typeLib = resolveTypes typeLib $ args ++ fields
       where
         args = map snd $ introspectArgs (Proxy::Proxy p)
         fields = [introspect (Proxy:: Proxy  a)]

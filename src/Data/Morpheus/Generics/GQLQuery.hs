@@ -39,7 +39,7 @@ import           Data.Morpheus.Types.Introspection
                                                 , createField
                                                 , emptyLib
                                                 )
-import           Data.Morpheus.Generics.TypeRep ( Selectors(..) )
+import           Data.Morpheus.Generics.TypeRep ( Selectors(..) , resolveTypes )
 import           Data.Proxy
 import           Data.Morpheus.Generics.GenericMap ( GenericMap(..) )
 import           Data.Maybe                     ( fromMaybe )
@@ -50,7 +50,6 @@ import           Data.Morpheus.Schema.GQL__Schema
 import           Data.Morpheus.Generics.GQLSelection
                                                 ( GQLSelection(..)
                                                 , wrapAsObject
-                                                , arrayMap
                                                 )
 import           Data.Morpheus.PreProcess       ( preProcessQuery )
 
@@ -81,7 +80,7 @@ class GQLQuery a where
 
     introspectRoot :: Proxy a  -> GQLTypeLib
     default introspectRoot :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib
-    introspectRoot _ = arrayMap addType stack
+    introspectRoot _ = resolveTypes addType stack
        where
          typeLib = introspect (Proxy:: Proxy GQL__Schema) emptyLib
          addType = M.insert "Query" (createType "Query" fields) typeLib
