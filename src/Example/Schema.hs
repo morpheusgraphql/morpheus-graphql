@@ -25,6 +25,9 @@ import           Data.Morpheus                  ( GQLSelection
                                                 , GQLInput
                                                 , EnumOf(unpackEnum)
                                                 , GQLEnum
+                                                , GQLRoot(..)
+                                                , NoMutation(..)
+                                                , GQLMutation
                                                 )
 import           Example.Files                  ( getJson )
 import           Data.Aeson                     ( FromJSON )
@@ -68,6 +71,10 @@ newtype Query = Query {
     user:: () ::-> User
 } deriving (Show,Generic,Data, GQLQuery , FromJSON )
 
+newtype Mutation = Mutation {
+    createUser:: LocationByCoordinates ::-> User
+} deriving (Show,Generic,Data, GQLMutation , FromJSON )
+
 fetchAddress :: Text -> Text -> ResolveIO Address
 fetchAddress cityName streetName = lift (getJson "address")
     >>= eitherToResponse modify
@@ -96,8 +103,19 @@ resolveUser = Resolver resolve
     modify user =
         user { address = resolveAddress, office = resolveOffice user }
 
-resolveRoot :: ResolveIO Query
-resolveRoot = pure $ Query { user = resolveUser }
+createUserMutation :: LocationByCoordinates ::-> User
+createUserMutation = Resolver resolve
+  where
+    resolve _ = lift (getJson "user") >>= eitherToResponse modify
+    modify user =
+        user { address = resolveAddress, office = resolveOffice user }
 
 gqlHandler :: GQLRequest -> IO GQLResponse
-gqlHandler = interpreter resolveRoot
+gqlHandler = interpreter GQLRoot {
+   queryResolver = Query {
+      user = resolveUser
+   }
+   ,mutationResolver = Mutation {
+      createUser = createUserMutation
+   }
+}

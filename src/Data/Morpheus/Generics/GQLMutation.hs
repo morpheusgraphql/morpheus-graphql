@@ -1,10 +1,8 @@
 {-# LANGUAGE DefaultSignatures , OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables , MultiParamTypeClasses, RankNTypes , DisambiguateRecordFields , FlexibleInstances , FlexibleContexts , TypeOperators #-}
 
-module Data.Morpheus.Generics.GQLQuery
-    ( GQLQuery(..)
-    )
-where
+module Data.Morpheus.Generics.GQLMutation (GQLMutation(..),NoMutation(..)) where
+
 
 import           Control.Monad
 import           Data.List                      ( find )
@@ -51,6 +49,7 @@ import           Data.Morpheus.Generics.GQLSelection
                                                 ( GQLSelection(..)
                                                 , wrapAsObject
                                                 )
+import           Data.Morpheus.PreProcess       ( preProcessQuery )
 
 setProperty :: Text -> JSType -> JSType -> JSType
 setProperty name prop (JSObject obj) = JSObject (M.insert name prop obj)
@@ -60,28 +59,28 @@ getProperty name (SelectionSet _ sel) = lookup name sel
 
 unpackObj (SelectionSet _ sel) = sel
 
-class GQLQuery a where
+class GQLMutation a where
 
-    encodeQuery :: a -> GQLTypeLib -> QuerySelection  ->  ResolveIO JSType
-    default encodeQuery :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
-    encodeQuery rootResolver schema query = case getProperty "__schema" query of
-            Nothing -> response
-            Just value ->  addSchema value response
-            where
-                item (SelectionSet _ x) = wrapAsObject $ encodeFields initialMeta x $ from $ initSchema $ M.elems schema
-                response = wrapAsObject $ encodeFields initialMeta (unpackObj query) $ from rootResolver
-                addSchema  = liftM2 (setProperty "__schema") . item
+    encodeMutation :: a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
+    default encodeMutation :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLTypeLib ->  QuerySelection -> ResolveIO JSType
+    encodeMutation rootResolver schema query = wrapAsObject $ encodeFields initialMeta (unpackObj query) $ from rootResolver
 
-    querySchema :: a -> GQLTypeLib -> GQLTypeLib
-    default querySchema :: (Generic a, Data a) => a -> GQLTypeLib -> GQLTypeLib
-    querySchema _ = introspectQuery (Proxy :: Proxy a)
+    mutationSchema :: a -> GQLTypeLib
+    default mutationSchema :: (Generic a, Data a) => a -> GQLTypeLib
+    mutationSchema _ = introspectMutation (Proxy :: Proxy a)
 
-    introspectQuery :: Proxy a  -> GQLTypeLib -> GQLTypeLib
-    default introspectQuery :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib -> GQLTypeLib
-    introspectQuery _ initialTypes = resolveTypes typeLib stack
+    introspectMutation :: Proxy a  -> GQLTypeLib
+    default introspectMutation :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib
+    introspectMutation _ = resolveTypes mutationType types
        where
-         typeLib = introspect (Proxy:: Proxy GQL__Schema) queryType
-         queryType = M.insert "Query" (createType "Query" fields) initialTypes
+         mutationType = M.fromList [("Mutation", createType "Mutation" fields)]
          fieldTypes  = getFields (Proxy :: Proxy (Rep a))
-         stack = map snd fieldTypes
-         fields = map fst fieldTypes ++ [ createField "__schema" "__Schema" [] ]
+         types = map snd fieldTypes
+         fields = map fst fieldTypes
+
+data NoMutation = NoMutation
+
+instance GQLMutation NoMutation where
+  encodeMutation _ _ _ = pure JSNull
+  mutationSchema _  = emptyLib
+  introspectMutation _ = emptyLib

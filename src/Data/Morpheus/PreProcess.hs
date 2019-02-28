@@ -26,6 +26,7 @@ import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , Argument(..)
                                                 , GQLQueryRoot(..)
                                                 , EnumOf(..)
+                                                , GQLOperator(..)
                                                 )
 import           Data.Morpheus.Types.JSType     (JSType(..))
 import           Data.Morpheus.Types.MetaInfo   (MetaInfo(..))
@@ -182,10 +183,17 @@ validateBySchema typeLib root _parentType (_name, Field head field) = do
 
 validateBySchema _ _ _ x = pure x
 
-preProcessQuery :: GQLTypeLib -> GQLQueryRoot -> Validation QuerySelection
+getOperationInfo (QueryOperator name x) = ("Query",x)
+getOperationInfo (MutationOperator name x) =  ("Mutation",x)
+
+updateQuery:: GQLOperator -> QuerySelection -> GQLOperator
+updateQuery (QueryOperator name _)  = QueryOperator name
+updateQuery (MutationOperator name _)  = MutationOperator name
+
+preProcessQuery :: GQLTypeLib -> GQLQueryRoot -> Validation GQLOperator
 preProcessQuery lib root = do
-    _type <- existsType "Query" lib
-    let (SelectionSet args body) = queryBody root
+    let (operator, SelectionSet args body) = getOperationInfo $ queryBody root
+    _type <- existsType operator lib
     variable <- checkQueryVariables lib root args
     selectors <- mapSelectors lib root _type body
-    pure $ SelectionSet [] selectors
+    pure $ updateQuery (queryBody root)  (SelectionSet [] selectors)

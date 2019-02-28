@@ -32,27 +32,24 @@ import           Data.Morpheus.Types.Types     ( Validation
                                                 )
 import           Data.Morpheus.Types.Error     ( GQLError )
 import           Data.Morpheus.ErrorMessage    ( syntaxError )
-import qualified Data.Morpheus.Parser.Query   as B
+import qualified Data.Morpheus.Parser.Query   as Q
 import           Data.Morpheus.Parser.Body     ( body )
 import           Data.Morpheus.Parser.Fragment ( fragment )
-
-
+import qualified Data.Morpheus.Parser.Mutation as M
+import           Data.Maybe (fromMaybe)
 request :: Parser GQLQueryRoot
 request = do
-    (queryName, args) <- (try (skipSpace *> B.query)) <|> pure ("",[])
-    queryBodyValue <- body args
+    queryValue <- Q.query <|> M.mutation
     fragmentLib    <- fromList <$> many fragment
     skipSpace
     endOfInput
     pure GQLQueryRoot
-        { queryBody      = queryBodyValue
+        { queryBody      = queryValue
         , fragments      = fragmentLib
         , inputVariables = fromList []
         }
 
-getVariables req = case variables req of
-    Nothing   -> fromList []
-    Just vars -> vars
+getVariables = fromMaybe (fromList []) . variables
 
 parseGQL :: GQLRequest -> Validation GQLQueryRoot
 parseGQL requestBody = case parseOnly request $ query requestBody of

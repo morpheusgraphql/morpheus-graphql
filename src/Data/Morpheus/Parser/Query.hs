@@ -5,11 +5,7 @@ module Data.Morpheus.Parser.Query
     )
 where
 
-import           Data.Text                      ( Text(..)
-                                                , pack
-                                                , unpack
-                                                )
-import           Data.Map                       ( fromList )
+
 import           Data.Attoparsec.Text           ( Parser
                                                 , char
                                                 , letter
@@ -26,47 +22,28 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.Morpheus.Types.Types     ( Arguments
-                                                , Argument(..)
-                                                )
-import           Data.Morpheus.Parser.Arguments
-                                                ( arguments )
 import           Data.Morpheus.Types.Error     ( GQLError )
 import           Data.Data                      ( Data )
-import           Data.Morpheus.ErrorMessage    ( syntaxError
-                                                , semanticError
+import           Data.Morpheus.Parser.Primitive ( token)
+import      Data.Morpheus.Parser.RootHead      (rootHeadArguments)
+import           Data.Text                      (Text)
+import           Data.Morpheus.Types.Types     ( QuerySelection(..)
+                                                , SelectionSet
+                                                , Arguments(..)
+                                                , GQLOperator(..)
                                                 )
-import           Data.Morpheus.Parser.Primitive
-                                                ( token
-                                                , variable
-                                                )
+import           Data.Morpheus.Parser.Body     ( body )
 
-queryVariable :: Parser (Text, Argument)
-queryVariable = do
-    skipSpace
-    variableName <- variable
-    skipSpace
-    char ':'
-    skipSpace
-    variableType <- token
-    pure (variableName, Variable variableType)
-
-queryArguments :: Parser Arguments
-queryArguments = do
-    skipSpace
-    char '('
-    skipSpace
-    parameters <- queryVariable `sepBy` (skipSpace *> char ',')
-    skipSpace
-    char ')'
-    pure parameters
-
-query :: Parser  (Text,Arguments)
-query = do
+queryHead :: Parser  (Text,Arguments)
+queryHead = do
     string "query "
     skipSpace
     queryName <- token
-    variables <- try (skipSpace *> queryArguments) <|> pure []
+    variables <- try (skipSpace *> rootHeadArguments) <|> pure []
     pure (queryName, variables)
 
-
+query:: Parser GQLOperator
+query = do
+  (queryName, args) <- try (skipSpace *> queryHead) <|> pure ("",[])
+  selection <- body args
+  pure $ QueryOperator queryName selection

@@ -13,6 +13,9 @@ module Data.Morpheus
     , GQLInput
     , EnumOf(unpackEnum)
     , GQLEnum
+    , GQLRoot(..)
+    , GQLMutation(..)
+    , NoMutation(..)
     )
 where
 
@@ -23,7 +26,7 @@ import           Data.Text                      ( Text
 import           Data.Morpheus.Generics.GQLSelection
                                                 ( GQLSelection )
 import           Data.Morpheus.Generics.GQLQuery
-                                                ( GQLQuery(encode) )
+                                                ( GQLQuery(..) )
 import           Data.Morpheus.Generics.GQLArgs
                                                 ( GQLArgs )
 import           Data.Morpheus.Parser.Parser   ( parseGQL )
@@ -35,6 +38,8 @@ import           Data.Morpheus.Types.Types     ( (::->)(Resolver)
                                                 , ResolveIO(..)
                                                 , failResolveIO
                                                 , EnumOf(unpackEnum)
+                                                , GQLOperator(..)
+                                                , GQLQueryRoot(..)
                                                 )
 import           Data.Proxy                     ( Proxy )
 import           Control.Monad                  ( (>=>) )
@@ -44,15 +49,35 @@ import           Control.Monad.Trans.Except     ( runExceptT
                                                 )
 import          Data.Morpheus.Generics.GQLInput (GQLInput)
 import          Data.Morpheus.Generics.GQLEnum  (GQLEnum)
+import          Data.Morpheus.Generics.GQLMutation (GQLMutation(..),NoMutation(..))
+import          Data.Morpheus.Types.Introspection (GQLTypeLib)
+import           Data.Morpheus.PreProcess       ( preProcessQuery )
 
 
-resolve :: GQLQuery a => ResolveIO a -> GQLRequest -> ResolveIO JSType
+data GQLRoot a b = GQLRoot {
+  queryResolver :: a,
+  mutationResolver:: b
+}
+
+schema :: ( GQLQuery a , GQLMutation b ) =>  a -> b -> GQLTypeLib
+schema query mutation  = querySchema query $ mutationSchema mutation
+
+validate schema root = case preProcessQuery schema root of
+        Right validGQL -> pure  validGQL
+        Left x ->  failResolveIO x
+
+resolve :: (GQLQuery a , GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO JSType
 resolve rootResolver body = do
-    root <- rootResolver
-    query  <- ExceptT $ pure $ parseGQL body
-    encode root query
+    rootGQL  <- ExceptT $ pure (parseGQL body >>= preProcessQuery gqlSchema)
+    case  rootGQL of
+      QueryOperator name query -> encodeQuery queryRes gqlSchema query
+      MutationOperator name mutation -> encodeMutation mutationRes gqlSchema mutation
+    where
+      gqlSchema = schema queryRes mutationRes
+      queryRes = queryResolver rootResolver
+      mutationRes = mutationResolver rootResolver
 
-interpreter :: GQLQuery a => ResolveIO a -> GQLRequest -> IO GQLResponse
+interpreter :: (GQLQuery a , GQLMutation b)=> GQLRoot a b -> GQLRequest -> IO GQLResponse
 interpreter rootResolver request = do
   value <- runExceptT $ resolve rootResolver request
   case value of
