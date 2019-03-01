@@ -1,0 +1,29 @@
+name: morpheus-graphql-example
+version: 0.0.1
+github: "githubuser/haskell-bff"
+license: BSD3
+author: "Davit Nalchevanidze"
+maintainer: "example@example.com"
+copyright: "2018 Author name here"
+
+description: Example usage of Morpheus GraphQL
+
+dependencies:
+  - base >= 4.7 && < 5
+  - morpheus-graphql
+  - scotty
+  - aeson
+  - bytestring
+  - mtl
+  - text
+
+executables:
+  api:
+    main: Main.hs
+    source-dirs: src
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - morpheus-graphql

@@ -1,0 +1,24 @@
+name: morpheus-graphql
+version: 0.0.1
+github: "githubuser/haskell-bff"
+license: BSD3
+author: "Davit Nalchevanidze"
+maintainer: "example@example.com"
+copyright: "2018 Author name here"
+
+description: Build GraphQL APIs with your favourite functional language!
+
+dependencies:
+  - base >= 4.7 && < 5
+  - aeson
+  - bytestring
+  - containers >= 0.4.2.1 && < 0.7
+  - unordered-containers
+  - split
+  - text
+  - attoparsec
+  - mtl
+  - transformers
+
+library:
+  source-dirs: src

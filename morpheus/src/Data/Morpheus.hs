@@ -2,13 +2,14 @@
 
 module Data.Morpheus
     ( interpreter
+    , requestFromText
+    , eitherToResponse
     , GQLResponse
     , GQLSelection
     , GQLQuery
     , GQLArgs
     , (::->)(..)
     , GQLRequest(..)
-    , eitherToResponse
     , ResolveIO(..)
     , GQLInput
     , EnumOf(unpackEnum)
@@ -51,7 +52,7 @@ import          Data.Morpheus.Generics.GQLInput (GQLInput)
 import          Data.Morpheus.Generics.GQLEnum  (GQLEnum)
 import          Data.Morpheus.Generics.GQLMutation (GQLMutation(..),NoMutation(..))
 import          Data.Morpheus.Types.Introspection (GQLTypeLib)
-import           Data.Morpheus.PreProcess       ( preProcessQuery )
+import          Data.Morpheus.PreProcess       ( preProcessQuery )
 
 
 data GQLRoot a b = GQLRoot {
@@ -59,7 +60,7 @@ data GQLRoot a b = GQLRoot {
   mutationResolver:: b
 }
 
-schema :: ( GQLQuery a , GQLMutation b ) =>  a -> b -> GQLTypeLib
+schema :: (GQLQuery a , GQLMutation b) =>  a -> b -> GQLTypeLib
 schema query mutation  = querySchema query $ mutationSchema mutation
 
 validate schema root = case preProcessQuery schema root of
@@ -87,3 +88,6 @@ interpreter rootResolver request = do
 eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a
 eitherToResponse f (Left  x) = failResolveIO $ errorMessage $ pack x
 eitherToResponse f (Right x) = pure (f x)
+
+requestFromText :: Text -> GQLRequest
+requestFromText t = GQLRequest t Nothing Nothing

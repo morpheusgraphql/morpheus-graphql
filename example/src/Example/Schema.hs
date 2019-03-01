@@ -1,10 +1,7 @@
-{-# LANGUAGE DeriveGeneric , DeriveAnyClass , DeriveDataTypeable, TypeOperators #-}
-{-# LANGUAGE MultiParamTypeClasses , OverloadedStrings  #-}
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass, DeriveDataTypeable, TypeOperators #-}
+{-# LANGUAGE MultiParamTypeClasses, OverloadedStrings  #-}
 
-module Example.Schema
-    ( gqlHandler
-    )
-where
+module Example.Schema ( resolve ) where
 
 import           GHC.Generics                   ( Generic )
 import           Data.Data                      ( Data )
@@ -53,27 +50,27 @@ data Location = Location {
 } deriving (Show,Data,Generic,GQLArgs)
 
 data Address = Address {
-        city :: Text
-        ,street :: Text
-        ,houseNumber :: Int
-        ,owner:: Maybe User
-} deriving (Generic,Show,GQLSelection,Data, FromJSON)
+  city :: Text,
+  street :: Text,
+  houseNumber :: Int,
+  owner:: Maybe User
+} deriving (Generic, Show, GQLSelection, Data, FromJSON)
 
 data User = User {
-        name :: Text
-        ,email :: Text
-        ,address:: LocationByCoordinates ::-> Address
-        ,office:: Location ::-> Address
-        ,friend:: Maybe User
-        ,home :: Maybe Address
-} deriving (Show,Generic,Data,GQLSelection , FromJSON )
+  name :: Text,
+  email :: Text,
+  address:: LocationByCoordinates ::-> Address,
+  office:: Location ::-> Address,
+  friend:: Maybe User,
+  home :: Maybe Address
+} deriving (Show,Generic,Data,GQLSelection, FromJSON )
 
 newtype Query = Query {
-    user:: () ::-> User
-} deriving (Show,Generic,Data, GQLQuery , FromJSON )
+  user:: () ::-> User
+} deriving (Show,Generic,Data, GQLQuery, FromJSON )
 
 newtype Mutation = Mutation {
-    createUser:: LocationByCoordinates ::-> User
+  createUser:: LocationByCoordinates ::-> User
 } deriving (Show,Generic,Data, GQLMutation , FromJSON )
 
 fetchAddress :: Text -> Text -> ResolveIO Address
@@ -115,8 +112,13 @@ createUserMutation = Resolver resolve
     modify user =
         user { address = resolveAddress, office = resolveOffice user }
 
-gqlHandler :: GQLRequest -> IO GQLResponse
-gqlHandler = interpreter GQLRoot
-    { queryResolver    = Query { user = resolveUser }
-    , mutationResolver = Mutation { createUser = createUserMutation }
+resolve :: GQLRequest -> IO GQLResponse
+resolve = interpreter GQLRoot
+    {
+      queryResolver    = Query {
+        user = resolveUser
+      },
+      mutationResolver = Mutation {
+        createUser = createUserMutation
+      }
     }
