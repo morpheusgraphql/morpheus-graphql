@@ -6,7 +6,7 @@ module Data.Morpheus.Generics.GenericMap ( GenericMap(..) ) where
 import           GHC.Generics
 import qualified Data.Maybe     as       M
 import qualified Data.Text      as       T
-import Data.Morpheus.Types.Types (SelectionSet, ResolveIO)
+import Data.Morpheus.Types.Types (QuerySelection, ResolveIO)
 import Data.Morpheus.Types.MetaInfo (MetaInfo(..))
 import Data.Morpheus.Types.JSType (JSType)
 
@@ -21,19 +21,19 @@ import Data.Morpheus.Types.JSType (JSType)
 -- Rep = D1 (...)  (C1 ...) (S1 (...) :+: D1 (...)  (C1 ...) (S1 (...)
 
 class GenericMap f where
-    encodeFields:: MetaInfo -> SelectionSet -> f a -> [(T.Text, ResolveIO JSType)]
+    encodeFields:: MetaInfo -> f a -> [(T.Text, QuerySelection -> ResolveIO JSType)]
 
 instance GenericMap U1  where
-    encodeFields _ _  _ = []
+    encodeFields  _  _ = []
 
 instance (Selector s, GenericMap f) => GenericMap (M1 S s f) where
-    encodeFields meta gql m@(M1 src) = encodeFields (meta{ key = T.pack $ selName m}) gql src
+    encodeFields meta m@(M1 src) = encodeFields (meta{ key = T.pack $ selName m})  src
 
 instance (Datatype c, GenericMap f) => GenericMap (M1 D c f)  where
-    encodeFields meta gql m@(M1 src) = encodeFields (meta{ className = T.pack $ datatypeName m}) gql src
+    encodeFields meta m@(M1 src) = encodeFields (meta{ className = T.pack $ datatypeName m}) src
 
 instance (Constructor c  , GenericMap f) => GenericMap (M1 C c f)  where
-    encodeFields meta gql m@(M1 src) =  encodeFields (meta{ cons = T.pack $ conName m}) gql src
+    encodeFields meta m@(M1 src) =  encodeFields (meta{ cons = T.pack $ conName m}) src
 
 instance (GenericMap f , GenericMap g ) => GenericMap (f :*: g)  where
-    encodeFields meta gql  (a :*: b) = encodeFields meta gql a ++ encodeFields meta gql b
+    encodeFields meta (a :*: b) = encodeFields meta a ++ encodeFields meta b

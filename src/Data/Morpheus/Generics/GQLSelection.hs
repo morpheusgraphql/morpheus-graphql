@@ -57,15 +57,11 @@ import qualified Data.Morpheus.Schema.GQL__Field as F (GQL__Field(..), createFie
 
 renameSystemNames = T.replace "GQL__" "__";
 
-getField :: MetaInfo -> SelectionSet -> Validation QuerySelection
-getField meta gql = pure $ fromMaybe QNull (lookup (key meta) gql)
-
 instance GQLSelection a => GenericMap (K1 i a)  where
-    encodeFields meta gql (K1 src) = case getField meta gql of
-        (Right field) -> case lookup (key meta) gql of
-                Nothing -> []
-                Just x -> [(key meta, encode field src)]
-        _ -> []
+    encodeFields meta (K1 src) = [(key meta, (`encode` src))]
+      -- case lookup (key meta) gql of
+      --           Nothing -> []
+      --          Just field -> [(key meta, encode field src)]
 
 instance (Selector s, D.Typeable a , GQLSelection a) => Selectors (M1 S s (K1 R a)) GQL__Field where
     getFields _ = [(fieldType (Proxy:: Proxy  a) name ,introspect (Proxy:: Proxy  a))]
@@ -74,20 +70,21 @@ instance (Selector s, D.Typeable a , GQLSelection a) => Selectors (M1 S s (K1 R 
 unwrapMonadTuple :: Monad m => (T.Text, m a) -> m (T.Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
-wrapAsObject ::   [(T.Text, ResolveIO JSType)] -> ResolveIO JSType
-wrapAsObject x = JSObject . M.fromList  <$> mapM unwrapMonadTuple x
+wrapAsObject :: [(T.Text,QuerySelection)] ->  [(T.Text, QuerySelection -> ResolveIO JSType)] -> ResolveIO JSType
+wrapAsObject gql x = JSObject . M.fromList  <$> getFields
+  where getFields = mapM unwrapMonadTuple $ orderList x gql
 
-findIn:: [(T.Text,JSType)] -> (T.Text,QuerySelection) -> (T.Text,JSType)
-findIn x (key,_) = ( key,  fromMaybe  JSNull $ lookup key x )
+findIn:: [(T.Text, QuerySelection -> ResolveIO JSType )] -> (T.Text,QuerySelection) -> (T.Text, ResolveIO JSType)
+findIn x (key, gql ) = (key, (fromMaybe  (\x-> pure JSNull) $ lookup key x) gql )
 
-orderList:: [(T.Text,QuerySelection)]  -> [(T.Text,JSType)] -> [(T.Text,JSType)]
-orderList gql x = map (findIn x) gql
+orderList:: [(T.Text, QuerySelection -> ResolveIO JSType )] -> [(T.Text,QuerySelection)] -> [(T.Text, ResolveIO JSType)]
+orderList x = map (findIn x)
 
 class GQLSelection a where
 
     encode :: QuerySelection ->  a -> ResolveIO JSType
     default encode :: ( Generic a, D.Data a, GenericMap (Rep a) , Show a) => QuerySelection -> a -> ResolveIO JSType
-    encode (SelectionSet args gql) = wrapAsObject . encodeFields initialMeta gql . from
+    encode (SelectionSet args gql) = wrapAsObject gql . encodeFields initialMeta  . from
     encode (Field args key) = \x -> failResolveIO $ Err.subfieldsNotSelected $ MetaInfo "" "" key
 
     fieldType :: Proxy a -> T.Text -> GQL__Field
