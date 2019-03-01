@@ -51,19 +51,11 @@ import           Data.Morpheus.Generics.GQLSelection
                                                 )
 import           Data.Morpheus.PreProcess       ( preProcessQuery )
 
-setProperty :: Text -> JSType -> JSType -> JSType
-setProperty name prop (JSObject obj) = JSObject (M.insert name prop obj)
-
-getProperty :: Text -> QuerySelection -> Maybe QuerySelection
-getProperty name (SelectionSet _ sel) = lookup name sel
-
-unpackObj (SelectionSet _ sel) = sel
-
 class GQLMutation a where
 
     encodeMutation :: a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
     default encodeMutation :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLTypeLib ->  QuerySelection -> ResolveIO JSType
-    encodeMutation rootResolver schema query = wrapAsObject $ encodeFields initialMeta (unpackObj query) $ from rootResolver
+    encodeMutation rootResolver schema (SelectionSet _ fields) = wrapAsObject fields $ encodeFields initialMeta  $ from rootResolver
 
     mutationSchema :: a -> GQLTypeLib
     default mutationSchema :: (Generic a, Data a) => a -> GQLTypeLib
