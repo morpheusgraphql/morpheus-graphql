@@ -6,8 +6,9 @@ module Data.Morpheus.Generics.GQLQuery
     )
 where
 
+
 import           Control.Monad
-import           Data.List                      ( find )
+import           Data.Map                       (insert)
 import           Data.Data                      ( Data
                                                 , Typeable
                                                 , typeOf
@@ -16,7 +17,6 @@ import           Data.Data                      ( Data
 import           Data.Text                      ( Text(..)
                                                 , pack
                                                 )
-import qualified Data.Map                      as M
 
 import           GHC.Generics
 import           Data.Morpheus.Types.Types      ( SelectionSet
@@ -56,12 +56,10 @@ class GQLQuery a where
 
     encodeQuery :: a -> GQLTypeLib -> QuerySelection  ->  ResolveIO JSType
     default encodeQuery :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
-    encodeQuery rootResolver schema (SelectionSet _ sel) = wrapAsObject sel resolvers
+    encodeQuery rootResolver schema (SelectionSet _ gql) = wrapAsObject gql $ schemaResolver ++ resolvers
             where
-                resolvers = schemaField ++ fieldResolvers
-                schemaResolver x = encode x $ initSchema  $ M.elems schema
-                schemaField = [("__schema", schemaResolver )]
-                fieldResolvers = encodeFields initialMeta  $ from rootResolver
+                schemaResolver = [("__schema", (`encode` initSchema schema))]
+                resolvers = encodeFields initialMeta  $ from rootResolver
 
     querySchema :: a -> GQLTypeLib -> GQLTypeLib
     default querySchema :: (Generic a, Data a) => a -> GQLTypeLib -> GQLTypeLib
@@ -72,7 +70,7 @@ class GQLQuery a where
     introspectQuery _ initialTypes = resolveTypes typeLib stack
        where
          typeLib = introspect (Proxy:: Proxy GQL__Schema) queryType
-         queryType = M.insert "Query" (createType "Query" fields) initialTypes
+         queryType = insert "Query" (createType "Query" fields) initialTypes
          fieldTypes  = getFields (Proxy :: Proxy (Rep a))
          stack = map snd fieldTypes
          fields = map fst fieldTypes ++ [ createField "__schema" "__Schema" [] ]

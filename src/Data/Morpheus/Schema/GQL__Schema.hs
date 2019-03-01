@@ -23,6 +23,7 @@ import           Data.Morpheus.Schema.GQL__Directive
                                                 ( GQL__Directive )
 
 import           Data.Proxy                     ( Proxy(..) )
+import qualified Data.Map                      as M
 
 data GQL__Schema = GQL__Schema {
      types::[GQL__Type]
@@ -32,9 +33,9 @@ data GQL__Schema = GQL__Schema {
     , directives:: [GQL__Directive]
 } deriving (Show , Data, Generic )
 
-initSchema :: [GQL__Type] -> GQL__Schema
+initSchema :: M.Map Text GQL__Type -> GQL__Schema
 initSchema types = GQL__Schema
-    { types            = types
+    { types            = M.elems types
     , queryType        = Just $ createType "Query" []
     , mutationType     = Nothing
     , subscriptionType = Nothing
