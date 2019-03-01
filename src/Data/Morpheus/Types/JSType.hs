@@ -13,19 +13,14 @@ replaceType x = x
 
 data JSType =  JSObject [(Text, JSType)] | JSList [JSType] |  JSEnum Text | JSInt Int | JSBool Bool | JSString Text | JSNull  deriving (Show, Generic)
 
-
 instance ToJSON JSType where
-    toJSON JSNull = Null
-    toJSON (JSInt x) = toJSON x
-    toJSON (JSBool x) = toJSON x
-    toJSON (JSString x) = toJSON x
-    toJSON (JSList x) = toJSON x
-    toJSON (JSObject x) = object (map convertField x)
-       where convertField (key, value ) = replaceType key .= toJSON value
-    -- toEncoding (JSObject x) = pairs $ foldr (<>) (head $ tail fields) (tail fields)
-    --   where
-    --    fields = map encodeField x
-    --    encodeField (key, value ) = key .= value
+    toEncoding JSNull = toEncoding Null
+    toEncoding (JSInt x) = toEncoding x
+    toEncoding (JSBool x) = toEncoding x
+    toEncoding (JSString x) = toEncoding x
+    toEncoding (JSList x) = toEncoding x
+    toEncoding (JSObject x) = pairs $ foldl1 (<>) $ map encodeField x
+       where encodeField (key, value ) = key .= value
 
 replace (key, val ) = (key, replaceValue val )
 

@@ -6,12 +6,12 @@ module Data.Morpheus.Types.Error
     )
 where
 
-import           GHC.Generics                   ( Generic )
-import           Data.Text                      ( Text )
 import           Data.Aeson                     ( ToJSON
                                                 , FromJSON
                                                 )
 import           Data.Data                      ( Data )
+import           Data.Text                      ( Text )
+import           GHC.Generics                   ( Generic )
 
 data ErrorLocation = ErrorLocation {
     line :: Int

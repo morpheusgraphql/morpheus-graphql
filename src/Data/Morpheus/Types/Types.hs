@@ -30,6 +30,7 @@ import           Data.Aeson                     ( ToJSON(..)
                                                 , (.=)
                                                 , FromJSON(..)
                                                 , Value(Null)
+                                                , pairs
                                                 )
 import           Data.Data
 import           Data.Morpheus.Types.Error     ( GQLError )
@@ -107,12 +108,9 @@ instance (ToJSON o) => ToJSON ( p ::->  o) where
 
 data GQLResponse = Data JSType | Errors [GQLError]  deriving (Show,Generic)
 
-
-
-
 instance ToJSON  GQLResponse where
-  toJSON (Errors _errors) = object ["errors" .= _errors]
-  toJSON (Data _data) = object ["data" .= _data]
+  toEncoding (Data _data) = pairs $ "data" .= _data
+  toEncoding (Errors _errors) = pairs $ "errors" .= _errors
 
 data GQLRequest = GQLRequest {
     query:: Text
