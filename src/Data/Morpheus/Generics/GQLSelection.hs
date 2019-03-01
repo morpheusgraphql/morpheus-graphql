@@ -2,9 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables , MultiParamTypeClasses, RankNTypes , DisambiguateRecordFields , FlexibleInstances , FlexibleContexts , TypeOperators #-}
 
 module Data.Morpheus.Generics.GQLSelection
-    ( GQLSelection(..)
-    , wrapAsObject
-    )
+    (GQLSelection(..))
 where
 
 import            GHC.Generics
@@ -49,45 +47,25 @@ import           Data.Morpheus.Types.Introspection
                                                 , createScalar
                                                 )
 import           Data.Morpheus.Generics.TypeRep ( Selectors(..) , resolveTypes )
-import           Data.Morpheus.Generics.GenericMap ( GenericMap(..) )
+import           Data.Morpheus.Generics.DeriveResolvers ( DeriveResolvers(..) , resolveBySelection )
 import           Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta)
 import           Data.Morpheus.Generics.GQLEnum (GQLEnum(..))
 import qualified Data.Morpheus.Schema.GQL__Field as F (GQL__Field(..), createFieldWith)
 
-
 renameSystemNames = T.replace "GQL__" "__";
 
-getField :: MetaInfo -> SelectionSet -> Validation QuerySelection
-getField meta gql = pure $ fromMaybe QNull (lookup (key meta) gql)
-
-instance GQLSelection a => GenericMap (K1 i a)  where
-    encodeFields meta gql (K1 src) = case getField meta gql of
-        (Right field) -> case lookup (key meta) gql of
-                Nothing -> []
-                Just x -> [(key meta, encode field src)]
-        _ -> []
+instance GQLSelection a => DeriveResolvers (K1 i a)  where
+    deriveResolvers meta (K1 src) = [(key meta, (`encode` src))]
 
 instance (Selector s, D.Typeable a , GQLSelection a) => Selectors (M1 S s (K1 R a)) GQL__Field where
     getFields _ = [(fieldType (Proxy:: Proxy  a) name ,introspect (Proxy:: Proxy  a))]
         where name = T.pack $ selName (undefined :: M1 S s (K1 R a) ())
 
-unwrapMonadTuple :: Monad m => (T.Text, m a) -> m (T.Text, a)
-unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
-
-wrapAsObject ::   [(T.Text, ResolveIO JSType)] -> ResolveIO JSType
-wrapAsObject x = JSObject . M.fromList  <$> mapM unwrapMonadTuple x
-
-findIn:: [(T.Text,JSType)] -> (T.Text,QuerySelection) -> (T.Text,JSType)
-findIn x (key,_) = ( key,  fromMaybe  JSNull $ lookup key x )
-
-orderList:: [(T.Text,QuerySelection)]  -> [(T.Text,JSType)] -> [(T.Text,JSType)]
-orderList gql x = map (findIn x) gql
-
 class GQLSelection a where
 
     encode :: QuerySelection ->  a -> ResolveIO JSType
-    default encode :: ( Generic a, D.Data a, GenericMap (Rep a) , Show a) => QuerySelection -> a -> ResolveIO JSType
-    encode (SelectionSet args gql) = wrapAsObject . encodeFields initialMeta gql . from
+    default encode :: ( Generic a, D.Data a, DeriveResolvers (Rep a) , Show a) => QuerySelection -> a -> ResolveIO JSType
+    encode (SelectionSet _ selection) = resolveBySelection selection . deriveResolvers initialMeta  . from
     encode (Field args key) = \x -> failResolveIO $ Err.subfieldsNotSelected $ MetaInfo "" "" key
 
     fieldType :: Proxy a -> T.Text -> GQL__Field

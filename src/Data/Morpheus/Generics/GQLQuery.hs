@@ -6,8 +6,9 @@ module Data.Morpheus.Generics.GQLQuery
     )
 where
 
+
 import           Control.Monad
-import           Data.List                      ( find )
+import           Data.Map                       (insert)
 import           Data.Data                      ( Data
                                                 , Typeable
                                                 , typeOf
@@ -16,7 +17,6 @@ import           Data.Data                      ( Data
 import           Data.Text                      ( Text(..)
                                                 , pack
                                                 )
-import qualified Data.Map                      as M
 
 import           GHC.Generics
 import           Data.Morpheus.Types.Types      ( SelectionSet
@@ -41,36 +41,23 @@ import           Data.Morpheus.Types.Introspection
                                                 )
 import           Data.Morpheus.Generics.TypeRep ( Selectors(..) , resolveTypes )
 import           Data.Proxy
-import           Data.Morpheus.Generics.GenericMap ( GenericMap(..) )
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Morpheus.Schema.GQL__Schema
                                                 ( initSchema
                                                 , GQL__Schema
                                                 )
-import           Data.Morpheus.Generics.GQLSelection
-                                                ( GQLSelection(..)
-                                                , wrapAsObject
-                                                )
+import           Data.Morpheus.Generics.GQLSelection (GQLSelection(..))
+import           Data.Morpheus.Generics.DeriveResolvers ( DeriveResolvers(..) , resolveBySelection )
 
-setProperty :: Text -> JSType -> JSType -> JSType
-setProperty name prop (JSObject obj) = JSObject (M.insert name prop obj)
-
-getProperty :: Text -> QuerySelection -> Maybe QuerySelection
-getProperty name (SelectionSet _ sel) = lookup name sel
-
-unpackObj (SelectionSet _ sel) = sel
 
 class GQLQuery a where
 
     encodeQuery :: a -> GQLTypeLib -> QuerySelection  ->  ResolveIO JSType
-    default encodeQuery :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
-    encodeQuery rootResolver schema query = case getProperty "__schema" query of
-            Nothing -> response
-            Just value ->  addSchema value response
+    default encodeQuery :: ( Generic a, Data a, DeriveResolvers (Rep a) , Show a) => a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
+    encodeQuery rootResolver schema (SelectionSet _ sel) = resolveBySelection sel $ schemaResolver ++ resolvers
             where
-                item (SelectionSet _ x) = wrapAsObject $ encodeFields initialMeta x $ from $ initSchema $ M.elems schema
-                response = wrapAsObject $ encodeFields initialMeta (unpackObj query) $ from rootResolver
-                addSchema  = liftM2 (setProperty "__schema") . item
+                schemaResolver = [("__schema", (`encode` initSchema schema))]
+                resolvers = deriveResolvers initialMeta  $ from rootResolver
 
     querySchema :: a -> GQLTypeLib -> GQLTypeLib
     default querySchema :: (Generic a, Data a) => a -> GQLTypeLib -> GQLTypeLib
@@ -81,7 +68,7 @@ class GQLQuery a where
     introspectQuery _ initialTypes = resolveTypes typeLib stack
        where
          typeLib = introspect (Proxy:: Proxy GQL__Schema) queryType
-         queryType = M.insert "Query" (createType "Query" fields) initialTypes
+         queryType = insert "Query" (createType "Query" fields) initialTypes
          fieldTypes  = getFields (Proxy :: Proxy (Rep a))
          stack = map snd fieldTypes
          fields = map fst fieldTypes ++ [ createField "__schema" "__Schema" [] ]
