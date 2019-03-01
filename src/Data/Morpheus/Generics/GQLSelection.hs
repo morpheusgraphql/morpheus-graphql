@@ -2,20 +2,22 @@
 {-# LANGUAGE ScopedTypeVariables , MultiParamTypeClasses, RankNTypes , DisambiguateRecordFields , FlexibleInstances , FlexibleContexts , TypeOperators #-}
 
 module Data.Morpheus.Generics.GQLSelection
-    (GQLSelection(..))
+    ( GQLSelection(..)
+    )
 where
 
-import            GHC.Generics
-import            Control.Monad
-import            Control.Monad.Trans.Except
-import qualified  Control.Monad.Trans       as     Trans
-import qualified  Data.Data                     as D
-import qualified  Data.Text                     as T
-import qualified  Data.Map                      as M
-import            Data.Proxy
-import            Data.Maybe                     ( fromMaybe )
-import            Data.Morpheus.Schema.SchemaField (wrapAsListType)
-import            Data.Morpheus.Types.Types     ( SelectionSet
+import           GHC.Generics
+import           Control.Monad
+import           Control.Monad.Trans.Except
+import qualified Control.Monad.Trans           as Trans
+import qualified Data.Data                     as D
+import qualified Data.Text                     as T
+import qualified Data.Map                      as M
+import           Data.Proxy
+import           Data.Maybe                     ( fromMaybe )
+import           Data.Morpheus.Schema.SchemaField
+                                                ( wrapAsListType )
+import           Data.Morpheus.Types.Types      ( SelectionSet
                                                 , QuerySelection(..)
                                                 , (::->)(..)
                                                 , ResolveIO(..)
@@ -23,10 +25,9 @@ import            Data.Morpheus.Types.Types     ( SelectionSet
                                                 , EnumOf(..)
                                                 , Validation
                                                 )
-import Data.Morpheus.Types.JSType (JSType(..))
-import qualified Data.Morpheus.ErrorMessage  as Err
-import           Data.Morpheus.Generics.GQLArgs
-                                                ( GQLArgs(..) )
+import           Data.Morpheus.Types.JSType     ( JSType(..) )
+import qualified Data.Morpheus.ErrorMessage    as Err
+import           Data.Morpheus.Generics.GQLArgs ( GQLArgs(..) )
 import           Data.Morpheus.Schema.GQL__Schema
                                                 ( GQL__Schema )
 import           Data.Morpheus.Schema.GQL__Directive
@@ -46,13 +47,24 @@ import           Data.Morpheus.Types.Introspection
                                                 , emptyLib
                                                 , createScalar
                                                 )
-import           Data.Morpheus.Generics.TypeRep ( Selectors(..) , resolveTypes )
-import           Data.Morpheus.Generics.DeriveResolvers ( DeriveResolvers(..) , resolveBySelection )
-import           Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta)
-import           Data.Morpheus.Generics.GQLEnum (GQLEnum(..))
-import qualified Data.Morpheus.Schema.GQL__Field as F (GQL__Field(..), createFieldWith)
+import           Data.Morpheus.Generics.TypeRep ( Selectors(..)
+                                                , resolveTypes
+                                                )
+import           Data.Morpheus.Generics.DeriveResolvers
+                                                ( DeriveResolvers(..)
+                                                , resolveBySelection
+                                                )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
+                                                , initialMeta
+                                                )
+import           Data.Morpheus.Generics.GQLEnum ( GQLEnum(..) )
+import qualified Data.Morpheus.Schema.GQL__Field
+                                               as F
+                                                ( GQL__Field(..)
+                                                , createFieldWith
+                                                )
 
-renameSystemNames = T.replace "GQL__" "__";
+renameSystemNames = T.replace "GQL__" "__"
 
 instance GQLSelection a => DeriveResolvers (K1 i a)  where
     deriveResolvers meta (K1 src) = [(key meta, (`encode` src))]

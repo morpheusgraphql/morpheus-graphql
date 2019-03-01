@@ -8,7 +8,7 @@ where
 
 
 import           Control.Monad
-import           Data.Map                       (insert)
+import           Data.Map                       ( insert )
 import           Data.Data                      ( Data
                                                 , Typeable
                                                 , typeOf
@@ -25,8 +25,10 @@ import           Data.Morpheus.Types.Types      ( SelectionSet
                                                 , ResolveIO(..)
                                                 , failResolveIO
                                                 )
-import Data.Morpheus.Types.JSType (JSType(..))
-import Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta)
+import           Data.Morpheus.Types.JSType     ( JSType(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
+                                                , initialMeta
+                                                )
 import           Data.Morpheus.Generics.GQLArgs ( GQLArgs(..) )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type(..)
@@ -39,15 +41,21 @@ import           Data.Morpheus.Types.Introspection
                                                 , createField
                                                 , emptyLib
                                                 )
-import           Data.Morpheus.Generics.TypeRep ( Selectors(..) , resolveTypes )
+import           Data.Morpheus.Generics.TypeRep ( Selectors(..)
+                                                , resolveTypes
+                                                )
 import           Data.Proxy
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Morpheus.Schema.GQL__Schema
                                                 ( initSchema
                                                 , GQL__Schema
                                                 )
-import           Data.Morpheus.Generics.GQLSelection (GQLSelection(..))
-import           Data.Morpheus.Generics.DeriveResolvers ( DeriveResolvers(..) , resolveBySelection )
+import           Data.Morpheus.Generics.GQLSelection
+                                                ( GQLSelection(..) )
+import           Data.Morpheus.Generics.DeriveResolvers
+                                                ( DeriveResolvers(..)
+                                                , resolveBySelection
+                                                )
 
 
 class GQLQuery a where

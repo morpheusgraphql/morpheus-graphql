@@ -1,5 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE  MultiParamTypeClasses , ScopedTypeVariables, FlexibleInstances , DefaultSignatures, FlexibleContexts #-}
+{-# LANGUAGE  MultiParamTypeClasses , ScopedTypeVariables  #-}
+{-# LANGUAGE  FlexibleInstances , DefaultSignatures, FlexibleContexts #-}
 
 module Data.Morpheus.Generics.GQLArgs
     ( GQLArgs(..)
@@ -7,27 +7,29 @@ module Data.Morpheus.Generics.GQLArgs
 where
 
 import           GHC.Generics
-import qualified Data.Text  as  T
-import qualified Data.Data  as  D
-import qualified Data.Map as M
+import qualified Data.Text                     as T
+import qualified Data.Data                     as D
 import           Data.Morpheus.Generics.TypeRep ( Selectors(..) )
 import           Data.Proxy                     ( Proxy(..) )
-import Data.Morpheus.Generics.GQLInput        (GQLInput(..))
-import qualified  Data.Morpheus.ErrorMessage    as Err
-import           Data.Morpheus.Types.Types     ( Arguments
+import           Data.Morpheus.Generics.GQLInput
+                                                ( GQLInput(..) )
+import qualified Data.Morpheus.ErrorMessage    as Err
+import           Data.Morpheus.Types.Types      ( Arguments
                                                 , Validation(..)
                                                 , (::->)(Some, None)
                                                 , Argument(..)
                                                 )
-import Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta)
-import Data.Morpheus.Types.JSType (JSType(..))
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
+                                                , initialMeta
+                                                )
+import           Data.Morpheus.Types.JSType     ( JSType(..) )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__InputValue(..)
                                                 , createInputValue
                                                 , GQLTypeLib
                                                 , createType
                                                 )
-import Data.Morpheus.Generics.GDecode           (GDecode(..))
+import           Data.Morpheus.Generics.GDecode ( GDecode(..) )
 
 updateLib :: GQLTypeLib -> GQLTypeLib
 updateLib x = x

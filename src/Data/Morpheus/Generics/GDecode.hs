@@ -1,11 +1,16 @@
 {-# LANGUAGE  MultiParamTypeClasses ,TypeOperators , FlexibleInstances #-}
 
-module Data.Morpheus.Generics.GDecode (GDecode(..)) where
+module Data.Morpheus.Generics.GDecode
+    ( GDecode(..)
+    )
+where
 
-import                 GHC.Generics
-import  qualified      Data.Text              as       T
-import Data.Morpheus.Types.Types (Arguments, Validation)
-import  Data.Morpheus.Types.MetaInfo
+import           GHC.Generics
+import qualified Data.Text                     as T
+import           Data.Morpheus.Types.Types      ( Arguments
+                                                , Validation
+                                                )
+import           Data.Morpheus.Types.MetaInfo
 
 fixProxy :: (a -> f a) -> f a
 fixProxy f = f undefined

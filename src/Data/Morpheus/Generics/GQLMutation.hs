@@ -1,7 +1,11 @@
 {-# LANGUAGE DefaultSignatures , OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables , MultiParamTypeClasses, RankNTypes , DisambiguateRecordFields , FlexibleInstances , FlexibleContexts , TypeOperators #-}
 
-module Data.Morpheus.Generics.GQLMutation (GQLMutation(..),NoMutation(..)) where
+module Data.Morpheus.Generics.GQLMutation
+  ( GQLMutation(..)
+  , NoMutation(..)
+  )
+where
 
 
 import           Control.Monad
@@ -23,8 +27,10 @@ import           Data.Morpheus.Types.Types      ( SelectionSet
                                                 , ResolveIO(..)
                                                 , failResolveIO
                                                 )
-import Data.Morpheus.Types.JSType (JSType(..))
-import Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta)
+import           Data.Morpheus.Types.JSType     ( JSType(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
+                                                , initialMeta
+                                                )
 import           Data.Morpheus.Generics.GQLArgs ( GQLArgs(..) )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type(..)
@@ -37,12 +43,19 @@ import           Data.Morpheus.Types.Introspection
                                                 , createField
                                                 , emptyLib
                                                 )
-import           Data.Morpheus.Generics.TypeRep ( Selectors(..) , resolveTypes )
+import           Data.Morpheus.Generics.TypeRep ( Selectors(..)
+                                                , resolveTypes
+                                                )
 import           Data.Proxy
 import           Data.Maybe                     ( fromMaybe )
-import           Data.Morpheus.Schema.GQL__Schema (GQL__Schema)
-import           Data.Morpheus.Generics.GQLSelection (GQLSelection(..))
-import           Data.Morpheus.Generics.DeriveResolvers ( DeriveResolvers(..) , resolveBySelection )
+import           Data.Morpheus.Schema.GQL__Schema
+                                                ( GQL__Schema )
+import           Data.Morpheus.Generics.GQLSelection
+                                                ( GQLSelection(..) )
+import           Data.Morpheus.Generics.DeriveResolvers
+                                                ( DeriveResolvers(..)
+                                                , resolveBySelection
+                                                )
 
 class GQLMutation a where
 

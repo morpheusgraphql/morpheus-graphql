@@ -3,21 +3,25 @@
 module Data.Morpheus.Generics.GQLEnum where
 
 import           GHC.Generics
-import qualified Data.Data as D
-import qualified Data.Map as M
-import qualified Data.Text as T
+import qualified Data.Data                     as D
+import qualified Data.Map                      as M
+import qualified Data.Text                     as T
 import           Data.Proxy                     ( Proxy(..) )
-import qualified Data.Morpheus.Types.Introspection as I
-import qualified Data.Morpheus.Schema.GQL__Field as F (createFieldWith)
-import           Data.Morpheus.Generics.GDecodeEnum ( GDecodeEnum(..))
-import           Data.Morpheus.Types.MetaInfo      ( MetaInfo(..) )
-import          Data.Morpheus.Types.JSType (JSType(..))
+import qualified Data.Morpheus.Types.Introspection
+                                               as I
+import qualified Data.Morpheus.Schema.GQL__Field
+                                               as F
+                                                ( createFieldWith )
+import           Data.Morpheus.Generics.GDecodeEnum
+                                                ( GDecodeEnum(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
+import           Data.Morpheus.Types.JSType     ( JSType(..) )
 
 
 getType :: D.Typeable a => a -> T.Text
 getType = renameSystemNames . T.pack . show . D.typeOf
 
-renameSystemNames = T.replace "GQL__" "__";
+renameSystemNames = T.replace "GQL__" "__"
 
 
 class GQLEnum a where

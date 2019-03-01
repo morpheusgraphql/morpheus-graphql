@@ -4,18 +4,22 @@
 {-# LANGUAGE ScopedTypeVariables , MultiParamTypeClasses , FlexibleContexts , RankNTypes , ExistentialQuantification  #-}
 
 module Data.Morpheus.Generics.TypeRep
-    (Selectors(..), resolveTypes )
+    ( Selectors(..)
+    , resolveTypes
+    )
 where
 
-import              Data.Proxy                     (Proxy(..))
-import              GHC.Generics
-import              Data.Morpheus.Types.Introspection  (GQLTypeLib)
-import  qualified   Data.Data                   as D
+import           Data.Proxy                     ( Proxy(..) )
+import           GHC.Generics
+import           Data.Morpheus.Types.Introspection
+                                                ( GQLTypeLib )
+import qualified Data.Data                     as D
+
+shift :: a -> (a -> b) -> b
+shift x y = y x
 
 resolveTypes :: GQLTypeLib -> [GQLTypeLib -> GQLTypeLib] -> GQLTypeLib
-resolveTypes lib []       = lib
-resolveTypes lib (f : fs) = resolveTypes (f lib) fs
-
+resolveTypes = foldl shift
 
 class  Selectors rep t where
     getFields ::  Proxy rep ->  [( t, GQLTypeLib -> GQLTypeLib )]
