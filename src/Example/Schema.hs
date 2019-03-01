@@ -8,7 +8,8 @@ where
 
 import           GHC.Generics                   ( Generic )
 import           Data.Data                      ( Data )
-import qualified Data.Text as T (concat)
+import qualified Data.Text                     as T
+                                                ( concat )
 import           Data.Text                      ( Text
                                                 , pack
                                                 , unpack
@@ -33,7 +34,7 @@ import           Example.Files                  ( getJson )
 import           Data.Aeson                     ( FromJSON )
 import           Data.Either
 import           Control.Monad.Trans            ( lift )
-import           Data.Maybe                     (fromMaybe)
+import           Data.Maybe                     ( fromMaybe )
 
 data CityID = Paris | BLN | HH deriving (Show,Generic,Data, GQLEnum)
 
@@ -85,15 +86,19 @@ fetchAddress cityName streetName = lift (getJson "address")
 
 resolveAddress :: LocationByCoordinates ::-> Address
 resolveAddress = Resolver resolve
-    where resolve args = fetchAddress (latitude $ coordinates args) (longitude $ coordinates args)
+  where
+    resolve args = fetchAddress (latitude $ coordinates args)
+                                (longitude $ coordinates args)
 
 addressByCityID Paris code = fetchAddress (pack $ "75" ++ code) "Paris"
-addressByCityID BLN code = fetchAddress (pack $ "10" ++ code) "Berlin"
-addressByCityID HH code = fetchAddress (pack $ "20" ++ code) "Hamburg"
+addressByCityID BLN   code = fetchAddress (pack $ "10" ++ code) "Berlin"
+addressByCityID HH    code = fetchAddress (pack $ "20" ++ code) "Hamburg"
 
 resolveOffice :: User -> Location ::-> Address
 resolveOffice user = Resolver resolve
-    where resolve args = addressByCityID (unpackEnum $ cityID args) (show $ fromMaybe 101 (zipCode args) )
+  where
+    resolve args = addressByCityID (unpackEnum $ cityID args)
+                                   (show $ fromMaybe 101 (zipCode args))
 
 
 resolveUser :: () ::-> User
@@ -111,11 +116,7 @@ createUserMutation = Resolver resolve
         user { address = resolveAddress, office = resolveOffice user }
 
 gqlHandler :: GQLRequest -> IO GQLResponse
-gqlHandler = interpreter GQLRoot {
-   queryResolver = Query {
-      user = resolveUser
-   }
-   ,mutationResolver = Mutation {
-      createUser = createUserMutation
-   }
-}
+gqlHandler = interpreter GQLRoot
+    { queryResolver    = Query { user = resolveUser }
+    , mutationResolver = Mutation { createUser = createUserMutation }
+    }

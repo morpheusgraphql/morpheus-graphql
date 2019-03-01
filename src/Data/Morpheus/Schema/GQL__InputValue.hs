@@ -1,9 +1,13 @@
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE DeriveDataTypeable , DeriveGeneric #-}
 
-module Data.Morpheus.Schema.GQL__InputValue (GQL__InputValue(..), createInputValueWith ) where
+module Data.Morpheus.Schema.GQL__InputValue
+  ( GQL__InputValue(..)
+  , createInputValueWith
+  )
+where
 
-import           Data.Text                      ( Text(..))
+import           Data.Text                      ( Text(..) )
 import           Data.Data                      ( Data )
 import           GHC.Generics
 
