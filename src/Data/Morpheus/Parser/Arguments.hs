@@ -24,12 +24,11 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.Morpheus.Types.Types     ( Arguments
+import           Data.Morpheus.Types.Types      ( Arguments
                                                 , Argument(..)
                                                 )
-import Data.Morpheus.Types.JSType ( JSType(JSEnum) )
-import           Data.Morpheus.Parser.Primitive
-                                                ( jsString
+import           Data.Morpheus.Types.JSType     ( JSType(JSEnum) )
+import           Data.Morpheus.Parser.Primitive ( jsString
                                                 , token
                                                 , variable
                                                 , jsBool
@@ -38,10 +37,14 @@ import           Data.Morpheus.Parser.Primitive
 
 inputValue :: Parser Argument
 inputValue =
-    (Argument . JSEnum) <$> token
-        <|> skipSpace *>  (Argument <$> jsString)
-        <|> skipSpace *>  (Argument <$> jsBool)
-        <|> skipSpace *>  (Argument <$> jsInt)
+    (Argument . JSEnum)
+        <$> token
+        <|> skipSpace
+        *>  (Argument <$> jsString)
+        <|> skipSpace
+        *>  (Argument <$> jsBool)
+        <|> skipSpace
+        *>  (Argument <$> jsInt)
         <|> (Variable <$> variable)
 
 parameter :: Parser (Text, Argument)

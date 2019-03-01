@@ -1,5 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta) where
+module Data.Morpheus.Types.MetaInfo
+  ( MetaInfo(..)
+  , initialMeta
+  )
+where
 
 import           Data.Text                      ( Text )
 

@@ -13,16 +13,19 @@ import           Data.Data                      ( Data )
 import           Data.Text                      ( Text(..) )
 import           Data.Morpheus.Types.Types      ( (::->)(..) )
 import           Data.Morpheus.Types.Introspection
-                                                (
-                                                  GQL__Field
-                                                 ,GQL__InputValue
-                                                 , GQL__Type
-                                                 , wrapListType
-                                                 , unwrapType
+                                                ( GQL__Field
+                                                , GQL__InputValue
+                                                , GQL__Type
+                                                , wrapListType
+                                                , unwrapType
                                                 )
 import           Control.Monad                  ( join )
-import qualified Data.Morpheus.Schema.GQL__Field as F (GQL__Field(..))
-import qualified Data.Morpheus.Schema.GQL__Type as T (GQL__Type(..))
+import qualified Data.Morpheus.Schema.GQL__Field
+                                               as F
+                                                ( GQL__Field(..) )
+import qualified Data.Morpheus.Schema.GQL__Type
+                                               as T
+                                                ( GQL__Type(..) )
 
 selectFieldByKey :: Text -> GQL__Type -> Maybe GQL__Field
 selectFieldByKey key gqlType = case T.fields gqlType of
@@ -30,7 +33,8 @@ selectFieldByKey key gqlType = case T.fields gqlType of
     _           -> Nothing
 
 getFieldTypeByKey :: Text -> GQL__Type -> Maybe GQL__Type
-getFieldTypeByKey key gqlType = selectFieldByKey key gqlType >>= F._type >>= unwrapType
+getFieldTypeByKey key gqlType =
+    selectFieldByKey key gqlType >>= F._type >>= unwrapType
 
 fieldArgsByKey :: Text -> GQL__Type -> Maybe [GQL__InputValue]
 fieldArgsByKey key gqlType = F.args <$> selectFieldByKey key gqlType

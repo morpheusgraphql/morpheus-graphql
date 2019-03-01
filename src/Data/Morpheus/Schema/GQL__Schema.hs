@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric ,DeriveAnyClass , DeriveDataTypeable , OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric , DeriveDataTypeable , OverloadedStrings #-}
 
 module Data.Morpheus.Schema.GQL__Schema where
 

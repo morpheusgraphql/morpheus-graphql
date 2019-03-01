@@ -12,7 +12,6 @@ import           Data.Morpheus.Types.Types      ( QuerySelection
                                                 )
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 import           Data.Morpheus.Types.JSType     ( JSType(..) )
-import           Data.Map                       (fromList)
 
 -- type D1 = M1 D
 -- type C1 = M1 C

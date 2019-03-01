@@ -6,23 +6,37 @@ module Data.Morpheus.Generics.GQLInput
     )
 where
 
-import           Data.Morpheus.Types.Types      ( EnumOf(..) ,Validation(..))
-import Data.Morpheus.Types.JSType         (JSType(..))
-import Data.Morpheus.Types.MetaInfo         (MetaInfo(..))
+import           Data.Morpheus.Types.Types      ( EnumOf(..)
+                                                , Validation(..)
+                                                )
+import           Data.Morpheus.Types.JSType     ( JSType(..) )
 import           Data.Text                      ( Text
                                                 , unpack
                                                 , pack
                                                 )
 import           GHC.Generics
 import           Data.Data
-import           Data.Morpheus.Types.Introspection (GQL__Field, createInputObject , createScalar , GQLTypeLib, GQL__InputValue(..), createInputValue)
-import qualified Data.Map as M
-import           Data.Morpheus.Generics.GQLEnum (GQLEnum(..))
-import qualified Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue(..))
-import           Data.Morpheus.Generics.GDecode (GDecode(..))
-import Data.Morpheus.Types.MetaInfo (MetaInfo(..), initialMeta)
-import qualified  Data.Morpheus.ErrorMessage    as Err
-import           Data.Morpheus.Generics.TypeRep ( Selectors(..) , resolveTypes )
+import           Data.Morpheus.Types.Introspection
+                                                ( GQL__Field
+                                                , createInputObject
+                                                , createScalar
+                                                , GQLTypeLib
+                                                , GQL__InputValue(..)
+                                                , createInputValue
+                                                )
+import qualified Data.Map                      as M
+import           Data.Morpheus.Generics.GQLEnum ( GQLEnum(..) )
+import qualified Data.Morpheus.Schema.GQL__InputValue
+                                               as I
+                                                ( GQL__InputValue(..) )
+import           Data.Morpheus.Generics.GDecode ( GDecode(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
+                                                , initialMeta
+                                                )
+import qualified Data.Morpheus.ErrorMessage    as Err
+import           Data.Morpheus.Generics.TypeRep ( Selectors(..)
+                                                , resolveTypes
+                                                )
 
 getType :: Typeable a => a -> Text
 getType = pack . show . typeOf

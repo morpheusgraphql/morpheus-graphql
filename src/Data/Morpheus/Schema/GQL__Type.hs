@@ -1,15 +1,27 @@
 {-# LANGUAGE DeriveDataTypeable , DeriveGeneric , TypeOperators #-}
 
-module Data.Morpheus.Schema.GQL__Type (GQL__Type(..),GQL__Deprecation__Args) where
+module Data.Morpheus.Schema.GQL__Type
+  ( GQL__Type(..)
+  , GQL__Deprecation__Args
+  )
+where
 
-import           Data.Text                      (Text)
-import           Data.Data                      (Data)
-import           GHC.Generics                   (Generic)
-import qualified  Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue(..))
-import qualified  Data.Morpheus.Schema.GQL__Field as  F (GQL__Field(..))
-import  Data.Morpheus.Schema.GQL__EnumValue (GQL__EnumValue)
-import  Data.Morpheus.Schema.GQL__TypeKind (GQL__TypeKind)
-import  Data.Morpheus.Types.Types (EnumOf, (::->)(..))
+import           Data.Text                      ( Text )
+import           Data.Data                      ( Data )
+import           GHC.Generics                   ( Generic )
+import qualified Data.Morpheus.Schema.GQL__InputValue
+                                               as I
+                                                ( GQL__InputValue(..) )
+import qualified Data.Morpheus.Schema.GQL__Field
+                                               as F
+                                                ( GQL__Field(..) )
+import           Data.Morpheus.Schema.GQL__EnumValue
+                                                ( GQL__EnumValue )
+import           Data.Morpheus.Schema.GQL__TypeKind
+                                                ( GQL__TypeKind )
+import           Data.Morpheus.Types.Types      ( EnumOf
+                                                , (::->)(..)
+                                                )
 
 
 data GQL__Type =  GQL__Type {

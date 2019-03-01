@@ -1,7 +1,8 @@
-{-# LANGUAGE DeriveGeneric, DeriveDataTypeable  ,  DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric, DeriveDataTypeable  #-}
 
 module Data.Morpheus.Schema.GQL__TypeKind
-  (GQL__TypeKind(..))
+  ( GQL__TypeKind(..)
+  )
 where
 
 import           GHC.Generics

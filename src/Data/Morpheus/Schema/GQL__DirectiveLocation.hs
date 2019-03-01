@@ -1,7 +1,8 @@
-{-# LANGUAGE DeriveGeneric, DeriveDataTypeable  ,  DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric, DeriveDataTypeable #-}
 
 module Data.Morpheus.Schema.GQL__DirectiveLocation
-  (GQL__DirectiveLocation(..))
+  ( GQL__DirectiveLocation(..)
+  )
 where
 
 import           GHC.Generics
