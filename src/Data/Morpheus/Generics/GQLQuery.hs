@@ -41,25 +41,23 @@ import           Data.Morpheus.Types.Introspection
                                                 )
 import           Data.Morpheus.Generics.TypeRep ( Selectors(..) , resolveTypes )
 import           Data.Proxy
-import           Data.Morpheus.Generics.GenericMap ( GenericMap(..) )
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Morpheus.Schema.GQL__Schema
                                                 ( initSchema
                                                 , GQL__Schema
                                                 )
-import           Data.Morpheus.Generics.GQLSelection
-                                                ( GQLSelection(..)
-                                                , wrapAsObject
-                                                )
+import           Data.Morpheus.Generics.GQLSelection (GQLSelection(..))
+import           Data.Morpheus.Generics.DeriveResolvers ( DeriveResolvers(..) , resolveBySelection )
+
 
 class GQLQuery a where
 
     encodeQuery :: a -> GQLTypeLib -> QuerySelection  ->  ResolveIO JSType
-    default encodeQuery :: ( Generic a, Data a, GenericMap (Rep a) , Show a) => a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
-    encodeQuery rootResolver schema (SelectionSet _ gql) = wrapAsObject gql $ schemaResolver ++ resolvers
+    default encodeQuery :: ( Generic a, Data a, DeriveResolvers (Rep a) , Show a) => a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
+    encodeQuery rootResolver schema (SelectionSet _ sel) = resolveBySelection sel $ schemaResolver ++ resolvers
             where
                 schemaResolver = [("__schema", (`encode` initSchema schema))]
-                resolvers = encodeFields initialMeta  $ from rootResolver
+                resolvers = deriveResolvers initialMeta  $ from rootResolver
 
     querySchema :: a -> GQLTypeLib -> GQLTypeLib
     default querySchema :: (Generic a, Data a) => a -> GQLTypeLib -> GQLTypeLib
