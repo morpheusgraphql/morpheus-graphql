@@ -28,7 +28,7 @@ getType :: Typeable a => a -> Text
 getType = pack . show . typeOf
 
 instance GQLInput a => GDecode JSType (K1 i a)  where
-    gDecode meta (JSObject x) = case lookup (key meta) (M.toList x) of
+    gDecode meta (JSObject x) = case lookup (key meta) x of
             Nothing -> Left $ Err.requiredArgument meta
             Just x -> K1 <$> decode x
 

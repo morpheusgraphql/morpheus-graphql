@@ -30,7 +30,7 @@ selectResolver:: [(T.Text, QuerySelection -> ResolveIO JSType )] -> (T.Text,Quer
 selectResolver x (key, gql ) = unwrapMonadTuple (key, (fromMaybe  (\x-> pure JSNull) $ lookup key x) gql )
 
 resolveBySelection :: [(T.Text,QuerySelection)] ->  [(T.Text, QuerySelection -> ResolveIO JSType)] -> ResolveIO JSType
-resolveBySelection selection resolvers = JSObject . fromList  <$> mapM (selectResolver resolvers) selection
+resolveBySelection selection resolvers = JSObject <$> mapM (selectResolver resolvers) selection
 
 class DeriveResolvers f where
     deriveResolvers:: MetaInfo -> f a -> [(T.Text, QuerySelection -> ResolveIO JSType)]
