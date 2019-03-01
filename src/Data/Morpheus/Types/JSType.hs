@@ -1,23 +1,17 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
 
 module Data.Morpheus.Types.JSType where
 
-import           Data.Map                       ( Map
-                                                , filter
-                                                , mapKeys
-                                                , fromList
-                                                )
 import           Data.Aeson
-import qualified Data.Text                   as T ( Text, pack )
+import           Data.Text                      (Text , pack )
 import           GHC.Generics                   ( Generic )
-import          Data.HashMap.Strict             (toList)
+import           Data.HashMap.Strict            (toList)
 
-
-replaceType :: T.Text -> T.Text
+replaceType :: Text -> Text
 replaceType "_type" = "type"
 replaceType x = x
 
-data JSType =  JSObject [(T.Text, JSType)] | JSList [JSType] |  JSEnum T.Text | JSInt Int | JSBool Bool | JSString T.Text | JSNull  deriving (Show, Generic)
+data JSType =  JSObject [(Text, JSType)] | JSList [JSType] |  JSEnum Text | JSInt Int | JSBool Bool | JSString Text | JSNull  deriving (Show, Generic)
 
 
 instance ToJSON JSType where
@@ -28,11 +22,11 @@ instance ToJSON JSType where
     toJSON (JSList x) = toJSON x
     toJSON (JSObject x) = object (map convertField x)
        where convertField (key, value ) = replaceType key .= toJSON value
-
     -- toEncoding (JSObject x) = pairs $ foldr (<>) (head $ tail fields) (tail fields)
     --   where
     --    fields = map encodeField x
     --    encodeField (key, value ) = key .= value
+
 replace (key, val ) = (key, replaceValue val )
 
 replaceValue :: Value -> JSType
