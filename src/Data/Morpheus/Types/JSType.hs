@@ -27,7 +27,7 @@ instance ToJSON JSType where
     toEncoding (JSString x) = toEncoding x
     toEncoding (JSList x) = toEncoding x
     toEncoding (JSObject x) = pairs $ foldl1 (<>) $ map encodeField x
-       where encodeField (key, value ) = key .= value
+       where encodeField (key, value ) = replaceType key .= value
 
 replace (key, val) = (key, replaceValue val)
 
