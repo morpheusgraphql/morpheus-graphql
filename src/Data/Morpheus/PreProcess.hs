@@ -6,7 +6,10 @@ module Data.Morpheus.PreProcess
     )
 where
 
-import           Data.List                      ( find )
+import qualified Data.Set                      as S
+import           Data.List                      ( find
+                                                , (\\)
+                                                )
 import qualified Data.Map                      as M
 import           GHC.Generics                   ( Generic
                                                 , Rep
@@ -180,19 +183,20 @@ spreadFields :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
 spreadFields root selectors = concat <$> mapM (propagateSpread root) selectors
 
 isFragment :: (Text, QuerySelection) -> Bool
-isFragment (key , Spread _) = True
-isFragment (key ,  _) = False
+isFragment (key, Spread _) = True
+isFragment (key, _       ) = False
 
 shouldSpread :: [(Text, QuerySelection)] -> Bool
-shouldSpread list = case find isFragment list of 
-    Just _ -> True
+shouldSpread list = case find isFragment list of
+    Just _  -> True
     Nothing -> False
 
 --splitFragments fields = (filter isFragment xs, filter (not . isFragment) xs)
 
 spreadFieldsWhile :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
-spreadFieldsWhile root selectors  = spreadFields root selectors >>= checkUpdate
-    where checkUpdate x = if shouldSpread x then spreadFieldsWhile root x else pure x  
+spreadFieldsWhile root selectors = spreadFields root selectors >>= checkUpdate
+  where
+    checkUpdate x = if shouldSpread x then spreadFieldsWhile root x else pure x
 
 typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fieldType
     where fieldType field = existsType (T.name field) typeLib
@@ -209,7 +213,8 @@ mapSelectors
     -> SelectionSet
     -> Validation SelectionSet
 mapSelectors typeLib root _type selectors =
-    spreadFieldsWhile root selectors >>= mapM (validateBySchema typeLib root _type)
+    spreadFieldsWhile root selectors >>= checkDuplicates >>= mapM
+        (validateBySchema typeLib root _type)
 
 validateBySchema
     :: GQLTypeLib
@@ -232,6 +237,19 @@ validateBySchema typeLib root _parentType (_name, Field head field) = do
     pure (_name, Field head' field)
 
 validateBySchema _ _ _ x = pure x
+
+checkDuplicates :: [(Text, a)] -> Validation [(Text, a)]
+checkDuplicates x = case keys \\ noDuplicates keys of
+    [] -> pure x
+    -- TODO: Error handling
+    duplicates ->
+        Left $ cannotQueryField $ MetaInfo "" "" $ pack $ show duplicates
+  where
+    keys         = map fst x
+    noDuplicates = S.toList . S.fromList
+
+
+
 
 getOperationInfo (QueryOperator    name x) = ("Query", x)
 getOperationInfo (MutationOperator name x) = ("Mutation", x)
