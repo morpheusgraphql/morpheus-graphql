@@ -1,8 +1,10 @@
--- This file has been generated from package.yaml by hpack version 0.28.2.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 37a78f5d5b45c48c38190ba7f45b167e6a7446db1949e53ae9490ea180492e15
+-- hash: d127b56e0f9167c6d53c45c8543ba4136cb5a2b424207756be748c0e1f850161
 
 name:           morpheus-graphql-example
 version:        0.0.1
@@ -14,7 +16,6 @@ maintainer:     example@example.com
 copyright:      2018 Author name here
 license:        BSD3
 build-type:     Simple
-cabal-version:  >= 1.10
 
 source-repository head
   type: git

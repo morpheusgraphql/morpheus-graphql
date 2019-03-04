@@ -54,6 +54,8 @@ import          Data.Morpheus.Generics.GQLMutation (GQLMutation(..),NoMutation(.
 import          Data.Morpheus.Types.Introspection (GQLTypeLib)
 import          Data.Morpheus.PreProcess       ( preProcessQuery )
 
+import Control.Monad.IO.Class (liftIO)
+
 
 data GQLRoot a b = GQLRoot {
   queryResolver :: a,
@@ -83,7 +85,7 @@ interpreter rootResolver request = do
   value <- runExceptT $ resolve rootResolver request
   case value of
     Left x -> pure $ Errors x
-    Right x -> pure$ Data x
+    Right x -> pure $ Data x
 
 eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a
 eitherToResponse f (Left  x) = failResolveIO $ errorMessage $ pack x
@@ -91,3 +93,4 @@ eitherToResponse f (Right x) = pure (f x)
 
 requestFromText :: Text -> GQLRequest
 requestFromText t = GQLRequest t Nothing Nothing
+

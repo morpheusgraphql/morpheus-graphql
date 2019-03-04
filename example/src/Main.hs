@@ -2,13 +2,14 @@
 module Main ( main ) where
 
 import Control.Monad.IO.Class (liftIO)
-import Web.Scotty (scotty, get, body)
+import Web.Scotty
 import Example.Schema (resolve)
 import Data.Morpheus (requestFromText)
-import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Data.Text as T
 
 main :: IO ()
-main = scotty 3000 $
-  get "/api" $ do
-    gqlQuery <- body
-    liftIO . resolve . requestFromText . B.pack $ gqlQuery
+main = scotty 3000 $ do
+  post "/api" $ do
+    response <- liftIO . resolve . requestFromText . T.pack . B.unpack =<< body
+    json response

@@ -63,9 +63,9 @@ class GQLQuery a where
     encodeQuery :: a -> GQLTypeLib -> QuerySelection  ->  ResolveIO JSType
     default encodeQuery :: ( Generic a, Data a, DeriveResolvers (Rep a) , Show a) => a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
     encodeQuery rootResolver schema (SelectionSet _ sel) = resolveBySelection sel $ schemaResolver ++ resolvers
-            where
-                schemaResolver = [("__schema", (`encode` initSchema schema))]
-                resolvers = deriveResolvers initialMeta  $ from rootResolver
+      where
+        schemaResolver = [("__schema", (`encode` initSchema schema))]
+        resolvers = deriveResolvers initialMeta $ from rootResolver
 
     querySchema :: a -> GQLTypeLib -> GQLTypeLib
     default querySchema :: (Generic a, Data a) => a -> GQLTypeLib -> GQLTypeLib
