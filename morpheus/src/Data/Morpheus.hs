@@ -1,23 +1,23 @@
-{-# LANGUAGE TypeOperators , FlexibleInstances , ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings, TypeOperators , FlexibleInstances , ScopedTypeVariables #-}
 
 module Data.Morpheus
-    ( interpreter
-    , requestFromText
-    , eitherToResponse
-    , GQLResponse
-    , GQLSelection
-    , GQLQuery
-    , GQLArgs
-    , (::->)(..)
-    , GQLRequest(..)
-    , ResolveIO(..)
-    , GQLInput
-    , EnumOf(unpackEnum)
-    , GQLEnum
-    , GQLRoot(..)
-    , GQLMutation(..)
-    , NoMutation(..)
-    )
+  ( interpreter
+  , requestFromText
+  , eitherToResponse
+  , GQLResponse
+  , GQLSelection
+  , GQLQuery
+  , GQLArgs
+  , (::->)(..)
+  , GQLRequest(..)
+  , ResolveIO(..)
+  , GQLInput
+  , EnumOf(unpackEnum)
+  , GQLEnum
+  , GQLRoot(..)
+  , GQLMutation(..)
+  , NoMutation(..)
+  )
 where
 
 import           GHC.Generics                   ( Generic )
@@ -28,11 +28,10 @@ import           Data.Morpheus.Generics.GQLSelection
                                                 ( GQLSelection )
 import           Data.Morpheus.Generics.GQLQuery
                                                 ( GQLQuery(..) )
-import           Data.Morpheus.Generics.GQLArgs
-                                                ( GQLArgs )
-import           Data.Morpheus.Parser.Parser   ( parseGQL )
-import           Data.Morpheus.Types.JSType     (JSType)
-import           Data.Morpheus.Types.Types     ( (::->)(Resolver)
+import           Data.Morpheus.Generics.GQLArgs ( GQLArgs )
+import           Data.Morpheus.Parser.Parser    ( parseGQL )
+import           Data.Morpheus.Types.JSType     ( JSType )
+import           Data.Morpheus.Types.Types      ( (::->)(Resolver)
                                                 , GQLResponse(..)
                                                 , GQLRequest(..)
                                                 , Validation(..)
@@ -44,53 +43,75 @@ import           Data.Morpheus.Types.Types     ( (::->)(Resolver)
                                                 )
 import           Data.Proxy                     ( Proxy )
 import           Control.Monad                  ( (>=>) )
-import           Data.Morpheus.ErrorMessage    ( errorMessage )
+import           Data.Morpheus.ErrorMessage     ( errorMessage )
 import           Control.Monad.Trans.Except     ( runExceptT
                                                 , ExceptT(..)
                                                 )
-import          Data.Morpheus.Generics.GQLInput (GQLInput)
-import          Data.Morpheus.Generics.GQLEnum  (GQLEnum)
-import          Data.Morpheus.Generics.GQLMutation (GQLMutation(..),NoMutation(..))
-import          Data.Morpheus.Types.Introspection (GQLTypeLib)
-import          Data.Morpheus.PreProcess       ( preProcessQuery )
-
-import Control.Monad.IO.Class (liftIO)
-
+import           Data.Morpheus.Generics.GQLInput
+                                                ( GQLInput )
+import           Data.Morpheus.Generics.GQLEnum ( GQLEnum )
+import           Data.Morpheus.Generics.GQLMutation
+                                                ( GQLMutation(..)
+                                                , NoMutation(..)
+                                                )
+import           Data.Morpheus.Types.Introspection
+                                                ( GQLTypeLib )
+import           Data.Morpheus.PreProcess       ( preProcessQuery )
+import           Data.Aeson                     ( decode )
+import           Control.Monad.IO.Class         ( liftIO )
+import qualified Data.ByteString.Lazy.Char8    as B
+import           Data.Maybe                     ( fromMaybe )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 
 data GQLRoot a b = GQLRoot {
   queryResolver :: a,
   mutationResolver:: b
 }
 
-schema :: (GQLQuery a , GQLMutation b) =>  a -> b -> GQLTypeLib
-schema query mutation  = querySchema query $ mutationSchema mutation
+schema :: (GQLQuery a, GQLMutation b) => a -> b -> GQLTypeLib
+schema query mutation = querySchema query $ mutationSchema mutation
 
 validate schema root = case preProcessQuery schema root of
-        Right validGQL -> pure  validGQL
-        Left x ->  failResolveIO x
+  Right validGQL -> pure validGQL
+  Left  x        -> failResolveIO x
 
-resolve :: (GQLQuery a , GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO JSType
+resolve
+  :: (GQLQuery a, GQLMutation b)
+  => GQLRoot a b
+  -> GQLRequest
+  -> ResolveIO JSType
 resolve rootResolver body = do
-    rootGQL  <- ExceptT $ pure (parseGQL body >>= preProcessQuery gqlSchema)
-    case  rootGQL of
-      QueryOperator name query -> encodeQuery queryRes gqlSchema query
-      MutationOperator name mutation -> encodeMutation mutationRes gqlSchema mutation
-    where
-      gqlSchema = schema queryRes mutationRes
-      queryRes = queryResolver rootResolver
-      mutationRes = mutationResolver rootResolver
+  rootGQL <- ExceptT $ pure (parseGQL body >>= preProcessQuery gqlSchema)
+  case rootGQL of
+    QueryOperator name query -> encodeQuery queryRes gqlSchema query
+    MutationOperator name mutation ->
+      encodeMutation mutationRes gqlSchema mutation
+ where
+  gqlSchema   = schema queryRes mutationRes
+  queryRes    = queryResolver rootResolver
+  mutationRes = mutationResolver rootResolver
 
-interpreter :: (GQLQuery a , GQLMutation b)=> GQLRoot a b -> GQLRequest -> IO GQLResponse
+interpreter
+  :: (GQLQuery a, GQLMutation b)
+  => GQLRoot a b
+  -> B.ByteString
+  -> IO GQLResponse
 interpreter rootResolver request = do
-  value <- runExceptT $ resolve rootResolver request
+  value <- runExceptT $ (requestFromText request >>= resolve rootResolver)
   case value of
-    Left x -> pure $ Errors x
+    Left  x -> pure $ Errors x
     Right x -> pure $ Data x
 
 eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a
 eitherToResponse f (Left  x) = failResolveIO $ errorMessage $ pack x
 eitherToResponse f (Right x) = pure (f x)
 
-requestFromText :: Text -> GQLRequest
-requestFromText t = GQLRequest t Nothing Nothing
 
+--interpreterFromText :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> B.ByteString -> IO GQLResponse
+--interpreterFromText rootResolver request text = requestFromText >>= interpreter rootResolver request text
+
+
+requestFromText :: B.ByteString -> ResolveIO GQLRequest
+requestFromText text = case decode text of
+  Just x  -> pure x
+  Nothing -> failResolveIO $ errorMessage $ pack $ show text

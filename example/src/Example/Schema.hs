@@ -1,7 +1,10 @@
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass, DeriveDataTypeable, TypeOperators #-}
 {-# LANGUAGE MultiParamTypeClasses, OverloadedStrings  #-}
 
-module Example.Schema ( resolve ) where
+module Example.Schema
+  ( resolve
+  )
+where
 
 import           GHC.Generics                   ( Generic )
 import           Data.Data                      ( Data )
@@ -32,6 +35,7 @@ import           Data.Aeson                     ( FromJSON )
 import           Data.Either
 import           Control.Monad.Trans            ( lift )
 import           Data.Maybe                     ( fromMaybe )
+import qualified Data.ByteString.Lazy.Char8    as B
 
 data CityID = Paris | BLN | HH deriving (Show,Generic,Data, GQLEnum)
 
@@ -75,17 +79,17 @@ newtype Mutation = Mutation {
 
 fetchAddress :: Text -> Text -> ResolveIO Address
 fetchAddress cityName streetName = lift (getJson "address")
-    >>= eitherToResponse modify
-  where
-    modify address = address { city   = T.concat [cityName, " ", city address]
-                             , street = streetName
-                             }
+  >>= eitherToResponse modify
+ where
+  modify address = address { city   = T.concat [cityName, " ", city address]
+                           , street = streetName
+                           }
 
 resolveAddress :: LocationByCoordinates ::-> Address
 resolveAddress = Resolver resolve
-  where
-    resolve args = fetchAddress (latitude $ coordinates args)
-                                (longitude $ coordinates args)
+ where
+  resolve args =
+    fetchAddress (latitude $ coordinates args) (longitude $ coordinates args)
 
 addressByCityID Paris code = fetchAddress (pack $ "75" ++ code) "Paris"
 addressByCityID BLN   code = fetchAddress (pack $ "10" ++ code) "Berlin"
@@ -93,32 +97,25 @@ addressByCityID HH    code = fetchAddress (pack $ "20" ++ code) "Hamburg"
 
 resolveOffice :: User -> Location ::-> Address
 resolveOffice user = Resolver resolve
-  where
-    resolve args = addressByCityID (unpackEnum $ cityID args)
-                                   (show $ fromMaybe 101 (zipCode args))
+ where
+  resolve args = addressByCityID (unpackEnum $ cityID args)
+                                 (show $ fromMaybe 101 (zipCode args))
 
 
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve
-  where
-    resolve _ = lift (getJson "user") >>= eitherToResponse modify
-    modify user =
-        user { address = resolveAddress, office = resolveOffice user }
+ where
+  resolve _ = lift (getJson "user") >>= eitherToResponse modify
+  modify user = user { address = resolveAddress, office = resolveOffice user }
 
 createUserMutation :: LocationByCoordinates ::-> User
 createUserMutation = Resolver resolve
-  where
-    resolve _ = lift (getJson "user") >>= eitherToResponse modify
-    modify user =
-        user { address = resolveAddress, office = resolveOffice user }
+ where
+  resolve _ = lift (getJson "user") >>= eitherToResponse modify
+  modify user = user { address = resolveAddress, office = resolveOffice user }
 
-resolve :: GQLRequest -> IO GQLResponse
+resolve :: B.ByteString -> IO GQLResponse
 resolve = interpreter GQLRoot
-    {
-      queryResolver    = Query {
-        user = resolveUser
-      },
-      mutationResolver = Mutation {
-        createUser = createUserMutation
-      }
-    }
+  { queryResolver    = Query { user = resolveUser }
+  , mutationResolver = Mutation { createUser = createUserMutation }
+  }
