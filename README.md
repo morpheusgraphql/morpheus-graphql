@@ -10,36 +10,56 @@ sls offline start
 
 ## request on api/graphql
 
+# Request 1
+
+```json
+{
+  "cord": {
+    "latitude": "123",
+    "longitude": "2413"
+  }
+}
+```
+
 ```graphql
-query GetUsers($office: String) {
+query GetUsers($cord: Coordinates) {
   user {
     name
     email
-    address(latitude: "Hi Nicas", longitude: "office") {
+    address(coordinates: $cord) {
       ...AdressDetails
     }
-    office(zipCode: "4134", cityID: "cityID") {
+    office(cityID: HH, zipCode: 123) {
       city
+      houseNumber
       street
+      owner {
+        name
+      }
     }
-    home {
-      city
-    }
+    home
   }
 }
 
 fragment AdressDetails on Address {
   houseNumber
-  street
   city
-  owner {
-    ...User
-  }
+  street
 }
+```
 
-fragment User on User {
-  address(latitude: "Hi Nicas", longitude: "Dublin") {
-    city
+# Simple Request
+
+```graphql
+query GetUsers {
+  user {
+    name
+    email
+    office(cityID: HH) {
+      city
+      houseNumber
+      street
+    }
   }
 }
 ```
