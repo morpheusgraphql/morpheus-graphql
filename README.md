@@ -12,6 +12,8 @@ sls offline start
 
 # Request 1
 
+variables:
+
 ```json
 {
   "cord": {
@@ -20,6 +22,8 @@ sls offline start
   }
 }
 ```
+
+Query:
 
 ```graphql
 query GetUsers($cord: Coordinates) {
@@ -49,6 +53,8 @@ fragment AdressDetails on Address {
 ```
 
 # Simple Request
+
+query without variables:
 
 ```graphql
 query GetUsers {
