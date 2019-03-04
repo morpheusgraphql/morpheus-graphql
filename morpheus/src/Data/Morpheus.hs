@@ -1,8 +1,7 @@
-{-# LANGUAGE OverloadedStrings, TypeOperators , FlexibleInstances , ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators , FlexibleInstances  #-}
 
 module Data.Morpheus
   ( interpreter
-  , requestFromText
   , eitherToResponse
   , GQLResponse
   , GQLSelection
@@ -97,7 +96,7 @@ interpreter
   -> B.ByteString
   -> IO GQLResponse
 interpreter rootResolver request = do
-  value <- runExceptT $ (requestFromText request >>= resolve rootResolver)
+  value <- runExceptT $ parseRequest request >>= resolve rootResolver
   case value of
     Left  x -> pure $ Errors x
     Right x -> pure $ Data x
@@ -106,12 +105,7 @@ eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a
 eitherToResponse f (Left  x) = failResolveIO $ errorMessage $ pack x
 eitherToResponse f (Right x) = pure (f x)
 
-
---interpreterFromText :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> B.ByteString -> IO GQLResponse
---interpreterFromText rootResolver request text = requestFromText >>= interpreter rootResolver request text
-
-
-requestFromText :: B.ByteString -> ResolveIO GQLRequest
-requestFromText text = case decode text of
+parseRequest :: B.ByteString -> ResolveIO GQLRequest
+parseRequest text = case decode text of
   Just x  -> pure x
   Nothing -> failResolveIO $ errorMessage $ pack $ show text
