@@ -15,7 +15,6 @@ import           Data.Morpheus.Types.Introspection
                                                 , GQL__InputValue
                                                 )
 import           Data.Morpheus.Types.Types      ( Validation(..)
-                                                , (::->)(Some)
                                                 , Arguments(..)
                                                 , Argument(..)
                                                 , GQLQueryRoot(..)
@@ -35,19 +34,7 @@ import           Data.Morpheus.ErrorMessage     ( invalidEnumOption
                                                 , variableIsNotDefined
                                                 , requiredArgument
                                                 )
-import           Data.Morpheus.Schema.GQL__EnumValue
-                                                ( isEnumOf )
-
-validateEnum :: GQL__Type -> Argument -> Validation Argument
-validateEnum _type (Argument (JSEnum argument)) =
-    if isEnumOf argument (unwrapField $ T.enumValues _type)
-        then pure (Argument (JSEnum argument))
-        else error
-  where
-    unwrapField (Some x) = x
-    error = Left $ invalidEnumOption $ MetaInfo (T.name _type) "" argument
-
-
+import           Data.Morpheus.PreProcess.Enum  (validateEnum)
 
 checkVariableType
     :: GQLTypeLib -> (Text, Argument) -> Validation (Text, Argument)
