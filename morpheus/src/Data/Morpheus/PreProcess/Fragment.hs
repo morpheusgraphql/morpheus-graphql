@@ -1,12 +1,16 @@
 {-# LANGUAGE OverloadedStrings  #-}
 
-module Data.Morpheus.PreProcess.Fragment (spreadFieldsWhile) where
+module Data.Morpheus.PreProcess.Fragment
+    ( spreadFieldsWhile
+    )
+where
 
-import           Data.Text                      (Text)
-import qualified Data.Map                  as M (lookup)
-import           Data.List                      (find)
-import           Data.Morpheus.Types.MetaInfo   (MetaInfo(..))
-import           Data.Morpheus.ErrorMessage     (unknownFragment)
+import           Data.Text                      ( Text )
+import qualified Data.Map                      as M
+                                                ( lookup )
+import           Data.List                      ( find )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
+import           Data.Morpheus.ErrorMessage     ( unknownFragment )
 import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , QuerySelection(..)
                                                 , SelectionSet

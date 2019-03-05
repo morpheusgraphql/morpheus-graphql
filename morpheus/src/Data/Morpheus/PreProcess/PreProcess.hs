@@ -67,12 +67,10 @@ import qualified Data.Morpheus.Schema.InputValue
                                                 , isRequired
                                                 , typeName
                                                 )
-import Data.Morpheus.PreProcess.Fragment        (spreadFieldsWhile)
+import           Data.Morpheus.PreProcess.Fragment
+                                                ( spreadFieldsWhile )
+import           Data.Morpheus.PreProcess.Utils ( existsType )
 
-existsType :: Text -> GQLTypeLib -> Validation GQL__Type
-existsType typeName typeLib = case M.lookup typeName typeLib of
-    Nothing -> handleError $ pack $ "type does not exist" ++ unpack typeName
-    Just x  -> pure x
 
 checkQueryVariables
     :: GQLTypeLib
