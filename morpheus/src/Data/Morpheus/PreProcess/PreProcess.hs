@@ -71,9 +71,10 @@ import           Data.Morpheus.PreProcess.Fragment
                                                 ( spreadFieldsWhile )
 import           Data.Morpheus.PreProcess.Utils ( existsType )
 import           Data.Morpheus.PreProcess.Arguments
-                                                ( validateArguments
-                                                , checkQueryVariables
-                                                )
+                                                ( validateArguments )
+import           Data.Morpheus.PreProcess.Variable
+                                                ( checkQueryVariables )
+
 
 fieldOf :: GQL__Type -> Text -> Validation GQL__Type
 fieldOf _type fieldName = case getFieldTypeByKey fieldName _type of

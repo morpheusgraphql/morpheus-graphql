@@ -2,7 +2,6 @@
 
 module Data.Morpheus.PreProcess.Arguments
     ( validateArguments
-    , checkQueryVariables
     )
 where
 
@@ -34,41 +33,9 @@ import           Data.Morpheus.ErrorMessage     ( invalidEnumOption
                                                 , variableIsNotDefined
                                                 , requiredArgument
                                                 )
-import           Data.Morpheus.PreProcess.Enum  (validateEnum)
-
-checkVariableType
-    :: GQLTypeLib -> (Text, Argument) -> Validation (Text, Argument)
-checkVariableType typeLib (key, Variable typeName) =
-    existsType typeName typeLib >>= checkType
-  where
-    checkType _type = case T.kind _type of
-        EnumOf SCALAR       -> pure (key, Variable typeName)
-        EnumOf INPUT_OBJECT -> pure (key, Variable typeName)
-        _                   -> Left $ unsupportedArgumentType MetaInfo
-            { className = typeName
-            , cons      = ""
-            , key       = key
-            }
-
-checkQueryVariables
-    :: GQLTypeLib
-    -> GQLQueryRoot
-    -> [(Text, Argument)]
-    -> Validation [(Text, Argument)]
-checkQueryVariables typeLib root = mapM (checkVariableType typeLib)
-
--- TODO: replace all var types with Variable values
-replaceVariable :: GQLQueryRoot -> Argument -> Validation Argument
-replaceVariable root (Variable key) =
-    case M.lookup key (inputVariables root) of
-        Nothing -> Left $ variableIsNotDefined $ MetaInfo
-            { className = "TODO: Name"
-            , cons      = ""
-            , key       = key
-            }
-        Just value -> pure $ Argument value
-replaceVariable _ x = pure x
-
+import           Data.Morpheus.PreProcess.Enum  ( validateEnum )
+import           Data.Morpheus.PreProcess.Variable
+                                                ( replaceVariable )
 
 -- TODO: Validate other Types , INPUT_OBJECT
 checkArgumentType :: GQLTypeLib -> Text -> Argument -> Validation Argument
