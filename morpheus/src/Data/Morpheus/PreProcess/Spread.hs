@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings  #-}
 
-module Data.Morpheus.PreProcess.Fragment
-    ( validateFragments
+module Data.Morpheus.PreProcess.Spread
+    ( spreadFieldsWhile
     )
 where
 
@@ -19,7 +19,14 @@ import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , GQLQueryRoot(..)
                                                 )
 
+shouldSpread :: [(Text, QuerySelection)] -> Bool
+shouldSpread list = case find isFragment list of
+    Just _  -> True
+    Nothing -> False
 
+isFragment :: (Text, QuerySelection) -> Bool
+isFragment (key, Spread _) = True
+isFragment (key, _       ) = False
 
 validateSpread :: FragmentLib -> Text -> Validation [(Text, QuerySelection)]
 validateSpread frags key = case M.lookup key frags of
@@ -30,19 +37,17 @@ validateSpread frags key = case M.lookup key frags of
         }
     Just (Fragment _ _ (SelectionSet _ gqlObj)) -> pure gqlObj
 
-validateFragmentField
+propagateSpread
     :: GQLQueryRoot
     -> (Text, QuerySelection)
     -> Validation [(Text, QuerySelection)]
-validateFragmentField root (key, Spread _) =
-    validateSpread (fragments root) key
-validateFragmentField root (text, value) = pure [(text, value)]
+propagateSpread root (key , Spread _) = validateSpread (fragments root) key
+propagateSpread root (text, value   ) = pure [(text, value)]
 
-validateFragmentFields
-    :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
-validateFragmentFields root selectors =
-    concat <$> mapM (validateFragmentField root) selectors
+spreadFields :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
+spreadFields root selectors = concat <$> mapM (propagateSpread root) selectors
 
-validateFragments :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
-validateFragments = validateFragmentFields
-
+spreadFieldsWhile :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
+spreadFieldsWhile root selectors = spreadFields root selectors >>= checkUpdate
+  where
+    checkUpdate x = if shouldSpread x then spreadFieldsWhile root x else pure x
