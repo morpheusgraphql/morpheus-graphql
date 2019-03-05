@@ -35,6 +35,7 @@ import           Data.Morpheus.ErrorMessage     ( invalidEnumOption
                                                 , unsupportedArgumentType
                                                 , variableIsNotDefined
                                                 , requiredArgument
+                                                , unknownArguments
                                                 )
 import           Data.Morpheus.PreProcess.Enum  ( validateEnum )
 import           Data.Morpheus.PreProcess.Variable
@@ -68,18 +69,14 @@ validateArgument types root requestArgs inpValue =
     key = I.name inpValue
     validated x = pure (key, x)
 
-
 checkForUnknownArguments
     :: [GQL__InputValue] -> Arguments -> Validation [GQL__InputValue]
 checkForUnknownArguments inputs args =
     case (map fst args) \\ (map I.name inputs) of
         []          -> pure inputs
-        unknownArgs -> Left $ requiredArgument $ MetaInfo
-            { className = ""
-            , cons      = ""
-            , key       = pack $ show unknownArgs
-            }
-
+        unknownArgs -> Left $ unknownArguments
+            (MetaInfo { className = "", cons = "", key = "" })
+            unknownArgs
 
 -- TODO: throw Error when gql request has more arguments al then inputType
 validateArguments

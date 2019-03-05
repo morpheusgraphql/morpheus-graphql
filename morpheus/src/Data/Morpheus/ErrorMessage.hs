@@ -12,6 +12,7 @@ module Data.Morpheus.ErrorMessage
     , variableIsNotDefined
     , unsupportedArgumentType
     , invalidEnumOption
+    , unknownArguments
     )
 where
 
@@ -29,6 +30,8 @@ import           Data.Data                      ( dataTypeOf
                                                 , dataTypeName
                                                 , Data
                                                 )
+
+
 
 errorMessage :: Text -> [GQLError]
 errorMessage x = [GQLError { message = x, locations = [ErrorLocation 0 0] }]
@@ -60,6 +63,15 @@ variableIsNotDefined meta = errorMessage $ T.concat
 unknownFragment :: MetaInfo -> [GQLError]
 unknownFragment meta =
     errorMessage $ T.concat ["Unknown fragment \"", key meta, "\"."]
+
+
+unknownArguments :: MetaInfo -> [Text] -> [GQLError]
+unknownArguments meta = map keyToError
+  where
+    keyToError x =
+        GQLError { message = toMessage x, locations = [ErrorLocation 0 0] }
+    toMessage key = T.concat
+        ["Unknown Argument \"", key, "\" on type \"", className meta, "\"."]
 
 requiredArgument :: MetaInfo -> [GQLError]
 requiredArgument meta = errorMessage $ T.concat
