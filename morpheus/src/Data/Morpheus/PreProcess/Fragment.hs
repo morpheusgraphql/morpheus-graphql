@@ -12,7 +12,9 @@ import qualified Data.Map                      as M
                                                 )
 import           Data.List                      ( find )
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
-import           Data.Morpheus.ErrorMessage     ( unknownFragment )
+import           Data.Morpheus.ErrorMessage     ( unknownFragment
+                                                , unsupportedSpreadOnType
+                                                )
 import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , QuerySelection(..)
                                                 , SelectionSet
@@ -42,11 +44,11 @@ getSpreadType frags _type key = case M.lookup key frags of
         }
     Just fragment -> if (T.name _type == target fragment)
         then pure _type
-        else Left $ unknownFragment $ MetaInfo
-            { className = ""
-            , cons = ""
-            , key = "spread 'TODO:name' with type '' couldnot spread on type"
-            }
+        else Left $ unsupportedSpreadOnType parent $ spread fragment
+  where
+    parent = MetaInfo { className = T.name _type, cons = "", key = "" }
+    spread fragment =
+        MetaInfo { className = target fragment, cons = "", key = key }
 
 
 validateFragmentFields

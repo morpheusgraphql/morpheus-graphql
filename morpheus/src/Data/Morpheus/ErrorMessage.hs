@@ -14,6 +14,7 @@ module Data.Morpheus.ErrorMessage
     , invalidEnumOption
     , unknownArguments
     , fieldTypeMismatch
+    , unsupportedSpreadOnType
     )
 where
 
@@ -65,14 +66,15 @@ unknownFragment :: MetaInfo -> [GQLError]
 unknownFragment meta =
     errorMessage $ T.concat ["Unknown fragment \"", key meta, "\"."]
 
-unsupportedFragmentOnType :: MetaInfo -> MetaInfo -> [GQLError]
-unsupportedFragmentOnType parent spread = errorMessage $ T.concat
-    [ "Spread \""
+unsupportedSpreadOnType :: MetaInfo -> MetaInfo -> [GQLError]
+unsupportedSpreadOnType parent spread = errorMessage $ T.concat
+    [ "cant apply fragment \""
     , key spread
-    , "\" has type \""
+    , "\" with type \""
+    , className spread
+    , "\" on type \""
     , className parent
-    , "\" has unsupported type\""
-    , key spread
+    , "\"."
     ]
 
 unknownArguments :: Text -> [Text] -> [GQLError]
