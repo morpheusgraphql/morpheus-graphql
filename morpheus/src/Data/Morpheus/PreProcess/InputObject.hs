@@ -1,5 +1,6 @@
 module Data.Morpheus.PreProcess.InputObject
     ( validateInputObject
+    , validateInputVariable
     )
 where
 
@@ -21,4 +22,10 @@ validateInputObject typeLib _parentType (_name, JSObject fields) = do
     fields' <- mapM (validateInputObject typeLib _type) fields
     pure (_name, JSObject fields')
 
-validateInputObject _ _ x = pure x
+validateInputObject typeLib _parentType (_name, x) =
+    typeBy typeLib _parentType _name >> pure (_name, x)
+
+
+validateInputVariable :: GQLTypeLib -> GQL__Type -> JSType -> Validation JSType
+validateInputVariable typeLib _type (JSObject fields) =
+    JSObject <$> mapM (validateInputObject typeLib _type) fields

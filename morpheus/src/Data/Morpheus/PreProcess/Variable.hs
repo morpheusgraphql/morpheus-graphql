@@ -30,7 +30,9 @@ import           Data.Morpheus.ErrorMessage     ( unsupportedArgumentType
                                                 , variableIsNotDefined
                                                 )
 import           Data.Morpheus.PreProcess.InputObject
-                                                ( validateInputObject )
+                                                ( validateInputVariable )
+
+
 
 
 getVariable :: GQLQueryRoot -> Text -> Validation JSType
@@ -52,8 +54,11 @@ checkVariableType typeLib root (key, Variable typeName) =
   where
     checkType _type = case T.kind _type of
         EnumOf SCALAR       -> pure (key, Variable typeName)
-        EnumOf INPUT_OBJECT -> pure (key, Variable typeName)
-        _                   -> Left $ unsupportedArgumentType MetaInfo
+        EnumOf INPUT_OBJECT -> do
+            variableValue <- getVariable root key
+            validateInputVariable typeLib _type variableValue
+                >> pure (key, Variable typeName)
+        _ -> Left $ unsupportedArgumentType MetaInfo
             { className = typeName
             , cons      = ""
             , key       = key
@@ -69,4 +74,4 @@ checkQueryVariables typeLib root = mapM (checkVariableType typeLib root)
 
 replaceVariable :: GQLQueryRoot -> Argument -> Validation Argument
 replaceVariable root (Variable key) = Argument <$> getVariable root key
-replaceVariable root a = pure a
+replaceVariable root a              = pure a
