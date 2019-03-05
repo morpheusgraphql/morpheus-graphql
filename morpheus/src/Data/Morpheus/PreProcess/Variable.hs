@@ -69,3 +69,4 @@ checkQueryVariables typeLib root = mapM (checkVariableType typeLib root)
 
 replaceVariable :: GQLQueryRoot -> Argument -> Validation Argument
 replaceVariable root (Variable key) = Argument <$> getVariable root key
+replaceVariable root a = pure a
