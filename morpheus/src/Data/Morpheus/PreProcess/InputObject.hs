@@ -28,6 +28,10 @@ typeMismatch _ (JSBool   x) "Boolean" = pure (JSBool x)
 typeMismatch meta isType shouldType =
     Left $ fieldTypeMismatch meta isType shouldType
 
+
+validateFieldType :: MetaInfo -> JSType -> GQL__Type -> Validation JSType
+validateFieldType meta x = typeMismatch meta x . T.name
+
 validateInputObject
     :: GQLTypeLib -> GQL__Type -> (Text, JSType) -> Validation (Text, JSType)
 validateInputObject typeLib _parentType (_name, JSObject fields) = do
@@ -36,12 +40,17 @@ validateInputObject typeLib _parentType (_name, JSObject fields) = do
     pure (_name, JSObject fields')
 
 validateInputObject typeLib _parentType (_key, x) =
-    typeBy typeLib _parentType _key >>= typeMismatch meta x . T.name >> pure
+    typeBy typeLib _parentType _key >>= validateFieldType meta x >> pure
         (_key, x)
   where
     meta = MetaInfo { className = T.name _parentType, cons = "", key = _key }
 
 
-validateInputVariable :: GQLTypeLib -> GQL__Type -> JSType -> Validation JSType
-validateInputVariable typeLib _type (JSObject fields) =
+validateInputVariable
+    :: GQLTypeLib -> GQL__Type -> (Text, JSType) -> Validation JSType
+validateInputVariable typeLib _type (varName, JSObject fields) =
     JSObject <$> mapM (validateInputObject typeLib _type) fields
+validateInputVariable typeLib _type (varName, x) = validateFieldType meta
+                                                                     x
+                                                                     _type
+    where meta = MetaInfo { className = "", cons = "", key = varName }

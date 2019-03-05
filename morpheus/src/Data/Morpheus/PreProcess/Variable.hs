@@ -53,16 +53,18 @@ checkVariableType typeLib root (key, Variable typeName) =
     existsType typeName typeLib >>= checkType
   where
     checkType _type = case T.kind _type of
-        EnumOf SCALAR       -> pure (key, Variable typeName)
-        EnumOf INPUT_OBJECT -> do
-            variableValue <- getVariable root key
-            validateInputVariable typeLib _type variableValue
-                >> pure (key, Variable typeName)
-        _ -> Left $ unsupportedArgumentType MetaInfo
+        EnumOf SCALAR       -> checkTypeInp _type key
+        EnumOf INPUT_OBJECT -> checkTypeInp _type key
+        _                   -> Left $ unsupportedArgumentType MetaInfo
             { className = typeName
             , cons      = ""
             , key       = key
             }
+
+    checkTypeInp _type key = do
+        variableValue <- getVariable root key
+        validateInputVariable typeLib _type (key,variableValue)
+        pure (key, Variable typeName)
 
 checkQueryVariables
     :: GQLTypeLib
