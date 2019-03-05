@@ -67,6 +67,7 @@ import qualified Data.Morpheus.Schema.InputValue
                                                 , isRequired
                                                 , typeName
                                                 )
+import Data.Morpheus.PreProcess.Fragment        (spreadFieldsWhile)
 
 existsType :: Text -> GQLTypeLib -> Validation GQL__Type
 existsType typeName typeLib = case M.lookup typeName typeLib of
@@ -162,41 +163,6 @@ fieldOf _type fieldName = case getFieldTypeByKey fieldName _type of
         , className = T.name _type
         }
     Just fieldType -> pure fieldType
-
-validateSpread :: FragmentLib -> Text -> Validation [(Text, QuerySelection)]
-validateSpread frags key = case M.lookup key frags of
-    Nothing -> Left $ unknownFragment $ MetaInfo
-        { className = ""
-        , cons      = ""
-        , key       = key
-        }
-    Just (Fragment _ _ (SelectionSet _ gqlObj)) -> pure gqlObj
-
-propagateSpread
-    :: GQLQueryRoot
-    -> (Text, QuerySelection)
-    -> Validation [(Text, QuerySelection)]
-propagateSpread root (key , Spread _) = validateSpread (fragments root) key
-propagateSpread root (text, value   ) = pure [(text, value)]
-
-spreadFields :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
-spreadFields root selectors = concat <$> mapM (propagateSpread root) selectors
-
-isFragment :: (Text, QuerySelection) -> Bool
-isFragment (key, Spread _) = True
-isFragment (key, _       ) = False
-
-shouldSpread :: [(Text, QuerySelection)] -> Bool
-shouldSpread list = case find isFragment list of
-    Just _  -> True
-    Nothing -> False
-
---splitFragments fields = (filter isFragment xs, filter (not . isFragment) xs)
-
-spreadFieldsWhile :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
-spreadFieldsWhile root selectors = spreadFields root selectors >>= checkUpdate
-  where
-    checkUpdate x = if shouldSpread x then spreadFieldsWhile root x else pure x
 
 typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fieldType
     where fieldType field = existsType (T.name field) typeLib
