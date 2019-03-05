@@ -65,13 +65,13 @@ unknownFragment meta =
     errorMessage $ T.concat ["Unknown fragment \"", key meta, "\"."]
 
 
-unknownArguments :: MetaInfo -> [Text] -> [GQLError]
-unknownArguments meta = map keyToError
+unknownArguments :: Text -> [Text] -> [GQLError]
+unknownArguments fieldName = map keyToError
   where
     keyToError x =
         GQLError { message = toMessage x, locations = [ErrorLocation 0 0] }
     toMessage key = T.concat
-        ["Unknown Argument \"", key, "\" on type \"", className meta, "\"."]
+        ["Unknown Argument \"", key, "\" on Field \"", fieldName, "\"."]
 
 requiredArgument :: MetaInfo -> [GQLError]
 requiredArgument meta = errorMessage $ T.concat

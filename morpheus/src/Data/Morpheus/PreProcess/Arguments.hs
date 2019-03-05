@@ -76,9 +76,7 @@ checkForUnknownArguments
 checkForUnknownArguments field args =
     case (map fst args) \\ (map I.name $ F.args field) of
         []          -> pure $ F.args field
-        unknownArgs -> Left $ unknownArguments
-            (MetaInfo { className = "", cons = "", key = "" })
-            unknownArgs
+        unknownArgs -> Left $ unknownArguments (F.name field) unknownArgs
 
 -- TODO: throw Error when gql request has more arguments al then inputType
 validateArguments
