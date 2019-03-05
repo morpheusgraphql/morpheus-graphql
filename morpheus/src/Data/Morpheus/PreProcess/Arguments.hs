@@ -6,8 +6,11 @@ module Data.Morpheus.PreProcess.Arguments
 where
 
 
-import           Data.Text                      ( Text )
+import           Data.Text                      ( Text
+                                                , pack
+                                                )
 import qualified Data.Map                      as M
+import           Data.List                      ( (\\) )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type(..)
                                                 , GQLTypeLib
@@ -68,7 +71,14 @@ validateArgument types root requestArgs inpValue =
 
 checkForUnknownArguments
     :: [GQL__InputValue] -> Arguments -> Validation [GQL__InputValue]
-checkForUnknownArguments inputs args = pure inputs
+checkForUnknownArguments inputs args =
+    case (map fst args) \\ (map I.name inputs) of
+        []          -> pure inputs
+        unknownArgs -> Left $ requiredArgument $ MetaInfo
+            { className = ""
+            , cons      = ""
+            , key       = pack $ show unknownArgs
+            }
 
 
 -- TODO: throw Error when gql request has more arguments al then inputType
@@ -79,4 +89,5 @@ validateArguments
     -> Arguments
     -> Validation Arguments
 validateArguments typeLib root inputs args =
-    checkForUnknownArguments inputs args >>= mapM (validateArgument typeLib root args) 
+    checkForUnknownArguments inputs args
+        >>= mapM (validateArgument typeLib root args)
