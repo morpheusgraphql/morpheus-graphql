@@ -70,21 +70,15 @@ import qualified Data.Morpheus.Schema.InputValue
                                                 )
 import           Data.Morpheus.PreProcess.Fragment
                                                 ( spreadFieldsWhile )
-import           Data.Morpheus.PreProcess.Utils ( existsType )
+import           Data.Morpheus.PreProcess.Utils ( existsType
+                                                , typeBy
+                                                )
 import           Data.Morpheus.PreProcess.Arguments
                                                 ( validateArguments )
 import           Data.Morpheus.PreProcess.Variable
                                                 ( checkQueryVariables )
 
 
-fieldTypeOf :: GQL__Type -> Text -> Validation GQL__Type
-fieldTypeOf _type fieldName = case getFieldTypeByKey fieldName _type of
-    Nothing -> Left $ cannotQueryField $ MetaInfo
-        { key       = fieldName
-        , cons      = ""
-        , className = T.name _type
-        }
-    Just fieldType -> pure fieldType
 
 fieldOf :: GQL__Type -> Text -> Validation GQL__Field
 fieldOf _type fieldName = case selectFieldByKey fieldName _type of
@@ -95,9 +89,6 @@ fieldOf _type fieldName = case selectFieldByKey fieldName _type of
         }
     Just field -> pure field
 
-
-typeBy typeLib _parentType _name = fieldTypeOf _parentType _name >>= fieldType
-    where fieldType field = existsType (T.name field) typeLib
 
 mapSelectors
     :: GQLTypeLib
@@ -118,14 +109,14 @@ validateBySchema
 validateBySchema typeLib root _parentType (_name, SelectionSet head selectors)
     = do
         _type      <- typeBy typeLib _parentType _name
-        _field     <- fieldOf  _parentType _name
+        _field     <- fieldOf _parentType _name
         head'      <- validateArguments typeLib root _field head
         selectors' <- mapSelectors typeLib root _type selectors
         pure (_name, SelectionSet head' selectors')
 
 validateBySchema typeLib root _parentType (_name, Field head field) = do
     _checksIfHasType <- typeBy typeLib _parentType _name
-    _field           <- fieldOf  _parentType _name
+    _field           <- fieldOf _parentType _name
     head'            <- validateArguments typeLib root _field head
     pure (_name, Field head' field)
 
