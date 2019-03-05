@@ -31,22 +31,14 @@ import           Data.Morpheus.PreProcess.Utils ( typeBy
 import           Data.Morpheus.PreProcess.Arguments
                                                 ( validateArguments )
 
-validateSpread :: FragmentLib -> Text -> Validation [(Text, QuerySelection)]
-validateSpread frags key = case M.lookup key frags of
+getSpreadType :: FragmentLib -> Text -> Validation Text
+getSpreadType frags key = case M.lookup key frags of
     Nothing -> Left $ unknownFragment $ MetaInfo
         { className = ""
         , cons      = ""
         , key       = key
         }
-    Just (Fragment _ _ (SelectionSet _ gqlObj)) -> pure gqlObj
-
-validateFragmentField
-    :: GQLQueryRoot
-    -> (Text, QuerySelection)
-    -> Validation [(Text, QuerySelection)]
-validateFragmentField root (key, Spread _) =
-    validateSpread (fragments root) key
-validateFragmentField root (text, value) = pure [(text, value)]
+    Just fragment -> pure $ target fragment
 
 
 validateFragmentFields
@@ -67,6 +59,9 @@ validateFragmentFields typeLib root _parentType (_name, Field head field) = do
     _field <- fieldOf _parentType _name
     head'  <- validateArguments typeLib root _field head
     pure (_name, Field head' field)
+
+validateFragmentFields lib root _parent (key, Spread value) =
+    getSpreadType (fragments root) key >> pure (key, Spread value)
 
 validateFragmentFields _ _ _ x = pure x
 
