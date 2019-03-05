@@ -7,7 +7,9 @@ where
 
 import           Data.Text                      ( Text )
 import qualified Data.Map                      as M
-                                                ( lookup )
+                                                ( lookup
+                                                , toList
+                                                )
 import           Data.List                      ( find )
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 import           Data.Morpheus.ErrorMessage     ( unknownFragment )
@@ -24,6 +26,7 @@ import           Data.Morpheus.Types.Introspection
                                                 )
 import           Data.Morpheus.PreProcess.Utils ( typeBy
                                                 , fieldOf
+                                                , existsType
                                                 )
 import           Data.Morpheus.PreProcess.Arguments
                                                 ( validateArguments )
@@ -50,13 +53,6 @@ validateFragmentField root (text, value) = pure [(text, value)]
 --validateFragmentFields root selectors =
 --    concat <$> mapM (validateFragmentField root) selectors
 
-validateFragments
-    :: GQLTypeLib
-    -> GQLQueryRoot
-    -> GQL__Type
-    -> (Text, QuerySelection)
-    -> Validation (Text, QuerySelection)
-validateFragments = validateFragmentFields
 
 
 validateFragmentFields
@@ -81,4 +77,18 @@ validateFragmentFields typeLib root _parentType (_name, Field head field) = do
     pure (_name, Field head' field)
 
 validateFragmentFields _ _ _ x = pure x
+
+
+
+validateFragments :: GQLTypeLib -> GQLQueryRoot -> Validation GQLQueryRoot
+validateFragments lib root = do
+    val <- mapM validateFrag (M.toList $ fragments root)
+    pure root
+  where
+    validateFrag (fName,frag) = do
+        _type <- existsType (target frag) lib
+        validateFragmentFields lib
+                               root
+                               _type
+                               (target frag, fragmentContent frag)
 
