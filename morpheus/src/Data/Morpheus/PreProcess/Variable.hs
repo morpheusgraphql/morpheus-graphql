@@ -29,37 +29,51 @@ import           Data.Morpheus.PreProcess.Utils ( existsType )
 import           Data.Morpheus.ErrorMessage     ( unsupportedArgumentType
                                                 , variableIsNotDefined
                                                 )
+import           Data.Morpheus.PreProcess.InputObject
+                                                ( validateInputVariable )
 
+
+
+
+getVariable :: GQLQueryRoot -> Text -> Validation JSType
+getVariable root key = case M.lookup key (inputVariables root) of
+    Nothing -> Left $ variableIsNotDefined $ MetaInfo
+        { className = "TODO: Name"
+        , cons      = ""
+        , key       = key
+        }
+    Just value -> pure value
 
 checkVariableType
-    :: GQLTypeLib -> (Text, Argument) -> Validation (Text, Argument)
-checkVariableType typeLib (key, Variable typeName) =
+    :: GQLTypeLib
+    -> GQLQueryRoot
+    -> (Text, Argument)
+    -> Validation (Text, Argument)
+checkVariableType typeLib root (key, Variable typeName) =
     existsType typeName typeLib >>= checkType
   where
     checkType _type = case T.kind _type of
-        EnumOf SCALAR       -> pure (key, Variable typeName)
-        EnumOf INPUT_OBJECT -> pure (key, Variable typeName)
+        EnumOf SCALAR       -> checkTypeInp _type key
+        EnumOf INPUT_OBJECT -> checkTypeInp _type key
         _                   -> Left $ unsupportedArgumentType MetaInfo
             { className = typeName
             , cons      = ""
             , key       = key
             }
 
+    checkTypeInp _type key = do
+        variableValue <- getVariable root key
+        validateInputVariable typeLib _type (key,variableValue)
+        pure (key, Variable typeName)
+
 checkQueryVariables
     :: GQLTypeLib
     -> GQLQueryRoot
     -> [(Text, Argument)]
     -> Validation [(Text, Argument)]
-checkQueryVariables typeLib root = mapM (checkVariableType typeLib)
+checkQueryVariables typeLib root = mapM (checkVariableType typeLib root)
 
--- TODO: replace all var types with Variable values
+
 replaceVariable :: GQLQueryRoot -> Argument -> Validation Argument
-replaceVariable root (Variable key) =
-    case M.lookup key (inputVariables root) of
-        Nothing -> Left $ variableIsNotDefined $ MetaInfo
-            { className = "TODO: Name"
-            , cons      = ""
-            , key       = key
-            }
-        Just value -> pure $ Argument value
-replaceVariable _ x = pure x
+replaceVariable root (Variable key) = Argument <$> getVariable root key
+replaceVariable root a              = pure a
