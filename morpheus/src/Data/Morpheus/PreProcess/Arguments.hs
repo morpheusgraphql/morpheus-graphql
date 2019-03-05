@@ -66,6 +66,11 @@ validateArgument types root requestArgs inpValue =
     validated x = pure (key, x)
 
 
+checkForUnknownArguments
+    :: [GQL__InputValue] -> Arguments -> Validation [GQL__InputValue]
+checkForUnknownArguments inputs args = pure inputs
+
+
 -- TODO: throw Error when gql request has more arguments al then inputType
 validateArguments
     :: GQLTypeLib
@@ -74,4 +79,4 @@ validateArguments
     -> Arguments
     -> Validation Arguments
 validateArguments typeLib root inputs args =
-    mapM (validateArgument typeLib root args) inputs
+    checkForUnknownArguments inputs args >>= mapM (validateArgument typeLib root args) 
