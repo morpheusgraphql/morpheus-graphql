@@ -37,18 +37,13 @@ import qualified Data.Morpheus.Schema.GQL__Type
 
 getSpreadType :: FragmentLib -> GQL__Type -> Text -> Validation GQL__Type
 getSpreadType frags _type key = case M.lookup key frags of
-    Nothing -> Left $ unknownFragment $ MetaInfo
-        { className = ""
-        , cons      = ""
-        , key       = key
-        }
+    Nothing -> Left $ unknownFragment $ spread ""
     Just fragment -> if (T.name _type == target fragment)
         then pure _type
-        else Left $ unsupportedSpreadOnType parent $ spread fragment
+        else Left $ unsupportedSpreadOnType parent $ spread $ target fragment
   where
     parent = MetaInfo { className = T.name _type, cons = "", key = "" }
-    spread fragment =
-        MetaInfo { className = target fragment, cons = "", key = key }
+    spread typeName = MetaInfo { className = typeName , cons = "", key = key }
 
 
 validateFragmentFields
