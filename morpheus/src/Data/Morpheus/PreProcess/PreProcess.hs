@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TypeOperators , FlexibleInstances , ScopedTypeVariables #-}
 
-module Data.Morpheus.PreProcess
+module Data.Morpheus.PreProcess.PreProcess
     ( preProcessQuery
     )
 where

@@ -55,7 +55,7 @@ import           Data.Morpheus.Generics.GQLMutation
                                                 )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQLTypeLib )
-import           Data.Morpheus.PreProcess       ( preProcessQuery )
+import           Data.Morpheus.PreProcess.PreProcess       ( preProcessQuery )
 import           Data.Aeson                     ( decode )
 import           Control.Monad.IO.Class         ( liftIO )
 import qualified Data.ByteString.Lazy.Char8    as B
