@@ -13,6 +13,7 @@ module Data.Morpheus.ErrorMessage
     , unsupportedArgumentType
     , invalidEnumOption
     , unknownArguments
+    , fieldTypeMismatch
     )
 where
 
@@ -30,7 +31,7 @@ import           Data.Data                      ( dataTypeOf
                                                 , dataTypeName
                                                 , Data
                                                 )
-
+import           Data.Morpheus.Types.JSType     ( JSType(..) )
 
 
 errorMessage :: Text -> [GQLError]
@@ -79,6 +80,19 @@ requiredArgument meta = errorMessage $ T.concat
     , key meta
     , "\" not Found on type \""
     , className meta
+    , "\"."
+    ]
+
+fieldTypeMismatch :: MetaInfo -> JSType -> Text -> [GQLError]
+fieldTypeMismatch meta isType should = errorMessage $ T.concat
+    [ "field \""
+    , key meta
+    , "\"on type \""
+    , className meta
+    , "\" has a type \""
+    , pack $ show isType
+    , "\" but should have \""
+    , should
     , "\"."
     ]
 
