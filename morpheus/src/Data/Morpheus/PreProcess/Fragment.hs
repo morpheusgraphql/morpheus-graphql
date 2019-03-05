@@ -18,8 +18,15 @@ import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , Fragment(..)
                                                 , GQLQueryRoot(..)
                                                 )
-
-
+import           Data.Morpheus.Types.Introspection
+                                                ( GQLTypeLib
+                                                , GQL__Type
+                                                )
+import           Data.Morpheus.PreProcess.Utils ( typeBy
+                                                , fieldOf
+                                                )
+import           Data.Morpheus.PreProcess.Arguments
+                                                ( validateArguments )
 
 validateSpread :: FragmentLib -> Text -> Validation [(Text, QuerySelection)]
 validateSpread frags key = case M.lookup key frags of
@@ -38,11 +45,40 @@ validateFragmentField root (key, Spread _) =
     validateSpread (fragments root) key
 validateFragmentField root (text, value) = pure [(text, value)]
 
-validateFragmentFields
-    :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
-validateFragmentFields root selectors =
-    concat <$> mapM (validateFragmentField root) selectors
+--validateFragmentFields
+--    :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
+--validateFragmentFields root selectors =
+--    concat <$> mapM (validateFragmentField root) selectors
 
-validateFragments :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
+validateFragments
+    :: GQLTypeLib
+    -> GQLQueryRoot
+    -> GQL__Type
+    -> (Text, QuerySelection)
+    -> Validation (Text, QuerySelection)
 validateFragments = validateFragmentFields
+
+
+validateFragmentFields
+    :: GQLTypeLib
+    -> GQLQueryRoot
+    -> GQL__Type
+    -> (Text, QuerySelection)
+    -> Validation (Text, QuerySelection)
+validateFragmentFields typeLib root _parent (_name, SelectionSet head selectors)
+    = do
+        _type  <- typeBy typeLib _parent _name
+        _field <- fieldOf _parent _name
+        head'  <- validateArguments typeLib root _field head
+       -- selectors' <-
+        --    concat
+        --        <$> mapM (validateFragmentFields typeLib root _field) selectors
+        pure (_name, SelectionSet head' selectors)
+
+validateFragmentFields typeLib root _parentType (_name, Field head field) = do
+    _field <- fieldOf _parentType _name
+    head'  <- validateArguments typeLib root _field head
+    pure (_name, Field head' field)
+
+validateFragmentFields _ _ _ x = pure x
 

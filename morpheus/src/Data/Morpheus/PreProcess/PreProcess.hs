@@ -72,6 +72,7 @@ import           Data.Morpheus.PreProcess.Spread
                                                 ( spreadFieldsWhile )
 import           Data.Morpheus.PreProcess.Utils ( existsType
                                                 , typeBy
+                                                , fieldOf
                                                 )
 import           Data.Morpheus.PreProcess.Arguments
                                                 ( validateArguments )
@@ -81,14 +82,6 @@ import           Data.Morpheus.PreProcess.Variable
 import           Data.Morpheus.PreProcess.Fragment
                                                 ( validateFragments )
 
-fieldOf :: GQL__Type -> Text -> Validation GQL__Field
-fieldOf _type fieldName = case selectFieldByKey fieldName _type of
-    Nothing -> Left $ cannotQueryField $ MetaInfo
-        { key       = fieldName
-        , cons      = ""
-        , className = T.name _type
-        }
-    Just field -> pure field
 
 
 mapSelectors
