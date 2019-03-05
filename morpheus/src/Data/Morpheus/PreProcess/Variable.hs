@@ -29,11 +29,25 @@ import           Data.Morpheus.PreProcess.Utils ( existsType )
 import           Data.Morpheus.ErrorMessage     ( unsupportedArgumentType
                                                 , variableIsNotDefined
                                                 )
+import           Data.Morpheus.PreProcess.InputObject
+                                                ( validateInputObject )
 
+
+getVariable :: GQLQueryRoot -> Text -> Validation JSType
+getVariable root key = case M.lookup key (inputVariables root) of
+    Nothing -> Left $ variableIsNotDefined $ MetaInfo
+        { className = "TODO: Name"
+        , cons      = ""
+        , key       = key
+        }
+    Just value -> pure value
 
 checkVariableType
-    :: GQLTypeLib -> (Text, Argument) -> Validation (Text, Argument)
-checkVariableType typeLib (key, Variable typeName) =
+    :: GQLTypeLib
+    -> GQLQueryRoot
+    -> (Text, Argument)
+    -> Validation (Text, Argument)
+checkVariableType typeLib root (key, Variable typeName) =
     existsType typeName typeLib >>= checkType
   where
     checkType _type = case T.kind _type of
@@ -50,16 +64,8 @@ checkQueryVariables
     -> GQLQueryRoot
     -> [(Text, Argument)]
     -> Validation [(Text, Argument)]
-checkQueryVariables typeLib root = mapM (checkVariableType typeLib)
+checkQueryVariables typeLib root = mapM (checkVariableType typeLib root)
 
--- TODO: replace all var types with Variable values
+
 replaceVariable :: GQLQueryRoot -> Argument -> Validation Argument
-replaceVariable root (Variable key) =
-    case M.lookup key (inputVariables root) of
-        Nothing -> Left $ variableIsNotDefined $ MetaInfo
-            { className = "TODO: Name"
-            , cons      = ""
-            , key       = key
-            }
-        Just value -> pure $ Argument value
-replaceVariable _ x = pure x
+replaceVariable root (Variable key) = Argument <$> getVariable root key
