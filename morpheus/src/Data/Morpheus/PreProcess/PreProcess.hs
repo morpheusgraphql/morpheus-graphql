@@ -57,6 +57,7 @@ import           Data.Morpheus.Types.Introspection
 import           Data.Morpheus.Schema.SchemaField
                                                 ( getFieldTypeByKey
                                                 , fieldArgsByKey
+                                                , selectFieldByKey
                                                 )
 import qualified Data.Morpheus.Schema.GQL__Type
                                                as T
@@ -76,8 +77,8 @@ import           Data.Morpheus.PreProcess.Variable
                                                 ( checkQueryVariables )
 
 
-fieldOf :: GQL__Type -> Text -> Validation GQL__Type
-fieldOf _type fieldName = case getFieldTypeByKey fieldName _type of
+fieldTypeOf :: GQL__Type -> Text -> Validation GQL__Type
+fieldTypeOf _type fieldName = case getFieldTypeByKey fieldName _type of
     Nothing -> Left $ cannotQueryField $ MetaInfo
         { key       = fieldName
         , cons      = ""
@@ -85,13 +86,18 @@ fieldOf _type fieldName = case getFieldTypeByKey fieldName _type of
         }
     Just fieldType -> pure fieldType
 
-typeBy typeLib _parentType _name = fieldOf _parentType _name >>= fieldType
-    where fieldType field = existsType (T.name field) typeLib
+fieldOf :: GQL__Type -> Text -> Validation GQL__Field
+fieldOf _type fieldName = case selectFieldByKey fieldName _type of
+    Nothing -> Left $ cannotQueryField $ MetaInfo
+        { key       = fieldName
+        , cons      = ""
+        , className = T.name _type
+        }
+    Just field -> pure field
 
-argsType :: GQL__Type -> Text -> Validation [GQL__InputValue]
-argsType currentType key = case fieldArgsByKey key currentType of
-    Nothing   -> handleError $ pack $ "header not found: " ++ show key
-    Just args -> pure args
+
+typeBy typeLib _parentType _name = fieldTypeOf _parentType _name >>= fieldType
+    where fieldType field = existsType (T.name field) typeLib
 
 mapSelectors
     :: GQLTypeLib
@@ -112,15 +118,15 @@ validateBySchema
 validateBySchema typeLib root _parentType (_name, SelectionSet head selectors)
     = do
         _type      <- typeBy typeLib _parentType _name
-        _argsType  <- argsType _parentType _name
-        head'      <- validateArguments typeLib root _argsType head
+        _field     <- fieldOf  _parentType _name
+        head'      <- validateArguments typeLib root _field head
         selectors' <- mapSelectors typeLib root _type selectors
         pure (_name, SelectionSet head' selectors')
 
 validateBySchema typeLib root _parentType (_name, Field head field) = do
     _checksIfHasType <- typeBy typeLib _parentType _name
-    _argsType        <- argsType _parentType _name
-    head'            <- validateArguments typeLib root _argsType head
+    _field           <- fieldOf  _parentType _name
+    head'            <- validateArguments typeLib root _field head
     pure (_name, Field head' field)
 
 validateBySchema _ _ _ x = pure x

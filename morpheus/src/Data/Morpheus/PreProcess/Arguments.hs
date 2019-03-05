@@ -14,6 +14,7 @@ import           Data.List                      ( (\\) )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type(..)
                                                 , GQLTypeLib
+                                                , GQL__Field
                                                 , GQL__InputValue
                                                 )
 import           Data.Morpheus.Types.Types      ( Validation(..)
@@ -40,7 +41,8 @@ import           Data.Morpheus.ErrorMessage     ( invalidEnumOption
 import           Data.Morpheus.PreProcess.Enum  ( validateEnum )
 import           Data.Morpheus.PreProcess.Variable
                                                 ( replaceVariable )
-
+import qualified Data.Morpheus.Schema.GQL__Field
+                                               as F
 -- TODO: Validate other Types , INPUT_OBJECT
 checkArgumentType :: GQLTypeLib -> Text -> Argument -> Validation Argument
 checkArgumentType typeLib typeName argument =
@@ -70,10 +72,10 @@ validateArgument types root requestArgs inpValue =
     validated x = pure (key, x)
 
 checkForUnknownArguments
-    :: [GQL__InputValue] -> Arguments -> Validation [GQL__InputValue]
-checkForUnknownArguments inputs args =
-    case (map fst args) \\ (map I.name inputs) of
-        []          -> pure inputs
+    :: GQL__Field -> Arguments -> Validation [GQL__InputValue]
+checkForUnknownArguments field args =
+    case (map fst args) \\ (map I.name $ F.args field) of
+        []          -> pure $ F.args field
         unknownArgs -> Left $ unknownArguments
             (MetaInfo { className = "", cons = "", key = "" })
             unknownArgs
@@ -82,7 +84,7 @@ checkForUnknownArguments inputs args =
 validateArguments
     :: GQLTypeLib
     -> GQLQueryRoot
-    -> [GQL__InputValue]
+    -> GQL__Field
     -> Arguments
     -> Validation Arguments
 validateArguments typeLib root inputs args =
