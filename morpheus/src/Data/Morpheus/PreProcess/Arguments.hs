@@ -78,7 +78,6 @@ checkForUnknownArguments field args =
         []          -> pure $ F.args field
         unknownArgs -> Left $ unknownArguments (F.name field) unknownArgs
 
--- TODO: throw Error when gql request has more arguments al then inputType
 validateArguments
     :: GQLTypeLib
     -> GQLQueryRoot

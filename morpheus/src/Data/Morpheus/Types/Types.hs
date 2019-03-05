@@ -115,6 +115,5 @@ instance ToJSON  GQLResponse where
 data GQLRequest = GQLRequest {
     query:: Text
     ,operationName:: Maybe Text
-    -- TODO: Make inputVariables generic JSON input
     ,variables:: Maybe (Map Text JSType)
 } deriving (Show,Generic,ToJSON,FromJSON)

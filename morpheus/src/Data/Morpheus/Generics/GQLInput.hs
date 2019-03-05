@@ -49,7 +49,6 @@ instance GQLInput a => GDecode JSType (K1 i a)  where
 
 
 class GQLInput a where
-    -- TODO:: write input Object Recognition
     decode :: JSType -> Validation a
     default decode :: ( Show a  , Generic a, Data a , GDecode JSType (Rep a) ) => JSType -> Validation a
     decode (JSObject x) = to <$> gDecode initialMeta (JSObject x)
