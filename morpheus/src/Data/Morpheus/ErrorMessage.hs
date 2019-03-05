@@ -65,6 +65,15 @@ unknownFragment :: MetaInfo -> [GQLError]
 unknownFragment meta =
     errorMessage $ T.concat ["Unknown fragment \"", key meta, "\"."]
 
+unsupportedFragmentOnType :: MetaInfo -> MetaInfo -> [GQLError]
+unsupportedFragmentOnType parent spread = errorMessage $ T.concat
+    [ "Spread \""
+    , key spread
+    , "\" has type \""
+    , className parent
+    , "\" has unsupported type\""
+    , key spread
+    ]
 
 unknownArguments :: Text -> [Text] -> [GQLError]
 unknownArguments fieldName = map keyToError

@@ -30,15 +30,23 @@ import           Data.Morpheus.PreProcess.Utils ( typeBy
                                                 )
 import           Data.Morpheus.PreProcess.Arguments
                                                 ( validateArguments )
+import qualified Data.Morpheus.Schema.GQL__Type
+                                               as T
 
-getSpreadType :: FragmentLib -> Text -> Validation Text
-getSpreadType frags key = case M.lookup key frags of
+getSpreadType :: FragmentLib -> GQL__Type -> Text -> Validation GQL__Type
+getSpreadType frags _type key = case M.lookup key frags of
     Nothing -> Left $ unknownFragment $ MetaInfo
         { className = ""
         , cons      = ""
         , key       = key
         }
-    Just fragment -> pure $ target fragment
+    Just fragment -> if (T.name _type == target fragment)
+        then pure _type
+        else Left $ unknownFragment $ MetaInfo
+            { className = ""
+            , cons = ""
+            , key = "spread 'TODO:name' with type '' couldnot spread on type"
+            }
 
 
 validateFragmentFields
@@ -61,7 +69,7 @@ validateFragmentFields typeLib root _parentType (_name, Field head field) = do
     pure (_name, Field head' field)
 
 validateFragmentFields lib root _parent (key, Spread value) =
-    getSpreadType (fragments root) key >> pure (key, Spread value)
+    getSpreadType (fragments root) _parent key >> pure (key, Spread value)
 
 validateFragmentFields _ _ _ x = pure x
 
