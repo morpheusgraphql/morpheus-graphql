@@ -25,19 +25,18 @@ import           Control.Applicative            ( (<|>)
                                                 , many
                                                 , some
                                                 )
-import           Data.Morpheus.Types.Types     ( QuerySelection(..)
+import           Data.Morpheus.Types.Types      ( QuerySelection(..)
                                                 , SelectionSet
                                                 , Arguments(..)
                                                 )
-import           Data.Morpheus.Parser.Arguments
-                                                ( arguments )
-import           Data.Morpheus.Parser.Primitive
-                                                ( token
+import           Data.Morpheus.Parser.Arguments ( arguments )
+import           Data.Morpheus.Parser.Primitive ( token
                                                 , separator
                                                 )
 
 spread :: Parser (Text, QuerySelection)
 spread = do
+    skipSpace
     string "..."
     key <- some (letter <|> char '_')
     return (pack key, Spread $ pack key)
