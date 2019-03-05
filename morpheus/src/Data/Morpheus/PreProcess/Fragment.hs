@@ -48,12 +48,6 @@ validateFragmentField root (key, Spread _) =
     validateSpread (fragments root) key
 validateFragmentField root (text, value) = pure [(text, value)]
 
---validateFragmentFields
---    :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
---validateFragmentFields root selectors =
---    concat <$> mapM (validateFragmentField root) selectors
-
-
 
 validateFragmentFields
     :: GQLTypeLib
