@@ -68,26 +68,20 @@ import qualified Data.Morpheus.Schema.InputValue
                                                 , isRequired
                                                 , typeName
                                                 )
-import           Data.Morpheus.PreProcess.Fragment
+import           Data.Morpheus.PreProcess.Spread
                                                 ( spreadFieldsWhile )
 import           Data.Morpheus.PreProcess.Utils ( existsType
                                                 , typeBy
+                                                , fieldOf
                                                 )
 import           Data.Morpheus.PreProcess.Arguments
                                                 ( validateArguments )
 import           Data.Morpheus.PreProcess.Variable
                                                 ( checkQueryVariables )
 
+import           Data.Morpheus.PreProcess.Fragment
+                                                ( validateFragments )
 
-
-fieldOf :: GQL__Type -> Text -> Validation GQL__Field
-fieldOf _type fieldName = case selectFieldByKey fieldName _type of
-    Nothing -> Left $ cannotQueryField $ MetaInfo
-        { key       = fieldName
-        , cons      = ""
-        , className = T.name _type
-        }
-    Just field -> pure field
 
 
 mapSelectors
@@ -146,4 +140,5 @@ preProcessQuery lib root = do
     _type     <- existsType operator lib
     variable  <- checkQueryVariables lib root args
     selectors <- mapSelectors lib root _type body
+    _         <- validateFragments lib root
     pure $ updateQuery (queryBody root) (SelectionSet [] selectors)
