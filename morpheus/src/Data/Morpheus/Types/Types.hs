@@ -107,9 +107,6 @@ instance (ToJSON o) => ToJSON ( p ::->  o) where
 
 data GQLResponse = Data JSType | Errors [GQLError]  deriving (Show,Generic)
 
-
-
-
 instance ToJSON  GQLResponse where
   toJSON (Errors _errors) = object ["errors" .= _errors]
   toJSON (Data _data) = object ["data" .= _data]
