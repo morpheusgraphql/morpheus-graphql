@@ -63,12 +63,10 @@ validateFragmentFields
     -> Validation (Text, QuerySelection)
 validateFragmentFields typeLib root _parent (_name, SelectionSet head selectors)
     = do
-        _type  <- typeBy typeLib _parent _name
-        _field <- fieldOf _parent _name
-        head'  <- validateArguments typeLib root _field head
-       -- selectors' <-
-        --    concat
-        --        <$> mapM (validateFragmentFields typeLib root _field) selectors
+        _type      <- typeBy typeLib _parent _name
+        _field     <- fieldOf _parent _name
+        head'      <- validateArguments typeLib root _field head
+        selectors' <- mapM (validateFragmentFields typeLib root _type) selectors
         pure (_name, SelectionSet head' selectors)
 
 validateFragmentFields typeLib root _parentType (_name, Field head field) = do
@@ -79,16 +77,20 @@ validateFragmentFields typeLib root _parentType (_name, Field head field) = do
 validateFragmentFields _ _ _ x = pure x
 
 
+validateFragment
+    :: GQLTypeLib
+    -> GQLQueryRoot
+    -> (Text, Fragment)
+    -> Validation [(Text, QuerySelection)]
+validateFragment lib root (fName, frag) = do
+    _type <- existsType (target frag) lib
+    let (SelectionSet _ selection) = (fragmentContent frag)
+    mapM (validateFragmentFields lib root _type) selection
+
 
 validateFragments :: GQLTypeLib -> GQLQueryRoot -> Validation GQLQueryRoot
 validateFragments lib root = do
-    val <- mapM validateFrag (M.toList $ fragments root)
+    val <- mapM (validateFragment lib root) (M.toList $ fragments root)
     pure root
-  where
-    validateFrag (fName,frag) = do
-        _type <- existsType (target frag) lib
-        validateFragmentFields lib
-                               root
-                               _type
-                               (target frag, fragmentContent frag)
+
 

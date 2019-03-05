@@ -140,4 +140,5 @@ preProcessQuery lib root = do
     _type     <- existsType operator lib
     variable  <- checkQueryVariables lib root args
     selectors <- mapSelectors lib root _type body
+    _         <- validateFragments lib root
     pure $ updateQuery (queryBody root) (SelectionSet [] selectors)
