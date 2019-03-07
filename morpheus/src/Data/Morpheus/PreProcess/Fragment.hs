@@ -5,7 +5,9 @@ module Data.Morpheus.PreProcess.Fragment
     )
 where
 
-import           Data.Text                      ( Text )
+import           Data.Text                      ( Text
+                                                , pack
+                                                )
 import qualified Data.Map                      as M
                                                 ( lookup
                                                 , toList
@@ -41,8 +43,9 @@ getFragment meta key lib = case M.lookup key lib of
     Just fragment -> pure fragment
 
 
-data Graph = Node [Graph] | Leaf Text;
+--data Graph = Node [Graph] | Leaf Text;
 
+type Graph = [Text];
 
 
 
@@ -69,41 +72,44 @@ validateFragmentFields
     -> Validation Graph
 validateFragmentFields typeLib root _parent (_name, SelectionSet head selectors)
     = do
-        _type      <- typeBy typeLib _parent _name
-        _field     <- fieldOf _parent _name
-        head'      <- validateArguments typeLib root _field head
-        selectors' <- mapM (validateFragmentFields typeLib root _type) selectors
-        pure $ Node []
+        _type  <- typeBy typeLib _parent _name
+        _field <- fieldOf _parent _name
+        head'  <- validateArguments typeLib root _field head
+        concat <$> mapM (validateFragmentFields typeLib root _type) selectors
 
 validateFragmentFields typeLib root _parentType (_name, Field head field) = do
     _field <- fieldOf _parentType _name
     head'  <- validateArguments typeLib root _field head
-    pure $ Leaf ""
+    pure []
 
 validateFragmentFields lib root _parent (key, Spread value) =
-    getSpreadType (fragments root) _parent key >> pure (Leaf value)
+    getSpreadType (fragments root) _parent key >> pure [value]
 
-validateFragmentFields _ _ _ (key, _) = pure $ Node []
+validateFragmentFields _ _ _ _ = pure []
 
 
 validateFragment
     :: GQLTypeLib
     -> GQLQueryRoot
     -> (Text, Fragment)
-    -> Validation [(Text, Graph)]
+    -> Validation (Text, Graph)
 validateFragment lib root (fName, frag) = do
     _type <- existsType (target frag) lib
     let (SelectionSet _ selection) = (fragmentContent frag)
-    leaftList <- mapM (validateFragmentFields lib root _type) selection
-    pure [(fName, Node leaftList)]
+    fragmentLinks <-
+        concat <$> mapM (validateFragmentFields lib root _type) selection
+    pure (fName, fragmentLinks)
 
 
 validateFragments :: GQLTypeLib -> GQLQueryRoot -> Validation GQLQueryRoot
 validateFragments lib root = do
-    val <- mapM (validateFragment lib root) (M.toList $ fragments root)
+    val <-
+        mapM (validateFragment lib root) (M.toList $ fragments root)
+            >>= detectLoopOnFragments
     pure root
 
 
-detectLoopOnFragments :: FragmentLib -> (Text, Fragment) -> Validation Fragment
-detectLoopOnFragments lib (key, _) = getFragment (MetaInfo "" "" "") key lib
+detectLoopOnFragments :: [(Text, Graph)] -> Validation [(Text, Graph)]
+detectLoopOnFragments lib =
+    Left $ unknownFragment $ MetaInfo "" "" $ pack $ show lib
 
