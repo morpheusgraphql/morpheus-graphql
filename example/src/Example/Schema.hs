@@ -41,7 +41,7 @@ data CityID = Paris | BLN | HH deriving (Show,Generic,Data, GQLEnum)
 
 data Coordinates = Coordinates {
     latitude :: Text,
-    longitude :: Text
+    longitude :: Int
 } deriving (Show,Generic,Data,GQLInput)
 
 data LocationByCoordinates = LocationByCoordinates {
@@ -88,8 +88,8 @@ fetchAddress cityName streetName = lift (getJson "address")
 resolveAddress :: LocationByCoordinates ::-> Address
 resolveAddress = Resolver resolve
  where
-  resolve args =
-    fetchAddress (latitude $ coordinates args) (longitude $ coordinates args)
+  resolve args = fetchAddress (latitude $ coordinates args)
+                              (pack $ show $ longitude $ coordinates args)
 
 addressByCityID Paris code = fetchAddress (pack $ "75" ++ code) "Paris"
 addressByCityID BLN   code = fetchAddress (pack $ "10" ++ code) "Berlin"
