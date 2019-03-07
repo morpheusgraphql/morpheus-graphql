@@ -41,6 +41,11 @@ getFragment meta key lib = case M.lookup key lib of
     Just fragment -> pure fragment
 
 
+data Graph = Node [Graph] | Leaf Text;
+
+
+
+
 compareFragmentType
     :: MetaInfo -> MetaInfo -> GQL__Type -> Fragment -> Validation GQL__Type
 compareFragmentType parent child _type fragment =
@@ -61,35 +66,36 @@ validateFragmentFields
     -> GQLQueryRoot
     -> GQL__Type
     -> (Text, QuerySelection)
-    -> Validation (Text, QuerySelection)
+    -> Validation Graph
 validateFragmentFields typeLib root _parent (_name, SelectionSet head selectors)
     = do
         _type      <- typeBy typeLib _parent _name
         _field     <- fieldOf _parent _name
         head'      <- validateArguments typeLib root _field head
         selectors' <- mapM (validateFragmentFields typeLib root _type) selectors
-        pure (_name, SelectionSet head' selectors)
+        pure $ Node []
 
 validateFragmentFields typeLib root _parentType (_name, Field head field) = do
     _field <- fieldOf _parentType _name
     head'  <- validateArguments typeLib root _field head
-    pure (_name, Field head' field)
+    pure $ Leaf ""
 
 validateFragmentFields lib root _parent (key, Spread value) =
-    getSpreadType (fragments root) _parent key >> pure (key, Spread value)
+    getSpreadType (fragments root) _parent key >> pure (Leaf value)
 
-validateFragmentFields _ _ _ x = pure x
+validateFragmentFields _ _ _ (key, _) = pure $ Node []
 
 
 validateFragment
     :: GQLTypeLib
     -> GQLQueryRoot
     -> (Text, Fragment)
-    -> Validation [(Text, QuerySelection)]
+    -> Validation [(Text, Graph)]
 validateFragment lib root (fName, frag) = do
     _type <- existsType (target frag) lib
     let (SelectionSet _ selection) = (fragmentContent frag)
-    mapM (validateFragmentFields lib root _type) selection
+    leaftList <- mapM (validateFragmentFields lib root _type) selection
+    pure [(fName, Node leaftList)]
 
 
 validateFragments :: GQLTypeLib -> GQLQueryRoot -> Validation GQLQueryRoot
@@ -98,7 +104,6 @@ validateFragments lib root = do
     pure root
 
 
-detectLoopOnFragments
-    :: FragmentLib -> (Text, Fragment) -> Validation (Text, Fragment)
-detectLoopOnFragments _ = pure
+detectLoopOnFragments :: FragmentLib -> (Text, Fragment) -> Validation Fragment
+detectLoopOnFragments lib (key, _) = getFragment (MetaInfo "" "" "") key lib
 
