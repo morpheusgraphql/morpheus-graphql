@@ -35,13 +35,23 @@ import           Data.Morpheus.PreProcess.Arguments
 import qualified Data.Morpheus.Schema.GQL__Type
                                                as T
 
-getSpreadType :: FragmentLib -> GQL__Type -> Text -> Validation GQL__Type
-getSpreadType frags _type key = case M.lookup key frags of
-    Nothing       -> Left $ unknownFragment $ spread ""
-    Just fragment -> if (T.name _type == target fragment)
+getFragment :: MetaInfo -> Text -> FragmentLib -> Validation Fragment
+getFragment meta key lib = case M.lookup key lib of
+    Nothing       -> Left $ unknownFragment meta
+    Just fragment -> pure fragment
+
+
+compareFragmentType
+    :: MetaInfo -> MetaInfo -> GQL__Type -> Fragment -> Validation GQL__Type
+compareFragmentType parent child _type fragment =
+    if (T.name _type == target fragment)
         then pure _type
-        else Left $ unsupportedSpreadOnType parent $ spread $ target fragment
+        else Left $ unsupportedSpreadOnType parent child
+
+getSpreadType :: FragmentLib -> GQL__Type -> Text -> Validation GQL__Type
+getSpreadType frags _type key = getFragment (spread "") key frags >>= fragment
   where
+    fragment fg = compareFragmentType parent (spread $ target fg) _type fg
     parent = MetaInfo { className = T.name _type, cons = "", key = "" }
     spread typeName = MetaInfo { className = typeName, cons = "", key = key }
 
@@ -91,3 +101,4 @@ validateFragments lib root = do
 detectLoopOnFragments
     :: FragmentLib -> (Text, Fragment) -> Validation (Text, Fragment)
 detectLoopOnFragments _ = pure
+
