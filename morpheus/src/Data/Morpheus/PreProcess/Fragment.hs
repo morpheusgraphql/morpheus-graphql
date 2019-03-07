@@ -14,7 +14,7 @@ import qualified Data.Map                      as M
                                                 )
 import           Data.List                      ( find )
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
-import           Data.Morpheus.ErrorMessage     ( unknownFragment
+import           Data.Morpheus.Error.Fragment     ( unknownFragment
                                                 , unsupportedSpreadOnType
                                                 )
 import           Data.Morpheus.Types.Types      ( Validation(..)
@@ -43,7 +43,6 @@ getFragment meta key lib = case M.lookup key lib of
     Just fragment -> pure fragment
 
 
---data Graph = Node [Graph] | Leaf Text;
 
 type Graph = [Text];
 
@@ -109,7 +108,22 @@ validateFragments lib root = do
     pure root
 
 
-detectLoopOnFragments :: [(Text, Graph)] -> Validation [(Text, Graph)]
-detectLoopOnFragments lib =
-    Left $ unknownFragment $ MetaInfo "" "" $ pack $ show lib
+type RootGraph = [(Text, Graph)];
 
+detectLoopOnFragments :: RootGraph -> Validation RootGraph
+detectLoopOnFragments lib = concat <$> mapM bla lib
+    where bla (key, l) = checkForCycle lib key [key]
+
+
+checkForCycle :: RootGraph -> Text -> [Text] -> Validation RootGraph
+checkForCycle lib parentNode history = case lookup parentNode lib of
+    Just nodes -> concat <$> mapM checkNode nodes
+    Nothing    -> pure []
+  where
+    checkNode x = if elem x history then error x else recurse x
+    recurse node = checkForCycle lib node (history ++ [node])
+    error x = Left $ unknownFragment $ MetaInfo
+        { className = pack $ show $ history 
+        , cons      = ""
+        , key       = head history 
+        }
