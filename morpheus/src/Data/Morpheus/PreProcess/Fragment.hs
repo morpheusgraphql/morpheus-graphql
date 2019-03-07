@@ -16,6 +16,7 @@ import           Data.List                      ( find )
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 import           Data.Morpheus.Error.Fragment     ( unknownFragment
                                                 , unsupportedSpreadOnType
+                                                , cycleOnFragment
                                                 )
 import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , QuerySelection(..)
@@ -122,8 +123,5 @@ checkForCycle lib parentNode history = case lookup parentNode lib of
   where
     checkNode x = if elem x history then error x else recurse x
     recurse node = checkForCycle lib node (history ++ [node])
-    error x = Left $ unknownFragment $ MetaInfo
-        { className = pack $ show $ history 
-        , cons      = ""
-        , key       = head history 
-        }
+    error x = Left $ cycleOnFragment history
+

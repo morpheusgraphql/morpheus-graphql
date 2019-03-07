@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Error.Fragment where
+module Data.Morpheus.Error.Fragment (unknownFragment,unsupportedSpreadOnType,cycleOnFragment) where
 
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 import qualified Data.Text                     as T
@@ -19,3 +19,10 @@ unsupportedSpreadOnType parent spread = errorMessage $ T.concat [ "cant apply fr
         , "\" on type \""
         , className parent
         , "\"."]
+
+cycleOnFragment :: [T.Text] -> [GQLError]
+cycleOnFragment fragments = errorMessage $ T.concat [ "fragment \""
+                , head fragments
+                , "\" has cycle \""
+                , T.intercalate "," fragments
+                , "\"."]

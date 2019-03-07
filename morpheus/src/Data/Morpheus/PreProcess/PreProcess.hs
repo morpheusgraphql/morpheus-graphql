@@ -37,9 +37,7 @@ import           Data.Morpheus.ErrorMessage     ( semanticError
                                                 , handleError
                                                 , cannotQueryField
                                                 , requiredArgument
-                                                , unknownFragment
                                                 , variableIsNotDefined
-                                                , unsupportedArgumentType
                                                 , invalidEnumOption
                                                 )
 import           Data.Morpheus.Schema.GQL__TypeKind
