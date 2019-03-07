@@ -19,6 +19,7 @@ dependencies:
   - attoparsec
   - mtl
   - transformers
+  - scientific
 
 library:
   source-dirs: src
