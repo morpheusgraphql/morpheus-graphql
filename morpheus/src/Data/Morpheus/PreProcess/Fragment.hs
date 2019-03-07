@@ -38,16 +38,14 @@ import           Data.Morpheus.PreProcess.Arguments
 import qualified Data.Morpheus.Schema.GQL__Type
                                                as T
 
+
+type Graph = [Text];
+type RootGraph = [(Text, Graph)];
+
 getFragment :: MetaInfo -> Text -> FragmentLib -> Validation Fragment
 getFragment meta key lib = case M.lookup key lib of
     Nothing       -> Left $ unknownFragment meta
     Just fragment -> pure fragment
-
-
-
-type Graph = [Text];
-
-
 
 compareFragmentType
     :: MetaInfo -> MetaInfo -> GQL__Type -> Fragment -> Validation GQL__Type
@@ -109,11 +107,9 @@ validateFragments lib root = do
     pure root
 
 
-type RootGraph = [(Text, Graph)];
-
 detectLoopOnFragments :: RootGraph -> Validation RootGraph
-detectLoopOnFragments lib = concat <$> mapM bla lib
-    where bla (key, l) = checkForCycle lib key [key]
+detectLoopOnFragments lib = concat <$> mapM checkFragment lib
+    where checkFragment (key,_) = checkForCycle lib key [key]
 
 
 checkForCycle :: RootGraph -> Text -> [Text] -> Validation RootGraph
