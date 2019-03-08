@@ -2,14 +2,21 @@
 
 module Data.Morpheus.Parser.Primitive where
 
-import           Data.Text                      ( Text
+import qualified Data.Text                     as T
+                                                ( Text
                                                 , pack
+                                                , concat
                                                 )
 import           Data.Attoparsec.Text
+import qualified Data.Attoparsec.Text          as AT
+                                                ( takeWhile )
 import           Control.Applicative
-import           Data.Morpheus.Types.JSType     (  JSType(..) )
+import           Data.Morpheus.Types.JSType     ( JSType(..) )
+import           Control.Applicative
+import           Data.Char
 
-replaceType :: Text -> Text
+
+replaceType :: T.Text -> T.Text
 replaceType "type" = "_type"
 replaceType x      = x
 
@@ -25,17 +32,29 @@ jsBool = boolTrue <|> boolFalse
 jsInt :: Parser JSType
 jsInt = JSInt <$> decimal
 
+codes :: [Char]
+codes = ['b', 'n', 'f', 'r', 't', '\\', '\"', '/']
+
+replacements :: [Char]
+replacements = ['\b', '\n', '\f', '\r', '\t', '\\', '\"', '/']
+
+escaped :: Parser Char
+escaped = do
+    x <- notChar '\"'
+    if x == '\\' then choice (zipWith escapeChar codes replacements) else pure x
+    where escapeChar code replacement = char code >> return replacement
+
 jsString :: Parser JSType
 jsString = do
     char '"'
-    value <- many (notChar '"')
+    value <- many escaped
     char '"'
-    pure $ JSString $ pack value
+    pure $ JSString $ T.pack value
 
-token :: Parser Text
-token = replaceType . pack <$> some (letter <|> char '_')
+token :: Parser T.Text
+token = replaceType . T.pack <$> some (letter <|> char '_')
 
-variable :: Parser Text
+variable :: Parser T.Text
 variable = skipSpace *> char '$' *> token
 
 separator :: Parser Char
