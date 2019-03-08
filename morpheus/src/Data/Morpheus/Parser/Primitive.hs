@@ -32,9 +32,13 @@ jsBool = boolTrue <|> boolFalse
 jsInt :: Parser JSType
 jsInt = JSInt <$> decimal
 
+codes :: [Char]
 codes = ['b', 'n', 'f', 'r', 't', '\\', '\"', '/']
+
+replacements :: [Char]
 replacements = ['\b', '\n', '\f', '\r', '\t', '\\', '\"', '/']
 
+escaped :: Parser Char
 escaped = do
     x <- notChar '\"'
     if x == '\\' then choice (zipWith escapeChar codes replacements) else pure x
