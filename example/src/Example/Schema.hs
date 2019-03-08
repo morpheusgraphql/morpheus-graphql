@@ -45,7 +45,8 @@ data Coordinates = Coordinates {
 } deriving (Show,Generic,Data,GQLInput)
 
 data LocationByCoordinates = LocationByCoordinates {
-    coordinates :: Coordinates
+    coordinates :: Coordinates,
+    comment :: Maybe Text
 } deriving (Show,Generic,Data,GQLArgs)
 
 data Location = Location {
