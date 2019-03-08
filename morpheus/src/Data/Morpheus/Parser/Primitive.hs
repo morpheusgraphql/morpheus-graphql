@@ -32,39 +32,18 @@ jsBool = boolTrue <|> boolFalse
 jsInt :: Parser JSType
 jsInt = JSInt <$> decimal
 
-
-
---escape :: Parser String
---escape = do
---    d <- char '\\'
---    c <- inClass "\\\"0nrvtbf"
---    return [d, c]
-
--- nonEscape :: Parser Char
--- nonEscape = notInClass "\\\"\0\n\r\v\t\b\f"
-
--- character :: Parser String
--- character = fmap return nonEscape <|> escape
-
--- parseString :: Parser String
--- parseString = do
---     char '"'
---     strings <- many character
---     char '"'
---     return $ concat strings
-
-escaped = char '\\' >> choice (zipWith escapedChar codes replacements)
-
-escapedChar code replacement = char code >> return replacement
-
 codes = ['b', 'n', 'f', 'r', 't', '\\', '\"', '/']
 replacements = ['\b', '\n', '\f', '\r', '\t', '\\', '\"', '/']
 
+escaped = do
+    x <- notChar '\"'
+    if x == '\\' then choice (zipWith escapeChar codes replacements) else pure x
+    where escapeChar code replacement = char code >> return replacement
 
 jsString :: Parser JSType
 jsString = do
     char '"'
-    value <- many (escaped <|> letter)
+    value <- many escaped
     char '"'
     pure $ JSString $ T.pack value
 
