@@ -5,7 +5,9 @@ module Data.Morpheus.PreProcess.Spread
     )
 where
 
-import           Data.Text                      ( Text, pack )
+import           Data.Text                      ( Text
+                                                , pack
+                                                )
 import qualified Data.Map                      as M
                                                 ( lookup )
 import           Data.List                      ( find )
@@ -23,6 +25,7 @@ import           Data.Morpheus.Types.Error      ( GQLError(..)
                                                 , ErrorLocation(..)
                                                 )
 import qualified Data.Text                     as T
+import           Data.List                      ( elemIndex )
 
 shouldSpread :: [(Text, QuerySelection)] -> Bool
 shouldSpread list = case find isFragment list of
@@ -36,18 +39,29 @@ isFragment (key, _         ) = False
 
 generateGQLError (Position loc) lines = [ErrorLocation loc 0]
 
-spreadError :: Position -> MetaInfo -> [[Int] -> GQLError]
-spreadError loc meta =
-    [ \lines -> GQLError
+spreadError :: GQLQueryRoot -> Position -> MetaInfo -> [[Int] -> GQLError]
+spreadError root loc meta =
+    [ \_ -> GQLError
           { message   = T.concat ["Unknown fragment \"", key meta, "\"."]
-          , locations = generateGQLError loc lines
+          , locations = [errorLocation loc root]
           }
     ]
 
+lineIndexAndNumber position lines = (length linesBefore + 1, maximum $ linesBefore)
+    where linesBefore = filter (position >=) lines
+
+errorLocation (Position loc) root = do
+    let (line, position) = lineIndexAndNumber loc (lineMarks root)
+    ErrorLocation line (loc - position)
+
 validateSpread
-    :: FragmentLib -> Position -> Text -> Validation [(Text, QuerySelection)]
-validateSpread frags location key = case M.lookup key frags of
-    Nothing -> Left $ spreadError location metaData
+    :: GQLQueryRoot
+    -> FragmentLib
+    -> Position
+    -> Text
+    -> Validation [(Text, QuerySelection)]
+validateSpread root frags location key = case M.lookup key frags of
+    Nothing -> Left $ spreadError root location metaData
     Just (Fragment _ _ (SelectionSet _ gqlObj)) -> pure gqlObj
     where metaData = MetaInfo { className = "", cons = "", key = key }
 
@@ -56,7 +70,7 @@ propagateSpread
     -> (Text, QuerySelection)
     -> Validation [(Text, QuerySelection)]
 propagateSpread root (key, Spread _ location) =
-    validateSpread (fragments root) location key
+    validateSpread root (fragments root) location key
 propagateSpread root (text, value) = pure [(text, value)]
 
 spreadFields :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
