@@ -66,6 +66,4 @@ scanLines requestBody root = do
 parseGQL :: GQLRequest -> Validation GQLQueryRoot
 parseGQL requestBody = case parseReq requestBody >>= scanLines requestBody of
     Right root  -> Right $ root { inputVariables = getVariables requestBody }
-    Left  error -> Left $ syntaxError text [] (Position 0)
-    where 
-        text = pack $ show error
+    Left  error -> Left $ syntaxError (pack $ show error) [] (Position 0)
