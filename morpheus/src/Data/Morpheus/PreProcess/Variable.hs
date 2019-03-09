@@ -18,7 +18,7 @@ import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , EnumOf(..)
                                                 )
 import           Data.Morpheus.Types.JSType     ( JSType(..) )
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..), Position(..) )
 import qualified Data.Morpheus.Schema.GQL__Type
                                                as T
 import qualified Data.Morpheus.Schema.InputValue
@@ -37,34 +37,33 @@ import           Data.Morpheus.PreProcess.InputObject
 
 getVariable :: GQLQueryRoot -> Text -> Validation JSType
 getVariable root key = case M.lookup key (inputVariables root) of
-    Nothing -> Left $ variableIsNotDefined $ MetaInfo
-        { className = "TODO: Name"
-        , cons      = ""
-        , key       = key
-        }
+    Nothing -> Left $ variableIsNotDefined [] meta
     Just value -> pure value
+    where meta = MetaInfo { typeName = "TODO: Name" , key       = key , position = Position 0}
 
 checkVariableType
     :: GQLTypeLib
     -> GQLQueryRoot
     -> (Text, Argument)
     -> Validation (Text, Argument)
-checkVariableType typeLib root (key, Variable typeName) =
-    existsType typeName typeLib >>= checkType
+checkVariableType typeLib root (key, Variable tName) =
+    existsType tName typeLib >>= checkType
   where
     checkType _type = case T.kind _type of
         EnumOf SCALAR       -> checkTypeInp _type key
         EnumOf INPUT_OBJECT -> checkTypeInp _type key
-        _                   -> Left $ unsupportedArgumentType MetaInfo
-            { className = typeName
-            , cons      = ""
+        _                   -> Left $ unsupportedArgumentType [] meta
+
+    meta = MetaInfo
+            { typeName = tName
+            , position      = Position 0
             , key       = key
             }
 
     checkTypeInp _type key = do
         variableValue <- getVariable root key
         validateInputVariable typeLib _type (key,variableValue)
-        pure (key, Variable typeName)
+        pure (key, Variable tName)
 
 checkQueryVariables
     :: GQLTypeLib
