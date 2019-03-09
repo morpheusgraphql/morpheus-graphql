@@ -32,9 +32,10 @@ import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , GQLOperator(..)
                                                 )
 import           Data.Morpheus.Types.JSType     ( JSType(..) )
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
-import           Data.Morpheus.ErrorMessage     ( semanticError
-                                                , handleError
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
+                                                , Position(..)
+                                                )
+import           Data.Morpheus.ErrorMessage     ( handleError
                                                 , cannotQueryField
                                                 , requiredArgument
                                                 , variableIsNotDefined
@@ -100,15 +101,15 @@ validateBySchema
     -> Validation (Text, QuerySelection)
 validateBySchema typeLib root _parentType (_name, SelectionSet head selectors)
     = do
-        _type      <- typeBy typeLib _parentType _name
-        _field     <- fieldOf _parentType _name
+        _type      <- typeBy (lineMarks root) typeLib _parentType _name
+        _field     <- fieldOf (lineMarks root) _parentType _name
         head'      <- validateArguments typeLib root _field head
         selectors' <- mapSelectors typeLib root _type selectors
         pure (_name, SelectionSet head' selectors')
 
 validateBySchema typeLib root _parentType (_name, Field head field) = do
-    _checksIfHasType <- typeBy typeLib _parentType _name
-    _field           <- fieldOf _parentType _name
+    _checksIfHasType <- typeBy (lineMarks root) typeLib _parentType _name
+    _field           <- fieldOf (lineMarks root) _parentType _name
     head'            <- validateArguments typeLib root _field head
     pure (_name, Field head' field)
 
@@ -116,13 +117,16 @@ validateBySchema _ _ _ x = pure x
 
 checkDuplicates :: [(Text, a)] -> Validation [(Text, a)]
 checkDuplicates x = case keys \\ noDuplicates keys of
-    [] -> pure x
-    -- TODO: Error handling
-    duplicates ->
-        Left $ cannotQueryField $ MetaInfo "" "" $ pack $ show duplicates
+    []         -> pure x
+    duplicates -> Left $ cannotQueryField [] $ meta duplicates
   where
     keys         = map fst x
     noDuplicates = S.toList . S.fromList
+    meta duplicates = MetaInfo
+        { typeName = "-- TODO: Error handling"
+        , key      = pack $ show duplicates
+        , position = Position 0
+        }
 
 
 getOperationInfo (QueryOperator    name x) = ("Query", x)

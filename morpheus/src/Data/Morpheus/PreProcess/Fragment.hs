@@ -13,7 +13,7 @@ import qualified Data.Map                      as M
                                                 , toList
                                                 )
 import           Data.List                      ( find )
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) ,Position(..) )
 import           Data.Morpheus.Error.Fragment   ( unknownFragment
                                                 , unsupportedSpreadOnType
                                                 , cycleOnFragment
@@ -44,7 +44,7 @@ type RootGraph = [(Text, Graph)];
 
 getFragment :: MetaInfo -> Text -> FragmentLib -> Validation Fragment
 getFragment meta key lib = case M.lookup key lib of
-    Nothing       -> Left $ unknownFragment meta
+    Nothing       -> Left $ unknownFragment [] meta
     Just fragment -> pure fragment
 
 compareFragmentType
@@ -52,14 +52,14 @@ compareFragmentType
 compareFragmentType parent child _type fragment =
     if (T.name _type == target fragment)
         then pure _type
-        else Left $ unsupportedSpreadOnType parent child
+        else Left $ unsupportedSpreadOnType [] parent child
 
 getSpreadType :: FragmentLib -> GQL__Type -> Text -> Validation GQL__Type
 getSpreadType frags _type key = getFragment (spread "") key frags >>= fragment
   where
     fragment fg = compareFragmentType parent (spread $ target fg) _type fg
-    parent = MetaInfo { className = T.name _type, cons = "", key = "" }
-    spread typeName = MetaInfo { className = typeName, cons = "", key = key }
+    parent = MetaInfo { typeName = T.name _type,  key = "" , position = Position 0 }
+    spread typeName = MetaInfo { typeName = typeName, key = key , position = Position 0  }
 
 
 validateFragmentFields
@@ -70,13 +70,13 @@ validateFragmentFields
     -> Validation Graph
 validateFragmentFields typeLib root _parent (_name, SelectionSet head selectors)
     = do
-        _type  <- typeBy typeLib _parent _name
-        _field <- fieldOf _parent _name
+        _type  <- typeBy (lineMarks root) typeLib _parent _name
+        _field <- fieldOf (lineMarks root) _parent _name
         head'  <- validateArguments typeLib root _field head
         concat <$> mapM (validateFragmentFields typeLib root _type) selectors
 
 validateFragmentFields typeLib root _parentType (_name, Field head field) = do
-    _field <- fieldOf _parentType _name
+    _field <- fieldOf [] _parentType _name
     head'  <- validateArguments typeLib root _field head
     pure []
 
