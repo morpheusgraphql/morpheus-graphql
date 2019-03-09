@@ -37,9 +37,7 @@ import           Data.Morpheus.ErrorMessage     ( semanticError
                                                 , handleError
                                                 , cannotQueryField
                                                 , requiredArgument
-                                                , unknownFragment
                                                 , variableIsNotDefined
-                                                , unsupportedArgumentType
                                                 , invalidEnumOption
                                                 )
 import           Data.Morpheus.Schema.GQL__TypeKind
@@ -136,9 +134,9 @@ updateQuery (MutationOperator name _) = MutationOperator name
 
 preProcessQuery :: GQLTypeLib -> GQLQueryRoot -> Validation GQLOperator
 preProcessQuery lib root = do
+    validateFragments lib root
     let (operator, SelectionSet args body) = getOperationInfo $ queryBody root
     _type     <- existsType operator lib
     variable  <- checkQueryVariables lib root args
     selectors <- mapSelectors lib root _type body
-    _         <- validateFragments lib root
     pure $ updateQuery (queryBody root) (SelectionSet [] selectors)

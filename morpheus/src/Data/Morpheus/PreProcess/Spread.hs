@@ -10,7 +10,7 @@ import qualified Data.Map                      as M
                                                 ( lookup )
 import           Data.List                      ( find )
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
-import           Data.Morpheus.ErrorMessage     ( unknownFragment )
+import           Data.Morpheus.Error.Fragment   ( unknownFragment )
 import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , QuerySelection(..)
                                                 , SelectionSet
