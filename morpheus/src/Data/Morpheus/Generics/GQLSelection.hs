@@ -78,7 +78,7 @@ class GQLSelection a where
 
     encode :: QuerySelection ->  a -> ResolveIO JSType
     default encode :: ( Generic a, D.Data a, DeriveResolvers (Rep a) , Show a) => QuerySelection -> a -> ResolveIO JSType
-    encode (SelectionSet _ selection) = resolveBySelection selection . deriveResolvers initialMeta  . from
+    encode (SelectionSet _ selection pos) = resolveBySelection selection . deriveResolvers initialMeta  . from
     encode (Field args key pos) = \x -> failResolveIO $ Err.subfieldsNotSelected [] meta
         where meta = MetaInfo { typeName = "" , key = key , position = pos }
 
@@ -108,9 +108,9 @@ resolve
     -> p ::-> a
     -> p ::-> a
     -> ResolveIO JSType
-resolve (SelectionSet gqlArgs body) (TypeHolder args) (Resolver resolver) =
+resolve (SelectionSet gqlArgs body pos) (TypeHolder args) (Resolver resolver) =
     (ExceptT $ pure $ decodeArgs gqlArgs args) >>= resolver >>= encode
-        (SelectionSet gqlArgs body)
+        (SelectionSet gqlArgs body pos)
 resolve (Field gqlArgs field pos) (TypeHolder args) (Resolver resolver) =
     (ExceptT $ pure $ decodeArgs gqlArgs args) >>= resolver >>= encode
         (Field gqlArgs field pos)
@@ -118,7 +118,7 @@ resolve query _ (Some value) = encode query value
 resolve _ _ None = ExceptT $ pure $ Err.handleError "resolver not implemented"
 
 instance (Show a, Show p, GQLSelection a , GQLArgs p ) => GQLSelection (p ::-> a) where
-    encode (SelectionSet args body) field = resolve (SelectionSet args body) (getType field) field
+    encode (SelectionSet args body pos) field = resolve (SelectionSet args body pos) (getType field) field
     encode (Field args body pos) field = resolve (Field args body pos) (getType field) field
     encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
     encode x (Some a) = encode x a

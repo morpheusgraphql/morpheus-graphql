@@ -59,9 +59,10 @@ seperated x = x `sepBy` separator
 body :: Arguments -> Parser QuerySelection
 body args = do
     skipSpace
+    index <- getPosition
     char '{'
     skipSpace
     entries <- seperated $ entry <|> spread
     skipSpace
     char '}'
-    return (SelectionSet args entries)
+    return (SelectionSet args entries $ Position index )

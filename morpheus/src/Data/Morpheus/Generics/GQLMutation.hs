@@ -61,7 +61,7 @@ class GQLMutation a where
 
     encodeMutation :: a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
     default encodeMutation :: ( Generic a, Data a, DeriveResolvers (Rep a) , Show a) => a -> GQLTypeLib ->  QuerySelection -> ResolveIO JSType
-    encodeMutation rootResolver schema (SelectionSet _ sel) = resolveBySelection sel $ deriveResolvers initialMeta  $ from rootResolver
+    encodeMutation rootResolver schema (SelectionSet _ sel pos) = resolveBySelection sel $ deriveResolvers initialMeta  $ from rootResolver
 
     mutationSchema :: a -> GQLTypeLib
     default mutationSchema :: (Generic a, Data a) => a -> GQLTypeLib

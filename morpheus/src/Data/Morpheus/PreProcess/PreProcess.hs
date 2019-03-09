@@ -99,13 +99,13 @@ validateBySchema
     -> GQL__Type
     -> (Text, QuerySelection)
     -> Validation (Text, QuerySelection)
-validateBySchema typeLib root _parentType (_name, SelectionSet head selectors)
+validateBySchema typeLib root _parentType (_name, SelectionSet head selectors pos)
     = do
-        _field     <- fieldOf (lineMarks root) (Position 0) _parentType _name
-        _type <- typeBy (lineMarks root) (Position 0) typeLib _parentType _name
+        _field     <- fieldOf (lineMarks root) pos _parentType _name
+        _type      <- typeBy (lineMarks root) pos typeLib _parentType _name
         head'      <- validateArguments typeLib root _field head
         selectors' <- mapSelectors typeLib root _type selectors
-        pure (_name, SelectionSet head' selectors')
+        pure (_name, SelectionSet head' selectors' pos)
 
 validateBySchema typeLib root _parentType (_name, Field head field pos) = do
     _field           <- fieldOf (lineMarks root) pos _parentType _name
@@ -139,8 +139,9 @@ updateQuery (MutationOperator name _) = MutationOperator name
 preProcessQuery :: GQLTypeLib -> GQLQueryRoot -> Validation GQLOperator
 preProcessQuery lib root = do
     validateFragments lib root
-    let (operator, SelectionSet args body) = getOperationInfo $ queryBody root
+    let (operator, SelectionSet args body pos) =
+            getOperationInfo $ queryBody root
     _type     <- existsType operator lib
     variable  <- checkQueryVariables lib root args
     selectors <- mapSelectors lib root _type body
-    pure $ updateQuery (queryBody root) (SelectionSet [] selectors)
+    pure $ updateQuery (queryBody root) (SelectionSet [] selectors pos)
