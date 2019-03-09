@@ -17,7 +17,12 @@ import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , FragmentLib
                                                 , Fragment(..)
                                                 , GQLQueryRoot(..)
+                                                , ParserPosition(..)
                                                 )
+import           Data.Morpheus.Types.Error      ( GQLError(..)
+                                                , ErrorLocation(..)
+                                                )
+import qualified Data.Text                     as T
 
 shouldSpread :: [(Text, QuerySelection)] -> Bool
 shouldSpread list = case find isFragment list of
@@ -28,21 +33,31 @@ isFragment :: (Text, QuerySelection) -> Bool
 isFragment (key, Spread _ _) = True
 isFragment (key, _         ) = False
 
-validateSpread :: FragmentLib -> Text -> Validation [(Text, QuerySelection)]
-validateSpread frags key = case M.lookup key frags of
-    Nothing -> Left $ unknownFragment $ MetaInfo
-        { className = ""
-        , cons      = ""
-        , key       = key
-        }
+
+balaba (ParserPosition pos) x =
+    [GQLError { message = x, locations = [ErrorLocation pos 0] }]
+
+spreadError :: ParserPosition -> MetaInfo -> [GQLError]
+spreadError  loc meta = balaba loc $ T.concat ["Unknown fragment \"", key meta, "\"."]
+
+
+validateSpread
+    :: FragmentLib
+    -> ParserPosition
+    -> Text
+    -> Validation [(Text, QuerySelection)]
+validateSpread frags location key = case M.lookup key frags of
+    Nothing -> Left $ spreadError location metaData
     Just (Fragment _ _ (SelectionSet _ gqlObj)) -> pure gqlObj
+    where metaData = MetaInfo { className = "", cons = "", key = key }
 
 propagateSpread
     :: GQLQueryRoot
     -> (Text, QuerySelection)
     -> Validation [(Text, QuerySelection)]
-propagateSpread root (key , Spread _ _) = validateSpread (fragments root) key
-propagateSpread root (text, value     ) = pure [(text, value)]
+propagateSpread root (key, Spread _ location) =
+    validateSpread (fragments root) location key
+propagateSpread root (text, value) = pure [(text, value)]
 
 spreadFields :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
 spreadFields root selectors = concat <$> mapM (propagateSpread root) selectors
