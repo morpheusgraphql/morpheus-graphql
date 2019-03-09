@@ -51,14 +51,14 @@ existsType typeName typeLib = case M.lookup typeName typeLib of
     Nothing -> handleError $ TX.concat ["type does not exist", typeName]
     Just x  -> pure x
 
-fieldOf :: LineMarks -> GQL__Type -> Text -> Validation GQL__Field
-fieldOf lines _type fieldName = case selectFieldByKey fieldName _type of
+fieldOf :: LineMarks -> Position -> GQL__Type -> Text -> Validation GQL__Field
+fieldOf lines pos _type fieldName = case selectFieldByKey fieldName _type of
     Nothing -> Left $ cannotQueryField lines meta
     Just field -> pure field
     where  
         meta = MetaInfo
             {   key = fieldName
                 , typeName = T.name _type
-                , position = Position 0
+                , position = pos
             }
 

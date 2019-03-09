@@ -75,13 +75,13 @@ validateFragmentFields
 validateFragmentFields typeLib root _parent (_name, SelectionSet head selectors)
     = do
         _type  <- typeBy (lineMarks root) typeLib _parent _name
-        _field <- fieldOf (lineMarks root) _parent _name
+        _field <- fieldOf (lineMarks root) (Position 0) _parent _name
         head'  <- validateArguments typeLib root _field head
         concat <$> mapM (validateFragmentFields typeLib root _type) selectors
 
 validateFragmentFields typeLib root _parentType (_name, Field head field _) =
     do
-        _field <- fieldOf [] _parentType _name
+        _field <- fieldOf (lineMarks root) (Position 0) _parentType _name
         head'  <- validateArguments typeLib root _field head
         pure []
 
