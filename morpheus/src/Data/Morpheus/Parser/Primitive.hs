@@ -14,7 +14,14 @@ import           Control.Applicative
 import           Data.Morpheus.Types.JSType     ( JSType(..) )
 import           Control.Applicative
 import           Data.Char
+import           Data.Char                      ( isAlpha
+                                                , isDigit
+                                                , isSpace
+                                                , ord
+                                                )
 
+import           Data.Morpheus.Types.Error      ( ErrorLocation(..) )
+import           Data.List                      ( filter )
 
 replaceType :: T.Text -> T.Text
 replaceType "type" = "_type"
@@ -59,3 +66,30 @@ variable = skipSpace *> char '$' *> token
 
 separator :: Parser Char
 separator = char ',' <|> char ' ' <|> char '\n' <|> char '\t'
+
+type WithPos a = (Int, Int, a)
+
+type Pos = ErrorLocation
+
+data Spaces = Line | Tab | Column deriving  ( Eq , Show) ;
+
+skipRow :: Parser Spaces
+skipRow = char '\n' >> pure Line
+
+skipTab :: Parser Spaces
+skipTab = char '\t' >> pure Tab
+
+skipEmpty :: Parser Spaces
+skipEmpty = char ' ' >> pure Column
+
+skipColumnRowSingle :: Parser Spaces
+skipColumnRowSingle = skipRow <|> skipTab <|> skipEmpty
+
+countMany :: Pos -> [Spaces] -> Pos
+countMany pos list = pos
+    { line   = (length $ filter (\x -> x == Line) list)
+    , column = (length $ filter (\x -> x == Tab) list)
+    }
+
+skipColumnRow :: Pos -> Parser Pos
+skipColumnRow pos = countMany pos <$> (many skipColumnRowSingle)
