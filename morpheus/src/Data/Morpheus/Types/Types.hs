@@ -35,10 +35,10 @@ import           Data.Aeson                     ( ToJSON(..)
 import           Data.Data
 import           Data.Morpheus.Types.Error      ( GQLError
                                                 , ErrorLocation
-                                                , Position
                                                 , GQLErrors
                                                 )
 import           Data.Morpheus.Types.JSType     ( JSType )
+import           Data.Morpheus.Types.MetaInfo     ( Position )
 import           Control.Monad.Trans            ( liftIO
                                                 , lift
                                                 , MonadTrans
