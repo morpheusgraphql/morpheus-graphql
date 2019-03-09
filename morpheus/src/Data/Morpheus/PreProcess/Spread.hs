@@ -21,11 +21,9 @@ import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , GQLQueryRoot(..)
                                                 )
 import           Data.Morpheus.Types.Error      ( GQLError(..)
-                                                , Position(..)
                                                 , ErrorLocation(..)
                                                 )
 import qualified Data.Text                     as T
-import           Data.Morpheus.Error.Utils   ( errorLocation )
 
 shouldSpread :: [(Text, QuerySelection)] -> Bool
 shouldSpread list = case find isFragment list of
@@ -36,13 +34,6 @@ isFragment :: (Text, QuerySelection) -> Bool
 isFragment (key, Spread _ _) = True
 isFragment (key, _         ) = False
 
-spreadError :: GQLQueryRoot -> Position -> MetaInfo -> [GQLError]
-spreadError root loc meta =
-    [ GQLError
-          { message   = T.concat ["Unknown fragment \"", key meta, "\"."]
-          , locations = [errorLocation loc root]
-          }
-    ]
 
 validateSpread
     :: GQLQueryRoot
