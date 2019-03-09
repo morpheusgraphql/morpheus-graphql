@@ -82,7 +82,6 @@ data Fragment = Fragment {
     fragmentContent:: QuerySelection
 } deriving (Show, Generic)
 
-type LineMarks = [Int];
 
 data GQLQueryRoot = GQLQueryRoot {
     lineMarks:: [Int],

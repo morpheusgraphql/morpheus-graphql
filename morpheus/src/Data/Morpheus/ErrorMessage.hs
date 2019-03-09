@@ -26,6 +26,7 @@ import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 import           Data.Morpheus.Types.Error      ( GQLError(..)
                                                 , ErrorLocation(..)
                                                 , GQLErrors
+                                                , Position(..)
                                                 )
 import           Data.Data                      ( dataTypeOf
                                                 , dataTypeName
@@ -38,7 +39,7 @@ import           Data.Morpheus.Error.Utils      (errorMessage)
 handleError x = Left $ errorMessage $ T.concat ["Field Error: ", x]
 
 invalidEnumOption :: MetaInfo -> GQLErrors
-invalidEnumOption meta = errorMessage $ T.concat
+invalidEnumOption line meta = errorMessage [] $ T.concat
     ["Invalid Option \"", key meta, "\" on Enum \"", className meta, "\"."]
 
 unsupportedArgumentType :: MetaInfo -> GQLErrors

@@ -25,7 +25,7 @@ import           Data.Morpheus.Types.Error      ( GQLError(..)
                                                 , ErrorLocation(..)
                                                 )
 import qualified Data.Text                     as T
-import           Data.List                      ( elemIndex )
+import           Data.Morpheus.Error.Utils   ( errorLocation )
 
 shouldSpread :: [(Text, QuerySelection)] -> Bool
 shouldSpread list = case find isFragment list of
@@ -36,9 +36,6 @@ isFragment :: (Text, QuerySelection) -> Bool
 isFragment (key, Spread _ _) = True
 isFragment (key, _         ) = False
 
-
-generateGQLError (Position loc) lines = [ErrorLocation loc 0]
-
 spreadError :: GQLQueryRoot -> Position -> MetaInfo -> [GQLError]
 spreadError root loc meta =
     [ GQLError
@@ -46,14 +43,6 @@ spreadError root loc meta =
           , locations = [errorLocation loc root]
           }
     ]
-
-lineIndexAndNumber position lines =
-    (length linesBefore + 1, maximum $ linesBefore)
-    where linesBefore = filter (position >=) lines
-
-errorLocation (Position loc) root = do
-    let (line, position) = lineIndexAndNumber loc (lineMarks root)
-    ErrorLocation line (loc - position)
 
 validateSpread
     :: GQLQueryRoot

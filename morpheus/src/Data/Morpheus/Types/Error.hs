@@ -3,7 +3,6 @@
 module Data.Morpheus.Types.Error
     ( GQLError(..)
     , ErrorLocation(..)
-    , Position(..)
     , GQLErrors
     )
 where
@@ -16,8 +15,6 @@ import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
 
 type GQLErrors = [GQLError ]
-
-newtype Position = Position { getPos :: Int } deriving (Show , Generic)
 
 data ErrorLocation = ErrorLocation {
     line :: Int

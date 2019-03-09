@@ -1,9 +1,13 @@
 
 module Data.Morpheus.Error.Utils
-    (errorMessage)
+    ( errorMessage
+    )
 where
 
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
+                                                , Position(..)
+                                                , LineMarks
+                                                )
 import           Data.Text                      ( Text )
 import           Data.Morpheus.Types.Error      ( GQLError(..)
                                                 , ErrorLocation(..)
@@ -11,5 +15,14 @@ import           Data.Morpheus.Types.Error      ( GQLError(..)
                                                 )
 
 
-errorMessage :: Text -> GQLErrors
-errorMessage x = [GQLError { message = x, locations = [ErrorLocation 0 0] }]
+errorMessage :: LineMarks -> Position -> Text -> GQLErrors
+errorMessage list loc text =
+    [GQLError { message = text, locations = [errorLocation loc list] }]
+
+lineIndexAndNumber position lines =
+    (length linesBefore + 1, maximum $ linesBefore)
+    where linesBefore = filter (position >=) lines
+
+errorLocation (Position loc) lineMarks = do
+    let (line, position) = lineIndexAndNumber loc lineMarks
+    ErrorLocation line (loc - position)
