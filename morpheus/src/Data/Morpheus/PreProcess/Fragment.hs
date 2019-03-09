@@ -72,16 +72,16 @@ validateFragmentFields
     -> GQL__Type
     -> (Text, QuerySelection)
     -> Validation Graph
-validateFragmentFields typeLib root _parent (_name, SelectionSet head selectors)
+validateFragmentFields typeLib root _parent (_name, SelectionSet head selectors pos)
     = do
-        _type  <- typeBy (lineMarks root) (Position 0) typeLib _parent _name
-        _field <- fieldOf (lineMarks root) (Position 0) _parent _name
+        _type  <- typeBy (lineMarks root) pos typeLib _parent _name
+        _field <- fieldOf (lineMarks root) pos _parent _name
         head'  <- validateArguments typeLib root _field head
         concat <$> mapM (validateFragmentFields typeLib root _type) selectors
 
-validateFragmentFields typeLib root _parentType (_name, Field head field _) =
+validateFragmentFields typeLib root _parentType (_name, Field head field pos) =
     do
-        _field <- fieldOf (lineMarks root) (Position 0) _parentType _name
+        _field <- fieldOf (lineMarks root) pos _parentType _name
         head'  <- validateArguments typeLib root _field head
         pure []
 
@@ -98,7 +98,7 @@ validateFragment
     -> Validation (Text, Graph)
 validateFragment lib root (fName, frag) = do
     _type <- existsType (target frag) lib
-    let (SelectionSet _ selection) = (fragmentContent frag)
+    let (SelectionSet _ selection pos) = (fragmentContent frag)
     fragmentLinks <-
         concat <$> mapM (validateFragmentFields lib root _type) selection
     pure (fName, fragmentLinks)

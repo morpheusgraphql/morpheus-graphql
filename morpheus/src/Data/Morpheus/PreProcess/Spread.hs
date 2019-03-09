@@ -43,7 +43,7 @@ validateSpread
     -> Validation [(Text, QuerySelection)]
 validateSpread root frags location key = case M.lookup key frags of
     Nothing -> Left $ unknownFragment (lineMarks root)  metaData
-    Just (Fragment _ _ (SelectionSet _ gqlObj)) -> pure gqlObj
+    Just (Fragment _ _ (SelectionSet _ gqlObj _)) -> pure gqlObj
     where metaData = MetaInfo { typeName = "", key = key, position = location}
 
 propagateSpread

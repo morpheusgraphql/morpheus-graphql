@@ -66,7 +66,7 @@ type Validation a = Either GQLErrors a
 type SelectionSet  = [(Text,QuerySelection)]
 
 data QuerySelection =
-    SelectionSet Arguments SelectionSet |
+    SelectionSet Arguments SelectionSet Position |
     Field Arguments Text Position|
     Spread Text Position |
     QNull
