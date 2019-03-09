@@ -7,17 +7,16 @@ module Data.Morpheus.Error.Fragment
         )
 where
 
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..), Position(..) , LineMarks)
 import qualified Data.Text                     as T
 import           Data.Morpheus.Types.Error      ( GQLError(..)
                                                 , GQLErrors
                                                 )
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 
-
-unknownFragment :: MetaInfo -> GQLErrors
-unknownFragment meta =
-        errorMessage $ T.concat ["Unknown fragment \"", key meta, "\"."]
+unknownFragment :: LineMarks -> MetaInfo -> GQLErrors
+unknownFragment lines meta = errorMessage lines (psoition meta) text
+        where text = T.concat ["Unknown fragment \"", key meta, "\"."]
 
 unsupportedSpreadOnType :: MetaInfo -> MetaInfo -> GQLErrors
 unsupportedSpreadOnType parent spread = errorMessage $ T.concat
