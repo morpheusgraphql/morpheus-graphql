@@ -19,7 +19,8 @@ errorMessage :: LineMarks -> Position -> Text -> GQLErrors
 errorMessage list loc text =
     [GQLError { message = text, locations = [errorLocation loc list] }]
 
-lineIndexAndNumber position lines = (length linesBefore, linePos linesBefore)
+lineIndexAndNumber position lines =
+    (length linesBefore + 1, linePos linesBefore)
   where
     linesBefore = filter (position >=) lines
     linePos [] = 1

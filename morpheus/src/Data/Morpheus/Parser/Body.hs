@@ -48,9 +48,9 @@ spread = do
 entry :: Parser (Text, QuerySelection)
 entry = do
     skipSpace
+    index <- getPosition
     key   <- token
     args  <- try arguments <|> pure []
-    index <- getPosition
     value <- (try $ body args) <|> (pure $ Field args key $ Position index)
     return (key, value)
 
@@ -65,4 +65,4 @@ body args = do
     entries <- seperated $ entry <|> spread
     skipSpace
     char '}'
-    return (SelectionSet args entries $ Position index )
+    return (SelectionSet args entries $ Position index)
