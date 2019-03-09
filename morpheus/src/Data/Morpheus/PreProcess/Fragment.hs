@@ -74,7 +74,7 @@ validateFragmentFields
     -> Validation Graph
 validateFragmentFields typeLib root _parent (_name, SelectionSet head selectors)
     = do
-        _type  <- typeBy (lineMarks root) typeLib _parent _name
+        _type  <- typeBy (lineMarks root) (Position 0) typeLib _parent _name
         _field <- fieldOf (lineMarks root) (Position 0) _parent _name
         head'  <- validateArguments typeLib root _field head
         concat <$> mapM (validateFragmentFields typeLib root _type) selectors

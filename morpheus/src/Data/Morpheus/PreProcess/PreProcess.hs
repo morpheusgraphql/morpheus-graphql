@@ -102,14 +102,14 @@ validateBySchema
 validateBySchema typeLib root _parentType (_name, SelectionSet head selectors)
     = do
         _field     <- fieldOf (lineMarks root) (Position 0) _parentType _name
-        _type      <- typeBy (lineMarks root) typeLib _parentType _name
+        _type <- typeBy (lineMarks root) (Position 0) typeLib _parentType _name
         head'      <- validateArguments typeLib root _field head
         selectors' <- mapSelectors typeLib root _type selectors
         pure (_name, SelectionSet head' selectors')
 
 validateBySchema typeLib root _parentType (_name, Field head field pos) = do
     _field           <- fieldOf (lineMarks root) pos _parentType _name
-    _checksIfHasType <- typeBy (lineMarks root) typeLib _parentType _name
+    _checksIfHasType <- typeBy (lineMarks root) pos typeLib _parentType _name
     head'            <- validateArguments typeLib root _field head
     pure (_name, Field head' field pos)
 
