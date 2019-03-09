@@ -36,6 +36,7 @@ import           Data.Data
 import           Data.Morpheus.Types.Error      ( GQLError
                                                 , ErrorLocation
                                                 , Position
+                                                , GQLErrors
                                                 )
 import           Data.Morpheus.Types.JSType     ( JSType )
 import           Control.Monad.Trans            ( liftIO
@@ -49,20 +50,20 @@ import           Control.Monad.Trans.Except     ( ExceptT(..)
                                                 , runExceptT
                                                 )
 
-type ResolveIO  = ExceptT [ [Int] -> GQLError ] IO
+
+type ResolveIO  = ExceptT GQLErrors IO
 
 newtype EnumOf a = EnumOf { unpackEnum :: a }  deriving (Show, Generic , Data)
 
-failResolveIO :: [[Int] -> GQLError] -> ResolveIO a
+failResolveIO :: GQLErrors -> ResolveIO a
 failResolveIO = ExceptT . pure . Left
 
 data Argument =  Variable Text | Argument JSType deriving (Show, Generic)
 type Arguments = [(Text,Argument)]
 
-type Validation a = Either [ [Int] -> GQLError ] a
+type Validation a = Either GQLErrors a
 
 type SelectionSet  = [(Text,QuerySelection)]
-
 
 data QuerySelection =
     SelectionSet Arguments SelectionSet |
@@ -80,6 +81,8 @@ data Fragment = Fragment {
     target :: Text,
     fragmentContent:: QuerySelection
 } deriving (Show, Generic)
+
+type LineMarks = [Int];
 
 data GQLQueryRoot = GQLQueryRoot {
     lineMarks:: [Int],

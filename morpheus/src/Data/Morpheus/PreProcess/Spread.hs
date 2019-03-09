@@ -39,15 +39,16 @@ isFragment (key, _         ) = False
 
 generateGQLError (Position loc) lines = [ErrorLocation loc 0]
 
-spreadError :: GQLQueryRoot -> Position -> MetaInfo -> [[Int] -> GQLError]
+spreadError :: GQLQueryRoot -> Position -> MetaInfo -> [GQLError]
 spreadError root loc meta =
-    [ \_ -> GQLError
+    [ GQLError
           { message   = T.concat ["Unknown fragment \"", key meta, "\"."]
           , locations = [errorLocation loc root]
           }
     ]
 
-lineIndexAndNumber position lines = (length linesBefore + 1, maximum $ linesBefore)
+lineIndexAndNumber position lines =
+    (length linesBefore + 1, maximum $ linesBefore)
     where linesBefore = filter (position >=) lines
 
 errorLocation (Position loc) root = do

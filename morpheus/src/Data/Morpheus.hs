@@ -99,7 +99,7 @@ interpreter
 interpreter rootResolver request = do
   value <- runExceptT $ parseRequest request >>= resolve rootResolver
   case value of
-    Left  x -> pure $ Errors $ map (\t -> t []) x
+    Left  x -> pure $ Errors x
     Right x -> pure $ Data x
 
 eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a

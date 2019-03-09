@@ -9,17 +9,17 @@ where
 
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 import qualified Data.Text                     as T
-import           Data.Morpheus.Types.Error      ( GQLError(..) )
-import           Data.Morpheus.Error.Utils      ( errorMessage
-                                                , Errors
+import           Data.Morpheus.Types.Error      ( GQLError(..)
+                                                , GQLErrors
                                                 )
+import           Data.Morpheus.Error.Utils      ( errorMessage )
 
 
-unknownFragment :: MetaInfo -> Errors
+unknownFragment :: MetaInfo -> GQLErrors
 unknownFragment meta =
         errorMessage $ T.concat ["Unknown fragment \"", key meta, "\"."]
 
-unsupportedSpreadOnType :: MetaInfo -> MetaInfo -> Errors
+unsupportedSpreadOnType :: MetaInfo -> MetaInfo -> GQLErrors
 unsupportedSpreadOnType parent spread = errorMessage $ T.concat
         [ "cant apply fragment \""
         , key spread
@@ -30,7 +30,7 @@ unsupportedSpreadOnType parent spread = errorMessage $ T.concat
         , "\"."
         ]
 
-cycleOnFragment :: [T.Text] -> Errors
+cycleOnFragment :: [T.Text] -> GQLErrors
 cycleOnFragment fragments = errorMessage $ T.concat
         [ "fragment \""
         , head fragments

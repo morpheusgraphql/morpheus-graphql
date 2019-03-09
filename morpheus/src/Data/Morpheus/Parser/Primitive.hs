@@ -10,18 +10,14 @@ import qualified Data.Text                     as T
 import           Data.Attoparsec.Text
 import qualified Data.Attoparsec.Text          as AT
                                                 ( takeWhile )
-import           Control.Applicative
 import           Data.Morpheus.Types.JSType     ( JSType(..) )
 import           Control.Applicative
-import           Data.Char
 import           Data.Char                      ( isAlpha
                                                 , isDigit
                                                 , isSpace
                                                 , ord
                                                 )
 
-import           Data.Morpheus.Types.Error      ( ErrorLocation(..) )
-import           Data.List                      ( filter )
 import qualified Data.Attoparsec.Internal.Types
                                                as AT
 
@@ -69,24 +65,6 @@ variable = skipSpace *> char '$' *> token
 separator :: Parser Char
 separator = char ',' <|> char ' ' <|> char '\n' <|> char '\t'
 
-type WithPos a = (Int, Int, a)
-
-type Pos = ErrorLocation
-
-data Spaces = Line | Tab | Column deriving  ( Eq , Show) ;
-
-skipRow :: Parser Spaces
-skipRow = char '\n' >> pure Line
-
-skipTab :: Parser Spaces
-skipTab = char '\t' >> pure Tab
-
-skipEmpty :: Parser Spaces
-skipEmpty = char ' ' >> pure Column
-
-skipColumnRowSingle :: Parser Spaces
-skipColumnRowSingle = skipRow <|> skipTab <|> skipEmpty
-
 getPosition :: Parser Int
 getPosition = (AT.Parser internFunc)
     where internFunc t pos more _ succ' = succ' t pos more (AT.fromPos pos)
@@ -98,18 +76,5 @@ getNextLine = do
     char '\n'
     pure index
 
-
 getLines :: Parser [Int]
 getLines = many getNextLine
-
-countLines = length . filter (== Line)
-
-countColumns = length . filter (== Column)
-
-countMany :: Pos -> [Spaces] -> Pos
-countMany pos list = pos { line   = countLines list + (line pos)
-                         , column = countColumns list + (column pos)
-                         }
-
-skipColumnRow :: Pos -> Parser Pos
-skipColumnRow pos = countMany pos <$> (many skipColumnRowSingle)
