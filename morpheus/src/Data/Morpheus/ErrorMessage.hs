@@ -2,7 +2,6 @@
 
 module Data.Morpheus.ErrorMessage
     ( syntaxError
-    , unknownFragment
     , cannotQueryField
     , subfieldsNotSelected
     , handleError
@@ -14,7 +13,6 @@ module Data.Morpheus.ErrorMessage
     , invalidEnumOption
     , unknownArguments
     , fieldTypeMismatch
-    , unsupportedSpreadOnType
     )
 where
 
@@ -59,21 +57,6 @@ variableIsNotDefined meta = errorMessage $ T.concat
     , key meta
     , "\" is not defined by operation \""
     , className meta
-    , "\"."
-    ]
-
-unknownFragment :: MetaInfo -> [GQLError]
-unknownFragment meta =
-    errorMessage $ T.concat ["Unknown fragment \"", key meta, "\"."]
-
-unsupportedSpreadOnType :: MetaInfo -> MetaInfo -> [GQLError]
-unsupportedSpreadOnType parent spread = errorMessage $ T.concat
-    [ "cant apply fragment \""
-    , key spread
-    , "\" with type \""
-    , className spread
-    , "\" on type \""
-    , className parent
     , "\"."
     ]
 
