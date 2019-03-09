@@ -5,7 +5,7 @@ module Data.Morpheus.PreProcess.Spread
     )
 where
 
-import           Data.Text                      ( Text )
+import           Data.Text                      ( Text, pack )
 import qualified Data.Map                      as M
                                                 ( lookup )
 import           Data.List                      ( find )
