@@ -22,6 +22,8 @@ import           Data.Char                      ( isAlpha
 
 import           Data.Morpheus.Types.Error      ( ErrorLocation(..) )
 import           Data.List                      ( filter )
+import qualified Data.Attoparsec.Internal.Types
+                                               as AT
 
 replaceType :: T.Text -> T.Text
 replaceType "type" = "_type"
@@ -85,10 +87,22 @@ skipEmpty = char ' ' >> pure Column
 skipColumnRowSingle :: Parser Spaces
 skipColumnRowSingle = skipRow <|> skipTab <|> skipEmpty
 
+getPosition :: Parser Int
+getPosition = (AT.Parser internFunc)
+    where internFunc t pos more _ succ' = succ' t pos more (AT.fromPos pos)
 
-countLines = length . filter (== Line) 
+getNextLine :: Parser Int
+getNextLine = do
+    skipWhile (== '\n')
+    getPosition
 
-countColumns = length . filter (==Column)
+getLines :: Parser [Int]
+getLines = many getNextLine
+
+
+countLines = length . filter (== Line)
+
+countColumns = length . filter (== Column)
 
 countMany :: Pos -> [Spaces] -> Pos
 countMany pos list = pos { line   = countLines list + (line pos)
