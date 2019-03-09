@@ -39,6 +39,7 @@ import           Data.Morpheus.Types.Error      ( Position(..) )
 
 spread :: Parser (Text, QuerySelection)
 spread = do
+    skipSpace
     index <- getPosition
     string "..."
     key <- some (letter <|> char '_')
@@ -58,6 +59,7 @@ body :: Arguments -> Parser QuerySelection
 body args = do
     skipSpace
     char '{'
+    skipSpace
     entries <- seperated $ entry <|> spread
     skipSpace
     char '}'

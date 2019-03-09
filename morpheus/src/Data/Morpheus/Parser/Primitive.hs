@@ -93,8 +93,11 @@ getPosition = (AT.Parser internFunc)
 
 getNextLine :: Parser Int
 getNextLine = do
-    skipWhile (== '\n')
-    getPosition
+    manyTill anyChar (char '\n')
+    index <- getPosition
+    char '\n'
+    pure index
+
 
 getLines :: Parser [Int]
 getLines = many getNextLine

@@ -53,7 +53,7 @@ type ResolveIO  = ExceptT [ [Int] -> GQLError ] IO
 
 newtype EnumOf a = EnumOf { unpackEnum :: a }  deriving (Show, Generic , Data)
 
-failResolveIO :: [ [Int] -> GQLError ] -> ResolveIO a
+failResolveIO :: [[Int] -> GQLError] -> ResolveIO a
 failResolveIO = ExceptT . pure . Left
 
 data Argument =  Variable Text | Argument JSType deriving (Show, Generic)
@@ -82,6 +82,7 @@ data Fragment = Fragment {
 } deriving (Show, Generic)
 
 data GQLQueryRoot = GQLQueryRoot {
+    lineMarks:: [Int],
     fragments:: FragmentLib,
     queryBody :: GQLOperator,
     inputVariables:: Map Text JSType
