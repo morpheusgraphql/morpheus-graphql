@@ -11,7 +11,7 @@ import           Data.Text                      ( Text
 import qualified Data.Map                      as M
                                                 ( lookup )
 import           Data.List                      ( find )
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) , Position )
 import           Data.Morpheus.Error.Fragment   ( unknownFragment )
 import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , QuerySelection(..)
@@ -42,9 +42,9 @@ validateSpread
     -> Text
     -> Validation [(Text, QuerySelection)]
 validateSpread root frags location key = case M.lookup key frags of
-    Nothing -> Left $ spreadError root location metaData
+    Nothing -> Left $ unknownFragment (lineMarks root)  metaData
     Just (Fragment _ _ (SelectionSet _ gqlObj)) -> pure gqlObj
-    where metaData = MetaInfo { className = "", cons = "", key = key }
+    where metaData = MetaInfo { typeName = "", key = key, position = location}
 
 propagateSpread
     :: GQLQueryRoot

@@ -19,14 +19,14 @@ import           Data.Morpheus.PreProcess.Utils ( typeBy )
 import           Data.Morpheus.ErrorMessage     ( fieldTypeMismatch )
 import qualified Data.Morpheus.Schema.GQL__Type
                                                as T
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..), Position(..))
 
 typeMismatch :: MetaInfo -> JSType -> Text -> Validation JSType
 typeMismatch _ (JSString x) "String"  = pure (JSString x)
 typeMismatch _ (JSInt    x) "Int"     = pure (JSInt x)
 typeMismatch _ (JSBool   x) "Boolean" = pure (JSBool x)
 typeMismatch meta isType shouldType =
-    Left $ fieldTypeMismatch meta isType shouldType
+    Left $ fieldTypeMismatch [] meta isType shouldType
 
 
 validateFieldType :: MetaInfo -> JSType -> GQL__Type -> Validation JSType
@@ -35,15 +35,13 @@ validateFieldType meta x = typeMismatch meta x . T.name
 validateInputObject
     :: GQLTypeLib -> GQL__Type -> (Text, JSType) -> Validation (Text, JSType)
 validateInputObject typeLib _parentType (_name, JSObject fields) = do
-    _type   <- typeBy typeLib _parentType _name
+    _type   <- typeBy [] typeLib _parentType _name
     fields' <- mapM (validateInputObject typeLib _type) fields
     pure (_name, JSObject fields')
 
-validateInputObject typeLib _parentType (_key, x) =
-    typeBy typeLib _parentType _key >>= validateFieldType meta x >> pure
-        (_key, x)
+validateInputObject typeLib _parentType (_key, x) = typeBy [] typeLib _parentType _key >>= validateFieldType meta x >> pure (_key, x)
   where
-    meta = MetaInfo { className = T.name _parentType, cons = "", key = _key }
+    meta = MetaInfo { typeName = T.name _parentType,  key = _key , position = Position 0 }
 
 
 validateInputVariable
@@ -53,4 +51,4 @@ validateInputVariable typeLib _type (varName, JSObject fields) =
 validateInputVariable typeLib _type (varName, x) = validateFieldType meta
                                                                      x
                                                                      _type
-    where meta = MetaInfo { className = "", cons = "", key = varName }
+    where meta = MetaInfo { typeName = "", key = varName , position = Position 0 }
