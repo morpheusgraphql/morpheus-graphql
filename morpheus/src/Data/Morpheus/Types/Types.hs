@@ -17,6 +17,7 @@ module Data.Morpheus.Types.Types
     , Arguments
     , EnumOf(..)
     , GQLOperator(..)
+    , ParserPosition(..)
     )
 where
 
@@ -33,7 +34,7 @@ import           Data.Aeson                     ( ToJSON(..)
                                                 , pairs
                                                 )
 import           Data.Data
-import           Data.Morpheus.Types.Error     ( GQLError )
+import           Data.Morpheus.Types.Error      ( GQLError )
 import           Data.Morpheus.Types.JSType     ( JSType )
 import           Control.Monad.Trans            ( liftIO
                                                 , lift
@@ -60,10 +61,14 @@ type Validation a = Either [GQLError] a
 
 type SelectionSet  = [(Text,QuerySelection)]
 
+data ParserPosition = ParserPosition {
+    index:: Int
+} deriving (Show, Generic)
+
 data QuerySelection =
     SelectionSet Arguments SelectionSet |
     Field Arguments Text |
-    Spread Text |
+    Spread Text ParserPosition |
     QNull
     deriving (Show, Generic)
 

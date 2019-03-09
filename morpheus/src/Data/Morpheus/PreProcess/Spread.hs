@@ -25,8 +25,8 @@ shouldSpread list = case find isFragment list of
     Nothing -> False
 
 isFragment :: (Text, QuerySelection) -> Bool
-isFragment (key, Spread _) = True
-isFragment (key, _       ) = False
+isFragment (key, Spread _ _) = True
+isFragment (key, _         ) = False
 
 validateSpread :: FragmentLib -> Text -> Validation [(Text, QuerySelection)]
 validateSpread frags key = case M.lookup key frags of
@@ -41,8 +41,8 @@ propagateSpread
     :: GQLQueryRoot
     -> (Text, QuerySelection)
     -> Validation [(Text, QuerySelection)]
-propagateSpread root (key , Spread _) = validateSpread (fragments root) key
-propagateSpread root (text, value   ) = pure [(text, value)]
+propagateSpread root (key , Spread _ _) = validateSpread (fragments root) key
+propagateSpread root (text, value     ) = pure [(text, value)]
 
 spreadFields :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
 spreadFields root selectors = concat <$> mapM (propagateSpread root) selectors
