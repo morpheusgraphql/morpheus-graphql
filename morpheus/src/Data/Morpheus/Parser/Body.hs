@@ -32,23 +32,17 @@ import           Data.Morpheus.Types.Types      ( QuerySelection(..)
 import           Data.Morpheus.Parser.Arguments ( arguments )
 import           Data.Morpheus.Parser.Primitive ( token
                                                 , separator
-                                                , skipColumnRow
+                                                , getPosition
                                                 )
-import           Data.Morpheus.Types.Error      ( ErrorLocation(..) )
+import           Data.Morpheus.Types.Error      ( Position(..) )
 
-import qualified Data.Attoparsec.Internal.Types
-                                               as AT
-
---getPosition :: Parser ParserPosition
---getPosition = ParserPosition <$> (AT.Parser internFunc)
---    where internFunc t pos more _ succ' = succ' t pos more (AT.fromPos pos)
 
 spread :: Parser (Text, QuerySelection)
 spread = do
-    position <- skipColumnRow $ ErrorLocation 0 0
+    index <- getPosition
     string "..."
     key <- some (letter <|> char '_')
-    return (pack key, Spread (pack key) position)
+    return (pack key, Spread (pack key) $ Position index)
 
 entry :: Parser (Text, QuerySelection)
 entry = do
@@ -64,8 +58,7 @@ body :: Arguments -> Parser QuerySelection
 body args = do
     skipSpace
     char '{'
-    position <- skipColumnRow $ ErrorLocation 0 0
-    entries  <- seperated $ entry <|> spread
+    entries <- seperated $ entry <|> spread
     skipSpace
     char '}'
     return (SelectionSet args entries)

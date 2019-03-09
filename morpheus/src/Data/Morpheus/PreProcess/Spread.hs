@@ -19,6 +19,7 @@ import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , GQLQueryRoot(..)
                                                 )
 import           Data.Morpheus.Types.Error      ( GQLError(..)
+                                                , Position(..)
                                                 , ErrorLocation(..)
                                                 )
 import qualified Data.Text                     as T
@@ -33,18 +34,18 @@ isFragment (key, Spread _ _) = True
 isFragment (key, _         ) = False
 
 
-balaba loc x = [GQLError { message = x, locations = [loc] }]
+generateGQLError (Position loc) lines = [ErrorLocation loc 0]
 
-spreadError :: ErrorLocation -> MetaInfo -> [GQLError]
+spreadError :: Position -> MetaInfo -> [[Int] -> GQLError]
 spreadError loc meta =
-    balaba loc $ T.concat ["Unknown fragment \"", key meta, "\"."]
-
+    [ \lines -> GQLError
+          { message   = T.concat ["Unknown fragment \"", key meta, "\"."]
+          , locations = generateGQLError loc lines
+          }
+    ]
 
 validateSpread
-    :: FragmentLib
-    -> ErrorLocation
-    -> Text
-    -> Validation [(Text, QuerySelection)]
+    :: FragmentLib -> Position -> Text -> Validation [(Text, QuerySelection)]
 validateSpread frags location key = case M.lookup key frags of
     Nothing -> Left $ spreadError location metaData
     Just (Fragment _ _ (SelectionSet _ gqlObj)) -> pure gqlObj

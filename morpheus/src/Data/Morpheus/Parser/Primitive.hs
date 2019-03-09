@@ -99,7 +99,6 @@ getNextLine = do
 getLines :: Parser [Int]
 getLines = many getNextLine
 
-
 countLines = length . filter (== Line)
 
 countColumns = length . filter (== Column)

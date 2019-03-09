@@ -55,7 +55,8 @@ import           Data.Morpheus.Generics.GQLMutation
                                                 )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQLTypeLib )
-import           Data.Morpheus.PreProcess.PreProcess       ( preProcessQuery )
+import           Data.Morpheus.PreProcess.PreProcess
+                                                ( preProcessQuery )
 import           Data.Aeson                     ( decode )
 import           Control.Monad.IO.Class         ( liftIO )
 import qualified Data.ByteString.Lazy.Char8    as B
@@ -98,7 +99,7 @@ interpreter
 interpreter rootResolver request = do
   value <- runExceptT $ parseRequest request >>= resolve rootResolver
   case value of
-    Left  x -> pure $ Errors x
+    Left  x -> pure $ Errors $ map (\t -> t []) x
     Right x -> pure $ Data x
 
 eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a

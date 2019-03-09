@@ -33,7 +33,10 @@ import           Data.Aeson                     ( ToJSON(..)
                                                 , pairs
                                                 )
 import           Data.Data
-import           Data.Morpheus.Types.Error      ( GQLError, ErrorLocation )
+import           Data.Morpheus.Types.Error      ( GQLError
+                                                , ErrorLocation
+                                                , Position
+                                                )
 import           Data.Morpheus.Types.JSType     ( JSType )
 import           Control.Monad.Trans            ( liftIO
                                                 , lift
@@ -46,17 +49,17 @@ import           Control.Monad.Trans.Except     ( ExceptT(..)
                                                 , runExceptT
                                                 )
 
-type ResolveIO  = ExceptT [GQLError] IO
+type ResolveIO  = ExceptT [ [Int] -> GQLError ] IO
 
 newtype EnumOf a = EnumOf { unpackEnum :: a }  deriving (Show, Generic , Data)
 
-failResolveIO :: [GQLError] -> ResolveIO a
+failResolveIO :: [ [Int] -> GQLError ] -> ResolveIO a
 failResolveIO = ExceptT . pure . Left
 
 data Argument =  Variable Text | Argument JSType deriving (Show, Generic)
 type Arguments = [(Text,Argument)]
 
-type Validation a = Either [GQLError] a
+type Validation a = Either [ [Int] -> GQLError ] a
 
 type SelectionSet  = [(Text,QuerySelection)]
 
@@ -64,9 +67,9 @@ type SelectionSet  = [(Text,QuerySelection)]
 data QuerySelection =
     SelectionSet Arguments SelectionSet |
     Field Arguments Text |
-    Spread Text ErrorLocation |
+    Spread Text Position |
     QNull
-    deriving (Show, Generic)
+    deriving (Show)
 
 data GQLOperator = QueryOperator Text QuerySelection | MutationOperator Text QuerySelection
 
