@@ -34,7 +34,7 @@ import           Data.Morpheus.Parser.Primitive ( token
                                                 , separator
                                                 , getPosition
                                                 )
-import           Data.Morpheus.Types.Error      ( Position(..) )
+import           Data.Morpheus.Types.MetaInfo      ( Position(..) )
 
 
 spread :: Parser (Text, QuerySelection)
