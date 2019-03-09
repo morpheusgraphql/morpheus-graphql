@@ -56,6 +56,7 @@ import           Data.Morpheus.Generics.DeriveResolvers
                                                 )
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
                                                 , initialMeta
+                                                , Position(..)
                                                 )
 import           Data.Morpheus.Generics.GQLEnum ( GQLEnum(..) )
 import qualified Data.Morpheus.Schema.GQL__Field
@@ -78,7 +79,8 @@ class GQLSelection a where
     encode :: QuerySelection ->  a -> ResolveIO JSType
     default encode :: ( Generic a, D.Data a, DeriveResolvers (Rep a) , Show a) => QuerySelection -> a -> ResolveIO JSType
     encode (SelectionSet _ selection) = resolveBySelection selection . deriveResolvers initialMeta  . from
-    encode (Field args key) = \x -> failResolveIO $ Err.subfieldsNotSelected $ MetaInfo "" "" key
+    encode (Field args key) = \x -> failResolveIO $ Err.subfieldsNotSelected [] meta
+        where meta = MetaInfo { typeName = "" , key = key , position = Position 0 }
 
     fieldType :: Proxy a -> T.Text -> GQL__Field
     default fieldType :: (Show a, Selectors (Rep a) GQL__Field , D.Typeable a) => Proxy a -> T.Text -> GQL__Field
