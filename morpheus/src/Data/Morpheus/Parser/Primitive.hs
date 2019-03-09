@@ -85,11 +85,15 @@ skipEmpty = char ' ' >> pure Column
 skipColumnRowSingle :: Parser Spaces
 skipColumnRowSingle = skipRow <|> skipTab <|> skipEmpty
 
+
+countLines = length . filter (== Line) 
+
+countColumns = length . filter (==Column)
+
 countMany :: Pos -> [Spaces] -> Pos
-countMany pos list = pos
-    { line   = (length $ filter (\x -> x == Line) list)
-    , column = (length $ filter (\x -> x == Tab) list)
-    }
+countMany pos list = pos { line   = countLines list + (line pos)
+                         , column = countColumns list + (column pos)
+                         }
 
 skipColumnRow :: Pos -> Parser Pos
 skipColumnRow pos = countMany pos <$> (many skipColumnRowSingle)
