@@ -111,15 +111,15 @@ resolve
 resolve (SelectionSet gqlArgs body) (TypeHolder args) (Resolver resolver) =
     (ExceptT $ pure $ decodeArgs gqlArgs args) >>= resolver >>= encode
         (SelectionSet gqlArgs body)
-resolve (Field gqlArgs field) (TypeHolder args) (Resolver resolver) =
+resolve (Field gqlArgs field pos) (TypeHolder args) (Resolver resolver) =
     (ExceptT $ pure $ decodeArgs gqlArgs args) >>= resolver >>= encode
-        (Field gqlArgs field)
+        (Field gqlArgs field pos)
 resolve query _ (Some value) = encode query value
 resolve _ _ None = ExceptT $ pure $ Err.handleError "resolver not implemented"
 
 instance (Show a, Show p, GQLSelection a , GQLArgs p ) => GQLSelection (p ::-> a) where
     encode (SelectionSet args body) field = resolve (SelectionSet args body) (getType field) field
-    encode (Field args body) field = resolve (Field args body) (getType field) field
+    encode (Field args body pos) field = resolve (Field args body pos) (getType field) field
     encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
     encode x (Some a) = encode x a
     encode x None = pure JSNull
@@ -151,7 +151,7 @@ instance GQLSelection Bool where
     fieldType _ name = F.createFieldWith name (createScalar "Boolean") []
 
 instance GQLSelection a => GQLSelection [a] where
-    encode (Field _ _) x =  pure $ JSList []
+    encode (Field _ _ _) x =  pure $ JSList []
     encode query list = JSList <$> mapM (encode query) list
     introspect _ = introspect (Proxy :: Proxy  a)
     fieldType _ = wrapAsListType <$> fieldType (Proxy :: Proxy  a)
