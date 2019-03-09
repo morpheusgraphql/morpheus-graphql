@@ -13,7 +13,9 @@ import qualified Data.Map                      as M
                                                 , toList
                                                 )
 import           Data.List                      ( find )
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) ,Position(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
+                                                , Position(..)
+                                                )
 import           Data.Morpheus.Error.Fragment   ( unknownFragment
                                                 , unsupportedSpreadOnType
                                                 , cycleOnFragment
@@ -58,8 +60,10 @@ getSpreadType :: FragmentLib -> GQL__Type -> Text -> Validation GQL__Type
 getSpreadType frags _type key = getFragment (spread "") key frags >>= fragment
   where
     fragment fg = compareFragmentType parent (spread $ target fg) _type fg
-    parent = MetaInfo { typeName = T.name _type,  key = "" , position = Position 0 }
-    spread typeName = MetaInfo { typeName = typeName, key = key , position = Position 0  }
+    parent =
+        MetaInfo { typeName = T.name _type, key = "", position = Position 0 }
+    spread typeName =
+        MetaInfo { typeName = typeName, key = key, position = Position 0 }
 
 
 validateFragmentFields
@@ -75,10 +79,11 @@ validateFragmentFields typeLib root _parent (_name, SelectionSet head selectors)
         head'  <- validateArguments typeLib root _field head
         concat <$> mapM (validateFragmentFields typeLib root _type) selectors
 
-validateFragmentFields typeLib root _parentType (_name, Field head field) = do
-    _field <- fieldOf [] _parentType _name
-    head'  <- validateArguments typeLib root _field head
-    pure []
+validateFragmentFields typeLib root _parentType (_name, Field head field _) =
+    do
+        _field <- fieldOf [] _parentType _name
+        head'  <- validateArguments typeLib root _field head
+        pure []
 
 validateFragmentFields lib root _parent (key, Spread value _) =
     getSpreadType (fragments root) _parent key >> pure [value]

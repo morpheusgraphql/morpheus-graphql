@@ -38,7 +38,7 @@ import           Data.Morpheus.Types.Error      ( GQLError
                                                 , GQLErrors
                                                 )
 import           Data.Morpheus.Types.JSType     ( JSType )
-import           Data.Morpheus.Types.MetaInfo     ( Position )
+import           Data.Morpheus.Types.MetaInfo   ( Position )
 import           Control.Monad.Trans            ( liftIO
                                                 , lift
                                                 , MonadTrans
@@ -67,7 +67,7 @@ type SelectionSet  = [(Text,QuerySelection)]
 
 data QuerySelection =
     SelectionSet Arguments SelectionSet |
-    Field Arguments Text |
+    Field Arguments Text Position|
     Spread Text Position |
     QNull
     deriving (Show)

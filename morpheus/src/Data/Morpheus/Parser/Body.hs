@@ -34,7 +34,7 @@ import           Data.Morpheus.Parser.Primitive ( token
                                                 , separator
                                                 , getPosition
                                                 )
-import           Data.Morpheus.Types.MetaInfo      ( Position(..) )
+import           Data.Morpheus.Types.MetaInfo   ( Position(..) )
 
 
 spread :: Parser (Text, QuerySelection)
@@ -50,7 +50,8 @@ entry = do
     skipSpace
     key   <- token
     args  <- try arguments <|> pure []
-    value <- (try $ body args) <|> (pure $ Field args key)
+    index <- getPosition
+    value <- (try $ body args) <|> (pure $ Field args key $ Position index)
     return (key, value)
 
 seperated x = x `sepBy` separator
