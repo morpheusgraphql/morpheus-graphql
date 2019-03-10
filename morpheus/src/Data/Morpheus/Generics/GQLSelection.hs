@@ -164,16 +164,22 @@ instance ( Show a, GQLEnum a , D.Typeable a  ) => GQLSelection (EnumOf a) where
 
 instance GQLSelection GQL__EnumValue where
     typeID _ = "__EnumValue"
+
 instance GQLSelection GQL__Type where
     typeID _ = "__Type"
+
 instance GQLSelection GQL__Field where
     typeID _ = "__Field"
+
 instance GQLSelection GQL__InputValue where
     typeID _ = "__InputValue"
+
 instance GQLSelection GQL__Schema where 
     typeID _ = "__Schema"
+
 instance GQLSelection GQL__Directive where
     typeID _ = "__Directive"
+
 instance GQLArgs GQL__Deprecation__Args
 instance GQLEnum GQL__TypeKind
 instance GQLEnum GQL__DirectiveLocation
