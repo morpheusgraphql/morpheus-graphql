@@ -14,7 +14,7 @@ import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , Argument(..)
                                                 )
 import           Data.Morpheus.Types.JSType     ( JSType(..) )
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..), Position(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 import qualified Data.Morpheus.Schema.GQL__Type
                                                as T
 import           Data.Morpheus.ErrorMessage     ( invalidEnumOption )
@@ -30,8 +30,4 @@ validateEnum _type (Argument (JSEnum argument)) =
   where
     unwrapField (Some x) = x
     error = Left $ invalidEnumOption [] meta
-    meta = MetaInfo {
-        typeName = (T.name _type) ,
-        key = argument,
-        position = Position 0
-    }
+    meta  = MetaInfo { typeName = (T.name _type), key = argument, position = 0 }

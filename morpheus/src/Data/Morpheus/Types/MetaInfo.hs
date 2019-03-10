@@ -10,11 +10,11 @@ where
 import           Data.Text                      ( Text )
 
 initialMeta :: MetaInfo
-initialMeta = MetaInfo { position = Position 0, typeName = "", key = "" }
+initialMeta = MetaInfo { position = 0, typeName = "", key = "" }
 
-type LineMarks = [Int];
+type LineMarks = [Position];
 
-newtype Position = Position { getPos :: Int } deriving (Show)
+type Position = Int;
 
 data MetaInfo = MetaInfo {
   position :: Position,

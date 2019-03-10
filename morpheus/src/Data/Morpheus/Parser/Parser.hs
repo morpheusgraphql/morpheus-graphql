@@ -38,7 +38,6 @@ import           Data.Morpheus.Parser.Fragment  ( fragment )
 import qualified Data.Morpheus.Parser.Mutation as M
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Morpheus.Parser.Primitive ( getLines )
-import           Data.Morpheus.Types.MetaInfo   (Position(..))
 
 
 request :: Parser GQLQueryRoot
@@ -58,12 +57,12 @@ getVariables = fromMaybe (fromList []) . variables
 
 parseReq requestBody = parseOnly request $ query requestBody
 
-scanLines requestBody root = do 
-    lines <- parseOnly getLines $ query requestBody 
-    pure root { lineMarks = lines}
+scanLines requestBody root = do
+    lines <- parseOnly getLines $ query requestBody
+    pure root { lineMarks = lines }
 
 
 parseGQL :: GQLRequest -> Validation GQLQueryRoot
 parseGQL requestBody = case parseReq requestBody >>= scanLines requestBody of
     Right root  -> Right $ root { inputVariables = getVariables requestBody }
-    Left  error -> Left $ syntaxError (pack $ show error) [] (Position 0)
+    Left  error -> Left $ syntaxError (pack $ show error) [] 0

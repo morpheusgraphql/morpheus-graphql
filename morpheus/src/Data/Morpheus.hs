@@ -61,7 +61,7 @@ import           Data.Aeson                     ( decode )
 import           Control.Monad.IO.Class         ( liftIO )
 import qualified Data.ByteString.Lazy.Char8    as B
 import           Data.Maybe                     ( fromMaybe )
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) , Position(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 
 data GQLRoot a b = GQLRoot {
   queryResolver :: a,
@@ -103,10 +103,10 @@ interpreter rootResolver request = do
     Right x -> pure $ Data x
 
 eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a
-eitherToResponse f (Left  x) = failResolveIO $ errorMessage [] (Position 0)  (pack $ show x)
+eitherToResponse f (Left  x) = failResolveIO $ errorMessage [] 0 (pack $ show x)
 eitherToResponse f (Right x) = pure (f x)
 
 parseRequest :: B.ByteString -> ResolveIO GQLRequest
 parseRequest text = case decode text of
   Just x  -> pure x
-  Nothing -> failResolveIO $ errorMessage [] (Position 0)  (pack $ show text)
+  Nothing -> failResolveIO $ errorMessage [] 0 (pack $ show text)

@@ -18,7 +18,7 @@ import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , EnumOf(..)
                                                 )
 import           Data.Morpheus.Types.JSType     ( JSType(..) )
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..), Position(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 import qualified Data.Morpheus.Schema.GQL__Type
                                                as T
 import qualified Data.Morpheus.Schema.InputValue
@@ -37,9 +37,9 @@ import           Data.Morpheus.PreProcess.InputObject
 
 getVariable :: GQLQueryRoot -> Text -> Validation JSType
 getVariable root key = case M.lookup key (inputVariables root) of
-    Nothing -> Left $ variableIsNotDefined [] meta
+    Nothing    -> Left $ variableIsNotDefined [] meta
     Just value -> pure value
-    where meta = MetaInfo { typeName = "TODO: Name" , key       = key , position = Position 0}
+    where meta = MetaInfo { typeName = "TODO: Name", key = key, position = 0 }
 
 checkVariableType
     :: GQLTypeLib
@@ -54,15 +54,11 @@ checkVariableType typeLib root (key, Variable tName) =
         EnumOf INPUT_OBJECT -> checkTypeInp _type key
         _                   -> Left $ unsupportedArgumentType [] meta
 
-    meta = MetaInfo
-            { typeName = tName
-            , position      = Position 0
-            , key       = key
-            }
+    meta = MetaInfo { typeName = tName, position = 0, key = key }
 
     checkTypeInp _type key = do
         variableValue <- getVariable root key
-        validateInputVariable typeLib _type (key,variableValue)
+        validateInputVariable typeLib _type (key, variableValue)
         pure (key, Variable tName)
 
 checkQueryVariables

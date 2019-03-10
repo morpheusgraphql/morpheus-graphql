@@ -13,9 +13,7 @@ import qualified Data.Map                      as M
                                                 , toList
                                                 )
 import           Data.List                      ( find )
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
-                                                , Position(..)
-                                                )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 import           Data.Morpheus.Error.Fragment   ( unknownFragment
                                                 , unsupportedSpreadOnType
                                                 , cycleOnFragment
@@ -60,10 +58,8 @@ getSpreadType :: FragmentLib -> GQL__Type -> Text -> Validation GQL__Type
 getSpreadType frags _type key = getFragment (spread "") key frags >>= fragment
   where
     fragment fg = compareFragmentType parent (spread $ target fg) _type fg
-    parent =
-        MetaInfo { typeName = T.name _type, key = "", position = Position 0 }
-    spread typeName =
-        MetaInfo { typeName = typeName, key = key, position = Position 0 }
+    parent = MetaInfo { typeName = T.name _type, key = "", position = 0 }
+    spread typeName = MetaInfo { typeName = typeName, key = key, position = 0 }
 
 
 validateFragmentFields

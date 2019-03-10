@@ -32,9 +32,7 @@ import           Data.Morpheus.Types.Types      ( Validation(..)
                                                 , GQLOperator(..)
                                                 )
 import           Data.Morpheus.Types.JSType     ( JSType(..) )
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
-                                                , Position(..)
-                                                )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 import           Data.Morpheus.ErrorMessage     ( handleError
                                                 , cannotQueryField
                                                 , requiredArgument
@@ -125,7 +123,7 @@ checkDuplicates x = case keys \\ noDuplicates keys of
     meta duplicates = MetaInfo
         { typeName = "-- TODO: Error handling"
         , key      = pack $ show duplicates
-        , position = Position 0
+        , position = 0
         }
 
 
