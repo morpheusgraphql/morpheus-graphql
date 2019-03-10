@@ -4,7 +4,7 @@ module Data.Morpheus.Types.Error
     ( GQLError(..)
     , ErrorLocation(..)
     , GQLErrors
-    , RenderError(..)
+    , JSONError(..)
     )
 where
 
@@ -30,7 +30,7 @@ data ErrorLocation = ErrorLocation {
 } deriving (Show , Generic, ToJSON)
 
 
-data RenderError = RenderError {
+data JSONError = JSONError {
     message::Text,
     locations:: [ErrorLocation]
 } deriving (Show , Generic , ToJSON)

@@ -62,6 +62,8 @@ import           Control.Monad.IO.Class         ( liftIO )
 import qualified Data.ByteString.Lazy.Char8    as B
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
+import           Data.Morpheus.Error.Utils      ( renderErrors )
+
 
 data GQLRoot a b = GQLRoot {
   queryResolver :: a,
@@ -99,7 +101,7 @@ interpreter
 interpreter rootResolver request = do
   value <- runExceptT $ parseRequest request >>= resolve rootResolver
   case value of
-    Left  x -> pure $ Errors x
+    Left  x -> pure $ Errors $ renderErrors x
     Right x -> pure $ Data x
 
 eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a

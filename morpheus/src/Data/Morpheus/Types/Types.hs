@@ -36,6 +36,7 @@ import           Data.Data
 import           Data.Morpheus.Types.Error      ( GQLError
                                                 , ErrorLocation
                                                 , GQLErrors
+                                                , JSONError(..)
                                                 )
 import           Data.Morpheus.Types.JSType     ( JSType )
 import           Data.Morpheus.Types.MetaInfo   ( Position )
@@ -113,7 +114,7 @@ instance (ToJSON o) => ToJSON ( p ::->  o) where
     toJSON (Some o) = toJSON o
     toJSON None = Null
 
-data GQLResponse = Data JSType | Errors [GQLError]  deriving (Show,Generic)
+data GQLResponse = Data JSType | Errors [JSONError]  deriving (Show,Generic)
 
 instance ToJSON  GQLResponse where
   toEncoding (Data _data) = pairs $ "data" .= _data
@@ -123,4 +124,4 @@ data GQLRequest = GQLRequest {
     query:: Text
     ,operationName:: Maybe Text
     ,variables:: Maybe (Map Text JSType)
-} deriving (Show,Generic,ToJSON,FromJSON)
+} deriving (Show,Generic,FromJSON)

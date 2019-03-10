@@ -65,8 +65,7 @@ variableIsNotDefined lines meta = errorMessage lines (position meta) text
 unknownArguments :: Text -> [Text] -> GQLErrors
 unknownArguments fieldName = map keyToError
  where
-  keyToError x =
-    GQLError { message = toMessage x, locations = [ErrorLocation 0 0] }
+  keyToError x = GQLError { desc = toMessage x, posIndex = 0 }
   toMessage key =
     T.concat ["Unknown Argument \"", key, "\" on Field \"", fieldName, "\"."]
 
