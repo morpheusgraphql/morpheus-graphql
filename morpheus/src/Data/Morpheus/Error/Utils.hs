@@ -37,6 +37,6 @@ lineIndexAndNumber position lines =
     linePos x  = (maximum linesBefore) + 1
 
 
-errorLocation lineMarks pos = do
-    let (line, position) = lineIndexAndNumber pos lineMarks
+errorLocation lineBreaks pos = do
+    let (line, position) = lineIndexAndNumber pos lineBreaks
     ErrorLocation line (pos - position)
