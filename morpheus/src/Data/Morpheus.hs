@@ -113,10 +113,10 @@ interpreter rootResolver request = do
  where
 
 eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a
-eitherToResponse f (Left  x) = failResolveIO $ errorMessage [] 0 (pack $ show x)
+eitherToResponse f (Left  x) = failResolveIO $ errorMessage 0 (pack $ show x)
 eitherToResponse f (Right x) = pure (f x)
 
 parseRequest :: B.ByteString -> ResolveIO GQLRequest
 parseRequest text = case decode text of
   Just x  -> pure x
-  Nothing -> failResolveIO $ errorMessage [] 0 (pack $ show text)
+  Nothing -> failResolveIO $ errorMessage 0 (pack $ show text)

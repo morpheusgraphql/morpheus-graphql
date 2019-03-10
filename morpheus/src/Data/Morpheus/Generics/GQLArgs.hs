@@ -42,7 +42,7 @@ instance (Selector s, D.Typeable t , GQLInput t) => Selectors (M1 S s (K1 R t)) 
 instance GQLInput a => GDecode Arguments (K1 i a)  where
     gDecode meta args =
         case lookup (key meta) args of
-            Nothing -> Left $ Err.requiredArgument [] meta
+            Nothing -> Left $ Err.requiredArgument meta
             Just (Argument x) -> K1 <$> decode x
             Just x -> Err.handleError $ T.pack $ show x
 
