@@ -20,13 +20,13 @@ import           Data.Morpheus.Types.Error      ( GQLError(..)
 errorMessage :: LineMarks -> Position -> Text -> GQLErrors
 errorMessage list loc text = [GQLError { desc = text, posIndex = loc }]
 
-renderErrors :: [GQLError] -> [JSONError]
-renderErrors = map renderError
+renderErrors :: LineMarks -> [GQLError] -> [JSONError]
+renderErrors x = map (renderError x)
 
-renderError :: GQLError -> JSONError
-renderError error = JSONError
+renderError :: LineMarks -> GQLError -> JSONError
+renderError lineBreaks error = JSONError
     { message   = desc error
-    , locations = [errorLocation [] $ posIndex error]
+    , locations = [errorLocation lineBreaks $ posIndex error]
     }
 
 lineIndexAndNumber position lines =

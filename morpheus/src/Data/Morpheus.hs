@@ -28,7 +28,9 @@ import           Data.Morpheus.Generics.GQLSelection
 import           Data.Morpheus.Generics.GQLQuery
                                                 ( GQLQuery(..) )
 import           Data.Morpheus.Generics.GQLArgs ( GQLArgs )
-import           Data.Morpheus.Parser.Parser    ( parseGQL )
+import           Data.Morpheus.Parser.Parser    ( parseGQL
+                                                , parseLineBreaks
+                                                )
 import           Data.Morpheus.Types.JSType     ( JSType )
 import           Data.Morpheus.Types.Types      ( (::->)(Resolver)
                                                 , GQLResponse(..)
@@ -93,6 +95,11 @@ resolve rootResolver body = do
   queryRes    = queryResolver rootResolver
   mutationRes = mutationResolver rootResolver
 
+lineBreaks :: B.ByteString -> [Int]
+lineBreaks req = case decode req of
+  Just x  -> parseLineBreaks x
+  Nothing -> []
+
 interpreter
   :: (GQLQuery a, GQLMutation b)
   => GQLRoot a b
@@ -101,8 +108,9 @@ interpreter
 interpreter rootResolver request = do
   value <- runExceptT $ parseRequest request >>= resolve rootResolver
   case value of
-    Left  x -> pure $ Errors $ renderErrors x
+    Left  x -> pure $ Errors $ renderErrors (lineBreaks request) x
     Right x -> pure $ Data x
+ where
 
 eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a
 eitherToResponse f (Left  x) = failResolveIO $ errorMessage [] 0 (pack $ show x)

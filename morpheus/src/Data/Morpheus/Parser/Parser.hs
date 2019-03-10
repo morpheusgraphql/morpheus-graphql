@@ -1,7 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Data.Morpheus.Parser.Parser
     ( parseGQL
+    , parseLineBreaks
     )
 where
 
@@ -58,8 +57,8 @@ getVariables = fromMaybe (fromList []) . variables
 parseReq requestBody = parseOnly request $ query requestBody
 
 
-scanLines :: GQLRequest -> [Int]
-scanLines requestBody = case parseOnly getLines $ query requestBody of
+parseLineBreaks :: GQLRequest -> [Int]
+parseLineBreaks requestBody = case parseOnly getLines $ query requestBody of
     Right x -> x
     Left  _ -> []
 
