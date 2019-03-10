@@ -61,7 +61,7 @@ validateArgument
 validateArgument types root requestArgs inpValue =
     case lookup (I.name inpValue) requestArgs of
         Nothing -> if I.isRequired inpValue
-            then Left $ requiredArgument (lineMarks root) (I.inputValueMeta inpValue)
+            then Left $ requiredArgument (I.inputValueMeta inpValue)
             else pure (key, Argument JSNull)
         Just x ->
             replaceVariable root x

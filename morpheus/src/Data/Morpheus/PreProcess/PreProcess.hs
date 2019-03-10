@@ -99,15 +99,15 @@ validateBySchema
     -> Validation (Text, QuerySelection)
 validateBySchema typeLib root _parentType (_name, SelectionSet head selectors pos)
     = do
-        _field     <- fieldOf (lineMarks root) pos _parentType _name
-        _type      <- typeBy (lineMarks root) pos typeLib _parentType _name
+        _field     <- fieldOf  pos _parentType _name
+        _type      <- typeBy pos typeLib _parentType _name
         head'      <- validateArguments typeLib root _field head
         selectors' <- mapSelectors typeLib root _type selectors
         pure (_name, SelectionSet head' selectors' pos)
 
 validateBySchema typeLib root _parentType (_name, Field head field pos) = do
-    _field           <- fieldOf (lineMarks root) pos _parentType _name
-    _checksIfHasType <- typeBy (lineMarks root) pos typeLib _parentType _name
+    _field           <- fieldOf  pos _parentType _name
+    _checksIfHasType <- typeBy  pos typeLib _parentType _name
     head'            <- validateArguments typeLib root _field head
     pure (_name, Field head' field pos)
 
@@ -116,7 +116,7 @@ validateBySchema _ _ _ x = pure x
 checkDuplicates :: [(Text, a)] -> Validation [(Text, a)]
 checkDuplicates x = case keys \\ noDuplicates keys of
     []         -> pure x
-    duplicates -> Left $ cannotQueryField [] $ meta duplicates
+    duplicates -> Left $ cannotQueryField $ meta duplicates
   where
     keys         = map fst x
     noDuplicates = S.toList . S.fromList

@@ -44,7 +44,7 @@ type RootGraph = [(Text, Graph)];
 
 getFragment :: MetaInfo -> Text -> FragmentLib -> Validation Fragment
 getFragment meta key lib = case M.lookup key lib of
-    Nothing       -> Left $ unknownFragment [] meta
+    Nothing       -> Left $ unknownFragment meta
     Just fragment -> pure fragment
 
 compareFragmentType
@@ -52,7 +52,7 @@ compareFragmentType
 compareFragmentType parent child _type fragment =
     if (T.name _type == target fragment)
         then pure _type
-        else Left $ unsupportedSpreadOnType [] parent child
+        else Left $ unsupportedSpreadOnType parent child
 
 getSpreadType :: FragmentLib -> GQL__Type -> Text -> Validation GQL__Type
 getSpreadType frags _type key = getFragment (spread "") key frags >>= fragment
@@ -70,14 +70,14 @@ validateFragmentFields
     -> Validation Graph
 validateFragmentFields typeLib root _parent (_name, SelectionSet head selectors pos)
     = do
-        _type  <- typeBy (lineMarks root) pos typeLib _parent _name
-        _field <- fieldOf (lineMarks root) pos _parent _name
+        _type  <- typeBy pos typeLib _parent _name
+        _field <- fieldOf pos _parent _name
         head'  <- validateArguments typeLib root _field head
         concat <$> mapM (validateFragmentFields typeLib root _type) selectors
 
 validateFragmentFields typeLib root _parentType (_name, Field head field pos) =
     do
-        _field <- fieldOf (lineMarks root) pos _parentType _name
+        _field <- fieldOf pos _parentType _name
         head'  <- validateArguments typeLib root _field head
         pure []
 

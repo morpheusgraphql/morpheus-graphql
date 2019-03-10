@@ -37,7 +37,7 @@ import           Data.Morpheus.PreProcess.InputObject
 
 getVariable :: GQLQueryRoot -> Text -> Validation JSType
 getVariable root key = case M.lookup key (inputVariables root) of
-    Nothing    -> Left $ variableIsNotDefined [] meta
+    Nothing    -> Left $ variableIsNotDefined meta
     Just value -> pure value
     where meta = MetaInfo { typeName = "TODO: Name", key = key, position = 0 }
 
@@ -52,7 +52,7 @@ checkVariableType typeLib root (key, Variable tName) =
     checkType _type = case T.kind _type of
         EnumOf SCALAR       -> checkTypeInp _type key
         EnumOf INPUT_OBJECT -> checkTypeInp _type key
-        _                   -> Left $ unsupportedArgumentType [] meta
+        _                   -> Left $ unsupportedArgumentType meta
 
     meta = MetaInfo { typeName = tName, position = 0, key = key }
 
