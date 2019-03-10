@@ -4,7 +4,7 @@ module Data.Morpheus.Types.Error
     ( GQLError(..)
     , ErrorLocation(..)
     , GQLErrors
-    , InternalError(..)
+    , RenderError(..)
     )
 where
 
@@ -16,12 +16,13 @@ import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
 
 
-data InternalError = InternalError {
+data GQLError = GQLError {
     desc :: Text ,
     posIndex :: Int
 } deriving (Show)
 
-type GQLErrors = [GQLError ]
+type GQLErrors = [ GQLError ]
+
 
 data ErrorLocation = ErrorLocation {
     line :: Int
@@ -29,7 +30,7 @@ data ErrorLocation = ErrorLocation {
 } deriving (Show , Generic, ToJSON)
 
 
-data GQLError = GQLError {
+data RenderError = RenderError {
     message::Text,
     locations:: [ErrorLocation]
 } deriving (Show , Generic , ToJSON)
