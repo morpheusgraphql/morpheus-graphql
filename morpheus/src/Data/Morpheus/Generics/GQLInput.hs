@@ -25,7 +25,7 @@ import           Data.Morpheus.Types.Introspection
                                                 , createInputValue
                                                 )
 import qualified Data.Map                      as M
-import           Data.Morpheus.Generics.GQLEnum ( GQLEnum(..) )
+import qualified Data.Morpheus.Generics.GQLEnum as E ( GQLEnum(..) )
 import qualified Data.Morpheus.Schema.GQL__InputValue
                                                as I
                                                 ( GQL__InputValue(..) )
@@ -90,10 +90,10 @@ instance (GQLInput a , Show a, Typeable a ) => GQLInput (Maybe a) where
     typeInfo _ name =  (typeInfo (Proxy :: Proxy a) name) { I.defaultValue = "Nothing" }
     introInput _  typeLib = typeLib
 
-instance ( Show a, GQLEnum a ) => GQLInput (EnumOf a) where
-    decode (JSEnum text) = pure $ EnumOf (decodeEnum (JSEnum text))
-    typeInfo _  = enumType (Proxy :: Proxy a)
-    introInput _ = introspectEnum (Proxy :: Proxy a)
+instance ( Show a, E.GQLEnum a ) => GQLInput (EnumOf a) where
+    decode (JSEnum text) = pure $ EnumOf (E.decode (JSEnum text))
+    typeInfo _ = E.enumType (Proxy:: Proxy a)
+    introInput _ = E.introspect (Proxy:: Proxy a)
 
 
 

@@ -32,8 +32,6 @@ import           Data.Morpheus.Schema.GQL__Schema
                                                 ( GQL__Schema )
 import           Data.Morpheus.Schema.GQL__Directive
                                                 ( GQL__Directive )
-import           Data.Morpheus.Schema.GQL__DirectiveLocation
-                                                ( GQL__DirectiveLocation(..) )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type(..)
                                                 , GQL__Field
@@ -58,7 +56,7 @@ import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
                                                 , initialMeta
                                                 , Position(..)
                                                 )
-import           Data.Morpheus.Generics.GQLEnum ( GQLEnum(..) )
+import qualified Data.Morpheus.Generics.GQLEnum as E ( GQLEnum(..) )
 import qualified Data.Morpheus.Schema.GQL__Field
                                                as F
                                                 ( GQL__Field(..)
@@ -152,15 +150,15 @@ instance GQLSelection Bool where
     fieldType _ name = F.createFieldWith name (createScalar "Boolean") []
 
 instance (GQLSelection a , D.Typeable a ) => GQLSelection [a] where
-    encode (Field _ _ _) x =  pure $ JSList []
+    encode (Field {}) x =  pure $ JSList []
     encode query list = JSList <$> mapM (encode query) list
     introspect _ = introspect (Proxy :: Proxy  a)
     fieldType _ = wrapAsListType <$> fieldType (Proxy :: Proxy  a)
 
-instance ( Show a, GQLEnum a , D.Typeable a  ) => GQLSelection (EnumOf a) where
+instance ( Show a, E.GQLEnum a , D.Typeable a  ) => GQLSelection (EnumOf a) where
     encode _ = pure . JSString . T.pack . show . unpackEnum
-    fieldType _  = enumFieldType (Proxy :: Proxy a)
-    introspect _ = introspectEnum (Proxy :: Proxy a)
+    fieldType _  = E.fieldType (Proxy :: Proxy a)
+    introspect _ = E.introspect (Proxy :: Proxy a)
 
 instance GQLSelection GQL__EnumValue where
     typeID _ = "__EnumValue"
@@ -181,5 +179,3 @@ instance GQLSelection GQL__Directive where
     typeID _ = "__Directive"
 
 instance GQLArgs GQL__Deprecation__Args
-instance GQLEnum GQL__TypeKind
-instance GQLEnum GQL__DirectiveLocation

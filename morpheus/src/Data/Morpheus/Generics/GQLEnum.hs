@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables , AllowAmbiguousTypes , DefaultSignatures, FlexibleContexts #-}
 
-module Data.Morpheus.Generics.GQLEnum where
+module Data.Morpheus.Generics.GQLEnum (GQLEnum(decode,introspect,enumType,fieldType)) where
 
 import           GHC.Generics
 import qualified Data.Data                     as D
@@ -14,34 +14,38 @@ import qualified Data.Morpheus.Schema.GQL__Field
                                                 ( createFieldWith )
 import           Data.Morpheus.Generics.GDecodeEnum
                                                 ( GDecodeEnum(..) )
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 import           Data.Morpheus.Types.JSType     ( JSType(..) )
-
-
-getType :: D.Typeable a => a -> T.Text
-getType = renameSystemNames . T.pack . show . D.typeOf
-
-renameSystemNames = T.replace "GQL__" "__"
-
+import           Data.Morpheus.Schema.GQL__DirectiveLocation
+                                                ( GQL__DirectiveLocation(..) )
 
 class GQLEnum a where
-    decodeEnum :: JSType -> a
-    default decodeEnum :: ( Show a  , Generic a, D.Data a , GDecodeEnum (Rep a) ) => JSType -> a
-    decodeEnum (JSEnum text) = to $ gToEnum text
+    decode :: JSType -> a
+    default decode :: ( Show a  , Generic a, D.Data a , GDecodeEnum (Rep a) ) => JSType -> a
+    decode (JSEnum text) = to $ gToEnum text
+
+    typeID :: Proxy a -> T.Text
+    default typeID :: D.Typeable a => Proxy a -> T.Text
+    typeID _ = T.pack $ show $ D.typeOf (undefined::a)
 
     enumType :: Proxy a -> T.Text -> I.GQL__InputValue
     default enumType :: (Show a, D.Typeable a) => Proxy a -> T.Text -> I.GQL__InputValue
-    enumType _ name  = I.createInputValue (renameSystemNames name) $ getType (undefined::a)
+    enumType proxy name  = I.createInputValue name $ typeID proxy
 
-    enumFieldType :: Proxy a -> T.Text -> I.GQL__Field
-    default enumFieldType :: (Show a, D.Typeable a) => Proxy a -> T.Text -> I.GQL__Field
-    enumFieldType _ name  = F.createFieldWith (renameSystemNames name) (I.createEnum  (getType (undefined::a)) []) []
+    fieldType :: Proxy a -> T.Text -> I.GQL__Field
+    default fieldType :: (Show a, D.Typeable a) => Proxy a -> T.Text -> I.GQL__Field
+    fieldType proxy name  = F.createFieldWith  name (I.createEnum  (typeID proxy) []) []
 
-    introspectEnum :: Proxy a -> I.GQLTypeLib -> I.GQLTypeLib
-    default introspectEnum :: (Show a, D.Typeable a , GDecodeEnum (Rep a) ) => Proxy a -> I.GQLTypeLib -> I.GQLTypeLib
-    introspectEnum _  typeLib = do
-            let typeName = getType (undefined::a)
-            let tags = getTags (Proxy:: Proxy (Rep a))
-            case M.lookup typeName typeLib of
+    introspect :: Proxy a -> I.GQLTypeLib -> I.GQLTypeLib
+    default introspect :: (Show a, D.Typeable a , GDecodeEnum (Rep a) ) => Proxy a -> I.GQLTypeLib -> I.GQLTypeLib
+    introspect proxy  typeLib = case M.lookup typeName typeLib of
                 Just _ -> typeLib
                 Nothing -> M.insert typeName (I.createEnum typeName tags) typeLib
+        where
+            typeName = typeID proxy
+            tags = getTags (Proxy:: Proxy (Rep a))
+
+instance GQLEnum I.GQL__TypeKind where
+    typeID _ = "__TypeKind"
+
+instance GQLEnum GQL__DirectiveLocation where
+    typeID _ = "__DirectiveLocation"
