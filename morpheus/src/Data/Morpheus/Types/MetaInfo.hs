@@ -3,7 +3,7 @@ module Data.Morpheus.Types.MetaInfo
   ( MetaInfo(..)
   , initialMeta
   , Position(..)
-  , LineMarks
+  , LineBreaks
   )
 where
 
@@ -12,7 +12,7 @@ import           Data.Text                      ( Text )
 initialMeta :: MetaInfo
 initialMeta = MetaInfo { position = 0, typeName = "", key = "" }
 
-type LineMarks = [Position];
+type LineBreaks = [Position];
 
 type Position = Int;
 

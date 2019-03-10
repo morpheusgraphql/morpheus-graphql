@@ -85,7 +85,6 @@ data Fragment = Fragment {
 
 
 data GQLQueryRoot = GQLQueryRoot {
-    lineMarks:: [Int],
     fragments:: FragmentLib,
     queryBody :: GQLOperator,
     inputVariables:: Map Text JSType

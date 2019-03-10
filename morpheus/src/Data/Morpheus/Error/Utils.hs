@@ -7,7 +7,7 @@ where
 
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
                                                 , Position(..)
-                                                , LineMarks
+                                                , LineBreaks
                                                 )
 import           Data.Text                      ( Text )
 import           Data.Morpheus.Types.Error      ( GQLError(..)
@@ -20,10 +20,10 @@ import           Data.Morpheus.Types.Error      ( GQLError(..)
 errorMessage :: Position -> Text -> GQLErrors
 errorMessage pos text = [GQLError { desc = text, posIndex = pos }]
 
-renderErrors :: LineMarks -> [GQLError] -> [JSONError]
+renderErrors :: LineBreaks -> [GQLError] -> [JSONError]
 renderErrors x = map (renderError x)
 
-renderError :: LineMarks -> GQLError -> JSONError
+renderError :: LineBreaks -> GQLError -> JSONError
 renderError lineBreaks error = JSONError
     { message   = desc error
     , locations = [errorLocation lineBreaks $ posIndex error]

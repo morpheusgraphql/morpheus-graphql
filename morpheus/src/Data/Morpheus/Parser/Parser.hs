@@ -46,8 +46,7 @@ request = do
     skipSpace
     endOfInput
     pure GQLQueryRoot
-        { lineMarks      = []
-        , queryBody      = queryValue
+        { queryBody      = queryValue
         , fragments      = fragmentLib
         , inputVariables = fromList []
         }
