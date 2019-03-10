@@ -29,7 +29,6 @@ import           Data.Morpheus.Types.JSType     ( JSType(..) )
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
                                                 , initialMeta
                                                 )
-import           Data.Morpheus.Generics.GQLArgs ( GQLArgs(..) )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQL__Type(..)
                                                 , GQL__Field

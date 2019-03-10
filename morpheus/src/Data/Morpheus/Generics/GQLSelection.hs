@@ -27,7 +27,7 @@ import           Data.Morpheus.Types.Types      ( SelectionSet
                                                 )
 import           Data.Morpheus.Types.JSType     ( JSType(..) )
 import qualified Data.Morpheus.ErrorMessage    as Err
-import           Data.Morpheus.Generics.GQLArgs ( GQLArgs(..) )
+import qualified Data.Morpheus.Generics.GQLArgs as Args ( GQLArgs(..) )
 import           Data.Morpheus.Schema.GQL__Schema
                                                 ( GQL__Schema )
 import           Data.Morpheus.Schema.GQL__Directive
@@ -38,7 +38,6 @@ import           Data.Morpheus.Types.Introspection
                                                 , GQL__TypeKind(..)
                                                 , GQL__InputValue
                                                 , GQLTypeLib
-                                                , GQL__Deprecation__Args
                                                 , GQL__EnumValue
                                                 , createType
                                                 , createField
@@ -98,25 +97,25 @@ class GQLSelection a where
             stack = map snd fieldTypes
             gqlFields = map fst fieldTypes
 
-getType :: (GQLSelection a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
+getType :: (GQLSelection a, Args.GQLArgs p) => (p ::-> a) -> (p ::-> a)
 getType _ = TypeHolder Nothing
 
 resolve
-    :: (Show a, Show p, GQLSelection a, GQLArgs p)
+    :: (Show a, Show p, GQLSelection a, Args.GQLArgs p)
     => QuerySelection
     -> p ::-> a
     -> p ::-> a
     -> ResolveIO JSType
 resolve (SelectionSet gqlArgs body pos) (TypeHolder args) (Resolver resolver) =
-    (ExceptT $ pure $ decodeArgs gqlArgs args) >>= resolver >>= encode
+    (ExceptT $ pure $ Args.decode gqlArgs args) >>= resolver >>= encode
         (SelectionSet gqlArgs body pos)
 resolve (Field gqlArgs field pos) (TypeHolder args) (Resolver resolver) =
-    (ExceptT $ pure $ decodeArgs gqlArgs args) >>= resolver >>= encode
+    (ExceptT $ pure $ Args.decode gqlArgs args) >>= resolver >>= encode
         (Field gqlArgs field pos)
 resolve query _ (Some value) = encode query value
 resolve _ _ None = ExceptT $ pure $ Err.handleError "resolver not implemented"
 
-instance (Show a, Show p ,GQLSelection a , GQLArgs p , D.Typeable ( p ::->a ) ) => GQLSelection (p ::-> a) where
+instance (Show a, Show p ,GQLSelection a , Args.GQLArgs p , D.Typeable ( p ::->a ) ) => GQLSelection (p ::-> a) where
     encode (SelectionSet args body pos) field = resolve (SelectionSet args body pos) (getType field) field
     encode (Field args body pos) field = resolve (Field args body pos) (getType field) field
     encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
@@ -124,9 +123,9 @@ instance (Show a, Show p ,GQLSelection a , GQLArgs p , D.Typeable ( p ::->a ) ) 
     encode x None = pure JSNull
     introspect  _  typeLib = resolveTypes typeLib $ args ++ fields
       where
-        args = map snd $ introspectArgs (Proxy::Proxy p)
+        args = map snd $ Args.introspect (Proxy::Proxy p)
         fields = [introspect (Proxy:: Proxy  a)]
-    fieldType _ name = (fieldType (Proxy:: Proxy  a) name ){ F.args = map fst $ introspectArgs (Proxy :: Proxy p) }
+    fieldType _ name = (fieldType (Proxy:: Proxy  a) name ){ F.args = map fst $ Args.introspect (Proxy :: Proxy p) }
 
 instance (Show a, GQLSelection a, D.Typeable a ) => GQLSelection (Maybe a) where
     encode _ Nothing = pure JSNull
@@ -177,5 +176,3 @@ instance GQLSelection GQL__Schema where
 
 instance GQLSelection GQL__Directive where
     typeID _ = "__Directive"
-
-instance GQLArgs GQL__Deprecation__Args
