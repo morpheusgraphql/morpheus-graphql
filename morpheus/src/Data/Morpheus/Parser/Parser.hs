@@ -57,12 +57,13 @@ getVariables = fromMaybe (fromList []) . variables
 
 parseReq requestBody = parseOnly request $ query requestBody
 
-scanLines requestBody root = do
-    lines <- parseOnly getLines $ query requestBody
-    pure root { lineMarks = lines }
 
+scanLines :: GQLRequest -> [Int]
+scanLines requestBody = case parseOnly getLines $ query requestBody of
+    Right x -> x
+    Left  _ -> []
 
 parseGQL :: GQLRequest -> Validation GQLQueryRoot
-parseGQL requestBody = case parseReq requestBody >>= scanLines requestBody of
+parseGQL requestBody = case parseReq requestBody of
     Right root  -> Right $ root { inputVariables = getVariables requestBody }
     Left  error -> Left $ syntaxError (pack $ show error) [] 0
