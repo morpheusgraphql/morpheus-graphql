@@ -29,5 +29,5 @@ validateEnum _type (Argument (JSEnum argument)) =
         else error
   where
     unwrapField (Some x) = x
-    error = Left $ invalidEnumOption [] meta
+    error = Left $ invalidEnumOption meta
     meta  = MetaInfo { typeName = (T.name _type), key = argument, position = 0 }

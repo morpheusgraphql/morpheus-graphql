@@ -17,8 +17,8 @@ import           Data.Morpheus.Types.Error      ( GQLError(..)
                                                 )
 
 
-errorMessage :: LineMarks -> Position -> Text -> GQLErrors
-errorMessage list loc text = [GQLError { desc = text, posIndex = loc }]
+errorMessage :: Position -> Text -> GQLErrors
+errorMessage pos text = [GQLError { desc = text, posIndex = pos }]
 
 renderErrors :: LineMarks -> [GQLError] -> [JSONError]
 renderErrors x = map (renderError x)

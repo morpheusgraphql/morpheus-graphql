@@ -22,7 +22,6 @@ import           Data.Text                      ( Text(..)
                                                 , unpack
                                                 )
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
-                                                , LineMarks
                                                 , Position
                                                 )
 import           Data.Morpheus.Types.Error      ( GQLError(..)
@@ -37,22 +36,22 @@ import           Data.Morpheus.Types.JSType     ( JSType(..) )
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 
 
-handleError x = Left $ errorMessage [] 0 $ T.concat ["Field Error: ", x]
+handleError x = Left $ errorMessage 0 $ T.concat ["Field Error: ", x]
 
-invalidEnumOption :: LineMarks -> MetaInfo -> GQLErrors
-invalidEnumOption lines meta = errorMessage lines (position meta) text
+invalidEnumOption :: MetaInfo -> GQLErrors
+invalidEnumOption meta = errorMessage (position meta) text
  where
   text = T.concat
     ["Invalid Option \"", key meta, "\" on Enum \"", typeName meta, "\"."]
 
-unsupportedArgumentType :: LineMarks -> MetaInfo -> GQLErrors
-unsupportedArgumentType lines meta = errorMessage lines (position meta) text
+unsupportedArgumentType :: MetaInfo -> GQLErrors
+unsupportedArgumentType meta = errorMessage (position meta) text
  where
   text = T.concat
     ["Argument \"", key meta, "\" has unsuported type \"", typeName meta, "\"."]
 
-variableIsNotDefined :: LineMarks -> MetaInfo -> GQLErrors
-variableIsNotDefined lines meta = errorMessage lines (position meta) text
+variableIsNotDefined :: MetaInfo -> GQLErrors
+variableIsNotDefined meta = errorMessage (position meta) text
  where
   text = T.concat
     [ "Variable \""
@@ -69,8 +68,8 @@ unknownArguments fieldName = map keyToError
   toMessage key =
     T.concat ["Unknown Argument \"", key, "\" on Field \"", fieldName, "\"."]
 
-requiredArgument :: LineMarks -> MetaInfo -> GQLErrors
-requiredArgument lines meta = errorMessage lines (position meta) text
+requiredArgument :: MetaInfo -> GQLErrors
+requiredArgument meta = errorMessage (position meta) text
  where
   text = T.concat
     [ "Required Argument: \""
@@ -80,10 +79,8 @@ requiredArgument lines meta = errorMessage lines (position meta) text
     , "\"."
     ]
 
-fieldTypeMismatch :: LineMarks -> MetaInfo -> JSType -> Text -> GQLErrors
-fieldTypeMismatch lines meta isType should = errorMessage lines
-                                                          (position meta)
-                                                          text
+fieldTypeMismatch :: MetaInfo -> JSType -> Text -> GQLErrors
+fieldTypeMismatch meta isType should = errorMessage (position meta) text
  where
   text = T.concat
     [ "field \""
@@ -97,14 +94,14 @@ fieldTypeMismatch lines meta isType should = errorMessage lines
     , "\"."
     ]
 
-cannotQueryField :: LineMarks -> MetaInfo -> GQLErrors
-cannotQueryField lines meta = errorMessage lines (position meta) text
+cannotQueryField :: MetaInfo -> GQLErrors
+cannotQueryField meta = errorMessage (position meta) text
  where
   text = T.concat
     ["Cannot query field \"", key meta, "\" on type \"", typeName meta, "\"."]
 
-subfieldsNotSelected :: LineMarks -> MetaInfo -> GQLErrors
-subfieldsNotSelected lines meta = errorMessage lines (position meta) text
+subfieldsNotSelected :: MetaInfo -> GQLErrors
+subfieldsNotSelected meta = errorMessage (position meta) text
  where
   text = T.concat
     [ "Field \""
@@ -114,6 +111,5 @@ subfieldsNotSelected lines meta = errorMessage lines (position meta) text
     , "\" must have a selection of subfields"
     ]
 
-syntaxError :: Text -> LineMarks -> Position -> GQLErrors
-syntaxError e lines pos =
-  errorMessage lines pos $ T.concat ["Syntax Error: ", e]
+syntaxError :: Text -> Position -> GQLErrors
+syntaxError e pos = errorMessage pos $ T.concat ["Syntax Error: ", e]

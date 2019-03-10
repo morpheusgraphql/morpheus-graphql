@@ -7,24 +7,19 @@ module Data.Morpheus.Error.Fragment
         )
 where
 
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
-                                                , LineMarks
-                                                )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 import qualified Data.Text                     as T
 import           Data.Morpheus.Types.Error      ( GQLError(..)
                                                 , GQLErrors
                                                 )
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 
-unknownFragment :: LineMarks -> MetaInfo -> GQLErrors
-unknownFragment lines meta = errorMessage lines (position meta) text
+unknownFragment :: MetaInfo -> GQLErrors
+unknownFragment meta = errorMessage (position meta) text
         where text = T.concat ["Unknown fragment \"", key meta, "\"."]
 
-unsupportedSpreadOnType :: LineMarks -> MetaInfo -> MetaInfo -> GQLErrors
-unsupportedSpreadOnType lines parent spread = errorMessage
-        lines
-        (position parent)
-        text
+unsupportedSpreadOnType :: MetaInfo -> MetaInfo -> GQLErrors
+unsupportedSpreadOnType parent spread = errorMessage (position parent) text
     where
         text = T.concat
                 [ "cant apply fragment \""
@@ -37,7 +32,7 @@ unsupportedSpreadOnType lines parent spread = errorMessage
                 ]
 
 cycleOnFragment :: [T.Text] -> GQLErrors
-cycleOnFragment fragments = errorMessage [] 0 $ T.concat
+cycleOnFragment fragments = errorMessage 0 $ T.concat
         [ "fragment \""
         , head fragments
         , "\" has cycle \""
