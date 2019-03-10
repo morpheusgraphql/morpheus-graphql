@@ -1,9 +1,10 @@
-{-# LANGUAGE DeriveAnyClass, DeriveGeneric, DeriveDataTypeable #-}
+{-# LANGUAGE DeriveAnyClass, DeriveGeneric #-}
 
 module Data.Morpheus.Types.Error
     ( GQLError(..)
     , ErrorLocation(..)
     , GQLErrors
+    , InternalError
     )
 where
 
