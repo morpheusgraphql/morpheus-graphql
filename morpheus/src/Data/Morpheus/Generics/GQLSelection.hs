@@ -149,7 +149,7 @@ instance GQLSelection Bool where
     fieldType _ name = F.createFieldWith name (createScalar "Boolean") []
 
 instance (GQLSelection a , D.Typeable a ) => GQLSelection [a] where
-    encode (Field {}) x =  pure $ JSList []
+    encode Field {} x =  pure $ JSList []
     encode query list = JSList <$> mapM (encode query) list
     introspect _ = introspect (Proxy :: Proxy  a)
     fieldType _ = wrapAsListType <$> fieldType (Proxy :: Proxy  a)
