@@ -10,11 +10,16 @@ import qualified Data.Text                     as T
 import           Data.Attoparsec.Text
 import qualified Data.Attoparsec.Text          as AT
                                                 ( takeWhile )
-import           Control.Applicative
 import           Data.Morpheus.Types.JSType     ( JSType(..) )
 import           Control.Applicative
-import           Data.Char
+import           Data.Char                      ( isAlpha
+                                                , isDigit
+                                                , isSpace
+                                                , ord
+                                                )
 
+import qualified Data.Attoparsec.Internal.Types
+                                               as AT
 
 replaceType :: T.Text -> T.Text
 replaceType "type" = "_type"
@@ -59,3 +64,17 @@ variable = skipSpace *> char '$' *> token
 
 separator :: Parser Char
 separator = char ',' <|> char ' ' <|> char '\n' <|> char '\t'
+
+getPosition :: Parser Int
+getPosition = (AT.Parser internFunc)
+    where internFunc t pos more _ succ' = succ' t pos more (AT.fromPos pos)
+
+getNextLine :: Parser Int
+getNextLine = do
+    _     <- many (notChar '\n')
+    index <- getPosition
+    char '\n'
+    pure index
+
+getLines :: Parser [Int]
+getLines = many getNextLine

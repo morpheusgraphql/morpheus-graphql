@@ -56,6 +56,7 @@ import           Data.Morpheus.Generics.DeriveResolvers
                                                 )
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
                                                 , initialMeta
+                                                , Position(..)
                                                 )
 import           Data.Morpheus.Generics.GQLEnum ( GQLEnum(..) )
 import qualified Data.Morpheus.Schema.GQL__Field
@@ -63,8 +64,6 @@ import qualified Data.Morpheus.Schema.GQL__Field
                                                 ( GQL__Field(..)
                                                 , createFieldWith
                                                 )
-
-renameSystemNames = T.replace "GQL__" "__"
 
 instance GQLSelection a => DeriveResolvers (K1 i a)  where
     deriveResolvers meta (K1 src) = [(key meta, (`encode` src))]
@@ -77,25 +76,29 @@ class GQLSelection a where
 
     encode :: QuerySelection ->  a -> ResolveIO JSType
     default encode :: ( Generic a, D.Data a, DeriveResolvers (Rep a) , Show a) => QuerySelection -> a -> ResolveIO JSType
-    encode (SelectionSet _ selection) = resolveBySelection selection . deriveResolvers initialMeta  . from
-    encode (Field args key) = \x -> failResolveIO $ Err.subfieldsNotSelected $ MetaInfo "" "" key
+    encode (SelectionSet _ selection pos) = resolveBySelection selection . deriveResolvers initialMeta  . from
+    encode (Field args key pos) = \x -> failResolveIO $ Err.subfieldsNotSelected meta
+        where meta = MetaInfo { typeName = "" , key = key , position = pos }
+
+    typeID :: Proxy a -> T.Text
+    default typeID :: (D.Typeable a) => Proxy a -> T.Text
+    typeID _ = (T.pack . show . D.typeOf) (undefined::a)
 
     fieldType :: Proxy a -> T.Text -> GQL__Field
     default fieldType :: (Show a, Selectors (Rep a) GQL__Field , D.Typeable a) => Proxy a -> T.Text -> GQL__Field
-    fieldType _ name  = createField name typeName []
-        where typeName = renameSystemNames $ (T.pack . show . D.typeOf) (undefined::a)
+    fieldType proxy name  = createField name typeName []
+        where typeName =  typeID proxy
 
     introspect :: Proxy a -> GQLTypeLib -> GQLTypeLib
     default introspect :: (Show a, Selectors (Rep a) GQL__Field , D.Typeable a) => Proxy a -> GQLTypeLib -> GQLTypeLib
-    introspect _  typeLib = do
-        let typeName = renameSystemNames $ (T.pack . show . D.typeOf) (undefined::a)
-        case M.lookup typeName typeLib of
+    introspect proxy  typeLib = case M.lookup typeName typeLib of
             Just _ -> typeLib
             Nothing -> resolveTypes (M.insert typeName (createType typeName gqlFields) typeLib) stack
-                where
-                    fieldTypes  = getFields (Proxy :: Proxy (Rep a))
-                    stack = map snd fieldTypes
-                    gqlFields = map fst fieldTypes
+        where
+            typeName = typeID proxy
+            fieldTypes  = getFields (Proxy :: Proxy (Rep a))
+            stack = map snd fieldTypes
+            gqlFields = map fst fieldTypes
 
 getType :: (GQLSelection a, GQLArgs p) => (p ::-> a) -> (p ::-> a)
 getType _ = TypeHolder Nothing
@@ -106,18 +109,18 @@ resolve
     -> p ::-> a
     -> p ::-> a
     -> ResolveIO JSType
-resolve (SelectionSet gqlArgs body) (TypeHolder args) (Resolver resolver) =
+resolve (SelectionSet gqlArgs body pos) (TypeHolder args) (Resolver resolver) =
     (ExceptT $ pure $ decodeArgs gqlArgs args) >>= resolver >>= encode
-        (SelectionSet gqlArgs body)
-resolve (Field gqlArgs field) (TypeHolder args) (Resolver resolver) =
+        (SelectionSet gqlArgs body pos)
+resolve (Field gqlArgs field pos) (TypeHolder args) (Resolver resolver) =
     (ExceptT $ pure $ decodeArgs gqlArgs args) >>= resolver >>= encode
-        (Field gqlArgs field)
+        (Field gqlArgs field pos)
 resolve query _ (Some value) = encode query value
 resolve _ _ None = ExceptT $ pure $ Err.handleError "resolver not implemented"
 
-instance (Show a, Show p, GQLSelection a , GQLArgs p ) => GQLSelection (p ::-> a) where
-    encode (SelectionSet args body) field = resolve (SelectionSet args body) (getType field) field
-    encode (Field args body) field = resolve (Field args body) (getType field) field
+instance (Show a, Show p ,GQLSelection a , GQLArgs p , D.Typeable ( p ::->a ) ) => GQLSelection (p ::-> a) where
+    encode (SelectionSet args body pos) field = resolve (SelectionSet args body pos) (getType field) field
+    encode (Field args body pos) field = resolve (Field args body pos) (getType field) field
     encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
     encode x (Some a) = encode x a
     encode x None = pure JSNull
@@ -127,7 +130,7 @@ instance (Show a, Show p, GQLSelection a , GQLArgs p ) => GQLSelection (p ::-> a
         fields = [introspect (Proxy:: Proxy  a)]
     fieldType _ name = (fieldType (Proxy:: Proxy  a) name ){ F.args = map fst $ introspectArgs (Proxy :: Proxy p) }
 
-instance (Show a, GQLSelection a) => GQLSelection (Maybe a) where
+instance (Show a, GQLSelection a, D.Typeable a ) => GQLSelection (Maybe a) where
     encode _ Nothing = pure JSNull
     encode query (Just value) = encode query value
     introspect  _ = introspect (Proxy:: Proxy  a)
@@ -148,23 +151,35 @@ instance GQLSelection Bool where
     introspect _ = M.insert "Boolean" $ createScalar "Boolean"
     fieldType _ name = F.createFieldWith name (createScalar "Boolean") []
 
-instance GQLSelection a => GQLSelection [a] where
-    encode (Field _ _) x =  pure $ JSList []
+instance (GQLSelection a , D.Typeable a ) => GQLSelection [a] where
+    encode (Field _ _ _) x =  pure $ JSList []
     encode query list = JSList <$> mapM (encode query) list
     introspect _ = introspect (Proxy :: Proxy  a)
     fieldType _ = wrapAsListType <$> fieldType (Proxy :: Proxy  a)
 
-instance ( Show a, GQLEnum a ) => GQLSelection (EnumOf a) where
+instance ( Show a, GQLEnum a , D.Typeable a  ) => GQLSelection (EnumOf a) where
     encode _ = pure . JSString . T.pack . show . unpackEnum
     fieldType _  = enumFieldType (Proxy :: Proxy a)
     introspect _ = introspectEnum (Proxy :: Proxy a)
 
-instance GQLSelection GQL__EnumValue
-instance GQLSelection GQL__Type
-instance GQLSelection GQL__Field
-instance GQLSelection GQL__InputValue
-instance GQLSelection GQL__Schema
-instance GQLSelection GQL__Directive
+instance GQLSelection GQL__EnumValue where
+    typeID _ = "__EnumValue"
+
+instance GQLSelection GQL__Type where
+    typeID _ = "__Type"
+
+instance GQLSelection GQL__Field where
+    typeID _ = "__Field"
+
+instance GQLSelection GQL__InputValue where
+    typeID _ = "__InputValue"
+
+instance GQLSelection GQL__Schema where 
+    typeID _ = "__Schema"
+
+instance GQLSelection GQL__Directive where
+    typeID _ = "__Directive"
+
 instance GQLArgs GQL__Deprecation__Args
 instance GQLEnum GQL__TypeKind
 instance GQLEnum GQL__DirectiveLocation

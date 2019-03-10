@@ -37,34 +37,29 @@ import           Data.Morpheus.PreProcess.InputObject
 
 getVariable :: GQLQueryRoot -> Text -> Validation JSType
 getVariable root key = case M.lookup key (inputVariables root) of
-    Nothing -> Left $ variableIsNotDefined $ MetaInfo
-        { className = "TODO: Name"
-        , cons      = ""
-        , key       = key
-        }
+    Nothing    -> Left $ variableIsNotDefined meta
     Just value -> pure value
+    where meta = MetaInfo { typeName = "TODO: Name", key = key, position = 0 }
 
 checkVariableType
     :: GQLTypeLib
     -> GQLQueryRoot
     -> (Text, Argument)
     -> Validation (Text, Argument)
-checkVariableType typeLib root (key, Variable typeName) =
-    existsType typeName typeLib >>= checkType
+checkVariableType typeLib root (key, Variable tName pos) =
+    existsType tName typeLib >>= checkType
   where
     checkType _type = case T.kind _type of
         EnumOf SCALAR       -> checkTypeInp _type key
         EnumOf INPUT_OBJECT -> checkTypeInp _type key
-        _                   -> Left $ unsupportedArgumentType MetaInfo
-            { className = typeName
-            , cons      = ""
-            , key       = key
-            }
+        _                   -> Left $ unsupportedArgumentType meta
+
+    meta = MetaInfo { typeName = tName, position = pos, key = key }
 
     checkTypeInp _type key = do
         variableValue <- getVariable root key
-        validateInputVariable typeLib _type (key,variableValue)
-        pure (key, Variable typeName)
+        validateInputVariable typeLib _type (key, variableValue)
+        pure (key, Variable tName pos)
 
 checkQueryVariables
     :: GQLTypeLib
@@ -75,5 +70,7 @@ checkQueryVariables typeLib root = mapM (checkVariableType typeLib root)
 
 
 replaceVariable :: GQLQueryRoot -> Argument -> Validation Argument
-replaceVariable root (Variable key) = Argument <$> getVariable root key
-replaceVariable root a              = pure a
+replaceVariable root (Variable key pos) = do
+    value <- getVariable root key
+    pure $ Argument value pos
+replaceVariable root a = pure a

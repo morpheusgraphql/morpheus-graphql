@@ -41,10 +41,10 @@ instance (Selector s, DeriveResolvers f) => DeriveResolvers (M1 S s f) where
     deriveResolvers meta m@(M1 src) = deriveResolvers (meta{ key = T.pack $ selName m})  src
 
 instance (Datatype c, DeriveResolvers f) => DeriveResolvers (M1 D c f)  where
-    deriveResolvers meta m@(M1 src) = deriveResolvers (meta{ className = T.pack $ datatypeName m}) src
+    deriveResolvers meta m@(M1 src) = deriveResolvers (meta{ typeName = T.pack $ datatypeName m}) src
 
 instance (Constructor c  , DeriveResolvers f) => DeriveResolvers (M1 C c f)  where
-    deriveResolvers meta m@(M1 src) =  deriveResolvers (meta{ cons = T.pack $ conName m}) src
+    deriveResolvers meta m@(M1 src) =  deriveResolvers meta src
 
 instance (DeriveResolvers f , DeriveResolvers g ) => DeriveResolvers (f :*: g)  where
     deriveResolvers meta (a :*: b) = deriveResolvers meta a ++ deriveResolvers meta b

@@ -1,4 +1,7 @@
-module Data.Morpheus.Parser.RootHead (rootHeadArguments) where
+module Data.Morpheus.Parser.RootHead
+    ( rootHeadArguments
+    )
+where
 
 import           Data.Text                      ( Text(..)
                                                 , pack
@@ -16,23 +19,24 @@ import           Data.Attoparsec.Text           ( Parser
                                                 , string
                                                 , endOfInput
                                                 )
-import           Data.Morpheus.Types.Types     ( Arguments
+import           Data.Morpheus.Types.Types      ( Arguments
                                                 , Argument(..)
                                                 )
-import           Data.Morpheus.Parser.Primitive
-                                                ( token
+import           Data.Morpheus.Parser.Primitive ( token
                                                 , variable
+                                                , getPosition
                                                 )
 
 rootHeadVariable :: Parser (Text, Argument)
 rootHeadVariable = do
     skipSpace
+    pos          <- getPosition
     variableName <- variable
     skipSpace
     char ':'
     skipSpace
     variableType <- token
-    pure (variableName, Variable variableType)
+    pure (variableName, Variable variableType pos)
 
 rootHeadArguments :: Parser Arguments
 rootHeadArguments = do

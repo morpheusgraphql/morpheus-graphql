@@ -33,8 +33,13 @@ import           Data.Aeson                     ( ToJSON(..)
                                                 , pairs
                                                 )
 import           Data.Data
-import           Data.Morpheus.Types.Error     ( GQLError )
+import           Data.Morpheus.Types.Error      ( GQLError
+                                                , ErrorLocation
+                                                , GQLErrors
+                                                , JSONError(..)
+                                                )
 import           Data.Morpheus.Types.JSType     ( JSType )
+import           Data.Morpheus.Types.MetaInfo   ( Position )
 import           Control.Monad.Trans            ( liftIO
                                                 , lift
                                                 , MonadTrans
@@ -46,26 +51,30 @@ import           Control.Monad.Trans.Except     ( ExceptT(..)
                                                 , runExceptT
                                                 )
 
-type ResolveIO  = ExceptT [GQLError] IO
+
+type Key = Text;
+
+type ResolveIO  = ExceptT GQLErrors IO
 
 newtype EnumOf a = EnumOf { unpackEnum :: a }  deriving (Show, Generic , Data)
 
-failResolveIO :: [GQLError] -> ResolveIO a
+failResolveIO :: GQLErrors -> ResolveIO a
 failResolveIO = ExceptT . pure . Left
 
-data Argument =  Variable Text | Argument JSType deriving (Show, Generic)
-type Arguments = [(Text,Argument)]
+data Argument =  Variable Key Position | Argument JSType Position deriving (Show, Generic)
 
-type Validation a = Either [GQLError] a
+type Arguments = [(Key,Argument)]
 
-type SelectionSet  = [(Text,QuerySelection)]
+type Validation a = Either GQLErrors a
+
+type SelectionSet  = [(Key,QuerySelection)]
 
 data QuerySelection =
-    SelectionSet Arguments SelectionSet |
-    Field Arguments Text |
-    Spread Text |
+    SelectionSet Arguments SelectionSet Position |
+    Field Arguments Key Position|
+    Spread Key Position |
     QNull
-    deriving (Show, Generic)
+    deriving (Show)
 
 data GQLOperator = QueryOperator Text QuerySelection | MutationOperator Text QuerySelection
 
@@ -76,6 +85,7 @@ data Fragment = Fragment {
     target :: Text,
     fragmentContent:: QuerySelection
 } deriving (Show, Generic)
+
 
 data GQLQueryRoot = GQLQueryRoot {
     fragments:: FragmentLib,
@@ -106,7 +116,7 @@ instance (ToJSON o) => ToJSON ( p ::->  o) where
     toJSON (Some o) = toJSON o
     toJSON None = Null
 
-data GQLResponse = Data JSType | Errors [GQLError]  deriving (Show,Generic)
+data GQLResponse = Data JSType | Errors [JSONError]  deriving (Show,Generic)
 
 instance ToJSON  GQLResponse where
   toEncoding (Data _data) = pairs $ "data" .= _data
@@ -116,4 +126,4 @@ data GQLRequest = GQLRequest {
     query:: Text
     ,operationName:: Maybe Text
     ,variables:: Maybe (Map Text JSType)
-} deriving (Show,Generic,ToJSON,FromJSON)
+} deriving (Show,Generic,FromJSON)

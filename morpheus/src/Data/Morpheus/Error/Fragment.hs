@@ -1,28 +1,41 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Error.Fragment (unknownFragment,unsupportedSpreadOnType,cycleOnFragment) where
+module Data.Morpheus.Error.Fragment
+        ( unknownFragment
+        , unsupportedSpreadOnType
+        , cycleOnFragment
+        )
+where
 
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
 import qualified Data.Text                     as T
-import           Data.Morpheus.Types.Error      ( GQLError(..))
-import           Data.Morpheus.Error.Utils      (errorMessage)
+import           Data.Morpheus.Types.Error      ( GQLError(..)
+                                                , GQLErrors
+                                                )
+import           Data.Morpheus.Error.Utils      ( errorMessage )
 
+unknownFragment :: MetaInfo -> GQLErrors
+unknownFragment meta = errorMessage (position meta) text
+        where text = T.concat ["Unknown fragment \"", key meta, "\"."]
 
-unknownFragment :: MetaInfo -> [GQLError]
-unknownFragment meta = errorMessage $ T.concat ["Unknown fragment \"", key meta, "\"."]
-    
-unsupportedSpreadOnType :: MetaInfo -> MetaInfo -> [GQLError]
-unsupportedSpreadOnType parent spread = errorMessage $ T.concat [ "cant apply fragment \""
-        , key spread
-        , "\" with type \""
-        , className spread
-        , "\" on type \""
-        , className parent
-        , "\"."]
+unsupportedSpreadOnType :: MetaInfo -> MetaInfo -> GQLErrors
+unsupportedSpreadOnType parent spread = errorMessage (position parent) text
+    where
+        text = T.concat
+                [ "cant apply fragment \""
+                , key spread
+                , "\" with type \""
+                , typeName spread
+                , "\" on type \""
+                , typeName parent
+                , "\"."
+                ]
 
-cycleOnFragment :: [T.Text] -> [GQLError]
-cycleOnFragment fragments = errorMessage $ T.concat [ "fragment \""
-                , head fragments
-                , "\" has cycle \""
-                , T.intercalate "," fragments
-                , "\"."]
+cycleOnFragment :: [T.Text] -> GQLErrors
+cycleOnFragment fragments = errorMessage 0 $ T.concat
+        [ "fragment \""
+        , head fragments
+        , "\" has cycle \""
+        , T.intercalate "," fragments
+        , "\"."
+        ]

@@ -26,9 +26,6 @@ import           Control.Applicative            ( (<|>)
                                                 , some
                                                 )
 import           Data.Morpheus.Types.Types     ( Fragment(..) )
-import           Data.Morpheus.ErrorMessage    ( syntaxError
-                                                , semanticError
-                                                )
 import           Data.Morpheus.Parser.Primitive
                                                 ( token )
 import           Data.Morpheus.Parser.Body     ( body )

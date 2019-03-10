@@ -24,23 +24,25 @@ import           Data.Morpheus.ErrorMessage     ( handleError
                                                 )
 import qualified Data.Morpheus.Schema.GQL__Type
                                                as T
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
+                                                , Position(..)
+                                                )
 import           Data.Morpheus.Schema.SchemaField
                                                 ( getFieldTypeByKey
                                                 , selectFieldByKey
                                                 )
 
-fieldTypeOf :: GQL__Type -> Text -> Validation GQL__Type
-fieldTypeOf _type fieldName = case getFieldTypeByKey fieldName _type of
-    Nothing -> Left $ cannotQueryField $ MetaInfo
-        { key       = fieldName
-        , cons      = ""
-        , className = T.name _type
-        }
+fieldTypeOf :: Position -> GQL__Type -> Text -> Validation GQL__Type
+fieldTypeOf pos _type fieldName = case getFieldTypeByKey fieldName _type of
+    Nothing        -> Left $ cannotQueryField meta
     Just fieldType -> pure fieldType
+  where
+    meta =
+        MetaInfo { key = fieldName, typeName = T.name _type, position = pos }
 
 
-typeBy typeLib _parentType _name = fieldTypeOf _parentType _name >>= fieldType
+typeBy pos typeLib _parentType _name =
+    fieldTypeOf pos _parentType _name >>= fieldType
     where fieldType field = existsType (T.name field) typeLib
 
 
@@ -49,12 +51,11 @@ existsType typeName typeLib = case M.lookup typeName typeLib of
     Nothing -> handleError $ TX.concat ["type does not exist", typeName]
     Just x  -> pure x
 
-fieldOf :: GQL__Type -> Text -> Validation GQL__Field
-fieldOf _type fieldName = case selectFieldByKey fieldName _type of
-    Nothing -> Left $ cannotQueryField $ MetaInfo
-        { key       = fieldName
-        , cons      = ""
-        , className = T.name _type
-        }
+fieldOf :: Position -> GQL__Type -> Text -> Validation GQL__Field
+fieldOf pos _type fieldName = case selectFieldByKey fieldName _type of
+    Nothing    -> Left $ cannotQueryField meta
     Just field -> pure field
+  where
+    meta =
+        MetaInfo { key = fieldName, typeName = T.name _type, position = pos }
 

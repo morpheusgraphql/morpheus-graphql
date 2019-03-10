@@ -1,19 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.ErrorMessage
-    ( syntaxError
-    , cannotQueryField
-    , subfieldsNotSelected
-    , handleError
-    , semanticError
-    , requiredArgument
-    , errorMessage
-    , variableIsNotDefined
-    , unsupportedArgumentType
-    , invalidEnumOption
-    , unknownArguments
-    , fieldTypeMismatch
-    )
+  ( syntaxError
+  , cannotQueryField
+  , subfieldsNotSelected
+  , handleError
+  , requiredArgument
+  , errorMessage
+  , variableIsNotDefined
+  , unsupportedArgumentType
+  , invalidEnumOption
+  , unknownArguments
+  , fieldTypeMismatch
+  )
 where
 
 import qualified Data.Text                     as T
@@ -22,67 +21,72 @@ import           Data.Text                      ( Text(..)
                                                 , pack
                                                 , unpack
                                                 )
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
+import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
+                                                , Position
+                                                )
 import           Data.Morpheus.Types.Error      ( GQLError(..)
                                                 , ErrorLocation(..)
+                                                , GQLErrors
                                                 )
 import           Data.Data                      ( dataTypeOf
                                                 , dataTypeName
                                                 , Data
                                                 )
 import           Data.Morpheus.Types.JSType     ( JSType(..) )
+import           Data.Morpheus.Error.Utils      ( errorMessage )
 
 
-errorMessage :: Text -> [GQLError]
-errorMessage x = [GQLError { message = x, locations = [ErrorLocation 0 0] }]
+handleError x = Left $ errorMessage 0 $ T.concat ["Field Error: ", x]
 
-handleError x = Left $ errorMessage $ T.concat ["Field Error: ", x]
+invalidEnumOption :: MetaInfo -> GQLErrors
+invalidEnumOption meta = errorMessage (position meta) text
+ where
+  text = T.concat
+    ["Invalid Option \"", key meta, "\" on Enum \"", typeName meta, "\"."]
 
-invalidEnumOption :: MetaInfo -> [GQLError]
-invalidEnumOption meta = errorMessage $ T.concat
-    ["Invalid Option \"", key meta, "\" on Enum \"", className meta, "\"."]
+unsupportedArgumentType :: MetaInfo -> GQLErrors
+unsupportedArgumentType meta = errorMessage (position meta) text
+ where
+  text = T.concat
+    ["Argument \"", key meta, "\" has unsuported type \"", typeName meta, "\"."]
 
-unsupportedArgumentType :: MetaInfo -> [GQLError]
-unsupportedArgumentType meta = errorMessage $ T.concat
-    [ "Argument \""
-    , key meta
-    , "\" has unsuported type \""
-    , className meta
-    , "\"."
-    ]
-
-variableIsNotDefined :: MetaInfo -> [GQLError]
-variableIsNotDefined meta = errorMessage $ T.concat
+variableIsNotDefined :: MetaInfo -> GQLErrors
+variableIsNotDefined meta = errorMessage (position meta) text
+ where
+  text = T.concat
     [ "Variable \""
     , key meta
     , "\" is not defined by operation \""
-    , className meta
+    , typeName meta
     , "\"."
     ]
 
-unknownArguments :: Text -> [Text] -> [GQLError]
+unknownArguments :: Text -> [Text] -> GQLErrors
 unknownArguments fieldName = map keyToError
-  where
-    keyToError x =
-        GQLError { message = toMessage x, locations = [ErrorLocation 0 0] }
-    toMessage key = T.concat
-        ["Unknown Argument \"", key, "\" on Field \"", fieldName, "\"."]
+ where
+  keyToError x = GQLError { desc = toMessage x, posIndex = 0 }
+  toMessage key =
+    T.concat ["Unknown Argument \"", key, "\" on Field \"", fieldName, "\"."]
 
-requiredArgument :: MetaInfo -> [GQLError]
-requiredArgument meta = errorMessage $ T.concat
+requiredArgument :: MetaInfo -> GQLErrors
+requiredArgument meta = errorMessage (position meta) text
+ where
+  text = T.concat
     [ "Required Argument: \""
     , key meta
     , "\" not Found on type \""
-    , className meta
+    , typeName meta
     , "\"."
     ]
 
-fieldTypeMismatch :: MetaInfo -> JSType -> Text -> [GQLError]
-fieldTypeMismatch meta isType should = errorMessage $ T.concat
+fieldTypeMismatch :: MetaInfo -> JSType -> Text -> GQLErrors
+fieldTypeMismatch meta isType should = errorMessage (position meta) text
+ where
+  text = T.concat
     [ "field \""
     , key meta
     , "\"on type \""
-    , className meta
+    , typeName meta
     , "\" has a type \""
     , pack $ show isType
     , "\" but should have \""
@@ -90,21 +94,22 @@ fieldTypeMismatch meta isType should = errorMessage $ T.concat
     , "\"."
     ]
 
-cannotQueryField :: MetaInfo -> [GQLError]
-cannotQueryField meta = errorMessage $ T.concat
-    ["Cannot query field \"", key meta, "\" on type \"", className meta, "\"."]
+cannotQueryField :: MetaInfo -> GQLErrors
+cannotQueryField meta = errorMessage (position meta) text
+ where
+  text = T.concat
+    ["Cannot query field \"", key meta, "\" on type \"", typeName meta, "\"."]
 
-subfieldsNotSelected :: MetaInfo -> [GQLError]
-subfieldsNotSelected meta = errorMessage $ T.concat
+subfieldsNotSelected :: MetaInfo -> GQLErrors
+subfieldsNotSelected meta = errorMessage (position meta) text
+ where
+  text = T.concat
     [ "Field \""
     , key meta
     , "\" of type \""
-    , className meta
+    , typeName meta
     , "\" must have a selection of subfields"
     ]
 
-syntaxError :: Text -> [GQLError]
-syntaxError e = errorMessage $ T.concat ["Syntax Error: ", e]
-
-semanticError :: Text -> [GQLError]
-semanticError = errorMessage
+syntaxError :: Text -> Position -> GQLErrors
+syntaxError e pos = errorMessage pos $ T.concat ["Syntax Error: ", e]

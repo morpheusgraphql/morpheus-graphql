@@ -28,7 +28,9 @@ import           Data.Morpheus.Generics.GQLSelection
 import           Data.Morpheus.Generics.GQLQuery
                                                 ( GQLQuery(..) )
 import           Data.Morpheus.Generics.GQLArgs ( GQLArgs )
-import           Data.Morpheus.Parser.Parser    ( parseGQL )
+import           Data.Morpheus.Parser.Parser    ( parseGQL
+                                                , parseLineBreaks
+                                                )
 import           Data.Morpheus.Types.JSType     ( JSType )
 import           Data.Morpheus.Types.Types      ( (::->)(Resolver)
                                                 , GQLResponse(..)
@@ -55,12 +57,15 @@ import           Data.Morpheus.Generics.GQLMutation
                                                 )
 import           Data.Morpheus.Types.Introspection
                                                 ( GQLTypeLib )
-import           Data.Morpheus.PreProcess.PreProcess       ( preProcessQuery )
+import           Data.Morpheus.PreProcess.PreProcess
+                                                ( preProcessQuery )
 import           Data.Aeson                     ( decode )
 import           Control.Monad.IO.Class         ( liftIO )
 import qualified Data.ByteString.Lazy.Char8    as B
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..) )
+import           Data.Morpheus.Error.Utils      ( renderErrors )
+
 
 data GQLRoot a b = GQLRoot {
   queryResolver :: a,
@@ -90,6 +95,11 @@ resolve rootResolver body = do
   queryRes    = queryResolver rootResolver
   mutationRes = mutationResolver rootResolver
 
+lineBreaks :: B.ByteString -> [Int]
+lineBreaks req = case decode req of
+  Just x  -> parseLineBreaks x
+  Nothing -> []
+
 interpreter
   :: (GQLQuery a, GQLMutation b)
   => GQLRoot a b
@@ -98,14 +108,15 @@ interpreter
 interpreter rootResolver request = do
   value <- runExceptT $ parseRequest request >>= resolve rootResolver
   case value of
-    Left  x -> pure $ Errors x
+    Left  x -> pure $ Errors $ renderErrors (lineBreaks request) x
     Right x -> pure $ Data x
+ where
 
 eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a
-eitherToResponse f (Left  x) = failResolveIO $ errorMessage $ pack x
+eitherToResponse f (Left  x) = failResolveIO $ errorMessage 0 (pack $ show x)
 eitherToResponse f (Right x) = pure (f x)
 
 parseRequest :: B.ByteString -> ResolveIO GQLRequest
 parseRequest text = case decode text of
   Just x  -> pure x
-  Nothing -> failResolveIO $ errorMessage $ pack $ show text
+  Nothing -> failResolveIO $ errorMessage 0 (pack $ show text)
