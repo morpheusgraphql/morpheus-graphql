@@ -4,7 +4,7 @@ module Data.Morpheus.Types.Error
     ( GQLError(..)
     , ErrorLocation(..)
     , GQLErrors
-    , InternalError
+    , InternalError(..)
     )
 where
 
