@@ -15,7 +15,7 @@ import           Data.Morpheus.Types.Introspection
                                                 ( GQL__InputValue
                                                 , GQL__Type
                                                 )
-import qualified Data.Morpheus.Types.MetaInfo  as M ( MetaInfo(..) )
+import qualified Data.Morpheus.Types.MetaInfo  as M ( MetaInfo(..) , Position )
 import qualified Data.Morpheus.Schema.GQL__InputValue
                                                as I
                                                 ( GQL__InputValue(..) )
@@ -34,6 +34,6 @@ typeName x = case I._type x of
   Nothing -> "Error"
   Just t  -> T.name t
 
-inputValueMeta :: GQL__InputValue -> M.MetaInfo
-inputValueMeta input =
-  M.MetaInfo { M.typeName = "TODO: Type", M.key = I.name input }
+inputValueMeta :: M.Position -> GQL__InputValue -> M.MetaInfo
+inputValueMeta pos input =
+  M.MetaInfo { M.typeName = "TODO: Type", M.key = I.name input , M.position = pos }
