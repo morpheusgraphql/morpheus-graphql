@@ -46,7 +46,7 @@ checkVariableType
     -> GQLQueryRoot
     -> (Text, Argument)
     -> Validation (Text, Argument)
-checkVariableType typeLib root (key, Variable tName) =
+checkVariableType typeLib root (key, Variable tName pos) =
     existsType tName typeLib >>= checkType
   where
     checkType _type = case T.kind _type of
@@ -54,12 +54,12 @@ checkVariableType typeLib root (key, Variable tName) =
         EnumOf INPUT_OBJECT -> checkTypeInp _type key
         _                   -> Left $ unsupportedArgumentType meta
 
-    meta = MetaInfo { typeName = tName, position = 0, key = key }
+    meta = MetaInfo { typeName = tName, position = pos, key = key }
 
     checkTypeInp _type key = do
         variableValue <- getVariable root key
         validateInputVariable typeLib _type (key, variableValue)
-        pure (key, Variable tName)
+        pure (key, Variable tName pos)
 
 checkQueryVariables
     :: GQLTypeLib
@@ -70,5 +70,7 @@ checkQueryVariables typeLib root = mapM (checkVariableType typeLib root)
 
 
 replaceVariable :: GQLQueryRoot -> Argument -> Validation Argument
-replaceVariable root (Variable key) = Argument <$> getVariable root key
-replaceVariable root a              = pure a
+replaceVariable root (Variable key pos) = do
+    value <- getVariable root key
+    pure $ Argument value pos
+replaceVariable root a = pure a

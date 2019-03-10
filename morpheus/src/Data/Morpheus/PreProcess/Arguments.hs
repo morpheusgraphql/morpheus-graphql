@@ -62,7 +62,7 @@ validateArgument types root requestArgs inpValue =
     case lookup (I.name inpValue) requestArgs of
         Nothing -> if I.isRequired inpValue
             then Left $ requiredArgument (I.inputValueMeta inpValue)
-            else pure (key, Argument JSNull)
+            else pure (key, Argument JSNull 0)
         Just x ->
             replaceVariable root x
                 >>= checkArgumentType types (I.typeName inpValue)

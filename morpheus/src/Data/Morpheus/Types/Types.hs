@@ -52,6 +52,8 @@ import           Control.Monad.Trans.Except     ( ExceptT(..)
                                                 )
 
 
+type Key = Text;
+
 type ResolveIO  = ExceptT GQLErrors IO
 
 newtype EnumOf a = EnumOf { unpackEnum :: a }  deriving (Show, Generic , Data)
@@ -59,17 +61,18 @@ newtype EnumOf a = EnumOf { unpackEnum :: a }  deriving (Show, Generic , Data)
 failResolveIO :: GQLErrors -> ResolveIO a
 failResolveIO = ExceptT . pure . Left
 
-data Argument =  Variable Text | Argument JSType deriving (Show, Generic)
-type Arguments = [(Text,Argument)]
+data Argument =  Variable Key Position | Argument JSType Position deriving (Show, Generic)
+
+type Arguments = [(Key,Argument)]
 
 type Validation a = Either GQLErrors a
 
-type SelectionSet  = [(Text,QuerySelection)]
+type SelectionSet  = [(Key,QuerySelection)]
 
 data QuerySelection =
     SelectionSet Arguments SelectionSet Position |
-    Field Arguments Text Position|
-    Spread Text Position |
+    Field Arguments Key Position|
+    Spread Key Position |
     QNull
     deriving (Show)
 

@@ -35,17 +35,19 @@ import           Data.Morpheus.Parser.Primitive ( jsString
                                                 , jsInt
                                                 )
 
+
+enum = JSEnum <$> token
+
+argumetType = do
+    arg <- enum <|> jsString <|> jsBool <|> jsInt
+    pure $ Argument arg 0
+
+variableType = do
+    val <- variable
+    pure $ Variable val 0
+
 inputValue :: Parser Argument
-inputValue =
-    (Argument . JSEnum)
-        <$> token
-        <|> skipSpace
-        *>  (Argument <$> jsString)
-        <|> skipSpace
-        *>  (Argument <$> jsBool)
-        <|> skipSpace
-        *>  (Argument <$> jsInt)
-        <|> (Variable <$> variable)
+inputValue = skipSpace *> argumetType <|> variableType
 
 parameter :: Parser (Text, Argument)
 parameter = do
