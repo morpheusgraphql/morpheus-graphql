@@ -21,7 +21,6 @@ import           Data.Morpheus.ErrorMessage     ( invalidEnumOption )
 import           Data.Morpheus.Schema.GQL__EnumValue
                                                 ( isEnumOf )
 
-
 validateEnum :: GQL__Type -> Argument -> Validation Argument
 validateEnum _type (Argument (JSEnum argument) pos) =
     if isEnumOf argument (unwrapField $ T.enumValues _type)
@@ -30,4 +29,4 @@ validateEnum _type (Argument (JSEnum argument) pos) =
   where
     unwrapField (Some x) = x
     error = Left $ invalidEnumOption meta
-    meta  = MetaInfo { typeName = (T.name _type), key = argument, position = pos }
+    meta  = MetaInfo { typeName = T.name _type, key = argument, position = pos }

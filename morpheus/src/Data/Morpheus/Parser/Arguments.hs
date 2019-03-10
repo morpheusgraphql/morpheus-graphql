@@ -39,8 +39,8 @@ import           Data.Morpheus.Parser.Primitive ( jsString
 
 enum = JSEnum <$> token
 
-argumetType :: Parser Argument
-argumetType = do
+argumentType :: Parser Argument
+argumentType = do
     pos <- getPosition
     arg <- enum <|> jsString <|> jsBool <|> jsInt
     pure $ Argument arg pos
@@ -52,7 +52,7 @@ variableType = do
     pure $ Variable val pos
 
 inputValue :: Parser Argument
-inputValue = skipSpace *> argumetType <|> variableType
+inputValue = skipSpace *> argumentType <|> variableType
 
 parameter :: Parser (Text, Argument)
 parameter = do

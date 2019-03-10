@@ -12,6 +12,7 @@ import qualified Data.Attoparsec.Text          as AT
                                                 ( takeWhile )
 import           Data.Morpheus.Types.JSType     ( JSType(..) )
 import           Control.Applicative
+import           Data.Functor
 import           Data.Char                      ( isAlpha
                                                 , isDigit
                                                 , isSpace
@@ -26,10 +27,10 @@ replaceType "type" = "_type"
 replaceType x      = x
 
 boolTrue :: Parser JSType
-boolTrue = string "true" *> pure (JSBool True)
+boolTrue = string "true" $> JSBool True
 
 boolFalse :: Parser JSType
-boolFalse = string "false" *> pure (JSBool False)
+boolFalse = string "false" $> JSBool False
 
 jsBool :: Parser JSType
 jsBool = boolTrue <|> boolFalse
@@ -37,10 +38,10 @@ jsBool = boolTrue <|> boolFalse
 jsInt :: Parser JSType
 jsInt = JSInt <$> decimal
 
-codes :: [Char]
+codes :: String
 codes = ['b', 'n', 'f', 'r', 't', '\\', '\"', '/']
 
-replacements :: [Char]
+replacements :: String
 replacements = ['\b', '\n', '\f', '\r', '\t', '\\', '\"', '/']
 
 escaped :: Parser Char
@@ -66,8 +67,8 @@ separator :: Parser Char
 separator = char ',' <|> char ' ' <|> char '\n' <|> char '\t'
 
 getPosition :: Parser Int
-getPosition = (AT.Parser internFunc)
-    where internFunc t pos more _ succ' = succ' t pos more (AT.fromPos pos)
+getPosition = AT.Parser internFunc
+    where internFunc t pos more _ succ = succ t pos more (AT.fromPos pos)
 
 getNextLine :: Parser Int
 getNextLine = do

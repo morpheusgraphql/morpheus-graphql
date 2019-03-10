@@ -110,7 +110,6 @@ interpreter rootResolver request = do
   case value of
     Left  x -> pure $ Errors $ renderErrors (lineBreaks request) x
     Right x -> pure $ Data x
- where
 
 eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a
 eitherToResponse f (Left  x) = failResolveIO $ errorMessage 0 (pack $ show x)

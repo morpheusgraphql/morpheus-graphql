@@ -50,7 +50,7 @@ getFragment meta key lib = case M.lookup key lib of
 compareFragmentType
     :: MetaInfo -> MetaInfo -> GQL__Type -> Fragment -> Validation GQL__Type
 compareFragmentType parent child _type fragment =
-    if (T.name _type == target fragment)
+    if T.name _type == target fragment
         then pure _type
         else Left $ unsupportedSpreadOnType parent child
 
