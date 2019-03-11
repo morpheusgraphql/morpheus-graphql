@@ -1,23 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Data.Morpheus.Types.MetaInfo
   ( MetaInfo(..)
   , initialMeta
   , Position(..)
   , LineBreaks
-  )
-where
+  ) where
 
-import           Data.Text                      ( Text )
+import           Data.Text (Text)
 
 initialMeta :: MetaInfo
-initialMeta = MetaInfo { position = 0, typeName = "", key = "" }
+initialMeta = MetaInfo {position = 0, typeName = "", key = ""}
 
-type LineBreaks = [Position];
+type LineBreaks = [Position]
 
-type Position = Int;
+type Position = Int
 
-data MetaInfo = MetaInfo {
-  position :: Position,
-  typeName ::  Text,
-  key ::  Text
-}
+data MetaInfo = MetaInfo
+  { position :: Position
+  , typeName :: Text
+  , key      :: Text
+  }
