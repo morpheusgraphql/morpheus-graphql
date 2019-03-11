@@ -7,7 +7,7 @@ import           Data.Aeson          (FromJSON (..), ToJSON (..), Value (..),
                                       pairs, (.=))
 import           Data.HashMap.Strict (toList)
 import           Data.Scientific     (Scientific, floatingOrInteger)
-import           Data.Text           (Text, pack)
+import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
 
 replaceType :: Text -> Text
@@ -37,15 +37,15 @@ instance ToJSON JSType where
 
 replace (key, val) = (key, replaceValue val)
 
-decodeSciefintic :: Scientific -> JSType
-decodeSciefintic v =
+decodeScientific :: Scientific -> JSType
+decodeScientific v =
   case floatingOrInteger v of
     Left float -> JSFloat float
     Right int  -> JSInt int
 
 replaceValue :: Value -> JSType
 replaceValue (Bool v)   = JSBool v
-replaceValue (Number v) = decodeSciefintic v
+replaceValue (Number v) = decodeScientific v
 replaceValue (String v) = JSString v
 replaceValue (Object v) = JSObject $ map replace (toList v)
 

@@ -3,7 +3,7 @@
 module Data.Morpheus.Types.MetaInfo
   ( MetaInfo(..)
   , initialMeta
-  , Position(..)
+  , Position
   , LineBreaks
   ) where
 

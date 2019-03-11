@@ -19,10 +19,7 @@ module Data.Morpheus.Types.Introspection
   , createInputObject
   ) where
 
-import           Data.Aeson
-import           Data.Data                            (Data)
 import           Data.Map                             (Map, fromList)
-import           Data.Maybe                           (fromMaybe)
 import           Data.Morpheus.Schema.GQL__EnumValue  (GQL__EnumValue,
                                                        createEnumValue)
 import qualified Data.Morpheus.Schema.GQL__Field      as F (GQL__Field (..),
@@ -33,8 +30,7 @@ import           Data.Morpheus.Schema.GQL__Type       (GQL__Deprecation__Args,
                                                        GQL__Type (..))
 import           Data.Morpheus.Schema.GQL__TypeKind   (GQL__TypeKind (..))
 import           Data.Morpheus.Types.Types            ((::->) (..), EnumOf (..))
-import           Data.Text                            (Text (..), pack)
-import           GHC.Generics
+import           Data.Text                            (Text)
 
 type GQL__InputValue = I.GQL__InputValue GQL__Type
 

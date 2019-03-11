@@ -18,7 +18,7 @@ import           Data.Morpheus.Error.Utils    (errorMessage)
 import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors)
 import           Data.Morpheus.Types.JSType   (JSType (..))
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
-import           Data.Text                    (Text (..), pack, unpack)
+import           Data.Text                    (Text, pack)
 import qualified Data.Text                    as T (concat)
 
 handleError x = Left $ errorMessage 0 $ T.concat ["Field Error: ", x]

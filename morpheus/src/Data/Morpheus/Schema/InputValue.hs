@@ -12,12 +12,10 @@ module Data.Morpheus.Schema.InputValue
 
 import qualified Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue (..))
 import qualified Data.Morpheus.Schema.GQL__Type       as T (GQL__Type (..))
-import           Data.Morpheus.Types.Introspection    (GQL__InputValue,
-                                                       GQL__Type)
+import           Data.Morpheus.Types.Introspection    (GQL__InputValue)
 import qualified Data.Morpheus.Types.MetaInfo         as M (MetaInfo (..),
                                                             Position)
-import           Data.Morpheus.Types.Types            ((::->) (..))
-import           Data.Text                            (Text (..))
+import           Data.Text                            (Text)
 
 name :: GQL__InputValue -> Text
 name = I.name

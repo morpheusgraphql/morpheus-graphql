@@ -8,8 +8,7 @@ module Data.Morpheus.Types.Error
   , JSONError(..)
   ) where
 
-import           Data.Aeson   (FromJSON, ToJSON)
-import           Data.Data    (Data)
+import           Data.Aeson   (ToJSON)
 import           Data.Text    (Text)
 import           GHC.Generics (Generic)
 

@@ -5,7 +5,6 @@ module Data.Morpheus.Schema.GQL__TypeKind
   ( GQL__TypeKind(..)
   ) where
 
-import           Data.Aeson   (ToJSON (..))
 import           Data.Data    (Data)
 import           GHC.Generics
 

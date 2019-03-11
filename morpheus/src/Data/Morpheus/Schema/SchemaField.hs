@@ -9,8 +9,6 @@ module Data.Morpheus.Schema.SchemaField
   , wrapAsListType
   ) where
 
-import           Control.Monad                     (join)
-import           Data.Data                         (Data)
 import           Data.List                         (find)
 import qualified Data.Morpheus.Schema.GQL__Field   as F (GQL__Field (..))
 import qualified Data.Morpheus.Schema.GQL__Type    as T (GQL__Type (..))
@@ -18,7 +16,7 @@ import           Data.Morpheus.Types.Introspection (GQL__Field, GQL__InputValue,
                                                     GQL__Type, unwrapType,
                                                     wrapListType)
 import           Data.Morpheus.Types.Types         ((::->) (..))
-import           Data.Text                         (Text (..))
+import           Data.Text                         (Text)
 
 selectFieldByKey :: Text -> GQL__Type -> Maybe GQL__Field
 selectFieldByKey key gqlType =
