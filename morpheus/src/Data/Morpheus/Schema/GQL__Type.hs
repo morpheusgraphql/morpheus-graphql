@@ -28,6 +28,6 @@ data GQL__Type = GQL__Type
   , inputFields   :: [I.GQL__InputValue GQL__Type]
   } deriving (Show, Data, Generic)
 
-data GQL__Deprecation__Args = DeprecationArgs
+newtype GQL__Deprecation__Args = DeprecationArgs
   { includeDeprecated :: Maybe Bool
   } deriving (Show, Data, Generic)

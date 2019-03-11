@@ -30,7 +30,7 @@ entry = do
   index <- getPosition
   key <- token
   args <- try arguments <|> pure []
-  value <- (try $ body args) <|> (pure $ Field args key index)
+  value <- try (body args) <|> pure (Field args key index)
   return (key, value)
 
 separated x = x `sepBy` separator

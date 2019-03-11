@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Data.Morpheus.PreProcess.Enum
   ( validateEnum
   ) where

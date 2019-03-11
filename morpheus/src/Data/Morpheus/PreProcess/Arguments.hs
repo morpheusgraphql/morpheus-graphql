@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Data.Morpheus.PreProcess.Arguments
   ( validateArguments
   ) where
@@ -53,7 +51,7 @@ validateArgument types root requestArgs inpValue =
 
 checkForUnknownArguments :: GQL__Field -> Arguments -> Validation [GQL__InputValue]
 checkForUnknownArguments field args =
-  case (map fst args) \\ (map I.name $ F.args field) of
+  case map fst args \\ map I.name (F.args field) of
     []          -> pure $ F.args field
     unknownArgs -> Left $ unknownArguments (F.name field) unknownArgs
 

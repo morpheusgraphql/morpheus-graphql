@@ -62,7 +62,7 @@ validateFragmentFields _ _ _ _ = pure []
 validateFragment :: GQLTypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation (Text, Graph)
 validateFragment lib root (fName, frag) = do
   _type <- existsType (target frag) lib
-  let (SelectionSet _ selection pos) = (fragmentContent frag)
+  let (SelectionSet _ selection pos) = fragmentContent frag
   fragmentLinks <- concat <$> mapM (validateFragmentFields lib root _type) selection
   pure (fName, fragmentLinks)
 
@@ -83,7 +83,7 @@ checkForCycle lib parentNode history =
     Nothing    -> pure []
   where
     checkNode x =
-      if elem x history
+      if x `elem`  history
         then error x
         else recurse x
     recurse node = checkForCycle lib node (history ++ [node])

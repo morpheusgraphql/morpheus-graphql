@@ -23,7 +23,7 @@ lineIndexAndNumber position lines = (length linesBefore + 1, linePos linesBefore
   where
     linesBefore = filter (position >=) lines
     linePos [] = 1
-    linePos x  = (maximum linesBefore) + 1
+    linePos x  = maximum linesBefore + 1
 
 errorLocation lineBreaks pos = do
   let (line, position) = lineIndexAndNumber pos lineBreaks

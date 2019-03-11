@@ -10,4 +10,4 @@ import           Example.Schema         (resolve)
 import           Web.Scotty
 
 main :: IO ()
-main = scotty 3000 $ post "/api" $ join $ json <$> (liftIO . resolve =<< body)
+main = scotty 3000 $ post "/api" $ json =<< (liftIO . resolve =<< body)
