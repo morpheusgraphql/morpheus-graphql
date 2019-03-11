@@ -22,33 +22,22 @@ module Data.Morpheus
 import           Control.Monad.Trans.Except          (ExceptT (..), runExceptT)
 import           Data.Aeson                          (decode)
 import qualified Data.ByteString.Lazy.Char8          as B
-import           Data.Maybe                          (fromMaybe)
 import           Data.Morpheus.Error.Utils           (renderErrors)
 import           Data.Morpheus.ErrorMessage          (errorMessage)
 import           Data.Morpheus.Generics.GQLArgs      (GQLArgs)
 import           Data.Morpheus.Generics.GQLEnum      (GQLEnum)
 import           Data.Morpheus.Generics.GQLInput     (GQLInput)
-import           Data.Morpheus.Generics.GQLMutation  (GQLMutation (..),
-                                                      NoMutation (..))
+import           Data.Morpheus.Generics.GQLMutation  (GQLMutation (..), NoMutation (..))
 import           Data.Morpheus.Generics.GQLQuery     (GQLQuery (..))
 import           Data.Morpheus.Generics.GQLSelection (GQLSelection)
 import           Data.Morpheus.Parser.Parser         (parseGQL, parseLineBreaks)
 import           Data.Morpheus.PreProcess.PreProcess (preProcessQuery)
 import           Data.Morpheus.Types.Introspection   (GQLTypeLib)
 import           Data.Morpheus.Types.JSType          (JSType)
-import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..))
-import           Data.Morpheus.Types.Types           ((::->) (Resolver),
-                                                      EnumOf (unpackEnum),
-                                                      GQLOperator (..),
-                                                      GQLQueryRoot (..),
-                                                      GQLRequest (..),
-                                                      GQLResponse (..),
-                                                      ResolveIO (..),
-                                                      Validation (..),
-                                                      failResolveIO)
-import           Data.Proxy                          (Proxy)
-import           Data.Text                           (Text, pack)
-import           GHC.Generics                        (Generic)
+import           Data.Morpheus.Types.Types           ((::->) (Resolver), EnumOf (unpackEnum),
+                                                      GQLOperator (..), GQLRequest (..),
+                                                      GQLResponse (..), ResolveIO, failResolveIO)
+import           Data.Text                           (pack)
 
 data GQLRoot a b = GQLRoot
   { queryResolver    :: a
@@ -57,7 +46,6 @@ data GQLRoot a b = GQLRoot
 
 schema :: (GQLQuery a, GQLMutation b) => a -> b -> GQLTypeLib
 schema query mutation = querySchema query $ mutationSchema mutation
-
 
 validate schema root =
   case preProcessQuery schema root of
@@ -68,7 +56,7 @@ resolve :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO
 resolve rootResolver body = do
   rootGQL <- ExceptT $ pure (parseGQL body >>= preProcessQuery gqlSchema)
   case rootGQL of
-    QueryOperator _ query -> encodeQuery queryRes gqlSchema query
+    QueryOperator _ query       -> encodeQuery queryRes gqlSchema query
     MutationOperator _ mutation -> encodeMutation mutationRes gqlSchema mutation
   where
     gqlSchema = schema queryRes mutationRes

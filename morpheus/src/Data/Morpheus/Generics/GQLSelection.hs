@@ -1,12 +1,11 @@
-{-# LANGUAGE DefaultSignatures        #-}
-{-# LANGUAGE DisambiguateRecordFields #-}
-{-# LANGUAGE FlexibleContexts         #-}
-{-# LANGUAGE FlexibleInstances        #-}
-{-# LANGUAGE MultiParamTypeClasses    #-}
-{-# LANGUAGE OverloadedStrings        #-}
-{-# LANGUAGE RankNTypes               #-}
-{-# LANGUAGE ScopedTypeVariables      #-}
-{-# LANGUAGE TypeOperators            #-}
+{-# LANGUAGE DefaultSignatures     #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeOperators         #-}
 
 module Data.Morpheus.Generics.GQLSelection
   ( GQLSelection(..)
@@ -16,31 +15,21 @@ import           Control.Monad.Trans.Except
 import qualified Data.Data                              as D
 import qualified Data.Map                               as M
 import qualified Data.Morpheus.ErrorMessage             as Err
-import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..),
-                                                         resolveBySelection)
+import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import qualified Data.Morpheus.Generics.GQLArgs         as Args (GQLArgs (..))
 import qualified Data.Morpheus.Generics.GQLEnum         as E (GQLEnum (..))
-import           Data.Morpheus.Generics.TypeRep         (Selectors (..),
-                                                         resolveTypes)
+import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
 import           Data.Morpheus.Schema.GQL__Directive    (GQL__Directive)
-import qualified Data.Morpheus.Schema.GQL__Field        as F (GQL__Field (..),
-                                                              createFieldWith)
+import qualified Data.Morpheus.Schema.GQL__Field        as F (GQL__Field (..), createFieldWith)
 import           Data.Morpheus.Schema.GQL__Schema       (GQL__Schema)
 import           Data.Morpheus.Schema.SchemaField       (wrapAsListType)
-import           Data.Morpheus.Types.Introspection      (GQLTypeLib,
-                                                         GQL__EnumValue,
-                                                         GQL__Field,
-                                                         GQL__InputValue,
-                                                         GQL__Type, createField,
-                                                         createScalar,
-                                                         createType)
+import           Data.Morpheus.Types.Introspection      (GQLTypeLib, GQL__EnumValue, GQL__Field,
+                                                         GQL__InputValue, GQL__Type, createField,
+                                                         createScalar, createType)
 import           Data.Morpheus.Types.JSType             (JSType (..))
-import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..),
-                                                         initialMeta)
-import           Data.Morpheus.Types.Types              ((::->) (..),
-                                                         EnumOf (..),
-                                                         QuerySelection (..),
-                                                         ResolveIO,
+import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), initialMeta)
+import           Data.Morpheus.Types.Types              ((::->) (..), EnumOf (..),
+                                                         QuerySelection (..), ResolveIO,
                                                          failResolveIO)
 import           Data.Proxy
 import qualified Data.Text                              as T
@@ -77,7 +66,7 @@ class GQLSelection a where
     Proxy a -> GQLTypeLib -> GQLTypeLib
   introspect proxy typeLib =
     case M.lookup typeName typeLib of
-      Just _ -> typeLib
+      Just _  -> typeLib
       Nothing -> resolveTypes (M.insert typeName (createType typeName gqlFields) typeLib) stack
     where
       typeName = typeID proxy
