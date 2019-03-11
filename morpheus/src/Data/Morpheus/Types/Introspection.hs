@@ -10,7 +10,7 @@ module Data.Morpheus.Types.Introspection
   , createField
   , GQLTypeLib
   , emptyLib
-  , GQL__EnumValue(..)
+  , GQL__EnumValue
   , createInputValue
   , wrapListType
   , unwrapType
@@ -20,14 +20,11 @@ module Data.Morpheus.Types.Introspection
   ) where
 
 import           Data.Map                             (Map, fromList)
-import           Data.Morpheus.Schema.GQL__EnumValue  (GQL__EnumValue,
-                                                       createEnumValue)
-import qualified Data.Morpheus.Schema.GQL__Field      as F (GQL__Field (..),
-                                                            createFieldWith)
+import           Data.Morpheus.Schema.GQL__EnumValue  (GQL__EnumValue, createEnumValue)
+import qualified Data.Morpheus.Schema.GQL__Field      as F (GQL__Field (..), createFieldWith)
 import qualified Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue (..),
                                                             createInputValueWith)
-import           Data.Morpheus.Schema.GQL__Type       (GQL__Deprecation__Args,
-                                                       GQL__Type (..))
+import           Data.Morpheus.Schema.GQL__Type       (GQL__Deprecation__Args, GQL__Type (..))
 import           Data.Morpheus.Schema.GQL__TypeKind   (GQL__TypeKind (..))
 import           Data.Morpheus.Types.Types            ((::->) (..), EnumOf (..))
 import           Data.Text                            (Text)
@@ -42,7 +39,7 @@ createInputValue :: Text -> Text -> I.GQL__InputValue GQL__Type
 createInputValue name typeName = I.createInputValueWith name (createInputObject typeName [])
 
 createField :: Text -> Text -> [I.GQL__InputValue GQL__Type] -> GQL__Field
-createField name typeName args = F.createFieldWith name (createType typeName []) []
+createField name typeName = F.createFieldWith name (createType typeName [])
 
 createInputObject :: Text -> [GQL__Field] -> GQL__Type
 createInputObject name fields =

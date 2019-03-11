@@ -24,5 +24,22 @@ dependencies:
 library:
   source-dirs: src
   ghc-options:
-      -Wall
-      -W
+      -fwarn-dodgy-exports
+      -fwarn-dodgy-imports
+      -fwarn-unused-imports
+      -fwarn-duplicate-exports
+      -fwarn-missing-fields
+      -fwarn-missing-methods
+      -fwarn-missing-signatures
+      -fwarn-overlapping-patterns
+      -fwarn-wrong-do-bind
+      -fwarn-unused-binds
+      -fwarn-unused-matches
+      -fwarn-type-defaults
+      -fwarn-incomplete-record-updates
+      -fwarn-hi-shadowing
+      -fwarn-dodgy-foreign-imports
+      -fwarn-deprecated-flags
+      -fwarn-warnings-deprecations
+      -fwarn-unrecognised-pragmas
+      -Werror

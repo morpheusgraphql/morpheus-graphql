@@ -4,18 +4,17 @@ module Data.Morpheus.Parser.Parser
   ) where
 
 import           Control.Applicative            (many, (<|>))
-import           Data.Attoparsec.Text           (Parser, endOfInput, parseOnly,
-                                                 skipSpace)
-import           Data.Map                       (fromList)
+import           Data.Attoparsec.Text           (Parser, endOfInput, parseOnly, skipSpace)
+import           Data.Map                       (Map, fromList)
 import           Data.Maybe                     (fromMaybe)
 import           Data.Morpheus.ErrorMessage     (syntaxError)
 import           Data.Morpheus.Parser.Fragment  (fragment)
 import qualified Data.Morpheus.Parser.Mutation  as M
 import           Data.Morpheus.Parser.Primitive (getLines)
 import qualified Data.Morpheus.Parser.Query     as Q
-import           Data.Morpheus.Types.Types      (GQLQueryRoot (..),
-                                                 GQLRequest (..), Validation)
-import           Data.Text                      (pack)
+import           Data.Morpheus.Types.JSType     (JSType (..))
+import           Data.Morpheus.Types.Types      (GQLQueryRoot (..), GQLRequest (..), Validation)
+import           Data.Text                      (Text, pack)
 
 request :: Parser GQLQueryRoot
 request = do
@@ -25,8 +24,10 @@ request = do
   endOfInput
   pure GQLQueryRoot {queryBody = queryValue, fragments = fragmentLib, inputVariables = fromList []}
 
+getVariables :: GQLRequest -> Map Text JSType
 getVariables = fromMaybe (fromList []) . variables
 
+parseReq :: GQLRequest -> Either String GQLQueryRoot
 parseReq requestBody = parseOnly request $ query requestBody
 
 parseLineBreaks :: GQLRequest -> [Int]

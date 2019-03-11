@@ -23,7 +23,7 @@ instance (Datatype c, GDecodeEnum f) => GDecodeEnum (M1 D c f) where
 
 instance (Constructor c) => GDecodeEnum (M1 C c U1) where
   gToEnum _ = M1 U1
-  tagName x = T.pack $ conName (undefined :: (M1 C c U1 x))
+  tagName _ = T.pack $ conName (undefined :: (M1 C c U1 x))
   getTags _ = [T.pack $ conName (undefined :: (M1 C c U1 x))]
 
 instance (GDecodeEnum a, GDecodeEnum b) => GDecodeEnum (a :+: b) where

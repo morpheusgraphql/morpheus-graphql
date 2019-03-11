@@ -13,12 +13,10 @@ import qualified Data.Morpheus.ErrorMessage        as Err
 import           Data.Morpheus.Generics.GDecode    (GDecode (..))
 import qualified Data.Morpheus.Generics.GQLInput   as I (GQLInput (..))
 import           Data.Morpheus.Generics.TypeRep    (Selectors (..))
-import           Data.Morpheus.Types.Introspection (GQLTypeLib,
-                                                    GQL__Deprecation__Args,
+import           Data.Morpheus.Types.Introspection (GQLTypeLib, GQL__Deprecation__Args,
                                                     GQL__InputValue)
 import           Data.Morpheus.Types.MetaInfo      (MetaInfo (..), initialMeta)
-import           Data.Morpheus.Types.Types         (Argument (..), Arguments,
-                                                    Validation)
+import           Data.Morpheus.Types.Types         (Argument (..), Arguments, Validation)
 import           Data.Proxy                        (Proxy (..))
 import qualified Data.Text                         as T
 import           GHC.Generics
@@ -31,9 +29,9 @@ instance (Selector s, D.Typeable t, I.GQLInput t) => Selectors (M1 S s (K1 R t))
 instance I.GQLInput a => GDecode Arguments (K1 i a) where
   gDecode meta args =
     case lookup (key meta) args of
-      Nothing               -> Left $ Err.requiredArgument meta
-      Just (Argument x pos) -> K1 <$> I.decode x
-      Just x                -> Err.handleError $ T.pack $ show x
+      Nothing                -> Left $ Err.requiredArgument meta
+      Just (Argument x _pos) -> K1 <$> I.decode x
+      Just x                 -> Err.handleError $ T.pack $ show x
 
 class GQLArgs p where
   decode :: Arguments -> Maybe p -> Validation p

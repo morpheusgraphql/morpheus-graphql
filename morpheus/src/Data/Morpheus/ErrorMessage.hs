@@ -21,6 +21,7 @@ import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
 import           Data.Text                    (Text, pack)
 import qualified Data.Text                    as T (concat)
 
+handleError :: Text -> Either GQLErrors b
 handleError x = Left $ errorMessage 0 $ T.concat ["Field Error: ", x]
 
 invalidEnumOption :: MetaInfo -> GQLErrors

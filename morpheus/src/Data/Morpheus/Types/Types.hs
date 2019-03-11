@@ -23,8 +23,7 @@ module Data.Morpheus.Types.Types
   ) where
 
 import           Control.Monad.Trans.Except   (ExceptT (..))
-import           Data.Aeson                   (FromJSON (..), ToJSON (..),
-                                               Value (Null), pairs,
+import           Data.Aeson                   (FromJSON (..), ToJSON (..), Value (Null), pairs,
                                                (.=))
 import           Data.Data
 import           Data.Map                     (Map)
@@ -101,16 +100,19 @@ instance Show (a ::-> b) where
   show _ = "Inline"
 
 instance (Data a, Data b) => Data (a ::-> b) where
-  gfoldl k z _ = z None
-  gunfold k z c = z None
+  gfoldl _ z _ = z None
+  gunfold _ z _ = z None
   toConstr (Some _) = con_Some
   toConstr _        = con_None
   dataTypeOf _ = ty_Resolver
 
+con_Some :: Constr
 con_Some = mkConstr ty_Resolver "Some" [] Prefix
 
+con_None :: Constr
 con_None = mkConstr ty_Resolver "None" [] Prefix
 
+ty_Resolver :: DataType
 ty_Resolver = mkDataType "Module.Resolver" [con_None, con_Some]
 
 instance FromJSON (p ::-> o) where
