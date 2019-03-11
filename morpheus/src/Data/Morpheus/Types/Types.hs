@@ -53,7 +53,7 @@ data Argument
              Position
   | Argument JSType
              Position
-  deriving (Show, Generic)
+  deriving (Show)
 
 type Arguments = [(Key, Argument)]
 
@@ -85,7 +85,7 @@ data Fragment = Fragment
   { id              :: Text
   , target          :: Text
   , fragmentContent :: QuerySelection
-  } deriving (Show, Generic)
+  } deriving (Show)
 
 data GQLQueryRoot = GQLQueryRoot
   { fragments      :: FragmentLib
