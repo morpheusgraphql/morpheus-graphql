@@ -1,9 +1,9 @@
 name: morpheus-graphql
 version: 0.0.1
-github: "githubuser/haskell-bff"
+github: "nalchevanidze/morpheus-graphql"
 license: BSD3
 author: "Davit Nalchevanidze"
-maintainer: "example@example.com"
+maintainer: "d.nalchevanidze@gmail.com"
 copyright: "2018 Author name here"
 
 description: Build GraphQL APIs with your favourite functional language!
