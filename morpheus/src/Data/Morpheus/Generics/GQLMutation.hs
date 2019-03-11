@@ -1,84 +1,57 @@
-{-# LANGUAGE DefaultSignatures , OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables , MultiParamTypeClasses, RankNTypes , DisambiguateRecordFields , FlexibleInstances , FlexibleContexts , TypeOperators #-}
+{-# LANGUAGE DefaultSignatures        #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE FlexibleContexts         #-}
+{-# LANGUAGE FlexibleInstances        #-}
+{-# LANGUAGE MultiParamTypeClasses    #-}
+{-# LANGUAGE OverloadedStrings        #-}
+{-# LANGUAGE RankNTypes               #-}
+{-# LANGUAGE ScopedTypeVariables      #-}
+{-# LANGUAGE TypeOperators            #-}
 
 module Data.Morpheus.Generics.GQLMutation
   ( GQLMutation(..)
   , NoMutation(..)
-  )
-where
+  ) where
 
-
-import           Control.Monad
-import           Data.List                      ( find )
-import           Data.Data                      ( Data
-                                                , Typeable
-                                                , typeOf
-                                                , TypeRep
-                                                )
-import           Data.Text                      ( Text(..)
-                                                , pack
-                                                )
-import qualified Data.Map                      as M
-
-import           GHC.Generics
-import           Data.Morpheus.Types.Types      ( SelectionSet
-                                                , QuerySelection(..)
-                                                , GQLQueryRoot(..)
-                                                , ResolveIO(..)
-                                                , failResolveIO
-                                                )
-import           Data.Morpheus.Types.JSType     ( JSType(..) )
-import           Data.Morpheus.Types.MetaInfo   ( MetaInfo(..)
-                                                , initialMeta
-                                                )
-import           Data.Morpheus.Generics.GQLArgs ( GQLArgs(..) )
-import           Data.Morpheus.Types.Introspection
-                                                ( GQL__Type(..)
-                                                , GQL__Field
-                                                , GQL__TypeKind(..)
-                                                , GQL__InputValue
-                                                , GQLTypeLib
-                                                , GQL__EnumValue
-                                                , createType
-                                                , createField
-                                                , emptyLib
-                                                )
-import           Data.Morpheus.Generics.TypeRep ( Selectors(..)
-                                                , resolveTypes
-                                                )
+import           Data.Data                              (Data, Typeable)
+import qualified Data.Map                               as M
+import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..),
+                                                         resolveBySelection)
+import           Data.Morpheus.Generics.TypeRep         (Selectors (..),
+                                                         resolveTypes)
+import           Data.Morpheus.Types.Introspection      (GQLTypeLib, GQL__Field,
+                                                         createType, emptyLib)
+import           Data.Morpheus.Types.JSType             (JSType (..))
+import           Data.Morpheus.Types.MetaInfo           (initialMeta)
+import           Data.Morpheus.Types.Types              (QuerySelection (..),
+                                                         ResolveIO)
 import           Data.Proxy
-import           Data.Maybe                     ( fromMaybe )
-import           Data.Morpheus.Schema.GQL__Schema
-                                                ( GQL__Schema )
-import           Data.Morpheus.Generics.GQLSelection
-                                                ( GQLSelection(..) )
-import           Data.Morpheus.Generics.DeriveResolvers
-                                                ( DeriveResolvers(..)
-                                                , resolveBySelection
-                                                )
+import           GHC.Generics
 
 class GQLMutation a where
+  encodeMutation :: a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
+  default encodeMutation :: (Generic a, Data a, DeriveResolvers (Rep a), Show a) =>
+    a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
+  encodeMutation rootResolver schema (SelectionSet _ sel pos) =
+    resolveBySelection sel $ deriveResolvers initialMeta $ from rootResolver
+  mutationSchema :: a -> GQLTypeLib
+  default mutationSchema :: (Generic a, Data a) =>
+    a -> GQLTypeLib
+  mutationSchema _ = introspectMutation (Proxy :: Proxy a)
+  introspectMutation :: Proxy a -> GQLTypeLib
+  default introspectMutation :: (Show a, Selectors (Rep a) GQL__Field, Typeable a) =>
+    Proxy a -> GQLTypeLib
+  introspectMutation _ = resolveTypes mutationType types
+    where
+      mutationType = M.fromList [("Mutation", createType "Mutation" fields)]
+      fieldTypes = getFields (Proxy :: Proxy (Rep a))
+      types = map snd fieldTypes
+      fields = map fst fieldTypes
 
-    encodeMutation :: a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
-    default encodeMutation :: ( Generic a, Data a, DeriveResolvers (Rep a) , Show a) => a -> GQLTypeLib ->  QuerySelection -> ResolveIO JSType
-    encodeMutation rootResolver schema (SelectionSet _ sel pos) = resolveBySelection sel $ deriveResolvers initialMeta  $ from rootResolver
-
-    mutationSchema :: a -> GQLTypeLib
-    default mutationSchema :: (Generic a, Data a) => a -> GQLTypeLib
-    mutationSchema _ = introspectMutation (Proxy :: Proxy a)
-
-    introspectMutation :: Proxy a  -> GQLTypeLib
-    default introspectMutation :: (Show a, Selectors (Rep a) GQL__Field , Typeable a) => Proxy a -> GQLTypeLib
-    introspectMutation _ = resolveTypes mutationType types
-       where
-         mutationType = M.fromList [("Mutation", createType "Mutation" fields)]
-         fieldTypes  = getFields (Proxy :: Proxy (Rep a))
-         types = map snd fieldTypes
-         fields = map fst fieldTypes
-
-data NoMutation = NoMutation
+data NoMutation =
+  NoMutation
 
 instance GQLMutation NoMutation where
   encodeMutation _ _ _ = pure JSNull
-  mutationSchema _  = emptyLib
+  mutationSchema _ = emptyLib
   introspectMutation _ = emptyLib

@@ -1,49 +1,32 @@
 module Data.Morpheus.Parser.RootHead
-    ( rootHeadArguments
-    )
-where
+  ( rootHeadArguments
+  ) where
 
-import           Data.Text                      ( Text(..)
-                                                , pack
-                                                , unpack
-                                                )
-import           Data.Attoparsec.Text           ( Parser
-                                                , char
-                                                , letter
-                                                , sepBy
-                                                , skipSpace
-                                                , try
-                                                , parseOnly
-                                                , parse
-                                                , IResult(Done)
-                                                , string
-                                                , endOfInput
-                                                )
-import           Data.Morpheus.Types.Types      ( Arguments
-                                                , Argument(..)
-                                                )
-import           Data.Morpheus.Parser.Primitive ( token
-                                                , variable
-                                                , getPosition
-                                                )
+import           Data.Attoparsec.Text           (IResult (Done), Parser, char,
+                                                 endOfInput, letter, parse,
+                                                 parseOnly, sepBy, skipSpace,
+                                                 string, try)
+import           Data.Morpheus.Parser.Primitive (getPosition, token, variable)
+import           Data.Morpheus.Types.Types      (Argument (..), Arguments)
+import           Data.Text                      (Text (..), pack, unpack)
 
 rootHeadVariable :: Parser (Text, Argument)
 rootHeadVariable = do
-    skipSpace
-    pos          <- getPosition
-    variableName <- variable
-    skipSpace
-    char ':'
-    skipSpace
-    variableType <- token
-    pure (variableName, Variable variableType pos)
+  skipSpace
+  pos <- getPosition
+  variableName <- variable
+  skipSpace
+  char ':'
+  skipSpace
+  variableType <- token
+  pure (variableName, Variable variableType pos)
 
 rootHeadArguments :: Parser Arguments
 rootHeadArguments = do
-    skipSpace
-    char '('
-    skipSpace
-    parameters <- rootHeadVariable `sepBy` (skipSpace *> char ',')
-    skipSpace
-    char ')'
-    pure parameters
+  skipSpace
+  char '('
+  skipSpace
+  parameters <- rootHeadVariable `sepBy` (skipSpace *> char ',')
+  skipSpace
+  char ')'
+  pure parameters
