@@ -24,5 +24,14 @@ dependencies:
 library:
   source-dirs: src
   ghc-options:
-      -Wall
-      -W
+      -fwarn-dodgy-exports
+      -fwarn-dodgy-imports
+      -fwarn-unused-imports
+      -fwarn-duplicate-exports
+      -fwarn-missing-fields
+      -fwarn-missing-methods
+      -fwarn-missing-signatures
+      -fwarn-overlapping-patterns
+      -fwarn-wrong-do-bind
+      -fwarn-unused-matches
+      -Werror

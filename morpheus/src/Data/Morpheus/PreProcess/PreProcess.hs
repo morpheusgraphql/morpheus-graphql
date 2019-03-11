@@ -12,15 +12,12 @@ import           Data.Morpheus.ErrorMessage         (cannotQueryField)
 import           Data.Morpheus.PreProcess.Arguments (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment  (validateFragments)
 import           Data.Morpheus.PreProcess.Spread    (spreadFieldsWhile)
-import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf,
-                                                     typeBy)
+import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf, typeBy)
 import           Data.Morpheus.PreProcess.Variable  (checkQueryVariables)
 import           Data.Morpheus.Types.Introspection  (GQLTypeLib, GQL__Type)
 import           Data.Morpheus.Types.MetaInfo       (MetaInfo (..))
-import           Data.Morpheus.Types.Types          (GQLOperator (..),
-                                                     GQLQueryRoot (..),
-                                                     QuerySelection (..),
-                                                     SelectionSet, Validation)
+import           Data.Morpheus.Types.Types          (GQLOperator (..), GQLQueryRoot (..),
+                                                     QuerySelection (..), SelectionSet, Validation)
 import qualified Data.Set                           as S
 import           Data.Text                          (Text, pack)
 
@@ -53,6 +50,7 @@ checkDuplicates x =
     noDuplicates = S.toList . S.fromList
     meta duplicates = MetaInfo {typeName = "-- TODO: Error handling", key = pack $ show duplicates, position = 0}
 
+getOperationInfo :: GQLOperator -> (Text, QuerySelection)
 getOperationInfo (QueryOperator name x)    = ("Query", x)
 getOperationInfo (MutationOperator name x) = ("Mutation", x)
 

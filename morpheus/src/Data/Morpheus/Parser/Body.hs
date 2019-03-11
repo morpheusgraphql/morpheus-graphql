@@ -5,8 +5,8 @@ module Data.Morpheus.Parser.Body
   ) where
 
 import           Control.Applicative            (some, (<|>))
-import           Data.Attoparsec.Text           (Parser, char, letter, sepBy,
-                                                 skipSpace, string, try)
+import           Data.Attoparsec.Text           (Parser, char, letter, sepBy, skipSpace, string,
+                                                 try)
 import           Data.Morpheus.Parser.Arguments (arguments)
 import           Data.Morpheus.Parser.Primitive (getPosition, separator, token)
 import           Data.Morpheus.Types.Types      (Arguments, QuerySelection (..))
@@ -29,6 +29,7 @@ entry = do
   value <- try (body args) <|> pure (Field args key index)
   return (key, value)
 
+separated :: Parser a -> Parser [a]
 separated x = x `sepBy` separator
 
 body :: Arguments -> Parser QuerySelection

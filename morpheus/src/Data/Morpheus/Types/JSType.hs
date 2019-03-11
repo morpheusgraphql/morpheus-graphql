@@ -35,6 +35,7 @@ instance ToJSON JSType where
     where
       encodeField (key, value) = replaceType key .= value
 
+replace :: (a, Value) -> (a, JSType)
 replace (key, val) = (key, replaceValue val)
 
 decodeScientific :: Scientific -> JSType

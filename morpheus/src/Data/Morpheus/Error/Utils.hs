@@ -18,12 +18,14 @@ renderErrors x = map (renderError x)
 renderError :: LineBreaks -> GQLError -> JSONError
 renderError lineBreaks error = JSONError {message = desc error, locations = [errorLocation lineBreaks $ posIndex error]}
 
+lineIndexAndNumber :: Position -> LineBreaks -> (Int, Int)
 lineIndexAndNumber position lines = (length linesBefore + 1, linePos linesBefore)
   where
     linesBefore = filter (position >=) lines
     linePos [] = 1
-    linePos x  = maximum linesBefore + 1
+    linePos _  = maximum linesBefore + 1
 
+errorLocation :: LineBreaks -> Position -> ErrorLocation
 errorLocation lineBreaks pos = do
   let (line, position) = lineIndexAndNumber pos lineBreaks
   ErrorLocation line (pos - position)
