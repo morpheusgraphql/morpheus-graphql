@@ -55,7 +55,7 @@ validateFragmentFields _ _ _ _ = pure []
 validateFragment :: GQLTypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation (Text, Graph)
 validateFragment lib root (fName, frag) = do
   _type <- existsType (target frag) lib
-  let (SelectionSet _ selection pos) = fragmentContent frag
+  let (SelectionSet _ selection _pos) = fragmentContent frag
   fragmentLinks <- concat <$> mapM (validateFragmentFields lib root _type) selection
   pure (fName, fragmentLinks)
 

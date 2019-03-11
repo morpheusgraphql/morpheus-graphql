@@ -35,9 +35,8 @@ import           Data.Morpheus.PreProcess.PreProcess (preProcessQuery)
 import           Data.Morpheus.Types.Introspection   (GQLTypeLib)
 import           Data.Morpheus.Types.JSType          (JSType)
 import           Data.Morpheus.Types.Types           ((::->) (Resolver), EnumOf (unpackEnum),
-                                                      GQLOperator (..), GQLQueryRoot,
-                                                      GQLRequest (..), GQLResponse (..), ResolveIO,
-                                                      failResolveIO)
+                                                      GQLOperator (..), GQLRequest (..),
+                                                      GQLResponse (..), ResolveIO, failResolveIO)
 import           Data.Text                           (pack)
 
 data GQLRoot a b = GQLRoot
@@ -47,12 +46,6 @@ data GQLRoot a b = GQLRoot
 
 schema :: (GQLQuery a, GQLMutation b) => a -> b -> GQLTypeLib
 schema query mutation = querySchema query $ mutationSchema mutation
-
-validate :: GQLTypeLib -> GQLQueryRoot -> ResolveIO GQLOperator
-validate schema root =
-  case preProcessQuery schema root of
-    Right validGQL -> pure validGQL
-    Left x         -> failResolveIO x
 
 resolve :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO JSType
 resolve rootResolver body = do

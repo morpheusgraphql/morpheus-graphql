@@ -33,5 +33,13 @@ library:
       -fwarn-missing-signatures
       -fwarn-overlapping-patterns
       -fwarn-wrong-do-bind
+      -fwarn-unused-binds
       -fwarn-unused-matches
+      -fwarn-type-defaults
+      -fwarn-incomplete-record-updates
+      -fwarn-hi-shadowing
+      -fwarn-dodgy-foreign-imports
+      -fwarn-deprecated-flags
+      -fwarn-warnings-deprecations
+      -fwarn-unrecognised-pragmas
       -Werror
