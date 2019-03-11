@@ -2,13 +2,10 @@ module Data.Morpheus.Parser.RootHead
   ( rootHeadArguments
   ) where
 
-import           Data.Attoparsec.Text           (IResult (Done), Parser, char,
-                                                 endOfInput, letter, parse,
-                                                 parseOnly, sepBy, skipSpace,
-                                                 string, try)
+import           Data.Attoparsec.Text           (Parser, char, sepBy, skipSpace)
 import           Data.Morpheus.Parser.Primitive (getPosition, token, variable)
 import           Data.Morpheus.Types.Types      (Argument (..), Arguments)
-import           Data.Text                      (Text (..), pack, unpack)
+import           Data.Text                      (Text)
 
 rootHeadVariable :: Parser (Text, Argument)
 rootHeadVariable = do

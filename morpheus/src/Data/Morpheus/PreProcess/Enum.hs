@@ -5,13 +5,11 @@ module Data.Morpheus.PreProcess.Enum
 import           Data.Morpheus.ErrorMessage          (invalidEnumOption)
 import           Data.Morpheus.Schema.GQL__EnumValue (isEnumOf)
 import qualified Data.Morpheus.Schema.GQL__Type      as T
-import           Data.Morpheus.Types.Introspection   (GQL__Type (..))
+import           Data.Morpheus.Types.Introspection   (GQL__Type)
 import           Data.Morpheus.Types.JSType          (JSType (..))
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..))
 import           Data.Morpheus.Types.Types           ((::->) (Some),
-                                                      Argument (..),
-                                                      Validation (..))
-import           Data.Text                           (Text)
+                                                      Argument (..), Validation)
 
 validateEnum :: GQL__Type -> Argument -> Validation Argument
 validateEnum _type (Argument (JSEnum argument) pos) =

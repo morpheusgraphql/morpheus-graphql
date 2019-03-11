@@ -4,11 +4,9 @@ module Data.Morpheus.Parser.Primitive where
 
 import           Control.Applicative
 import           Data.Attoparsec.Text
-import qualified Data.Attoparsec.Text           as AT (takeWhile)
-import           Data.Char                      (isAlpha, isDigit, isSpace, ord)
 import           Data.Functor
 import           Data.Morpheus.Types.JSType     (JSType (..))
-import qualified Data.Text                      as T (Text, concat, pack)
+import qualified Data.Text                      as T (Text, pack)
 
 import qualified Data.Attoparsec.Internal.Types as AT
 

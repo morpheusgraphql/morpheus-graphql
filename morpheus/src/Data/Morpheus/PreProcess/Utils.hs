@@ -14,8 +14,7 @@ import           Data.Morpheus.Schema.SchemaField  (getFieldTypeByKey,
                                                     selectFieldByKey)
 import           Data.Morpheus.Types.Introspection (GQLTypeLib, GQL__Field,
                                                     GQL__Type)
-import           Data.Morpheus.Types.MetaInfo      (MetaInfo (..),
-                                                    Position (..))
+import           Data.Morpheus.Types.MetaInfo      (MetaInfo (..), Position)
 import           Data.Morpheus.Types.Types         (Validation)
 import           Data.Text                         as TX (Text, concat)
 

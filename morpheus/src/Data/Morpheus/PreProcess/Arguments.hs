@@ -3,12 +3,8 @@ module Data.Morpheus.PreProcess.Arguments
   ) where
 
 import           Data.List                          ((\\))
-import qualified Data.Map                           as M
-import           Data.Morpheus.ErrorMessage         (invalidEnumOption,
-                                                     requiredArgument,
-                                                     unknownArguments,
-                                                     unsupportedArgumentType,
-                                                     variableIsNotDefined)
+import           Data.Morpheus.ErrorMessage         (requiredArgument,
+                                                     unknownArguments)
 import           Data.Morpheus.PreProcess.Enum      (validateEnum)
 import           Data.Morpheus.PreProcess.Utils     (existsType)
 import           Data.Morpheus.PreProcess.Variable  (replaceVariable)
@@ -17,16 +13,13 @@ import qualified Data.Morpheus.Schema.GQL__Type     as T
 import           Data.Morpheus.Schema.GQL__TypeKind (GQL__TypeKind (..))
 import qualified Data.Morpheus.Schema.InputValue    as I
 import           Data.Morpheus.Types.Introspection  (GQLTypeLib, GQL__Field,
-                                                     GQL__InputValue,
-                                                     GQL__Type (..))
+                                                     GQL__InputValue)
 import           Data.Morpheus.Types.JSType         (JSType (..))
-import           Data.Morpheus.Types.MetaInfo       (MetaInfo (..))
-import           Data.Morpheus.Types.Types          (Argument (..),
-                                                     Arguments (..),
+import           Data.Morpheus.Types.Types          (Argument (..), Arguments,
                                                      EnumOf (..),
                                                      GQLQueryRoot (..),
-                                                     Validation (..))
-import           Data.Text                          (Text, pack)
+                                                     Validation)
+import           Data.Text                          (Text)
 
 -- TODO: Validate other Types , INPUT_OBJECT
 checkArgumentType :: GQLTypeLib -> Text -> Argument -> Validation Argument

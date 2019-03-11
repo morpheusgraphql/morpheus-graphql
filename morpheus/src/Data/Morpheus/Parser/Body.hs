@@ -4,17 +4,13 @@ module Data.Morpheus.Parser.Body
   ( body
   ) where
 
-import           Control.Applicative            (many, some, (<|>))
-import           Data.Attoparsec.Text           (IResult (Done), Parser, char,
-                                                 endOfInput, letter, parse,
-                                                 parseOnly, sepBy, skipSpace,
-                                                 string, try)
+import           Control.Applicative            (some, (<|>))
+import           Data.Attoparsec.Text           (Parser, char, letter, sepBy,
+                                                 skipSpace, string, try)
 import           Data.Morpheus.Parser.Arguments (arguments)
 import           Data.Morpheus.Parser.Primitive (getPosition, separator, token)
-import           Data.Morpheus.Types.Types      (Arguments (..),
-                                                 QuerySelection (..),
-                                                 SelectionSet)
-import           Data.Text                      (Text (..), pack, unpack)
+import           Data.Morpheus.Types.Types      (Arguments, QuerySelection (..))
+import           Data.Text                      (Text, pack)
 
 spread :: Parser (Text, QuerySelection)
 spread = do
