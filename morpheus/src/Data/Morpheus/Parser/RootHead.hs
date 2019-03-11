@@ -13,7 +13,7 @@ rootHeadVariable = do
   pos <- getPosition
   variableName <- variable
   skipSpace
-  char ':'
+  _ <- char ':'
   skipSpace
   variableType <- token
   pure (variableName, Variable variableType pos)
@@ -21,9 +21,9 @@ rootHeadVariable = do
 rootHeadArguments :: Parser Arguments
 rootHeadArguments = do
   skipSpace
-  char '('
+  _ <- char '('
   skipSpace
   parameters <- rootHeadVariable `sepBy` (skipSpace *> char ',')
   skipSpace
-  char ')'
+  _ <- char ')'
   pure parameters

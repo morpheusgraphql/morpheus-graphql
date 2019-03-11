@@ -16,7 +16,7 @@ spread :: Parser (Text, QuerySelection)
 spread = do
   skipSpace
   index <- getPosition
-  string "..."
+  _ <- string "..."
   key <- some (letter <|> char '_')
   return (pack key, Spread (pack key) index)
 
@@ -36,9 +36,9 @@ body :: Arguments -> Parser QuerySelection
 body args = do
   skipSpace
   index <- getPosition
-  char '{'
+  _ <- char '{'
   skipSpace
   entries <- separated $ entry <|> spread
   skipSpace
-  char '}'
+  _ <- char '}'
   return (SelectionSet args entries index)

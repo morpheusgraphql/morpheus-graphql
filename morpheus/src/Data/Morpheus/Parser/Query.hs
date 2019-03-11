@@ -14,7 +14,7 @@ import           Data.Text                      (Text)
 
 queryHead :: Parser (Text, Arguments)
 queryHead = do
-  string "query "
+  _ <- string "query "
   skipSpace
   queryName <- token
   variables <- try (skipSpace *> rootHeadArguments) <|> pure []

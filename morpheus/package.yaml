@@ -42,4 +42,5 @@ library:
       -fwarn-deprecated-flags
       -fwarn-warnings-deprecations
       -fwarn-unrecognised-pragmas
+      -Wunused-do-bind
       -Werror

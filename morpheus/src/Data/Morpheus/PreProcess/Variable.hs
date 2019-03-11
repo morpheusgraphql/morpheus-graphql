@@ -38,7 +38,7 @@ checkVariableType typeLib root (key, Variable tName pos) = existsType tName type
     meta = MetaInfo {typeName = tName, position = pos, key = key}
     checkTypeInp _type key = do
       variableValue <- getVariable pos root key
-      validateInputVariable typeLib _type (key, variableValue)
+      _ <- validateInputVariable typeLib _type (key, variableValue)
       pure (key, Variable tName pos)
 
 checkQueryVariables :: GQLTypeLib -> GQLQueryRoot -> [(Text, Argument)] -> Validation [(Text, Argument)]

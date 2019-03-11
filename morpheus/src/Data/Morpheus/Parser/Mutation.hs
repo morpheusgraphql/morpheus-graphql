@@ -13,7 +13,7 @@ import           Data.Morpheus.Types.Types      (GQLOperator (..))
 
 mutation :: Parser GQLOperator
 mutation = do
-  string "mutation "
+  _ <- string "mutation "
   skipSpace
   name <- token
   variables <- try (skipSpace *> rootHeadArguments) <|> pure []

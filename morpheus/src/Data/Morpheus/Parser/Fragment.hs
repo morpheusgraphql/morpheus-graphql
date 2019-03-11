@@ -13,11 +13,11 @@ import           Data.Text                      (Text)
 fragment :: Parser (Text, Fragment)
 fragment = do
   skipSpace
-  string "fragment"
+  _ <- string "fragment"
   skipSpace
   name <- token
   skipSpace
-  string "on"
+  _ <- string "on"
   skipSpace
   targetName <- token
   skipSpace

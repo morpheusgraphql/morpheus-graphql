@@ -33,7 +33,7 @@ parameter = do
   skipSpace
   key <- token
   skipSpace
-  char ':'
+  _ <- char ':'
   skipSpace
   value <- inputValue
   pure (key, value)
@@ -41,9 +41,9 @@ parameter = do
 arguments :: Parser Arguments
 arguments = do
   skipSpace
-  char '('
+  _ <- char '('
   skipSpace
   parameters <- parameter `sepBy` (skipSpace *> char ',')
   skipSpace
-  char ')'
+  _ <- char ')'
   pure parameters

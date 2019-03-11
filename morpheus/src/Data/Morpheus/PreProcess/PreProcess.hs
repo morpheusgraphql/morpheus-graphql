@@ -60,7 +60,7 @@ updateQuery (MutationOperator name _) = MutationOperator name
 
 preProcessQuery :: GQLTypeLib -> GQLQueryRoot -> Validation GQLOperator
 preProcessQuery lib root = do
-  validateFragments lib root
+  _ <- validateFragments lib root
   let (operator, SelectionSet args body pos) = getOperationInfo $ queryBody root
   _type <- existsType operator lib
   _ <- checkQueryVariables lib root args

@@ -43,9 +43,9 @@ escaped = do
 
 jsString :: Parser JSType
 jsString = do
-  char '"'
+  _ <- char '"'
   value <- many escaped
-  char '"'
+  _ <- char '"'
   pure $ JSString $ T.pack value
 
 token :: Parser T.Text
@@ -66,7 +66,7 @@ getNextLine :: Parser Int
 getNextLine = do
   _ <- many (notChar '\n')
   index <- getPosition
-  char '\n'
+  _ <- char '\n'
   pure index
 
 getLines :: Parser [Int]
