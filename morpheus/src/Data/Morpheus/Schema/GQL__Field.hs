@@ -6,7 +6,7 @@ module Data.Morpheus.Schema.GQL__Field where
 
 import           Data.Data                            (Data)
 import           Data.Morpheus.Schema.GQL__InputValue (GQL__InputValue)
-import           Data.Text                            (Text (..))
+import           Data.Text                            (Text)
 import           GHC.Generics
 
 data GQL__Field t = GQL__Field

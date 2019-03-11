@@ -12,13 +12,8 @@ module Data.Morpheus.Generics.GQLQuery
   ( GQLQuery(..)
   ) where
 
-import           Control.Monad
-import           Data.Data                              (Data, TypeRep,
-                                                         Typeable, typeOf)
+import           Data.Data                              (Data, Typeable)
 import           Data.Map                               (insert)
-import           Data.Text                              (Text (..), pack)
-
-import           Data.Maybe                             (fromMaybe)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..),
                                                          resolveBySelection)
 import           Data.Morpheus.Generics.GQLSelection    (GQLSelection (..))
@@ -26,22 +21,13 @@ import           Data.Morpheus.Generics.TypeRep         (Selectors (..),
                                                          resolveTypes)
 import           Data.Morpheus.Schema.GQL__Schema       (GQL__Schema,
                                                          initSchema)
-import           Data.Morpheus.Types.Introspection      (GQLTypeLib,
-                                                         GQL__EnumValue,
-                                                         GQL__Field,
-                                                         GQL__InputValue,
-                                                         GQL__Type (..),
-                                                         GQL__TypeKind (..),
+import           Data.Morpheus.Types.Introspection      (GQLTypeLib, GQL__Field,
                                                          createField,
-                                                         createType, emptyLib)
+                                                         createType)
 import           Data.Morpheus.Types.JSType             (JSType (..))
-import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..),
-                                                         initialMeta)
-import           Data.Morpheus.Types.Types              (GQLQueryRoot (..),
-                                                         QuerySelection (..),
-                                                         ResolveIO (..),
-                                                         SelectionSet,
-                                                         failResolveIO)
+import           Data.Morpheus.Types.MetaInfo           (initialMeta)
+import           Data.Morpheus.Types.Types              (QuerySelection (..),
+                                                         ResolveIO)
 import           Data.Proxy
 import           GHC.Generics
 

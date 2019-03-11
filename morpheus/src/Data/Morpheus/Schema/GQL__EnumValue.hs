@@ -8,10 +8,8 @@ module Data.Morpheus.Schema.GQL__EnumValue
   , isEnumOf
   ) where
 
-import           Data.Aeson                 (ToJSON (..))
+
 import           Data.Data                  (Data)
-import           Data.Morpheus.Types.JSType (JSType (..))
-import           Data.Morpheus.Types.Types  (Argument (..))
 import           Data.Text                  (Text)
 import           GHC.Generics
 

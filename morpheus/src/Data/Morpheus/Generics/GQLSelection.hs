@@ -12,12 +12,9 @@ module Data.Morpheus.Generics.GQLSelection
   ( GQLSelection(..)
   ) where
 
-import           Control.Monad
-import qualified Control.Monad.Trans                    as Trans
 import           Control.Monad.Trans.Except
 import qualified Data.Data                              as D
 import qualified Data.Map                               as M
-import           Data.Maybe                             (fromMaybe)
 import qualified Data.Morpheus.ErrorMessage             as Err
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..),
                                                          resolveBySelection)
@@ -34,21 +31,16 @@ import           Data.Morpheus.Types.Introspection      (GQLTypeLib,
                                                          GQL__EnumValue,
                                                          GQL__Field,
                                                          GQL__InputValue,
-                                                         GQL__Type (..),
-                                                         GQL__TypeKind (..),
-                                                         createField,
+                                                         GQL__Type, createField,
                                                          createScalar,
-                                                         createType, emptyLib)
+                                                         createType)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..),
-                                                         Position (..),
                                                          initialMeta)
 import           Data.Morpheus.Types.Types              ((::->) (..),
                                                          EnumOf (..),
                                                          QuerySelection (..),
-                                                         ResolveIO (..),
-                                                         SelectionSet,
-                                                         Validation,
+                                                         ResolveIO,
                                                          failResolveIO)
 import           Data.Proxy
 import qualified Data.Text                              as T

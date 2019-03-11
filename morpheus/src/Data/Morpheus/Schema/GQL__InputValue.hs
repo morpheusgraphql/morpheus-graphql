@@ -8,7 +8,7 @@ module Data.Morpheus.Schema.GQL__InputValue
   ) where
 
 import           Data.Data    (Data)
-import           Data.Text    (Text (..))
+import           Data.Text    (Text)
 import           GHC.Generics
 
 data GQL__InputValue t = GQL__InputValue

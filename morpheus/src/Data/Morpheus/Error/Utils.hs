@@ -6,8 +6,7 @@ module Data.Morpheus.Error.Utils
 import           Data.Morpheus.Types.Error    (ErrorLocation (..),
                                                GQLError (..), GQLErrors,
                                                JSONError (..))
-import           Data.Morpheus.Types.MetaInfo (LineBreaks, MetaInfo (..),
-                                               Position (..))
+import           Data.Morpheus.Types.MetaInfo (LineBreaks, Position)
 import           Data.Text                    (Text)
 
 errorMessage :: Position -> Text -> GQLErrors

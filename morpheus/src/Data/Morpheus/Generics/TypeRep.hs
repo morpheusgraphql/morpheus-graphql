@@ -12,7 +12,6 @@ module Data.Morpheus.Generics.TypeRep
   , resolveTypes
   ) where
 
-import qualified Data.Data                         as D
 import           Data.Morpheus.Types.Introspection (GQLTypeLib)
 import           Data.Proxy                        (Proxy (..))
 import           GHC.Generics

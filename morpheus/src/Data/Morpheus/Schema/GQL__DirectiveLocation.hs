@@ -5,7 +5,6 @@ module Data.Morpheus.Schema.GQL__DirectiveLocation
   ( GQL__DirectiveLocation(..)
   ) where
 
-import           Data.Aeson   (ToJSON (..))
 import           Data.Data    (Data)
 import           GHC.Generics
 

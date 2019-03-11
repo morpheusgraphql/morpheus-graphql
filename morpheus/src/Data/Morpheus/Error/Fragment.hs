@@ -7,7 +7,7 @@ module Data.Morpheus.Error.Fragment
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors)
+import           Data.Morpheus.Types.Error    (GQLErrors)
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
 import qualified Data.Text                    as T
 

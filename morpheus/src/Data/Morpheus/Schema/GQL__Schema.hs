@@ -4,20 +4,12 @@
 
 module Data.Morpheus.Schema.GQL__Schema where
 
-import           Data.Aeson                          (FromJSON (..),
-                                                      ToJSON (..),
-                                                      defaultOptions,
-                                                      genericToJSON,
-                                                      omitNothingFields)
 import           Data.Data                           (Data)
 import           Data.Morpheus.Schema.GQL__Directive (GQL__Directive)
-import           Data.Morpheus.Types.Introspection   (GQL__Type, createType,
-                                                      emptyLib)
-import           Data.Text                           (Text (..), pack, unpack)
+import           Data.Morpheus.Types.Introspection   (GQL__Type, createType)
+import           Data.Text                           (Text)
 import           GHC.Generics                        (Generic)
-
 import qualified Data.Map                            as M
-import           Data.Proxy                          (Proxy (..))
 
 data GQL__Schema = GQL__Schema
   { types            :: [GQL__Type]

@@ -13,37 +13,18 @@ module Data.Morpheus.Generics.GQLMutation
   , NoMutation(..)
   ) where
 
-import           Control.Monad
-import           Data.Data                              (Data, TypeRep,
-                                                         Typeable, typeOf)
-import           Data.List                              (find)
+import           Data.Data                              (Data, Typeable)
 import qualified Data.Map                               as M
-import           Data.Text                              (Text (..), pack)
-
-import           Data.Maybe                             (fromMaybe)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..),
                                                          resolveBySelection)
-import           Data.Morpheus.Generics.GQLArgs         (GQLArgs (..))
-import           Data.Morpheus.Generics.GQLSelection    (GQLSelection (..))
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..),
                                                          resolveTypes)
-import           Data.Morpheus.Schema.GQL__Schema       (GQL__Schema)
-import           Data.Morpheus.Types.Introspection      (GQLTypeLib,
-                                                         GQL__EnumValue,
-                                                         GQL__Field,
-                                                         GQL__InputValue,
-                                                         GQL__Type (..),
-                                                         GQL__TypeKind (..),
-                                                         createField,
+import           Data.Morpheus.Types.Introspection      (GQLTypeLib, GQL__Field,
                                                          createType, emptyLib)
 import           Data.Morpheus.Types.JSType             (JSType (..))
-import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..),
-                                                         initialMeta)
-import           Data.Morpheus.Types.Types              (GQLQueryRoot (..),
-                                                         QuerySelection (..),
-                                                         ResolveIO (..),
-                                                         SelectionSet,
-                                                         failResolveIO)
+import           Data.Morpheus.Types.MetaInfo           (initialMeta)
+import           Data.Morpheus.Types.Types              (QuerySelection (..),
+                                                         ResolveIO)
 import           Data.Proxy
 import           GHC.Generics
 

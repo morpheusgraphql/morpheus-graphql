@@ -15,14 +15,10 @@ import qualified Data.Morpheus.Generics.GQLInput   as I (GQLInput (..))
 import           Data.Morpheus.Generics.TypeRep    (Selectors (..))
 import           Data.Morpheus.Types.Introspection (GQLTypeLib,
                                                     GQL__Deprecation__Args,
-                                                    GQL__InputValue (..),
-                                                    createInputValue,
-                                                    createType)
-import           Data.Morpheus.Types.JSType        (JSType (..))
+                                                    GQL__InputValue)
 import           Data.Morpheus.Types.MetaInfo      (MetaInfo (..), initialMeta)
-import           Data.Morpheus.Types.Types         ((::->) (None, Some),
-                                                    Argument (..), Arguments,
-                                                    Validation (..))
+import           Data.Morpheus.Types.Types         (Argument (..), Arguments,
+                                                    Validation)
 import           Data.Proxy                        (Proxy (..))
 import qualified Data.Text                         as T
 import           GHC.Generics

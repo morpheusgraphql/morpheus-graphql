@@ -19,16 +19,14 @@ import           Data.Morpheus.Generics.TypeRep       (Selectors (..),
                                                        resolveTypes)
 import qualified Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue (..))
 import           Data.Morpheus.Types.Introspection    (GQLTypeLib, GQL__Field,
-                                                       GQL__InputValue (..),
+                                                       GQL__InputValue,
                                                        createInputObject,
-                                                       createInputValue,
-                                                       createScalar)
+                                                       createInputValue)
 import           Data.Morpheus.Types.JSType           (JSType (..))
 import           Data.Morpheus.Types.MetaInfo         (MetaInfo (..),
                                                        initialMeta)
-import           Data.Morpheus.Types.Types            (EnumOf (..),
-                                                       Validation (..))
-import           Data.Text                            (Text, pack, unpack)
+import           Data.Morpheus.Types.Types            (EnumOf (..), Validation)
+import           Data.Text                            (Text, pack)
 import           GHC.Generics
 
 getType :: Typeable a => a -> Text
