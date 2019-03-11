@@ -14,10 +14,8 @@ module Data.Morpheus.ErrorMessage
   , fieldTypeMismatch
   ) where
 
-import           Data.Data                    (Data, dataTypeName, dataTypeOf)
 import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (ErrorLocation (..),
-                                               GQLError (..), GQLErrors)
+import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors)
 import           Data.Morpheus.Types.JSType   (JSType (..))
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
 import           Data.Text                    (Text (..), pack, unpack)

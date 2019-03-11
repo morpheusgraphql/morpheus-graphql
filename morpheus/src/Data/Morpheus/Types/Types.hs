@@ -15,23 +15,20 @@ module Data.Morpheus.Types.Types
   , GQLResponse(..)
   , GQLRequest(..)
   , Argument(..)
-  , ResolveIO(..)
+  , ResolveIO
   , failResolveIO
   , Arguments
   , EnumOf(..)
   , GQLOperator(..)
   ) where
 
-import           Control.Monad                (forM, liftM)
-import           Control.Monad.Trans          (MonadTrans, lift, liftIO)
-import           Control.Monad.Trans.Except   (ExceptT (..), runExceptT)
+import           Control.Monad.Trans.Except   (ExceptT (..))
 import           Data.Aeson                   (FromJSON (..), ToJSON (..),
-                                               Value (Null), object, pairs,
+                                               Value (Null), pairs,
                                                (.=))
 import           Data.Data
-import           Data.Map                     (Map, mapKeys)
-import           Data.Morpheus.Types.Error    (ErrorLocation, GQLError,
-                                               GQLErrors, JSONError (..))
+import           Data.Map                     (Map)
+import           Data.Morpheus.Types.Error    (GQLErrors, JSONError (..))
 import           Data.Morpheus.Types.JSType   (JSType)
 import           Data.Morpheus.Types.MetaInfo (Position)
 import           Data.Text                    (Text)

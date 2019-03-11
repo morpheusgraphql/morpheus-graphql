@@ -10,7 +10,7 @@ module Data.Morpheus
   , GQLArgs
   , (::->)(..)
   , GQLRequest(..)
-  , ResolveIO(..)
+  , ResolveIO
   , GQLInput
   , EnumOf(unpackEnum)
   , GQLEnum
@@ -19,8 +19,6 @@ module Data.Morpheus
   , NoMutation(..)
   ) where
 
-import           Control.Monad                       ((>=>))
-import           Control.Monad.IO.Class              (liftIO)
 import           Control.Monad.Trans.Except          (ExceptT (..), runExceptT)
 import           Data.Aeson                          (decode)
 import qualified Data.ByteString.Lazy.Char8          as B
@@ -60,6 +58,7 @@ data GQLRoot a b = GQLRoot
 schema :: (GQLQuery a, GQLMutation b) => a -> b -> GQLTypeLib
 schema query mutation = querySchema query $ mutationSchema mutation
 
+
 validate schema root =
   case preProcessQuery schema root of
     Right validGQL -> pure validGQL
@@ -69,8 +68,8 @@ resolve :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO
 resolve rootResolver body = do
   rootGQL <- ExceptT $ pure (parseGQL body >>= preProcessQuery gqlSchema)
   case rootGQL of
-    QueryOperator name query -> encodeQuery queryRes gqlSchema query
-    MutationOperator name mutation -> encodeMutation mutationRes gqlSchema mutation
+    QueryOperator _ query -> encodeQuery queryRes gqlSchema query
+    MutationOperator _ mutation -> encodeMutation mutationRes gqlSchema mutation
   where
     gqlSchema = schema queryRes mutationRes
     queryRes = queryResolver rootResolver
@@ -90,7 +89,7 @@ interpreter rootResolver request = do
     Right x -> pure $ Data x
 
 eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a
-eitherToResponse f (Left x)  = failResolveIO $ errorMessage 0 (pack $ show x)
+eitherToResponse _ (Left x)  = failResolveIO $ errorMessage 0 (pack $ show x)
 eitherToResponse f (Right x) = pure (f x)
 
 parseRequest :: B.ByteString -> ResolveIO GQLRequest
