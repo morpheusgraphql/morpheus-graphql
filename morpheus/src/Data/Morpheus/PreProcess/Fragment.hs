@@ -4,7 +4,6 @@ module Data.Morpheus.PreProcess.Fragment
   ( validateFragments
   ) where
 
-import           Data.List                          (find)
 import qualified Data.Map                           as M (lookup, toList)
 import           Data.Morpheus.Error.Fragment       (cycleOnFragment,
                                                      unknownFragment,
@@ -18,9 +17,8 @@ import           Data.Morpheus.Types.MetaInfo       (MetaInfo (..))
 import           Data.Morpheus.Types.Types          (Fragment (..), FragmentLib,
                                                      GQLQueryRoot (..),
                                                      QuerySelection (..),
-                                                     SelectionSet,
-                                                     Validation (..))
-import           Data.Text                          (Text, pack)
+                                                     Validation)
+import           Data.Text                          (Text)
 
 type Graph = [Text]
 
@@ -83,7 +81,7 @@ checkForCycle lib parentNode history =
     Nothing    -> pure []
   where
     checkNode x =
-      if x `elem`  history
+      if x `elem` history
         then error x
         else recurse x
     recurse node = checkForCycle lib node (history ++ [node])

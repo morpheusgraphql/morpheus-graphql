@@ -3,23 +3,19 @@ module Data.Morpheus.Parser.Parser
   , parseLineBreaks
   ) where
 
-import           Control.Applicative            (many, some, (<|>))
-import           Data.Attoparsec.Text           (IResult (Done), Parser, char,
-                                                 endOfInput, letter, parse,
-                                                 parseOnly, sepBy, skipSpace,
-                                                 string, try)
+import           Control.Applicative            (many, (<|>))
+import           Data.Attoparsec.Text           (Parser, endOfInput, parseOnly,
+                                                 skipSpace)
 import           Data.Map                       (fromList)
 import           Data.Maybe                     (fromMaybe)
 import           Data.Morpheus.ErrorMessage     (syntaxError)
-import           Data.Morpheus.Parser.Body      (body)
 import           Data.Morpheus.Parser.Fragment  (fragment)
 import qualified Data.Morpheus.Parser.Mutation  as M
 import           Data.Morpheus.Parser.Primitive (getLines)
 import qualified Data.Morpheus.Parser.Query     as Q
-import           Data.Morpheus.Types.Error      (GQLError)
 import           Data.Morpheus.Types.Types      (GQLQueryRoot (..),
                                                  GQLRequest (..), Validation)
-import           Data.Text                      (Text (..), pack, unpack)
+import           Data.Text                      (pack)
 
 request :: Parser GQLQueryRoot
 request = do

@@ -4,15 +4,11 @@ module Data.Morpheus.Parser.Fragment
   ( fragment
   ) where
 
-import           Control.Applicative            (many, some, (<|>))
-import           Data.Attoparsec.Text           (IResult (Done), Parser, char,
-                                                 endOfInput, letter, parse,
-                                                 parseOnly, sepBy, skipSpace,
-                                                 string, try)
+import           Data.Attoparsec.Text           (Parser, skipSpace, string)
 import           Data.Morpheus.Parser.Body      (body)
 import           Data.Morpheus.Parser.Primitive (token)
 import           Data.Morpheus.Types.Types      (Fragment (..))
-import           Data.Text                      (Text (..), pack, unpack)
+import           Data.Text                      (Text)
 
 fragment :: Parser (Text, Fragment)
 fragment = do

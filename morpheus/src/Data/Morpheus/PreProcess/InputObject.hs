@@ -11,7 +11,7 @@ import qualified Data.Morpheus.Schema.GQL__Type    as T
 import           Data.Morpheus.Types.Introspection (GQLTypeLib, GQL__Type)
 import           Data.Morpheus.Types.JSType        (JSType (..))
 import           Data.Morpheus.Types.MetaInfo      (MetaInfo (..))
-import           Data.Morpheus.Types.Types         (Validation (..))
+import           Data.Morpheus.Types.Types         (Validation)
 import           Data.Text                         as Text (Text)
 
 typeMismatch :: MetaInfo -> JSType -> Text -> Validation JSType

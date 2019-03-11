@@ -2,17 +2,13 @@ module Data.Morpheus.Parser.Arguments
   ( arguments
   ) where
 
-import           Control.Applicative            (many, some, (<|>))
-import           Data.Attoparsec.Text           (IResult (Done), Parser, char,
-                                                 endOfInput, letter, parse,
-                                                 parseOnly, sepBy, skipSpace,
-                                                 string, try)
-import           Data.Map                       (fromList)
+import           Control.Applicative            ((<|>))
+import           Data.Attoparsec.Text           (Parser, char, sepBy, skipSpace)
 import           Data.Morpheus.Parser.Primitive (getPosition, jsBool, jsInt,
                                                  jsString, token, variable)
 import           Data.Morpheus.Types.JSType     (JSType (JSEnum))
 import           Data.Morpheus.Types.Types      (Argument (..), Arguments)
-import           Data.Text                      (Text (..), pack, unpack)
+import           Data.Text                      (Text)
 
 enum = JSEnum <$> token
 

@@ -4,20 +4,12 @@ module Data.Morpheus.Parser.Query
   ( query
   ) where
 
-import           Control.Applicative            (many, some, (<|>))
-import           Data.Attoparsec.Text           (IResult (Done), Parser, char,
-                                                 endOfInput, letter, parse,
-                                                 parseOnly, sepBy, skipSpace,
-                                                 string, try)
-import           Data.Data                      (Data)
+import           Control.Applicative            ((<|>))
+import           Data.Attoparsec.Text           (Parser, skipSpace, string, try)
 import           Data.Morpheus.Parser.Body      (body)
 import           Data.Morpheus.Parser.Primitive (token)
 import           Data.Morpheus.Parser.RootHead  (rootHeadArguments)
-import           Data.Morpheus.Types.Error      (GQLError)
-import           Data.Morpheus.Types.Types      (Arguments (..),
-                                                 GQLOperator (..),
-                                                 QuerySelection (..),
-                                                 SelectionSet)
+import           Data.Morpheus.Types.Types      (Arguments, GQLOperator (..))
 import           Data.Text                      (Text)
 
 queryHead :: Parser (Text, Arguments)

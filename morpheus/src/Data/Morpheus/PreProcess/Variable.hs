@@ -12,15 +12,13 @@ import           Data.Morpheus.PreProcess.InputObject (validateInputVariable)
 import           Data.Morpheus.PreProcess.Utils       (existsType)
 import qualified Data.Morpheus.Schema.GQL__Type       as T
 import           Data.Morpheus.Schema.GQL__TypeKind   (GQL__TypeKind (..))
-import qualified Data.Morpheus.Schema.InputValue      as I
 import           Data.Morpheus.Types.Introspection    (GQLTypeLib)
 import           Data.Morpheus.Types.JSType           (JSType (..))
 import           Data.Morpheus.Types.MetaInfo         (MetaInfo (..))
 import           Data.Morpheus.Types.Types            (Argument (..),
-                                                       Arguments (..),
                                                        EnumOf (..),
                                                        GQLQueryRoot (..),
-                                                       Validation (..))
+                                                       Validation)
 import           Data.Text                            (Text)
 
 getVariable :: Int -> GQLQueryRoot -> Text -> Validation JSType

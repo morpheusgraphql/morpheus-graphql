@@ -7,50 +7,22 @@ module Data.Morpheus.PreProcess.PreProcess
   ( preProcessQuery
   ) where
 
-import           Data.Data                           (Data)
-import           Data.List                           (find, (\\))
-import qualified Data.Map                            as M
-import           Data.Morpheus.ErrorMessage          (cannotQueryField,
-                                                      handleError,
-                                                      invalidEnumOption,
-                                                      requiredArgument,
-                                                      variableIsNotDefined)
-import           Data.Morpheus.PreProcess.Arguments  (validateArguments)
-import           Data.Morpheus.PreProcess.Spread     (spreadFieldsWhile)
-import           Data.Morpheus.PreProcess.Utils      (existsType, fieldOf,
-                                                      typeBy)
-import           Data.Morpheus.PreProcess.Variable   (checkQueryVariables)
-import           Data.Morpheus.Schema.GQL__EnumValue (isEnumOf)
-import qualified Data.Morpheus.Schema.GQL__Type      as T
-import           Data.Morpheus.Schema.GQL__TypeKind  (GQL__TypeKind (..))
-import qualified Data.Morpheus.Schema.InputValue     as I (inputValueMeta,
-                                                           isRequired, name,
-                                                           typeName)
-import           Data.Morpheus.Schema.SchemaField    (fieldArgsByKey,
-                                                      getFieldTypeByKey,
-                                                      selectFieldByKey)
-import           Data.Morpheus.Types.Introspection   (GQLTypeLib, GQL__Field,
-                                                      GQL__InputValue,
-                                                      GQL__Type (..), emptyLib)
-import           Data.Morpheus.Types.JSType          (JSType (..))
-import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..))
-import           Data.Morpheus.Types.Types           ((::->) (..),
-                                                      Argument (..),
-                                                      Arguments (..),
-                                                      EnumOf (..),
-                                                      Fragment (..),
-                                                      FragmentLib,
-                                                      GQLOperator (..),
-                                                      GQLQueryRoot (..),
-                                                      QuerySelection (..),
-                                                      SelectionSet,
-                                                      Validation (..))
-import           Data.Proxy
-import qualified Data.Set                            as S
-import           Data.Text                           (Text (..), pack, unpack)
-import           GHC.Generics                        (Generic, Rep)
-
-import           Data.Morpheus.PreProcess.Fragment   (validateFragments)
+import           Data.List                          ((\\))
+import           Data.Morpheus.ErrorMessage         (cannotQueryField)
+import           Data.Morpheus.PreProcess.Arguments (validateArguments)
+import           Data.Morpheus.PreProcess.Fragment  (validateFragments)
+import           Data.Morpheus.PreProcess.Spread    (spreadFieldsWhile)
+import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf,
+                                                     typeBy)
+import           Data.Morpheus.PreProcess.Variable  (checkQueryVariables)
+import           Data.Morpheus.Types.Introspection  (GQLTypeLib, GQL__Type)
+import           Data.Morpheus.Types.MetaInfo       (MetaInfo (..))
+import           Data.Morpheus.Types.Types          (GQLOperator (..),
+                                                     GQLQueryRoot (..),
+                                                     QuerySelection (..),
+                                                     SelectionSet, Validation)
+import qualified Data.Set                           as S
+import           Data.Text                          (Text, pack)
 
 mapSelectors :: GQLTypeLib -> GQLQueryRoot -> GQL__Type -> SelectionSet -> Validation SelectionSet
 mapSelectors typeLib root _type selectors =
