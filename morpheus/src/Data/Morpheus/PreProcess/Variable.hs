@@ -15,10 +15,8 @@ import           Data.Morpheus.Schema.GQL__TypeKind   (GQL__TypeKind (..))
 import           Data.Morpheus.Types.Introspection    (GQLTypeLib)
 import           Data.Morpheus.Types.JSType           (JSType (..))
 import           Data.Morpheus.Types.MetaInfo         (MetaInfo (..))
-import           Data.Morpheus.Types.Types            (Argument (..),
-                                                       EnumOf (..),
-                                                       GQLQueryRoot (..),
-                                                       Validation)
+import           Data.Morpheus.Types.Types            (Argument (..), EnumOf (..),
+                                                       GQLQueryRoot (..), Validation)
 import           Data.Text                            (Text)
 
 getVariable :: Int -> GQLQueryRoot -> Text -> Validation JSType
@@ -50,4 +48,4 @@ replaceVariable :: GQLQueryRoot -> Argument -> Validation Argument
 replaceVariable root (Variable key pos) = do
   value <- getVariable pos root key
   pure $ Argument value pos
-replaceVariable root a = pure a
+replaceVariable _ a = pure a

@@ -26,7 +26,7 @@ unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
 selectResolver ::
      [(T.Text, QuerySelection -> ResolveIO JSType)] -> (T.Text, QuerySelection) -> ResolveIO (T.Text, JSType)
-selectResolver x (key, gql) = unwrapMonadTuple (key, (fromMaybe (\x -> pure JSNull) $ lookup key x) gql)
+selectResolver x (key, gql) = unwrapMonadTuple (key, (fromMaybe (\_ -> pure JSNull) $ lookup key x) gql)
 
 resolveBySelection :: [(T.Text, QuerySelection)] -> [(T.Text, QuerySelection -> ResolveIO JSType)] -> ResolveIO JSType
 resolveBySelection selection resolvers = JSObject <$> mapM (selectResolver resolvers) selection
@@ -44,7 +44,7 @@ instance (Datatype c, DeriveResolvers f) => DeriveResolvers (M1 D c f) where
   deriveResolvers meta m@(M1 src) = deriveResolvers (meta {typeName = T.pack $ datatypeName m}) src
 
 instance (Constructor c, DeriveResolvers f) => DeriveResolvers (M1 C c f) where
-  deriveResolvers meta m@(M1 src) = deriveResolvers meta src
+  deriveResolvers meta (M1 src) = deriveResolvers meta src
 
 instance (DeriveResolvers f, DeriveResolvers g) => DeriveResolvers (f :*: g) where
   deriveResolvers meta (a :*: b) = deriveResolvers meta a ++ deriveResolvers meta b

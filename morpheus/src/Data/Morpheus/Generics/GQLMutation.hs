@@ -15,24 +15,21 @@ module Data.Morpheus.Generics.GQLMutation
 
 import           Data.Data                              (Data, Typeable)
 import qualified Data.Map                               as M
-import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..),
-                                                         resolveBySelection)
-import           Data.Morpheus.Generics.TypeRep         (Selectors (..),
-                                                         resolveTypes)
-import           Data.Morpheus.Types.Introspection      (GQLTypeLib, GQL__Field,
-                                                         createType, emptyLib)
+import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
+import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
+import           Data.Morpheus.Types.Introspection      (GQLTypeLib, GQL__Field, createType,
+                                                         emptyLib)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (initialMeta)
-import           Data.Morpheus.Types.Types              (QuerySelection (..),
-                                                         ResolveIO)
+import           Data.Morpheus.Types.Types              (QuerySelection (..), ResolveIO)
 import           Data.Proxy
 import           GHC.Generics
 
 class GQLMutation a where
-  encodeMutation :: a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
+  encodeMutation :: a -> QuerySelection -> ResolveIO JSType
   default encodeMutation :: (Generic a, Data a, DeriveResolvers (Rep a), Show a) =>
-    a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
-  encodeMutation rootResolver schema (SelectionSet _ sel pos) =
+    a -> QuerySelection -> ResolveIO JSType
+  encodeMutation rootResolver (SelectionSet _ sel _pos) =
     resolveBySelection sel $ deriveResolvers initialMeta $ from rootResolver
   mutationSchema :: a -> GQLTypeLib
   default mutationSchema :: (Generic a, Data a) =>
@@ -52,6 +49,6 @@ data NoMutation =
   NoMutation
 
 instance GQLMutation NoMutation where
-  encodeMutation _ _ _ = pure JSNull
+  encodeMutation _ _ = pure JSNull
   mutationSchema _ = emptyLib
   introspectMutation _ = emptyLib

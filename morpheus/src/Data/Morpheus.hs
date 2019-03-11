@@ -59,7 +59,7 @@ resolve rootResolver body = do
   rootGQL <- ExceptT $ pure (parseGQL body >>= preProcessQuery gqlSchema)
   case rootGQL of
     QueryOperator _ query       -> encodeQuery queryRes gqlSchema query
-    MutationOperator _ mutation -> encodeMutation mutationRes gqlSchema mutation
+    MutationOperator _ mutation -> encodeMutation mutationRes mutation
   where
     gqlSchema = schema queryRes mutationRes
     queryRes = queryResolver rootResolver

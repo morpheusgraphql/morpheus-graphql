@@ -16,9 +16,9 @@ import           Data.Text                         as Text (Text)
 
 typeMismatch :: MetaInfo -> JSType -> Text -> Validation JSType
 typeMismatch _ (JSString x) "String" = pure (JSString x)
-typeMismatch _ (JSInt x) "Int" = pure (JSInt x)
-typeMismatch _ (JSBool x) "Boolean" = pure (JSBool x)
-typeMismatch meta isType shouldType = Left $ fieldTypeMismatch meta isType shouldType
+typeMismatch _ (JSInt x) "Int"       = pure (JSInt x)
+typeMismatch _ (JSBool x) "Boolean"  = pure (JSBool x)
+typeMismatch meta isType shouldType  = Left $ fieldTypeMismatch meta isType shouldType
 
 validateFieldType :: MetaInfo -> JSType -> GQL__Type -> Validation JSType
 validateFieldType meta x = typeMismatch meta x . T.name
@@ -34,8 +34,7 @@ validateInputObject typeLib _parentType (_key, x) =
     meta = MetaInfo {typeName = T.name _parentType, key = _key, position = 0}
 
 validateInputVariable :: GQLTypeLib -> GQL__Type -> (Text, JSType) -> Validation JSType
-validateInputVariable typeLib _type (varName, JSObject fields) =
-  JSObject <$> mapM (validateInputObject typeLib _type) fields
-validateInputVariable typeLib _type (varName, x) = validateFieldType meta x _type
+validateInputVariable typeLib _type (_, JSObject fields) = JSObject <$> mapM (validateInputObject typeLib _type) fields
+validateInputVariable _ _type (varName, x) = validateFieldType meta x _type
   where
     meta = MetaInfo {typeName = "", key = varName, position = 0}

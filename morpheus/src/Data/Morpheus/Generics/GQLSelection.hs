@@ -47,7 +47,7 @@ class GQLSelection a where
   encode :: QuerySelection -> a -> ResolveIO JSType
   default encode :: (Generic a, D.Data a, DeriveResolvers (Rep a), Show a) =>
     QuerySelection -> a -> ResolveIO JSType
-  encode (SelectionSet _ selection pos) = resolveBySelection selection . deriveResolvers initialMeta . from
+  encode (SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers initialMeta . from
   encode (Field _ key pos) = \_ -> failResolveIO $ Err.subfieldsNotSelected meta
     where
       meta = MetaInfo {typeName = "", key = key, position = pos}
@@ -91,7 +91,7 @@ instance (Show a, Show p, GQLSelection a, Args.GQLArgs p, D.Typeable (p ::-> a))
   encode (Field args body pos) field = resolve (Field args body pos) (getType field) field
   encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
   encode x (Some a) = encode x a
-  encode x None = pure JSNull
+  encode _ None = pure JSNull
   introspect _ typeLib = resolveTypes typeLib $ args ++ fields
     where
       args = map snd $ Args.introspect (Proxy :: Proxy p)
@@ -120,7 +120,7 @@ instance GQLSelection Bool where
   fieldType _ name = F.createFieldWith name (createScalar "Boolean") []
 
 instance (GQLSelection a, D.Typeable a) => GQLSelection [a] where
-  encode Field {} x = pure $ JSList []
+  encode Field {} _ = pure $ JSList []
   encode query list = JSList <$> mapM (encode query) list
   introspect _ = introspect (Proxy :: Proxy a)
   fieldType _ = wrapAsListType <$> fieldType (Proxy :: Proxy a)
