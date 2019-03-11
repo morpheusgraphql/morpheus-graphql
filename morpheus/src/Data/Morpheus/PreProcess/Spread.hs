@@ -23,16 +23,16 @@ isFragment (_key, Spread _ _) = True
 isFragment (_key, _)          = False
 
 validateSpread :: GQLQueryRoot -> FragmentLib -> Position -> Text -> Validation [(Text, QuerySelection)]
-validateSpread _root frags location key =
-  case M.lookup key frags of
+validateSpread _root frags location spreadID =
+  case M.lookup spreadID frags of
     Nothing                                       -> Left $ unknownFragment metaData
     Just (Fragment _ _ (SelectionSet _ gqlObj _)) -> pure gqlObj
   where
-    metaData = MetaInfo {typeName = "", key = key, position = location}
+    metaData = MetaInfo {typeName = "", key = spreadID, position = location}
 
 propagateSpread :: GQLQueryRoot -> (Text, QuerySelection) -> Validation [(Text, QuerySelection)]
-propagateSpread root (key, Spread _ location) = validateSpread root (fragments root) location key
-propagateSpread _ (text, value)               = pure [(text, value)]
+propagateSpread root (spreadID, Spread _ location) = validateSpread root (fragments root) location spreadID
+propagateSpread _ (text, value) = pure [(text, value)]
 
 spreadFields :: GQLQueryRoot -> SelectionSet -> Validation SelectionSet
 spreadFields root selectors = concat <$> mapM (propagateSpread root) selectors

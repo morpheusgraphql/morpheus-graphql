@@ -43,7 +43,7 @@ unknownArguments :: Text -> [Text] -> GQLErrors
 unknownArguments fieldName = map keyToError
   where
     keyToError x = GQLError {desc = toMessage x, posIndex = 0}
-    toMessage key = T.concat ["Unknown Argument \"", key, "\" on Field \"", fieldName, "\"."]
+    toMessage argName = T.concat ["Unknown Argument \"", argName, "\" on Field \"", fieldName, "\"."]
 
 requiredArgument :: MetaInfo -> GQLErrors
 requiredArgument meta = errorMessage (position meta) text

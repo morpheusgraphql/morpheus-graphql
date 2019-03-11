@@ -8,7 +8,7 @@ module Data.Morpheus.Generics.DeriveResolvers
 
 import           Data.Maybe                   (fromMaybe)
 import           Data.Morpheus.Types.JSType   (JSType (..))
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
+import qualified Data.Morpheus.Types.MetaInfo as Meta (MetaInfo (..))
 import           Data.Morpheus.Types.Types    (QuerySelection, ResolveIO)
 import qualified Data.Text                    as T
 import           GHC.Generics
@@ -32,16 +32,16 @@ resolveBySelection :: [(T.Text, QuerySelection)] -> [(T.Text, QuerySelection -> 
 resolveBySelection selection resolvers = JSObject <$> mapM (selectResolver resolvers) selection
 
 class DeriveResolvers f where
-  deriveResolvers :: MetaInfo -> f a -> [(T.Text, QuerySelection -> ResolveIO JSType)]
+  deriveResolvers :: Meta.MetaInfo -> f a -> [(T.Text, QuerySelection -> ResolveIO JSType)]
 
 instance DeriveResolvers U1 where
   deriveResolvers _ _ = []
 
 instance (Selector s, DeriveResolvers f) => DeriveResolvers (M1 S s f) where
-  deriveResolvers meta m@(M1 src) = deriveResolvers (meta {key = T.pack $ selName m}) src
+  deriveResolvers meta m@(M1 src) = deriveResolvers (meta {Meta.key = T.pack $ selName m}) src
 
 instance (Datatype c, DeriveResolvers f) => DeriveResolvers (M1 D c f) where
-  deriveResolvers meta m@(M1 src) = deriveResolvers (meta {typeName = T.pack $ datatypeName m}) src
+  deriveResolvers meta m@(M1 src) = deriveResolvers (meta {Meta.typeName = T.pack $ datatypeName m}) src
 
 instance (Constructor c, DeriveResolvers f) => DeriveResolvers (M1 C c f) where
   deriveResolvers meta (M1 src) = deriveResolvers meta src

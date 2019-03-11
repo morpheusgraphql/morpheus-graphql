@@ -27,16 +27,16 @@ mapSelectors typeLib root _type selectors =
 
 validateBySchema ::
      GQLTypeLib -> GQLQueryRoot -> GQL__Type -> (Text, QuerySelection) -> Validation (Text, QuerySelection)
-validateBySchema typeLib root _parentType (_name, SelectionSet head selectors pos) = do
+validateBySchema typeLib root _parentType (_name, SelectionSet args selectors pos) = do
   _field <- fieldOf pos _parentType _name
   _type <- typeBy pos typeLib _parentType _name
-  head' <- validateArguments typeLib root _field head
+  head' <- validateArguments typeLib root _field args
   selectors' <- mapSelectors typeLib root _type selectors
   pure (_name, SelectionSet head' selectors' pos)
-validateBySchema typeLib root _parentType (_name, Field head field pos) = do
+validateBySchema typeLib root _parentType (_name, Field args field pos) = do
   _field <- fieldOf pos _parentType _name
   _checksIfHasType <- typeBy pos typeLib _parentType _name
-  head' <- validateArguments typeLib root _field head
+  head' <- validateArguments typeLib root _field args
   pure (_name, Field head' field pos)
 validateBySchema _ _ _ x = pure x
 

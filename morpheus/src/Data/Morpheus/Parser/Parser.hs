@@ -39,5 +39,5 @@ parseLineBreaks requestBody =
 parseGQL :: GQLRequest -> Validation GQLQueryRoot
 parseGQL requestBody =
   case parseReq requestBody of
-    Right root -> Right $ root {inputVariables = getVariables requestBody}
-    Left error -> Left $ syntaxError (pack $ show error) 0
+    Right root      -> Right $ root {inputVariables = getVariables requestBody}
+    Left parseError -> Left $ syntaxError (pack $ show parseError) 0

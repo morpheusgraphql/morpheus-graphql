@@ -21,8 +21,8 @@ type Graph = [Text]
 type RootGraph = [(Text, Graph)]
 
 getFragment :: MetaInfo -> Text -> FragmentLib -> Validation Fragment
-getFragment meta key lib =
-  case M.lookup key lib of
+getFragment meta fragmentID lib =
+  case M.lookup fragmentID lib of
     Nothing       -> Left $ unknownFragment meta
     Just fragment -> pure fragment
 
@@ -33,23 +33,24 @@ compareFragmentType parent child _type fragment =
     else Left $ unsupportedSpreadOnType parent child
 
 getSpreadType :: FragmentLib -> GQL__Type -> Text -> Validation GQL__Type
-getSpreadType frags _type key = getFragment (spread "") key frags >>= fragment
+getSpreadType frags _type fragmentID = getFragment (spread "") fragmentID frags >>= fragment
   where
     fragment fg = compareFragmentType parent (spread $ target fg) _type fg
     parent = MetaInfo {typeName = T.name _type, key = "", position = 0}
-    spread typeName = MetaInfo {typeName = typeName, key = key, position = 0}
+    spread name = MetaInfo {typeName = name, key = fragmentID, position = 0}
 
 validateFragmentFields :: GQLTypeLib -> GQLQueryRoot -> GQL__Type -> (Text, QuerySelection) -> Validation Graph
-validateFragmentFields typeLib root _parent (_name, SelectionSet head selectors pos) = do
+validateFragmentFields typeLib root _parent (_name, SelectionSet args selectors pos) = do
   _type <- typeBy pos typeLib _parent _name
   _field <- fieldOf pos _parent _name
-  _ <- validateArguments typeLib root _field head
+  _ <- validateArguments typeLib root _field args
   concat <$> mapM (validateFragmentFields typeLib root _type) selectors
-validateFragmentFields typeLib root _parentType (_name, Field head _ pos) = do
+validateFragmentFields typeLib root _parentType (_name, Field args _ pos) = do
   _field <- fieldOf pos _parentType _name
-  _ <- validateArguments typeLib root _field head
+  _ <- validateArguments typeLib root _field args
   pure []
-validateFragmentFields _ root _parent (key, Spread value _) = getSpreadType (fragments root) _parent key >> pure [value]
+validateFragmentFields _ root _parent (spreadID, Spread value _) =
+  getSpreadType (fragments root) _parent spreadID >> pure [value]
 validateFragmentFields _ _ _ _ = pure []
 
 validateFragment :: GQLTypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation (Text, Graph)
@@ -67,7 +68,7 @@ validateFragments lib root = do
 detectLoopOnFragments :: RootGraph -> Validation RootGraph
 detectLoopOnFragments lib = concat <$> mapM checkFragment lib
   where
-    checkFragment (key, _) = checkForCycle lib key [key]
+    checkFragment (fragmentID, _) = checkForCycle lib fragmentID [fragmentID]
 
 checkForCycle :: RootGraph -> Text -> [Text] -> Validation RootGraph
 checkForCycle lib parentNode history =
@@ -77,7 +78,7 @@ checkForCycle lib parentNode history =
   where
     checkNode x =
       if x `elem` history
-        then error
+        then cycleError
         else recurse x
     recurse node = checkForCycle lib node (history ++ [node])
-    error = Left $ cycleOnFragment history
+    cycleError = Left $ cycleOnFragment history

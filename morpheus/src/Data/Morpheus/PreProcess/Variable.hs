@@ -20,32 +20,32 @@ import           Data.Morpheus.Types.Types            (Argument (..), EnumOf (..
 import           Data.Text                            (Text)
 
 getVariable :: Int -> GQLQueryRoot -> Text -> Validation JSType
-getVariable pos root key =
-  case M.lookup key (inputVariables root) of
+getVariable pos root variableID =
+  case M.lookup variableID (inputVariables root) of
     Nothing    -> Left $ variableIsNotDefined meta
     Just value -> pure value
   where
-    meta = MetaInfo {typeName = "TODO: Name", key = key, position = pos}
+    meta = MetaInfo {typeName = "TODO: Name", key = variableID, position = pos}
 
 checkVariableType :: GQLTypeLib -> GQLQueryRoot -> (Text, Argument) -> Validation (Text, Argument)
-checkVariableType typeLib root (key, Variable tName pos) = existsType tName typeLib >>= checkType
+checkVariableType typeLib root (variableID, Variable tName pos) = existsType tName typeLib >>= checkType
   where
     checkType _type =
       case T.kind _type of
-        EnumOf SCALAR       -> checkTypeInp _type key
-        EnumOf INPUT_OBJECT -> checkTypeInp _type key
+        EnumOf SCALAR       -> checkTypeInp _type variableID
+        EnumOf INPUT_OBJECT -> checkTypeInp _type variableID
         _                   -> Left $ unsupportedArgumentType meta
-    meta = MetaInfo {typeName = tName, position = pos, key = key}
-    checkTypeInp _type key = do
-      variableValue <- getVariable pos root key
-      _ <- validateInputVariable typeLib _type (key, variableValue)
-      pure (key, Variable tName pos)
+    meta = MetaInfo {typeName = tName, position = pos, key = variableID}
+    checkTypeInp _type inputKey = do
+      variableValue <- getVariable pos root inputKey
+      _ <- validateInputVariable typeLib _type (inputKey, variableValue)
+      pure (inputKey, Variable tName pos)
 
 checkQueryVariables :: GQLTypeLib -> GQLQueryRoot -> [(Text, Argument)] -> Validation [(Text, Argument)]
 checkQueryVariables typeLib root = mapM (checkVariableType typeLib root)
 
 replaceVariable :: GQLQueryRoot -> Argument -> Validation Argument
-replaceVariable root (Variable key pos) = do
-  value <- getVariable pos root key
+replaceVariable root (Variable variableID pos) = do
+  value <- getVariable pos root variableID
   pure $ Argument value pos
 replaceVariable _ a = pure a

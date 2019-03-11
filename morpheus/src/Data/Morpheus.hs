@@ -45,14 +45,14 @@ data GQLRoot a b = GQLRoot
   }
 
 schema :: (GQLQuery a, GQLMutation b) => a -> b -> GQLTypeLib
-schema query mutation = querySchema query $ mutationSchema mutation
+schema queryRes mutationRes = querySchema queryRes $ mutationSchema mutationRes
 
 resolve :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO JSType
 resolve rootResolver body = do
   rootGQL <- ExceptT $ pure (parseGQL body >>= preProcessQuery gqlSchema)
   case rootGQL of
-    QueryOperator _ query       -> encodeQuery queryRes gqlSchema query
-    MutationOperator _ mutation -> encodeMutation mutationRes mutation
+    QueryOperator _ selection       -> encodeQuery queryRes gqlSchema selection
+    MutationOperator _ selection -> encodeMutation mutationRes selection
   where
     gqlSchema = schema queryRes mutationRes
     queryRes = queryResolver rootResolver

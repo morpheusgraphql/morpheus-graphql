@@ -29,9 +29,9 @@ typeBy pos typeLib _parentType _name = fieldTypeOf pos _parentType _name >>= fie
     fieldType field = existsType (T.name field) typeLib
 
 existsType :: TX.Text -> GQLTypeLib -> Validation GQL__Type
-existsType typeName typeLib =
-  case M.lookup typeName typeLib of
-    Nothing -> handleError $ TX.concat ["type does not exist", typeName]
+existsType name typeLib =
+  case M.lookup name typeLib of
+    Nothing -> handleError $ TX.concat ["type does not exist", name]
     Just x  -> pure x
 
 fieldOf :: Position -> GQL__Type -> Text -> Validation GQL__Field

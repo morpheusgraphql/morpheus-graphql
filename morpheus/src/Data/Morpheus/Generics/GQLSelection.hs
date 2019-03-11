@@ -27,7 +27,7 @@ import           Data.Morpheus.Types.Introspection      (GQLTypeLib, GQL__EnumVa
                                                          GQL__InputValue, GQL__Type, createField,
                                                          createScalar, createType)
 import           Data.Morpheus.Types.JSType             (JSType (..))
-import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), initialMeta)
+import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
 import           Data.Morpheus.Types.Types              ((::->) (..), EnumOf (..),
                                                          QuerySelection (..), ResolveIO,
                                                          failResolveIO)
@@ -36,7 +36,7 @@ import qualified Data.Text                              as T
 import           GHC.Generics
 
 instance GQLSelection a => DeriveResolvers (K1 i a) where
-  deriveResolvers meta (K1 src) = [(key meta, (`encode` src))]
+  deriveResolvers meta (K1 src) = [(Meta.key meta, (`encode` src))]
 
 instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (M1 S s (K1 R a)) GQL__Field where
   getFields _ = [(fieldType (Proxy :: Proxy a) name, introspect (Proxy :: Proxy a))]
@@ -47,10 +47,10 @@ class GQLSelection a where
   encode :: QuerySelection -> a -> ResolveIO JSType
   default encode :: (Generic a, D.Data a, DeriveResolvers (Rep a), Show a) =>
     QuerySelection -> a -> ResolveIO JSType
-  encode (SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers initialMeta . from
+  encode (SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers Meta.initialMeta . from
   encode (Field _ key pos) = \_ -> failResolveIO $ Err.subfieldsNotSelected meta
     where
-      meta = MetaInfo {typeName = "", key = key, position = pos}
+      meta = Meta.MetaInfo {Meta.typeName = "", Meta.key = key, Meta.position = pos}
   typeID :: Proxy a -> T.Text
   default typeID :: (D.Typeable a) =>
     Proxy a -> T.Text

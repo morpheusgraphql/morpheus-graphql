@@ -60,7 +60,7 @@ separator = char ',' <|> char ' ' <|> char '\n' <|> char '\t'
 getPosition :: Parser Int
 getPosition = AT.Parser internFunc
   where
-    internFunc t pos more _ succ = succ t pos more (AT.fromPos pos)
+    internFunc t pos more _ success = success t pos more (AT.fromPos pos)
 
 getNextLine :: Parser Int
 getNextLine = do

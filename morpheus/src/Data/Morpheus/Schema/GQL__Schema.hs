@@ -5,11 +5,11 @@
 module Data.Morpheus.Schema.GQL__Schema where
 
 import           Data.Data                           (Data)
+import qualified Data.Map                            as M
 import           Data.Morpheus.Schema.GQL__Directive (GQL__Directive)
 import           Data.Morpheus.Types.Introspection   (GQL__Type, createType)
 import           Data.Text                           (Text)
 import           GHC.Generics                        (Generic)
-import qualified Data.Map                            as M
 
 data GQL__Schema = GQL__Schema
   { types            :: [GQL__Type]
@@ -20,9 +20,9 @@ data GQL__Schema = GQL__Schema
   } deriving (Show, Data, Generic)
 
 initSchema :: M.Map Text GQL__Type -> GQL__Schema
-initSchema types =
+initSchema sTypes =
   GQL__Schema
-    { types = M.elems types
+    { types = M.elems sTypes
     , queryType = Just $ createType "Query" []
     , mutationType = Nothing
     , subscriptionType = Nothing

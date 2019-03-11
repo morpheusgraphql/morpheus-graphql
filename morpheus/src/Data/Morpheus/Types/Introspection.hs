@@ -35,19 +35,19 @@ type GQL__Field = F.GQL__Field GQL__Type
 
 type GQLTypeLib = Map Text GQL__Type
 
-createInputValue :: Text -> Text -> I.GQL__InputValue GQL__Type
-createInputValue name typeName = I.createInputValueWith name (createInputObject typeName [])
-
 createField :: Text -> Text -> [I.GQL__InputValue GQL__Type] -> GQL__Field
-createField name typeName = F.createFieldWith name (createType typeName [])
+createField fName typeName = F.createFieldWith fName (createType typeName [])
+
+createInputValue :: Text -> Text -> I.GQL__InputValue GQL__Type
+createInputValue iName typeName = I.createInputValueWith iName (createInputObject typeName [])
 
 createInputObject :: Text -> [GQL__Field] -> GQL__Type
-createInputObject name fields =
+createInputObject iName iFields =
   GQL__Type
     { kind = EnumOf INPUT_OBJECT
-    , name = name
+    , name = iName
     , description = ""
-    , fields = Some fields
+    , fields = Some iFields
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
@@ -56,12 +56,12 @@ createInputObject name fields =
     }
 
 createType :: Text -> [GQL__Field] -> GQL__Type
-createType name fields =
+createType tName tFields =
   GQL__Type
     { kind = EnumOf OBJECT
-    , name = name
+    , name = tName
     , description = ""
-    , fields = Some fields
+    , fields = Some tFields
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
@@ -70,10 +70,10 @@ createType name fields =
     }
 
 createScalar :: Text -> GQL__Type
-createScalar name =
+createScalar sName =
   GQL__Type
     { kind = EnumOf SCALAR
-    , name = name
+    , name = sName
     , description = ""
     , fields = Some []
     , ofType = Nothing
@@ -84,10 +84,10 @@ createScalar name =
     }
 
 createEnum :: Text -> [Text] -> GQL__Type
-createEnum name tags =
+createEnum eName tags =
   GQL__Type
     { kind = EnumOf ENUM
-    , name = name
+    , name = eName
     , description = ""
     , fields = Some []
     , ofType = Nothing

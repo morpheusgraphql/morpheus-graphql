@@ -19,6 +19,12 @@ data GQL__Field t = GQL__Field
   } deriving (Show, Data, Generic)
 
 createFieldWith :: Text -> a -> [GQL__InputValue a] -> GQL__Field a
-createFieldWith _name fieldType args =
+createFieldWith _name fieldType fieldArgs =
   GQL__Field
-    {name = _name, description = "", args = args, _type = Just fieldType, isDeprecated = False, deprecationReason = ""}
+    { name = _name
+    , description = ""
+    , args = fieldArgs
+    , _type = Just fieldType
+    , isDeprecated = False
+    , deprecationReason = ""
+    }
