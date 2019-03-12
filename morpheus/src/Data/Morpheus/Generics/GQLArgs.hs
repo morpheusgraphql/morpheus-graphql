@@ -14,6 +14,7 @@ import qualified Data.Morpheus.ErrorMessage        as Err
 import           Data.Morpheus.Generics.GDecode    (GDecode (..))
 import qualified Data.Morpheus.Generics.GQLInput   as I (GQLInput (..))
 import           Data.Morpheus.Generics.TypeRep    (Selectors (..))
+import           Data.Morpheus.Generics.Utils      (RecSel, SelOf)
 import           Data.Morpheus.Types.Introspection (GQLTypeLib, GQL__Deprecation__Args,
                                                     GQL__InputValue)
 import           Data.Morpheus.Types.MetaInfo      (MetaInfo (..), initialMeta)
@@ -22,10 +23,10 @@ import           Data.Proxy                        (Proxy (..))
 import qualified Data.Text                         as T
 import           GHC.Generics
 
-instance (Selector s, D.Typeable t, I.GQLInput t) => Selectors (M1 S s (K1 R t)) GQL__InputValue where
-  getFields _ = [(I.typeInfo (Proxy @t) name, I.introInput (Proxy @t))]
+instance (Selector s, D.Typeable a, I.GQLInput a) => Selectors (RecSel s a) GQL__InputValue where
+  getFields _ = [(I.typeInfo (Proxy @a) name, I.introInput (Proxy @a))]
     where
-      name = T.pack $ selName (undefined :: M1 S s (K1 R t) ())
+      name = T.pack $ selName (undefined :: SelOf s)
 
 instance I.GQLInput a => GDecode Arguments (K1 i a) where
   gDecode meta args =
