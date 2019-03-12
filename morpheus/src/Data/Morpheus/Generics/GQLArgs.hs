@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 
 module Data.Morpheus.Generics.GQLArgs
   ( GQLArgs(..)
@@ -22,7 +23,7 @@ import qualified Data.Text                         as T
 import           GHC.Generics
 
 instance (Selector s, D.Typeable t, I.GQLInput t) => Selectors (M1 S s (K1 R t)) GQL__InputValue where
-  getFields _ = [(I.typeInfo (Proxy :: Proxy t) name, I.introInput (Proxy :: Proxy t))]
+  getFields _ = [(I.typeInfo (Proxy @t) name, I.introInput (Proxy @t))]
     where
       name = T.pack $ selName (undefined :: M1 S s (K1 R t) ())
 
@@ -41,7 +42,7 @@ class GQLArgs p where
   introspect :: Proxy p -> [(GQL__InputValue, GQLTypeLib -> GQLTypeLib)]
   default introspect :: (Show p, Selectors (Rep p) GQL__InputValue, D.Typeable p) =>
     Proxy p -> [(GQL__InputValue, GQLTypeLib -> GQLTypeLib)]
-  introspect _ = getFields (Proxy :: Proxy (Rep p))
+  introspect _ = getFields (Proxy @(Rep p))
 
 instance GQLArgs () where
   decode _ _ = pure ()

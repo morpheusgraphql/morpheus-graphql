@@ -14,7 +14,7 @@ import           GHC.Generics
 class GDecodeEnum f where
   gToEnum :: T.Text -> f a
   tagName :: Proxy f -> T.Text
-  getTags :: proxy f -> [T.Text]
+  getTags :: Proxy f -> [T.Text]
 
 instance (Datatype c, GDecodeEnum f) => GDecodeEnum (M1 D c f) where
   gToEnum = M1 . gToEnum
@@ -24,7 +24,7 @@ instance (Datatype c, GDecodeEnum f) => GDecodeEnum (M1 D c f) where
 instance (Constructor c) => GDecodeEnum (M1 C c U1) where
   gToEnum _ = M1 U1
   tagName _ = T.pack $ conName (undefined :: (M1 C c U1 x))
-  getTags _ = [T.pack $ conName (undefined :: (M1 C c U1 x))]
+  getTags proxy = [tagName proxy]
 
 instance (GDecodeEnum a, GDecodeEnum b) => GDecodeEnum (a :+: b) where
   gToEnum name =
