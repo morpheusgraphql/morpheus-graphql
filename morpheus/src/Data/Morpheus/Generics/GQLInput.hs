@@ -5,28 +5,28 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 
 module Data.Morpheus.Generics.GQLInput
   ( GQLInput(..)
   ) where
 
-import           Data.Data
+import           Data.Data                            (Data, Typeable)
 import qualified Data.Map                             as M
 import qualified Data.Morpheus.ErrorMessage           as Err
 import           Data.Morpheus.Generics.GDecode       (GDecode (..))
 import qualified Data.Morpheus.Generics.GQLEnum       as E (GQLEnum (..))
 import           Data.Morpheus.Generics.TypeRep       (Selectors (..), resolveTypes)
+import           Data.Morpheus.Generics.Utils         (typeOf)
 import qualified Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue (..))
 import           Data.Morpheus.Types.Introspection    (GQLTypeLib, GQL__Field, GQL__InputValue,
                                                        createInputObject, createInputValue)
 import           Data.Morpheus.Types.JSType           (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo         as Meta (MetaInfo (..), initialMeta)
 import           Data.Morpheus.Types.Types            (EnumOf (..), Validation)
-import           Data.Text                            (Text, pack)
+import           Data.Proxy                           (Proxy (..))
+import           Data.Text                            (Text)
 import           GHC.Generics
-
-getType :: Typeable a => a -> Text
-getType = pack . show . typeOf
 
 instance GQLInput a => GDecode JSType (K1 i a) where
   gDecode meta (JSObject object) =
@@ -42,7 +42,7 @@ class GQLInput a where
   typeInfo :: Proxy a -> Text -> GQL__InputValue
   default typeInfo :: (Show a, Typeable a) =>
     Proxy a -> Text -> GQL__InputValue
-  typeInfo _ name = createInputValue name $ getType (undefined :: a)
+  typeInfo _ name = createInputValue name $ typeOf (Proxy @a)
   introInput :: Proxy a -> GQLTypeLib -> GQLTypeLib
   default introInput :: (Show a, Typeable a, Selectors (Rep a) GQL__Field) =>
     Proxy a -> GQLTypeLib -> GQLTypeLib
@@ -52,8 +52,8 @@ class GQLInput a where
       Nothing -> addType
     where
       addType = resolveTypes (M.insert typeName (createInputObject typeName gqlFields) typeLib) stack
-      typeName = getType (undefined :: a)
-      fieldTypes = getFields (Proxy :: Proxy (Rep a))
+      typeName = typeOf (Proxy @a)
+      fieldTypes = getFields (Proxy @(Rep a))
       stack = map snd fieldTypes
       gqlFields = map fst fieldTypes
 
@@ -75,10 +75,10 @@ instance GQLInput Int where
 instance (GQLInput a, Show a, Typeable a) => GQLInput (Maybe a) where
   decode JSNull = pure Nothing
   decode x      = Just <$> decode x
-  typeInfo _ name = (typeInfo (Proxy :: Proxy a) name) {I.defaultValue = "Nothing"}
+  typeInfo _ name = (typeInfo (Proxy @a) name) {I.defaultValue = "Nothing"}
   introInput _ typeLib = typeLib
 
 instance (Show a, E.GQLEnum a) => GQLInput (EnumOf a) where
   decode (JSEnum text) = pure $ EnumOf (E.decode (JSEnum text))
-  typeInfo _ = E.enumType (Proxy :: Proxy a)
-  introInput _ = E.introspect (Proxy :: Proxy a)
+  typeInfo _ = E.enumType (Proxy @a)
+  introInput _ = E.introspect (Proxy @a)

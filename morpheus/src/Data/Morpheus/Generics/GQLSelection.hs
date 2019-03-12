@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeOperators         #-}
 
 module Data.Morpheus.Generics.GQLSelection
@@ -19,6 +20,7 @@ import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), r
 import qualified Data.Morpheus.Generics.GQLArgs         as Args (GQLArgs (..))
 import qualified Data.Morpheus.Generics.GQLEnum         as E (GQLEnum (..))
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
+import           Data.Morpheus.Generics.Utils           (typeOf)
 import           Data.Morpheus.Schema.GQL__Directive    (GQL__Directive)
 import qualified Data.Morpheus.Schema.GQL__Field        as F (GQL__Field (..), createFieldWith)
 import           Data.Morpheus.Schema.GQL__Schema       (GQL__Schema)
@@ -54,7 +56,7 @@ class GQLSelection a where
   typeID :: Proxy a -> T.Text
   default typeID :: (D.Typeable a) =>
     Proxy a -> T.Text
-  typeID _ = (T.pack . show . D.typeOf) (undefined :: a)
+  typeID _ = typeOf $ Proxy @a
   fieldType :: Proxy a -> T.Text -> GQL__Field
   default fieldType :: (Show a, Selectors (Rep a) GQL__Field, D.Typeable a) =>
     Proxy a -> T.Text -> GQL__Field
