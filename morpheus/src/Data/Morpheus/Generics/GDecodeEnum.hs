@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 
 module Data.Morpheus.Generics.GDecodeEnum
@@ -28,8 +29,8 @@ instance (Constructor c) => GDecodeEnum (M1 C c U1) where
 
 instance (GDecodeEnum a, GDecodeEnum b) => GDecodeEnum (a :+: b) where
   gToEnum name =
-    if tagName (Proxy :: Proxy a) == name
+    if tagName (Proxy @a) == name
       then L1 $ gToEnum name
       else R1 $ gToEnum name
   tagName _ = ""
-  getTags _ = getTags (Proxy :: Proxy a) ++ getTags (Proxy :: Proxy b)
+  getTags _ = getTags (Proxy @a) ++ getTags (Proxy @b)
