@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeOperators         #-}
 
 module Data.Morpheus.Generics.GQLSelection
@@ -19,6 +20,7 @@ import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), r
 import qualified Data.Morpheus.Generics.GQLArgs         as Args (GQLArgs (..))
 import qualified Data.Morpheus.Generics.GQLEnum         as E (GQLEnum (..))
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
+import           Data.Morpheus.Generics.Utils           (RecSel, SelOf, typeOf)
 import           Data.Morpheus.Schema.GQL__Directive    (GQL__Directive)
 import qualified Data.Morpheus.Schema.GQL__Field        as F (GQL__Field (..), createFieldWith)
 import           Data.Morpheus.Schema.GQL__Schema       (GQL__Schema)
@@ -38,10 +40,10 @@ import           GHC.Generics
 instance GQLSelection a => DeriveResolvers (K1 i a) where
   deriveResolvers meta (K1 src) = [(Meta.key meta, (`encode` src))]
 
-instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (M1 S s (K1 R a)) GQL__Field where
+instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (RecSel s a) GQL__Field where
   getFields _ = [(fieldType (Proxy :: Proxy a) name, introspect (Proxy :: Proxy a))]
     where
-      name = T.pack $ selName (undefined :: M1 S s (K1 R a) ())
+      name = T.pack $ selName (undefined :: SelOf s)
 
 class GQLSelection a where
   encode :: QuerySelection -> a -> ResolveIO JSType
@@ -54,7 +56,7 @@ class GQLSelection a where
   typeID :: Proxy a -> T.Text
   default typeID :: (D.Typeable a) =>
     Proxy a -> T.Text
-  typeID _ = (T.pack . show . D.typeOf) (undefined :: a)
+  typeID _ = typeOf $ Proxy @a
   fieldType :: Proxy a -> T.Text -> GQL__Field
   default fieldType :: (Show a, Selectors (Rep a) GQL__Field, D.Typeable a) =>
     Proxy a -> T.Text -> GQL__Field

@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Data.Morpheus.Generics.GQLEnum
   ( GQLEnum(decode, introspect, enumType, fieldType)
@@ -11,6 +12,7 @@ module Data.Morpheus.Generics.GQLEnum
 import qualified Data.Data                                   as D
 import qualified Data.Map                                    as M
 import           Data.Morpheus.Generics.GDecodeEnum          (GDecodeEnum (..))
+import           Data.Morpheus.Generics.Utils                (typeOf)
 import           Data.Morpheus.Schema.GQL__DirectiveLocation (GQL__DirectiveLocation (..))
 import qualified Data.Morpheus.Schema.GQL__Field             as F (createFieldWith)
 import qualified Data.Morpheus.Types.Introspection           as I
@@ -27,7 +29,7 @@ class GQLEnum a where
   typeID :: Proxy a -> T.Text
   default typeID :: D.Typeable a =>
     Proxy a -> T.Text
-  typeID _ = T.pack $ show $ D.typeOf (undefined :: a)
+  typeID _ = typeOf (Proxy @a)
   enumType :: Proxy a -> T.Text -> I.GQL__InputValue
   default enumType :: (Show a, D.Typeable a) =>
     Proxy a -> T.Text -> I.GQL__InputValue
@@ -45,7 +47,7 @@ class GQLEnum a where
       Nothing -> M.insert typeName (I.createEnum typeName tags) typeLib
     where
       typeName = typeID proxy
-      tags = getTags (Proxy :: Proxy (Rep a))
+      tags = getTags (Proxy @(Rep a))
 
 instance GQLEnum I.GQL__TypeKind where
   typeID _ = "__TypeKind"
