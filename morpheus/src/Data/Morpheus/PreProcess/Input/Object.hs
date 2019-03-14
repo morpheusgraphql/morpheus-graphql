@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.PreProcess.InputObject
+module Data.Morpheus.PreProcess.Input.Object
   ( validateInputObject
   , validateInputVariable
   ) where

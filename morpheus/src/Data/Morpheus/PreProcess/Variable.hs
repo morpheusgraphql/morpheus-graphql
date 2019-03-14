@@ -5,21 +5,21 @@ module Data.Morpheus.PreProcess.Variable
   , replaceVariable
   ) where
 
-import qualified Data.Map                             as M
-import           Data.Morpheus.Error.Arguments        (unsupportedArgumentType)
-import           Data.Morpheus.Error.Variable         (variableIsNotDefined,
-                                                       variableValidationError)
-import           Data.Morpheus.PreProcess.InputObject (validateInputVariable)
-import           Data.Morpheus.PreProcess.Utils       (existsType)
-import qualified Data.Morpheus.Schema.GQL__Type       as T
-import           Data.Morpheus.Schema.GQL__TypeKind   (GQL__TypeKind (..))
-import           Data.Morpheus.Types.Error            (InputValidation)
-import           Data.Morpheus.Types.Introspection    (GQLTypeLib)
-import           Data.Morpheus.Types.JSType           (JSType (..))
-import           Data.Morpheus.Types.MetaInfo         (MetaInfo (..))
-import           Data.Morpheus.Types.Types            (Argument (..), EnumOf (..),
-                                                       GQLQueryRoot (..), Validation)
-import           Data.Text                            (Text)
+import qualified Data.Map                              as M
+import           Data.Morpheus.Error.Arguments         (unsupportedArgumentType)
+import           Data.Morpheus.Error.Variable          (variableIsNotDefined,
+                                                        variableValidationError)
+import           Data.Morpheus.PreProcess.Input.Object (validateInputVariable)
+import           Data.Morpheus.PreProcess.Utils        (existsType)
+import qualified Data.Morpheus.Schema.GQL__Type        as T
+import           Data.Morpheus.Schema.GQL__TypeKind    (GQL__TypeKind (..))
+import           Data.Morpheus.Types.Error             (InputValidation)
+import           Data.Morpheus.Types.Introspection     (GQLTypeLib)
+import           Data.Morpheus.Types.JSType            (JSType (..))
+import           Data.Morpheus.Types.MetaInfo          (MetaInfo (..))
+import           Data.Morpheus.Types.Types             (Argument (..), EnumOf (..),
+                                                        GQLQueryRoot (..), Validation)
+import           Data.Text                             (Text)
 
 asGQLError :: InputValidation JSType -> Validation JSType
 asGQLError (Left err)    = Left $ variableValidationError err
