@@ -7,7 +7,7 @@ import           Control.Applicative            (many, (<|>))
 import           Data.Attoparsec.Text           (Parser, endOfInput, parseOnly, skipSpace)
 import           Data.Map                       (Map, fromList)
 import           Data.Maybe                     (fromMaybe)
-import           Data.Morpheus.ErrorMessage     (syntaxError)
+import           Data.Morpheus.Error.Syntax     (syntaxError)
 import           Data.Morpheus.Parser.Fragment  (fragment)
 import qualified Data.Morpheus.Parser.Mutation  as M
 import           Data.Morpheus.Parser.Primitive (getLines)

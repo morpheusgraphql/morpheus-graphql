@@ -7,7 +7,8 @@ module Data.Morpheus.PreProcess.Utils
   ) where
 
 import qualified Data.Map                          as M (lookup)
-import           Data.Morpheus.ErrorMessage        (cannotQueryField, handleError)
+import           Data.Morpheus.Error.Error         (handleError)
+import           Data.Morpheus.Error.Selection     (cannotQueryField)
 import qualified Data.Morpheus.Schema.GQL__Type    as T
 import           Data.Morpheus.Schema.SchemaField  (getFieldTypeByKey, selectFieldByKey)
 import           Data.Morpheus.Types.Introspection (GQLTypeLib, GQL__Field, GQL__Type)

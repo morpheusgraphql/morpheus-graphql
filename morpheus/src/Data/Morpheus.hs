@@ -22,8 +22,7 @@ module Data.Morpheus
 import           Control.Monad.Trans.Except          (ExceptT (..), runExceptT)
 import           Data.Aeson                          (decode)
 import qualified Data.ByteString.Lazy.Char8          as B
-import           Data.Morpheus.Error.Utils           (renderErrors)
-import           Data.Morpheus.ErrorMessage          (errorMessage)
+import           Data.Morpheus.Error.Utils           (errorMessage, renderErrors)
 import           Data.Morpheus.Generics.GQLArgs      (GQLArgs)
 import           Data.Morpheus.Generics.GQLEnum      (GQLEnum)
 import           Data.Morpheus.Generics.GQLInput     (GQLInput)
@@ -51,7 +50,7 @@ resolve :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO
 resolve rootResolver body = do
   rootGQL <- ExceptT $ pure (parseGQL body >>= preProcessQuery gqlSchema)
   case rootGQL of
-    QueryOperator _ selection       -> encodeQuery queryRes gqlSchema selection
+    QueryOperator _ selection    -> encodeQuery queryRes gqlSchema selection
     MutationOperator _ selection -> encodeMutation mutationRes selection
   where
     gqlSchema = schema queryRes mutationRes

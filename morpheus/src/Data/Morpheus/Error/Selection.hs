@@ -1,32 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.ErrorMessage
-  ( syntaxError
-  , cannotQueryField
+module Data.Morpheus.Error.Selection
+  ( cannotQueryField
   , subfieldsNotSelected
-  , handleError
-  , errorMessage
-  , invalidEnumOption
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
 import           Data.Morpheus.Types.Error    (GQLErrors)
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
-import           Data.Text                    (Text)
+import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
 import qualified Data.Text                    as T (concat)
 
--- GQL:: if no mutation defined -> "Schema is not configured for mutations."
-
-handleError :: Text -> Either GQLErrors b
-handleError x = Left $ errorMessage 0 $ T.concat ["Field Error: ", x]
-
-invalidEnumOption :: MetaInfo -> GQLErrors
-invalidEnumOption meta = errorMessage (position meta) text
-  where
-    text = T.concat ["Expected type ", typeName meta, " found ", key meta, "."]
-
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
-
 cannotQueryField :: MetaInfo -> GQLErrors
 cannotQueryField meta = errorMessage (position meta) text
   where
@@ -37,6 +21,3 @@ subfieldsNotSelected :: MetaInfo -> GQLErrors
 subfieldsNotSelected meta = errorMessage (position meta) text
   where
     text = T.concat ["Field \"", key meta, "\" of type \"", typeName meta, "\" must have a selection of subfields"]
-
-syntaxError :: Text -> Position -> GQLErrors
-syntaxError e pos = errorMessage pos $ T.concat ["Syntax Error: ", e]

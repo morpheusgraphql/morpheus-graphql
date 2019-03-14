@@ -11,7 +11,7 @@ module Data.Morpheus.Generics.GQLArgs
 
 import qualified Data.Data                         as D
 import           Data.Morpheus.Error.Arguments     (requiredArgument)
-import           Data.Morpheus.ErrorMessage        (handleError)
+import           Data.Morpheus.Error.Error         (handleError)
 import           Data.Morpheus.Generics.GDecode    (GDecode (..))
 import qualified Data.Morpheus.Generics.GQLInput   as I (GQLInput (..))
 import           Data.Morpheus.Generics.TypeRep    (Selectors (..))

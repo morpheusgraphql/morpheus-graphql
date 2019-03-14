@@ -3,6 +3,7 @@
 module Data.Morpheus.Error.Variable
   ( variableIsNotDefined
   , fieldTypeMismatch
+  , invalidEnumOption
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
@@ -41,6 +42,15 @@ variableIsNotDefined :: MetaInfo -> GQLErrors
 variableIsNotDefined meta = errorMessage (position meta) text
   where
     text = T.concat ["Variable \"", key meta, "\" is not defined by operation \"", typeName meta, "\"."]
+
+
+-- TODO: delete it GQL has no this kind of error
+invalidEnumOption :: MetaInfo -> GQLErrors
+invalidEnumOption meta = errorMessage (position meta) text
+  where
+    text = T.concat ["Expected type ", typeName meta, " found ", key meta, "."]
+
+
 
 -- TODO: delete it GQL has no this kind of error
 fieldTypeMismatch :: MetaInfo -> JSType -> T.Text -> GQLErrors
