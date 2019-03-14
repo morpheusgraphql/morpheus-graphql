@@ -21,7 +21,7 @@ import           Data.Morpheus.Types.Types             (Argument (..), EnumOf (.
                                                         GQLQueryRoot (..), Validation)
 import           Data.Text                             (Text)
 
-asGQLError :: MetaValidation JSType -> Validation JSType
+asGQLError :: MetaValidation a -> Validation a
 asGQLError (Left err)    = Left $ variableValidationError err
 asGQLError (Right value) = pure value
 
@@ -34,7 +34,7 @@ getVariable pos root variableID =
     meta = MetaInfo {typeName = "TODO: Name", key = variableID, position = pos}
 
 checkVariableType :: GQLTypeLib -> GQLQueryRoot -> (Text, Argument) -> Validation (Text, Argument)
-checkVariableType typeLib root (variableID, Variable tName pos) = existsType tName typeLib >>= checkType
+checkVariableType typeLib root (variableID, Variable tName pos) = asGQLError (existsType tName typeLib) >>= checkType
   where
     checkType _type =
       case T.kind _type of

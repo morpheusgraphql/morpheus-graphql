@@ -5,7 +5,7 @@ module Data.Morpheus.PreProcess.Input.Object
   , validateInputVariable
   ) where
 
-import           Data.Morpheus.PreProcess.Utils    (typeBy')
+import           Data.Morpheus.PreProcess.Utils    (typeBy)
 import qualified Data.Morpheus.Schema.GQL__Type    as T
 import           Data.Morpheus.Types.Error         (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.Introspection (GQLTypeLib, GQL__Type)
@@ -24,11 +24,11 @@ validateFieldType meta x = typeMismatch meta x . T.name
 
 validateInputObject :: GQLTypeLib -> GQL__Type -> (Text, JSType) -> MetaValidation (Text, JSType)
 validateInputObject typeLib _parentType (_name, JSObject fields) = do
-  _type <- typeBy' 0 typeLib _parentType _name
+  _type <- typeBy 0 typeLib _parentType _name
   fields' <- mapM (validateInputObject typeLib _type) fields
   pure (_name, JSObject fields')
 validateInputObject typeLib _parentType (_key, x) =
-  typeBy' 0 typeLib _parentType _key >>= validateFieldType meta x >> pure (_key, x)
+  typeBy 0 typeLib _parentType _key >>= validateFieldType meta x >> pure (_key, x)
   where
     meta = MetaInfo {typeName = T.name _parentType, key = _key, position = 0}
 
