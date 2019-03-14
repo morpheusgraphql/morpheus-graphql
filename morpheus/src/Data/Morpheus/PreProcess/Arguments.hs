@@ -3,8 +3,7 @@ module Data.Morpheus.PreProcess.Arguments
   ) where
 
 import           Data.List                          ((\\))
-import           Data.Morpheus.ErrorMessage         (requiredArgument,
-                                                     unknownArguments)
+import           Data.Morpheus.Error.Arguments      (requiredArgument, unknownArguments)
 import           Data.Morpheus.PreProcess.Enum      (validateEnum)
 import           Data.Morpheus.PreProcess.Utils     (existsType)
 import           Data.Morpheus.PreProcess.Variable  (replaceVariable)
@@ -12,13 +11,10 @@ import qualified Data.Morpheus.Schema.GQL__Field    as F
 import qualified Data.Morpheus.Schema.GQL__Type     as T
 import           Data.Morpheus.Schema.GQL__TypeKind (GQL__TypeKind (..))
 import qualified Data.Morpheus.Schema.InputValue    as I
-import           Data.Morpheus.Types.Introspection  (GQLTypeLib, GQL__Field,
-                                                     GQL__InputValue)
+import           Data.Morpheus.Types.Introspection  (GQLTypeLib, GQL__Field, GQL__InputValue)
 import           Data.Morpheus.Types.JSType         (JSType (..))
-import           Data.Morpheus.Types.Types          (Argument (..), Arguments,
-                                                     EnumOf (..),
-                                                     GQLQueryRoot (..),
-                                                     Validation)
+import           Data.Morpheus.Types.Types          (Argument (..), Arguments, EnumOf (..),
+                                                     GQLQueryRoot (..), Validation)
 import           Data.Text                          (Text)
 
 -- TODO: Validate other Types , INPUT_OBJECT

@@ -10,7 +10,8 @@ module Data.Morpheus.Generics.GQLArgs
   ) where
 
 import qualified Data.Data                         as D
-import qualified Data.Morpheus.ErrorMessage        as Err
+import           Data.Morpheus.Error.Arguments     (requiredArgument)
+import           Data.Morpheus.ErrorMessage        (handleError)
 import           Data.Morpheus.Generics.GDecode    (GDecode (..))
 import qualified Data.Morpheus.Generics.GQLInput   as I (GQLInput (..))
 import           Data.Morpheus.Generics.TypeRep    (Selectors (..))
@@ -30,10 +31,12 @@ instance (Selector s, D.Typeable a, I.GQLInput a) => Selectors (RecSel s a) GQL_
 
 instance I.GQLInput a => GDecode Arguments (K1 i a) where
   gDecode meta args =
-    case lookup (key meta) args of
-      Nothing                -> Left $ Err.requiredArgument meta
+    case lookup (key meta) args
+      -- TODO: validate it in PreProcess
+          of
+      Nothing                -> Left $ requiredArgument meta
       Just (Argument x _pos) -> K1 <$> I.decode x
-      Just x                 -> Err.handleError $ T.pack $ show x
+      Just x                 -> handleError $ T.pack $ show x
 
 class GQLArgs p where
   decode :: Arguments -> Maybe p -> Validation p

@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Error.Variable where
+module Data.Morpheus.Error.Variable
+  ( variableIsNotDefined
+  ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
 import           Data.Morpheus.Types.Error    (GQLErrors)
