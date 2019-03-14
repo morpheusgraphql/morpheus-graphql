@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE TypeOperators  , TypeApplications , FlexibleContexts , MultiParamTypeClasses , DeriveAnyClass , AllowAmbiguousTypes , DefaultSignatures , ConstraintKinds #-}
 
 module Data.Morpheus
   ( interpreter
@@ -38,11 +38,33 @@ import           Data.Morpheus.Types.Types           ((::->) (Resolver), EnumOf 
                                                       GQLOperator (..), GQLRequest (..),
                                                       GQLResponse (..), ResolveIO, failResolveIO)
 import           Data.Text                           (pack)
+import           Data.Proxy
 
 data GQLRoot a b = GQLRoot
   { queryResolver    :: a
   , mutationResolver :: b
   }
+
+class AsGQL a f where
+  cool :: Proxy a -> f  -> String
+  default cool :: (Show f ) => Proxy a -> f -> String
+  cool _ = show
+
+class AsInt a where
+  isType :: a -> Proxy Int
+  default isType :: a -> Proxy Int
+  isType _ = Proxy @Int
+
+data O = O {
+  o :: Int,
+  i:: Int
+} deriving (Show, AsInt , AsGQL Int)
+
+getO :: O
+getO = O { o = 1 , i = 1 }
+
+showO :: String
+showO = cool (isType getO) getO
 
 schema :: (GQLQuery a, GQLMutation b) => a -> b -> GQLTypeLib
 schema queryRes mutationRes = querySchema queryRes $ mutationSchema mutationRes
@@ -76,7 +98,7 @@ eitherToResponse _ (Left x)  = failResolveIO $ errorMessage 0 (pack $ show x)
 eitherToResponse f (Right x) = pure (f x)
 
 parseRequest :: B.ByteString -> ResolveIO GQLRequest
-parseRequest text =
-  case decode text of
-    Just x  -> pure x
-    Nothing -> failResolveIO $ errorMessage 0 (pack $ show text)
+parseRequest _ = failResolveIO $ errorMessage 0 (pack showO)
+  --case decode text of
+   -- Just x  -> failResolveIO $ errorMessage 0 (pack showO)
+   -- Nothing -> failResolveIO $ errorMessage 0 (pack showO)
