@@ -7,14 +7,12 @@ module Data.Morpheus.ErrorMessage
   , handleError
   , errorMessage
   , invalidEnumOption
-  , fieldTypeMismatch
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
 import           Data.Morpheus.Types.Error    (GQLErrors)
-import           Data.Morpheus.Types.JSType   (JSType (..))
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
-import           Data.Text                    (Text, pack)
+import           Data.Text                    (Text)
 import qualified Data.Text                    as T (concat)
 
 -- GQL:: if no mutation defined -> "Schema is not configured for mutations."
@@ -26,23 +24,6 @@ invalidEnumOption :: MetaInfo -> GQLErrors
 invalidEnumOption meta = errorMessage (position meta) text
   where
     text = T.concat ["Expected type ", typeName meta, " found ", key meta, "."]
-
-
-fieldTypeMismatch :: MetaInfo -> JSType -> Text -> GQLErrors
-fieldTypeMismatch meta isType should = errorMessage (position meta) text
-  where
-    text =
-      T.concat
-        [ "field \""
-        , key meta
-        , "\"on type \""
-        , typeName meta
-        , "\" has a type \""
-        , pack $ show isType
-        , "\" but should have \""
-        , should
-        , "\"."
-        ]
 
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
 

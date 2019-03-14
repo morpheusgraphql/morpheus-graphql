@@ -2,12 +2,14 @@
 
 module Data.Morpheus.Error.Variable
   ( variableIsNotDefined
+  , fieldTypeMismatch
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
 import           Data.Morpheus.Types.Error    (GQLErrors)
+import           Data.Morpheus.Types.JSType   (JSType (..))
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
-import qualified Data.Text                    as T (concat)
+import qualified Data.Text                    as T (Text, concat, pack)
 
 {-|
 VARIABLES:
@@ -39,3 +41,20 @@ variableIsNotDefined :: MetaInfo -> GQLErrors
 variableIsNotDefined meta = errorMessage (position meta) text
   where
     text = T.concat ["Variable \"", key meta, "\" is not defined by operation \"", typeName meta, "\"."]
+
+-- TODO: delete it GQL has no this kind of error
+fieldTypeMismatch :: MetaInfo -> JSType -> T.Text -> GQLErrors
+fieldTypeMismatch meta isType should = errorMessage (position meta) text
+  where
+    text =
+      T.concat
+        [ "field \""
+        , key meta
+        , "\"on type \""
+        , typeName meta
+        , "\" has a type \""
+        , T.pack $ show isType
+        , "\" but should have \""
+        , should
+        , "\"."
+        ]

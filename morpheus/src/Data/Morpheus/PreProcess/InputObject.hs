@@ -5,7 +5,7 @@ module Data.Morpheus.PreProcess.InputObject
   , validateInputVariable
   ) where
 
-import           Data.Morpheus.ErrorMessage        (fieldTypeMismatch)
+import           Data.Morpheus.Error.Variable       (fieldTypeMismatch)
 import           Data.Morpheus.PreProcess.Utils    (typeBy)
 import qualified Data.Morpheus.Schema.GQL__Type    as T
 import           Data.Morpheus.Types.Introspection (GQLTypeLib, GQL__Type)
