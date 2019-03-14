@@ -17,18 +17,6 @@ import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
 import           Data.Text                    (Text, pack)
 import qualified Data.Text                    as T (concat)
 
-{-
-  FRAGMENT:
-    type Experience {
-        experience ( lang: LANGUAGE ) : String ,
-        date: String
-    }
-    fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
-    fragment H on T1 { ...A} , fragment A on T { ...H } -> "Cannot spread fragment \"H\" within itself via A."
-    fragment H on D {...}  ->  "Unknown type \"D\"."
--}
-
-
 -- GQL:: if no mutation defined -> "Schema is not configured for mutations."
 
 handleError :: Text -> Either GQLErrors b

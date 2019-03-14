@@ -11,6 +11,19 @@ import           Data.Morpheus.Types.Error    (GQLErrors)
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
 import qualified Data.Text                    as T
 
+{-
+  FRAGMENT:
+    type Experience {
+        experience ( lang: LANGUAGE ) : String ,
+        date: String
+    }
+    fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
+    fragment H on T1 { ...A} , fragment A on T { ...H } -> "Cannot spread fragment \"H\" within itself via A."
+    fragment H on D {...}  ->  "Unknown type \"D\"."
+    {...H} -> "Unknown fragment \"H\"."
+-}
+
+
 unknownFragment :: MetaInfo -> GQLErrors
 unknownFragment meta = errorMessage (position meta) text
   where
