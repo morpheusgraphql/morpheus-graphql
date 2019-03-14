@@ -1,4 +1,4 @@
-module Data.Morpheus.PreProcess.Enum
+module Data.Morpheus.PreProcess.Input.Enum
   ( validateEnum
   ) where
 
