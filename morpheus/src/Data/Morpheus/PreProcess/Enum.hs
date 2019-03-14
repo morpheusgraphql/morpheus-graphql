@@ -2,7 +2,7 @@ module Data.Morpheus.PreProcess.Enum
   ( validateEnum
   ) where
 
-import           Data.Morpheus.ErrorMessage          (invalidEnumOption)
+import           Data.Morpheus.Error.Variable        (invalidEnumOption)
 import           Data.Morpheus.Schema.GQL__EnumValue (isEnumOf)
 import qualified Data.Morpheus.Schema.GQL__Type      as T
 import           Data.Morpheus.Types.Introspection   (GQL__Type)

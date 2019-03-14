@@ -8,7 +8,7 @@ module Data.Morpheus.PreProcess.PreProcess
   ) where
 
 import           Data.List                          ((\\))
-import           Data.Morpheus.ErrorMessage         (cannotQueryField)
+import           Data.Morpheus.Error.Selection      (cannotQueryField)
 import           Data.Morpheus.PreProcess.Arguments (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment  (validateFragments)
 import           Data.Morpheus.PreProcess.Spread    (spreadFieldsWhile)

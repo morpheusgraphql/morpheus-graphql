@@ -6,8 +6,8 @@ module Data.Morpheus.PreProcess.Variable
   ) where
 
 import qualified Data.Map                             as M
-import           Data.Morpheus.ErrorMessage           (unsupportedArgumentType,
-                                                       variableIsNotDefined)
+import           Data.Morpheus.Error.Arguments        (unsupportedArgumentType)
+import           Data.Morpheus.Error.Variable         (variableIsNotDefined)
 import           Data.Morpheus.PreProcess.InputObject (validateInputVariable)
 import           Data.Morpheus.PreProcess.Utils       (existsType)
 import qualified Data.Morpheus.Schema.GQL__Type       as T
