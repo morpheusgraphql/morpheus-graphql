@@ -8,7 +8,7 @@ module Data.Morpheus.Error.Variable
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (GQLErrors, InputError (..))
+import           Data.Morpheus.Types.Error    (GQLErrors, MetaError (..))
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
 import qualified Data.Text                    as T (Text, concat, pack)
 
@@ -38,7 +38,7 @@ case variable does not match to argument type
   - query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
 
 |-}
-variableValidationError :: InputError -> GQLErrors
+variableValidationError :: MetaError -> GQLErrors
 variableValidationError (TypeMismatch meta isType shouldType) = fieldTypeMismatch meta isType shouldType
 
 variableIsNotDefined :: MetaInfo -> GQLErrors

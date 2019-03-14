@@ -6,8 +6,8 @@ module Data.Morpheus.Types.Error
   , ErrorLocation(..)
   , GQLErrors
   , JSONError(..)
-  , InputError(..)
-  , InputValidation
+  , MetaError(..)
+  , MetaValidation
   ) where
 
 import           Data.Aeson                   (ToJSON)
@@ -15,7 +15,7 @@ import           Data.Morpheus.Types.MetaInfo (MetaInfo)
 import           Data.Text                    (Text)
 import           GHC.Generics                 (Generic)
 
-data InputError
+data MetaError
   = TypeMismatch MetaInfo
                  Text
                  Text
@@ -24,7 +24,7 @@ data InputError
   | UnknownField MetaInfo
   | UnknownType MetaInfo
 
-type InputValidation a = Either InputError a
+type MetaValidation a = Either MetaError a
 
 data GQLError = GQLError
   { desc     :: Text

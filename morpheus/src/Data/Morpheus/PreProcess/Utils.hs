@@ -12,24 +12,24 @@ import           Data.Morpheus.Error.Error         (handleError)
 import           Data.Morpheus.Error.Selection     (cannotQueryField)
 import qualified Data.Morpheus.Schema.GQL__Type    as T
 import           Data.Morpheus.Schema.SchemaField  (getFieldTypeByKey, selectFieldByKey)
-import           Data.Morpheus.Types.Error         (InputError (..), InputValidation)
+import           Data.Morpheus.Types.Error         (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.Introspection (GQLTypeLib, GQL__Field, GQL__Type)
 import           Data.Morpheus.Types.MetaInfo      (MetaInfo (..), Position)
 import           Data.Morpheus.Types.Types         (Validation)
 import           Data.Text                         as TX (Text, concat)
 
-typeBy' :: Position -> GQLTypeLib -> GQL__Type -> Text -> InputValidation GQL__Type
+typeBy' :: Position -> GQLTypeLib -> GQL__Type -> Text -> MetaValidation GQL__Type
 typeBy' pos typeLib _parentType _name = fieldTypeOf' pos _parentType _name >>= fieldType
   where
     fieldType field = existsType' (T.name field) typeLib
 
-existsType' :: TX.Text -> GQLTypeLib -> InputValidation GQL__Type
+existsType' :: TX.Text -> GQLTypeLib -> MetaValidation GQL__Type
 existsType' name typeLib =
   case M.lookup name typeLib of
     Nothing -> Left $ UnknownType (MetaInfo {position = 0, typeName = name, key = ""})
     Just x  -> pure x
 
-fieldTypeOf' :: Position -> GQL__Type -> Text -> InputValidation GQL__Type
+fieldTypeOf' :: Position -> GQL__Type -> Text -> MetaValidation GQL__Type
 fieldTypeOf' pos _type fieldName =
   case getFieldTypeByKey fieldName _type of
     Nothing        -> Left $ UnknownField meta
