@@ -4,10 +4,11 @@ module Data.Morpheus.Error.Fragment
   ( unknownFragment
   , unsupportedSpreadOnType
   , cycleOnFragment
+  , fragmentError
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (GQLErrors)
+import           Data.Morpheus.Types.Error    (GQLErrors, MetaError (..))
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
 import qualified Data.Text                    as T
 
@@ -22,7 +23,8 @@ import qualified Data.Text                    as T
     fragment H on D {...}  ->  "Unknown type \"D\"."
     {...H} -> "Unknown fragment \"H\"."
 -}
-
+fragmentError :: MetaError -> GQLErrors
+fragmentError (UnknownType meta) = unknownFragment meta
 
 unknownFragment :: MetaInfo -> GQLErrors
 unknownFragment meta = errorMessage (position meta) text

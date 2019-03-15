@@ -3,7 +3,7 @@ module Data.Morpheus.PreProcess.Arguments
   ) where
 
 import           Data.List                           ((\\))
-import           Data.Morpheus.Error.Arguments       (requiredArgument, unknownArguments)
+import           Data.Morpheus.Error.Arguments       (requiredArgument, unknownArguments, argumentError)
 import           Data.Morpheus.PreProcess.Input.Enum (validateEnum)
 import           Data.Morpheus.PreProcess.Utils      (existsType)
 import           Data.Morpheus.PreProcess.Variable   (replaceVariable)
@@ -16,14 +16,20 @@ import           Data.Morpheus.Types.JSType          (JSType (..))
 import           Data.Morpheus.Types.Types           (Argument (..), Arguments, EnumOf (..),
                                                       GQLQueryRoot (..), Validation)
 import           Data.Text                           (Text)
+import           Data.Morpheus.Types.Error          (MetaValidation)
 
--- TODO: Validate other Types , INPUT_OBJECT
+asGQLError :: MetaValidation a -> Validation a
+asGQLError (Left err) = Left $ argumentError err
+asGQLError (Right value) = pure value
+
+-- TODO: Validate other Types , type missmatch
 checkArgumentType :: GQLTypeLib -> Text -> Argument -> Validation Argument
-checkArgumentType typeLib typeName argument = existsType typeName typeLib >>= checkType
+checkArgumentType typeLib typeName argument = asGQLError (existsType typeName typeLib) >>= checkType
   where
     checkType _type =
       case T.kind _type of
         EnumOf ENUM -> validateEnum _type argument
+       -- INPUT_OBJECT is already validated
         _           -> pure argument
 
 validateArgument :: GQLTypeLib -> GQLQueryRoot -> Arguments -> GQL__InputValue -> Validation (Text, Argument)

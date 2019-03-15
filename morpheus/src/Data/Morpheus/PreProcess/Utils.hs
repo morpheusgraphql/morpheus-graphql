@@ -35,7 +35,6 @@ fieldTypeOf pos _type fieldName =
   where
     meta = MetaInfo {key = fieldName, typeName = T.name _type, position = pos}
 
-
 fieldOf :: Position -> GQL__Type -> Text -> Validation GQL__Field
 fieldOf pos _type fieldName =
   case selectFieldByKey fieldName _type of

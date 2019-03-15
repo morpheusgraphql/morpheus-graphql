@@ -5,11 +5,12 @@ module Data.Morpheus.PreProcess.Fragment
   ) where
 
 import qualified Data.Map                           as M (lookup, toList)
-import           Data.Morpheus.Error.Fragment       (cycleOnFragment, unknownFragment,
-                                                     unsupportedSpreadOnType)
+import           Data.Morpheus.Error.Fragment       (cycleOnFragment, fragmentError,
+                                                     unknownFragment, unsupportedSpreadOnType)
 import           Data.Morpheus.PreProcess.Arguments (validateArguments)
 import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf, typeBy)
 import qualified Data.Morpheus.Schema.GQL__Type     as T
+import           Data.Morpheus.Types.Error          (MetaValidation)
 import           Data.Morpheus.Types.Introspection  (GQLTypeLib, GQL__Type)
 import           Data.Morpheus.Types.MetaInfo       (MetaInfo (..))
 import           Data.Morpheus.Types.Types          (Fragment (..), FragmentLib, GQLQueryRoot (..),
@@ -19,6 +20,10 @@ import           Data.Text                          (Text)
 type Graph = [Text]
 
 type RootGraph = [(Text, Graph)]
+
+asGQLError :: MetaValidation a -> Validation a
+asGQLError (Left err)    = Left $ fragmentError err
+asGQLError (Right value) = pure value
 
 getFragment :: MetaInfo -> Text -> FragmentLib -> Validation Fragment
 getFragment meta fragmentID lib =
@@ -41,7 +46,7 @@ getSpreadType frags _type fragmentID = getFragment (spread "") fragmentID frags 
 
 validateFragmentFields :: GQLTypeLib -> GQLQueryRoot -> GQL__Type -> (Text, QuerySelection) -> Validation Graph
 validateFragmentFields typeLib root _parent (_name, SelectionSet args selectors pos) = do
-  _type <- typeBy pos typeLib _parent _name
+  _type <- asGQLError $ typeBy pos typeLib _parent _name
   _field <- fieldOf pos _parent _name
   _ <- validateArguments typeLib root _field args
   concat <$> mapM (validateFragmentFields typeLib root _type) selectors
@@ -55,7 +60,7 @@ validateFragmentFields _ _ _ _ = pure []
 
 validateFragment :: GQLTypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation (Text, Graph)
 validateFragment lib root (fName, frag) = do
-  _type <- existsType (target frag) lib
+  _type <- asGQLError $ existsType (target frag) lib
   let (SelectionSet _ selection _pos) = fragmentContent frag
   fragmentLinks <- concat <$> mapM (validateFragmentFields lib root _type) selection
   pure (fName, fragmentLinks)

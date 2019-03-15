@@ -4,10 +4,11 @@ module Data.Morpheus.Error.Arguments
   ( requiredArgument
   , unknownArguments
   , unsupportedArgumentType
+  , argumentError
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors)
+import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors, MetaError (..))
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T (concat)
@@ -26,6 +27,9 @@ import qualified Data.Text                    as T (concat)
   - experience( a1 : 1 ) -> "Unknown argument \"a1\" on field \"experience\" of type \"Experience\".",
   - date(name: "name") -> "Unknown argument \"name\" on field \"date\" of type \"Experience\"."
 -}
+argumentError :: MetaError -> GQLErrors
+argumentError (UnknownType meta) = unsupportedArgumentType meta
+
 unsupportedArgumentType :: MetaInfo -> GQLErrors
 unsupportedArgumentType meta = errorMessage (position meta) text
   where
