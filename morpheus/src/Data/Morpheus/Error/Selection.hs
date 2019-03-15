@@ -3,12 +3,21 @@
 module Data.Morpheus.Error.Selection
   ( cannotQueryField
   , subfieldsNotSelected
+  , selectionError
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (GQLErrors)
+import           Data.Morpheus.Types.Error    (GQLErrors, MetaError (..))
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
 import qualified Data.Text                    as T (concat)
+
+selectionError :: MetaError -> GQLErrors
+selectionError (UnknownType meta) = typeDoesNotExists meta
+
+typeDoesNotExists :: MetaInfo -> GQLErrors
+typeDoesNotExists meta = errorMessage (position meta) text
+  where
+    text = T.concat ["Unknown type \"", typeName meta, "\"."]
 
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
 cannotQueryField :: MetaInfo -> GQLErrors

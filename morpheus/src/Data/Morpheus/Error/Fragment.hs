@@ -23,6 +23,7 @@ import qualified Data.Text                    as T
     fragment H on D {...}  ->  "Unknown type \"D\"."
     {...H} -> "Unknown fragment \"H\"."
 -}
+
 fragmentError :: MetaError -> GQLErrors
 fragmentError (UnknownType meta) = unknownFragment meta
 
