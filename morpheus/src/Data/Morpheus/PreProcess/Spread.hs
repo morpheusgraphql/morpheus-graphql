@@ -8,7 +8,7 @@ import           Data.List                    (find)
 import qualified Data.Map                     as M (lookup)
 import           Data.Morpheus.Error.Fragment (unknownFragment)
 import           Data.Morpheus.Types.Error    (Validation)
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
+import qualified Data.Morpheus.Types.MetaInfo as Meta (MetaInfo (..), Position)
 import           Data.Morpheus.Types.Types    (Fragment (..), FragmentLib, GQLQueryRoot (..),
                                                QuerySelection (..), SelectionSet)
 import           Data.Text                    (Text)
@@ -23,13 +23,13 @@ isFragment :: (Text, QuerySelection) -> Bool
 isFragment (_key, Spread _ _) = True
 isFragment (_key, _)          = False
 
-validateSpread :: GQLQueryRoot -> FragmentLib -> Position -> Text -> Validation [(Text, QuerySelection)]
+validateSpread :: GQLQueryRoot -> FragmentLib -> Meta.Position -> Text -> Validation [(Text, QuerySelection)]
 validateSpread _root frags location spreadID =
   case M.lookup spreadID frags of
-    Nothing                                       -> Left $ unknownFragment metaData
-    Just (Fragment _ _ (SelectionSet _ gqlObj _)) -> pure gqlObj
+    Nothing                             -> Left $ unknownFragment metaData
+    Just Fragment {content = selection} -> pure selection
   where
-    metaData = MetaInfo {typeName = "", key = spreadID, position = location}
+    metaData = Meta.MetaInfo {Meta.typeName = "", Meta.key = spreadID, Meta.position = location}
 
 propagateSpread :: GQLQueryRoot -> (Text, QuerySelection) -> Validation [(Text, QuerySelection)]
 propagateSpread root (spreadID, Spread _ location) = validateSpread root (fragments root) location spreadID

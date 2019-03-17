@@ -12,13 +12,12 @@ import           Data.Morpheus.Types.JSType       (JSType (..))
 import           Data.Morpheus.Types.MetaInfo     (MetaInfo (..))
 import           Data.Morpheus.Types.Types        (Argument (..))
 
-unwrapField (Some x) = x
-
 validateEnum :: Type -> Argument -> Validation Argument
 validateEnum _type (Argument (JSEnum argument) pos) =
   if isEnumOf argument (unwrapField $ T.enumValues _type)
     then pure (Argument (JSEnum argument) pos)
     else Left $ invalidEnumOption meta
   where
+    unwrapField (Some x) = x
     meta = MetaInfo {typeName = T.name _type, key = argument, position = pos}
 --validateEnum _ (Argument _ _) = Left $ InternError "validateEnum: didnot got JSEnum as Input"

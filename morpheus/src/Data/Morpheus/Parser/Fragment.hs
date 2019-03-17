@@ -5,14 +5,15 @@ module Data.Morpheus.Parser.Fragment
   ) where
 
 import           Data.Attoparsec.Text           (Parser, skipSpace, string)
-import           Data.Morpheus.Parser.Body      (body)
-import           Data.Morpheus.Parser.Primitive (token)
+import           Data.Morpheus.Parser.Body      (entries)
+import           Data.Morpheus.Parser.Primitive (getPosition, token)
 import           Data.Morpheus.Types.Types      (Fragment (..))
 import           Data.Text                      (Text)
 
 fragment :: Parser (Text, Fragment)
 fragment = do
   skipSpace
+  index <- getPosition
   _ <- string "fragment"
   skipSpace
   name <- token
@@ -21,5 +22,5 @@ fragment = do
   skipSpace
   targetName <- token
   skipSpace
-  fragmentBody <- body []
-  pure (name, Fragment name targetName fragmentBody)
+  fragmentBody <- entries
+  pure (name, Fragment {key = name, target = targetName, content = fragmentBody, pos = index})

@@ -2,14 +2,14 @@
 
 module Data.Morpheus.Parser.Body
   ( body
+  , entries
   ) where
 
 import           Control.Applicative            (some, (<|>))
 import           Data.Attoparsec.Text           (Parser, char, letter, sepBy, skipSpace, string,
                                                  try)
 import           Data.Morpheus.Parser.Arguments (arguments)
-import           Data.Morpheus.Parser.Primitive (getPosition, separator, token)
-import           Data.Morpheus.Types.Types      (Arguments, QuerySelection (..))
+import Data.Morpheus.Parser.Primitive (getPosition, separator, token)import           Data.Morpheus.Types.Types      (Arguments, QuerySelection (..), SelectionSet)
 import           Data.Text                      (Text, pack)
 
 spread :: Parser (Text, QuerySelection)
@@ -32,13 +32,18 @@ entry = do
 separated :: Parser a -> Parser [a]
 separated x = x `sepBy` separator
 
+entries :: Parser SelectionSet
+entries = do
+  _ <- char '{'
+  skipSpace
+  entries' <- separated $ entry <|> spread
+  skipSpace
+  _ <- char '}'
+  return entries'
+
 body :: Arguments -> Parser QuerySelection
 body args = do
   skipSpace
   index <- getPosition
-  _ <- char '{'
-  skipSpace
-  entries <- separated $ entry <|> spread
-  skipSpace
-  _ <- char '}'
-  return (SelectionSet args entries index)
+  entries' <- entries
+  return (SelectionSet args entries' index)
