@@ -24,9 +24,9 @@ validateFieldType meta x = typeMismatch meta x . T.name
 
 validateInputObject :: GQLTypeLib -> GQL__Type -> (Text, JSType) -> MetaValidation (Text, JSType)
 validateInputObject typeLib _parentType (_name, JSObject fields) = do
-  _type <- typeBy 0 typeLib _parentType _name
-  fields' <- mapM (validateInputObject typeLib _type) fields
-  pure (_name, JSObject fields')
+  typeSD <- typeBy 0 typeLib _parentType _name
+  fieldsQS <- mapM (validateInputObject typeLib typeSD) fields
+  pure (_name, JSObject fieldsQS)
 validateInputObject typeLib _parentType (_key, x) =
   typeBy 0 typeLib _parentType _key >>= validateFieldType meta x >> pure (_key, x)
   where
