@@ -14,6 +14,8 @@ import qualified Data.Text                    as T (concat)
 
 selectionError :: MetaError -> GQLErrors
 selectionError (UnknownType meta) = typeDoesNotExists meta
+selectionError (UnknownField meta) = cannotQueryField meta
+
 
 typeDoesNotExists :: MetaInfo -> GQLErrors
 typeDoesNotExists meta = errorMessage (position meta) text

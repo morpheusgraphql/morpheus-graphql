@@ -6,37 +6,47 @@ module Data.Morpheus.PreProcess.Utils
   , fieldOf
   ) where
 
-import qualified Data.Map                          as M (lookup)
-import qualified Data.Morpheus.Schema.GQL__Type    as T
-import           Data.Morpheus.Schema.SchemaField  (getFieldTypeByKey, selectFieldByKey)
-import           Data.Morpheus.Types.Error         (MetaError (..), MetaValidation)
-import           Data.Morpheus.Types.Introspection (GQLTypeLib, GQL__Field, GQL__Type)
-import           Data.Morpheus.Types.MetaInfo      (MetaInfo (..), Position)
-import           Data.Text                         as TX (Text)
+import           Control.Monad                      ((>=>))
+import qualified Data.Map                           as M (lookup)
+import           Data.Morpheus.Schema.GQL__Field    as F (name, _type)
+import           Data.Morpheus.Schema.GQL__Type     as F (kind)
+import qualified Data.Morpheus.Schema.GQL__Type     as T (name, ofType)
+import           Data.Morpheus.Schema.GQL__TypeKind (GQL__TypeKind (..))
+import           Data.Morpheus.Schema.SchemaField   (fieldByKey)
+import           Data.Morpheus.Types.Error          (MetaError (..), MetaValidation)
+import           Data.Morpheus.Types.Introspection  (GQLTypeLib, GQL__Field, GQL__Type)
+import           Data.Morpheus.Types.MetaInfo       (MetaInfo (..), Position)
+import           Data.Morpheus.Types.Types          (EnumOf (..))
+import           Data.Text                          as TX (Text)
 
-typeBy :: Position -> GQLTypeLib -> GQL__Type -> Text -> MetaValidation GQL__Type
-typeBy pos typeLib _parentType _name = fieldTypeOf pos _parentType _name >>= fieldType
-  where
-    fieldType field = existsType (T.name field) typeLib
+unwrapType :: GQL__Type -> Maybe GQL__Type
+unwrapType x =
+  case kind x of
+    EnumOf LIST -> T.ofType x
+    _           -> Just x
 
 existsType :: TX.Text -> GQLTypeLib -> MetaValidation GQL__Type
-existsType name typeLib =
-  case M.lookup name typeLib of
-    Nothing -> Left $ UnknownType (MetaInfo {position = 0, typeName = name, key = ""})
+existsType _name lib =
+  case M.lookup _name lib of
+    Nothing -> Left $ UnknownType (MetaInfo {position = 0, typeName = _name, key = ""})
     Just x  -> pure x
-
-fieldTypeOf :: Position -> GQL__Type -> Text -> MetaValidation GQL__Type
-fieldTypeOf pos _type fieldName =
-  case getFieldTypeByKey fieldName _type of
-    Nothing        -> Left $ UnknownField meta
-    Just fieldType -> pure fieldType
-  where
-    meta = MetaInfo {key = fieldName, typeName = T.name _type, position = pos}
 
 fieldOf :: Position -> GQL__Type -> Text -> MetaValidation GQL__Field
 fieldOf pos _type fieldName =
-  case selectFieldByKey fieldName _type of
+  case fieldByKey fieldName _type of
     Nothing    -> Left $ UnknownField meta
     Just field -> pure field
   where
     meta = MetaInfo {key = fieldName, typeName = T.name _type, position = pos}
+
+fieldHasType :: GQL__Field -> Maybe GQL__Type
+fieldHasType = F._type >=> unwrapType
+
+fieldType :: Position -> GQLTypeLib -> GQL__Field -> MetaValidation GQL__Type
+fieldType pos lib field =
+  case fieldHasType field of
+    Nothing -> Left $ UnknownType $ MetaInfo {key = F.name field, typeName = "", position = pos}
+    Just _type -> existsType (T.name _type) lib
+
+typeBy :: Position -> GQLTypeLib -> GQL__Type -> Text -> MetaValidation GQL__Type
+typeBy pos lib _parentType _name = fieldOf pos _parentType _name >>= fieldType pos lib
