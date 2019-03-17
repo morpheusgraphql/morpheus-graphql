@@ -21,10 +21,10 @@ import           Data.Morpheus.Generics.Utils     (typeOf)
 import qualified Data.Morpheus.Schema.InputValue  as I (InputValue (..))
 import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib, createInputObject,
                                                    createInputValue)
+import           Data.Morpheus.Types.Describer    (EnumOf (..))
 import           Data.Morpheus.Types.Error        (Validation)
 import           Data.Morpheus.Types.JSType       (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo     as Meta (MetaInfo (..), initialMeta)
-import           Data.Morpheus.Types.Types        (EnumOf (..))
 import           Data.Proxy                       (Proxy (..))
 import           Data.Text                        (Text)
 import           GHC.Generics

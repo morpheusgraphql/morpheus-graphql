@@ -14,11 +14,11 @@ import           Data.Morpheus.PreProcess.Utils        (existsType)
 import qualified Data.Morpheus.Schema.Type             as T (kind)
 import           Data.Morpheus.Schema.TypeKind         (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils      (TypeLib)
+import           Data.Morpheus.Types.Describer         (EnumOf (..))
 import           Data.Morpheus.Types.Error             (MetaValidation, Validation)
 import           Data.Morpheus.Types.JSType            (JSType (..))
 import           Data.Morpheus.Types.MetaInfo          (MetaInfo (..))
-import           Data.Morpheus.Types.Types             (Argument (..), EnumOf (..),
-                                                        GQLQueryRoot (..))
+import           Data.Morpheus.Types.Types             (Argument (..), GQLQueryRoot (..))
 import           Data.Text                             (Text)
 
 asGQLError :: MetaValidation a -> Validation a

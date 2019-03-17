@@ -12,7 +12,7 @@ import           Data.List                        (find)
 import qualified Data.Morpheus.Schema.Field       as F (Field (..))
 import qualified Data.Morpheus.Schema.Type        as T (Type (..))
 import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, Type, wrapListType)
-import           Data.Morpheus.Types.Types        ((::->) (..))
+import           Data.Morpheus.Types.Describer    ((::->) (..))
 import           Data.Text                        (Text)
 
 fieldByKey :: Text -> Type -> Maybe Field

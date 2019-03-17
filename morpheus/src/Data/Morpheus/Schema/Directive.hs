@@ -9,7 +9,7 @@ module Data.Morpheus.Schema.Directive
 import           Data.Data                              (Data)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.Utils.Utils       (InputValue)
-import           Data.Morpheus.Types.Types              (EnumOf (..))
+import           Data.Morpheus.Types.Describer          (EnumOf (..))
 import           Data.Text                              (Text)
 import           GHC.Generics
 

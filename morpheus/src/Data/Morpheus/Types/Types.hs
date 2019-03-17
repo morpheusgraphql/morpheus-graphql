@@ -1,13 +1,11 @@
-{-# LANGUAGE DeriveAnyClass     #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE TypeOperators      #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module Data.Morpheus.Types.Types
   ( QuerySelection(..)
   , SelectionSet
-  , (::->)(..)
   , GQLQueryRoot(..)
   , Fragment(..)
   , FragmentLib
@@ -15,25 +13,17 @@ module Data.Morpheus.Types.Types
   , GQLRequest(..)
   , Argument(..)
   , Arguments
-  , EnumOf(..)
   , GQLOperator(..)
   ) where
 
-import           Data.Aeson                     (FromJSON (..), ToJSON (..), Value (Null), pairs,
-                                                 (.=))
-import           Data.Data
-import           Data.Map                       (Map)
-import           Data.Morpheus.Types.Core       (Key)
-import           Data.Morpheus.Types.Error      (JSONError (..))
-import           Data.Morpheus.Types.JSType     (JSType)
-import           Data.Morpheus.Types.MetaInfo   (Position)
-import           Data.Morpheus.Types.Selections ((::->) (..))
-import           Data.Text                      (Text)
-import           GHC.Generics                   (Generic)
-
-newtype EnumOf a = EnumOf
-  { unpackEnum :: a
-  } deriving (Show, Generic, Data)
+import           Data.Aeson                   (FromJSON (..), ToJSON (..), pairs, (.=))
+import           Data.Map                     (Map)
+import           Data.Morpheus.Types.Core     (Key)
+import           Data.Morpheus.Types.Error    (JSONError (..))
+import           Data.Morpheus.Types.JSType   (JSType)
+import           Data.Morpheus.Types.MetaInfo (Position)
+import           Data.Text                    (Text)
+import           GHC.Generics                 (Generic)
 
 data Argument
   = Variable Key
@@ -77,13 +67,6 @@ data GQLQueryRoot = GQLQueryRoot
   , queryBody      :: GQLOperator
   , inputVariables :: Map Text JSType
   }
-
-instance FromJSON (p ::-> o) where
-  parseJSON _ = pure None
-
-instance (ToJSON o) => ToJSON (p ::-> o) where
-  toJSON (Some o) = toJSON o
-  toJSON None     = Null
 
 data GQLResponse
   = Data JSType

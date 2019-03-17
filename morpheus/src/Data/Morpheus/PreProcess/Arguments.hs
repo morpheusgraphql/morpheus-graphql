@@ -14,10 +14,10 @@ import qualified Data.Morpheus.Schema.Type             as T (kind)
 import           Data.Morpheus.Schema.TypeKind         (TypeKind (..))
 import qualified Data.Morpheus.Schema.Utils.InputValue as UI (typeName)
 import           Data.Morpheus.Schema.Utils.Utils      (Field, InputValue, TypeLib)
+import           Data.Morpheus.Types.Describer         (EnumOf (..))
 import           Data.Morpheus.Types.Error             (MetaValidation, Validation)
 import           Data.Morpheus.Types.JSType            (JSType (..))
-import           Data.Morpheus.Types.Types             (Argument (..), Arguments, EnumOf (..),
-                                                        GQLQueryRoot (..))
+import           Data.Morpheus.Types.Types             (Argument (..), Arguments, GQLQueryRoot (..))
 import           Data.Text                             (Text)
 
 asGQLError :: MetaValidation a -> Validation a

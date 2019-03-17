@@ -29,11 +29,11 @@ import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.Utils.Field       (wrapAsListType)
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type, TypeLib,
                                                          createField, createScalar, createType)
+import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
-import           Data.Morpheus.Types.Types              ((::->) (..), EnumOf (..),
-                                                         QuerySelection (..))
+import           Data.Morpheus.Types.Types              (QuerySelection (..))
 import           Data.Proxy
 import qualified Data.Text                              as T
 import           GHC.Generics

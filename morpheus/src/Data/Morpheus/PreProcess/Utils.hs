@@ -13,9 +13,9 @@ import qualified Data.Morpheus.Schema.Type        as T (kind, name, ofType)
 import           Data.Morpheus.Schema.TypeKind    (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Field (fieldByKey)
 import           Data.Morpheus.Schema.Utils.Utils (Field, Type, TypeLib)
+import           Data.Morpheus.Types.Describer    (EnumOf (..))
 import           Data.Morpheus.Types.Error        (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.MetaInfo     (MetaInfo (..), Position)
-import           Data.Morpheus.Types.Types        (EnumOf (..))
 import           Data.Text                        as TX (Text)
 
 unwrapType :: Type -> Maybe Type

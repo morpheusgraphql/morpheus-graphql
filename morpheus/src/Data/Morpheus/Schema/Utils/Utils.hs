@@ -21,7 +21,7 @@ import qualified Data.Morpheus.Schema.Field      as F (Field (..), createFieldWi
 import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..), createInputValueWith)
 import           Data.Morpheus.Schema.Type       (Type (..))
 import           Data.Morpheus.Schema.TypeKind   (TypeKind (..))
-import           Data.Morpheus.Types.Types       ((::->) (..), EnumOf (..))
+import           Data.Morpheus.Types.Describer   ((::->) (..), EnumOf (..))
 import           Data.Text                       (Text)
 
 type InputValue = I.InputValue Type

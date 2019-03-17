@@ -12,7 +12,7 @@ import           Data.Morpheus.Schema.EnumValue  (EnumValue)
 import qualified Data.Morpheus.Schema.Field      as F (Field (..))
 import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..))
 import           Data.Morpheus.Schema.TypeKind   (TypeKind)
-import           Data.Morpheus.Types.Types       ((::->) (..), EnumOf)
+import           Data.Morpheus.Types.Describer   ((::->) (..), EnumOf)
 import           Data.Text                       (Text)
 import           GHC.Generics                    (Generic)
 
