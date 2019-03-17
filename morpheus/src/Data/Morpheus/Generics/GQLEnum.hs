@@ -9,16 +9,16 @@ module Data.Morpheus.Generics.GQLEnum
   ( GQLEnum(decode, introspect, enumType, fieldType)
   ) where
 
-import qualified Data.Data                                   as D
-import qualified Data.Map                                    as M
-import           Data.Morpheus.Generics.GDecodeEnum          (GDecodeEnum (..))
-import           Data.Morpheus.Generics.Utils                (typeOf)
-import           Data.Morpheus.Schema.GQL__DirectiveLocation (GQL__DirectiveLocation (..))
-import qualified Data.Morpheus.Schema.GQL__Field             as F (createFieldWith)
-import qualified Data.Morpheus.Types.Introspection           as I
-import           Data.Morpheus.Types.JSType                  (JSType (..))
-import           Data.Proxy                                  (Proxy (..))
-import qualified Data.Text                                   as T
+import qualified Data.Data                              as D
+import qualified Data.Map                               as M
+import           Data.Morpheus.Generics.GDecodeEnum     (GDecodeEnum (..))
+import           Data.Morpheus.Generics.Utils           (typeOf)
+import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation (..))
+import qualified Data.Morpheus.Schema.Field             as F (createFieldWith)
+import qualified Data.Morpheus.Types.Introspection      as I
+import           Data.Morpheus.Types.JSType             (JSType (..))
+import           Data.Proxy                             (Proxy (..))
+import qualified Data.Text                              as T
 import           GHC.Generics
 
 class GQLEnum a where

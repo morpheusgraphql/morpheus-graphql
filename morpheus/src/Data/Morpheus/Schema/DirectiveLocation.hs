@@ -1,14 +1,14 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric      #-}
 
-module Data.Morpheus.Schema.GQL__DirectiveLocation
-  ( GQL__DirectiveLocation(..)
+module Data.Morpheus.Schema.DirectiveLocation
+  ( DirectiveLocation(..)
   ) where
 
 import           Data.Data    (Data)
 import           GHC.Generics
 
-data GQL__DirectiveLocation
+data DirectiveLocation
   = QUERY
   | MUTATION
   | SUBSCRIPTION
