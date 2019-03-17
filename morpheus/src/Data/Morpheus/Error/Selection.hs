@@ -11,6 +11,7 @@ import           Data.Morpheus.Types.Error    (GQLErrors, MetaError (..))
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
 import qualified Data.Text                    as T (concat)
 
+
 selectionError :: MetaError -> GQLErrors
 selectionError (UnknownType meta) = typeDoesNotExists meta
 

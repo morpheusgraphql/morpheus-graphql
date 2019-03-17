@@ -12,8 +12,9 @@ import           Data.Morpheus.Parser.Fragment  (fragment)
 import qualified Data.Morpheus.Parser.Mutation  as M
 import           Data.Morpheus.Parser.Primitive (getLines)
 import qualified Data.Morpheus.Parser.Query     as Q
+import           Data.Morpheus.Types.Error      (Validation)
 import           Data.Morpheus.Types.JSType     (JSType (..))
-import           Data.Morpheus.Types.Types      (GQLQueryRoot (..), GQLRequest (..), Validation)
+import           Data.Morpheus.Types.Types      (GQLQueryRoot (..), GQLRequest (..))
 import           Data.Text                      (Text, pack)
 
 request :: Parser GQLQueryRoot

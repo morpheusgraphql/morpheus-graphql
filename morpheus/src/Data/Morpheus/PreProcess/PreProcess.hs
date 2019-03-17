@@ -14,17 +14,17 @@ import           Data.Morpheus.PreProcess.Fragment  (validateFragments)
 import           Data.Morpheus.PreProcess.Spread    (spreadFieldsWhile)
 import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf, typeBy)
 import           Data.Morpheus.PreProcess.Variable  (validateVariables)
-import           Data.Morpheus.Types.Error          (MetaValidation)
+import           Data.Morpheus.Types.Error          (Validation, MetaValidation)
 import           Data.Morpheus.Types.Introspection  (GQLTypeLib, GQL__Type)
 import           Data.Morpheus.Types.MetaInfo       (MetaInfo (..))
 import           Data.Morpheus.Types.Types          (GQLOperator (..), GQLQueryRoot (..),
-                                                     QuerySelection (..), SelectionSet, Validation)
+                                                     QuerySelection (..), SelectionSet)
 import qualified Data.Set                           as S
 import           Data.Text                          (Text, pack)
+import           Data.Morpheus.Error.Utils          (toGQLError)
 
-asGQLError :: MetaValidation a -> Validation a
-asGQLError (Left err)    = Left $ selectionError err
-asGQLError (Right value) = pure value
+asSelectionValidation :: MetaValidation a -> Validation a
+asSelectionValidation = toGQLError selectionError
 
 mapSelectors :: GQLTypeLib -> GQLQueryRoot -> GQL__Type -> SelectionSet -> Validation SelectionSet
 mapSelectors typeLib root _type selectors =
@@ -33,14 +33,14 @@ mapSelectors typeLib root _type selectors =
 validateBySchema ::
      GQLTypeLib -> GQLQueryRoot -> GQL__Type -> (Text, QuerySelection) -> Validation (Text, QuerySelection)
 validateBySchema typeLib root _parentType (_name, SelectionSet args selectors pos) = do
-  fieldName <- fieldOf pos _parentType _name
-  nameOfType <-  asGQLError $ typeBy pos typeLib _parentType _name
+  fieldName <- asSelectionValidation $ fieldOf pos _parentType _name
+  nameOfType <- asSelectionValidation $ typeBy pos typeLib _parentType _name
   head' <- validateArguments typeLib root fieldName args
   selectors' <- mapSelectors typeLib root nameOfType selectors
   pure (_name, SelectionSet head' selectors' pos)
 validateBySchema typeLib root _parentType (_name, Field args field pos) = do
-  _field <- fieldOf pos _parentType _name
-  _checksIfHasType <- asGQLError $ typeBy pos typeLib _parentType _name
+  _field <- asSelectionValidation $ fieldOf pos _parentType _name
+  _checksIfHasType <- asSelectionValidation $ typeBy pos typeLib _parentType _name
   head' <- validateArguments typeLib root _field args
   pure (_name, Field head' field pos)
 validateBySchema _ _ _ x = pure x
@@ -68,6 +68,6 @@ preProcessQuery lib root = do
   let (operator, SelectionSet args body pos) = getOperationInfo $ queryBody root
   validateVariables lib root args
   validateFragments lib root
-  _type <- asGQLError $ existsType operator lib
+  _type <- asSelectionValidation $ existsType operator lib
   selectors <- mapSelectors lib root _type body
   pure $ updateQuery (queryBody root) (SelectionSet [] selectors pos)

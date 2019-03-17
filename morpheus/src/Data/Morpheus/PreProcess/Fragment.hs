@@ -10,16 +10,20 @@ import           Data.Morpheus.Error.Fragment       (cycleOnFragment, fragmentEr
 import           Data.Morpheus.PreProcess.Arguments (validateArguments)
 import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf, typeBy)
 import qualified Data.Morpheus.Schema.GQL__Type     as T
-import           Data.Morpheus.Types.Error          (MetaValidation)
+import           Data.Morpheus.Types.Error          (MetaValidation, Validation)
 import           Data.Morpheus.Types.Introspection  (GQLTypeLib, GQL__Type)
 import           Data.Morpheus.Types.MetaInfo       (MetaInfo (..))
 import           Data.Morpheus.Types.Types          (Fragment (..), FragmentLib, GQLQueryRoot (..),
-                                                     QuerySelection (..), Validation)
+                                                     QuerySelection (..))
 import           Data.Text                          (Text)
-
+import           Data.Morpheus.Error.Utils          (toGQLError)
+import           Data.Morpheus.Error.Selection      (selectionError)
 type Graph = [Text]
 
 type RootGraph = [(Text, Graph)]
+
+asSelectionValidation :: MetaValidation a -> Validation a
+asSelectionValidation = toGQLError selectionError
 
 asGQLError :: MetaValidation a -> Validation a
 asGQLError (Left err)    = Left $ fragmentError err
@@ -47,11 +51,11 @@ getSpreadType frags _type fragmentID = getFragment (spread "") fragmentID frags 
 validateFragmentFields :: GQLTypeLib -> GQLQueryRoot -> GQL__Type -> (Text, QuerySelection) -> Validation Graph
 validateFragmentFields typeLib root _parent (_name, SelectionSet args selectors pos) = do
   _type <- asGQLError $ typeBy pos typeLib _parent _name
-  _field <- fieldOf pos _parent _name
-  _ <- validateArguments typeLib root _field args
+  field <-asSelectionValidation $ fieldOf pos _parent _name
+  _ <- validateArguments typeLib root field args
   concat <$> mapM (validateFragmentFields typeLib root _type) selectors
 validateFragmentFields typeLib root _parentType (_name, Field args _ pos) = do
-  _field <- fieldOf pos _parentType _name
+  _field <- asSelectionValidation $ fieldOf pos _parentType _name
   _ <- validateArguments typeLib root _field args
   pure []
 validateFragmentFields _ root _parent (spreadID, Spread value _) =

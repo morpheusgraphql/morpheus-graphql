@@ -5,8 +5,7 @@
 {-# LANGUAGE TypeOperators      #-}
 
 module Data.Morpheus.Types.Types
-  ( Validation
-  , QuerySelection(..)
+  ( QuerySelection(..)
   , SelectionSet
   , (::->)(..)
   , GQLQueryRoot(..)
@@ -52,8 +51,6 @@ data Argument
   deriving (Show)
 
 type Arguments = [(Key, Argument)]
-
-type Validation a = Either GQLErrors a
 
 type SelectionSet = [(Key, QuerySelection)]
 

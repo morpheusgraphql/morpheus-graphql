@@ -3,7 +3,8 @@ module Data.Morpheus.PreProcess.Arguments
   ) where
 
 import           Data.List                           ((\\))
-import           Data.Morpheus.Error.Arguments       (requiredArgument, unknownArguments, argumentError)
+import           Data.Morpheus.Error.Arguments       (argumentError, requiredArgument,
+                                                      unknownArguments)
 import           Data.Morpheus.PreProcess.Input.Enum (validateEnum)
 import           Data.Morpheus.PreProcess.Utils      (existsType)
 import           Data.Morpheus.PreProcess.Variable   (replaceVariable)
@@ -11,15 +12,15 @@ import qualified Data.Morpheus.Schema.GQL__Field     as F
 import qualified Data.Morpheus.Schema.GQL__Type      as T
 import           Data.Morpheus.Schema.GQL__TypeKind  (GQL__TypeKind (..))
 import qualified Data.Morpheus.Schema.InputValue     as I
+import           Data.Morpheus.Types.Error           (MetaValidation, Validation)
 import           Data.Morpheus.Types.Introspection   (GQLTypeLib, GQL__Field, GQL__InputValue)
 import           Data.Morpheus.Types.JSType          (JSType (..))
 import           Data.Morpheus.Types.Types           (Argument (..), Arguments, EnumOf (..),
-                                                      GQLQueryRoot (..), Validation)
+                                                      GQLQueryRoot (..))
 import           Data.Text                           (Text)
-import           Data.Morpheus.Types.Error          (MetaValidation)
 
 asGQLError :: MetaValidation a -> Validation a
-asGQLError (Left err) = Left $ argumentError err
+asGQLError (Left err)    = Left $ argumentError err
 asGQLError (Right value) = pure value
 
 -- TODO: Validate other Types , type missmatch

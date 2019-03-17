@@ -8,6 +8,7 @@ module Data.Morpheus.Types.Error
   , JSONError(..)
   , MetaError(..)
   , MetaValidation
+  , Validation
   ) where
 
 import           Data.Aeson                   (ToJSON)
@@ -24,7 +25,6 @@ data MetaError
   | UnknownField MetaInfo
   | UnknownType MetaInfo
 
-type MetaValidation a = Either MetaError a
 
 data GQLError = GQLError
   { desc     :: Text
@@ -42,3 +42,7 @@ data JSONError = JSONError
   { message   :: Text
   , locations :: [ErrorLocation]
   } deriving (Show, Generic, ToJSON)
+
+
+type MetaValidation a = Either MetaError a
+type Validation a = Either GQLErrors a

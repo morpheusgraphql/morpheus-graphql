@@ -7,13 +7,11 @@ module Data.Morpheus.PreProcess.Utils
   ) where
 
 import qualified Data.Map                          as M (lookup)
-import           Data.Morpheus.Error.Selection     (cannotQueryField)
 import qualified Data.Morpheus.Schema.GQL__Type    as T
 import           Data.Morpheus.Schema.SchemaField  (getFieldTypeByKey, selectFieldByKey)
 import           Data.Morpheus.Types.Error         (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.Introspection (GQLTypeLib, GQL__Field, GQL__Type)
 import           Data.Morpheus.Types.MetaInfo      (MetaInfo (..), Position)
-import           Data.Morpheus.Types.Types         (Validation)
 import           Data.Text                         as TX (Text)
 
 typeBy :: Position -> GQLTypeLib -> GQL__Type -> Text -> MetaValidation GQL__Type
@@ -35,10 +33,10 @@ fieldTypeOf pos _type fieldName =
   where
     meta = MetaInfo {key = fieldName, typeName = T.name _type, position = pos}
 
-fieldOf :: Position -> GQL__Type -> Text -> Validation GQL__Field
+fieldOf :: Position -> GQL__Type -> Text -> MetaValidation GQL__Field
 fieldOf pos _type fieldName =
   case selectFieldByKey fieldName _type of
-    Nothing    -> Left $ cannotQueryField meta
+    Nothing    -> Left $ UnknownField meta
     Just field -> pure field
   where
     meta = MetaInfo {key = fieldName, typeName = T.name _type, position = pos}

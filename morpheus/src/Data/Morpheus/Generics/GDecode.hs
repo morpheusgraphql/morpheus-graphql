@@ -6,8 +6,8 @@ module Data.Morpheus.Generics.GDecode
   ( GDecode(..)
   ) where
 
+import           Data.Morpheus.Types.Error    (Validation)
 import           Data.Morpheus.Types.MetaInfo
-import           Data.Morpheus.Types.Types    (Validation)
 import qualified Data.Text                    as T
 import           GHC.Generics
 

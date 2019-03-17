@@ -13,25 +13,27 @@ module Data.Morpheus.Generics.GQLInput
 
 import           Data.Data                            (Data, Typeable)
 import qualified Data.Map                             as M
-import           Data.Morpheus.Error.Arguments          (requiredArgument)
+import           Data.Morpheus.Error.Arguments        (requiredArgument)
 import           Data.Morpheus.Generics.GDecode       (GDecode (..))
 import qualified Data.Morpheus.Generics.GQLEnum       as E (GQLEnum (..))
 import           Data.Morpheus.Generics.TypeRep       (Selectors (..), resolveTypes)
 import           Data.Morpheus.Generics.Utils         (typeOf)
 import qualified Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue (..))
+import           Data.Morpheus.Types.Error            (Validation)
 import           Data.Morpheus.Types.Introspection    (GQLTypeLib, GQL__Field, GQL__InputValue,
                                                        createInputObject, createInputValue)
 import           Data.Morpheus.Types.JSType           (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo         as Meta (MetaInfo (..), initialMeta)
-import           Data.Morpheus.Types.Types            (EnumOf (..), Validation)
+import           Data.Morpheus.Types.Types            (EnumOf (..))
 import           Data.Proxy                           (Proxy (..))
 import           Data.Text                            (Text)
 import           GHC.Generics
 
 instance GQLInput a => GDecode JSType (K1 i a) where
   gDecode meta (JSObject object) =
-    case lookup (Meta.key meta) object of
+    case lookup (Meta.key meta) object
       -- TODO: validate it in PreProcess
+          of
       Nothing    -> Left $ requiredArgument meta
       Just value -> K1 <$> decode value
 
