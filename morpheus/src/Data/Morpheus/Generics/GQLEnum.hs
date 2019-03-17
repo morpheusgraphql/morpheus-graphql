@@ -17,7 +17,7 @@ import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation (..))
 import qualified Data.Morpheus.Schema.Field             as F (createFieldWith)
 import qualified Data.Morpheus.Schema.Helpers           as I (Field, InputValue, TypeLib,
                                                               createEnum, createInputValue)
-import qualified Data.Morpheus.Schema.TypeKind          (TypeKind (..))
+import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Proxy                             (Proxy (..))
 import qualified Data.Text                              as T
