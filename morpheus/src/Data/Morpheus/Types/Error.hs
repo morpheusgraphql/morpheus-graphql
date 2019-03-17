@@ -27,6 +27,7 @@ data MetaError
   | UndefinedField MetaInfo
   | UnknownField MetaInfo
   | UnknownType MetaInfo
+  | InternError Text
 
 data GQLError = GQLError
   { desc     :: Text

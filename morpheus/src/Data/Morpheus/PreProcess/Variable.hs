@@ -33,7 +33,7 @@ getVariable pos root variableID =
   where
     meta = MetaInfo {typeName = "TODO: Name", key = variableID, position = pos}
 
-checkVariableType :: TypeLib -> GQLQueryRoot -> (Text, Argument) -> Validation (Text, Argument)
+checkVariableType :: TypeLib -> GQLQueryRoot -> (Text, Argument) -> Validation ()
 checkVariableType typeLib root (variableID, Variable tName pos) = asGQLError (existsType tName typeLib) >>= checkType
   where
     checkType _type =
@@ -45,7 +45,8 @@ checkVariableType typeLib root (variableID, Variable tName pos) = asGQLError (ex
     checkTypeInp _type inputKey = do
       variableValue <- getVariable pos root inputKey
       _ <- asGQLError (validateInputVariable typeLib _type (inputKey, variableValue))
-      pure (inputKey, Variable tName pos)
+      pure ()
+checkVariableType _ _ (_, Argument _ _) = pure ()
 
 validateVariables :: TypeLib -> GQLQueryRoot -> [(Text, Argument)] -> Validation ()
 validateVariables typeLib root = mapM_ (checkVariableType typeLib root)
