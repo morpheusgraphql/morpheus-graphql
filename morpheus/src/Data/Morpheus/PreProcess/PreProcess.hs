@@ -9,29 +9,28 @@ module Data.Morpheus.PreProcess.PreProcess
 
 import           Data.List                          ((\\))
 import           Data.Morpheus.Error.Selection      (cannotQueryField, selectionError)
+import           Data.Morpheus.Error.Utils          (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment  (validateFragments)
 import           Data.Morpheus.PreProcess.Spread    (spreadFieldsWhile)
 import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf, fieldType)
 import           Data.Morpheus.PreProcess.Variable  (validateVariables)
-import           Data.Morpheus.Types.Error          (Validation, MetaValidation)
-import           Data.Morpheus.Types.Introspection  (GQLTypeLib, GQL__Type)
+import           Data.Morpheus.Schema.Utils.Utils   (Type, TypeLib)
+import           Data.Morpheus.Types.Error          (MetaValidation, Validation)
 import           Data.Morpheus.Types.MetaInfo       (MetaInfo (..))
 import           Data.Morpheus.Types.Types          (GQLOperator (..), GQLQueryRoot (..),
                                                      QuerySelection (..), SelectionSet)
 import qualified Data.Set                           as S
 import           Data.Text                          (Text, pack)
-import           Data.Morpheus.Error.Utils          (toGQLError)
 
 asSelectionValidation :: MetaValidation a -> Validation a
 asSelectionValidation = toGQLError selectionError
 
-mapSelectors :: GQLTypeLib -> GQLQueryRoot -> GQL__Type -> SelectionSet -> Validation SelectionSet
+mapSelectors :: TypeLib -> GQLQueryRoot -> Type -> SelectionSet -> Validation SelectionSet
 mapSelectors typeLib root _type selectors =
   spreadFieldsWhile root selectors >>= checkDuplicates >>= mapM (validateBySchema typeLib root _type)
 
-validateBySchema ::
-     GQLTypeLib -> GQLQueryRoot -> GQL__Type -> (Text, QuerySelection) -> Validation (Text, QuerySelection)
+validateBySchema :: TypeLib -> GQLQueryRoot -> Type -> (Text, QuerySelection) -> Validation (Text, QuerySelection)
 validateBySchema typeLib root _parentType (sName, SelectionSet args selectors pos) = do
   fieldSD <- asSelectionValidation $ fieldOf pos _parentType sName
   typeSD <- asSelectionValidation $ fieldType pos typeLib fieldSD
@@ -63,7 +62,7 @@ updateQuery :: GQLOperator -> QuerySelection -> GQLOperator
 updateQuery (QueryOperator name _)    = QueryOperator name
 updateQuery (MutationOperator name _) = MutationOperator name
 
-preProcessQuery :: GQLTypeLib -> GQLQueryRoot -> Validation GQLOperator
+preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation GQLOperator
 preProcessQuery lib root = do
   let (operator, SelectionSet args body pos) = getOperationInfo $ queryBody root
   validateVariables lib root args

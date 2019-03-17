@@ -1,33 +1,31 @@
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE OverloadedStrings  #-}
 
 module Data.Morpheus.Schema.InputValue
-  ( name
+  ( InputValue(..)
+  , createInputValueWith
   , isRequired
   , inputValueMeta
-  , typeName
   ) where
 
-import qualified Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue (..))
-import qualified Data.Morpheus.Schema.GQL__Type       as T (GQL__Type (..))
-import           Data.Morpheus.Types.Introspection    (GQL__InputValue)
-import qualified Data.Morpheus.Types.MetaInfo         as M (MetaInfo (..),
-                                                            Position)
-import           Data.Text                            (Text)
+import           Data.Data                    (Data)
+import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
+import           Data.Text                    (Text)
+import           GHC.Generics
 
-name :: GQL__InputValue -> Text
-name = I.name
+data InputValue t = InputValue
+  { name         :: Text
+  , description  :: Text
+  , _type        :: Maybe t
+  , defaultValue :: Text
+  } deriving (Show, Data, Generic)
 
-isRequired :: GQL__InputValue -> Bool
-isRequired x = I.defaultValue x /= "Nothing"
+isRequired :: InputValue a -> Bool
+isRequired x = defaultValue x /= "Nothing"
 
-typeName :: GQL__InputValue -> Text
-typeName x =
-  case I._type x of
-    Nothing -> "Error"
-    Just t  -> T.name t
+inputValueMeta :: Position -> InputValue a -> MetaInfo
+inputValueMeta pos input = MetaInfo {typeName = "TODO: Type", key = name input, position = pos}
 
-inputValueMeta :: M.Position -> GQL__InputValue -> M.MetaInfo
-inputValueMeta pos input = M.MetaInfo {M.typeName = "TODO: Type", M.key = I.name input, M.position = pos}
+createInputValueWith :: Text -> a -> InputValue a
+createInputValueWith _name ofType = InputValue {name = _name, description = "", _type = Just ofType, defaultValue = ""}

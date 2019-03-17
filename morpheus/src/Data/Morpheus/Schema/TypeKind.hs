@@ -1,14 +1,14 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric      #-}
 
-module Data.Morpheus.Schema.GQL__TypeKind
-  ( GQL__TypeKind(..)
+module Data.Morpheus.Schema.TypeKind
+  ( TypeKind(..)
   ) where
 
 import           Data.Data    (Data)
 import           GHC.Generics
 
-data GQL__TypeKind
+data TypeKind
   = SCALAR
   | OBJECT
   | INTERFACE

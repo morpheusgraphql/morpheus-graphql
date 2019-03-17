@@ -7,9 +7,10 @@ module Data.Morpheus.Generics.DeriveResolvers
   ) where
 
 import           Data.Maybe                   (fromMaybe)
+import           Data.Morpheus.Types.Error    (ResolveIO)
 import           Data.Morpheus.Types.JSType   (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo as Meta (MetaInfo (..))
-import           Data.Morpheus.Types.Types    (QuerySelection, ResolveIO)
+import           Data.Morpheus.Types.Types    (QuerySelection)
 import qualified Data.Text                    as T
 import           GHC.Generics
 

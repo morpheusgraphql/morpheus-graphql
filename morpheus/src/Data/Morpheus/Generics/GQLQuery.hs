@@ -14,41 +14,39 @@ module Data.Morpheus.Generics.GQLQuery
 
 import           Data.Data                              (Data, Typeable)
 import           Data.Map                               (insert)
-import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..),
-                                                         resolveBySelection)
+import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.GQLSelection    (GQLSelection (..))
-import           Data.Morpheus.Generics.TypeRep         (Selectors (..),
-                                                         resolveTypes)
-import           Data.Morpheus.Schema.GQL__Schema       (GQL__Schema,
-                                                         initSchema)
-import           Data.Morpheus.Types.Introspection      (GQLTypeLib, GQL__Field,
-                                                         createField,
-                                                         createType)
+import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
+import           Data.Morpheus.Schema.Schema            (Schema, initSchema)
+import           Data.Morpheus.Schema.Utils.Utils       (Field, TypeLib, createField, createType)
+import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (initialMeta)
-import           Data.Morpheus.Types.Types              (QuerySelection (..),
-                                                         ResolveIO)
+import           Data.Morpheus.Types.Types              (QuerySelection (..))
+
 import           Data.Proxy
 import           GHC.Generics
 
+type UpdateTypes = TypeLib -> TypeLib
+
 class GQLQuery a where
-  encodeQuery :: a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
+  encodeQuery :: a -> TypeLib -> QuerySelection -> ResolveIO JSType
   default encodeQuery :: (Generic a, Data a, DeriveResolvers (Rep a), Show a) =>
-    a -> GQLTypeLib -> QuerySelection -> ResolveIO JSType
+    a -> TypeLib -> QuerySelection -> ResolveIO JSType
   encodeQuery rootResolver schema (SelectionSet _ sel _pos) = resolveBySelection sel $ schemaResolver ++ resolvers
     where
       schemaResolver = [("__schema", (`encode` initSchema schema))]
       resolvers = deriveResolvers initialMeta $ from rootResolver
-  querySchema :: a -> GQLTypeLib -> GQLTypeLib
+  querySchema :: a -> UpdateTypes
   default querySchema :: (Generic a, Data a) =>
-    a -> GQLTypeLib -> GQLTypeLib
+    a -> UpdateTypes
   querySchema _ = introspectQuery (Proxy :: Proxy a)
-  introspectQuery :: Proxy a -> GQLTypeLib -> GQLTypeLib
-  default introspectQuery :: (Show a, Selectors (Rep a) GQL__Field, Typeable a) =>
-    Proxy a -> GQLTypeLib -> GQLTypeLib
+  introspectQuery :: Proxy a -> UpdateTypes
+  default introspectQuery :: (Show a, Selectors (Rep a) Field, Typeable a) =>
+    Proxy a -> UpdateTypes
   introspectQuery _ initialTypes = resolveTypes typeLib stack
     where
-      typeLib = introspect (Proxy :: Proxy GQL__Schema) queryType
+      typeLib = introspect (Proxy :: Proxy Schema) queryType
       queryType = insert "Query" (createType "Query" fields) initialTypes
       fieldTypes = getFields (Proxy :: Proxy (Rep a))
       stack = map snd fieldTypes

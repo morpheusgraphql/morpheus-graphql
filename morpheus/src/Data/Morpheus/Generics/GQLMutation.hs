@@ -17,11 +17,12 @@ import           Data.Data                              (Data, Typeable)
 import qualified Data.Map                               as M
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
-import           Data.Morpheus.Types.Introspection      (GQLTypeLib, GQL__Field, createType,
-                                                         emptyLib)
+import           Data.Morpheus.Schema.Utils.Utils       (Field, TypeLib, createType, emptyLib)
+import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (initialMeta)
-import           Data.Morpheus.Types.Types              (QuerySelection (..), ResolveIO)
+import           Data.Morpheus.Types.Types              (QuerySelection (..))
+
 import           Data.Proxy
 import           GHC.Generics
 
@@ -31,13 +32,13 @@ class GQLMutation a where
     a -> QuerySelection -> ResolveIO JSType
   encodeMutation rootResolver (SelectionSet _ sel _pos) =
     resolveBySelection sel $ deriveResolvers initialMeta $ from rootResolver
-  mutationSchema :: a -> GQLTypeLib
+  mutationSchema :: a -> TypeLib
   default mutationSchema :: (Generic a, Data a) =>
-    a -> GQLTypeLib
+    a -> TypeLib
   mutationSchema _ = introspectMutation (Proxy :: Proxy a)
-  introspectMutation :: Proxy a -> GQLTypeLib
-  default introspectMutation :: (Show a, Selectors (Rep a) GQL__Field, Typeable a) =>
-    Proxy a -> GQLTypeLib
+  introspectMutation :: Proxy a -> TypeLib
+  default introspectMutation :: (Show a, Selectors (Rep a) Field, Typeable a) =>
+    Proxy a -> TypeLib
   introspectMutation _ = resolveTypes mutationType types
     where
       mutationType = M.fromList [("Mutation", createType "Mutation" fields)]

@@ -22,18 +22,18 @@ import qualified Data.Morpheus.Generics.GQLArgs         as Args (GQLArgs (..))
 import qualified Data.Morpheus.Generics.GQLEnum         as E (GQLEnum (..))
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf, typeOf)
-import           Data.Morpheus.Schema.GQL__Directive    (GQL__Directive)
-import qualified Data.Morpheus.Schema.GQL__Field        as F (GQL__Field (..), createFieldWith)
-import           Data.Morpheus.Schema.GQL__Schema       (GQL__Schema)
-import           Data.Morpheus.Schema.SchemaField       (wrapAsListType)
-import           Data.Morpheus.Types.Introspection      (GQLTypeLib, GQL__EnumValue, GQL__Field,
-                                                         GQL__InputValue, GQL__Type, createField,
-                                                         createScalar, createType)
+import           Data.Morpheus.Schema.Directive         (Directive)
+import           Data.Morpheus.Schema.EnumValue         (EnumValue)
+import qualified Data.Morpheus.Schema.Field             as F (Field (..), createFieldWith)
+import           Data.Morpheus.Schema.Schema            (Schema)
+import           Data.Morpheus.Schema.Utils.Field       (wrapAsListType)
+import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type, TypeLib,
+                                                         createField, createScalar, createType)
+import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..))
+import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
-import           Data.Morpheus.Types.Types              ((::->) (..), EnumOf (..),
-                                                         QuerySelection (..), ResolveIO,
-                                                         failResolveIO)
+import           Data.Morpheus.Types.Types              (QuerySelection (..))
 import           Data.Proxy
 import qualified Data.Text                              as T
 import           GHC.Generics
@@ -41,7 +41,7 @@ import           GHC.Generics
 instance GQLSelection a => DeriveResolvers (K1 i a) where
   deriveResolvers meta (K1 src) = [(Meta.key meta, (`encode` src))]
 
-instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (RecSel s a) GQL__Field where
+instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (RecSel s a) Field where
   getFields _ = [(fieldType (Proxy :: Proxy a) name, introspect (Proxy :: Proxy a))]
     where
       name = T.pack $ selName (undefined :: SelOf s)
@@ -58,15 +58,15 @@ class GQLSelection a where
   default typeID :: (D.Typeable a) =>
     Proxy a -> T.Text
   typeID _ = typeOf $ Proxy @a
-  fieldType :: Proxy a -> T.Text -> GQL__Field
-  default fieldType :: (Show a, Selectors (Rep a) GQL__Field, D.Typeable a) =>
-    Proxy a -> T.Text -> GQL__Field
+  fieldType :: Proxy a -> T.Text -> Field
+  default fieldType :: (Show a, Selectors (Rep a) Field, D.Typeable a) =>
+    Proxy a -> T.Text -> Field
   fieldType proxy name = createField name typeName []
     where
       typeName = typeID proxy
-  introspect :: Proxy a -> GQLTypeLib -> GQLTypeLib
-  default introspect :: (Show a, Selectors (Rep a) GQL__Field, D.Typeable a) =>
-    Proxy a -> GQLTypeLib -> GQLTypeLib
+  introspect :: Proxy a -> TypeLib -> TypeLib
+  default introspect :: (Show a, Selectors (Rep a) Field, D.Typeable a) =>
+    Proxy a -> TypeLib -> TypeLib
   introspect proxy typeLib =
     case M.lookup typeName typeLib of
       Just _  -> typeLib
@@ -133,20 +133,20 @@ instance (Show a, E.GQLEnum a, D.Typeable a) => GQLSelection (EnumOf a) where
   fieldType _ = E.fieldType (Proxy :: Proxy a)
   introspect _ = E.introspect (Proxy :: Proxy a)
 
-instance GQLSelection GQL__EnumValue where
+instance GQLSelection EnumValue where
   typeID _ = "__EnumValue"
 
-instance GQLSelection GQL__Type where
+instance GQLSelection Type where
   typeID _ = "__Type"
 
-instance GQLSelection GQL__Field where
+instance GQLSelection Field where
   typeID _ = "__Field"
 
-instance GQLSelection GQL__InputValue where
+instance GQLSelection InputValue where
   typeID _ = "__InputValue"
 
-instance GQLSelection GQL__Schema where
+instance GQLSelection Schema where
   typeID _ = "__Schema"
 
-instance GQLSelection GQL__Directive where
+instance GQLSelection Directive where
   typeID _ = "__Directive"

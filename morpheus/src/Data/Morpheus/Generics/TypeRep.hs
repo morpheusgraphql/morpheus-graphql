@@ -13,18 +13,18 @@ module Data.Morpheus.Generics.TypeRep
   , resolveTypes
   ) where
 
-import           Data.Morpheus.Types.Introspection (GQLTypeLib)
-import           Data.Proxy                        (Proxy (..))
+import           Data.Morpheus.Schema.Utils.Utils (TypeLib)
+import           Data.Proxy                       (Proxy (..))
 import           GHC.Generics
 
 shift :: a -> (a -> b) -> b
 shift x y = y x
 
-resolveTypes :: GQLTypeLib -> [GQLTypeLib -> GQLTypeLib] -> GQLTypeLib
+resolveTypes :: TypeLib -> [TypeLib -> TypeLib] -> TypeLib
 resolveTypes = foldl shift
 
 class Selectors rep t where
-  getFields :: Proxy rep -> [(t, GQLTypeLib -> GQLTypeLib)]
+  getFields :: Proxy rep -> [(t, TypeLib -> TypeLib)]
 
 instance Selectors f t => Selectors (M1 D x f) t where
   getFields _ = getFields (Proxy @f)

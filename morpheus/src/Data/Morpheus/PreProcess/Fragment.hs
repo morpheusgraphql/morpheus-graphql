@@ -7,17 +7,18 @@ module Data.Morpheus.PreProcess.Fragment
 import qualified Data.Map                           as M (lookup, toList)
 import           Data.Morpheus.Error.Fragment       (cycleOnFragment, fragmentError,
                                                      unknownFragment, unsupportedSpreadOnType)
+import           Data.Morpheus.Error.Selection      (selectionError)
+import           Data.Morpheus.Error.Utils          (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments (validateArguments)
 import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf, fieldType)
-import qualified Data.Morpheus.Schema.GQL__Type     as T
+import qualified Data.Morpheus.Schema.Type          as T (name)
+import           Data.Morpheus.Schema.Utils.Utils   (Type, TypeLib)
 import           Data.Morpheus.Types.Error          (MetaValidation, Validation)
-import           Data.Morpheus.Types.Introspection  (GQLTypeLib, GQL__Type)
 import           Data.Morpheus.Types.MetaInfo       (MetaInfo (..))
 import           Data.Morpheus.Types.Types          (Fragment (..), FragmentLib, GQLQueryRoot (..),
                                                      QuerySelection (..))
 import           Data.Text                          (Text)
-import           Data.Morpheus.Error.Utils          (toGQLError)
-import           Data.Morpheus.Error.Selection      (selectionError)
+
 type Graph = [Text]
 
 type RootGraph = [(Text, Graph)]
@@ -35,22 +36,22 @@ getFragment meta fragmentID lib =
     Nothing       -> Left $ unknownFragment meta
     Just fragment -> pure fragment
 
-compareFragmentType :: MetaInfo -> MetaInfo -> GQL__Type -> Fragment -> Validation GQL__Type
+compareFragmentType :: MetaInfo -> MetaInfo -> Type -> Fragment -> Validation Type
 compareFragmentType parent child _type fragment =
   if T.name _type == target fragment
     then pure _type
     else Left $ unsupportedSpreadOnType parent child
 
-getSpreadType :: FragmentLib -> GQL__Type -> Text -> Validation GQL__Type
+getSpreadType :: FragmentLib -> Type -> Text -> Validation Type
 getSpreadType frags _type fragmentID = getFragment (spread "") fragmentID frags >>= fragment
   where
     fragment fg = compareFragmentType parent (spread $ target fg) _type fg
     parent = MetaInfo {typeName = T.name _type, key = "", position = 0}
     spread name = MetaInfo {typeName = name, key = fragmentID, position = 0}
 
-validateFragmentFields :: GQLTypeLib -> GQLQueryRoot -> GQL__Type -> (Text, QuerySelection) -> Validation Graph
+validateFragmentFields :: TypeLib -> GQLQueryRoot -> Type -> (Text, QuerySelection) -> Validation Graph
 validateFragmentFields typeLib root _parent (_name, SelectionSet args selectors pos) = do
-  fieldSC <-asSelectionValidation $ fieldOf pos _parent _name
+  fieldSC <- asSelectionValidation $ fieldOf pos _parent _name
   typeSC <- asGQLError $ fieldType pos typeLib fieldSC
   _ <- validateArguments typeLib root fieldSC args
   concat <$> mapM (validateFragmentFields typeLib root typeSC) selectors
@@ -62,14 +63,14 @@ validateFragmentFields _ root _parent (spreadID, Spread value _) =
   getSpreadType (fragments root) _parent spreadID >> pure [value]
 validateFragmentFields _ _ _ _ = pure []
 
-validateFragment :: GQLTypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation (Text, Graph)
+validateFragment :: TypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation (Text, Graph)
 validateFragment lib root (fName, frag) = do
   _type <- asGQLError $ existsType (target frag) lib
   let (SelectionSet _ selection _pos) = fragmentContent frag
   fragmentLinks <- concat <$> mapM (validateFragmentFields lib root _type) selection
   pure (fName, fragmentLinks)
 
-validateFragments :: GQLTypeLib -> GQLQueryRoot -> Validation ()
+validateFragments :: TypeLib -> GQLQueryRoot -> Validation ()
 validateFragments lib root = mapM (validateFragment lib root) (M.toList $ fragments root) >>= detectLoopOnFragments
 
 detectLoopOnFragments :: RootGraph -> Validation ()
