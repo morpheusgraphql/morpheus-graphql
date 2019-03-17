@@ -11,7 +11,7 @@ import           Data.Morpheus.Error.Variable          (variableIsNotDefined,
                                                         variableValidationError)
 import           Data.Morpheus.PreProcess.Input.Object (validateInputVariable)
 import           Data.Morpheus.PreProcess.Utils        (existsType)
-import           Data.Morpheus.Schema.Helpers          (TypeLib)
+import           Data.Morpheus.Schema.Utils          (TypeLib)
 import qualified Data.Morpheus.Schema.Type             as T (kind)
 import           Data.Morpheus.Schema.TypeKind         (TypeKind (..))
 import           Data.Morpheus.Types.Error             (MetaValidation, Validation)

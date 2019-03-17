@@ -9,10 +9,10 @@ module Data.Morpheus.PreProcess.Utils
 
 import qualified Data.Map                         as M (lookup)
 import qualified Data.Morpheus.Schema.Field       as F (name, _type)
-import           Data.Morpheus.Schema.Helpers     (Field, Type, TypeLib)
-import           Data.Morpheus.Schema.SchemaField (fieldByKey)
 import qualified Data.Morpheus.Schema.Type        as T (kind, name, ofType)
 import           Data.Morpheus.Schema.TypeKind    (TypeKind (..))
+import           Data.Morpheus.Schema.Utils.Field (fieldByKey)
+import           Data.Morpheus.Schema.Utils.Utils (Field, Type, TypeLib)
 import           Data.Morpheus.Types.Error        (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.MetaInfo     (MetaInfo (..), Position)
 import           Data.Morpheus.Types.Types        (EnumOf (..))

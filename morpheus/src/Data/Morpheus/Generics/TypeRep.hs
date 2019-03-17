@@ -13,8 +13,8 @@ module Data.Morpheus.Generics.TypeRep
   , resolveTypes
   ) where
 
-import           Data.Morpheus.Schema.Helpers (TypeLib)
-import           Data.Proxy                   (Proxy (..))
+import           Data.Morpheus.Schema.Utils.Utils (TypeLib)
+import           Data.Proxy                       (Proxy (..))
 import           GHC.Generics
 
 shift :: a -> (a -> b) -> b

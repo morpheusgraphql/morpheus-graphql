@@ -4,12 +4,12 @@
 
 module Data.Morpheus.Schema.Schema where
 
-import           Data.Data                      (Data)
-import qualified Data.Map                       as M
-import           Data.Morpheus.Schema.Directive (Directive)
-import           Data.Morpheus.Schema.Helpers   (Type, createType)
-import           Data.Text                      (Text)
-import           GHC.Generics                   (Generic)
+import           Data.Data                        (Data)
+import qualified Data.Map                         as M
+import           Data.Morpheus.Schema.Directive   (Directive)
+import           Data.Morpheus.Schema.Utils.Utils (Type, createType)
+import           Data.Text                        (Text)
+import           GHC.Generics                     (Generic)
 
 data Schema = Schema
   { types            :: [Type]

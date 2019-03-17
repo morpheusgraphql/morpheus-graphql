@@ -1,11 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Schema.Helpers
+module Data.Morpheus.Schema.Utils.Utils
   ( Type
   , Field
   , InputValue
-  , DeprecationArgs
-  , EnumValue
   , TypeLib
   , createType
   , createField
@@ -18,10 +16,10 @@ module Data.Morpheus.Schema.Helpers
   ) where
 
 import           Data.Map                        (Map, fromList)
-import           Data.Morpheus.Schema.EnumValue  (EnumValue, createEnumValue)
+import           Data.Morpheus.Schema.EnumValue  (createEnumValue)
 import qualified Data.Morpheus.Schema.Field      as F (Field (..), createFieldWith)
 import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..), createInputValueWith)
-import           Data.Morpheus.Schema.Type       (DeprecationArgs, Type (..))
+import           Data.Morpheus.Schema.Type       (Type (..))
 import           Data.Morpheus.Schema.TypeKind   (TypeKind (..))
 import           Data.Morpheus.Types.Types       ((::->) (..), EnumOf (..))
 import           Data.Text                       (Text)

@@ -4,8 +4,8 @@ module Data.Morpheus.PreProcess.Input.Enum
 
 import           Data.Morpheus.Error.Variable   (invalidEnumOption)
 import           Data.Morpheus.Schema.EnumValue (isEnumOf)
-import           Data.Morpheus.Schema.Helpers   (Type)
 import qualified Data.Morpheus.Schema.Type      as T (enumValues, name)
+import           Data.Morpheus.Schema.Utils     (Type)
 import           Data.Morpheus.Types.Error      (Validation)
 import           Data.Morpheus.Types.JSType     (JSType (..))
 import           Data.Morpheus.Types.MetaInfo   (MetaInfo (..))

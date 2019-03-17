@@ -2,18 +2,18 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Data.Morpheus.Schema.SchemaField
+module Data.Morpheus.Schema.Utils.Field
   ( fieldByKey
   , argsByKey
   , wrapAsListType
   ) where
 
-import           Data.List                    (find)
-import qualified Data.Morpheus.Schema.Field   as F (Field (..))
-import           Data.Morpheus.Schema.Helpers (Field, InputValue, Type, wrapListType)
-import qualified Data.Morpheus.Schema.Type    as T (Type (..))
-import           Data.Morpheus.Types.Types    ((::->) (..))
-import           Data.Text                    (Text)
+import           Data.List                        (find)
+import qualified Data.Morpheus.Schema.Field       as F (Field (..))
+import qualified Data.Morpheus.Schema.Type        as T (Type (..))
+import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, Type, wrapListType)
+import           Data.Morpheus.Types.Types        ((::->) (..))
+import           Data.Text                        (Text)
 
 fieldByKey :: Text -> Type -> Maybe Field
 fieldByKey key gqlType =
