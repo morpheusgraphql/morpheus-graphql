@@ -1,26 +1,18 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric  #-}
-{-# LANGUAGE TypeOperators  #-}
-
 module Data.Morpheus.Types.Types
   ( QuerySelection(..)
   , SelectionSet
   , GQLQueryRoot(..)
   , Fragment(..)
   , FragmentLib
-  , GQLRequest(..)
   , Argument(..)
   , Arguments
   , GQLOperator(..)
   ) where
 
-import           Data.Aeson                   (FromJSON (..))
 import           Data.Map                     (Map)
 import           Data.Morpheus.Types.Core     (Key)
 import           Data.Morpheus.Types.JSType   (JSType)
 import           Data.Morpheus.Types.MetaInfo (Position)
-import           Data.Text                    (Text)
-import           GHC.Generics                 (Generic)
 
 data Argument
   = Variable Key
@@ -46,27 +38,21 @@ data QuerySelection
   deriving (Show)
 
 data GQLOperator
-  = QueryOperator Text
+  = QueryOperator Key
                   QuerySelection
-  | MutationOperator Text
+  | MutationOperator Key
                      QuerySelection
 
-type FragmentLib = Map Text Fragment
+type FragmentLib = Map Key Fragment
 
 data Fragment = Fragment
-  { id              :: Text
-  , target          :: Text
+  { id              :: Key
+  , target          :: Key
   , fragmentContent :: QuerySelection
   } deriving (Show)
 
 data GQLQueryRoot = GQLQueryRoot
   { fragments      :: FragmentLib
   , queryBody      :: GQLOperator
-  , inputVariables :: Map Text JSType
+  , inputVariables :: Map Key JSType
   }
-
-data GQLRequest = GQLRequest
-  { query :: Text
-  , operationName :: Maybe Text
-  , variables :: Maybe (Map Text JSType)
-  } deriving (Show, Generic, FromJSON)
