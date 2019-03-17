@@ -12,7 +12,7 @@ import           Data.Morpheus.Error.Selection      (cannotQueryField, selection
 import           Data.Morpheus.PreProcess.Arguments (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment  (validateFragments)
 import           Data.Morpheus.PreProcess.Spread    (spreadFieldsWhile)
-import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf, typeBy)
+import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf, fieldType)
 import           Data.Morpheus.PreProcess.Variable  (validateVariables)
 import           Data.Morpheus.Types.Error          (Validation, MetaValidation)
 import           Data.Morpheus.Types.Introspection  (GQLTypeLib, GQL__Type)
@@ -32,17 +32,17 @@ mapSelectors typeLib root _type selectors =
 
 validateBySchema ::
      GQLTypeLib -> GQLQueryRoot -> GQL__Type -> (Text, QuerySelection) -> Validation (Text, QuerySelection)
-validateBySchema typeLib root _parentType (_name, SelectionSet args selectors pos) = do
-  fieldName <- asSelectionValidation $ fieldOf pos _parentType _name
-  nameOfType <- asSelectionValidation $ typeBy pos typeLib _parentType _name
-  head' <- validateArguments typeLib root fieldName args
-  selectors' <- mapSelectors typeLib root nameOfType selectors
-  pure (_name, SelectionSet head' selectors' pos)
-validateBySchema typeLib root _parentType (_name, Field args field pos) = do
-  _field <- asSelectionValidation $ fieldOf pos _parentType _name
-  _checksIfHasType <- asSelectionValidation $ typeBy pos typeLib _parentType _name
-  head' <- validateArguments typeLib root _field args
-  pure (_name, Field head' field pos)
+validateBySchema typeLib root _parentType (sName, SelectionSet args selectors pos) = do
+  fieldSD <- asSelectionValidation $ fieldOf pos _parentType sName
+  typeSD <- asSelectionValidation $ fieldType pos typeLib fieldSD
+  headQS <- validateArguments typeLib root fieldSD args
+  selectorsQS <- mapSelectors typeLib root typeSD selectors
+  pure (sName, SelectionSet headQS selectorsQS pos)
+validateBySchema typeLib root _parentType (sName, Field args field pos) = do
+  fieldSD <- asSelectionValidation $ fieldOf pos _parentType sName
+  _checksIfHasType <- asSelectionValidation $ fieldType pos typeLib fieldSD
+  head' <- validateArguments typeLib root fieldSD args
+  pure (sName, Field head' field pos)
 validateBySchema _ _ _ x = pure x
 
 checkDuplicates :: [(Text, a)] -> Validation [(Text, a)]
