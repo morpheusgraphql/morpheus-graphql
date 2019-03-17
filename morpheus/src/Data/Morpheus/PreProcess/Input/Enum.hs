@@ -2,14 +2,14 @@ module Data.Morpheus.PreProcess.Input.Enum
   ( validateEnum
   ) where
 
-import           Data.Morpheus.Error.Variable   (invalidEnumOption)
-import           Data.Morpheus.Schema.EnumValue (isEnumOf)
-import qualified Data.Morpheus.Schema.Type      as T (enumValues, name)
-import           Data.Morpheus.Schema.Utils     (Type)
-import           Data.Morpheus.Types.Error      (Validation)
-import           Data.Morpheus.Types.JSType     (JSType (..))
-import           Data.Morpheus.Types.MetaInfo   (MetaInfo (..))
-import           Data.Morpheus.Types.Types      ((::->) (Some), Argument (..))
+import           Data.Morpheus.Error.Variable     (invalidEnumOption)
+import           Data.Morpheus.Schema.EnumValue   (isEnumOf)
+import qualified Data.Morpheus.Schema.Type        as T (enumValues, name)
+import           Data.Morpheus.Schema.Utils.Utils (Type)
+import           Data.Morpheus.Types.Error        (Validation)
+import           Data.Morpheus.Types.JSType       (JSType (..))
+import           Data.Morpheus.Types.MetaInfo     (MetaInfo (..))
+import           Data.Morpheus.Types.Types        ((::->) (Some), Argument (..))
 
 validateEnum :: Type -> Argument -> Validation Argument
 validateEnum _type (Argument (JSEnum argument) pos) =

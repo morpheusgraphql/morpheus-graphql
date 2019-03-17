@@ -31,7 +31,7 @@ import           Data.Morpheus.Generics.GQLQuery     (GQLQuery (..))
 import           Data.Morpheus.Generics.GQLSelection (GQLSelection)
 import           Data.Morpheus.Parser.Parser         (parseGQL, parseLineBreaks)
 import           Data.Morpheus.PreProcess.PreProcess (preProcessQuery)
-import           Data.Morpheus.Types.Introspection   (GQLTypeLib)
+import           Data.Morpheus.Schema.Utils.Utils    (TypeLib)
 import           Data.Morpheus.Types.JSType          (JSType)
 import           Data.Morpheus.Types.Types           ((::->) (Resolver), EnumOf (unpackEnum),
                                                       GQLOperator (..), GQLRequest (..),
@@ -43,7 +43,7 @@ data GQLRoot a b = GQLRoot
   , mutationResolver :: b
   }
 
-schema :: (GQLQuery a, GQLMutation b) => a -> b -> GQLTypeLib
+schema :: (GQLQuery a, GQLMutation b) => a -> b -> TypeLib
 schema queryRes mutationRes = querySchema queryRes $ mutationSchema mutationRes
 
 resolve :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO JSType

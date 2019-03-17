@@ -11,22 +11,22 @@ module Data.Morpheus.Generics.GQLInput
   ( GQLInput(..)
   ) where
 
-import           Data.Data                            (Data, Typeable)
-import qualified Data.Map                             as M
-import           Data.Morpheus.Error.Arguments        (requiredArgument)
-import           Data.Morpheus.Generics.GDecode       (GDecode (..))
-import qualified Data.Morpheus.Generics.GQLEnum       as E (GQLEnum (..))
-import           Data.Morpheus.Generics.TypeRep       (Selectors (..), resolveTypes)
-import           Data.Morpheus.Generics.Utils         (typeOf)
-import qualified Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue (..))
-import           Data.Morpheus.Types.Error            (Validation)
-import           Data.Morpheus.Types.Introspection    (GQLTypeLib, GQL__Field, GQL__InputValue,
-                                                       createInputObject, createInputValue)
-import           Data.Morpheus.Types.JSType           (JSType (..))
-import qualified Data.Morpheus.Types.MetaInfo         as Meta (MetaInfo (..), initialMeta)
-import           Data.Morpheus.Types.Types            (EnumOf (..))
-import           Data.Proxy                           (Proxy (..))
-import           Data.Text                            (Text)
+import           Data.Data                        (Data, Typeable)
+import qualified Data.Map                         as M
+import           Data.Morpheus.Error.Arguments    (requiredArgument)
+import           Data.Morpheus.Generics.GDecode   (GDecode (..))
+import qualified Data.Morpheus.Generics.GQLEnum   as E (GQLEnum (..))
+import           Data.Morpheus.Generics.TypeRep   (Selectors (..), resolveTypes)
+import           Data.Morpheus.Generics.Utils     (typeOf)
+import qualified Data.Morpheus.Schema.InputValue  as I (InputValue (..))
+import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib, createInputObject,
+                                                   createInputValue)
+import           Data.Morpheus.Types.Error        (Validation)
+import           Data.Morpheus.Types.JSType       (JSType (..))
+import qualified Data.Morpheus.Types.MetaInfo     as Meta (MetaInfo (..), initialMeta)
+import           Data.Morpheus.Types.Types        (EnumOf (..))
+import           Data.Proxy                       (Proxy (..))
+import           Data.Text                        (Text)
 import           GHC.Generics
 
 instance GQLInput a => GDecode JSType (K1 i a) where
@@ -42,13 +42,13 @@ class GQLInput a where
   default decode :: (Show a, Generic a, Data a, GDecode JSType (Rep a)) =>
     JSType -> Validation a
   decode (JSObject x) = to <$> gDecode Meta.initialMeta (JSObject x)
-  typeInfo :: Proxy a -> Text -> GQL__InputValue
+  typeInfo :: Proxy a -> Text -> InputValue
   default typeInfo :: (Show a, Typeable a) =>
-    Proxy a -> Text -> GQL__InputValue
+    Proxy a -> Text -> InputValue
   typeInfo _ name = createInputValue name $ typeOf (Proxy @a)
-  introInput :: Proxy a -> GQLTypeLib -> GQLTypeLib
-  default introInput :: (Show a, Typeable a, Selectors (Rep a) GQL__Field) =>
-    Proxy a -> GQLTypeLib -> GQLTypeLib
+  introInput :: Proxy a -> TypeLib -> TypeLib
+  default introInput :: (Show a, Typeable a, Selectors (Rep a) Field) =>
+    Proxy a -> TypeLib -> TypeLib
   introInput _ typeLib =
     case M.lookup typeName typeLib of
       Just _  -> typeLib
