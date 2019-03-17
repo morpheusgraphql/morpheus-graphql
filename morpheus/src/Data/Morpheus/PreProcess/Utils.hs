@@ -4,9 +4,9 @@ module Data.Morpheus.PreProcess.Utils
   ( existsType
   , typeBy
   , fieldOf
+  , fieldType
   ) where
 
-import           Control.Monad                      ((>=>))
 import qualified Data.Map                           as M (lookup)
 import           Data.Morpheus.Schema.GQL__Field    as F (name, _type)
 import           Data.Morpheus.Schema.GQL__Type     as F (kind)
@@ -39,12 +39,9 @@ fieldOf pos _type fieldName =
   where
     meta = MetaInfo {key = fieldName, typeName = T.name _type, position = pos}
 
-fieldHasType :: GQL__Field -> Maybe GQL__Type
-fieldHasType = F._type >=> unwrapType
-
 fieldType :: Position -> GQLTypeLib -> GQL__Field -> MetaValidation GQL__Type
 fieldType pos lib field =
-  case fieldHasType field of
+  case F._type field >>= unwrapType of
     Nothing -> Left $ UnknownType $ MetaInfo {key = F.name field, typeName = "", position = pos}
     Just _type -> existsType (T.name _type) lib
 

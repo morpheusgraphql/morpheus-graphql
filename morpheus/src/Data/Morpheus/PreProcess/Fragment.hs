@@ -8,7 +8,7 @@ import qualified Data.Map                           as M (lookup, toList)
 import           Data.Morpheus.Error.Fragment       (cycleOnFragment, fragmentError,
                                                      unknownFragment, unsupportedSpreadOnType)
 import           Data.Morpheus.PreProcess.Arguments (validateArguments)
-import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf, typeBy)
+import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf, fieldType)
 import qualified Data.Morpheus.Schema.GQL__Type     as T
 import           Data.Morpheus.Types.Error          (MetaValidation, Validation)
 import           Data.Morpheus.Types.Introspection  (GQLTypeLib, GQL__Type)
@@ -50,10 +50,10 @@ getSpreadType frags _type fragmentID = getFragment (spread "") fragmentID frags 
 
 validateFragmentFields :: GQLTypeLib -> GQLQueryRoot -> GQL__Type -> (Text, QuerySelection) -> Validation Graph
 validateFragmentFields typeLib root _parent (_name, SelectionSet args selectors pos) = do
-  _type <- asGQLError $ typeBy pos typeLib _parent _name
-  field <-asSelectionValidation $ fieldOf pos _parent _name
-  _ <- validateArguments typeLib root field args
-  concat <$> mapM (validateFragmentFields typeLib root _type) selectors
+  fieldSC <-asSelectionValidation $ fieldOf pos _parent _name
+  typeSC <- asGQLError $ fieldType pos typeLib fieldSC
+  _ <- validateArguments typeLib root fieldSC args
+  concat <$> mapM (validateFragmentFields typeLib root typeSC) selectors
 validateFragmentFields typeLib root _parentType (_name, Field args _ pos) = do
   _field <- asSelectionValidation $ fieldOf pos _parentType _name
   _ <- validateArguments typeLib root _field args

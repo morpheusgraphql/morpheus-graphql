@@ -19,7 +19,8 @@ module Data.Morpheus.Types.Introspection
   ) where
 
 import           Data.Map                             (Map, fromList)
-import Data.Morpheus.Schema.GQL__EnumValue (GQL__EnumValue, createEnumValue)import qualified Data.Morpheus.Schema.GQL__Field      as F (GQL__Field (..), createFieldWith)
+import           Data.Morpheus.Schema.GQL__EnumValue  (GQL__EnumValue, createEnumValue)
+import qualified Data.Morpheus.Schema.GQL__Field      as F (GQL__Field (..), createFieldWith)
 import qualified Data.Morpheus.Schema.GQL__InputValue as I (GQL__InputValue (..),
                                                             createInputValueWith)
 import           Data.Morpheus.Schema.GQL__Type       (GQL__Deprecation__Args, GQL__Type (..))
