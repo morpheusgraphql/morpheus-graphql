@@ -65,13 +65,11 @@ validateFragment lib root (fName, frag) = do
   fragmentLinks <- concat <$> mapM (validateFragmentFields lib root _type) selection
   pure (fName, fragmentLinks)
 
-validateFragments :: GQLTypeLib -> GQLQueryRoot -> Validation GQLQueryRoot
-validateFragments lib root = do
-  _ <- mapM (validateFragment lib root) (M.toList $ fragments root) >>= detectLoopOnFragments
-  pure root
+validateFragments :: GQLTypeLib -> GQLQueryRoot -> Validation ()
+validateFragments lib root = mapM (validateFragment lib root) (M.toList $ fragments root) >>= detectLoopOnFragments
 
-detectLoopOnFragments :: RootGraph -> Validation RootGraph
-detectLoopOnFragments lib = concat <$> mapM checkFragment lib
+detectLoopOnFragments :: RootGraph -> Validation ()
+detectLoopOnFragments lib = mapM_ checkFragment lib
   where
     checkFragment (fragmentID, _) = checkForCycle lib fragmentID [fragmentID]
 
