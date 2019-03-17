@@ -1,7 +1,6 @@
-{-# LANGUAGE DeriveAnyClass    #-}
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric  #-}
+{-# LANGUAGE TypeOperators  #-}
 
 module Data.Morpheus.Types.Types
   ( QuerySelection(..)
@@ -9,17 +8,15 @@ module Data.Morpheus.Types.Types
   , GQLQueryRoot(..)
   , Fragment(..)
   , FragmentLib
-  , GQLResponse(..)
   , GQLRequest(..)
   , Argument(..)
   , Arguments
   , GQLOperator(..)
   ) where
 
-import           Data.Aeson                   (FromJSON (..), ToJSON (..), pairs, (.=))
+import           Data.Aeson                   (FromJSON (..))
 import           Data.Map                     (Map)
 import           Data.Morpheus.Types.Core     (Key)
-import           Data.Morpheus.Types.Error    (JSONError (..))
 import           Data.Morpheus.Types.JSType   (JSType)
 import           Data.Morpheus.Types.MetaInfo (Position)
 import           Data.Text                    (Text)
@@ -68,17 +65,8 @@ data GQLQueryRoot = GQLQueryRoot
   , inputVariables :: Map Text JSType
   }
 
-data GQLResponse
-  = Data JSType
-  | Errors [JSONError]
-  deriving (Show, Generic)
-
-instance ToJSON GQLResponse where
-  toEncoding (Data _data)     = pairs $ "data" .= _data
-  toEncoding (Errors _errors) = pairs $ "errors" .= _errors
-
 data GQLRequest = GQLRequest
-  { query         :: Text
+  { query :: Text
   , operationName :: Maybe Text
-  , variables     :: Maybe (Map Text JSType)
+  , variables :: Maybe (Map Text JSType)
   } deriving (Show, Generic, FromJSON)

@@ -35,8 +35,8 @@ import           Data.Morpheus.Schema.Utils.Utils    (TypeLib)
 import           Data.Morpheus.Types.Describer       ((::->) (Resolver), EnumOf (unpackEnum))
 import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType)
-import           Data.Morpheus.Types.Types           (GQLOperator (..), GQLRequest (..),
-                                                      GQLResponse (..))
+import           Data.Morpheus.Types.Response        (GQLResponse (..))
+import           Data.Morpheus.Types.Types           (GQLOperator (..), GQLRequest (..))
 import           Data.Text                           (pack)
 
 data GQLRoot a b = GQLRoot
