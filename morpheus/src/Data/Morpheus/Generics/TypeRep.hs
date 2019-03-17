@@ -14,13 +14,13 @@ module Data.Morpheus.Generics.TypeRep
   ) where
 
 import           Data.Morpheus.Schema.Helpers (TypeLib)
-import           Data.Proxy                        (Proxy (..))
+import           Data.Proxy                   (Proxy (..))
 import           GHC.Generics
 
 shift :: a -> (a -> b) -> b
 shift x y = y x
 
-resolveTypes :: TypeLib -> [GQLTypeLib -> GQLTypeLib] -> TypeLib
+resolveTypes :: TypeLib -> [TypeLib -> TypeLib] -> TypeLib
 resolveTypes = foldl shift
 
 class Selectors rep t where

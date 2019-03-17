@@ -1,16 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Schema.Helpers
-  ( GQL__Type
-  , GQL__Field
-  , GQL__InputValue
-  , GQL__Deprecation__Args
-  , GQL__TypeKind(..)
+  ( Type
+  , Field
+  , InputValue
+  , DeprecationArgs
+  , EnumValue
+  , TypeLib
   , createType
   , createField
-  , GQLTypeLib
   , emptyLib
-  , GQL__EnumValue
   , createInputValue
   , wrapListType
   , createScalar
@@ -18,16 +17,16 @@ module Data.Morpheus.Schema.Helpers
   , createInputObject
   ) where
 
-import           Data.Map                           (Map, fromList)
-import           Data.Morpheus.Schema.EnumValue     (EnumValue, createEnumValue)
-import qualified Data.Morpheus.Schema.Field         as F (Field (..), createFieldWith)
-import           Data.Morpheus.Schema.GQL__TypeKind (GQL__TypeKind (..))
-import qualified Data.Morpheus.Schema.InputValue    as I (InputValue (..), createInputValueWith)
-import           Data.Morpheus.Schema.Type          (DeprecationArgs, Type (..))
-import           Data.Morpheus.Types.Types          ((::->) (..), EnumOf (..))
-import           Data.Text                          (Text)
+import           Data.Map                        (Map, fromList)
+import           Data.Morpheus.Schema.EnumValue  (EnumValue, createEnumValue)
+import qualified Data.Morpheus.Schema.Field      as F (Field (..), createFieldWith)
+import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..), createInputValueWith)
+import           Data.Morpheus.Schema.Type       (DeprecationArgs, Type (..))
+import           Data.Morpheus.Schema.TypeKind   (TypeKind (..))
+import           Data.Morpheus.Types.Types       ((::->) (..), EnumOf (..))
+import           Data.Text                       (Text)
 
-type InputValue = I.InputValue GQL__Type
+type InputValue = I.InputValue Type
 
 type Field = F.Field Type
 

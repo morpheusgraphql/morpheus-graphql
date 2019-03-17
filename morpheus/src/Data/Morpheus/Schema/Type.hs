@@ -25,7 +25,7 @@ data Type = Type
   , interfaces    :: [Type]
   , possibleTypes :: [Type]
   , enumValues    :: DeprecationArgs ::-> [EnumValue]
-  , inputFields   :: [I.GQL__InputValue Type]
+  , inputFields   :: [I.InputValue Type]
   } deriving (Show, Data, Generic)
 
 newtype DeprecationArgs = DeprecationArgs
