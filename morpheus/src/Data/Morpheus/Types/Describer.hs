@@ -48,5 +48,7 @@ instance FromJSON (p ::-> o) where
   parseJSON _ = pure None
 
 instance (ToJSON o) => ToJSON (p ::-> o) where
-  toJSON (Some o) = toJSON o
-  toJSON None     = Null
+  toJSON (Some o)      = toJSON o
+  toJSON None          = Null
+  toJSON Resolver {}   = Null -- should not be called at all
+  toJSON TypeHolder {} = Null -- should not be called at all
