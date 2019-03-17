@@ -7,9 +7,10 @@ module Data.Morpheus.PreProcess.Spread
 import           Data.List                    (find)
 import qualified Data.Map                     as M (lookup)
 import           Data.Morpheus.Error.Fragment (unknownFragment)
+import           Data.Morpheus.Types.Error    (Validation)
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
 import           Data.Morpheus.Types.Types    (Fragment (..), FragmentLib, GQLQueryRoot (..),
-                                               QuerySelection (..), SelectionSet, Validation)
+                                               QuerySelection (..), SelectionSet)
 import           Data.Text                    (Text)
 
 shouldSpread :: [(Text, QuerySelection)] -> Bool

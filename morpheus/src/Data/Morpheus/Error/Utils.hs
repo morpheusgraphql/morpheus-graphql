@@ -1,12 +1,18 @@
 module Data.Morpheus.Error.Utils
   ( errorMessage
   , renderErrors
+  , toGQLError
   ) where
 
 import           Data.Morpheus.Types.Error    (ErrorLocation (..), GQLError (..), GQLErrors,
-                                               JSONError (..))
+                                               JSONError (..), MetaError, MetaValidation,
+                                               Validation)
 import           Data.Morpheus.Types.MetaInfo (LineBreaks, Position)
 import           Data.Text                    (Text)
+
+toGQLError :: (MetaError -> GQLErrors) -> MetaValidation a -> Validation a
+toGQLError handler (Left err) = Left $ handler err
+toGQLError _ (Right value)    = pure value
 
 errorMessage :: Position -> Text -> GQLErrors
 errorMessage pos text = [GQLError {desc = text, posIndex = pos}]

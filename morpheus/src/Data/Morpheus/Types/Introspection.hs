@@ -13,7 +13,6 @@ module Data.Morpheus.Types.Introspection
   , GQL__EnumValue
   , createInputValue
   , wrapListType
-  , unwrapType
   , createScalar
   , createEnum
   , createInputObject
@@ -96,12 +95,6 @@ createEnum eName tags =
     , enumValues = Some $ map createEnumValue tags
     , inputFields = []
     }
-
-unwrapType :: GQL__Type -> Maybe GQL__Type
-unwrapType x =
-  case kind x of
-    EnumOf LIST -> ofType x
-    _           -> Just x
 
 wrapListType :: GQL__Type -> GQL__Type
 wrapListType contentType =

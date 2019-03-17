@@ -16,10 +16,12 @@ import           Data.Morpheus.Generics.GDecode    (GDecode (..))
 import qualified Data.Morpheus.Generics.GQLInput   as I (GQLInput (..))
 import           Data.Morpheus.Generics.TypeRep    (Selectors (..))
 import           Data.Morpheus.Generics.Utils      (RecSel, SelOf)
+import           Data.Morpheus.Types.Error         (Validation)
 import           Data.Morpheus.Types.Introspection (GQLTypeLib, GQL__Deprecation__Args,
                                                     GQL__InputValue)
 import           Data.Morpheus.Types.MetaInfo      (MetaInfo (..), initialMeta)
-import           Data.Morpheus.Types.Types         (Argument (..), Arguments, Validation)
+import           Data.Morpheus.Types.Types         (Argument (..), Arguments)
+
 import           Data.Proxy                        (Proxy (..))
 import qualified Data.Text                         as T
 import           GHC.Generics

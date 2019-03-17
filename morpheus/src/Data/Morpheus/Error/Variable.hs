@@ -4,11 +4,11 @@ module Data.Morpheus.Error.Variable
   ( variableIsNotDefined
   , fieldTypeMismatch
   , invalidEnumOption
+  , variableValidationError
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (GQLErrors)
-import           Data.Morpheus.Types.JSType   (JSType (..))
+import           Data.Morpheus.Types.Error    (GQLErrors, MetaError (..))
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
 import qualified Data.Text                    as T (Text, concat, pack)
 
@@ -38,11 +38,13 @@ case variable does not match to argument type
   - query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
 
 |-}
+variableValidationError :: MetaError -> GQLErrors
+variableValidationError (TypeMismatch meta isType shouldType) = fieldTypeMismatch meta isType shouldType
+
 variableIsNotDefined :: MetaInfo -> GQLErrors
 variableIsNotDefined meta = errorMessage (position meta) text
   where
     text = T.concat ["Variable \"", key meta, "\" is not defined by operation \"", typeName meta, "\"."]
-
 
 -- TODO: delete it GQL has no this kind of error
 invalidEnumOption :: MetaInfo -> GQLErrors
@@ -50,15 +52,13 @@ invalidEnumOption meta = errorMessage (position meta) text
   where
     text = T.concat ["Expected type ", typeName meta, " found ", key meta, "."]
 
-
-
 -- TODO: delete it GQL has no this kind of error
-fieldTypeMismatch :: MetaInfo -> JSType -> T.Text -> GQLErrors
+fieldTypeMismatch :: MetaInfo -> T.Text -> T.Text -> GQLErrors
 fieldTypeMismatch meta isType should = errorMessage (position meta) text
   where
     text =
       T.concat
-        [ "field \""
+        [ "Variable field\""
         , key meta
         , "\"on type \""
         , typeName meta

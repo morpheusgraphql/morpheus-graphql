@@ -5,20 +5,29 @@ module Data.Morpheus.PreProcess.Fragment
   ) where
 
 import qualified Data.Map                           as M (lookup, toList)
-import           Data.Morpheus.Error.Fragment       (cycleOnFragment, unknownFragment,
-                                                     unsupportedSpreadOnType)
+import           Data.Morpheus.Error.Fragment       (cycleOnFragment, fragmentError,
+                                                     unknownFragment, unsupportedSpreadOnType)
 import           Data.Morpheus.PreProcess.Arguments (validateArguments)
-import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf, typeBy)
+import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf, fieldType)
 import qualified Data.Morpheus.Schema.GQL__Type     as T
+import           Data.Morpheus.Types.Error          (MetaValidation, Validation)
 import           Data.Morpheus.Types.Introspection  (GQLTypeLib, GQL__Type)
 import           Data.Morpheus.Types.MetaInfo       (MetaInfo (..))
 import           Data.Morpheus.Types.Types          (Fragment (..), FragmentLib, GQLQueryRoot (..),
-                                                     QuerySelection (..), Validation)
+                                                     QuerySelection (..))
 import           Data.Text                          (Text)
-
+import           Data.Morpheus.Error.Utils          (toGQLError)
+import           Data.Morpheus.Error.Selection      (selectionError)
 type Graph = [Text]
 
 type RootGraph = [(Text, Graph)]
+
+asSelectionValidation :: MetaValidation a -> Validation a
+asSelectionValidation = toGQLError selectionError
+
+asGQLError :: MetaValidation a -> Validation a
+asGQLError (Left err)    = Left $ fragmentError err
+asGQLError (Right value) = pure value
 
 getFragment :: MetaInfo -> Text -> FragmentLib -> Validation Fragment
 getFragment meta fragmentID lib =
@@ -41,12 +50,12 @@ getSpreadType frags _type fragmentID = getFragment (spread "") fragmentID frags 
 
 validateFragmentFields :: GQLTypeLib -> GQLQueryRoot -> GQL__Type -> (Text, QuerySelection) -> Validation Graph
 validateFragmentFields typeLib root _parent (_name, SelectionSet args selectors pos) = do
-  _type <- typeBy pos typeLib _parent _name
-  _field <- fieldOf pos _parent _name
-  _ <- validateArguments typeLib root _field args
-  concat <$> mapM (validateFragmentFields typeLib root _type) selectors
+  fieldSC <-asSelectionValidation $ fieldOf pos _parent _name
+  typeSC <- asGQLError $ fieldType pos typeLib fieldSC
+  _ <- validateArguments typeLib root fieldSC args
+  concat <$> mapM (validateFragmentFields typeLib root typeSC) selectors
 validateFragmentFields typeLib root _parentType (_name, Field args _ pos) = do
-  _field <- fieldOf pos _parentType _name
+  _field <- asSelectionValidation $ fieldOf pos _parentType _name
   _ <- validateArguments typeLib root _field args
   pure []
 validateFragmentFields _ root _parent (spreadID, Spread value _) =
@@ -55,18 +64,16 @@ validateFragmentFields _ _ _ _ = pure []
 
 validateFragment :: GQLTypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation (Text, Graph)
 validateFragment lib root (fName, frag) = do
-  _type <- existsType (target frag) lib
+  _type <- asGQLError $ existsType (target frag) lib
   let (SelectionSet _ selection _pos) = fragmentContent frag
   fragmentLinks <- concat <$> mapM (validateFragmentFields lib root _type) selection
   pure (fName, fragmentLinks)
 
-validateFragments :: GQLTypeLib -> GQLQueryRoot -> Validation GQLQueryRoot
-validateFragments lib root = do
-  _ <- mapM (validateFragment lib root) (M.toList $ fragments root) >>= detectLoopOnFragments
-  pure root
+validateFragments :: GQLTypeLib -> GQLQueryRoot -> Validation ()
+validateFragments lib root = mapM (validateFragment lib root) (M.toList $ fragments root) >>= detectLoopOnFragments
 
-detectLoopOnFragments :: RootGraph -> Validation RootGraph
-detectLoopOnFragments lib = concat <$> mapM checkFragment lib
+detectLoopOnFragments :: RootGraph -> Validation ()
+detectLoopOnFragments lib = mapM_ checkFragment lib
   where
     checkFragment (fragmentID, _) = checkForCycle lib fragmentID [fragmentID]
 
