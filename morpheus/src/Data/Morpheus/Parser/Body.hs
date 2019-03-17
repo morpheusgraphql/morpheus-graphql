@@ -9,7 +9,8 @@ import           Control.Applicative            (some, (<|>))
 import           Data.Attoparsec.Text           (Parser, char, letter, sepBy, skipSpace, string,
                                                  try)
 import           Data.Morpheus.Parser.Arguments (arguments)
-import Data.Morpheus.Parser.Primitive (getPosition, separator, token)import           Data.Morpheus.Types.Types      (Arguments, QuerySelection (..), SelectionSet)
+import           Data.Morpheus.Parser.Primitive (getPosition, separator, token)
+import           Data.Morpheus.Types.Types      (Arguments, QuerySelection (..), SelectionSet)
 import           Data.Text                      (Text, pack)
 
 spread :: Parser (Text, QuerySelection)
