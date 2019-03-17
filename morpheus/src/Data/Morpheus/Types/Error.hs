@@ -9,8 +9,11 @@ module Data.Morpheus.Types.Error
   , MetaError(..)
   , MetaValidation
   , Validation
+  , ResolveIO
+  , failResolveIO
   ) where
 
+import           Control.Monad.Trans.Except   (ExceptT (..))
 import           Data.Aeson                   (ToJSON)
 import           Data.Morpheus.Types.MetaInfo (MetaInfo)
 import           Data.Text                    (Text)
@@ -24,7 +27,6 @@ data MetaError
   | UndefinedField MetaInfo
   | UnknownField MetaInfo
   | UnknownType MetaInfo
-
 
 data GQLError = GQLError
   { desc     :: Text
@@ -43,6 +45,11 @@ data JSONError = JSONError
   , locations :: [ErrorLocation]
   } deriving (Show, Generic, ToJSON)
 
-
 type MetaValidation a = Either MetaError a
+
 type Validation a = Either GQLErrors a
+
+type ResolveIO = ExceptT GQLErrors IO
+
+failResolveIO :: GQLErrors -> ResolveIO a
+failResolveIO = ExceptT . pure . Left

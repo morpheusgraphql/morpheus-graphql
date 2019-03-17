@@ -32,10 +32,11 @@ import           Data.Morpheus.Generics.GQLSelection (GQLSelection)
 import           Data.Morpheus.Parser.Parser         (parseGQL, parseLineBreaks)
 import           Data.Morpheus.PreProcess.PreProcess (preProcessQuery)
 import           Data.Morpheus.Schema.Utils.Utils    (TypeLib)
+import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType)
 import           Data.Morpheus.Types.Types           ((::->) (Resolver), EnumOf (unpackEnum),
                                                       GQLOperator (..), GQLRequest (..),
-                                                      GQLResponse (..), ResolveIO, failResolveIO)
+                                                      GQLResponse (..))
 import           Data.Text                           (pack)
 
 data GQLRoot a b = GQLRoot

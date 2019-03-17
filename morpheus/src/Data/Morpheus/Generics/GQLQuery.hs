@@ -19,9 +19,11 @@ import           Data.Morpheus.Generics.GQLSelection    (GQLSelection (..))
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
 import           Data.Morpheus.Schema.Schema            (Schema, initSchema)
 import           Data.Morpheus.Schema.Utils.Utils       (Field, TypeLib, createField, createType)
+import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (initialMeta)
-import           Data.Morpheus.Types.Types              (QuerySelection (..), ResolveIO)
+import           Data.Morpheus.Types.Types              (QuerySelection (..))
+
 import           Data.Proxy
 import           GHC.Generics
 

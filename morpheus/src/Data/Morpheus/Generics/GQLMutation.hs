@@ -18,9 +18,11 @@ import qualified Data.Map                               as M
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
 import           Data.Morpheus.Schema.Utils.Utils       (Field, TypeLib, createType, emptyLib)
+import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (initialMeta)
-import           Data.Morpheus.Types.Types              (QuerySelection (..), ResolveIO)
+import           Data.Morpheus.Types.Types              (QuerySelection (..))
+
 import           Data.Proxy
 import           GHC.Generics
 
