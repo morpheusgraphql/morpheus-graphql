@@ -25,5 +25,6 @@ query :: Parser Operator
 query = do
   pos <- getPosition
   (queryName, args) <- try (skipSpace *> queryHead) <|> pure ("", [])
+  skipSpace
   selection <- entries
   pure $ Query queryName args selection pos

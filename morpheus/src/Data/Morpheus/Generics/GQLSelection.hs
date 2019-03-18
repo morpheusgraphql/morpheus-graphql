@@ -80,21 +80,20 @@ class GQLSelection a where
 getType :: (GQLSelection a, Args.GQLArgs p) => (p ::-> a) -> (p ::-> a)
 getType _ = TypeHolder Nothing
 
-resolve ::
-     (Show a, Show p, GQLSelection a, Args.GQLArgs p) => QuerySelection -> p ::-> a -> p ::-> a -> ResolveIO JSType
-resolve (SelectionSet gqlArgs body pos) (TypeHolder args) (Resolver resolver) =
-  (ExceptT $ pure $ Args.decode gqlArgs args) >>= resolver >>= encode (SelectionSet gqlArgs body pos)
-resolve (Field gqlArgs field pos) (TypeHolder args) (Resolver resolver) =
-  (ExceptT $ pure $ Args.decode gqlArgs args) >>= resolver >>= encode (Field gqlArgs field pos)
-resolve query _ (Some value) = encode query value
-resolve _ _ None = ExceptT $ pure $ internalUndefinedResolver "resolver not implemented"
+resolve :: (Show a, Show p, GQLSelection a, Args.GQLArgs p) => QuerySelection -> p ::-> a -> ResolveIO JSType
+resolve (SelectionSet gqlArgs body pos) (Resolver resolver) =
+  (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (SelectionSet gqlArgs body pos)
+resolve (Field gqlArgs field pos) (Resolver resolver) =
+  (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (Field gqlArgs field pos)
+resolve query (Some value) = encode query value
+resolve _ None = ExceptT $ pure $ internalUndefinedResolver "resolver not implemented"
 
 instance (Show a, Show p, GQLSelection a, Args.GQLArgs p, D.Typeable (p ::-> a)) => GQLSelection (p ::-> a) where
-  encode (SelectionSet args body pos) field = resolve (SelectionSet args body pos) (getType field) field
-  encode (Field args body pos) field = resolve (Field args body pos) (getType field) field
-  encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
-  encode x (Some a) = encode x a
-  encode _ None = pure JSNull
+  encode (SelectionSet args body pos) field = resolve (SelectionSet args body pos) field
+  encode (Field args body pos) field        = resolve (Field args body pos) field
+  encode x (Resolver f)                     = resolve x (Resolver f)
+  encode x (Some a)                         = encode x a
+  encode _ None                             = pure JSNull
   introspect _ typeLib = resolveTypes typeLib $ args ++ fields
     where
       args = map snd $ Args.introspect (Proxy :: Proxy p)

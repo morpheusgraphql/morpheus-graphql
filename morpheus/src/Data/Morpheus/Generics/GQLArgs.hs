@@ -39,17 +39,17 @@ instance I.GQLInput a => GDecode Arguments (K1 i a) where
       Just _                 -> internalArgumentError "typeMismatch"
 
 class GQLArgs p where
-  decode :: Arguments -> Maybe p -> Validation p
+  decode :: Arguments -> Validation p
   default decode :: (Show p, Generic p, D.Data p, GDecode Arguments (Rep p)) =>
-    Arguments -> Maybe p -> Validation p
-  decode args _ = to <$> gDecode initialMeta args
+    Arguments -> Validation p
+  decode args = to <$> gDecode initialMeta args
   introspect :: Proxy p -> [(InputValue, TypeLib -> TypeLib)]
   default introspect :: (Show p, Selectors (Rep p) InputValue, D.Typeable p) =>
     Proxy p -> [(InputValue, TypeLib -> TypeLib)]
   introspect _ = getFields (Proxy @(Rep p))
 
 instance GQLArgs () where
-  decode _ _ = pure ()
+  decode _ = pure ()
   introspect _ = []
 
 instance GQLArgs DeprecationArgs

@@ -18,5 +18,6 @@ mutation = do
   skipSpace
   name <- token
   variables <- try (skipSpace *> rootHeadArguments) <|> pure []
+  skipSpace
   sel <- entries
   pure $ Mutation name variables sel pos
