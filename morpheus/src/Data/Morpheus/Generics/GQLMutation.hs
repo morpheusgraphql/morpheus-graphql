@@ -21,7 +21,7 @@ import           Data.Morpheus.Schema.Utils.Utils       (Field, TypeLib, createT
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (initialMeta)
-import           Data.Morpheus.Types.Types              (SelectionSet)
+import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
 import           Data.Proxy
 import           GHC.Generics
 

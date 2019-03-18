@@ -2,25 +2,23 @@ module Data.Morpheus.Types.Query.Selection
   ( Argument(..)
   , Arguments
   , SelectionSet
-  , QuerySelection(..)
+  , Selection(..)
   ) where
 
 import           Data.Morpheus.Types.Core     (Collection, Key)
 import           Data.Morpheus.Types.JSType   (JSType)
 import           Data.Morpheus.Types.MetaInfo (Position)
 
-data Argument
-  = Variable Key
-             Position
-  | Argument JSType
-             Position
+data Argument =
+  Argument JSType
+           Position
   deriving (Show)
 
 type Arguments = Collection Argument
 
-type SelectionSet = Collection QuerySelection
+type SelectionSet = Collection Selection
 
-data QuerySelection
+data Selection
   = SelectionSet Arguments
                  SelectionSet
                  Position

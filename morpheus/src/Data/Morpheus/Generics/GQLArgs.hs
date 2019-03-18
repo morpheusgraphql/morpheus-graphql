@@ -10,20 +10,20 @@ module Data.Morpheus.Generics.GQLArgs
   ( GQLArgs(..)
   ) where
 
-import qualified Data.Data                        as D
-import           Data.Morpheus.Error.Internal     (internalArgumentError)
-import           Data.Morpheus.Generics.GDecode   (GDecode (..))
-import qualified Data.Morpheus.Generics.GQLInput  as I (GQLInput (..))
-import           Data.Morpheus.Generics.TypeRep   (Selectors (..))
-import           Data.Morpheus.Generics.Utils     (RecSel, SelOf)
-import           Data.Morpheus.Schema.Type        (DeprecationArgs)
-import           Data.Morpheus.Schema.Utils.Utils (InputValue, TypeLib)
-import           Data.Morpheus.Types.Error        (Validation)
-import           Data.Morpheus.Types.MetaInfo     (MetaInfo (..), initialMeta)
-import           Data.Morpheus.Types.Types        (Argument (..), Arguments)
+import qualified Data.Data                           as D
+import           Data.Morpheus.Error.Internal        (internalArgumentError)
+import           Data.Morpheus.Generics.GDecode      (GDecode (..))
+import qualified Data.Morpheus.Generics.GQLInput     as I (GQLInput (..))
+import           Data.Morpheus.Generics.TypeRep      (Selectors (..))
+import           Data.Morpheus.Generics.Utils        (RecSel, SelOf)
+import           Data.Morpheus.Schema.Type           (DeprecationArgs)
+import           Data.Morpheus.Schema.Utils.Utils    (InputValue, TypeLib)
+import           Data.Morpheus.Types.Error           (Validation)
+import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), initialMeta)
+import           Data.Morpheus.Types.Query.Selection (Argument (..), Arguments)
 
-import           Data.Proxy                       (Proxy (..))
-import qualified Data.Text                        as T
+import           Data.Proxy                          (Proxy (..))
+import qualified Data.Text                           as T
 import           GHC.Generics
 
 instance (Selector s, D.Typeable a, I.GQLInput a) => Selectors (RecSel s a) InputValue where

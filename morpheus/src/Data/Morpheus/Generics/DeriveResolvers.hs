@@ -6,12 +6,12 @@ module Data.Morpheus.Generics.DeriveResolvers
   , resolveBySelection
   ) where
 
-import           Data.Maybe                   (fromMaybe)
-import           Data.Morpheus.Types.Error    (ResolveIO)
-import           Data.Morpheus.Types.JSType   (JSType (..))
-import qualified Data.Morpheus.Types.MetaInfo as Meta (MetaInfo (..))
-import           Data.Morpheus.Types.Types    (QuerySelection)
-import qualified Data.Text                    as T
+import           Data.Maybe                          (fromMaybe)
+import           Data.Morpheus.Types.Error           (ResolveIO)
+import           Data.Morpheus.Types.JSType          (JSType (..))
+import qualified Data.Morpheus.Types.MetaInfo        as Meta (MetaInfo (..))
+import           Data.Morpheus.Types.Query.Selection (Selection)
+import qualified Data.Text                           as T
 import           GHC.Generics
 
 -- type D1 = M1 D
@@ -25,15 +25,14 @@ import           GHC.Generics
 unwrapMonadTuple :: Monad m => (T.Text, m a) -> m (T.Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
-selectResolver ::
-     [(T.Text, QuerySelection -> ResolveIO JSType)] -> (T.Text, QuerySelection) -> ResolveIO (T.Text, JSType)
+selectResolver :: [(T.Text, Selection -> ResolveIO JSType)] -> (T.Text, Selection) -> ResolveIO (T.Text, JSType)
 selectResolver x (key, gql) = unwrapMonadTuple (key, (fromMaybe (\_ -> pure JSNull) $ lookup key x) gql)
 
-resolveBySelection :: [(T.Text, QuerySelection)] -> [(T.Text, QuerySelection -> ResolveIO JSType)] -> ResolveIO JSType
+resolveBySelection :: [(T.Text, Selection)] -> [(T.Text, Selection -> ResolveIO JSType)] -> ResolveIO JSType
 resolveBySelection selection resolvers = JSObject <$> mapM (selectResolver resolvers) selection
 
 class DeriveResolvers f where
-  deriveResolvers :: Meta.MetaInfo -> f a -> [(T.Text, QuerySelection -> ResolveIO JSType)]
+  deriveResolvers :: Meta.MetaInfo -> f a -> [(T.Text, Selection -> ResolveIO JSType)]
 
 instance DeriveResolvers U1 where
   deriveResolvers _ _ = []

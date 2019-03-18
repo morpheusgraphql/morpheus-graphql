@@ -21,8 +21,8 @@ import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..))
 import           Data.Morpheus.Types.Query.Operator     (Operator (..), RawOperator, ValidOperator)
 import           Data.Morpheus.Types.Query.RawSelection (RawArguments, RawSelection (..),
                                                          RawSelectionSet)
-import           Data.Morpheus.Types.Types              (Arguments, GQLQueryRoot (..),
-                                                         QuerySelection (..), SelectionSet)
+import           Data.Morpheus.Types.Query.Selection    (Selection (..), SelectionSet)
+import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import qualified Data.Set                               as S
 import           Data.Text                              (Text, pack)
 
@@ -33,7 +33,7 @@ mapSelectors :: TypeLib -> GQLQueryRoot -> Type -> RawSelectionSet -> Validation
 mapSelectors typeLib root _type selectors =
   spreadFields root selectors >>= checkDuplicates >>= mapM (validateBySchema typeLib root _type)
 
-validateBySchema :: TypeLib -> GQLQueryRoot -> Type -> (Text, RawSelection) -> Validation (Text, QuerySelection)
+validateBySchema :: TypeLib -> GQLQueryRoot -> Type -> (Text, RawSelection) -> Validation (Text, Selection)
 validateBySchema typeLib root _parentType (sName, RawSelectionSet args selectors pos) = do
   fieldSD <- asSelectionValidation $ fieldOf pos _parentType sName
   typeSD <- asSelectionValidation $ fieldType pos typeLib fieldSD

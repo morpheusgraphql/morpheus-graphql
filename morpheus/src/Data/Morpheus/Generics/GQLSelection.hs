@@ -33,7 +33,7 @@ import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
-import           Data.Morpheus.Types.Types              (QuerySelection (..))
+import           Data.Morpheus.Types.Query.Selection    (Selection (..))
 import           Data.Proxy
 import qualified Data.Text                              as T
 import           GHC.Generics
@@ -47,9 +47,9 @@ instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (RecSel s a) Fi
       name = T.pack $ selName (undefined :: SelOf s)
 
 class GQLSelection a where
-  encode :: QuerySelection -> a -> ResolveIO JSType
+  encode :: Selection -> a -> ResolveIO JSType
   default encode :: (Generic a, D.Data a, DeriveResolvers (Rep a), Show a) =>
-    QuerySelection -> a -> ResolveIO JSType
+    Selection -> a -> ResolveIO JSType
   encode (SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers Meta.initialMeta . from
   encode (Field _ key pos) = \_ -> failResolveIO $ subfieldsNotSelected meta
     where
@@ -77,7 +77,7 @@ class GQLSelection a where
       stack = map snd fieldTypes
       gqlFields = map fst fieldTypes
 
-resolve :: (Show a, Show p, GQLSelection a, Args.GQLArgs p) => QuerySelection -> p ::-> a -> ResolveIO JSType
+resolve :: (Show a, Show p, GQLSelection a, Args.GQLArgs p) => Selection -> p ::-> a -> ResolveIO JSType
 resolve (SelectionSet gqlArgs body pos) (Resolver resolver) =
   (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (SelectionSet gqlArgs body pos)
 resolve (Field gqlArgs field pos) (Resolver resolver) =
