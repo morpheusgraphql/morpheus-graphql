@@ -77,9 +77,6 @@ class GQLSelection a where
       stack = map snd fieldTypes
       gqlFields = map fst fieldTypes
 
-getType :: (GQLSelection a, Args.GQLArgs p) => (p ::-> a) -> (p ::-> a)
-getType _ = TypeHolder Nothing
-
 resolve :: (Show a, Show p, GQLSelection a, Args.GQLArgs p) => QuerySelection -> p ::-> a -> ResolveIO JSType
 resolve (SelectionSet gqlArgs body pos) (Resolver resolver) =
   (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (SelectionSet gqlArgs body pos)

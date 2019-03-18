@@ -19,8 +19,7 @@ newtype EnumOf a = EnumOf
   } deriving (Show, Generic, Data)
 
 data a ::-> b
-  = TypeHolder (Maybe a)
-  | Resolver (a -> ResolveIO b)
+  = Resolver (a -> ResolveIO b)
   | Some b
   | None
   deriving (Generic)
@@ -48,7 +47,6 @@ instance FromJSON (p ::-> o) where
   parseJSON _ = pure None
 
 instance (ToJSON o) => ToJSON (p ::-> o) where
-  toJSON (Some o)      = toJSON o
-  toJSON None          = Null
-  toJSON Resolver {}   = Null -- should not be called at all
-  toJSON TypeHolder {} = Null -- should not be called at all
+  toJSON (Some o)    = toJSON o
+  toJSON None        = Null
+  toJSON Resolver {} = Null -- should not be called at all
