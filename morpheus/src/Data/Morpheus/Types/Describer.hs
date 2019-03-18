@@ -21,7 +21,7 @@ newtype EnumOf a = EnumOf
 data a ::-> b
   = Resolver (a -> ResolveIO b)
   | Some b
-  | None
+  | None -- TODO: Remove it
   deriving (Generic)
 
 instance Show (a ::-> b) where
