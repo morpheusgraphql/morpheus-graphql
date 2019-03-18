@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Internal
-  ( handleError
+  ( internalError
   , internalTypeMismatch
   , internalUnresolvedField
   , internalArgumentError
@@ -15,8 +15,8 @@ import qualified Data.Text                  as T (Text, concat, pack)
 
 -- GQL:: if no mutation defined -> "Schema is not configured for mutations."
 -- TODO: remove it
-handleError :: T.Text -> Either GQLErrors b
-handleError x = Left $ errorMessage 0 $ T.concat ["Field Error: ", x]
+internalError :: T.Text -> Either GQLErrors b
+internalError x = Left $ errorMessage 0 $ T.concat ["Field Error: ", x]
 
 internalArgumentError :: T.Text -> Either GQLErrors b
 internalArgumentError x = Left $ errorMessage 0 $ T.concat ["Field Argument Error: ", x]

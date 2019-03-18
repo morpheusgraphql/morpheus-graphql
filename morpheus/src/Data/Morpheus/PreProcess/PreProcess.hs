@@ -8,6 +8,7 @@ module Data.Morpheus.PreProcess.PreProcess
   ) where
 
 import           Data.List                              ((\\))
+import           Data.Morpheus.Error.Internal           (internalError)
 import           Data.Morpheus.Error.Selection          (cannotQueryField, selectionError)
 import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
@@ -45,8 +46,8 @@ validateBySchema typeLib root _parentType (sName, RawField args field pos) = do
   _checksIfHasType <- asSelectionValidation $ fieldType pos typeLib fieldSD
   headQS <- validateArguments typeLib root fieldSD args
   pure (sName, Field headQS field pos)
+validateBySchema _ _ _ (_, Spread _ _) = internalError "unresolved Spread"
 
---validateBySchema _ _ _ x = Left $ handleError "unresolved Spread"
 checkDuplicates :: [(Text, a)] -> Validation [(Text, a)]
 checkDuplicates x =
   case keys \\ noDuplicates keys of
