@@ -61,7 +61,6 @@ validateFragmentFields typeLib root _parentType (_name, Field args _ pos_) = do
   pure []
 validateFragmentFields _ root _parent (spreadID, Spread value _) =
   getSpreadType (fragments root) _parent spreadID >> pure [value]
-validateFragmentFields _ _ _ _ = pure []
 
 validateFragment :: TypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation (Text, Graph)
 validateFragment lib root (fName, Fragment {content = selection, target = target'}) = do

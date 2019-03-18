@@ -30,9 +30,6 @@ data QuerySelection
           Position
   | Spread Key
            Position
-  | QNull
-  deriving (Show)
-
--- data ValArgument = ValArgument JSType Position
+  deriving (Show) -- data ValArgument = ValArgument JSType Position
 -- type OutSet = [(Key, OutSelection)]
 -- data OutSelection = OutSet ValArgument OutSet Position | OutField Arguments Key Position | Null
