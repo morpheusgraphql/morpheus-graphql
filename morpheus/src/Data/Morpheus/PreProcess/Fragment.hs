@@ -4,20 +4,21 @@ module Data.Morpheus.PreProcess.Fragment
   ( validateFragments
   ) where
 
-import qualified Data.Map                           as M (lookup, toList)
-import           Data.Morpheus.Error.Fragment       (cycleOnFragment, fragmentError,
-                                                     unknownFragment, unsupportedSpreadOnType)
-import           Data.Morpheus.Error.Selection      (selectionError)
-import           Data.Morpheus.Error.Utils          (toGQLError)
-import           Data.Morpheus.PreProcess.Arguments (validateArguments)
-import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf, fieldType)
-import qualified Data.Morpheus.Schema.Type          as T (name)
-import           Data.Morpheus.Schema.Utils.Utils   (Type, TypeLib)
-import           Data.Morpheus.Types.Error          (MetaValidation, Validation)
-import qualified Data.Morpheus.Types.MetaInfo       as Meta (MetaInfo (..))
-import           Data.Morpheus.Types.Types          (Fragment (..), FragmentLib, GQLQueryRoot (..),
-                                                     QuerySelection (..))
-import           Data.Text                          (Text)
+import qualified Data.Map                               as M (lookup, toList)
+import           Data.Morpheus.Error.Fragment           (cycleOnFragment, fragmentError,
+                                                         unknownFragment, unsupportedSpreadOnType)
+import           Data.Morpheus.Error.Selection          (selectionError)
+import           Data.Morpheus.Error.Utils              (toGQLError)
+import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
+import           Data.Morpheus.PreProcess.Utils         (existsType, fieldOf, fieldType)
+import qualified Data.Morpheus.Schema.Type              as T (name)
+import           Data.Morpheus.Schema.Utils.Utils       (Type, TypeLib)
+import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
+import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..))
+import           Data.Morpheus.Types.Query.Fragment     (Fragment (..), FragmentLib)
+import           Data.Morpheus.Types.Query.RawSelection (RawSelection (..))
+import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
+import           Data.Text                              (Text)
 
 type Graph = [Text]
 
@@ -49,13 +50,13 @@ getSpreadType frags _type fragmentID = getFragment (spread "") fragmentID frags 
     parent = Meta.MetaInfo {Meta.typeName = T.name _type, Meta.key = "", Meta.position = 0}
     spread name = Meta.MetaInfo {Meta.typeName = name, Meta.key = fragmentID, Meta.position = 0}
 
-validateFragmentFields :: TypeLib -> GQLQueryRoot -> Type -> (Text, QuerySelection) -> Validation Graph
-validateFragmentFields typeLib root _parent (_name, SelectionSet args selectors pos_) = do
-  fieldSC <- asSelectionValidation $ fieldOf pos_ _parent _name
+validateFragmentFields :: TypeLib -> GQLQueryRoot -> Type -> (Text,RawSelection) -> Validation Graph
+validateFragmentFields typeLib root _parent (name', RawSelectionSet args selectors pos_) = do
+  fieldSC <- asSelectionValidation $ fieldOf pos_ _parent name'
   typeSC <- asGQLError $ fieldType pos_ typeLib fieldSC
   _ <- validateArguments typeLib root fieldSC args
   concat <$> mapM (validateFragmentFields typeLib root typeSC) selectors
-validateFragmentFields typeLib root _parentType (_name, Field args _ pos_) = do
+validateFragmentFields typeLib root _parentType (_name, RawField args _ pos_) = do
   _field <- asSelectionValidation $ fieldOf pos_ _parentType _name
   _ <- validateArguments typeLib root _field args
   pure []

@@ -5,17 +5,17 @@ module Data.Morpheus.PreProcess.Input.Enum
   ( validateEnum
   ) where
 
-import           Data.Morpheus.Error.Arguments    (unsupportedArgumentType)
-import           Data.Morpheus.Error.Internal     (internalUnresolvedField)
-import           Data.Morpheus.Error.Variable     (invalidEnumOption)
-import           Data.Morpheus.Schema.EnumValue   (isEnumOf)
-import qualified Data.Morpheus.Schema.Type        as T (enumValues, name)
-import           Data.Morpheus.Schema.Utils.Utils (Type)
-import           Data.Morpheus.Types.Describer    ((::->) (Some))
-import           Data.Morpheus.Types.Error        (Validation)
-import           Data.Morpheus.Types.JSType       (JSType (..))
-import           Data.Morpheus.Types.MetaInfo     (MetaInfo (..))
-import           Data.Morpheus.Types.Types        (Argument (..))
+import           Data.Morpheus.Error.Arguments       (unsupportedArgumentType)
+import           Data.Morpheus.Error.Internal        (internalUnresolvedField)
+import           Data.Morpheus.Error.Variable        (invalidEnumOption)
+import           Data.Morpheus.Schema.EnumValue      (isEnumOf)
+import qualified Data.Morpheus.Schema.Type           as T (enumValues, name)
+import           Data.Morpheus.Schema.Utils.Utils    (Type)
+import           Data.Morpheus.Types.Describer       ((::->) (Some))
+import           Data.Morpheus.Types.Error           (Validation)
+import           Data.Morpheus.Types.JSType          (JSType (..))
+import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..))
+import           Data.Morpheus.Types.Query.Selection (Argument (..))
 
 unwrapField :: (p ::-> a) -> Validation a
 unwrapField (Some x) = pure x

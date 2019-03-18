@@ -9,9 +9,9 @@ import           Data.Attoparsec.Text               (Parser, skipSpace, string, 
 import           Data.Morpheus.Parser.Body          (entries)
 import           Data.Morpheus.Parser.Primitive     (getPosition, token)
 import           Data.Morpheus.Parser.RootHead      (rootHeadArguments)
-import           Data.Morpheus.Types.Query.Operator (Operator (..))
+import           Data.Morpheus.Types.Query.Operator (Operator (..), RawOperator)
 
-mutation :: Parser Operator
+mutation :: Parser RawOperator
 mutation = do
   pos <- getPosition
   _ <- string "mutation "
