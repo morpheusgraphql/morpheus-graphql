@@ -98,11 +98,11 @@ wrapListType contentType =
     { kind = EnumOf LIST
     , name = ""
     , description = ""
-    , fields = None
+    , fields = Some []
     , ofType = Just contentType
     , interfaces = []
     , possibleTypes = []
-    , enumValues = None
+    , enumValues = Some []
     , inputFields = []
     }
 

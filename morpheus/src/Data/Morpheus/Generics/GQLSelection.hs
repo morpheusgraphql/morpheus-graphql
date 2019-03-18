@@ -15,7 +15,6 @@ module Data.Morpheus.Generics.GQLSelection
 import           Control.Monad.Trans.Except
 import qualified Data.Data                              as D
 import qualified Data.Map                               as M
-import           Data.Morpheus.Error.Internal           (internalUndefinedResolver)
 import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import qualified Data.Morpheus.Generics.GQLArgs         as Args (GQLArgs (..))
@@ -83,7 +82,6 @@ resolve (SelectionSet gqlArgs body pos) (Resolver resolver) =
 resolve (Field gqlArgs field pos) (Resolver resolver) =
   (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (Field gqlArgs field pos)
 resolve query (Some value) = encode query value
-resolve _ None = ExceptT $ pure $ internalUndefinedResolver "resolver not implemented"
 
 instance (Show a, Show p, GQLSelection a, Args.GQLArgs p, D.Typeable (p ::-> a)) => GQLSelection (p ::-> a) where
   encode = resolve

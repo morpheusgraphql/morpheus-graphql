@@ -15,12 +15,10 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Data                  (Data)
 import           Data.Either
 import           Data.Maybe                 (fromMaybe)
-import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum),
-                                             GQLArgs, GQLEnum, GQLInput,
-                                             GQLMutation, GQLQuery, GQLRequest,
-                                             GQLResponse, GQLRoot (..),
-                                             GQLSelection, NoMutation (..),
-                                             ResolveIO (..), eitherToResponse,
+import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLArgs, GQLEnum,
+                                             GQLInput, GQLMutation, GQLQuery, GQLRequest,
+                                             GQLResponse, GQLRoot (..), GQLSelection,
+                                             NoMutation (..), ResolveIO (..), eitherToResponse,
                                              interpreter)
 import           Data.Text                  (Text, pack, unpack)
 import qualified Data.Text                  as T (concat)
@@ -53,7 +51,7 @@ data Address = Address
   , street      :: Text
   , houseNumber :: Int
   , owner       :: Maybe User
-  } deriving (Generic, Show, GQLSelection, Data, FromJSON)
+  } deriving (Generic, Show, GQLSelection, Data)
 
 data User = User
   { name    :: Text
@@ -62,15 +60,15 @@ data User = User
   , office  :: Location ::-> Address
   , friend  :: Maybe User
   , home    :: Maybe Address
-  } deriving (Show, Generic, Data, GQLSelection, FromJSON)
+  } deriving (Show, Generic, Data, GQLSelection)
 
 newtype Query = Query
   { user :: () ::-> User
-  } deriving (Show, Generic, Data, GQLQuery, FromJSON)
+  } deriving (Show, Generic, Data, GQLQuery)
 
 newtype Mutation = Mutation
   { createUser :: LocationByCoordinates ::-> User
-  } deriving (Show, Generic, Data, GQLMutation, FromJSON)
+  } deriving (Show, Generic, Data, GQLMutation)
 
 fetchAddress :: Text -> Text -> ResolveIO Address
 fetchAddress cityName streetName = lift (getJson "address") >>= eitherToResponse modify
