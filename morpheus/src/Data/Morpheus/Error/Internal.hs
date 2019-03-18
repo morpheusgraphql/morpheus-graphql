@@ -25,9 +25,8 @@ internalTypeMismatch :: T.Text -> JSType -> Either GQLErrors b
 internalTypeMismatch text jsType =
   Left $ errorMessage 0 $ T.concat ["Field Error: Type mismatch", text, T.pack $ show jsType]
 
-internalUnresolvedField :: T.Text -> JSType -> Either GQLErrors b
-internalUnresolvedField text jsType =
-  Left $ errorMessage 0 $ T.concat ["Field Error: Unresolverd field", text, T.pack $ show jsType]
+internalUnresolvedField :: T.Text -> Either GQLErrors b
+internalUnresolvedField text = Left $ errorMessage 0 $ T.concat ["Field Error: Unresolverd field", text]
 
 internalUndefinedResolver :: T.Text -> Either GQLErrors b
 internalUndefinedResolver text = Left $ errorMessage 0 $ T.concat ["Field resolver not implemented Error: ", text]

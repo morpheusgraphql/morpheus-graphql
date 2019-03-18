@@ -47,4 +47,3 @@ library:
       -Wunused-do-bind
       -fwarn-name-shadowing
       -fwarn-incomplete-patterns
-      -Werror

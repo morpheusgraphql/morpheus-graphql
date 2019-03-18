@@ -20,6 +20,7 @@ type Arguments = [(Key, Argument)]
 
 type SelectionSet = [(Key, QuerySelection)]
 
+-- TODO: define 2 Types raw and validated selections
 data QuerySelection
   = SelectionSet Arguments
                  SelectionSet
@@ -31,3 +32,7 @@ data QuerySelection
            Position
   | QNull
   deriving (Show)
+
+-- data ValArgument = ValArgument JSType Position
+-- type OutSet = [(Key, OutSelection)]
+-- data OutSelection = OutSet ValArgument OutSet Position | OutField Arguments Key Position | Null
