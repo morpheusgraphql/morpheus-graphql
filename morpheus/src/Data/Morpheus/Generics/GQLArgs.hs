@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 
@@ -10,8 +11,7 @@ module Data.Morpheus.Generics.GQLArgs
   ) where
 
 import qualified Data.Data                        as D
-import           Data.Morpheus.Error.Arguments    (requiredArgument)
-import           Data.Morpheus.Error.Error        (handleError)
+import           Data.Morpheus.Error.Internal     (internalArgumentError)
 import           Data.Morpheus.Generics.GDecode   (GDecode (..))
 import qualified Data.Morpheus.Generics.GQLInput  as I (GQLInput (..))
 import           Data.Morpheus.Generics.TypeRep   (Selectors (..))
@@ -33,12 +33,10 @@ instance (Selector s, D.Typeable a, I.GQLInput a) => Selectors (RecSel s a) Inpu
 
 instance I.GQLInput a => GDecode Arguments (K1 i a) where
   gDecode meta args =
-    case lookup (key meta) args
-      -- TODO: validate it in PreProcess
-          of
-      Nothing                -> Left $ requiredArgument meta
+    case lookup (key meta) args of
+      Nothing                -> internalArgumentError "Required"
       Just (Argument x _pos) -> K1 <$> I.decode x
-      Just x                 -> handleError $ T.pack $ show x
+      Just _                 -> internalArgumentError "typeMismatch"
 
 class GQLArgs p where
   decode :: Arguments -> Maybe p -> Validation p

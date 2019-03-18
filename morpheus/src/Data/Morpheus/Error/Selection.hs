@@ -11,11 +11,10 @@ import           Data.Morpheus.Types.Error    (GQLErrors, MetaError (..))
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
 import qualified Data.Text                    as T (concat)
 
-
 selectionError :: MetaError -> GQLErrors
-selectionError (UnknownType meta) = typeDoesNotExists meta
-selectionError (UnknownField meta) = cannotQueryField meta
-
+selectionError (UnknownType meta)      = typeDoesNotExists meta
+selectionError (UnknownField meta)     = cannotQueryField meta
+selectionError (TypeMismatch meta _ _) = subfieldsNotSelected meta -- real type for this case
 
 typeDoesNotExists :: MetaInfo -> GQLErrors
 typeDoesNotExists meta = errorMessage (position meta) text

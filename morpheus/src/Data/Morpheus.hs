@@ -52,8 +52,8 @@ resolve :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO
 resolve rootResolver body = do
   rootGQL <- ExceptT $ pure (parseGQL body >>= preProcessQuery gqlSchema)
   case rootGQL of
-    Query _ args selection pos    -> encodeQuery queryRes gqlSchema selection
-    Mutation _ args selection pos -> encodeMutation mutationRes selection
+    Query _ _args selection _pos    -> encodeQuery queryRes gqlSchema selection
+    Mutation _ _args selection _pos -> encodeMutation mutationRes selection
   where
     gqlSchema = schema queryRes mutationRes
     queryRes = queryResolver rootResolver

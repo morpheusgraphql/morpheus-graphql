@@ -29,6 +29,8 @@ import qualified Data.Text                    as T (concat)
 -}
 argumentError :: MetaError -> GQLErrors
 argumentError (UnknownType meta) = unsupportedArgumentType meta
+argumentError (UnknownField meta) = unsupportedArgumentType meta
+argumentError (TypeMismatch meta _ _) = unsupportedArgumentType meta
 
 unsupportedArgumentType :: MetaInfo -> GQLErrors
 unsupportedArgumentType meta = errorMessage (position meta) text

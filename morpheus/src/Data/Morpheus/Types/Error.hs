@@ -23,11 +23,8 @@ data MetaError
   = TypeMismatch MetaInfo
                  Text
                  Text
-  | UndefinedType MetaInfo
-  | UndefinedField MetaInfo
   | UnknownField MetaInfo
   | UnknownType MetaInfo
-  | InternError Text
 
 data GQLError = GQLError
   { desc     :: Text
