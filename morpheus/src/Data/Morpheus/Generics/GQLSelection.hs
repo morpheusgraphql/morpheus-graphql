@@ -86,11 +86,7 @@ resolve query (Some value) = encode query value
 resolve _ None = ExceptT $ pure $ internalUndefinedResolver "resolver not implemented"
 
 instance (Show a, Show p, GQLSelection a, Args.GQLArgs p, D.Typeable (p ::-> a)) => GQLSelection (p ::-> a) where
-  encode (SelectionSet args body pos) field = resolve (SelectionSet args body pos) field
-  encode (Field args body pos) field        = resolve (Field args body pos) field
-  encode x (Resolver f)                     = resolve x (Resolver f)
-  encode x (Some a)                         = encode x a
-  encode _ None                             = pure JSNull
+  encode = resolve
   introspect _ typeLib = resolveTypes typeLib $ args ++ fields
     where
       args = map snd $ Args.introspect (Proxy :: Proxy p)
