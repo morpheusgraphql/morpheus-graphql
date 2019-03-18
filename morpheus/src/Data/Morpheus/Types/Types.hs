@@ -6,24 +6,18 @@ module Data.Morpheus.Types.Types
   , FragmentLib
   , Argument(..)
   , Arguments
-  , GQLOperator(..)
   ) where
 
 import           Data.Map                            (Map)
 import           Data.Morpheus.Types.Core            (Key)
 import           Data.Morpheus.Types.JSType          (JSType)
 import           Data.Morpheus.Types.Query.Fragment  (Fragment (..), FragmentLib)
+import           Data.Morpheus.Types.Query.Operator  (Operator)
 import           Data.Morpheus.Types.Query.Selection (Argument (..), Arguments, QuerySelection (..),
                                                       SelectionSet)
 
-data GQLOperator
-  = QueryOperator Key
-                  QuerySelection
-  | MutationOperator Key
-                     QuerySelection
-
 data GQLQueryRoot = GQLQueryRoot
   { fragments      :: FragmentLib
-  , queryBody      :: GQLOperator
+  , queryBody      :: Operator
   , inputVariables :: Map Key JSType
   }

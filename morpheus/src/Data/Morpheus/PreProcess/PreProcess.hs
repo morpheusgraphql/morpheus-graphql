@@ -18,7 +18,8 @@ import           Data.Morpheus.PreProcess.Variable  (validateVariables)
 import           Data.Morpheus.Schema.Utils.Utils   (Type, TypeLib)
 import           Data.Morpheus.Types.Error          (MetaValidation, Validation)
 import           Data.Morpheus.Types.MetaInfo       (MetaInfo (..))
-import           Data.Morpheus.Types.Types          (GQLOperator (..), GQLQueryRoot (..),
+import           Data.Morpheus.Types.Query.Operator (Operator (..))
+import           Data.Morpheus.Types.Types          (Arguments, GQLQueryRoot (..),
                                                      QuerySelection (..), SelectionSet)
 import qualified Data.Set                           as S
 import           Data.Text                          (Text, pack)
@@ -54,19 +55,19 @@ checkDuplicates x =
     noDuplicates = S.toList . S.fromList
     meta duplicates = MetaInfo {typeName = "-- TODO: Error handling", key = pack $ show duplicates, position = 0}
 
-getOperationInfo :: GQLOperator -> (Text, QuerySelection)
-getOperationInfo (QueryOperator _ x)    = ("Query", x)
-getOperationInfo (MutationOperator _ x) = ("Mutation", x)
+getOperationInfo :: Operator -> (Text, Arguments, SelectionSet)
+getOperationInfo (Query _ args sel _)    = ("Query", args, sel)
+getOperationInfo (Mutation _ args sel _) = ("Mutation", args, sel)
 
-updateQuery :: GQLOperator -> QuerySelection -> GQLOperator
-updateQuery (QueryOperator name _)    = QueryOperator name
-updateQuery (MutationOperator name _) = MutationOperator name
+updateQuery :: Operator -> SelectionSet -> Operator
+updateQuery (Query name args _ pos) sel    = Query name args sel pos
+updateQuery (Mutation name args _ pos) sel = Mutation name args sel pos
 
-preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation GQLOperator
+preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation Operator
 preProcessQuery lib root = do
-  let (operator, SelectionSet args body pos) = getOperationInfo $ queryBody root
+  let (operator, args, sel) = getOperationInfo $ queryBody root
   validateVariables lib root args
   validateFragments lib root
   _type <- asSelectionValidation $ existsType operator lib
-  selectors <- mapSelectors lib root _type body
-  pure $ updateQuery (queryBody root) (SelectionSet [] selectors pos)
+  selectors <- mapSelectors lib root _type sel
+  pure $ updateQuery (queryBody root) selectors

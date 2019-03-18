@@ -35,9 +35,9 @@ import           Data.Morpheus.Schema.Utils.Utils    (TypeLib)
 import           Data.Morpheus.Types.Describer       ((::->) (Resolver), EnumOf (unpackEnum))
 import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType)
+import           Data.Morpheus.Types.Query.Operator  (Operator (..))
 import           Data.Morpheus.Types.Request         (GQLRequest (..))
 import           Data.Morpheus.Types.Response        (GQLResponse (..))
-import           Data.Morpheus.Types.Types           (GQLOperator (..))
 import           Data.Text                           (pack)
 
 data GQLRoot a b = GQLRoot
@@ -52,8 +52,8 @@ resolve :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO
 resolve rootResolver body = do
   rootGQL <- ExceptT $ pure (parseGQL body >>= preProcessQuery gqlSchema)
   case rootGQL of
-    QueryOperator _ selection    -> encodeQuery queryRes gqlSchema selection
-    MutationOperator _ selection -> encodeMutation mutationRes selection
+    Query _ args selection pos    -> encodeQuery queryRes gqlSchema selection
+    Mutation _ args selection pos -> encodeMutation mutationRes selection
   where
     gqlSchema = schema queryRes mutationRes
     queryRes = queryResolver rootResolver

@@ -82,6 +82,6 @@ instance (GQLInput a, Show a, Typeable a) => GQLInput (Maybe a) where
   introInput _ typeLib = typeLib
 
 instance (Show a, E.GQLEnum a) => GQLInput (EnumOf a) where
-  decode (JSEnum text) = pure $ EnumOf (E.decode (JSEnum text))
+  decode (JSEnum text) = pure $ EnumOf (E.decode text)
   typeInfo _ = E.enumType (Proxy @a)
   introInput _ = E.introspect (Proxy @a)

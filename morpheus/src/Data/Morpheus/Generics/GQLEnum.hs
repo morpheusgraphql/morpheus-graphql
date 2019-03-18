@@ -18,16 +18,16 @@ import qualified Data.Morpheus.Schema.Field             as F (createFieldWith)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import qualified Data.Morpheus.Schema.Utils.Utils       as I (Field, InputValue, TypeLib,
                                                               createEnum, createInputValue)
-import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Proxy                             (Proxy (..))
+import           Data.Text                              (Text)
 import qualified Data.Text                              as T
 import           GHC.Generics
 
 class GQLEnum a where
-  decode :: JSType -> a
+  decode :: Text -> a
   default decode :: (Show a, Generic a, D.Data a, GDecodeEnum (Rep a)) =>
-    JSType -> a
-  decode (JSEnum text) = to $ gToEnum text
+    Text -> a
+  decode text = to $ gToEnum text
   typeID :: Proxy a -> T.Text
   default typeID :: D.Typeable a =>
     Proxy a -> T.Text

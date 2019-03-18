@@ -22,7 +22,7 @@ import           Data.Morpheus.Schema.Utils.Utils       (Field, TypeLib, createF
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (initialMeta)
-import           Data.Morpheus.Types.Types              (QuerySelection (..))
+import           Data.Morpheus.Types.Types              (SelectionSet)
 
 import           Data.Proxy
 import           GHC.Generics
@@ -30,10 +30,10 @@ import           GHC.Generics
 type UpdateTypes = TypeLib -> TypeLib
 
 class GQLQuery a where
-  encodeQuery :: a -> TypeLib -> QuerySelection -> ResolveIO JSType
+  encodeQuery :: a -> TypeLib -> SelectionSet -> ResolveIO JSType
   default encodeQuery :: (Generic a, Data a, DeriveResolvers (Rep a), Show a) =>
-    a -> TypeLib -> QuerySelection -> ResolveIO JSType
-  encodeQuery rootResolver schema (SelectionSet _ sel _pos) = resolveBySelection sel $ schemaResolver ++ resolvers
+    a -> TypeLib -> SelectionSet -> ResolveIO JSType
+  encodeQuery rootResolver schema sel = resolveBySelection sel $ schemaResolver ++ resolvers
     where
       schemaResolver = [("__schema", (`encode` initSchema schema))]
       resolvers = deriveResolvers initialMeta $ from rootResolver
