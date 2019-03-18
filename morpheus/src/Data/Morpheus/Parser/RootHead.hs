@@ -2,12 +2,12 @@ module Data.Morpheus.Parser.RootHead
   ( rootHeadArguments
   ) where
 
-import           Data.Attoparsec.Text           (Parser, char, sepBy, skipSpace)
-import           Data.Morpheus.Parser.Primitive (getPosition, token, variable)
-import           Data.Morpheus.Types.Types      (Argument (..), Arguments)
-import           Data.Text                      (Text)
+import           Data.Attoparsec.Text                   (Parser, char, sepBy, skipSpace)
+import           Data.Morpheus.Parser.Primitive         (getPosition, token, variable)
+import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..), RawArguments)
+import           Data.Text                              (Text)
 
-rootHeadVariable :: Parser (Text, Argument)
+rootHeadVariable :: Parser (Text, RawArgument)
 rootHeadVariable = do
   skipSpace
   pos <- getPosition
@@ -18,7 +18,7 @@ rootHeadVariable = do
   variableType <- token
   pure (variableName, Variable variableType pos)
 
-rootHeadArguments :: Parser Arguments
+rootHeadArguments :: Parser RawArguments
 rootHeadArguments = do
   skipSpace
   _ <- char '('

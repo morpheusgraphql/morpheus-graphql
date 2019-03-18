@@ -2,33 +2,33 @@ module Data.Morpheus.Parser.Arguments
   ( arguments
   ) where
 
-import           Control.Applicative            ((<|>))
-import           Data.Attoparsec.Text           (Parser, char, sepBy, skipSpace)
-import           Data.Morpheus.Parser.Primitive (getPosition, jsBool, jsInt, jsString, token,
-                                                 variable)
-import           Data.Morpheus.Types.JSType     (JSType (JSEnum))
-import           Data.Morpheus.Types.Types      (Argument (..), Arguments)
-import           Data.Text                      (Text)
+import           Control.Applicative                    ((<|>))
+import           Data.Attoparsec.Text                   (Parser, char, sepBy, skipSpace)
+import           Data.Morpheus.Parser.Primitive         (getPosition, jsBool, jsInt, jsString,
+                                                         token, variable)
+import           Data.Morpheus.Types.JSType             (JSType (JSEnum))
+import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..), RawArguments)
+import           Data.Text                              (Text)
 
 enum :: Parser JSType
 enum = JSEnum <$> token
 
-argumentType :: Parser Argument
+argumentType :: Parser RawArgument
 argumentType = do
   pos <- getPosition
   arg <- enum <|> jsString <|> jsBool <|> jsInt
   pure $ Argument arg pos
 
-variableType :: Parser Argument
+variableType :: Parser RawArgument
 variableType = do
   pos <- getPosition
   val <- variable
   pure $ Variable val pos
 
-inputValue :: Parser Argument
+inputValue :: Parser RawArgument
 inputValue = skipSpace *> argumentType <|> variableType
 
-parameter :: Parser (Text, Argument)
+parameter :: Parser (Text, RawArgument)
 parameter = do
   skipSpace
   key <- token
@@ -38,7 +38,7 @@ parameter = do
   value <- inputValue
   pure (key, value)
 
-arguments :: Parser Arguments
+arguments :: Parser RawArguments
 arguments = do
   skipSpace
   _ <- char '('

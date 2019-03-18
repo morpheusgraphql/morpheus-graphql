@@ -5,21 +5,23 @@ module Data.Morpheus.PreProcess.Variable
   , replaceVariable
   ) where
 
-import qualified Data.Map                              as M
-import           Data.Morpheus.Error.Arguments         (unsupportedArgumentType)
-import           Data.Morpheus.Error.Variable          (variableIsNotDefined,
-                                                        variableValidationError)
-import           Data.Morpheus.PreProcess.Input.Object (validateInputVariable)
-import           Data.Morpheus.PreProcess.Utils        (existsType)
-import qualified Data.Morpheus.Schema.Type             as T (kind)
-import           Data.Morpheus.Schema.TypeKind         (TypeKind (..))
-import           Data.Morpheus.Schema.Utils.Utils      (TypeLib)
-import           Data.Morpheus.Types.Describer         (EnumOf (..))
-import           Data.Morpheus.Types.Error             (MetaValidation, Validation)
-import           Data.Morpheus.Types.JSType            (JSType (..))
-import           Data.Morpheus.Types.MetaInfo          (MetaInfo (..))
-import           Data.Morpheus.Types.Types             (Argument (..), GQLQueryRoot (..))
-import           Data.Text                             (Text)
+import qualified Data.Map                               as M
+import           Data.Morpheus.Error.Arguments          (unsupportedArgumentType)
+import           Data.Morpheus.Error.Variable           (variableIsNotDefined,
+                                                         variableValidationError)
+import           Data.Morpheus.PreProcess.Input.Object  (validateInputVariable)
+import           Data.Morpheus.PreProcess.Utils         (existsType)
+import qualified Data.Morpheus.Schema.Type              as T (kind)
+import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
+import           Data.Morpheus.Schema.Utils.Utils       (TypeLib)
+import           Data.Morpheus.Types.Describer          (EnumOf (..))
+import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
+import           Data.Morpheus.Types.JSType             (JSType (..))
+import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..))
+import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..))
+import qualified Data.Morpheus.Types.Query.Selection    as Valid (Argument (..))
+import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
+import           Data.Text                              (Text)
 
 asGQLError :: MetaValidation a -> Validation a
 asGQLError (Left err)    = Left $ variableValidationError err
@@ -33,7 +35,7 @@ getVariable pos root variableID =
   where
     meta = MetaInfo {typeName = "TODO: Name", key = variableID, position = pos}
 
-checkVariableType :: TypeLib -> GQLQueryRoot -> (Text, Argument) -> Validation (Text, Argument)
+checkVariableType :: TypeLib -> GQLQueryRoot -> (Text, RawArgument) -> Validation ()
 checkVariableType typeLib root (variableID, Variable tName pos) = asGQLError (existsType tName typeLib) >>= checkType
   where
     checkType _type =
@@ -45,13 +47,14 @@ checkVariableType typeLib root (variableID, Variable tName pos) = asGQLError (ex
     checkTypeInp _type inputKey = do
       variableValue <- getVariable pos root inputKey
       _ <- asGQLError (validateInputVariable typeLib _type (inputKey, variableValue))
-      pure (inputKey, Variable tName pos)
+      pure ()
+checkVariableType _ _ (_, Argument _ _) = pure ()
 
-validateVariables :: TypeLib -> GQLQueryRoot -> [(Text, Argument)] -> Validation ()
+validateVariables :: TypeLib -> GQLQueryRoot -> [(Text, RawArgument)] -> Validation ()
 validateVariables typeLib root = mapM_ (checkVariableType typeLib root)
 
-replaceVariable :: GQLQueryRoot -> Argument -> Validation Argument
+replaceVariable :: GQLQueryRoot -> RawArgument -> Validation Valid.Argument
 replaceVariable root (Variable variableID pos) = do
   value <- getVariable pos root variableID
-  pure $ Argument value pos
-replaceVariable _ a = pure a
+  pure $ Valid.Argument value pos
+replaceVariable _ (Argument value pos) = pure $ Valid.Argument value pos

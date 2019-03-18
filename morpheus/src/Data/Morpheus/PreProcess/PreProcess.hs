@@ -7,42 +7,46 @@ module Data.Morpheus.PreProcess.PreProcess
   ( preProcessQuery
   ) where
 
-import           Data.List                          ((\\))
-import           Data.Morpheus.Error.Selection      (cannotQueryField, selectionError)
-import           Data.Morpheus.Error.Utils          (toGQLError)
-import           Data.Morpheus.PreProcess.Arguments (validateArguments)
-import           Data.Morpheus.PreProcess.Fragment  (validateFragments)
-import           Data.Morpheus.PreProcess.Spread    (spreadFieldsWhile)
-import           Data.Morpheus.PreProcess.Utils     (existsType, fieldOf, fieldType)
-import           Data.Morpheus.PreProcess.Variable  (validateVariables)
-import           Data.Morpheus.Schema.Utils.Utils   (Type, TypeLib)
-import           Data.Morpheus.Types.Error          (MetaValidation, Validation)
-import           Data.Morpheus.Types.MetaInfo       (MetaInfo (..))
-import           Data.Morpheus.Types.Types          (GQLOperator (..), GQLQueryRoot (..),
-                                                     QuerySelection (..), SelectionSet)
-import qualified Data.Set                           as S
-import           Data.Text                          (Text, pack)
+import           Data.List                              ((\\))
+import           Data.Morpheus.Error.Internal           (internalError)
+import           Data.Morpheus.Error.Selection          (cannotQueryField, selectionError)
+import           Data.Morpheus.Error.Utils              (toGQLError)
+import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
+import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
+import           Data.Morpheus.PreProcess.Spread        (spreadFields)
+import           Data.Morpheus.PreProcess.Utils         (existsType, fieldOf, fieldType)
+import           Data.Morpheus.PreProcess.Variable      (validateVariables)
+import           Data.Morpheus.Schema.Utils.Utils       (Type, TypeLib)
+import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
+import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..))
+import           Data.Morpheus.Types.Query.Operator     (Operator (..), RawOperator, ValidOperator)
+import           Data.Morpheus.Types.Query.RawSelection (RawArguments, RawSelection (..),
+                                                         RawSelectionSet)
+import           Data.Morpheus.Types.Query.Selection    (Selection (..), SelectionSet)
+import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
+import qualified Data.Set                               as S
+import           Data.Text                              (Text, pack)
 
 asSelectionValidation :: MetaValidation a -> Validation a
 asSelectionValidation = toGQLError selectionError
 
-mapSelectors :: TypeLib -> GQLQueryRoot -> Type -> SelectionSet -> Validation SelectionSet
+mapSelectors :: TypeLib -> GQLQueryRoot -> Type -> RawSelectionSet -> Validation SelectionSet
 mapSelectors typeLib root _type selectors =
-  spreadFieldsWhile root selectors >>= checkDuplicates >>= mapM (validateBySchema typeLib root _type)
+  spreadFields root selectors >>= checkDuplicates >>= mapM (validateBySchema typeLib root _type)
 
-validateBySchema :: TypeLib -> GQLQueryRoot -> Type -> (Text, QuerySelection) -> Validation (Text, QuerySelection)
-validateBySchema typeLib root _parentType (sName, SelectionSet args selectors pos) = do
+validateBySchema :: TypeLib -> GQLQueryRoot -> Type -> (Text, RawSelection) -> Validation (Text, Selection)
+validateBySchema typeLib root _parentType (sName, RawSelectionSet args selectors pos) = do
   fieldSD <- asSelectionValidation $ fieldOf pos _parentType sName
   typeSD <- asSelectionValidation $ fieldType pos typeLib fieldSD
   headQS <- validateArguments typeLib root fieldSD args
   selectorsQS <- mapSelectors typeLib root typeSD selectors
   pure (sName, SelectionSet headQS selectorsQS pos)
-validateBySchema typeLib root _parentType (sName, Field args field pos) = do
+validateBySchema typeLib root _parentType (sName, RawField args field pos) = do
   fieldSD <- asSelectionValidation $ fieldOf pos _parentType sName
   _checksIfHasType <- asSelectionValidation $ fieldType pos typeLib fieldSD
-  head' <- validateArguments typeLib root fieldSD args
-  pure (sName, Field head' field pos)
-validateBySchema _ _ _ x = pure x
+  headQS <- validateArguments typeLib root fieldSD args
+  pure (sName, Field headQS field pos)
+validateBySchema _ _ _ (_, Spread _ _) = internalError "unresolved Spread"
 
 checkDuplicates :: [(Text, a)] -> Validation [(Text, a)]
 checkDuplicates x =
@@ -54,19 +58,19 @@ checkDuplicates x =
     noDuplicates = S.toList . S.fromList
     meta duplicates = MetaInfo {typeName = "-- TODO: Error handling", key = pack $ show duplicates, position = 0}
 
-getOperationInfo :: GQLOperator -> (Text, QuerySelection)
-getOperationInfo (QueryOperator _ x)    = ("Query", x)
-getOperationInfo (MutationOperator _ x) = ("Mutation", x)
+getOperationInfo :: RawOperator -> (Text, RawArguments, RawSelectionSet)
+getOperationInfo (Query _ args sel _)    = ("Query", args, sel)
+getOperationInfo (Mutation _ args sel _) = ("Mutation", args, sel)
 
-updateQuery :: GQLOperator -> QuerySelection -> GQLOperator
-updateQuery (QueryOperator name _)    = QueryOperator name
-updateQuery (MutationOperator name _) = MutationOperator name
+updateQuery :: RawOperator -> SelectionSet -> ValidOperator
+updateQuery (Query name _ _ pos) sel    = Query name [] sel pos -- TODO: real args
+updateQuery (Mutation name _ _ pos) sel = Mutation name [] sel pos -- TODO: real args
 
-preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation GQLOperator
+preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
 preProcessQuery lib root = do
-  let (operator, SelectionSet args body pos) = getOperationInfo $ queryBody root
+  let (operator, args, sel) = getOperationInfo $ queryBody root
   validateVariables lib root args
   validateFragments lib root
   _type <- asSelectionValidation $ existsType operator lib
-  selectors <- mapSelectors lib root _type body
-  pure $ updateQuery (queryBody root) (SelectionSet [] selectors pos)
+  selectors <- mapSelectors lib root _type sel
+  pure $ updateQuery (queryBody root) selectors

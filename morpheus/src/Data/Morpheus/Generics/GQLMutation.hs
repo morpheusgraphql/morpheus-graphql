@@ -21,17 +21,15 @@ import           Data.Morpheus.Schema.Utils.Utils       (Field, TypeLib, createT
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (initialMeta)
-import           Data.Morpheus.Types.Types              (QuerySelection (..))
-
+import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
 import           Data.Proxy
 import           GHC.Generics
 
 class GQLMutation a where
-  encodeMutation :: a -> QuerySelection -> ResolveIO JSType
+  encodeMutation :: a -> SelectionSet -> ResolveIO JSType
   default encodeMutation :: (Generic a, Data a, DeriveResolvers (Rep a), Show a) =>
-    a -> QuerySelection -> ResolveIO JSType
-  encodeMutation rootResolver (SelectionSet _ sel _pos) =
-    resolveBySelection sel $ deriveResolvers initialMeta $ from rootResolver
+    a -> SelectionSet -> ResolveIO JSType
+  encodeMutation rootResolver sel = resolveBySelection sel $ deriveResolvers initialMeta $ from rootResolver
   mutationSchema :: a -> TypeLib
   default mutationSchema :: (Generic a, Data a) =>
     a -> TypeLib

@@ -20,6 +20,8 @@ dependencies:
   - mtl
   - transformers
   - scientific
+  - vector
+
 
 library:
   source-dirs: src
@@ -44,4 +46,5 @@ library:
       -fwarn-unrecognised-pragmas
       -Wunused-do-bind
       -fwarn-name-shadowing
+      -fwarn-incomplete-patterns
       -Werror

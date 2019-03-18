@@ -15,7 +15,7 @@ module Data.Morpheus.Generics.GQLSelection
 import           Control.Monad.Trans.Except
 import qualified Data.Data                              as D
 import qualified Data.Map                               as M
-import           Data.Morpheus.Error.Error              (handleError)
+import           Data.Morpheus.Error.Internal           (internalUndefinedResolver)
 import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import qualified Data.Morpheus.Generics.GQLArgs         as Args (GQLArgs (..))
@@ -33,7 +33,7 @@ import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
-import           Data.Morpheus.Types.Types              (QuerySelection (..))
+import           Data.Morpheus.Types.Query.Selection    (Selection (..))
 import           Data.Proxy
 import qualified Data.Text                              as T
 import           GHC.Generics
@@ -47,9 +47,9 @@ instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (RecSel s a) Fi
       name = T.pack $ selName (undefined :: SelOf s)
 
 class GQLSelection a where
-  encode :: QuerySelection -> a -> ResolveIO JSType
+  encode :: Selection -> a -> ResolveIO JSType
   default encode :: (Generic a, D.Data a, DeriveResolvers (Rep a), Show a) =>
-    QuerySelection -> a -> ResolveIO JSType
+    Selection -> a -> ResolveIO JSType
   encode (SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers Meta.initialMeta . from
   encode (Field _ key pos) = \_ -> failResolveIO $ subfieldsNotSelected meta
     where
@@ -77,24 +77,16 @@ class GQLSelection a where
       stack = map snd fieldTypes
       gqlFields = map fst fieldTypes
 
-getType :: (GQLSelection a, Args.GQLArgs p) => (p ::-> a) -> (p ::-> a)
-getType _ = TypeHolder Nothing
-
-resolve ::
-     (Show a, Show p, GQLSelection a, Args.GQLArgs p) => QuerySelection -> p ::-> a -> p ::-> a -> ResolveIO JSType
-resolve (SelectionSet gqlArgs body pos) (TypeHolder args) (Resolver resolver) =
-  (ExceptT $ pure $ Args.decode gqlArgs args) >>= resolver >>= encode (SelectionSet gqlArgs body pos)
-resolve (Field gqlArgs field pos) (TypeHolder args) (Resolver resolver) =
-  (ExceptT $ pure $ Args.decode gqlArgs args) >>= resolver >>= encode (Field gqlArgs field pos)
-resolve query _ (Some value) = encode query value
-resolve _ _ None = ExceptT $ pure $ handleError "resolver not implemented"
+resolve :: (Show a, Show p, GQLSelection a, Args.GQLArgs p) => Selection -> p ::-> a -> ResolveIO JSType
+resolve (SelectionSet gqlArgs body pos) (Resolver resolver) =
+  (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (SelectionSet gqlArgs body pos)
+resolve (Field gqlArgs field pos) (Resolver resolver) =
+  (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (Field gqlArgs field pos)
+resolve query (Some value) = encode query value
+resolve _ None = ExceptT $ pure $ internalUndefinedResolver "resolver not implemented"
 
 instance (Show a, Show p, GQLSelection a, Args.GQLArgs p, D.Typeable (p ::-> a)) => GQLSelection (p ::-> a) where
-  encode (SelectionSet args body pos) field = resolve (SelectionSet args body pos) (getType field) field
-  encode (Field args body pos) field = resolve (Field args body pos) (getType field) field
-  encode x (Resolver f) = resolve x (getType (Resolver f)) (Resolver f)
-  encode x (Some a) = encode x a
-  encode _ None = pure JSNull
+  encode = resolve
   introspect _ typeLib = resolveTypes typeLib $ args ++ fields
     where
       args = map snd $ Args.introspect (Proxy :: Proxy p)
