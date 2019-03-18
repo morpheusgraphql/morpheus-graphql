@@ -34,9 +34,8 @@ instance (Selector s, D.Typeable a, I.GQLInput a) => Selectors (RecSel s a) Inpu
 instance I.GQLInput a => GDecode Arguments (K1 i a) where
   gDecode meta args =
     case lookup (key meta) args of
-      Nothing                -> internalArgumentError "Required"
+      Nothing                -> internalArgumentError "Required Argument Not Found"
       Just (Argument x _pos) -> K1 <$> I.decode x
-      Just _                 -> internalArgumentError "typeMismatch"
 
 class GQLArgs p where
   decode :: Arguments -> Validation p
