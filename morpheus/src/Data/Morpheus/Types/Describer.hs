@@ -8,7 +8,6 @@ module Data.Morpheus.Types.Describer
   , EnumOf(..)
   ) where
 
-import           Data.Aeson                (ToJSON (..), Value (Null))
 import           Data.Data                 (Constr, Data, DataType, Fixity (Prefix), dataTypeOf,
                                             gfoldl, gunfold, mkConstr, mkDataType, toConstr)
 import           Data.Morpheus.Types.Error (ResolveIO)
@@ -38,8 +37,3 @@ conResolved = mkConstr tyResolver "Resolved" [] Prefix
 
 tyResolver :: DataType
 tyResolver = mkDataType "Module.Resolver" [conResolved]
-
-instance (ToJSON o) => ToJSON (p ::-> o) where
-  toJSON (Resolved o) = toJSON o
-  toJSON Resolver {}  = Null
-                            -- should not be called at all
