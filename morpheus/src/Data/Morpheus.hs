@@ -72,7 +72,7 @@ interpreter rootResolver request = do
     Left x  -> pure $ Errors $ renderErrors (lineBreaks request) x
     Right x -> pure $ Data x
 
-eitherToResponse :: (a -> a) -> Either String a -> ResolveIO a
+eitherToResponse :: (a -> b) -> Either String a -> ResolveIO b
 eitherToResponse _ (Left x)  = failResolveIO $ errorMessage 0 (pack $ show x)
 eitherToResponse f (Right x) = pure (f x)
 
