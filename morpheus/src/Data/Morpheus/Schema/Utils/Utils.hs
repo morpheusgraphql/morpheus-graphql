@@ -42,11 +42,11 @@ createInputObject iName iFields =
     { kind = EnumOf INPUT_OBJECT
     , name = iName
     , description = ""
-    , fields = Some iFields
+    , fields = Resolved iFields
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Some []
+    , enumValues = Resolved []
     , inputFields = []
     }
 
@@ -56,11 +56,11 @@ createType tName tFields =
     { kind = EnumOf OBJECT
     , name = tName
     , description = ""
-    , fields = Some tFields
+    , fields = Resolved tFields
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Some []
+    , enumValues = Resolved []
     , inputFields = []
     }
 
@@ -70,11 +70,11 @@ createScalar sName =
     { kind = EnumOf SCALAR
     , name = sName
     , description = ""
-    , fields = Some []
+    , fields = Resolved []
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Some []
+    , enumValues = Resolved []
     , inputFields = []
     }
 
@@ -84,11 +84,11 @@ createEnum eName tags =
     { kind = EnumOf ENUM
     , name = eName
     , description = ""
-    , fields = Some []
+    , fields = Resolved []
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Some $ map createEnumValue tags
+    , enumValues = Resolved $ map createEnumValue tags
     , inputFields = []
     }
 
@@ -98,11 +98,11 @@ wrapListType contentType =
     { kind = EnumOf LIST
     , name = ""
     , description = ""
-    , fields = Some []
+    , fields = Resolved []
     , ofType = Just contentType
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Some []
+    , enumValues = Resolved []
     , inputFields = []
     }
 

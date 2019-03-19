@@ -81,7 +81,7 @@ resolve (SelectionSet gqlArgs body pos) (Resolver resolver) =
   (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (SelectionSet gqlArgs body pos)
 resolve (Field gqlArgs field pos) (Resolver resolver) =
   (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (Field gqlArgs field pos)
-resolve query (Some value) = encode query value
+resolve query (Resolved value) = encode query value
 
 instance (Show a, Show p, GQLSelection a, Args.GQLArgs p, D.Typeable (p ::-> a)) => GQLSelection (p ::-> a) where
   encode = resolve
