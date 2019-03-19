@@ -27,7 +27,7 @@ data JSONAddress = JSONAddress
   } deriving (Generic, Show, FromJSON)
 
 jsonUser :: IO (Either String JSONUser)
-jsonUser = getJson "address"
+jsonUser = getJson "user"
 
 jsonAddress :: IO (Either String JSONAddress)
 jsonAddress = getJson "address"
