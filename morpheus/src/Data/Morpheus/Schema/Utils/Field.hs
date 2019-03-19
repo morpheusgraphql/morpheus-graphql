@@ -18,8 +18,8 @@ import           Data.Text                        (Text)
 fieldByKey :: Text -> Type -> Maybe Field
 fieldByKey key gqlType =
   case T.fields gqlType of
-    Some fields -> find (\x -> key == F.name x) fields
-    _           -> Nothing
+    Resolved fields -> find (\x -> key == F.name x) fields
+    _               -> Nothing
 
 argsByKey :: Text -> Type -> Maybe [InputValue]
 argsByKey key gqlType = F.args <$> fieldByKey key gqlType

@@ -10,21 +10,17 @@ module Example.Schema
   ) where
 
 import           Control.Monad.Trans        (lift)
-import           Data.Aeson                 (FromJSON)
 import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Data                  (Data)
-import           Data.Either
 import           Data.Maybe                 (fromMaybe)
-import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum),
-                                             GQLArgs, GQLEnum, GQLInput,
-                                             GQLMutation, GQLQuery, GQLRequest,
-                                             GQLResponse, GQLRoot (..),
-                                             GQLSelection, NoMutation (..),
-                                             ResolveIO (..), eitherToResponse,
-                                             interpreter)
-import           Data.Text                  (Text, pack, unpack)
+import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLArgs, GQLEnum,
+                                             GQLInput, GQLMutation, GQLQuery, GQLResponse,
+                                             GQLRoot (..), GQLSelection, ResolveIO,
+                                             eitherToResponse, interpreter)
+import           Data.Text                  (Text, pack)
 import qualified Data.Text                  as T (concat)
-import           Example.Files              (getJson)
+import qualified Example.Model              as M (JSONAddress (..), JSONUser (..), jsonAddress,
+                                                  jsonUser)
 import           GHC.Generics               (Generic)
 
 data CityID
@@ -53,7 +49,7 @@ data Address = Address
   , street      :: Text
   , houseNumber :: Int
   , owner       :: Maybe User
-  } deriving (Generic, Show, GQLSelection, Data, FromJSON)
+  } deriving (Generic, Show, GQLSelection, Data)
 
 data User = User
   { name    :: Text
@@ -62,46 +58,69 @@ data User = User
   , office  :: Location ::-> Address
   , friend  :: Maybe User
   , home    :: Maybe Address
-  } deriving (Show, Generic, Data, GQLSelection, FromJSON)
+  } deriving (Show, Generic, Data, GQLSelection)
 
 newtype Query = Query
   { user :: () ::-> User
-  } deriving (Show, Generic, Data, GQLQuery, FromJSON)
+  } deriving (Show, Generic, Data, GQLQuery)
 
 newtype Mutation = Mutation
   { createUser :: LocationByCoordinates ::-> User
-  } deriving (Show, Generic, Data, GQLMutation, FromJSON)
+  } deriving (Show, Generic, Data, GQLMutation)
 
 fetchAddress :: Text -> Text -> ResolveIO Address
-fetchAddress cityName streetName = lift (getJson "address") >>= eitherToResponse modify
+fetchAddress cityName streetName = lift M.jsonAddress >>= eitherToResponse modify
   where
-    modify address = address {city = T.concat [cityName, " ", city address], street = streetName}
+    modify mAddress =
+      Address
+        { city = T.concat [cityName, " ", M.city mAddress]
+        , houseNumber = M.houseNumber mAddress
+        , street = streetName
+        , owner = Nothing
+        }
 
 resolveAddress :: LocationByCoordinates ::-> Address
-resolveAddress = Resolver resolve
+resolveAddress = Resolver res
   where
-    resolve args = fetchAddress (latitude $ coordinates args) (pack $ show $ longitude $ coordinates args)
+    res args = fetchAddress (latitude $ coordinates args) (pack $ show $ longitude $ coordinates args)
 
+addressByCityID :: CityID -> String -> ResolveIO Address
 addressByCityID Paris code = fetchAddress (pack $ "75" ++ code) "Paris"
 addressByCityID BLN code   = fetchAddress (pack $ "10" ++ code) "Berlin"
 addressByCityID HH code    = fetchAddress (pack $ "20" ++ code) "Hamburg"
 
-resolveOffice :: User -> Location ::-> Address
-resolveOffice user = Resolver resolve
+resolveOffice :: M.JSONUser -> Location ::-> Address
+resolveOffice _ = Resolver resolve'
   where
-    resolve args = addressByCityID (unpackEnum $ cityID args) (show $ fromMaybe 101 (zipCode args))
+    resolve' args = addressByCityID (unpackEnum $ cityID args) (show $ fromMaybe 101 (zipCode args))
 
 resolveUser :: () ::-> User
-resolveUser = Resolver resolve
+resolveUser = Resolver resolve'
   where
-    resolve _ = lift (getJson "user") >>= eitherToResponse modify
-    modify user = user {address = resolveAddress, office = resolveOffice user}
+    resolve' _ = lift M.jsonUser >>= eitherToResponse modify
+    modify user' =
+      User
+        { name = M.name user'
+        , email = M.email user'
+        , address = resolveAddress
+        , office = resolveOffice user'
+        , home = Nothing
+        , friend = Nothing
+        }
 
 createUserMutation :: LocationByCoordinates ::-> User
-createUserMutation = Resolver resolve
+createUserMutation = Resolver resolve'
   where
-    resolve _ = lift (getJson "user") >>= eitherToResponse modify
-    modify user = user {address = resolveAddress, office = resolveOffice user}
+    resolve' _ = lift M.jsonUser >>= eitherToResponse modify
+    modify user' =
+      User
+        { name = M.name user'
+        , email = M.email user'
+        , address = resolveAddress
+        , office = resolveOffice user'
+        , home = Nothing
+        , friend = Nothing
+        }
 
 resolve :: B.ByteString -> IO GQLResponse
 resolve =
