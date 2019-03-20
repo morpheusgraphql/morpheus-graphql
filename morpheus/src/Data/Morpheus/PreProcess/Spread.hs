@@ -43,18 +43,5 @@ convertTo root (key_, RawSelectionSet _ selectors pos_) = do
 convertTo root (spreadID, Spread _ location) = validateSpread root location spreadID
 convertTo _ (sName, RawField _ field pos_) = pure [(sName, Field [] field pos_)]
 
-resolveSpread :: GQLQueryRoot -> (Text, Selection) -> (Text, RawSelection) -> Validation (Text, Selection)
-resolveSpread root parent (sName, RawSelectionSet _ selectors pos_)
-  -- headQS <- validateArguments typeLib root fieldSD args
- = do
-  selectorsQS <- mapFields root parent selectors
-  pure (sName, SelectionSet [] selectorsQS pos_)
-resolveSpread _ _ (sName, RawField _ field pos_) = pure (sName, Field [] field pos_)
-  --headQS <- validateArguments typeLib root fieldSD args
-resolveSpread root parent (spreadID, Spread _ location) =
-  validateSpread root (fragments root) location spreadID >>= checkUpdate
-  where
-    checkUpdate x =
-      if shouldSpread x
-        then mapFields root parent x
-        else pure x
+resolveSpread :: GQLQueryRoot -> RawSelectionSet -> Validation SelectionSet
+resolveSpread root sel = concat <$> mapM (convertTo root) sel
