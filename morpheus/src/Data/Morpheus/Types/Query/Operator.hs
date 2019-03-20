@@ -13,12 +13,12 @@ type ValidOperator = Operator Arguments SelectionSet
 
 type RawOperator = Operator RawArguments RawSelectionSet
 
-data Operator a b
+data Operator args sel
   = Query Key
-          a
-          b
+          args
+          sel
           Position
   | Mutation Key
-             a
-             b
+             args
+             sel
              Position

@@ -1,46 +1,38 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.PreProcess.Spread
-  ( spreadFields
+  ( prepareRawSelection
   ) where
 
-import           Data.List                              (find)
 import qualified Data.Map                               as M (lookup)
 import           Data.Morpheus.Error.Fragment           (unknownFragment)
+import           Data.Morpheus.PreProcess.Arguments     (onlyResolveArguments)
 import           Data.Morpheus.Types.Error              (Validation)
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), Position)
-import           Data.Morpheus.Types.Query.Fragment     (Fragment (..), FragmentLib)
+import           Data.Morpheus.Types.Query.Fragment     (Fragment (..))
 import           Data.Morpheus.Types.Query.RawSelection (RawSelection (..), RawSelectionSet)
+import           Data.Morpheus.Types.Query.Selection    (Selection (..), SelectionSet)
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Text                              (Text)
 
-shouldSpread :: RawSelectionSet -> Bool
-shouldSpread list =
-  case find isFragment list of
-    Just _  -> True
-    Nothing -> False
-
-isFragment :: (Text, RawSelection) -> Bool
-isFragment (_key, Spread _ _) = True
-isFragment (_key, _)          = False
-
-validateSpread :: GQLQueryRoot -> FragmentLib -> Meta.Position -> Text -> Validation RawSelectionSet
-validateSpread _root frags location spreadID =
-  case M.lookup spreadID frags of
-    Nothing                             -> Left $ unknownFragment metaData
-    Just Fragment {content = selection} -> pure selection
+-- TODO :: add on type validation as in fragment
+selectionSetFromSpread :: GQLQueryRoot -> Meta.Position -> Text -> Validation SelectionSet
+selectionSetFromSpread _root location spreadID =
+  case M.lookup spreadID (fragments _root) of
+    Nothing -> Left $ unknownFragment metaData
+    Just Fragment {content = selection} -> concat <$> mapM (replaceVariableAndSpread _root) selection
   where
     metaData = Meta.MetaInfo {Meta.typeName = "", Meta.key = spreadID, Meta.position = location}
 
-propagateSpread :: GQLQueryRoot -> (Text, RawSelection) -> Validation RawSelectionSet
-propagateSpread root (spreadID, Spread _ location) =
-  validateSpread root (fragments root) location spreadID >>= checkUpdate
-  where
-    checkUpdate x =
-      if shouldSpread x
-        then spreadFields root x
-        else pure x
-propagateSpread _ value = pure [value]
+replaceVariableAndSpread :: GQLQueryRoot -> (Text, RawSelection) -> Validation SelectionSet
+replaceVariableAndSpread root (sKey, RawSelectionSet rawArgs rawSelectors sPos) = do
+  sel <- concat <$> mapM (replaceVariableAndSpread root) rawSelectors
+  args <- onlyResolveArguments root rawArgs
+  pure [(sKey, SelectionSet args sel sPos)]
+replaceVariableAndSpread root (sKey, RawField rawArgs field sPos) = do
+  args <- onlyResolveArguments root rawArgs
+  pure [(sKey, Field args field sPos)]
+replaceVariableAndSpread root (spreadID, Spread _ sPos) = selectionSetFromSpread root sPos spreadID
 
-spreadFields :: GQLQueryRoot -> RawSelectionSet -> Validation RawSelectionSet
-spreadFields root selectors = concat <$> mapM (propagateSpread root) selectors
+prepareRawSelection :: GQLQueryRoot -> RawSelectionSet -> Validation SelectionSet
+prepareRawSelection root sel = concat <$> mapM (replaceVariableAndSpread root) sel

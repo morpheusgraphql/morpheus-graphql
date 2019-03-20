@@ -56,7 +56,7 @@ data User = User
   , email   :: Text
   , address :: LocationByCoordinates ::-> Address
   , office  :: Location ::-> Address
-  , friend  :: Maybe User
+  , friend  :: () ::-> Maybe User
   , home    :: Maybe Address
   } deriving (Show, Generic, Data, GQLSelection)
 
@@ -105,7 +105,7 @@ resolveUser = Resolver resolve'
         , address = resolveAddress
         , office = resolveOffice user'
         , home = Nothing
-        , friend = Nothing
+        , friend = Resolver $ \_ -> pure Nothing
         }
 
 createUserMutation :: LocationByCoordinates ::-> User
@@ -119,7 +119,7 @@ createUserMutation = Resolver resolve'
         , address = resolveAddress
         , office = resolveOffice user'
         , home = Nothing
-        , friend = Nothing
+        , friend = Resolver $ \_ -> pure Nothing
         }
 
 resolve :: B.ByteString -> IO GQLResponse

@@ -1,5 +1,7 @@
 module Data.Morpheus.PreProcess.Arguments
   ( validateArguments
+  , resolveArguments
+  , onlyResolveArguments
   ) where
 
 import           Data.List                              ((\\))
@@ -27,33 +29,37 @@ asGQLError (Left err)    = Left $ argumentError err
 asGQLError (Right value) = pure value
 
 -- TODO: Validate other Types , type missmatch
-checkArgumentType :: TypeLib -> Text -> Argument -> Validation Argument
-checkArgumentType typeLib typeName argument = asGQLError (existsType typeName typeLib) >>= checkType
+checkArgumentType :: TypeLib -> Text -> (Text, Argument) -> Validation (Text, Argument)
+checkArgumentType typeLib typeName (aKey, argument) = asGQLError (existsType typeName typeLib) >>= checkType
   where
     checkType _type =
       case T.kind _type of
-        EnumOf ENUM -> validateEnum _type argument
+        EnumOf ENUM -> validateEnum _type argument >>= \x -> pure (aKey, x)
        -- INPUT_OBJECT is already validated
-        _           -> pure argument
+        _           -> pure (aKey, argument)
 
-validateArgument :: TypeLib -> GQLQueryRoot -> Raw.RawArguments -> InputValue -> Validation (Text, Argument)
-validateArgument types root requestArgs inpValue =
+validateArgument :: TypeLib -> Arguments -> InputValue -> Validation (Text, Argument)
+validateArgument types requestArgs inpValue =
   case lookup (I.name inpValue) requestArgs of
     Nothing ->
       if I.isRequired inpValue
         then Left $ requiredArgument (I.inputValueMeta 0 inpValue)
         else pure (key, Argument JSNull 0)
-    Just x -> replaceVariable root x >>= checkArgumentType types (UI.typeName inpValue) >>= validated
+    Just x -> checkArgumentType types (UI.typeName inpValue) (key, x)
   where
     key = I.name inpValue
-    validated x = pure (key, x)
 
-checkForUnknownArguments :: Field -> Raw.RawArguments -> Validation [InputValue]
+onlyResolveArguments :: GQLQueryRoot -> Raw.RawArguments -> Validation Arguments
+onlyResolveArguments root = mapM (replaceVariable root)
+
+checkForUnknownArguments :: Field -> [(Text, a)] -> Validation [InputValue]
 checkForUnknownArguments field args =
   case map fst args \\ map I.name (F.args field) of
     []          -> pure $ F.args field
     unknownArgs -> Left $ unknownArguments (F.name field) unknownArgs
 
-validateArguments :: TypeLib -> GQLQueryRoot -> Field -> Raw.RawArguments -> Validation Arguments
-validateArguments typeLib root inputs args =
-  checkForUnknownArguments inputs args >>= mapM (validateArgument typeLib root args)
+resolveArguments :: TypeLib -> GQLQueryRoot -> Field -> Raw.RawArguments -> Validation Arguments
+resolveArguments typeLib root inputs args = onlyResolveArguments root args >>= validateArguments typeLib inputs
+
+validateArguments :: TypeLib -> Field -> Arguments -> Validation Arguments
+validateArguments typeLib inputs args = checkForUnknownArguments inputs args >>= mapM (validateArgument typeLib args)
