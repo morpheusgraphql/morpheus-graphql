@@ -59,8 +59,8 @@ getOperationInfo (Query _ args sel _)    = ("Query", args, sel)
 getOperationInfo (Mutation _ args sel _) = ("Mutation", args, sel)
 
 updateQuery :: RawOperator -> SelectionSet -> ValidOperator
-updateQuery (Query name _ _ pos) sel    = Query name [] sel pos -- TODO: real args
-updateQuery (Mutation name _ _ pos) sel = Mutation name [] sel pos -- TODO: real args
+updateQuery (Query name _ _ pos) sel    = Query name [] sel pos
+updateQuery (Mutation name _ _ pos) sel = Mutation name [] sel pos
 
 preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
 preProcessQuery lib root = do
