@@ -9,7 +9,7 @@ import           Data.Morpheus.Error.Fragment           (cycleOnFragment, fragme
                                                          unknownFragment, unsupportedSpreadOnType)
 import           Data.Morpheus.Error.Selection          (selectionError)
 import           Data.Morpheus.Error.Utils              (toGQLError)
-import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
+import           Data.Morpheus.PreProcess.Arguments     (resolveArguments)
 import           Data.Morpheus.PreProcess.Utils         (existsType, fieldOf, fieldType)
 import qualified Data.Morpheus.Schema.Type              as T (name)
 import           Data.Morpheus.Schema.Utils.Utils       (Type, TypeLib)
@@ -50,15 +50,15 @@ getSpreadType frags _type fragmentID = getFragment (spread "") fragmentID frags 
     parent = Meta.MetaInfo {Meta.typeName = T.name _type, Meta.key = "", Meta.position = 0}
     spread name = Meta.MetaInfo {Meta.typeName = name, Meta.key = fragmentID, Meta.position = 0}
 
-validateFragmentFields :: TypeLib -> GQLQueryRoot -> Type -> (Text,RawSelection) -> Validation Graph
+validateFragmentFields :: TypeLib -> GQLQueryRoot -> Type -> (Text, RawSelection) -> Validation Graph
 validateFragmentFields typeLib root _parent (name', RawSelectionSet args selectors pos_) = do
   fieldSC <- asSelectionValidation $ fieldOf pos_ _parent name'
   typeSC <- asGQLError $ fieldType pos_ typeLib fieldSC
-  _ <- validateArguments typeLib root fieldSC args
+  _ <- resolveArguments typeLib root fieldSC args -- TODO do not use heavy validation
   concat <$> mapM (validateFragmentFields typeLib root typeSC) selectors
 validateFragmentFields typeLib root _parentType (_name, RawField args _ pos_) = do
   _field <- asSelectionValidation $ fieldOf pos_ _parentType _name
-  _ <- validateArguments typeLib root _field args
+  _ <- resolveArguments typeLib root _field args -- TODO do not use heavy validation
   pure []
 validateFragmentFields _ root _parent (spreadID, Spread value _) =
   getSpreadType (fragments root) _parent spreadID >> pure [value]

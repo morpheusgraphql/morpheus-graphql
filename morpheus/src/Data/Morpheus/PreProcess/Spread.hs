@@ -6,6 +6,7 @@ module Data.Morpheus.PreProcess.Spread
 
 import qualified Data.Map                               as M (lookup)
 import           Data.Morpheus.Error.Fragment           (unknownFragment)
+import           Data.Morpheus.PreProcess.Arguments     (onlyResolveArguments)
 import           Data.Morpheus.Types.Error              (Validation)
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), Position)
 import           Data.Morpheus.Types.Query.Fragment     (Fragment (..))
@@ -25,11 +26,14 @@ validateSpread _root location spreadID =
     metaData = Meta.MetaInfo {Meta.typeName = "", Meta.key = spreadID, Meta.position = location}
 
 convertTo :: GQLQueryRoot -> (Text, RawSelection) -> Validation SelectionSet
-convertTo root (key_, RawSelectionSet _ selectors pos_) = do
-  list <- mapM (convertTo root) selectors
-  pure [(key_, SelectionSet [] (concat list) pos_)]
-convertTo root (spreadID, Spread _ location) = validateSpread root location spreadID
-convertTo _ (sName, RawField _ field pos_) = pure [(sName, Field [] field pos_)]
+convertTo root (sKey, RawSelectionSet rawArgs rawSelectors sPos) = do
+  sel <- concat <$> mapM (convertTo root) rawSelectors
+  args <- onlyResolveArguments root rawArgs
+  pure [(sKey, SelectionSet args sel sPos)]
+convertTo root (sKey, RawField rawArgs field sPos) = do
+  args <- onlyResolveArguments root rawArgs
+  pure [(sKey, Field args field sPos)]
+convertTo root (spreadID, Spread _ sPos) = validateSpread root sPos spreadID
 
 resolveSpread :: GQLQueryRoot -> RawSelectionSet -> Validation SelectionSet
 resolveSpread root sel = concat <$> mapM (convertTo root) sel

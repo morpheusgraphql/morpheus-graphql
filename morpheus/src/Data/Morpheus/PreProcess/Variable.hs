@@ -53,8 +53,8 @@ checkVariableType _ _ (_, Argument _ _) = pure ()
 validateVariables :: TypeLib -> GQLQueryRoot -> [(Text, RawArgument)] -> Validation ()
 validateVariables typeLib root = mapM_ (checkVariableType typeLib root)
 
-replaceVariable :: GQLQueryRoot -> RawArgument -> Validation Valid.Argument
-replaceVariable root (Variable variableID pos) = do
+replaceVariable :: GQLQueryRoot -> (Text, RawArgument) -> Validation (Text, Valid.Argument)
+replaceVariable root (vKey, Variable variableID pos) = do
   value <- getVariable pos root variableID
-  pure $ Valid.Argument value pos
-replaceVariable _ (Argument value pos) = pure $ Valid.Argument value pos
+  pure (vKey, Valid.Argument value pos)
+replaceVariable _ (vKey, Argument value pos) = pure (vKey, Valid.Argument value pos)

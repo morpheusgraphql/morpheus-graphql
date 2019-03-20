@@ -119,7 +119,7 @@ createUserMutation = Resolver resolve'
         , address = resolveAddress
         , office = resolveOffice user'
         , home = Nothing
-        , friend = Nothing
+        , friend = Resolver $ \_ -> pure Nothing
         }
 
 resolve :: B.ByteString -> IO GQLResponse
