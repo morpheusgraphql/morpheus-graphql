@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.PreProcess.Spread
-  ( resolveSpread
+  ( prepareRawSelection
   ) where
 
 import qualified Data.Map                               as M (lookup)
@@ -15,25 +15,24 @@ import           Data.Morpheus.Types.Query.Selection    (Selection (..), Selecti
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Text                              (Text)
 
-validateSpread :: GQLQueryRoot -> Meta.Position -> Text -> Validation SelectionSet
-validateSpread _root location spreadID =
+-- TODO :: add on type validation as in fragment
+selectionSetFromSpread :: GQLQueryRoot -> Meta.Position -> Text -> Validation SelectionSet
+selectionSetFromSpread _root location spreadID =
   case M.lookup spreadID (fragments _root) of
     Nothing -> Left $ unknownFragment metaData
-    Just Fragment {content = selection} -> do
-      list <- mapM (convertTo _root) selection
-      pure (concat list)
+    Just Fragment {content = selection} -> concat <$> mapM (replaceVariableAndSpread _root) selection
   where
     metaData = Meta.MetaInfo {Meta.typeName = "", Meta.key = spreadID, Meta.position = location}
 
-convertTo :: GQLQueryRoot -> (Text, RawSelection) -> Validation SelectionSet
-convertTo root (sKey, RawSelectionSet rawArgs rawSelectors sPos) = do
-  sel <- concat <$> mapM (convertTo root) rawSelectors
+replaceVariableAndSpread :: GQLQueryRoot -> (Text, RawSelection) -> Validation SelectionSet
+replaceVariableAndSpread root (sKey, RawSelectionSet rawArgs rawSelectors sPos) = do
+  sel <- concat <$> mapM (replaceVariableAndSpread root) rawSelectors
   args <- onlyResolveArguments root rawArgs
   pure [(sKey, SelectionSet args sel sPos)]
-convertTo root (sKey, RawField rawArgs field sPos) = do
+replaceVariableAndSpread root (sKey, RawField rawArgs field sPos) = do
   args <- onlyResolveArguments root rawArgs
   pure [(sKey, Field args field sPos)]
-convertTo root (spreadID, Spread _ sPos) = validateSpread root sPos spreadID
+replaceVariableAndSpread root (spreadID, Spread _ sPos) = selectionSetFromSpread root sPos spreadID
 
-resolveSpread :: GQLQueryRoot -> RawSelectionSet -> Validation SelectionSet
-resolveSpread root sel = concat <$> mapM (convertTo root) sel
+prepareRawSelection :: GQLQueryRoot -> RawSelectionSet -> Validation SelectionSet
+prepareRawSelection root sel = concat <$> mapM (replaceVariableAndSpread root) sel

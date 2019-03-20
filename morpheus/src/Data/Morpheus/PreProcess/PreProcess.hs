@@ -12,7 +12,7 @@ import           Data.Morpheus.Error.Selection          (cannotQueryField, selec
 import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
-import           Data.Morpheus.PreProcess.Spread        (resolveSpread)
+import           Data.Morpheus.PreProcess.Spread        (prepareRawSelection)
 import           Data.Morpheus.PreProcess.Utils         (existsType, fieldOf, fieldType)
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
 import           Data.Morpheus.Schema.Utils.Utils       (Type, TypeLib)
@@ -68,6 +68,6 @@ preProcessQuery lib root = do
   validateVariables lib root args
   validateFragments lib root
   _type <- asSelectionValidation $ existsType operator lib
-  sel <- resolveSpread root rawSel
+  sel <- prepareRawSelection root rawSel
   selectors <- mapSelectors lib _type sel
   pure $ updateQuery (queryBody root) selectors
