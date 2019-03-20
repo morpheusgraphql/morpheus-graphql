@@ -1,11 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.PreProcess.Spread
-  -- spreadFields,
   ( resolveSpread
   ) where
 
-import           Data.List                              (find)
 import qualified Data.Map                               as M (lookup)
 import           Data.Morpheus.Error.Fragment           (unknownFragment)
 import           Data.Morpheus.Types.Error              (Validation)
@@ -15,16 +13,6 @@ import           Data.Morpheus.Types.Query.RawSelection (RawSelection (..), RawS
 import           Data.Morpheus.Types.Query.Selection    (Selection (..), SelectionSet)
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Text                              (Text)
-
-shouldSpread :: RawSelectionSet -> Bool
-shouldSpread list =
-  case find isFragment list of
-    Just _  -> True
-    Nothing -> False
-
-isFragment :: (Text, RawSelection) -> Bool
-isFragment (_key, Spread _ _) = True
-isFragment (_key, _)          = False
 
 validateSpread :: GQLQueryRoot -> Meta.Position -> Text -> Validation SelectionSet
 validateSpread _root location spreadID =
