@@ -5,6 +5,7 @@
 
 module Data.Morpheus.Types.Describer
   ( (::->)(..)
+  , (::=>)(..)
   , EnumOf(..)
   ) where
 
@@ -17,16 +18,16 @@ newtype EnumOf a = EnumOf
   { unpackEnum :: a
   } deriving (Show, Generic, Data)
 
-newtype a |=> b =
+newtype a ::=> b =
   InternalResolver (a -> b)
   deriving (Generic)
 
-instance Show (a |=> b) where
+instance Show (a ::=> b) where
   show _ = "InternalResolver"
 
-instance (Data a, Data b) => Data (a |=> b) where
-  gfoldl _ z _ = z undefined
-  gunfold _ z _ = z undefined
+instance (Data a, Data b) => Data (a ::=> b) where
+  gfoldl _ z _ = z (InternalResolver $ const undefined)
+  gunfold _ z _ = z (InternalResolver $ const undefined)
   toConstr _ = conInternalResolver
   dataTypeOf _ = tyInternalResolver
 
@@ -36,18 +37,16 @@ conInternalResolver = mkConstr tyResolver "InternalResolver" [] Prefix
 tyInternalResolver :: DataType
 tyInternalResolver = mkDataType "Module.InternalResolver" [conInternalResolver]
 
-data a ::-> b
-  = Resolver (a -> ResolveIO b)
-  | Resolved b
+newtype a ::-> b =
+  Resolver (a -> ResolveIO b)
   deriving (Generic)
 
 instance Show (a ::-> b) where
   show _ = "Resolver"
 
 instance (Data a, Data b) => Data (a ::-> b) where
-  gfoldl k z (Resolved c) = z Resolved `k` c
-  gfoldl k z (Resolver _) = z Resolved `k` (undefined :: b)
-  gunfold k z _ = k (z Resolved)
+  gfoldl _ z (Resolver _) = z (Resolver $ const undefined)
+  gunfold _ z _ = z (Resolver $ const undefined)
   toConstr _ = conResolved
   dataTypeOf _ = tyResolver
 
