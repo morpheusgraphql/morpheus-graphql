@@ -5,7 +5,7 @@
 
 module Data.Morpheus.Types.Describer
   ( (::->)(..)
-  , Deprecation(..)
+  , WithDeprecationArgs(..)
   , EnumOf(..)
   ) where
 
@@ -18,8 +18,8 @@ newtype EnumOf a = EnumOf
   { unpackEnum :: a
   } deriving (Show, Generic, Data)
 
-newtype Deprecation a = Deprecation
-  { unpackDeprecation :: a
+newtype WithDeprecationArgs a = WithDeprecationArgs
+  { unpackDeprecationArgs :: a
   } deriving (Show, Generic, Data)
 
 newtype a ::-> b =

@@ -12,7 +12,7 @@ import           Data.Morpheus.Schema.EnumValue  (EnumValue)
 import qualified Data.Morpheus.Schema.Field      as F (Field (..))
 import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..))
 import           Data.Morpheus.Schema.TypeKind   (TypeKind)
-import           Data.Morpheus.Types.Describer   (Deprecation (..), EnumOf)
+import           Data.Morpheus.Types.Describer   (EnumOf, WithDeprecationArgs (..))
 import           Data.Text                       (Text)
 import           GHC.Generics                    (Generic)
 
@@ -20,11 +20,11 @@ data Type = Type
   { kind          :: EnumOf TypeKind
   , name          :: Text
   , description   :: Text
-  , fields        :: Deprecation [F.Field Type]
+  , fields        :: WithDeprecationArgs [F.Field Type]
   , ofType        :: Maybe Type
   , interfaces    :: [Type]
   , possibleTypes :: [Type]
-  , enumValues    :: Deprecation [EnumValue]
+  , enumValues    :: WithDeprecationArgs [EnumValue]
   , inputFields   :: [I.InputValue Type]
   } deriving (Show, Data, Generic)
 

@@ -22,7 +22,7 @@ import qualified Data.Morpheus.Schema.Field      as F (Field (..), createFieldWi
 import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..), createInputValueWith)
 import           Data.Morpheus.Schema.Type       (Type (..))
 import           Data.Morpheus.Schema.TypeKind   (TypeKind (..))
-import           Data.Morpheus.Types.Describer   (Deprecation (..), EnumOf (..))
+import           Data.Morpheus.Types.Describer   (EnumOf (..), WithDeprecationArgs (..))
 import           Data.Text                       (Text)
 
 type InputValue = I.InputValue Type
@@ -43,11 +43,11 @@ createInputObject iName iFields =
     { kind = EnumOf INPUT_OBJECT
     , name = iName
     , description = ""
-    , fields = Deprecation iFields
+    , fields = WithDeprecationArgs iFields
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Deprecation []
+    , enumValues = WithDeprecationArgs []
     , inputFields = []
     }
 
@@ -57,11 +57,11 @@ createType tName tFields =
     { kind = EnumOf OBJECT
     , name = tName
     , description = ""
-    , fields = Deprecation tFields
+    , fields = WithDeprecationArgs tFields
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Deprecation []
+    , enumValues = WithDeprecationArgs []
     , inputFields = []
     }
 
@@ -71,11 +71,11 @@ createScalar sName =
     { kind = EnumOf SCALAR
     , name = sName
     , description = ""
-    , fields = Deprecation []
+    , fields = WithDeprecationArgs []
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Deprecation []
+    , enumValues = WithDeprecationArgs []
     , inputFields = []
     }
 
@@ -85,11 +85,11 @@ createEnum eName tags =
     { kind = EnumOf ENUM
     , name = eName
     , description = ""
-    , fields = Deprecation []
+    , fields = WithDeprecationArgs []
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Deprecation $ map createEnumValue tags
+    , enumValues = WithDeprecationArgs $ map createEnumValue tags
     , inputFields = []
     }
 
@@ -99,11 +99,11 @@ wrapListType contentType =
     { kind = EnumOf LIST
     , name = ""
     , description = ""
-    , fields = Deprecation []
+    , fields = WithDeprecationArgs []
     , ofType = Just contentType
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Deprecation []
+    , enumValues = WithDeprecationArgs []
     , inputFields = []
     }
 

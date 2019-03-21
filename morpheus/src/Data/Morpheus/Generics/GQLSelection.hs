@@ -29,7 +29,8 @@ import           Data.Morpheus.Schema.Type              (DeprecationArgs)
 import           Data.Morpheus.Schema.Utils.Field       (wrapAsListType)
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type, TypeLib,
                                                          createField, createScalar, createType)
-import           Data.Morpheus.Types.Describer          ((::->) (..), Deprecation (..), EnumOf (..))
+import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..),
+                                                         WithDeprecationArgs (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
@@ -92,8 +93,8 @@ instance (Show a, Show p, GQLSelection a, Args.GQLArgs p, D.Typeable (p ::-> a))
   fieldType _ name = (fieldType (Proxy :: Proxy a) name) {F.args = map fst $ Args.introspect (Proxy :: Proxy p)}
 
 -- manual deriving of  DeprecationArgs ::-> a
-instance (Show a, GQLSelection a, D.Typeable a) => GQLSelection (Deprecation a) where
-  encode x (Deprecation list) = encode x list
+instance (Show a, GQLSelection a, D.Typeable a) => GQLSelection (WithDeprecationArgs a) where
+  encode sel (WithDeprecationArgs val) = encode sel val
   introspect _ typeLib = resolveTypes typeLib $ args ++ fields
     where
       args = map snd $ Args.introspect (Proxy @DeprecationArgs)
