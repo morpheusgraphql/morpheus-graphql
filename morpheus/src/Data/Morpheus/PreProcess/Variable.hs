@@ -36,7 +36,8 @@ getVariable pos root variableID =
     meta = MetaInfo {typeName = "TODO: Name", key = variableID, position = pos}
 
 checkVariableType :: TypeLib -> GQLQueryRoot -> (Text, RawArgument) -> Validation ()
-checkVariableType typeLib root (variableID, Variable tName pos) = asGQLError (existsType tName typeLib) >>= checkType
+checkVariableType typeLib root (variableID, Variable tName pos) =
+  asGQLError (existsType (pos, tName) tName typeLib) >>= checkType
   where
     checkType _type =
       case T.kind _type of
