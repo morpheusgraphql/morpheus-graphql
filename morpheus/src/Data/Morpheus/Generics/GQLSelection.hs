@@ -25,10 +25,11 @@ import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import qualified Data.Morpheus.Schema.Field             as F (Field (..), createFieldWith)
 import           Data.Morpheus.Schema.Schema            (Schema)
+import           Data.Morpheus.Schema.Type              (DeprecationArgs)
 import           Data.Morpheus.Schema.Utils.Field       (wrapAsListType)
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type, TypeLib,
                                                          createField, createScalar, createType)
-import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..))
+import           Data.Morpheus.Types.Describer          ((::->) (..), Deprecation (..), EnumOf (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
@@ -81,7 +82,6 @@ resolve (SelectionSet gqlArgs body pos) (Resolver resolver) =
   (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (SelectionSet gqlArgs body pos)
 resolve (Field gqlArgs field pos) (Resolver resolver) =
   (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (Field gqlArgs field pos)
-resolve query (Resolved value) = encode query value
 
 instance (Show a, Show p, GQLSelection a, Args.GQLArgs p, D.Typeable (p ::-> a)) => GQLSelection (p ::-> a) where
   encode = resolve
@@ -90,6 +90,15 @@ instance (Show a, Show p, GQLSelection a, Args.GQLArgs p, D.Typeable (p ::-> a))
       args = map snd $ Args.introspect (Proxy :: Proxy p)
       fields = [introspect (Proxy :: Proxy a)]
   fieldType _ name = (fieldType (Proxy :: Proxy a) name) {F.args = map fst $ Args.introspect (Proxy :: Proxy p)}
+
+-- manual deriving of  DeprecationArgs ::-> a
+instance (Show a, GQLSelection a, D.Typeable a) => GQLSelection (Deprecation a) where
+  encode x (Deprecation list) = encode x list
+  introspect _ typeLib = resolveTypes typeLib $ args ++ fields
+    where
+      args = map snd $ Args.introspect (Proxy @DeprecationArgs)
+      fields = [introspect (Proxy :: Proxy a)]
+  fieldType _ name = (fieldType (Proxy :: Proxy a) name) {F.args = map fst $ Args.introspect (Proxy @DeprecationArgs)}
 
 instance (Show a, GQLSelection a, D.Typeable a) => GQLSelection (Maybe a) where
   encode _ Nothing          = pure JSNull

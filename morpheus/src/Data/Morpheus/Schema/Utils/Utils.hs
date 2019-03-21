@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module Data.Morpheus.Schema.Utils.Utils
   ( Type
@@ -13,6 +14,7 @@ module Data.Morpheus.Schema.Utils.Utils
   , createScalar
   , createEnum
   , createInputObject
+  , resolveDeprecation
   ) where
 
 import           Data.Map                        (Map, fromList)
@@ -21,7 +23,7 @@ import qualified Data.Morpheus.Schema.Field      as F (Field (..), createFieldWi
 import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..), createInputValueWith)
 import           Data.Morpheus.Schema.Type       (Type (..))
 import           Data.Morpheus.Schema.TypeKind   (TypeKind (..))
-import           Data.Morpheus.Types.Describer   ((::->) (..), EnumOf (..))
+import           Data.Morpheus.Types.Describer   (Deprecation (..), EnumOf (..))
 import           Data.Text                       (Text)
 
 type InputValue = I.InputValue Type
@@ -29,6 +31,9 @@ type InputValue = I.InputValue Type
 type Field = F.Field Type
 
 type TypeLib = Map Text Type
+
+resolveDeprecation :: Deprecation b -> b
+resolveDeprecation (Deprecation x) = x
 
 createField :: Text -> Text -> [InputValue] -> Field
 createField fName typeName = F.createFieldWith fName (createType typeName [])
@@ -42,11 +47,11 @@ createInputObject iName iFields =
     { kind = EnumOf INPUT_OBJECT
     , name = iName
     , description = ""
-    , fields = Resolved iFields
+    , fields = Deprecation iFields
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Resolved []
+    , enumValues = Deprecation []
     , inputFields = []
     }
 
@@ -56,11 +61,11 @@ createType tName tFields =
     { kind = EnumOf OBJECT
     , name = tName
     , description = ""
-    , fields = Resolved tFields
+    , fields = Deprecation tFields
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Resolved []
+    , enumValues = Deprecation []
     , inputFields = []
     }
 
@@ -70,11 +75,11 @@ createScalar sName =
     { kind = EnumOf SCALAR
     , name = sName
     , description = ""
-    , fields = Resolved []
+    , fields = Deprecation []
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Resolved []
+    , enumValues = Deprecation []
     , inputFields = []
     }
 
@@ -84,11 +89,11 @@ createEnum eName tags =
     { kind = EnumOf ENUM
     , name = eName
     , description = ""
-    , fields = Resolved []
+    , fields = Deprecation []
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Resolved $ map createEnumValue tags
+    , enumValues = Deprecation $ map createEnumValue tags
     , inputFields = []
     }
 
@@ -98,11 +103,11 @@ wrapListType contentType =
     { kind = EnumOf LIST
     , name = ""
     , description = ""
-    , fields = Resolved []
+    , fields = Deprecation []
     , ofType = Just contentType
     , interfaces = []
     , possibleTypes = []
-    , enumValues = Resolved []
+    , enumValues = Deprecation []
     , inputFields = []
     }
 

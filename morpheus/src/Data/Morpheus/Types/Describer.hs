@@ -5,7 +5,7 @@
 
 module Data.Morpheus.Types.Describer
   ( (::->)(..)
-  , (::=>)(..)
+  , Deprecation(..)
   , EnumOf(..)
   ) where
 
@@ -18,24 +18,9 @@ newtype EnumOf a = EnumOf
   { unpackEnum :: a
   } deriving (Show, Generic, Data)
 
-newtype a ::=> b =
-  InternalResolver (a -> b)
-  deriving (Generic)
-
-instance Show (a ::=> b) where
-  show _ = "InternalResolver"
-
-instance (Data a, Data b) => Data (a ::=> b) where
-  gfoldl _ z _ = z (InternalResolver $ const undefined)
-  gunfold _ z _ = z (InternalResolver $ const undefined)
-  toConstr _ = conInternalResolver
-  dataTypeOf _ = tyInternalResolver
-
-conInternalResolver :: Constr
-conInternalResolver = mkConstr tyResolver "InternalResolver" [] Prefix
-
-tyInternalResolver :: DataType
-tyInternalResolver = mkDataType "Module.InternalResolver" [conInternalResolver]
+newtype Deprecation a = Deprecation
+  { deprecation :: a
+  } deriving (Show, Generic, Data)
 
 newtype a ::-> b =
   Resolver (a -> ResolveIO b)
