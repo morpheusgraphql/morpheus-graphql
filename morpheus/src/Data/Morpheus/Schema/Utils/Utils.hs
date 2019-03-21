@@ -14,7 +14,6 @@ module Data.Morpheus.Schema.Utils.Utils
   , createScalar
   , createEnum
   , createInputObject
-  , resolveDeprecation
   ) where
 
 import           Data.Map                        (Map, fromList)
@@ -31,9 +30,6 @@ type InputValue = I.InputValue Type
 type Field = F.Field Type
 
 type TypeLib = Map Text Type
-
-resolveDeprecation :: Deprecation b -> b
-resolveDeprecation (Deprecation x) = x
 
 createField :: Text -> Text -> [InputValue] -> Field
 createField fName typeName = F.createFieldWith fName (createType typeName [])

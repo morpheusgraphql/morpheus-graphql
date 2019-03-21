@@ -19,7 +19,7 @@ newtype EnumOf a = EnumOf
   } deriving (Show, Generic, Data)
 
 newtype Deprecation a = Deprecation
-  { deprecation :: a
+  { unpackDeprecation :: a
   } deriving (Show, Generic, Data)
 
 newtype a ::-> b =
