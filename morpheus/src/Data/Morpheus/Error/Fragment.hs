@@ -2,7 +2,7 @@
 
 module Data.Morpheus.Error.Fragment
   ( unknownFragment
-  , unsupportedSpreadOnType
+  , cannotBeSpreadOnType
   , cycleOnFragment
   , fragmentError
   ) where
@@ -25,25 +25,25 @@ import qualified Data.Text                    as T
 -}
 fragmentError :: MetaError -> GQLErrors
 fragmentError (UnknownType meta)      = unknownFragment meta
-fragmentError (UnknownField meta) = unknownFragment meta -- TODO should not Apairs
-fragmentError (TypeMismatch meta _ _) = unsupportedSpreadOnType meta meta -- real types
+fragmentError (UnknownField meta)     = unknownFragment meta -- TODO should not Apairs
+fragmentError (TypeMismatch meta _ _) = unknownFragment meta -- TODO find better solution
 
 unknownFragment :: MetaInfo -> GQLErrors
 unknownFragment meta = errorMessage (position meta) text
   where
     text = T.concat ["Unknown fragment \"", key meta, "\"."]
 
-unsupportedSpreadOnType :: MetaInfo -> MetaInfo -> GQLErrors
-unsupportedSpreadOnType parent spread = errorMessage (position parent) text
+cannotBeSpreadOnType :: MetaInfo -> T.Text -> GQLErrors
+cannotBeSpreadOnType spread selectionType = errorMessage (position spread) text
   where
     text =
       T.concat
-        [ "cant apply fragment \""
+        [ "Fragment \""
         , key spread
-        , "\" with type \""
+        , "\" cannot be spread here as objects of type \""
         , typeName spread
-        , "\" on type \""
-        , typeName parent
+        , "\" can never be of type \""
+        , selectionType
         , "\"."
         ]
 
