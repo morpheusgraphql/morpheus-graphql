@@ -5,6 +5,7 @@
 
 module Data.Morpheus.Types.Describer
   ( (::->)(..)
+  , WithDeprecationArgs(..)
   , EnumOf(..)
   ) where
 
@@ -17,18 +18,20 @@ newtype EnumOf a = EnumOf
   { unpackEnum :: a
   } deriving (Show, Generic, Data)
 
-data a ::-> b
-  = Resolver (a -> ResolveIO b)
-  | Resolved b
+newtype WithDeprecationArgs a = WithDeprecationArgs
+  { unpackDeprecationArgs :: a
+  } deriving (Show, Generic, Data)
+
+newtype a ::-> b =
+  Resolver (a -> ResolveIO b)
   deriving (Generic)
 
 instance Show (a ::-> b) where
   show _ = "Resolver"
 
 instance (Data a, Data b) => Data (a ::-> b) where
-  gfoldl k z (Resolved c) = z Resolved `k` c
-  gfoldl k z (Resolver _) = z Resolved `k` (undefined :: b)
-  gunfold k z _ = k (z Resolved)
+  gfoldl _ z (Resolver _) = z (Resolver $ const undefined)
+  gunfold _ z _ = z (Resolver $ const undefined)
   toConstr _ = conResolved
   dataTypeOf _ = tyResolver
 
