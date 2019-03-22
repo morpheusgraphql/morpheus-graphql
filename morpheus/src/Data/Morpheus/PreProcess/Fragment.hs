@@ -13,20 +13,15 @@ import           Data.Morpheus.PreProcess.Arguments     (resolveArguments)
 import           Data.Morpheus.PreProcess.Utils         (existsType, fieldOf, fieldType)
 import qualified Data.Morpheus.Schema.Type              as T (name)
 import           Data.Morpheus.Schema.Utils.Utils       (Type, TypeLib)
+import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
-import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), Position)
+import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..))
 import           Data.Morpheus.Types.Query.Fragment     (Fragment (..), FragmentLib)
 import           Data.Morpheus.Types.Query.RawSelection (RawSelection (..))
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Text                              (Text)
 
-data Node = Node
-  { uid      :: Text
-  , location :: Meta.Position
-  }
-
-instance Eq Node where
-  (Node id1 _) == (Node id2 _) = id1 == id2
+type Node = EnhancedKey
 
 type NodeEdges = (Node, [Node])
 
@@ -66,7 +61,7 @@ validateFragmentFields typeLib root _parentType (_name, RawField args _ sPos) = 
   _ <- resolveArguments typeLib root _field sPos args -- TODO do not use heavy validation
   pure []
 validateFragmentFields _ root _parent (spreadID, Spread value pos) =
-  getSpreadType (fragments root) _parent spreadID spreadMeta >> pure [Node value pos]
+  getSpreadType (fragments root) _parent spreadID spreadMeta >> pure [EnhancedKey value pos]
   where
     spreadMeta = Meta.MetaInfo {Meta.typeName = "", Meta.key = spreadID, Meta.position = pos}
 
@@ -74,7 +69,7 @@ validateFragment :: TypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation No
 validateFragment lib root (fName, Fragment {content = selection, target = target', position = position'}) = do
   _type <- asGQLError $ existsType (position', fName) target' lib
   fragmentLinks <- concat <$> mapM (validateFragmentFields lib root _type) selection
-  pure (Node fName position', fragmentLinks)
+  pure (EnhancedKey fName position', fragmentLinks)
 
 validateFragments :: TypeLib -> GQLQueryRoot -> Validation ()
 validateFragments lib root = mapM (validateFragment lib root) (M.toList $ fragments root) >>= detectLoopOnFragments
@@ -95,4 +90,4 @@ checkForCycle lib parentNode history =
         then cycleError x
         else recurse x
     recurse node = checkForCycle lib node $ history ++ [node]
-    cycleError n = Left $ cycleOnFragment (map (\x -> (uid x, location x)) (history ++ [n])) -- TODO real position
+    cycleError n = Left $ cycleOnFragment $ history ++ [n]

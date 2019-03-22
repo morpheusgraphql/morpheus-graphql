@@ -8,8 +8,9 @@ module Data.Morpheus.Error.Fragment
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
+import           Data.Morpheus.Types.Core     (EnhancedKey (..))
 import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors, MetaError (..))
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
+import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
 import qualified Data.Text                    as T
 
 {-
@@ -47,14 +48,14 @@ cannotBeSpreadOnType spread selectionType = errorMessage (position spread) text
         , "\"."
         ]
 
-cycleOnFragment :: [(T.Text, Position)] -> GQLErrors
-cycleOnFragment fragments = [GQLError {desc = text, posIndex = map snd fragments}]
+cycleOnFragment :: [EnhancedKey] -> GQLErrors
+cycleOnFragment fragments = [GQLError {desc = text, posIndex = map location fragments}]
   where
     text =
       T.concat
         [ "Cannot spread fragment \""
-        , fst $ head fragments
+        , uid $ head fragments
         , "\" within itself via "
-        , T.intercalate "," (map fst fragments)
+        , T.intercalate "," (map uid fragments)
         , "."
         ]

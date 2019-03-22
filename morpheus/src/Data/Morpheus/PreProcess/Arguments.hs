@@ -16,6 +16,7 @@ import qualified Data.Morpheus.Schema.Type              as T (kind)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import qualified Data.Morpheus.Schema.Utils.InputValue  as UI (typeName)
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, TypeLib)
+import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Describer          (EnumOf (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
 import           Data.Morpheus.Types.JSType             (JSType (..))
@@ -54,11 +55,14 @@ validateArgument types position' requestArgs inpValue =
 onlyResolveArguments :: GQLQueryRoot -> Position -> Raw.RawArguments -> Validation Arguments
 onlyResolveArguments root _ = mapM (replaceVariable root)
 
-checkForUnknownArguments :: Field -> [(Text, a)] -> Validation [InputValue]
+checkForUnknownArguments :: Field -> Arguments -> Validation [InputValue]
 checkForUnknownArguments field args =
-  case map fst args \\ map I.name (F.args field) of
+  case map argToKey args \\ fieldKeys of
     []          -> pure $ F.args field
     unknownArgs -> Left $ unknownArguments (F.name field) unknownArgs
+  where
+    argToKey (key', Argument _ pos) = EnhancedKey key' pos
+    fieldKeys = map (\x -> EnhancedKey (I.name x) 0) (F.args field) -- pos information can be 0 because we differentiate it to args and it will be not included in error keys
 
 resolveArguments :: TypeLib -> GQLQueryRoot -> Field -> Position -> Raw.RawArguments -> Validation Arguments
 resolveArguments typeLib root inputs pos args =
