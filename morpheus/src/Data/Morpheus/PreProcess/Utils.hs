@@ -52,6 +52,5 @@ fieldType position' lib field =
 typeBy :: Position -> TypeLib -> Type -> Text -> MetaValidation Type
 typeBy pos lib _parentType _name = fieldOf pos _parentType _name >>= fieldType pos lib
 
--- pos information can be 0 because we differentiate it to args and it will be not included in error keys
 differKeys :: [EnhancedKey] -> [Key] -> [EnhancedKey]
 differKeys enhanced keys = enhanced \\ map enhanceKeyWithNull keys
