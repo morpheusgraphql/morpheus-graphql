@@ -29,8 +29,9 @@ asGQLError (Left err)    = Left $ argumentError err
 asGQLError (Right value) = pure value
 
 -- TODO: Validate other Types , type missmatch
-checkArgumentType :: TypeLib -> Text -> (Text, Argument) -> Validation (Text, Argument)
-checkArgumentType typeLib typeName (aKey, argument) = asGQLError (existsType typeName typeLib) >>= checkType
+checkArgumentType :: TypeLib -> (Text, Int) -> (Text, Argument) -> Validation (Text, Argument)
+checkArgumentType typeLib (typeName, position') (aKey, argument) =
+  asGQLError (existsType (position', aKey) typeName typeLib) >>= checkType
   where
     checkType _type =
       case T.kind _type of
@@ -45,7 +46,7 @@ validateArgument types requestArgs inpValue =
       if I.isRequired inpValue
         then Left $ requiredArgument (I.inputValueMeta 0 inpValue)
         else pure (key, Argument JSNull 0)
-    Just x -> checkArgumentType types (UI.typeName inpValue) (key, x)
+    Just (Argument value pos) -> checkArgumentType types (UI.typeName inpValue, pos) (key, Argument value pos)
   where
     key = I.name inpValue
 

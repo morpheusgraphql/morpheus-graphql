@@ -17,7 +17,7 @@ import           Data.Morpheus.PreProcess.Utils         (existsType, fieldOf, fi
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
 import           Data.Morpheus.Schema.Utils.Utils       (Type, TypeLib)
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
-import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..))
+import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), Position)
 import           Data.Morpheus.Types.Query.Operator     (Operator (..), RawOperator, ValidOperator)
 import           Data.Morpheus.Types.Query.RawSelection (RawArguments, RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..), SelectionSet)
@@ -54,9 +54,9 @@ checkDuplicates x =
     noDuplicates = S.toList . S.fromList
     meta duplicates = MetaInfo {typeName = "-- TODO: Error handling", key = pack $ show duplicates, position = 0}
 
-getOperationInfo :: RawOperator -> (Text, RawArguments, RawSelectionSet)
-getOperationInfo (Query _ args sel _)    = ("Query", args, sel)
-getOperationInfo (Mutation _ args sel _) = ("Mutation", args, sel)
+getOperationInfo :: RawOperator -> (Text, RawArguments, RawSelectionSet, Position)
+getOperationInfo (Query _ args sel pos)    = ("Query", args, sel, pos)
+getOperationInfo (Mutation _ args sel pos) = ("Mutation", args, sel, pos)
 
 updateQuery :: RawOperator -> SelectionSet -> ValidOperator
 updateQuery (Query name _ _ pos) sel    = Query name [] sel pos
@@ -64,10 +64,10 @@ updateQuery (Mutation name _ _ pos) sel = Mutation name [] sel pos
 
 preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
 preProcessQuery lib root = do
-  let (operator, args, rawSel) = getOperationInfo $ queryBody root
+  let (operator, args, rawSel, position') = getOperationInfo $ queryBody root
   validateVariables lib root args
   validateFragments lib root
-  _type <- asSelectionValidation $ existsType operator lib
+  _type <- asSelectionValidation $ existsType (position',operator) operator lib
   sel <- prepareRawSelection root rawSel
   selectors <- mapSelectors lib _type sel
   pure $ updateQuery (queryBody root) selectors

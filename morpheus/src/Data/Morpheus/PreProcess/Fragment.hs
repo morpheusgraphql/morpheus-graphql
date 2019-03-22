@@ -63,8 +63,8 @@ validateFragmentFields _ root _parent (spreadID, Spread value pos) =
     spreadMeta = Meta.MetaInfo {Meta.typeName = "", Meta.key = spreadID, Meta.position = pos}
 
 validateFragment :: TypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation (Text, Graph)
-validateFragment lib root (fName, Fragment {content = selection, target = target'}) = do
-  _type <- asGQLError $ existsType target' lib
+validateFragment lib root (fName, Fragment {content = selection, target = target', position = position'}) = do
+  _type <- asGQLError $ existsType (position', fName) target' lib
   fragmentLinks <- concat <$> mapM (validateFragmentFields lib root _type) selection
   pure (fName, fragmentLinks)
 
