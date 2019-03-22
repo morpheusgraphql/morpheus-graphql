@@ -79,12 +79,12 @@ detectLoopOnFragments lib = mapM_ checkFragment lib
 checkForCycle :: RootGraph -> Text -> [Text] -> Validation RootGraph
 checkForCycle lib parentNode history =
   case lookup parentNode lib of
-    Just nodes -> concat <$> mapM checkNode nodes
-    Nothing    -> pure []
+    Just node -> concat <$> mapM checkNode node
+    Nothing   -> pure []
   where
     checkNode x =
       if x `elem` history
         then cycleError
         else recurse x
     recurse node = checkForCycle lib node (history ++ [node])
-    cycleError = Left $ cycleOnFragment history
+    cycleError = Left $ cycleOnFragment (map (\x -> (x, 0)) history) -- TODO real position
