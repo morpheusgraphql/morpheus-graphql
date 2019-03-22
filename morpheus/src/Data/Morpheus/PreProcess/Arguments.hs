@@ -19,6 +19,7 @@ import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type
 import           Data.Morpheus.Types.Describer          (EnumOf (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
 import           Data.Morpheus.Types.JSType             (JSType (..))
+import           Data.Morpheus.Types.MetaInfo           (Position)
 import qualified Data.Morpheus.Types.Query.RawSelection as Raw (RawArguments)
 import           Data.Morpheus.Types.Query.Selection    (Argument (..), Arguments)
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
@@ -39,19 +40,19 @@ checkArgumentType typeLib (typeName, position') (aKey, argument) =
        -- INPUT_OBJECT is already validated
         _           -> pure (aKey, argument)
 
-validateArgument :: TypeLib -> Arguments -> InputValue -> Validation (Text, Argument)
-validateArgument types requestArgs inpValue =
+validateArgument :: TypeLib -> Position -> Arguments -> InputValue -> Validation (Text, Argument)
+validateArgument types position' requestArgs inpValue =
   case lookup (I.name inpValue) requestArgs of
     Nothing ->
       if I.isRequired inpValue
-        then Left $ requiredArgument (I.inputValueMeta 0 inpValue)
-        else pure (key, Argument JSNull 0)
+        then Left $ requiredArgument (I.inputValueMeta position' inpValue)
+        else pure (key, Argument JSNull position')
     Just (Argument value pos) -> checkArgumentType types (UI.typeName inpValue, pos) (key, Argument value pos)
   where
     key = I.name inpValue
 
-onlyResolveArguments :: GQLQueryRoot -> Raw.RawArguments -> Validation Arguments
-onlyResolveArguments root = mapM (replaceVariable root)
+onlyResolveArguments :: GQLQueryRoot -> Position -> Raw.RawArguments -> Validation Arguments
+onlyResolveArguments root _ = mapM (replaceVariable root)
 
 checkForUnknownArguments :: Field -> [(Text, a)] -> Validation [InputValue]
 checkForUnknownArguments field args =
@@ -59,8 +60,10 @@ checkForUnknownArguments field args =
     []          -> pure $ F.args field
     unknownArgs -> Left $ unknownArguments (F.name field) unknownArgs
 
-resolveArguments :: TypeLib -> GQLQueryRoot -> Field -> Raw.RawArguments -> Validation Arguments
-resolveArguments typeLib root inputs args = onlyResolveArguments root args >>= validateArguments typeLib inputs
+resolveArguments :: TypeLib -> GQLQueryRoot -> Field -> Position -> Raw.RawArguments -> Validation Arguments
+resolveArguments typeLib root inputs pos args =
+  onlyResolveArguments root pos args >>= validateArguments typeLib inputs pos
 
-validateArguments :: TypeLib -> Field -> Arguments -> Validation Arguments
-validateArguments typeLib inputs args = checkForUnknownArguments inputs args >>= mapM (validateArgument typeLib args)
+validateArguments :: TypeLib -> Field -> Position -> Arguments -> Validation Arguments
+validateArguments typeLib inputs pos args =
+  checkForUnknownArguments inputs args >>= mapM (validateArgument typeLib pos args)

@@ -35,13 +35,13 @@ validateBySchema :: TypeLib -> Type -> (Text, Selection) -> Validation (Text, Se
 validateBySchema typeLib _parentType (sName, SelectionSet args selectors pos) = do
   fieldSD <- asSelectionValidation $ fieldOf pos _parentType sName
   typeSD <- asSelectionValidation $ fieldType pos typeLib fieldSD
-  headQS <- validateArguments typeLib fieldSD args
+  headQS <- validateArguments typeLib fieldSD pos args
   selectorsQS <- mapSelectors typeLib typeSD selectors
   pure (sName, SelectionSet headQS selectorsQS pos)
 validateBySchema typeLib _parentType (sName, Field args field pos) = do
   fieldSD <- asSelectionValidation $ fieldOf pos _parentType sName
   _checksIfHasType <- asSelectionValidation $ fieldType pos typeLib fieldSD
-  headQS <- validateArguments typeLib fieldSD args
+  headQS <- validateArguments typeLib fieldSD pos args
   pure (sName, Field headQS field pos)
 
 checkDuplicates :: [(Text, a)] -> Validation [(Text, a)]
@@ -67,7 +67,7 @@ preProcessQuery lib root = do
   let (operator, args, rawSel, position') = getOperationInfo $ queryBody root
   validateVariables lib root args
   validateFragments lib root
-  _type <- asSelectionValidation $ existsType (position',operator) operator lib
+  _type <- asSelectionValidation $ existsType (position', operator) operator lib
   sel <- prepareRawSelection root rawSel
   selectors <- mapSelectors lib _type sel
   pure $ updateQuery (queryBody root) selectors

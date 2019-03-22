@@ -48,14 +48,14 @@ getSpreadType frags _type fragmentID spreadMeta =
   getFragment spreadMeta fragmentID frags >>= compareFragmentType spreadMeta _type
 
 validateFragmentFields :: TypeLib -> GQLQueryRoot -> Type -> (Text, RawSelection) -> Validation Graph
-validateFragmentFields typeLib root _parent (name', RawSelectionSet args selectors pos_) = do
-  fieldSC <- asSelectionValidation $ fieldOf pos_ _parent name'
-  typeSC <- asGQLError $ fieldType pos_ typeLib fieldSC
-  _ <- resolveArguments typeLib root fieldSC args -- TODO do not use heavy validation
+validateFragmentFields typeLib root _parent (name', RawSelectionSet args selectors sPos) = do
+  fieldSC <- asSelectionValidation $ fieldOf sPos _parent name'
+  typeSC <- asGQLError $ fieldType sPos typeLib fieldSC
+  _ <- resolveArguments typeLib root fieldSC sPos args -- TODO do not use heavy validation
   concat <$> mapM (validateFragmentFields typeLib root typeSC) selectors
-validateFragmentFields typeLib root _parentType (_name, RawField args _ pos_) = do
-  _field <- asSelectionValidation $ fieldOf pos_ _parentType _name
-  _ <- resolveArguments typeLib root _field args -- TODO do not use heavy validation
+validateFragmentFields typeLib root _parentType (_name, RawField args _ sPos) = do
+  _field <- asSelectionValidation $ fieldOf sPos _parentType _name
+  _ <- resolveArguments typeLib root _field sPos args -- TODO do not use heavy validation
   pure []
 validateFragmentFields _ root _parent (spreadID, Spread value pos) =
   getSpreadType (fragments root) _parent spreadID spreadMeta >> pure [value]
