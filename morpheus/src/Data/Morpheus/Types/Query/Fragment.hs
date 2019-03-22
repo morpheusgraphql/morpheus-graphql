@@ -11,7 +11,7 @@ import           Data.Morpheus.Types.Query.RawSelection (RawSelectionSet)
 data Fragment = Fragment
   { key     :: Key
   , target  :: Key
-  , pos     :: Position
+  , position     :: Position
   , content :: RawSelectionSet
   } deriving (Show)
 

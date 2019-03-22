@@ -4,11 +4,11 @@ module Data.Morpheus.Parser.Fragment
   ( fragment
   ) where
 
-import           Data.Attoparsec.Text           (Parser, skipSpace, string)
-import           Data.Morpheus.Parser.Body      (entries)
-import           Data.Morpheus.Parser.Primitive (getPosition, token)
-import           Data.Morpheus.Types.Types      (Fragment (..))
-import           Data.Text                      (Text)
+import           Data.Attoparsec.Text               (Parser, skipSpace, string)
+import           Data.Morpheus.Parser.Body          (entries)
+import           Data.Morpheus.Parser.Primitive     (getPosition, token)
+import           Data.Morpheus.Types.Query.Fragment (Fragment (..))
+import           Data.Text                          (Text)
 
 fragment :: Parser (Text, Fragment)
 fragment = do
@@ -23,4 +23,4 @@ fragment = do
   targetName <- token
   skipSpace
   fragmentBody <- entries
-  pure (name, Fragment {key = name, target = targetName, content = fragmentBody, pos = index})
+  pure (name, Fragment {key = name, target = targetName, content = fragmentBody, position = index})

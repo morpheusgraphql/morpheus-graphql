@@ -52,7 +52,7 @@ class GQLSelection a where
   default encode :: (Generic a, D.Data a, DeriveResolvers (Rep a), Show a) =>
     Selection -> a -> ResolveIO JSType
   encode (SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers Meta.initialMeta . from
-  encode (Field _ key pos) = \_ -> failResolveIO $ subfieldsNotSelected meta
+  encode (Field _ key pos) = \_ -> failResolveIO $ subfieldsNotSelected meta -- TODO: must be internal Error
     where
       meta = Meta.MetaInfo {Meta.typeName = "", Meta.key = key, Meta.position = pos}
   typeID :: Proxy a -> T.Text

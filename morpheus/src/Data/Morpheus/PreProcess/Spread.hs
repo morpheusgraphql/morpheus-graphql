@@ -27,10 +27,10 @@ selectionSetFromSpread _root location spreadID =
 replaceVariableAndSpread :: GQLQueryRoot -> (Text, RawSelection) -> Validation SelectionSet
 replaceVariableAndSpread root (sKey, RawSelectionSet rawArgs rawSelectors sPos) = do
   sel <- concat <$> mapM (replaceVariableAndSpread root) rawSelectors
-  args <- onlyResolveArguments root rawArgs
+  args <- onlyResolveArguments root sPos rawArgs
   pure [(sKey, SelectionSet args sel sPos)]
 replaceVariableAndSpread root (sKey, RawField rawArgs field sPos) = do
-  args <- onlyResolveArguments root rawArgs
+  args <- onlyResolveArguments root sPos rawArgs
   pure [(sKey, Field args field sPos)]
 replaceVariableAndSpread root (spreadID, Spread _ sPos) = selectionSetFromSpread root sPos spreadID
 

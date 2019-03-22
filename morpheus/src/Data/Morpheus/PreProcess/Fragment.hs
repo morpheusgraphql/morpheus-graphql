@@ -5,14 +5,15 @@ module Data.Morpheus.PreProcess.Fragment
   ) where
 
 import qualified Data.Map                               as M (lookup, toList)
-import           Data.Morpheus.Error.Fragment           (cycleOnFragment, fragmentError,
-                                                         unknownFragment, unsupportedSpreadOnType)
+import           Data.Morpheus.Error.Fragment           (cannotBeSpreadOnType, cycleOnFragment,
+                                                         fragmentError, unknownFragment)
 import           Data.Morpheus.Error.Selection          (selectionError)
 import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (resolveArguments)
 import           Data.Morpheus.PreProcess.Utils         (existsType, fieldOf, fieldType)
 import qualified Data.Morpheus.Schema.Type              as T (name)
 import           Data.Morpheus.Schema.Utils.Utils       (Type, TypeLib)
+import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..))
 import           Data.Morpheus.Types.Query.Fragment     (Fragment (..), FragmentLib)
@@ -20,9 +21,11 @@ import           Data.Morpheus.Types.Query.RawSelection (RawSelection (..))
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Text                              (Text)
 
-type Graph = [Text]
+type Node = EnhancedKey
 
-type RootGraph = [(Text, Graph)]
+type NodeEdges = (Node, [Node])
+
+type Graph = [NodeEdges]
 
 asSelectionValidation :: MetaValidation a -> Validation a
 asSelectionValidation = toGQLError selectionError
@@ -37,55 +40,54 @@ getFragment meta fragmentID lib =
     Nothing       -> Left $ unknownFragment meta
     Just fragment -> pure fragment
 
-compareFragmentType :: Meta.MetaInfo -> Meta.MetaInfo -> Type -> Fragment -> Validation Type
-compareFragmentType parent child _type fragment =
+compareFragmentType :: Meta.MetaInfo -> Type -> Fragment -> Validation Type
+compareFragmentType spreadMeta _type fragment =
   if T.name _type == target fragment
     then pure _type
-    else Left $ unsupportedSpreadOnType parent child
+    else Left $ cannotBeSpreadOnType (spreadMeta {Meta.typeName = target fragment}) (T.name _type)
 
-getSpreadType :: FragmentLib -> Type -> Text -> Validation Type
-getSpreadType frags _type fragmentID = getFragment (spread "") fragmentID frags >>= fragment
-  where
-    fragment fg = compareFragmentType parent (spread $ target fg) _type fg
-    parent = Meta.MetaInfo {Meta.typeName = T.name _type, Meta.key = "", Meta.position = 0}
-    spread name = Meta.MetaInfo {Meta.typeName = name, Meta.key = fragmentID, Meta.position = 0}
+getSpreadType :: FragmentLib -> Type -> Text -> Meta.MetaInfo -> Validation Type
+getSpreadType frags _type fragmentID spreadMeta =
+  getFragment spreadMeta fragmentID frags >>= compareFragmentType spreadMeta _type
 
-validateFragmentFields :: TypeLib -> GQLQueryRoot -> Type -> (Text, RawSelection) -> Validation Graph
-validateFragmentFields typeLib root _parent (name', RawSelectionSet args selectors pos_) = do
-  fieldSC <- asSelectionValidation $ fieldOf pos_ _parent name'
-  typeSC <- asGQLError $ fieldType pos_ typeLib fieldSC
-  _ <- resolveArguments typeLib root fieldSC args -- TODO do not use heavy validation
+validateFragmentFields :: TypeLib -> GQLQueryRoot -> Type -> (Text, RawSelection) -> Validation [Node]
+validateFragmentFields typeLib root _parent (name', RawSelectionSet args selectors sPos) = do
+  fieldSC <- asSelectionValidation $ fieldOf sPos _parent name'
+  typeSC <- asGQLError $ fieldType sPos typeLib fieldSC
+  _ <- resolveArguments typeLib root fieldSC sPos args -- TODO do not use heavy validation
   concat <$> mapM (validateFragmentFields typeLib root typeSC) selectors
-validateFragmentFields typeLib root _parentType (_name, RawField args _ pos_) = do
-  _field <- asSelectionValidation $ fieldOf pos_ _parentType _name
-  _ <- resolveArguments typeLib root _field args -- TODO do not use heavy validation
+validateFragmentFields typeLib root _parentType (_name, RawField args _ sPos) = do
+  _field <- asSelectionValidation $ fieldOf sPos _parentType _name
+  _ <- resolveArguments typeLib root _field sPos args -- TODO do not use heavy validation
   pure []
-validateFragmentFields _ root _parent (spreadID, Spread value _) =
-  getSpreadType (fragments root) _parent spreadID >> pure [value]
+validateFragmentFields _ root _parent (spreadID, Spread value pos) =
+  getSpreadType (fragments root) _parent spreadID spreadMeta >> pure [EnhancedKey value pos]
+  where
+    spreadMeta = Meta.MetaInfo {Meta.typeName = "", Meta.key = spreadID, Meta.position = pos}
 
-validateFragment :: TypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation (Text, Graph)
-validateFragment lib root (fName, Fragment {content = selection, target = target'}) = do
-  _type <- asGQLError $ existsType target' lib
+validateFragment :: TypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation NodeEdges
+validateFragment lib root (fName, Fragment {content = selection, target = target', position = position'}) = do
+  _type <- asGQLError $ existsType (position', fName) target' lib
   fragmentLinks <- concat <$> mapM (validateFragmentFields lib root _type) selection
-  pure (fName, fragmentLinks)
+  pure (EnhancedKey fName position', fragmentLinks)
 
 validateFragments :: TypeLib -> GQLQueryRoot -> Validation ()
 validateFragments lib root = mapM (validateFragment lib root) (M.toList $ fragments root) >>= detectLoopOnFragments
 
-detectLoopOnFragments :: RootGraph -> Validation ()
+detectLoopOnFragments :: Graph -> Validation ()
 detectLoopOnFragments lib = mapM_ checkFragment lib
   where
     checkFragment (fragmentID, _) = checkForCycle lib fragmentID [fragmentID]
 
-checkForCycle :: RootGraph -> Text -> [Text] -> Validation RootGraph
+checkForCycle :: Graph -> Node -> [Node] -> Validation Graph
 checkForCycle lib parentNode history =
   case lookup parentNode lib of
-    Just nodes -> concat <$> mapM checkNode nodes
-    Nothing    -> pure []
+    Just node -> concat <$> mapM checkNode node
+    Nothing   -> pure []
   where
     checkNode x =
       if x `elem` history
-        then cycleError
+        then cycleError x
         else recurse x
-    recurse node = checkForCycle lib node (history ++ [node])
-    cycleError = Left $ cycleOnFragment history
+    recurse node = checkForCycle lib node $ history ++ [node]
+    cycleError n = Left $ cycleOnFragment $ history ++ [n]

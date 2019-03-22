@@ -4,12 +4,14 @@ module Data.Morpheus.Error.Selection
   ( cannotQueryField
   , subfieldsNotSelected
   , selectionError
+  , duplicateQuerySelections
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (GQLErrors, MetaError (..))
+import           Data.Morpheus.Types.Core     (EnhancedKey (..))
+import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors, MetaError (..))
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
-import qualified Data.Text                    as T (concat)
+import qualified Data.Text                    as T (Text, concat)
 
 selectionError :: MetaError -> GQLErrors
 selectionError (UnknownType meta)      = typeDoesNotExists meta
@@ -26,6 +28,12 @@ cannotQueryField :: MetaInfo -> GQLErrors
 cannotQueryField meta = errorMessage (position meta) text
   where
     text = T.concat ["Cannot query field \"", key meta, "\" on type \"", typeName meta, "\"."]
+
+duplicateQuerySelections :: T.Text -> [EnhancedKey] -> GQLErrors
+duplicateQuerySelections parentType = map keyToError
+  where
+    keyToError (EnhancedKey key' pos) = GQLError {desc = toMessage key', posIndex = [pos]}
+    toMessage key' = T.concat ["duplicate selection of key \"", key', "\" on type \"", parentType, "\"."]
 
 -- GQL:: Field \"hobby\" of type \"Hobby!\" must have a selection of subfields. Did you mean \"hobby { ... }\"?
 subfieldsNotSelected :: MetaInfo -> GQLErrors

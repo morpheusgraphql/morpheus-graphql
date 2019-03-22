@@ -13,8 +13,7 @@ module Data.Morpheus.Generics.GQLInput
 
 import           Data.Data                        (Data, Typeable)
 import qualified Data.Map                         as M
-import           Data.Morpheus.Error.Arguments    (requiredArgument)
-import           Data.Morpheus.Error.Internal     (internalTypeMismatch)
+import           Data.Morpheus.Error.Internal     (internalArgumentError, internalTypeMismatch)
 import           Data.Morpheus.Generics.GDecode   (GDecode (..))
 import qualified Data.Morpheus.Generics.GQLEnum   as E (GQLEnum (..))
 import           Data.Morpheus.Generics.TypeRep   (Selectors (..), resolveTypes)
@@ -33,7 +32,7 @@ import           GHC.Generics
 instance GQLInput a => GDecode JSType (K1 i a) where
   gDecode meta (JSObject object) =
     case lookup (Meta.key meta) object of
-      Nothing    -> Left $ requiredArgument meta
+      Nothing    -> internalArgumentError "Missing Argument"
       Just value -> K1 <$> decode value
   gDecode _ isType = internalTypeMismatch "InputObject" isType
 

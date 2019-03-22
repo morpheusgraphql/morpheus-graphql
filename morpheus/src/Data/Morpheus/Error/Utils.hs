@@ -15,14 +15,14 @@ toGQLError handler (Left err) = Left $ handler err
 toGQLError _ (Right value)    = pure value
 
 errorMessage :: Position -> Text -> GQLErrors
-errorMessage pos text = [GQLError {desc = text, posIndex = pos}]
+errorMessage pos text = [GQLError {desc = text, posIndex = [pos]}]
 
 renderErrors :: LineBreaks -> [GQLError] -> [JSONError]
 renderErrors x = map (renderError x)
 
 renderError :: LineBreaks -> GQLError -> JSONError
 renderError lineBreaks internError =
-  JSONError {message = desc internError, locations = [errorLocation lineBreaks $ posIndex internError]}
+  JSONError {message = desc internError, locations = map (errorLocation lineBreaks) $ posIndex internError}
 
 lineIndexAndNumber :: Position -> LineBreaks -> (Int, Int)
 lineIndexAndNumber position lineBreaks = (length linesBefore + 1, linePos linesBefore)
