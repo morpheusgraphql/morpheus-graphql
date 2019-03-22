@@ -17,7 +17,7 @@ import           Data.Morpheus.Schema.Utils.Utils       (TypeLib)
 import           Data.Morpheus.Types.Describer          (EnumOf (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
 import           Data.Morpheus.Types.JSType             (JSType (..))
-import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..))
+import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), Position)
 import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..))
 import qualified Data.Morpheus.Types.Query.Selection    as Valid (Argument (..))
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
@@ -27,7 +27,7 @@ asGQLError :: MetaValidation a -> Validation a
 asGQLError (Left err)    = Left $ variableValidationError err
 asGQLError (Right value) = pure value
 
-getVariable :: Int -> GQLQueryRoot -> Text -> Validation JSType
+getVariable :: Position -> GQLQueryRoot -> Text -> Validation JSType
 getVariable pos root variableID =
   case M.lookup variableID (inputVariables root) of
     Nothing    -> Left $ variableIsNotDefined meta
@@ -47,7 +47,7 @@ checkVariableType typeLib root (variableID, Variable tName pos) =
     meta = MetaInfo {typeName = tName, position = pos, key = variableID}
     checkTypeInp _type inputKey = do
       variableValue <- getVariable pos root inputKey
-      _ <- asGQLError (validateInputVariable typeLib _type (inputKey, variableValue))
+      _ <- asGQLError $ validateInputVariable typeLib _type pos (inputKey, variableValue)
       pure ()
 checkVariableType _ _ (_, Argument _ _) = pure ()
 

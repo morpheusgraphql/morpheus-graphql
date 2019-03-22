@@ -10,7 +10,7 @@ import qualified Data.Morpheus.Schema.Type        as T (name)
 import           Data.Morpheus.Schema.Utils.Utils (Type, TypeLib)
 import           Data.Morpheus.Types.Error        (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.JSType       (JSType (..))
-import           Data.Morpheus.Types.MetaInfo     (MetaInfo (..))
+import           Data.Morpheus.Types.MetaInfo     (MetaInfo (..), Position)
 import           Data.Text                        as Text (Text, pack)
 
 typeMismatch :: MetaInfo -> JSType -> Text -> MetaValidation JSType
@@ -22,18 +22,19 @@ typeMismatch meta isType sType       = Left $ TypeMismatch meta (Text.pack $ sho
 validateFieldType :: MetaInfo -> JSType -> Type -> MetaValidation JSType
 validateFieldType meta x = typeMismatch meta x . T.name
 
-validateInputObject :: TypeLib -> Type -> (Text, JSType) -> MetaValidation (Text, JSType)
-validateInputObject typeLib _parentType (_name, JSObject fields) = do
-  typeSD <- typeBy 0 typeLib _parentType _name
-  fieldsQS <- mapM (validateInputObject typeLib typeSD) fields
+validateInputObject :: TypeLib -> Type -> Position -> (Text, JSType) -> MetaValidation (Text, JSType)
+validateInputObject typeLib _parentType pos (_name, JSObject fields) = do
+  typeSD <- typeBy pos typeLib _parentType _name
+  fieldsQS <- mapM (validateInputObject typeLib typeSD pos) fields
   pure (_name, JSObject fieldsQS)
-validateInputObject typeLib _parentType (_key, x) =
-  typeBy 0 typeLib _parentType _key >>= validateFieldType meta x >> pure (_key, x)
+validateInputObject typeLib _parentType pos (_key, x) =
+  typeBy pos typeLib _parentType _key >>= validateFieldType meta x >> pure (_key, x)
   where
-    meta = MetaInfo {typeName = T.name _parentType, key = _key, position = 0}
+    meta = MetaInfo {typeName = T.name _parentType, key = _key, position = pos}
 
-validateInputVariable :: TypeLib -> Type -> (Text, JSType) -> MetaValidation JSType
-validateInputVariable typeLib _type (_, JSObject fields) = JSObject <$> mapM (validateInputObject typeLib _type) fields
-validateInputVariable _ _type (varName, x) = validateFieldType meta x _type
+validateInputVariable :: TypeLib -> Type -> Position -> (Text, JSType) -> MetaValidation JSType
+validateInputVariable typeLib _type pos (_, JSObject fields) =
+  JSObject <$> mapM (validateInputObject typeLib _type pos) fields
+validateInputVariable _ _type pos (varName, x) = validateFieldType meta x _type
   where
-    meta = MetaInfo {typeName = "", key = varName, position = 0}
+    meta = MetaInfo {typeName = "", key = varName, position = pos}
