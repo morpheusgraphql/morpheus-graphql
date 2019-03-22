@@ -14,15 +14,23 @@ import           Data.Morpheus.PreProcess.Utils         (existsType, fieldOf, fi
 import qualified Data.Morpheus.Schema.Type              as T (name)
 import           Data.Morpheus.Schema.Utils.Utils       (Type, TypeLib)
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
-import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..))
+import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), Position)
 import           Data.Morpheus.Types.Query.Fragment     (Fragment (..), FragmentLib)
 import           Data.Morpheus.Types.Query.RawSelection (RawSelection (..))
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Text                              (Text)
 
-type Graph = [Text]
+data Node = Node
+  { uid      :: Text
+  , location :: Meta.Position
+  }
 
-type RootGraph = [(Text, Graph)]
+instance Eq Node where
+  (Node id1 _) == (Node id2 _) = id1 == id2
+
+type NodeEdges = (Node, [Node])
+
+type Graph = [NodeEdges]
 
 asSelectionValidation :: MetaValidation a -> Validation a
 asSelectionValidation = toGQLError selectionError
@@ -47,7 +55,7 @@ getSpreadType :: FragmentLib -> Type -> Text -> Meta.MetaInfo -> Validation Type
 getSpreadType frags _type fragmentID spreadMeta =
   getFragment spreadMeta fragmentID frags >>= compareFragmentType spreadMeta _type
 
-validateFragmentFields :: TypeLib -> GQLQueryRoot -> Type -> (Text, RawSelection) -> Validation Graph
+validateFragmentFields :: TypeLib -> GQLQueryRoot -> Type -> (Text, RawSelection) -> Validation [Node]
 validateFragmentFields typeLib root _parent (name', RawSelectionSet args selectors sPos) = do
   fieldSC <- asSelectionValidation $ fieldOf sPos _parent name'
   typeSC <- asGQLError $ fieldType sPos typeLib fieldSC
@@ -58,25 +66,25 @@ validateFragmentFields typeLib root _parentType (_name, RawField args _ sPos) = 
   _ <- resolveArguments typeLib root _field sPos args -- TODO do not use heavy validation
   pure []
 validateFragmentFields _ root _parent (spreadID, Spread value pos) =
-  getSpreadType (fragments root) _parent spreadID spreadMeta >> pure [value]
+  getSpreadType (fragments root) _parent spreadID spreadMeta >> pure [Node value pos]
   where
     spreadMeta = Meta.MetaInfo {Meta.typeName = "", Meta.key = spreadID, Meta.position = pos}
 
-validateFragment :: TypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation (Text, Graph)
+validateFragment :: TypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation NodeEdges
 validateFragment lib root (fName, Fragment {content = selection, target = target', position = position'}) = do
   _type <- asGQLError $ existsType (position', fName) target' lib
   fragmentLinks <- concat <$> mapM (validateFragmentFields lib root _type) selection
-  pure (fName, fragmentLinks)
+  pure (Node fName position', fragmentLinks)
 
 validateFragments :: TypeLib -> GQLQueryRoot -> Validation ()
 validateFragments lib root = mapM (validateFragment lib root) (M.toList $ fragments root) >>= detectLoopOnFragments
 
-detectLoopOnFragments :: RootGraph -> Validation ()
+detectLoopOnFragments :: Graph -> Validation ()
 detectLoopOnFragments lib = mapM_ checkFragment lib
   where
     checkFragment (fragmentID, _) = checkForCycle lib fragmentID [fragmentID]
 
-checkForCycle :: RootGraph -> Text -> [Text] -> Validation RootGraph
+checkForCycle :: Graph -> Node -> [Node] -> Validation Graph
 checkForCycle lib parentNode history =
   case lookup parentNode lib of
     Just node -> concat <$> mapM checkNode node
@@ -84,7 +92,7 @@ checkForCycle lib parentNode history =
   where
     checkNode x =
       if x `elem` history
-        then cycleError
+        then cycleError x
         else recurse x
-    recurse node = checkForCycle lib node (history ++ [node])
-    cycleError = Left $ cycleOnFragment (map (\x -> (x, 0)) history) -- TODO real position
+    recurse node = checkForCycle lib node $ history ++ [node]
+    cycleError n = Left $ cycleOnFragment (map (\x -> (uid x, location x)) (history ++ [n])) -- TODO real position

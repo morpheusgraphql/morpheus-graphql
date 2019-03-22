@@ -28,7 +28,7 @@ data MetaError
 
 data GQLError = GQLError
   { desc     :: Text
-  , posIndex :: Int
+  , posIndex :: [Int]
   } deriving (Show)
 
 type GQLErrors = [GQLError]

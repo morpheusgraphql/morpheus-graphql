@@ -28,8 +28,8 @@ import qualified Data.Text                    as T (concat)
   - date(name: "name") -> "Unknown argument \"name\" on field \"date\" of type \"Experience\"."
 -}
 argumentError :: MetaError -> GQLErrors
-argumentError (UnknownType meta) = unsupportedArgumentType meta
-argumentError (UnknownField meta) = unsupportedArgumentType meta
+argumentError (UnknownType meta)      = unsupportedArgumentType meta
+argumentError (UnknownField meta)     = unsupportedArgumentType meta
 argumentError (TypeMismatch meta _ _) = unsupportedArgumentType meta
 
 unsupportedArgumentType :: MetaInfo -> GQLErrors
@@ -40,7 +40,7 @@ unsupportedArgumentType meta = errorMessage (position meta) text
 unknownArguments :: Text -> [Text] -> GQLErrors
 unknownArguments fieldName = map keyToError
   where
-    keyToError x = GQLError {desc = toMessage x, posIndex = 0}
+    keyToError x = GQLError {desc = toMessage x, posIndex = [0]}
     toMessage argName = T.concat ["Unknown Argument \"", argName, "\" on Field \"", fieldName, "\"."]
 
 requiredArgument :: MetaInfo -> GQLErrors
