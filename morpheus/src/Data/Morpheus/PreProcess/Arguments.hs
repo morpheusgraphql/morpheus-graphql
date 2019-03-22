@@ -4,11 +4,10 @@ module Data.Morpheus.PreProcess.Arguments
   , onlyResolveArguments
   ) where
 
-import           Data.List                              ((\\))
 import           Data.Morpheus.Error.Arguments          (argumentError, requiredArgument,
                                                          unknownArguments)
 import           Data.Morpheus.PreProcess.Input.Enum    (validateEnum)
-import           Data.Morpheus.PreProcess.Utils         (existsType)
+import           Data.Morpheus.PreProcess.Utils         (differKeys, existsType)
 import           Data.Morpheus.PreProcess.Variable      (replaceVariable)
 import qualified Data.Morpheus.Schema.Field             as F (args, name)
 import qualified Data.Morpheus.Schema.InputValue        as I (inputValueMeta, isRequired, name)
@@ -57,12 +56,12 @@ onlyResolveArguments root _ = mapM (replaceVariable root)
 
 checkForUnknownArguments :: Field -> Arguments -> Validation [InputValue]
 checkForUnknownArguments field args =
-  case map argToKey args \\ fieldKeys of
+  case differKeys (map argToKey args) fieldKeys of
     []          -> pure $ F.args field
     unknownArgs -> Left $ unknownArguments (F.name field) unknownArgs
   where
     argToKey (key', Argument _ pos) = EnhancedKey key' pos
-    fieldKeys = map (\x -> EnhancedKey (I.name x) 0) (F.args field) -- pos information can be 0 because we differentiate it to args and it will be not included in error keys
+    fieldKeys = map I.name (F.args field)
 
 resolveArguments :: TypeLib -> GQLQueryRoot -> Field -> Position -> Raw.RawArguments -> Validation Arguments
 resolveArguments typeLib root inputs pos args =

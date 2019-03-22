@@ -2,6 +2,7 @@ module Data.Morpheus.Types.Core
   ( Key
   , Collection
   , EnhancedKey(..)
+  , enhanceKeyWithNull
   ) where
 
 import           Data.Text (Text)
@@ -18,3 +19,6 @@ data EnhancedKey = EnhancedKey
 
 instance Eq EnhancedKey where
   (EnhancedKey id1 _) == (EnhancedKey id2 _) = id1 == id2
+
+enhanceKeyWithNull :: Key -> EnhancedKey
+enhanceKeyWithNull text = EnhancedKey {uid = text, location = 0}

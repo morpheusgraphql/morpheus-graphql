@@ -5,15 +5,17 @@ module Data.Morpheus.PreProcess.Utils
   , typeBy
   , fieldOf
   , fieldType
+  , differKeys
   ) where
 
+import           Data.List                        ((\\))
 import qualified Data.Map                         as M (lookup)
 import qualified Data.Morpheus.Schema.Field       as F (name, _type)
 import qualified Data.Morpheus.Schema.Type        as T (kind, name, ofType)
 import           Data.Morpheus.Schema.TypeKind    (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Field (fieldByKey)
 import           Data.Morpheus.Schema.Utils.Utils (Field, Type, TypeLib)
-import           Data.Morpheus.Types.Core         (Key)
+import           Data.Morpheus.Types.Core         (EnhancedKey (..), Key, enhanceKeyWithNull)
 import           Data.Morpheus.Types.Describer    (EnumOf (..))
 import           Data.Morpheus.Types.Error        (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.MetaInfo     (MetaInfo (..), Position)
@@ -49,3 +51,7 @@ fieldType position' lib field =
 
 typeBy :: Position -> TypeLib -> Type -> Text -> MetaValidation Type
 typeBy pos lib _parentType _name = fieldOf pos _parentType _name >>= fieldType pos lib
+
+-- pos information can be 0 because we differentiate it to args and it will be not included in error keys
+differKeys :: [EnhancedKey] -> [Key] -> [EnhancedKey]
+differKeys enhanced keys = enhanced \\ map enhanceKeyWithNull keys
