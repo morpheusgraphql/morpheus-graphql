@@ -35,7 +35,7 @@ instance GQLKind CityID where
 data Coordinates = Coordinates
   { latitude  :: Text
   , longitude :: Int
-  } deriving (Show, Generic, Data, GQLInput)
+  } deriving (Show, Generic, Data, GQLKind, GQLInput)
 
 data LocationByCoordinates = LocationByCoordinates
   { coordinates :: Coordinates
