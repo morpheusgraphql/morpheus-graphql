@@ -73,14 +73,11 @@ class GQLSelection a where
       fieldTypes = getFields (Proxy @(Rep a))
       stack = map snd fieldTypes
 
-resolve :: (Show a, Show p, GQLSelection a, Args.GQLArgs p) => Selection -> p ::-> a -> ResolveIO JSType
-resolve (SelectionSet gqlArgs body pos) (Resolver resolver) =
-  (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (SelectionSet gqlArgs body pos)
-resolve (Field gqlArgs field pos) (Resolver resolver) =
-  (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (Field gqlArgs field pos)
-
-instance (Show a, Show p, GQLSelection a, Args.GQLArgs p, D.Typeable (p ::-> a)) => GQLSelection (p ::-> a) where
-  encode = resolve
+instance (GQLSelection a, Args.GQLArgs p) => GQLSelection (p ::-> a) where
+  encode (SelectionSet gqlArgs body pos) (Resolver resolver) =
+    (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (SelectionSet gqlArgs body pos)
+  encode (Field gqlArgs field pos) (Resolver resolver) =
+    (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (Field gqlArgs field pos)
   introspect _ typeLib = resolveTypes typeLib $ args ++ fields
     where
       args = map snd $ Args.introspect (Proxy @p)
@@ -88,7 +85,7 @@ instance (Show a, Show p, GQLSelection a, Args.GQLArgs p, D.Typeable (p ::-> a))
   fieldType _ name = (fieldType (Proxy @a) name) {F.args = map fst $ Args.introspect (Proxy @p)}
 
 -- manual deriving of  DeprecationArgs ::-> a
-instance (Show a, GQLSelection a, D.Typeable a) => GQLSelection (WithDeprecationArgs a) where
+instance GQLSelection a => GQLSelection (WithDeprecationArgs a) where
   encode sel (WithDeprecationArgs val) = encode sel val
   introspect _ typeLib = resolveTypes typeLib $ args ++ fields
     where
