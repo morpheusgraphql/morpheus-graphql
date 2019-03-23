@@ -7,7 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 
-module Data.Morpheus.Generics.GQLInput
+module Data.Morpheus.Kind.GQLInput
   ( GQLInput(..)
   ) where
 
@@ -15,9 +15,9 @@ import           Data.Data                        (Data, Typeable)
 import qualified Data.Map                         as M
 import           Data.Morpheus.Error.Internal     (internalArgumentError, internalTypeMismatch)
 import           Data.Morpheus.Generics.GDecode   (GDecode (..))
-import qualified Data.Morpheus.Generics.GQLEnum   as E (GQLEnum (..))
 import           Data.Morpheus.Generics.TypeRep   (Selectors (..), resolveTypes)
 import           Data.Morpheus.Generics.Utils     (typeOf)
+import qualified Data.Morpheus.Kind.GQLEnum       as E (GQLEnum (..))
 import qualified Data.Morpheus.Schema.InputValue  as I (InputValue (..))
 import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib, createInputObject,
                                                    createInputValue)

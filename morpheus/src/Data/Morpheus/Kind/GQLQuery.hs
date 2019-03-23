@@ -8,15 +8,15 @@
 {-# LANGUAGE ScopedTypeVariables      #-}
 {-# LANGUAGE TypeOperators            #-}
 
-module Data.Morpheus.Generics.GQLQuery
+module Data.Morpheus.Kind.GQLQuery
   ( GQLQuery(..)
   ) where
 
 import           Data.Data                              (Data, Typeable)
 import           Data.Map                               (insert)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
-import           Data.Morpheus.Generics.GQLSelection    (GQLSelection (..))
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
+import           Data.Morpheus.Kind.GQLSelection        (GQLSelection (..))
 import           Data.Morpheus.Schema.Schema            (Schema, initSchema)
 import           Data.Morpheus.Schema.Utils.Utils       (Field, TypeLib, createField,
                                                          createObjectType)

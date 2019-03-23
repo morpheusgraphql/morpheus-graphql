@@ -8,7 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables      #-}
 {-# LANGUAGE TypeOperators            #-}
 
-module Data.Morpheus.Generics.GQLMutation
+module Data.Morpheus.Kind.GQLMutation
   ( GQLMutation(..)
   , NoMutation(..)
   ) where

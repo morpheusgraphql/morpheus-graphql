@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Data.Morpheus.Generics.GQLKind
+module Data.Morpheus.Kind.GQLKind
   ( GQLKind(..)
   ) where
 

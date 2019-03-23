@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeOperators         #-}
 
-module Data.Morpheus.Generics.GQLSelection
+module Data.Morpheus.Kind.GQLSelection
   ( GQLSelection(..)
   ) where
 
@@ -17,11 +17,11 @@ import qualified Data.Data                              as D
 import qualified Data.Map                               as M
 import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
-import qualified Data.Morpheus.Generics.GQLArgs         as Args (GQLArgs (..))
-import qualified Data.Morpheus.Generics.GQLEnum         as E (GQLEnum (..))
-import           Data.Morpheus.Generics.GQLKind         (GQLKind (..))
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
+import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
+import qualified Data.Morpheus.Kind.GQLEnum             as E (GQLEnum (..))
+import           Data.Morpheus.Kind.GQLKind             (GQLKind (..))
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import qualified Data.Morpheus.Schema.Field             as F (Field (..), createFieldWith)

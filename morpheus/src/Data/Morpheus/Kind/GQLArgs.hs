@@ -6,16 +6,16 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 
-module Data.Morpheus.Generics.GQLArgs
+module Data.Morpheus.Kind.GQLArgs
   ( GQLArgs(..)
   ) where
 
 import qualified Data.Data                           as D
 import           Data.Morpheus.Error.Internal        (internalArgumentError)
 import           Data.Morpheus.Generics.GDecode      (GDecode (..))
-import qualified Data.Morpheus.Generics.GQLInput     as I (GQLInput (..))
 import           Data.Morpheus.Generics.TypeRep      (Selectors (..))
 import           Data.Morpheus.Generics.Utils        (RecSel, SelOf)
+import qualified Data.Morpheus.Kind.GQLInput         as I (GQLInput (..))
 import           Data.Morpheus.Schema.Type           (DeprecationArgs)
 import           Data.Morpheus.Schema.Utils.Utils    (InputValue, TypeLib)
 import           Data.Morpheus.Types.Error           (Validation)

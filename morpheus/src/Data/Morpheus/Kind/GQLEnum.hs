@@ -4,14 +4,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module Data.Morpheus.Generics.GQLEnum
+module Data.Morpheus.Kind.GQLEnum
   ( GQLEnum(decode, introspect, enumType, fieldType)
   ) where
 
 import qualified Data.Data                              as D
 import qualified Data.Map                               as M
 import           Data.Morpheus.Generics.GDecodeEnum     (GDecodeEnum (..))
-import           Data.Morpheus.Generics.GQLKind         (GQLKind (..))
+import           Data.Morpheus.Kind.GQLKind             (GQLKind (..))
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import qualified Data.Morpheus.Schema.Field             as F (createFieldWith)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
