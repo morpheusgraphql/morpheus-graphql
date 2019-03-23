@@ -48,6 +48,9 @@ instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (RecSel s a) Fi
       name = T.pack $ selName (undefined :: SelOf s)
 
 class GQLSelection a where
+  description :: Proxy a -> T.Text
+  default description :: Proxy a -> T.Text
+  description _ = ""
   encode :: Selection -> a -> ResolveIO JSType
   default encode :: (Generic a, D.Data a, DeriveResolvers (Rep a), Show a) =>
     Selection -> a -> ResolveIO JSType
