@@ -21,7 +21,7 @@ import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolve
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
 import qualified Data.Morpheus.Kind.GQLEnum             as E (GQLEnum (..))
-import           Data.Morpheus.Kind.GQLKind             (GQLKind (..))
+import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), scalarTypeOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import qualified Data.Morpheus.Schema.Field             as F (Field (..), createFieldWith)
@@ -29,8 +29,7 @@ import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.Type              (DeprecationArgs)
 import           Data.Morpheus.Schema.Utils.Field       (wrapAsListType)
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type, TypeLib,
-                                                         createField, createObjectType,
-                                                         createScalar)
+                                                         createField, createObjectType)
 import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..),
                                                          WithDeprecationArgs (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
@@ -106,20 +105,26 @@ instance (Show a, GQLSelection a, D.Typeable a) => GQLSelection (Maybe a) where
   introspect _ = introspect (Proxy :: Proxy a)
   fieldType _ = fieldType (Proxy :: Proxy a)
 
+introspectScalar :: GQLKind a => Proxy a -> TypeLib -> TypeLib
+introspectScalar proxy = M.insert (typeID proxy) (scalarTypeOf proxy)
+
+scalarField :: GQLKind a => Proxy a -> T.Text -> Field
+scalarField proxy name = F.createFieldWith name (scalarTypeOf proxy) []
+
 instance GQLSelection Int where
   encode _ = pure . JSInt
-  introspect _ = M.insert "Int" $ createScalar "Int"
-  fieldType _ name = F.createFieldWith name (createScalar "Int") []
+  introspect = introspectScalar
+  fieldType = scalarField
 
 instance GQLSelection T.Text where
   encode _ = pure . JSString
-  introspect _ = M.insert "String" $ createScalar "String"
-  fieldType _ name = F.createFieldWith name (createScalar "String") []
+  introspect = introspectScalar
+  fieldType = scalarField
 
 instance GQLSelection Bool where
   encode _ = pure . JSBool
-  introspect _ = M.insert "Boolean" $ createScalar "Boolean"
-  fieldType _ name = F.createFieldWith name (createScalar "Boolean") []
+  introspect = introspectScalar
+  fieldType = scalarField
 
 instance (GQLSelection a, D.Typeable a) => GQLSelection [a] where
   encode Field {} _ = pure $ JSList []
