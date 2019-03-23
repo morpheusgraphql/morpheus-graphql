@@ -5,7 +5,8 @@ module Data.Morpheus
   ( interpreter
   , eitherToResponse
   , GQLResponse
-  , GQLSelection(description)
+  , GQLSelection
+  , GQLKind(description)
   , GQLQuery
   , GQLArgs
   , (::->)(..)
@@ -26,9 +27,10 @@ import           Data.Morpheus.Error.Utils           (errorMessage, renderErrors
 import           Data.Morpheus.Generics.GQLArgs      (GQLArgs)
 import           Data.Morpheus.Generics.GQLEnum      (GQLEnum)
 import           Data.Morpheus.Generics.GQLInput     (GQLInput)
+import           Data.Morpheus.Generics.GQLKind      (GQLKind (description))
 import           Data.Morpheus.Generics.GQLMutation  (GQLMutation (..), NoMutation (..))
 import           Data.Morpheus.Generics.GQLQuery     (GQLQuery (..))
-import           Data.Morpheus.Generics.GQLSelection (GQLSelection (description))
+import           Data.Morpheus.Generics.GQLSelection (GQLSelection)
 import           Data.Morpheus.Parser.Parser         (parseGQL, parseLineBreaks)
 import           Data.Morpheus.PreProcess.PreProcess (preProcessQuery)
 import           Data.Morpheus.Schema.Utils.Utils    (TypeLib)

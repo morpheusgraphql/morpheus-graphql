@@ -19,8 +19,9 @@ import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import qualified Data.Morpheus.Generics.GQLArgs         as Args (GQLArgs (..))
 import qualified Data.Morpheus.Generics.GQLEnum         as E (GQLEnum (..))
+import           Data.Morpheus.Generics.GQLKind         (GQLKind (..))
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
-import           Data.Morpheus.Generics.Utils           (RecSel, SelOf, typeOf)
+import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import qualified Data.Morpheus.Schema.Field             as F (Field (..), createFieldWith)
@@ -49,9 +50,6 @@ instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (RecSel s a) Fi
       name = T.pack $ selName (undefined :: SelOf s)
 
 class GQLSelection a where
-  description :: Proxy a -> T.Text
-  default description :: Proxy a -> T.Text
-  description _ = "default selection Description"
   encode :: Selection -> a -> ResolveIO JSType
   default encode :: (Generic a, D.Data a, DeriveResolvers (Rep a), Show a) =>
     Selection -> a -> ResolveIO JSType
@@ -59,18 +57,14 @@ class GQLSelection a where
   encode (Field _ key pos) = \_ -> failResolveIO $ subfieldsNotSelected meta -- TODO: must be internal Error
     where
       meta = Meta.MetaInfo {Meta.typeName = "", Meta.key = key, Meta.position = pos}
-  typeID :: Proxy a -> T.Text
-  default typeID :: (D.Typeable a) =>
-    Proxy a -> T.Text
-  typeID _ = typeOf $ Proxy @a
   fieldType :: Proxy a -> T.Text -> Field
-  default fieldType :: (Show a, Selectors (Rep a) Field, D.Typeable a) =>
+  default fieldType :: (Show a, Selectors (Rep a) Field, D.Typeable a, GQLKind a) =>
     Proxy a -> T.Text -> Field
   fieldType proxy name = createField name typeName []
     where
       typeName = typeID proxy
   introspect :: Proxy a -> TypeLib -> TypeLib
-  default introspect :: (Show a, Selectors (Rep a) Field, D.Typeable a) =>
+  default introspect :: (Show a, Selectors (Rep a) Field, D.Typeable a, GQLKind a) =>
     Proxy a -> TypeLib -> TypeLib
   introspect proxy typeLib =
     case M.lookup typeName typeLib of
@@ -138,20 +132,14 @@ instance (Show a, E.GQLEnum a, D.Typeable a) => GQLSelection (EnumOf a) where
   fieldType _ = E.fieldType (Proxy :: Proxy a)
   introspect _ = E.introspect (Proxy :: Proxy a)
 
-instance GQLSelection EnumValue where
-  typeID _ = "__EnumValue"
+instance GQLSelection EnumValue
 
-instance GQLSelection Type where
-  typeID _ = "__Type"
+instance GQLSelection Type
 
-instance GQLSelection Field where
-  typeID _ = "__Field"
+instance GQLSelection Field
 
-instance GQLSelection InputValue where
-  typeID _ = "__InputValue"
+instance GQLSelection InputValue
 
-instance GQLSelection Schema where
-  typeID _ = "__Schema"
+instance GQLSelection Schema
 
-instance GQLSelection Directive where
-  typeID _ = "__Directive"
+instance GQLSelection Directive
