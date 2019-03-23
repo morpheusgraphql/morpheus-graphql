@@ -21,15 +21,14 @@ import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolve
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
 import qualified Data.Morpheus.Kind.GQLEnum             as E (GQLEnum (..))
-import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), scalarTypeOf)
+import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), objectTypeOf, scalarTypeOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import qualified Data.Morpheus.Schema.Field             as F (Field (..), createFieldWith)
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.Type              (DeprecationArgs)
 import           Data.Morpheus.Schema.Utils.Field       (wrapAsListType)
-import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type, TypeLib, createField,
-                                                         createObjectType)
+import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type, TypeLib, createField)
 import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..), WithDeprecationArgs (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
@@ -62,18 +61,17 @@ class GQLSelection a where
     where
       typeName = typeID proxy
   introspect :: Proxy a -> TypeLib -> TypeLib
-  default introspect :: (Show a, Selectors (Rep a) Field, D.Typeable a, GQLKind a) =>
+  default introspect :: (Show a, Selectors (Rep a) Field, GQLKind a) =>
     Proxy a -> TypeLib -> TypeLib
   introspect proxy typeLib =
     case M.lookup typeName typeLib of
       Just _  -> typeLib
       Nothing -> resolveTypes (M.insert typeName objectType typeLib) stack
     where
-      objectType = createObjectType typeName (description $ Proxy @a) gqlFields
+      objectType = objectTypeOf (Proxy @a) (map fst fieldTypes)
       typeName = typeID proxy
       fieldTypes = getFields (Proxy :: Proxy (Rep a))
       stack = map snd fieldTypes
-      gqlFields = map fst fieldTypes
 
 resolve :: (Show a, Show p, GQLSelection a, Args.GQLArgs p) => Selection -> p ::-> a -> ResolveIO JSType
 resolve (SelectionSet gqlArgs body pos) (Resolver resolver) =
@@ -85,9 +83,9 @@ instance (Show a, Show p, GQLSelection a, Args.GQLArgs p, D.Typeable (p ::-> a))
   encode = resolve
   introspect _ typeLib = resolveTypes typeLib $ args ++ fields
     where
-      args = map snd $ Args.introspect (Proxy :: Proxy p)
-      fields = [introspect (Proxy :: Proxy a)]
-  fieldType _ name = (fieldType (Proxy :: Proxy a) name) {F.args = map fst $ Args.introspect (Proxy :: Proxy p)}
+      args = map snd $ Args.introspect (Proxy @p)
+      fields = [introspect (Proxy @a)]
+  fieldType _ name = (fieldType (Proxy :: Proxy a) name) {F.args = map fst $ Args.introspect (Proxy @p)}
 
 -- manual deriving of  DeprecationArgs ::-> a
 instance (Show a, GQLSelection a, D.Typeable a) => GQLSelection (WithDeprecationArgs a) where

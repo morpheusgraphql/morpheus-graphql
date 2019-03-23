@@ -6,6 +6,7 @@
 module Data.Morpheus.Kind.GQLKind
   ( GQLKind(..)
   , scalarTypeOf
+  , objectTypeOf
   ) where
 
 import           Data.Data                              (Typeable)
@@ -23,6 +24,9 @@ import           Data.Text                              (Text)
 
 scalarTypeOf :: GQLKind a => Proxy a -> Type
 scalarTypeOf proxy = buildType proxy SCALAR [] Nothing
+
+objectTypeOf :: GQLKind a => Proxy a -> [Field] -> Type
+objectTypeOf proxy fields = buildType proxy OBJECT fields Nothing
 
 class GQLKind a where
   description :: Proxy a -> Text

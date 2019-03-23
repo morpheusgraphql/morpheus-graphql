@@ -11,7 +11,6 @@ module Data.Morpheus.Schema.Utils.Utils
   , emptyLib
   , createInputValue
   , wrapListType
-  , createScalar
   , createEnum
   , createInputObject
   ) where
@@ -58,20 +57,6 @@ createObjectType tName desc tFields =
     , name = tName
     , description = desc
     , fields = WithDeprecationArgs tFields
-    , ofType = Nothing
-    , interfaces = []
-    , possibleTypes = []
-    , enumValues = WithDeprecationArgs []
-    , inputFields = []
-    }
-
-createScalar :: Text -> Type
-createScalar sName =
-  Type
-    { kind = EnumOf SCALAR
-    , name = sName
-    , description = ""
-    , fields = WithDeprecationArgs []
     , ofType = Nothing
     , interfaces = []
     , possibleTypes = []
