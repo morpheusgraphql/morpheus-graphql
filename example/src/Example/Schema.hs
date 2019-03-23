@@ -61,7 +61,7 @@ data User = User
   } deriving (Show, Generic, Data)
 
 instance GQLSelection User where
-  description _ = "Custom Description for Client Defined User"
+  description _ = "Custom Description for Client Defined User Type"
 
 newtype Query = Query
   { user :: () ::-> User
