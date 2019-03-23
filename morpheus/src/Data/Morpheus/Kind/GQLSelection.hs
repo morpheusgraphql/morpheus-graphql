@@ -42,7 +42,7 @@ instance GQLSelection a => DeriveResolvers (K1 i a) where
   deriveResolvers meta (K1 src) = [(Meta.key meta, (`encode` src))]
 
 instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (RecSel s a) Field where
-  getFields _ = [(fieldType (Proxy :: Proxy a) name, introspect (Proxy :: Proxy a))]
+  getFields _ = [(fieldType (Proxy @a) name, introspect (Proxy @a))]
     where
       name = T.pack $ selName (undefined :: SelOf s)
 
@@ -70,7 +70,7 @@ class GQLSelection a where
     where
       objectType = objectTypeOf (Proxy @a) (map fst fieldTypes)
       typeName = typeID proxy
-      fieldTypes = getFields (Proxy :: Proxy (Rep a))
+      fieldTypes = getFields (Proxy @(Rep a))
       stack = map snd fieldTypes
 
 resolve :: (Show a, Show p, GQLSelection a, Args.GQLArgs p) => Selection -> p ::-> a -> ResolveIO JSType
@@ -85,7 +85,7 @@ instance (Show a, Show p, GQLSelection a, Args.GQLArgs p, D.Typeable (p ::-> a))
     where
       args = map snd $ Args.introspect (Proxy @p)
       fields = [introspect (Proxy @a)]
-  fieldType _ name = (fieldType (Proxy :: Proxy a) name) {F.args = map fst $ Args.introspect (Proxy @p)}
+  fieldType _ name = (fieldType (Proxy @a) name) {F.args = map fst $ Args.introspect (Proxy @p)}
 
 -- manual deriving of  DeprecationArgs ::-> a
 instance (Show a, GQLSelection a, D.Typeable a) => GQLSelection (WithDeprecationArgs a) where
