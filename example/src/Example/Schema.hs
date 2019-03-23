@@ -15,7 +15,7 @@ import           Data.Data                  (Data)
 import           Data.Maybe                 (fromMaybe)
 import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLArgs, GQLEnum,
                                              GQLInput, GQLMutation, GQLQuery, GQLResponse,
-                                             GQLRoot (..), GQLSelection, ResolveIO,
+                                             GQLRoot (..), GQLSelection (description), ResolveIO,
                                              eitherToResponse, interpreter)
 import           Data.Text                  (Text, pack)
 import qualified Data.Text                  as T (concat)
@@ -58,7 +58,10 @@ data User = User
   , office  :: Location ::-> Address
   , friend  :: () ::-> Maybe User
   , home    :: Maybe Address
-  } deriving (Show, Generic, Data, GQLSelection)
+  } deriving (Show, Generic, Data)
+
+instance GQLSelection User where
+  description _ = "Custom Description for Client Defined User"
 
 newtype Query = Query
   { user :: () ::-> User

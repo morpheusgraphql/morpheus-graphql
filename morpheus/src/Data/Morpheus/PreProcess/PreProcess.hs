@@ -10,7 +10,8 @@ module Data.Morpheus.PreProcess.PreProcess
 import           Data.Morpheus.Error.Selection          (duplicateQuerySelections, selectionError)
 import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
-import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
+
+-- import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
 import           Data.Morpheus.PreProcess.Spread        (prepareRawSelection)
 import           Data.Morpheus.PreProcess.Utils         (differKeys, existsType, fieldOf, fieldType)
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
@@ -71,7 +72,7 @@ preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
 preProcessQuery lib root = do
   let (operator, args, rawSel, position') = getOperationInfo $ queryBody root
   validateVariables lib root args
-  validateFragments lib root
+  -- validateFragments lib root
   _type <- asSelectionValidation $ existsType (position', operator) operator lib
   sel <- prepareRawSelection root rawSel
   selectors <- mapSelectors lib _type sel

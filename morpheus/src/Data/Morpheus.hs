@@ -5,7 +5,7 @@ module Data.Morpheus
   ( interpreter
   , eitherToResponse
   , GQLResponse
-  , GQLSelection
+  , GQLSelection(description)
   , GQLQuery
   , GQLArgs
   , (::->)(..)
@@ -15,7 +15,7 @@ module Data.Morpheus
   , EnumOf(unpackEnum)
   , GQLEnum
   , GQLRoot(..)
-  , GQLMutation(..)
+  , GQLMutation
   , NoMutation(..)
   ) where
 
@@ -28,7 +28,7 @@ import           Data.Morpheus.Generics.GQLEnum      (GQLEnum)
 import           Data.Morpheus.Generics.GQLInput     (GQLInput)
 import           Data.Morpheus.Generics.GQLMutation  (GQLMutation (..), NoMutation (..))
 import           Data.Morpheus.Generics.GQLQuery     (GQLQuery (..))
-import           Data.Morpheus.Generics.GQLSelection (GQLSelection)
+import           Data.Morpheus.Generics.GQLSelection (GQLSelection (description))
 import           Data.Morpheus.Parser.Parser         (parseGQL, parseLineBreaks)
 import           Data.Morpheus.PreProcess.PreProcess (preProcessQuery)
 import           Data.Morpheus.Schema.Utils.Utils    (TypeLib)

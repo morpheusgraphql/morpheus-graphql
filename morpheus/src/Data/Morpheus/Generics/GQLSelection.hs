@@ -28,7 +28,8 @@ import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.Type              (DeprecationArgs)
 import           Data.Morpheus.Schema.Utils.Field       (wrapAsListType)
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type, TypeLib,
-                                                         createField, createScalar, createType)
+                                                         createField, createObjectType,
+                                                         createScalar)
 import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..),
                                                          WithDeprecationArgs (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
@@ -50,7 +51,7 @@ instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (RecSel s a) Fi
 class GQLSelection a where
   description :: Proxy a -> T.Text
   default description :: Proxy a -> T.Text
-  description _ = ""
+  description _ = "default selection Description"
   encode :: Selection -> a -> ResolveIO JSType
   default encode :: (Generic a, D.Data a, DeriveResolvers (Rep a), Show a) =>
     Selection -> a -> ResolveIO JSType
@@ -74,8 +75,9 @@ class GQLSelection a where
   introspect proxy typeLib =
     case M.lookup typeName typeLib of
       Just _  -> typeLib
-      Nothing -> resolveTypes (M.insert typeName (createType typeName gqlFields) typeLib) stack
+      Nothing -> resolveTypes (M.insert typeName objectType typeLib) stack
     where
+      objectType = createObjectType typeName (description $ Proxy @a) gqlFields
       typeName = typeID proxy
       fieldTypes = getFields (Proxy :: Proxy (Rep a))
       stack = map snd fieldTypes

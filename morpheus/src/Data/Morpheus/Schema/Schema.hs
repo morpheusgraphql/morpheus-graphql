@@ -7,7 +7,7 @@ module Data.Morpheus.Schema.Schema where
 import           Data.Data                        (Data)
 import qualified Data.Map                         as M
 import           Data.Morpheus.Schema.Directive   (Directive)
-import           Data.Morpheus.Schema.Utils.Utils (Type, createType)
+import           Data.Morpheus.Schema.Utils.Utils (Type, createObjectType)
 import           Data.Text                        (Text)
 import           GHC.Generics                     (Generic)
 
@@ -23,7 +23,7 @@ initSchema :: M.Map Text Type -> Schema
 initSchema sTypes =
   Schema
     { types = M.elems sTypes
-    , queryType = Just $ createType "Query" []
+    , queryType = Just $ createObjectType "Query" "Query Description" []
     , mutationType = Nothing
     , subscriptionType = Nothing
     , directives = []

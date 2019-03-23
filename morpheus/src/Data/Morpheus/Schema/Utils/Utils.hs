@@ -6,7 +6,7 @@ module Data.Morpheus.Schema.Utils.Utils
   , Field
   , InputValue
   , TypeLib
-  , createType
+  , createObjectType
   , createField
   , emptyLib
   , createInputValue
@@ -32,7 +32,7 @@ type Field = F.Field Type
 type TypeLib = Map Text Type
 
 createField :: Text -> Text -> [InputValue] -> Field
-createField fName typeName = F.createFieldWith fName (createType typeName [])
+createField fName typeName = F.createFieldWith fName (createObjectType typeName "" [])
 
 createInputValue :: Text -> Text -> InputValue
 createInputValue iName typeName = I.createInputValueWith iName (createInputObject typeName [])
@@ -51,12 +51,12 @@ createInputObject iName iFields =
     , inputFields = []
     }
 
-createType :: Text -> [Field] -> Type
-createType tName tFields =
+createObjectType :: Text -> Text -> [Field] -> Type
+createObjectType tName desc tFields =
   Type
     { kind = EnumOf OBJECT
     , name = tName
-    , description = ""
+    , description = desc
     , fields = WithDeprecationArgs tFields
     , ofType = Nothing
     , interfaces = []
