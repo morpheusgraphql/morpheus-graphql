@@ -8,7 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables      #-}
 {-# LANGUAGE TypeOperators            #-}
 
-module Data.Morpheus.Generics.GQLMutation
+module Data.Morpheus.Kind.GQLMutation
   ( GQLMutation(..)
   , NoMutation(..)
   ) where
@@ -17,7 +17,7 @@ import           Data.Data                              (Data, Typeable)
 import qualified Data.Map                               as M
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
-import           Data.Morpheus.Schema.Utils.Utils       (Field, TypeLib, createType, emptyLib)
+import           Data.Morpheus.Schema.Utils.Utils       (Field, TypeLib, createObjectType, emptyLib)
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (initialMeta)
@@ -39,7 +39,7 @@ class GQLMutation a where
     Proxy a -> TypeLib
   introspectMutation _ = resolveTypes mutationType types
     where
-      mutationType = M.fromList [("Mutation", createType "Mutation" fields)]
+      mutationType = M.fromList [("Mutation", createObjectType "Mutation" "TODO: Mutation description" fields)]
       fieldTypes = getFields (Proxy :: Proxy (Rep a))
       types = map snd fieldTypes
       fields = map fst fieldTypes

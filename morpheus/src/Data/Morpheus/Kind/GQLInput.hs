@@ -7,20 +7,19 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 
-module Data.Morpheus.Generics.GQLInput
+module Data.Morpheus.Kind.GQLInput
   ( GQLInput(..)
   ) where
 
-import           Data.Data                        (Data, Typeable)
 import qualified Data.Map                         as M
 import           Data.Morpheus.Error.Internal     (internalArgumentError, internalTypeMismatch)
 import           Data.Morpheus.Generics.GDecode   (GDecode (..))
-import qualified Data.Morpheus.Generics.GQLEnum   as E (GQLEnum (..))
 import           Data.Morpheus.Generics.TypeRep   (Selectors (..), resolveTypes)
-import           Data.Morpheus.Generics.Utils     (typeOf)
+import qualified Data.Morpheus.Kind.GQLEnum       as E (GQLEnum (..))
+import           Data.Morpheus.Kind.GQLKind       (GQLKind (..), inputObjectOf, scalarTypeOf)
+import           Data.Morpheus.Schema.InputValue  (createInputValueWith)
 import qualified Data.Morpheus.Schema.InputValue  as I (InputValue (..))
-import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib, createInputObject,
-                                                   createInputValue)
+import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib)
 import           Data.Morpheus.Types.Describer    (EnumOf (..))
 import           Data.Morpheus.Types.Error        (Validation)
 import           Data.Morpheus.Types.JSType       (JSType (..))
@@ -38,59 +37,65 @@ instance GQLInput a => GDecode JSType (K1 i a) where
 
 class GQLInput a where
   decode :: JSType -> Validation a
-  default decode :: (Show a, Generic a, Data a, GDecode JSType (Rep a)) =>
+  default decode :: (Generic a, GDecode JSType (Rep a)) =>
     JSType -> Validation a
   decode (JSObject x) = to <$> gDecode Meta.initialMeta (JSObject x)
   decode isType       = internalTypeMismatch "InputObject" isType
   typeInfo :: Proxy a -> Text -> InputValue
-  default typeInfo :: (Show a, Typeable a) =>
+  default typeInfo :: (Show a, GQLKind a) =>
     Proxy a -> Text -> InputValue
-  typeInfo _ name = createInputValue name $ typeOf (Proxy @a)
+  typeInfo proxy name = createInputValueWith name (inputObjectOf proxy [])
   introInput :: Proxy a -> TypeLib -> TypeLib
-  default introInput :: (Show a, Typeable a, Selectors (Rep a) Field) =>
+  default introInput :: (GQLKind a, Selectors (Rep a) Field) =>
     Proxy a -> TypeLib -> TypeLib
-  introInput _ typeLib =
+  introInput proxy typeLib =
     case M.lookup typeName typeLib of
       Just _  -> typeLib
       Nothing -> addType
     where
-      addType = resolveTypes (M.insert typeName (createInputObject typeName gqlFields) typeLib) stack
-      typeName = typeOf (Proxy @a)
+      addType = resolveTypes (M.insert typeName (inputObjectOf proxy gqlFields) typeLib) stack
+      typeName = typeID proxy
       fieldTypes = getFields (Proxy @(Rep a))
       stack = map snd fieldTypes
       gqlFields = map fst fieldTypes
 
+inputValueOf :: GQLKind a => Proxy a -> Text -> InputValue
+inputValueOf proxy name = createInputValueWith name (scalarTypeOf proxy)
+
+introspectInput :: Proxy a -> TypeLib -> TypeLib
+introspectInput _ typeLib = typeLib
+
 instance GQLInput Text where
   decode (JSString x) = pure x
   decode isType       = internalTypeMismatch "String" isType
-  typeInfo _ name = createInputValue name "String"
-  introInput _ typeLib = typeLib
+  typeInfo = inputValueOf
+  introInput = introspectInput
 
 instance GQLInput Bool where
   decode (JSBool x) = pure x
   decode isType     = internalTypeMismatch "Boolean" isType
-  typeInfo _ name = createInputValue name "Boolean"
-  introInput _ typeLib = typeLib
+  typeInfo = inputValueOf
+  introInput = introspectInput
 
 instance GQLInput Int where
   decode (JSInt x) = pure x
   decode isType    = internalTypeMismatch "Int" isType
-  typeInfo _ name = createInputValue name "Int"
-  introInput _ typeLib = typeLib
+  typeInfo = inputValueOf
+  introInput = introspectInput
 
-instance (GQLInput a, Show a, Typeable a) => GQLInput (Maybe a) where
+instance GQLInput a => GQLInput (Maybe a) where
   decode JSNull = pure Nothing
   decode x      = Just <$> decode x
   typeInfo _ name = (typeInfo (Proxy @a) name) {I.defaultValue = "Nothing"}
   introInput _ typeLib = typeLib
 
-instance (Show a, E.GQLEnum a) => GQLInput (EnumOf a) where
+instance E.GQLEnum a => GQLInput (EnumOf a) where
   decode (JSEnum text) = pure $ EnumOf (E.decode text)
   decode isType        = internalTypeMismatch "Enum" isType
   typeInfo _ = E.enumType (Proxy @a)
   introInput _ = E.introspect (Proxy @a)
 
-instance (Show a, GQLInput a) => GQLInput [a] where
+instance GQLInput a => GQLInput [a] where
   decode (JSList li) = mapM decode li
   decode isType      = internalTypeMismatch "List" isType
   typeInfo _ = typeInfo (Proxy @a)

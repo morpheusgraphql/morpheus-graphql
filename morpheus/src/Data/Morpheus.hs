@@ -6,6 +6,7 @@ module Data.Morpheus
   , eitherToResponse
   , GQLResponse
   , GQLSelection
+  , GQLKind(description)
   , GQLQuery
   , GQLArgs
   , (::->)(..)
@@ -15,7 +16,7 @@ module Data.Morpheus
   , EnumOf(unpackEnum)
   , GQLEnum
   , GQLRoot(..)
-  , GQLMutation(..)
+  , GQLMutation
   , NoMutation(..)
   ) where
 
@@ -23,12 +24,13 @@ import           Control.Monad.Trans.Except          (ExceptT (..), runExceptT)
 import           Data.Aeson                          (decode)
 import qualified Data.ByteString.Lazy.Char8          as B
 import           Data.Morpheus.Error.Utils           (errorMessage, renderErrors)
-import           Data.Morpheus.Generics.GQLArgs      (GQLArgs)
-import           Data.Morpheus.Generics.GQLEnum      (GQLEnum)
-import           Data.Morpheus.Generics.GQLInput     (GQLInput)
-import           Data.Morpheus.Generics.GQLMutation  (GQLMutation (..), NoMutation (..))
-import           Data.Morpheus.Generics.GQLQuery     (GQLQuery (..))
-import           Data.Morpheus.Generics.GQLSelection (GQLSelection)
+import           Data.Morpheus.Kind.GQLArgs          (GQLArgs)
+import           Data.Morpheus.Kind.GQLEnum          (GQLEnum)
+import           Data.Morpheus.Kind.GQLInput         (GQLInput)
+import           Data.Morpheus.Kind.GQLKind          (GQLKind (description))
+import           Data.Morpheus.Kind.GQLMutation      (GQLMutation (..), NoMutation (..))
+import           Data.Morpheus.Kind.GQLQuery         (GQLQuery (..))
+import           Data.Morpheus.Kind.GQLSelection     (GQLSelection)
 import           Data.Morpheus.Parser.Parser         (parseGQL, parseLineBreaks)
 import           Data.Morpheus.PreProcess.PreProcess (preProcessQuery)
 import           Data.Morpheus.Schema.Utils.Utils    (TypeLib)

@@ -6,16 +6,16 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 
-module Data.Morpheus.Generics.GQLArgs
+module Data.Morpheus.Kind.GQLArgs
   ( GQLArgs(..)
   ) where
 
 import qualified Data.Data                           as D
 import           Data.Morpheus.Error.Internal        (internalArgumentError)
 import           Data.Morpheus.Generics.GDecode      (GDecode (..))
-import qualified Data.Morpheus.Generics.GQLInput     as I (GQLInput (..))
 import           Data.Morpheus.Generics.TypeRep      (Selectors (..))
 import           Data.Morpheus.Generics.Utils        (RecSel, SelOf)
+import qualified Data.Morpheus.Kind.GQLInput         as I (GQLInput (..))
 import           Data.Morpheus.Schema.Type           (DeprecationArgs)
 import           Data.Morpheus.Schema.Utils.Utils    (InputValue, TypeLib)
 import           Data.Morpheus.Types.Error           (Validation)
@@ -39,11 +39,11 @@ instance I.GQLInput a => GDecode Arguments (K1 i a) where
 
 class GQLArgs p where
   decode :: Arguments -> Validation p
-  default decode :: (Show p, Generic p, D.Data p, GDecode Arguments (Rep p)) =>
+  default decode :: (Generic p, GDecode Arguments (Rep p)) =>
     Arguments -> Validation p
   decode args = to <$> gDecode initialMeta args
   introspect :: Proxy p -> [(InputValue, TypeLib -> TypeLib)]
-  default introspect :: (Show p, Selectors (Rep p) InputValue, D.Typeable p) =>
+  default introspect :: Selectors (Rep p) InputValue =>
     Proxy p -> [(InputValue, TypeLib -> TypeLib)]
   introspect _ = getFields (Proxy @(Rep p))
 

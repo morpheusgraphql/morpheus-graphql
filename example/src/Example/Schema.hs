@@ -13,14 +13,12 @@ import           Control.Monad.Trans        (lift)
 import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Data                  (Data)
 import           Data.Maybe                 (fromMaybe)
-import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLArgs, GQLEnum,
-                                             GQLInput, GQLMutation, GQLQuery, GQLResponse,
-                                             GQLRoot (..), GQLSelection, ResolveIO,
-                                             eitherToResponse, interpreter)
+import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLArgs, GQLEnum, GQLInput,
+                                             GQLKind (description), GQLMutation, GQLQuery, GQLResponse, GQLRoot (..),
+                                             GQLSelection, ResolveIO, eitherToResponse, interpreter)
 import           Data.Text                  (Text, pack)
 import qualified Data.Text                  as T (concat)
-import qualified Example.Model              as M (JSONAddress (..), JSONUser (..), jsonAddress,
-                                                  jsonUser)
+import qualified Example.Model              as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
 import           GHC.Generics               (Generic)
 
 data CityID
@@ -29,10 +27,16 @@ data CityID
   | HH
   deriving (Show, Generic, Data, GQLEnum)
 
+instance GQLKind CityID where
+  description _ = "ID of Cities in Zip Format"
+
 data Coordinates = Coordinates
   { latitude  :: Text
   , longitude :: Int
   } deriving (Show, Generic, Data, GQLInput)
+
+instance GQLKind Coordinates where
+  description _ = "just random latitude and longitude"
 
 data LocationByCoordinates = LocationByCoordinates
   { coordinates :: Coordinates
@@ -49,7 +53,7 @@ data Address = Address
   , street      :: Text
   , houseNumber :: Int
   , owner       :: Maybe User
-  } deriving (Generic, Show, GQLSelection, Data)
+  } deriving (Generic, Show, GQLKind, GQLSelection, Data)
 
 data User = User
   { name    :: Text
@@ -59,6 +63,9 @@ data User = User
   , friend  :: () ::-> Maybe User
   , home    :: Maybe Address
   } deriving (Show, Generic, Data, GQLSelection)
+
+instance GQLKind User where
+  description _ = "Custom Description for Client Defined User Type"
 
 newtype Query = Query
   { user :: () ::-> User
