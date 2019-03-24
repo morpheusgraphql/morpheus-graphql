@@ -16,9 +16,10 @@ import           Data.Morpheus.Error.Internal     (internalArgumentError, intern
 import           Data.Morpheus.Generics.GDecode   (GDecode (..))
 import           Data.Morpheus.Generics.TypeRep   (Selectors (..), resolveTypes)
 import qualified Data.Morpheus.Kind.GQLEnum       as E (GQLEnum (..))
-import           Data.Morpheus.Kind.GQLKind       (GQLKind (..))
+import           Data.Morpheus.Kind.GQLKind       (GQLKind (..), inputObjectOf, scalarTypeOf)
+import           Data.Morpheus.Schema.InputValue  (createInputValueWith)
 import qualified Data.Morpheus.Schema.InputValue  as I (InputValue (..))
-import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib, createInputObject, createInputValue)
+import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib)
 import           Data.Morpheus.Types.Describer    (EnumOf (..))
 import           Data.Morpheus.Types.Error        (Validation)
 import           Data.Morpheus.Types.JSType       (JSType (..))
@@ -43,7 +44,7 @@ class GQLInput a where
   typeInfo :: Proxy a -> Text -> InputValue
   default typeInfo :: (Show a, GQLKind a) =>
     Proxy a -> Text -> InputValue
-  typeInfo proxy name = createInputValue name $ typeID proxy
+  typeInfo proxy name = createInputValueWith name (inputObjectOf proxy [])
   introInput :: Proxy a -> TypeLib -> TypeLib
   default introInput :: (GQLKind a, Selectors (Rep a) Field) =>
     Proxy a -> TypeLib -> TypeLib
@@ -52,14 +53,14 @@ class GQLInput a where
       Just _  -> typeLib
       Nothing -> addType
     where
-      addType = resolveTypes (M.insert typeName (createInputObject typeName gqlFields) typeLib) stack
+      addType = resolveTypes (M.insert typeName (inputObjectOf proxy gqlFields) typeLib) stack
       typeName = typeID proxy
       fieldTypes = getFields (Proxy @(Rep a))
       stack = map snd fieldTypes
       gqlFields = map fst fieldTypes
 
 inputValueOf :: GQLKind a => Proxy a -> Text -> InputValue
-inputValueOf proxy name = createInputValue name (typeID proxy)
+inputValueOf proxy name = createInputValueWith name (scalarTypeOf proxy)
 
 introspectInput :: Proxy a -> TypeLib -> TypeLib
 introspectInput _ typeLib = typeLib

@@ -9,14 +9,12 @@ module Data.Morpheus.Schema.Utils.Utils
   , createObjectType
   , createField
   , emptyLib
-  , createInputValue
   , wrapListType
-  , createInputObject
   ) where
 
 import           Data.Map                        (Map, fromList)
 import qualified Data.Morpheus.Schema.Field      as F (Field (..), createFieldWith)
-import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..), createInputValueWith)
+import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..))
 import           Data.Morpheus.Schema.Type       (Type (..))
 import           Data.Morpheus.Schema.TypeKind   (TypeKind (..))
 import           Data.Morpheus.Types.Describer   (EnumOf (..), WithDeprecationArgs (..))
@@ -30,23 +28,6 @@ type TypeLib = Map Text Type
 
 createField :: Text -> Text -> [InputValue] -> Field
 createField fName typeName = F.createFieldWith fName (createObjectType typeName "" [])
-
-createInputValue :: Text -> Text -> InputValue
-createInputValue iName typeName = I.createInputValueWith iName (createInputObject typeName [])
-
-createInputObject :: Text -> [Field] -> Type
-createInputObject iName iFields =
-  Type
-    { kind = EnumOf INPUT_OBJECT
-    , name = iName
-    , description = ""
-    , fields = WithDeprecationArgs iFields
-    , ofType = Nothing
-    , interfaces = []
-    , possibleTypes = []
-    , enumValues = WithDeprecationArgs []
-    , inputFields = []
-    }
 
 createObjectType :: Text -> Text -> [Field] -> Type
 createObjectType tName desc tFields =
