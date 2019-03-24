@@ -13,9 +13,10 @@ import qualified Data.Map                               as M
 import           Data.Morpheus.Generics.GDecodeEnum     (GDecodeEnum (..))
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), enumTypeOf)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
-import qualified Data.Morpheus.Schema.Field             as F (createFieldWith)
+import           Data.Morpheus.Schema.Field             (createFieldWith)
+import           Data.Morpheus.Schema.InputValue        (createInputValueWith)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import qualified Data.Morpheus.Schema.Utils.Utils       as I (Field, InputValue, TypeLib, createInputValue)
+import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, TypeLib)
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 import qualified Data.Text                              as T
@@ -26,17 +27,17 @@ class GQLEnum a where
   default decode :: (Show a, Generic a, D.Data a, GDecodeEnum (Rep a)) =>
     Text -> a
   decode text = to $ gToEnum text
-  enumType :: Proxy a -> T.Text -> I.InputValue
+  enumType :: Proxy a -> T.Text -> InputValue
   default enumType :: (Show a, GQLKind a) =>
-    Proxy a -> T.Text -> I.InputValue
-  enumType proxy name = I.createInputValue name $ typeID proxy
-  fieldType :: Proxy a -> T.Text -> I.Field
+    Proxy a -> T.Text -> InputValue
+  enumType proxy name = createInputValueWith name (enumTypeOf proxy [])
+  fieldType :: Proxy a -> T.Text -> Field
   default fieldType :: (Show a, GQLKind a) =>
-    Proxy a -> T.Text -> I.Field
-  fieldType proxy name = F.createFieldWith name (enumTypeOf proxy []) []
-  introspect :: Proxy a -> I.TypeLib -> I.TypeLib
+    Proxy a -> T.Text -> Field
+  fieldType proxy name = createFieldWith name (enumTypeOf proxy []) []
+  introspect :: Proxy a -> TypeLib -> TypeLib
   default introspect :: (Show a, GQLKind a, GDecodeEnum (Rep a)) =>
-    Proxy a -> I.TypeLib -> I.TypeLib
+    Proxy a -> TypeLib -> TypeLib
   introspect proxy typeLib =
     case M.lookup typeName typeLib of
       Just _  -> typeLib
