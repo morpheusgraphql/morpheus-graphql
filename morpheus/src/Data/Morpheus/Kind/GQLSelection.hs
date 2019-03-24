@@ -124,9 +124,9 @@ instance (GQLSelection a, D.Typeable a) => GQLSelection [a] where
   introspect _ = introspect (Proxy @a)
   fieldType _ = wrapAsListType <$> fieldType (Proxy @a)
 
-instance (Show a, E.GQLEnum a) => GQLSelection (EnumOf a) where
+instance (Show a, GQLKind a, E.GQLEnum a) => GQLSelection (EnumOf a) where
   encode _ = pure . JSString . T.pack . show . unpackEnum
-  fieldType _ = E.fieldType (Proxy @a)
+  fieldType _ = E.asField (Proxy @a)
   introspect _ = E.introspect (Proxy @a)
 
 instance S.Scalar a => GQLSelection (ScalarOf a) where
