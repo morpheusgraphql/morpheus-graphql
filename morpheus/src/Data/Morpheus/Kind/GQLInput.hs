@@ -19,8 +19,7 @@ import           Data.Morpheus.Generics.TypeRep   (Selectors (..), resolveTypes)
 import qualified Data.Morpheus.Kind.GQLEnum       as E (GQLEnum (..))
 import           Data.Morpheus.Kind.GQLKind       (GQLKind (..))
 import qualified Data.Morpheus.Schema.InputValue  as I (InputValue (..))
-import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib, createInputObject,
-                                                   createInputValue)
+import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib, createInputObject, createInputValue)
 import           Data.Morpheus.Types.Describer    (EnumOf (..))
 import           Data.Morpheus.Types.Error        (Validation)
 import           Data.Morpheus.Types.JSType       (JSType (..))
@@ -60,23 +59,29 @@ class GQLInput a where
       stack = map snd fieldTypes
       gqlFields = map fst fieldTypes
 
+inputValueOf :: GQLKind a => Proxy a -> Text -> InputValue
+inputValueOf proxy name = createInputValue name (typeID proxy)
+
+introspectInput :: Proxy a -> TypeLib -> TypeLib
+introspectInput _ typeLib = typeLib
+
 instance GQLInput Text where
   decode (JSString x) = pure x
   decode isType       = internalTypeMismatch "String" isType
-  typeInfo _ name = createInputValue name "String"
-  introInput _ typeLib = typeLib
+  typeInfo = inputValueOf
+  introInput = introspectInput
 
 instance GQLInput Bool where
   decode (JSBool x) = pure x
   decode isType     = internalTypeMismatch "Boolean" isType
-  typeInfo _ name = createInputValue name "Boolean"
-  introInput _ typeLib = typeLib
+  typeInfo = inputValueOf
+  introInput = introspectInput
 
 instance GQLInput Int where
   decode (JSInt x) = pure x
   decode isType    = internalTypeMismatch "Int" isType
-  typeInfo _ name = createInputValue name "Int"
-  introInput _ typeLib = typeLib
+  typeInfo = inputValueOf
+  introInput = introspectInput
 
 instance (GQLInput a, Show a, Typeable a) => GQLInput (Maybe a) where
   decode JSNull = pure Nothing
