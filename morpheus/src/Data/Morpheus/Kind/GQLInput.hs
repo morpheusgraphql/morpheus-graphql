@@ -90,10 +90,10 @@ instance GQLInput a => GQLInput (Maybe a) where
   typeInfo _ name = (typeInfo (Proxy @a) name) {I.defaultValue = "Nothing"}
   introInput _ typeLib = typeLib
 
-instance E.GQLEnum a => GQLInput (EnumOf a) where
+instance (E.GQLEnum a, GQLKind a) => GQLInput (EnumOf a) where
   decode (JSEnum text) = pure $ EnumOf (E.decode text)
   decode isType        = internalTypeMismatch "Enum" isType
-  typeInfo _ = E.enumType (Proxy @a)
+  typeInfo _ = E.asType (Proxy @a)
   introInput _ = E.introspect (Proxy @a)
 
 instance S.Scalar a => GQLInput (ScalarOf a) where

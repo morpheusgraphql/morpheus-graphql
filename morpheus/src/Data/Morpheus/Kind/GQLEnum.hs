@@ -1,11 +1,12 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DefaultSignatures   #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE AllowAmbiguousTypes     #-}
+{-# LANGUAGE ConstrainedClassMethods #-}
+{-# LANGUAGE DefaultSignatures       #-}
+{-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE TypeApplications        #-}
 
 module Data.Morpheus.Kind.GQLEnum
-  ( GQLEnum(decode, introspect, enumType, fieldType)
+  ( GQLEnum(..)
   ) where
 
 import           Data.Morpheus.Generics.GDecodeEnum     (GDecodeEnum (..))
@@ -22,17 +23,13 @@ import           GHC.Generics
 
 class GQLEnum a where
   decode :: Text -> a
-  default decode :: (Show a, Generic a, GDecodeEnum (Rep a)) =>
+  default decode :: (Generic a, GDecodeEnum (Rep a)) =>
     Text -> a
   decode text = to $ gToEnum text
-  enumType :: Proxy a -> T.Text -> InputValue
-  default enumType :: GQLKind a =>
-    Proxy a -> T.Text -> InputValue
-  enumType proxy name = createInputValueWith name (enumTypeOf [] proxy)
-  fieldType :: Proxy a -> T.Text -> Field
-  default fieldType :: GQLKind a =>
-    Proxy a -> T.Text -> Field
-  fieldType proxy name = createFieldWith name (enumTypeOf [] proxy) []
+  asType :: GQLKind a => Proxy a -> T.Text -> InputValue
+  asType proxy name = createInputValueWith name (enumTypeOf [] proxy)
+  asField :: GQLKind a => Proxy a -> T.Text -> Field
+  asField proxy name = createFieldWith name (enumTypeOf [] proxy) []
   introspect :: Proxy a -> TypeLib -> TypeLib
   default introspect :: (GQLKind a, GDecodeEnum (Rep a)) =>
     Proxy a -> TypeLib -> TypeLib
