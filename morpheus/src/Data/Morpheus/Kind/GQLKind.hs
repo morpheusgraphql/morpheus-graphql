@@ -12,6 +12,7 @@ module Data.Morpheus.Kind.GQLKind
   ) where
 
 import           Data.Data                              (Typeable)
+import qualified Data.Map                               as M (insert, lookup)
 import           Data.Morpheus.Generics.Utils           (typeOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
@@ -19,7 +20,7 @@ import           Data.Morpheus.Schema.EnumValue         (EnumValue, createEnumVa
 import           Data.Morpheus.Schema.Schema            (Schema)
 import qualified Data.Morpheus.Schema.Type              as T (Type (..))
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
+import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type, TypeLib)
 import           Data.Morpheus.Types.Describer          (EnumOf (..), WithDeprecationArgs (..))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
@@ -58,6 +59,11 @@ class GQLKind a where
       , T.enumValues = WithDeprecationArgs enums'
       , T.inputFields = []
       }
+  updateLib :: (Proxy a -> Type) -> Proxy a -> TypeLib -> TypeLib
+  updateLib typeBuilder proxy lib' =
+    case M.lookup (typeID proxy) lib' of
+      Just _  -> lib'
+      Nothing -> M.insert (typeID proxy) (typeBuilder proxy) lib'
 
 instance GQLKind EnumValue where
   typeID _ = "__EnumValue"
