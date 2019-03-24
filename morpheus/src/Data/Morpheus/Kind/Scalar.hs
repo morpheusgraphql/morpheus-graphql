@@ -24,4 +24,4 @@ class Scalar a where
   introspect :: Proxy a -> TypeLib -> TypeLib
   default introspect :: GQLKind a =>
     Proxy a -> TypeLib -> TypeLib
-  introspect = updateLib scalarTypeOf
+  introspect = updateLib scalarTypeOf []

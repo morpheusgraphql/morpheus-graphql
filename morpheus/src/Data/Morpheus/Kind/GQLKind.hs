@@ -13,6 +13,7 @@ module Data.Morpheus.Kind.GQLKind
 
 import           Data.Data                              (Typeable)
 import qualified Data.Map                               as M (insert, lookup)
+import           Data.Morpheus.Generics.TypeRep         (resolveTypes)
 import           Data.Morpheus.Generics.Utils           (typeOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
@@ -59,11 +60,12 @@ class GQLKind a where
       , T.enumValues = WithDeprecationArgs enums'
       , T.inputFields = []
       }
-  updateLib :: (Proxy a -> Type) -> Proxy a -> TypeLib -> TypeLib
-  updateLib typeBuilder proxy lib' =
+  updateLib :: (Proxy a -> Type) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib
+  updateLib typeBuilder stack proxy lib' =
     case M.lookup (typeID proxy) lib' of
-      Just _  -> lib'
-      Nothing -> M.insert (typeID proxy) (typeBuilder proxy) lib'
+      Just _ -> lib'
+      Nothing -> resolveTypes lib' ([addType] ++ stack)
+        where addType = M.insert (typeID proxy) (typeBuilder proxy)
 
 instance GQLKind EnumValue where
   typeID _ = "__EnumValue"

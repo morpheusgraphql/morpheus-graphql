@@ -65,14 +65,10 @@ class GQLSelection a where
   introspect :: Proxy a -> TypeLib -> TypeLib
   default introspect :: (Show a, Selectors (Rep a) Field, GQLKind a) =>
     Proxy a -> TypeLib -> TypeLib
-  introspect proxy typeLib =
-    case M.lookup typeName typeLib of
-      Just _  -> typeLib
-      Nothing -> resolveTypes (M.insert typeName objectType typeLib) stack
+  introspect = updateLib objectType stack
     where
-      objectType = objectTypeOf (Proxy @a) (map fst fieldTypes)
-      typeName = typeID proxy
       fieldTypes = getFields (Proxy @(Rep a))
+      objectType p = objectTypeOf p (map fst fieldTypes)
       stack = map snd fieldTypes
 
 instance (GQLSelection a, Args.GQLArgs p) => GQLSelection (p ::-> a) where
