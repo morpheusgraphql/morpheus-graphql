@@ -11,7 +11,6 @@ module Data.Morpheus.Kind.GQLInput
   ( GQLInput(..)
   ) where
 
-import           Data.Data                        (Data, Typeable)
 import qualified Data.Map                         as M
 import           Data.Morpheus.Error.Internal     (internalArgumentError, internalTypeMismatch)
 import           Data.Morpheus.Generics.GDecode   (GDecode (..))
@@ -37,7 +36,7 @@ instance GQLInput a => GDecode JSType (K1 i a) where
 
 class GQLInput a where
   decode :: JSType -> Validation a
-  default decode :: (Show a, Generic a, Data a, GDecode JSType (Rep a)) =>
+  default decode :: (Generic a, GDecode JSType (Rep a)) =>
     JSType -> Validation a
   decode (JSObject x) = to <$> gDecode Meta.initialMeta (JSObject x)
   decode isType       = internalTypeMismatch "InputObject" isType
@@ -46,7 +45,7 @@ class GQLInput a where
     Proxy a -> Text -> InputValue
   typeInfo proxy name = createInputValue name $ typeID proxy
   introInput :: Proxy a -> TypeLib -> TypeLib
-  default introInput :: (Show a, GQLKind a, Selectors (Rep a) Field) =>
+  default introInput :: (GQLKind a, Selectors (Rep a) Field) =>
     Proxy a -> TypeLib -> TypeLib
   introInput proxy typeLib =
     case M.lookup typeName typeLib of
@@ -83,19 +82,19 @@ instance GQLInput Int where
   typeInfo = inputValueOf
   introInput = introspectInput
 
-instance (GQLInput a, Show a, Typeable a) => GQLInput (Maybe a) where
+instance GQLInput a => GQLInput (Maybe a) where
   decode JSNull = pure Nothing
   decode x      = Just <$> decode x
   typeInfo _ name = (typeInfo (Proxy @a) name) {I.defaultValue = "Nothing"}
   introInput _ typeLib = typeLib
 
-instance (Show a, E.GQLEnum a) => GQLInput (EnumOf a) where
+instance E.GQLEnum a => GQLInput (EnumOf a) where
   decode (JSEnum text) = pure $ EnumOf (E.decode text)
   decode isType        = internalTypeMismatch "Enum" isType
   typeInfo _ = E.enumType (Proxy @a)
   introInput _ = E.introspect (Proxy @a)
 
-instance (Show a, GQLInput a) => GQLInput [a] where
+instance GQLInput a => GQLInput [a] where
   decode (JSList li) = mapM decode li
   decode isType      = internalTypeMismatch "List" isType
   typeInfo _ = typeInfo (Proxy @a)
