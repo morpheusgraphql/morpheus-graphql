@@ -17,6 +17,7 @@ import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), G
                                              ScalarOf (..), eitherToResponse, interpreter)
 import           Data.Morpheus.Kind         (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLQuery,
                                              GQLSelection, Scalar (..))
+import           Data.Morpheus.Types.JSType (JSType (..))
 import           Data.Text                  (Text, pack)
 import qualified Data.Text                  as T (concat)
 import qualified Example.Model              as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
@@ -33,7 +34,11 @@ instance GQLKind CityID where
 
 newtype Odd =
   Odd Int
-  deriving (Show, Data, Generic)
+  deriving (Show, Data, Generic, GQLKind)
+
+instance Scalar Odd where
+  parseValue _ = Odd 2
+  serialize (Odd value) = JSInt value
 
 data Coordinates = Coordinates
   { latitude  :: ScalarOf Odd

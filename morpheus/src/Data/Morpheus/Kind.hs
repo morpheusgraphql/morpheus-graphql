@@ -7,7 +7,7 @@ module Data.Morpheus.Kind
   , GQLEnum
   , GQLMutation
   , NoMutation(..)
-  , Scalar
+  , Scalar(..)
   ) where
 
 import           Data.Morpheus.Kind.GQLArgs      (GQLArgs)
@@ -17,4 +17,4 @@ import           Data.Morpheus.Kind.GQLKind      (GQLKind (description))
 import           Data.Morpheus.Kind.GQLMutation  (GQLMutation (..), NoMutation (..))
 import           Data.Morpheus.Kind.GQLQuery     (GQLQuery (..))
 import           Data.Morpheus.Kind.GQLSelection (GQLSelection)
-import           Data.Morpheus.Kind.Scalar       (Scalar)
+import           Data.Morpheus.Kind.Scalar       (Scalar (parseValue, serialize))
