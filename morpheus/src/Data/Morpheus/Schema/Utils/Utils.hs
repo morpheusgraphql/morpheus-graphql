@@ -11,12 +11,10 @@ module Data.Morpheus.Schema.Utils.Utils
   , emptyLib
   , createInputValue
   , wrapListType
-  , createEnum
   , createInputObject
   ) where
 
 import           Data.Map                        (Map, fromList)
-import           Data.Morpheus.Schema.EnumValue  (createEnumValue)
 import qualified Data.Morpheus.Schema.Field      as F (Field (..), createFieldWith)
 import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..), createInputValueWith)
 import           Data.Morpheus.Schema.Type       (Type (..))
@@ -61,20 +59,6 @@ createObjectType tName desc tFields =
     , interfaces = []
     , possibleTypes = []
     , enumValues = WithDeprecationArgs []
-    , inputFields = []
-    }
-
-createEnum :: Text -> [Text] -> Type
-createEnum eName tags =
-  Type
-    { kind = EnumOf ENUM
-    , name = eName
-    , description = ""
-    , fields = WithDeprecationArgs []
-    , ofType = Nothing
-    , interfaces = []
-    , possibleTypes = []
-    , enumValues = WithDeprecationArgs $ map createEnumValue tags
     , inputFields = []
     }
 

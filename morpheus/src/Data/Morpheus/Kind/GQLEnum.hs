@@ -11,12 +11,11 @@ module Data.Morpheus.Kind.GQLEnum
 import qualified Data.Data                              as D
 import qualified Data.Map                               as M
 import           Data.Morpheus.Generics.GDecodeEnum     (GDecodeEnum (..))
-import           Data.Morpheus.Kind.GQLKind             (GQLKind (..))
+import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), enumTypeOf)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import qualified Data.Morpheus.Schema.Field             as F (createFieldWith)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import qualified Data.Morpheus.Schema.Utils.Utils       as I (Field, InputValue, TypeLib,
-                                                              createEnum, createInputValue)
+import qualified Data.Morpheus.Schema.Utils.Utils       as I (Field, InputValue, TypeLib, createInputValue)
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 import qualified Data.Text                              as T
@@ -34,14 +33,14 @@ class GQLEnum a where
   fieldType :: Proxy a -> T.Text -> I.Field
   default fieldType :: (Show a, GQLKind a) =>
     Proxy a -> T.Text -> I.Field
-  fieldType proxy name = F.createFieldWith name (I.createEnum (typeID proxy) []) []
+  fieldType proxy name = F.createFieldWith name (enumTypeOf proxy []) []
   introspect :: Proxy a -> I.TypeLib -> I.TypeLib
   default introspect :: (Show a, GQLKind a, GDecodeEnum (Rep a)) =>
     Proxy a -> I.TypeLib -> I.TypeLib
   introspect proxy typeLib =
     case M.lookup typeName typeLib of
       Just _  -> typeLib
-      Nothing -> M.insert typeName (I.createEnum typeName tags) typeLib
+      Nothing -> M.insert typeName (enumTypeOf proxy tags) typeLib
     where
       typeName = typeID proxy
       tags = getTags (Proxy @(Rep a))

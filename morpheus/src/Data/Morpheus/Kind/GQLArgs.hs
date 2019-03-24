@@ -39,11 +39,11 @@ instance I.GQLInput a => GDecode Arguments (K1 i a) where
 
 class GQLArgs p where
   decode :: Arguments -> Validation p
-  default decode :: (Show p, Generic p, D.Data p, GDecode Arguments (Rep p)) =>
+  default decode :: (Generic p, GDecode Arguments (Rep p)) =>
     Arguments -> Validation p
   decode args = to <$> gDecode initialMeta args
   introspect :: Proxy p -> [(InputValue, TypeLib -> TypeLib)]
-  default introspect :: (Show p, Selectors (Rep p) InputValue, D.Typeable p) =>
+  default introspect :: Selectors (Rep p) InputValue =>
     Proxy p -> [(InputValue, TypeLib -> TypeLib)]
   introspect _ = getFields (Proxy @(Rep p))
 

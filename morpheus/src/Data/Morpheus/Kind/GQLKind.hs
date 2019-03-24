@@ -7,13 +7,14 @@ module Data.Morpheus.Kind.GQLKind
   ( GQLKind(..)
   , scalarTypeOf
   , objectTypeOf
+  , enumTypeOf
   ) where
 
 import           Data.Data                              (Typeable)
 import           Data.Morpheus.Generics.Utils           (typeOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
-import           Data.Morpheus.Schema.EnumValue         (EnumValue)
+import           Data.Morpheus.Schema.EnumValue         (EnumValue, createEnumValue)
 import           Data.Morpheus.Schema.Schema            (Schema)
 import qualified Data.Morpheus.Schema.Type              as T (Type (..))
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
@@ -23,10 +24,13 @@ import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 
 scalarTypeOf :: GQLKind a => Proxy a -> Type
-scalarTypeOf proxy = buildType proxy SCALAR [] Nothing
+scalarTypeOf proxy = buildType proxy SCALAR [] Nothing []
 
 objectTypeOf :: GQLKind a => Proxy a -> [Field] -> Type
-objectTypeOf proxy fields = buildType proxy OBJECT fields Nothing
+objectTypeOf proxy fields = buildType proxy OBJECT fields Nothing []
+
+enumTypeOf :: GQLKind a => Proxy a -> [Text] -> Type
+enumTypeOf proxy tags = buildType proxy ENUM [] Nothing (map createEnumValue tags)
 
 class GQLKind a where
   description :: Proxy a -> Text
@@ -36,9 +40,9 @@ class GQLKind a where
   default typeID :: Typeable a =>
     Proxy a -> Text
   typeID = typeOf
-  buildType :: Proxy a -> TypeKind -> [Field] -> Maybe Type -> Type
-  default buildType :: Proxy a -> TypeKind -> [Field] -> Maybe Type -> Type
-  buildType proxy kind' fields' type' =
+  buildType :: Proxy a -> TypeKind -> [Field] -> Maybe Type -> [EnumValue] -> Type
+  default buildType :: Proxy a -> TypeKind -> [Field] -> Maybe Type -> [EnumValue] -> Type
+  buildType proxy kind' fields' type' enums' =
     T.Type
       { T.kind = EnumOf kind'
       , T.name = typeID proxy
@@ -47,7 +51,7 @@ class GQLKind a where
       , T.ofType = type'
       , T.interfaces = []
       , T.possibleTypes = []
-      , T.enumValues = WithDeprecationArgs []
+      , T.enumValues = WithDeprecationArgs enums'
       , T.inputFields = []
       }
 
