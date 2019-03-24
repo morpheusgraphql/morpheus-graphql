@@ -93,7 +93,7 @@ instance GQLSelection a => GQLSelection (WithDeprecationArgs a) where
       fields = [introspect (Proxy @a)]
   fieldType _ name = (fieldType (Proxy @a) name) {F.args = map fst $ Args.introspect (Proxy @DeprecationArgs)}
 
-instance (Show a, GQLSelection a, D.Typeable a) => GQLSelection (Maybe a) where
+instance GQLSelection a => GQLSelection (Maybe a) where
   encode _ Nothing          = pure JSNull
   encode query (Just value) = encode query value
   introspect _ = introspect (Proxy @a)
