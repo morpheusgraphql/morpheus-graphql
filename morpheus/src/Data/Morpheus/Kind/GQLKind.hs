@@ -29,8 +29,8 @@ import           Data.Text                              (Text)
 scalarTypeOf :: GQLKind a => Proxy a -> Type
 scalarTypeOf proxy = buildType proxy SCALAR [] Nothing []
 
-enumTypeOf :: GQLKind a => Proxy a -> [Text] -> Type
-enumTypeOf proxy tags = buildType proxy ENUM [] Nothing (map createEnumValue tags)
+enumTypeOf :: GQLKind a => [Text] -> Proxy a -> Type
+enumTypeOf tags proxy = buildType proxy ENUM [] Nothing (map createEnumValue tags)
 
 asObjectType :: GQLKind a => [Field] -> Proxy a -> Type
 asObjectType fields proxy = buildType proxy OBJECT fields Nothing []
