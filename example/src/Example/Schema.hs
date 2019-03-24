@@ -13,14 +13,12 @@ import           Control.Monad.Trans        (lift)
 import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Data                  (Data)
 import           Data.Maybe                 (fromMaybe)
-import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLArgs, GQLEnum,
-                                             GQLInput, GQLKind (description), GQLMutation, GQLQuery,
-                                             GQLResponse, GQLRoot (..), GQLSelection, ResolveIO,
-                                             eitherToResponse, interpreter)
+import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLArgs, GQLEnum, GQLInput,
+                                             GQLKind (description), GQLMutation, GQLQuery, GQLResponse, GQLRoot (..),
+                                             GQLSelection, ResolveIO, eitherToResponse, interpreter)
 import           Data.Text                  (Text, pack)
 import qualified Data.Text                  as T (concat)
-import qualified Example.Model              as M (JSONAddress (..), JSONUser (..), jsonAddress,
-                                                  jsonUser)
+import qualified Example.Model              as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
 import           GHC.Generics               (Generic)
 
 data CityID
@@ -35,7 +33,10 @@ instance GQLKind CityID where
 data Coordinates = Coordinates
   { latitude  :: Text
   , longitude :: Int
-  } deriving (Show, Generic, Data, GQLKind, GQLInput)
+  } deriving (Show, Generic, Data, GQLInput)
+
+instance GQLKind Coordinates where
+  description _ = "just random latitude and longitude"
 
 data LocationByCoordinates = LocationByCoordinates
   { coordinates :: Coordinates
