@@ -6,7 +6,7 @@
 module Data.Morpheus.Kind.GQLKind
   ( GQLKind(..)
   , scalarTypeOf
-  , objectTypeOf
+  , asObjectType
   , enumTypeOf
   , inputObjectOf
   ) where
@@ -32,8 +32,8 @@ scalarTypeOf proxy = buildType proxy SCALAR [] Nothing []
 enumTypeOf :: GQLKind a => Proxy a -> [Text] -> Type
 enumTypeOf proxy tags = buildType proxy ENUM [] Nothing (map createEnumValue tags)
 
-objectTypeOf :: GQLKind a => Proxy a -> [Field] -> Type
-objectTypeOf proxy fields = buildType proxy OBJECT fields Nothing []
+asObjectType :: GQLKind a => [Field] -> Proxy a -> Type
+asObjectType fields proxy = buildType proxy OBJECT fields Nothing []
 
 inputObjectOf :: GQLKind a => Proxy a -> [Field] -> Type
 inputObjectOf proxy fields = buildType proxy INPUT_OBJECT fields Nothing []

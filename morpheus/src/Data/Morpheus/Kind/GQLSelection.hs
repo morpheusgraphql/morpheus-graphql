@@ -21,7 +21,7 @@ import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolve
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
 import qualified Data.Morpheus.Kind.GQLEnum             as E (GQLEnum (..))
-import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), objectTypeOf, scalarTypeOf)
+import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType, scalarTypeOf)
 import qualified Data.Morpheus.Kind.Scalar              as S (Scalar (..))
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
@@ -65,10 +65,10 @@ class GQLSelection a where
   introspect :: Proxy a -> TypeLib -> TypeLib
   default introspect :: (Show a, Selectors (Rep a) Field, GQLKind a) =>
     Proxy a -> TypeLib -> TypeLib
-  introspect = updateLib objectType stack
+  introspect = updateLib (asObjectType fields) stack
     where
       fieldTypes = getFields (Proxy @(Rep a))
-      objectType p = objectTypeOf p (map fst fieldTypes)
+      fields = map fst fieldTypes
       stack = map snd fieldTypes
 
 instance (GQLSelection a, Args.GQLArgs p) => GQLSelection (p ::-> a) where
