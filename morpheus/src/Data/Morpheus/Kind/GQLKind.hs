@@ -35,8 +35,8 @@ enumTypeOf tags proxy = buildType proxy ENUM [] Nothing (map createEnumValue tag
 asObjectType :: GQLKind a => [Field] -> Proxy a -> Type
 asObjectType fields proxy = buildType proxy OBJECT fields Nothing []
 
-inputObjectOf :: GQLKind a => Proxy a -> [Field] -> Type
-inputObjectOf proxy fields = buildType proxy INPUT_OBJECT fields Nothing []
+inputObjectOf :: GQLKind a => [Field] -> Proxy a -> Type
+inputObjectOf fields proxy = buildType proxy INPUT_OBJECT fields Nothing []
 
 class GQLKind a where
   description :: Proxy a -> Text

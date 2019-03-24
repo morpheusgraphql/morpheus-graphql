@@ -11,10 +11,9 @@ module Data.Morpheus.Kind.GQLInput
   ( GQLInput(..)
   ) where
 
-import qualified Data.Map                         as M
 import           Data.Morpheus.Error.Internal     (internalArgumentError, internalTypeMismatch)
 import           Data.Morpheus.Generics.GDecode   (GDecode (..))
-import           Data.Morpheus.Generics.TypeRep   (Selectors (..), resolveTypes)
+import           Data.Morpheus.Generics.TypeRep   (Selectors (..))
 import qualified Data.Morpheus.Kind.GQLEnum       as E (GQLEnum (..))
 import           Data.Morpheus.Kind.GQLKind       (GQLKind (..), inputObjectOf, scalarTypeOf)
 import qualified Data.Morpheus.Kind.Scalar        as S (Scalar (..))
@@ -45,20 +44,15 @@ class GQLInput a where
   typeInfo :: Proxy a -> Text -> InputValue
   default typeInfo :: (Show a, GQLKind a) =>
     Proxy a -> Text -> InputValue
-  typeInfo proxy name = createInputValueWith name (inputObjectOf proxy [])
+  typeInfo proxy name = createInputValueWith name (inputObjectOf [] proxy)
   introInput :: Proxy a -> TypeLib -> TypeLib
   default introInput :: (GQLKind a, Selectors (Rep a) Field) =>
     Proxy a -> TypeLib -> TypeLib
-  introInput proxy typeLib =
-    case M.lookup typeName typeLib of
-      Just _  -> typeLib
-      Nothing -> addType
+  introInput = updateLib (inputObjectOf fields) stack
     where
-      addType = resolveTypes (M.insert typeName (inputObjectOf proxy gqlFields) typeLib) stack
-      typeName = typeID proxy
       fieldTypes = getFields (Proxy @(Rep a))
       stack = map snd fieldTypes
-      gqlFields = map fst fieldTypes
+      fields = map fst fieldTypes
 
 inputValueOf :: GQLKind a => Proxy a -> Text -> InputValue
 inputValueOf proxy name = createInputValueWith name (scalarTypeOf proxy)
