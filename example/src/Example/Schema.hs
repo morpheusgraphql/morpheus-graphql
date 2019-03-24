@@ -13,9 +13,10 @@ import           Control.Monad.Trans        (lift)
 import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Data                  (Data)
 import           Data.Maybe                 (fromMaybe)
-import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLArgs, GQLEnum, GQLInput,
-                                             GQLKind (description), GQLMutation, GQLQuery, GQLResponse, GQLRoot (..),
-                                             GQLSelection, ResolveIO, eitherToResponse, interpreter)
+import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLResponse, GQLRoot (..), ResolveIO,
+                                             ScalarOf (..), eitherToResponse, interpreter)
+import           Data.Morpheus.Kind         (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLQuery,
+                                             GQLSelection, Scalar (..))
 import           Data.Text                  (Text, pack)
 import qualified Data.Text                  as T (concat)
 import qualified Example.Model              as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
@@ -30,8 +31,12 @@ data CityID
 instance GQLKind CityID where
   description _ = "ID of Cities in Zip Format"
 
+newtype Odd =
+  Odd Int
+  deriving (Show, Data, Generic)
+
 data Coordinates = Coordinates
-  { latitude  :: Text
+  { latitude  :: ScalarOf Odd
   , longitude :: Int
   } deriving (Show, Generic, Data, GQLInput)
 

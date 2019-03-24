@@ -17,10 +17,11 @@ import           Data.Morpheus.Generics.GDecode   (GDecode (..))
 import           Data.Morpheus.Generics.TypeRep   (Selectors (..), resolveTypes)
 import qualified Data.Morpheus.Kind.GQLEnum       as E (GQLEnum (..))
 import           Data.Morpheus.Kind.GQLKind       (GQLKind (..), inputObjectOf, scalarTypeOf)
+import qualified Data.Morpheus.Kind.Scalar        as S (Scalar (..))
 import           Data.Morpheus.Schema.InputValue  (createInputValueWith)
 import qualified Data.Morpheus.Schema.InputValue  as I (InputValue (..))
 import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib)
-import           Data.Morpheus.Types.Describer    (EnumOf (..))
+import           Data.Morpheus.Types.Describer    (EnumOf (..), ScalarOf (..))
 import           Data.Morpheus.Types.Error        (Validation)
 import           Data.Morpheus.Types.JSType       (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo     as Meta (MetaInfo (..), initialMeta)
@@ -94,6 +95,11 @@ instance E.GQLEnum a => GQLInput (EnumOf a) where
   decode isType        = internalTypeMismatch "Enum" isType
   typeInfo _ = E.enumType (Proxy @a)
   introInput _ = E.introspect (Proxy @a)
+
+instance S.Scalar a => GQLInput (ScalarOf a) where
+  decode text = pure $ ScalarOf (S.parseValue text)
+  typeInfo _ = S.asInput (Proxy @a)
+  introInput _ = S.introspect (Proxy @a)
 
 instance GQLInput a => GQLInput [a] where
   decode (JSList li) = mapM decode li

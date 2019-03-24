@@ -5,36 +5,24 @@ module Data.Morpheus
   ( interpreter
   , eitherToResponse
   , GQLResponse
-  , GQLSelection
-  , GQLKind(description)
-  , GQLQuery
-  , GQLArgs
   , (::->)(..)
   , GQLRequest(..)
   , ResolveIO
-  , GQLInput
   , EnumOf(unpackEnum)
-  , GQLEnum
   , GQLRoot(..)
-  , GQLMutation
-  , NoMutation(..)
+  , ScalarOf(..)
   ) where
 
 import           Control.Monad.Trans.Except          (ExceptT (..), runExceptT)
 import           Data.Aeson                          (decode)
 import qualified Data.ByteString.Lazy.Char8          as B
 import           Data.Morpheus.Error.Utils           (errorMessage, renderErrors)
-import           Data.Morpheus.Kind.GQLArgs          (GQLArgs)
-import           Data.Morpheus.Kind.GQLEnum          (GQLEnum)
-import           Data.Morpheus.Kind.GQLInput         (GQLInput)
-import           Data.Morpheus.Kind.GQLKind          (GQLKind (description))
-import           Data.Morpheus.Kind.GQLMutation      (GQLMutation (..), NoMutation (..))
+import           Data.Morpheus.Kind.GQLMutation      (GQLMutation (..))
 import           Data.Morpheus.Kind.GQLQuery         (GQLQuery (..))
-import           Data.Morpheus.Kind.GQLSelection     (GQLSelection)
 import           Data.Morpheus.Parser.Parser         (parseGQL, parseLineBreaks)
 import           Data.Morpheus.PreProcess.PreProcess (preProcessQuery)
 import           Data.Morpheus.Schema.Utils.Utils    (TypeLib)
-import           Data.Morpheus.Types.Describer       ((::->) (Resolver), EnumOf (unpackEnum))
+import           Data.Morpheus.Types.Describer       ((::->) (Resolver), EnumOf (unpackEnum), ScalarOf (..))
 import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType)
 import           Data.Morpheus.Types.Query.Operator  (Operator (..))
