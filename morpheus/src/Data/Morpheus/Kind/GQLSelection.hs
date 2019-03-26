@@ -33,7 +33,7 @@ import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type
 import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..), ScalarOf (..),
                                                          WithDeprecationArgs (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
-import           Data.Morpheus.Types.JSType             (JSType (..))
+import           Data.Morpheus.Types.JSType             (JSType (..), Scalar (..))
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..))
 import           Data.Proxy
@@ -104,17 +104,17 @@ scalarField :: GQLKind a => Proxy a -> T.Text -> Field
 scalarField proxy name = F.createFieldWith name (scalarTypeOf proxy) []
 
 instance GQLSelection Int where
-  encode _ = pure . JSInt
+  encode _ = pure . Scalar . Int
   introspect = introspectScalar
   fieldType = scalarField
 
 instance GQLSelection T.Text where
-  encode _ = pure . JSString
+  encode _ = pure . Scalar . String
   introspect = introspectScalar
   fieldType = scalarField
 
 instance GQLSelection Bool where
-  encode _ = pure . JSBool
+  encode _ = pure . Scalar . Boolean
   introspect = introspectScalar
   fieldType = scalarField
 
@@ -125,12 +125,12 @@ instance (GQLSelection a, D.Typeable a) => GQLSelection [a] where
   fieldType _ = wrapAsListType <$> fieldType (Proxy @a)
 
 instance (Show a, GQLKind a, E.GQLEnum a) => GQLSelection (EnumOf a) where
-  encode _ = pure . JSString . T.pack . show . unpackEnum
+  encode _ = pure . Scalar . String . T.pack . show . unpackEnum
   fieldType _ = E.asField (Proxy @a)
   introspect _ = E.introspect (Proxy @a)
 
 instance S.Scalar a => GQLSelection (ScalarOf a) where
-  encode _ (ScalarOf x) = pure $ S.serialize x
+  encode _ (ScalarOf x) = pure $ Scalar $ S.serialize x
   fieldType _ = S.asField (Proxy @a)
   introspect _ = S.introspect (Proxy @a)
 
