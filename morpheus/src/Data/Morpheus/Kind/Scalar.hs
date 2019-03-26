@@ -7,12 +7,16 @@ import           Data.Morpheus.Schema.Field       (createFieldWith)
 import           Data.Morpheus.Schema.InputValue  (createInputValueWith)
 import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib)
 import           Data.Morpheus.Types.Core         (Key)
-import           Data.Morpheus.Types.JSType       (JSType (..))
+import qualified Data.Morpheus.Types.JSType       as Value (JSType, Scalar, toJSValue, toScalar)
 import           Data.Proxy                       (Proxy (..))
 
 class Scalar a where
-  parseValue :: JSType -> a
-  serialize :: a -> JSType
+  parseValue :: Value.Scalar -> a
+  decode :: Value.JSType -> a
+  decode = Value.toScalar . parseValue
+  serialize :: a -> Value.Scalar
+  encode :: a -> Value.JSType
+  encode = Value.toJSValue . serialize
   asInput :: Proxy a -> Key -> InputValue
   default asInput :: (Show a, GQLKind a) =>
     Proxy a -> Key -> InputValue

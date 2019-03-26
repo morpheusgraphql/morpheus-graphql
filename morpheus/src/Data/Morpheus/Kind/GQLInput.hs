@@ -91,7 +91,7 @@ instance (E.GQLEnum a, GQLKind a) => GQLInput (EnumOf a) where
   introInput _ = E.introspect (Proxy @a)
 
 instance S.Scalar a => GQLInput (ScalarOf a) where
-  decode text = pure $ ScalarOf (S.parseValue text)
+  decode text = pure $ ScalarOf (S.encode text)
   typeInfo _ = S.asInput (Proxy @a)
   introInput _ = S.introspect (Proxy @a)
 
