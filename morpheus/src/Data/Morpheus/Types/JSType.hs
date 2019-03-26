@@ -1,7 +1,10 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Types.JSType where
+module Data.Morpheus.Types.JSType
+  ( JSType(..)
+  , Scalar(..)
+  ) where
 
 import qualified Data.Aeson          as A (FromJSON (..), ToJSON (..), Value (..), pairs, (.=))
 import qualified Data.HashMap.Strict as M (toList)
@@ -32,18 +35,18 @@ data JSType
   deriving (Show, Generic)
 
 instance A.ToJSON JSType where
-  toEncoding JSNull = toEncoding A.Null
-  toEncoding (JSEnum x) = toEncoding x
-  toEncoding (JSFloat x) = toEncoding x
-  toEncoding (JSInt x) = toEncoding x
-  toEncoding (JSBool x) = toEncoding x
-  toEncoding (JSString x) = toEncoding x
-  toEncoding (JSList x) = toEncoding x
-  toEncoding (JSObject x) = pairs $ foldl1 (<>) $ map encodeField x
+  toEncoding JSNull = A.toEncoding A.Null
+  toEncoding (JSEnum x) = A.toEncoding x
+  toEncoding (JSFloat x) = A.toEncoding x
+  toEncoding (JSInt x) = A.toEncoding x
+  toEncoding (JSBool x) = A.toEncoding x
+  toEncoding (JSString x) = A.toEncoding x
+  toEncoding (JSList x) = A.toEncoding x
+  toEncoding (JSObject x) = A.pairs $ foldl1 (<>) $ map encodeField x
     where
-      encodeField (key, value) = replaceType key .= value
+      encodeField (key, value) = replaceType key A..= value
 
-replace :: (a, Value) -> (a, JSType)
+replace :: (a, A.Value) -> (a, JSType)
 replace (key, val) = (key, replaceValue val)
 
 decodeScientific :: Scientific -> JSType
