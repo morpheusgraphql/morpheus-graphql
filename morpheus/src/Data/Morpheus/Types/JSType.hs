@@ -3,7 +3,7 @@
 
 module Data.Morpheus.Types.JSType where
 
-import           Data.Aeson          (FromJSON (..), ToJSON (..), Value (..), pairs, (.=))
+import qualified Data.Aeson          as A (FromJSON (..), ToJSON (..), Value (..), pairs, (.=))
 import qualified Data.HashMap.Strict as M (toList)
 import           Data.Scientific     (Scientific, floatingOrInteger)
 import           Data.Text           (Text)
@@ -13,6 +13,12 @@ import           GHC.Generics        (Generic)
 replaceType :: Text -> Text
 replaceType "_type" = "type"
 replaceType x       = x
+
+data Scalar
+  = Int Int
+  | Float Float
+  | String Text
+  | Boolean Bool
 
 data JSType
   = JSObject [(Text, JSType)]
@@ -25,8 +31,8 @@ data JSType
   | JSNull
   deriving (Show, Generic)
 
-instance ToJSON JSType where
-  toEncoding JSNull = toEncoding Null
+instance A.ToJSON JSType where
+  toEncoding JSNull = toEncoding A.Null
   toEncoding (JSEnum x) = toEncoding x
   toEncoding (JSFloat x) = toEncoding x
   toEncoding (JSInt x) = toEncoding x
@@ -46,13 +52,13 @@ decodeScientific v =
     Left float -> JSFloat float
     Right int  -> JSInt int
 
-replaceValue :: Value -> JSType
-replaceValue (Bool v)   = JSBool v
-replaceValue (Number v) = decodeScientific v
-replaceValue (String v) = JSString v
-replaceValue (Object v) = JSObject $ map replace (M.toList v)
-replaceValue (Array li) = JSList (map replaceValue (V.toList li))
-replaceValue Null       = JSNull
+replaceValue :: A.Value -> JSType
+replaceValue (A.Bool v)   = JSBool v
+replaceValue (A.Number v) = decodeScientific v
+replaceValue (A.String v) = JSString v
+replaceValue (A.Object v) = JSObject $ map replace (M.toList v)
+replaceValue (A.Array li) = JSList (map replaceValue (V.toList li))
+replaceValue A.Null       = JSNull
 
-instance FromJSON JSType where
+instance A.FromJSON JSType where
   parseJSON = pure . replaceValue
