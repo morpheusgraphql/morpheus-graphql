@@ -9,15 +9,15 @@ import           Data.Morpheus.PreProcess.Utils   (typeBy)
 import qualified Data.Morpheus.Schema.Type        as T (name)
 import           Data.Morpheus.Schema.Utils.Utils (Type, TypeLib)
 import           Data.Morpheus.Types.Error        (MetaError (..), MetaValidation)
-import           Data.Morpheus.Types.JSType       (JSType (..))
+import           Data.Morpheus.Types.JSType       (JSType (..), Scalar (..))
 import           Data.Morpheus.Types.MetaInfo     (MetaInfo (..), Position)
 import           Data.Text                        as Text (Text, pack)
 
 typeMismatch :: MetaInfo -> JSType -> Text -> MetaValidation JSType
-typeMismatch _ (JSString x) "String" = pure (JSString x)
-typeMismatch _ (JSInt x) "Int"       = pure (JSInt x)
-typeMismatch _ (JSBool x) "Boolean"  = pure (JSBool x)
-typeMismatch meta isType sType       = Left $ TypeMismatch meta (Text.pack $ show isType) sType
+typeMismatch _ (Scalar (String x)) "String"   = pure (Scalar (String x))
+typeMismatch _ (Scalar (Int x)) "Int"         = pure (Scalar (Int x))
+typeMismatch _ (Scalar (Boolean x)) "Boolean" = pure (Scalar (Boolean x))
+typeMismatch meta isType sType                = Left $ TypeMismatch meta (Text.pack $ show isType) sType
 
 validateFieldType :: MetaInfo -> JSType -> Type -> MetaValidation JSType
 validateFieldType meta x = typeMismatch meta x . T.name

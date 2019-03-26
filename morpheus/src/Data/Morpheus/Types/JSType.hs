@@ -24,16 +24,6 @@ data Scalar
   | Boolean Bool
   deriving (Show, Generic)
 
---toJSValue :: Scalar -> JSType
---toJSValue (Int x)     = JSInt x
---toJSValue (Float x)   = JSFloat x
---toJSValue (String x)  = JSString x
---toJSValue (Boolean x) = JSBool x
---toScalar :: JSType -> Scalar
---toScalar (JSInt x)    = Int x
---toScalar (JSFloat x)  = Float x
---toScalar (JSString x) = String x
---toScalar (JSBool x)   = Boolean x
 instance A.ToJSON Scalar where
   toEncoding (Float x)   = A.toEncoding x
   toEncoding (Int x)     = A.toEncoding x

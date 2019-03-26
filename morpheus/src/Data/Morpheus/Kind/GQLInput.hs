@@ -22,7 +22,7 @@ import qualified Data.Morpheus.Schema.InputValue  as I (InputValue (..))
 import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib)
 import           Data.Morpheus.Types.Describer    (EnumOf (..), ScalarOf (..))
 import           Data.Morpheus.Types.Error        (Validation)
-import           Data.Morpheus.Types.JSType       (JSType (..))
+import           Data.Morpheus.Types.JSType       (JSType (..), Scalar (..))
 import qualified Data.Morpheus.Types.MetaInfo     as Meta (MetaInfo (..), initialMeta)
 import           Data.Proxy                       (Proxy (..))
 import           Data.Text                        (Text)
@@ -61,20 +61,20 @@ introspectInput :: Proxy a -> TypeLib -> TypeLib
 introspectInput _ typeLib = typeLib
 
 instance GQLInput Text where
-  decode (JSString x) = pure x
-  decode isType       = internalTypeMismatch "String" isType
+  decode (Scalar (String x)) = pure x
+  decode isType              = internalTypeMismatch "String" isType
   typeInfo = inputValueOf
   introInput = introspectInput
 
 instance GQLInput Bool where
-  decode (JSBool x) = pure x
-  decode isType     = internalTypeMismatch "Boolean" isType
+  decode (Scalar (Boolean x)) = pure x
+  decode isType               = internalTypeMismatch "Boolean" isType
   typeInfo = inputValueOf
   introInput = introspectInput
 
 instance GQLInput Int where
-  decode (JSInt x) = pure x
-  decode isType    = internalTypeMismatch "Int" isType
+  decode (Scalar (Int x)) = pure x
+  decode isType           = internalTypeMismatch "Int" isType
   typeInfo = inputValueOf
   introInput = introspectInput
 
@@ -91,7 +91,7 @@ instance (E.GQLEnum a, GQLKind a) => GQLInput (EnumOf a) where
   introInput _ = E.introspect (Proxy @a)
 
 instance S.Scalar a => GQLInput (ScalarOf a) where
-  decode text = pure $ ScalarOf (S.encode text)
+  decode text = ScalarOf <$> S.decode text
   typeInfo _ = S.asInput (Proxy @a)
   introInput _ = S.introspect (Proxy @a)
 
