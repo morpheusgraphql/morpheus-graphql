@@ -17,7 +17,7 @@ import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), G
                                              ScalarOf (..), eitherToResponse, interpreter)
 import           Data.Morpheus.Kind         (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLQuery,
                                              GQLSelection, Scalar (..))
-import           Data.Morpheus.Types.JSType (JSType (..))
+import qualified Data.Morpheus.Types.JSType as S (Scalar (..))
 import           Data.Text                  (Text, pack)
 import qualified Data.Text                  as T (concat)
 import qualified Example.Model              as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
@@ -37,8 +37,8 @@ newtype Even =
   deriving (Show, Data, Generic, GQLKind)
 
 instance Scalar Even where
-  parseValue _ = Even 2
-  serialize (Even value) = JSInt value
+  parseValue _ = pure $ Even 2
+  serialize (Even value) = S.Int value
 
 data Coordinates = Coordinates
   { latitude  :: ScalarOf Even
