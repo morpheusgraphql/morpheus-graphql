@@ -37,7 +37,8 @@ newtype Even =
   deriving (Show, Data, Generic, GQLKind)
 
 instance Scalar Even where
-  parseValue _ = pure $ Even 2
+  parseValue (S.Int x) = pure $ Even (x * 2)
+  parseValue _         = pure $ Even 2
   serialize (Even value) = S.Int value
 
 data Coordinates = Coordinates
