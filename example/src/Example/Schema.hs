@@ -32,17 +32,18 @@ data CityID
 instance GQLKind CityID where
   description _ = "ID of Cities in Zip Format"
 
-newtype Even =
-  Even Int
+data Modulo7 =
+  Modulo7 Int
+          Int
   deriving (Show, Data, Generic, GQLKind)
 
-instance Scalar Even where
-  parseValue (S.Int x) = pure $ Even (x * 2)
+instance Scalar Modulo7 where
+  parseValue (S.Int x) = pure $ Modulo7 (x `div` 7) (x `mod` 7)
   parseValue _         = pure $ Even 2
-  serialize (Even value) = S.Int value
+  serialize (Modulo7 value _) = S.Int value
 
 data Coordinates = Coordinates
-  { latitude  :: ScalarOf Even
+  { latitude  :: ScalarOf Modulo7
   , longitude :: Int
   } deriving (Show, Generic, Data, GQLInput)
 
@@ -86,12 +87,12 @@ newtype Mutation = Mutation
   { createUser :: LocationByCoordinates ::-> User
   } deriving (Show, Generic, Data, GQLMutation)
 
-fetchAddress :: Even -> Text -> ResolveIO Address
-fetchAddress (Even x) streetName = lift M.jsonAddress >>= eitherToResponse modify
+fetchAddress :: Modulo7 -> Text -> ResolveIO Address
+fetchAddress (Modulo7 x y) streetName = lift M.jsonAddress >>= eitherToResponse modify
   where
     modify mAddress =
       Address
-        { city = T.concat [pack $ show x, " ", M.city mAddress]
+        { city = T.concat [pack $ show x, pack $ show y, " ", M.city mAddress]
         , houseNumber = M.houseNumber mAddress
         , street = streetName
         , owner = Nothing
@@ -103,9 +104,9 @@ resolveAddress = Resolver res
     res args = fetchAddress (unpackScalar $ latitude $ coordinates args) (pack $ show $ longitude $ coordinates args)
 
 addressByCityID :: CityID -> Int -> ResolveIO Address
-addressByCityID Paris code = fetchAddress (Even $ 75 + code) "Paris"
-addressByCityID BLN code   = fetchAddress (Even $ 10 + code) "Berlin"
-addressByCityID HH code    = fetchAddress (Even $ 20 + code) "Hamburg"
+addressByCityID Paris code = fetchAddress (Modulo7 75 code) "Paris"
+addressByCityID BLN code   = fetchAddress (Modulo7 10 code) "Berlin"
+addressByCityID HH code    = fetchAddress (Modulo7 20 code) "Hamburg"
 
 resolveOffice :: M.JSONUser -> Location ::-> Address
 resolveOffice _ = Resolver resolve'
