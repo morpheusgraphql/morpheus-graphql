@@ -6,8 +6,10 @@ module Data.Morpheus.PreProcess.Input.Object
   ) where
 
 import           Data.Morpheus.PreProcess.Utils   (typeBy)
-import qualified Data.Morpheus.Schema.Type        as T (name)
+import qualified Data.Morpheus.Schema.Type        as T (kind, name)
+import           Data.Morpheus.Schema.TypeKind    (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils (Type, TypeLib)
+import           Data.Morpheus.Types.Describer    (EnumOf (..))
 import           Data.Morpheus.Types.Error        (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.JSType       (JSType (..), Scalar (..))
 import           Data.Morpheus.Types.MetaInfo     (MetaInfo (..), Position)
@@ -20,7 +22,10 @@ typeMismatch _ (Scalar (Boolean x)) "Boolean" = pure (Scalar (Boolean x))
 typeMismatch meta isType sType                = Left $ TypeMismatch meta (Text.pack $ show isType) sType
 
 validateFieldType :: MetaInfo -> JSType -> Type -> MetaValidation JSType
-validateFieldType meta x = typeMismatch meta x . T.name
+validateFieldType meta jsType type' =
+  case (jsType, T.kind type') of
+    (Scalar _, EnumOf SCALAR) -> pure jsType -- TODO Validate Scalar
+    (_, _)                    -> typeMismatch meta jsType (T.name type')
 
 validateInputObject :: TypeLib -> Type -> Position -> (Text, JSType) -> MetaValidation (Text, JSType)
 validateInputObject typeLib _parentType pos (_name, JSObject fields) = do
