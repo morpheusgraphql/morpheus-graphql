@@ -39,7 +39,7 @@ data Modulo7 =
 
 instance Scalar Modulo7 where
   parseValue (S.Int x) = pure $ Modulo7 (x `div` 7) (x `mod` 7)
-  parseValue _         = pure $ Even 2
+  parseValue _         = pure $ Modulo7 0 0
   serialize (Modulo7 value _) = S.Int value
 
 data Coordinates = Coordinates
