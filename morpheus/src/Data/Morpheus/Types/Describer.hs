@@ -7,15 +7,20 @@ module Data.Morpheus.Types.Describer
   ( (::->)(..)
   , WithDeprecationArgs(..)
   , EnumOf(..)
+  , ScalarOf(..)
   ) where
 
-import           Data.Data                 (Constr, Data, DataType, Fixity (Prefix), dataTypeOf,
-                                            gfoldl, gunfold, mkConstr, mkDataType, toConstr)
+import           Data.Data                 (Constr, Data, DataType, Fixity (Prefix), dataTypeOf, gfoldl, gunfold,
+                                            mkConstr, mkDataType, toConstr)
 import           Data.Morpheus.Types.Error (ResolveIO)
 import           GHC.Generics              (Generic)
 
 newtype EnumOf a = EnumOf
   { unpackEnum :: a
+  } deriving (Show, Generic, Data)
+
+newtype ScalarOf a = ScalarOf
+  { unpackScalar :: a
   } deriving (Show, Generic, Data)
 
 newtype WithDeprecationArgs a = WithDeprecationArgs

@@ -5,7 +5,7 @@ module Data.Morpheus.Parser.Primitive where
 import           Control.Applicative
 import           Data.Attoparsec.Text
 import           Data.Functor
-import           Data.Morpheus.Types.JSType     (JSType (..))
+import           Data.Morpheus.Types.JSType     (JSType (..), Scalar (..))
 import qualified Data.Text                      as T (Text, pack)
 
 import qualified Data.Attoparsec.Internal.Types as AT
@@ -15,16 +15,16 @@ replaceType "type" = "_type"
 replaceType x      = x
 
 boolTrue :: Parser JSType
-boolTrue = string "true" $> JSBool True
+boolTrue = string "true" $> Scalar (Boolean True)
 
 boolFalse :: Parser JSType
-boolFalse = string "false" $> JSBool False
+boolFalse = string "false" $> Scalar (Boolean False)
 
 jsBool :: Parser JSType
 jsBool = boolTrue <|> boolFalse
 
 jsInt :: Parser JSType
-jsInt = JSInt <$> decimal
+jsInt = Scalar . Int <$> decimal
 
 codes :: String
 codes = ['b', 'n', 'f', 'r', 't', '\\', '\"', '/']
@@ -46,7 +46,7 @@ jsString = do
   _ <- char '"'
   value <- many escaped
   _ <- char '"'
-  pure $ JSString $ T.pack value
+  pure $ Scalar $ String $ T.pack value
 
 token :: Parser T.Text
 token = replaceType . T.pack <$> some (letter <|> char '_')

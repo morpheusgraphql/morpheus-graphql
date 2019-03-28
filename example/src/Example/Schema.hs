@@ -13,9 +13,11 @@ import           Control.Monad.Trans        (lift)
 import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Data                  (Data)
 import           Data.Maybe                 (fromMaybe)
-import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLArgs, GQLEnum, GQLInput,
-                                             GQLKind (description), GQLMutation, GQLQuery, GQLResponse, GQLRoot (..),
-                                             GQLSelection, ResolveIO, eitherToResponse, interpreter)
+import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLResponse, GQLRoot (..), ResolveIO,
+                                             ScalarOf (..), eitherToResponse, interpreter)
+import           Data.Morpheus.Kind         (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLQuery,
+                                             GQLSelection, Scalar (..))
+import qualified Data.Morpheus.Types.JSType as S (Scalar (..))
 import           Data.Text                  (Text, pack)
 import qualified Data.Text                  as T (concat)
 import qualified Example.Model              as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
@@ -30,8 +32,18 @@ data CityID
 instance GQLKind CityID where
   description _ = "ID of Cities in Zip Format"
 
+data Modulo7 =
+  Modulo7 Int
+          Int
+  deriving (Show, Data, Generic, GQLKind)
+
+instance Scalar Modulo7 where
+  parseValue (S.Int x) = pure $ Modulo7 (x `div` 7) (x `mod` 7)
+  parseValue _         = pure $ Modulo7 0 0
+  serialize (Modulo7 value _) = S.Int value
+
 data Coordinates = Coordinates
-  { latitude  :: Text
+  { latitude  :: ScalarOf Modulo7
   , longitude :: Int
   } deriving (Show, Generic, Data, GQLInput)
 
@@ -75,12 +87,12 @@ newtype Mutation = Mutation
   { createUser :: LocationByCoordinates ::-> User
   } deriving (Show, Generic, Data, GQLMutation)
 
-fetchAddress :: Text -> Text -> ResolveIO Address
-fetchAddress cityName streetName = lift M.jsonAddress >>= eitherToResponse modify
+fetchAddress :: Modulo7 -> Text -> ResolveIO Address
+fetchAddress (Modulo7 x y) streetName = lift M.jsonAddress >>= eitherToResponse modify
   where
     modify mAddress =
       Address
-        { city = T.concat [cityName, " ", M.city mAddress]
+        { city = T.concat [pack $ show x, pack $ show y, " ", M.city mAddress]
         , houseNumber = M.houseNumber mAddress
         , street = streetName
         , owner = Nothing
@@ -89,17 +101,17 @@ fetchAddress cityName streetName = lift M.jsonAddress >>= eitherToResponse modif
 resolveAddress :: LocationByCoordinates ::-> Address
 resolveAddress = Resolver res
   where
-    res args = fetchAddress (latitude $ coordinates args) (pack $ show $ longitude $ coordinates args)
+    res args = fetchAddress (unpackScalar $ latitude $ coordinates args) (pack $ show $ longitude $ coordinates args)
 
-addressByCityID :: CityID -> String -> ResolveIO Address
-addressByCityID Paris code = fetchAddress (pack $ "75" ++ code) "Paris"
-addressByCityID BLN code   = fetchAddress (pack $ "10" ++ code) "Berlin"
-addressByCityID HH code    = fetchAddress (pack $ "20" ++ code) "Hamburg"
+addressByCityID :: CityID -> Int -> ResolveIO Address
+addressByCityID Paris code = fetchAddress (Modulo7 75 code) "Paris"
+addressByCityID BLN code   = fetchAddress (Modulo7 10 code) "Berlin"
+addressByCityID HH code    = fetchAddress (Modulo7 20 code) "Hamburg"
 
 resolveOffice :: M.JSONUser -> Location ::-> Address
 resolveOffice _ = Resolver resolve'
   where
-    resolve' args = addressByCityID (unpackEnum $ cityID args) (show $ fromMaybe 101 (zipCode args))
+    resolve' args = addressByCityID (unpackEnum $ cityID args) (fromMaybe 101 (zipCode args))
 
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve'

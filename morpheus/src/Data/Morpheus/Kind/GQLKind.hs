@@ -6,12 +6,14 @@
 module Data.Morpheus.Kind.GQLKind
   ( GQLKind(..)
   , scalarTypeOf
-  , objectTypeOf
+  , asObjectType
   , enumTypeOf
   , inputObjectOf
   ) where
 
 import           Data.Data                              (Typeable)
+import qualified Data.Map                               as M (insert, lookup)
+import           Data.Morpheus.Generics.TypeRep         (resolveTypes)
 import           Data.Morpheus.Generics.Utils           (typeOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
@@ -19,7 +21,7 @@ import           Data.Morpheus.Schema.EnumValue         (EnumValue, createEnumVa
 import           Data.Morpheus.Schema.Schema            (Schema)
 import qualified Data.Morpheus.Schema.Type              as T (Type (..))
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
+import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type, TypeLib)
 import           Data.Morpheus.Types.Describer          (EnumOf (..), WithDeprecationArgs (..))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
@@ -27,14 +29,14 @@ import           Data.Text                              (Text)
 scalarTypeOf :: GQLKind a => Proxy a -> Type
 scalarTypeOf proxy = buildType proxy SCALAR [] Nothing []
 
-enumTypeOf :: GQLKind a => Proxy a -> [Text] -> Type
-enumTypeOf proxy tags = buildType proxy ENUM [] Nothing (map createEnumValue tags)
+enumTypeOf :: GQLKind a => [Text] -> Proxy a -> Type
+enumTypeOf tags proxy = buildType proxy ENUM [] Nothing (map createEnumValue tags)
 
-objectTypeOf :: GQLKind a => Proxy a -> [Field] -> Type
-objectTypeOf proxy fields = buildType proxy OBJECT fields Nothing []
+asObjectType :: GQLKind a => [Field] -> Proxy a -> Type
+asObjectType fields proxy = buildType proxy OBJECT fields Nothing []
 
-inputObjectOf :: GQLKind a => Proxy a -> [Field] -> Type
-inputObjectOf proxy fields = buildType proxy INPUT_OBJECT fields Nothing []
+inputObjectOf :: GQLKind a => [Field] -> Proxy a -> Type
+inputObjectOf fields proxy = buildType proxy INPUT_OBJECT fields Nothing []
 
 class GQLKind a where
   description :: Proxy a -> Text
@@ -58,6 +60,12 @@ class GQLKind a where
       , T.enumValues = WithDeprecationArgs enums'
       , T.inputFields = []
       }
+  updateLib :: (Proxy a -> Type) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib
+  updateLib typeBuilder stack proxy lib' =
+    case M.lookup (typeID proxy) lib' of
+      Just _ -> lib'
+      Nothing -> resolveTypes lib' ([addType] ++ stack)
+        where addType = M.insert (typeID proxy) (typeBuilder proxy)
 
 instance GQLKind EnumValue where
   typeID _ = "__EnumValue"

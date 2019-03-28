@@ -11,18 +11,18 @@ module Data.Morpheus.Kind.GQLInput
   ( GQLInput(..)
   ) where
 
-import qualified Data.Map                         as M
 import           Data.Morpheus.Error.Internal     (internalArgumentError, internalTypeMismatch)
 import           Data.Morpheus.Generics.GDecode   (GDecode (..))
-import           Data.Morpheus.Generics.TypeRep   (Selectors (..), resolveTypes)
+import           Data.Morpheus.Generics.TypeRep   (Selectors (..))
 import qualified Data.Morpheus.Kind.GQLEnum       as E (GQLEnum (..))
 import           Data.Morpheus.Kind.GQLKind       (GQLKind (..), inputObjectOf, scalarTypeOf)
+import qualified Data.Morpheus.Kind.Scalar        as S (Scalar (..))
 import           Data.Morpheus.Schema.InputValue  (createInputValueWith)
 import qualified Data.Morpheus.Schema.InputValue  as I (InputValue (..))
 import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib)
-import           Data.Morpheus.Types.Describer    (EnumOf (..))
+import           Data.Morpheus.Types.Describer    (EnumOf (..), ScalarOf (..))
 import           Data.Morpheus.Types.Error        (Validation)
-import           Data.Morpheus.Types.JSType       (JSType (..))
+import           Data.Morpheus.Types.JSType       (JSType (..), Scalar (..))
 import qualified Data.Morpheus.Types.MetaInfo     as Meta (MetaInfo (..), initialMeta)
 import           Data.Proxy                       (Proxy (..))
 import           Data.Text                        (Text)
@@ -44,20 +44,15 @@ class GQLInput a where
   typeInfo :: Proxy a -> Text -> InputValue
   default typeInfo :: (Show a, GQLKind a) =>
     Proxy a -> Text -> InputValue
-  typeInfo proxy name = createInputValueWith name (inputObjectOf proxy [])
+  typeInfo proxy name = createInputValueWith name (inputObjectOf [] proxy)
   introInput :: Proxy a -> TypeLib -> TypeLib
   default introInput :: (GQLKind a, Selectors (Rep a) Field) =>
     Proxy a -> TypeLib -> TypeLib
-  introInput proxy typeLib =
-    case M.lookup typeName typeLib of
-      Just _  -> typeLib
-      Nothing -> addType
+  introInput = updateLib (inputObjectOf fields) stack
     where
-      addType = resolveTypes (M.insert typeName (inputObjectOf proxy gqlFields) typeLib) stack
-      typeName = typeID proxy
       fieldTypes = getFields (Proxy @(Rep a))
       stack = map snd fieldTypes
-      gqlFields = map fst fieldTypes
+      fields = map fst fieldTypes
 
 inputValueOf :: GQLKind a => Proxy a -> Text -> InputValue
 inputValueOf proxy name = createInputValueWith name (scalarTypeOf proxy)
@@ -66,20 +61,20 @@ introspectInput :: Proxy a -> TypeLib -> TypeLib
 introspectInput _ typeLib = typeLib
 
 instance GQLInput Text where
-  decode (JSString x) = pure x
-  decode isType       = internalTypeMismatch "String" isType
+  decode (Scalar (String x)) = pure x
+  decode isType              = internalTypeMismatch "String" isType
   typeInfo = inputValueOf
   introInput = introspectInput
 
 instance GQLInput Bool where
-  decode (JSBool x) = pure x
-  decode isType     = internalTypeMismatch "Boolean" isType
+  decode (Scalar (Boolean x)) = pure x
+  decode isType               = internalTypeMismatch "Boolean" isType
   typeInfo = inputValueOf
   introInput = introspectInput
 
 instance GQLInput Int where
-  decode (JSInt x) = pure x
-  decode isType    = internalTypeMismatch "Int" isType
+  decode (Scalar (Int x)) = pure x
+  decode isType           = internalTypeMismatch "Int" isType
   typeInfo = inputValueOf
   introInput = introspectInput
 
@@ -89,11 +84,16 @@ instance GQLInput a => GQLInput (Maybe a) where
   typeInfo _ name = (typeInfo (Proxy @a) name) {I.defaultValue = "Nothing"}
   introInput _ typeLib = typeLib
 
-instance E.GQLEnum a => GQLInput (EnumOf a) where
+instance (E.GQLEnum a, GQLKind a) => GQLInput (EnumOf a) where
   decode (JSEnum text) = pure $ EnumOf (E.decode text)
   decode isType        = internalTypeMismatch "Enum" isType
-  typeInfo _ = E.enumType (Proxy @a)
+  typeInfo _ = E.asType (Proxy @a)
   introInput _ = E.introspect (Proxy @a)
+
+instance S.Scalar a => GQLInput (ScalarOf a) where
+  decode text = ScalarOf <$> S.decode text
+  typeInfo _ = S.asInput (Proxy @a)
+  introInput _ = S.introspect (Proxy @a)
 
 instance GQLInput a => GQLInput [a] where
   decode (JSList li) = mapM decode li
