@@ -11,7 +11,7 @@ import           Data.Morpheus.Schema.TypeKind    (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils (Type, TypeLib)
 import           Data.Morpheus.Types.Describer    (EnumOf (..))
 import           Data.Morpheus.Types.Error        (MetaError (..), MetaValidation)
-import           Data.Morpheus.Types.JSType       (JSType (..), Scalar (..))
+import           Data.Morpheus.Types.JSType       (JSType (..), ScalarValue (..))
 import           Data.Morpheus.Types.MetaInfo     (MetaInfo (..), Position)
 import           Data.Text                        as Text (Text, pack)
 

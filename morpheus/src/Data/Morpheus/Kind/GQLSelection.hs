@@ -33,7 +33,7 @@ import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type
 import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..), ScalarOf (..),
                                                          WithDeprecationArgs (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
-import           Data.Morpheus.Types.JSType             (JSType (..), Scalar (..))
+import           Data.Morpheus.Types.JSType             (JSType (..), ScalarValue (..))
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..))
 import           Data.Proxy

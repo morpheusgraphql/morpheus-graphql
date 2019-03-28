@@ -3,7 +3,7 @@
 
 module Data.Morpheus.Types.JSType
   ( JSType(..)
-  , Scalar(..)
+  , ScalarValue(..)
   ) where
 
 import qualified Data.Aeson          as A (FromJSON (..), ToJSON (..), Value (..), pairs, (.=))
@@ -17,14 +17,14 @@ replaceType :: Text -> Text
 replaceType "_type" = "type"
 replaceType x       = x
 
-data Scalar
+data ScalarValue
   = Int Int
   | Float Float
   | String Text
   | Boolean Bool
   deriving (Show, Generic)
 
-instance A.ToJSON Scalar where
+instance A.ToJSON ScalarValue where
   toEncoding (Float x)   = A.toEncoding x
   toEncoding (Int x)     = A.toEncoding x
   toEncoding (Boolean x) = A.toEncoding x
@@ -34,7 +34,7 @@ data JSType
   = JSObject [(Text, JSType)]
   | JSList [JSType]
   | JSEnum Text
-  | Scalar Scalar
+  | Scalar ScalarValue
   | JSNull
   deriving (Show, Generic)
 
@@ -50,7 +50,7 @@ instance A.ToJSON JSType where
 replace :: (a, A.Value) -> (a, JSType)
 replace (key, val) = (key, replaceValue val)
 
-decodeScientific :: Scientific -> Scalar
+decodeScientific :: Scientific -> ScalarValue
 decodeScientific v =
   case floatingOrInteger v of
     Left float -> Float float

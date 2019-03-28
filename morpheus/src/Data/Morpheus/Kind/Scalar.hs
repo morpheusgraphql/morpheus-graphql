@@ -11,20 +11,20 @@ import           Data.Morpheus.Schema.InputValue  (createInputValueWith)
 import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib)
 import           Data.Morpheus.Types.Core         (Key)
 import           Data.Morpheus.Types.Error        (Validation)
-import qualified Data.Morpheus.Types.JSType       as Value (JSType (..), Scalar (..))
+import           Data.Morpheus.Types.JSType       (JSType (..), ScalarValue (..))
 import           Data.Proxy                       (Proxy (..))
 
-toScalar :: Value.JSType -> Validation Value.Scalar
-toScalar (Value.Scalar x) = pure x
-toScalar jsType           = internalTypeMismatch "Scalar" jsType
+toScalar :: JSType -> Validation ScalarValue
+toScalar (Scalar x) = pure x
+toScalar jsType     = internalTypeMismatch "Scalar" jsType
 
 class Scalar a where
-  parseValue :: Value.Scalar -> Validation a
-  decode :: Value.JSType -> Validation a
+  parseValue :: ScalarValue -> Validation a
+  decode :: JSType -> Validation a
   decode = toScalar >=> parseValue
-  serialize :: a -> Value.Scalar
-  encode :: a -> Value.JSType
-  encode = Value.Scalar . serialize
+  serialize :: a -> ScalarValue
+  encode :: a -> JSType
+  encode = Scalar . serialize
   asInput :: Proxy a -> Key -> InputValue
   default asInput :: (Show a, GQLKind a) =>
     Proxy a -> Key -> InputValue
