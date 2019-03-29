@@ -19,7 +19,7 @@ import           Data.Morpheus.Kind.GQLKind       (GQLKind (..), inputObjectOf, 
 import qualified Data.Morpheus.Kind.Scalar        as S (Scalar (..))
 import           Data.Morpheus.Schema.InputValue  (createInputValueWith)
 import qualified Data.Morpheus.Schema.InputValue  as I (InputValue (..))
-import           Data.Morpheus.Schema.Utils.Utils (Field, InputValue, TypeLib)
+import           Data.Morpheus.Schema.Utils.Utils (InputValue, TypeLib)
 import           Data.Morpheus.Types.Describer    (EnumOf (..), ScalarOf (..))
 import           Data.Morpheus.Types.Error        (Validation)
 import           Data.Morpheus.Types.JSType       (JSType (..), ScalarValue (..))
@@ -46,7 +46,7 @@ class GQLInput a where
     Proxy a -> Text -> InputValue
   typeInfo proxy name = createInputValueWith name (inputObjectOf [] proxy)
   introInput :: Proxy a -> TypeLib -> TypeLib
-  default introInput :: (GQLKind a, Selectors (Rep a) Field) =>
+  default introInput :: (GQLKind a, Selectors (Rep a) InputValue) =>
     Proxy a -> TypeLib -> TypeLib
   introInput = updateLib (inputObjectOf fields) stack
     where

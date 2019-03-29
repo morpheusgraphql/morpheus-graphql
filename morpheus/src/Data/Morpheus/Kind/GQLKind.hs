@@ -27,16 +27,16 @@ import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 
 scalarTypeOf :: GQLKind a => Proxy a -> Type
-scalarTypeOf proxy = buildType proxy SCALAR [] Nothing []
+scalarTypeOf proxy = buildType proxy SCALAR [] Nothing [] []
 
 enumTypeOf :: GQLKind a => [Text] -> Proxy a -> Type
-enumTypeOf tags proxy = buildType proxy ENUM [] Nothing (map createEnumValue tags)
+enumTypeOf tags proxy = buildType proxy ENUM [] Nothing (map createEnumValue tags) []
 
 asObjectType :: GQLKind a => [Field] -> Proxy a -> Type
-asObjectType fields proxy = buildType proxy OBJECT fields Nothing []
+asObjectType fields proxy = buildType proxy OBJECT fields Nothing [] []
 
-inputObjectOf :: GQLKind a => [Field] -> Proxy a -> Type
-inputObjectOf fields proxy = buildType proxy INPUT_OBJECT fields Nothing []
+inputObjectOf :: GQLKind a => [InputValue] -> Proxy a -> Type
+inputObjectOf inputFields proxy = buildType proxy INPUT_OBJECT [] Nothing [] inputFields
 
 class GQLKind a where
   description :: Proxy a -> Text
@@ -46,19 +46,19 @@ class GQLKind a where
   default typeID :: Typeable a =>
     Proxy a -> Text
   typeID = typeOf
-  buildType :: Proxy a -> TypeKind -> [Field] -> Maybe Type -> [EnumValue] -> Type
-  default buildType :: Proxy a -> TypeKind -> [Field] -> Maybe Type -> [EnumValue] -> Type
-  buildType proxy kind' fields' type' enums' =
+  buildType :: Proxy a -> TypeKind -> [Field] -> Maybe Type -> [EnumValue] -> [InputValue] -> Type
+  default buildType :: Proxy a -> TypeKind -> [Field] -> Maybe Type -> [EnumValue] -> [InputValue] -> Type
+  buildType proxy kind' fields' type' enums' inputFields' =
     T.Type
       { T.kind = EnumOf kind'
       , T.name = typeID proxy
       , T.description = description proxy
-      , T.fields = WithDeprecationArgs fields'
+      , T.fields = WithDeprecationArgs fields' --fields of object
       , T.ofType = type'
       , T.interfaces = []
       , T.possibleTypes = []
       , T.enumValues = WithDeprecationArgs enums'
-      , T.inputFields = []
+      , T.inputFields = inputFields' -- fields of INPUT_OBJECT
       }
   updateLib :: (Proxy a -> Type) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib
   updateLib typeBuilder stack proxy lib' =
