@@ -19,20 +19,20 @@ import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), Field, InputType (..), ObjectField (..),
-                                                         OutType (..))
+                                                         OutputType (..))
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Schema.Utils.Utils       (InputValue, TypeLib)
+import           Data.Morpheus.Schema.Utils.Utils       (InputValue, Type, TypeLib)
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 
-scalarTypeOf :: GQLKind a => Proxy a -> OutType
+scalarTypeOf :: GQLKind a => Proxy a -> OutputType
 scalarTypeOf = Scalar . buildType
 
-enumTypeOf :: GQLKind a => [Text] -> Proxy a -> OutType
+enumTypeOf :: GQLKind a => [Text] -> Proxy a -> OutputType
 enumTypeOf tags = Enum tags . buildType
 
-asObjectType :: GQLKind a => [ObjectField] -> Proxy a -> OutType
+asObjectType :: GQLKind a => [ObjectField] -> Proxy a -> OutputType
 asObjectType fields = Object fields . buildType
 
 inputObjectOf :: GQLKind a => [Field] -> Proxy a -> InputType

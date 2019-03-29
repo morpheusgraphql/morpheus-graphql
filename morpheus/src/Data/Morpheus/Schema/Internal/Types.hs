@@ -1,5 +1,5 @@
 module Data.Morpheus.Schema.Internal.Types
-  ( Type(..)
+  ( OutputType(..)
   , Core(..)
   , Field(..)
   , ObjectField(..)
@@ -30,7 +30,7 @@ data ObjectField =
   ObjectField [Arg]
               Field
 
-data OutType
+data OutputType
   = Scalar Core
   | Enum [EnumValue]
          Core
