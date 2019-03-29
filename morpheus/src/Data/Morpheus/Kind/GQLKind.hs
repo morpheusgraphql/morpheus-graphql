@@ -40,14 +40,12 @@ inputObjectOf inputFields = IObject inputFields . buildType
 
 class GQLKind a where
   description :: Proxy a -> Text
-  default description :: Proxy a -> Text
   description _ = "default selection Description"
   typeID :: Proxy a -> Text
   default typeID :: Typeable a =>
     Proxy a -> Text
   typeID = typeOf
   buildType :: Proxy a -> Core
-  default buildType :: Proxy a -> Core
   buildType proxy = Core {name = typeID proxy, typeDescription = description proxy}
   updateLib :: (Proxy a -> Type) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib
   updateLib typeBuilder stack proxy lib' =
