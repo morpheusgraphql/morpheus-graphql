@@ -5,7 +5,7 @@ module Data.Morpheus.PreProcess.Input.Object
   , validateInputVariable
   ) where
 
-import           Data.Morpheus.PreProcess.Utils   (typeBy)
+import           Data.Morpheus.PreProcess.Utils   (inputTypeBy)
 import qualified Data.Morpheus.Schema.Type        as T (kind, name)
 import           Data.Morpheus.Schema.TypeKind    (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils (Type, TypeLib)
@@ -29,11 +29,11 @@ validateFieldType meta jsType type' =
 
 validateInputObject :: TypeLib -> Type -> Position -> (Text, JSType) -> MetaValidation (Text, JSType)
 validateInputObject typeLib _parentType pos (_name, JSObject fields) = do
-  typeSD <- typeBy pos typeLib _parentType _name
+  typeSD <- inputTypeBy pos typeLib _parentType _name
   fieldsQS <- mapM (validateInputObject typeLib typeSD pos) fields
   pure (_name, JSObject fieldsQS)
 validateInputObject typeLib _parentType pos (_key, x) =
-  typeBy pos typeLib _parentType _key >>= validateFieldType meta x >> pure (_key, x)
+  inputTypeBy pos typeLib _parentType _key >>= validateFieldType meta x >> pure (_key, x)
   where
     meta = MetaInfo {typeName = T.name _parentType, key = _key, position = pos}
 
