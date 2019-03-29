@@ -15,9 +15,8 @@ type EnumValue = Text
 type Arg = Core
 
 data Core = Core
-  { name        :: Text
-  , description :: Text
-  , typeID      :: Text
+  { name            :: Text
+  , typeDescription :: Text
   }
 
 data Field = Field
@@ -31,16 +30,16 @@ data ObjectField =
   ObjectField [Arg]
               Field
 
-data Type
-  = Scalar Type
-  | Enum Type
-         [EnumValue]
-  | Object Type
-           [ObjectField]
+data OutType
+  = Scalar Core
+  | Enum [EnumValue]
+         Core
+  | Object [ObjectField]
+           Core
 
 data InputType
-  = IScalar Type
-  | IEnum Type
-          [EnumValue]
-  | IObject Type
-            [Field]
+  = IScalar Core
+  | IEnum [EnumValue]
+          Core
+  | IObject [Field]
+            Core

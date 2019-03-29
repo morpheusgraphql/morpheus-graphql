@@ -17,26 +17,26 @@ import           Data.Morpheus.Generics.TypeRep         (resolveTypes)
 import           Data.Morpheus.Generics.Utils           (typeOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
-import           Data.Morpheus.Schema.EnumValue         (EnumValue, createEnumValue)
+import           Data.Morpheus.Schema.EnumValue         (EnumValue)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), Field, InputType (..), ObjectField (..),
+                                                         OutType (..))
 import           Data.Morpheus.Schema.Schema            (Schema)
-import qualified Data.Morpheus.Schema.Type              as T (Type (..))
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type, TypeLib)
-import           Data.Morpheus.Types.Describer          (EnumOf (..), WithDeprecationArgs (..))
+import           Data.Morpheus.Schema.Utils.Utils       (InputValue, TypeLib)
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 
-scalarTypeOf :: GQLKind a => Proxy a -> Type
-scalarTypeOf proxy = buildType proxy SCALAR [] Nothing [] []
+scalarTypeOf :: GQLKind a => Proxy a -> OutType
+scalarTypeOf = Scalar . buildType
 
-enumTypeOf :: GQLKind a => [Text] -> Proxy a -> Type
-enumTypeOf tags proxy = buildType proxy ENUM [] Nothing (map createEnumValue tags) []
+enumTypeOf :: GQLKind a => [Text] -> Proxy a -> OutType
+enumTypeOf tags = Enum tags . buildType
 
-asObjectType :: GQLKind a => [Field] -> Proxy a -> Type
-asObjectType fields proxy = buildType proxy OBJECT fields Nothing [] []
+asObjectType :: GQLKind a => [ObjectField] -> Proxy a -> OutType
+asObjectType fields = Object fields . buildType
 
-inputObjectOf :: GQLKind a => [InputValue] -> Proxy a -> Type
-inputObjectOf inputFields proxy = buildType proxy INPUT_OBJECT [] Nothing [] inputFields
+inputObjectOf :: GQLKind a => [Field] -> Proxy a -> InputType
+inputObjectOf inputFields = IObject inputFields . buildType
 
 class GQLKind a where
   description :: Proxy a -> Text
@@ -46,20 +46,9 @@ class GQLKind a where
   default typeID :: Typeable a =>
     Proxy a -> Text
   typeID = typeOf
-  buildType :: Proxy a -> TypeKind -> [Field] -> Maybe Type -> [EnumValue] -> [InputValue] -> Type
-  default buildType :: Proxy a -> TypeKind -> [Field] -> Maybe Type -> [EnumValue] -> [InputValue] -> Type
-  buildType proxy kind' fields' type' enums' inputFields' =
-    T.Type
-      { T.kind = EnumOf kind'
-      , T.name = typeID proxy
-      , T.description = description proxy
-      , T.fields = WithDeprecationArgs fields' --fields of object
-      , T.ofType = type'
-      , T.interfaces = []
-      , T.possibleTypes = []
-      , T.enumValues = WithDeprecationArgs enums'
-      , T.inputFields = inputFields' -- fields of INPUT_OBJECT
-      }
+  buildType :: Proxy a -> Core
+  default buildType :: Proxy a -> Core
+  buildType proxy = Core {name = typeID proxy, typeDescription = description proxy}
   updateLib :: (Proxy a -> Type) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib
   updateLib typeBuilder stack proxy lib' =
     case M.lookup (typeID proxy) lib' of
