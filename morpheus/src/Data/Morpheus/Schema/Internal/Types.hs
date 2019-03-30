@@ -47,7 +47,7 @@ data InputType
   = IScalar Core
   | IEnum [EnumValue]
           Core
-  | IObject [Field]
+  | IObject [InputField]
             Core
 
 data GType

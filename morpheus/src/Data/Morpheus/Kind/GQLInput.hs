@@ -46,7 +46,7 @@ class GQLInput a where
   asArgument proxy name =
     InputField $ Field {fieldName = name, notNull = True, kind = INPUT_OBJECT, typeName = typeID proxy}
   introInput :: Proxy a -> TypeLib -> TypeLib
-  default introInput :: (GQLKind a, Selectors (Rep a) Field) =>
+  default introInput :: (GQLKind a, Selectors (Rep a) InputField) =>
     Proxy a -> TypeLib -> TypeLib
   introInput = updateLib (inputObjectOf fields) stack
     where
