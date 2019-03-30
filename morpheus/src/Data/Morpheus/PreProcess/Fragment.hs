@@ -5,14 +5,14 @@ module Data.Morpheus.PreProcess.Fragment
   ) where
 
 import qualified Data.Map                               as M (lookup, toList)
-import           Data.Morpheus.Error.Fragment           (cannotBeSpreadOnType, cycleOnFragment,
-                                                         fragmentError, unknownFragment)
+import           Data.Morpheus.Error.Fragment           (cannotBeSpreadOnType, cycleOnFragment, fragmentError,
+                                                         unknownFragment)
 import           Data.Morpheus.Error.Selection          (selectionError)
 import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (resolveArguments)
-import           Data.Morpheus.PreProcess.Utils         (existsType, fieldOf, fieldType)
-import qualified Data.Morpheus.Schema.Type              as T (name)
-import           Data.Morpheus.Schema.Utils.Utils       (Type, TypeLib)
+import           Data.Morpheus.PreProcess.Utils         (existsType, fieldOf, getObjectFieldType)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), GType, ObjectField, OutputType,
+                                                         TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..))
@@ -40,20 +40,20 @@ getFragment meta fragmentID lib =
     Nothing       -> Left $ unknownFragment meta
     Just fragment -> pure fragment
 
-compareFragmentType :: Meta.MetaInfo -> Type -> Fragment -> Validation Type
+compareFragmentType :: Meta.MetaInfo -> OutputType -> Fragment -> Validation OutputType
 compareFragmentType spreadMeta _type fragment =
-  if T.name _type == target fragment
+  if name _type == target fragment
     then pure _type
-    else Left $ cannotBeSpreadOnType (spreadMeta {Meta.typeName = target fragment}) (T.name _type)
+    else Left $ cannotBeSpreadOnType (spreadMeta {Meta.typeName = target fragment}) (name _type)
 
-getSpreadType :: FragmentLib -> Type -> Text -> Meta.MetaInfo -> Validation Type
+getSpreadType :: FragmentLib -> GType -> Text -> Meta.MetaInfo -> Validation GType
 getSpreadType frags _type fragmentID spreadMeta =
   getFragment spreadMeta fragmentID frags >>= compareFragmentType spreadMeta _type
 
-validateFragmentFields :: TypeLib -> GQLQueryRoot -> Type -> (Text, RawSelection) -> Validation [Node]
-validateFragmentFields typeLib root _parent (name', RawSelectionSet args selectors sPos) = do
-  fieldSC <- asSelectionValidation $ fieldOf sPos _parent name'
-  typeSC <- asGQLError $ fieldType sPos typeLib fieldSC
+validateFragmentFields :: TypeLib -> GQLQueryRoot -> GObject ObjectField -> (Text, RawSelection) -> Validation [Node]
+validateFragmentFields typeLib root (GObject parentFields core) (name', RawSelectionSet args selectors sPos) = do
+  fieldSC <- asSelectionValidation $ fieldOf (sPos, name core) parentFields name'
+  typeSC <- asGQLError $ getObjectFieldType sPos typeLib fieldSC
   _ <- resolveArguments typeLib root fieldSC sPos args -- TODO do not use heavy validation
   concat <$> mapM (validateFragmentFields typeLib root typeSC) selectors
 validateFragmentFields typeLib root _parentType (_name, RawField args _ sPos) = do

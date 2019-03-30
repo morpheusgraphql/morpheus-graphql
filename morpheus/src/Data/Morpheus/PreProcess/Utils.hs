@@ -4,7 +4,7 @@ module Data.Morpheus.PreProcess.Utils
   ( existsType
   , typeBy
   , fieldOf
-  , fieldType
+  , getObjectFieldType
   , differKeys
   , inputTypeBy
   ) where
