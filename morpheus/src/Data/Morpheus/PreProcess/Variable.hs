@@ -7,14 +7,10 @@ module Data.Morpheus.PreProcess.Variable
 
 import qualified Data.Map                               as M
 import           Data.Morpheus.Error.Arguments          (unsupportedArgumentType)
-import           Data.Morpheus.Error.Variable           (variableIsNotDefined,
-                                                         variableValidationError)
+import           Data.Morpheus.Error.Variable           (variableIsNotDefined, variableValidationError)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInputVariable)
 import           Data.Morpheus.PreProcess.Utils         (existsType)
-import qualified Data.Morpheus.Schema.Type              as T (kind)
-import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Schema.Utils.Utils       (TypeLib)
-import           Data.Morpheus.Types.Describer          (EnumOf (..))
+import           Data.Morpheus.Schema.Internal.Types    (GType (..), TypeLib)
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), Position)
@@ -39,11 +35,8 @@ checkVariableType :: TypeLib -> GQLQueryRoot -> (Text, RawArgument) -> Validatio
 checkVariableType typeLib root (variableID, Variable tName pos) =
   asGQLError (existsType (pos, tName) tName typeLib) >>= checkType
   where
-    checkType _type =
-      case T.kind _type of
-        EnumOf SCALAR       -> checkTypeInp _type variableID
-        EnumOf INPUT_OBJECT -> checkTypeInp _type variableID
-        _                   -> Left $ unsupportedArgumentType meta
+    checkType (IType x) = checkTypeInp x variableID
+    checkType (OType _) = Left $ unsupportedArgumentType meta
     meta = MetaInfo {typeName = tName, position = pos, key = variableID}
     checkTypeInp _type inputKey = do
       variableValue <- getVariable pos root inputKey
