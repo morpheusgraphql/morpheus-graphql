@@ -20,8 +20,8 @@ import           Data.Morpheus.Generics.Utils           (typeOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GType (..), InputField, InputType (..),
-                                                         ObjectField (..), OutputType (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), GType (..), InputField,
+                                                         InternalType (..), ObjectField (..), TypeLib)
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
@@ -35,10 +35,10 @@ enumTypeOf :: GQLKind a => [Text] -> Proxy a -> GType
 enumTypeOf tags = OType . Enum tags . buildType
 
 asObjectType :: GQLKind a => [(Text, ObjectField)] -> Proxy a -> GType
-asObjectType fields = OType . Object fields . buildType
+asObjectType fields = OType . Object . GObject fields . buildType
 
-inputObjectOf :: GQLKind a => [InputField] -> Proxy a -> GType
-inputObjectOf inputFields = IType . IObject inputFields . buildType
+inputObjectOf :: GQLKind a => [(Text, InputField)] -> Proxy a -> GType
+inputObjectOf inputFields = IType . Object . GObject inputFields . buildType
 
 class GQLKind a where
   description :: Proxy a -> Text

@@ -1,13 +1,14 @@
 module Data.Morpheus.Schema.Internal.Types
-  ( OutputType(..)
+  ( OutputType
+  , InternalType(..)
   , Core(..)
   , Field(..)
   , ObjectField(..)
-  , InputType(..)
+  , InputType
   , InputField(..)
   , TypeLib
   , GType(..)
-  , ObjectFields
+  , GObject(..)
   ) where
 
 import           Data.Map                      (Map)
@@ -37,21 +38,19 @@ data ObjectField = ObjectField
   , fieldContent :: Field
   }
 
-type ObjectFields = [(Text, ObjectField)]
+data GObject a =
+  GObject [(Text, a)]
+          Core
 
-data OutputType
+data InternalType a
   = Scalar Core
   | Enum [EnumValue]
          Core
-  | Object ObjectFields
-           Core
+  | Object (GObject a)
 
-data InputType
-  = IScalar Core
-  | IEnum [EnumValue]
-          Core
-  | IObject [InputField]
-            Core
+type OutputType = InternalType ObjectField
+
+type InputType = InternalType InputField
 
 data GType
   = OType OutputType
