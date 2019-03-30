@@ -23,9 +23,13 @@ class GQLEnum a where
   default decode :: (Generic a, GDecodeEnum (Rep a)) =>
     Text -> a
   decode text = to $ gToEnum text
-  asInputField :: GQLKind a => Proxy a -> Text -> InputField
-  asInputField proxy name = InputField $ Field {fieldName = name, notNull = True, kind = ENUM, typeName = typeID proxy}
-  asField :: GQLKind a => Proxy a -> Text -> Field
+  asInputField :: Proxy a -> Text -> InputField
+  default asInputField :: GQLKind a =>
+    Proxy a -> Text -> InputField
+  asInputField proxy = InputField . asField proxy
+  asField :: Proxy a -> Text -> Field
+  default asField :: GQLKind a =>
+    Proxy a -> Text -> Field
   asField proxy name = Field {fieldName = name, notNull = True, kind = ENUM, typeName = typeID proxy}
   introspect :: Proxy a -> TypeLib -> TypeLib
   default introspect :: (GQLKind a, GDecodeEnum (Rep a)) =>

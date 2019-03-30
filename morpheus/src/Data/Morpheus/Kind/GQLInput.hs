@@ -40,7 +40,9 @@ class GQLInput a where
     JSType -> Validation a
   decode (JSObject x) = to <$> gDecode Meta.initialMeta (JSObject x)
   decode isType       = internalTypeMismatch "InputObject" isType
-  asArgument :: GQLKind a => Proxy a -> Text -> InputField
+  asArgument :: Proxy a -> Text -> InputField
+  default asArgument :: GQLKind a =>
+    Proxy a -> Text -> InputField
   asArgument proxy name =
     InputField $ Field {fieldName = name, notNull = True, kind = INPUT_OBJECT, typeName = typeID proxy}
   introInput :: Proxy a -> TypeLib -> TypeLib

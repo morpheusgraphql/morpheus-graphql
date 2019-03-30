@@ -31,9 +31,10 @@ data Field = Field
   , typeName  :: Text
   }
 
-data ObjectField =
-  ObjectField [InputField]
-              Field
+data ObjectField = ObjectField
+  { args         :: [InputField]
+  , fieldContent :: Field
+  }
 
 data OutputType
   = Scalar Core

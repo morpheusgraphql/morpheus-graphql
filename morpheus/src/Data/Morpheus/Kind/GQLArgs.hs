@@ -16,7 +16,6 @@ import           Data.Morpheus.Generics.GDecode      (GDecode (..))
 import           Data.Morpheus.Generics.TypeRep      (Selectors (..))
 import           Data.Morpheus.Generics.Utils        (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLInput         as I (GQLInput (..))
-import           Data.Morpheus.Kind.GQLKind          (GQLKind)
 import           Data.Morpheus.Schema.Internal.Types (InputField, TypeLib)
 import           Data.Morpheus.Schema.Type           (DeprecationArgs)
 import           Data.Morpheus.Types.Error           (Validation)
@@ -26,7 +25,7 @@ import           Data.Proxy                          (Proxy (..))
 import qualified Data.Text                           as T
 import           GHC.Generics
 
-instance (Selector s, D.Typeable a, GQLKind a, I.GQLInput a) => Selectors (RecSel s a) InputField where
+instance (Selector s, D.Typeable a, I.GQLInput a) => Selectors (RecSel s a) InputField where
   getFields _ = [(I.asArgument (Proxy @a) name, I.introInput (Proxy @a))]
     where
       name = T.pack $ selName (undefined :: SelOf s)
