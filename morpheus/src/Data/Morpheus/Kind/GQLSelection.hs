@@ -38,16 +38,16 @@ import           Data.Morpheus.Types.JSType             (JSType (..), ScalarValu
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..))
 import           Data.Proxy
-import qualified Data.Text                              as T
+import           Data.Text                              (Text, pack)
 import           GHC.Generics
 
 instance GQLSelection a => DeriveResolvers (K1 i a) where
   deriveResolvers meta (K1 src) = [(Meta.key meta, (`encode` src))]
 
-instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (RecSel s a) ObjectField where
-  getFields _ = [(fieldType (Proxy @a) name, introspect (Proxy @a))]
+instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (RecSel s a) (Text, ObjectField) where
+  getFields _ = [((name, fieldType (Proxy @a) name), introspect (Proxy @a))]
     where
-      name = T.pack $ selName (undefined :: SelOf s)
+      name = pack $ selName (undefined :: SelOf s)
 
 class GQLSelection a where
   encode :: Selection -> a -> ResolveIO JSType
@@ -57,13 +57,13 @@ class GQLSelection a where
   encode (Field _ key pos) = \_ -> failResolveIO $ subfieldsNotSelected meta -- TODO: must be internal Error
     where
       meta = Meta.MetaInfo {Meta.typeName = "", Meta.key = key, Meta.position = pos}
-  fieldType :: Proxy a -> T.Text -> ObjectField
-  default fieldType :: (Show a, Selectors (Rep a) ObjectField, D.Typeable a, GQLKind a) =>
-    Proxy a -> T.Text -> ObjectField
+  fieldType :: Proxy a -> Text -> ObjectField
+  default fieldType :: (Show a, Selectors (Rep a) (Text, ObjectField), D.Typeable a, GQLKind a) =>
+    Proxy a -> Text -> ObjectField
   fieldType proxy name =
-    ObjectField [] $ I.Field {I.fieldName = name, I.notNull = True, I.kind = OBJECT, I.typeName = typeID proxy}
+    ObjectField [] $ I.Field {I.fieldName = name, I.notNull = True, I.kind = OBJECT, I.fieldType = typeID proxy}
   introspect :: Proxy a -> TypeLib -> TypeLib
-  default introspect :: (Show a, Selectors (Rep a) ObjectField, GQLKind a) =>
+  default introspect :: (Show a, Selectors (Rep a) (Text, ObjectField), GQLKind a) =>
     Proxy a -> TypeLib -> TypeLib
   introspect = updateLib (asObjectType fields) stack
     where
@@ -100,16 +100,16 @@ instance GQLSelection a => GQLSelection (Maybe a) where
 introspectScalar :: GQLKind a => Proxy a -> TypeLib -> TypeLib
 introspectScalar proxy = M.insert (typeID proxy) (scalarTypeOf proxy)
 
-scalarField :: GQLKind a => Proxy a -> T.Text -> ObjectField
+scalarField :: GQLKind a => Proxy a -> Text -> ObjectField
 scalarField proxy name =
-  ObjectField [] I.Field {I.fieldName = name, I.notNull = True, I.kind = OBJECT, I.typeName = typeID proxy}
+  ObjectField [] I.Field {I.fieldName = name, I.notNull = True, I.kind = OBJECT, I.fieldType = typeID proxy}
 
 instance GQLSelection Int where
   encode _ = pure . Scalar . Int
   introspect = introspectScalar
   fieldType = scalarField
 
-instance GQLSelection T.Text where
+instance GQLSelection Text where
   encode _ = pure . Scalar . String
   introspect = introspectScalar
   fieldType = scalarField
@@ -126,7 +126,7 @@ instance (GQLSelection a, D.Typeable a) => GQLSelection [a] where
   fieldType _ = fieldType (Proxy @a) --  TODO: wrapAsListType <$>
 
 instance (Show a, GQLKind a, E.GQLEnum a) => GQLSelection (EnumOf a) where
-  encode _ = pure . Scalar . String . T.pack . show . unpackEnum
+  encode _ = pure . Scalar . String . pack . show . unpackEnum
   fieldType _ = ObjectField [] . E.asField (Proxy @a)
   introspect _ = E.introspect (Proxy @a)
 

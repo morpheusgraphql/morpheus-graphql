@@ -17,14 +17,15 @@ import           Data.Map                               (insert)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
 import           Data.Morpheus.Kind.GQLSelection        (GQLSelection (..))
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GType (..), ObjectField, OutputType (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), GType (..), InternalType (..),
+                                                         ObjectField, OutputType (..), TypeLib)
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (initialMeta)
 import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
-
 import           Data.Proxy
+import           Data.Text                              (Text)
 import           GHC.Generics
 
 type UpdateTypes = TypeLib -> TypeLib
@@ -42,12 +43,12 @@ class GQLQuery a where
     a -> UpdateTypes
   querySchema _ = introspectQuery (Proxy :: Proxy a)
   introspectQuery :: Proxy a -> UpdateTypes
-  default introspectQuery :: (Show a, Selectors (Rep a) ObjectField, Typeable a) =>
+  default introspectQuery :: (Show a, Selectors (Rep a) (Text, ObjectField), Typeable a) =>
     Proxy a -> UpdateTypes
   introspectQuery _ initialTypes = resolveTypes typeLib stack
     where
       typeLib = introspect (Proxy :: Proxy Schema) queryType
-      queryType = insert "Query" (OType $ Object fields $ Core "Query" "Description") initialTypes
+      queryType = insert "Query" (OType $ Object $ GObject fields (Core "Query" "Description")) initialTypes
       fieldTypes = getFields (Proxy :: Proxy (Rep a))
       stack = map snd fieldTypes
       fields = map fst fieldTypes -- ++ [createField "__schema" "__Schema" []] TODO: add no field schema but show in validation
