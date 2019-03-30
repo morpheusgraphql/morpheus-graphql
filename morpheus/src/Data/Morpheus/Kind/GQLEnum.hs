@@ -12,7 +12,7 @@ module Data.Morpheus.Kind.GQLEnum
 import           Data.Morpheus.Generics.GDecodeEnum     (GDecodeEnum (..))
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), enumTypeOf)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
-import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField, TypeLib)
+import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
@@ -24,7 +24,7 @@ class GQLEnum a where
     Text -> a
   decode text = to $ gToEnum text
   asInputField :: GQLKind a => Proxy a -> Text -> InputField
-  asInputField proxy name = Field {fieldName = name, notNull = True, kind = ENUM, typeName = typeID proxy}
+  asInputField proxy name = InputField $ Field {fieldName = name, notNull = True, kind = ENUM, typeName = typeID proxy}
   asField :: GQLKind a => Proxy a -> Text -> Field
   asField proxy name = Field {fieldName = name, notNull = True, kind = ENUM, typeName = typeID proxy}
   introspect :: Proxy a -> TypeLib -> TypeLib

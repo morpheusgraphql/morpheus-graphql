@@ -17,7 +17,7 @@ import           Data.Morpheus.Generics.TypeRep      (Selectors (..))
 import qualified Data.Morpheus.Kind.GQLEnum          as E (GQLEnum (..))
 import           Data.Morpheus.Kind.GQLKind          (GQLKind (..), inputObjectOf)
 import qualified Data.Morpheus.Kind.Scalar           as S (Scalar (..))
-import           Data.Morpheus.Schema.Internal.Types (Field (..), InputField, TypeLib)
+import           Data.Morpheus.Schema.Internal.Types (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Describer       (EnumOf (..), ScalarOf (..))
 import           Data.Morpheus.Types.Error           (Validation)
@@ -41,7 +41,8 @@ class GQLInput a where
   decode (JSObject x) = to <$> gDecode Meta.initialMeta (JSObject x)
   decode isType       = internalTypeMismatch "InputObject" isType
   asArgument :: GQLKind a => Proxy a -> Text -> InputField
-  asArgument proxy name = Field {fieldName = name, notNull = True, kind = INPUT_OBJECT, typeName = typeID proxy}
+  asArgument proxy name =
+    InputField $ Field {fieldName = name, notNull = True, kind = INPUT_OBJECT, typeName = typeID proxy}
   introInput :: Proxy a -> TypeLib -> TypeLib
   default introInput :: (GQLKind a, Selectors (Rep a) Field) =>
     Proxy a -> TypeLib -> TypeLib
@@ -52,7 +53,7 @@ class GQLInput a where
       fields = map fst fieldTypes
 
 inputFieldOf :: GQLKind a => Proxy a -> Text -> InputField
-inputFieldOf proxy name = Field {fieldName = name, notNull = True, kind = SCALAR, typeName = typeID proxy}
+inputFieldOf proxy name = InputField $ Field {fieldName = name, notNull = True, kind = SCALAR, typeName = typeID proxy}
 
 introspectInput :: Proxy a -> TypeLib -> TypeLib
 introspectInput _ typeLib = typeLib
@@ -78,7 +79,10 @@ instance GQLInput Int where
 instance (GQLInput a, GQLKind a) => GQLInput (Maybe a) where
   decode JSNull = pure Nothing
   decode x      = Just <$> decode x
-  asArgument _ name = (asArgument (Proxy @a) name) {notNull = False}
+  asArgument _ name = InputField $ setNullable $ unpackInputField $ asArgument (Proxy @a) name
+    where
+      setNullable :: Field -> Field
+      setNullable x = x {notNull = False}
   introInput _ typeLib = typeLib
 
 instance (E.GQLEnum a, GQLKind a) => GQLInput (EnumOf a) where

@@ -4,7 +4,7 @@ module Data.Morpheus.Schema.Internal.Types
   , Field(..)
   , ObjectField(..)
   , InputType(..)
-  , InputField
+  , InputField(..)
   , TypeLib
   , GType(..)
   ) where
@@ -15,7 +15,9 @@ import           Data.Text                     (Text)
 
 type EnumValue = Text
 
-type InputField = Field
+newtype InputField = InputField
+  { unpackInputField :: Field
+  }
 
 data Core = Core
   { name            :: Text
