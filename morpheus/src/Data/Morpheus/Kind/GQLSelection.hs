@@ -30,7 +30,6 @@ import qualified Data.Morpheus.Schema.Internal.Types    as I (Field (..))
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.Type              (DeprecationArgs)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Schema.Utils.Field       (wrapAsListType)
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
 import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..), ScalarOf (..),
                                                          WithDeprecationArgs (..))
@@ -59,7 +58,7 @@ class GQLSelection a where
     where
       meta = Meta.MetaInfo {Meta.typeName = "", Meta.key = key, Meta.position = pos}
   fieldType :: Proxy a -> T.Text -> ObjectField
-  default fieldType :: (Show a, Selectors (Rep a) I.Field, D.Typeable a, GQLKind a) =>
+  default fieldType :: (Show a, Selectors (Rep a) ObjectField, D.Typeable a, GQLKind a) =>
     Proxy a -> T.Text -> ObjectField
   fieldType proxy name =
     ObjectField [] $ I.Field {I.fieldName = name, I.notNull = True, I.kind = OBJECT, I.typeName = typeID proxy}
@@ -77,9 +76,9 @@ instance (GQLSelection a, Args.GQLArgs p) => GQLSelection (p ::-> a) where
     (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (SelectionSet gqlArgs body pos)
   encode (Field gqlArgs field pos) (Resolver resolver) =
     (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (Field gqlArgs field pos)
-  introspect _ typeLib = resolveTypes typeLib $ args ++ fields
+  introspect _ typeLib = resolveTypes typeLib $ args' ++ fields
     where
-      args = map snd $ Args.introspect (Proxy @p)
+      args' = map snd $ Args.introspect (Proxy @p)
       fields = [introspect (Proxy @a)]
   fieldType _ name = (fieldType (Proxy @a) name) {args = map fst $ Args.introspect (Proxy @p)}
 
