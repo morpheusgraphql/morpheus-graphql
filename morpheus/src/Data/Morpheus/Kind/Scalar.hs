@@ -26,8 +26,7 @@ class Scalar a where
   encode :: a -> JSType
   encode = Scalar . serialize
   asInputField :: GQLKind a => Proxy a -> Key -> InputField
-  asInputField proxy name =
-    InputField $ Field {fieldName = name, notNull = True, kind = SCALAR, typeName = typeID proxy}
+  asInputField proxy name = InputField . asField proxy
   asField :: Proxy a -> Key -> Field
   default asField :: GQLKind a =>
     Proxy a -> Key -> Field

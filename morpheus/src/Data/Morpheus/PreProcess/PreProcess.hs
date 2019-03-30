@@ -14,8 +14,8 @@ import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
 import           Data.Morpheus.PreProcess.Spread        (prepareRawSelection)
 import           Data.Morpheus.PreProcess.Utils         (differKeys, existsType, fieldOf, fieldType)
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
+import           Data.Morpheus.Schema.Internal.Types    (GType, TypeLib)
 import qualified Data.Morpheus.Schema.Type              as T (name)
-import           Data.Morpheus.Schema.Utils.Utils       (Type, TypeLib)
 
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
@@ -30,10 +30,10 @@ import           Data.Text                              (Text)
 asSelectionValidation :: MetaValidation a -> Validation a
 asSelectionValidation = toGQLError selectionError
 
-mapSelectors :: TypeLib -> Type -> SelectionSet -> Validation SelectionSet
+mapSelectors :: TypeLib -> GType -> SelectionSet -> Validation SelectionSet
 mapSelectors typeLib type' selectors = checkDuplicatesOn type' selectors >>= mapM (validateBySchema typeLib type')
 
-validateBySchema :: TypeLib -> Type -> (Text, Selection) -> Validation (Text, Selection)
+validateBySchema :: TypeLib -> GType -> (Text, Selection) -> Validation (Text, Selection)
 validateBySchema typeLib _parentType (sName, SelectionSet args selectors pos) = do
   fieldSD <- asSelectionValidation $ fieldOf pos _parentType sName
   typeSD <- asSelectionValidation $ fieldType pos typeLib fieldSD
@@ -50,7 +50,7 @@ selToKey :: (Text, Selection) -> EnhancedKey
 selToKey (sName, Field _ _ pos)        = EnhancedKey sName pos
 selToKey (sName, SelectionSet _ _ pos) = EnhancedKey sName pos
 
-checkDuplicatesOn :: Type -> SelectionSet -> Validation SelectionSet
+checkDuplicatesOn :: GType -> SelectionSet -> Validation SelectionSet
 checkDuplicatesOn type' keys =
   case differKeys enhancedKeys noDuplicates of
     []         -> pure keys

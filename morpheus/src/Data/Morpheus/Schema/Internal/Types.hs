@@ -7,6 +7,7 @@ module Data.Morpheus.Schema.Internal.Types
   , InputField(..)
   , TypeLib
   , GType(..)
+  , ObjectFields
   ) where
 
 import           Data.Map                      (Map)
@@ -28,7 +29,7 @@ data Field = Field
   { fieldName :: Text
   , notNull   :: Bool
   , kind      :: TypeKind
-  , typeName  :: Text
+  , fieldType :: Text
   }
 
 data ObjectField = ObjectField
@@ -36,11 +37,13 @@ data ObjectField = ObjectField
   , fieldContent :: Field
   }
 
+type ObjectFields = [(Text, ObjectField)]
+
 data OutputType
   = Scalar Core
   | Enum [EnumValue]
          Core
-  | Object [ObjectField]
+  | Object ObjectFields
            Core
 
 data InputType

@@ -34,7 +34,7 @@ scalarTypeOf = OType . Scalar . buildType
 enumTypeOf :: GQLKind a => [Text] -> Proxy a -> GType
 enumTypeOf tags = OType . Enum tags . buildType
 
-asObjectType :: GQLKind a => [ObjectField] -> Proxy a -> GType
+asObjectType :: GQLKind a => [(Text, ObjectField)] -> Proxy a -> GType
 asObjectType fields = OType . Object fields . buildType
 
 inputObjectOf :: GQLKind a => [InputField] -> Proxy a -> GType
