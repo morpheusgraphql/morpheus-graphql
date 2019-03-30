@@ -4,15 +4,18 @@ module Data.Morpheus.Schema.Internal.Types
   , Field(..)
   , ObjectField(..)
   , InputType(..)
-  , Arg
+  , InputField
+  , TypeLib
+  , GType(..)
   ) where
 
+import           Data.Map                      (Map)
 import           Data.Morpheus.Schema.TypeKind (TypeKind)
 import           Data.Text                     (Text)
 
 type EnumValue = Text
 
-type Arg = Core
+type InputField = Field
 
 data Core = Core
   { name            :: Text
@@ -27,7 +30,7 @@ data Field = Field
   }
 
 data ObjectField =
-  ObjectField [Arg]
+  ObjectField [InputField]
               Field
 
 data OutputType
@@ -43,3 +46,9 @@ data InputType
           Core
   | IObject [Field]
             Core
+
+data GType
+  = OType OutputType
+  | IType InputType
+
+type TypeLib = Map Text GType

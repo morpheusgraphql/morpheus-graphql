@@ -1,6 +1,8 @@
 {-# LANGUAGE DefaultSignatures    #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
 module Data.Morpheus.Kind.GQLKind
@@ -18,25 +20,25 @@ import           Data.Morpheus.Generics.Utils           (typeOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), Field, InputType (..), ObjectField (..),
-                                                         OutputType (..))
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), Field, GType (..), InputType (..), ObjectField (..),
+                                                         OutputType (..), TypeLib)
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Schema.Utils.Utils       (InputValue, Type, TypeLib)
+import           Data.Morpheus.Schema.Utils.Utils       (InputValue, Type)
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 
-scalarTypeOf :: GQLKind a => Proxy a -> OutputType
-scalarTypeOf = Scalar . buildType
+scalarTypeOf :: GQLKind a => Proxy a -> GType
+scalarTypeOf = OType . Scalar . buildType
 
-enumTypeOf :: GQLKind a => [Text] -> Proxy a -> OutputType
-enumTypeOf tags = Enum tags . buildType
+enumTypeOf :: GQLKind a => [Text] -> Proxy a -> GType
+enumTypeOf tags = OType . Enum tags . buildType
 
-asObjectType :: GQLKind a => [ObjectField] -> Proxy a -> OutputType
-asObjectType fields = Object fields . buildType
+asObjectType :: GQLKind a => [ObjectField] -> Proxy a -> GType
+asObjectType fields = OType . Object fields . buildType
 
-inputObjectOf :: GQLKind a => [Field] -> Proxy a -> InputType
-inputObjectOf inputFields = IObject inputFields . buildType
+inputObjectOf :: GQLKind a => [Field] -> Proxy a -> GType
+inputObjectOf inputFields = IType . IObject inputFields . buildType
 
 class GQLKind a where
   description :: Proxy a -> Text
@@ -47,7 +49,7 @@ class GQLKind a where
   typeID = typeOf
   buildType :: Proxy a -> Core
   buildType proxy = Core {name = typeID proxy, typeDescription = description proxy}
-  updateLib :: (Proxy a -> Type) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib
+  updateLib :: (Proxy a -> GType) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib
   updateLib typeBuilder stack proxy lib' =
     case M.lookup (typeID proxy) lib' of
       Just _ -> lib'
@@ -86,3 +88,6 @@ instance GQLKind Text where
 
 instance GQLKind Bool where
   typeID _ = "Boolean"
+
+instance GQLKind a => GQLKind (Maybe a) where
+  typeID _ = typeID (Proxy @a)

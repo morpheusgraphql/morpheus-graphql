@@ -17,7 +17,7 @@ import           Data.Data                              (Data, Typeable)
 import qualified Data.Map                               as M
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
-import           Data.Morpheus.Schema.Utils.Utils       (Field, TypeLib, createObjectType, emptyLib)
+import           Data.Morpheus.Schema.Internal.Types    (Field, TypeLib, createObjectType, emptyLib)
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (initialMeta)
