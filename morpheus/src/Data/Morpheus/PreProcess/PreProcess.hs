@@ -7,7 +7,7 @@ module Data.Morpheus.PreProcess.PreProcess
   ( preProcessQuery
   ) where
 
-import           Data.Morpheus.Error.Selection          (duplicateQuerySelections, selectionError)
+import           Data.Morpheus.Error.Selection          (duplicateQuerySelections, selectionError, subfieldsNotSelected)
 import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
@@ -16,9 +16,10 @@ import           Data.Morpheus.PreProcess.Utils         (differKeys, existsObjec
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField (..), TypeLib)
 import qualified Data.Morpheus.Schema.Internal.Types    as SC (Field (..))
+import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
-import           Data.Morpheus.Types.MetaInfo           (Position)
+import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), Position)
 import           Data.Morpheus.Types.Query.Operator     (Operator (..), RawOperator, ValidOperator)
 import           Data.Morpheus.Types.Query.RawSelection (RawArguments, RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..), SelectionSet)
@@ -32,15 +33,29 @@ asSelectionValidation = toGQLError selectionError
 mapSelectors :: TypeLib -> GObject ObjectField -> SelectionSet -> Validation SelectionSet
 mapSelectors typeLib type' selectors = checkDuplicatesOn type' selectors >>= mapM (validateBySchema typeLib type')
 
+isObjectKind :: ObjectField -> Bool
+isObjectKind (ObjectField _ field') =
+  case SC.kind field' of
+    OBJECT -> True
+    _      -> False
+
+notObject :: (Text, Position) -> ObjectField -> Validation ObjectField
+notObject (key', position') field' =
+  if isObjectKind field'
+    then Left $ subfieldsNotSelected meta
+    else pure field'
+  where
+    meta = MetaInfo {position = position', key = key', typeName = SC.fieldType $ fieldContent field'}
+
 validateBySchema :: TypeLib -> GObject ObjectField -> (Text, Selection) -> Validation (Text, Selection)
 validateBySchema lib' (GObject parentFields core) (name', SelectionSet args' selectors sPos) = do
-  field' <- asSelectionValidation $ fieldOf (sPos, name core) parentFields name'
+  field' <- asSelectionValidation (fieldOf (sPos, name core) parentFields name')
   typeSD <- asSelectionValidation $ existsObjectType (sPos, name') (SC.fieldType $ fieldContent field') lib'
   headQS <- validateArguments lib' (name', field') sPos args'
   selectorsQS <- mapSelectors lib' typeSD selectors
   pure (name', SelectionSet headQS selectorsQS sPos)
 validateBySchema typeLib (GObject parentFields core) (name', Field args' field sPos) = do
-  field' <- asSelectionValidation $ fieldOf (sPos, name core) parentFields name'
+  field' <- asSelectionValidation (fieldOf (sPos, name core) parentFields name') >>= notObject (name', sPos)
   -- _checksIfHasType <- asSelectionValidation $ getObjectFieldType sPos typeLib fieldSD
   headQS <- validateArguments typeLib (name', field') sPos args'
   pure (name', Field headQS field sPos)

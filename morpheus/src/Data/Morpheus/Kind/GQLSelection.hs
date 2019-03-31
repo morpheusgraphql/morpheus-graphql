@@ -101,7 +101,7 @@ introspectScalar proxy = defineType (typeID proxy, scalarTypeOf proxy)
 
 scalarField :: GQLKind a => Proxy a -> Text -> ObjectField
 scalarField proxy name =
-  ObjectField [] I.Field {I.fieldName = name, I.notNull = True, I.kind = OBJECT, I.fieldType = typeID proxy}
+  ObjectField [] I.Field {I.fieldName = name, I.notNull = True, I.kind = SCALAR, I.fieldType = typeID proxy}
 
 instance GQLSelection Int where
   encode _ = pure . Scalar . Int

@@ -7,7 +7,6 @@ module Data.Morpheus.Schema.Internal.Types
   , InputType
   , InputField(..)
   , TypeLib(..)
-  , GType(..)
   , GObject(..)
   , Leaf(..)
   , InputObject
@@ -61,10 +60,6 @@ type InputType = InternalType InputField
 type InputObject = GObject InputField
 
 type OutputObject = GObject ObjectField
-
-data GType
-  = OType OutputType
-  | IType InputType
 
 data Leaf
   = LScalar Core
