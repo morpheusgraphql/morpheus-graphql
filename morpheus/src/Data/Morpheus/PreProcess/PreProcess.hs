@@ -71,7 +71,7 @@ preProcessQuery lib root = do
   let (operator, args', rawSel, position') = getOperationInfo $ queryBody root
   validateVariables lib root args'
   validateFragments lib root
-  _type <- asSelectionValidation $ existsOutputObjectType (position', operator) operator lib
+  _type <- asSelectionValidation $ existsObjectType (position', operator) operator lib
   sel <- prepareRawSelection root rawSel
   selectors <- mapSelectors lib _type sel
   pure $ updateQuery (queryBody root) selectors
