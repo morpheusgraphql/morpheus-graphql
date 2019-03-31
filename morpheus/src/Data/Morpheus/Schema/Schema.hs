@@ -4,12 +4,11 @@
 
 module Data.Morpheus.Schema.Schema where
 
-import           Data.Data                        (Data)
-import qualified Data.Map                         as M
-import           Data.Morpheus.Schema.Directive   (Directive)
-import           Data.Morpheus.Schema.Utils.Utils (Type, createObjectType)
-import           Data.Text                        (Text)
-import           GHC.Generics                     (Generic)
+import           Data.Data                           (Data)
+import           Data.Morpheus.Schema.Directive      (Directive)
+import           Data.Morpheus.Schema.Internal.Types (TypeLib)
+import           Data.Morpheus.Schema.Utils.Utils    (Type, createObjectType)
+import           GHC.Generics                        (Generic)
 
 data Schema = Schema
   { types            :: [Type]
@@ -19,10 +18,13 @@ data Schema = Schema
   , directives       :: [Directive]
   } deriving (Show, Data, Generic)
 
-initSchema :: M.Map Text Type -> Schema
-initSchema sTypes =
+convertTypes :: TypeLib -> [Type]
+convertTypes _ = []
+
+initSchema :: TypeLib -> Schema
+initSchema types' =
   Schema
-    { types = M.elems sTypes
+    { types = convertTypes types'
     , queryType = Just $ createObjectType "Query" "Query Description" []
     , mutationType = Nothing
     , subscriptionType = Nothing
