@@ -7,6 +7,8 @@ module Data.Morpheus.PreProcess.Utils
   , getObjectFieldType
   , differKeys
   , inputTypeBy
+  , existsInputType
+  , existsOutputType
   ) where
 
 import           Data.List                           ((\\))
@@ -28,6 +30,24 @@ existsType (position', key') typeName' lib =
   case M.lookup typeName' lib of
     Nothing -> Left $ UnknownType meta
     Just x  -> pure x
+  where
+    meta = MetaInfo {position = position', typeName = typeName', key = key'}
+
+isInputType :: MetaInfo -> GType -> MetaValidation InputType
+isInputType meta (OType _) = Left $ UnknownType meta
+isInputType _ (IType x)    = pure x
+
+isOutputType :: MetaInfo -> GType -> MetaValidation OutputType
+isOutputType meta (IType _) = Left $ UnknownType meta
+isOutputType _ (OType x)    = pure x
+
+existsOutputType :: (Position, Key) -> TX.Text -> TypeLib -> MetaValidation OutputType
+existsOutputType (position', key') typeName' lib = existsType (position', key') typeName' lib >>= isOutputType meta
+  where
+    meta = MetaInfo {position = position', typeName = typeName', key = key'}
+
+existsInputType :: (Position, Key) -> TX.Text -> TypeLib -> MetaValidation InputType
+existsInputType (position', key') typeName' lib = existsType (position', key') typeName' lib >>= isInputType meta
   where
     meta = MetaInfo {position = position', typeName = typeName', key = key'}
 
