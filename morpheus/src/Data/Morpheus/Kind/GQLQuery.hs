@@ -13,12 +13,11 @@ module Data.Morpheus.Kind.GQLQuery
   ) where
 
 import           Data.Data                              (Data, Typeable)
-import           Data.Map                               (insert)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
 import           Data.Morpheus.Kind.GQLSelection        (GQLSelection (..))
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), GType (..), InternalType (..),
-                                                         ObjectField, TypeLib)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), LibType (..), ObjectField, TypeLib,
+                                                         defineType)
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
@@ -48,7 +47,7 @@ class GQLQuery a where
   introspectQuery _ initialTypes = resolveTypes typeLib stack
     where
       typeLib = introspect (Proxy :: Proxy Schema) queryType
-      queryType = insert "Query" (OType $ Object $ GObject fields (Core "Query" "Description")) initialTypes
+      queryType = defineType ("Query", OutputObject $ GObject fields (Core "Query" "Description")) initialTypes
       fieldTypes = getFields (Proxy :: Proxy (Rep a))
       stack = map snd fieldTypes
       fields = map fst fieldTypes -- ++ [createField "__schema" "__Schema" []] TODO: add no field schema but show in validation
