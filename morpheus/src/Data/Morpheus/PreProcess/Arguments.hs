@@ -8,7 +8,7 @@ module Data.Morpheus.PreProcess.Arguments
 
 import           Data.Morpheus.Error.Arguments          (argumentError, requiredArgument, unknownArguments)
 import           Data.Morpheus.PreProcess.Input.Enum    (validateEnum)
-import           Data.Morpheus.PreProcess.Utils         (differKeys, existsInputType)
+import           Data.Morpheus.PreProcess.Utils         (differKeys, getInputType)
 import           Data.Morpheus.PreProcess.Variable      (replaceVariable)
 import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField (..), InternalType (..),
                                                          ObjectField (..), TypeLib)
@@ -28,7 +28,7 @@ asGQLError (Right value) = pure value
 -- TODO: Validate other Types , type Mismatch
 checkArgumentType :: TypeLib -> (Text, Int) -> (Text, Argument) -> Validation (Text, Argument)
 checkArgumentType typeLib (tName, position') (aKey, argument) =
-  asGQLError (existsInputType (position', aKey) tName typeLib) >>= checkType
+  asGQLError (getInputType (position', aKey) tName typeLib) >>= checkType
   where
     checkType (Enum tags _) = validateEnum aKey tags argument >>= \x -> pure (aKey, x)
     checkType _             = pure (aKey, argument)
