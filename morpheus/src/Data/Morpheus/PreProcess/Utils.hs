@@ -9,12 +9,13 @@ module Data.Morpheus.PreProcess.Utils
   , inputTypeBy
   , existsInputType
   , existsOutputType
+  , toObject
   ) where
 
 import           Data.List                           ((\\))
 import qualified Data.Map                            as M (lookup)
-import           Data.Morpheus.Schema.Internal.Types (Field (..), GType (..), InputField (..), InputType,
-                                                      ObjectField (..), OutputType, TypeLib)
+import           Data.Morpheus.Schema.Internal.Types (Field (..), GObject (..), GType (..), InputField (..), InputType,
+                                                      InternalType (..), ObjectField (..), OutputType, TypeLib)
 import           Data.Morpheus.Types.Core            (EnhancedKey (..), Key, enhanceKeyWithNull)
 import           Data.Morpheus.Types.Error           (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
@@ -53,6 +54,11 @@ existsInputType (position', key') typeName' lib = existsType (position', key') t
 
 getFieldType :: Position -> TypeLib -> Field -> MetaValidation GType
 getFieldType position' lib field = existsType (position', fieldName field) (fieldType field) lib
+
+toObject :: MetaInfo -> InternalType a -> MetaValidation (GObject a)
+toObject _ (Object gObj) = pure gObj
+toObject meta (Scalar _) = Left $ UnknownType meta
+toObject meta (Enum _ _) = Left $ UnknownType meta
 
 getInputFieldType :: Position -> TypeLib -> InputField -> MetaValidation InputType
 getInputFieldType position' lib (InputField field) = do

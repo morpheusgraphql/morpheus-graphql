@@ -11,8 +11,8 @@ import           Data.Morpheus.Error.Selection          (selectionError)
 import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (resolveArguments)
 import           Data.Morpheus.PreProcess.Utils         (existsType, fieldOf, getObjectFieldType)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), GType (..), InternalType (..),
-                                                         ObjectField (..), OutputType, TypeLib)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), InternalType (..), ObjectField (..),
+                                                         OutputType, TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..))
@@ -46,7 +46,7 @@ compareFragmentType spreadMeta (GObject fields core) fragment =
     then pure (GObject fields core)
     else Left $ cannotBeSpreadOnType (spreadMeta {Meta.typeName = target fragment}) (name core)
 
-getSpreadType :: FragmentLib -> OutputType -> Text -> Meta.MetaInfo -> Validation OutputType
+getSpreadType :: FragmentLib -> GObject ObjectField -> Text -> Meta.MetaInfo -> Validation (GObject ObjectField)
 getSpreadType frags _type fragmentID spreadMeta =
   getFragment spreadMeta fragmentID frags >>= compareFragmentType spreadMeta _type
 
@@ -54,11 +54,11 @@ validateFragmentFields :: TypeLib -> GQLQueryRoot -> GObject ObjectField -> (Tex
 validateFragmentFields typeLib root (GObject parentFields core) (name', RawSelectionSet args selectors sPos) = do
   fieldSC <- asSelectionValidation $ fieldOf (sPos, name core) parentFields name'
   typeSC <- asGQLError $ getObjectFieldType sPos typeLib fieldSC
-  _ <- resolveArguments typeLib root fieldSC sPos args -- TODO do not use heavy validation
+  _ <- resolveArguments typeLib root (name', fieldSC) sPos args -- TODO do not use heavy validation
   concat <$> mapM (validateFragmentFields typeLib root typeSC) selectors
-validateFragmentFields typeLib root _parentType (_name, RawField args _ sPos) = do
-  _field <- asSelectionValidation $ fieldOf sPos _parentType _name
-  _ <- resolveArguments typeLib root _field sPos args -- TODO do not use heavy validation
+validateFragmentFields typeLib root (GObject parentFields core) (name', RawField args _ sPos) = do
+  field' <- asSelectionValidation $ fieldOf (sPos, name core) parentFields name'
+  _ <- resolveArguments typeLib root (name', field') sPos args -- TODO do not use heavy validation
   pure []
 validateFragmentFields _ root _parent (spreadID, Spread value pos) =
   getSpreadType (fragments root) _parent spreadID spreadMeta >> pure [EnhancedKey value pos]
