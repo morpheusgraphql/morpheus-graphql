@@ -13,6 +13,7 @@ module Data.Morpheus.Schema.Internal.Types
   , InputObject
   , OutputObject
   , isTypeDefined
+  , initTypeLib
   , defineType
   , LibType(..)
   ) where
@@ -75,6 +76,9 @@ data TypeLib = TypeLib
   , inputObject :: [(Text, InputObject)]
   , object      :: [(Text, OutputObject)]
   }
+
+initTypeLib :: TypeLib
+initTypeLib = TypeLib {leaf = [], inputObject = [], object = []}
 
 data LibType
   = Leaf Leaf
