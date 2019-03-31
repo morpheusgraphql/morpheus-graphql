@@ -30,7 +30,7 @@ hasNoSubfields meta = errorMessage (position meta) text
   where
     text =
       T.concat
-        ["Field \"", key meta, "\" ust not have a selection since type \"", typeName meta, "\" has no subfields."]
+        ["Field \"", key meta, "\" must not have a selection since type \"", typeName meta, "\" has no subfields."]
 
 cannotQueryField :: MetaInfo -> GQLErrors
 cannotQueryField meta = errorMessage (position meta) text
