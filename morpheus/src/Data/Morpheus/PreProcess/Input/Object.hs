@@ -5,19 +5,22 @@ module Data.Morpheus.PreProcess.Input.Object
   , validateInputVariable
   ) where
 
-import           Data.Morpheus.PreProcess.Utils      (inputTypeBy)
-import           Data.Morpheus.Schema.Internal.Types (Core (..), GObject (..), InputField (..), InputType, TypeLib)
+import           Data.Morpheus.PreProcess.Utils      (existsInputObjectType, existsLeafType, fieldOf)
+import           Data.Morpheus.Schema.Internal.Types (Core (..), Field (..), GObject (..), InputField (..), InputType,
+                                                      Leaf (..), TypeLib)
 import qualified Data.Morpheus.Schema.Internal.Types as T (InternalType (..))
 import           Data.Morpheus.Types.Error           (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.JSType          (JSType (..))
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
 import           Data.Text                           as Text (Text, pack)
 
-fieldIsNotObject :: MetaInfo -> Core -> MetaValidation a -- TODO: real error
-fieldIsNotObject meta core = Left $ TypeMismatch meta (name core) "ObJECT"
-
 subfieldsMustSelected :: Text -> MetaInfo -> MetaValidation a -- TODO: Real error
 subfieldsMustSelected fName meta = Left $ TypeMismatch meta fName "Field"
+
+validateLeaf :: MetaInfo -> JSType -> Leaf -> MetaValidation JSType
+validateLeaf _ (Scalar x) (LScalar _) = pure (Scalar x) -- TODO Validate Scalar
+validateLeaf _ (JSEnum x) (LEnum _ _) = pure (JSEnum x) -- TODO Validate Scalar
+validateLeaf meta jsType _            = Left $ TypeMismatch meta (Text.pack $ show jsType) "TODO add Type"
 
 validateFieldType :: MetaInfo -> JSType -> InputType -> MetaValidation JSType
 validateFieldType _ (Scalar x) (T.Scalar _)   = pure (Scalar x) -- TODO Validate Scalar
@@ -29,21 +32,16 @@ validateFieldType _ (JSEnum x) (T.Enum _ _)   = pure (JSEnum x) -- TODO Validate
 validateFieldType meta jsType _               = Left $ TypeMismatch meta (Text.pack $ show jsType) "TODO add Type"
 
 validateInputObject :: TypeLib -> GObject InputField -> Position -> (Text, JSType) -> MetaValidation (Text, JSType)
-validateInputObject typeLib (GObject parentFields core) pos (_name, JSObject fields) = do
-  typeSD <- inputTypeBy pos typeLib parentFields _name
-  case typeSD of
-    T.Object gObj  -> mapM (validateInputObject typeLib gObj pos) fields >>= \x -> pure (_name, JSObject x)
-    T.Scalar core' -> fieldIsNotObject meta core'
-    T.Enum _ core' -> fieldIsNotObject meta core'
+validateInputObject lib' (GObject parentFields _) pos (_name, JSObject fields) = do
+  fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
+  inputObject' <- existsInputObjectType (pos, _name) fieldTypeName' lib'
+  mapM (validateInputObject lib' inputObject' pos) fields >>= \x -> pure (_name, JSObject x)
+validateInputObject lib' (GObject parentFields core) pos (_name, x) = do
+  fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
+  fieldType' <- existsLeafType (pos, _name) fieldTypeName' lib'
+  validateLeaf meta x fieldType' >> pure (_name, x)
   where
     meta = MetaInfo {typeName = name core, key = _name, position = pos}
-validateInputObject typeLib (GObject parentFields core) pos (_key, x) = do
-  fType <- inputTypeBy pos typeLib parentFields _key
-  case fType of
-    T.Object _ -> subfieldsMustSelected _key meta
-    _          -> validateFieldType meta x fType >> pure (_key, x)
-  where
-    meta = MetaInfo {typeName = name core, key = _key, position = pos}
 
 validateInputVariable :: TypeLib -> InputType -> Position -> (Text, JSType) -> MetaValidation JSType
 validateInputVariable typeLib (T.Object oType) pos (_, JSObject fields) =
