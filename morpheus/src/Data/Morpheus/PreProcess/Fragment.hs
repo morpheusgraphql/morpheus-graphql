@@ -11,8 +11,8 @@ import           Data.Morpheus.Error.Selection          (selectionError)
 import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (resolveArguments)
 import           Data.Morpheus.PreProcess.Utils         (existsType, fieldOf, getObjectFieldType)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), GType, ObjectField, OutputType,
-                                                         TypeLib)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), GType (..), InternalType (..),
+                                                         ObjectField (..), OutputType, TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..))
@@ -40,13 +40,13 @@ getFragment meta fragmentID lib =
     Nothing       -> Left $ unknownFragment meta
     Just fragment -> pure fragment
 
-compareFragmentType :: Meta.MetaInfo -> OutputType -> Fragment -> Validation OutputType
-compareFragmentType spreadMeta _type fragment =
-  if name _type == target fragment
-    then pure _type
-    else Left $ cannotBeSpreadOnType (spreadMeta {Meta.typeName = target fragment}) (name _type)
+compareFragmentType :: Meta.MetaInfo -> GObject ObjectField -> Fragment -> Validation (GObject ObjectField)
+compareFragmentType spreadMeta (GObject fields core) fragment =
+  if name core == target fragment
+    then pure (GObject fields core)
+    else Left $ cannotBeSpreadOnType (spreadMeta {Meta.typeName = target fragment}) (name core)
 
-getSpreadType :: FragmentLib -> GType -> Text -> Meta.MetaInfo -> Validation GType
+getSpreadType :: FragmentLib -> OutputType -> Text -> Meta.MetaInfo -> Validation OutputType
 getSpreadType frags _type fragmentID spreadMeta =
   getFragment spreadMeta fragmentID frags >>= compareFragmentType spreadMeta _type
 
