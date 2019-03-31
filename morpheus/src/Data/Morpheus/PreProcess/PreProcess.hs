@@ -12,10 +12,10 @@ import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
 import           Data.Morpheus.PreProcess.Spread        (prepareRawSelection)
-import           Data.Morpheus.PreProcess.Utils         (differKeys, existsOutputObjectType, fieldOf,
-                                                         getObjectFieldObjectType, getObjectFieldType)
+import           Data.Morpheus.PreProcess.Utils         (differKeys, existsObjectType, fieldOf)
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField, TypeLib)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField (..), TypeLib)
+import qualified Data.Morpheus.Schema.Internal.Types    as SC (Field (..))
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
 import           Data.Morpheus.Types.MetaInfo           (Position)
@@ -33,16 +33,16 @@ mapSelectors :: TypeLib -> GObject ObjectField -> SelectionSet -> Validation Sel
 mapSelectors typeLib type' selectors = checkDuplicatesOn type' selectors >>= mapM (validateBySchema typeLib type')
 
 validateBySchema :: TypeLib -> GObject ObjectField -> (Text, Selection) -> Validation (Text, Selection)
-validateBySchema typeLib (GObject parentFields core) (name', SelectionSet args selectors sPos) = do
-  fieldSD <- asSelectionValidation $ fieldOf (sPos, name core) parentFields name'
-  typeSD <- asSelectionValidation $ getObjectFieldObjectType sPos typeLib fieldSD
-  headQS <- validateArguments typeLib (name', fieldSD) sPos args
-  selectorsQS <- mapSelectors typeLib typeSD selectors
+validateBySchema lib' (GObject parentFields core) (name', SelectionSet args' selectors sPos) = do
+  field' <- asSelectionValidation $ fieldOf (sPos, name core) parentFields name'
+  typeSD <- asSelectionValidation $ existsObjectType (sPos, name') (SC.fieldType $ fieldContent field') lib'
+  headQS <- validateArguments lib' (name', field') sPos args'
+  selectorsQS <- mapSelectors lib' typeSD selectors
   pure (name', SelectionSet headQS selectorsQS sPos)
-validateBySchema typeLib (GObject parentFields core) (name', Field args field sPos) = do
-  fieldSD <- asSelectionValidation $ fieldOf (sPos, name core) parentFields name'
-  _checksIfHasType <- asSelectionValidation $ getObjectFieldType sPos typeLib fieldSD
-  headQS <- validateArguments typeLib (name', fieldSD) sPos args
+validateBySchema typeLib (GObject parentFields core) (name', Field args' field sPos) = do
+  field' <- asSelectionValidation $ fieldOf (sPos, name core) parentFields name'
+  -- _checksIfHasType <- asSelectionValidation $ getObjectFieldType sPos typeLib fieldSD
+  headQS <- validateArguments typeLib (name', field') sPos args'
   pure (name', Field headQS field sPos)
 
 selToKey :: (Text, Selection) -> EnhancedKey
@@ -59,8 +59,8 @@ checkDuplicatesOn (GObject _ core) keys =
     noDuplicates = S.toList $ S.fromList (map fst keys)
 
 getOperationInfo :: RawOperator -> (Text, RawArguments, RawSelectionSet, Position)
-getOperationInfo (Query _ args sel pos)    = ("Query", args, sel, pos)
-getOperationInfo (Mutation _ args sel pos) = ("Mutation", args, sel, pos)
+getOperationInfo (Query _ args' sel pos)    = ("Query", args', sel, pos)
+getOperationInfo (Mutation _ args' sel pos) = ("Mutation", args', sel, pos)
 
 updateQuery :: RawOperator -> SelectionSet -> ValidOperator
 updateQuery (Query name' _ _ pos) sel    = Query name' [] sel pos
@@ -68,8 +68,8 @@ updateQuery (Mutation name' _ _ pos) sel = Mutation name' [] sel pos
 
 preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
 preProcessQuery lib root = do
-  let (operator, args, rawSel, position') = getOperationInfo $ queryBody root
-  validateVariables lib root args
+  let (operator, args', rawSel, position') = getOperationInfo $ queryBody root
+  validateVariables lib root args'
   validateFragments lib root
   _type <- asSelectionValidation $ existsOutputObjectType (position', operator) operator lib
   sel <- prepareRawSelection root rawSel
