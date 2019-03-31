@@ -12,11 +12,11 @@ import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
 import           Data.Morpheus.PreProcess.Spread        (prepareRawSelection)
-import           Data.Morpheus.PreProcess.Utils         (differKeys, existsType, fieldOf)
+import           Data.Morpheus.PreProcess.Utils         (differKeys, existsType, fieldOf, getObjectFieldObjectType,
+                                                         getObjectFieldType)
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
-import           Data.Morpheus.Schema.Internal.Types    (GType, TypeLib)
-import qualified Data.Morpheus.Schema.Type              as T (name)
-
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), GType, ObjectField, OutputType,
+                                                         TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
 import           Data.Morpheus.Types.MetaInfo           (Position)
@@ -30,31 +30,31 @@ import           Data.Text                              (Text)
 asSelectionValidation :: MetaValidation a -> Validation a
 asSelectionValidation = toGQLError selectionError
 
-mapSelectors :: TypeLib -> GType -> SelectionSet -> Validation SelectionSet
+mapSelectors :: TypeLib -> GObject ObjectField -> SelectionSet -> Validation SelectionSet
 mapSelectors typeLib type' selectors = checkDuplicatesOn type' selectors >>= mapM (validateBySchema typeLib type')
 
-validateBySchema :: TypeLib -> GType -> (Text, Selection) -> Validation (Text, Selection)
-validateBySchema typeLib _parentType (sName, SelectionSet args selectors pos) = do
-  fieldSD <- asSelectionValidation $ fieldOf pos _parentType sName
-  typeSD <- asSelectionValidation $ fieldType pos typeLib fieldSD
-  headQS <- validateArguments typeLib fieldSD pos args
+validateBySchema :: TypeLib -> GObject ObjectField -> (Text, Selection) -> Validation (Text, Selection)
+validateBySchema typeLib (GObject parentFields core) (name', SelectionSet args selectors sPos) = do
+  fieldSD <- asSelectionValidation $ fieldOf (sPos, name core) parentFields name'
+  typeSD <- asSelectionValidation $ getObjectFieldObjectType sPos typeLib fieldSD
+  headQS <- validateArguments typeLib (name', fieldSD) sPos args
   selectorsQS <- mapSelectors typeLib typeSD selectors
-  pure (sName, SelectionSet headQS selectorsQS pos)
-validateBySchema typeLib _parentType (sName, Field args field pos) = do
-  fieldSD <- asSelectionValidation $ fieldOf pos _parentType sName
-  _checksIfHasType <- asSelectionValidation $ fieldType pos typeLib fieldSD
-  headQS <- validateArguments typeLib fieldSD pos args
-  pure (sName, Field headQS field pos)
+  pure (name', SelectionSet headQS selectorsQS sPos)
+validateBySchema typeLib (GObject parentFields core) (name', Field args field sPos) = do
+  fieldSD <- asSelectionValidation $ fieldOf (sPos, name core) parentFields name'
+  _checksIfHasType <- asSelectionValidation $ getObjectFieldType sPos typeLib fieldSD
+  headQS <- validateArguments typeLib (name', fieldSD) sPos args
+  pure (name', Field headQS field sPos)
 
 selToKey :: (Text, Selection) -> EnhancedKey
 selToKey (sName, Field _ _ pos)        = EnhancedKey sName pos
 selToKey (sName, SelectionSet _ _ pos) = EnhancedKey sName pos
 
-checkDuplicatesOn :: GType -> SelectionSet -> Validation SelectionSet
-checkDuplicatesOn type' keys =
+checkDuplicatesOn :: GObject ObjectField -> SelectionSet -> Validation SelectionSet
+checkDuplicatesOn (GObject _ core) keys =
   case differKeys enhancedKeys noDuplicates of
     []         -> pure keys
-    duplicates -> Left $ duplicateQuerySelections (T.name type') duplicates
+    duplicates -> Left $ duplicateQuerySelections (name core) duplicates
   where
     enhancedKeys = map selToKey keys
     noDuplicates = S.toList $ S.fromList (map fst keys)
@@ -64,8 +64,8 @@ getOperationInfo (Query _ args sel pos)    = ("Query", args, sel, pos)
 getOperationInfo (Mutation _ args sel pos) = ("Mutation", args, sel, pos)
 
 updateQuery :: RawOperator -> SelectionSet -> ValidOperator
-updateQuery (Query name _ _ pos) sel    = Query name [] sel pos
-updateQuery (Mutation name _ _ pos) sel = Mutation name [] sel pos
+updateQuery (Query name' _ _ pos) sel    = Query name' [] sel pos
+updateQuery (Mutation name' _ _ pos) sel = Mutation name' [] sel pos
 
 preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
 preProcessQuery lib root = do

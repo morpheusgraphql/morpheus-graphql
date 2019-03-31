@@ -10,6 +10,7 @@ module Data.Morpheus.PreProcess.Utils
   , existsInputType
   , existsOutputType
   , toObject
+  , getObjectFieldObjectType
   ) where
 
 import           Data.List                           ((\\))
@@ -83,6 +84,11 @@ getObjectFieldType position' lib field = do
   case gType of
     IType _ -> Left $ UnknownType $ MetaInfo {key = fieldName $ fieldContent field, typeName = "", position = position'}
     OType x -> pure x
+
+getObjectFieldObjectType :: Position -> TypeLib -> ObjectField -> MetaValidation (GObject ObjectField)
+getObjectFieldObjectType position' lib field = getObjectFieldType position' lib field >>= toObject meta
+  where
+    meta = MetaInfo {key = fieldName $ fieldContent field, typeName = "", position = position'}
 
 typeBy :: Position -> TypeLib -> [(Text, ObjectField)] -> Text -> MetaValidation OutputType
 typeBy pos lib _parentType _name = fieldOf (pos, _name) _parentType _name >>= getObjectFieldType pos lib
