@@ -34,10 +34,7 @@ mapSelectors :: TypeLib -> GObject ObjectField -> SelectionSet -> Validation Sel
 mapSelectors typeLib type' selectors = checkDuplicatesOn type' selectors >>= mapM (validateBySchema typeLib type')
 
 isObjectKind :: ObjectField -> Bool
-isObjectKind (ObjectField _ field') =
-  case SC.kind field' of
-    OBJECT -> True
-    _      -> False
+isObjectKind (ObjectField _ field') = OBJECT == SC.kind field'
 
 notObject :: (Text, Position) -> ObjectField -> Validation ObjectField
 notObject (key', position') field' =
