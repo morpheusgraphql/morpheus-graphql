@@ -5,6 +5,7 @@ module Data.Morpheus.Error.Selection
   , subfieldsNotSelected
   , selectionError
   , duplicateQuerySelections
+  , hasNoSubfields
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
@@ -24,6 +25,13 @@ typeDoesNotExists meta = errorMessage (position meta) text
     text = T.concat ["Unknown type \"", typeName meta, "\"."]
 
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
+hasNoSubfields :: MetaInfo -> GQLErrors
+hasNoSubfields meta = errorMessage (position meta) text
+  where
+    text =
+      T.concat
+        ["Field \"", key meta, "\" ust not have a selection since type \"", typeName meta, "\" has no subfields."]
+
 cannotQueryField :: MetaInfo -> GQLErrors
 cannotQueryField meta = errorMessage (position meta) text
   where

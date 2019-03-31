@@ -7,7 +7,8 @@ module Data.Morpheus.PreProcess.PreProcess
   ( preProcessQuery
   ) where
 
-import           Data.Morpheus.Error.Selection          (duplicateQuerySelections, selectionError, subfieldsNotSelected)
+import           Data.Morpheus.Error.Selection          (duplicateQuerySelections, hasNoSubfields, selectionError,
+                                                         subfieldsNotSelected)
 import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
@@ -36,6 +37,14 @@ mapSelectors typeLib type' selectors = checkDuplicatesOn type' selectors >>= map
 isObjectKind :: ObjectField -> Bool
 isObjectKind (ObjectField _ field') = OBJECT == SC.kind field'
 
+mustBeObject :: (Text, Position) -> ObjectField -> Validation ObjectField
+mustBeObject (key', position') field' =
+  if isObjectKind field'
+    then pure field'
+    else Left $ hasNoSubfields meta
+  where
+    meta = MetaInfo {position = position', key = key', typeName = SC.fieldType $ fieldContent field'}
+
 notObject :: (Text, Position) -> ObjectField -> Validation ObjectField
 notObject (key', position') field' =
   if isObjectKind field'
@@ -46,14 +55,13 @@ notObject (key', position') field' =
 
 validateBySchema :: TypeLib -> GObject ObjectField -> (Text, Selection) -> Validation (Text, Selection)
 validateBySchema lib' (GObject parentFields core) (name', SelectionSet args' selectors sPos) = do
-  field' <- asSelectionValidation (fieldOf (sPos, name core) parentFields name')
+  field' <- asSelectionValidation (fieldOf (sPos, name core) parentFields name') >>= mustBeObject (name', sPos)
   typeSD <- asSelectionValidation $ existsObjectType (sPos, name') (SC.fieldType $ fieldContent field') lib'
   headQS <- validateArguments lib' (name', field') sPos args'
   selectorsQS <- mapSelectors lib' typeSD selectors
   pure (name', SelectionSet headQS selectorsQS sPos)
 validateBySchema typeLib (GObject parentFields core) (name', Field args' field sPos) = do
   field' <- asSelectionValidation (fieldOf (sPos, name core) parentFields name') >>= notObject (name', sPos)
-  -- _checksIfHasType <- asSelectionValidation $ getObjectFieldType sPos typeLib fieldSD
   headQS <- validateArguments typeLib (name', field') sPos args'
   pure (name', Field headQS field sPos)
 
