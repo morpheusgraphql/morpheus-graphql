@@ -12,11 +12,10 @@ import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
 import           Data.Morpheus.PreProcess.Spread        (prepareRawSelection)
-import           Data.Morpheus.PreProcess.Utils         (differKeys, existsType, fieldOf, getObjectFieldObjectType,
-                                                         getObjectFieldType)
+import           Data.Morpheus.PreProcess.Utils         (differKeys, existsOutputObjectType, fieldOf,
+                                                         getObjectFieldObjectType, getObjectFieldType)
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), GType, ObjectField, OutputType,
-                                                         TypeLib)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField, TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
 import           Data.Morpheus.Types.MetaInfo           (Position)
@@ -72,7 +71,7 @@ preProcessQuery lib root = do
   let (operator, args, rawSel, position') = getOperationInfo $ queryBody root
   validateVariables lib root args
   validateFragments lib root
-  _type <- asSelectionValidation $ existsType (position', operator) operator lib
+  _type <- asSelectionValidation $ existsOutputObjectType (position', operator) operator lib
   sel <- prepareRawSelection root rawSel
   selectors <- mapSelectors lib _type sel
   pure $ updateQuery (queryBody root) selectors

@@ -11,6 +11,7 @@ module Data.Morpheus.PreProcess.Utils
   , existsOutputType
   , toObject
   , getObjectFieldObjectType
+  , existsOutputObjectType
   ) where
 
 import           Data.List                           ((\\))
@@ -45,6 +46,12 @@ isOutputType _ (OType x)    = pure x
 
 existsOutputType :: (Position, Key) -> TX.Text -> TypeLib -> MetaValidation OutputType
 existsOutputType (position', key') typeName' lib = existsType (position', key') typeName' lib >>= isOutputType meta
+  where
+    meta = MetaInfo {position = position', typeName = typeName', key = key'}
+
+existsOutputObjectType :: (Position, Key) -> TX.Text -> TypeLib -> MetaValidation (GObject ObjectField)
+existsOutputObjectType (position', key') typeName' lib =
+  existsOutputType (position', key') typeName' lib >>= toObject meta
   where
     meta = MetaInfo {position = position', typeName = typeName', key = key'}
 
