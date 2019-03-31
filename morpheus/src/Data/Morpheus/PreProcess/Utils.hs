@@ -5,14 +5,15 @@ module Data.Morpheus.PreProcess.Utils
   , existsObjectType
   , existsLeafType
   , toObject
+  , getInputType
   -- , inputTypeBy
   -- , getObjectFieldType
   -- , getObjectFieldObjectType
   ) where
 
 import           Data.List                           ((\\))
-import           Data.Morpheus.Schema.Internal.Types (GObject (..), InputObject, InternalType (..), Leaf, OutputObject,
-                                                      TypeLib (..))
+import           Data.Morpheus.Schema.Internal.Types (GObject (..), InputObject, InputType, InternalType (..),
+                                                      Leaf (..), OutputObject, TypeLib (..))
 import           Data.Morpheus.Types.Core            (EnhancedKey (..), Key, enhanceKeyWithNull)
 import           Data.Morpheus.Types.Error           (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
@@ -28,6 +29,18 @@ existsTypeIn (position', key') typeName' lib =
   case lookup typeName' lib of
     Nothing -> Left $ UnknownType meta
     Just x  -> pure x
+  where
+    meta = MetaInfo {position = position', typeName = typeName', key = key'}
+
+getInputType :: (Position, Key) -> TX.Text -> TypeLib -> MetaValidation InputType
+getInputType (position', key') typeName' lib =
+  case lookup typeName' (inputObject lib) of
+    Just x -> pure (Object x)
+    Nothing ->
+      case lookup typeName' (leaf lib) of
+        Nothing          -> Left $ UnknownType meta
+        Just (LScalar x) -> pure (Scalar x)
+        Just (LEnum x y) -> pure (Enum x y)
   where
     meta = MetaInfo {position = position', typeName = typeName', key = key'}
 
@@ -72,6 +85,5 @@ fieldOf (pos, tName) outType fName =
 -- getObjectFieldObjectType position' lib field = existsObjectType (position', key') typeName' lib position' lib (fieldContent field)
 -- typeBy :: Position -> TypeLib -> [(Text, ObjectField)] -> Text -> MetaValidation OutputType
 -- typeBy pos lib _parentType _name = fieldOf (pos, _name) _parentType _name >>= getObjectFieldType pos lib
-
 differKeys :: [EnhancedKey] -> [Key] -> [EnhancedKey]
 differKeys enhanced keys = enhanced \\ map enhanceKeyWithNull keys
