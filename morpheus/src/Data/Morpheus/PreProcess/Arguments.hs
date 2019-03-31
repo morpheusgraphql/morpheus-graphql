@@ -33,31 +33,32 @@ checkArgumentType typeLib (tName, position') (aKey, argument) =
     checkType (Enum tags _) = validateEnum aKey tags argument >>= \x -> pure (aKey, x)
     checkType _             = pure (aKey, argument)
 
-validateArgument :: TypeLib -> Position -> Arguments -> InputField -> Validation (Text, Argument)
-validateArgument types position' requestArgs (InputField arg) =
-  case lookup (fieldName arg) requestArgs of
+validateArgument :: TypeLib -> Position -> Arguments -> (Text, InputField) -> Validation (Text, Argument)
+validateArgument types position' requestArgs (key', InputField arg) =
+  case lookup key' requestArgs of
     Nothing ->
       if notNull arg
         then Left $ requiredArgument (MetaInfo {position = position', key = "TODO:", typeName = "TODO:"})
-        else pure (fieldName arg, Argument JSNull position')
-    Just (Argument value pos) -> checkArgumentType types (fieldType arg, pos) (fieldName arg, Argument value pos)
+        else pure (key', Argument JSNull position')
+    Just (Argument value pos) -> checkArgumentType types (fieldType arg, pos) (key', Argument value pos)
 
 onlyResolveArguments :: GQLQueryRoot -> Position -> Raw.RawArguments -> Validation Arguments
 onlyResolveArguments root _ = mapM (replaceVariable root)
 
-checkForUnknownArguments :: ObjectField -> Arguments -> Validation [(Text,InputField)]
-checkForUnknownArguments (ObjectField fieldArgs field) args' =
+checkForUnknownArguments :: (Text, ObjectField) -> Arguments -> Validation [(Text, InputField)]
+checkForUnknownArguments (fieldKey', ObjectField fieldArgs _) args' =
   case differKeys (map argToKey args') fieldKeys of
     []          -> pure fieldArgs
-    unknownArgs -> Left $ unknownArguments (fieldName field) unknownArgs
+    unknownArgs -> Left $ unknownArguments fieldKey' unknownArgs
   where
     argToKey (key', Argument _ pos) = EnhancedKey key' pos
-    fieldKeys = map name (args field)
+    fieldKeys = map fst fieldArgs
 
-resolveArguments :: TypeLib -> GQLQueryRoot -> Field -> Position -> Raw.RawArguments -> Validation Arguments
-resolveArguments typeLib root inputs pos args =
-  onlyResolveArguments root pos args >>= validateArguments typeLib inputs pos
+resolveArguments ::
+     TypeLib -> GQLQueryRoot -> (Text, ObjectField) -> Position -> Raw.RawArguments -> Validation Arguments
+resolveArguments typeLib root objectField pos args' =
+  onlyResolveArguments root pos args' >>= validateArguments typeLib objectField pos
 
-validateArguments :: TypeLib -> ObjectField -> Position -> Arguments -> Validation Arguments
-validateArguments typeLib inputs pos args =
-  checkForUnknownArguments inputs args >>= mapM (validateArgument typeLib pos args)
+validateArguments :: TypeLib -> (Text, ObjectField) -> Position -> Arguments -> Validation Arguments
+validateArguments typeLib inputs pos args' =
+  checkForUnknownArguments inputs args' >>= mapM (validateArgument typeLib pos args')
