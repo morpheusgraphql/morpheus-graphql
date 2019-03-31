@@ -86,12 +86,25 @@ updateQuery :: RawOperator -> SelectionSet -> ValidOperator
 updateQuery (Query name' _ _ pos) sel    = Query name' [] sel pos
 updateQuery (Mutation name' _ _ pos) sel = Mutation name' [] sel pos
 
+fieldSchema :: [(Text, ObjectField)]
+fieldSchema =
+  [ ( "__schema"
+    , ObjectField
+        { args = []
+        , fieldContent =
+            SC.Field {SC.fieldName = "__schema", SC.notNull = True, SC.kind = OBJECT, SC.fieldType = "__Schema"}
+        })
+  ]
+
+setFieldSchema :: GObject ObjectField -> GObject ObjectField
+setFieldSchema (GObject fields core) = GObject (fields ++ fieldSchema) core
+
 preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
 preProcessQuery lib root = do
   let (operator, args', rawSel, position') = getOperationInfo $ queryBody root
   validateVariables lib root args'
   validateFragments lib root
-  _type <- asSelectionValidation $ existsObjectType (position', operator) operator lib
+  queryOrMutationType <- asSelectionValidation $ existsObjectType (position', operator) operator lib
   sel <- prepareRawSelection root rawSel
-  selectors <- mapSelectors lib _type sel
+  selectors <- mapSelectors lib (setFieldSchema queryOrMutationType) sel
   pure $ updateQuery (queryBody root) selectors
