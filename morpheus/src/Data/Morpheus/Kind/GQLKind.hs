@@ -19,26 +19,25 @@ import           Data.Morpheus.Generics.Utils           (typeOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), GType (..), InputField,
-                                                         InternalType (..), LibType (..), ObjectField (..), TypeLib,
-                                                         defineType, isTypeDefined)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), InputField, Leaf (..), LibType (..),
+                                                         ObjectField (..), TypeLib, defineType, isTypeDefined)
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 
-scalarTypeOf :: GQLKind a => Proxy a -> GType
-scalarTypeOf = OType . Scalar . buildType
+scalarTypeOf :: GQLKind a => Proxy a -> LibType
+scalarTypeOf = Leaf . LScalar . buildType
 
-enumTypeOf :: GQLKind a => [Text] -> Proxy a -> GType
-enumTypeOf tags = OType . Enum tags . buildType
+enumTypeOf :: GQLKind a => [Text] -> Proxy a -> LibType
+enumTypeOf tags = Leaf . LEnum tags . buildType
 
-asObjectType :: GQLKind a => [(Text, ObjectField)] -> Proxy a -> GType
-asObjectType fields = OType . Object . GObject fields . buildType
+asObjectType :: GQLKind a => [(Text, ObjectField)] -> Proxy a -> LibType
+asObjectType fields = OutputObject . GObject fields . buildType
 
-inputObjectOf :: GQLKind a => [(Text, InputField)] -> Proxy a -> GType
-inputObjectOf inputFields = IType . Object . GObject inputFields . buildType
+inputObjectOf :: GQLKind a => [(Text, InputField)] -> Proxy a -> LibType
+inputObjectOf inputFields = InputObject . GObject inputFields . buildType
 
 class GQLKind a where
   description :: Proxy a -> Text

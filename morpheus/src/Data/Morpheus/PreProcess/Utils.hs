@@ -28,9 +28,9 @@ import           Data.Text                           as TX (Text)
 --  case T.kind x of
 --    EnumOf LIST -> T.ofType x
 --    _           -> Just x
-existsType :: (Position, Key) -> TX.Text -> TypeLib -> MetaValidation GType
-existsType (position', key') typeName' lib =
-  case M.lookup typeName' lib of
+existsTypeIn :: (Position, Key) -> TX.Text -> [(Text, a)] -> MetaValidation a
+existsTypeIn (position', key') typeName' lib =
+  case lookup typeName' lib of
     Nothing -> Left $ UnknownType meta
     Just x  -> pure x
   where
