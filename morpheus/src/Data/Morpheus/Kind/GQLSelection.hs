@@ -14,7 +14,6 @@ module Data.Morpheus.Kind.GQLSelection
 
 import           Control.Monad.Trans.Except
 import qualified Data.Data                              as D
-import qualified Data.Map                               as M
 import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
@@ -25,7 +24,7 @@ import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectT
 import qualified Data.Morpheus.Kind.Scalar              as S (Scalar (..))
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
-import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib, defineType)
 import qualified Data.Morpheus.Schema.Internal.Types    as I (Field (..))
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.Type              (DeprecationArgs)
@@ -98,7 +97,7 @@ instance GQLSelection a => GQLSelection (Maybe a) where
   fieldType _ = fieldType (Proxy @a)
 
 introspectScalar :: GQLKind a => Proxy a -> TypeLib -> TypeLib
-introspectScalar proxy = M.insert (typeID proxy) (scalarTypeOf proxy)
+introspectScalar proxy = defineType (typeID proxy, scalarTypeOf proxy)
 
 scalarField :: GQLKind a => Proxy a -> Text -> ObjectField
 scalarField proxy name =
