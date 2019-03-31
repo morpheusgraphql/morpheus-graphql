@@ -34,7 +34,7 @@ data Field = Field
   }
 
 data ObjectField = ObjectField
-  { args         :: [InputField]
+  { args         :: [(Text, InputField)]
   , fieldContent :: Field
   }
 

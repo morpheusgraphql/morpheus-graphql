@@ -18,7 +18,7 @@ import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), r
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
 import           Data.Morpheus.Kind.GQLSelection        (GQLSelection (..))
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), GType (..), InternalType (..),
-                                                         ObjectField, OutputType (..), TypeLib)
+                                                         ObjectField, TypeLib)
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
