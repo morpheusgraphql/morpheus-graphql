@@ -14,14 +14,14 @@ module Data.Morpheus.Kind.GQLKind
   ) where
 
 import           Data.Data                              (Typeable)
-import qualified Data.Map                               as M (insert, lookup)
 import           Data.Morpheus.Generics.TypeRep         (resolveTypes)
 import           Data.Morpheus.Generics.Utils           (typeOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), GType (..), InputField,
-                                                         InternalType (..), ObjectField (..), TypeLib)
+                                                         InternalType (..), LibType (..), ObjectField (..), TypeLib,
+                                                         defineType, isTypeDefined)
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
@@ -49,12 +49,11 @@ class GQLKind a where
   typeID = typeOf
   buildType :: Proxy a -> Core
   buildType proxy = Core {name = typeID proxy, typeDescription = description proxy}
-  updateLib :: (Proxy a -> GType) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib
+  updateLib :: (Proxy a -> LibType) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib
   updateLib typeBuilder stack proxy lib' =
-    case M.lookup (typeID proxy) lib' of
-      Just _ -> lib'
-      Nothing -> resolveTypes lib' ([addType] ++ stack)
-        where addType = M.insert (typeID proxy) (typeBuilder proxy)
+    if isTypeDefined (typeID proxy) lib'
+      then lib'
+      else resolveTypes lib' ([defineType (typeID proxy, typeBuilder proxy)] ++ stack)
 
 instance GQLKind EnumValue where
   typeID _ = "__EnumValue"
