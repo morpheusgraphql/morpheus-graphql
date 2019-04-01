@@ -46,14 +46,14 @@ createLeafType :: TypeKind -> Text -> Text -> [EnumValue] -> Type
 createLeafType kind' name' desc' enums' =
   Type
     { kind = EnumOf kind'
-    , name = name'
-    , description = desc'
-    , fields = WithDeprecationArgs []
+    , name = Just name'
+    , description = Just desc'
+    , fields = Nothing
     , ofType = Nothing
-    , interfaces = []
-    , possibleTypes = []
-    , enumValues = WithDeprecationArgs enums'
-    , inputFields = []
+    , interfaces = Nothing
+    , possibleTypes = Nothing
+    , enumValues = Just $ WithDeprecationArgs enums'
+    , inputFields = Nothing
     }
 
 typeFromObject :: (Text, I.OutputObject) -> Type
@@ -71,40 +71,40 @@ createInputObject :: Text -> Text -> [InputValue] -> Type
 createInputObject name' desc' fields' =
   Type
     { kind = EnumOf INPUT_OBJECT
-    , name = name'
-    , description = desc'
-    , fields = WithDeprecationArgs []
+    , name = Just name'
+    , description = Just desc'
+    , fields = Just $ WithDeprecationArgs []
     , ofType = Nothing
-    , interfaces = []
-    , possibleTypes = []
-    , enumValues = WithDeprecationArgs []
-    , inputFields = fields'
+    , interfaces = Nothing
+    , possibleTypes = Nothing
+    , enumValues = Nothing
+    , inputFields = Just fields'
     }
 
 createType :: TypeKind -> Text -> Text -> [Field] -> Type
 createType kind' name' desc' fields' =
   Type
     { kind = EnumOf kind'
-    , name = name'
-    , description = desc'
-    , fields = WithDeprecationArgs fields'
+    , name = Just name'
+    , description = Just desc'
+    , fields = Just $ WithDeprecationArgs fields'
     , ofType = Nothing
-    , interfaces = []
-    , possibleTypes = []
-    , enumValues = WithDeprecationArgs []
-    , inputFields = []
+    , interfaces = Nothing
+    , possibleTypes = Nothing
+    , enumValues = Nothing
+    , inputFields = Nothing
     }
 
 wrapListType :: Type -> Type
 wrapListType contentType =
   Type
     { kind = EnumOf LIST
-    , name = ""
-    , description = ""
-    , fields = WithDeprecationArgs []
+    , name = Nothing
+    , description = Nothing
+    , fields = Nothing
     , ofType = Just contentType
-    , interfaces = []
-    , possibleTypes = []
-    , enumValues = WithDeprecationArgs []
-    , inputFields = []
+    , interfaces = Nothing
+    , possibleTypes = Nothing
+    , enumValues = Nothing
+    , inputFields = Nothing
     }
