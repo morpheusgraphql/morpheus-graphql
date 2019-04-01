@@ -36,6 +36,7 @@ data Field = Field
   , notNull   :: Bool
   , kind      :: TypeKind
   , fieldType :: Text
+  , asList    :: Bool
   }
 
 data ObjectField = ObjectField

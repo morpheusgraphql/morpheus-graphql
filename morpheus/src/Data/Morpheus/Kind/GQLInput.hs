@@ -44,7 +44,7 @@ class GQLInput a where
   default asArgument :: GQLKind a =>
     Proxy a -> Text -> InputField
   asArgument proxy name =
-    InputField $ Field {fieldName = name, notNull = True, kind = INPUT_OBJECT, fieldType = typeID proxy}
+    InputField $ Field {fieldName = name, notNull = True, asList = False, kind = INPUT_OBJECT, fieldType = typeID proxy}
   introInput :: Proxy a -> TypeLib -> TypeLib
   default introInput :: (GQLKind a, Selectors (Rep a) (Text, InputField)) =>
     Proxy a -> TypeLib -> TypeLib
@@ -55,7 +55,8 @@ class GQLInput a where
       fields = map fst fieldTypes
 
 inputFieldOf :: GQLKind a => Proxy a -> Text -> InputField
-inputFieldOf proxy name = InputField $ Field {fieldName = name, notNull = True, kind = SCALAR, fieldType = typeID proxy}
+inputFieldOf proxy name =
+  InputField $ Field {fieldName = name, asList = False, notNull = True, kind = SCALAR, fieldType = typeID proxy}
 
 introspectInput :: Proxy a -> TypeLib -> TypeLib
 introspectInput _ typeLib = typeLib

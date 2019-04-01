@@ -60,7 +60,8 @@ class GQLSelection a where
   default fieldType :: (Show a, Selectors (Rep a) (Text, ObjectField), D.Typeable a, GQLKind a) =>
     Proxy a -> Text -> ObjectField
   fieldType proxy name =
-    ObjectField [] $ I.Field {I.fieldName = name, I.notNull = True, I.kind = OBJECT, I.fieldType = typeID proxy}
+    ObjectField [] $
+    I.Field {I.fieldName = name, I.notNull = True, I.asList = False, I.kind = OBJECT, I.fieldType = typeID proxy}
   introspect :: Proxy a -> TypeLib -> TypeLib
   default introspect :: (Show a, Selectors (Rep a) (Text, ObjectField), GQLKind a) =>
     Proxy a -> TypeLib -> TypeLib
@@ -101,7 +102,9 @@ introspectScalar proxy = defineType (typeID proxy, scalarTypeOf proxy)
 
 scalarField :: GQLKind a => Proxy a -> Text -> ObjectField
 scalarField proxy name =
-  ObjectField [] I.Field {I.fieldName = name, I.notNull = True, I.kind = SCALAR, I.fieldType = typeID proxy}
+  ObjectField
+    []
+    I.Field {I.fieldName = name, I.notNull = True, I.asList = False, I.kind = SCALAR, I.fieldType = typeID proxy}
 
 instance GQLSelection Int where
   encode _ = pure . Scalar . Int

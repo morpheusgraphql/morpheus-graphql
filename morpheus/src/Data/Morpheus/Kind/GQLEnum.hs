@@ -30,7 +30,7 @@ class GQLEnum a where
   asField :: Proxy a -> Text -> Field
   default asField :: GQLKind a =>
     Proxy a -> Text -> Field
-  asField proxy name = Field {fieldName = name, notNull = True, kind = ENUM, fieldType = typeID proxy}
+  asField proxy name = Field {fieldName = name, notNull = True, kind = ENUM, fieldType = typeID proxy, asList = False}
   introspect :: Proxy a -> TypeLib -> TypeLib
   default introspect :: (GQLKind a, GDecodeEnum (Rep a)) =>
     Proxy a -> TypeLib -> TypeLib

@@ -92,7 +92,13 @@ fieldSchema =
     , ObjectField
         { args = []
         , fieldContent =
-            SC.Field {SC.fieldName = "__schema", SC.notNull = True, SC.kind = OBJECT, SC.fieldType = "__Schema"}
+            SC.Field
+              { SC.fieldName = "__schema"
+              , SC.notNull = True
+              , SC.asList = False
+              , SC.kind = OBJECT
+              , SC.fieldType = "__Schema"
+              }
         })
   ]
 
