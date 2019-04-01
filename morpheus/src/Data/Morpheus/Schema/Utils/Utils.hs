@@ -37,8 +37,15 @@ wrapNotNull field' type' =
     then wrapAs NON_NULL type'
     else type'
 
+wrapList :: I.ObjectField -> Type -> Type
+wrapList field' type' =
+  if I.asList $ I.fieldContent field'
+    then wrapAs LIST type'
+    else type'
+
 fieldFromObjectField :: (Text, I.ObjectField) -> Field
-fieldFromObjectField (key', field') = F.createFieldWith key' (wrapNotNull field' $ createObjectType getType "" []) args'
+fieldFromObjectField (key', field') =
+  F.createFieldWith key' (wrapNotNull field' $ wrapList field' $ createObjectType getType "" []) args'
   where
     getType = I.fieldType $ I.fieldContent field'
     args' = map inputValueFromArg $ I.args field'

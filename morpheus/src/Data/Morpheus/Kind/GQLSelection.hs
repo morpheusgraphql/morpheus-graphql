@@ -127,7 +127,9 @@ instance (GQLSelection a, D.Typeable a) => GQLSelection [a] where
   encode Field {} _ = pure $ JSList []
   encode query list = JSList <$> mapM (encode query) list
   introspect _ = introspect (Proxy @a)
-  fieldType _ = fieldType (Proxy @a) --  TODO: wrapAsListType <$>
+  fieldType _ name = fType {fieldContent = (fieldContent fType) {I.asList = True}}
+    where
+      fType = fieldType (Proxy @a) name
 
 instance (Show a, GQLKind a, E.GQLEnum a) => GQLSelection (EnumOf a) where
   encode _ = pure . Scalar . String . pack . show . unpackEnum
