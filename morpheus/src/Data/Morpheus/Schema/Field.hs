@@ -13,7 +13,7 @@ data Field t = Field
   { name              :: Text
   , description       :: Maybe Text
   , args              :: [InputValue t]
-  , _type             :: Maybe t
+  , _type             :: t
   , isDeprecated      :: Bool
   , deprecationReason :: Maybe Text
   } deriving (Show, Data, Generic)
@@ -24,7 +24,7 @@ createFieldWith _name fieldType fieldArgs =
     { name = _name
     , description = Nothing
     , args = fieldArgs
-    , _type = Just fieldType
+    , _type = fieldType
     , isDeprecated = False
     , deprecationReason = Nothing
     }
