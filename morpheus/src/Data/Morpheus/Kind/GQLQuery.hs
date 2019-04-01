@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings        #-}
 {-# LANGUAGE RankNTypes               #-}
 {-# LANGUAGE ScopedTypeVariables      #-}
+{-# LANGUAGE TypeApplications         #-}
 {-# LANGUAGE TypeOperators            #-}
 
 module Data.Morpheus.Kind.GQLQuery
@@ -33,21 +34,21 @@ class GQLQuery a where
   encodeQuery :: a -> TypeLib -> SelectionSet -> ResolveIO JSType
   default encodeQuery :: (Generic a, Data a, DeriveResolvers (Rep a), Show a) =>
     a -> TypeLib -> SelectionSet -> ResolveIO JSType
-  encodeQuery rootResolver types sel = resolveBySelection sel (resolvers ++ schemaResolver)
+  encodeQuery rootResolver types sel = resolveBySelection sel (schemaResolver ++ resolvers)
     where
       schemaResolver = [("__schema", (`encode` initSchema types))] -- TODO: lazy schema derivation
       resolvers = deriveResolvers initialMeta $ from rootResolver
   querySchema :: a -> UpdateTypes
   default querySchema :: (Generic a, Data a) =>
     a -> UpdateTypes
-  querySchema _ = introspectQuery (Proxy :: Proxy a)
+  querySchema _ = introspectQuery (Proxy @a)
   introspectQuery :: Proxy a -> UpdateTypes
   default introspectQuery :: (Show a, Selectors (Rep a) (Text, ObjectField), Typeable a) =>
     Proxy a -> UpdateTypes
   introspectQuery _ initialTypes = resolveTypes typeLib stack
     where
-      typeLib = introspect (Proxy :: Proxy Schema) queryType
+      typeLib = introspect (Proxy @Schema) queryType
       queryType = defineType ("Query", OutputObject $ GObject fields (Core "Query" "Description")) initialTypes
-      fieldTypes = getFields (Proxy :: Proxy (Rep a))
+      fieldTypes = getFields (Proxy @(Rep a))
       stack = map snd fieldTypes
-      fields = map fst fieldTypes -- ++ [createField "__schema" "__Schema" []] TODO: add no field schema but show in validation
+      fields = map fst fieldTypes
