@@ -56,7 +56,7 @@ class GQLKind a where
   updateLib typeBuilder stack proxy lib' =
     if isTypeDefined (typeID proxy) lib'
       then lib'
-      else resolveTypes lib' ([defineType (typeID proxy, typeBuilder proxy)] ++ stack)
+      else resolveTypes lib' (defineType (typeID proxy, typeBuilder proxy) : stack)
 
 instance GQLKind EnumValue where
   typeID _ = "__EnumValue"

@@ -2,15 +2,14 @@
 
 module Data.Morpheus.Error.Variable
   ( variableIsNotDefined
-  , fieldTypeMismatch
-  , invalidEnumOption
   , variableValidationError
   ) where
 
-import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (GQLErrors, MetaError (..))
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
-import qualified Data.Text                    as T (Text, concat, pack)
+import           Data.Morpheus.Error.InputType (expectedTypeAFoundB)
+import           Data.Morpheus.Error.Utils     (errorMessage)
+import           Data.Morpheus.Types.Error     (GQLErrors, MetaError (..))
+import           Data.Morpheus.Types.MetaInfo  (MetaInfo (..))
+import qualified Data.Text                     as T (concat)
 
 {-|
 VARIABLES:
@@ -39,34 +38,11 @@ case variable does not match to argument type
 
 |-}
 variableValidationError :: MetaError -> GQLErrors
-variableValidationError (TypeMismatch meta isType shouldType) = fieldTypeMismatch meta isType shouldType
-variableValidationError (UnknownField meta) = variableIsNotDefined meta -- TODO real error handling
-variableValidationError (UnknownType meta) = variableIsNotDefined meta -- TODO should real error handling
+variableValidationError (TypeMismatch meta isType) = expectedTypeAFoundB meta isType
+variableValidationError (UnknownField meta)        = variableIsNotDefined meta -- TODO real error handling
+variableValidationError (UnknownType meta)         = variableIsNotDefined meta -- TODO should real error handling
 
 variableIsNotDefined :: MetaInfo -> GQLErrors
 variableIsNotDefined meta = errorMessage (position meta) text
   where
     text = T.concat ["Variable \"", key meta, "\" is not defined by operation \"", typeName meta, "\"."]
-
--- TODO: delete it GQL has no this kind of error
-invalidEnumOption :: MetaInfo -> GQLErrors
-invalidEnumOption meta = errorMessage (position meta) text
-  where
-    text = T.concat ["Expected type ", typeName meta, " found ", key meta, "."]
-
--- TODO: delete it GQL has no this kind of error
-fieldTypeMismatch :: MetaInfo -> T.Text -> T.Text -> GQLErrors
-fieldTypeMismatch meta isType should = errorMessage (position meta) text
-  where
-    text =
-      T.concat
-        [ "Variable field\""
-        , key meta
-        , "\"on type \""
-        , typeName meta
-        , "\" has a type \""
-        , T.pack $ show isType
-        , "\" but should have \""
-        , should
-        , "\"."
-        ]

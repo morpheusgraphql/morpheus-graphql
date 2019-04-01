@@ -100,4 +100,4 @@ instance (GQLInput a, GQLKind a) => GQLInput [a] where
   decode (JSList li) = mapM decode li
   decode isType      = internalTypeMismatch "List" isType
   asArgument _ = asArgument (Proxy @a)
-  introInput _ = introInput (Proxy @a) -- wrap as List
+  introInput _ = introInput (Proxy @a) -- TODO: wrap as List

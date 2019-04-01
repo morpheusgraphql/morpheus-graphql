@@ -95,6 +95,6 @@ isTypeDefined :: Text -> TypeLib -> Bool
 isTypeDefined name' lib' = name' `elem` getAllTypeKeys lib'
 
 defineType :: (Text, LibType) -> TypeLib -> TypeLib
-defineType (key', Leaf type') lib         = lib {leaf = [(key', type')] ++ leaf lib}
-defineType (key', InputObject type') lib  = lib {inputObject = [(key', type')] ++ inputObject lib}
-defineType (key', OutputObject type') lib = lib {object = [(key', type')] ++ object lib}
+defineType (key', Leaf type') lib         = lib {leaf = (key', type') : leaf lib}
+defineType (key', InputObject type') lib  = lib {inputObject = (key', type') : inputObject lib}
+defineType (key', OutputObject type') lib = lib {object = (key', type') : object lib}

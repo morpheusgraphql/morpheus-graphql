@@ -15,17 +15,18 @@ module Data.Morpheus.Types.Error
 
 import           Control.Monad.Trans.Except   (ExceptT (..))
 import           Data.Aeson                   (ToJSON)
+import           Data.Morpheus.Types.JSType   (JSType)
 import           Data.Morpheus.Types.MetaInfo (MetaInfo)
 import           Data.Text                    (Text)
 import           GHC.Generics                 (Generic)
 
 data MetaError
   = TypeMismatch MetaInfo
-                 Text
-                 Text
+                 JSType
   | UnknownField MetaInfo
   | UnknownType MetaInfo
 
+-- TODO : define INPUT_ERROR = TypeMismatch | ....   SELECTION_ERROR = ....
 data GQLError = GQLError
   { desc     :: Text
   , posIndex :: [Int]

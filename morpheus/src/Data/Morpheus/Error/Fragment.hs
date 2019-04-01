@@ -25,9 +25,9 @@ import qualified Data.Text                    as T
     {...H} -> "Unknown fragment \"H\"."
 -}
 fragmentError :: MetaError -> GQLErrors
-fragmentError (UnknownType meta)      = unknownFragment meta
-fragmentError (UnknownField meta)     = unknownFragment meta -- TODO should not Apairs
-fragmentError (TypeMismatch meta _ _) = unknownFragment meta -- TODO find better solution
+fragmentError (UnknownType meta)    = unknownFragment meta
+fragmentError (UnknownField meta)   = unknownFragment meta -- TODO should not Apairs
+fragmentError (TypeMismatch meta _) = unknownFragment meta -- TODO find better solution
 
 unknownFragment :: MetaInfo -> GQLErrors
 unknownFragment meta = errorMessage (position meta) text
