@@ -89,10 +89,10 @@ createType kind' name' desc' fields' =
     , description = Just desc'
     , fields = Just $ WithDeprecationArgs fields'
     , ofType = Nothing
-    , interfaces = Nothing
-    , possibleTypes = Nothing
-    , enumValues = Nothing
-    , inputFields = Nothing
+    , interfaces = Just []
+    , possibleTypes = Just []
+    , enumValues = Just $ WithDeprecationArgs []
+    , inputFields = Just []
     }
 
 wrapListType :: Type -> Type
