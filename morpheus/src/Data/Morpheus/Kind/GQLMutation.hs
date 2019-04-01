@@ -15,8 +15,7 @@ module Data.Morpheus.Kind.GQLMutation
 import           Data.Data                              (Data, Typeable)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), LibType (..), ObjectField, TypeLib,
-                                                         defineType)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField, TypeLib (..))
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (initialMeta)
@@ -35,7 +34,7 @@ class GQLMutation a where
     a -> TypeLib -> TypeLib
   mutationSchema _ initialType = resolveTypes mutationType types
     where
-      mutationType = defineType ("Mutation", OutputObject $ GObject fields $ Core "Mutation" "Description") initialType
+      mutationType = initialType {mutation = Just ("Mutation", GObject fields $ Core "Mutation" "Description")}
       fieldTypes = getFields (Proxy :: Proxy (Rep a))
       types = map snd fieldTypes
       fields = map fst fieldTypes
