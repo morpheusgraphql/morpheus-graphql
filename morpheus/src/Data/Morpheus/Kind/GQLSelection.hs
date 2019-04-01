@@ -20,11 +20,11 @@ import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolve
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
 import qualified Data.Morpheus.Kind.GQLEnum             as E (GQLEnum (..))
-import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType, scalarTypeOf)
+import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType, introspectScalar)
 import qualified Data.Morpheus.Kind.Scalar              as S (Scalar (..))
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
-import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib, defineType)
+import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib)
 import qualified Data.Morpheus.Schema.Internal.Types    as I (Field (..))
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.Type              (DeprecationArgs)
@@ -98,9 +98,6 @@ instance GQLSelection a => GQLSelection (Maybe a) where
   fieldType _ name = (fType name) {fieldContent = (fieldContent $ fType name) {I.notNull = False}}
     where
       fType = fieldType (Proxy @a)
-
-introspectScalar :: GQLKind a => Proxy a -> TypeLib -> TypeLib
-introspectScalar proxy = defineType (typeID proxy, scalarTypeOf proxy)
 
 scalarField :: GQLKind a => Proxy a -> Text -> ObjectField
 scalarField proxy name =

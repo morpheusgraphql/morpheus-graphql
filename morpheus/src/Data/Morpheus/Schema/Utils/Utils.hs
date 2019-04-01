@@ -51,8 +51,8 @@ fieldFromObjectField (key', field') =
     args' = map inputValueFromArg $ I.args field'
 
 typeFromLeaf :: (Text, I.Leaf) -> Type
-typeFromLeaf (_, I.LScalar (I.Core name' desc'))     = createLeafType SCALAR name' desc' []
-typeFromLeaf (_, I.LEnum tags' (I.Core name' desc')) = createLeafType ENUM name' desc' (map createEnumValue tags')
+typeFromLeaf (key', I.LScalar (I.Core _ desc'))     = createLeafType SCALAR key' desc' []
+typeFromLeaf (key', I.LEnum tags' (I.Core _ desc')) = createLeafType ENUM key' desc' (map createEnumValue tags')
 
 createLeafType :: TypeKind -> Text -> Text -> [EnumValue] -> Type
 createLeafType kind' name' desc' enums' =

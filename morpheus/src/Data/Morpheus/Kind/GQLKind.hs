@@ -11,6 +11,7 @@ module Data.Morpheus.Kind.GQLKind
   , asObjectType
   , enumTypeOf
   , inputObjectOf
+  , introspectScalar
   ) where
 
 import           Data.Data                              (Typeable)
@@ -38,6 +39,9 @@ asObjectType fields = OutputObject . GObject fields . buildType
 
 inputObjectOf :: GQLKind a => [(Text, InputField)] -> Proxy a -> LibType
 inputObjectOf inputFields = InputObject . GObject inputFields . buildType
+
+introspectScalar :: GQLKind a => Proxy a -> TypeLib -> TypeLib
+introspectScalar = updateLib scalarTypeOf []
 
 class GQLKind a where
   description :: Proxy a -> Text

@@ -15,7 +15,7 @@ import           Data.Morpheus.Error.Internal        (internalArgumentError, int
 import           Data.Morpheus.Generics.GDecode      (GDecode (..))
 import           Data.Morpheus.Generics.TypeRep      (Selectors (..))
 import qualified Data.Morpheus.Kind.GQLEnum          as E (GQLEnum (..))
-import           Data.Morpheus.Kind.GQLKind          (GQLKind (..), inputObjectOf)
+import           Data.Morpheus.Kind.GQLKind          (GQLKind (..), inputObjectOf, introspectScalar)
 import qualified Data.Morpheus.Kind.Scalar           as S (Scalar (..))
 import           Data.Morpheus.Schema.Internal.Types (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
@@ -58,26 +58,23 @@ inputFieldOf :: GQLKind a => Proxy a -> Text -> InputField
 inputFieldOf proxy name =
   InputField $ Field {fieldName = name, asList = False, notNull = True, kind = SCALAR, fieldType = typeID proxy}
 
-introspectInput :: Proxy a -> TypeLib -> TypeLib
-introspectInput _ typeLib = typeLib
-
 instance GQLInput Text where
   decode (Scalar (String x)) = pure x
   decode isType              = internalTypeMismatch "String" isType
   asArgument = inputFieldOf
-  introInput = introspectInput
+  introInput = introspectScalar
 
 instance GQLInput Bool where
   decode (Scalar (Boolean x)) = pure x
   decode isType               = internalTypeMismatch "Boolean" isType
   asArgument = inputFieldOf
-  introInput = introspectInput
+  introInput = introspectScalar
 
 instance GQLInput Int where
   decode (Scalar (Int x)) = pure x
   decode isType           = internalTypeMismatch "Int" isType
   asArgument = inputFieldOf
-  introInput = introspectInput
+  introInput = introspectScalar
 
 instance (GQLInput a, GQLKind a) => GQLInput (Maybe a) where
   decode JSNull = pure Nothing
