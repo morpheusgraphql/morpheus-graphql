@@ -15,8 +15,7 @@ module Data.Morpheus.Kind.GQLMutation
 import           Data.Data                              (Data, Typeable)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), LibType (..), ObjectField, TypeLib,
-                                                         defineType, initTypeLib)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField, TypeLib (..))
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (initialMeta)
@@ -30,21 +29,16 @@ class GQLMutation a where
   default encodeMutation :: (Generic a, Data a, DeriveResolvers (Rep a), Show a) =>
     a -> SelectionSet -> ResolveIO JSType
   encodeMutation rootResolver sel = resolveBySelection sel $ deriveResolvers initialMeta $ from rootResolver
-  mutationSchema :: a -> TypeLib
-  default mutationSchema :: (Generic a, Data a) =>
-    a -> TypeLib
-  mutationSchema _ = introspectMutation (Proxy :: Proxy a)
-  introspectMutation :: Proxy a -> TypeLib
-  default introspectMutation :: (Show a, Selectors (Rep a) (Text, ObjectField), Typeable a) =>
-    Proxy a -> TypeLib
-  introspectMutation _ = resolveTypes mutationType types
+  mutationSchema :: a -> TypeLib -> TypeLib
+  default mutationSchema :: (Show a, Selectors (Rep a) (Text, ObjectField), Typeable a) =>
+    a -> TypeLib -> TypeLib
+  mutationSchema _ initialType = resolveTypes mutationType types
     where
-      mutationType = defineType ("Mutation", OutputObject $ GObject fields $ Core "Mutation" "Description") initTypeLib
+      mutationType = initialType {mutation = Just ("Mutation", GObject fields $ Core "Mutation" "Description")}
       fieldTypes = getFields (Proxy :: Proxy (Rep a))
       types = map snd fieldTypes
       fields = map fst fieldTypes
 
 instance GQLMutation () where
   encodeMutation _ _ = pure JSNull
-  mutationSchema _ = initTypeLib
-  introspectMutation _ = initTypeLib
+  mutationSchema _ = id

@@ -14,13 +14,14 @@ import           GHC.Generics
 
 data EnumValue = EnumValue
   { name              :: Text
-  , description       :: Text
+  , description       :: Maybe Text
   , isDeprecated      :: Bool
-  , deprecationReason :: Text
+  , deprecationReason :: Maybe Text
   } deriving (Show, Data, Generic)
 
 createEnumValue :: Text -> EnumValue
-createEnumValue enumName = EnumValue {name = enumName, description = "", isDeprecated = False, deprecationReason = ""}
+createEnumValue enumName =
+  EnumValue {name = enumName, description = Nothing, isDeprecated = False, deprecationReason = Nothing}
 
 isEnumValue :: Text -> EnumValue -> Bool
 isEnumValue inpName enum = inpName == name enum

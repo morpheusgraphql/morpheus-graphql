@@ -36,7 +36,7 @@ data GQLRoot a b = GQLRoot
   }
 
 schema :: (GQLQuery a, GQLMutation b) => a -> b -> TypeLib
-schema queryRes mutationRes = querySchema queryRes $ mutationSchema mutationRes
+schema queryRes mutationRes = mutationSchema mutationRes $ querySchema queryRes
 
 resolve :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO JSType
 resolve rootResolver body = do
