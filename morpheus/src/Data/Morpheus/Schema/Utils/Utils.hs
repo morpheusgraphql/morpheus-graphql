@@ -9,12 +9,14 @@ module Data.Morpheus.Schema.Utils.Utils
   , wrapListType
   , typeFromObject
   , typeFromInputObject
+  , typeFromLeaf
   ) where
 
+import           Data.Morpheus.Schema.EnumValue      (EnumValue, createEnumValue)
 import qualified Data.Morpheus.Schema.Field          as F (Field (..), createFieldWith)
 import qualified Data.Morpheus.Schema.InputValue     as IN (InputValue (..), createInputValueWith)
 import qualified Data.Morpheus.Schema.Internal.Types as I (Core (..), Field (..), GObject (..), InputField (..),
-                                                           InputObject, ObjectField (..), OutputObject)
+                                                           InputObject, Leaf (..), ObjectField (..), OutputObject)
 import           Data.Morpheus.Schema.Type           (Type (..))
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Describer       (EnumOf (..), WithDeprecationArgs (..))
@@ -35,6 +37,24 @@ fieldFromObjectField (key', field') = F.createFieldWith key' (createObjectType g
   where
     getType = I.fieldType $ I.fieldContent field'
     args' = map inputValueFromArg $ I.args field'
+
+typeFromLeaf :: (Text, I.Leaf) -> Type
+typeFromLeaf (_, I.LScalar (I.Core name' desc'))     = createLeafType SCALAR name' desc' []
+typeFromLeaf (_, I.LEnum tags' (I.Core name' desc')) = createLeafType ENUM name' desc' (map createEnumValue tags')
+
+createLeafType :: TypeKind -> Text -> Text -> [EnumValue] -> Type
+createLeafType kind' name' desc' enums' =
+  Type
+    { kind = EnumOf kind'
+    , name = name'
+    , description = desc'
+    , fields = WithDeprecationArgs []
+    , ofType = Nothing
+    , interfaces = []
+    , possibleTypes = []
+    , enumValues = WithDeprecationArgs enums'
+    , inputFields = []
+    }
 
 typeFromObject :: (Text, I.OutputObject) -> Type
 typeFromObject (key', I.GObject fields' (I.Core _ description')) =

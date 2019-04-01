@@ -7,7 +7,8 @@ module Data.Morpheus.Schema.Schema where
 import           Data.Data                           (Data)
 import           Data.Morpheus.Schema.Directive      (Directive)
 import           Data.Morpheus.Schema.Internal.Types (TypeLib (..))
-import           Data.Morpheus.Schema.Utils.Utils    (Type, createObjectType, typeFromInputObject, typeFromObject)
+import           Data.Morpheus.Schema.Utils.Utils    (Type, createObjectType, typeFromInputObject, typeFromLeaf,
+                                                      typeFromObject)
 import           GHC.Generics                        (Generic)
 
 data Schema = Schema
@@ -19,7 +20,8 @@ data Schema = Schema
   } deriving (Show, Data, Generic)
 
 convertTypes :: TypeLib -> [Type]
-convertTypes lib' = map typeFromObject (object lib') ++ map typeFromInputObject (inputObject lib')
+convertTypes lib' =
+  map typeFromObject (object lib') ++ map typeFromInputObject (inputObject lib') ++ map typeFromLeaf (leaf lib')
 
 initSchema :: TypeLib -> Schema
 initSchema types' =
