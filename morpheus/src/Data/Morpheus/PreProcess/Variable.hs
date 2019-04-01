@@ -7,7 +7,7 @@ module Data.Morpheus.PreProcess.Variable
 
 import qualified Data.Map                               as M
 import           Data.Morpheus.Error.Variable           (variableIsNotDefined, variableValidationError)
-import           Data.Morpheus.PreProcess.Input.Object  (validateInputVariable)
+import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
 import           Data.Morpheus.PreProcess.Utils         (getInputType)
 import           Data.Morpheus.Schema.Internal.Types    (TypeLib)
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
@@ -25,7 +25,7 @@ asGQLError (Right value) = pure value
 getVariable :: Position -> GQLQueryRoot -> Text -> Validation JSType
 getVariable pos root variableID =
   case M.lookup variableID (inputVariables root) of
-    Nothing    -> Left $ variableIsNotDefined $ MetaInfo {typeName = "TODO: Name", key = variableID, position = pos}
+    Nothing    -> Left $ variableIsNotDefined $ MetaInfo {typeName = "", key = variableID, position = pos}
     Just value -> pure value
 
 checkVariableType :: TypeLib -> GQLQueryRoot -> (Text, RawArgument) -> Validation ()
@@ -34,7 +34,7 @@ checkVariableType typeLib root (variableID, Variable tName pos) =
   where
     checkType inputKey _type = do
       variableValue <- getVariable pos root inputKey
-      _ <- asGQLError $ validateInputVariable typeLib _type pos (inputKey, variableValue)
+      _ <- asGQLError $ validateInput typeLib _type pos (inputKey, variableValue)
       pure ()
 checkVariableType _ _ (_, Argument _ _) = pure ()
 

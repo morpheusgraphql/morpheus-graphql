@@ -15,13 +15,14 @@ module Data.Morpheus.Types.Error
 
 import           Control.Monad.Trans.Except   (ExceptT (..))
 import           Data.Aeson                   (ToJSON)
+import           Data.Morpheus.Types.JSType   (JSType)
 import           Data.Morpheus.Types.MetaInfo (MetaInfo)
 import           Data.Text                    (Text)
 import           GHC.Generics                 (Generic)
 
 data MetaError
   = TypeMismatch MetaInfo
-                 Text
+                 JSType
                  Text
   | UnknownField MetaInfo
   | UnknownType MetaInfo

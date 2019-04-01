@@ -7,15 +7,14 @@ module Data.Morpheus.Error.Arguments
   , argumentError
   ) where
 
-import           Data.Aeson                   (encode)
-import           Data.ByteString.Lazy.Char8   (unpack)
-import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Core     (EnhancedKey (..))
-import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors, MetaError (..))
-import           Data.Morpheus.Types.JSType   (JSType (..), ScalarValue (..))
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
-import           Data.Text                    (Text)
-import qualified Data.Text                    as T (concat, pack)
+import           Data.Morpheus.Error.InputType (expectedTypeAFoundB)
+import           Data.Morpheus.Error.Utils     (errorMessage)
+import           Data.Morpheus.Types.Core      (EnhancedKey (..))
+import           Data.Morpheus.Types.Error     (GQLError (..), GQLErrors, MetaError (..))
+import           Data.Morpheus.Types.JSType    (JSType (..), ScalarValue (..))
+import           Data.Morpheus.Types.MetaInfo  (MetaInfo (..))
+import           Data.Text                     (Text)
+import qualified Data.Text                     as T (concat)
 
 {-
   ARGUMENTS:
@@ -35,11 +34,6 @@ argumentError :: MetaError -> GQLErrors
 argumentError (UnknownType meta)      = expectedTypeAFoundB meta (Scalar $ String "TODO:")
 argumentError (UnknownField meta)     = expectedTypeAFoundB meta (Scalar $ String "TODO:")
 argumentError (TypeMismatch meta _ _) = expectedTypeAFoundB meta (Scalar $ String "TODO:")
-
-expectedTypeAFoundB :: MetaInfo -> JSType -> GQLErrors
-expectedTypeAFoundB meta found = errorMessage (position meta) text
-  where
-    text = T.concat ["Expected type \"", typeName meta, "\" found ", T.pack (unpack $ encode found), "."]
 
 unknownArguments :: Text -> [EnhancedKey] -> GQLErrors
 unknownArguments fieldName = map keyToError

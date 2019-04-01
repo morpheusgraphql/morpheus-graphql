@@ -7,10 +7,12 @@ module Data.Morpheus.Error.Variable
   , variableValidationError
   ) where
 
-import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (GQLErrors, MetaError (..))
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
-import qualified Data.Text                    as T (Text, concat, pack)
+import           Data.Morpheus.Error.InputType (expectedTypeAFoundB)
+import           Data.Morpheus.Error.Utils     (errorMessage)
+import           Data.Morpheus.Types.Error     (GQLErrors, MetaError (..))
+import           Data.Morpheus.Types.MetaInfo  (MetaInfo (..))
+import           Data.Text                     (Text)
+import qualified Data.Text                     as T (concat, pack)
 
 {-|
 VARIABLES:
@@ -39,9 +41,9 @@ case variable does not match to argument type
 
 |-}
 variableValidationError :: MetaError -> GQLErrors
-variableValidationError (TypeMismatch meta isType shouldType) = fieldTypeMismatch meta isType shouldType
-variableValidationError (UnknownField meta) = variableIsNotDefined meta -- TODO real error handling
-variableValidationError (UnknownType meta) = variableIsNotDefined meta -- TODO should real error handling
+variableValidationError (TypeMismatch meta isType _) = expectedTypeAFoundB meta isType
+variableValidationError (UnknownField meta)          = variableIsNotDefined meta -- TODO real error handling
+variableValidationError (UnknownType meta)           = variableIsNotDefined meta -- TODO should real error handling
 
 variableIsNotDefined :: MetaInfo -> GQLErrors
 variableIsNotDefined meta = errorMessage (position meta) text
@@ -55,7 +57,7 @@ invalidEnumOption meta = errorMessage (position meta) text
     text = T.concat ["Expected type ", typeName meta, " found ", key meta, "."]
 
 -- TODO: delete it GQL has no this kind of error
-fieldTypeMismatch :: MetaInfo -> T.Text -> T.Text -> GQLErrors
+fieldTypeMismatch :: MetaInfo -> Text -> Text -> GQLErrors
 fieldTypeMismatch meta isType should = errorMessage (position meta) text
   where
     text =
