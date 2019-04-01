@@ -3,16 +3,19 @@
 module Data.Morpheus.Error.Arguments
   ( requiredArgument
   , unknownArguments
-  , unsupportedArgumentType
+  , expectedTypeAFoundB
   , argumentError
   ) where
 
+import           Data.Aeson                   (encode)
+import           Data.ByteString.Lazy.Char8   (unpack)
 import           Data.Morpheus.Error.Utils    (errorMessage)
 import           Data.Morpheus.Types.Core     (EnhancedKey (..))
 import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors, MetaError (..))
+import           Data.Morpheus.Types.JSType   (JSType (..), ScalarValue (..))
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
 import           Data.Text                    (Text)
-import qualified Data.Text                    as T (concat)
+import qualified Data.Text                    as T (concat, pack)
 
 {-
   ARGUMENTS:
@@ -29,14 +32,14 @@ import qualified Data.Text                    as T (concat)
   - date(name: "name") -> "Unknown argument \"name\" on field \"date\" of type \"Experience\"."
 -}
 argumentError :: MetaError -> GQLErrors
-argumentError (UnknownType meta)      = unsupportedArgumentType meta
-argumentError (UnknownField meta)     = unsupportedArgumentType meta
-argumentError (TypeMismatch meta _ _) = unsupportedArgumentType meta
+argumentError (UnknownType meta)      = expectedTypeAFoundB meta (Scalar $ String "TODO:")
+argumentError (UnknownField meta)     = expectedTypeAFoundB meta (Scalar $ String "TODO:")
+argumentError (TypeMismatch meta _ _) = expectedTypeAFoundB meta (Scalar $ String "TODO:")
 
-unsupportedArgumentType :: MetaInfo -> GQLErrors
-unsupportedArgumentType meta = errorMessage (position meta) text
+expectedTypeAFoundB :: MetaInfo -> JSType -> GQLErrors
+expectedTypeAFoundB meta found = errorMessage (position meta) text
   where
-    text = T.concat ["Argument \"", key meta, "\" has unsuported type \"", typeName meta, "\"."]
+    text = T.concat ["Expected type \"", typeName meta, "\" found ", T.pack (unpack $ encode found), "."]
 
 unknownArguments :: Text -> [EnhancedKey] -> GQLErrors
 unknownArguments fieldName = map keyToError

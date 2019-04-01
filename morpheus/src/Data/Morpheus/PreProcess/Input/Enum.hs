@@ -6,7 +6,7 @@ module Data.Morpheus.PreProcess.Input.Enum
   ) where
 
 import           Data.List                           (elem)
-import           Data.Morpheus.Error.Arguments       (unsupportedArgumentType)
+import           Data.Morpheus.Error.Arguments       (expectedTypeAFoundB)
 import           Data.Morpheus.Error.Variable        (invalidEnumOption)
 import           Data.Morpheus.Types.Error           (Validation)
 import           Data.Morpheus.Types.JSType          (JSType (..))
@@ -19,5 +19,5 @@ validateEnum typeName' tags' (Argument (JSEnum argument) pos) =
   if argument `elem` tags'
     then pure (Argument (JSEnum argument) pos)
     else Left $ invalidEnumOption $ MetaInfo {typeName = typeName', key = argument, position = pos}
-validateEnum typeName' _ (Argument _ pos) =
-  Left $ unsupportedArgumentType $ MetaInfo {typeName = typeName', key = "", position = pos}
+validateEnum typeName' _ (Argument jsObj pos) =
+  Left $ expectedTypeAFoundB (MetaInfo {typeName = typeName', key = "", position = pos}) jsObj
