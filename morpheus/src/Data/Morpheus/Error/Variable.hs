@@ -2,8 +2,6 @@
 
 module Data.Morpheus.Error.Variable
   ( variableIsNotDefined
-  , fieldTypeMismatch
-  , invalidEnumOption
   , variableValidationError
   ) where
 
@@ -11,8 +9,7 @@ import           Data.Morpheus.Error.InputType (expectedTypeAFoundB)
 import           Data.Morpheus.Error.Utils     (errorMessage)
 import           Data.Morpheus.Types.Error     (GQLErrors, MetaError (..))
 import           Data.Morpheus.Types.MetaInfo  (MetaInfo (..))
-import           Data.Text                     (Text)
-import qualified Data.Text                     as T (concat, pack)
+import qualified Data.Text                     as T (concat)
 
 {-|
 VARIABLES:
@@ -49,26 +46,3 @@ variableIsNotDefined :: MetaInfo -> GQLErrors
 variableIsNotDefined meta = errorMessage (position meta) text
   where
     text = T.concat ["Variable \"", key meta, "\" is not defined by operation \"", typeName meta, "\"."]
-
--- TODO: delete it GQL has no this kind of error
-invalidEnumOption :: MetaInfo -> GQLErrors
-invalidEnumOption meta = errorMessage (position meta) text
-  where
-    text = T.concat ["Expected type ", typeName meta, " found ", key meta, "."]
-
--- TODO: delete it GQL has no this kind of error
-fieldTypeMismatch :: MetaInfo -> Text -> Text -> GQLErrors
-fieldTypeMismatch meta isType should = errorMessage (position meta) text
-  where
-    text =
-      T.concat
-        [ "Variable field\""
-        , key meta
-        , "\"on type \""
-        , typeName meta
-        , "\" has a type \""
-        , T.pack $ show isType
-        , "\" but should have \""
-        , should
-        , "\"."
-        ]
