@@ -13,10 +13,11 @@ import           GHC.Generics
 
 data InputValue t = InputValue
   { name         :: Text
-  , description  :: Text
-  , _type        :: Maybe t
-  , defaultValue :: Text
+  , description  :: Maybe Text
+  , _type        :: t
+  , defaultValue :: Maybe Text
   } deriving (Show, Data, Generic)
 
 createInputValueWith :: Text -> a -> InputValue a
-createInputValueWith _name ofType = InputValue {name = _name, description = "", _type = Just ofType, defaultValue = ""}
+createInputValueWith _name ofType =
+  InputValue {name = _name, description = Nothing, _type = ofType, defaultValue = Nothing}

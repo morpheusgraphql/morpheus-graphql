@@ -15,7 +15,7 @@ import           GHC.Generics
 
 data Directive = Directive
   { name        :: Text
-  , description :: Text
+  , description :: Maybe Text
   , locations   :: [EnumOf DirectiveLocation]
   , args        :: [InputValue]
   } deriving (Show, Data, Generic)

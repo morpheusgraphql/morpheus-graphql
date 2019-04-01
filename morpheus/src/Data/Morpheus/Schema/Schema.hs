@@ -13,7 +13,7 @@ import           GHC.Generics                        (Generic)
 
 data Schema = Schema
   { types            :: [Type]
-  , queryType        :: Maybe Type
+  , queryType        :: Type
   , mutationType     :: Maybe Type
   , subscriptionType :: Maybe Type
   , directives       :: [Directive]

@@ -11,20 +11,20 @@ import           GHC.Generics
 
 data Field t = Field
   { name              :: Text
-  , description       :: Text
+  , description       :: Maybe Text
   , args              :: [InputValue t]
   , _type             :: Maybe t
   , isDeprecated      :: Bool
-  , deprecationReason :: Text
+  , deprecationReason :: Maybe Text
   } deriving (Show, Data, Generic)
 
 createFieldWith :: Text -> a -> [InputValue a] -> Field a
 createFieldWith _name fieldType fieldArgs =
   Field
     { name = _name
-    , description = ""
+    , description = Nothing
     , args = fieldArgs
     , _type = Just fieldType
     , isDeprecated = False
-    , deprecationReason = ""
+    , deprecationReason = Nothing
     }
