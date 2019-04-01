@@ -5,57 +5,118 @@ module Data.Morpheus.Schema.Utils.Utils
   ( Type
   , Field
   , InputValue
-  , TypeLib
   , createObjectType
-  , createField
-  , emptyLib
-  , wrapListType
+  , typeFromObject
+  , typeFromInputObject
+  , typeFromLeaf
   ) where
 
-import           Data.Map                        (Map, fromList)
-import qualified Data.Morpheus.Schema.Field      as F (Field (..), createFieldWith)
-import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..))
-import           Data.Morpheus.Schema.Type       (Type (..))
-import           Data.Morpheus.Schema.TypeKind   (TypeKind (..))
-import           Data.Morpheus.Types.Describer   (EnumOf (..), WithDeprecationArgs (..))
-import           Data.Text                       (Text)
+import           Data.Morpheus.Schema.EnumValue      (EnumValue, createEnumValue)
+import qualified Data.Morpheus.Schema.Field          as F (Field (..), createFieldWith)
+import qualified Data.Morpheus.Schema.InputValue     as IN (InputValue (..), createInputValueWith)
+import qualified Data.Morpheus.Schema.Internal.Types as I (Core (..), Field (..), GObject (..), InputField (..),
+                                                           InputObject, Leaf (..), ObjectField (..), OutputObject)
+import           Data.Morpheus.Schema.Type           (Type (..))
+import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
+import           Data.Morpheus.Types.Describer       (EnumOf (..), WithDeprecationArgs (..))
+import           Data.Text                           (Text)
 
-type InputValue = I.InputValue Type
+type InputValue = IN.InputValue Type
 
 type Field = F.Field Type
 
-type TypeLib = Map Text Type
+inputValueFromArg :: (Text, I.InputField) -> InputValue
+inputValueFromArg (key', input') = IN.createInputValueWith key' (createInputObjectType input')
 
-createField :: Text -> Text -> [InputValue] -> Field
-createField fName typeName = F.createFieldWith fName (createObjectType typeName "" [])
+createInputObjectType :: I.InputField -> Type
+createInputObjectType (I.InputField field') = createType (I.kind field') (I.fieldType field') "" []
+
+wrapNotNull :: I.ObjectField -> Type -> Type
+wrapNotNull field' type' =
+  if I.notNull $ I.fieldContent field'
+    then wrapAs NON_NULL type'
+    else type'
+
+wrapList :: I.ObjectField -> Type -> Type
+wrapList field' type' =
+  if I.asList $ I.fieldContent field'
+    then wrapAs LIST type'
+    else type'
+
+fieldFromObjectField :: (Text, I.ObjectField) -> Field
+fieldFromObjectField (key', field') =
+  F.createFieldWith key' (wrapNotNull field' $ wrapList field' $ createObjectType getType "" []) args'
+  where
+    getType = I.fieldType $ I.fieldContent field'
+    args' = map inputValueFromArg $ I.args field'
+
+typeFromLeaf :: (Text, I.Leaf) -> Type
+typeFromLeaf (_, I.LScalar (I.Core name' desc'))     = createLeafType SCALAR name' desc' []
+typeFromLeaf (_, I.LEnum tags' (I.Core name' desc')) = createLeafType ENUM name' desc' (map createEnumValue tags')
+
+createLeafType :: TypeKind -> Text -> Text -> [EnumValue] -> Type
+createLeafType kind' name' desc' enums' =
+  Type
+    { kind = EnumOf kind'
+    , name = Just name'
+    , description = Just desc'
+    , fields = Nothing
+    , ofType = Nothing
+    , interfaces = Nothing
+    , possibleTypes = Nothing
+    , enumValues = Just $ WithDeprecationArgs enums'
+    , inputFields = Nothing
+    }
+
+typeFromObject :: (Text, I.OutputObject) -> Type
+typeFromObject (key', I.GObject fields' (I.Core _ description')) =
+  createObjectType key' description' (map fieldFromObjectField fields')
+
+typeFromInputObject :: (Text, I.InputObject) -> Type
+typeFromInputObject (key', I.GObject fields' (I.Core _ description')) =
+  createInputObject key' description' (map inputValueFromArg fields')
 
 createObjectType :: Text -> Text -> [Field] -> Type
-createObjectType tName desc tFields =
+createObjectType = createType OBJECT
+
+createInputObject :: Text -> Text -> [InputValue] -> Type
+createInputObject name' desc' fields' =
   Type
-    { kind = EnumOf OBJECT
-    , name = tName
-    , description = desc
-    , fields = WithDeprecationArgs tFields
+    { kind = EnumOf INPUT_OBJECT
+    , name = Just name'
+    , description = Just desc'
+    , fields = Just $ WithDeprecationArgs []
     , ofType = Nothing
-    , interfaces = []
-    , possibleTypes = []
-    , enumValues = WithDeprecationArgs []
-    , inputFields = []
+    , interfaces = Nothing
+    , possibleTypes = Nothing
+    , enumValues = Nothing
+    , inputFields = Just fields'
     }
 
-wrapListType :: Type -> Type
-wrapListType contentType =
+createType :: TypeKind -> Text -> Text -> [Field] -> Type
+createType kind' name' desc' fields' =
   Type
-    { kind = EnumOf LIST
-    , name = ""
-    , description = ""
-    , fields = WithDeprecationArgs []
-    , ofType = Just contentType
-    , interfaces = []
-    , possibleTypes = []
-    , enumValues = WithDeprecationArgs []
-    , inputFields = []
+    { kind = EnumOf kind'
+    , name = Just name'
+    , description = Just desc'
+    , fields = Just $ WithDeprecationArgs fields'
+    , ofType = Nothing
+    , interfaces = Just []
+    , possibleTypes = Just []
+    , enumValues = Just $ WithDeprecationArgs []
+    , inputFields = Just []
     }
 
-emptyLib :: TypeLib
-emptyLib = fromList []
+wrapAs :: TypeKind -> Type -> Type
+wrapAs kind' contentType =
+  Type
+    { kind = EnumOf kind'
+    , name = Nothing
+    , description = Nothing
+    , fields = Nothing
+    , ofType = Just contentType
+    , interfaces = Nothing
+    , possibleTypes = Nothing
+    , enumValues = Nothing
+    , inputFields = Nothing
+    }

@@ -12,13 +12,10 @@ module Data.Morpheus.Kind.GQLEnum
 import           Data.Morpheus.Generics.GDecodeEnum     (GDecodeEnum (..))
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), enumTypeOf)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
-import           Data.Morpheus.Schema.Field             (createFieldWith)
-import           Data.Morpheus.Schema.InputValue        (createInputValueWith)
+import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, TypeLib)
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
-import qualified Data.Text                              as T
 import           GHC.Generics
 
 class GQLEnum a where
@@ -26,10 +23,14 @@ class GQLEnum a where
   default decode :: (Generic a, GDecodeEnum (Rep a)) =>
     Text -> a
   decode text = to $ gToEnum text
-  asType :: GQLKind a => Proxy a -> T.Text -> InputValue
-  asType proxy name = createInputValueWith name (enumTypeOf [] proxy)
-  asField :: GQLKind a => Proxy a -> T.Text -> Field
-  asField proxy name = createFieldWith name (enumTypeOf [] proxy) []
+  asInputField :: Proxy a -> Text -> InputField
+  default asInputField :: GQLKind a =>
+    Proxy a -> Text -> InputField
+  asInputField proxy = InputField . asField proxy
+  asField :: Proxy a -> Text -> Field
+  default asField :: GQLKind a =>
+    Proxy a -> Text -> Field
+  asField proxy name = Field {fieldName = name, notNull = True, kind = ENUM, fieldType = typeID proxy, asList = False}
   introspect :: Proxy a -> TypeLib -> TypeLib
   default introspect :: (GQLKind a, GDecodeEnum (Rep a)) =>
     Proxy a -> TypeLib -> TypeLib

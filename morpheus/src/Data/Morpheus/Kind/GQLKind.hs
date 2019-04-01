@@ -1,6 +1,8 @@
 {-# LANGUAGE DefaultSignatures    #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
 module Data.Morpheus.Kind.GQLKind
@@ -12,60 +14,45 @@ module Data.Morpheus.Kind.GQLKind
   ) where
 
 import           Data.Data                              (Typeable)
-import qualified Data.Map                               as M (insert, lookup)
 import           Data.Morpheus.Generics.TypeRep         (resolveTypes)
 import           Data.Morpheus.Generics.Utils           (typeOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
-import           Data.Morpheus.Schema.EnumValue         (EnumValue, createEnumValue)
+import           Data.Morpheus.Schema.EnumValue         (EnumValue)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), InputField, Leaf (..), LibType (..),
+                                                         ObjectField (..), TypeLib, defineType, isTypeDefined)
 import           Data.Morpheus.Schema.Schema            (Schema)
-import qualified Data.Morpheus.Schema.Type              as T (Type (..))
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type, TypeLib)
-import           Data.Morpheus.Types.Describer          (EnumOf (..), WithDeprecationArgs (..))
+import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 
-scalarTypeOf :: GQLKind a => Proxy a -> Type
-scalarTypeOf proxy = buildType proxy SCALAR [] Nothing [] []
+scalarTypeOf :: GQLKind a => Proxy a -> LibType
+scalarTypeOf = Leaf . LScalar . buildType
 
-enumTypeOf :: GQLKind a => [Text] -> Proxy a -> Type
-enumTypeOf tags proxy = buildType proxy ENUM [] Nothing (map createEnumValue tags) []
+enumTypeOf :: GQLKind a => [Text] -> Proxy a -> LibType
+enumTypeOf tags = Leaf . LEnum tags . buildType
 
-asObjectType :: GQLKind a => [Field] -> Proxy a -> Type
-asObjectType fields proxy = buildType proxy OBJECT fields Nothing [] []
+asObjectType :: GQLKind a => [(Text, ObjectField)] -> Proxy a -> LibType
+asObjectType fields = OutputObject . GObject fields . buildType
 
-inputObjectOf :: GQLKind a => [InputValue] -> Proxy a -> Type
-inputObjectOf inputFields proxy = buildType proxy INPUT_OBJECT [] Nothing [] inputFields
+inputObjectOf :: GQLKind a => [(Text, InputField)] -> Proxy a -> LibType
+inputObjectOf inputFields = InputObject . GObject inputFields . buildType
 
 class GQLKind a where
   description :: Proxy a -> Text
-  default description :: Proxy a -> Text
   description _ = "default selection Description"
   typeID :: Proxy a -> Text
   default typeID :: Typeable a =>
     Proxy a -> Text
   typeID = typeOf
-  buildType :: Proxy a -> TypeKind -> [Field] -> Maybe Type -> [EnumValue] -> [InputValue] -> Type
-  default buildType :: Proxy a -> TypeKind -> [Field] -> Maybe Type -> [EnumValue] -> [InputValue] -> Type
-  buildType proxy kind' fields' type' enums' inputFields' =
-    T.Type
-      { T.kind = EnumOf kind'
-      , T.name = typeID proxy
-      , T.description = description proxy
-      , T.fields = WithDeprecationArgs fields' --fields of object
-      , T.ofType = type'
-      , T.interfaces = []
-      , T.possibleTypes = []
-      , T.enumValues = WithDeprecationArgs enums'
-      , T.inputFields = inputFields' -- fields of INPUT_OBJECT
-      }
-  updateLib :: (Proxy a -> Type) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib
+  buildType :: Proxy a -> Core
+  buildType proxy = Core {name = typeID proxy, typeDescription = description proxy}
+  updateLib :: (Proxy a -> LibType) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib
   updateLib typeBuilder stack proxy lib' =
-    case M.lookup (typeID proxy) lib' of
-      Just _ -> lib'
-      Nothing -> resolveTypes lib' ([addType] ++ stack)
-        where addType = M.insert (typeID proxy) (typeBuilder proxy)
+    if isTypeDefined (typeID proxy) lib'
+      then lib'
+      else resolveTypes lib' ([defineType (typeID proxy, typeBuilder proxy)] ++ stack)
 
 instance GQLKind EnumValue where
   typeID _ = "__EnumValue"
@@ -99,3 +86,6 @@ instance GQLKind Text where
 
 instance GQLKind Bool where
   typeID _ = "Boolean"
+
+instance GQLKind a => GQLKind (Maybe a) where
+  typeID _ = typeID (Proxy @a)

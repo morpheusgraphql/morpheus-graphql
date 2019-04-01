@@ -18,14 +18,14 @@ import           GHC.Generics                    (Generic)
 
 data Type = Type
   { kind          :: EnumOf TypeKind
-  , name          :: Text
-  , description   :: Text
-  , fields        :: WithDeprecationArgs [F.Field Type]
+  , name          :: Maybe Text
+  , description   :: Maybe Text
+  , fields        :: Maybe (WithDeprecationArgs [F.Field Type])
   , ofType        :: Maybe Type
-  , interfaces    :: [Type]
-  , possibleTypes :: [Type]
-  , enumValues    :: WithDeprecationArgs [EnumValue]
-  , inputFields   :: [I.InputValue Type]
+  , interfaces    :: Maybe [Type]
+  , possibleTypes :: Maybe [Type]
+  , enumValues    :: Maybe (WithDeprecationArgs [EnumValue])
+  , inputFields   :: Maybe [I.InputValue Type]
   } deriving (Show, Data, Generic)
 
 newtype DeprecationArgs = DeprecationArgs

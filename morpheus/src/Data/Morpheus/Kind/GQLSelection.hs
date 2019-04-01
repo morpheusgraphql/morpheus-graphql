@@ -14,7 +14,6 @@ module Data.Morpheus.Kind.GQLSelection
 
 import           Control.Monad.Trans.Except
 import qualified Data.Data                              as D
-import qualified Data.Map                               as M
 import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
@@ -25,11 +24,12 @@ import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectT
 import qualified Data.Morpheus.Kind.Scalar              as S (Scalar (..))
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
-import qualified Data.Morpheus.Schema.Field             as F (Field (..), createFieldWith)
+import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib, defineType)
+import qualified Data.Morpheus.Schema.Internal.Types    as I (Field (..))
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.Type              (DeprecationArgs)
-import           Data.Morpheus.Schema.Utils.Field       (wrapAsListType)
-import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type, TypeLib, createField)
+import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
+import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
 import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..), ScalarOf (..),
                                                          WithDeprecationArgs (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
@@ -37,16 +37,16 @@ import           Data.Morpheus.Types.JSType             (JSType (..), ScalarValu
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..))
 import           Data.Proxy
-import qualified Data.Text                              as T
+import           Data.Text                              (Text, pack)
 import           GHC.Generics
 
 instance GQLSelection a => DeriveResolvers (K1 i a) where
   deriveResolvers meta (K1 src) = [(Meta.key meta, (`encode` src))]
 
-instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (RecSel s a) Field where
-  getFields _ = [(fieldType (Proxy @a) name, introspect (Proxy @a))]
+instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (RecSel s a) (Text, ObjectField) where
+  getFields _ = [((name, fieldType (Proxy @a) name), introspect (Proxy @a))]
     where
-      name = T.pack $ selName (undefined :: SelOf s)
+      name = pack $ selName (undefined :: SelOf s)
 
 class GQLSelection a where
   encode :: Selection -> a -> ResolveIO JSType
@@ -56,14 +56,14 @@ class GQLSelection a where
   encode (Field _ key pos) = \_ -> failResolveIO $ subfieldsNotSelected meta -- TODO: must be internal Error
     where
       meta = Meta.MetaInfo {Meta.typeName = "", Meta.key = key, Meta.position = pos}
-  fieldType :: Proxy a -> T.Text -> Field
-  default fieldType :: (Show a, Selectors (Rep a) Field, D.Typeable a, GQLKind a) =>
-    Proxy a -> T.Text -> Field
-  fieldType proxy name = createField name typeName []
-    where
-      typeName = typeID proxy
+  fieldType :: Proxy a -> Text -> ObjectField
+  default fieldType :: (Show a, Selectors (Rep a) (Text, ObjectField), D.Typeable a, GQLKind a) =>
+    Proxy a -> Text -> ObjectField
+  fieldType proxy name =
+    ObjectField [] $
+    I.Field {I.fieldName = name, I.notNull = True, I.asList = False, I.kind = OBJECT, I.fieldType = typeID proxy}
   introspect :: Proxy a -> TypeLib -> TypeLib
-  default introspect :: (Show a, Selectors (Rep a) Field, GQLKind a) =>
+  default introspect :: (Show a, Selectors (Rep a) (Text, ObjectField), GQLKind a) =>
     Proxy a -> TypeLib -> TypeLib
   introspect = updateLib (asObjectType fields) stack
     where
@@ -76,39 +76,44 @@ instance (GQLSelection a, Args.GQLArgs p) => GQLSelection (p ::-> a) where
     (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (SelectionSet gqlArgs body pos)
   encode (Field gqlArgs field pos) (Resolver resolver) =
     (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (Field gqlArgs field pos)
-  introspect _ typeLib = resolveTypes typeLib $ args ++ fields
+  introspect _ typeLib = resolveTypes typeLib $ args' ++ fields
     where
-      args = map snd $ Args.introspect (Proxy @p)
+      args' = map snd $ Args.introspect (Proxy @p)
       fields = [introspect (Proxy @a)]
-  fieldType _ name = (fieldType (Proxy @a) name) {F.args = map fst $ Args.introspect (Proxy @p)}
+  fieldType _ name = (fieldType (Proxy @a) name) {args = map fst $ Args.introspect (Proxy @p)}
 
 -- manual deriving of  DeprecationArgs ::-> a
 instance GQLSelection a => GQLSelection (WithDeprecationArgs a) where
   encode sel (WithDeprecationArgs val) = encode sel val
-  introspect _ typeLib = resolveTypes typeLib $ args ++ fields
+  introspect _ typeLib = resolveTypes typeLib $ args' ++ fields
     where
-      args = map snd $ Args.introspect (Proxy @DeprecationArgs)
+      args' = map snd $ Args.introspect (Proxy @DeprecationArgs)
       fields = [introspect (Proxy @a)]
-  fieldType _ name = (fieldType (Proxy @a) name) {F.args = map fst $ Args.introspect (Proxy @DeprecationArgs)}
+  fieldType _ name = (fieldType (Proxy @a) name) {args = map fst $ Args.introspect (Proxy @DeprecationArgs)}
 
 instance GQLSelection a => GQLSelection (Maybe a) where
   encode _ Nothing          = pure JSNull
   encode query (Just value) = encode query value
   introspect _ = introspect (Proxy @a)
-  fieldType _ = fieldType (Proxy @a)
+  fieldType _ name = (fType name) {fieldContent = (fieldContent $ fType name) {I.notNull = False}}
+    where
+      fType = fieldType (Proxy @a)
 
 introspectScalar :: GQLKind a => Proxy a -> TypeLib -> TypeLib
-introspectScalar proxy = M.insert (typeID proxy) (scalarTypeOf proxy)
+introspectScalar proxy = defineType (typeID proxy, scalarTypeOf proxy)
 
-scalarField :: GQLKind a => Proxy a -> T.Text -> Field
-scalarField proxy name = F.createFieldWith name (scalarTypeOf proxy) []
+scalarField :: GQLKind a => Proxy a -> Text -> ObjectField
+scalarField proxy name =
+  ObjectField
+    []
+    I.Field {I.fieldName = name, I.notNull = True, I.asList = False, I.kind = SCALAR, I.fieldType = typeID proxy}
 
 instance GQLSelection Int where
   encode _ = pure . Scalar . Int
   introspect = introspectScalar
   fieldType = scalarField
 
-instance GQLSelection T.Text where
+instance GQLSelection Text where
   encode _ = pure . Scalar . String
   introspect = introspectScalar
   fieldType = scalarField
@@ -122,16 +127,18 @@ instance (GQLSelection a, D.Typeable a) => GQLSelection [a] where
   encode Field {} _ = pure $ JSList []
   encode query list = JSList <$> mapM (encode query) list
   introspect _ = introspect (Proxy @a)
-  fieldType _ = wrapAsListType <$> fieldType (Proxy @a)
+  fieldType _ name = fType {fieldContent = (fieldContent fType) {I.asList = True}}
+    where
+      fType = fieldType (Proxy @a) name
 
 instance (Show a, GQLKind a, E.GQLEnum a) => GQLSelection (EnumOf a) where
-  encode _ = pure . Scalar . String . T.pack . show . unpackEnum
-  fieldType _ = E.asField (Proxy @a)
+  encode _ = pure . Scalar . String . pack . show . unpackEnum
+  fieldType _ = ObjectField [] . E.asField (Proxy @a)
   introspect _ = E.introspect (Proxy @a)
 
 instance S.Scalar a => GQLSelection (ScalarOf a) where
   encode _ (ScalarOf x) = pure $ Scalar $ S.serialize x
-  fieldType _ = S.asField (Proxy @a)
+  fieldType _ = ObjectField [] . S.asField (Proxy @a)
   introspect _ = S.introspect (Proxy @a)
 
 instance GQLSelection EnumValue

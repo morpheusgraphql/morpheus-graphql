@@ -17,4 +17,4 @@ data TypeKind
   | INPUT_OBJECT
   | LIST
   | NON_NULL
-  deriving (Show, Data, Generic)
+  deriving (Show, Eq, Data, Generic)

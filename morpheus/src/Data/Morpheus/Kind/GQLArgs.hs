@@ -16,20 +16,19 @@ import           Data.Morpheus.Generics.GDecode      (GDecode (..))
 import           Data.Morpheus.Generics.TypeRep      (Selectors (..))
 import           Data.Morpheus.Generics.Utils        (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLInput         as I (GQLInput (..))
+import           Data.Morpheus.Schema.Internal.Types (InputField, TypeLib)
 import           Data.Morpheus.Schema.Type           (DeprecationArgs)
-import           Data.Morpheus.Schema.Utils.Utils    (InputValue, TypeLib)
 import           Data.Morpheus.Types.Error           (Validation)
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), initialMeta)
 import           Data.Morpheus.Types.Query.Selection (Argument (..), Arguments)
-
 import           Data.Proxy                          (Proxy (..))
-import qualified Data.Text                           as T
+import           Data.Text                           (Text, pack)
 import           GHC.Generics
 
-instance (Selector s, D.Typeable a, I.GQLInput a) => Selectors (RecSel s a) InputValue where
-  getFields _ = [(I.typeInfo (Proxy @a) name, I.introInput (Proxy @a))]
+instance (Selector s, D.Typeable a, I.GQLInput a) => Selectors (RecSel s a) (Text, InputField) where
+  getFields _ = [((name, I.asArgument (Proxy @a) name), I.introInput (Proxy @a))]
     where
-      name = T.pack $ selName (undefined :: SelOf s)
+      name = pack $ selName (undefined :: SelOf s)
 
 instance I.GQLInput a => GDecode Arguments (K1 i a) where
   gDecode meta args =
@@ -42,9 +41,9 @@ class GQLArgs p where
   default decode :: (Generic p, GDecode Arguments (Rep p)) =>
     Arguments -> Validation p
   decode args = to <$> gDecode initialMeta args
-  introspect :: Proxy p -> [(InputValue, TypeLib -> TypeLib)]
-  default introspect :: Selectors (Rep p) InputValue =>
-    Proxy p -> [(InputValue, TypeLib -> TypeLib)]
+  introspect :: Proxy p -> [((Text, InputField), TypeLib -> TypeLib)]
+  default introspect :: Selectors (Rep p) (Text, InputField) =>
+    Proxy p -> [((Text, InputField), TypeLib -> TypeLib)]
   introspect _ = getFields (Proxy @(Rep p))
 
 instance GQLArgs () where
