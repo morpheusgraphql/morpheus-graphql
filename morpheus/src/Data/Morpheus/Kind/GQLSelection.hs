@@ -95,7 +95,9 @@ instance GQLSelection a => GQLSelection (Maybe a) where
   encode _ Nothing          = pure JSNull
   encode query (Just value) = encode query value
   introspect _ = introspect (Proxy @a)
-  fieldType _ = fieldType (Proxy @a)
+  fieldType _ name = (fType name) {fieldContent = (fieldContent $ fType name) {I.notNull = False}}
+    where
+      fType = fieldType (Proxy @a)
 
 introspectScalar :: GQLKind a => Proxy a -> TypeLib -> TypeLib
 introspectScalar proxy = defineType (typeID proxy, scalarTypeOf proxy)

@@ -6,7 +6,6 @@ module Data.Morpheus.Schema.Utils.Utils
   , Field
   , InputValue
   , createObjectType
-  , wrapListType
   , typeFromObject
   , typeFromInputObject
   , typeFromLeaf
@@ -32,8 +31,14 @@ inputValueFromArg (key', input') = IN.createInputValueWith key' (createInputObje
 createInputObjectType :: I.InputField -> Type
 createInputObjectType (I.InputField field') = createType (I.kind field') (I.fieldType field') "" []
 
+wrapNotNull :: I.ObjectField -> Type -> Type
+wrapNotNull field' type' =
+  if I.notNull $ I.fieldContent field'
+    then wrapAs NON_NULL type'
+    else type'
+
 fieldFromObjectField :: (Text, I.ObjectField) -> Field
-fieldFromObjectField (key', field') = F.createFieldWith key' (createObjectType getType "" []) args'
+fieldFromObjectField (key', field') = F.createFieldWith key' (wrapNotNull field' $ createObjectType getType "" []) args'
   where
     getType = I.fieldType $ I.fieldContent field'
     args' = map inputValueFromArg $ I.args field'
@@ -95,10 +100,10 @@ createType kind' name' desc' fields' =
     , inputFields = Just []
     }
 
-wrapListType :: Type -> Type
-wrapListType contentType =
+wrapAs :: TypeKind -> Type -> Type
+wrapAs kind' contentType =
   Type
-    { kind = EnumOf LIST
+    { kind = EnumOf kind'
     , name = Nothing
     , description = Nothing
     , fields = Nothing
