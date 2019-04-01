@@ -30,12 +30,15 @@ typeFromMutation :: Maybe (Text, OutputObject) -> [Type]
 typeFromMutation (Just x) = [typeFromObject x]
 typeFromMutation Nothing  = []
 
+buildSchemaLinkType :: (Text, OutputObject) -> Type
+buildSchemaLinkType (key', _) = createObjectType key' "Query Description" []
+
 initSchema :: TypeLib -> Schema
 initSchema types' =
   Schema
     { types = convertTypes types'
-    , queryType = createObjectType (fst $ query types') "Query Description" []
-    , mutationType = Nothing
+    , queryType = buildSchemaLinkType $ query types'
+    , mutationType = buildSchemaLinkType <$> mutation types'
     , subscriptionType = Nothing
     , directives = []
     }
