@@ -25,10 +25,8 @@ asGQLError (Right value) = pure value
 getVariable :: Position -> GQLQueryRoot -> Text -> Validation JSType
 getVariable pos root variableID =
   case M.lookup variableID (inputVariables root) of
-    Nothing    -> Left $ variableIsNotDefined meta
+    Nothing    -> Left $ variableIsNotDefined $ MetaInfo {typeName = "TODO: Name", key = variableID, position = pos}
     Just value -> pure value
-  where
-    meta = MetaInfo {typeName = "TODO: Name", key = variableID, position = pos}
 
 checkVariableType :: TypeLib -> GQLQueryRoot -> (Text, RawArgument) -> Validation ()
 checkVariableType typeLib root (variableID, Variable tName pos) =

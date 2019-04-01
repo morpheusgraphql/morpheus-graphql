@@ -15,11 +15,6 @@ import           Data.Morpheus.Types.Error           (MetaError (..), MetaValida
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
 import           Data.Text                           as TX (Text)
 
---unwrapType :: GType -> Maybe GType
---unwrapType x =
---  case T.kind x of
---    EnumOf LIST -> T.ofType x
---    _           -> Just x
 existsTypeIn :: (Position, Key) -> TX.Text -> [(Text, a)] -> MetaValidation a
 existsTypeIn (position', key') typeName' lib =
   case lookup typeName' lib of
@@ -49,32 +44,11 @@ existsInputObjectType (position', key') typeName' lib = existsTypeIn (position',
 existsLeafType :: (Position, Key) -> TX.Text -> TypeLib -> MetaValidation Leaf
 existsLeafType (position', key') typeName' lib = existsTypeIn (position', key') typeName' (leaf lib)
 
---getFieldType :: Position -> TypeLib -> Field -> MetaValidation GType
--- getFieldType position' lib field = existsType (position', fieldName field) (fieldType field) lib
---getInputFieldType :: Position -> TypeLib -> InputField -> MetaValidation InputType
---getInputFieldType position' lib (InputField field) = do
---  gType <- getFieldType position' lib field
---  case gType of
---    OType _ -> Left $ UnknownType $ MetaInfo {key = fieldName field, typeName = "", position = position'}
---    IType x -> pure x
--- inputTypeBy :: Position -> TypeLib -> [(Text, InputField)] -> Text -> MetaValidation InputType
--- inputTypeBy pos lib _parentType _name = fieldOf (pos, _name) _parentType _name >>= getInputFieldType pos lib
--- fType = ObjectField | InputField
 fieldOf :: (Position, Text) -> [(Text, fType)] -> Text -> MetaValidation fType
 fieldOf (pos, tName) outType fName =
   case lookup fName outType of
     Nothing    -> Left $ UnknownField $ MetaInfo {key = fName, typeName = tName, position = pos}
     Just field -> pure field
 
---getObjectFieldType :: Position -> TypeLib -> ObjectField -> MetaValidation OutputType
---getObjectFieldType position' lib field = do
---  gType <- getFieldType position' lib (fieldContent field)
---  case gType of
---    IType _ -> Left $ UnknownType $ MetaInfo {key = fieldName $ fieldContent field, typeName = "", position = position'}
---    OType x -> pure x
---getObjectFieldObjectType :: Position -> TypeLib -> ObjectField -> MetaValidation (GObject ObjectField)
--- getObjectFieldObjectType position' lib field = existsObjectType (position', key') typeName' lib position' lib (fieldContent field)
--- typeBy :: Position -> TypeLib -> [(Text, ObjectField)] -> Text -> MetaValidation OutputType
--- typeBy pos lib _parentType _name = fieldOf (pos, _name) _parentType _name >>= getObjectFieldType pos lib
 differKeys :: [EnhancedKey] -> [Key] -> [EnhancedKey]
 differKeys enhanced keys = enhanced \\ map enhanceKeyWithNull keys
