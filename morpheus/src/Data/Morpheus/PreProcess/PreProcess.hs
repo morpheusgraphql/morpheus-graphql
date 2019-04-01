@@ -7,6 +7,7 @@ module Data.Morpheus.PreProcess.PreProcess
   ( preProcessQuery
   ) where
 
+import           Data.Morpheus.Error.Mutation           (mutationIsNotDefined)
 import           Data.Morpheus.Error.Selection          (duplicateQuerySelections, hasNoSubfields, selectionError,
                                                          subfieldsNotSelected)
 import           Data.Morpheus.Error.Utils              (toGQLError)
@@ -15,7 +16,8 @@ import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
 import           Data.Morpheus.PreProcess.Spread        (prepareRawSelection)
 import           Data.Morpheus.PreProcess.Utils         (differKeys, existsObjectType, fieldOf)
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField (..), OutputObject,
+                                                         TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.Types    as SC (Field (..))
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
@@ -78,10 +80,6 @@ checkDuplicatesOn (GObject _ core) keys =
     enhancedKeys = map selToKey keys
     noDuplicates = S.toList $ S.fromList (map fst keys)
 
-getOperationInfo :: RawOperator -> (Text, RawArguments, RawSelectionSet, Position)
-getOperationInfo (Query _ args' sel pos)    = ("Query", args', sel, pos)
-getOperationInfo (Mutation _ args' sel pos) = ("Mutation", args', sel, pos)
-
 updateQuery :: RawOperator -> SelectionSet -> ValidOperator
 updateQuery (Query name' _ _ pos) sel    = Query name' [] sel pos
 updateQuery (Mutation name' _ _ pos) sel = Mutation name' [] sel pos
@@ -105,12 +103,18 @@ fieldSchema =
 setFieldSchema :: GObject ObjectField -> GObject ObjectField
 setFieldSchema (GObject fields core) = GObject (fields ++ fieldSchema) core
 
+getOperator :: RawOperator -> TypeLib -> Validation (OutputObject, RawArguments, RawSelectionSet)
+getOperator (Query _ args' sel _) lib' = pure (snd $ query lib', args', sel)
+getOperator (Mutation _ args' sel position') lib' =
+  case mutation lib' of
+    Just (_, mutation') -> pure (mutation', args', sel)
+    Nothing             -> Left $ mutationIsNotDefined position'
+
 preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
 preProcessQuery lib root = do
-  let (operator, args', rawSel, position') = getOperationInfo $ queryBody root
+  (query', args', rawSel) <- getOperator (queryBody root) lib
   validateVariables lib root args'
   validateFragments lib root
-  queryOrMutationType <- asSelectionValidation $ existsObjectType (position', operator) operator lib
   sel <- prepareRawSelection root rawSel
-  selectors <- mapSelectors lib (setFieldSchema queryOrMutationType) sel
+  selectors <- mapSelectors lib (setFieldSchema query') sel
   pure $ updateQuery (queryBody root) selectors

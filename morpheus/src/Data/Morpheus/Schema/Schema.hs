@@ -21,13 +21,14 @@ data Schema = Schema
 
 convertTypes :: TypeLib -> [Type]
 convertTypes lib' =
-  map typeFromObject (object lib') ++ map typeFromInputObject (inputObject lib') ++ map typeFromLeaf (leaf lib')
+  map typeFromObject (object lib') ++
+  [typeFromObject $ query lib'] ++ map typeFromInputObject (inputObject lib') ++ map typeFromLeaf (leaf lib')
 
 initSchema :: TypeLib -> Schema
 initSchema types' =
   Schema
     { types = convertTypes types'
-    , queryType = Just $ createObjectType "Query" "Query Description" []
+    , queryType = createObjectType "Query" "Query Description" []
     , mutationType = Nothing
     , subscriptionType = Nothing
     , directives = []
