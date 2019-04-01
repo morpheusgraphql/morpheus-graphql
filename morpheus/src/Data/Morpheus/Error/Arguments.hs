@@ -31,9 +31,9 @@ import qualified Data.Text                     as T (concat)
   - date(name: "name") -> "Unknown argument \"name\" on field \"date\" of type \"Experience\"."
 -}
 argumentError :: MetaError -> GQLErrors
-argumentError (UnknownType meta)    = expectedTypeAFoundB meta (Scalar $ String "TODO:")
-argumentError (UnknownField meta)   = expectedTypeAFoundB meta (Scalar $ String "TODO:")
-argumentError (TypeMismatch meta _) = expectedTypeAFoundB meta (Scalar $ String "TODO:")
+argumentError (UnknownType meta)         = expectedTypeAFoundB meta (Scalar $ String "TODO:")
+argumentError (UnknownField meta)        = expectedTypeAFoundB meta (Scalar $ String "TODO:")
+argumentError (TypeMismatch meta jsType) = expectedTypeAFoundB meta jsType
 
 unknownArguments :: Text -> [EnhancedKey] -> GQLErrors
 unknownArguments fieldName = map keyToError
