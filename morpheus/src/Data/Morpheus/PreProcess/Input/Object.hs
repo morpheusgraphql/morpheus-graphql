@@ -15,22 +15,26 @@ import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
 import           Data.Text                           as Text (Text)
 
-validateLeaf :: MetaInfo -> JSType -> Leaf -> MetaValidation JSType
-validateLeaf _ (Scalar x) (LScalar _) = pure (Scalar x) -- TODO Validate Scalar
-validateLeaf _ (JSEnum x) (LEnum _ _) = pure (JSEnum x) -- TODO Validate Scalar
-validateLeaf meta scalar _            = Left $ TypeMismatch meta scalar ""
+leafToInputType :: Leaf -> InputType
+leafToInputType (LScalar core) = T.Scalar core
+leafToInputType (LEnum x y)    = T.Enum x y
 
 validateScalarTypes :: MetaInfo -> Text -> ScalarValue -> MetaValidation ScalarValue
-validateScalarTypes _ "String" (String x)   = pure (String x)
-validateScalarTypes _ "Int" (Int x)         = pure (Int x)
+validateScalarTypes _ "String" (String x) = pure (String x)
+validateScalarTypes meta "String" scalar =
+  Left $ TypeMismatch (meta {typeName = "String"}) (Scalar scalar) "TODO add Type"
+validateScalarTypes _ "Int" (Int x) = pure (Int x)
+validateScalarTypes meta "Int" scalar = Left $ TypeMismatch (meta {typeName = "Int"}) (Scalar scalar) "TODO add Type"
 validateScalarTypes _ "Boolean" (Boolean x) = pure (Boolean x)
-validateScalarTypes meta _ scalar           = Left $ TypeMismatch meta (Scalar scalar) "TODO add Type"
+validateScalarTypes meta "Boolean" scalar =
+  Left $ TypeMismatch (meta {typeName = "Boolean"}) (Scalar scalar) "TODO add Type"
+validateScalarTypes _ _ scalar = pure scalar
 
-validateFieldType :: MetaInfo -> JSType -> InputType -> MetaValidation JSType
-validateFieldType meta (Scalar found) (T.Scalar core) = Scalar <$> validateScalarTypes meta (name core) found
-validateFieldType _ (JSObject x) (T.Object _)         = pure (JSObject x) -- TODO Validate Scalar
-validateFieldType _ (JSEnum x) (T.Enum _ _)           = pure (JSEnum x) -- TODO Validate Scalar
-validateFieldType meta jsType _                       = Left $ TypeMismatch meta jsType "TODO add Type"
+validateFieldType :: MetaInfo -> InputType -> JSType -> MetaValidation JSType
+validateFieldType meta (T.Scalar core) (Scalar found) = Scalar <$> validateScalarTypes meta (name core) found
+validateFieldType _ (T.Object _) (JSObject x)         = pure (JSObject x) -- TODO Validate Scalar
+validateFieldType _ (T.Enum _ _) (JSEnum x)           = pure (JSEnum x) -- TODO Validate Scalar
+validateFieldType meta _ jsType                       = Left $ TypeMismatch meta jsType "TODO add Type"
 
 validateInputObject :: TypeLib -> GObject InputField -> Position -> (Text, JSType) -> MetaValidation (Text, JSType)
 validateInputObject lib' (GObject parentFields _) pos (_name, JSObject fields) = do
@@ -39,8 +43,8 @@ validateInputObject lib' (GObject parentFields _) pos (_name, JSObject fields) =
   mapM (validateInputObject lib' inputObject' pos) fields >>= \x -> pure (_name, JSObject x)
 validateInputObject lib' (GObject parentFields core) pos (_name, x) = do
   fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
-  fieldType' <- existsLeafType (pos, _name) fieldTypeName' lib'
-  validateLeaf meta x fieldType' >> pure (_name, x)
+  fieldType' <- leafToInputType <$> existsLeafType (pos, _name) fieldTypeName' lib'
+  validateFieldType meta fieldType' x >> pure (_name, x)
   where
     meta = MetaInfo {typeName = name core, key = _name, position = pos}
 
@@ -48,9 +52,9 @@ validateInput :: TypeLib -> InputType -> Position -> (Text, JSType) -> MetaValid
 validateInput typeLib (T.Object oType) pos (_, JSObject fields) =
   JSObject <$> mapM (validateInputObject typeLib oType pos) fields
 validateInput _ (T.Object (GObject _ core)) pos (_, jsType) = typeMismatchMetaError pos (name core) jsType
-validateInput _ (T.Scalar core) pos (varName, x) = validateFieldType meta x (T.Scalar core)
+validateInput _ (T.Scalar core) pos (varName, x) = validateFieldType meta (T.Scalar core) x
   where
     meta = MetaInfo {typeName = name core, key = varName, position = pos}
-validateInput _ (T.Enum _ core) pos (varName, x) = validateFieldType meta x (T.Scalar core)
+validateInput _ (T.Enum _ core) pos (varName, x) = validateFieldType meta (T.Scalar core) x
   where
     meta = MetaInfo {typeName = name core, key = varName, position = pos}
