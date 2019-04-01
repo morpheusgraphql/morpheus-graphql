@@ -16,7 +16,7 @@ import           Data.Text                    (Text)
 import qualified Data.Text                    as T (concat, pack)
 
 typeMismatchMetaError :: Position -> Text -> JSType -> MetaValidation a
-typeMismatchMetaError pos expectedType' jsType = Left $ TypeMismatch meta jsType expectedType'
+typeMismatchMetaError pos expectedType' jsType = Left $ TypeMismatch meta jsType
   where
     meta = MetaInfo {typeName = expectedType', position = pos, key = ""}
 

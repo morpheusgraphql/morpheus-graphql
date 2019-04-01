@@ -38,9 +38,9 @@ case variable does not match to argument type
 
 |-}
 variableValidationError :: MetaError -> GQLErrors
-variableValidationError (TypeMismatch meta isType _) = expectedTypeAFoundB meta isType
-variableValidationError (UnknownField meta)          = variableIsNotDefined meta -- TODO real error handling
-variableValidationError (UnknownType meta)           = variableIsNotDefined meta -- TODO should real error handling
+variableValidationError (TypeMismatch meta isType) = expectedTypeAFoundB meta isType
+variableValidationError (UnknownField meta)        = variableIsNotDefined meta -- TODO real error handling
+variableValidationError (UnknownType meta)         = variableIsNotDefined meta -- TODO should real error handling
 
 variableIsNotDefined :: MetaInfo -> GQLErrors
 variableIsNotDefined meta = errorMessage (position meta) text

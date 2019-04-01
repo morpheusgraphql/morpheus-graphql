@@ -23,10 +23,10 @@ import           GHC.Generics                 (Generic)
 data MetaError
   = TypeMismatch MetaInfo
                  JSType
-                 Text
   | UnknownField MetaInfo
   | UnknownType MetaInfo
 
+-- TODO : define INPUT_ERROR = TypeMismatch | ....   SELECTION_ERROR = ....
 data GQLError = GQLError
   { desc     :: Text
   , posIndex :: [Int]

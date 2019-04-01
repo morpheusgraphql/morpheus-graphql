@@ -20,21 +20,19 @@ leafToInputType (LScalar core) = T.Scalar core
 leafToInputType (LEnum x y)    = T.Enum x y
 
 validateScalarTypes :: MetaInfo -> Text -> ScalarValue -> MetaValidation ScalarValue
-validateScalarTypes _ "String" (String x) = pure (String x)
-validateScalarTypes meta "String" scalar =
-  Left $ TypeMismatch (meta {typeName = "String"}) (Scalar scalar) "TODO add Type"
-validateScalarTypes _ "Int" (Int x) = pure (Int x)
-validateScalarTypes meta "Int" scalar = Left $ TypeMismatch (meta {typeName = "Int"}) (Scalar scalar) "TODO add Type"
+validateScalarTypes _ "String" (String x)   = pure (String x)
+validateScalarTypes meta "String" scalar    = Left $ TypeMismatch (meta {typeName = "String"}) (Scalar scalar)
+validateScalarTypes _ "Int" (Int x)         = pure (Int x)
+validateScalarTypes meta "Int" scalar       = Left $ TypeMismatch (meta {typeName = "Int"}) (Scalar scalar)
 validateScalarTypes _ "Boolean" (Boolean x) = pure (Boolean x)
-validateScalarTypes meta "Boolean" scalar =
-  Left $ TypeMismatch (meta {typeName = "Boolean"}) (Scalar scalar) "TODO add Type"
-validateScalarTypes _ _ scalar = pure scalar
+validateScalarTypes meta "Boolean" scalar   = Left $ TypeMismatch (meta {typeName = "Boolean"}) (Scalar scalar)
+validateScalarTypes _ _ scalar              = pure scalar
 
 validateFieldType :: MetaInfo -> InputType -> JSType -> MetaValidation JSType
 validateFieldType meta (T.Scalar core) (Scalar found) = Scalar <$> validateScalarTypes meta (name core) found
 validateFieldType _ (T.Object _) (JSObject x)         = pure (JSObject x) -- TODO Validate Scalar
 validateFieldType _ (T.Enum _ _) (JSEnum x)           = pure (JSEnum x) -- TODO Validate Scalar
-validateFieldType meta _ jsType                       = Left $ TypeMismatch meta jsType "TODO add Type"
+validateFieldType meta _ jsType                       = Left $ TypeMismatch meta jsType
 
 validateInputObject :: TypeLib -> GObject InputField -> Position -> (Text, JSType) -> MetaValidation (Text, JSType)
 validateInputObject lib' (GObject parentFields _) pos (_name, JSObject fields) = do
