@@ -5,7 +5,7 @@ module Data.Morpheus.Error.Input
   , typeMismatchMetaError
   , expectedEnumFoundB
   , InputError(..)
-  , Property(..)
+  , Prop(..)
   , InputErrorKind(..)
   ) where
 
@@ -19,18 +19,17 @@ import           Data.Text                    (Text)
 import qualified Data.Text                    as T (concat, pack)
 
 data InputErrorKind
-  = UnexpectedTypes Text
-                    Text
+  = UnexpectedType JSType
   | UndefinedField
 
-data Property = Property
-  { propertyName :: Text
-  , propertyType :: Text
-  }
+data Prop = Prop {
+  propName :: Text,
+  propType :: Text
+}
 
 data InputError = InputError
-  { path :: [Property]
-  , kind :: InputErrorKind
+  { path   :: [Prop]
+  , kind   :: InputErrorKind
   }
 
 typeMismatchMetaError :: Position -> Text -> JSType -> MetaValidation a
