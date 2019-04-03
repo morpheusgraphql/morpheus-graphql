@@ -5,7 +5,8 @@ module Data.Morpheus.PreProcess.Input.Object
   , validateInput
   ) where
 
-import           Data.Morpheus.Error.Input           (InputError (..), InputErrorKind (..), typeMismatchMetaError)
+import           Data.Morpheus.Error.Input           (InputError (..), InputErrorKind (..), Prop (..),
+                                                      typeMismatchMetaError)
 import           Data.Morpheus.PreProcess.Utils      (fieldOf, lookupType)
 import           Data.Morpheus.Schema.Internal.Types (Core (..), Field (..), GObject (..), InputField (..), InputObject,
                                                       InputType, Leaf (..), TypeLib (..))
@@ -14,6 +15,7 @@ import           Data.Morpheus.Types.Error           (MetaError (..), MetaValida
 import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
 import           Data.Text                           (Text)
+import qualified Data.Text                           as T (intercalate)
 
 leafToInputType :: Leaf -> InputType
 leafToInputType (LScalar core) = T.Scalar core
@@ -31,9 +33,11 @@ existsLeafType lib' = lookupType error' (leaf lib')
   where
     error' = InputError {path = [], errorKind = UndefinedField}
 
-convertError :: (Position, Text) -> InputValidation a -> MetaValidation a
-convertError (position', key') (Left _) =
+convertError :: (Position, [Prop]) -> InputValidation a -> MetaValidation a
+convertError (position', props') (Left _) =
   Left $ TypeMismatch (MetaInfo {position = position', typeName = "String", key = key'}) (Scalar $ Int 1)
+  where
+    key' = T.intercalate "." $ fmap propKey props'
 convertError _ (Right x) = pure x
 
 validateScalarTypes :: MetaInfo -> Text -> ScalarValue -> MetaValidation ScalarValue
@@ -51,24 +55,26 @@ validateFieldType _ (T.Object _) (JSObject x)         = pure (JSObject x) -- TOD
 validateFieldType _ (T.Enum _ _) (JSEnum x)           = pure (JSEnum x) -- TODO Validate Scalar
 validateFieldType meta _ jsType                       = Left $ TypeMismatch meta jsType
 
-validateInputObject :: TypeLib -> GObject InputField -> Position -> (Text, JSType) -> MetaValidation (Text, JSType)
-validateInputObject lib' (GObject parentFields _) pos (_name, JSObject fields) = do
+validateInputObject ::
+     [Prop] -> TypeLib -> GObject InputField -> Position -> (Text, JSType) -> MetaValidation (Text, JSType)
+validateInputObject prop' lib' (GObject parentFields _) pos (_name, JSObject fields) = do
   fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
-  inputObject' <- toError (existsInputObjectType lib' fieldTypeName')
-  mapM (validateInputObject lib' inputObject' pos) fields >>= \x -> pure (_name, JSObject x)
+  let currentProp = prop' ++ [Prop _name fieldTypeName']
+  inputObject' <- toError currentProp (existsInputObjectType lib' fieldTypeName')
+  mapM (validateInputObject currentProp lib' inputObject' pos) fields >>= \x -> pure (_name, JSObject x)
   where
-    toError = convertError (pos, _name)
-validateInputObject lib' (GObject parentFields core) pos (_name, x) = do
+    toError props = convertError (pos, props)
+validateInputObject prop' lib' (GObject parentFields core) pos (_name, x) = do
   fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
-  fieldType' <- toError (leafToInputType <$> existsLeafType lib' fieldTypeName')
+  let currentProp = prop' ++ [Prop _name fieldTypeName']
+  fieldType' <- convertError (pos, currentProp) (leafToInputType <$> existsLeafType lib' fieldTypeName')
   validateFieldType meta fieldType' x >> pure (_name, x)
   where
-    toError = convertError (pos, _name)
     meta = MetaInfo {typeName = name core, key = _name, position = pos}
 
 validateInput :: TypeLib -> InputType -> Position -> (Text, JSType) -> MetaValidation JSType
 validateInput typeLib (T.Object oType) pos (_, JSObject fields) =
-  JSObject <$> mapM (validateInputObject typeLib oType pos) fields
+  JSObject <$> mapM (validateInputObject [] typeLib oType pos) fields
 validateInput _ (T.Object (GObject _ core)) pos (_, jsType) = typeMismatchMetaError pos (name core) jsType
 validateInput _ (T.Scalar core) pos (varName, x) = validateFieldType meta (T.Scalar core) x
   where

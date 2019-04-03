@@ -23,7 +23,7 @@ data InputErrorKind
   | UndefinedField
 
 data Prop = Prop
-  { propName :: Text
+  { propKey  :: Text
   , propType :: Text
   }
 
@@ -40,7 +40,8 @@ typeMismatchMetaError pos expectedType' jsType = Left $ TypeMismatch meta jsType
 expectedTypeAFoundB :: MetaInfo -> JSType -> GQLErrors
 expectedTypeAFoundB meta found = errorMessage (position meta) text
   where
-    text = T.concat ["Expected type \"", typeName meta, "\" found ", T.pack (unpack $ encode found), "."]
+    text =
+      T.concat ["Expected type \"", typeName meta, "\" found ", T.pack (unpack $ encode found), ".", "on : ", key meta]
 
 expectedEnumFoundB :: MetaInfo -> GQLErrors
 expectedEnumFoundB meta = errorMessage (position meta) text
