@@ -1,9 +1,10 @@
-{-# LANGUAGE DefaultSignatures    #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications , ConstraintKinds #-}
+{-# LANGUAGE TypeSynonymInstances, TypeFamilies,
+  MultiParamTypeClasses #-}
 
 module Data.Morpheus.Kind.GQLKind
   ( GQLKind(..)
@@ -12,21 +13,56 @@ module Data.Morpheus.Kind.GQLKind
   , enumTypeOf
   , inputObjectOf
   , introspectScalar
+  , Kind(..)
   ) where
 
-import           Data.Data                              (Typeable)
-import           Data.Morpheus.Generics.TypeRep         (resolveTypes)
-import           Data.Morpheus.Generics.Utils           (typeOf)
-import           Data.Morpheus.Schema.Directive         (Directive)
-import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
-import           Data.Morpheus.Schema.EnumValue         (EnumValue)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), InputField, Leaf (..), LibType (..),
-                                                         ObjectField (..), TypeLib, defineType, isTypeDefined)
-import           Data.Morpheus.Schema.Schema            (Schema)
-import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
-import           Data.Proxy                             (Proxy (..))
-import           Data.Text                              (Text)
+import Data.Data (Typeable)
+import Data.Morpheus.Generics.TypeRep (resolveTypes)
+import Data.Morpheus.Generics.Utils (typeOf)
+import Data.Morpheus.Schema.Directive (Directive)
+import Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
+import Data.Morpheus.Schema.EnumValue (EnumValue)
+import Data.Morpheus.Schema.Internal.Types
+  ( Core(..)
+  , GObject(..)
+  , InputField
+  , Leaf(..)
+  , LibType(..)
+  , ObjectField(..)
+  , TypeLib
+  , defineType
+  , isTypeDefined
+  )
+import Data.Morpheus.Schema.Schema (Schema)
+import Data.Morpheus.Schema.TypeKind (TypeKind(..))
+import Data.Morpheus.Schema.Utils.Utils (Field, InputValue, Type)
+import Data.Proxy (Proxy(..))
+import Data.Text (Text)
+import GHC.Exts (Constraint)
+
+data CSel =
+  CSel
+
+data CEnum =
+  CEnum
+
+data Enu a =
+  ENUM a
+
+
+class B a where
+  intr :: Proxy a -> Int
+  intr _ = 3
+
+class Kind con a where
+  type GKind con a :: Constraint
+  type GKind con  a = B a
+  enc :: Proxy a -> Int
+  default enc :: GKind con a => Proxy a -> Int
+  enc  = intr
+
+instance Kind (B CEnum) CEnum where
+  type GKind (B a) CEnum = B CEnum
 
 scalarTypeOf :: GQLKind a => Proxy a -> LibType
 scalarTypeOf = Leaf . LScalar . buildType

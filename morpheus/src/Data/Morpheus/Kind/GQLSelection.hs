@@ -1,44 +1,54 @@
-{-# LANGUAGE DefaultSignatures     #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Kind.GQLSelection
   ( GQLSelection(..)
   ) where
 
-import           Control.Monad.Trans.Except
-import qualified Data.Data                              as D
-import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
-import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
-import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
-import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
-import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
-import qualified Data.Morpheus.Kind.GQLEnum             as E (GQLEnum (..))
-import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType, introspectScalar)
-import qualified Data.Morpheus.Kind.Scalar              as S (Scalar (..))
-import           Data.Morpheus.Schema.Directive         (Directive)
-import           Data.Morpheus.Schema.EnumValue         (EnumValue)
-import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib)
-import qualified Data.Morpheus.Schema.Internal.Types    as I (Field (..))
-import           Data.Morpheus.Schema.Schema            (Schema)
-import           Data.Morpheus.Schema.Type              (DeprecationArgs)
-import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
-import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..), ScalarOf (..),
-                                                         WithDeprecationArgs (..))
-import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
-import           Data.Morpheus.Types.JSType             (JSType (..), ScalarValue (..))
-import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
-import           Data.Morpheus.Types.Query.Selection    (Selection (..))
-import           Data.Proxy
-import           Data.Text                              (Text, pack)
-import           GHC.Generics
+import Control.Monad.Trans.Except
+import qualified Data.Data as D
+import Data.Morpheus.Error.Selection (subfieldsNotSelected)
+import Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers(..), resolveBySelection)
+import Data.Morpheus.Generics.TypeRep (Selectors(..), resolveTypes)
+import Data.Morpheus.Generics.Utils (RecSel, SelOf)
+import qualified Data.Morpheus.Kind.GQLArgs as Args (GQLArgs(..))
+import qualified Data.Morpheus.Kind.GQLEnum as E (GQLEnum(..))
+import Data.Morpheus.Kind.GQLKind (GQLKind(..), Kind(..), asObjectType, introspectScalar)
+import qualified Data.Morpheus.Kind.Scalar as S (Scalar(..))
+import Data.Morpheus.Schema.Directive (Directive)
+import Data.Morpheus.Schema.EnumValue (EnumValue)
+import Data.Morpheus.Schema.Internal.Types (ObjectField(..), TypeLib)
+import qualified Data.Morpheus.Schema.Internal.Types as I (Field(..))
+import Data.Morpheus.Schema.Schema (Schema)
+import Data.Morpheus.Schema.Type (DeprecationArgs)
+import Data.Morpheus.Schema.TypeKind (TypeKind(..))
+import Data.Morpheus.Schema.Utils.Utils (Field, InputValue, Type)
+import Data.Morpheus.Types.Describer ((::->)(..), EnumOf(..), ScalarOf(..), WithDeprecationArgs(..))
+import Data.Morpheus.Types.Error (ResolveIO, failResolveIO)
+import Data.Morpheus.Types.JSType (JSType(..), ScalarValue(..))
+import qualified Data.Morpheus.Types.MetaInfo as Meta (MetaInfo(..), initialMeta)
+import Data.Morpheus.Types.Query.Selection (Selection(..))
+import Data.Proxy
+import Data.Text (Text, pack)
+import GHC.Generics
+
+data Sel =
+  Sel
+
+class A a where
+  get :: Proxy a -> Int
+  get _ = 2
+
+instance Kind Sel where
+  type GKind Sel = A Sel
+  enc = get2
 
 instance GQLSelection a => DeriveResolvers (K1 i a) where
   deriveResolvers meta (K1 src) = [(Meta.key meta, (`encode` src))]
@@ -92,7 +102,7 @@ instance GQLSelection a => GQLSelection (WithDeprecationArgs a) where
   fieldType _ name = (fieldType (Proxy @a) name) {args = map fst $ Args.introspect (Proxy @DeprecationArgs)}
 
 instance GQLSelection a => GQLSelection (Maybe a) where
-  encode _ Nothing          = pure JSNull
+  encode _ Nothing = pure JSNull
   encode query (Just value) = encode query value
   introspect _ = introspect (Proxy @a)
   fieldType _ name = (fType name) {fieldContent = (fieldContent $ fType name) {I.notNull = False}}
