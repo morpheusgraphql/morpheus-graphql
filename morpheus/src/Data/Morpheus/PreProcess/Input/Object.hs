@@ -23,21 +23,24 @@ leafToInputType (LEnum x y)    = T.Enum x y
 
 type InputValidation a = Either InputError a
 
-existsInputObjectType :: TypeLib -> Text -> InputValidation InputObject
-existsInputObjectType lib' = lookupType error' (inputObject lib')
+existsInputObjectType :: [Prop] -> JSType -> TypeLib -> Text -> InputValidation InputObject
+existsInputObjectType path' jsType lib' = lookupType error' (inputObject lib')
   where
-    error' = InputError {path = [], errorKind = UndefinedField}
+    error' = InputError {path = path', errorKind = UnexpectedType jsType}
 
-existsLeafType :: TypeLib -> Text -> InputValidation Leaf
-existsLeafType lib' = lookupType error' (leaf lib')
+existsLeafType :: [Prop] -> JSType -> TypeLib -> Text -> InputValidation Leaf
+existsLeafType path' jsType lib' = lookupType error' (leaf lib')
   where
-    error' = InputError {path = [], errorKind = UndefinedField}
+    error' = InputError {path = path', errorKind = UnexpectedType jsType}
 
-convertError :: (Position, [Prop]) -> InputValidation a -> MetaValidation a
-convertError (position', props') (Left _) =
-  Left $ TypeMismatch (MetaInfo {position = position', typeName = "String", key = key'}) (Scalar $ Int 1)
+convertError :: Position -> InputValidation a -> MetaValidation a
+convertError position' (Left inpError) =
+  case errorKind inpError of
+    UnexpectedType jsType -> Left $ TypeMismatch meta jsType
+    UndefinedField        -> Left $ UnknownField meta
   where
-    key' = T.intercalate "." $ fmap propKey props'
+    meta = MetaInfo {position = position', typeName = "String", key = key'}
+    key' = T.intercalate "." $ fmap propKey (path inpError)
 convertError _ (Right x) = pure x
 
 validateScalarTypes :: MetaInfo -> Text -> ScalarValue -> MetaValidation ScalarValue
@@ -60,21 +63,19 @@ validateInputObject ::
 validateInputObject prop' lib' (GObject parentFields _) pos (_name, JSObject fields) = do
   fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
   let currentProp = prop' ++ [Prop _name fieldTypeName']
-  inputObject' <- toError currentProp (existsInputObjectType lib' fieldTypeName')
+  inputObject' <- convertError pos (existsInputObjectType currentProp (JSObject fields) lib' fieldTypeName')
   mapM (validateInputObject currentProp lib' inputObject' pos) fields >>= \x -> pure (_name, JSObject x)
-  where
-    toError props = convertError (pos, props)
-validateInputObject prop' lib' (GObject parentFields core) pos (_name, x) = do
+validateInputObject prop' lib' (GObject parentFields core) pos (_name, jsType) = do
   fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
   let currentProp = prop' ++ [Prop _name fieldTypeName']
-  fieldType' <- convertError (pos, currentProp) (leafToInputType <$> existsLeafType lib' fieldTypeName')
-  validateFieldType meta fieldType' x >> pure (_name, x)
+  fieldType' <- convertError pos (leafToInputType <$> existsLeafType currentProp jsType lib' fieldTypeName')
+  validateFieldType meta fieldType' jsType >> pure (_name, jsType)
   where
     meta = MetaInfo {typeName = name core, key = _name, position = pos}
 
 validateInput :: TypeLib -> InputType -> Position -> (Text, JSType) -> MetaValidation JSType
-validateInput typeLib (T.Object oType) pos (_, JSObject fields) =
-  JSObject <$> mapM (validateInputObject [] typeLib oType pos) fields
+validateInput typeLib (T.Object oType) pos (key', JSObject fields) =
+  JSObject <$> mapM (validateInputObject [Prop key' "TODO:"] typeLib oType pos) fields
 validateInput _ (T.Object (GObject _ core)) pos (_, jsType) = typeMismatchMetaError pos (name core) jsType
 validateInput _ (T.Scalar core) pos (varName, x) = validateFieldType meta (T.Scalar core) x
   where

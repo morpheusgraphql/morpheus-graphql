@@ -41,7 +41,8 @@ expectedTypeAFoundB :: MetaInfo -> JSType -> GQLErrors
 expectedTypeAFoundB meta found = errorMessage (position meta) text
   where
     text =
-      T.concat ["Expected type \"", typeName meta, "\" found ", T.pack (unpack $ encode found), ".", "on : ", key meta]
+      T.concat
+        ["Input ", key meta, ",", " Expected type \"", typeName meta, "\" found ", T.pack (unpack $ encode found), "."]
 
 expectedEnumFoundB :: MetaInfo -> GQLErrors
 expectedEnumFoundB meta = errorMessage (position meta) text
