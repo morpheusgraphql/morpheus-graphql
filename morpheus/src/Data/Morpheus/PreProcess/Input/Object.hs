@@ -6,18 +6,24 @@ module Data.Morpheus.PreProcess.Input.Object
   ) where
 
 import           Data.Morpheus.Error.Input           (typeMismatchMetaError)
-import           Data.Morpheus.PreProcess.Utils      (existsInputObjectType, existsLeafType, fieldOf)
-import           Data.Morpheus.Schema.Internal.Types (Core (..), Field (..), GObject (..), InputField (..), InputType,
-                                                      Leaf (..), TypeLib)
+import           Data.Morpheus.PreProcess.Utils      (existsTypeIn, fieldOf)
+import           Data.Morpheus.Schema.Internal.Types (Core (..), Field (..), GObject (..), InputField (..), InputObject,
+                                                      InputType, Leaf (..), TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.Types as T (InternalType (..))
 import           Data.Morpheus.Types.Error           (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
-import           Data.Text                           as Text (Text)
+import           Data.Text                           (Text)
 
 leafToInputType :: Leaf -> InputType
 leafToInputType (LScalar core) = T.Scalar core
 leafToInputType (LEnum x y)    = T.Enum x y
+
+existsInputObjectType :: (Position, Text) -> Text -> TypeLib -> MetaValidation InputObject
+existsInputObjectType (position', key') typeName' lib = existsTypeIn (position', key') typeName' (inputObject lib)
+
+existsLeafType :: (Position, Text) -> Text -> TypeLib -> MetaValidation Leaf
+existsLeafType (position', key') typeName' lib = existsTypeIn (position', key') typeName' (leaf lib)
 
 validateScalarTypes :: MetaInfo -> Text -> ScalarValue -> MetaValidation ScalarValue
 validateScalarTypes _ "String" (String x)   = pure (String x)

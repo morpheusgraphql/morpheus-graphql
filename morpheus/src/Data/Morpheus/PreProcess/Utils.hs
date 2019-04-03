@@ -1,15 +1,14 @@
 module Data.Morpheus.PreProcess.Utils
   ( fieldOf
   , differKeys
-  , existsInputObjectType
   , existsObjectType
-  , existsLeafType
+  , existsTypeIn
   , getInputType
   ) where
 
 import           Data.List                           ((\\))
-import           Data.Morpheus.Schema.Internal.Types (InputObject, InputType, InternalType (..), Leaf (..),
-                                                      OutputObject, TypeLib (..))
+import           Data.Morpheus.Schema.Internal.Types (InputType, InternalType (..), Leaf (..), OutputObject,
+                                                      TypeLib (..))
 import           Data.Morpheus.Types.Core            (EnhancedKey (..), Key, enhanceKeyWithNull)
 import           Data.Morpheus.Types.Error           (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
@@ -37,12 +36,6 @@ getInputType (position', key') typeName' lib =
 
 existsObjectType :: (Position, Key) -> TX.Text -> TypeLib -> MetaValidation OutputObject
 existsObjectType (position', key') typeName' lib = existsTypeIn (position', key') typeName' (object lib)
-
-existsInputObjectType :: (Position, Key) -> TX.Text -> TypeLib -> MetaValidation InputObject
-existsInputObjectType (position', key') typeName' lib = existsTypeIn (position', key') typeName' (inputObject lib)
-
-existsLeafType :: (Position, Key) -> TX.Text -> TypeLib -> MetaValidation Leaf
-existsLeafType (position', key') typeName' lib = existsTypeIn (position', key') typeName' (leaf lib)
 
 fieldOf :: (Position, Text) -> [(Text, fType)] -> Text -> MetaValidation fType
 fieldOf (pos, tName) outType fName =
