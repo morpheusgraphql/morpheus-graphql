@@ -6,7 +6,7 @@ module Data.Morpheus.PreProcess.Input.Enum
   ) where
 
 import           Data.List                           (elem)
-import           Data.Morpheus.Error.InputType       (expectedEnumFoundB, expectedTypeAFoundB)
+import           Data.Morpheus.Error.Input           (expectedEnumFoundB, expectedTypeAFoundB)
 import           Data.Morpheus.Types.Error           (Validation)
 import           Data.Morpheus.Types.JSType          (JSType (..))
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..))

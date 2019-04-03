@@ -1,9 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Error.InputType
+module Data.Morpheus.Error.Input
   ( expectedTypeAFoundB
   , typeMismatchMetaError
   , expectedEnumFoundB
+  , InputError(..)
+  , Property(..)
+  , InputErrorKind(..)
   ) where
 
 import           Data.Aeson                   (encode)
@@ -14,6 +17,21 @@ import           Data.Morpheus.Types.JSType   (JSType)
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T (concat, pack)
+
+data InputErrorKind
+  = UnexpectedTypes Text
+                    Text
+  | UndefinedField
+
+data Property = Property
+  { propertyName :: Text
+  , propertyType :: Text
+  }
+
+data InputError = InputError
+  { path :: [Property]
+  , kind :: InputErrorKind
+  }
 
 typeMismatchMetaError :: Position -> Text -> JSType -> MetaValidation a
 typeMismatchMetaError pos expectedType' jsType = Left $ TypeMismatch meta jsType

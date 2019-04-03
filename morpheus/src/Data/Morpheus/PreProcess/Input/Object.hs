@@ -5,7 +5,7 @@ module Data.Morpheus.PreProcess.Input.Object
   , validateInput
   ) where
 
-import           Data.Morpheus.Error.InputType       (typeMismatchMetaError)
+import           Data.Morpheus.Error.Input           (typeMismatchMetaError)
 import           Data.Morpheus.PreProcess.Utils      (existsInputObjectType, existsLeafType, fieldOf)
 import           Data.Morpheus.Schema.Internal.Types (Core (..), Field (..), GObject (..), InputField (..), InputType,
                                                       Leaf (..), TypeLib)
