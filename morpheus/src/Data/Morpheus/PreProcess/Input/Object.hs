@@ -5,8 +5,8 @@ module Data.Morpheus.PreProcess.Input.Object
   , validateInput
   ) where
 
-import           Data.Morpheus.Error.Input           (typeMismatchMetaError)
-import           Data.Morpheus.PreProcess.Utils      (existsTypeIn, fieldOf)
+import           Data.Morpheus.Error.Input           (InputError (..), InputErrorKind (..), typeMismatchMetaError)
+import           Data.Morpheus.PreProcess.Utils      (fieldOf, lookupType)
 import           Data.Morpheus.Schema.Internal.Types (Core (..), Field (..), GObject (..), InputField (..), InputObject,
                                                       InputType, Leaf (..), TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.Types as T (InternalType (..))
@@ -19,11 +19,22 @@ leafToInputType :: Leaf -> InputType
 leafToInputType (LScalar core) = T.Scalar core
 leafToInputType (LEnum x y)    = T.Enum x y
 
-existsInputObjectType :: (Position, Text) -> Text -> TypeLib -> MetaValidation InputObject
-existsInputObjectType (position', key') typeName' lib = existsTypeIn (position', key') typeName' (inputObject lib)
+type InputValidation a = Either InputError a
 
-existsLeafType :: (Position, Text) -> Text -> TypeLib -> MetaValidation Leaf
-existsLeafType (position', key') typeName' lib = existsTypeIn (position', key') typeName' (leaf lib)
+existsInputObjectType :: TypeLib -> Text -> InputValidation InputObject
+existsInputObjectType lib' = lookupType error' (inputObject lib')
+  where
+    error' = InputError {path = [], errorKind = UndefinedField}
+
+existsLeafType :: TypeLib -> Text -> InputValidation Leaf
+existsLeafType lib' = lookupType error' (leaf lib')
+  where
+    error' = InputError {path = [], errorKind = UndefinedField}
+
+convertError :: (Position, Text) -> InputValidation a -> MetaValidation a
+convertError (position', key') (Left _) =
+  Left $ TypeMismatch (MetaInfo {position = position', typeName = "String", key = key'}) (Scalar $ Int 1)
+convertError _ (Right x) = pure x
 
 validateScalarTypes :: MetaInfo -> Text -> ScalarValue -> MetaValidation ScalarValue
 validateScalarTypes _ "String" (String x)   = pure (String x)
@@ -43,13 +54,16 @@ validateFieldType meta _ jsType                       = Left $ TypeMismatch meta
 validateInputObject :: TypeLib -> GObject InputField -> Position -> (Text, JSType) -> MetaValidation (Text, JSType)
 validateInputObject lib' (GObject parentFields _) pos (_name, JSObject fields) = do
   fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
-  inputObject' <- existsInputObjectType (pos, _name) fieldTypeName' lib'
+  inputObject' <- toError (existsInputObjectType lib' fieldTypeName')
   mapM (validateInputObject lib' inputObject' pos) fields >>= \x -> pure (_name, JSObject x)
+  where
+    toError = convertError (pos, _name)
 validateInputObject lib' (GObject parentFields core) pos (_name, x) = do
   fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
-  fieldType' <- leafToInputType <$> existsLeafType (pos, _name) fieldTypeName' lib'
+  fieldType' <- toError (leafToInputType <$> existsLeafType lib' fieldTypeName')
   validateFieldType meta fieldType' x >> pure (_name, x)
   where
+    toError = convertError (pos, _name)
     meta = MetaInfo {typeName = name core, key = _name, position = pos}
 
 validateInput :: TypeLib -> InputType -> Position -> (Text, JSType) -> MetaValidation JSType

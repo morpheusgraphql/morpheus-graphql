@@ -22,14 +22,14 @@ data InputErrorKind
   = UnexpectedType JSType
   | UndefinedField
 
-data Prop = Prop {
-  propName :: Text,
-  propType :: Text
-}
+data Prop = Prop
+  { propName :: Text
+  , propType :: Text
+  }
 
 data InputError = InputError
-  { path   :: [Prop]
-  , kind   :: InputErrorKind
+  { path      :: [Prop]
+  , errorKind :: InputErrorKind
   }
 
 typeMismatchMetaError :: Position -> Text -> JSType -> MetaValidation a
