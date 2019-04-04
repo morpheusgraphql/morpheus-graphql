@@ -7,12 +7,10 @@ module Data.Morpheus.PreProcess.Arguments
   ) where
 
 import           Data.Morpheus.Error.Arguments          (argumentError, requiredArgument, unknownArguments)
-import           Data.Morpheus.PreProcess.Input.Enum    (validateEnum)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
 import           Data.Morpheus.PreProcess.Utils         (differKeys, getInputType)
 import           Data.Morpheus.PreProcess.Variable      (replaceVariable)
-import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField (..), InternalType (..),
-                                                         ObjectField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField (..), ObjectField (..), TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
 import           Data.Morpheus.Types.JSType             (JSType (JSNull))
@@ -26,14 +24,11 @@ asGQLError :: MetaValidation a -> Validation a
 asGQLError (Left err)    = Left $ argumentError err
 asGQLError (Right value) = pure value
 
--- TODO: Validate other Types , type Mismatch
 checkArgumentType :: TypeLib -> (Text, Int) -> (Text, Argument) -> Validation (Text, Argument)
 checkArgumentType lib' (tName, position') (key', Argument value' argPosition) =
-  asGQLError (getInputType (position', key') tName lib') >>= checkType
+  asGQLError (getInputType (position', key') tName lib') >>= checkType >> pure (key', Argument value' argPosition)
   where
-    checkType (Enum tags _) = validateEnum key' tags (Argument value' argPosition) >>= \x -> pure (key', x)
-    checkType type' =
-      asGQLError (validateInput lib' type' argPosition (key', value')) >> pure (key', Argument value' argPosition)
+    checkType type' = asGQLError (validateInput lib' type' argPosition (key', value'))
 
 validateArgument :: TypeLib -> Position -> Arguments -> (Text, InputField) -> Validation (Text, Argument)
 validateArgument types position' requestArgs (key', InputField arg) =

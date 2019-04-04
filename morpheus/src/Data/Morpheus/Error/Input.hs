@@ -7,6 +7,7 @@ module Data.Morpheus.Error.Input
   , InputError(..)
   , Prop(..)
   , InputErrorKind(..)
+  , InputValidation
   ) where
 
 import           Data.Aeson                   (encode)
@@ -17,6 +18,8 @@ import           Data.Morpheus.Types.JSType   (JSType)
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T (concat, pack)
+
+type InputValidation a = Either InputError a
 
 data InputErrorKind
   = UnexpectedType JSType
