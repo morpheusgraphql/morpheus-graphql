@@ -2,13 +2,11 @@
 
 module Data.Morpheus.Error.Variable
   ( variableIsNotDefined
-  , variableValidationError
   , unknownType
   ) where
 
-import           Data.Morpheus.Error.Input    (expectedTypeAFoundB)
 import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (GQLErrors, MetaError (..))
+import           Data.Morpheus.Types.Error    (GQLErrors)
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T (concat)
@@ -37,11 +35,10 @@ case variable does not match to argument type
   - query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
 
 |-}
-variableValidationError :: MetaError -> GQLErrors
-variableValidationError (TypeMismatch meta isType) = expectedTypeAFoundB meta isType
-variableValidationError (UnknownField meta)        = variableIsNotDefined meta -- TODO real error handling
-variableValidationError (UnknownType meta)         = variableIsNotDefined meta -- TODO should real error handling
-
+--variableValidationError :: MetaError -> GQLErrors
+--variableValidationError (TypeMismatch meta isType) = expectedTypeAFoundB meta isType
+--variableValidationError (UnknownField meta)        = variableIsNotDefined meta -- TODO real error handling
+--variableValidationError (UnknownType meta)         = variableIsNotDefined meta -- TODO should real error handling
 -- variableNotMatchesArgument
 -- unusedVariable :: ... -> GQLErrors
 --  query Q ($a: D) ->  "Unknown type \"D\"."

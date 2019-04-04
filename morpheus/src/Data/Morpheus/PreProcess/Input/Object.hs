@@ -12,12 +12,11 @@ import           Data.Morpheus.PreProcess.Utils      (fieldOf, lookupType)
 import           Data.Morpheus.Schema.Internal.Types (Core (..), Field (..), GObject (..), InputField (..), InputObject,
                                                       InputType, Leaf (..), TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.Types as T (InternalType (..))
-import           Data.Morpheus.Types.Error           (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
-import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
 import           Data.Text                           (Text)
-import qualified Data.Text                           as T (intercalate)
 
+-- import           Data.Morpheus.Types.MetaInfo        (Position)
+-- import qualified Data.Text                           as T (intercalate)
 generateError :: JSType -> [Prop] -> InputError
 generateError jsType path' = InputError {path = path', errorKind = UnexpectedType jsType}
 
@@ -27,16 +26,15 @@ existsInputObjectType error' lib' = lookupType error' (inputObject lib')
 existsLeafType :: InputError -> TypeLib -> Text -> InputValidation Leaf
 existsLeafType error' lib' = lookupType error' (leaf lib')
 
-convertError :: Position -> Text -> InputValidation a -> MetaValidation a
-convertError position' type' (Left inpError) =
-  case errorKind inpError of
-    UnexpectedType jsType -> Left $ TypeMismatch meta jsType
-    UndefinedField        -> Left $ UnknownField meta
-  where
-    meta = MetaInfo {position = position', typeName = type', key = key'}
-    key' = T.intercalate "." $ fmap propKey (path inpError)
-convertError _ _ (Right x) = pure x
-
+-- convertError :: Position -> Text -> InputValidation a -> MetaValidation a
+-- convertError position' type' (Left inpError) =
+--  case errorKind inpError of
+--    UnexpectedType jsType -> Left $ TypeMismatch meta jsType
+--    UndefinedField        -> Left $ UnknownField meta
+--  where
+--    meta = MetaInfo {position = position', typeName = type', key = key'}
+--    key' = T.intercalate "." $ fmap propKey (path inpError)
+-- convertError _ _ (Right x) = pure x
 validateScalarTypes :: Text -> ScalarValue -> [Prop] -> InputValidation ScalarValue
 validateScalarTypes "String" (String x)   = pure . const (String x)
 validateScalarTypes "String" scalar       = Left . generateError (Scalar scalar)
@@ -56,28 +54,24 @@ validateLeaf (LScalar core) (Scalar found) props = Scalar <$> validateScalarType
 validateLeaf (LEnum tags _) jsType props         = validateEnumType tags jsType props
 validateLeaf _ jsType props                      = Left $ generateError jsType props
 
-validateInputObject ::
-     [Prop] -> TypeLib -> GObject InputField -> Position -> (Text, JSType) -> MetaValidation (Text, JSType)
-validateInputObject prop' lib' (GObject parentFields _) pos (_name, JSObject fields) = do
+validateInputObject :: [Prop] -> TypeLib -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
+validateInputObject prop' lib' (GObject parentFields _) (_name, JSObject fields) = do
   fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
   let currentProp = prop' ++ [Prop _name fieldTypeName']
   let error' = generateError (JSObject fields) currentProp
-  let toError = convertError pos fieldTypeName'
-  inputObject' <- toError (existsInputObjectType error' lib' fieldTypeName')
-  mapM (validateInputObject currentProp lib' inputObject' pos) fields >>= \x -> pure (_name, JSObject x)
-validateInputObject prop' lib' (GObject parentFields _) pos (_name, jsType) = do
+  inputObject' <- existsInputObjectType error' lib' fieldTypeName'
+  mapM (validateInputObject currentProp lib' inputObject') fields >>= \x -> pure (_name, JSObject x)
+validateInputObject prop' lib' (GObject parentFields _) (_name, jsType) = do
   fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
   let currentProp = prop' ++ [Prop _name fieldTypeName']
   let error' = generateError jsType currentProp
-  let toError = convertError pos fieldTypeName'
-  fieldType' <- toError (existsLeafType error' lib' fieldTypeName')
-  toError $ validateLeaf fieldType' jsType currentProp >> pure (_name, jsType)
+  fieldType' <- existsLeafType error' lib' fieldTypeName'
+  validateLeaf fieldType' jsType currentProp >> pure (_name, jsType)
 
-validateInput :: TypeLib -> InputType -> Position -> (Text, JSType) -> MetaValidation JSType
-validateInput typeLib (T.Object oType) pos (key', JSObject fields) =
+validateInput :: TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
+validateInput typeLib (T.Object oType) (key', JSObject fields) =
   JSObject <$> mapM (validateInputObject [Prop key' "TODO:"] typeLib oType pos) fields
-validateInput _ (T.Object (GObject _ core)) pos (_, jsType) = typeMismatchMetaError pos (name core) jsType
-validateInput _ (T.Scalar core) pos (varName, jsValue) =
-  convertError pos (name core) $ validateLeaf (LScalar core) jsValue [Prop varName (name core)]
-validateInput _ (T.Enum tags core) pos (varName, jsValue) =
-  convertError pos (name core) $ validateLeaf (LEnum tags core) jsValue [Prop varName (name core)]
+validateInput _ (T.Object (GObject _ core)) (_, jsType) = typeMismatchMetaError pos (name core) jsType
+validateInput _ (T.Scalar core) (varName, jsValue) = validateLeaf (LScalar core) jsValue [Prop varName (name core)]
+validateInput _ (T.Enum tags core) (varName, jsValue) =
+  validateLeaf (LEnum tags core) jsValue [Prop varName (name core)]
