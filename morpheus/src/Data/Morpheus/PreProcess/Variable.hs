@@ -6,8 +6,8 @@ module Data.Morpheus.PreProcess.Variable
   ) where
 
 import qualified Data.Map                               as M (lookup)
-import           Data.Morpheus.Error.Input              (expectedTypeAFoundB)
-import           Data.Morpheus.Error.Variable           (unknownType, variableIsNotDefined)
+import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
+import           Data.Morpheus.Error.Variable           (unknownType, variableGotInvalidValue, variableIsNotDefined)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
 import           Data.Morpheus.PreProcess.Utils         (getInputType)
 import           Data.Morpheus.Schema.Internal.Types    (InputType, TypeLib)
@@ -33,8 +33,10 @@ getVariable pos root variableID =
     Nothing    -> Left $ variableIsNotDefined $ MetaInfo {typeName = "", key = variableID, position = pos}
     Just value -> pure value
 
-handleInputError (Left error) = expectedTypeAFoundB error
-handleInputError (Right _)    = pure ()
+handleInputError :: Text -> Int -> InputValidation a -> Validation ()
+handleInputError name' position' (Left error') =
+  Left $ variableGotInvalidValue name' (inputErrorMessage error') position'
+handleInputError _ _ _ = pure ()
 
 checkVariableType :: TypeLib -> GQLQueryRoot -> (Text, RawArgument) -> Validation ()
 checkVariableType typeLib root (variableID, Variable tName pos) =
@@ -42,7 +44,7 @@ checkVariableType typeLib root (variableID, Variable tName pos) =
   where
     checkType inputKey _type = do
       variableValue <- getVariable pos root inputKey
-      handleInputError $ validateInput typeLib _type (inputKey, variableValue)
+      handleInputError tName pos $ validateInput typeLib _type (inputKey, variableValue)
 checkVariableType _ _ (_, Argument _ _) = pure ()
 
 validateVariables :: TypeLib -> GQLQueryRoot -> [(Text, RawArgument)] -> Validation ()

@@ -3,6 +3,7 @@
 module Data.Morpheus.Error.Variable
   ( variableIsNotDefined
   , unknownType
+  , variableGotInvalidValue
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
@@ -42,6 +43,11 @@ case variable does not match to argument type
 -- variableNotMatchesArgument
 -- unusedVariable :: ... -> GQLErrors
 --  query Q ($a: D) ->  "Unknown type \"D\"."
+variableGotInvalidValue :: Text -> Text -> Position -> GQLErrors
+variableGotInvalidValue name' inputMessage' position' = errorMessage position' text
+  where
+    text = T.concat ["Variable \"$", name', "\" got invalid value ;", inputMessage']
+
 unknownType :: Text -> Position -> GQLErrors
 unknownType type' position' = errorMessage position' text
   where

@@ -14,10 +14,8 @@ import qualified Data.Morpheus.Schema.Internal.Types as T (InternalType (..))
 import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
 import           Data.Text                           (Text)
 
--- import           Data.Morpheus.Types.MetaInfo        (Position)
--- import qualified Data.Text                           as T (intercalate)
-generateError :: JSType -> [Prop] -> InputError
-generateError jsType path' = UnexpectedType path' jsType
+generateError :: JSType -> Text -> [Prop] -> InputError
+generateError jsType expected' path' = UnexpectedType path' expected' jsType
 
 existsInputObjectType :: InputError -> TypeLib -> Text -> InputValidation InputObject
 existsInputObjectType error' lib' = lookupType error' (inputObject lib')
@@ -25,52 +23,42 @@ existsInputObjectType error' lib' = lookupType error' (inputObject lib')
 existsLeafType :: InputError -> TypeLib -> Text -> InputValidation Leaf
 existsLeafType error' lib' = lookupType error' (leaf lib')
 
--- convertError :: Position -> Text -> InputValidation a -> MetaValidation a
--- convertError position' type' (Left inpError) =
---  case errorKind inpError of
---    UnexpectedType jsType -> Left $ TypeMismatch meta jsType
---    UndefinedField        -> Left $ UnknownField meta
---  where
---    meta = MetaInfo {position = position', typeName = type', key = key'}
---    key' = T.intercalate "." $ fmap propKey (path inpError)
--- convertError _ _ (Right x) = pure x
 validateScalarTypes :: Text -> ScalarValue -> [Prop] -> InputValidation ScalarValue
 validateScalarTypes "String" (String x)   = pure . const (String x)
-validateScalarTypes "String" scalar       = Left . generateError (Scalar scalar)
+validateScalarTypes "String" scalar       = Left . generateError (Scalar scalar) "String"
 validateScalarTypes "Int" (Int x)         = pure . const (Int x)
-validateScalarTypes "Int" scalar          = Left . generateError (Scalar scalar)
+validateScalarTypes "Int" scalar          = Left . generateError (Scalar scalar) "Int"
 validateScalarTypes "Boolean" (Boolean x) = pure . const (Boolean x)
-validateScalarTypes "Boolean" scalar      = Left . generateError (Scalar scalar)
+validateScalarTypes "Boolean" scalar      = Left . generateError (Scalar scalar) "Boolean"
 validateScalarTypes _ scalar              = pure . const scalar
 
-validateEnumType :: [Text] -> JSType -> [Prop] -> InputValidation JSType
-validateEnumType tags jsType props = validateEnum error' tags jsType
-  where
-    error' = generateError jsType props
+validateEnumType :: Text -> [Text] -> JSType -> [Prop] -> InputValidation JSType
+validateEnumType expected' tags jsType props = validateEnum (UnexpectedType props expected' jsType) tags jsType
 
 validateLeaf :: Leaf -> JSType -> [Prop] -> InputValidation JSType
+validateLeaf (LEnum tags core) jsType props      = validateEnumType (name core) tags jsType props
 validateLeaf (LScalar core) (Scalar found) props = Scalar <$> validateScalarTypes (name core) found props
-validateLeaf (LEnum tags _) jsType props         = validateEnumType tags jsType props
-validateLeaf _ jsType props                      = Left $ generateError jsType props
+validateLeaf (LScalar core) jsType props         = Left $ generateError jsType (name core) props
 
 validateInputObject :: [Prop] -> TypeLib -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
 validateInputObject prop' lib' (GObject parentFields _) (_name, JSObject fields) = do
   fieldTypeName' <- fieldType . unpackInputField <$> lookupField parentFields _name (UnknownField prop' _name)
   let currentProp = prop' ++ [Prop _name fieldTypeName']
-  let error' = generateError (JSObject fields) currentProp
+  let error' = generateError (JSObject fields) fieldTypeName' currentProp
   inputObject' <- existsInputObjectType error' lib' fieldTypeName'
   mapM (validateInputObject currentProp lib' inputObject') fields >>= \x -> pure (_name, JSObject x)
 validateInputObject prop' lib' (GObject parentFields _) (_name, jsType) = do
   fieldTypeName' <- fieldType . unpackInputField <$> lookupField parentFields _name (UnknownField prop' _name)
   let currentProp = prop' ++ [Prop _name fieldTypeName']
-  let error' = generateError jsType currentProp
+  let error' = generateError jsType fieldTypeName' currentProp
   fieldType' <- existsLeafType error' lib' fieldTypeName'
   validateLeaf fieldType' jsType currentProp >> pure (_name, jsType)
 
 validateInput :: TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
 validateInput typeLib (T.Object oType) (key', JSObject fields) =
   JSObject <$> mapM (validateInputObject [Prop key' "TODO:"] typeLib oType) fields
-validateInput _ (T.Object (GObject _ core)) (key', jsType) = Left $ generateError jsType [Prop key' $ name core]
+validateInput _ (T.Object (GObject _ core)) (key', jsType) =
+  Left $ generateError jsType (name core) [Prop key' $ name core]
 validateInput _ (T.Scalar core) (varName, jsValue) = validateLeaf (LScalar core) jsValue [Prop varName (name core)]
 validateInput _ (T.Enum tags core) (varName, jsValue) =
   validateLeaf (LEnum tags core) jsValue [Prop varName (name core)]
