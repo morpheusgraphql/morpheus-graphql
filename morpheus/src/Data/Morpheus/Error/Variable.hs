@@ -3,6 +3,7 @@
 module Data.Morpheus.Error.Variable
   ( variableIsNotDefined
   , variableValidationError
+  , unknownType
   ) where
 
 import           Data.Morpheus.Error.Input    (expectedTypeAFoundB)
@@ -18,8 +19,6 @@ Variable -> Error (position Query Head)
   data E = EN | DE
   query M ( $v : E ){...}
 
-case type does not exists
-  query Q ($a: D) ->  "Unknown type \"D\"."
 
 
 case String
@@ -41,6 +40,14 @@ variableValidationError :: MetaError -> GQLErrors
 variableValidationError (TypeMismatch meta isType) = expectedTypeAFoundB meta isType
 variableValidationError (UnknownField meta)        = variableIsNotDefined meta -- TODO real error handling
 variableValidationError (UnknownType meta)         = variableIsNotDefined meta -- TODO should real error handling
+
+-- variableNotMatchesArgument
+-- unusedVariable :: ... -> GQLErrors
+--  query Q ($a: D) ->  "Unknown type \"D\"."
+unknownType :: MetaInfo -> GQLErrors
+unknownType meta = errorMessage (position meta) text
+  where
+    text = T.concat ["Unknown type \"", typeName meta, "\"."]
 
 variableIsNotDefined :: MetaInfo -> GQLErrors
 variableIsNotDefined meta = errorMessage (position meta) text
