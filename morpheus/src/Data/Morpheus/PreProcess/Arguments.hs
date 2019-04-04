@@ -23,15 +23,14 @@ import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Text                              (Text)
 
 handleInputError :: Text -> Int -> InputValidation a -> Validation ()
-handleInputError name' position' (Left error') =
-  Left $ argumentGotInvalidValue name' (inputErrorMessage error') position'
+handleInputError key' position' (Left error') = Left $ argumentGotInvalidValue key' (inputErrorMessage error') position'
 handleInputError _ _ _ = pure ()
 
 checkArgumentType :: TypeLib -> (Text, Int) -> (Text, Argument) -> Validation (Text, Argument)
-checkArgumentType lib' (tName, _) (key', Argument value' argPosition) =
-  getInputType tName lib' (internalUnknownTypeMessage tName) >>= checkType >> pure (key', Argument value' argPosition)
+checkArgumentType lib' (tName, _) (key', Argument value' position') =
+  getInputType tName lib' (internalUnknownTypeMessage tName) >>= checkType >> pure (key', Argument value' position')
   where
-    checkType type' = handleInputError tName argPosition (validateInput lib' type' (key', value'))
+    checkType type' = handleInputError key' position' (validateInput lib' type' (key', value'))
 
 validateArgument :: TypeLib -> Position -> Arguments -> (Text, InputField) -> Validation (Text, Argument)
 validateArgument types position' requestArgs (key', InputField arg) =

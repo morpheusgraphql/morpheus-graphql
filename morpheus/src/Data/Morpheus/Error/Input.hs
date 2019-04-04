@@ -35,15 +35,15 @@ inputErrorMessage (UndefinedField path' field')      = undefinedField path' fiel
 inputErrorMessage (UnknownField path' field')        = unknownField path' field'
 
 pathToText :: [Prop] -> Text
-pathToText path' = T.intercalate "." $ fmap propKey path'
+pathToText []    = ""
+pathToText path' = T.concat ["on ", T.intercalate "." $ fmap propKey path']
 
 expectedTypeAFoundB :: [Prop] -> Text -> JSType -> Text
 expectedTypeAFoundB path' expected found =
-  T.concat
-    ["Input ", pathToText path', ",", " Expected type \"", expected, "\" found ", T.pack (unpack $ encode found), "."]
+  T.concat [pathToText path', " Expected type \"", expected, "\" found ", T.pack (unpack $ encode found), "."]
 
 undefinedField :: [Prop] -> Text -> Text
-undefinedField path' field' = T.concat ["Input ", pathToText path', ",", " Undefined Field \"", field', "\"."]
+undefinedField path' field' = T.concat [pathToText path', " Undefined Field \"", field', "\"."]
 
 unknownField :: [Prop] -> Text -> Text
-unknownField path' field' = T.concat ["Input ", pathToText path', ",", " Undefined Field \"", field', "\"."]
+unknownField path' field' = T.concat [pathToText path', " Unknown Field \"", field', "\"."]

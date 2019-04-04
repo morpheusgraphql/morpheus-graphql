@@ -55,10 +55,8 @@ validateInputObject prop' lib' (GObject parentFields _) (_name, jsType) = do
   validateLeaf fieldType' jsType currentProp >> pure (_name, jsType)
 
 validateInput :: TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
-validateInput typeLib (T.Object oType) (key', JSObject fields) =
-  JSObject <$> mapM (validateInputObject [Prop key' "TODO:"] typeLib oType) fields
-validateInput _ (T.Object (GObject _ core)) (key', jsType) =
-  Left $ generateError jsType (name core) [Prop key' $ name core]
-validateInput _ (T.Scalar core) (varName, jsValue) = validateLeaf (LScalar core) jsValue [Prop varName (name core)]
-validateInput _ (T.Enum tags core) (varName, jsValue) =
-  validateLeaf (LEnum tags core) jsValue [Prop varName (name core)]
+validateInput typeLib (T.Object oType) (_, JSObject fields) =
+  JSObject <$> mapM (validateInputObject [] typeLib oType) fields
+validateInput _ (T.Object (GObject _ core)) (_, jsType) = Left $ generateError jsType (name core) []
+validateInput _ (T.Scalar core) (_, jsValue) = validateLeaf (LScalar core) jsValue []
+validateInput _ (T.Enum tags core) (_, jsValue) = validateLeaf (LEnum tags core) jsValue []

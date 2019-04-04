@@ -34,10 +34,9 @@ argumentError (UnknownField meta)   = requiredArgument meta
 argumentError (TypeMismatch meta _) = requiredArgument meta
 
 argumentGotInvalidValue :: Text -> Text -> Int -> GQLErrors
-argumentGotInvalidValue name' inputMessage' position' = errorMessage position' text
+argumentGotInvalidValue key' inputMessage' position' = errorMessage position' text
   where
-    text = T.concat ["Argument \"", name', "\" got invalid value ;", inputMessage']
-
+    text = T.concat ["Argument ", key', " got invalid value ;", inputMessage']
 
 unknownArguments :: Text -> [EnhancedKey] -> GQLErrors
 unknownArguments fieldName = map keyToError
