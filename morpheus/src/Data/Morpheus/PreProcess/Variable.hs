@@ -34,17 +34,15 @@ getVariable pos root variableID =
     Just value -> pure value
 
 handleInputError :: Text -> Int -> InputValidation a -> Validation ()
-handleInputError name' position' (Left error') =
-  Left $ variableGotInvalidValue name' (inputErrorMessage error') position'
+handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
 handleInputError _ _ _ = pure ()
 
 checkVariableType :: TypeLib -> GQLQueryRoot -> (Text, RawArgument) -> Validation ()
-checkVariableType typeLib root (variableID, Variable tName pos) =
-  getVariableType tName pos typeLib >>= checkType variableID
+checkVariableType typeLib root (key', Variable tName pos) = getVariableType tName pos typeLib >>= checkType
   where
-    checkType inputKey _type = do
-      variableValue <- getVariable pos root inputKey
-      handleInputError tName pos $ validateInput typeLib _type (inputKey, variableValue)
+    checkType _type = do
+      variableValue <- getVariable pos root key'
+      handleInputError key' pos $ validateInput typeLib _type (key', variableValue)
 checkVariableType _ _ (_, Argument _ _) = pure ()
 
 validateVariables :: TypeLib -> GQLQueryRoot -> [(Text, RawArgument)] -> Validation ()

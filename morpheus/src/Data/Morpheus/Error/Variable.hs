@@ -20,6 +20,7 @@ Variable -> Error (position Query Head)
   query M ( $v : E ){...}
 
 
+query Q ($a: D) ->  "Unknown type \"D\"."
 
 case String
   - { "v" : "EN" }  ->  no error converts as enum
@@ -29,24 +30,19 @@ case type mismatch
   - { "v" : "v1" }  -> "Variable \"$v\" got invalid value \"v1\"; Expected type LANGUAGE."
   - { "v": 1  }        "Variable \"$v\" got invalid value 1; Expected type LANGUAGE."
 
-case unused variable
+TODO: unused variable
   - query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
 
-case variable does not match to argument type
+TODO: variable does not match to argument type
   - query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
 
 |-}
---variableValidationError :: MetaError -> GQLErrors
---variableValidationError (TypeMismatch meta isType) = expectedTypeAFoundB meta isType
---variableValidationError (UnknownField meta)        = variableIsNotDefined meta -- TODO real error handling
---variableValidationError (UnknownType meta)         = variableIsNotDefined meta -- TODO should real error handling
--- variableNotMatchesArgument
--- unusedVariable :: ... -> GQLErrors
---  query Q ($a: D) ->  "Unknown type \"D\"."
+
 variableGotInvalidValue :: Text -> Text -> Position -> GQLErrors
 variableGotInvalidValue name' inputMessage' position' = errorMessage position' text
   where
-    text = T.concat ["Variable \"$", name', "\" got invalid value ;", inputMessage']
+    text = T.concat ["Variable \"$", name', "\" got invalid value; ", inputMessage']
+
 
 unknownType :: Text -> Position -> GQLErrors
 unknownType type' position' = errorMessage position' text
