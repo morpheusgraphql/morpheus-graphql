@@ -23,8 +23,8 @@ leafToInputType (LEnum x y)    = T.Enum x y
 
 type InputValidation a = Either InputError a
 
-generateError :: [Prop] -> JSType -> InputError
-generateError path' jsType = InputError {path = path', errorKind = UnexpectedType jsType}
+generateError :: JSType -> [Prop] -> InputError
+generateError jsType path' = InputError {path = path', errorKind = UnexpectedType jsType}
 
 existsInputObjectType :: InputError -> TypeLib -> Text -> InputValidation InputObject
 existsInputObjectType error' lib' = lookupType error' (inputObject lib')
@@ -44,32 +44,32 @@ convertError _ _ (Right x) = pure x
 
 validateScalarTypes :: Text -> ScalarValue -> [Prop] -> InputValidation ScalarValue
 validateScalarTypes "String" (String x)   = pure . const (String x)
-validateScalarTypes "String" scalar       = Left . (`generateError` Scalar scalar)
+validateScalarTypes "String" scalar       = Left . generateError (Scalar scalar)
 validateScalarTypes "Int" (Int x)         = pure . const (Int x)
-validateScalarTypes "Int" scalar          = Left . (`generateError` Scalar scalar)
+validateScalarTypes "Int" scalar          = Left . generateError (Scalar scalar)
 validateScalarTypes "Boolean" (Boolean x) = pure . const (Boolean x)
-validateScalarTypes "Boolean" scalar      = Left . (`generateError` Scalar scalar)
+validateScalarTypes "Boolean" scalar      = Left . generateError (Scalar scalar)
 validateScalarTypes _ scalar              = pure . const scalar
 
 validateFieldType :: InputType -> JSType -> [Prop] -> InputValidation JSType
 validateFieldType (T.Scalar core) (Scalar found) props = Scalar <$> validateScalarTypes (name core) found props
 validateFieldType (T.Object _) (JSObject x) _          = pure (JSObject x) -- TODO Validate Scalar
 validateFieldType (T.Enum _ _) (JSEnum x) _            = pure (JSEnum x) -- TODO Validate Scalar
-validateFieldType _ jsType props                       = Left $ generateError props jsType
+validateFieldType _ jsType props                       = Left $ generateError jsType props
 
 validateInputObject ::
      [Prop] -> TypeLib -> GObject InputField -> Position -> (Text, JSType) -> MetaValidation (Text, JSType)
 validateInputObject prop' lib' (GObject parentFields _) pos (_name, JSObject fields) = do
   fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
   let currentProp = prop' ++ [Prop _name fieldTypeName']
-  let error' = generateError currentProp (JSObject fields)
+  let error' = generateError (JSObject fields) currentProp
   let toError = convertError pos fieldTypeName'
   inputObject' <- toError (existsInputObjectType error' lib' fieldTypeName')
   mapM (validateInputObject currentProp lib' inputObject' pos) fields >>= \x -> pure (_name, JSObject x)
 validateInputObject prop' lib' (GObject parentFields _) pos (_name, jsType) = do
   fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
   let currentProp = prop' ++ [Prop _name fieldTypeName']
-  let error' = generateError currentProp jsType
+  let error' = generateError jsType currentProp
   let toError = convertError pos fieldTypeName'
   fieldType' <- toError (leafToInputType <$> existsLeafType error' lib' fieldTypeName')
   toError $ validateFieldType fieldType' jsType currentProp >> pure (_name, jsType)
