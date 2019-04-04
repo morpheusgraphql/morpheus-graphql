@@ -5,7 +5,7 @@ module Data.Morpheus.PreProcess.Input.Object
   , validateInput
   ) where
 
-import           Data.Morpheus.Error.Input           (InputError (..), InputErrorKind (..), Prop (..),
+import           Data.Morpheus.Error.Input           (InputError (..), InputErrorKind (..), InputValidation, Prop (..),
                                                       typeMismatchMetaError)
 import           Data.Morpheus.PreProcess.Utils      (fieldOf, lookupType)
 import           Data.Morpheus.Schema.Internal.Types (Core (..), Field (..), GObject (..), InputField (..), InputObject,
@@ -16,8 +16,6 @@ import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
 import           Data.Text                           (Text)
 import qualified Data.Text                           as T (intercalate)
-
-type InputValidation a = Either InputError a
 
 generateError :: JSType -> [Prop] -> InputError
 generateError jsType path' = InputError {path = path', errorKind = UnexpectedType jsType}

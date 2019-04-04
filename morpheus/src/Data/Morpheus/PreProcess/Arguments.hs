@@ -7,7 +7,7 @@ module Data.Morpheus.PreProcess.Arguments
   ) where
 
 import           Data.Morpheus.Error.Arguments          (argumentError, requiredArgument, unknownArguments)
-import           Data.Morpheus.PreProcess.Input.Enum    (validateEnum)
+import           Data.Morpheus.PreProcess.Input.Enum    (validateEnumArgument)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
 import           Data.Morpheus.PreProcess.Utils         (differKeys, getInputType)
 import           Data.Morpheus.PreProcess.Variable      (replaceVariable)
@@ -31,7 +31,7 @@ checkArgumentType :: TypeLib -> (Text, Int) -> (Text, Argument) -> Validation (T
 checkArgumentType lib' (tName, position') (key', Argument value' argPosition) =
   asGQLError (getInputType (position', key') tName lib') >>= checkType
   where
-    checkType (Enum tags _) = validateEnum key' tags (Argument value' argPosition) >>= \x -> pure (key', x)
+    checkType (Enum tags _) = validateEnumArgument key' tags (Argument value' argPosition) >>= \x -> pure (key', x)
     checkType type' =
       asGQLError (validateInput lib' type' argPosition (key', value')) >> pure (key', Argument value' argPosition)
 
