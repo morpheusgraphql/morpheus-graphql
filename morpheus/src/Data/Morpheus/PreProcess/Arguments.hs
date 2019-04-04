@@ -24,12 +24,9 @@ asGQLError :: MetaValidation a -> Validation a
 asGQLError (Left err)    = Left $ argumentError err
 asGQLError (Right value) = pure value
 
--- TODO: Validate other Types , type Mismatch
 checkArgumentType :: TypeLib -> (Text, Int) -> (Text, Argument) -> Validation (Text, Argument)
 checkArgumentType lib' (tName, position') (key', Argument value' argPosition) =
   asGQLError (getInputType (position', key') tName lib') >>= checkType >> pure (key', Argument value' argPosition)
-    -- error' = expectedTypeAFoundB (MetaInfo {typeName = tName, key = key', position = argPosition})
-   -- checkType (Enum tags _) = validateEnum (error' value') tags value'
   where
     checkType type' = asGQLError (validateInput lib' type' argPosition (key', value'))
 
