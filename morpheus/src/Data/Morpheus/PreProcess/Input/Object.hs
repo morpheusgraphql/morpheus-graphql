@@ -23,63 +23,62 @@ leafToInputType (LEnum x y)    = T.Enum x y
 
 type InputValidation a = Either InputError a
 
-existsInputObjectType :: [Prop] -> JSType -> TypeLib -> Text -> InputValidation InputObject
-existsInputObjectType path' jsType lib' = lookupType error' (inputObject lib')
-  where
-    error' = InputError {path = path', errorKind = UnexpectedType jsType}
+generateError :: [Prop] -> JSType -> InputError
+generateError path' jsType = InputError {path = path', errorKind = UnexpectedType jsType}
 
-existsLeafType :: [Prop] -> JSType -> TypeLib -> Text -> InputValidation Leaf
-existsLeafType path' jsType lib' = lookupType error' (leaf lib')
-  where
-    error' = InputError {path = path', errorKind = UnexpectedType jsType}
+existsInputObjectType :: InputError -> TypeLib -> Text -> InputValidation InputObject
+existsInputObjectType error' lib' = lookupType error' (inputObject lib')
 
-convertError :: Position -> InputValidation a -> MetaValidation a
-convertError position' (Left inpError) =
+existsLeafType :: InputError -> TypeLib -> Text -> InputValidation Leaf
+existsLeafType error' lib' = lookupType error' (leaf lib')
+
+convertError :: Position -> Text -> InputValidation a -> MetaValidation a
+convertError position' type' (Left inpError) =
   case errorKind inpError of
     UnexpectedType jsType -> Left $ TypeMismatch meta jsType
     UndefinedField        -> Left $ UnknownField meta
   where
-    meta = MetaInfo {position = position', typeName = "String", key = key'}
+    meta = MetaInfo {position = position', typeName = type', key = key'}
     key' = T.intercalate "." $ fmap propKey (path inpError)
-convertError _ (Right x) = pure x
+convertError _ _ (Right x) = pure x
 
-validateScalarTypes :: MetaInfo -> Text -> ScalarValue -> MetaValidation ScalarValue
-validateScalarTypes _ "String" (String x)   = pure (String x)
-validateScalarTypes meta "String" scalar    = Left $ TypeMismatch (meta {typeName = "String"}) (Scalar scalar)
-validateScalarTypes _ "Int" (Int x)         = pure (Int x)
-validateScalarTypes meta "Int" scalar       = Left $ TypeMismatch (meta {typeName = "Int"}) (Scalar scalar)
-validateScalarTypes _ "Boolean" (Boolean x) = pure (Boolean x)
-validateScalarTypes meta "Boolean" scalar   = Left $ TypeMismatch (meta {typeName = "Boolean"}) (Scalar scalar)
-validateScalarTypes _ _ scalar              = pure scalar
+validateScalarTypes :: Text -> ScalarValue -> [Prop] -> InputValidation ScalarValue
+validateScalarTypes "String" (String x)   = pure . const (String x)
+validateScalarTypes "String" scalar       = Left . (`generateError` Scalar scalar)
+validateScalarTypes "Int" (Int x)         = pure . const (Int x)
+validateScalarTypes "Int" scalar          = Left . (`generateError` Scalar scalar)
+validateScalarTypes "Boolean" (Boolean x) = pure . const (Boolean x)
+validateScalarTypes "Boolean" scalar      = Left . (`generateError` Scalar scalar)
+validateScalarTypes _ scalar              = pure . const scalar
 
-validateFieldType :: MetaInfo -> InputType -> JSType -> MetaValidation JSType
-validateFieldType meta (T.Scalar core) (Scalar found) = Scalar <$> validateScalarTypes meta (name core) found
-validateFieldType _ (T.Object _) (JSObject x)         = pure (JSObject x) -- TODO Validate Scalar
-validateFieldType _ (T.Enum _ _) (JSEnum x)           = pure (JSEnum x) -- TODO Validate Scalar
-validateFieldType meta _ jsType                       = Left $ TypeMismatch meta jsType
+validateFieldType :: InputType -> JSType -> [Prop] -> InputValidation JSType
+validateFieldType (T.Scalar core) (Scalar found) props = Scalar <$> validateScalarTypes (name core) found props
+validateFieldType (T.Object _) (JSObject x) _          = pure (JSObject x) -- TODO Validate Scalar
+validateFieldType (T.Enum _ _) (JSEnum x) _            = pure (JSEnum x) -- TODO Validate Scalar
+validateFieldType _ jsType props                       = Left $ generateError props jsType
 
 validateInputObject ::
      [Prop] -> TypeLib -> GObject InputField -> Position -> (Text, JSType) -> MetaValidation (Text, JSType)
 validateInputObject prop' lib' (GObject parentFields _) pos (_name, JSObject fields) = do
   fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
   let currentProp = prop' ++ [Prop _name fieldTypeName']
-  inputObject' <- convertError pos (existsInputObjectType currentProp (JSObject fields) lib' fieldTypeName')
+  let error' = generateError currentProp (JSObject fields)
+  let toError = convertError pos fieldTypeName'
+  inputObject' <- toError (existsInputObjectType error' lib' fieldTypeName')
   mapM (validateInputObject currentProp lib' inputObject' pos) fields >>= \x -> pure (_name, JSObject x)
 validateInputObject prop' lib' (GObject parentFields core) pos (_name, jsType) = do
   fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
   let currentProp = prop' ++ [Prop _name fieldTypeName']
-  fieldType' <- convertError pos (leafToInputType <$> existsLeafType currentProp jsType lib' fieldTypeName')
-  validateFieldType meta fieldType' jsType >> pure (_name, jsType)
-  where
-    meta = MetaInfo {typeName = name core, key = _name, position = pos}
+  let error' = generateError currentProp jsType
+  let toError = convertError pos fieldTypeName'
+  fieldType' <- toError (leafToInputType <$> existsLeafType error' lib' fieldTypeName')
+  toError $ validateFieldType fieldType' jsType currentProp >> pure (_name, jsType)
 
 validateInput :: TypeLib -> InputType -> Position -> (Text, JSType) -> MetaValidation JSType
 validateInput typeLib (T.Object oType) pos (key', JSObject fields) =
   JSObject <$> mapM (validateInputObject [Prop key' "TODO:"] typeLib oType pos) fields
 validateInput _ (T.Object (GObject _ core)) pos (_, jsType) = typeMismatchMetaError pos (name core) jsType
-validateInput _ (T.Scalar core) pos (varName, x) = validateFieldType meta (T.Scalar core) x
-  where
-    meta = MetaInfo {typeName = name core, key = varName, position = pos}
-validateInput _ (T.Enum _ core) pos (varName, x) = validateFieldType meta (T.Scalar core) x
-  where
-    meta = MetaInfo {typeName = name core, key = varName, position = pos}
+validateInput _ (T.Scalar core) pos (varName, jsValue) =
+  convertError pos (name core) $ validateFieldType (T.Scalar core) jsValue [Prop varName (name core)]
+validateInput _ (T.Enum _ core) pos (varName, jsValue) =
+  convertError pos (name core) $ validateFieldType (T.Scalar core) jsValue [Prop varName (name core)]
