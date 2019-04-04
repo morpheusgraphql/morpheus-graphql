@@ -7,6 +7,7 @@ module Data.Morpheus.PreProcess.Input.Object
 
 import           Data.Morpheus.Error.Input           (InputError (..), InputErrorKind (..), InputValidation, Prop (..),
                                                       typeMismatchMetaError)
+import           Data.Morpheus.PreProcess.Input.Enum (validateEnum)
 import           Data.Morpheus.PreProcess.Utils      (fieldOf, lookupType)
 import           Data.Morpheus.Schema.Internal.Types (Core (..), Field (..), GObject (..), InputField (..), InputObject,
                                                       InputType, Leaf (..), TypeLib (..))
@@ -45,9 +46,14 @@ validateScalarTypes "Boolean" (Boolean x) = pure . const (Boolean x)
 validateScalarTypes "Boolean" scalar      = Left . generateError (Scalar scalar)
 validateScalarTypes _ scalar              = pure . const scalar
 
+validateEnumType :: [Text] -> JSType -> [Prop] -> InputValidation JSType
+validateEnumType tags jsType props = validateEnum error' tags jsType
+  where
+    error' = generateError jsType props
+
 validateLeaf :: Leaf -> JSType -> [Prop] -> InputValidation JSType
 validateLeaf (LScalar core) (Scalar found) props = Scalar <$> validateScalarTypes (name core) found props
-validateLeaf (LEnum _ _) (JSEnum x) _            = pure (JSEnum x) -- TODO Validate Enum
+validateLeaf (LEnum tags _) jsType props         = validateEnumType tags jsType props
 validateLeaf _ jsType props                      = Left $ generateError jsType props
 
 validateInputObject ::
@@ -73,5 +79,5 @@ validateInput typeLib (T.Object oType) pos (key', JSObject fields) =
 validateInput _ (T.Object (GObject _ core)) pos (_, jsType) = typeMismatchMetaError pos (name core) jsType
 validateInput _ (T.Scalar core) pos (varName, jsValue) =
   convertError pos (name core) $ validateLeaf (LScalar core) jsValue [Prop varName (name core)]
-validateInput _ (T.Enum _ core) pos (varName, jsValue) =
-  convertError pos (name core) $ validateLeaf (LScalar core) jsValue [Prop varName (name core)]
+validateInput _ (T.Enum tags core) pos (varName, jsValue) =
+  convertError pos (name core) $ validateLeaf (LEnum tags core) jsValue [Prop varName (name core)]
