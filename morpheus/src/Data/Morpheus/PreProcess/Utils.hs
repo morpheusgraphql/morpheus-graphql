@@ -1,29 +1,31 @@
 module Data.Morpheus.PreProcess.Utils
   ( fieldOf
   , differKeys
-  , existsInputObjectType
   , existsObjectType
-  , existsLeafType
+  , lookupType
   , getInputType
   ) where
 
 import           Data.List                           ((\\))
-import           Data.Morpheus.Schema.Internal.Types (InputObject, InputType, InternalType (..), Leaf (..),
-                                                      OutputObject, TypeLib (..))
+import           Data.Morpheus.Schema.Internal.Types (InputType, InternalType (..), Leaf (..), OutputObject,
+                                                      TypeLib (..))
 import           Data.Morpheus.Types.Core            (EnhancedKey (..), Key, enhanceKeyWithNull)
 import           Data.Morpheus.Types.Error           (MetaError (..), MetaValidation)
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
-import           Data.Text                           as TX (Text)
+import           Data.Text                           (Text)
 
-existsTypeIn :: (Position, Key) -> TX.Text -> [(Text, a)] -> MetaValidation a
-existsTypeIn (position', key') typeName' lib =
-  case lookup typeName' lib of
-    Nothing -> Left $ UnknownType meta
+lookupType :: error -> [(Text, a)] -> Text -> Either error a
+lookupType error' lib' typeName' =
+  case lookup typeName' lib' of
+    Nothing -> Left error'
     Just x  -> pure x
+
+existsTypeIn :: (Position, Key) -> [(Text, a)] -> Text -> MetaValidation a
+existsTypeIn (position', key') lib typeName' = lookupType (UnknownType meta) lib typeName'
   where
     meta = MetaInfo {position = position', typeName = typeName', key = key'}
 
-getInputType :: (Position, Key) -> TX.Text -> TypeLib -> MetaValidation InputType
+getInputType :: (Position, Key) -> Text -> TypeLib -> MetaValidation InputType
 getInputType (position', key') typeName' lib =
   case lookup typeName' (inputObject lib) of
     Just x -> pure (Object x)
@@ -35,14 +37,8 @@ getInputType (position', key') typeName' lib =
   where
     meta = MetaInfo {position = position', typeName = typeName', key = key'}
 
-existsObjectType :: (Position, Key) -> TX.Text -> TypeLib -> MetaValidation OutputObject
-existsObjectType (position', key') typeName' lib = existsTypeIn (position', key') typeName' (object lib)
-
-existsInputObjectType :: (Position, Key) -> TX.Text -> TypeLib -> MetaValidation InputObject
-existsInputObjectType (position', key') typeName' lib = existsTypeIn (position', key') typeName' (inputObject lib)
-
-existsLeafType :: (Position, Key) -> TX.Text -> TypeLib -> MetaValidation Leaf
-existsLeafType (position', key') typeName' lib = existsTypeIn (position', key') typeName' (leaf lib)
+existsObjectType :: (Position, Key) -> Text -> TypeLib -> MetaValidation OutputObject
+existsObjectType (position', key') typeName' lib = existsTypeIn (position', key') (object lib) typeName'
 
 fieldOf :: (Position, Text) -> [(Text, fType)] -> Text -> MetaValidation fType
 fieldOf (pos, tName) outType fName =

@@ -5,11 +5,11 @@ module Data.Morpheus.Error.Variable
   , variableValidationError
   ) where
 
-import           Data.Morpheus.Error.InputType (expectedTypeAFoundB)
-import           Data.Morpheus.Error.Utils     (errorMessage)
-import           Data.Morpheus.Types.Error     (GQLErrors, MetaError (..))
-import           Data.Morpheus.Types.MetaInfo  (MetaInfo (..))
-import qualified Data.Text                     as T (concat)
+import           Data.Morpheus.Error.Input    (expectedTypeAFoundB)
+import           Data.Morpheus.Error.Utils    (errorMessage)
+import           Data.Morpheus.Types.Error    (GQLErrors, MetaError (..))
+import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
+import qualified Data.Text                    as T (concat)
 
 {-|
 VARIABLES:

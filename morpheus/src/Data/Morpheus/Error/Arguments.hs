@@ -7,14 +7,14 @@ module Data.Morpheus.Error.Arguments
   , argumentError
   ) where
 
-import           Data.Morpheus.Error.InputType (expectedTypeAFoundB)
-import           Data.Morpheus.Error.Utils     (errorMessage)
-import           Data.Morpheus.Types.Core      (EnhancedKey (..))
-import           Data.Morpheus.Types.Error     (GQLError (..), GQLErrors, MetaError (..))
-import           Data.Morpheus.Types.JSType    (JSType (..), ScalarValue (..))
-import           Data.Morpheus.Types.MetaInfo  (MetaInfo (..))
-import           Data.Text                     (Text)
-import qualified Data.Text                     as T (concat)
+import           Data.Morpheus.Error.Input    (expectedTypeAFoundB)
+import           Data.Morpheus.Error.Utils    (errorMessage)
+import           Data.Morpheus.Types.Core     (EnhancedKey (..))
+import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors, MetaError (..))
+import           Data.Morpheus.Types.JSType   (JSType (..), ScalarValue (..))
+import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
+import           Data.Text                    (Text)
+import qualified Data.Text                    as T (concat)
 
 {-
   ARGUMENTS:
