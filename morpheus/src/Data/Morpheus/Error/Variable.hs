@@ -2,13 +2,14 @@
 
 module Data.Morpheus.Error.Variable
   ( variableIsNotDefined
-  , variableValidationError
+  , unknownType
+  , variableGotInvalidValue
   ) where
 
-import           Data.Morpheus.Error.Input    (expectedTypeAFoundB)
 import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (GQLErrors, MetaError (..))
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
+import           Data.Morpheus.Types.Error    (GQLErrors)
+import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
+import           Data.Text                    (Text)
 import qualified Data.Text                    as T (concat)
 
 {-|
@@ -18,9 +19,8 @@ Variable -> Error (position Query Head)
   data E = EN | DE
   query M ( $v : E ){...}
 
-case type does not exists
-  query Q ($a: D) ->  "Unknown type \"D\"."
 
+query Q ($a: D) ->  "Unknown type \"D\"."
 
 case String
   - { "v" : "EN" }  ->  no error converts as enum
@@ -30,17 +30,24 @@ case type mismatch
   - { "v" : "v1" }  -> "Variable \"$v\" got invalid value \"v1\"; Expected type LANGUAGE."
   - { "v": 1  }        "Variable \"$v\" got invalid value 1; Expected type LANGUAGE."
 
-case unused variable
+TODO: unused variable
   - query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
 
-case variable does not match to argument type
+TODO: variable does not match to argument type
   - query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
 
 |-}
-variableValidationError :: MetaError -> GQLErrors
-variableValidationError (TypeMismatch meta isType) = expectedTypeAFoundB meta isType
-variableValidationError (UnknownField meta)        = variableIsNotDefined meta -- TODO real error handling
-variableValidationError (UnknownType meta)         = variableIsNotDefined meta -- TODO should real error handling
+
+variableGotInvalidValue :: Text -> Text -> Position -> GQLErrors
+variableGotInvalidValue name' inputMessage' position' = errorMessage position' text
+  where
+    text = T.concat ["Variable \"$", name', "\" got invalid value; ", inputMessage']
+
+
+unknownType :: Text -> Position -> GQLErrors
+unknownType type' position' = errorMessage position' text
+  where
+    text = T.concat ["Unknown type \"", type', "\"."]
 
 variableIsNotDefined :: MetaInfo -> GQLErrors
 variableIsNotDefined meta = errorMessage (position meta) text

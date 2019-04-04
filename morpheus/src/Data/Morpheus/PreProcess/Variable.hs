@@ -5,12 +5,13 @@ module Data.Morpheus.PreProcess.Variable
   , replaceVariable
   ) where
 
-import qualified Data.Map                               as M
-import           Data.Morpheus.Error.Variable           (variableIsNotDefined, variableValidationError)
+import qualified Data.Map                               as M (lookup)
+import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
+import           Data.Morpheus.Error.Variable           (unknownType, variableGotInvalidValue, variableIsNotDefined)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
 import           Data.Morpheus.PreProcess.Utils         (getInputType)
-import           Data.Morpheus.Schema.Internal.Types    (TypeLib)
-import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
+import           Data.Morpheus.Schema.Internal.Types    (InputType, TypeLib)
+import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), Position)
 import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..))
@@ -18,9 +19,13 @@ import qualified Data.Morpheus.Types.Query.Selection    as Valid (Argument (..))
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Text                              (Text)
 
-asGQLError :: MetaValidation a -> Validation a
-asGQLError (Left err)    = Left $ variableValidationError err
-asGQLError (Right value) = pure value
+-- asGQLError :: MetaValidation a -> Validation a
+-- asGQLError (Left err)    = Left $ variableValidationError err
+-- asGQLError (Right value) = pure value
+getVariableType :: Text -> Position -> TypeLib -> Validation InputType
+getVariableType type' position' lib' = getInputType type' lib' error'
+  where
+    error' = unknownType type' position'
 
 getVariable :: Position -> GQLQueryRoot -> Text -> Validation JSType
 getVariable pos root variableID =
@@ -28,14 +33,16 @@ getVariable pos root variableID =
     Nothing    -> Left $ variableIsNotDefined $ MetaInfo {typeName = "", key = variableID, position = pos}
     Just value -> pure value
 
+handleInputError :: Text -> Int -> InputValidation a -> Validation ()
+handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
+handleInputError _ _ _ = pure ()
+
 checkVariableType :: TypeLib -> GQLQueryRoot -> (Text, RawArgument) -> Validation ()
-checkVariableType typeLib root (variableID, Variable tName pos) =
-  asGQLError (getInputType (pos, tName) tName typeLib) >>= checkType variableID
+checkVariableType typeLib root (key', Variable tName pos) = getVariableType tName pos typeLib >>= checkType
   where
-    checkType inputKey _type = do
-      variableValue <- getVariable pos root inputKey
-      _ <- asGQLError $ validateInput typeLib _type pos (inputKey, variableValue)
-      pure ()
+    checkType _type = do
+      variableValue <- getVariable pos root key'
+      handleInputError key' pos $ validateInput typeLib _type (key', variableValue)
 checkVariableType _ _ (_, Argument _ _) = pure ()
 
 validateVariables :: TypeLib -> GQLQueryRoot -> [(Text, RawArgument)] -> Validation ()

@@ -6,13 +6,15 @@ module Data.Morpheus.PreProcess.Arguments
   , onlyResolveArguments
   ) where
 
-import           Data.Morpheus.Error.Arguments          (argumentError, requiredArgument, unknownArguments)
+import           Data.Morpheus.Error.Arguments          (argumentGotInvalidValue, requiredArgument, unknownArguments)
+import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
+import           Data.Morpheus.Error.Internal           (internalUnknownTypeMessage)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
 import           Data.Morpheus.PreProcess.Utils         (differKeys, getInputType)
 import           Data.Morpheus.PreProcess.Variable      (replaceVariable)
 import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField (..), ObjectField (..), TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
-import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
+import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.JSType             (JSType (JSNull))
 import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), Position)
 import qualified Data.Morpheus.Types.Query.RawSelection as Raw (RawArguments)
@@ -20,15 +22,15 @@ import           Data.Morpheus.Types.Query.Selection    (Argument (..), Argument
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Text                              (Text)
 
-asGQLError :: MetaValidation a -> Validation a
-asGQLError (Left err)    = Left $ argumentError err
-asGQLError (Right value) = pure value
+handleInputError :: Text -> Int -> InputValidation a -> Validation ()
+handleInputError key' position' (Left error') = Left $ argumentGotInvalidValue key' (inputErrorMessage error') position'
+handleInputError _ _ _ = pure ()
 
-checkArgumentType :: TypeLib -> (Text, Int) -> (Text, Argument) -> Validation (Text, Argument)
-checkArgumentType lib' (tName, position') (key', Argument value' argPosition) =
-  asGQLError (getInputType (position', key') tName lib') >>= checkType >> pure (key', Argument value' argPosition)
+validateArgumentValue :: TypeLib -> (Text, Int) -> (Text, Argument) -> Validation (Text, Argument)
+validateArgumentValue lib' (tName, _) (key', Argument value' position') =
+  getInputType tName lib' (internalUnknownTypeMessage tName) >>= checkType >> pure (key', Argument value' position')
   where
-    checkType type' = asGQLError (validateInput lib' type' argPosition (key', value'))
+    checkType type' = handleInputError key' position' (validateInput lib' type' (key', value'))
 
 validateArgument :: TypeLib -> Position -> Arguments -> (Text, InputField) -> Validation (Text, Argument)
 validateArgument types position' requestArgs (key', InputField arg) =
@@ -37,7 +39,7 @@ validateArgument types position' requestArgs (key', InputField arg) =
       if notNull arg
         then Left $ requiredArgument (MetaInfo {position = position', key = "TODO:", typeName = "TODO:"})
         else pure (key', Argument JSNull position')
-    Just (Argument value pos) -> checkArgumentType types (fieldType arg, pos) (key', Argument value pos)
+    Just (Argument value pos) -> validateArgumentValue types (fieldType arg, pos) (key', Argument value pos)
 
 onlyResolveArguments :: GQLQueryRoot -> Position -> Raw.RawArguments -> Validation Arguments
 onlyResolveArguments root _ = mapM (replaceVariable root)

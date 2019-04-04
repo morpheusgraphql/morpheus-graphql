@@ -3,15 +3,13 @@
 module Data.Morpheus.Error.Arguments
   ( requiredArgument
   , unknownArguments
-  , expectedTypeAFoundB
   , argumentError
+  , argumentGotInvalidValue
   ) where
 
-import           Data.Morpheus.Error.Input    (expectedTypeAFoundB)
 import           Data.Morpheus.Error.Utils    (errorMessage)
 import           Data.Morpheus.Types.Core     (EnhancedKey (..))
 import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors, MetaError (..))
-import           Data.Morpheus.Types.JSType   (JSType (..), ScalarValue (..))
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T (concat)
@@ -31,9 +29,14 @@ import qualified Data.Text                    as T (concat)
   - date(name: "name") -> "Unknown argument \"name\" on field \"date\" of type \"Experience\"."
 -}
 argumentError :: MetaError -> GQLErrors
-argumentError (UnknownType meta)         = expectedTypeAFoundB meta (Scalar $ String "TODO:")
-argumentError (UnknownField meta)        = expectedTypeAFoundB meta (Scalar $ String "TODO:")
-argumentError (TypeMismatch meta jsType) = expectedTypeAFoundB meta jsType
+argumentError (UnknownType meta)    = requiredArgument meta
+argumentError (UnknownField meta)   = requiredArgument meta
+argumentError (TypeMismatch meta _) = requiredArgument meta
+
+argumentGotInvalidValue :: Text -> Text -> Int -> GQLErrors
+argumentGotInvalidValue key' inputMessage' position' = errorMessage position' text
+  where
+    text = T.concat ["Argument ", key', " got invalid value ;", inputMessage']
 
 unknownArguments :: Text -> [EnhancedKey] -> GQLErrors
 unknownArguments fieldName = map keyToError
