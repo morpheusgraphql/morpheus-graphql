@@ -6,7 +6,7 @@ module Data.Morpheus.PreProcess.Variable
   ) where
 
 import qualified Data.Map                               as M (lookup)
-import           Data.Morpheus.Error.Input              (expectedEnumFoundB)
+import           Data.Morpheus.Error.Input              (expectedTypeAFoundB)
 import           Data.Morpheus.Error.Variable           (unknownType, variableIsNotDefined)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
 import           Data.Morpheus.PreProcess.Utils         (getInputType)
@@ -33,7 +33,8 @@ getVariable pos root variableID =
     Nothing    -> Left $ variableIsNotDefined $ MetaInfo {typeName = "", key = variableID, position = pos}
     Just value -> pure value
 
-handleInputError (Left x) = expectedEnumFoundB
+handleInputError (Left error) = expectedTypeAFoundB error
+handleInputError (Right _)    = pure ()
 
 checkVariableType :: TypeLib -> GQLQueryRoot -> (Text, RawArgument) -> Validation ()
 checkVariableType typeLib root (variableID, Variable tName pos) =
@@ -41,8 +42,7 @@ checkVariableType typeLib root (variableID, Variable tName pos) =
   where
     checkType inputKey _type = do
       variableValue <- getVariable pos root inputKey
-      _ <- expectedEnumFoundB $ validateInput typeLib _type pos (inputKey, variableValue)
-      pure ()
+      handleInputError $ validateInput typeLib _type (inputKey, variableValue)
 checkVariableType _ _ (_, Argument _ _) = pure ()
 
 validateVariables :: TypeLib -> GQLQueryRoot -> [(Text, RawArgument)] -> Validation ()

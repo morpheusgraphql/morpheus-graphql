@@ -1,48 +1,49 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Input
-  ( expectedTypeAFoundB
-  , typeMismatchMetaError
+  ( inputErrorMessage
   , InputError(..)
   , Prop(..)
-  , InputErrorKind(..)
   , InputValidation
   ) where
 
-import           Data.Aeson                   (encode)
-import           Data.ByteString.Lazy.Char8   (unpack)
-import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (GQLErrors, MetaError (..), MetaValidation)
-import           Data.Morpheus.Types.JSType   (JSType)
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
-import           Data.Text                    (Text)
-import qualified Data.Text                    as T (concat, pack)
+import           Data.Aeson                 (encode)
+import           Data.ByteString.Lazy.Char8 (unpack)
+import           Data.Morpheus.Types.JSType (JSType)
+import           Data.Text                  (Text)
+import qualified Data.Text                  as T (concat, intercalate, pack)
 
 type InputValidation a = Either InputError a
 
-data InputErrorKind
-  = UnexpectedType JSType
-  | UndefinedField
-  | UnknownField
+data InputError
+  = UnexpectedType [Prop]
+                   Text
+                   JSType
+  | UndefinedField [Prop]
+                   Text
+  | UnknownField [Prop]
+                 Text
 
 data Prop = Prop
   { propKey  :: Text
   , propType :: Text
   }
 
-data InputError = InputError
-  { path      :: [Prop]
-  , errorKind :: InputErrorKind
-  }
+inputErrorMessage :: InputError -> Text
+inputErrorMessage (UnexpectedType path type' jsType) = expectedTypeAFoundB path type' jsType
+inputErrorMessage (UndefinedField path' field')      = undefinedField path' field'
+inputErrorMessage (UnknownField path' field')        = unknownField path' field'
 
-typeMismatchMetaError :: Position -> Text -> JSType -> MetaValidation a
-typeMismatchMetaError pos expectedType' jsType = Left $ TypeMismatch meta jsType
-  where
-    meta = MetaInfo {typeName = expectedType', position = pos, key = ""}
+pathToText :: [Prop] -> Text
+pathToText path' = T.intercalate "." $ fmap propKey path'
 
-expectedTypeAFoundB :: MetaInfo -> JSType -> GQLErrors
-expectedTypeAFoundB meta found = errorMessage (position meta) text
-  where
-    text =
-      T.concat
-        ["Input ", key meta, ",", " Expected type \"", typeName meta, "\" found ", T.pack (unpack $ encode found), "."]
+expectedTypeAFoundB :: [Prop] -> Text -> JSType -> Text
+expectedTypeAFoundB path' expected found =
+  T.concat
+    ["Input ", pathToText path', ",", " Expected type \"", expected, "\" found ", T.pack (unpack $ encode found), "."]
+
+undefinedField :: [Prop] -> Text -> Text
+undefinedField path' field' = T.concat ["Input ", pathToText path', ",", " Undefined Field \"", field', "\"."]
+
+unknownField :: [Prop] -> Text -> Text
+unknownField path' field' = T.concat ["Input ", pathToText path', ",", " Undefined Field \"", field', "\"."]
