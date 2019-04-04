@@ -66,7 +66,7 @@ validateInputObject prop' lib' (GObject parentFields _) pos (_name, JSObject fie
   let toError = convertError pos fieldTypeName'
   inputObject' <- toError (existsInputObjectType error' lib' fieldTypeName')
   mapM (validateInputObject currentProp lib' inputObject' pos) fields >>= \x -> pure (_name, JSObject x)
-validateInputObject prop' lib' (GObject parentFields core) pos (_name, jsType) = do
+validateInputObject prop' lib' (GObject parentFields _) pos (_name, jsType) = do
   fieldTypeName' <- fieldType . unpackInputField <$> fieldOf (pos, _name) parentFields _name
   let currentProp = prop' ++ [Prop _name fieldTypeName']
   let error' = generateError currentProp jsType
