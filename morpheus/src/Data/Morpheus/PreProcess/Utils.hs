@@ -4,6 +4,7 @@ module Data.Morpheus.PreProcess.Utils
   , existsObjectType
   , lookupType
   , getInputType
+  , lookupField
   ) where
 
 import           Data.List                           ((\\))
@@ -21,6 +22,12 @@ lookupType error' lib' typeName' =
   case lookup typeName' lib' of
     Nothing -> Left error'
     Just x  -> pure x
+
+lookupField :: [(Text, fType)] -> Text -> GenError error fType
+lookupField outType fName error' =
+  case lookup fName outType of
+    Nothing    -> Left error'
+    Just field -> pure field
 
 existsTypeIn :: (Position, Key) -> [(Text, a)] -> Text -> MetaValidation a
 existsTypeIn (position', key') lib typeName' = lookupType (UnknownType meta) lib typeName'
