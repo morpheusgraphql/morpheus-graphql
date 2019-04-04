@@ -9,7 +9,8 @@ module Data.Morpheus.Error.Variable
 import           Data.Morpheus.Error.Input    (expectedTypeAFoundB)
 import           Data.Morpheus.Error.Utils    (errorMessage)
 import           Data.Morpheus.Types.Error    (GQLErrors, MetaError (..))
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
+import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
+import           Data.Text                    (Text)
 import qualified Data.Text                    as T (concat)
 
 {-|
@@ -44,10 +45,10 @@ variableValidationError (UnknownType meta)         = variableIsNotDefined meta -
 -- variableNotMatchesArgument
 -- unusedVariable :: ... -> GQLErrors
 --  query Q ($a: D) ->  "Unknown type \"D\"."
-unknownType :: MetaInfo -> GQLErrors
-unknownType meta = errorMessage (position meta) text
+unknownType :: Text -> Position -> GQLErrors
+unknownType type' position' = errorMessage position' text
   where
-    text = T.concat ["Unknown type \"", typeName meta, "\"."]
+    text = T.concat ["Unknown type \"", type', "\"."]
 
 variableIsNotDefined :: MetaInfo -> GQLErrors
 variableIsNotDefined meta = errorMessage (position meta) text

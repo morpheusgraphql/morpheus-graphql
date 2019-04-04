@@ -7,6 +7,7 @@ module Data.Morpheus.PreProcess.Arguments
   ) where
 
 import           Data.Morpheus.Error.Arguments          (argumentError, requiredArgument, unknownArguments)
+import           Data.Morpheus.Error.Internal           (internalUnknownTypeMessage)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
 import           Data.Morpheus.PreProcess.Utils         (differKeys, getInputType)
 import           Data.Morpheus.PreProcess.Variable      (replaceVariable)
@@ -25,8 +26,8 @@ asGQLError (Left err)    = Left $ argumentError err
 asGQLError (Right value) = pure value
 
 checkArgumentType :: TypeLib -> (Text, Int) -> (Text, Argument) -> Validation (Text, Argument)
-checkArgumentType lib' (tName, position') (key', Argument value' argPosition) =
-  asGQLError (getInputType (position', key') tName lib') >>= checkType >> pure (key', Argument value' argPosition)
+checkArgumentType lib' (tName, _) (key', Argument value' argPosition) =
+  getInputType tName lib' (internalUnknownTypeMessage tName) >>= checkType >> pure (key', Argument value' argPosition)
   where
     checkType type' = asGQLError (validateInput lib' type' argPosition (key', value'))
 
