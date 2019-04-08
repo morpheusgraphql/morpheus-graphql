@@ -8,12 +8,11 @@ module Data.Morpheus.PreProcess.PreProcess
   ) where
 
 import           Data.Morpheus.Error.Mutation           (mutationIsNotDefined)
-import           Data.Morpheus.Error.Selection          (duplicateQuerySelections, hasNoSubfields, selectionError,
-                                                         subfieldsNotSelected)
+import           Data.Morpheus.Error.Selection          (duplicateQuerySelections, selectionError)
 import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
-import           Data.Morpheus.PreProcess.Selection     (lookupFieldAsSelectionSet)
+import           Data.Morpheus.PreProcess.Selection     (lookupFieldAsSelectionSet, mustBeObject, notObject)
 import           Data.Morpheus.PreProcess.Spread        (prepareRawSelection)
 import           Data.Morpheus.PreProcess.Utils         (differKeys, fieldOf)
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
@@ -23,7 +22,6 @@ import qualified Data.Morpheus.Schema.Internal.Types    as SC (Field (..))
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
-import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), Position)
 import           Data.Morpheus.Types.Query.Operator     (Operator (..), RawOperator, ValidOperator)
 import           Data.Morpheus.Types.Query.RawSelection (RawArguments, RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..), SelectionSet)
@@ -36,25 +34,6 @@ asSelectionValidation = toGQLError selectionError
 
 mapSelectors :: TypeLib -> GObject ObjectField -> SelectionSet -> Validation SelectionSet
 mapSelectors typeLib type' selectors = checkDuplicatesOn type' selectors >>= mapM (validateBySchema typeLib type')
-
-isObjectKind :: ObjectField -> Bool
-isObjectKind (ObjectField _ field') = OBJECT == SC.kind field'
-
-mustBeObject :: (Text, Position) -> ObjectField -> Validation ObjectField
-mustBeObject (key', position') field' =
-  if isObjectKind field'
-    then pure field'
-    else Left $ hasNoSubfields meta
-  where
-    meta = MetaInfo {position = position', key = key', typeName = SC.fieldType $ fieldContent field'}
-
-notObject :: (Text, Position) -> ObjectField -> Validation ObjectField
-notObject (key', position') field' =
-  if isObjectKind field'
-    then Left $ subfieldsNotSelected meta
-    else pure field'
-  where
-    meta = MetaInfo {position = position', key = key', typeName = SC.fieldType $ fieldContent field'}
 
 validateBySchema :: TypeLib -> GObject ObjectField -> (Text, Selection) -> Validation (Text, Selection)
 validateBySchema lib' (GObject parentFields core) (key', SelectionSet args' selectors position') = do

@@ -9,10 +9,10 @@ import           Data.Morpheus.Error.Selection          (selectionError)
 import           Data.Morpheus.Error.Spread             (cannotBeSpreadOnType, unknownFragment)
 import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (onlyResolveArguments)
-import           Data.Morpheus.PreProcess.Utils         (existsObjectType, fieldOf)
+import           Data.Morpheus.PreProcess.Selection     (lookupFieldAsSelectionSet)
+import           Data.Morpheus.PreProcess.Utils         (fieldOf)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField (..), OutputObject,
                                                          TypeLib (..))
-import qualified Data.Morpheus.Schema.Internal.Types    as SC (Field (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
 import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), Position)
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..))
@@ -52,7 +52,7 @@ replaceVariableAndSpread ::
      TypeLib -> GQLQueryRoot -> GObject ObjectField -> (Text, RawSelection) -> Validation SelectionSet
 replaceVariableAndSpread lib' root' (GObject parentFields core) (key', RawSelectionSet rawArgs rawSelectors position') = do
   field' <- asSelectionValidation $ fieldOf (position', name core) parentFields key'
-  fieldType' <- existsObjectType position' (SC.fieldType $ fieldContent field') lib'
+  fieldType' <- lookupFieldAsSelectionSet position' key' field' lib'
   args' <- onlyResolveArguments root' position' rawArgs
   sel <- concat <$> mapM (replaceVariableAndSpread lib' root' fieldType') rawSelectors
   pure [(key', SelectionSet args' sel position')]
