@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.PreProcess.Variable
-  ( validateVariables
+  ( validateDefinedVariables
   , replaceVariable
   ) where
 
@@ -42,8 +42,8 @@ checkVariableType typeLib root (key', Variable tName pos) = getVariableType tNam
       handleInputError key' pos $ validateInput typeLib _type (key', variableValue)
 checkVariableType _ _ (_, Argument _ _) = pure ()
 
-validateVariables :: TypeLib -> GQLQueryRoot -> [(Text, RawArgument)] -> Validation ()
-validateVariables typeLib root = mapM_ (checkVariableType typeLib root)
+validateDefinedVariables :: TypeLib -> GQLQueryRoot -> [(Text, RawArgument)] -> Validation ()
+validateDefinedVariables typeLib root = mapM_ (checkVariableType typeLib root)
 
 replaceVariable :: GQLQueryRoot -> (Text, RawArgument) -> Validation (Text, Valid.Argument)
 replaceVariable root (vKey, Variable variableID pos) = do

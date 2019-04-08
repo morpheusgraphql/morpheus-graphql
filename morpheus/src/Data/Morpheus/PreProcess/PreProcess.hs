@@ -15,7 +15,7 @@ import           Data.Morpheus.PreProcess.Selection     (lookupFieldAsSelectionS
                                                          notObject)
 import           Data.Morpheus.PreProcess.Spread        (prepareRawSelection)
 import           Data.Morpheus.PreProcess.Utils         (checkNameCollision)
-import           Data.Morpheus.PreProcess.Variable      (validateVariables)
+import           Data.Morpheus.PreProcess.Variable      (validateDefinedVariables)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField (..), OutputObject,
                                                          TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.Types    as SC (Field (..))
@@ -86,7 +86,7 @@ getOperator (Mutation _ args' sel position') lib' =
 preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
 preProcessQuery lib root = do
   (query', args', rawSel) <- getOperator (queryBody root) lib
-  validateVariables lib root args'
+  validateDefinedVariables lib root args'
   validateFragments lib root
   sel <- prepareRawSelection lib root rawSel (setFieldSchema query')
   selectors <- mapSelectors lib (setFieldSchema query') sel
