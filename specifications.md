@@ -2,13 +2,13 @@
 
 ### InputValue:
 
-- **expectedAFoundB**: input value does matches to schema type
-- **undefinedField**: required field not found on input value
-- **unknownField**: field does not exists on inputObject
+- **expectedAFoundB**: input value does matches to schema type ✅
+- **undefinedField**: required field not found on input value ✅
+- **unknownField**: field does not exists on inputObject ✅
 
 ### Mutation:
 
-- **mutationNotSupported**: mutation is not defined by schema
+- **mutationNotSupported**: mutation is not defined by schema ✅
 
 ### Query
 
@@ -38,8 +38,9 @@
 
 - **Spread:**
 
-  - **unknownFragment**:
-  - **incompatibleTargetType**:
+  - **unknownFragment**: ✅
+  - **cannotBeSpreadOnType**: ✅
+  - **nameConflict**:
 
 - **Fragment**: whole spread will be done there (for performance reason), Selection and Argument will be Validated on Query, because there will be no unused fragment we will validate all subfields.
 
