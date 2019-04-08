@@ -115,6 +115,6 @@ preProcessQuery lib root = do
   (query', args', rawSel) <- getOperator (queryBody root) lib
   validateVariables lib root args'
   validateFragments lib root
-  sel <- prepareRawSelection root rawSel
+  sel <- prepareRawSelection lib root rawSel query'
   selectors <- mapSelectors lib (setFieldSchema query') sel
   pure $ updateQuery (queryBody root) selectors

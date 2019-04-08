@@ -7,12 +7,11 @@ module Data.Morpheus.PreProcess.Fragment
 import qualified Data.Map                               as M (toList)
 import           Data.Morpheus.Error.Fragment           (cycleOnFragment, fragmentError)
 import           Data.Morpheus.Error.Selection          (selectionError)
-import           Data.Morpheus.Error.Spread             (cannotBeSpreadOnType)
 import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (resolveArguments)
-import           Data.Morpheus.PreProcess.Spread        (getFragment)
+import           Data.Morpheus.PreProcess.Spread        (castFragmentType, getFragment)
 import           Data.Morpheus.PreProcess.Utils         (existsObjectType, fieldOf)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), Field (..), GObject (..), ObjectField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.Types    (Core (..), Field (..), GObject (..), OutputObject,ObjectField (..), TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..))
@@ -34,15 +33,9 @@ asGQLError :: MetaValidation a -> Validation a
 asGQLError (Left err)    = Left $ fragmentError err
 asGQLError (Right value) = pure value
 
-compareFragmentType :: Meta.MetaInfo -> GObject ObjectField -> Fragment -> Validation (GObject ObjectField)
-compareFragmentType spreadMeta (GObject fields core) fragment =
-  if name core == target fragment
-    then pure (GObject fields core)
-    else Left $ cannotBeSpreadOnType (spreadMeta {Meta.typeName = target fragment}) (name core)
-
-getSpreadType :: FragmentLib -> GObject ObjectField -> Text -> Meta.MetaInfo -> Validation (GObject ObjectField)
-getSpreadType frags _type fragmentID spreadMeta =
-  getFragment (Meta.position spreadMeta) fragmentID frags >>= compareFragmentType spreadMeta _type
+getSpreadType :: FragmentLib -> OutputObject -> Text -> Meta.MetaInfo -> Validation Fragment
+getSpreadType frags outObject' fragmentID spreadMeta =
+  getFragment (Meta.position spreadMeta) fragmentID frags >>= castFragmentType spreadMeta outObject'
 
 validateFragmentFields :: TypeLib -> GQLQueryRoot -> GObject ObjectField -> (Text, RawSelection) -> Validation [Node]
 validateFragmentFields lib' root (GObject parentFields core) (name', RawSelectionSet args' selectors sPos) = do
