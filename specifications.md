@@ -14,9 +14,9 @@
 
 - **Arguments:**
 
-  - **unknownArgument**:
-  - **undefinedArgument**:
-  - **invalidInputValue -> InputValue**:
+  - **unknownArgument**: ✅
+  - **undefinedArgument**: ✅
+  - **invalidInputValue -> InputValue**: ✅
   - **nameConflict**:
 
 - **Variable:** input Value Will be validated on query argument validation, because there will not be unused Variable all inputValues(variables) will be checked

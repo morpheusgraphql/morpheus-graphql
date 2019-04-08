@@ -6,7 +6,7 @@ module Data.Morpheus.PreProcess.Arguments
   , onlyResolveArguments
   ) where
 
-import           Data.Morpheus.Error.Arguments          (argumentGotInvalidValue, requiredArgument, unknownArguments)
+import           Data.Morpheus.Error.Arguments          (argumentGotInvalidValue, undefinedArgument, unknownArguments)
 import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Internal           (internalUnknownTypeMessage)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
@@ -37,7 +37,7 @@ validateArgument types position' requestArgs (key', InputField arg) =
   case lookup key' requestArgs of
     Nothing ->
       if notNull arg
-        then Left $ requiredArgument (MetaInfo {position = position', key = "TODO:", typeName = "TODO:"})
+        then Left $ undefinedArgument (MetaInfo {position = position', key = "TODO:", typeName = "TODO:"})
         else pure (key', Argument JSNull position')
     Just (Argument value pos) -> validateArgumentValue types (fieldType arg) (key', Argument value pos)
 

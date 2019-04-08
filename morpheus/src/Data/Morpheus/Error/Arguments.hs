@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Arguments
-  ( requiredArgument
+  ( undefinedArgument
   , unknownArguments
   , argumentGotInvalidValue
   ) where
@@ -38,7 +38,7 @@ unknownArguments fieldName = map keyToError
     keyToError (EnhancedKey argName pos) = GQLError {desc = toMessage argName, posIndex = [pos]}
     toMessage argName = T.concat ["Unknown Argument \"", argName, "\" on Field \"", fieldName, "\"."]
 
-requiredArgument :: MetaInfo -> GQLErrors
-requiredArgument meta = errorMessage (position meta) text
+undefinedArgument :: MetaInfo -> GQLErrors
+undefinedArgument meta = errorMessage (position meta) text
   where
-    text = T.concat ["Required Argument: \"", key meta, "\" not Found on type \"", typeName meta, "\"."]
+    text = T.concat ["Undefined Required Argument: \"", key meta, "\" not Found on type \"", typeName meta, "\"."]
