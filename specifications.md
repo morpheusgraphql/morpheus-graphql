@@ -24,9 +24,9 @@
   - **nameConflict**:
   - **uninitializedVariable**: variable defined in query head ,but not found request body
   - **undefinedVariable**: referenced variable is not defined
-  - **unknownType**: variable type does not exists
+  - **unknownType**: variable type does not exists ✅
   - **incompatibleVariableType**: argument references variable with different type
-  - **invalidInputValue**: validation of input fails
+  - **invalidInputValue**: validation of input fails ✅
   - **unusedVariable**:
 
 - **Selection:** ✅

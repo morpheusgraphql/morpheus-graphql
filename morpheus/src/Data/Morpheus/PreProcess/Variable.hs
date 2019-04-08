@@ -7,7 +7,7 @@ module Data.Morpheus.PreProcess.Variable
 
 import qualified Data.Map                               as M (lookup)
 import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
-import           Data.Morpheus.Error.Variable           (unknownType, variableGotInvalidValue, variableIsNotDefined)
+import           Data.Morpheus.Error.Variable           (undefinedVariable, unknownType, variableGotInvalidValue)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
 import           Data.Morpheus.PreProcess.Utils         (getInputType)
 import           Data.Morpheus.Schema.Internal.Types    (InputType, TypeLib)
@@ -30,7 +30,7 @@ getVariableType type' position' lib' = getInputType type' lib' error'
 getVariable :: Position -> GQLQueryRoot -> Text -> Validation JSType
 getVariable pos root variableID =
   case M.lookup variableID (inputVariables root) of
-    Nothing    -> Left $ variableIsNotDefined $ MetaInfo {typeName = "", key = variableID, position = pos}
+    Nothing    -> Left $ undefinedVariable $ MetaInfo {typeName = "", key = variableID, position = pos}
     Just value -> pure value
 
 handleInputError :: Text -> Int -> InputValidation a -> Validation ()

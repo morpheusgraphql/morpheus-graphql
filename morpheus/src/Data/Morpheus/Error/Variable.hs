@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Variable
-  ( variableIsNotDefined
+  ( undefinedVariable
   , unknownType
   , variableGotInvalidValue
   ) where
@@ -49,7 +49,7 @@ unknownType type' position' = errorMessage position' text
   where
     text = T.concat ["Unknown type \"", type', "\"."]
 
-variableIsNotDefined :: MetaInfo -> GQLErrors
-variableIsNotDefined meta = errorMessage (position meta) text
+undefinedVariable :: MetaInfo -> GQLErrors
+undefinedVariable meta = errorMessage (position meta) text
   where
     text = T.concat ["Variable \"", key meta, "\" is not defined by operation \"", typeName meta, "\"."]
