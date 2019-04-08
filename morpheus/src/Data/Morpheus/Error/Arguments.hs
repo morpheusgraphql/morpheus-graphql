@@ -4,6 +4,7 @@ module Data.Morpheus.Error.Arguments
   ( undefinedArgument
   , unknownArguments
   , argumentGotInvalidValue
+  , argumentNameCollision
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
@@ -37,6 +38,12 @@ unknownArguments fieldName = map keyToError
   where
     keyToError (EnhancedKey argName pos) = GQLError {desc = toMessage argName, posIndex = [pos]}
     toMessage argName = T.concat ["Unknown Argument \"", argName, "\" on Field \"", fieldName, "\"."]
+
+argumentNameCollision :: [EnhancedKey] -> GQLErrors
+argumentNameCollision = map keyToError
+  where
+    keyToError (EnhancedKey argName pos) = GQLError {desc = toMessage argName, posIndex = [pos]}
+    toMessage argName = T.concat ["There can Be only One Argument Named \"", argName]
 
 undefinedArgument :: MetaInfo -> GQLErrors
 undefinedArgument meta = errorMessage (position meta) text

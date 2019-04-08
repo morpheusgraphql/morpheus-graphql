@@ -6,6 +6,7 @@ module Data.Morpheus.PreProcess.Utils
   , getInputType
   , lookupField
   , checkNameCollision
+  , checkForUnknownKeys
   ) where
 
 import           Data.List                           ((\\))
@@ -56,10 +57,20 @@ fieldOf (pos, tName) outType fName =
 differKeys :: [EnhancedKey] -> [Key] -> [EnhancedKey]
 differKeys enhanced keys = enhanced \\ map enhanceKeyWithNull keys
 
+removeDuplicates :: Ord a => [a] -> [a]
+removeDuplicates = S.toList . S.fromList
+
+elementOfKeys :: [Text] -> EnhancedKey -> Bool
+elementOfKeys keys' EnhancedKey {uid = id'} = id' `elem` keys'
+
 checkNameCollision :: [EnhancedKey] -> [Text] -> ([EnhancedKey] -> error) -> Either error [EnhancedKey]
 checkNameCollision enhancedKeys' keys' errorGenerator' =
-  case differKeys enhancedKeys' (withoutDuplicates keys') of
+  case differKeys enhancedKeys' (removeDuplicates keys') of
     []          -> pure enhancedKeys'
     duplicates' -> Left $ errorGenerator' duplicates'
-  where
-    withoutDuplicates = S.toList . S.fromList
+
+checkForUnknownKeys :: [EnhancedKey] -> [Text] -> ([EnhancedKey] -> error) -> Either error [EnhancedKey]
+checkForUnknownKeys enhancedKeys' keys' errorGenerator' =
+  case filter (not . elementOfKeys keys') enhancedKeys' of
+    []           -> pure enhancedKeys'
+    unknownKeys' -> Left $ errorGenerator' unknownKeys'

@@ -6,11 +6,12 @@ module Data.Morpheus.PreProcess.Arguments
   , onlyResolveArguments
   ) where
 
-import           Data.Morpheus.Error.Arguments          (argumentGotInvalidValue, undefinedArgument, unknownArguments)
+import           Data.Morpheus.Error.Arguments          (argumentGotInvalidValue, argumentNameCollision,
+                                                         undefinedArgument, unknownArguments)
 import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Internal           (internalUnknownTypeMessage)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
-import           Data.Morpheus.PreProcess.Utils         (differKeys, getInputType)
+import           Data.Morpheus.PreProcess.Utils         (checkForUnknownKeys, checkNameCollision, getInputType)
 import           Data.Morpheus.PreProcess.Variable      (replaceVariable)
 import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField (..), ObjectField (..), TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
@@ -46,10 +47,11 @@ onlyResolveArguments root _ = mapM (replaceVariable root)
 
 checkForUnknownArguments :: (Text, ObjectField) -> Arguments -> Validation [(Text, InputField)]
 checkForUnknownArguments (fieldKey', ObjectField fieldArgs _) args' =
-  case differKeys (map argToKey args') fieldKeys of
-    []          -> pure fieldArgs
-    unknownArgs -> Left $ unknownArguments fieldKey' unknownArgs
+  checkForUnknownKeys enhancedKeys' fieldKeys error' >> checkNameCollision enhancedKeys' fieldKeys argumentNameCollision >>
+  pure fieldArgs
   where
+    error' = unknownArguments fieldKey'
+    enhancedKeys' = map argToKey args'
     argToKey (key', Argument _ pos) = EnhancedKey key' pos
     fieldKeys = map fst fieldArgs
 
