@@ -3,6 +3,7 @@ module Data.Morpheus.PreProcess.Selection
   , lookupSelectionObjectFieldType
   , mustBeObject
   , notObject
+  , lookupSelectionField
   ) where
 
 import           Data.Morpheus.Error.Selection       (cannotQueryField, hasNoSubfields, subfieldsNotSelected)

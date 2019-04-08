@@ -12,7 +12,8 @@ import           Data.Morpheus.Error.Selection          (duplicateQuerySelection
 import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
-import           Data.Morpheus.PreProcess.Selection     (lookupFieldAsSelectionSet, mustBeObject, notObject)
+import           Data.Morpheus.PreProcess.Selection     (lookupFieldAsSelectionSet, lookupSelectionField, mustBeObject,
+                                                         notObject)
 import           Data.Morpheus.PreProcess.Spread        (prepareRawSelection)
 import           Data.Morpheus.PreProcess.Utils         (differKeys, fieldOf)
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
@@ -37,15 +38,15 @@ mapSelectors typeLib type' selectors = checkDuplicatesOn type' selectors >>= map
 
 validateBySchema :: TypeLib -> GObject ObjectField -> (Text, Selection) -> Validation (Text, Selection)
 validateBySchema lib' (GObject parentFields core) (key', SelectionSet args' selectors position') = do
-  field' <- asSelectionValidation (fieldOf (position', name core) parentFields key') >>= mustBeObject (key', position')
-  typeSD <- lookupFieldAsSelectionSet position' key' lib' field'
-  headQS <- validateArguments lib' (key', field') position' args'
-  selectorsQS <- mapSelectors lib' typeSD selectors
-  pure (key', SelectionSet headQS selectorsQS position')
+  field' <- lookupSelectionField position' key' (GObject parentFields core) >>= mustBeObject (key', position')
+  fieldType' <- lookupFieldAsSelectionSet position' key' lib' field'
+  arguments' <- validateArguments lib' (key', field') position' args'
+  selectorsQS <- mapSelectors lib' fieldType' selectors
+  pure (key', SelectionSet arguments' selectorsQS position')
 validateBySchema typeLib (GObject parentFields core) (name', Field args' field sPos) = do
   field' <- asSelectionValidation (fieldOf (sPos, name core) parentFields name') >>= notObject (name', sPos)
-  headQS <- validateArguments typeLib (name', field') sPos args'
-  pure (name', Field headQS field sPos)
+  arguments' <- validateArguments typeLib (name', field') sPos args'
+  pure (name', Field arguments' field sPos)
 
 selToKey :: (Text, Selection) -> EnhancedKey
 selToKey (sName, Field _ _ pos)        = EnhancedKey sName pos
