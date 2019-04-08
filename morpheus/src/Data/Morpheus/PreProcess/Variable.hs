@@ -34,16 +34,16 @@ handleInputError :: Text -> Int -> InputValidation a -> Validation ()
 handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
 handleInputError _ _ _ = pure ()
 
-checkVariableType :: TypeLib -> GQLQueryRoot -> (Text, RawArgument) -> Validation ()
-checkVariableType typeLib root (key', Variable tName pos) = getVariableType tName pos typeLib >>= checkType
+lookupAndValidateValueOnBody :: TypeLib -> GQLQueryRoot -> (Text, RawArgument) -> Validation ()
+lookupAndValidateValueOnBody typeLib root (key', Variable tName pos) = getVariableType tName pos typeLib >>= checkType
   where
     checkType _type = do
       variableValue <- getVariable pos root key'
       handleInputError key' pos $ validateInput typeLib _type (key', variableValue)
-checkVariableType _ _ (_, Argument _ _) = pure ()
+lookupAndValidateValueOnBody _ _ (_, Argument _ _) = pure ()
 
 validateDefinedVariables :: TypeLib -> GQLQueryRoot -> [(Text, RawArgument)] -> Validation ()
-validateDefinedVariables typeLib root = mapM_ (checkVariableType typeLib root)
+validateDefinedVariables typeLib root = mapM_ (lookupAndValidateValueOnBody typeLib root)
 
 replaceVariable :: GQLQueryRoot -> (Text, RawArgument) -> Validation (Text, Valid.Argument)
 replaceVariable root (vKey, Variable variableID pos) = do
