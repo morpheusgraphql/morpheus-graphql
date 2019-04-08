@@ -13,8 +13,9 @@ import           Data.Morpheus.Error.Selection          (duplicateQuerySelection
 import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
+import           Data.Morpheus.PreProcess.Selection     (lookupFieldAsSelectionSet)
 import           Data.Morpheus.PreProcess.Spread        (prepareRawSelection)
-import           Data.Morpheus.PreProcess.Utils         (differKeys, existsObjectType, fieldOf)
+import           Data.Morpheus.PreProcess.Utils         (differKeys, fieldOf)
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField (..), OutputObject,
                                                          TypeLib (..))
@@ -56,13 +57,12 @@ notObject (key', position') field' =
     meta = MetaInfo {position = position', key = key', typeName = SC.fieldType $ fieldContent field'}
 
 validateBySchema :: TypeLib -> GObject ObjectField -> (Text, Selection) -> Validation (Text, Selection)
-validateBySchema lib' (GObject parentFields core) (name', SelectionSet args' selectors position') = do
-  field' <-
-    asSelectionValidation (fieldOf (position', name core) parentFields name') >>= mustBeObject (name', position')
-  typeSD <- existsObjectType position' (SC.fieldType $ fieldContent field') lib'
-  headQS <- validateArguments lib' (name', field') position' args'
+validateBySchema lib' (GObject parentFields core) (key', SelectionSet args' selectors position') = do
+  field' <- asSelectionValidation (fieldOf (position', name core) parentFields key') >>= mustBeObject (key', position')
+  typeSD <- lookupFieldAsSelectionSet position' key' field' lib'
+  headQS <- validateArguments lib' (key', field') position' args'
   selectorsQS <- mapSelectors lib' typeSD selectors
-  pure (name', SelectionSet headQS selectorsQS position')
+  pure (key', SelectionSet headQS selectorsQS position')
 validateBySchema typeLib (GObject parentFields core) (name', Field args' field sPos) = do
   field' <- asSelectionValidation (fieldOf (sPos, name core) parentFields name') >>= notObject (name', sPos)
   headQS <- validateArguments typeLib (name', field') sPos args'
