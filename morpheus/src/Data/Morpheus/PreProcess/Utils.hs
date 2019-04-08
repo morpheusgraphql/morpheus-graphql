@@ -8,10 +8,11 @@ module Data.Morpheus.PreProcess.Utils
   ) where
 
 import           Data.List                           ((\\))
+import           Data.Morpheus.Error.Variable        (unknownType)
 import           Data.Morpheus.Schema.Internal.Types (InputType, InternalType (..), Leaf (..), OutputObject,
                                                       TypeLib (..))
 import           Data.Morpheus.Types.Core            (EnhancedKey (..), Key, enhanceKeyWithNull)
-import           Data.Morpheus.Types.Error           (MetaError (..), MetaValidation)
+import           Data.Morpheus.Types.Error           (MetaError (..), MetaValidation, Validation)
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
 import           Data.Text                           (Text)
 
@@ -29,11 +30,6 @@ lookupField outType fName error' =
     Nothing    -> Left error'
     Just field -> pure field
 
-existsTypeIn :: (Position, Key) -> [(Text, a)] -> Text -> MetaValidation a
-existsTypeIn (position', key') lib typeName' = lookupType (UnknownType meta) lib typeName'
-  where
-    meta = MetaInfo {position = position', typeName = typeName', key = key'}
-
 getInputType :: Text -> TypeLib -> GenError error InputType
 getInputType typeName' lib error' =
   case lookup typeName' (inputObject lib) of
@@ -44,8 +40,10 @@ getInputType typeName' lib error' =
         Just (LScalar x) -> pure (Scalar x)
         Just (LEnum x y) -> pure (Enum x y)
 
-existsObjectType :: (Position, Key) -> Text -> TypeLib -> MetaValidation OutputObject
-existsObjectType (position', key') typeName' lib = existsTypeIn (position', key') (object lib) typeName'
+existsObjectType :: Position -> Text -> TypeLib -> Validation OutputObject
+existsObjectType position' typeName' lib = lookupType error' (object lib) typeName'
+  where
+    error' = unknownType typeName' position'
 
 fieldOf :: (Position, Text) -> [(Text, fType)] -> Text -> MetaValidation fType
 fieldOf (pos, tName) outType fName =
