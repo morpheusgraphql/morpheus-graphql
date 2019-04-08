@@ -50,12 +50,12 @@ asSelectionValidation = toGQLError selectionError
 
 replaceVariableAndSpread ::
      TypeLib -> GQLQueryRoot -> GObject ObjectField -> (Text, RawSelection) -> Validation SelectionSet
-replaceVariableAndSpread lib' root' (GObject parentFields core) (key', RawSelectionSet rawArgs rawSelectors sPos) = do
-  field' <- asSelectionValidation $ fieldOf (sPos, name core) parentFields key'
-  fieldType' <- asSelectionValidation $ existsObjectType (sPos, name core) (SC.fieldType $ fieldContent field') lib'
-  args' <- onlyResolveArguments root' sPos rawArgs
+replaceVariableAndSpread lib' root' (GObject parentFields core) (key', RawSelectionSet rawArgs rawSelectors position') = do
+  field' <- asSelectionValidation $ fieldOf (position', name core) parentFields key'
+  fieldType' <- existsObjectType position' (SC.fieldType $ fieldContent field') lib'
+  args' <- onlyResolveArguments root' position' rawArgs
   sel <- concat <$> mapM (replaceVariableAndSpread lib' root' fieldType') rawSelectors
-  pure [(key', SelectionSet args' sel sPos)]
+  pure [(key', SelectionSet args' sel position')]
 replaceVariableAndSpread _ root' _ (sKey, RawField rawArgs field sPos) = do
   args' <- onlyResolveArguments root' sPos rawArgs
   pure [(sKey, Field args' field sPos)]

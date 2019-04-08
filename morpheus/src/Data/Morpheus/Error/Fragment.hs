@@ -1,13 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Fragment
-  ( cycleOnFragment
-  , fragmentError
+  ( cannotSpreadWithinItself
   ) where
 
 -- import Data.Morpheus.Error.Utils (errorMessage)
 import           Data.Morpheus.Types.Core  (EnhancedKey (..))
-import           Data.Morpheus.Types.Error (GQLError (..), GQLErrors, MetaError (..))
+import           Data.Morpheus.Types.Error (GQLError (..), GQLErrors)
 
 -- import Data.Morpheus.Types.MetaInfo (MetaInfo(..))
 import qualified Data.Text                 as T
@@ -23,13 +22,8 @@ import qualified Data.Text                 as T
     fragment H on D {...}  ->  "Unknown type \"D\"."
     {...H} -> "Unknown fragment \"H\"."
 -}
-fragmentError :: MetaError -> GQLErrors
-fragmentError (UnknownType _)    = cycleOnFragment [] -- TODO should not Apairs
-fragmentError (UnknownField _)   = cycleOnFragment [] -- TODO should not Apairs
-fragmentError (TypeMismatch _ _) = cycleOnFragment [] -- TODO find better solution
-
-cycleOnFragment :: [EnhancedKey] -> GQLErrors
-cycleOnFragment fragments = [GQLError {desc = text, posIndex = map location fragments}]
+cannotSpreadWithinItself :: [EnhancedKey] -> GQLErrors
+cannotSpreadWithinItself fragments = [GQLError {desc = text, posIndex = map location fragments}]
   where
     text =
       T.concat

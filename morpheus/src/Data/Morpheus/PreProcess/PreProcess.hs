@@ -56,12 +56,13 @@ notObject (key', position') field' =
     meta = MetaInfo {position = position', key = key', typeName = SC.fieldType $ fieldContent field'}
 
 validateBySchema :: TypeLib -> GObject ObjectField -> (Text, Selection) -> Validation (Text, Selection)
-validateBySchema lib' (GObject parentFields core) (name', SelectionSet args' selectors sPos) = do
-  field' <- asSelectionValidation (fieldOf (sPos, name core) parentFields name') >>= mustBeObject (name', sPos)
-  typeSD <- asSelectionValidation $ existsObjectType (sPos, name') (SC.fieldType $ fieldContent field') lib'
-  headQS <- validateArguments lib' (name', field') sPos args'
+validateBySchema lib' (GObject parentFields core) (name', SelectionSet args' selectors position') = do
+  field' <-
+    asSelectionValidation (fieldOf (position', name core) parentFields name') >>= mustBeObject (name', position')
+  typeSD <- existsObjectType position' (SC.fieldType $ fieldContent field') lib'
+  headQS <- validateArguments lib' (name', field') position' args'
   selectorsQS <- mapSelectors lib' typeSD selectors
-  pure (name', SelectionSet headQS selectorsQS sPos)
+  pure (name', SelectionSet headQS selectorsQS position')
 validateBySchema typeLib (GObject parentFields core) (name', Field args' field sPos) = do
   field' <- asSelectionValidation (fieldOf (sPos, name core) parentFields name') >>= notObject (name', sPos)
   headQS <- validateArguments typeLib (name', field') sPos args'
