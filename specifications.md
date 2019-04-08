@@ -21,11 +21,11 @@
 
 - **Variable:** input Value Will be validated on query argument validation, because there will not be unused Variable all inputValues(variables) will be checked
 
-  - **nameConflict**:
-  - **uninitializedVariable**: variable defined in query head ,but not found request body
-  - **undefinedVariable**: referenced variable is not defined
+  - **nameConflict**: ❌
+  - **uninitializedVariable**: variable defined in query head ,but not found request body ❌
+  - **undefinedVariable**: referenced variable is not defined by operation QueryName | MutationName ⚠️
   - **unknownType**: variable type does not exists ✅
-  - **incompatibleVariableType**: argument references variable with different type
+  - **incompatibleVariableType**: argument references variable with different type ❌
   - **invalidInputValue**: validation of input fails ✅
   - **unusedVariable**:
 
@@ -40,11 +40,11 @@
 
   - **unknownFragment**: ✅
   - **cannotBeSpreadOnType**: ✅
-  - **nameConflict**:
+  - **nameConflict**: ❌
 
 - **Fragment**: whole spread will be done there (for performance reason), Selection and Argument will be Validated on Query, because there will be no unused fragment we will validate all subfields.
 
-  - **unusedFragment**:
-  - **unknownTargetType**:
-  - **cannotSpreadWithinItself**:
+  - **unusedFragment**: ❌
+  - **unknownTargetType**: ✅
+  - **cannotSpreadWithinItself**: ✅
   - **nameConflict**: duplicate fragment with same name
