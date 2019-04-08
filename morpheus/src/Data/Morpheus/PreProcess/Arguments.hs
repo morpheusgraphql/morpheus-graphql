@@ -26,9 +26,9 @@ handleInputError :: Text -> Int -> InputValidation a -> Validation ()
 handleInputError key' position' (Left error') = Left $ argumentGotInvalidValue key' (inputErrorMessage error') position'
 handleInputError _ _ _ = pure ()
 
-validateArgumentValue :: TypeLib -> (Text, Int) -> (Text, Argument) -> Validation (Text, Argument)
-validateArgumentValue lib' (tName, _) (key', Argument value' position') =
-  getInputType tName lib' (internalUnknownTypeMessage tName) >>= checkType >> pure (key', Argument value' position')
+validateArgumentValue :: TypeLib -> Text -> (Text, Argument) -> Validation (Text, Argument)
+validateArgumentValue lib' typeID' (key', Argument value' position') =
+  getInputType typeID' lib' (internalUnknownTypeMessage typeID') >>= checkType >> pure (key', Argument value' position')
   where
     checkType type' = handleInputError key' position' (validateInput lib' type' (key', value'))
 
@@ -39,7 +39,7 @@ validateArgument types position' requestArgs (key', InputField arg) =
       if notNull arg
         then Left $ requiredArgument (MetaInfo {position = position', key = "TODO:", typeName = "TODO:"})
         else pure (key', Argument JSNull position')
-    Just (Argument value pos) -> validateArgumentValue types (fieldType arg, pos) (key', Argument value pos)
+    Just (Argument value pos) -> validateArgumentValue types (fieldType arg) (key', Argument value pos)
 
 onlyResolveArguments :: GQLQueryRoot -> Position -> Raw.RawArguments -> Validation Arguments
 onlyResolveArguments root _ = mapM (replaceVariable root)
