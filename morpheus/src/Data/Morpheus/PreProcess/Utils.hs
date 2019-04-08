@@ -5,6 +5,7 @@ module Data.Morpheus.PreProcess.Utils
   , lookupType
   , getInputType
   , lookupField
+  , checkNameCollision
   ) where
 
 import           Data.List                           ((\\))
@@ -14,6 +15,7 @@ import           Data.Morpheus.Schema.Internal.Types (InputType, InternalType (.
 import           Data.Morpheus.Types.Core            (EnhancedKey (..), Key, enhanceKeyWithNull)
 import           Data.Morpheus.Types.Error           (MetaError (..), MetaValidation, Validation)
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
+import qualified Data.Set                            as S
 import           Data.Text                           (Text)
 
 type GenError error a = error -> Either error a
@@ -53,3 +55,11 @@ fieldOf (pos, tName) outType fName =
 
 differKeys :: [EnhancedKey] -> [Key] -> [EnhancedKey]
 differKeys enhanced keys = enhanced \\ map enhanceKeyWithNull keys
+
+checkNameCollision :: [EnhancedKey] -> [Text] -> ([EnhancedKey] -> error) -> Either error [EnhancedKey]
+checkNameCollision enhancedKeys' keys' errorGenerator' =
+  case differKeys enhancedKeys' (withoutDuplicates keys') of
+    []          -> pure enhancedKeys'
+    duplicates' -> Left $ errorGenerator' duplicates'
+  where
+    withoutDuplicates = S.toList . S.fromList

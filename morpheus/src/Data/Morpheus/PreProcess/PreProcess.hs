@@ -14,7 +14,7 @@ import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
 import           Data.Morpheus.PreProcess.Selection     (lookupFieldAsSelectionSet, lookupSelectionField, mustBeObject,
                                                          notObject)
 import           Data.Morpheus.PreProcess.Spread        (prepareRawSelection)
-import           Data.Morpheus.PreProcess.Utils         (differKeys)
+import           Data.Morpheus.PreProcess.Utils         (checkNameCollision)
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField (..), OutputObject,
                                                          TypeLib (..))
@@ -26,7 +26,6 @@ import           Data.Morpheus.Types.Query.Operator     (Operator (..), RawOpera
 import           Data.Morpheus.Types.Query.RawSelection (RawArguments, RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..), SelectionSet)
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
-import qualified Data.Set                               as S
 import           Data.Text                              (Text)
 
 mapSelectors :: TypeLib -> GObject ObjectField -> SelectionSet -> Validation SelectionSet
@@ -49,13 +48,10 @@ selToKey (sName, Field _ _ pos)        = EnhancedKey sName pos
 selToKey (sName, SelectionSet _ _ pos) = EnhancedKey sName pos
 
 checkDuplicatesOn :: GObject ObjectField -> SelectionSet -> Validation SelectionSet
-checkDuplicatesOn (GObject _ core) keys =
-  case differKeys enhancedKeys noDuplicates of
-    []         -> pure keys
-    duplicates -> Left $ duplicateQuerySelections (name core) duplicates
+checkDuplicatesOn (GObject _ core) keys = checkNameCollision enhancedKeys (map fst keys) error' >> pure keys
   where
+    error' = duplicateQuerySelections (name core)
     enhancedKeys = map selToKey keys
-    noDuplicates = S.toList $ S.fromList (map fst keys)
 
 updateQuery :: RawOperator -> SelectionSet -> ValidOperator
 updateQuery (Query name' _ _ pos) sel    = Query name' [] sel pos
