@@ -9,20 +9,19 @@ module Data.Morpheus.PreProcess.PreProcess
 
 import           Data.Morpheus.Error.Mutation           (mutationIsNotDefined)
 import           Data.Morpheus.Error.Selection          (duplicateQuerySelections)
-import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
 import           Data.Morpheus.PreProcess.Selection     (lookupFieldAsSelectionSet, lookupSelectionField, mustBeObject,
                                                          notObject)
 import           Data.Morpheus.PreProcess.Spread        (prepareRawSelection)
-import           Data.Morpheus.PreProcess.Utils         (differKeys, fieldOf)
+import           Data.Morpheus.PreProcess.Utils         (differKeys)
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField (..), OutputObject,
                                                          TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.Types    as SC (Field (..))
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
-import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
+import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.Query.Operator     (Operator (..), RawOperator, ValidOperator)
 import           Data.Morpheus.Types.Query.RawSelection (RawArguments, RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..), SelectionSet)
