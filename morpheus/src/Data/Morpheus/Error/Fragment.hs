@@ -1,17 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Fragment
-  ( unknownFragment
-  , cannotBeSpreadOnType
-  , cycleOnFragment
+  ( cycleOnFragment
   , fragmentError
   ) where
 
-import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Core     (EnhancedKey (..))
-import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors, MetaError (..))
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
-import qualified Data.Text                    as T
+-- import Data.Morpheus.Error.Utils (errorMessage)
+import           Data.Morpheus.Types.Core  (EnhancedKey (..))
+import           Data.Morpheus.Types.Error (GQLError (..), GQLErrors, MetaError (..))
+
+-- import Data.Morpheus.Types.MetaInfo (MetaInfo(..))
+import qualified Data.Text                 as T
 
 {-
   FRAGMENT:
@@ -25,28 +24,9 @@ import qualified Data.Text                    as T
     {...H} -> "Unknown fragment \"H\"."
 -}
 fragmentError :: MetaError -> GQLErrors
-fragmentError (UnknownType meta)    = unknownFragment meta
-fragmentError (UnknownField meta)   = unknownFragment meta -- TODO should not Apairs
-fragmentError (TypeMismatch meta _) = unknownFragment meta -- TODO find better solution
-
-unknownFragment :: MetaInfo -> GQLErrors
-unknownFragment meta = errorMessage (position meta) text
-  where
-    text = T.concat ["Unknown fragment \"", key meta, "\"."]
-
-cannotBeSpreadOnType :: MetaInfo -> T.Text -> GQLErrors
-cannotBeSpreadOnType spread selectionType = errorMessage (position spread) text
-  where
-    text =
-      T.concat
-        [ "Fragment \""
-        , key spread
-        , "\" cannot be spread here as objects of type \""
-        , typeName spread
-        , "\" can never be of type \""
-        , selectionType
-        , "\"."
-        ]
+fragmentError (UnknownType _)    = cycleOnFragment [] -- TODO should not Apairs
+fragmentError (UnknownField _)   = cycleOnFragment [] -- TODO should not Apairs
+fragmentError (TypeMismatch _ _) = cycleOnFragment [] -- TODO find better solution
 
 cycleOnFragment :: [EnhancedKey] -> GQLErrors
 cycleOnFragment fragments = [GQLError {desc = text, posIndex = map location fragments}]

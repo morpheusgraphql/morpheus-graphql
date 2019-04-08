@@ -1,28 +1,30 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Data.Morpheus.PreProcess.Spread
   ( prepareRawSelection
+  , getFragment
   ) where
 
 import qualified Data.Map                               as M (lookup)
-import           Data.Morpheus.Error.Fragment           (unknownFragment)
+import           Data.Morpheus.Error.Spread             (unknownFragment)
 import           Data.Morpheus.PreProcess.Arguments     (onlyResolveArguments)
 import           Data.Morpheus.Types.Error              (Validation)
-import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), Position)
-import           Data.Morpheus.Types.Query.Fragment     (Fragment (..))
+import           Data.Morpheus.Types.MetaInfo           (Position)
+import           Data.Morpheus.Types.Query.Fragment     (Fragment (..), FragmentLib)
 import           Data.Morpheus.Types.Query.RawSelection (RawSelection (..), RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..), SelectionSet)
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Text                              (Text)
 
+getFragment :: Position -> Text -> FragmentLib -> Validation Fragment
+getFragment position' id' lib =
+  case M.lookup id' lib of
+    Nothing       -> Left $ unknownFragment id' position'
+    Just fragment -> pure fragment
+
 -- TODO :: add on type validation as in fragment
-selectionSetFromSpread :: GQLQueryRoot -> Meta.Position -> Text -> Validation SelectionSet
-selectionSetFromSpread _root location spreadID =
-  case M.lookup spreadID (fragments _root) of
-    Nothing -> Left $ unknownFragment metaData
-    Just Fragment {content = selection} -> concat <$> mapM (replaceVariableAndSpread _root) selection
+selectionSetFromSpread :: GQLQueryRoot -> Position -> Text -> Validation SelectionSet
+selectionSetFromSpread _root position' id' = getFragment position' id' (fragments _root) >>= replace
   where
-    metaData = Meta.MetaInfo {Meta.typeName = "", Meta.key = spreadID, Meta.position = location}
+    replace fragment = concat <$> mapM (replaceVariableAndSpread _root) (content fragment)
 
 replaceVariableAndSpread :: GQLQueryRoot -> (Text, RawSelection) -> Validation SelectionSet
 replaceVariableAndSpread root (sKey, RawSelectionSet rawArgs rawSelectors sPos) = do
