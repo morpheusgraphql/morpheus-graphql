@@ -34,7 +34,7 @@
   - **unknownField**: requested field does not exist on type ✅
   - **hasNoSubfields**: requested subfields but type is scalar Type ✅
   - **mustHaveSubfields**: requested as scalar but is object ✅
-  - **nameConflict**:
+  - **nameConflict**: ✅
 
 - **Spread:**
 
