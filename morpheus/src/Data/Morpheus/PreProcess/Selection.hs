@@ -1,13 +1,14 @@
 module Data.Morpheus.PreProcess.Selection
   ( lookupFieldAsSelectionSet
-  , lookupFieldSelectionSetType
+  , lookupSelectionObjectFieldType
   , mustBeObject
   , notObject
   ) where
 
-import           Data.Morpheus.Error.Selection       (hasNoSubfields, subfieldsNotSelected)
-import           Data.Morpheus.PreProcess.Utils      (lookupType)
-import           Data.Morpheus.Schema.Internal.Types (Field (..), ObjectField (..), OutputObject, TypeLib (..))
+import           Data.Morpheus.Error.Selection       (cannotQueryField, hasNoSubfields, subfieldsNotSelected)
+import           Data.Morpheus.PreProcess.Utils      (lookupField, lookupType)
+import           Data.Morpheus.Schema.Internal.Types (Core (..), Field (..), GObject (..), ObjectField (..),
+                                                      OutputObject, TypeLib (..))
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Error           (Validation)
 import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
@@ -32,14 +33,18 @@ notObject (key', position') field' =
   where
     meta = MetaInfo {position = position', key = key', typeName = fieldType $ fieldContent field'}
 
-lookupFieldAsSelectionSet :: Position -> Text -> ObjectField -> TypeLib -> Validation OutputObject
-lookupFieldAsSelectionSet position' key' field' lib' = lookupType error' (object lib') type'
+lookupFieldAsSelectionSet :: Position -> Text -> TypeLib -> ObjectField -> Validation OutputObject
+lookupFieldAsSelectionSet position' key' lib' field' = lookupType error' (object lib') type'
   where
     error' = hasNoSubfields $ MetaInfo {position = position', key = key', typeName = type'}
     type' = fieldType $ fieldContent field'
 
-lookupFieldSelectionSetType :: Position -> Text -> ObjectField -> TypeLib -> Validation OutputObject
-lookupFieldSelectionSetType position' key' field' lib' = lookupType error' (object lib') type'
+lookupSelectionField :: Position -> Text -> GObject ObjectField -> Validation ObjectField
+lookupSelectionField position' key' (GObject fields' core') = lookupField key' fields' error'
   where
-    error' = subfieldsNotSelected $ MetaInfo {position = position', key = key', typeName = type'}
-    type' = fieldType $ fieldContent field'
+    error' = cannotQueryField $ MetaInfo {position = position', key = key', typeName = name core'}
+
+lookupSelectionObjectFieldType :: Position -> Text -> TypeLib -> GObject ObjectField -> Validation OutputObject
+lookupSelectionObjectFieldType position' key' lib' object' =
+  lookupSelectionField position' key' object' >>= mustBeObject (key', position') >>=
+  lookupFieldAsSelectionSet position' key' lib'

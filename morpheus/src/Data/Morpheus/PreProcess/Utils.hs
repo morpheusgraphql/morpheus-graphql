@@ -24,9 +24,9 @@ lookupType error' lib' typeName' =
     Nothing -> Left error'
     Just x  -> pure x
 
-lookupField :: [(Text, fType)] -> Text -> GenError error fType
-lookupField outType fName error' =
-  case lookup fName outType of
+lookupField :: Text -> [(Text, fType)] -> GenError error fType
+lookupField id' lib' error' =
+  case lookup id' lib' of
     Nothing    -> Left error'
     Just field -> pure field
 

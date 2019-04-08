@@ -5,15 +5,12 @@ module Data.Morpheus.PreProcess.Spread
   ) where
 
 import qualified Data.Map                               as M (lookup)
-import           Data.Morpheus.Error.Selection          (selectionError)
 import           Data.Morpheus.Error.Spread             (cannotBeSpreadOnType, unknownFragment)
-import           Data.Morpheus.Error.Utils              (toGQLError)
 import           Data.Morpheus.PreProcess.Arguments     (onlyResolveArguments)
-import           Data.Morpheus.PreProcess.Selection     (lookupFieldAsSelectionSet)
-import           Data.Morpheus.PreProcess.Utils         (fieldOf)
+import           Data.Morpheus.PreProcess.Selection     (lookupSelectionObjectFieldType)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField (..), OutputObject,
                                                          TypeLib (..))
-import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
+import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), Position)
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..))
 import           Data.Morpheus.Types.Query.Fragment     (Fragment (..), FragmentLib)
@@ -45,14 +42,10 @@ selectionSetFromSpread lib' root' parentType' position' id' =
         fragment'
     replace fragment = concat <$> mapM (replaceVariableAndSpread lib' root' parentType') (content fragment)
 
-asSelectionValidation :: MetaValidation a -> Validation a
-asSelectionValidation = toGQLError selectionError
-
 replaceVariableAndSpread ::
      TypeLib -> GQLQueryRoot -> GObject ObjectField -> (Text, RawSelection) -> Validation SelectionSet
-replaceVariableAndSpread lib' root' (GObject parentFields core) (key', RawSelectionSet rawArgs rawSelectors position') = do
-  field' <- asSelectionValidation $ fieldOf (position', name core) parentFields key'
-  fieldType' <- lookupFieldAsSelectionSet position' key' field' lib'
+replaceVariableAndSpread lib' root' parent' (key', RawSelectionSet rawArgs rawSelectors position') = do
+  fieldType' <- lookupSelectionObjectFieldType position' key' lib' parent'
   args' <- onlyResolveArguments root' position' rawArgs
   sel <- concat <$> mapM (replaceVariableAndSpread lib' root' fieldType') rawSelectors
   pure [(key', SelectionSet args' sel position')]

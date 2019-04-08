@@ -40,15 +40,15 @@ validateLeaf (LEnum tags core) jsType props      = validateEnumType (name core) 
 validateLeaf (LScalar core) (Scalar found) props = Scalar <$> validateScalarTypes (name core) found props
 validateLeaf (LScalar core) jsType props         = Left $ generateError jsType (name core) props
 
-validateInputObject :: [Prop] -> TypeLib -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
+validateInputObject :: [Prop] -> TypeLib -> GObject InputField-> (Text, JSType) -> InputValidation (Text, JSType)
 validateInputObject prop' lib' (GObject parentFields _) (_name, JSObject fields) = do
-  fieldTypeName' <- fieldType . unpackInputField <$> lookupField parentFields _name (UnknownField prop' _name)
+  fieldTypeName' <- fieldType . unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
   let currentProp = prop' ++ [Prop _name fieldTypeName']
   let error' = generateError (JSObject fields) fieldTypeName' currentProp
   inputObject' <- existsInputObjectType error' lib' fieldTypeName'
   mapM (validateInputObject currentProp lib' inputObject') fields >>= \x -> pure (_name, JSObject x)
 validateInputObject prop' lib' (GObject parentFields _) (_name, jsType) = do
-  fieldTypeName' <- fieldType . unpackInputField <$> lookupField parentFields _name (UnknownField prop' _name)
+  fieldTypeName' <- fieldType . unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
   let currentProp = prop' ++ [Prop _name fieldTypeName']
   let error' = generateError jsType fieldTypeName' currentProp
   fieldType' <- existsLeafType error' lib' fieldTypeName'

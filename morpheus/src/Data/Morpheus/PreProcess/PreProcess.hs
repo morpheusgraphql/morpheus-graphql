@@ -38,7 +38,7 @@ mapSelectors typeLib type' selectors = checkDuplicatesOn type' selectors >>= map
 validateBySchema :: TypeLib -> GObject ObjectField -> (Text, Selection) -> Validation (Text, Selection)
 validateBySchema lib' (GObject parentFields core) (key', SelectionSet args' selectors position') = do
   field' <- asSelectionValidation (fieldOf (position', name core) parentFields key') >>= mustBeObject (key', position')
-  typeSD <- lookupFieldAsSelectionSet position' key' field' lib'
+  typeSD <- lookupFieldAsSelectionSet position' key' lib' field'
   headQS <- validateArguments lib' (key', field') position' args'
   selectorsQS <- mapSelectors lib' typeSD selectors
   pure (key', SelectionSet headQS selectorsQS position')
