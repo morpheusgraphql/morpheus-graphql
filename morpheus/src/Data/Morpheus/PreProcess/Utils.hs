@@ -1,6 +1,5 @@
 module Data.Morpheus.PreProcess.Utils
-  ( fieldOf
-  , differKeys
+  ( differKeys
   , existsObjectType
   , lookupType
   , getInputType
@@ -14,8 +13,8 @@ import           Data.Morpheus.Error.Variable        (unknownType)
 import           Data.Morpheus.Schema.Internal.Types (InputType, InternalType (..), Leaf (..), OutputObject,
                                                       TypeLib (..))
 import           Data.Morpheus.Types.Core            (EnhancedKey (..), Key, enhanceKeyWithNull)
-import           Data.Morpheus.Types.Error           (MetaError (..), MetaValidation, Validation)
-import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), Position)
+import           Data.Morpheus.Types.Error           (Validation)
+import           Data.Morpheus.Types.MetaInfo        (Position)
 import qualified Data.Set                            as S
 import           Data.Text                           (Text)
 
@@ -47,12 +46,6 @@ existsObjectType :: Position -> Text -> TypeLib -> Validation OutputObject
 existsObjectType position' typeName' lib = lookupType error' (object lib) typeName'
   where
     error' = unknownType typeName' position'
-
-fieldOf :: (Position, Text) -> [(Text, fType)] -> Text -> MetaValidation fType
-fieldOf (pos, tName) outType fName =
-  case lookup fName outType of
-    Nothing    -> Left $ UnknownField $ MetaInfo {key = fName, typeName = tName, position = pos}
-    Just field -> pure field
 
 differKeys :: [EnhancedKey] -> [Key] -> [EnhancedKey]
 differKeys enhanced keys = enhanced \\ map enhanceKeyWithNull keys
