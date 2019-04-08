@@ -19,17 +19,15 @@ type NodeEdges = (Node, [Node])
 
 type Graph = [NodeEdges]
 
-validateFragmentFields :: TypeLib -> GQLQueryRoot -> (Text, RawSelection) -> Validation [Node]
-validateFragmentFields lib' root (_', RawSelectionSet _ selectors _) =
-  concat <$> mapM (validateFragmentFields lib' root) selectors
-validateFragmentFields _ _ (_, RawField {}) = pure []
-validateFragmentFields _ _ (_, Spread value pos) = pure [EnhancedKey value pos]
+scanForSpread :: TypeLib -> GQLQueryRoot -> (Text, RawSelection) -> [Node]
+scanForSpread lib' root (_', RawSelectionSet _ selectors _) = concatMap (scanForSpread lib' root) selectors
+scanForSpread _ _ (_, RawField {})                          = []
+scanForSpread _ _ (_, Spread value pos)                     = [EnhancedKey value pos]
 
 validateFragment :: TypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation NodeEdges
-validateFragment lib' root (fName, Fragment {content = selection, target = target', position = position'}) = do
-  _ <- existsObjectType position' target' lib'
-  fragmentLinks <- concat <$> mapM (validateFragmentFields lib' root) selection
-  pure (EnhancedKey fName position', fragmentLinks)
+validateFragment lib' root (fName, Fragment {content = selection, target = target', position = position'}) =
+  existsObjectType position' target' lib' >>
+  pure (EnhancedKey fName position', concatMap (scanForSpread lib' root) selection)
 
 validateFragments :: TypeLib -> GQLQueryRoot -> Validation ()
 validateFragments lib root = mapM (validateFragment lib root) (M.toList $ fragments root) >>= detectLoopOnFragments
