@@ -12,12 +12,12 @@
 
 ### Query
 
-- **Arguments:**
+- **Arguments:** ✅
 
-  - **unknownArgument**:
-  - **undefinedArgument**:
-  - **invalidInputValue -> InputValue**:
-  - **nameConflict**:
+  - **unknownArgument**: ✅
+  - **undefinedArgument**: ✅
+  - **invalidInputValue -> InputValue**: ✅
+  - **nameConflict**: ✅
 
 - **Variable:** input Value Will be validated on query argument validation, because there will not be unused Variable all inputValues(variables) will be checked
 
@@ -29,7 +29,7 @@
   - **invalidInputValue**: validation of input fails
   - **unusedVariable**:
 
-- **Selection:**
+- **Selection:** ✅
 
   - **unknownField**: requested field does not exist on type ✅
   - **hasNoSubfields**: requested subfields but type is scalar Type ✅

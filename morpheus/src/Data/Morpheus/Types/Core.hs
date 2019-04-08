@@ -15,7 +15,7 @@ type Collection a = [(Key, a)]
 data EnhancedKey = EnhancedKey
   { uid      :: Text
   , location :: Int
-  }
+  } deriving (Ord) -- TODO: derive manual Ord
 
 instance Eq EnhancedKey where
   (EnhancedKey id1 _) == (EnhancedKey id2 _) = id1 == id2
