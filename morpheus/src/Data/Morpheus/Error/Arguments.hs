@@ -7,12 +7,11 @@ module Data.Morpheus.Error.Arguments
   , argumentNameCollision
   ) where
 
-import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Core     (EnhancedKey (..))
-import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors)
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
-import           Data.Text                    (Text)
-import qualified Data.Text                    as T (concat)
+import           Data.Morpheus.Error.Utils (errorMessage)
+import           Data.Morpheus.Types.Core  (EnhancedKey (..))
+import           Data.Morpheus.Types.Error (GQLError (..), GQLErrors)
+import           Data.Text                 (Text)
+import qualified Data.Text                 as T (concat)
 
 {-
   ARGUMENTS:
@@ -45,7 +44,7 @@ argumentNameCollision = map keyToError
     keyToError (EnhancedKey argName pos) = GQLError {desc = toMessage argName, posIndex = [pos]}
     toMessage argName = T.concat ["There can Be only One Argument Named \"", argName]
 
-undefinedArgument :: MetaInfo -> GQLErrors
-undefinedArgument meta = errorMessage (position meta) text
+undefinedArgument :: EnhancedKey -> GQLErrors
+undefinedArgument (EnhancedKey key' position') = errorMessage position' text
   where
-    text = T.concat ["Undefined Required Argument: \"", key meta, "\" not Found on type \"", typeName meta, "\"."]
+    text = T.concat ["Required Argument: \"", key', "\" was not Defined"] -- TODO: real message

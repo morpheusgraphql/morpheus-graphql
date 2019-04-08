@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Data.Morpheus.PreProcess.Arguments
   ( validateArguments
   , resolveArguments
@@ -17,7 +15,7 @@ import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField 
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.JSType             (JSType (JSNull))
-import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), Position)
+import           Data.Morpheus.Types.MetaInfo           (Position)
 import qualified Data.Morpheus.Types.Query.RawSelection as Raw (RawArguments)
 import           Data.Morpheus.Types.Query.Selection    (Argument (..), Arguments)
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
@@ -38,7 +36,7 @@ validateArgument types position' requestArgs (key', InputField arg) =
   case lookup key' requestArgs of
     Nothing ->
       if notNull arg
-        then Left $ undefinedArgument (MetaInfo {position = position', key = "TODO:", typeName = "TODO:"})
+        then Left $ undefinedArgument (EnhancedKey key' position')
         else pure (key', Argument JSNull position')
     Just (Argument value pos) -> validateArgumentValue types (fieldType arg) (key', Argument value pos)
 
