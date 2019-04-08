@@ -34,7 +34,6 @@ castFragmentType spreadMeta (GObject _ core) fragment =
     then pure fragment
     else Left $ cannotBeSpreadOnType (spreadMeta {typeName = target fragment}) (name core)
 
--- TODO :: add on type validation as in fragment
 selectionSetFromSpread :: TypeLib -> GQLQueryRoot -> GObject ObjectField -> Position -> Text -> Validation SelectionSet
 selectionSetFromSpread lib' root' parentType' position' id' =
   getFragment position' id' (fragments root') >>= cast >>= replace
