@@ -11,21 +11,13 @@ import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
 
-{-
-  FRAGMENT:
-    type Experience {
-        experience ( lang: LANGUAGE ) : String ,
-        date: String
-    }
-    fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
-    fragment H on D {...}  ->  "Unknown type \"D\"."
-    {...H} -> "Unknown fragment \"H\"."
--}
+-- {...H} -> "Unknown fragment \"H\"."
 unknownFragment :: Text -> Position -> GQLErrors
 unknownFragment key' position' = errorMessage position' text
   where
     text = T.concat ["Unknown Fragment \"", key', "\"."]
 
+-- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
 cannotBeSpreadOnType :: MetaInfo -> T.Text -> GQLErrors
 cannotBeSpreadOnType spread selectionType = errorMessage (position spread) text
   where
