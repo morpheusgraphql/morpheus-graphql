@@ -29,7 +29,7 @@
   - **invalidInputValue**: validation of input fails
   - **unusedVariable**:
 
-- **Selection:**
+- **Selection:** ✅
 
   - **unknownField**: requested field does not exist on type ✅
   - **hasNoSubfields**: requested subfields but type is scalar Type ✅
