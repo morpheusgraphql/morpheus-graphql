@@ -47,4 +47,4 @@
   - **unusedFragment**: ❌
   - **unknownTargetType**: ✅
   - **cannotSpreadWithinItself**: ✅
-  - **nameConflict**: duplicate fragment with same name
+  - **nameConflict**: duplicate fragment with same name ❌
