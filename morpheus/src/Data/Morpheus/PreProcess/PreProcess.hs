@@ -8,21 +8,20 @@ module Data.Morpheus.PreProcess.PreProcess
   ) where
 
 import           Data.Morpheus.Error.Mutation           (mutationIsNotDefined)
-import           Data.Morpheus.Error.Selection          (duplicateQuerySelections, hasNoSubfields, selectionError,
-                                                         subfieldsNotSelected)
-import           Data.Morpheus.Error.Utils              (toGQLError)
+import           Data.Morpheus.Error.Selection          (duplicateQuerySelections)
 import           Data.Morpheus.PreProcess.Arguments     (validateArguments)
 import           Data.Morpheus.PreProcess.Fragment      (validateFragments)
+import           Data.Morpheus.PreProcess.Selection     (lookupFieldAsSelectionSet, lookupSelectionField, mustBeObject,
+                                                         notObject)
 import           Data.Morpheus.PreProcess.Spread        (prepareRawSelection)
-import           Data.Morpheus.PreProcess.Utils         (differKeys, existsObjectType, fieldOf)
+import           Data.Morpheus.PreProcess.Utils         (differKeys)
 import           Data.Morpheus.PreProcess.Variable      (validateVariables)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField (..), OutputObject,
                                                          TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.Types    as SC (Field (..))
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
-import           Data.Morpheus.Types.Error              (MetaValidation, Validation)
-import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), Position)
+import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.Query.Operator     (Operator (..), RawOperator, ValidOperator)
 import           Data.Morpheus.Types.Query.RawSelection (RawArguments, RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..), SelectionSet)
@@ -30,43 +29,20 @@ import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import qualified Data.Set                               as S
 import           Data.Text                              (Text)
 
-asSelectionValidation :: MetaValidation a -> Validation a
-asSelectionValidation = toGQLError selectionError
-
 mapSelectors :: TypeLib -> GObject ObjectField -> SelectionSet -> Validation SelectionSet
 mapSelectors typeLib type' selectors = checkDuplicatesOn type' selectors >>= mapM (validateBySchema typeLib type')
 
-isObjectKind :: ObjectField -> Bool
-isObjectKind (ObjectField _ field') = OBJECT == SC.kind field'
-
-mustBeObject :: (Text, Position) -> ObjectField -> Validation ObjectField
-mustBeObject (key', position') field' =
-  if isObjectKind field'
-    then pure field'
-    else Left $ hasNoSubfields meta
-  where
-    meta = MetaInfo {position = position', key = key', typeName = SC.fieldType $ fieldContent field'}
-
-notObject :: (Text, Position) -> ObjectField -> Validation ObjectField
-notObject (key', position') field' =
-  if isObjectKind field'
-    then Left $ subfieldsNotSelected meta
-    else pure field'
-  where
-    meta = MetaInfo {position = position', key = key', typeName = SC.fieldType $ fieldContent field'}
-
 validateBySchema :: TypeLib -> GObject ObjectField -> (Text, Selection) -> Validation (Text, Selection)
-validateBySchema lib' (GObject parentFields core) (name', SelectionSet args' selectors position') = do
-  field' <-
-    asSelectionValidation (fieldOf (position', name core) parentFields name') >>= mustBeObject (name', position')
-  typeSD <- existsObjectType position' (SC.fieldType $ fieldContent field') lib'
-  headQS <- validateArguments lib' (name', field') position' args'
-  selectorsQS <- mapSelectors lib' typeSD selectors
-  pure (name', SelectionSet headQS selectorsQS position')
-validateBySchema typeLib (GObject parentFields core) (name', Field args' field sPos) = do
-  field' <- asSelectionValidation (fieldOf (sPos, name core) parentFields name') >>= notObject (name', sPos)
-  headQS <- validateArguments typeLib (name', field') sPos args'
-  pure (name', Field headQS field sPos)
+validateBySchema lib' parent' (key', SelectionSet args' selectors position') = do
+  field' <- lookupSelectionField position' key' parent' >>= mustBeObject (key', position')
+  fieldType' <- lookupFieldAsSelectionSet position' key' lib' field'
+  arguments' <- validateArguments lib' (key', field') position' args'
+  selectorsQS <- mapSelectors lib' fieldType' selectors
+  pure (key', SelectionSet arguments' selectorsQS position')
+validateBySchema lib' parent' (key', Field args' field position') = do
+  field' <- lookupSelectionField position' key' parent' >>= notObject (key', position')
+  arguments' <- validateArguments lib' (key', field') position' args'
+  pure (key', Field arguments' field position')
 
 selToKey :: (Text, Selection) -> EnhancedKey
 selToKey (sName, Field _ _ pos)        = EnhancedKey sName pos
