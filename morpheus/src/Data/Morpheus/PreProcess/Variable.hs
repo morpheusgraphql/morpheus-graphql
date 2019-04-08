@@ -19,9 +19,6 @@ import qualified Data.Morpheus.Types.Query.Selection    as Valid (Argument (..))
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Text                              (Text)
 
--- asGQLError :: MetaValidation a -> Validation a
--- asGQLError (Left err)    = Left $ variableValidationError err
--- asGQLError (Right value) = pure value
 getVariableType :: Text -> Position -> TypeLib -> Validation InputType
 getVariableType type' position' lib' = getInputType type' lib' error'
   where
