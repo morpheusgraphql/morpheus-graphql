@@ -22,8 +22,8 @@ import qualified Data.Morpheus.Schema.Internal.Types    as SC (Field (..))
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
-import           Data.Morpheus.Types.Query.Operator     (Operator (..), RawOperator, ValidOperator)
-import           Data.Morpheus.Types.Query.RawSelection (RawArguments, RawSelectionSet)
+import           Data.Morpheus.Types.Query.Operator     (Operator (..), RawOperator, ValidOperator, VariableDefinitions)
+import           Data.Morpheus.Types.Query.RawSelection (RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..), SelectionSet)
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Text                              (Text)
@@ -76,7 +76,7 @@ fieldSchema =
 setFieldSchema :: GObject ObjectField -> GObject ObjectField
 setFieldSchema (GObject fields core) = GObject (fields ++ fieldSchema) core
 
-getOperator :: RawOperator -> TypeLib -> Validation (OutputObject, RawArguments, RawSelectionSet)
+getOperator :: RawOperator -> TypeLib -> Validation (OutputObject, VariableDefinitions, RawSelectionSet)
 getOperator (Query _ args' sel _) lib' = pure (snd $ query lib', args', sel)
 getOperator (Mutation _ args' sel position') lib' =
   case mutation lib' of
