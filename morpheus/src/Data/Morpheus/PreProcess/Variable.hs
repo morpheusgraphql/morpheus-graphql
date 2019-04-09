@@ -7,13 +7,14 @@ module Data.Morpheus.PreProcess.Variable
 
 import qualified Data.Map                               as M (lookup)
 import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
-import           Data.Morpheus.Error.Variable           (undefinedVariable, unknownType, variableGotInvalidValue)
+import           Data.Morpheus.Error.Variable           (undefinedVariable, uninitializedVariable, unknownType,
+                                                         variableGotInvalidValue)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
 import           Data.Morpheus.PreProcess.Utils         (getInputType)
 import           Data.Morpheus.Schema.Internal.Types    (InputType, TypeLib)
 import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.JSType             (JSType (..))
-import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), Position)
+import           Data.Morpheus.Types.MetaInfo           (Position)
 import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..))
 import qualified Data.Morpheus.Types.Query.Selection    as Valid (Argument (..))
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
@@ -24,11 +25,17 @@ getVariableType type' position' lib' = getInputType type' lib' error'
   where
     error' = unknownType type' position'
 
-getVariable :: Position -> GQLQueryRoot -> Text -> Validation JSType
-getVariable pos root variableID =
-  case M.lookup variableID (inputVariables root) of
-    Nothing    -> Left $ undefinedVariable $ MetaInfo {typeName = "", key = variableID, position = pos}
+lookupVariable :: GQLQueryRoot -> Text -> (Text -> error) -> Either error JSType
+lookupVariable root key' error' =
+  case M.lookup key' (inputVariables root) of
+    Nothing    -> Left $ error' key'
     Just value -> pure value
+
+getVariable :: Position -> GQLQueryRoot -> Text -> Validation JSType
+getVariable position' root key' = lookupVariable root key' (undefinedVariable "Query" position')
+
+lookupBodyValue :: Position -> GQLQueryRoot -> Text -> Validation JSType
+lookupBodyValue position' root key' = lookupVariable root key' (uninitializedVariable position')
 
 handleInputError :: Text -> Int -> InputValidation a -> Validation ()
 handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
@@ -38,7 +45,7 @@ lookupAndValidateValueOnBody :: TypeLib -> GQLQueryRoot -> (Text, RawArgument) -
 lookupAndValidateValueOnBody typeLib root (key', Variable tName pos) = getVariableType tName pos typeLib >>= checkType
   where
     checkType _type = do
-      variableValue <- getVariable pos root key'
+      variableValue <- lookupBodyValue pos root key'
       handleInputError key' pos $ validateInput typeLib _type (key', variableValue)
 lookupAndValidateValueOnBody _ _ (_, Argument _ _) = pure ()
 
