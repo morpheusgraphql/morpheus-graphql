@@ -10,8 +10,8 @@ import           Data.Morpheus.Types.JSType   (JSType)
 import           Data.Morpheus.Types.MetaInfo (Position)
 
 data RawArgument
-  = Variable Key
-             Position
+  = VariableReference Key
+                      Position
   | Argument JSType
              Position
   deriving (Show)
