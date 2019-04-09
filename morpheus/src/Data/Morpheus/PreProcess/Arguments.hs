@@ -10,7 +10,7 @@ import           Data.Morpheus.Error.Input              (InputValidation, inputE
 import           Data.Morpheus.Error.Internal           (internalUnknownTypeMessage)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
 import           Data.Morpheus.PreProcess.Utils         (checkForUnknownKeys, checkNameCollision, getInputType)
-import           Data.Morpheus.PreProcess.Variable      (replaceVariable)
+import           Data.Morpheus.PreProcess.Variable      (resolveArgumentValue)
 import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField (..), ObjectField (..), TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
@@ -41,7 +41,7 @@ validateArgument types position' requestArgs (key', InputField arg) =
     Just (Argument value pos) -> validateArgumentValue types (fieldType arg) (key', Argument value pos)
 
 onlyResolveArguments :: GQLQueryRoot -> Position -> Raw.RawArguments -> Validation Arguments
-onlyResolveArguments root _ = mapM (replaceVariable root)
+onlyResolveArguments root _ = mapM (resolveArgumentValue root)
 
 checkForUnknownArguments :: (Text, ObjectField) -> Arguments -> Validation [(Text, InputField)]
 checkForUnknownArguments (fieldKey', ObjectField fieldArgs _) args' =
