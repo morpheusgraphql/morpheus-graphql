@@ -4,20 +4,20 @@ module Data.Morpheus.PreProcess.Spread
   , castFragmentType
   ) where
 
-import qualified Data.Map                               as M (lookup)
-import           Data.Morpheus.Error.Spread             (cannotBeSpreadOnType, unknownFragment)
-import           Data.Morpheus.PreProcess.Arguments     (onlyResolveArguments)
-import           Data.Morpheus.PreProcess.Selection     (lookupSelectionObjectFieldType)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField (..), OutputObject,
-                                                         TypeLib (..))
-import           Data.Morpheus.Types.Error              (Validation)
-import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), Position)
-import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..))
-import           Data.Morpheus.Types.Query.Fragment     (Fragment (..), FragmentLib)
-import           Data.Morpheus.Types.Query.RawSelection (RawSelection (..), RawSelectionSet)
-import           Data.Morpheus.Types.Query.Selection    (Selection (..), SelectionSet)
-import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
-import           Data.Text                              (Text)
+import qualified Data.Map                                    as M (lookup)
+import           Data.Morpheus.Error.Spread                  (cannotBeSpreadOnType, unknownFragment)
+import           Data.Morpheus.PreProcess.Selection          (lookupSelectionObjectFieldType)
+import           Data.Morpheus.PreProcess.Validate.Arguments (onlyResolveArguments)
+import           Data.Morpheus.Schema.Internal.Types         (Core (..), GObject (..), ObjectField (..), OutputObject,
+                                                              TypeLib (..))
+import           Data.Morpheus.Types.Error                   (Validation)
+import           Data.Morpheus.Types.MetaInfo                (MetaInfo (..), Position)
+import qualified Data.Morpheus.Types.MetaInfo                as Meta (MetaInfo (..))
+import           Data.Morpheus.Types.Query.Fragment          (Fragment (..), FragmentLib)
+import           Data.Morpheus.Types.Query.RawSelection      (RawSelection (..), RawSelectionSet)
+import           Data.Morpheus.Types.Query.Selection         (Selection (..), SelectionSet)
+import           Data.Morpheus.Types.Types                   (GQLQueryRoot (..))
+import           Data.Text                                   (Text)
 
 getFragment :: Position -> Text -> FragmentLib -> Validation Fragment
 getFragment position' id' lib =

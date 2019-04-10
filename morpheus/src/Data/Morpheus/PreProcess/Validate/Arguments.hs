@@ -1,4 +1,4 @@
-module Data.Morpheus.PreProcess.Arguments
+module Data.Morpheus.PreProcess.Validate.Arguments
   ( validateArguments
   , resolveArguments
   , onlyResolveArguments
