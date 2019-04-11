@@ -3,6 +3,7 @@
 module Data.Morpheus.PreProcess.Variable
   ( validateDefinedVariables
   , resolveArgumentValue
+  , getAllReferences
   ) where
 
 import qualified Data.Map                               as M (lookup)
@@ -16,7 +17,7 @@ import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (Position)
 import           Data.Morpheus.Types.Query.Operator     (Variable (..))
-import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..))
+import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..), RawSelection (..))
 import qualified Data.Morpheus.Types.Query.Selection    as Valid (Argument (..))
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Text                              (Text)
@@ -51,6 +52,18 @@ lookupAndValidateValueOnBody typeLib root (key', Variable type' pos) = getVariab
 
 validateDefinedVariables :: TypeLib -> GQLQueryRoot -> [(Text, Variable)] -> Validation ()
 validateDefinedVariables typeLib root = mapM_ (lookupAndValidateValueOnBody typeLib root)
+
+type PosRef = (Text, Int)
+
+referencesFromArgument :: (Text, RawArgument) -> [PosRef]
+referencesFromArgument (_, Argument _ _)                       = []
+referencesFromArgument (_, VariableReference value' position') = [(value', position')]
+
+getAllReferences :: (Text, RawSelection) -> [PosRef]
+getAllReferences (_, RawSelectionSet rawArgs rawSelectors _) =
+  concatMap referencesFromArgument rawArgs ++ concatMap getAllReferences rawSelectors
+getAllReferences (_, RawField rawArgs _ _) = concatMap referencesFromArgument rawArgs
+getAllReferences (_, Spread _ _) = []
 
 resolveArgumentValue :: GQLQueryRoot -> (Text, RawArgument) -> Validation (Text, Valid.Argument)
 resolveArgumentValue root (key', VariableReference variableID pos) = do
