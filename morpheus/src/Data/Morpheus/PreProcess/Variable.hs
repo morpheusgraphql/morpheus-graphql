@@ -3,7 +3,7 @@
 module Data.Morpheus.PreProcess.Variable
   ( validateDefinedVariables
   , resolveArgumentValue
-  , getAllReferences
+  , allVariableReferences
   ) where
 
 import qualified Data.Map                               as M (lookup)
@@ -17,7 +17,7 @@ import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (Position)
 import           Data.Morpheus.Types.Query.Operator     (Variable (..))
-import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..), RawSelection (..))
+import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..), RawSelection (..), RawSelectionSet)
 import qualified Data.Morpheus.Types.Query.Selection    as Valid (Argument (..))
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Text                              (Text)
@@ -55,15 +55,18 @@ validateDefinedVariables typeLib root = mapM_ (lookupAndValidateValueOnBody type
 
 type PosRef = (Text, Int)
 
+allVariableReferences :: [RawSelectionSet] -> [PosRef]
+allVariableReferences = concatMap (concatMap searchReferencesIn)
+
 referencesFromArgument :: (Text, RawArgument) -> [PosRef]
 referencesFromArgument (_, Argument _ _)                       = []
 referencesFromArgument (_, VariableReference value' position') = [(value', position')]
 
-getAllReferences :: (Text, RawSelection) -> [PosRef]
-getAllReferences (_, RawSelectionSet rawArgs rawSelectors _) =
-  concatMap referencesFromArgument rawArgs ++ concatMap getAllReferences rawSelectors
-getAllReferences (_, RawField rawArgs _ _) = concatMap referencesFromArgument rawArgs
-getAllReferences (_, Spread _ _) = []
+searchReferencesIn :: (Text, RawSelection) -> [PosRef]
+searchReferencesIn (_, RawSelectionSet rawArgs rawSelectors _) =
+  concatMap referencesFromArgument rawArgs ++ concatMap searchReferencesIn rawSelectors
+searchReferencesIn (_, RawField rawArgs _ _) = concatMap referencesFromArgument rawArgs
+searchReferencesIn (_, Spread _ _) = []
 
 resolveArgumentValue :: GQLQueryRoot -> (Text, RawArgument) -> Validation (Text, Valid.Argument)
 resolveArgumentValue root (key', VariableReference variableID pos) = do
