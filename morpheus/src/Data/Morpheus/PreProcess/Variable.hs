@@ -6,10 +6,11 @@ module Data.Morpheus.PreProcess.Variable
   , allVariableReferences
   ) where
 
+import           Data.List                              ((\\))
 import qualified Data.Map                               as M (lookup)
 import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Variable           (undefinedVariable, uninitializedVariable, unknownType,
-                                                         variableGotInvalidValue)
+                                                         unusedVariables, variableGotInvalidValue)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
 import           Data.Morpheus.PreProcess.Utils         (getInputType)
 import           Data.Morpheus.Schema.Internal.Types    (InputType, TypeLib)
@@ -50,10 +51,17 @@ lookupAndValidateValueOnBody typeLib root (key', Variable type' pos) = getVariab
       variableValue <- lookupBodyValue pos root key'
       handleInputError key' pos $ validateInput typeLib _type (key', variableValue)
 
-validateDefinedVariables :: TypeLib -> GQLQueryRoot -> [(Text, Variable)] -> Validation ()
-validateDefinedVariables typeLib root = mapM_ (lookupAndValidateValueOnBody typeLib root)
+validateDefinedVariables :: TypeLib -> GQLQueryRoot -> [PosRef] -> [(Text, Variable)] -> Validation ()
+validateDefinedVariables typeLib root references' variables' =
+  mapM_ (lookupAndValidateValueOnBody typeLib root) variables' >> checkUnusedVariable references' variables'
 
 type PosRef = (Text, Int)
+
+checkUnusedVariable :: [PosRef] -> [(Text, Variable)] -> Validation ()
+checkUnusedVariable references' variables' =
+  case map fst variables' \\ map fst references' of
+    []      -> pure ()
+    unused' -> Left $ unusedVariables unused'
 
 allVariableReferences :: [RawSelectionSet] -> [PosRef]
 allVariableReferences = concatMap (concatMap searchReferencesIn)

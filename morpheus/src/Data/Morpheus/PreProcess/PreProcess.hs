@@ -11,7 +11,7 @@ import           Data.Morpheus.Error.Mutation               (mutationIsNotDefine
 import           Data.Morpheus.PreProcess.Fragment          (validateFragments)
 import           Data.Morpheus.PreProcess.Spread            (prepareRawSelection)
 import           Data.Morpheus.PreProcess.Validate.Validate (mapSelectorValidation)
-import           Data.Morpheus.PreProcess.Variable          (validateDefinedVariables)
+import           Data.Morpheus.PreProcess.Variable          (allVariableReferences, validateDefinedVariables)
 import           Data.Morpheus.Schema.Internal.Types        (GObject (..), ObjectField (..), OutputObject, TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.Types        as SC (Field (..))
 import           Data.Morpheus.Schema.TypeKind              (TypeKind (..))
@@ -56,7 +56,7 @@ getOperator (Mutation _ args' sel position') lib' =
 resolveValues :: TypeLib -> GQLQueryRoot -> Validation (OutputObject, SelectionSet)
 resolveValues lib root = do
   (query', args', rawSel) <- getOperator (queryBody root) lib
-  validateDefinedVariables lib root args'
+  validateDefinedVariables lib root (allVariableReferences [rawSel]) args'
   validateFragments lib root
   let operator' = setFieldSchema query'
   selection' <- prepareRawSelection lib root rawSel operator'

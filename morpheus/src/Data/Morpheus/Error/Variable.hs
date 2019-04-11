@@ -5,6 +5,7 @@ module Data.Morpheus.Error.Variable
   , unknownType
   , variableGotInvalidValue
   , uninitializedVariable
+  , unusedVariables
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
@@ -38,6 +39,11 @@ TODO: variable does not match to argument type
   - query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
 
 |-}
+unusedVariables :: [Text] -> GQLErrors
+unusedVariables variables' = errorMessage 0 text
+  where
+    text = T.concat ["unused Variable \"$", head variables', "\"."]
+
 variableGotInvalidValue :: Text -> Text -> Position -> GQLErrors
 variableGotInvalidValue name' inputMessage' position' = errorMessage position' text
   where
