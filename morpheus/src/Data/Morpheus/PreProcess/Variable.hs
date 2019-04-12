@@ -14,6 +14,7 @@ import           Data.Morpheus.Error.Variable           (undefinedVariable, unin
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
 import           Data.Morpheus.PreProcess.Utils         (getInputType)
 import           Data.Morpheus.Schema.Internal.Types    (InputType, TypeLib)
+import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (Position)
@@ -51,26 +52,27 @@ lookupAndValidateValueOnBody typeLib root (key', Variable type' pos) = getVariab
       variableValue <- lookupBodyValue pos root key'
       handleInputError key' pos $ validateInput typeLib _type (key', variableValue)
 
-validateDefinedVariables :: TypeLib -> GQLQueryRoot -> [PosRef] -> [(Text, Variable)] -> Validation ()
+validateDefinedVariables :: TypeLib -> GQLQueryRoot -> [EnhancedKey] -> [(Text, Variable)] -> Validation ()
 validateDefinedVariables typeLib root references' variables' =
   mapM_ (lookupAndValidateValueOnBody typeLib root) variables' >> checkUnusedVariable references' variables'
 
-type PosRef = (Text, Int)
+varToKey :: (Text, Variable) -> EnhancedKey
+varToKey (key', Variable _ position') = EnhancedKey key' position'
 
-checkUnusedVariable :: [PosRef] -> [(Text, Variable)] -> Validation ()
+checkUnusedVariable :: [EnhancedKey] -> [(Text, Variable)] -> Validation ()
 checkUnusedVariable references' variables' =
-  case map fst variables' \\ map fst references' of
+  case map varToKey variables' \\ references' of
     []      -> pure ()
     unused' -> Left $ unusedVariables unused'
 
-allVariableReferences :: [RawSelectionSet] -> [PosRef]
+allVariableReferences :: [RawSelectionSet] -> [EnhancedKey]
 allVariableReferences = concatMap (concatMap searchReferencesIn)
 
-referencesFromArgument :: (Text, RawArgument) -> [PosRef]
+referencesFromArgument :: (Text, RawArgument) -> [EnhancedKey]
 referencesFromArgument (_, Argument _ _)                       = []
-referencesFromArgument (_, VariableReference value' position') = [(value', position')]
+referencesFromArgument (_, VariableReference value' position') = [EnhancedKey value' position']
 
-searchReferencesIn :: (Text, RawSelection) -> [PosRef]
+searchReferencesIn :: (Text, RawSelection) -> [EnhancedKey]
 searchReferencesIn (_, RawSelectionSet rawArgs rawSelectors _) =
   concatMap referencesFromArgument rawArgs ++ concatMap searchReferencesIn rawSelectors
 searchReferencesIn (_, RawField rawArgs _ _) = concatMap referencesFromArgument rawArgs
