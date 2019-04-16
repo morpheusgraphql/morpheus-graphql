@@ -2,89 +2,75 @@
 
 Build GraphQL APIs with your favourite functional language!
 
-## intsall
-
-```
-npm i
-sls offline start
-
-```
-
-## request on api/graphql
-
-```graphql
-query GetUsers($office: String) {
-  user {
-    name
-    email
-    address(latitude: "Hi Nicas", longitude: "office") {
-      ...AdressDetails
-    }
-    office(zipCode: "4134", cityID: "cityID") {
-      city
-      street
-    }
-    home {
-      city
-    }
-  }
-}
-
-fragment AdressDetails on Address {
-  houseNumber
-  street
-  city
-  owner {
-    ...User
-  }
-}
-
-fragment User on User {
-  address(latitude: "Hi Nicas", longitude: "Dublin") {
-    city
-  }
-}
-```
-
 # Example
 
 define schema with native Haskell Types and derive them automaticaly as GraphQL Types
 
 ```haskell
-data CityID = Paris | BLN | HH deriving (Show, Data, Generic, GQLEnum)
 
-data Coordinates = Coordinates {
-    latitude :: Text,
-    longitude :: Text
-} deriving (Show, Data, Generic, GQLInput)
+data CityID
+  = Paris
+  | BLN
+  | HH
+  deriving (Show, Generic, Data, GQLEnum) -- GQL Enum
 
-data LocationByCoordinates = LocationByCoordinates {
-    coordinates :: Coordinates
-} deriving (Show, Data, Generic, GQLArgs)
+instance GQLKind CityID where
+  description _ = "ID of Cities in Zip Format"
 
-data Location = Location {
-    zipCode:: Maybe Int, -- optional argument
-    cityID:: EnumOf CityID -- Enum Value
-} deriving (Show, Data, Generic, GQLArgs)
+data Modulo7 =
+  Modulo7 Int
+          Int
+  deriving (Show, Data, Generic, GQLKind)
 
-data Address = Address {
-  city :: Text,
-  house:: Int,
-} deriving (Show, Data, Generic, GQLSelection)
+instance Scalar Modulo7 where
+  parseValue (Int x) = pure $ Modulo7 (x `div` 7) (x `mod` 7)
+  parseValue _       = pure $ Modulo7 0 0
+  serialize (Modulo7 value _) = Int value
 
-data User = User {
-  name :: Text,
-  address:: LocationByCoordinates ::-> Address,
-  office:: Location ::-> Maybe Address,
-} deriving (Show, Data, Generic, GQLSelection )
+data Coordinates = Coordinates
+  { latitude  :: ScalarOf Modulo7
+  , longitude :: Int
+  } deriving (Show, Generic, Data, GQLInput) -- GQL Input Object
 
-newtype Query = Query {
-  user:: () ::-> User
-} deriving (Show, Data, Generic, GQLQuery )
+instance GQLKind Coordinates where
+  description _ = "just random latitude and longitude"
 
-newtype Mutation = Mutation {
-  createUser:: LocationByCoordinates ::-> User
-} deriving (Show, Data, Generic, GQLMutation)
+data LocationByCoordinates = LocationByCoordinates
+  { coordinates :: Coordinates
+  , comment     :: Maybe Text
+  } deriving (Show, Generic, Data, GQLArgs) -- GQL Arguments
+
+data Location = Location
+  { zipCode :: Maybe Int
+  , cityID  :: EnumOf CityID
+  } deriving (Show, Data, Generic, GQLArgs) -- GQL Arguments
+
+data Address = Address
+  { city        :: Text
+  , street      :: Text
+  , houseNumber :: Int
+  , owner       :: Maybe User
+  } deriving (Generic, Show, GQLKind, GQLObject, Data) -- GQL Object
+
+data User = User
+  { name    :: Text
+  , email   :: Text
+  , address :: LocationByCoordinates ::-> Address
+  , office  :: Location ::-> Address
+  , friend  :: () ::-> Maybe User
+  , home    :: Maybe Address
+  } deriving (Show, Generic, Data, GQLObject) -- GQL Object
+
+instance GQLKind User where
+  description _ = "Custom Description for Client Defined User Type"
+
+newtype Query = Query
+  { user :: () ::-> User
+  } deriving (Show, Generic, Data, GQLQuery)
+
+newtype Mutation = Mutation
+  { createUser :: LocationByCoordinates ::-> User
+  } deriving (Show, Generic, Data, GQLMutation)
 
 ```
 
@@ -93,27 +79,63 @@ newtype Mutation = Mutation {
 resolvers are haskell functions, they automaticaly recieve typed data as input
 
 ```haskell
-resolveAddress :: LocationByCoordinates ::-> Address
-resolveAddress = Resolver resolve $ getAdress -- ... your resolver function
+fetchAddress :: Modulo7 -> Text -> ResolveIO Address
+fetchAddress (Modulo7 x y) streetName = lift M.jsonAddress >>= eitherToResponse modify
+  where
+    modify mAddress =
+      Address
+        { city = T.concat [pack $ show x, pack $ show y, " ", M.city mAddress]
+        , houseNumber = M.houseNumber mAddress
+        , street = streetName
+        , owner = Nothing
+        }
 
-resolveOffice :: User -> Location ::-> Address
-resolveOffice user = Resolver resolve $ getAdress -- ... your resolver
+resolveAddress :: LocationByCoordinates ::-> Address
+resolveAddress = Resolver res
+  where
+    res args = fetchAddress (unpackScalar $ latitude $ coordinates args) (pack $ show $ longitude $ coordinates args)
+
+addressByCityID :: CityID -> Int -> ResolveIO Address
+addressByCityID Paris code = fetchAddress (Modulo7 75 code) "Paris"
+addressByCityID BLN code   = fetchAddress (Modulo7 10 code) "Berlin"
+addressByCityID HH code    = fetchAddress (Modulo7 20 code) "Hamburg"
+
+resolveOffice :: M.JSONUser -> Location ::-> Address
+resolveOffice _ = Resolver resolve'
+  where
+    resolve' args = addressByCityID (unpackEnum $ cityID args) (fromMaybe 101 (zipCode args))
 
 resolveUser :: () ::-> User
-resolveUser = Resolver resolve
- where
-  resolve _ = pure $ User {
-    name = "<name>",
-    address = resolveAddress,
-    office = resolveOffice user
-  }
+resolveUser = Resolver resolve'
+  where
+    resolve' _ = lift M.jsonUser >>= eitherToResponse modify
+    modify user' =
+      User
+        { name = M.name user'
+        , email = M.email user'
+        , address = resolveAddress
+        , office = resolveOffice user'
+        , home = Nothing
+        , friend = Resolver $ \_ -> pure Nothing
+        }
 
 createUserMutation :: LocationByCoordinates ::-> User
-createUserMutation = Resolver resolve -- your mutation function
+createUserMutation = Resolver resolve'
+  where
+    resolve' _ = lift M.jsonUser >>= eitherToResponse modify
+    modify user' =
+      User
+        { name = M.name user'
+        , email = M.email user'
+        , address = resolveAddress
+        , office = resolveOffice user'
+        , home = Nothing
+        , friend = Resolver $ \_ -> pure Nothing
+        }
 
 resolve :: B.ByteString -> IO GQLResponse
-resolve = interpreter GQLRoot
-  { queryResolver    = Query { user = resolveUser }
-  , mutationResolver = Mutation { createUser = createUserMutation }
-  }
+resolve =
+  interpreter
+    GQLRoot {queryResolver = Query {user = resolveUser}, mutationResolver = Mutation {createUser = createUserMutation}}
+
 ```

@@ -15,8 +15,8 @@ import           Data.Data                  (Data)
 import           Data.Maybe                 (fromMaybe)
 import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLResponse, GQLRoot (..), ResolveIO,
                                              ScalarOf (..), eitherToResponse, interpreter)
-import           Data.Morpheus.Kind         (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLQuery,
-                                             GQLSelection, Scalar (..))
+import           Data.Morpheus.Kind         (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLObject, GQLQuery,
+                                             Scalar (..))
 import           Data.Morpheus.Types.JSType (ScalarValue (..))
 import           Data.Text                  (Text, pack)
 import qualified Data.Text                  as T (concat)
@@ -65,7 +65,7 @@ data Address = Address
   , street      :: Text
   , houseNumber :: Int
   , owner       :: Maybe User
-  } deriving (Generic, Show, GQLKind, GQLSelection, Data)
+  } deriving (Generic, Show, GQLKind, GQLObject, Data)
 
 data User = User
   { name    :: Text
@@ -74,7 +74,7 @@ data User = User
   , office  :: Location ::-> Address
   , friend  :: () ::-> Maybe User
   , home    :: Maybe Address
-  } deriving (Show, Generic, Data, GQLSelection)
+  } deriving (Show, Generic, Data, GQLObject)
 
 instance GQLKind User where
   description _ = "Custom Description for Client Defined User Type"

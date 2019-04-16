@@ -8,8 +8,8 @@
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeOperators         #-}
 
-module Data.Morpheus.Kind.GQLSelection
-  ( GQLSelection(..)
+module Data.Morpheus.Kind.GQLObject
+  ( GQLObject(..)
   ) where
 
 import           Control.Monad.Trans.Except
@@ -40,15 +40,15 @@ import           Data.Proxy
 import           Data.Text                              (Text, pack)
 import           GHC.Generics
 
-instance GQLSelection a => DeriveResolvers (K1 i a) where
+instance GQLObject a => DeriveResolvers (K1 i a) where
   deriveResolvers meta (K1 src) = [(Meta.key meta, (`encode` src))]
 
-instance (Selector s, D.Typeable a, GQLSelection a) => Selectors (RecSel s a) (Text, ObjectField) where
+instance (Selector s, D.Typeable a, GQLObject a) => Selectors (RecSel s a) (Text, ObjectField) where
   getFields _ = [((name, fieldType (Proxy @a) name), introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)
 
-class GQLSelection a where
+class GQLObject a where
   encode :: Selection -> a -> ResolveIO JSType
   default encode :: (Generic a, D.Data a, DeriveResolvers (Rep a), Show a) =>
     Selection -> a -> ResolveIO JSType
@@ -71,7 +71,7 @@ class GQLSelection a where
       fields = map fst fieldTypes
       stack = map snd fieldTypes
 
-instance (GQLSelection a, Args.GQLArgs p) => GQLSelection (p ::-> a) where
+instance (GQLObject a, Args.GQLArgs p) => GQLObject (p ::-> a) where
   encode (SelectionSet gqlArgs body pos) (Resolver resolver) =
     (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (SelectionSet gqlArgs body pos)
   encode (Field gqlArgs field pos) (Resolver resolver) =
@@ -83,7 +83,7 @@ instance (GQLSelection a, Args.GQLArgs p) => GQLSelection (p ::-> a) where
   fieldType _ name = (fieldType (Proxy @a) name) {args = map fst $ Args.introspect (Proxy @p)}
 
 -- manual deriving of  DeprecationArgs ::-> a
-instance GQLSelection a => GQLSelection (WithDeprecationArgs a) where
+instance GQLObject a => GQLObject (WithDeprecationArgs a) where
   encode sel (WithDeprecationArgs val) = encode sel val
   introspect _ typeLib = resolveTypes typeLib $ args' ++ fields
     where
@@ -91,7 +91,7 @@ instance GQLSelection a => GQLSelection (WithDeprecationArgs a) where
       fields = [introspect (Proxy @a)]
   fieldType _ name = (fieldType (Proxy @a) name) {args = map fst $ Args.introspect (Proxy @DeprecationArgs)}
 
-instance GQLSelection a => GQLSelection (Maybe a) where
+instance GQLObject a => GQLObject (Maybe a) where
   encode _ Nothing          = pure JSNull
   encode query (Just value) = encode query value
   introspect _ = introspect (Proxy @a)
@@ -105,22 +105,22 @@ scalarField proxy name =
     []
     I.Field {I.fieldName = name, I.notNull = True, I.asList = False, I.kind = SCALAR, I.fieldType = typeID proxy}
 
-instance GQLSelection Int where
+instance GQLObject Int where
   encode _ = pure . Scalar . Int
   introspect = introspectScalar
   fieldType = scalarField
 
-instance GQLSelection Text where
+instance GQLObject Text where
   encode _ = pure . Scalar . String
   introspect = introspectScalar
   fieldType = scalarField
 
-instance GQLSelection Bool where
+instance GQLObject Bool where
   encode _ = pure . Scalar . Boolean
   introspect = introspectScalar
   fieldType = scalarField
 
-instance (GQLSelection a, D.Typeable a) => GQLSelection [a] where
+instance (GQLObject a, D.Typeable a) => GQLObject [a] where
   encode Field {} _ = pure $ JSList []
   encode query list = JSList <$> mapM (encode query) list
   introspect _ = introspect (Proxy @a)
@@ -128,24 +128,24 @@ instance (GQLSelection a, D.Typeable a) => GQLSelection [a] where
     where
       fType = fieldType (Proxy @a) name
 
-instance (Show a, GQLKind a, E.GQLEnum a) => GQLSelection (EnumOf a) where
+instance (Show a, GQLKind a, E.GQLEnum a) => GQLObject (EnumOf a) where
   encode _ = pure . Scalar . String . pack . show . unpackEnum
   fieldType _ = ObjectField [] . E.asField (Proxy @a)
   introspect _ = E.introspect (Proxy @a)
 
-instance S.Scalar a => GQLSelection (ScalarOf a) where
+instance S.Scalar a => GQLObject (ScalarOf a) where
   encode _ (ScalarOf x) = pure $ Scalar $ S.serialize x
   fieldType _ = ObjectField [] . S.asField (Proxy @a)
   introspect _ = S.introspect (Proxy @a)
 
-instance GQLSelection EnumValue
+instance GQLObject EnumValue
 
-instance GQLSelection Type
+instance GQLObject Type
 
-instance GQLSelection Field
+instance GQLObject Field
 
-instance GQLSelection InputValue
+instance GQLObject InputValue
 
-instance GQLSelection Schema
+instance GQLObject Schema
 
-instance GQLSelection Directive
+instance GQLObject Directive
