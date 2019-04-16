@@ -27,7 +27,7 @@
   - **unknownType**: variable type does not exists ✅
   - **incompatibleVariableType**: argument references variable with different type ❌
   - **invalidInputValue**: validation of input fails ✅
-  - **unusedVariable**:
+  - **unusedVariable**: ✅
 
 - **Selection:** ✅
 
