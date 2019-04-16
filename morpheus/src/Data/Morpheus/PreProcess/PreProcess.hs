@@ -54,12 +54,12 @@ getOperator (Mutation _ args' sel position') lib' =
     Nothing             -> Left $ mutationIsNotDefined position'
 
 resolveValues :: TypeLib -> GQLQueryRoot -> Validation (OutputObject, SelectionSet)
-resolveValues lib root = do
-  (query', args', rawSel) <- getOperator (queryBody root) lib
-  validateDefinedVariables lib root (allVariableReferences [rawSel]) args'
-  validateFragments lib root
+resolveValues typesLib root = do
+  (query', args', rawSel) <- getOperator (queryBody root) typesLib
+  validateDefinedVariables typesLib root (allVariableReferences [rawSel]) args'
+  validateFragments typesLib root
   let operator' = setFieldSchema query'
-  selection' <- prepareRawSelection lib root rawSel operator'
+  selection' <- prepareRawSelection typesLib (fragments root,inputVariables root) rawSel operator'
   pure (operator', selection')
 
 preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator

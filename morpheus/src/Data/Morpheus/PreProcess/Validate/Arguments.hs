@@ -18,7 +18,7 @@ import           Data.Morpheus.Types.JSType             (JSType (JSNull))
 import           Data.Morpheus.Types.MetaInfo           (Position)
 import qualified Data.Morpheus.Types.Query.RawSelection as Raw (RawArguments)
 import           Data.Morpheus.Types.Query.Selection    (Argument (..), Arguments)
-import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
+import           Data.Morpheus.Types.Types              (Variables)
 import           Data.Text                              (Text)
 
 handleInputError :: Text -> Int -> InputValidation a -> Validation ()
@@ -40,8 +40,8 @@ validateArgument types position' requestArgs (key', InputField arg) =
         else pure (key', Argument JSNull position')
     Just (Argument value pos) -> validateArgumentValue types (fieldType arg) (key', Argument value pos)
 
-onlyResolveArguments :: GQLQueryRoot -> Position -> Raw.RawArguments -> Validation Arguments
-onlyResolveArguments root _ = mapM (resolveArgumentValue root)
+onlyResolveArguments :: Variables -> Position -> Raw.RawArguments -> Validation Arguments
+onlyResolveArguments variables' _ = mapM (resolveArgumentValue variables')
 
 checkForUnknownArguments :: (Text, ObjectField) -> Arguments -> Validation [(Text, InputField)]
 checkForUnknownArguments (fieldKey', ObjectField fieldArgs _) args' =
@@ -53,8 +53,7 @@ checkForUnknownArguments (fieldKey', ObjectField fieldArgs _) args' =
     argToKey (key', Argument _ pos) = EnhancedKey key' pos
     fieldKeys = map fst fieldArgs
 
-resolveArguments ::
-     TypeLib -> GQLQueryRoot -> (Text, ObjectField) -> Position -> Raw.RawArguments -> Validation Arguments
+resolveArguments :: TypeLib -> Variables -> (Text, ObjectField) -> Position -> Raw.RawArguments -> Validation Arguments
 resolveArguments typeLib root objectField pos args' =
   onlyResolveArguments root pos args' >>= validateArguments typeLib objectField pos
 

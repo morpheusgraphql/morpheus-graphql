@@ -16,7 +16,7 @@ import qualified Data.Morpheus.Types.MetaInfo                as Meta (MetaInfo (
 import           Data.Morpheus.Types.Query.Fragment          (Fragment (..), FragmentLib)
 import           Data.Morpheus.Types.Query.RawSelection      (RawSelection (..), RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection         (Selection (..), SelectionSet)
-import           Data.Morpheus.Types.Types                   (GQLQueryRoot (..))
+import           Data.Morpheus.Types.Types                   (Variables)
 import           Data.Text                                   (Text)
 
 getFragment :: Position -> Text -> FragmentLib -> Validation Fragment
@@ -31,29 +31,31 @@ castFragmentType spreadMeta (GObject _ core) fragment =
     then pure fragment
     else Left $ cannotBeSpreadOnType (spreadMeta {typeName = target fragment}) (name core)
 
-selectionSetFromSpread :: TypeLib -> GQLQueryRoot -> GObject ObjectField -> Position -> Text -> Validation SelectionSet
-selectionSetFromSpread lib' root' parentType' position' id' =
-  getFragment position' id' (fragments root') >>= cast >>= replace
+selectionSetFromSpread ::
+     TypeLib -> (FragmentLib, Variables) -> GObject ObjectField -> Position -> Text -> Validation SelectionSet
+selectionSetFromSpread lib' (fragments', variables') parentType' position' id' =
+  getFragment position' id' fragments' >>= cast >>= replace
   where
     cast fragment' =
       castFragmentType
         (MetaInfo {Meta.position = position', Meta.key = id', Meta.typeName = target fragment'})
         parentType'
         fragment'
-    replace fragment = concat <$> mapM (replaceVariableAndSpread lib' root' parentType') (content fragment)
+    replace fragment =
+      concat <$> mapM (replaceVariableAndSpread lib' (fragments', variables') parentType') (content fragment)
 
 replaceVariableAndSpread ::
-     TypeLib -> GQLQueryRoot -> GObject ObjectField -> (Text, RawSelection) -> Validation SelectionSet
+     TypeLib -> (FragmentLib, Variables) -> GObject ObjectField -> (Text, RawSelection) -> Validation SelectionSet
 replaceVariableAndSpread lib' root' parent' (key', RawSelectionSet rawArgs rawSelectors position') = do
   fieldType' <- lookupSelectionObjectFieldType position' key' lib' parent'
-  args' <- onlyResolveArguments root' position' rawArgs
+  args' <- onlyResolveArguments (snd root') position' rawArgs
   sel <- concat <$> mapM (replaceVariableAndSpread lib' root' fieldType') rawSelectors
   pure [(key', SelectionSet args' sel position')]
 replaceVariableAndSpread _ root' _ (sKey, RawField rawArgs field sPos) = do
-  args' <- onlyResolveArguments root' sPos rawArgs
+  args' <- onlyResolveArguments (snd root') sPos rawArgs
   pure [(sKey, Field args' field sPos)]
 replaceVariableAndSpread lib' root' parent' (spreadID, Spread _ sPos) =
   selectionSetFromSpread lib' root' parent' sPos spreadID
 
-prepareRawSelection :: TypeLib -> GQLQueryRoot -> RawSelectionSet -> OutputObject -> Validation SelectionSet
+prepareRawSelection :: TypeLib -> (FragmentLib, Variables) -> RawSelectionSet -> OutputObject -> Validation SelectionSet
 prepareRawSelection lib' root' sel query' = concat <$> mapM (replaceVariableAndSpread lib' root' query') sel
