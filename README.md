@@ -4,7 +4,9 @@ Build GraphQL APIs with your favourite functional language!
 
 # Example
 
-define schema with native Haskell Types and derive them automaticaly as GraphQL Types
+define schema with native Haskell Types and derive them as GraphQL Types
+
+check example project for more details
 
 ```haskell
 
