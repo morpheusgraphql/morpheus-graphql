@@ -7,21 +7,22 @@ module Data.Morpheus.PreProcess.PreProcess
   ( preProcessQuery
   ) where
 
-import           Data.Morpheus.Error.Mutation               (mutationIsNotDefined)
-import           Data.Morpheus.PreProcess.Fragment          (validateFragments)
-import           Data.Morpheus.PreProcess.Spread            (prepareRawSelection)
-import           Data.Morpheus.PreProcess.Validate.Validate (mapSelectorValidation)
-import           Data.Morpheus.PreProcess.Variable          (allVariableReferences, validateDefinedVariables)
-import           Data.Morpheus.Schema.Internal.Types        (GObject (..), ObjectField (..), OutputObject, TypeLib (..))
-import qualified Data.Morpheus.Schema.Internal.Types        as SC (Field (..))
-import           Data.Morpheus.Schema.TypeKind              (TypeKind (..))
-import           Data.Morpheus.Types.Error                  (Validation)
-import           Data.Morpheus.Types.Query.Operator         (Operator (..), RawOperator, ValidOperator,
-                                                             VariableDefinitions)
-import           Data.Morpheus.Types.Query.RawSelection     (RawSelectionSet)
-import           Data.Morpheus.Types.Query.Selection        (SelectionSet)
-import           Data.Morpheus.Types.Types                  (GQLQueryRoot (..))
-import           Data.Text                                  (Text)
+import           Data.Morpheus.Error.Mutation                     (mutationIsNotDefined)
+import           Data.Morpheus.PreProcess.Fragment                (validateFragments)
+import           Data.Morpheus.PreProcess.Resolve.ResolveRawQuery (resolveRawQuery)
+import           Data.Morpheus.PreProcess.Validate.Validate       (mapSelectorValidation)
+import           Data.Morpheus.PreProcess.Variable                (allVariableReferences, validateDefinedVariables)
+import           Data.Morpheus.Schema.Internal.Types              (GObject (..), ObjectField (..), OutputObject,
+                                                                   TypeLib (..))
+import qualified Data.Morpheus.Schema.Internal.Types              as SC (Field (..))
+import           Data.Morpheus.Schema.TypeKind                    (TypeKind (..))
+import           Data.Morpheus.Types.Error                        (Validation)
+import           Data.Morpheus.Types.Query.Operator               (Operator (..), RawOperator, ValidOperator,
+                                                                   VariableDefinitions)
+import           Data.Morpheus.Types.Query.RawSelection           (RawSelectionSet)
+import           Data.Morpheus.Types.Query.Selection              (SelectionSet)
+import           Data.Morpheus.Types.Types                        (GQLQueryRoot (..))
+import           Data.Text                                        (Text)
 
 updateQuery :: RawOperator -> SelectionSet -> ValidOperator
 updateQuery (Query name' _ _ pos) sel    = Query name' [] sel pos
@@ -59,7 +60,7 @@ resolveValues typesLib root = do
   validateDefinedVariables typesLib (inputVariables root) (allVariableReferences [rawSel]) args'
   validateFragments typesLib root
   let operator' = setFieldSchema query'
-  selection' <- prepareRawSelection typesLib (fragments root) (inputVariables root) rawSel operator'
+  selection' <- resolveRawQuery typesLib (fragments root) (inputVariables root) rawSel operator'
   pure (operator', selection')
 
 preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
