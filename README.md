@@ -79,40 +79,50 @@ newtype Mutation = Mutation
 resolvers are haskell functions, they automaticaly recieve typed data as input
 
 ```haskell
+
+jsonAddress :: IO (Either String JSONAddress)
+jsonAddress = ...
+
+jsonUser :: IO (Either String JSONAddress)
+jsonUser = ...
+
+toText :: Modulo7 -> Text
+toText = ...
+
 fetchAddress :: Modulo7 -> Text -> ResolveIO Address
-fetchAddress (Modulo7 x y) streetName = lift M.jsonAddress >>= eitherToResponse modify
+fetchAddress (Modulo7 x y) streetName = lift jsonAddress >>= eitherToResponse modify
   where
-    modify mAddress =
+    modify address =
       Address
-        { city = T.concat [pack $ show x, pack $ show y, " ", M.city mAddress]
-        , houseNumber = M.houseNumber mAddress
-        , street = streetName
-        , owner = Nothing
+        { city = ..
+        , houseNumber = ...
+        , street = ...
+        , owner = ...
         }
 
 resolveAddress :: LocationByCoordinates ::-> Address
 resolveAddress = Resolver res
   where
-    res args = fetchAddress (unpackScalar $ latitude $ coordinates args) (pack $ show $ longitude $ coordinates args)
+    res args = fetchAddress (toText $ latitude $ coordinates args) (longitude $ coordinates args)
 
 addressByCityID :: CityID -> Int -> ResolveIO Address
-addressByCityID Paris code = fetchAddress (Modulo7 75 code) "Paris"
-addressByCityID BLN code   = fetchAddress (Modulo7 10 code) "Berlin"
-addressByCityID HH code    = fetchAddress (Modulo7 20 code) "Hamburg"
+addressByCityID Paris code = fetchAddress ...
+addressByCityID BLN code   = fetchAddress ...
+addressByCityID HH code    = fetchAddress ...
 
-resolveOffice :: M.JSONUser -> Location ::-> Address
+resolveOffice :: JSONUser -> Location ::-> Address
 resolveOffice _ = Resolver resolve'
   where
-    resolve' args = addressByCityID (unpackEnum $ cityID args) (fromMaybe 101 (zipCode args))
+    resolve' args = addressByCityID (unpackEnum $ cityID args) ....
 
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve'
   where
-    resolve' _ = lift M.jsonUser >>= eitherToResponse modify
+    resolve' _ = lift jsonUser >>= eitherToResponse modify
     modify user' =
       User
-        { name = M.name user'
-        , email = M.email user'
+        { name = ...
+        , email = ...
         , address = resolveAddress
         , office = resolveOffice user'
         , home = Nothing
@@ -122,11 +132,11 @@ resolveUser = Resolver resolve'
 createUserMutation :: LocationByCoordinates ::-> User
 createUserMutation = Resolver resolve'
   where
-    resolve' _ = lift M.jsonUser >>= eitherToResponse modify
+    resolve' _ = lift jsonUser >>= eitherToResponse modify
     modify user' =
       User
-        { name = M.name user'
-        , email = M.email user'
+        { name = ...
+        , email = ...
         , address = resolveAddress
         , office = resolveOffice user'
         , home = Nothing
@@ -136,6 +146,13 @@ createUserMutation = Resolver resolve'
 resolve :: B.ByteString -> IO GQLResponse
 resolve =
   interpreter
-    GQLRoot {queryResolver = Query {user = resolveUser}, mutationResolver = Mutation {createUser = createUserMutation}}
+    GQLRoot {
+      queryResolver = Query {
+        user = resolveUser
+      },
+      mutationResolver = Mutation {
+        createUser = createUserMutation
+      }
+    }
 
 ```
