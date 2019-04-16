@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.PreProcess.Variable
-  ( validateDefinedVariables
+  ( resolveOperationVariables
   , resolveArgumentValue
   , allVariableReferences
   ) where
 
 import           Data.List                              ((\\))
-import qualified Data.Map                               as M (lookup)
+import qualified Data.Map                               as M (fromList, lookup)
 import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Variable           (undefinedVariable, uninitializedVariable, unknownType,
                                                          unusedVariables, variableGotInvalidValue)
@@ -41,20 +41,21 @@ getVariable position' variables' key' = lookupVariable variables' key' (undefine
 lookupBodyValue :: Position -> Variables -> Text -> Validation JSType
 lookupBodyValue position' variables' key' = lookupVariable variables' key' (uninitializedVariable position')
 
-handleInputError :: Text -> Int -> InputValidation a -> Validation ()
+handleInputError :: Text -> Int -> InputValidation JSType -> Validation (Text, JSType)
 handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
-handleInputError _ _ _ = pure ()
+handleInputError key' _ (Right value') = pure (key', value')
 
-lookupAndValidateValueOnBody :: TypeLib -> Variables -> (Text, Variable) -> Validation ()
+lookupAndValidateValueOnBody :: TypeLib -> Variables -> (Text, Variable) -> Validation (Text, JSType)
 lookupAndValidateValueOnBody typeLib root (key', Variable type' pos) = getVariableType type' pos typeLib >>= checkType
   where
     checkType _type = do
       variableValue <- lookupBodyValue pos root key'
       handleInputError key' pos $ validateInput typeLib _type (key', variableValue)
 
-validateDefinedVariables :: TypeLib -> Variables -> [EnhancedKey] -> [(Text, Variable)] -> Validation ()
-validateDefinedVariables typeLib root references' variables' =
-  mapM_ (lookupAndValidateValueOnBody typeLib root) variables' >> checkUnusedVariable references' variables'
+resolveOperationVariables :: TypeLib -> Variables -> [EnhancedKey] -> [(Text, Variable)] -> Validation Variables
+resolveOperationVariables typeLib root references' variables' = do
+  checkUnusedVariable references' variables'
+  M.fromList <$> mapM (lookupAndValidateValueOnBody typeLib root) variables'
 
 varToKey :: (Text, Variable) -> EnhancedKey
 varToKey (key', Variable _ position') = EnhancedKey key' position'
