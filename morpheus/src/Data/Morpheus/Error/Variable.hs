@@ -1,14 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Variable
-  ( variableIsNotDefined
+  ( undefinedVariable
   , unknownType
   , variableGotInvalidValue
+  , uninitializedVariable
+  , unusedVariables
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (GQLErrors)
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
+import           Data.Morpheus.Types.Core     (EnhancedKey (..))
+import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors)
+import           Data.Morpheus.Types.MetaInfo (Position)
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T (concat)
 
@@ -37,19 +40,28 @@ TODO: variable does not match to argument type
   - query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
 
 |-}
+unusedVariables :: [EnhancedKey] -> GQLErrors
+unusedVariables = map keyToError
+  where
+    keyToError (EnhancedKey key' position') = GQLError {desc = text key', posIndex = [position']}
+    text key' = T.concat ["unused Variable \"$", key', "\"."]
 
 variableGotInvalidValue :: Text -> Text -> Position -> GQLErrors
 variableGotInvalidValue name' inputMessage' position' = errorMessage position' text
   where
     text = T.concat ["Variable \"$", name', "\" got invalid value; ", inputMessage']
 
-
 unknownType :: Text -> Position -> GQLErrors
 unknownType type' position' = errorMessage position' text
   where
     text = T.concat ["Unknown type \"", type', "\"."]
 
-variableIsNotDefined :: MetaInfo -> GQLErrors
-variableIsNotDefined meta = errorMessage (position meta) text
+undefinedVariable :: Text -> Position -> Text -> GQLErrors
+undefinedVariable operation' position' key' = errorMessage position' text
   where
-    text = T.concat ["Variable \"", key meta, "\" is not defined by operation \"", typeName meta, "\"."]
+    text = T.concat ["Variable \"", key', "\" is not defined by operation \"", operation', "\"."]
+
+uninitializedVariable :: Position -> Text -> GQLErrors
+uninitializedVariable position' key' = errorMessage position' text
+  where
+    text = T.concat ["Value for Variable \"$", key', "\" is not initialized in Query body."]

@@ -6,27 +6,16 @@ module Data.Morpheus.Types.Error
   , ErrorLocation(..)
   , GQLErrors
   , JSONError(..)
-  , MetaError(..)
-  , MetaValidation
   , Validation
   , ResolveIO
   , failResolveIO
   ) where
 
-import           Control.Monad.Trans.Except   (ExceptT (..))
-import           Data.Aeson                   (ToJSON)
-import           Data.Morpheus.Types.JSType   (JSType)
-import           Data.Morpheus.Types.MetaInfo (MetaInfo)
-import           Data.Text                    (Text)
-import           GHC.Generics                 (Generic)
+import           Control.Monad.Trans.Except (ExceptT (..))
+import           Data.Aeson                 (ToJSON)
+import           Data.Text                  (Text)
+import           GHC.Generics               (Generic)
 
-data MetaError
-  = TypeMismatch MetaInfo
-                 JSType
-  | UnknownField MetaInfo
-  | UnknownType MetaInfo
-
--- TODO : define INPUT_ERROR = TypeMismatch | ....   SELECTION_ERROR = ....
 data GQLError = GQLError
   { desc     :: Text
   , posIndex :: [Int]
@@ -43,8 +32,6 @@ data JSONError = JSONError
   { message   :: Text
   , locations :: [ErrorLocation]
   } deriving (Show, Generic, ToJSON)
-
-type MetaValidation a = Either MetaError a
 
 type Validation a = Either GQLErrors a
 

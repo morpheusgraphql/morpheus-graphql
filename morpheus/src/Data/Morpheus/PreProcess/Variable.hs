@@ -1,55 +1,86 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.PreProcess.Variable
-  ( validateVariables
-  , replaceVariable
+  ( resolveOperationVariables
+  , resolveArgumentValue
+  , allVariableReferences
   ) where
 
-import qualified Data.Map                               as M (lookup)
+import           Data.List                              ((\\))
+import qualified Data.Map                               as M (fromList, lookup)
 import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
-import           Data.Morpheus.Error.Variable           (unknownType, variableGotInvalidValue, variableIsNotDefined)
+import           Data.Morpheus.Error.Variable           (undefinedVariable, uninitializedVariable, unknownType,
+                                                         unusedVariables, variableGotInvalidValue)
 import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
 import           Data.Morpheus.PreProcess.Utils         (getInputType)
 import           Data.Morpheus.Schema.Internal.Types    (InputType, TypeLib)
+import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.JSType             (JSType (..))
-import           Data.Morpheus.Types.MetaInfo           (MetaInfo (..), Position)
-import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..))
+import           Data.Morpheus.Types.MetaInfo           (Position)
+import           Data.Morpheus.Types.Query.Operator     (Variable (..))
+import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..), RawSelection (..), RawSelectionSet)
 import qualified Data.Morpheus.Types.Query.Selection    as Valid (Argument (..))
-import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
+import           Data.Morpheus.Types.Types              (Variables)
 import           Data.Text                              (Text)
 
--- asGQLError :: MetaValidation a -> Validation a
--- asGQLError (Left err)    = Left $ variableValidationError err
--- asGQLError (Right value) = pure value
 getVariableType :: Text -> Position -> TypeLib -> Validation InputType
 getVariableType type' position' lib' = getInputType type' lib' error'
   where
     error' = unknownType type' position'
 
-getVariable :: Position -> GQLQueryRoot -> Text -> Validation JSType
-getVariable pos root variableID =
-  case M.lookup variableID (inputVariables root) of
-    Nothing    -> Left $ variableIsNotDefined $ MetaInfo {typeName = "", key = variableID, position = pos}
+lookupVariable :: Variables -> Text -> (Text -> error) -> Either error JSType
+lookupVariable variables' key' error' =
+  case M.lookup key' variables' of
+    Nothing    -> Left $ error' key'
     Just value -> pure value
 
-handleInputError :: Text -> Int -> InputValidation a -> Validation ()
-handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
-handleInputError _ _ _ = pure ()
+getVariable :: Position -> Variables -> Text -> Validation JSType
+getVariable position' variables' key' = lookupVariable variables' key' (undefinedVariable "Query" position')
 
-checkVariableType :: TypeLib -> GQLQueryRoot -> (Text, RawArgument) -> Validation ()
-checkVariableType typeLib root (key', Variable tName pos) = getVariableType tName pos typeLib >>= checkType
+lookupBodyValue :: Position -> Variables -> Text -> Validation JSType
+lookupBodyValue position' variables' key' = lookupVariable variables' key' (uninitializedVariable position')
+
+handleInputError :: Text -> Int -> InputValidation JSType -> Validation (Text, JSType)
+handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
+handleInputError key' _ (Right value') = pure (key', value')
+
+lookupAndValidateValueOnBody :: TypeLib -> Variables -> (Text, Variable) -> Validation (Text, JSType)
+lookupAndValidateValueOnBody typeLib root (key', Variable type' pos) = getVariableType type' pos typeLib >>= checkType
   where
     checkType _type = do
-      variableValue <- getVariable pos root key'
+      variableValue <- lookupBodyValue pos root key'
       handleInputError key' pos $ validateInput typeLib _type (key', variableValue)
-checkVariableType _ _ (_, Argument _ _) = pure ()
 
-validateVariables :: TypeLib -> GQLQueryRoot -> [(Text, RawArgument)] -> Validation ()
-validateVariables typeLib root = mapM_ (checkVariableType typeLib root)
+resolveOperationVariables :: TypeLib -> Variables -> [EnhancedKey] -> [(Text, Variable)] -> Validation Variables
+resolveOperationVariables typeLib root references' variables' = do
+  checkUnusedVariable references' variables'
+  M.fromList <$> mapM (lookupAndValidateValueOnBody typeLib root) variables'
 
-replaceVariable :: GQLQueryRoot -> (Text, RawArgument) -> Validation (Text, Valid.Argument)
-replaceVariable root (vKey, Variable variableID pos) = do
+varToKey :: (Text, Variable) -> EnhancedKey
+varToKey (key', Variable _ position') = EnhancedKey key' position'
+
+checkUnusedVariable :: [EnhancedKey] -> [(Text, Variable)] -> Validation ()
+checkUnusedVariable references' variables' =
+  case map varToKey variables' \\ references' of
+    []      -> pure ()
+    unused' -> Left $ unusedVariables unused'
+
+allVariableReferences :: [RawSelectionSet] -> [EnhancedKey]
+allVariableReferences = concatMap (concatMap searchReferencesIn)
+
+referencesFromArgument :: (Text, RawArgument) -> [EnhancedKey]
+referencesFromArgument (_, Argument _ _)                       = []
+referencesFromArgument (_, VariableReference value' position') = [EnhancedKey value' position']
+
+searchReferencesIn :: (Text, RawSelection) -> [EnhancedKey]
+searchReferencesIn (_, RawSelectionSet rawArgs rawSelectors _) =
+  concatMap referencesFromArgument rawArgs ++ concatMap searchReferencesIn rawSelectors
+searchReferencesIn (_, RawField rawArgs _ _) = concatMap referencesFromArgument rawArgs
+searchReferencesIn (_, Spread _ _) = []
+
+resolveArgumentValue :: Variables -> (Text, RawArgument) -> Validation (Text, Valid.Argument)
+resolveArgumentValue root (key', VariableReference variableID pos) = do
   value <- getVariable pos root variableID
-  pure (vKey, Valid.Argument value pos)
-replaceVariable _ (vKey, Argument value pos) = pure (vKey, Valid.Argument value pos)
+  pure (key', Valid.Argument value pos)
+resolveArgumentValue _ (key', Argument value pos) = pure (key', Valid.Argument value pos)

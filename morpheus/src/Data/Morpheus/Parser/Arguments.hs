@@ -22,7 +22,7 @@ variableType :: Parser RawArgument
 variableType = do
   pos <- getPosition
   val <- variable
-  pure $ Variable val pos
+  pure $ VariableReference val pos
 
 inputValue :: Parser RawArgument
 inputValue = skipSpace *> argumentType <|> variableType
