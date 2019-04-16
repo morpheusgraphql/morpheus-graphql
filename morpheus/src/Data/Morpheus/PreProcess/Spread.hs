@@ -32,8 +32,8 @@ castFragmentType spreadMeta (GObject _ core) fragment =
     else Left $ cannotBeSpreadOnType (spreadMeta {typeName = target fragment}) (name core)
 
 selectionSetFromSpread ::
-     TypeLib -> (FragmentLib, Variables) -> GObject ObjectField -> Position -> Text -> Validation SelectionSet
-selectionSetFromSpread lib' (fragments', variables') parentType' position' id' =
+     TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> Position -> Text -> Validation SelectionSet
+selectionSetFromSpread lib' fragments' variables' parentType' position' id' =
   getFragment position' id' fragments' >>= cast >>= replace
   where
     cast fragment' =
@@ -42,20 +42,20 @@ selectionSetFromSpread lib' (fragments', variables') parentType' position' id' =
         parentType'
         fragment'
     replace fragment =
-      concat <$> mapM (replaceVariableAndSpread lib' (fragments', variables') parentType') (content fragment)
-
+      concat <$> mapM (replaceVariableAndSpread lib' fragments' variables' parentType') (content fragment)
 replaceVariableAndSpread ::
-     TypeLib -> (FragmentLib, Variables) -> GObject ObjectField -> (Text, RawSelection) -> Validation SelectionSet
-replaceVariableAndSpread lib' root' parent' (key', RawSelectionSet rawArgs rawSelectors position') = do
+     TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> (Text, RawSelection) -> Validation SelectionSet
+replaceVariableAndSpread lib' fragments' variables' parent' (key', RawSelectionSet rawArgs rawSelectors position') = do
   fieldType' <- lookupSelectionObjectFieldType position' key' lib' parent'
-  args' <- onlyResolveArguments (snd root') position' rawArgs
-  sel <- concat <$> mapM (replaceVariableAndSpread lib' root' fieldType') rawSelectors
+  args' <- onlyResolveArguments variables' position' rawArgs
+  sel <- concat <$> mapM (replaceVariableAndSpread lib' fragments' variables' fieldType') rawSelectors
   pure [(key', SelectionSet args' sel position')]
-replaceVariableAndSpread _ root' _ (sKey, RawField rawArgs field sPos) = do
-  args' <- onlyResolveArguments (snd root') sPos rawArgs
+replaceVariableAndSpread _ _ variables' _ (sKey, RawField rawArgs field sPos) = do
+  args' <- onlyResolveArguments variables' sPos rawArgs
   pure [(sKey, Field args' field sPos)]
-replaceVariableAndSpread lib' root' parent' (spreadID, Spread _ sPos) =
-  selectionSetFromSpread lib' root' parent' sPos spreadID
+replaceVariableAndSpread lib' fragments' variables' parent' (spreadID, Spread _ sPos) =
+  selectionSetFromSpread lib' fragments' variables' parent' sPos spreadID
 
-prepareRawSelection :: TypeLib -> (FragmentLib, Variables) -> RawSelectionSet -> OutputObject -> Validation SelectionSet
-prepareRawSelection lib' root' sel query' = concat <$> mapM (replaceVariableAndSpread lib' root' query') sel
+prepareRawSelection :: TypeLib -> FragmentLib -> Variables -> RawSelectionSet -> OutputObject -> Validation SelectionSet
+prepareRawSelection lib' fragments' variables' sel query' =
+  concat <$> mapM (replaceVariableAndSpread lib' fragments' variables' query') sel

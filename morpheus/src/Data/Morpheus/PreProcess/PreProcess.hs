@@ -59,7 +59,7 @@ resolveValues typesLib root = do
   validateDefinedVariables typesLib (inputVariables root) (allVariableReferences [rawSel]) args'
   validateFragments typesLib root
   let operator' = setFieldSchema query'
-  selection' <- prepareRawSelection typesLib (fragments root, inputVariables root) rawSel operator'
+  selection' <- prepareRawSelection typesLib (fragments root) (inputVariables root) rawSel operator'
   pure (operator', selection')
 
 preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
