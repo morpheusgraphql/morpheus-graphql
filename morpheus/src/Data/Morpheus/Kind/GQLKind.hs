@@ -85,6 +85,9 @@ instance GQLKind DirectiveLocation where
 instance GQLKind Int where
   typeID _ = "Int"
 
+instance GQLKind Float where
+  typeID _ = "Int"
+
 instance GQLKind Text where
   typeID _ = "String"
 

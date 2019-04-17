@@ -4,6 +4,7 @@
 module Data.Morpheus.Types.JSType
   ( JSType(..)
   , ScalarValue(..)
+  , decodeScientific
   ) where
 
 import qualified Data.Aeson          as A (FromJSON (..), ToJSON (..), Value (..), pairs, (.=))

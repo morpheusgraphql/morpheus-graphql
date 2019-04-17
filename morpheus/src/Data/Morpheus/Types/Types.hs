@@ -14,5 +14,5 @@ type Variables = Map Key JSType
 data GQLQueryRoot = GQLQueryRoot
   { fragments      :: FragmentLib
   , queryBody      :: RawOperator
-  , inputVariables :: Map Key JSType
+  , inputVariables :: [(Key,JSType)]
   }

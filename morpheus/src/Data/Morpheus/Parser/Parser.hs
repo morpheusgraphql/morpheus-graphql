@@ -5,7 +5,7 @@ module Data.Morpheus.Parser.Parser
 
 import           Control.Applicative            (many, (<|>))
 import           Data.Attoparsec.Text           (Parser, endOfInput, parseOnly, skipSpace)
-import           Data.Map                       (Map, fromList)
+import           Data.Map                       (fromList, toList)
 import           Data.Maybe                     (fromMaybe)
 import           Data.Morpheus.Error.Syntax     (syntaxError)
 import           Data.Morpheus.Parser.Fragment  (fragment)
@@ -24,10 +24,10 @@ request = do
   fragmentLib <- fromList <$> many fragment
   skipSpace
   endOfInput
-  pure GQLQueryRoot {queryBody = queryValue, fragments = fragmentLib, inputVariables = fromList []}
+  pure GQLQueryRoot {queryBody = queryValue, fragments = fragmentLib, inputVariables = []}
 
-getVariables :: GQLRequest -> Map Text JSType
-getVariables = fromMaybe (fromList []) . variables
+getVariables :: GQLRequest -> [(Text, JSType)]
+getVariables request' = fromMaybe [] (toList <$> variables request')
 
 parseReq :: GQLRequest -> Either String GQLQueryRoot
 parseReq requestBody = parseOnly request $ query requestBody

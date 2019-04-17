@@ -5,7 +5,7 @@ module Data.Morpheus.Parser.Primitive where
 import           Control.Applicative
 import           Data.Attoparsec.Text
 import           Data.Functor
-import           Data.Morpheus.Types.JSType     (JSType (..), ScalarValue (..))
+import           Data.Morpheus.Types.JSType     (JSType (..), ScalarValue (..), decodeScientific)
 import qualified Data.Text                      as T (Text, pack)
 
 import qualified Data.Attoparsec.Internal.Types as AT
@@ -23,8 +23,8 @@ boolFalse = string "false" $> Scalar (Boolean False)
 jsBool :: Parser JSType
 jsBool = boolTrue <|> boolFalse
 
-jsInt :: Parser JSType
-jsInt = Scalar . Int <$> decimal
+jsNumber :: Parser JSType
+jsNumber = Scalar . decodeScientific <$> scientific
 
 codes :: String
 codes = ['b', 'n', 'f', 'r', 't', '\\', '\"', '/']

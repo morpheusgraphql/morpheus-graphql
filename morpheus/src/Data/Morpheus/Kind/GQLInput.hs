@@ -76,6 +76,12 @@ instance GQLInput Int where
   asArgument = inputFieldOf
   introInput = introspectScalar
 
+instance GQLInput Float where
+  decode (Scalar (Float x)) = pure x
+  decode isType             = internalTypeMismatch "Int" isType
+  asArgument = inputFieldOf
+  introInput = introspectScalar
+
 instance (GQLInput a, GQLKind a) => GQLInput (Maybe a) where
   decode JSNull = pure Nothing
   decode x      = Just <$> decode x
