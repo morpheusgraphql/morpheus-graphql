@@ -9,5 +9,5 @@ import           Data.Morpheus.Types.Query.Selection    (Arguments)
 import           Data.Morpheus.Types.Types              (Variables)
 import           Data.Morpheus.Schema.Internal.Types    (GObject (..), ObjectField (..))
 
-resolveArguments :: Variables -> GObject ObjectField -> Raw.RawArguments -> Validation Arguments
+resolveArguments :: Variables -> [(Text, InputField)] -> Raw.RawArguments -> Validation Arguments
 resolveArguments variables' _ = mapM (resolveArgumentValue variables')
