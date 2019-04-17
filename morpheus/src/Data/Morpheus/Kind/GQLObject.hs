@@ -110,6 +110,11 @@ instance GQLObject Int where
   introspect = introspectScalar
   fieldType = scalarField
 
+instance GQLObject Float where
+  encode _ = pure . Scalar . Float
+  introspect = introspectScalar
+  fieldType = scalarField
+
 instance GQLObject Text where
   encode _ = pure . Scalar . String
   introspect = introspectScalar
