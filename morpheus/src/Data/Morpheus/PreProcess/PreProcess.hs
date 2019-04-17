@@ -7,6 +7,7 @@ module Data.Morpheus.PreProcess.PreProcess
   ( preProcessQuery
   ) where
 
+import           Data.Map                                         (fromList)
 import           Data.Morpheus.Error.Mutation                     (mutationIsNotDefined)
 import           Data.Morpheus.PreProcess.Fragment                (validateFragments)
 import           Data.Morpheus.PreProcess.Resolve.ResolveRawQuery (resolveRawQuery)
@@ -57,7 +58,8 @@ getOperator (Mutation _ args' sel position') lib' =
 resolveValues :: TypeLib -> GQLQueryRoot -> Validation (OutputObject, SelectionSet)
 resolveValues typesLib root = do
   (query', args', rawSel) <- getOperator (queryBody root) typesLib
-  variables' <- resolveOperationVariables typesLib (inputVariables root) (allVariableReferences [rawSel]) args'
+  variables' <-
+    resolveOperationVariables typesLib (fromList $ inputVariables root) (allVariableReferences [rawSel]) args'
   validateFragments typesLib root
   let operator' = setFieldSchema query'
   selection' <- resolveRawQuery typesLib (fragments root) variables' rawSel operator'

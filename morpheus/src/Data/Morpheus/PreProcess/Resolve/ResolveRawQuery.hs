@@ -17,11 +17,11 @@ resolveVariableAndSpread ::
      TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> (Text, RawSelection) -> Validation SelectionSet
 resolveVariableAndSpread lib' fragments' variables' parent' (key', RawSelectionSet rawArgs rawSelectors position') = do
   fieldType' <- lookupSelectionObjectFieldType position' key' lib' parent'
-  args' <- resolveArguments variables' parent' rawArgs
+  args' <- resolveArguments variables' rawArgs
   sel <- concat <$> mapM (resolveVariableAndSpread lib' fragments' variables' fieldType') rawSelectors
   pure [(key', SelectionSet args' sel position')]
-resolveVariableAndSpread _ _ variables' parentType' (sKey, RawField rawArgs field sPos) = do
-  args' <- resolveArguments variables' parentType' rawArgs
+resolveVariableAndSpread _ _ variables' _ (sKey, RawField rawArgs field sPos) = do
+  args' <- resolveArguments variables' rawArgs
   pure [(sKey, Field args' field sPos)]
 resolveVariableAndSpread lib' fragments' variables' parent' (spreadID, Spread _ sPos) =
   concat <$> (resolveSpread fragments' parent' sPos spreadID >>= recursiveResolve)
