@@ -24,7 +24,7 @@ data Modulo7 =
           Int
   deriving (Show, Data, Generic, GQLKind)
 
-instance Scalar Modulo7 where
+instance GQLScalar Modulo7 where
   parseValue (Int x) = pure $ Modulo7 (x `div` 7) (x `mod` 7)
   parseValue _       = pure $ Modulo7 0 0
   serialize (Modulo7 value _) = Int value

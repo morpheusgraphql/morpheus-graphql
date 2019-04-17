@@ -21,7 +21,7 @@ import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
 import qualified Data.Morpheus.Kind.GQLEnum             as E (GQLEnum (..))
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType, introspectScalar)
-import qualified Data.Morpheus.Kind.Scalar              as S (Scalar (..))
+import qualified Data.Morpheus.Kind.GQLScalar           as S (GQLScalar (..))
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib)
@@ -138,7 +138,7 @@ instance (Show a, GQLKind a, E.GQLEnum a) => GQLObject (EnumOf a) where
   fieldType _ = ObjectField [] . E.asField (Proxy @a)
   introspect _ = E.introspect (Proxy @a)
 
-instance S.Scalar a => GQLObject (ScalarOf a) where
+instance S.GQLScalar a => GQLObject (ScalarOf a) where
   encode _ (ScalarOf x) = pure $ Scalar $ S.serialize x
   fieldType _ = ObjectField [] . S.asField (Proxy @a)
   introspect _ = S.introspect (Proxy @a)

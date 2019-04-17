@@ -16,7 +16,7 @@ import           Data.Morpheus.Generics.GDecode      (GDecode (..))
 import           Data.Morpheus.Generics.TypeRep      (Selectors (..))
 import qualified Data.Morpheus.Kind.GQLEnum          as E (GQLEnum (..))
 import           Data.Morpheus.Kind.GQLKind          (GQLKind (..), inputObjectOf, introspectScalar)
-import qualified Data.Morpheus.Kind.Scalar           as S (Scalar (..))
+import qualified Data.Morpheus.Kind.GQLScalar        as S (GQLScalar (..))
 import           Data.Morpheus.Schema.Internal.Types (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Describer       (EnumOf (..), ScalarOf (..))
@@ -97,7 +97,7 @@ instance (E.GQLEnum a, GQLKind a) => GQLInput (EnumOf a) where
   asArgument _ = E.asInputField (Proxy @a)
   introInput _ = E.introspect (Proxy @a)
 
-instance (S.Scalar a, GQLKind a) => GQLInput (ScalarOf a) where
+instance (S.GQLScalar a, GQLKind a) => GQLInput (ScalarOf a) where
   decode text = ScalarOf <$> S.decode text
   asArgument _ = S.asInputField (Proxy @a)
   introInput _ = S.introspect (Proxy @a)

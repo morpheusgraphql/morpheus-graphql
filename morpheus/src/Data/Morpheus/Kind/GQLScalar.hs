@@ -2,7 +2,7 @@
 {-# LANGUAGE DefaultSignatures       #-}
 {-# LANGUAGE OverloadedStrings       #-}
 
-module Data.Morpheus.Kind.Scalar where
+module Data.Morpheus.Kind.GQLScalar where
 
 import           Control.Monad                       ((>=>))
 import           Data.Morpheus.Error.Internal        (internalTypeMismatch)
@@ -18,7 +18,7 @@ toScalar :: JSType -> Validation ScalarValue
 toScalar (Scalar x) = pure x
 toScalar jsType     = internalTypeMismatch "Scalar" jsType
 
-class Scalar a where
+class GQLScalar a where
   parseValue :: ScalarValue -> Validation a
   decode :: JSType -> Validation a
   decode = toScalar >=> parseValue

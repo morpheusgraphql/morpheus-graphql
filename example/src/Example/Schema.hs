@@ -16,7 +16,7 @@ import           Data.Maybe                 (fromMaybe)
 import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLResponse, GQLRoot (..), ResolveIO,
                                              ScalarOf (..), eitherToResponse, interpreter)
 import           Data.Morpheus.Kind         (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLObject, GQLQuery,
-                                             Scalar (..))
+                                             GQLScalar (..))
 import           Data.Morpheus.Types.JSType (ScalarValue (..))
 import           Data.Text                  (Text, pack)
 import qualified Data.Text                  as T (concat)
@@ -37,7 +37,7 @@ data Modulo7 =
           Int
   deriving (Show, Data, Generic, GQLKind)
 
-instance Scalar Modulo7 where
+instance GQLScalar Modulo7 where
   parseValue (Int x) = pure $ Modulo7 (x `div` 7) (x `mod` 7)
   parseValue _       = pure $ Modulo7 0 0
   serialize (Modulo7 value _) = Int value
