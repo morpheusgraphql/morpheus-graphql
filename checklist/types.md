@@ -10,7 +10,7 @@ OutputType:
     - Array:
     - Enum:
     - Object:
-    - Multible Object Types 
+    - Multiple Object Types
     - Query
 
 inputTypes:
@@ -18,6 +18,6 @@ inputTypes:
     - customScalar: 
     - Array:
     - Enum:
-    - InpuTObject
+    - InputObject
     - Mutation
     
