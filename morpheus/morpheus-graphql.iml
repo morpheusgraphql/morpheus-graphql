@@ -19,6 +19,7 @@
     <orderEntry type="library" name="text-1.2.3.0" level="project" />
     <orderEntry type="library" name="transformers-0.5.5.0" level="project" />
     <orderEntry type="library" name="unordered-containers-0.2.9.0" level="project" />
+    <orderEntry type="library" name="vector-0.12.0.1" level="project" />
     <orderEntry type="library" name="base-compat-0.10.4" level="project" />
     <orderEntry type="library" name="deepseq-1.4.3.0" level="project" />
     <orderEntry type="library" name="dlist-0.8.0.5" level="project" />
@@ -31,7 +32,6 @@
     <orderEntry type="library" name="time-1.8.0.2" level="project" />
     <orderEntry type="library" name="time-locale-compat-0.1.1.5" level="project" />
     <orderEntry type="library" name="uuid-types-1.0.3" level="project" />
-    <orderEntry type="library" name="vector-0.12.0.1" level="project" />
     <orderEntry type="library" name="array-0.5.2.0" level="project" />
     <orderEntry type="library" name="integer-gmp-1.0.2.0" level="project" />
     <orderEntry type="library" name="integer-logarithms-1.0.2.2" level="project" />

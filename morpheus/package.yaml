@@ -2,9 +2,11 @@ name: morpheus-graphql
 version: 0.0.1
 github: "nalchevanidze/morpheus-graphql"
 license: BSD3
-author: "Davit Nalchevanidze"
+author: "Daviti Nalchevanidze"
+category: web, graphql
+synopsis: Morpheus GraphQL
 maintainer: "d.nalchevanidze@gmail.com"
-copyright: "2018 Author name here"
+copyright: "(c) 2019 Daviti Nalchevanidze"
 
 description: Build GraphQL APIs with your favourite functional language!
 
@@ -26,25 +28,4 @@ dependencies:
 library:
   source-dirs: src
   ghc-options:
-      -fwarn-dodgy-exports
-      -fwarn-dodgy-imports
-      -fwarn-unused-imports
-      -fwarn-duplicate-exports
-      -fwarn-missing-fields
-      -fwarn-missing-methods
-      -fwarn-missing-signatures
-      -fwarn-overlapping-patterns
-      -fwarn-wrong-do-bind
-      -fwarn-unused-binds
-      -fwarn-unused-matches
-      -fwarn-type-defaults
-      -fwarn-incomplete-record-updates
-      -fwarn-hi-shadowing
-      -fwarn-dodgy-foreign-imports
-      -fwarn-deprecated-flags
-      -fwarn-warnings-deprecations
-      -fwarn-unrecognised-pragmas
-      -Wunused-do-bind
-      -fwarn-name-shadowing
-      -fwarn-incomplete-patterns
-      -Werror
+      -Wall
