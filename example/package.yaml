@@ -1,10 +1,12 @@
 name: morpheus-graphql-example
 version: 0.0.1
-github: "githubuser/haskell-bff"
+github: "nalchevanidze/morpheus-graphql"
 license: BSD3
-author: "Davit Nalchevanidze"
-maintainer: "example@example.com"
-copyright: "2018 Author name here"
+author: "Daviti Nalchevanidze"
+maintainer: "d.nalchevanidze@gmail.com"
+copyright: "2019 Daviti Nalchevanidze"
+category: example, web, graphql
+synopsis: Morpheus GraphQL
 
 description: Example usage of Morpheus GraphQL
 
@@ -26,6 +28,5 @@ executables:
       -rtsopts
       -with-rtsopts=-N
       -Wall
-      -Werror
     dependencies:
       - morpheus-graphql
