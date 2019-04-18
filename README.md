@@ -2,120 +2,35 @@
 
 Build GraphQL APIs with your favourite functional language!
 
-# Example
+## Hello world GrapqhQL haskell
 
-define schema with native Haskell Types and derive them as GraphQL Types
-
-check example project for more details
+define schema with native Haskell Types and derive them as GraphQL Schema and Introspection
 
 ```haskell
 
-data CityID
-  = Paris
-  | BLN
-  | HH
-  deriving (Show, Generic, Data, GQLEnum) -- GQL Enum
-
-instance GQLKind CityID where
-  description _ = "ID of Cities in Zip Format"
-
-data Modulo7 =
-  Modulo7 Int
-          Int
-  deriving (Show, Data, Generic, GQLKind)
-
-instance GQLScalar Modulo7 where
-  parseValue (Int x) = pure $ Modulo7 (x `div` 7) (x `mod` 7)
-  parseValue _       = pure $ Modulo7 0 0
-  serialize (Modulo7 value _) = Int value
-
-data Coordinates = Coordinates
-  { latitude  :: ScalarOf Modulo7
-  , longitude :: Int
-  } deriving (Show, Generic, Data, GQLInput) -- GQL Input Object
-
-instance GQLKind Coordinates where
-  description _ = "just random latitude and longitude"
-
-data LocationByCoordinates = LocationByCoordinates
-  { coordinates :: Coordinates
-  , comment     :: Maybe Text
-  } deriving (Show, Generic, Data, GQLArgs) -- GQL Arguments
-
+-- Query Arguments
 data Location = Location
-  { zipCode :: Maybe Int
-  , cityID  :: EnumOf CityID
-  } deriving (Show, Data, Generic, GQLArgs) -- GQL Arguments
-
-data Address = Address
-  { city        :: Text
-  , street      :: Text
-  , houseNumber :: Int
-  , owner       :: Maybe User
-  } deriving (Generic, Show, GQLKind, GQLObject, Data) -- GQL Object
+  { zipCode :: Maybe Int -- Optional Argument
+  , name  :: Text -- Required Argument
+  } deriving (Show, Data, Generic , GQLArgs)
 
 data User = User
-  { name    :: Text
-  , email   :: Text
-  , address :: LocationByCoordinates ::-> Address
-  , office  :: Location ::-> Address
-  , friend  :: () ::-> Maybe User
-  , home    :: Maybe Address
-  } deriving (Show, Generic, Data, GQLObject) -- GQL Object
-
-instance GQLKind User where
-  description _ = "Custom Description for Client Defined User Type"
+  { name    :: Text  -- pure value
+  , email   :: Maybe Text
+  , home  :: Location ::-> Address
+  } deriving (Show, Data, Generic, GQLKind, GQLObject)
 
 newtype Query = Query
-  { user :: () ::-> User
-  } deriving (Show, Generic, Data, GQLQuery)
+  { user :: () ::-> User -- with IO interaction
+  } deriving (Show, Data, Genneric , GQLQuery)
 
-newtype Mutation = Mutation
-  { createUser :: LocationByCoordinates ::-> User
-  } deriving (Show, Generic, Data, GQLMutation)
-
-```
-
-# Resolvers
-
-resolvers are haskell functions, they automaticaly recieve typed data as input
-
-```haskell
-
-jsonAddress :: IO (Either String JSONAddress)
-jsonAddress = ...
 
 jsonUser :: IO (Either String JSONAddress)
 jsonUser = ...
 
-toText :: Modulo7 -> Text
-toText = ...
-
-fetchAddress :: Modulo7 -> Text -> ResolveIO Address
-fetchAddress (Modulo7 x y) streetName = lift jsonAddress >>= eitherToResponse modify
-  where
-    modify address =
-      Address
-        { city = ..
-        , houseNumber = ...
-        , street = ...
-        , owner = ...
-        }
-
-resolveAddress :: LocationByCoordinates ::-> Address
-resolveAddress = Resolver res
-  where
-    res args = fetchAddress (toText $ latitude $ coordinates args) (longitude $ coordinates args)
-
-addressByCityID :: CityID -> Int -> ResolveIO Address
-addressByCityID Paris code = fetchAddress ...
-addressByCityID BLN code   = fetchAddress ...
-addressByCityID HH code    = fetchAddress ...
-
-resolveOffice :: JSONUser -> Location ::-> Address
-resolveOffice _ = Resolver resolve'
-  where
-    resolve' args = addressByCityID (unpackEnum $ cityID args) ....
+-- Hi Order Resolver
+resolveAddress :: User -> Location ::-> Address
+resolveAddress = ...
 
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve'
@@ -123,26 +38,9 @@ resolveUser = Resolver resolve'
     resolve' _ = lift jsonUser >>= eitherToResponse modify
     modify user' =
       User
-        { name = ...
-        , email = ...
-        , address = resolveAddress
-        , office = resolveOffice user'
-        , home = Nothing
-        , friend = Resolver $ \_ -> pure Nothing
-        }
-
-createUserMutation :: LocationByCoordinates ::-> User
-createUserMutation = Resolver resolve'
-  where
-    resolve' _ = lift jsonUser >>= eitherToResponse modify
-    modify user' =
-      User
-        { name = ...
-        , email = ...
-        , address = resolveAddress
-        , office = resolveOffice user'
-        , home = Nothing
-        , friend = Resolver $ \_ -> pure Nothing
+        { name = "<Name>"
+        , email = Just "<Email>"
+        , address = resolveAddress user'
         }
 
 resolve :: B.ByteString -> IO GQLResponse
@@ -152,9 +50,99 @@ resolve =
       queryResolver = Query {
         user = resolveUser
       },
+      mutationResolver = ()
+    }
+```
+
+## Enum
+
+```haskell
+data City
+  = Hamburg
+  | Paris
+  | Berlin
+  deriving (Show, Generic, Data, GQLKind , GQLEnum) -- GQL Enum
+
+data SomeGQLType = SomeGQLType
+  { ...
+    ...
+  , city  :: EnumOf City
+  } deriving ...
+
+-- pack Enum
+SomeGQLType
+  { ...
+  , city = EnumOf Hamburg
+  }
+
+-- unpack Enum
+getCity :: SomeGQLType -> City
+getCity x = unpackEnum $ city x
+
+```
+
+## Scalar
+
+```haskell
+
+data Odd = Int deriving (Show, Data, Generic, GQLKind)
+
+instance GQLScalar Odd where
+  parseValue (Int x) = pure $ Odd (...  )
+  parseValue (String x) = pure $ Odd (...  )
+  serialize  (Odd value) = Int value
+
+data SomeGQLType = SomeGQLType { ....
+ count :: ScalarOf Odd
+} deriving ...
+
+```
+
+## InputObject
+
+inputObject can be used only inside in arguments or in another inputObject
+
+```haskell
+
+data Coordinates = Coordinates
+{ latitude :: Int
+, longitude :: Int
+} deriving (Show, Generic, Data, GQLKind, GQLInput)
+
+```
+
+## Descriptions
+
+if you need description for your GQL Type you can define GQL instance manualy and assign them description
+
+```haskell
+data Person = Person
+{ name :: Text
+} deriving (Show, Generic, Data, GQLInput)
+
+instance GQLKind Person where
+  description \_ = "ID of Cities in Zip Format"
+
+```
+
+# Mutation
+
+```haskell
+
+newtype Mutation = Mutation
+  { createUser :: Form ::-> User
+  } deriving (Show, Generic, Data, GQLMutation)
+
+createUser :: Form ::-> User
+createUser = ...
+
+resolve :: B.ByteString -> IO GQLResponse
+resolve =
+  interpreter
+    GQLRoot {
+      queryResolver = Query {...},
       mutationResolver = Mutation {
-        createUser = createUserMutation
+        createUser = createUser
       }
     }
-
 ```
