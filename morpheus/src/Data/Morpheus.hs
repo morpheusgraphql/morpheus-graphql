@@ -3,7 +3,6 @@
 
 module Data.Morpheus
   ( interpreter
-  , eitherToResponse
   , GQLResponse
   , (::->)(..)
   , GQLRequest(..)
@@ -61,10 +60,6 @@ interpreter rootResolver request = do
   case value of
     Left x  -> pure $ Errors $ renderErrors (lineBreaks request) x
     Right x -> pure $ Data x
-
-eitherToResponse :: (a -> b) -> Either String a -> ResolveIO b
-eitherToResponse _ (Left x)  = failResolveIO $ errorMessage 0 (pack $ show x)
-eitherToResponse f (Right x) = pure (f x)
 
 parseRequest :: B.ByteString -> ResolveIO GQLRequest
 parseRequest text =

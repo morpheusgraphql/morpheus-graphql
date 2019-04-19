@@ -12,9 +12,11 @@ module Data.Morpheus.Kind.GQLObject
   ( GQLObject(..)
   ) where
 
+import           Control.Monad.Trans                    (lift)
 import           Control.Monad.Trans.Except
 import qualified Data.Data                              as D
 import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
+import           Data.Morpheus.Error.Utils              (errorMessage)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
@@ -71,11 +73,18 @@ class GQLObject a where
       fields = map fst fieldTypes
       stack = map snd fieldTypes
 
+liftResolver :: IO (Either String a) -> ResolveIO a
+liftResolver x = do
+  result <- lift x
+  case result of
+    Left error' -> failResolveIO $ errorMessage 0 (pack error')
+    Right value -> pure value
+
 instance (GQLObject a, Args.GQLArgs p) => GQLObject (p ::-> a) where
   encode (SelectionSet gqlArgs body pos) (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (SelectionSet gqlArgs body pos)
+    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver . resolver >>= encode (SelectionSet gqlArgs body pos)
   encode (Field gqlArgs field pos) (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= resolver >>= encode (Field gqlArgs field pos)
+    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver . resolver >>= encode (Field gqlArgs field pos)
   introspect _ typeLib = resolveTypes typeLib $ args' ++ fields
     where
       args' = map snd $ Args.introspect (Proxy @p)
