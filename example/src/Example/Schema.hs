@@ -117,6 +117,7 @@ resolveOffice _ = Resolver resolve'
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve'
   where
+    resolve' :: () -> IO (Either String User)
     resolve' _ = do
       value <- M.jsonUser
       pure $ modify <$> value

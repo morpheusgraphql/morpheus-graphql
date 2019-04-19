@@ -15,13 +15,13 @@ data Location = Location
   } deriving (Show, Data, Generic , GQLArgs)
 
 data User = User
-  { name    :: Text  -- pure value
-  , email   :: Maybe Text
-  , home  :: Location ::-> Address
+  { name    :: Text  -- not Null  Field
+  , email   :: Maybe Text -- Nullable Field
+  , home  :: Location ::-> Address -- Field With Arguments and IO interaction
   } deriving (Show, Data, Generic, GQLKind, GQLObject)
 
 newtype Query = Query
-  { user :: () ::-> User -- with IO interaction
+  { user :: () ::-> User -- Field With No Arguments and IO interaction
   } deriving (Show, Data, Genneric , GQLQuery)
 
 
@@ -35,7 +35,10 @@ resolveAddress = ...
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve'
   where
-    resolve' _ = lift jsonUser >>= eitherToResponse modify
+    resolve' :: () -> IO (Either String User)
+    resolve' _ = do
+      value <- M.jsonUser
+      pure $ modify <$> value
     modify user' =
       User
         { name = "<Name>"
