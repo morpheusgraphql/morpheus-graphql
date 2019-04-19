@@ -25,11 +25,11 @@ newtype Query = Query
   } deriving (Show, Data, Genneric , GQLQuery)
 
 
-jsonUser :: IO (Either String JSONAddress)
+jsonUser :: IO (Either String JSONUser)
 jsonUser = ...
 
 -- Hi Order Resolver
-resolveAddress :: User -> Location ::-> Address
+resolveAddress :: JSONUser -> Location ::-> Address
 resolveAddress = ...
 
 resolveUser :: () ::-> User
@@ -37,12 +37,12 @@ resolveUser = Resolver resolve'
   where
     resolve' :: () -> IO (Either String User)
     resolve' _ = do
-      value <- M.jsonUser
-      pure $ modify <$> value
+      value <- jsonUser
+      pure (modify <$> value)
     modify user' =
       User
-        { name = "<Name>"
-        , email = Just "<Email>"
+        { name = name user'
+        , email = email user'
         , address = resolveAddress user'
         }
 
