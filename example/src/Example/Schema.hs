@@ -9,12 +9,11 @@ module Example.Schema
   ( resolve
   ) where
 
-import           Control.Monad.Trans        (lift)
 import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Data                  (Data)
 import           Data.Maybe                 (fromMaybe)
-import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLResponse, GQLRoot (..), ResolveIO,
-                                             ScalarOf (..), eitherToResponse, interpreter)
+import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLResponse, GQLRoot (..), ScalarOf (..),
+                                             interpreter)
 import           Data.Morpheus.Kind         (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLObject, GQLQuery,
                                              GQLScalar (..))
 import           Data.Morpheus.Types.JSType (ScalarValue (..))
@@ -87,8 +86,10 @@ newtype Mutation = Mutation
   { createUser :: LocationByCoordinates ::-> User
   } deriving (Show, Generic, Data, GQLMutation)
 
-fetchAddress :: Modulo7 -> Text -> ResolveIO Address
-fetchAddress (Modulo7 x y) streetName = lift M.jsonAddress >>= eitherToResponse modify
+fetchAddress :: Modulo7 -> Text -> IO (Either String Address)
+fetchAddress (Modulo7 x y) streetName = do
+  address' <- M.jsonAddress
+  pure (modify <$> address')
   where
     modify mAddress =
       Address
@@ -103,7 +104,7 @@ resolveAddress = Resolver res
   where
     res args = fetchAddress (unpackScalar $ latitude $ coordinates args) (pack $ show $ longitude $ coordinates args)
 
-addressByCityID :: CityID -> Int -> ResolveIO Address
+addressByCityID :: CityID -> Int -> IO (Either String Address)
 addressByCityID Paris code = fetchAddress (Modulo7 75 code) "Paris"
 addressByCityID BLN code   = fetchAddress (Modulo7 10 code) "Berlin"
 addressByCityID HH code    = fetchAddress (Modulo7 20 code) "Hamburg"
@@ -116,7 +117,10 @@ resolveOffice _ = Resolver resolve'
 resolveUser :: () ::-> User
 resolveUser = Resolver resolve'
   where
-    resolve' _ = lift M.jsonUser >>= eitherToResponse modify
+    resolve' :: () -> IO (Either String User)
+    resolve' _ = do
+      value <- M.jsonUser
+      pure $ modify <$> value
     modify user' =
       User
         { name = M.name user'
@@ -124,13 +128,15 @@ resolveUser = Resolver resolve'
         , address = resolveAddress
         , office = resolveOffice user'
         , home = Nothing
-        , friend = Resolver $ \_ -> pure Nothing
+        , friend = Resolver $ \_ -> pure (pure Nothing)
         }
 
 createUserMutation :: LocationByCoordinates ::-> User
 createUserMutation = Resolver resolve'
   where
-    resolve' _ = lift M.jsonUser >>= eitherToResponse modify
+    resolve' _ = do
+      result <- M.jsonUser
+      pure (modify <$> result)
     modify user' =
       User
         { name = M.name user'
@@ -138,7 +144,7 @@ createUserMutation = Resolver resolve'
         , address = resolveAddress
         , office = resolveOffice user'
         , home = Nothing
-        , friend = Resolver $ \_ -> pure Nothing
+        , friend = Resolver $ \_ -> pure (pure Nothing)
         }
 
 resolve :: B.ByteString -> IO GQLResponse
