@@ -1,4 +1,4 @@
-resolver: lts-11.10
+resolver: lts-12.0
 packages:
   - morpheus
   - example
