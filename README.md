@@ -8,6 +8,15 @@ define schema with native Haskell Types and derive them as GraphQL Schema and In
 
 ```haskell
 
+gqlApi :: ByteString -> IO ByteString
+gqlApi = interpreter
+    GQLRoot {
+      query = Query {
+        user = resolveUser
+      },
+      mutation = () -- no mutation
+    }
+
 -- Query Arguments
 data Location = Location
   { zipCode :: Maybe Int -- Optional Argument
@@ -17,7 +26,7 @@ data Location = Location
 data User = User
   { name    :: Text  -- not Null  Field
   , email   :: Maybe Text -- Nullable Field
-  , home  :: Location ::-> Address -- Field With Arguments and IO interaction
+  , address  :: Location ::-> Address -- Field With Arguments and IO interaction
   } deriving (Show, Data, Generic, GQLKind, GQLObject)
 
 newtype Query = Query
@@ -33,28 +42,14 @@ resolveAddress :: JSONUser -> Location ::-> Address
 resolveAddress = ...
 
 resolveUser :: () ::-> User
-resolveUser = Resolver resolve'
-  where
-    resolve' :: () -> IO (Either String User)
-    resolve' _ = do
-      value <- jsonUser
-      pure (modify <$> value)
-    modify user' =
-      User
-        { name = name user'
-        , email = email user'
-        , address = resolveAddress user'
-        }
-
-resolve :: B.ByteString -> IO GQLResponse
-resolve =
-  interpreter
-    GQLRoot {
-      queryResolver = Query {
-        user = resolveUser
-      },
-      mutationResolver = ()
-    }
+resolveUser = Resolver $ const (jsonUser >>= \x -> return (buildResolverBy <$> x))
+    where
+        buildResolverBy user' =
+            User {
+                name = name user'
+                , email = email user'
+                , address = resolveAddress user'
+            }
 ```
 
 ## Enum
@@ -139,13 +134,13 @@ newtype Mutation = Mutation
 createUser :: Form ::-> User
 createUser = ...
 
-resolve :: B.ByteString -> IO GQLResponse
-resolve =
-  interpreter
+
+gqlApi :: ByteString -> IO ByteString
+gqlApi = interpreter
     GQLRoot {
-      queryResolver = Query {...},
-      mutationResolver = Mutation {
-        createUser = createUser
+      query = Query {...},
+      mutation = Mutation {
+         createUser = createUser
       }
     }
 ```

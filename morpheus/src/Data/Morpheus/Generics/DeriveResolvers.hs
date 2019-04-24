@@ -25,14 +25,15 @@ import           GHC.Generics
 unwrapMonadTuple :: Monad m => (T.Text, m a) -> m (T.Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
-selectResolver :: [(T.Text, Selection -> ResolveIO JSType)] -> (T.Text, Selection) -> ResolveIO (T.Text, JSType)
-selectResolver x (key, gql) = unwrapMonadTuple (key, (fromMaybe (\_ -> pure JSNull) $ lookup key x) gql)
+selectResolver ::
+     [(T.Text, (T.Text, Selection) -> ResolveIO JSType)] -> (T.Text, Selection) -> ResolveIO (T.Text, JSType)
+selectResolver x (key, gql) = unwrapMonadTuple (key, (fromMaybe (\_ -> pure JSNull) $ lookup key x) (key, gql))
 
-resolveBySelection :: [(T.Text, Selection)] -> [(T.Text, Selection -> ResolveIO JSType)] -> ResolveIO JSType
+resolveBySelection :: [(T.Text, Selection)] -> [(T.Text, (T.Text, Selection) -> ResolveIO JSType)] -> ResolveIO JSType
 resolveBySelection selection resolvers = JSObject <$> mapM (selectResolver resolvers) selection
 
 class DeriveResolvers f where
-  deriveResolvers :: Meta.MetaInfo -> f a -> [(T.Text, Selection -> ResolveIO JSType)]
+  deriveResolvers :: Meta.MetaInfo -> f a -> [(T.Text, (T.Text, Selection) -> ResolveIO JSType)]
 
 instance DeriveResolvers U1 where
   deriveResolvers _ _ = []

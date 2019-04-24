@@ -15,8 +15,7 @@ module Data.Morpheus.Kind.GQLObject
 import           Control.Monad.Trans                    (lift)
 import           Control.Monad.Trans.Except
 import qualified Data.Data                              as D
-import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
-import           Data.Morpheus.Error.Utils              (errorMessage)
+import           Data.Morpheus.Error.Selection          (fieldNotResolved, subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
@@ -51,11 +50,11 @@ instance (Selector s, D.Typeable a, GQLObject a) => Selectors (RecSel s a) (Text
       name = pack $ selName (undefined :: SelOf s)
 
 class GQLObject a where
-  encode :: Selection -> a -> ResolveIO JSType
+  encode :: (Text, Selection) -> a -> ResolveIO JSType
   default encode :: (Generic a, D.Data a, DeriveResolvers (Rep a), Show a) =>
-    Selection -> a -> ResolveIO JSType
-  encode (SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers Meta.initialMeta . from
-  encode (Field _ key pos) = \_ -> failResolveIO $ subfieldsNotSelected meta -- TODO: must be internal Error
+    (Text, Selection) -> a -> ResolveIO JSType
+  encode (_, SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers Meta.initialMeta . from
+  encode (_, Field _ key pos) = const $ failResolveIO $ subfieldsNotSelected meta -- TODO: must be internal Error
     where
       meta = Meta.MetaInfo {Meta.typeName = "", Meta.key = key, Meta.position = pos}
   fieldType :: Proxy a -> Text -> ObjectField
@@ -73,18 +72,20 @@ class GQLObject a where
       fields = map fst fieldTypes
       stack = map snd fieldTypes
 
-liftResolver :: IO (Either String a) -> ResolveIO a
-liftResolver x = do
+liftResolver :: Int -> Text -> IO (Either String a) -> ResolveIO a
+liftResolver position' typeName' x = do
   result <- lift x
   case result of
-    Left error' -> failResolveIO $ errorMessage 0 (pack error')
-    Right value -> pure value
+    Left message' -> failResolveIO $ fieldNotResolved position' typeName' (pack message')
+    Right value   -> pure value
 
 instance (GQLObject a, Args.GQLArgs p) => GQLObject (p ::-> a) where
-  encode (SelectionSet gqlArgs body pos) (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver . resolver >>= encode (SelectionSet gqlArgs body pos)
-  encode (Field gqlArgs field pos) (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver . resolver >>= encode (Field gqlArgs field pos)
+  encode (key', SelectionSet gqlArgs body position') (Resolver resolver) =
+    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
+    encode (key', SelectionSet gqlArgs body position')
+  encode (key', Field gqlArgs field position') (Resolver resolver) =
+    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
+    encode (key', Field gqlArgs field position')
   introspect _ typeLib = resolveTypes typeLib $ args' ++ fields
     where
       args' = map snd $ Args.introspect (Proxy @p)
@@ -135,8 +136,8 @@ instance GQLObject Bool where
   fieldType = scalarField
 
 instance (GQLObject a, D.Typeable a) => GQLObject [a] where
-  encode Field {} _ = pure $ JSList []
-  encode query list = JSList <$> mapM (encode query) list
+  encode (_, Field {}) _ = pure $ JSList []
+  encode query list      = JSList <$> mapM (encode query) list
   introspect _ = introspect (Proxy @a)
   fieldType _ name = fType {fieldContent = (fieldContent fType) {I.asList = True}}
     where

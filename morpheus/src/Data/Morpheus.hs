@@ -5,7 +5,6 @@ module Data.Morpheus
   ( interpreter
   , GQLResponse
   , (::->)(..)
-  , GQLRequest(..)
   , ResolveIO
   , EnumOf(unpackEnum)
   , GQLRoot(..)
@@ -13,7 +12,7 @@ module Data.Morpheus
   ) where
 
 import           Control.Monad.Trans.Except          (ExceptT (..), runExceptT)
-import           Data.Aeson                          (decode)
+import           Data.Aeson                          (decode, encode)
 import qualified Data.ByteString.Lazy.Char8          as B
 import           Data.Morpheus.Error.Utils           (errorMessage, renderErrors)
 import           Data.Morpheus.Kind.GQLMutation      (GQLMutation (..))
@@ -25,13 +24,13 @@ import           Data.Morpheus.Types.Describer       ((::->) (Resolver), EnumOf 
 import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType)
 import           Data.Morpheus.Types.Query.Operator  (Operator (..))
-import           Data.Morpheus.Types.Request         (GQLRequest (..))
+import           Data.Morpheus.Types.Request         (GQLRequest)
 import           Data.Morpheus.Types.Response        (GQLResponse (..))
 import           Data.Text                           (pack)
 
 data GQLRoot a b = GQLRoot
-  { queryResolver    :: a
-  , mutationResolver :: b
+  { query    :: a
+  , mutation :: b
   }
 
 schema :: (GQLQuery a, GQLMutation b) => a -> b -> TypeLib
@@ -45,8 +44,8 @@ resolve rootResolver body = do
     Mutation _ _args selection _pos -> encodeMutation mutationRes selection
   where
     gqlSchema = schema queryRes mutationRes
-    queryRes = queryResolver rootResolver
-    mutationRes = mutationResolver rootResolver
+    queryRes = query rootResolver
+    mutationRes = mutation rootResolver
 
 lineBreaks :: B.ByteString -> [Int]
 lineBreaks req =
@@ -54,12 +53,15 @@ lineBreaks req =
     Just x  -> parseLineBreaks x
     Nothing -> []
 
-interpreter :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> B.ByteString -> IO GQLResponse
-interpreter rootResolver request = do
+interpreterRaw :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> B.ByteString -> IO GQLResponse
+interpreterRaw rootResolver request = do
   value <- runExceptT $ parseRequest request >>= resolve rootResolver
   case value of
     Left x  -> pure $ Errors $ renderErrors (lineBreaks request) x
     Right x -> pure $ Data x
+
+interpreter :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> B.ByteString -> IO B.ByteString
+interpreter rootResolver request = encode <$> interpreterRaw rootResolver request
 
 parseRequest :: B.ByteString -> ResolveIO GQLRequest
 parseRequest text =

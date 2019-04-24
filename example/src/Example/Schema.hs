@@ -6,14 +6,13 @@
 {-# LANGUAGE TypeOperators         #-}
 
 module Example.Schema
-  ( resolve
+  ( gqlApi
   ) where
 
 import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Data                  (Data)
 import           Data.Maybe                 (fromMaybe)
-import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLResponse, GQLRoot (..), ScalarOf (..),
-                                             interpreter)
+import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLRoot (..), ScalarOf (..), interpreter)
 import           Data.Morpheus.Kind         (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLObject, GQLQuery,
                                              GQLScalar (..))
 import           Data.Morpheus.Types.JSType (ScalarValue (..))
@@ -115,13 +114,9 @@ resolveOffice _ = Resolver resolve'
     resolve' args = addressByCityID (unpackEnum $ cityID args) (fromMaybe 101 (zipCode args))
 
 resolveUser :: () ::-> User
-resolveUser = Resolver resolve'
+resolveUser = Resolver $ const (M.jsonUser >>= \x -> return (buildResolverBy <$> x))
   where
-    resolve' :: () -> IO (Either String User)
-    resolve' _ = do
-      value <- M.jsonUser
-      pure $ modify <$> value
-    modify user' =
+    buildResolverBy user' =
       User
         { name = M.name user'
         , email = M.email user'
@@ -147,7 +142,5 @@ createUserMutation = Resolver resolve'
         , friend = Resolver $ \_ -> pure (pure Nothing)
         }
 
-resolve :: B.ByteString -> IO GQLResponse
-resolve =
-  interpreter
-    GQLRoot {queryResolver = Query {user = resolveUser}, mutationResolver = Mutation {createUser = createUserMutation}}
+gqlApi :: B.ByteString -> IO B.ByteString
+gqlApi = interpreter GQLRoot {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}}

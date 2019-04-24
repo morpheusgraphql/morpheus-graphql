@@ -5,13 +5,19 @@ module Data.Morpheus.Error.Selection
   , subfieldsNotSelected
   , duplicateQuerySelections
   , hasNoSubfields
+  , fieldNotResolved
   ) where
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
 import           Data.Morpheus.Types.Core     (EnhancedKey (..))
 import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors)
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..))
+import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
 import qualified Data.Text                    as T (Text, concat)
+
+fieldNotResolved :: Position -> T.Text -> T.Text -> GQLErrors
+fieldNotResolved position' key' message' = errorMessage position' text
+  where
+    text = T.concat ["Failure on Resolving Field \"", key', "\": ", message']
 
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
 hasNoSubfields :: MetaInfo -> GQLErrors
