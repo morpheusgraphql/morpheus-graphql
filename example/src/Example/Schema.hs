@@ -146,4 +146,4 @@ createUserMutation = Resolver resolve'
 gqlApi :: B.ByteString -> IO B.ByteString
 gqlApi =
   interpreterBytestring
-    GQLRoot {queryResolver = Query {user = resolveUser}, mutationResolver = Mutation {createUser = createUserMutation}}
+    GQLRoot {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}}

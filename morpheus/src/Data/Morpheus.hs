@@ -6,7 +6,6 @@ module Data.Morpheus
   , interpreterBytestring
   , GQLResponse
   , (::->)(..)
-  , GQLRequest(..)
   , ResolveIO
   , EnumOf(unpackEnum)
   , GQLRoot(..)
@@ -26,13 +25,13 @@ import           Data.Morpheus.Types.Describer       ((::->) (Resolver), EnumOf 
 import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType)
 import           Data.Morpheus.Types.Query.Operator  (Operator (..))
-import           Data.Morpheus.Types.Request         (GQLRequest (..))
+import           Data.Morpheus.Types.Request         (GQLRequest)
 import           Data.Morpheus.Types.Response        (GQLResponse (..))
 import           Data.Text                           (pack)
 
 data GQLRoot a b = GQLRoot
-  { queryResolver    :: a
-  , mutationResolver :: b
+  { query    :: a
+  , mutation :: b
   }
 
 schema :: (GQLQuery a, GQLMutation b) => a -> b -> TypeLib
@@ -46,8 +45,8 @@ resolve rootResolver body = do
     Mutation _ _args selection _pos -> encodeMutation mutationRes selection
   where
     gqlSchema = schema queryRes mutationRes
-    queryRes = queryResolver rootResolver
-    mutationRes = mutationResolver rootResolver
+    queryRes = query rootResolver
+    mutationRes = mutation rootResolver
 
 lineBreaks :: B.ByteString -> [Int]
 lineBreaks req =
