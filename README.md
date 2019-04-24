@@ -2,37 +2,67 @@
 
 Build GraphQL APIs with your favourite functional language!
 
-## Hello world GrapqhQL haskell
+morpheus graphql helps you to build GraphQL API in Haskell with native haskell types,
+all your resolvers are regular haskell functions, morpheus graphql will convert your haskell schema to graphql schema.
+
+See example for more details on at https://github.com/nalchevanidze/morpheus-graphql/tree/master/example
+
+## features
+
+- Introspection
+- Enum
+- Scalar
+- InputObject
+- Mutation
+
+# Getting Started
 
 define schema with native Haskell Types and derive them as GraphQL Schema and Introspection
 
-```haskell
+starting point in morpheus graphql is to define your api function with morpheus interpreter
+acourding your Query and Mutation type interpreter will generate GQL schema that could be introspecteb by request
+for simplicity we wil not define mutation just query
 
+```haskell
 gqlApi :: ByteString -> IO ByteString
 gqlApi = interpreter
     GQLRoot {
-      query = Query {
+      query = Query {  -- query resolver function
         user = resolveUser
       },
       mutation = () -- no mutation
     }
 
+data Query = Query
+  { user :: () ::-> User -- Field With No Arguments and IO interaction
+  } deriving (Show, Data, Genneric , GQLQuery)
+```
+
+as you see Query type in morpheus graphql is just Haskell record, we derive it with **GQLQuery** as as Graphql Query
+in this case our query has only one field user with no arguments **"()"** and Type **"User"**
+
+anotation **"::->"** is inline haskell data Type with Constructor
+
+```haskell
+Resolver (argument -> IO Either string value)
+```
+
+arguments are also just haskell record with GQLArgs derivation
+
+```haskell
 -- Query Arguments
 data Location = Location
   { zipCode :: Maybe Int -- Optional Argument
   , name  :: Text -- Required Argument
   } deriving (Show, Data, Generic , GQLArgs)
+```
 
+```haskell
 data User = User
   { name    :: Text  -- not Null  Field
   , email   :: Maybe Text -- Nullable Field
   , address  :: Location ::-> Address -- Field With Arguments and IO interaction
   } deriving (Show, Data, Generic, GQLKind, GQLObject)
-
-newtype Query = Query
-  { user :: () ::-> User -- Field With No Arguments and IO interaction
-  } deriving (Show, Data, Genneric , GQLQuery)
-
 
 jsonUser :: IO (Either String JSONUser)
 jsonUser = ...
