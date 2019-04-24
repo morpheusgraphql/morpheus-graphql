@@ -8,14 +8,14 @@ define schema with native Haskell Types and derive them as GraphQL Schema and In
 
 ```haskell
 
-gqlApi :: B.ByteString -> IO GQLResponse
+gqlApi :: ByteString -> IO ByteString
 gqlApi =
   interpreter
     GQLRoot {
       query = Query {
         user = resolveUser
       },
-      mutation = () -- whithout mutation
+      mutation = () -- no mutation
     }
 
 -- Query Arguments
@@ -43,20 +43,14 @@ resolveAddress :: JSONUser -> Location ::-> Address
 resolveAddress = ...
 
 resolveUser :: () ::-> User
-resolveUser = Resolver resolve'
-  where
-    resolve' :: () -> IO (Either String User)
-    resolve' _ = do
-      value <- jsonUser
-      pure (modify <$> value)
-    modify user' =
-      User
-        { name = name user'
-        , email = email user'
-        , address = resolveAddress user'
-        }
-
-
+resolveUser = Resolver $ const (jsonUser >>= \x -> return (buildResolverBy <$> x))
+    where
+        buildResolverBy user' =
+            User {
+                name = name user'
+                , email = email user'
+                , address = resolveAddress user'
+            }
 ```
 
 ## Enum
