@@ -3,7 +3,7 @@
 Build GraphQL APIs with your favourite functional language!
 
 morpheus graphql helps you to build GraphQL API in Haskell with native haskell types,
-all your resolvers are regular haskell functions, morpheus graphql will convert your haskell schema to graphql schema.
+all your resolvers are regular haskell functions, morpheus graphql will convert your haskell schema to graphql Introspection.
 
 # Getting Started
 
