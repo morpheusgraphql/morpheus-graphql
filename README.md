@@ -7,7 +7,7 @@ all your resolvers are regular haskell functions, morpheus graphql will convert 
 
 # Getting Started
 
-Starting point in morpheus GraphQL is the definition of your API function with the morpheus interpreter.according to your query and mutation type, a GQL scheme and introspection will be generated. for simplicity, we won't define mutation, we'll just define query.
+Starting point in morpheus GraphQL is the definition of your API function with the morpheus interpreter. according to your query and mutation type, a GQL scheme and introspection will be generated. for simplicity, we won't define mutation, we'll just define query.
 
 ```haskell
 gqlApi :: ByteString -> IO ByteString
