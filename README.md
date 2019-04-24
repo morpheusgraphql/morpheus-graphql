@@ -17,11 +17,9 @@ See example for more details on at https://github.com/nalchevanidze/morpheus-gra
 
 # Getting Started
 
-define schema with native Haskell Types and derive them as GraphQL Schema and Introspection
+define Schema with native Haskell Types and derive them as GraphQL Schema
 
-starting point in morpheus graphql is to define your api function with morpheus interpreter
-acourding your Query and Mutation type interpreter will generate GQL schema that could be introspecteb by request
-for simplicity we wil not define mutation just query
+Starting point in morpheus GraphQL is the definition of your API function with the morpheus interpreter.according to your query and mutation type, a GQL scheme and introspection will be generated. for simplicity, we won't define mutation, we'll just define query.
 
 ```haskell
 gqlApi :: ByteString -> IO ByteString
@@ -38,16 +36,19 @@ data Query = Query
   } deriving (Show, Data, Genneric , GQLQuery)
 ```
 
-as you see Query type in morpheus graphql is just Haskell record, we derive it with **GQLQuery** as as Graphql Query
-in this case our query has only one field user with no arguments **"()"** and Type **"User"**
+as you can see query type is just Haskell record, we derive it with **GQLQuery** as as Graphql Query. it has only one field user with no argument **"()"** and output Type **"User"**
 
 anotation **"::->"** is inline haskell data Type with Constructor
+where in **(Either string value)**
+
+- **string** is for error messages
+- **value** value of field
 
 ```haskell
-Resolver (argument -> IO Either string value)
+Resolver (argument -> IO (Either String value))
 ```
 
-arguments are also just haskell record with GQLArgs derivation
+arguments are just Haskell record with GQLArgs derivation, as default all fields are required. only field with type Maybe is optional
 
 ```haskell
 -- Query Arguments
@@ -57,13 +58,20 @@ data Location = Location
   } deriving (Show, Data, Generic , GQLArgs)
 ```
 
+for the GQL object, define the data record and derive it as a **GQLKind,GQLObject**.
+only fields with **::->** are lazy and can access to IO. all other field will be evaluated instantly. by default all fields are notNull only (Maybe a) values are nullable.
+
 ```haskell
 data User = User
   { name    :: Text  -- not Null  Field
   , email   :: Maybe Text -- Nullable Field
   , address  :: Location ::-> Address -- Field With Arguments and IO interaction
   } deriving (Show, Data, Generic, GQLKind, GQLObject)
+```
 
+now we can write resolvers for your schema
+
+```haskell
 jsonUser :: IO (Either String JSONUser)
 jsonUser = ...
 
@@ -76,11 +84,13 @@ resolveUser = Resolver $ const (jsonUser >>= \x -> return (buildResolverBy <$> x
     where
         buildResolverBy user' =
             User {
-                name = name user'
+                  name = name user'
                 , email = email user'
                 , address = resolveAddress user'
             }
 ```
+
+for more details you cann See your Example on https://github.com/nalchevanidze/morpheus-graphql/tree/master/example
 
 ## Enum
 
