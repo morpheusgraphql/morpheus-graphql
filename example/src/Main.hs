@@ -9,4 +9,4 @@ import           Example.Schema         (gqlApi)
 import           Web.Scotty
 
 main :: IO ()
-main = scotty 3000 $ post "/api" $ json =<< (liftIO . gqlApi =<< body)
+main = scotty 3000 $ post "/api" $ raw =<< (liftIO . gqlApi =<< body)

@@ -12,8 +12,8 @@ module Example.Schema
 import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Data                  (Data)
 import           Data.Maybe                 (fromMaybe)
-import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLResponse, GQLRoot (..), ScalarOf (..),
-                                             interpreter)
+import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLRoot (..), ScalarOf (..),
+                                             interpreterBytestring)
 import           Data.Morpheus.Kind         (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLObject, GQLQuery,
                                              GQLScalar (..))
 import           Data.Morpheus.Types.JSType (ScalarValue (..))
@@ -143,7 +143,7 @@ createUserMutation = Resolver resolve'
         , friend = Resolver $ \_ -> pure (pure Nothing)
         }
 
-gqlApi :: B.ByteString -> IO GQLResponse
+gqlApi :: B.ByteString -> IO B.ByteString
 gqlApi =
-  interpreter
+  interpreterBytestring
     GQLRoot {queryResolver = Query {user = resolveUser}, mutationResolver = Mutation {createUser = createUserMutation}}

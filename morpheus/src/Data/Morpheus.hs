@@ -3,6 +3,7 @@
 
 module Data.Morpheus
   ( interpreter
+  , interpreterBytestring
   , GQLResponse
   , (::->)(..)
   , GQLRequest(..)
@@ -13,7 +14,7 @@ module Data.Morpheus
   ) where
 
 import           Control.Monad.Trans.Except          (ExceptT (..), runExceptT)
-import           Data.Aeson                          (decode)
+import           Data.Aeson                          (decode, encode)
 import qualified Data.ByteString.Lazy.Char8          as B
 import           Data.Morpheus.Error.Utils           (errorMessage, renderErrors)
 import           Data.Morpheus.Kind.GQLMutation      (GQLMutation (..))
@@ -60,6 +61,9 @@ interpreter rootResolver request = do
   case value of
     Left x  -> pure $ Errors $ renderErrors (lineBreaks request) x
     Right x -> pure $ Data x
+
+interpreterBytestring :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> B.ByteString -> IO B.ByteString
+interpreterBytestring rootResolver request = encode <$> interpreter rootResolver request
 
 parseRequest :: B.ByteString -> ResolveIO GQLRequest
 parseRequest text =
