@@ -5,16 +5,6 @@ Build GraphQL APIs with your favourite functional language!
 morpheus graphql helps you to build GraphQL API in Haskell with native haskell types,
 all your resolvers are regular haskell functions, morpheus graphql will convert your haskell schema to graphql schema.
 
-See example for more details on at https://github.com/nalchevanidze/morpheus-graphql/tree/master/example
-
-## Exisiting Features
-
-- Introspection
-- Enum
-- Scalar
-- InputObject
-- Mutation
-
 # Getting Started
 
 Starting point in morpheus GraphQL is the definition of your API function with the morpheus interpreter.according to your query and mutation type, a GQL scheme and introspection will be generated. for simplicity, we won't define mutation, we'll just define query.
@@ -183,16 +173,20 @@ gqlApi = interpreter
     }
 ```
 
+## Exisiting Features
+
+- Introspection
+- Enum
+- Scalar
+- InputObject
+- Mutation
+
 ## Roadmap
 
-- Near future:
-  - improve error handling
-  - impove API
-  - GQL isomorphic Introspection
 - Medium future:
-  - stabilize API
-  - GQL isomorphic error handling
+  - stabile API
+  - isomorphic Introspection
+  - isomorphic error handling
 - Long term
-  - Union Types
-  - Query Alias
-  - Performance Optimisation
+  - aLL possible GQL Types: Alias , Unions ..
+  - performance optimisation
