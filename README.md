@@ -2,38 +2,64 @@
 
 Build GraphQL APIs with your favourite functional language!
 
-## Hello world GrapqhQL haskell
+morpheus graphql helps you to build GraphQL API in Haskell with native haskell types,
+all your resolvers are regular haskell functions, morpheus graphql will convert your haskell schema to graphql Introspection.
 
-define schema with native Haskell Types and derive them as GraphQL Schema and Introspection
+# Getting Started
+
+Starting point in morpheus GraphQL is the definition of your API function with the morpheus interpreter. according to your query and mutation type, a GQL scheme and introspection will be generated. for simplicity, we won't define mutation, we'll just define query.
 
 ```haskell
-
 gqlApi :: ByteString -> IO ByteString
 gqlApi = interpreter
     GQLRoot {
-      query = Query {
+      query = Query {  -- query resolver function
         user = resolveUser
       },
       mutation = () -- no mutation
     }
 
+data Query = Query
+  { user :: () ::-> User -- Field With No Arguments and IO interaction
+  } deriving (Show, Data, Genneric , GQLQuery)
+```
+
+as you can see query type is just Haskell record, we derive it with **GQLQuery** as as Graphql Query. it has only one field user with no argument **"()"** and output Type **"User"**
+
+anotation **"::->"** is inline haskell data Type with Constructor
+where in **(Either string value)**
+
+- **string** is for error messages
+- **value** value of field
+
+```haskell
+Resolver (argument -> IO (Either String value))
+```
+
+arguments are just Haskell record with GQLArgs derivation, as default all fields are required. only field with type Maybe is optional
+
+```haskell
 -- Query Arguments
 data Location = Location
   { zipCode :: Maybe Int -- Optional Argument
   , name  :: Text -- Required Argument
   } deriving (Show, Data, Generic , GQLArgs)
+```
 
+for the GQL object, define the data record and derive it as a **GQLKind,GQLObject**.
+only fields with **::->** are lazy and can access to IO. all other field will be evaluated instantly. by default all fields are notNull only (Maybe a) values are nullable.
+
+```haskell
 data User = User
   { name    :: Text  -- not Null  Field
   , email   :: Maybe Text -- Nullable Field
   , address  :: Location ::-> Address -- Field With Arguments and IO interaction
   } deriving (Show, Data, Generic, GQLKind, GQLObject)
+```
 
-newtype Query = Query
-  { user :: () ::-> User -- Field With No Arguments and IO interaction
-  } deriving (Show, Data, Genneric , GQLQuery)
+now we can write resolvers for your schema
 
-
+```haskell
 jsonUser :: IO (Either String JSONUser)
 jsonUser = ...
 
@@ -46,11 +72,13 @@ resolveUser = Resolver $ const (jsonUser >>= \x -> return (buildResolverBy <$> x
     where
         buildResolverBy user' =
             User {
-                name = name user'
+                  name = name user'
                 , email = email user'
                 , address = resolveAddress user'
             }
 ```
+
+for more details you cann See your Example on https://github.com/nalchevanidze/morpheus-graphql/tree/master/example
 
 ## Enum
 
@@ -144,3 +172,21 @@ gqlApi = interpreter
       }
     }
 ```
+
+## Exisiting Features
+
+- Introspection
+- Enum
+- Scalar
+- InputObject
+- Mutation
+
+## Roadmap
+
+- Medium future:
+  - stabile API
+  - isomorphic Introspection
+  - isomorphic error handling
+- Long term
+  - aLL possible GQL Types: Alias , Unions ..
+  - performance optimisation
