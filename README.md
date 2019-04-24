@@ -8,6 +8,16 @@ define schema with native Haskell Types and derive them as GraphQL Schema and In
 
 ```haskell
 
+gqlApi :: B.ByteString -> IO GQLResponse
+gqlApi =
+  interpreter
+    GQLRoot {
+      query = Query {
+        user = resolveUser
+      },
+      mutation = () -- whithout mutation
+    }
+
 -- Query Arguments
 data Location = Location
   { zipCode :: Maybe Int -- Optional Argument
@@ -17,7 +27,7 @@ data Location = Location
 data User = User
   { name    :: Text  -- not Null  Field
   , email   :: Maybe Text -- Nullable Field
-  , home  :: Location ::-> Address -- Field With Arguments and IO interaction
+  , address  :: Location ::-> Address -- Field With Arguments and IO interaction
   } deriving (Show, Data, Generic, GQLKind, GQLObject)
 
 newtype Query = Query
@@ -46,15 +56,7 @@ resolveUser = Resolver resolve'
         , address = resolveAddress user'
         }
 
-resolve :: B.ByteString -> IO GQLResponse
-resolve =
-  interpreter
-    GQLRoot {
-      queryResolver = Query {
-        user = resolveUser
-      },
-      mutationResolver = ()
-    }
+
 ```
 
 ## Enum
