@@ -17,8 +17,6 @@ See example for more details on at https://github.com/nalchevanidze/morpheus-gra
 
 # Getting Started
 
-define Schema with native Haskell Types and derive them as GraphQL Schema
-
 Starting point in morpheus GraphQL is the definition of your API function with the morpheus interpreter.according to your query and mutation type, a GQL scheme and introspection will be generated. for simplicity, we won't define mutation, we'll just define query.
 
 ```haskell
