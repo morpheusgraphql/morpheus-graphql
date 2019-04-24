@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeOperators         #-}
 
 module Example.Schema
-  ( resolve
+  ( gqlApi
   ) where
 
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -143,7 +143,7 @@ createUserMutation = Resolver resolve'
         , friend = Resolver $ \_ -> pure (pure Nothing)
         }
 
-resolve :: B.ByteString -> IO GQLResponse
-resolve =
+gqlApi :: B.ByteString -> IO GQLResponse
+gqlApi =
   interpreter
     GQLRoot {queryResolver = Query {user = resolveUser}, mutationResolver = Mutation {createUser = createUserMutation}}

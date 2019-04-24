@@ -5,8 +5,8 @@ module Main
   ) where
 
 import           Control.Monad.IO.Class (liftIO)
-import           Example.Schema         (resolve)
+import           Example.Schema         (gqlApi)
 import           Web.Scotty
 
 main :: IO ()
-main = scotty 3000 $ post "/api" $ json =<< (liftIO . resolve =<< body)
+main = scotty 3000 $ post "/api" $ json =<< (liftIO . gqlApi =<< body)
