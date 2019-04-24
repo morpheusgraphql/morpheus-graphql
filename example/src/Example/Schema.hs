@@ -115,12 +115,8 @@ resolveOffice _ = Resolver resolve'
     resolve' args = addressByCityID (unpackEnum $ cityID args) (fromMaybe 101 (zipCode args))
 
 resolveUser :: () ::-> User
-resolveUser = Resolver resolve'
+resolveUser = Resolver $ const (M.jsonUser >>= \x -> return (modify <$> x))
   where
-    resolve' :: () -> IO (Either String User)
-    resolve' _ = do
-      value <- M.jsonUser
-      pure $ modify <$> value
     modify user' =
       User
         { name = M.name user'
