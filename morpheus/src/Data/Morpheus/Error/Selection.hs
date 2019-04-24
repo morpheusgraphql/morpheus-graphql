@@ -14,10 +14,10 @@ import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors)
 import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
 import qualified Data.Text                    as T (Text, concat)
 
-fieldNotResolved :: T.Text -> Position -> GQLErrors
-fieldNotResolved message' position' = errorMessage position' text
+fieldNotResolved :: Position -> T.Text -> T.Text -> GQLErrors
+fieldNotResolved position' key' message' = errorMessage position' text
   where
-    text = T.concat ["Field not be Resolved: ", message']
+    text = T.concat ["Failure on Resolving Field \"", key', "\": ", message']
 
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
 hasNoSubfields :: MetaInfo -> GQLErrors

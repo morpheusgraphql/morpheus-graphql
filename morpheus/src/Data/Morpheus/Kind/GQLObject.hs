@@ -72,19 +72,19 @@ class GQLObject a where
       fields = map fst fieldTypes
       stack = map snd fieldTypes
 
-liftResolver :: Text -> Int -> IO (Either String a) -> ResolveIO a
-liftResolver typeName' position' x = do
+liftResolver :: Int -> Text -> IO (Either String a) -> ResolveIO a
+liftResolver position' typeName' x = do
   result <- lift x
   case result of
-    Left _      -> failResolveIO $ fieldNotResolved typeName' position'
-    Right value -> pure value
+    Left message' -> failResolveIO $ fieldNotResolved position' typeName' (pack message')
+    Right value   -> pure value
 
 instance (GQLObject a, Args.GQLArgs p) => GQLObject (p ::-> a) where
   encode (key', SelectionSet gqlArgs body position') (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver key' position' . resolver >>=
+    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
     encode (key', SelectionSet gqlArgs body position')
   encode (key', Field gqlArgs field position') (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver key' position' . resolver >>=
+    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
     encode (key', Field gqlArgs field position')
   introspect _ typeLib = resolveTypes typeLib $ args' ++ fields
     where
