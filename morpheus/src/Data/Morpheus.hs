@@ -3,7 +3,6 @@
 
 module Data.Morpheus
   ( interpreter
-  , interpreterBytestring
   , GQLResponse
   , (::->)(..)
   , ResolveIO
@@ -54,15 +53,15 @@ lineBreaks req =
     Just x  -> parseLineBreaks x
     Nothing -> []
 
-interpreter :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> B.ByteString -> IO GQLResponse
-interpreter rootResolver request = do
+interpreterRaw :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> B.ByteString -> IO GQLResponse
+interpreterRaw rootResolver request = do
   value <- runExceptT $ parseRequest request >>= resolve rootResolver
   case value of
     Left x  -> pure $ Errors $ renderErrors (lineBreaks request) x
     Right x -> pure $ Data x
 
-interpreterBytestring :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> B.ByteString -> IO B.ByteString
-interpreterBytestring rootResolver request = encode <$> interpreter rootResolver request
+interpreter :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> B.ByteString -> IO B.ByteString
+interpreter rootResolver request = encode <$> interpreterRaw rootResolver request
 
 parseRequest :: B.ByteString -> ResolveIO GQLRequest
 parseRequest text =
