@@ -7,14 +7,6 @@ all your resolvers are regular haskell functions, morpheus graphql will convert 
 
 See example for more details on at https://github.com/nalchevanidze/morpheus-graphql/tree/master/example
 
-## features
-
-- Introspection
-- Enum
-- Scalar
-- InputObject
-- Mutation
-
 # Getting Started
 
 define schema with native Haskell Types and derive them as GraphQL Schema and Introspection
@@ -174,3 +166,25 @@ gqlApi = interpreter
       }
     }
 ```
+
+## Exisiting Features
+
+- Introspection
+- Enum
+- Scalar
+- InputObject
+- Mutation
+
+## Roadmap
+
+- Near future:
+  - improve error handling
+  - impove API
+  - GQL isomorphic Introspection
+- Medium future:
+  - stabilize API
+  - GQL isomorphic error handling
+- Long term
+  - Union Types
+  - Query Alias
+  - Performance Optimisation
