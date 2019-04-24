@@ -9,8 +9,7 @@ define schema with native Haskell Types and derive them as GraphQL Schema and In
 ```haskell
 
 gqlApi :: ByteString -> IO ByteString
-gqlApi =
-  interpreter
+gqlApi = interpreter
     GQLRoot {
       query = Query {
         user = resolveUser
@@ -135,13 +134,13 @@ newtype Mutation = Mutation
 createUser :: Form ::-> User
 createUser = ...
 
-resolve :: B.ByteString -> IO GQLResponse
-resolve =
-  interpreter
+
+gqlApi :: ByteString -> IO ByteString
+gqlApi = interpreter
     GQLRoot {
-      queryResolver = Query {...},
-      mutationResolver = Mutation {
-        createUser = createUser
+      query = Query {...},
+      mutation = Mutation {
+         createUser = createUser
       }
     }
 ```
