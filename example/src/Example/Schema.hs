@@ -10,7 +10,6 @@ module Example.Schema
   ) where
 
 import qualified Data.ByteString.Lazy.Char8 as B
-import           Data.Data                  (Data)
 import           Data.Maybe                 (fromMaybe)
 import           Data.Morpheus              ((::->) (..), EnumOf (unpackEnum), GQLRoot (..), ScalarOf (..), interpreter)
 import           Data.Morpheus.Kind         (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLObject, GQLQuery,
@@ -18,6 +17,7 @@ import           Data.Morpheus.Kind         (GQLArgs, GQLEnum, GQLInput, GQLKind
 import           Data.Morpheus.Types.JSType (ScalarValue (..))
 import           Data.Text                  (Text, pack)
 import qualified Data.Text                  as T (concat)
+import           Data.Typeable              (Typeable)
 import qualified Example.Model              as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
 import           GHC.Generics               (Generic)
 
@@ -25,7 +25,7 @@ data CityID
   = Paris
   | BLN
   | HH
-  deriving (Show, Generic, Data, GQLEnum)
+  deriving (Show, Generic, Typeable, GQLEnum)
 
 instance GQLKind CityID where
   description _ = "ID of Cities in Zip Format"
@@ -33,7 +33,7 @@ instance GQLKind CityID where
 data Modulo7 =
   Modulo7 Int
           Int
-  deriving (Data, Generic, GQLKind)
+  deriving (Typeable, Generic, GQLKind)
 
 instance GQLScalar Modulo7 where
   parseValue (Int x) = pure $ Modulo7 (x `div` 7) (x `mod` 7)
@@ -43,7 +43,7 @@ instance GQLScalar Modulo7 where
 data Coordinates = Coordinates
   { latitude  :: ScalarOf Modulo7
   , longitude :: Int
-  } deriving (Generic, Data, GQLInput)
+  } deriving (Generic, Typeable, GQLInput)
 
 instance GQLKind Coordinates where
   description _ = "just random latitude and longitude"
@@ -51,19 +51,19 @@ instance GQLKind Coordinates where
 data LocationByCoordinates = LocationByCoordinates
   { coordinates :: Coordinates
   , comment     :: Maybe Text
-  } deriving (Generic, Data, GQLArgs)
+  } deriving (Generic, GQLArgs)
 
 data Location = Location
   { zipCode :: Maybe Int
   , cityID  :: EnumOf CityID
-  } deriving (Data, Generic, GQLArgs)
+  } deriving (Generic, GQLArgs)
 
 data Address = Address
   { city        :: Text
   , street      :: Text
   , houseNumber :: Int
   , owner       :: Maybe User
-  } deriving (Generic, GQLKind, GQLObject, Data)
+  } deriving (Generic, GQLKind, GQLObject, Typeable)
 
 data User = User
   { name    :: Text
@@ -72,18 +72,18 @@ data User = User
   , office  :: Location ::-> Address
   , friend  :: () ::-> Maybe User
   , home    :: Maybe Address
-  } deriving (Generic, Data, GQLObject)
+  } deriving (Generic, Typeable, GQLObject)
 
 instance GQLKind User where
   description _ = "Custom Description for Client Defined User Type"
 
 newtype Query = Query
   { user :: () ::-> User
-  } deriving (Generic, Data, GQLQuery)
+  } deriving (Generic, GQLQuery)
 
 newtype Mutation = Mutation
   { createUser :: LocationByCoordinates ::-> User
-  } deriving (Generic, Data, GQLMutation)
+  } deriving (Generic, GQLMutation)
 
 fetchAddress :: Modulo7 -> Text -> IO (Either String Address)
 fetchAddress (Modulo7 x y) streetName = do
