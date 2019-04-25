@@ -5,7 +5,6 @@ module Data.Morpheus
   ( interpreter
   , GQLResponse
   , (::->)(..)
-  , GQLRoot(..)
   ) where
 
 import           Control.Monad.Trans.Except          (ExceptT (..), runExceptT)
@@ -23,12 +22,8 @@ import           Data.Morpheus.Types.JSType          (JSType)
 import           Data.Morpheus.Types.Query.Operator  (Operator (..))
 import           Data.Morpheus.Types.Request         (GQLRequest)
 import           Data.Morpheus.Types.Response        (GQLResponse (..))
+import           Data.Morpheus.Types.Types           (GQLRoot (..))
 import           Data.Text                           (pack)
-
-data GQLRoot a b = GQLRoot
-  { query :: a
-  , mutation :: b
-  }
 
 schema :: (GQLQuery a, GQLMutation b) => a -> b -> TypeLib
 schema queryRes mutationRes = mutationSchema mutationRes $ querySchema queryRes
