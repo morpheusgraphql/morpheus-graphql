@@ -11,10 +11,10 @@ module Example.Schema
 
 import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Maybe                 (fromMaybe)
-import           Data.Morpheus              ((::->) (..), interpreter)
+import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLObject, GQLQuery,
                                              GQLScalar (..))
-import           Data.Morpheus.Types        (EnumOf (unpackEnum), GQLRoot (..), ScalarOf (..))
+import           Data.Morpheus.Types        ((::->) (..), EnumOf (unpackEnum), GQLRoot (..), ScalarOf (..))
 import           Data.Morpheus.Types.JSType (ScalarValue (..))
 import           Data.Text                  (Text, pack)
 import qualified Data.Text                  as T (concat)
