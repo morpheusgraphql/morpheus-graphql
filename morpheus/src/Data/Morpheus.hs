@@ -3,8 +3,6 @@
 
 module Data.Morpheus
   ( interpreter
-  , GQLResponse
-  , (::->)(..)
   ) where
 
 import           Control.Monad.Trans.Except          (ExceptT (..), runExceptT)
@@ -16,7 +14,6 @@ import           Data.Morpheus.Kind.GQLQuery         (GQLQuery (..))
 import           Data.Morpheus.Parser.Parser         (parseGQL, parseLineBreaks)
 import           Data.Morpheus.PreProcess.PreProcess (preProcessQuery)
 import           Data.Morpheus.Schema.Internal.Types (TypeLib)
-import           Data.Morpheus.Types.Describer       ((::->) (Resolver))
 import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType)
 import           Data.Morpheus.Types.Query.Operator  (Operator (..))
