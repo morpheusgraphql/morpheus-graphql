@@ -3,12 +3,6 @@
 
 module Data.Morpheus
   ( interpreter
-  , GQLResponse
-  , (::->)(..)
-  , ResolveIO
-  , EnumOf(unpackEnum)
-  , GQLRoot(..)
-  , ScalarOf(..)
   ) where
 
 import           Control.Monad.Trans.Except          (ExceptT (..), runExceptT)
@@ -20,18 +14,13 @@ import           Data.Morpheus.Kind.GQLQuery         (GQLQuery (..))
 import           Data.Morpheus.Parser.Parser         (parseGQL, parseLineBreaks)
 import           Data.Morpheus.PreProcess.PreProcess (preProcessQuery)
 import           Data.Morpheus.Schema.Internal.Types (TypeLib)
-import           Data.Morpheus.Types.Describer       ((::->) (Resolver), EnumOf (unpackEnum), ScalarOf (..))
 import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType)
 import           Data.Morpheus.Types.Query.Operator  (Operator (..))
 import           Data.Morpheus.Types.Request         (GQLRequest)
 import           Data.Morpheus.Types.Response        (GQLResponse (..))
+import           Data.Morpheus.Types.Types           (GQLRoot (..))
 import           Data.Text                           (pack)
-
-data GQLRoot a b = GQLRoot
-  { query    :: a
-  , mutation :: b
-  }
 
 schema :: (GQLQuery a, GQLMutation b) => a -> b -> TypeLib
 schema queryRes mutationRes = mutationSchema mutationRes $ querySchema queryRes

@@ -18,6 +18,13 @@ newtype EnumOf a = EnumOf
   { unpackEnum :: a
   } deriving (Show, Generic, Data)
 
+instance Functor EnumOf where
+  fmap f (EnumOf x) = EnumOf (f x)
+
+instance Applicative EnumOf where
+  pure = EnumOf
+  (<*>) (EnumOf x) y = x <$> y
+
 newtype ScalarOf a = ScalarOf
   { unpackScalar :: a
   } deriving (Show, Generic, Data)

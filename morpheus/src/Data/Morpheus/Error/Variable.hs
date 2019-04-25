@@ -14,6 +14,7 @@ import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors)
 import           Data.Morpheus.Types.MetaInfo (Position)
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T (concat)
+ -- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
 
 {-|
 VARIABLES:
@@ -33,18 +34,14 @@ case type mismatch
   - { "v" : "v1" }  -> "Variable \"$v\" got invalid value \"v1\"; Expected type LANGUAGE."
   - { "v": 1  }        "Variable \"$v\" got invalid value 1; Expected type LANGUAGE."
 
-TODO: unused variable
-  - query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
-
 TODO: variable does not match to argument type
   - query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
-
 |-}
 unusedVariables :: [EnhancedKey] -> GQLErrors
 unusedVariables = map keyToError
   where
     keyToError (EnhancedKey key' position') = GQLError {desc = text key', posIndex = [position']}
-    text key' = T.concat ["unused Variable \"$", key', "\"."]
+    text key' = T.concat ["Variable \"$", key', "\" is never used in operation \"Query\"."]
 
 variableGotInvalidValue :: Text -> Text -> Position -> GQLErrors
 variableGotInvalidValue name' inputMessage' position' = errorMessage position' text

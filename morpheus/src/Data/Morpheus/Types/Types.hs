@@ -1,6 +1,7 @@
 module Data.Morpheus.Types.Types
   ( GQLQueryRoot(..)
   , Variables
+  , GQLRoot(..)
   ) where
 
 import           Data.Map                           (Map)
@@ -14,5 +15,10 @@ type Variables = Map Key JSType
 data GQLQueryRoot = GQLQueryRoot
   { fragments      :: FragmentLib
   , queryBody      :: RawOperator
-  , inputVariables :: [(Key,JSType)]
+  , inputVariables :: [(Key, JSType)]
+  }
+
+data GQLRoot a b = GQLRoot
+  { query    :: a
+  , mutation :: b
   }

@@ -32,7 +32,7 @@ class GQLQuery a where
     a -> TypeLib -> SelectionSet -> ResolveIO JSType
   encodeQuery rootResolver types sel = resolveBySelection sel (schemaResolver ++ resolvers)
     where
-      schemaResolver = [("__schema", (`encode` initSchema types))] -- TODO : lazy schema derivation
+      schemaResolver = [("__schema", (`encode` initSchema types))]
       resolvers = deriveResolvers initialMeta $ from rootResolver
   querySchema :: a -> TypeLib
   default querySchema :: (Selectors (Rep a) (Text, ObjectField)) =>
