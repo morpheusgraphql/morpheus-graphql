@@ -7,7 +7,6 @@ module Data.Morpheus.Kind
   , GQLEnum
   , GQLMutation
   , GQLScalar(..)
-  , GQLRoot(..)
   ) where
 
 import           Data.Morpheus.Kind.GQLArgs     (GQLArgs)
@@ -18,4 +17,3 @@ import           Data.Morpheus.Kind.GQLMutation (GQLMutation (..))
 import           Data.Morpheus.Kind.GQLObject   (GQLObject)
 import           Data.Morpheus.Kind.GQLQuery    (GQLQuery (..))
 import           Data.Morpheus.Kind.GQLScalar   (GQLScalar (parseValue, serialize))
-import           Data.Morpheus.Types.Types      (GQLRoot (..))
