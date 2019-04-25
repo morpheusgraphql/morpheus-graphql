@@ -26,11 +26,11 @@ import           GHC.Generics
 
 class GQLMutation a where
   encodeMutation :: a -> SelectionSet -> ResolveIO JSType
-  default encodeMutation :: (Generic a, Data a, DeriveResolvers (Rep a), Show a) =>
+  default encodeMutation :: (Generic a, Data a, DeriveResolvers (Rep a)) =>
     a -> SelectionSet -> ResolveIO JSType
   encodeMutation rootResolver sel = resolveBySelection sel $ deriveResolvers initialMeta $ from rootResolver
   mutationSchema :: a -> TypeLib -> TypeLib
-  default mutationSchema :: (Show a, Selectors (Rep a) (Text, ObjectField), Typeable a) =>
+  default mutationSchema :: (Selectors (Rep a) (Text, ObjectField), Typeable a) =>
     a -> TypeLib -> TypeLib
   mutationSchema _ initialType = resolveTypes mutationType types
     where

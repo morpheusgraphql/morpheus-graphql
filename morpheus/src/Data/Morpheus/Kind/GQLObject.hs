@@ -51,20 +51,20 @@ instance (Selector s, D.Typeable a, GQLObject a) => Selectors (RecSel s a) (Text
 
 class GQLObject a where
   encode :: (Text, Selection) -> a -> ResolveIO JSType
-  default encode :: (Generic a, D.Data a, DeriveResolvers (Rep a), Show a) =>
+  default encode :: (Generic a, D.Data a, DeriveResolvers (Rep a)) =>
     (Text, Selection) -> a -> ResolveIO JSType
   encode (_, SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers Meta.initialMeta . from
   encode (_, Field _ key pos) = const $ failResolveIO $ subfieldsNotSelected meta -- TODO: must be internal Error
     where
       meta = Meta.MetaInfo {Meta.typeName = "", Meta.key = key, Meta.position = pos}
   fieldType :: Proxy a -> Text -> ObjectField
-  default fieldType :: (Show a, Selectors (Rep a) (Text, ObjectField), D.Typeable a, GQLKind a) =>
+  default fieldType :: (Selectors (Rep a) (Text, ObjectField), D.Typeable a, GQLKind a) =>
     Proxy a -> Text -> ObjectField
   fieldType proxy name =
     ObjectField [] $
     I.Field {I.fieldName = name, I.notNull = True, I.asList = False, I.kind = OBJECT, I.fieldType = typeID proxy}
   introspect :: Proxy a -> TypeLib -> TypeLib
-  default introspect :: (Show a, Selectors (Rep a) (Text, ObjectField), GQLKind a) =>
+  default introspect :: (Selectors (Rep a) (Text, ObjectField), GQLKind a) =>
     Proxy a -> TypeLib -> TypeLib
   introspect = updateLib (asObjectType fields) stack
     where

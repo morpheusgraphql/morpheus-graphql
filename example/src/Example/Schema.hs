@@ -33,7 +33,7 @@ instance GQLKind CityID where
 data Modulo7 =
   Modulo7 Int
           Int
-  deriving (Show, Data, Generic, GQLKind)
+  deriving (Data, Generic, GQLKind)
 
 instance GQLScalar Modulo7 where
   parseValue (Int x) = pure $ Modulo7 (x `div` 7) (x `mod` 7)
@@ -43,7 +43,7 @@ instance GQLScalar Modulo7 where
 data Coordinates = Coordinates
   { latitude  :: ScalarOf Modulo7
   , longitude :: Int
-  } deriving (Show, Generic, Data, GQLInput)
+  } deriving (Generic, Data, GQLInput)
 
 instance GQLKind Coordinates where
   description _ = "just random latitude and longitude"
@@ -51,19 +51,19 @@ instance GQLKind Coordinates where
 data LocationByCoordinates = LocationByCoordinates
   { coordinates :: Coordinates
   , comment     :: Maybe Text
-  } deriving (Show, Generic, Data, GQLArgs)
+  } deriving (Generic, Data, GQLArgs)
 
 data Location = Location
   { zipCode :: Maybe Int
   , cityID  :: EnumOf CityID
-  } deriving (Show, Data, Generic, GQLArgs)
+  } deriving (Data, Generic, GQLArgs)
 
 data Address = Address
   { city        :: Text
   , street      :: Text
   , houseNumber :: Int
   , owner       :: Maybe User
-  } deriving (Generic, Show, GQLKind, GQLObject, Data)
+  } deriving (Generic, GQLKind, GQLObject, Data)
 
 data User = User
   { name    :: Text
@@ -72,18 +72,18 @@ data User = User
   , office  :: Location ::-> Address
   , friend  :: () ::-> Maybe User
   , home    :: Maybe Address
-  } deriving (Show, Generic, Data, GQLObject)
+  } deriving (Generic, Data, GQLObject)
 
 instance GQLKind User where
   description _ = "Custom Description for Client Defined User Type"
 
 newtype Query = Query
   { user :: () ::-> User
-  } deriving (Show, Generic, Data, GQLQuery)
+  } deriving (Generic, Data, GQLQuery)
 
 newtype Mutation = Mutation
   { createUser :: LocationByCoordinates ::-> User
-  } deriving (Show, Generic, Data, GQLMutation)
+  } deriving (Generic, Data, GQLMutation)
 
 fetchAddress :: Modulo7 -> Text -> IO (Either String Address)
 fetchAddress (Modulo7 x y) streetName = do

@@ -29,7 +29,7 @@ import           GHC.Generics
 
 class GQLQuery a where
   encodeQuery :: a -> TypeLib -> SelectionSet -> ResolveIO JSType
-  default encodeQuery :: (Generic a, Data a, DeriveResolvers (Rep a), Show a) =>
+  default encodeQuery :: (Generic a, Data a, DeriveResolvers (Rep a)) =>
     a -> TypeLib -> SelectionSet -> ResolveIO JSType
   encodeQuery rootResolver types sel = resolveBySelection sel (schemaResolver ++ resolvers)
     where
