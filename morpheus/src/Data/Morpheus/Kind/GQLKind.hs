@@ -14,7 +14,6 @@ module Data.Morpheus.Kind.GQLKind
   , introspectScalar
   ) where
 
-import           Data.Data                              (Typeable)
 import           Data.Morpheus.Generics.TypeRep         (resolveTypes)
 import           Data.Morpheus.Generics.Utils           (typeOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
@@ -27,6 +26,7 @@ import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
+import           Data.Typeable                          (Typeable)
 
 scalarTypeOf :: GQLKind a => Proxy a -> LibType
 scalarTypeOf = Leaf . LScalar . buildType

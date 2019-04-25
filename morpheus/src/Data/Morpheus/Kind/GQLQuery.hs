@@ -13,7 +13,6 @@ module Data.Morpheus.Kind.GQLQuery
   ( GQLQuery(..)
   ) where
 
-import           Data.Data                              (Data, Typeable)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
 import           Data.Morpheus.Kind.GQLObject           (GQLObject (..))
@@ -29,14 +28,14 @@ import           GHC.Generics
 
 class GQLQuery a where
   encodeQuery :: a -> TypeLib -> SelectionSet -> ResolveIO JSType
-  default encodeQuery :: (Generic a, Data a, DeriveResolvers (Rep a)) =>
+  default encodeQuery :: (Generic a, DeriveResolvers (Rep a)) =>
     a -> TypeLib -> SelectionSet -> ResolveIO JSType
   encodeQuery rootResolver types sel = resolveBySelection sel (schemaResolver ++ resolvers)
     where
       schemaResolver = [("__schema", (`encode` initSchema types))] -- TODO : lazy schema derivation
       resolvers = deriveResolvers initialMeta $ from rootResolver
   querySchema :: a -> TypeLib
-  default querySchema :: (Selectors (Rep a) (Text, ObjectField), Typeable a) =>
+  default querySchema :: (Selectors (Rep a) (Text, ObjectField)) =>
     a -> TypeLib
   querySchema _ = resolveTypes typeLib stack
     where

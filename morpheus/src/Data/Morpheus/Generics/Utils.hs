@@ -4,7 +4,7 @@ module Data.Morpheus.Generics.Utils
   , RecSel
   ) where
 
-import           Data.Data    (Typeable, tyConName, typeRep, typeRepTyCon)
+import           Data.Typeable    (Typeable, tyConName, typeRep, typeRepTyCon)
 import           Data.Proxy   (Proxy)
 import           Data.Text    (Text, pack)
 import           GHC.Generics

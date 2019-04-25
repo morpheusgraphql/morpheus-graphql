@@ -10,7 +10,6 @@ module Data.Morpheus.Kind.GQLArgs
   ( GQLArgs(..)
   ) where
 
-import qualified Data.Data                           as D
 import           Data.Morpheus.Error.Internal        (internalArgumentError)
 import           Data.Morpheus.Generics.GDecode      (GDecode (..))
 import           Data.Morpheus.Generics.TypeRep      (Selectors (..))
@@ -25,7 +24,7 @@ import           Data.Proxy                          (Proxy (..))
 import           Data.Text                           (Text, pack)
 import           GHC.Generics
 
-instance (Selector s, D.Typeable a, I.GQLInput a) => Selectors (RecSel s a) (Text, InputField) where
+instance (Selector s, I.GQLInput a) => Selectors (RecSel s a) (Text, InputField) where
   getFields _ = [((name, I.asArgument (Proxy @a) name), I.introInput (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)

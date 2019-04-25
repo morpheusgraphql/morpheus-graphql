@@ -14,7 +14,6 @@ module Data.Morpheus.Kind.GQLObject
 
 import           Control.Monad.Trans                    (lift)
 import           Control.Monad.Trans.Except
-import qualified Data.Data                              as D
 import           Data.Morpheus.Error.Selection          (fieldNotResolved, subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
@@ -44,21 +43,21 @@ import           GHC.Generics
 instance GQLObject a => DeriveResolvers (K1 i a) where
   deriveResolvers meta (K1 src) = [(Meta.key meta, (`encode` src))]
 
-instance (Selector s, D.Typeable a, GQLObject a) => Selectors (RecSel s a) (Text, ObjectField) where
+instance (Selector s, GQLObject a) => Selectors (RecSel s a) (Text, ObjectField) where
   getFields _ = [((name, fieldType (Proxy @a) name), introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)
 
 class GQLObject a where
   encode :: (Text, Selection) -> a -> ResolveIO JSType
-  default encode :: (Generic a, D.Data a, DeriveResolvers (Rep a)) =>
+  default encode :: (Generic a, DeriveResolvers (Rep a)) =>
     (Text, Selection) -> a -> ResolveIO JSType
   encode (_, SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers Meta.initialMeta . from
   encode (_, Field _ key pos) = const $ failResolveIO $ subfieldsNotSelected meta -- TODO: must be internal Error
     where
       meta = Meta.MetaInfo {Meta.typeName = "", Meta.key = key, Meta.position = pos}
   fieldType :: Proxy a -> Text -> ObjectField
-  default fieldType :: (Selectors (Rep a) (Text, ObjectField), D.Typeable a, GQLKind a) =>
+  default fieldType :: (Selectors (Rep a) (Text, ObjectField), GQLKind a) =>
     Proxy a -> Text -> ObjectField
   fieldType proxy name =
     ObjectField [] $
@@ -135,7 +134,7 @@ instance GQLObject Bool where
   introspect = introspectScalar
   fieldType = scalarField
 
-instance (GQLObject a, D.Typeable a) => GQLObject [a] where
+instance GQLObject a => GQLObject [a] where
   encode (_, Field {}) _ = pure $ JSList []
   encode query list      = JSList <$> mapM (encode query) list
   introspect _ = introspect (Proxy @a)
