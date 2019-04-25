@@ -7,7 +7,9 @@ all your resolvers are regular haskell functions, morpheus graphql will convert 
 
 # Getting Started
 
-Starting point in morpheus GraphQL is the definition of your API function with the morpheus interpreter. according to your query and mutation type, a GQL scheme and introspection will be generated. for simplicity, we won't define mutation, we'll just define query.
+Starting point in morpheus GraphQL is the definition of your API function with the morpheus interpreter.
+according to your query and mutation type a GQL scheme and introspection will be generated.
+for simplicity, we won't define mutation, we'll just define query.
 
 ```haskell
 gqlApi :: ByteString -> IO ByteString
@@ -21,29 +23,28 @@ gqlApi = interpreter
 
 data Query = Query
   { user :: () ::-> User -- Field With No Arguments and IO interaction
-  } deriving (Show, Data, Genneric , GQLQuery)
+  } deriving (Genneric , GQLQuery)
 ```
 
 as you can see query type is just Haskell record, we derive it with **GQLQuery** as as Graphql Query. it has only one field user with no argument **"()"** and output Type **"User"**
 
-anotation **"::->"** is inline haskell data Type with Constructor
-where in **(Either string value)**
-
-- **string** is for error messages
-- **value** value of field
+notation **"::->"** is inline haskell data Type with Constructor **Resolver**
 
 ```haskell
 Resolver (argument -> IO (Either String value))
 ```
+where
+- **string** is for error messages
+- **value** value of field
 
-arguments are just Haskell record with GQLArgs derivation, as default all fields are required. only field with type Maybe is optional
+arguments are Haskell record with GQLArgs derivation, as default all fields are required. only field with type Maybe is optional
 
 ```haskell
 -- Query Arguments
 data Location = Location
   { zipCode :: Maybe Int -- Optional Argument
   , name  :: Text -- Required Argument
-  } deriving (Show, Data, Generic , GQLArgs)
+  } deriving (Generic , GQLArgs)
 ```
 
 for the GQL object, define the data record and derive it as a **GQLKind,GQLObject**.
@@ -54,7 +55,7 @@ data User = User
   { name    :: Text  -- not Null  Field
   , email   :: Maybe Text -- Nullable Field
   , address  :: Location ::-> Address -- Field With Arguments and IO interaction
-  } deriving (Show, Data, Generic, GQLKind, GQLObject)
+  } deriving (Typeable, Generic, GQLKind, GQLObject)
 ```
 
 now we can write resolvers for your schema
@@ -78,7 +79,7 @@ resolveUser = Resolver $ const (jsonUser >>= \x -> return (buildResolverBy <$> x
             }
 ```
 
-for more details you cann See your Example on https://github.com/nalchevanidze/morpheus-graphql/tree/master/example
+for more details you can See your Example on https://github.com/nalchevanidze/morpheus-graphql/tree/master/example
 
 ## Enum
 
@@ -139,7 +140,7 @@ data Coordinates = Coordinates
 
 ## Descriptions
 
-if you need description for your GQL Type you can define GQL instance manualy and assign them description
+if you need description for your GQL Type you can define GQL instance manually and assign them description
 
 ```haskell
 data Person = Person
@@ -151,10 +152,9 @@ instance GQLKind Person where
 
 ```
 
-# Mutation
+## Mutation
 
 ```haskell
-
 newtype Mutation = Mutation
   { createUser :: Form ::-> User
   } deriving (Show, Generic, Data, GQLMutation)
@@ -173,7 +173,7 @@ gqlApi = interpreter
     }
 ```
 
-## Exisiting Features
+# Existing Features
 
 - Introspection
 - Enum
@@ -181,7 +181,7 @@ gqlApi = interpreter
 - InputObject
 - Mutation
 
-## Roadmap
+# Roadmap
 
 - Medium future:
   - stabile API
