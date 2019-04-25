@@ -47,4 +47,4 @@ argumentNameCollision = map keyToError
 undefinedArgument :: EnhancedKey -> GQLErrors
 undefinedArgument (EnhancedKey key' position') = errorMessage position' text
   where
-    text = T.concat ["Required Argument: \"", key', "\" was not Defined"] -- TODO: real message
+    text = T.concat ["Required Argument: \"", key', "\" was not Defined"]
