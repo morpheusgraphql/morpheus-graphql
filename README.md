@@ -159,6 +159,12 @@ instance GQLKind Deity where
 
 ```
 
+screenshots from `Insomnia`
+
+![alt text](./assets/introspection/spelling.png "spelling")
+![alt text](./assets/introspection/autocomplete.png "autocomplete")
+![alt text](./assets/introspection/type.png "type")
+
 ### Mutations
 In addition to queries, Morpheus also supports mutations. The behave just like regular queries and are defined similarly:
 Just exchange deriving `GQLQuery` for `GQLMutation` and declare them separately at the `GQLRoot` definition
@@ -184,7 +190,7 @@ gqlApi = interpreter
 
 ## The name
 _Morpheus_ is the greek god of sleep and dreams whose name comes from the greek word _μορφή_ meaning form or shape.
-He is said to be able to mimick different forms and GraphQL is good at doing exactly that: Transforming data in the shape
+He is said to be able to mimic different forms and GraphQL is good at doing exactly that: Transforming data in the shape
 of many different APIs.
 
 ## Team
