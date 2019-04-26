@@ -9,7 +9,7 @@ Morpheus will convert your haskell types to a GraphQL schema and all your resolv
 Just open an issue here on GitHub to get in contact.*
 
 ## Getting Started
-###Setup
+### Setup
 
 To get started with Morpheus, you first need to add it to your project's dependencies, as follows (assuming you're using hpack): 
 
@@ -31,7 +31,7 @@ extra-deps:
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack update`
 
-###Building your first API
+### Building your first API
 To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
  which derives the `Generic`and `GQLQuery` typeclasses. Lazily resolvable fields on this `Query` type are defined via the infix type `::->`,
  representing resolving a set of arguments `()` to a concrete value.
