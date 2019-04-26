@@ -1,1 +1,5 @@
 theme: jekyll-theme-cayman
+
+title: Morpheus GraphQL
+
+description: Haskell GraphQL library, Build GraphQL APIs with your favourite functional language!
