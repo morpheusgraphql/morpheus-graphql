@@ -158,7 +158,9 @@ instance GQLKind Deity where
   description = const "A supernatural being considered divine and sacred"
 
 ```
-_insomnia_
+
+screenshots from `Insomnia`
+
 ![alt text](./assets/introspection/spelling.png "spelling")
 ![alt text](./assets/introspection/autocomplete.png "autocomplete")
 ![alt text](./assets/introspection/type.png "type")
