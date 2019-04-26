@@ -120,7 +120,7 @@ data City
   | Corinth
   | Delphi
   | Argos
-  deriving (Show, Generic, Data, GQLKind, GQLEnum)
+  deriving (Show, Generic, Typeable, GQLKind, GQLEnum)
 
 data SomeGQLType = SomeGQLType
   { ...
@@ -158,7 +158,7 @@ data Deity = Deity
 } deriving (Show, Generic, Data, GQLObject)
 
 instance GQLKind Deity where
-  description \_ = "A supernatural being considered divine and sacred"
+  description = const "A supernatural being considered divine and sacred"
 
 ```
 
