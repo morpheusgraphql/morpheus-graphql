@@ -1,87 +1,98 @@
-# morpheus-graphql
+# Morpheus GraphQL
 
 Build GraphQL APIs with your favourite functional language!
 
-morpheus graphql helps you to build GraphQL API in Haskell with native haskell types,
-all your resolvers are regular haskell functions, morpheus graphql will convert your haskell schema to graphql Introspection.
+Morpheus GraphQL helps you to build GraphQL APIs in Haskell with native haskell types.
+Morpheus will convert your haskell types to a GraphQL schema and all your resolvers are just native Haskell functions.
 
-# Getting Started
+*Morpheus is still in an early stage of development, so any feedback is more than welcome, and we appreciate any contribution!
+Just open an issue here on GitHub to get in contact.*
 
-Starting point in morpheus GraphQL is the definition of your API function with the morpheus interpreter.
-according to your query and mutation type a GQL scheme and introspection will be generated.
-for simplicity, we won't define mutation, we'll just define query.
+## Getting Started
+###Setup
+
+To get started with Morpheus, you first need to add it to your project's dependencies, as follows (assuming you're using hpack): 
+
+package.yml
+```yaml
+dependencies:
+  - morpheus-graphql
+```
+
+
+Additionally, you should tell stack which version to pick:
+
+stack.yml
+```yaml
+resolver: lts-12.0 # or greater
+extra-deps:
+  - morpheus-graphql-0.0.1
+```
+
+As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack update`
+
+###Building your first API
+To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
+ which derives the `Generic`and `GQLQuery` typeclasses. Lazily resolvable fields on this `Query` type are defined via the infix type `::->`,
+ representing resolving a set of arguments `()` to a concrete value.
+ 
+```haskell
+data Query = Query
+  { deity :: DeityArgs ::-> Deity
+  } deriving (Generic , GQLQuery)
+  
+data Deity = Deity
+  { fullname  :: Text          -- Non-Nullable Field
+  , power     :: Maybe Text    -- Nullable Field
+  } deriving (Generic, GQLKind, GQLObject, Typeable)
+  
+data DeityArgs = DeityArgs
+  { name      :: Text        -- Required Argument
+  , mythology :: Maybe Text  -- Optional Argument
+  } deriving (Generic , GQLArgs)
+```
+
+For each field in the `Query` type defined via `::->` (like `deity`) we will define a resolver implementation that provides the values during runtime by referring to
+some data source, e.g. a database or another API. Fields that are defined without `::->` you can just provide a value.
+
+```haskell
+resolveDeity :: DeityArgs ::-> Deity
+resolveDeity = Resolver (\args -> do
+  deity <- askDB (name args) (mythology args)
+  return deity
+)
+
+askDB :: Text -> Maybe Text -> IO (Either String Deity)
+askDB = ...
+```
+Note that the infix type `a ::-> b` is just syntactic sugar for `Resolver (a -> IO (Either String b))`
+
+
+To make this `Query` type available as an API, we define a `GQLRoot` and feed it to the Morpheus `interpreter`. A `GQLRoot` consists
+of `query` and `mutation` definitions, while we omit the latter for this example:
 
 ```haskell
 gqlApi :: ByteString -> IO ByteString
 gqlApi = interpreter
     GQLRoot {
-      query = Query {  -- query resolver function
-        user = resolveUser
+      query = Query {
+        deity = resolveDeity
       },
-      mutation = () -- no mutation
+      mutation = ()
     }
-
-data Query = Query
-  { user :: () ::-> User -- Field With No Arguments and IO interaction
-  } deriving (Genneric , GQLQuery)
 ```
-
-as you can see query type is just Haskell record, we derive it with **GQLQuery** as as Graphql Query. it has only one field user with no argument **"()"** and output Type **"User"**
-
-notation **"::->"** is inline haskell data Type with Constructor **Resolver**
-
+As you can see, the API is defined as `ByteString -> IO ByteString` which we can either invoke directly or use inside an arbitrary web framework
+such as `scotty` or `serverless-haskell`.
 ```haskell
-Resolver (argument -> IO (Either String value))
-```
-where
-- **string** is for error messages
-- **value** value of field
-
-arguments are Haskell record with GQLArgs derivation, as default all fields are required. only field with type Maybe is optional
-
-```haskell
--- Query Arguments
-data Location = Location
-  { zipCode :: Maybe Int -- Optional Argument
-  , name  :: Text -- Required Argument
-  } deriving (Generic , GQLArgs)
+-- Using with scotty
+main :: IO ()
+main = scotty 3000 $ post "/api" $ raw =<< (liftIO . gqlApi =<< body)
 ```
 
-for the GQL object, define the data record and derive it as a **GQLKind,GQLObject**.
-only fields with **::->** are lazy and can access to IO. all other field will be evaluated instantly. by default all fields are notNull only (Maybe a) values are nullable.
+## Advanced topics
+### Enums
 
-```haskell
-data User = User
-  { name    :: Text  -- not Null  Field
-  , email   :: Maybe Text -- Nullable Field
-  , address  :: Location ::-> Address -- Field With Arguments and IO interaction
-  } deriving (Typeable, Generic, GQLKind, GQLObject)
-```
-
-now we can write resolvers for your schema
-
-```haskell
-jsonUser :: IO (Either String JSONUser)
-jsonUser = ...
-
--- Hi Order Resolver
-resolveAddress :: JSONUser -> Location ::-> Address
-resolveAddress = ...
-
-resolveUser :: () ::-> User
-resolveUser = Resolver $ const (jsonUser >>= \x -> return (buildResolverBy <$> x))
-    where
-        buildResolverBy user' =
-            User {
-                  name = name user'
-                , email = email user'
-                , address = resolveAddress user'
-            }
-```
-
-for more details you can See your Example on https://github.com/nalchevanidze/morpheus-graphql/tree/master/example
-
-## Enum
+PLEASE DESCRIBE ENUMS HERE.
 
 ```haskell
 data City
@@ -108,7 +119,7 @@ getCity x = unpackEnum $ city x
 
 ```
 
-## Scalar
+### Scalar values
 
 ```haskell
 
@@ -125,8 +136,7 @@ data SomeGQLType = SomeGQLType { ....
 
 ```
 
-## InputObject
-
+### InputObject
 inputObject can be used only inside in arguments or in another inputObject
 
 ```haskell
@@ -138,8 +148,7 @@ data Coordinates = Coordinates
 
 ```
 
-## Descriptions
-
+### Field descriptions
 if you need description for your GQL Type you can define GQL instance manually and assign them description
 
 ```haskell
@@ -152,7 +161,7 @@ instance GQLKind Person where
 
 ```
 
-## Mutation
+### Mutations
 
 ```haskell
 newtype Mutation = Mutation
@@ -173,20 +182,25 @@ gqlApi = interpreter
     }
 ```
 
-# Existing Features
+### Introspection
 
-- Introspection
-- Enum
-- Scalar
-- InputObject
-- Mutation
+  
+# About
 
-# Roadmap
+## The name
+_Morpheus_ is the greek god of sleep and dreams whose name comes from the greek word _μορφή_ meaning form or shape.
+He is said to be able to mimick different forms and GraphQL is good at doing exactly that: Transforming data in the shape
+of many different APIs.
+
+## Team
+Morpheus is written and maintained by [_nalchevanidze_](https://github.com/nalchevanidze) and [_PygmalionPolymorph_](https://github.com/PygmalionPolymorph).
+
+## Roadmap
 
 - Medium future:
-  - stabile API
-  - isomorphic Introspection
-  - isomorphic error handling
-- Long term
-  - aLL possible GQL Types: Alias , Unions ..
-  - performance optimisation
+  - Stabilize API
+  - Specification-isomorphic introspection
+  - Specification-isomorphic error handling
+- Long term:
+  - Support all possible GQL features: Aliases, Unions, etc.
+  - Performance optimization
