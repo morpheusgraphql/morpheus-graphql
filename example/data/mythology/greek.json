@@ -1,0 +1,23 @@
+{
+  "morpheus":{
+    "name": "Morpheus",
+    "mythology" :"Greek",
+    "power": "Shape shifting",
+    "role": "god of Dreams",
+    "governs": "Dreams"
+  },
+  "zeus":{
+    "name": "Zeus",
+    "mythology" :"Greek",
+    "power": "thunder",
+    "role": "King of the gods",
+    "governs": "Olympus"
+  },
+  "poseidon":{
+    "name": "Poseidon",
+    "mythology" :"Greek",
+    "power": "Storm",
+    "role": "King of the See",
+    "governs": "See"
+  }
+}
