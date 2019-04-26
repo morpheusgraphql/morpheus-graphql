@@ -57,7 +57,7 @@ some data source, e.g. a database or another API. Fields that are defined withou
 
 ```haskell
 resolveDeity :: DeityArgs ::-> Deity
-resolveDeity = Resolver $ \args -> dbDeity (name args) (mythology args)
+resolveDeity = Resolver $ \args -> askDB (name args) (mythology args)
 
 askDB :: Text -> Maybe Text -> IO (Either String Deity)
 askDB = ...
