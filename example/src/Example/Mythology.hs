@@ -5,7 +5,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeOperators         #-}
 
-module Mythology
+module Example.Mythology
   ( mythologyApi
   ) where
 
@@ -36,10 +36,10 @@ data DeityArgs = DeityArgs
   } deriving (Generic, GQLArgs)
 
 resolveDeity :: DeityArgs ::-> Deity
-resolveDeity = Resolver $ \args -> askDB (name args) (mythology args)
+resolveDeity = Resolver $ \args -> dbDeity (name args) (mythology args)
 
-askDB :: Text -> Maybe Text -> IO (Either String Deity)
-askDB _ _ = return $ Right $ Deity {fullName = "Morpheus", power = Just "Shapeshifting"}
+dbDeity :: Text -> Maybe Text -> IO (Either String Deity)
+dbDeity _ _ = return $ Right $ Deity {fullName = "Morpheus", power = Just "Shapeshifting"}
 
 mythologyApi :: B.ByteString -> IO B.ByteString
 mythologyApi = interpreter GQLRoot {query = Query {deity = resolveDeity}, mutation = ()}
