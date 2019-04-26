@@ -82,47 +82,57 @@ gqlApi = interpreter
     }
 ```
 As you can see, the API is defined as `ByteString -> IO ByteString` which we can either invoke directly or use inside an arbitrary web framework
-such as `scotty` or `serverless-haskell`.
+such as `scotty` or `serverless-haskell`. We'll go for `scotty` in this example:
 ```haskell
--- Using with scotty
 main :: IO ()
 main = scotty 3000 $ post "/api" $ raw =<< (liftIO . gqlApi =<< body)
 ```
+If we now send a POST request to `http://localhost:3000/api` with a GraphQL Query as body for example in a tool like `Insomnia`:
+```GraphQL
+query GetDeity {
+  deity (name: "Morpheus") {
+    fullname
+    power
+  }
+}
+```
+our query will be resolved!
+```JSON
+{
+  "data": {
+    "deity": {
+      "fullname": "Morpheus",
+      "power": "Shapeshifting"
+    }
+  }
+}
+```
+
 
 ## Advanced topics
 ### Enums
-
-PLEASE DESCRIBE ENUMS HERE.
-
+You can use Union Types as Enums, but they're not allowed to have any parameters.
+Wrap them with `EnumOf` inside your `GQLType` definition.
 ```haskell
 data City
-  = Hamburg
-  | Paris
-  | Berlin
-  deriving (Show, Generic, Data, GQLKind , GQLEnum) -- GQL Enum
+  = Athens
+  | Sparta
+  | Corinth
+  | Delphi
+  | Argos
+  deriving (Show, Generic, Data, GQLKind, GQLEnum)
 
 data SomeGQLType = SomeGQLType
   { ...
-    ...
   , city  :: EnumOf City
   } deriving ...
 
--- pack Enum
-SomeGQLType
-  { ...
-  , city = EnumOf Hamburg
-  }
-
--- unpack Enum
-getCity :: SomeGQLType -> City
-getCity x = unpackEnum $ city x
-
 ```
 
-### Scalar values
-
+### Scalar types
+To use custom scalar types, you need to provide implementations for `parseValue` and `serialize` respectively.
+Wrap them with `ScalarOf` inside your `GQLType` definition.
 ```haskell
-
 data Odd = Int deriving (Show, Data, Generic, GQLKind)
 
 instance GQLScalar Odd where
@@ -130,61 +140,49 @@ instance GQLScalar Odd where
   parseValue (String x) = pure $ Odd (...  )
   serialize  (Odd value) = Int value
 
-data SomeGQLType = SomeGQLType { ....
+data SomeGQLType = SomeGQLType { ...
  count :: ScalarOf Odd
 } deriving ...
 
 ```
 
-### InputObject
-inputObject can be used only inside in arguments or in another inputObject
+### Introspection
+Morpheus converts your schema to a GraphQL introspection automatically. You can use tools like `Insomnia` to take a
+look at the introspection and validate your schema.
+If you need a description for your GQLType inside of the introspection you can define the GQLKind instance manually
+and provide an implementation for the `description` function:
 
 ```haskell
+data Deity = Deity
+{ ...
+} deriving (Show, Generic, Data, GQLObject)
 
-data Coordinates = Coordinates
-{ latitude :: Int
-, longitude :: Int
-} deriving (Show, Generic, Data, GQLKind, GQLInput)
-
-```
-
-### Field descriptions
-if you need description for your GQL Type you can define GQL instance manually and assign them description
-
-```haskell
-data Person = Person
-{ name :: Text
-} deriving (Show, Generic, Data, GQLInput)
-
-instance GQLKind Person where
-  description \_ = "ID of Cities in Zip Format"
+instance GQLKind Deity where
+  description \_ = "A supernatural being considered divine and sacred"
 
 ```
 
 ### Mutations
-
+In addition to queries, Morpheus also supports mutations. The behave just like regular queries and are defined similarly:
+Just exchange deriving `GQLQuery` for `GQLMutation` and declare them separately at the `GQLRoot` definition
 ```haskell
 newtype Mutation = Mutation
-  { createUser :: Form ::-> User
+  { createDeity :: Form ::-> Deity
   } deriving (Show, Generic, Data, GQLMutation)
 
-createUser :: Form ::-> User
-createUser = ...
-
+createDeityMutation :: Form ::-> Deity
+createDeityMutation = ...
 
 gqlApi :: ByteString -> IO ByteString
 gqlApi = interpreter
-    GQLRoot {
-      query = Query {...},
-      mutation = Mutation {
-         createUser = createUser
-      }
+  GQLRoot {
+    query = Query {...},
+    mutation = Mutation {
+       createDeity = createDeityMutation
     }
+  }
 ```
 
-### Introspection
-
-  
 # About
 
 ## The name
