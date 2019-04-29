@@ -107,8 +107,8 @@ our query will be resolved!
 ## Serverless Example
 
 If you are interested in creating a `Morpheus GraphQL` API with `Serverless`, you should take a look at our example in this repository:
-[_Mythology Api_](https://github.com/morpheusgraphql/mythology-api) it is our example project build with `Morpheus GraphQL` and `Serverless-Haskell`,
-where you can query different mythology characters with `GraphiQL` (unfortunately at the moment just only one god).
+[_Mythology API_](https://github.com/morpheusgraphql/mythology-api) it is our example project build with `Morpheus GraphQL` and `Serverless-Haskell`,
+where you can query different mythology characters with `GraphiQL`.
 
 Mythology API is deployed on : [_api.morpheusgraphql.com_](https://api.morpheusgraphql.com) where you can test it with `GraphiQL`
 
