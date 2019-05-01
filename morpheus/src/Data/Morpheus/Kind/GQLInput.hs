@@ -105,5 +105,7 @@ instance (S.GQLScalar a, GQLKind a) => GQLInput (ScalarOf a) where
 instance (GQLInput a, GQLKind a) => GQLInput [a] where
   decode (JSList li) = mapM decode li
   decode isType      = internalTypeMismatch "List" isType
-  asArgument _ = asArgument (Proxy @a)
-  introInput _ = introInput (Proxy @a) -- TODO: wrap as List
+  asArgument _ name = fType {unpackInputField = (unpackInputField fType) {asList = True}}
+    where
+      fType = asArgument (Proxy @a) name
+  introInput _ = introInput (Proxy @a)
