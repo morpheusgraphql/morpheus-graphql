@@ -96,3 +96,6 @@ instance GQLKind Bool where
 
 instance GQLKind a => GQLKind (Maybe a) where
   typeID _ = typeID (Proxy @a)
+
+instance GQLKind a => GQLKind [a] where
+  typeID _ = typeID (Proxy @a)

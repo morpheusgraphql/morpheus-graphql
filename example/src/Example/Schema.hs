@@ -55,7 +55,7 @@ data LocationByCoordinates = LocationByCoordinates
   } deriving (Generic, GQLArgs)
 
 data Location = Location
-  { zipCode :: Maybe Int
+  { zipCode :: Maybe [Int]
   , cityID  :: EnumOf CityID
   } deriving (Generic, GQLArgs)
 
@@ -112,7 +112,7 @@ addressByCityID HH code    = fetchAddress (Modulo7 20 code) "Hamburg"
 resolveOffice :: M.JSONUser -> Location ::-> Address
 resolveOffice _ = Resolver resolve'
   where
-    resolve' args = addressByCityID (unwrap $ cityID args) (fromMaybe 101 (zipCode args))
+    resolve' args = addressByCityID (unwrap $ cityID args) (head $ fromMaybe [101] (zipCode args))
 
 resolveUser :: () ::-> User
 resolveUser = Resolver $ const (M.jsonUser >>= \x -> return (buildResolverBy <$> x))
