@@ -10,7 +10,12 @@ inputList parser = do
   skipSpace
   _ <- char '['
   skipSpace
-  entries' <- parser `sepBy` char ','
+  entries' <-
+    (do skipSpace
+        val <- parser
+        skipSpace
+        return val) `sepBy`
+    char ','
   skipSpace
   _ <- char ']'
   return (JSList entries')

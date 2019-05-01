@@ -15,6 +15,7 @@ entry parser = do
   _ <- char ':'
   skipSpace
   value <- try parser
+  skipSpace
   return (key, value)
 
 entries :: Parser JSType -> Parser [(Text, JSType)]
