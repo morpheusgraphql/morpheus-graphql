@@ -6,7 +6,7 @@ import           Data.Morpheus.Error.Arguments         (argumentGotInvalidValue,
                                                         undefinedArgument, unknownArguments)
 import           Data.Morpheus.Error.Input             (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Internal          (internalUnknownTypeMessage)
-import           Data.Morpheus.PreProcess.Input.Object (validateInput)
+import           Data.Morpheus.PreProcess.Input.Object (validateInputValue)
 import           Data.Morpheus.PreProcess.Utils        (checkForUnknownKeys, checkNameCollision, getInputType)
 import           Data.Morpheus.Schema.Internal.Types   (Field (..), InputField (..), ObjectField (..), TypeLib)
 import           Data.Morpheus.Types.Core              (EnhancedKey (..))
@@ -20,11 +20,11 @@ handleInputError :: Text -> Int -> InputValidation a -> Validation ()
 handleInputError key' position' (Left error') = Left $ argumentGotInvalidValue key' (inputErrorMessage error') position'
 handleInputError _ _ _ = pure ()
 
-validateArgumentValue :: TypeLib -> Text -> (Text, Argument) -> Validation (Text, Argument)
-validateArgumentValue lib' typeID' (key', Argument value' position') =
+validateArgumentValue :: Bool -> TypeLib -> Text -> (Text, Argument) -> Validation (Text, Argument)
+validateArgumentValue isList' lib' typeID' (key', Argument value' position') =
   getInputType typeID' lib' (internalUnknownTypeMessage typeID') >>= checkType >> pure (key', Argument value' position')
   where
-    checkType type' = handleInputError key' position' (validateInput lib' type' (key', value'))
+    checkType type' = handleInputError key' position' (validateInputValue isList' lib' type' (key', value'))
 
 validateArgument :: TypeLib -> Position -> Arguments -> (Text, InputField) -> Validation (Text, Argument)
 validateArgument types position' requestArgs (key', InputField arg) =
@@ -33,7 +33,7 @@ validateArgument types position' requestArgs (key', InputField arg) =
       if notNull arg
         then Left $ undefinedArgument (EnhancedKey key' position')
         else pure (key', Argument JSNull position')
-    Just (Argument value pos) -> validateArgumentValue types (fieldType arg) (key', Argument value pos)
+    Just (Argument value pos) -> validateArgumentValue (asList arg) types (fieldType arg) (key', Argument value pos)
 
 checkForUnknownArguments :: (Text, ObjectField) -> Arguments -> Validation [(Text, InputField)]
 checkForUnknownArguments (fieldKey', ObjectField fieldArgs _) args' =
