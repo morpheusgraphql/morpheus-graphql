@@ -22,6 +22,7 @@ import           Data.Morpheus.Types.Response        (GQLResponse (..))
 import           Data.Morpheus.Types.Types           (GQLRoot (..))
 import           Data.Text                           (Text, pack)
 import           Data.Text.Lazy                      (fromStrict, toStrict)
+import qualified Data.Text.Lazy                      as LT (Text)
 import           Data.Text.Lazy.Encoding             (decodeUtf8, encodeUtf8)
 
 schema :: (GQLQuery a, GQLMutation b) => a -> b -> TypeLib
@@ -63,5 +64,8 @@ class Interpreter a where
 instance Interpreter ByteString where
   interpreter root request = encode <$> interpreterRaw root request
 
+instance Interpreter LT.Text where
+  interpreter root request = decodeUtf8 <$> interpreter root (encodeUtf8 request)
+
 instance Interpreter Text where
-  interpreter root request = toStrict . decodeUtf8 . encode <$> interpreterRaw root (encodeUtf8 $ fromStrict request)
+  interpreter root request = toStrict <$> interpreter root (fromStrict request)
