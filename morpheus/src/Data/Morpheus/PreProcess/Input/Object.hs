@@ -52,6 +52,13 @@ validateInputObject prop' lib' (GObject parentFields _) (_name, JSObject fields)
   let error' = generateError (JSObject fields) fieldTypeName' currentProp
   inputObject' <- existsInputObjectType error' lib' fieldTypeName'
   mapM (validateInputObject currentProp lib' inputObject') fields >>= \x -> pure (_name, JSObject x)
+validateInputObject prop' lib' (GObject parentFields pos) (_name, JSList list') = do
+  field' <- unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
+  if asList field'
+    then mapM_ recValidate list' >> pure (_name, JSList list')
+    else Left $ generateError (JSList list') (fieldType field') prop'
+  where
+    recValidate x = validateInputObject prop' lib' (GObject parentFields pos) (_name, x)
 validateInputObject prop' lib' (GObject parentFields _) (_name, jsType) = do
   field' <- unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
   let fieldTypeName' = fieldType field'
