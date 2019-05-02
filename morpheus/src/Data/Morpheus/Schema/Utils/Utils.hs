@@ -29,23 +29,26 @@ inputValueFromArg :: (Text, I.InputField) -> InputValue
 inputValueFromArg (key', input') = IN.createInputValueWith key' (createInputObjectType input')
 
 createInputObjectType :: I.InputField -> Type
-createInputObjectType (I.InputField field') = createType (I.kind field') (I.fieldType field') "" []
+createInputObjectType (I.InputField field') = wrap field' $ createType (I.kind field') (I.fieldType field') "" []
 
-wrapNotNull :: I.ObjectField -> Type -> Type
+wrap :: I.Field -> Type -> Type
+wrap field' = wrapNotNull field' . wrapList field'
+
+wrapNotNull :: I.Field -> Type -> Type
 wrapNotNull field' type' =
-  if I.notNull $ I.fieldContent field'
+  if I.notNull field'
     then wrapAs NON_NULL type'
     else type'
 
-wrapList :: I.ObjectField -> Type -> Type
+wrapList :: I.Field -> Type -> Type
 wrapList field' type' =
-  if I.asList $ I.fieldContent field'
+  if I.asList field'
     then wrapAs LIST type'
     else type'
 
 fieldFromObjectField :: (Text, I.ObjectField) -> Field
 fieldFromObjectField (key', field') =
-  F.createFieldWith key' (wrapNotNull field' $ wrapList field' $ createObjectType getType "" []) args'
+  F.createFieldWith key' (wrap (I.fieldContent field') $ createObjectType getType "" []) args'
   where
     getType = I.fieldType $ I.fieldContent field'
     args' = map inputValueFromArg $ I.args field'

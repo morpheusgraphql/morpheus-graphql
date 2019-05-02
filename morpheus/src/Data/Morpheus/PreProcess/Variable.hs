@@ -11,7 +11,7 @@ import qualified Data.Map                               as M (fromList, lookup)
 import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Variable           (undefinedVariable, uninitializedVariable, unknownType,
                                                          unusedVariables, variableGotInvalidValue)
-import           Data.Morpheus.PreProcess.Input.Object  (validateInput)
+import           Data.Morpheus.PreProcess.Input.Object  (validateInputValue)
 import           Data.Morpheus.PreProcess.Utils         (getInputType)
 import           Data.Morpheus.Schema.Internal.Types    (InputType, TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
@@ -50,7 +50,7 @@ lookupAndValidateValueOnBody typeLib root (key', Variable type' pos) = getVariab
   where
     checkType _type = do
       variableValue <- lookupBodyValue pos root key'
-      handleInputError key' pos $ validateInput typeLib _type (key', variableValue)
+      handleInputError key' pos $ validateInputValue False typeLib _type (key', variableValue)
 
 resolveOperationVariables :: TypeLib -> Variables -> [EnhancedKey] -> [(Text, Variable)] -> Validation Variables
 resolveOperationVariables typeLib root references' variables' = do
