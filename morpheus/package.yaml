@@ -25,5 +25,10 @@ dependencies:
 
 library:
   source-dirs: src
+  exposed-modules:
+      -  Data.Morpheus
+      -  Data.Morpheus.Kind
+      -  Data.Morpheus.Types
+      -  Data.Morpheus.Wrapper
   ghc-options:
       -Wall
