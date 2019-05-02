@@ -43,7 +43,7 @@ instance GQLScalar Modulo7 where
 
 data Coordinates = Coordinates
   { latitude  :: ScalarOf Modulo7
-  , longitude :: Int
+  , longitude :: [Int]
   } deriving (Generic, Typeable, GQLInput)
 
 instance GQLKind Coordinates where
