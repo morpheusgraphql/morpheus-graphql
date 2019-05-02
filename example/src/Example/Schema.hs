@@ -41,9 +41,13 @@ instance GQLScalar Modulo7 where
   parseValue _       = pure $ Modulo7 0 0
   serialize (Modulo7 value _) = Int value
 
+data UID = UID
+  { uid :: Text
+  } deriving (Show, Generic, Typeable, GQLKind, GQLInput)
+
 data Coordinates = Coordinates
   { latitude  :: ScalarOf Modulo7
-  , longitude :: [Int]
+  , longitude :: [UID]
   } deriving (Generic, Typeable, GQLInput)
 
 instance GQLKind Coordinates where
