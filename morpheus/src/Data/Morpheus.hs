@@ -7,7 +7,8 @@ module Data.Morpheus
 
 import           Control.Monad.Trans.Except          (ExceptT (..), runExceptT)
 import           Data.Aeson                          (decode, encode)
-import           Data.ByteString.Lazy.Char8          (ByteString)
+import           Data.ByteString                     (ByteString)
+import qualified Data.ByteString.Lazy.Char8          as LB (ByteString, fromStrict, toStrict)
 import           Data.Morpheus.Error.Utils           (errorMessage, renderErrors)
 import           Data.Morpheus.Kind.GQLMutation      (GQLMutation (..))
 import           Data.Morpheus.Kind.GQLQuery         (GQLQuery (..))
@@ -21,8 +22,7 @@ import           Data.Morpheus.Types.Request         (GQLRequest)
 import           Data.Morpheus.Types.Response        (GQLResponse (..))
 import           Data.Morpheus.Types.Types           (GQLRoot (..))
 import           Data.Text                           (Text, pack)
-import           Data.Text.Lazy                      (fromStrict, toStrict)
-import qualified Data.Text.Lazy                      as LT (Text)
+import qualified Data.Text.Lazy                      as LT (Text, fromStrict, toStrict)
 import           Data.Text.Lazy.Encoding             (decodeUtf8, encodeUtf8)
 
 schema :: (GQLQuery a, GQLMutation b) => a -> b -> TypeLib
@@ -39,20 +39,20 @@ resolve rootResolver body = do
     queryRes = query rootResolver
     mutationRes = mutation rootResolver
 
-lineBreaks :: ByteString -> [Int]
+lineBreaks :: LB.ByteString -> [Int]
 lineBreaks req =
   case decode req of
     Just x  -> parseLineBreaks x
     Nothing -> []
 
-interpreterRaw :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> ByteString -> IO GQLResponse
+interpreterRaw :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> LB.ByteString -> IO GQLResponse
 interpreterRaw rootResolver request = do
   value <- runExceptT $ parseRequest request >>= resolve rootResolver
   case value of
     Left x  -> pure $ Errors $ renderErrors (lineBreaks request) x
     Right x -> pure $ Data x
 
-parseRequest :: ByteString -> ResolveIO GQLRequest
+parseRequest :: LB.ByteString -> ResolveIO GQLRequest
 parseRequest text =
   case decode text of
     Just x  -> pure x
@@ -61,11 +61,14 @@ parseRequest text =
 class Interpreter a where
   interpreter :: (GQLQuery q, GQLMutation m) => GQLRoot q m -> a -> IO a
 
-instance Interpreter ByteString where
+instance Interpreter LB.ByteString where
   interpreter root request = encode <$> interpreterRaw root request
 
 instance Interpreter LT.Text where
   interpreter root request = decodeUtf8 <$> interpreter root (encodeUtf8 request)
 
+instance Interpreter ByteString where
+  interpreter root request = LB.toStrict <$> interpreter root (LB.fromStrict request)
+
 instance Interpreter Text where
-  interpreter root request = toStrict <$> interpreter root (fromStrict request)
+  interpreter root request = LT.toStrict <$> interpreter root (LT.fromStrict request)
