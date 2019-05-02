@@ -64,13 +64,16 @@ validateInputObject prop' lib' _ (GObject parentFields pos) (_name, JSList list'
     else Left $ generateError (JSList list') (fieldType field') prop'
   where
     recValidate x = validateInputObject prop' lib' True (GObject parentFields pos) (_name, x)
-validateInputObject prop' lib' _ (GObject parentFields _) (_name, jsType) = do
+validateInputObject prop' lib' fromList' (GObject parentFields _) (_name, jsType) = do
   field' <- unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
   let fieldTypeName' = fieldType field'
   let currentProp = prop' ++ [Prop _name fieldTypeName']
   let error' = generateError jsType fieldTypeName' currentProp
-  fieldType' <- existsLeafType error' lib' fieldTypeName'
-  validateLeaf fieldType' jsType currentProp >> pure (_name, jsType)
+  if not fromList' && asList field'
+    then Left $ UnexpectedType prop' (T.concat ["[", fieldTypeName', "]"]) jsType
+    else do
+      fieldType' <- existsLeafType error' lib' fieldTypeName'
+      validateLeaf fieldType' jsType currentProp >> pure (_name, jsType)
 
 validateInput :: TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
 validateInput typeLib (T.Object oType) (_, JSObject fields) =
