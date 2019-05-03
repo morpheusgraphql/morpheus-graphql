@@ -59,6 +59,7 @@ lineBreaks req =
 interpreterRaw :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> LB.ByteString -> IO GQLResponse
 interpreterRaw rootResolver request = do
   value <- runExceptT $ parseRequest request >>= resolve rootResolver
+  print resolveTypes
   case value of
     Left x -> pure $ Errors $ renderErrors (lineBreaks request) x
     Right x -> pure $ Data x
@@ -136,7 +137,7 @@ instance GQLObject User
 
 instance GQLScalar Odd
 
-resolveUserG :: GQLObject User => User -> Text
+resolveUserG :: GQLCons User (GQL User) => User -> Text
 resolveUserG = scan (Proxy @(GQL User)) introScalar introObject
 
 resolveUser :: Text
@@ -146,4 +147,4 @@ resolveOdd :: Text
 resolveOdd = scan (Proxy @(GQL Odd)) introScalar introObject (Odd 3)
 
 resolveTypes :: Text
-resolveTypes = T.concat [resolveOdd, resolveUser]
+resolveTypes = T.concat [resolveOdd, resolveUser, resolveUserG $ User "Hello from Generic"]
