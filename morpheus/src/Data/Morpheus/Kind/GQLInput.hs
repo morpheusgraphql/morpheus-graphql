@@ -7,6 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Morpheus.Kind.GQLInput
   ( GQLInput(..)
@@ -29,11 +30,11 @@ import           Data.Proxy                          (Proxy (..))
 import           Data.Text                           (Text)
 import           GHC.Generics
 
-instance GQLInput a => GDecode JSType (K1 i a) where
+instance (IntrospectionRouter a (GQL a)) => GDecode JSType (K1 i a) where
   gDecode meta (JSObject object) =
     case lookup (Meta.key meta) object of
       Nothing    -> internalArgumentError "Missing Argument"
-      Just value -> K1 <$> decode value
+      Just value -> K1 <$> _decode value
   gDecode _ isType = internalTypeMismatch "InputObject" isType
 
 class GQLInput a where
