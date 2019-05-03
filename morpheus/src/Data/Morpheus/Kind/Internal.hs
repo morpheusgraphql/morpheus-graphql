@@ -14,6 +14,8 @@ module Data.Morpheus.Kind.Internal
   , introspection
   , SCALAR
   , OBJECT
+  , ENUM
+  , INPUT_OBJECT
   , GQL
   ) where
 
@@ -25,10 +27,17 @@ import Prelude (Eq, Read, Show(..))
 -- Hidden GQL type System API
 type family GQL a :: *
 
-data OBJECT
+data PRIMITIVE
 
 data SCALAR
 
+data OBJECT
+
+data ENUM
+
+data INPUT_OBJECT
+
+-- UNION : TODO: implement UNION
 type family GQLConstraint a b :: Constraint
 
 class IntrospectionRouter a b where
