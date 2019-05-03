@@ -12,13 +12,16 @@ module Data.Morpheus.Kind.Internal
   ( GQLObject
   , GQLScalar
   , introspection
+  , PRIMITIVE
   , SCALAR
   , OBJECT
   , ENUM
   , INPUT_OBJECT
   , GQL
+  , _introspect
   ) where
 
+import Data.Morpheus.Schema.Internal.Types (TypeLib)
 import Data.Proxy (Proxy(..))
 import Data.Text (Text, concat, pack)
 import GHC.Exts (Constraint)
@@ -42,6 +45,14 @@ type family GQLConstraint a b :: Constraint
 
 class IntrospectionRouter a b where
   routeIntrospection :: Proxy b -> a -> Text
+  __introspect :: Proxy b -> Proxy a -> TypeLib -> TypeLib
+
+_introspect ::
+     forall a. IntrospectionRouter a (GQL a)
+  => Proxy a
+  -> TypeLib
+  -> TypeLib
+_introspect = __introspect (Proxy @(GQL a))
 
 introspection ::
      forall a. IntrospectionRouter a (GQL a)
