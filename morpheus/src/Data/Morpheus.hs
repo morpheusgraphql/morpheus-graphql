@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators, ScopedTypeVariables, DeriveAnyClass,
-  InstanceSigs #-}
+  InstanceSigs, DefaultSignatures #-}
 
 module Data.Morpheus
   ( interpreter
@@ -107,22 +107,26 @@ introspection = routeIntrospection (Proxy @(GQL a))
 -- Define GQL Kind Classes
 -- Define and bind GQLObject
 class GQLObject a where
-  introspectObject :: (Show a, Eq a) => a -> Text
+  introspectObject :: a -> Text
+  default introspectObject :: (Show a, Eq a) =>
+    a -> Text
   introspectObject x = T.concat ["Resolved Object :: ", pack $ show x]
 
 type instance GQLConstraint a OBJECT = GQLObject a
 
-instance (GQLObject a, Eq a, Show a) => IntrospectionRouter a OBJECT where
+instance GQLObject a => IntrospectionRouter a OBJECT where
   routeIntrospection _ = introspectObject
 
 -- Define and bind GQLScalar
 class GQLScalar a where
-  introspectScalar :: (Show a, Read a) => a -> Text
+  introspectScalar :: a -> Text
+  default introspectScalar :: (Show a, Read a) =>
+    a -> Text
   introspectScalar x = T.concat ["Resolved Scalar:: ", pack $ show x]
 
 type instance GQLConstraint a SCALAR = GQLScalar a
 
-instance (GQLScalar a, Read a, Show a) => IntrospectionRouter a SCALAR where
+instance GQLScalar a => IntrospectionRouter a SCALAR where
   routeIntrospection _ = introspectScalar
 
 -- Client Side
