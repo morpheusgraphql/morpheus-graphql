@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module Data.Morpheus.Kind.GQLInput
   ( GQLInput(..)
@@ -17,6 +18,7 @@ import           Data.Morpheus.Generics.TypeRep      (Selectors (..))
 import qualified Data.Morpheus.Kind.GQLEnum          as E (GQLEnum (..))
 import           Data.Morpheus.Kind.GQLKind          (GQLKind (..), inputObjectOf, introspectScalar)
 import qualified Data.Morpheus.Kind.GQLScalar        as S (GQLScalar (..))
+import           Data.Morpheus.Kind.Internal
 import           Data.Morpheus.Schema.Internal.Types (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Describer       (EnumOf (..), ScalarOf (..))
@@ -109,3 +111,8 @@ instance (GQLInput a, GQLKind a) => GQLInput [a] where
     where
       fType = asArgument (Proxy @a) name
   introInput _ = introInput (Proxy @a)
+
+type instance GQLConstraint a PRIMITIVE = GQLKind a
+
+instance GQLKind a => IntrospectionRouter a PRIMITIVE where
+  __introspect _ = introspectScalar

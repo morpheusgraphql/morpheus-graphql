@@ -19,6 +19,8 @@ module Data.Morpheus.Kind.Internal
   , INPUT_OBJECT
   , GQL
   , _introspect
+  , GQLConstraint
+  , IntrospectionRouter(..)
   ) where
 
 import Data.Morpheus.Schema.Internal.Types (TypeLib)
@@ -68,6 +70,13 @@ class GQLObject a where
     a -> Text
   introspectObject x = concat ["Resolved Object :: ", pack (show x)]
 
+--default introInput :: (GQLKind a, Selectors (Rep a) (Text, InputField)) =>
+--    Proxy a -> TypeLib -> TypeLib
+--  introInput = updateLib (inputObjectOf fields) stack
+--    where
+--      fieldTypes = getFields (Proxy @(Rep a))
+--      stack = map snd fieldTypes
+--      fields = map fst fieldTypes
 type instance GQLConstraint a OBJECT = GQLObject a
 
 instance GQLObject a => IntrospectionRouter a OBJECT where
