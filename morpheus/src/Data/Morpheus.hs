@@ -86,61 +86,57 @@ instance Interpreter ByteString where
 instance Interpreter Text where
   interpreter root request = LT.toStrict <$> interpreter root (LT.fromStrict request)
 
+-- Hidden GQL type System API
 type family GQL a :: *
 
-data OBJECT =
-  OBJECT
+data OBJECT
 
-data SCALAR =
-  SCALAR
+data SCALAR
 
-type family GQLCons a b :: Constraint
+type family GQLConstraint a b :: Constraint
 
-type instance GQLCons a OBJECT = GQLObject a
+class IntrospectionRouter a b where
+  routeIntrospection :: Proxy b -> a -> Text
 
-type instance GQLCons a SCALAR = GQLScalar a
+introspection ::
+     forall a. IntrospectionRouter a (GQL a)
+  => a
+  -> Text
+introspection = routeIntrospection (Proxy @(GQL a))
 
+-- Define GQL Kind Classes
+-- Define and bind GQLObject
 class GQLObject a where
-  introObject :: Show a => a -> Text
-  introObject x = T.concat ["Resolved Object :: ", pack $ show x]
+  introspectObject :: (Show a, Eq a) => a -> Text
+  introspectObject x = T.concat ["Resolved Object :: ", pack $ show x]
 
+type instance GQLConstraint a OBJECT = GQLObject a
+
+instance (GQLObject a, Eq a, Show a) => IntrospectionRouter a OBJECT where
+  routeIntrospection _ = introspectObject
+
+-- Define and bind GQLScalar
 class GQLScalar a where
-  introScalar :: Read a => a -> Text
-  introScalar _ = T.concat ["Resolved Scalar"]
+  introspectScalar :: (Show a, Read a) => a -> Text
+  introspectScalar x = T.concat ["Resolved Scalar:: ", pack $ show x]
 
-class Scanner a b where
-  scan :: Proxy b -> a -> Text
+type instance GQLConstraint a SCALAR = GQLScalar a
 
-instance (GQLScalar a, Read a) => Scanner a SCALAR where
-  scan _ = introScalar
-
-instance (GQLObject a, Show a) => Scanner a OBJECT where
-  scan _ = introObject
-
-type ResolverOf a
-   = GQLCons a (GQL a) => a -> Text
-
-gqlKindOf :: forall a. a -> Proxy (GQL a)
-gqlKindOf _ = Proxy @(GQL a)
+instance (GQLScalar a, Read a, Show a) => IntrospectionRouter a SCALAR where
+  routeIntrospection _ = introspectScalar
 
 -- API Definition After
 newtype User =
   User Text
-  deriving (Show, GQLObject)
+  deriving (Show, Eq, GQLObject)
 
 newtype Odd =
   Odd Int
-  deriving (Read, GQLScalar)
+  deriving (Show, Read, GQLScalar)
 
 type instance GQL Odd = SCALAR
 
 type instance GQL User = OBJECT
 
-resolveUser :: ResolverOf User
-resolveUser x = scan (gqlKindOf x) x
-
-resolveOdd :: ResolverOf Odd
-resolveOdd x = scan (gqlKindOf x) x
-
 resolveTypes :: Text
-resolveTypes = T.concat [resolveOdd (Odd 3), resolveUser $ User "David"]
+resolveTypes = T.concat [introspection (Odd 3), " and ", introspection $ User "David"]
