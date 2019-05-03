@@ -19,11 +19,14 @@ module Data.Morpheus.Kind.Internal
   , INPUT_OBJECT
   , GQL
   , _introspect
+  , _decode
   , GQLConstraint
   , IntrospectionRouter(..)
   ) where
 
 import Data.Morpheus.Schema.Internal.Types (TypeLib)
+import Data.Morpheus.Types.Error (Validation(..))
+import Data.Morpheus.Types.JSType (JSType(..))
 import Data.Proxy (Proxy(..))
 import Data.Text (Text, concat, pack)
 import GHC.Exts (Constraint)
@@ -48,6 +51,13 @@ type family GQLConstraint a b :: Constraint
 class IntrospectionRouter a b where
   routeIntrospection :: Proxy b -> a -> Text
   __introspect :: Proxy b -> Proxy a -> TypeLib -> TypeLib
+  __decode :: Proxy b -> JSType -> Validation a
+
+_decode ::
+     forall a. IntrospectionRouter a (GQL a)
+  => JSType
+  -> Validation a
+_decode = __decode (Proxy @(GQL a))
 
 _introspect ::
      forall a. IntrospectionRouter a (GQL a)
