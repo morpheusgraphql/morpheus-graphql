@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE TypeOperators  , TypeFamilies   #-}
 
 module Data.Morpheus
   ( interpreter
@@ -72,3 +72,17 @@ instance Interpreter ByteString where
 
 instance Interpreter Text where
   interpreter root request = LT.toStrict <$> interpreter root (LT.fromStrict request)
+
+
+type family GQL a
+
+data User = User Text
+
+data Dog = Dog Int
+
+type instance GQL User = Int
+
+type instance GQL Dog = Text
+
+
+
