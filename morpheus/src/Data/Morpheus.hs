@@ -1,8 +1,13 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators  , TypeFamilies  , OverloadedStrings , MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
 
 module Data.Morpheus
   ( interpreter
+  , resolveTypes
   ) where
 
 import           Control.Monad.Trans.Except          (ExceptT (..), runExceptT)
@@ -21,7 +26,9 @@ import           Data.Morpheus.Types.Query.Operator  (Operator (..))
 import           Data.Morpheus.Types.Request         (GQLRequest)
 import           Data.Morpheus.Types.Response        (GQLResponse (..))
 import           Data.Morpheus.Types.Types           (GQLRoot (..))
+import           Data.Proxy
 import           Data.Text                           (Text, pack)
+import qualified Data.Text                           as T (concat)
 import qualified Data.Text.Lazy                      as LT (Text, fromStrict, toStrict)
 import           Data.Text.Lazy.Encoding             (decodeUtf8, encodeUtf8)
 
@@ -73,21 +80,57 @@ instance Interpreter ByteString where
 instance Interpreter Text where
   interpreter root request = LT.toStrict <$> interpreter root (LT.fromStrict request)
 
-type family GQL a
+type family GQL a :: *
 
-data User = User Text
-data Odd = Odd Int
+newtype User =
+  User Text
 
-data OBJECT  = OBJECT
-data SCALAR  = SCALAR
+newtype Odd =
+  Odd Int
 
-type instance GQL User = OBJECT
+data OBJECT =
+  OBJECT
+
+data SCALAR =
+  SCALAR
+
 type instance GQL Odd = SCALAR
 
-class Intro a b where
-  intro :: a -> b -> GQL a
+class KObject a where
+  introObject :: a -> Text
+  introObject _ = "Object Of User"
 
-instance Intro a OBJECT where
-  intro x _ = x
+instance KObject User
 
+class KScalar a where
+  introScalar :: a -> Text
+  introScalar _ = "Scalar Of Odd"
 
+instance KScalar Odd
+
+--instance Intro a OBJECT where
+--  intro x _ = x
+class Scanner a b where
+  scan ::
+       Proxy b
+    -> (KScalar a =>
+          a -> Text)
+    -> (KObject a =>
+          a -> Text)
+    -> a
+    -> Text
+
+instance KScalar a => Scanner a SCALAR where
+  scan _ c1 _ = c1
+
+instance KObject a => Scanner a OBJECT where
+  scan _ _ c2 = c2
+
+resolveUser :: Text
+resolveUser = scan (Proxy :: Proxy OBJECT) introScalar introObject (User "")
+
+resolveOdd :: Text
+resolveOdd = scan (Proxy :: Proxy SCALAR) introScalar introObject (Odd 3)
+
+resolveTypes :: Text
+resolveTypes = T.concat [resolveOdd, resolveUser]
