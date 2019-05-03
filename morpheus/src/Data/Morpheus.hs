@@ -6,7 +6,8 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators, ScopedTypeVariables, DeriveAnyClass #-}
+{-# LANGUAGE TypeOperators, ScopedTypeVariables, DeriveAnyClass,
+  InstanceSigs #-}
 
 module Data.Morpheus
   ( interpreter
@@ -100,53 +101,46 @@ type instance GQLCons a OBJECT = GQLObject a
 type instance GQLCons a SCALAR = GQLScalar a
 
 class GQLObject a where
-  introObject :: a -> Text
-  introObject _ = "Object Of User"
+  introObject :: Show a => a -> Text
+  introObject x = T.concat ["Resolved Object :: ", pack $ show x]
 
 class GQLScalar a where
-  introScalar :: a -> Text
-  introScalar _ = "Scalar Of Odd"
+  introScalar :: Read a => a -> Text
+  introScalar _ = T.concat ["Resolved Scalar"]
 
 class Scanner a b where
-  scan ::
-       Proxy b
-    -> (GQLScalar a =>
-          a -> Text)
-    -> (GQLObject a =>
-          a -> Text)
-    -> a
-    -> Text
+  scan :: Proxy b -> a -> Text
 
-instance GQLScalar a => Scanner a SCALAR where
-  scan _ c1 _ = c1
+instance (GQLScalar a, Read a) => Scanner a SCALAR where
+  scan _ = introScalar
 
-instance GQLObject a => Scanner a OBJECT where
-  scan _ _ c2 = c2
+instance (GQLObject a, Show a) => Scanner a OBJECT where
+  scan _ = introObject
 
-type ResolverOf a = GQLCons a (GQL a) => a -> Text
+type ResolverOf a
+   = GQLCons a (GQL a) => a -> Text
 
-
-
-
+gqlKindOf :: forall a. a -> Proxy (GQL a)
+gqlKindOf _ = Proxy @(GQL a)
 
 -- API Definition After
 newtype User =
   User Text
-  deriving (GQLObject)
+  deriving (Show, GQLObject)
 
 newtype Odd =
   Odd Int
-  deriving (GQLScalar)
+  deriving (Read, GQLScalar)
 
 type instance GQL Odd = SCALAR
 
 type instance GQL User = OBJECT
 
 resolveUser :: ResolverOf User
-resolveUser = scan (Proxy @(GQL User)) introScalar introObject
+resolveUser x = scan (gqlKindOf x) x
 
 resolveOdd :: ResolverOf Odd
-resolveOdd = scan (Proxy @(GQL Odd)) introScalar introObject
+resolveOdd x = scan (gqlKindOf x) x
 
 resolveTypes :: Text
-resolveTypes = T.concat [resolveOdd (Odd 3), resolveUser $ User "Hello from Generic"]
+resolveTypes = T.concat [resolveOdd (Odd 3), resolveUser $ User "David"]
