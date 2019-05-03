@@ -125,7 +125,7 @@ type instance GQLConstraint a SCALAR = GQLScalar a
 instance (GQLScalar a, Read a, Show a) => IntrospectionRouter a SCALAR where
   routeIntrospection _ = introspectScalar
 
--- API Definition After
+-- define GQL Schema
 newtype User =
   User Text
   deriving (Show, Eq, GQLObject)
@@ -139,4 +139,4 @@ type instance GQL Odd = SCALAR
 type instance GQL User = OBJECT
 
 resolveTypes :: Text
-resolveTypes = T.concat [introspection (Odd 3), " and ", introspection $ User "David"]
+resolveTypes = T.concat [introspection (Odd 3), " and ", introspection (User "David")]
