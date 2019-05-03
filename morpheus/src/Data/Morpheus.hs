@@ -6,7 +6,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators, ScopedTypeVariables, DeriveAnyClass #-}
 
 module Data.Morpheus
   ( interpreter
@@ -123,28 +123,30 @@ instance GQLScalar a => Scanner a SCALAR where
 instance GQLObject a => Scanner a OBJECT where
   scan _ _ c2 = c2
 
+type ResolverOf a = GQLCons a (GQL a) => a -> Text
+
+
+
+
+
+-- API Definition After
 newtype User =
   User Text
+  deriving (GQLObject)
 
 newtype Odd =
   Odd Int
+  deriving (GQLScalar)
 
 type instance GQL Odd = SCALAR
 
 type instance GQL User = OBJECT
 
-instance GQLObject User
+resolveUser :: ResolverOf User
+resolveUser = scan (Proxy @(GQL User)) introScalar introObject
 
-instance GQLScalar Odd
-
-resolveUserG :: GQLCons User (GQL User) => User -> Text
-resolveUserG = scan (Proxy @(GQL User)) introScalar introObject
-
-resolveUser :: Text
-resolveUser = scan (Proxy @(GQL User)) introScalar introObject (User "")
-
-resolveOdd :: Text
-resolveOdd = scan (Proxy @(GQL Odd)) introScalar introObject (Odd 3)
+resolveOdd :: ResolverOf Odd
+resolveOdd = scan (Proxy @(GQL Odd)) introScalar introObject
 
 resolveTypes :: Text
-resolveTypes = T.concat [resolveOdd, resolveUser, resolveUserG $ User "Hello from Generic"]
+resolveTypes = T.concat [resolveOdd (Odd 3), resolveUser $ User "Hello from Generic"]
