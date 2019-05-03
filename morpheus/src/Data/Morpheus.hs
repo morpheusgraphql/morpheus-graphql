@@ -82,49 +82,49 @@ instance Interpreter Text where
 
 type family GQL a :: *
 
-newtype User =
-  User Text
-
-newtype Odd =
-  Odd Int
-
 data OBJECT =
   OBJECT
 
 data SCALAR =
   SCALAR
 
-type instance GQL Odd = SCALAR
-
-class KObject a where
+class GQLObject a where
   introObject :: a -> Text
   introObject _ = "Object Of User"
 
-instance KObject User
-
-class KScalar a where
+class GQLScalar a where
   introScalar :: a -> Text
   introScalar _ = "Scalar Of Odd"
 
-instance KScalar Odd
-
---instance Intro a OBJECT where
---  intro x _ = x
 class Scanner a b where
   scan ::
        Proxy b
-    -> (KScalar a =>
+    -> (GQLScalar a =>
           a -> Text)
-    -> (KObject a =>
+    -> (GQLObject a =>
           a -> Text)
     -> a
     -> Text
 
-instance KScalar a => Scanner a SCALAR where
+instance GQLScalar a => Scanner a SCALAR where
   scan _ c1 _ = c1
 
-instance KObject a => Scanner a OBJECT where
+instance GQLObject a => Scanner a OBJECT where
   scan _ _ c2 = c2
+
+newtype User =
+  User Text
+
+newtype Odd =
+  Odd Int
+
+instance GQLScalar Odd
+
+type instance GQL Odd = SCALAR
+
+instance GQLObject User
+
+type instance GQL User = OBJECT
 
 resolveUser :: Text
 resolveUser = scan (Proxy :: Proxy OBJECT) introScalar introObject (User "")
