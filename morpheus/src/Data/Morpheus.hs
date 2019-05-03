@@ -1,7 +1,9 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
@@ -127,10 +129,10 @@ instance GQLObject User
 type instance GQL User = OBJECT
 
 resolveUser :: Text
-resolveUser = scan (Proxy :: Proxy OBJECT) introScalar introObject (User "")
+resolveUser = scan (Proxy @(GQL User)) introScalar introObject (User "")
 
 resolveOdd :: Text
-resolveOdd = scan (Proxy :: Proxy SCALAR) introScalar introObject (Odd 3)
+resolveOdd = scan (Proxy @(GQL Odd)) introScalar introObject (Odd 3)
 
 resolveTypes :: Text
 resolveTypes = T.concat [resolveOdd, resolveUser]
