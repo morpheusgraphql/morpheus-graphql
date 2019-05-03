@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
@@ -120,13 +121,16 @@ newtype User =
 newtype Odd =
   Odd Int
 
-instance GQLScalar Odd
-
 type instance GQL Odd = SCALAR
+
+type instance GQL User = OBJECT
 
 instance GQLObject User
 
-type instance GQL User = OBJECT
+instance GQLScalar Odd
+
+resolveUserG :: GQLObject User => User -> Text
+resolveUserG = scan (Proxy @(GQL User)) introScalar introObject
 
 resolveUser :: Text
 resolveUser = scan (Proxy @(GQL User)) introScalar introObject (User "")
