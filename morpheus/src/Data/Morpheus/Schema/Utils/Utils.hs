@@ -18,7 +18,7 @@ import qualified Data.Morpheus.Schema.Internal.Types as I (Core (..), Field (..)
                                                            InputObject, Leaf (..), ObjectField (..), OutputObject)
 import           Data.Morpheus.Schema.Type           (Type (..))
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
-import           Data.Morpheus.Types.Describer       (EnumOf (..), WithDeprecationArgs (..))
+import           Data.Morpheus.Types.Describer       (WithDeprecationArgs (..))
 import           Data.Text                           (Text)
 
 type InputValue = IN.InputValue Type
@@ -60,7 +60,7 @@ typeFromLeaf (key', I.LEnum tags' (I.Core _ desc')) = createLeafType ENUM key' d
 createLeafType :: TypeKind -> Text -> Text -> [EnumValue] -> Type
 createLeafType kind' name' desc' enums' =
   Type
-    { kind = EnumOf kind'
+    { kind = kind'
     , name = Just name'
     , description = Just desc'
     , fields = Nothing
@@ -85,7 +85,7 @@ createObjectType = createType OBJECT
 createInputObject :: Text -> Text -> [InputValue] -> Type
 createInputObject name' desc' fields' =
   Type
-    { kind = EnumOf INPUT_OBJECT
+    { kind = INPUT_OBJECT
     , name = Just name'
     , description = Just desc'
     , fields = Just $ WithDeprecationArgs []
@@ -99,7 +99,7 @@ createInputObject name' desc' fields' =
 createType :: TypeKind -> Text -> Text -> [Field] -> Type
 createType kind' name' desc' fields' =
   Type
-    { kind = EnumOf kind'
+    { kind = kind'
     , name = Just name'
     , description = Just desc'
     , fields = Just $ WithDeprecationArgs fields'
@@ -113,7 +113,7 @@ createType kind' name' desc' fields' =
 wrapAs :: TypeKind -> Type -> Type
 wrapAs kind' contentType =
   Type
-    { kind = EnumOf kind'
+    { kind = kind'
     , name = Nothing
     , description = Nothing
     , fields = Nothing

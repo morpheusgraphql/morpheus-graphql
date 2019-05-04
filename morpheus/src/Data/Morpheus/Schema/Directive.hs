@@ -9,13 +9,12 @@ module Data.Morpheus.Schema.Directive
 import           Data.Data                              (Data)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.Utils.Utils       (InputValue)
-import           Data.Morpheus.Types.Describer          (EnumOf (..))
 import           Data.Text                              (Text)
 import           GHC.Generics
 
 data Directive = Directive
   { name        :: Text
   , description :: Maybe Text
-  , locations   :: [EnumOf DirectiveLocation]
+  , locations   :: [DirectiveLocation]
   , args        :: [InputValue]
   } deriving (Show, Data, Generic)

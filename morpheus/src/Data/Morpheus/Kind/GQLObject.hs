@@ -7,6 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Morpheus.Kind.GQLObject
   ( GQLObject(..)
@@ -22,6 +23,8 @@ import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
 import qualified Data.Morpheus.Kind.GQLEnum             as E (GQLEnum (..))
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType, introspectScalar)
 import qualified Data.Morpheus.Kind.GQLScalar           as S (GQLScalar (..))
+import           Data.Morpheus.Kind.Internal            (GQL, IntrospectionRouter (..), _encode, _introspect,
+                                                         _objectField)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib)
@@ -40,11 +43,11 @@ import           Data.Proxy
 import           Data.Text                              (Text, pack)
 import           GHC.Generics
 
-instance GQLObject a => DeriveResolvers (K1 i a) where
-  deriveResolvers meta (K1 src) = [(Meta.key meta, (`encode` src))]
+instance IntrospectionRouter a (GQL a) => DeriveResolvers (K1 s a) where
+  deriveResolvers meta (K1 src) = [(Meta.key meta, (`_encode` src))]
 
-instance (Selector s, GQLObject a) => Selectors (RecSel s a) (Text, ObjectField) where
-  getFields _ = [((name, fieldType (Proxy @a) name), introspect (Proxy @a))]
+instance (Selector s, IntrospectionRouter a (GQL a)) => Selectors (RecSel s a) (Text, ObjectField) where
+  getFields _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)
 
