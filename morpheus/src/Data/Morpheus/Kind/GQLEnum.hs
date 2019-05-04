@@ -60,6 +60,7 @@ instance (GQLEnum a, GQLKind a) => GQLEnum (Maybe a) where
   asInputField _ name = wrapMaybe $ asInputField (Proxy @a) name
   introspect _ = introspect (Proxy @a)
 
+-- TODO: fix before merge it
 instance (GQLEnum a, GQLKind a) => GQLEnum [a] where
   decode x = [decode x]
   introspect _ = introspect (Proxy @a)
