@@ -57,7 +57,7 @@ _field ::
      forall a. IntrospectionRouter a (GQL a)
   => Proxy a
   -> Text
-  -> o
+  -> forall o. o
 _field = __field (Proxy @(GQL a))
 
 _encode ::
