@@ -16,12 +16,13 @@ module Data.Morpheus.Kind.Internal
   , _introspect
   , _decode
   , _field
+  , _objectField
   , _encode
   , GQLConstraint
   , IntrospectionRouter(..)
   ) where
 
-import Data.Morpheus.Schema.Internal.Types (InputField, TypeLib)
+import Data.Morpheus.Schema.Internal.Types (InputField, ObjectField, TypeLib)
 import Data.Morpheus.Types.Error (ResolveIO, Validation)
 import Data.Morpheus.Types.JSType (JSType(..))
 import Data.Morpheus.Types.Query.Selection (Selection)
@@ -67,16 +68,24 @@ type Encode_ a = (Text, Selection) -> a -> ResolveIO JSType
 
 type Field_ a = Proxy a -> Text -> InputField
 
+type OField_ a = Proxy a -> Text -> ObjectField
+
 class IntrospectionRouter a b where
   __introspect :: Proxy b -> Intro_ a
   __decode :: Proxy b -> Decode_ a
   __encode :: Proxy b -> Encode_ a
   __field :: Proxy b -> Field_ a
+  __objectField :: Proxy b -> OField_ a
 
 _field ::
      forall a. IntrospectionRouter a (GQL a)
   => Field_ a
 _field = __field (Proxy @(GQL a))
+
+_objectField ::
+     forall a. IntrospectionRouter a (GQL a)
+  => OField_ a
+_objectField = __objectField (Proxy @(GQL a))
 
 _encode ::
      forall a. IntrospectionRouter a (GQL a)
