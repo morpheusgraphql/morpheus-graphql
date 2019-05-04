@@ -4,10 +4,10 @@
 
 module Data.Morpheus.Kind.Client where
 
-import           Data.Morpheus.Kind.Internal (GQL, GQLObject, OBJECT, SCALAR, introspection)
-import           Data.Text                   (Text)
-import qualified Data.Text                   as T (concat)
+--import           Data.Morpheus.Kind.Internal (GQL, GQLObject, OBJECT, SCALAR, introspection)
+import           Data.Text (Text)
 
+-- import qualified Data.Text                   as T (concat)
 -- Client Side
 -- define GQL Schema
 --newtype User =
@@ -17,11 +17,8 @@ import qualified Data.Text                   as T (concat)
 -- newtype Odd =
 --  Odd Int
 --  deriving (Show, Read, GQLScalar)
-
 -- type instance GQL Odd = SCALAR
-
 -- type instance GQL User = OBJECT
-
 -- Resolvers
 resolveTypes :: Text
 resolveTypes = ""
