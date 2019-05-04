@@ -24,6 +24,7 @@ import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType)
 import           Data.Morpheus.Kind.Internal            (GQL, GQLConstraint, IntrospectionRouter (..), OBJECT, _encode,
                                                          _introspect, _objectField)
+import           Data.Morpheus.Kind.Utils               (encodeList, encodeMaybe, listField, nullableField)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib)
@@ -102,20 +103,14 @@ instance GQLObject a => GQLObject (WithDeprecationArgs a) where
   fieldType _ name = (fieldType (Proxy @a) name) {args = map fst $ Args.introspect (Proxy @DeprecationArgs)}
 
 instance GQLObject a => GQLObject (Maybe a) where
-  encode _ Nothing          = pure JSNull
-  encode query (Just value) = encode query value
+  encode = encodeMaybe encode
   introspect _ = introspect (Proxy @a)
-  fieldType _ name = (fType name) {fieldContent = (fieldContent $ fType name) {I.notNull = False}}
-    where
-      fType = fieldType (Proxy @a)
+  fieldType _ name = nullableField (fieldType (Proxy @a) name)
 
 instance GQLObject a => GQLObject [a] where
-  encode (_, Field {}) _ = pure $ JSList []
-  encode query list      = JSList <$> mapM (encode query) list
+  encode = encodeList encode
   introspect _ = introspect (Proxy @a)
-  fieldType _ name = fType {fieldContent = (fieldContent fType) {I.asList = True}}
-    where
-      fType = fieldType (Proxy @a) name
+  fieldType _ name = listField (fieldType (Proxy @a) name)
 
 instance GQLObject EnumValue
 
