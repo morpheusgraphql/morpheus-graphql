@@ -21,7 +21,7 @@ import           Data.Morpheus.Kind.GQLKind          (GQLKind (..), inputObjectO
 import           Data.Morpheus.Kind.GQLPrimitive     (GQLPrimitive (..))
 import qualified Data.Morpheus.Kind.GQLScalar        as S (GQLScalar (..))
 import           Data.Morpheus.Kind.Internal
-import           Data.Morpheus.Schema.Internal.Types (Field (..), InputField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.Types (Field (..), InputField (..), ObjectField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Error           (Validation)
 import           Data.Morpheus.Types.JSType          (JSType (..))
@@ -83,25 +83,20 @@ type instance GQLConstraint a ENUM = E.GQLEnum a
 
 type instance GQLConstraint a INPUT_OBJECT = GQLInput a
 
---instance (Show a, GQLKind a, E.GQLEnum a) => GQLObject (EnumOf a) where
---  encode _ = pure . Scalar . String . pack . show . unpackEnum
---  fieldType _ = ObjectField [] . E.asField (Proxy @a)
---  introspect _ = E.introspect (Proxy @a)
---instance S.GQLScalar a => GQLObject (ScalarOf a) where
---  encode _ (ScalarOf x) = pure $ Scalar $ S.serialize x
---  fieldType _ = ObjectField [] . S.asField (Proxy @a)
---  introspect _ = S.introspect (Proxy @a)
-
 instance (S.GQLScalar a, GQLKind a) => IntrospectionRouter a SCALAR where
   __decode _ = S.decode
   __introspect _ _ = S.introspect (Proxy @a)
   __field _ _ = S.asInputField (Proxy @a)
+  --  encode _ (ScalarOf x) = pure $ Scalar $ S.serialize x
+  __objectField _ _ = ObjectField [] . S.asField (Proxy @a)
 
 instance (E.GQLEnum a, GQLKind a) => IntrospectionRouter a ENUM where
   __decode _ (JSEnum value) = pure (E.decode value)
   __decode _ isType         = internalTypeMismatch "Enum" isType
   __introspect _ _ = E.introspect (Proxy @a)
   __field _ _ = E.asInputField (Proxy @a)
+  --  encode _ = pure . Scalar . String . pack . show . unpackEnum
+  __objectField _ _ = ObjectField [] . E.asField (Proxy @a)
 
 instance (GQLInput a, GQLKind a) => IntrospectionRouter a INPUT_OBJECT where
   __decode _ = decode
@@ -109,6 +104,8 @@ instance (GQLInput a, GQLKind a) => IntrospectionRouter a INPUT_OBJECT where
   __field _ = asArgument
 
 instance (GQLPrimitive a, GQLKind a) => IntrospectionRouter a PRIMITIVE where
+  __encode _ = encode'
   __decode _ = decode'
   __field _ = inputField'
   __introspect _ = introspect'
+  __objectField _ = objectField'
