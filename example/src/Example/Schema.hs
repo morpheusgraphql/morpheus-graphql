@@ -17,7 +17,7 @@ import           Data.Morpheus.Kind          (GQLArgs, GQLEnum, GQLInput, GQLKin
                                               GQLQuery, GQLScalar (..))
 import           Data.Morpheus.Kind.Internal (ENUM, GQL, INPUT_OBJECT, PRIMITIVE, SCALAR)
 import           Data.Morpheus.Types         (ScalarValue (..))
-import           Data.Morpheus.Wrapper       ((::->) (..), EnumOf, GQLRoot (..), ScalarOf, unwrap)
+import           Data.Morpheus.Wrapper       ((::->) (..), GQLRoot (..))
 import           Data.Text                   (Text, pack)
 import           Data.Typeable               (Typeable)
 import qualified Example.Model               as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
@@ -54,7 +54,7 @@ data UID = UID
   } deriving (Show, Generic, Typeable, GQLKind, GQLInput)
 
 data Coordinates = Coordinates
-  { latitude  :: ScalarOf Euro
+  { latitude  :: Euro
   , longitude :: [UID]
   } deriving (Generic, Typeable, GQLInput)
 
@@ -68,7 +68,7 @@ data LocationByCoordinates = LocationByCoordinates
 
 data Location = Location
   { zipCode :: Maybe [Int]
-  , cityID  :: EnumOf CityID
+  , cityID  :: CityID
   } deriving (Generic, GQLArgs)
 
 data Address = Address
@@ -119,7 +119,7 @@ addressByCityID HH code    = fetchAddress (Euro 1 code) "Hamburg"
 resolveOffice :: M.JSONUser -> Location ::-> Address
 resolveOffice _ = Resolver resolve'
   where
-    resolve' args = addressByCityID (unwrap $ cityID args) (head $ fromMaybe [101] (zipCode args))
+    resolve' args = addressByCityID (cityID args) (head $ fromMaybe [101] (zipCode args))
 
 resolveUser :: () ::-> User
 resolveUser = Resolver $ const (M.jsonUser >>= \x -> return (buildResolverBy <$> x))

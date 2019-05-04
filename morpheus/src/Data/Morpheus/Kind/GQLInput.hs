@@ -22,7 +22,6 @@ import qualified Data.Morpheus.Kind.GQLScalar        as S (GQLScalar (..))
 import           Data.Morpheus.Kind.Internal
 import           Data.Morpheus.Schema.Internal.Types (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
-import           Data.Morpheus.Types.Describer       (EnumOf (..), ScalarOf (..))
 import           Data.Morpheus.Types.Error           (Validation)
 import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
 import qualified Data.Morpheus.Types.MetaInfo        as Meta (MetaInfo (..), initialMeta)
@@ -110,22 +109,18 @@ type instance GQLConstraint a ENUM = E.GQLEnum a
 
 type instance GQLConstraint a INPUT_OBJECT = GQLInput a
 
-type instance GQL (ScalarOf a) = SCALAR
-
-type instance GQL (EnumOf a) = ENUM
-
 instance GQLInput a => IntrospectionRouter a PRIMITIVE where
   __decode _ = decode
   __introspect _ = introInput
   __field _ = asArgument
 
-instance (S.GQLScalar a, GQLKind a) => IntrospectionRouter (ScalarOf a) SCALAR where
-  __decode _ value = ScalarOf <$> S.decode value
+instance (S.GQLScalar a, GQLKind a) => IntrospectionRouter a SCALAR where
+  __decode _ = S.decode
   __introspect _ _ = S.introspect (Proxy @a)
   __field _ _ = S.asInputField (Proxy @a)
 
-instance (E.GQLEnum a, GQLKind a) => IntrospectionRouter (EnumOf a) ENUM where
-  __decode _ (JSEnum value) = pure $ EnumOf (E.decode value)
+instance (E.GQLEnum a, GQLKind a) => IntrospectionRouter a ENUM where
+  __decode _ (JSEnum value) = pure (E.decode value)
   __decode _ isType         = internalTypeMismatch "Enum" isType
   __introspect _ _ = E.introspect (Proxy @a)
   __field _ _ = E.asInputField (Proxy @a)
