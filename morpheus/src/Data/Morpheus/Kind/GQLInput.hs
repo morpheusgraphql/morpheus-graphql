@@ -24,10 +24,10 @@ import           Data.Morpheus.Kind.Internal
 import           Data.Morpheus.Schema.Internal.Types (Field (..), InputField (..), ObjectField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Error           (Validation)
-import           Data.Morpheus.Types.JSType          (JSType (..))
+import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
 import qualified Data.Morpheus.Types.MetaInfo        as Meta (MetaInfo (..), initialMeta)
 import           Data.Proxy                          (Proxy (..))
-import           Data.Text                           (Text)
+import           Data.Text                           (Text, pack)
 import           GHC.Generics
 
 instance (IntrospectionRouter a (GQL a)) => GDecode JSType (K1 i a) where
@@ -87,15 +87,15 @@ instance (S.GQLScalar a, GQLKind a) => IntrospectionRouter a SCALAR where
   __decode _ = S.decode
   __introspect _ _ = S.introspect (Proxy @a)
   __field _ _ = S.asInputField (Proxy @a)
-  --  encode _ (ScalarOf x) = pure $ Scalar $ S.serialize x
+  __encode _ _ = pure . S.encode
   __objectField _ _ = ObjectField [] . S.asField (Proxy @a)
 
-instance (E.GQLEnum a, GQLKind a) => IntrospectionRouter a ENUM where
+instance (E.GQLEnum a, Show a, GQLKind a) => IntrospectionRouter a ENUM where
   __decode _ (JSEnum value) = pure (E.decode value)
   __decode _ isType         = internalTypeMismatch "Enum" isType
   __introspect _ _ = E.introspect (Proxy @a)
   __field _ _ = E.asInputField (Proxy @a)
-  --  encode _ = pure . Scalar . String . pack . show . unpackEnum
+  __encode _ _ = pure . Scalar . String . pack . show
   __objectField _ _ = ObjectField [] . E.asField (Proxy @a)
 
 instance (GQLInput a, GQLKind a) => IntrospectionRouter a INPUT_OBJECT where

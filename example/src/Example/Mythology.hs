@@ -14,7 +14,7 @@ import qualified Data.ByteString.Lazy.Char8  as B
 
 import           Data.Morpheus               (interpreter)
 import           Data.Morpheus.Kind          (GQLArgs, GQLKind (..), GQLObject, GQLQuery)
-import           Data.Morpheus.Kind.Internal (ENUM, GQL, OBJECT, SCALAR)
+import           Data.Morpheus.Kind.Internal (GQL, OBJECT)
 import           Data.Morpheus.Wrapper       ((::->) (..), GQLRoot (..))
 import           Data.Text                   (Text)
 import           Data.Typeable               (Typeable)
@@ -25,6 +25,7 @@ data Query = Query
   } deriving (Generic, GQLQuery)
 
 type instance GQL Deity = OBJECT
+
 data Deity = Deity
   { fullName :: Text -- Non-Nullable Field
   , power    :: Maybe Text -- Nullable Field

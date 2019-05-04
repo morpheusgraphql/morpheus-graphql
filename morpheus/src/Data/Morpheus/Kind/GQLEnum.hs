@@ -13,12 +13,10 @@ module Data.Morpheus.Kind.GQLEnum
 
 import           Data.Morpheus.Generics.GDecodeEnum     (GDecodeEnum (..))
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), enumTypeOf)
-import           Data.Morpheus.Kind.Internal            (ENUM, GQL, IntrospectionRouter (..), _decode, _field,
-                                                         _introspect, _objectField)
+import           Data.Morpheus.Kind.Internal            (ENUM, GQL)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
-import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField (..), ObjectField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 import           GHC.Generics
