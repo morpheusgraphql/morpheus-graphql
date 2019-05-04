@@ -15,9 +15,9 @@ import           Data.Maybe                  (fromMaybe)
 import           Data.Morpheus               (interpreter)
 import           Data.Morpheus.Kind          (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLObject,
                                               GQLQuery, GQLScalar (..))
-import           Data.Morpheus.Kind.Internal (GQL, PRIMITIVE,SCALAR)
+import           Data.Morpheus.Kind.Internal (GQL, PRIMITIVE, SCALAR)
 import           Data.Morpheus.Types         (ScalarValue (..))
-import           Data.Morpheus.Wrapper       ((::->) (..), EnumOf,ScalarOf(..), GQLRoot (..), unwrap)
+import           Data.Morpheus.Wrapper       ((::->) (..), EnumOf, GQLRoot (..), ScalarOf, unwrap)
 import           Data.Text                   (Text, pack)
 import           Data.Typeable               (Typeable)
 import qualified Example.Model               as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
@@ -32,15 +32,16 @@ data CityID
 instance GQLKind CityID where
   description _ = "ID of Cities in Zip Format"
 
-data Seven =
-  Seven
+data Euro =
+  Euro Int
+       Int
   deriving (Typeable, Generic, GQLKind)
 
-instance GQLScalar Seven where
-  parseValue _ = pure Seven
-  serialize Seven = Int 7
+instance GQLScalar Euro where
+  parseValue _ = pure (Euro 1 0)
+  serialize (Euro x y) = Int (x * 100 + y)
 
-type instance GQL Seven = SCALAR
+type instance GQL Euro = SCALAR
 
 type instance GQL UID = PRIMITIVE
 
@@ -49,8 +50,8 @@ data UID = UID
   } deriving (Show, Generic, Typeable, GQLKind, GQLInput)
 
 data Coordinates = Coordinates
-  { latitude  :: ScalarOf Seven
-  , longitude :: UID
+  { latitude  :: ScalarOf Euro
+  , longitude :: [UID]
   } deriving (Generic, Typeable, GQLInput)
 
 instance GQLKind Coordinates where
@@ -93,8 +94,8 @@ newtype Mutation = Mutation
   { createUser :: LocationByCoordinates ::-> User
   } deriving (Generic, GQLMutation)
 
-fetchAddress :: Seven -> Text -> IO (Either String Address)
-fetchAddress Seven streetName = do
+fetchAddress :: Euro -> Text -> IO (Either String Address)
+fetchAddress _ streetName = do
   address' <- M.jsonAddress
   pure (modify <$> address')
   where
@@ -104,12 +105,12 @@ fetchAddress Seven streetName = do
 resolveAddress :: LocationByCoordinates ::-> Address
 resolveAddress = Resolver res
   where
-    res args = fetchAddress Seven (pack $ show $ longitude $ coordinates args)
+    res args = fetchAddress (Euro 1 0) (pack $ show $ longitude $ coordinates args)
 
 addressByCityID :: CityID -> Int -> IO (Either String Address)
-addressByCityID Paris code = fetchAddress Seven "Paris"
-addressByCityID BLN code   = fetchAddress Seven "Berlin"
-addressByCityID HH code    = fetchAddress Seven "Hamburg"
+addressByCityID Paris code = fetchAddress (Euro 1 code) "Paris"
+addressByCityID BLN code   = fetchAddress (Euro 1 code) "Berlin"
+addressByCityID HH code    = fetchAddress (Euro 1 code) "Hamburg"
 
 resolveOffice :: M.JSONUser -> Location ::-> Address
 resolveOffice _ = Resolver resolve'
