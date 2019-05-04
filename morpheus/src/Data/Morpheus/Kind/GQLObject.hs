@@ -181,6 +181,8 @@ type instance GQL InputValue = OBJECT
 type instance GQL Schema = OBJECT
 
 type instance GQL Directive = OBJECT
+-- type instance GQL
+  
 
 instance (GQLObject a, GQLKind a) => IntrospectionRouter a OBJECT where
   __encode _ = encode
