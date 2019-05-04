@@ -6,6 +6,7 @@
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
@@ -23,8 +24,8 @@ import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
 import qualified Data.Morpheus.Kind.GQLEnum             as E (GQLEnum (..))
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType, introspectScalar)
 import qualified Data.Morpheus.Kind.GQLScalar           as S (GQLScalar (..))
-import           Data.Morpheus.Kind.Internal            (GQL, IntrospectionRouter (..), _encode, _introspect,
-                                                         _objectField)
+import           Data.Morpheus.Kind.Internal            (GQL, GQLConstraint, IntrospectionRouter (..), OBJECT, _encode,
+                                                         _introspect, _objectField)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib)
@@ -166,3 +167,22 @@ instance GQLObject InputValue
 instance GQLObject Schema
 
 instance GQLObject Directive
+
+type instance GQLConstraint a OBJECT = (GQLObject a, GQLKind a)
+
+type instance GQL EnumValue = OBJECT
+
+type instance GQL Type = OBJECT
+
+type instance GQL Field = OBJECT
+
+type instance GQL InputValue = OBJECT
+
+type instance GQL Schema = OBJECT
+
+type instance GQL Directive = OBJECT
+
+instance (GQLObject a, GQLKind a) => IntrospectionRouter a OBJECT where
+  __encode _ = encode
+  __introspect _ = introspect
+  __objectField _ = fieldType
