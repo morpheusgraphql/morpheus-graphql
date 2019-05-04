@@ -83,6 +83,15 @@ type instance GQLConstraint a ENUM = E.GQLEnum a
 
 type instance GQLConstraint a INPUT_OBJECT = GQLInput a
 
+--instance (Show a, GQLKind a, E.GQLEnum a) => GQLObject (EnumOf a) where
+--  encode _ = pure . Scalar . String . pack . show . unpackEnum
+--  fieldType _ = ObjectField [] . E.asField (Proxy @a)
+--  introspect _ = E.introspect (Proxy @a)
+--instance S.GQLScalar a => GQLObject (ScalarOf a) where
+--  encode _ (ScalarOf x) = pure $ Scalar $ S.serialize x
+--  fieldType _ = ObjectField [] . S.asField (Proxy @a)
+--  introspect _ = S.introspect (Proxy @a)
+
 instance (S.GQLScalar a, GQLKind a) => IntrospectionRouter a SCALAR where
   __decode _ = S.decode
   __introspect _ _ = S.introspect (Proxy @a)

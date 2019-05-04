@@ -119,14 +119,6 @@ instance GQLObject a => GQLObject [a] where
     where
       fType = fieldType (Proxy @a) name
 
---instance (Show a, GQLKind a, E.GQLEnum a) => GQLObject (EnumOf a) where
---  encode _ = pure . Scalar . String . pack . show . unpackEnum
---  fieldType _ = ObjectField [] . E.asField (Proxy @a)
---  introspect _ = E.introspect (Proxy @a)
---instance S.GQLScalar a => GQLObject (ScalarOf a) where
---  encode _ (ScalarOf x) = pure $ Scalar $ S.serialize x
---  fieldType _ = ObjectField [] . S.asField (Proxy @a)
---  introspect _ = S.introspect (Proxy @a)
 instance GQLObject EnumValue
 
 instance GQLObject Type
@@ -153,7 +145,6 @@ type instance GQL Schema = OBJECT
 
 type instance GQL Directive = OBJECT
 
--- type instance GQL
 instance (GQLObject a, GQLKind a) => IntrospectionRouter a OBJECT where
   __encode _ = encode
   __introspect _ = introspect
