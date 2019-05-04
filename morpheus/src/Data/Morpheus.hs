@@ -7,7 +7,6 @@ import           Data.Aeson                          (decode, encode)
 import           Data.ByteString                     (ByteString)
 import qualified Data.ByteString.Lazy.Char8          as LB (ByteString, fromStrict, toStrict)
 import           Data.Morpheus.Error.Utils           (errorMessage, renderErrors)
-import           Data.Morpheus.Kind.Client           (resolveTypes)
 import           Data.Morpheus.Kind.GQLMutation      (GQLMutation (..))
 import           Data.Morpheus.Kind.GQLQuery         (GQLQuery (..))
 import           Data.Morpheus.Parser.Parser         (parseGQL, parseLineBreaks)
@@ -46,7 +45,6 @@ lineBreaks req =
 interpreterRaw :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> LB.ByteString -> IO GQLResponse
 interpreterRaw rootResolver request = do
   value <- runExceptT $ parseRequest request >>= resolve rootResolver
-  print resolveTypes
   case value of
     Left x  -> pure $ Errors $ renderErrors (lineBreaks request) x
     Right x -> pure $ Data x

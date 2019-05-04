@@ -92,10 +92,3 @@ _introspect ::
      forall a. IntrospectionRouter a (GQL a)
   => Intro_ a
 _introspect = __introspect (Proxy @(GQL a))
-
---instance IntrospectionRouter a b => IntrospectionRouter (Maybe a) b where
---  __introspect proxyB _ = __introspect proxyB (Proxy @a)
---  __decode proxy value = Just <$> __decode proxy value
---  __encode proxyB sel (Just x) = __encode proxyB sel x
---  __encode _ _ Nothing = pure JSNull
---  __field proxyB _ = __field proxyB (Proxy @a)

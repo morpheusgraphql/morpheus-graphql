@@ -17,13 +17,14 @@ import           Data.Morpheus.Error.Internal        (internalArgumentError, int
 import           Data.Morpheus.Generics.GDecode      (GDecode (..))
 import           Data.Morpheus.Generics.TypeRep      (Selectors (..))
 import qualified Data.Morpheus.Kind.GQLEnum          as E (GQLEnum (..))
-import           Data.Morpheus.Kind.GQLKind          (GQLKind (..), inputObjectOf, introspectScalar)
+import           Data.Morpheus.Kind.GQLKind          (GQLKind (..), inputObjectOf)
+import           Data.Morpheus.Kind.GQLPrimitive     (GQLPrimitive (..))
 import qualified Data.Morpheus.Kind.GQLScalar        as S (GQLScalar (..))
 import           Data.Morpheus.Kind.Internal
 import           Data.Morpheus.Schema.Internal.Types (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Error           (Validation)
-import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
+import           Data.Morpheus.Types.JSType          (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo        as Meta (MetaInfo (..), initialMeta)
 import           Data.Proxy                          (Proxy (..))
 import           Data.Text                           (Text)
@@ -56,54 +57,17 @@ class GQLInput a where
       stack = map snd fieldTypes
       fields = map fst fieldTypes
 
-class GQLPrimitive a where
-  decode' :: JSType -> Validation a
-  inputField' :: GQLKind a => Proxy a -> Text -> InputField
-  inputField' proxy name =
-    InputField $ Field {fieldName = name, asList = False, notNull = True, kind = SCALAR, fieldType = typeID proxy}
-  introspect' :: GQLKind a => Proxy a -> TypeLib -> TypeLib
-  introspect' = introspectScalar
-
-instance GQLPrimitive Text where
-  decode' (Scalar (String x)) = pure x
-  decode' isType              = internalTypeMismatch "String" isType
-
-instance GQLPrimitive Bool where
-  decode' (Scalar (Boolean x)) = pure x
-  decode' isType               = internalTypeMismatch "Boolean" isType
-
-instance GQLPrimitive Int where
-  decode' (Scalar (Int x)) = pure x
-  decode' isType           = internalTypeMismatch "Int" isType
-
-instance GQLPrimitive Float where
-  decode' (Scalar (Float x)) = pure x
-  decode' isType             = internalTypeMismatch "Int" isType
-
 setNullable :: Field -> Field
 setNullable x = x {notNull = False}
 
+wrapMaybe :: InputField -> InputField
 wrapMaybe = InputField . setNullable . unpackInputField
-
-instance IntrospectionRouter a (GQL a) => GQLPrimitive (Maybe a) where
-  decode' JSNull = pure Nothing
-  decode' x      = Just <$> _decode x
-  inputField' _ name = wrapMaybe $ _field (Proxy @a) name
-  introspect' _ = _introspect (Proxy @a)
 
 instance IntrospectionRouter a (GQL a) => GQLInput (Maybe a) where
   decode JSNull = pure Nothing
   decode x      = Just <$> _decode x
   asArgument _ name = wrapMaybe $ _field (Proxy @a) name
   introInput _ = _introspect (Proxy @a)
-
-instance IntrospectionRouter a (GQL a) => GQLPrimitive [a] where
-  decode' (JSList li) = mapM _decode li
-  decode' isType      = internalTypeMismatch "List" isType
-  inputField' _ name = fType {unpackInputField = (unpackInputField fType) {asList = True}}
-    where
-      fType = _field (Proxy @a) name
-  introspect' _ = _introspect (Proxy @a)
 
 instance (GQLInput a, GQLKind a) => GQLInput [a] where
   decode (JSList li) = mapM decode li
@@ -113,18 +77,11 @@ instance (GQLInput a, GQLKind a) => GQLInput [a] where
       fType = asArgument (Proxy @a) name
   introInput _ = introInput (Proxy @a)
 
-type instance GQLConstraint a PRIMITIVE = GQLKind a
-
 type instance GQLConstraint a SCALAR = S.GQLScalar a
 
 type instance GQLConstraint a ENUM = E.GQLEnum a
 
 type instance GQLConstraint a INPUT_OBJECT = GQLInput a
-
-instance (GQLPrimitive a, GQLKind a) => IntrospectionRouter a PRIMITIVE where
-  __decode _ = decode'
-  __field _ = inputField'
-  __introspect _ = introspect'
 
 instance (S.GQLScalar a, GQLKind a) => IntrospectionRouter a SCALAR where
   __decode _ = S.decode
@@ -141,3 +98,8 @@ instance (GQLInput a, GQLKind a) => IntrospectionRouter a INPUT_OBJECT where
   __decode _ = decode
   __introspect _ = introInput
   __field _ = asArgument
+
+instance (GQLPrimitive a, GQLKind a) => IntrospectionRouter a PRIMITIVE where
+  __decode _ = decode'
+  __field _ = inputField'
+  __introspect _ = introspect'
