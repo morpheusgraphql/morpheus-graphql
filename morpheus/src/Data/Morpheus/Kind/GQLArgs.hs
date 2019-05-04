@@ -16,7 +16,7 @@ import           Data.Morpheus.Generics.GDecode      (GDecode (..))
 import           Data.Morpheus.Generics.TypeRep      (Selectors (..))
 import           Data.Morpheus.Generics.Utils        (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLInput         as I (GQLInput (..))
-import           Data.Morpheus.Kind.Internal         (GQL, IntrospectionRouter, _field, _introspect)
+import           Data.Morpheus.Kind.Internal         (GQL, IntrospectionRouter, _decode, _field, _introspect)
 import           Data.Morpheus.Schema.Internal.Types (InputField, TypeLib)
 import           Data.Morpheus.Schema.Type           (DeprecationArgs)
 import           Data.Morpheus.Types.Error           (Validation)
@@ -31,11 +31,11 @@ instance (Selector s, IntrospectionRouter a (GQL a)) => Selectors (RecSel s a) (
     where
       name = pack $ selName (undefined :: SelOf s)
 
-instance I.GQLInput a => GDecode Arguments (K1 i a) where
+instance IntrospectionRouter a (GQL a) => GDecode Arguments (K1 i a) where
   gDecode meta args =
     case lookup (key meta) args of
       Nothing                -> internalArgumentError "Required Argument Not Found"
-      Just (Argument x _pos) -> K1 <$> I.decode x
+      Just (Argument x _pos) -> K1 <$> _decode x
 
 class GQLArgs p where
   decode :: Arguments -> Validation p
