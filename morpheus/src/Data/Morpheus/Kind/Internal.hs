@@ -7,9 +7,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 module Data.Morpheus.Kind.Internal
-  --GQLObject
- -- , GQLScalar
-  --, introspection
   ( PRIMITIVE
   , SCALAR
   , OBJECT
@@ -25,6 +22,7 @@ module Data.Morpheus.Kind.Internal
   ) where
 
 import Data.Morpheus.Schema.Internal.Types (TypeLib)
+import Data.Morpheus.Types.Describer (ScalarOf(..))
 import Data.Morpheus.Types.Error (ResolveIO, Validation)
 import Data.Morpheus.Types.JSType (JSType(..))
 import Data.Morpheus.Types.Query.Selection (Selection)
@@ -52,6 +50,20 @@ class IntrospectionRouter a b where
   __decode :: Proxy b -> JSType -> Validation a
   __encode :: Proxy b -> (Text, Selection) -> a -> ResolveIO JSType
   __field :: Proxy b -> Proxy a -> Text -> o
+
+instance IntrospectionRouter a b => IntrospectionRouter (Maybe a) b where
+  __introspect proxyB _ = __introspect proxyB (Proxy @a)
+  __decode proxy value = Just <$> __decode proxy value
+  __encode proxyB sel (Just x) = __encode proxyB sel x
+  __encode _ _ Nothing = pure JSNull
+  __field proxyB _ = __field proxyB (Proxy @a)
+
+-- TODO: Remove It after finishing
+--instance IntrospectionRouter a SCALAR => IntrospectionRouter (ScalarOf a) SCALAR where
+--  __introspect proxyB _ = __introspect proxyB (Proxy @a)
+--  __decode proxy value = ScalarOf <$> __decode proxy value
+--  __encode proxyB sel (ScalarOf x) = __encode proxyB sel x
+--  __field proxyB _ = __field proxyB (Proxy @a)
 
 _field ::
      forall a. IntrospectionRouter a (GQL a)

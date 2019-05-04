@@ -15,9 +15,9 @@ import           Data.Maybe                  (fromMaybe)
 import           Data.Morpheus               (interpreter)
 import           Data.Morpheus.Kind          (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLObject,
                                               GQLQuery, GQLScalar (..))
-import           Data.Morpheus.Kind.Internal (GQL, PRIMITIVE)
+import           Data.Morpheus.Kind.Internal (GQL, PRIMITIVE,SCALAR)
 import           Data.Morpheus.Types         (ScalarValue (..))
-import           Data.Morpheus.Wrapper       ((::->) (..), EnumOf, GQLRoot (..), unwrap)
+import           Data.Morpheus.Wrapper       ((::->) (..), EnumOf,ScalarOf(..), GQLRoot (..), unwrap)
 import           Data.Text                   (Text, pack)
 import           Data.Typeable               (Typeable)
 import qualified Example.Model               as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
@@ -34,13 +34,13 @@ instance GQLKind CityID where
 
 data Seven =
   Seven
-  deriving (Typeable, Generic, GQLKind, GQLInput)
+  deriving (Typeable, Generic, GQLKind)
 
 instance GQLScalar Seven where
   parseValue _ = pure Seven
   serialize Seven = Int 7
 
-type instance GQL Seven = PRIMITIVE
+type instance GQL Seven = SCALAR
 
 type instance GQL Text = PRIMITIVE
 
@@ -51,7 +51,7 @@ data UID = UID
   } deriving (Show, Generic, Typeable, GQLKind, GQLInput)
 
 data Coordinates = Coordinates
-  { latitude  :: Seven
+  { latitude  :: ScalarOf Seven
   , longitude :: UID
   } deriving (Generic, Typeable, GQLInput)
 
