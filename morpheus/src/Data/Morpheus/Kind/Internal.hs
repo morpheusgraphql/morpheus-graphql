@@ -21,7 +21,7 @@ module Data.Morpheus.Kind.Internal
   , IntrospectionRouter(..)
   ) where
 
-import Data.Morpheus.Schema.Internal.Types (TypeLib)
+import Data.Morpheus.Schema.Internal.Types (InputField, TypeLib)
 import Data.Morpheus.Types.Error (ResolveIO, Validation)
 import Data.Morpheus.Types.JSType (JSType(..))
 import Data.Morpheus.Types.Query.Selection (Selection)
@@ -62,7 +62,7 @@ class IntrospectionRouter a b where
   __introspect :: Proxy b -> Proxy a -> TypeLib -> TypeLib
   __decode :: Proxy b -> JSType -> Validation a
   __encode :: Proxy b -> (Text, Selection) -> a -> ResolveIO JSType
-  __field :: Proxy b -> Proxy a -> Text -> o
+  __field :: Proxy b -> Proxy a -> Text -> InputField
 
 --instance IntrospectionRouter a b => IntrospectionRouter (Maybe a) b where
 --  __introspect proxyB _ = __introspect proxyB (Proxy @a)
@@ -70,7 +70,6 @@ class IntrospectionRouter a b where
 --  __encode proxyB sel (Just x) = __encode proxyB sel x
 --  __encode _ _ Nothing = pure JSNull
 --  __field proxyB _ = __field proxyB (Proxy @a)
-
 -- TODO: Remove It after finishing
 --instance IntrospectionRouter a SCALAR => IntrospectionRouter (ScalarOf a) SCALAR where
 --  __introspect proxyB _ = __introspect proxyB (Proxy @a)
@@ -81,7 +80,7 @@ _field ::
      forall a. IntrospectionRouter a (GQL a)
   => Proxy a
   -> Text
-  -> forall o. o
+  -> InputField
 _field = __field (Proxy @(GQL a))
 
 _encode ::

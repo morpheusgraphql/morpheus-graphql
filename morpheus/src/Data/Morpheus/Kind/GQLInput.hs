@@ -127,12 +127,20 @@ type instance GQL (EnumOf a) = ENUM
 
 instance GQLInput a => IntrospectionRouter a PRIMITIVE where
   __decode _ = decode
+  __introspect _ = introInput
+  __field _ = asArgument
 
 instance (S.GQLScalar a, GQLKind a) => IntrospectionRouter (ScalarOf a) SCALAR where
   __decode _ value = ScalarOf <$> S.decode value
+  __introspect _ _ = S.introspect (Proxy @a)
+  __field _ _ = S.asInputField (Proxy @a)
 
 instance (E.GQLEnum a, GQLKind a) => IntrospectionRouter (EnumOf a) ENUM where
   __decode _ (JSEnum value) = pure $ EnumOf (E.decode value)
+  __introspect _ _ = E.introspect (Proxy @a)
+  __field _ _ = E.asInputField (Proxy @a)
 
 instance (GQLInput a, GQLKind a) => IntrospectionRouter a INPUT_OBJECT where
   __decode _ = decode
+  __introspect _ = introInput
+  __field _ = asArgument
