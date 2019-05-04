@@ -111,32 +111,6 @@ instance GQLObject a => GQLObject (Maybe a) where
     where
       fType = fieldType (Proxy @a)
 
-scalarField :: GQLKind a => Proxy a -> Text -> ObjectField
-scalarField proxy name =
-  ObjectField
-    []
-    I.Field {I.fieldName = name, I.notNull = True, I.asList = False, I.kind = SCALAR, I.fieldType = typeID proxy}
-
-instance GQLObject Int where
-  encode _ = pure . Scalar . Int
-  introspect = introspectScalar
-  fieldType = scalarField
-
-instance GQLObject Float where
-  encode _ = pure . Scalar . Float
-  introspect = introspectScalar
-  fieldType = scalarField
-
-instance GQLObject Text where
-  encode _ = pure . Scalar . String
-  introspect = introspectScalar
-  fieldType = scalarField
-
-instance GQLObject Bool where
-  encode _ = pure . Scalar . Boolean
-  introspect = introspectScalar
-  fieldType = scalarField
-
 instance GQLObject a => GQLObject [a] where
   encode (_, Field {}) _ = pure $ JSList []
   encode query list      = JSList <$> mapM (encode query) list
