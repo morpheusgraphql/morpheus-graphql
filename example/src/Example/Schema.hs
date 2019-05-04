@@ -15,13 +15,21 @@ import           Data.Maybe                  (fromMaybe)
 import           Data.Morpheus               (interpreter)
 import           Data.Morpheus.Kind          (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLObject,
                                               GQLQuery, GQLScalar (..))
-import           Data.Morpheus.Kind.Internal (GQL, PRIMITIVE, SCALAR)
+import           Data.Morpheus.Kind.Internal (ENUM, GQL, INPUT_OBJECT, PRIMITIVE, SCALAR)
 import           Data.Morpheus.Types         (ScalarValue (..))
 import           Data.Morpheus.Wrapper       ((::->) (..), EnumOf, GQLRoot (..), ScalarOf, unwrap)
 import           Data.Text                   (Text, pack)
 import           Data.Typeable               (Typeable)
 import qualified Example.Model               as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
 import           GHC.Generics                (Generic)
+
+type instance GQL CityID = ENUM
+
+type instance GQL Euro = SCALAR
+
+type instance GQL UID = PRIMITIVE
+
+type instance GQL Coordinates = INPUT_OBJECT
 
 data CityID
   = Paris
@@ -40,10 +48,6 @@ data Euro =
 instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
   serialize (Euro x y) = Int (x * 100 + y)
-
-type instance GQL Euro = SCALAR
-
-type instance GQL UID = PRIMITIVE
 
 data UID = UID
   { uid :: Text

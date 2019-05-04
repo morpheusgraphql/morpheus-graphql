@@ -117,6 +117,10 @@ type instance GQLConstraint a PRIMITIVE = GQLKind a
 
 type instance GQLConstraint a SCALAR = S.GQLScalar a
 
+type instance GQLConstraint a ENUM = E.GQLEnum a
+
+type instance GQLConstraint a INPUT_OBJECT = GQLInput a
+
 type instance GQL (ScalarOf a) = SCALAR
 
 type instance GQL (EnumOf a) = ENUM
@@ -127,5 +131,8 @@ instance GQLInput a => IntrospectionRouter a PRIMITIVE where
 instance (S.GQLScalar a, GQLKind a) => IntrospectionRouter (ScalarOf a) SCALAR where
   __decode _ value = ScalarOf <$> S.decode value
 
-instance (E.GQLEnum a, GQLKind a) => IntrospectionRouter (EnumOf a) SCALAR where
+instance (E.GQLEnum a, GQLKind a) => IntrospectionRouter (EnumOf a) ENUM where
   __decode _ (JSEnum value) = pure $ EnumOf (E.decode value)
+
+instance (GQLInput a, GQLKind a) => IntrospectionRouter a INPUT_OBJECT where
+  __decode _ = decode

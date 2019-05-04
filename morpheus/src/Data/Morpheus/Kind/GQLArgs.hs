@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Morpheus.Kind.GQLArgs
   ( GQLArgs(..)
@@ -15,6 +16,7 @@ import           Data.Morpheus.Generics.GDecode      (GDecode (..))
 import           Data.Morpheus.Generics.TypeRep      (Selectors (..))
 import           Data.Morpheus.Generics.Utils        (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLInput         as I (GQLInput (..))
+import           Data.Morpheus.Kind.Internal         (GQL, IntrospectionRouter, _field, _introspect)
 import           Data.Morpheus.Schema.Internal.Types (InputField, TypeLib)
 import           Data.Morpheus.Schema.Type           (DeprecationArgs)
 import           Data.Morpheus.Types.Error           (Validation)
@@ -24,8 +26,8 @@ import           Data.Proxy                          (Proxy (..))
 import           Data.Text                           (Text, pack)
 import           GHC.Generics
 
-instance (Selector s, I.GQLInput a) => Selectors (RecSel s a) (Text, InputField) where
-  getFields _ = [((name, I.asArgument (Proxy @a) name), I.introInput (Proxy @a))]
+instance (Selector s, IntrospectionRouter a (GQL a)) => Selectors (RecSel s a) (Text, InputField) where
+  getFields _ = [((name, _field (Proxy @a) name), _introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)
 
