@@ -94,17 +94,6 @@ instance (GQLInput a, GQLKind a) => GQLInput (Maybe a) where
       setNullable x = x {notNull = False}
   introInput _ typeLib = typeLib
 
-instance (E.GQLEnum a, GQLKind a) => GQLInput (EnumOf a) where
-  decode (JSEnum text) = pure $ EnumOf (E.decode text)
-  decode isType        = internalTypeMismatch "Enum" isType
-  asArgument _ = E.asInputField (Proxy @a)
-  introInput _ = E.introspect (Proxy @a)
-
-instance (S.GQLScalar a, GQLKind a) => GQLInput (ScalarOf a) where
-  decode text = ScalarOf <$> S.decode text
-  asArgument _ = S.asInputField (Proxy @a)
-  introInput _ = S.introspect (Proxy @a)
-
 instance (GQLInput a, GQLKind a) => GQLInput [a] where
   decode (JSList li) = mapM decode li
   decode isType      = internalTypeMismatch "List" isType
@@ -137,6 +126,7 @@ instance (S.GQLScalar a, GQLKind a) => IntrospectionRouter (ScalarOf a) SCALAR w
 
 instance (E.GQLEnum a, GQLKind a) => IntrospectionRouter (EnumOf a) ENUM where
   __decode _ (JSEnum value) = pure $ EnumOf (E.decode value)
+  __decode _ isType         = internalTypeMismatch "Enum" isType
   __introspect _ _ = E.introspect (Proxy @a)
   __field _ _ = E.asInputField (Proxy @a)
 
