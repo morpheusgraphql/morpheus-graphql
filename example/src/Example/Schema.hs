@@ -15,7 +15,7 @@ import           Data.Maybe                  (fromMaybe)
 import           Data.Morpheus               (interpreter)
 import           Data.Morpheus.Kind          (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLObject,
                                               GQLQuery, GQLScalar (..))
-import           Data.Morpheus.Kind.Internal (ENUM, GQL, INPUT_OBJECT, PRIMITIVE, SCALAR)
+import           Data.Morpheus.Kind.Internal (ENUM, GQL, INPUT_OBJECT, SCALAR)
 import           Data.Morpheus.Types         (ScalarValue (..))
 import           Data.Morpheus.Wrapper       ((::->) (..), GQLRoot (..))
 import           Data.Text                   (Text, pack)
@@ -27,7 +27,7 @@ type instance GQL CityID = ENUM
 
 type instance GQL Euro = SCALAR
 
-type instance GQL UID = PRIMITIVE
+type instance GQL UID = INPUT_OBJECT
 
 type instance GQL Coordinates = INPUT_OBJECT
 
