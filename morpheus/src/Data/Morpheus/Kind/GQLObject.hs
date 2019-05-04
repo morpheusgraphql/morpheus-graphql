@@ -34,8 +34,7 @@ import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.Type              (DeprecationArgs)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
-import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..), ScalarOf (..),
-                                                         WithDeprecationArgs (..))
+import           Data.Morpheus.Types.Describer          ((::->) (..), WithDeprecationArgs (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..), ScalarValue (..))
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
@@ -146,16 +145,14 @@ instance GQLObject a => GQLObject [a] where
     where
       fType = fieldType (Proxy @a) name
 
-instance (Show a, GQLKind a, E.GQLEnum a) => GQLObject (EnumOf a) where
-  encode _ = pure . Scalar . String . pack . show . unpackEnum
-  fieldType _ = ObjectField [] . E.asField (Proxy @a)
-  introspect _ = E.introspect (Proxy @a)
-
-instance S.GQLScalar a => GQLObject (ScalarOf a) where
-  encode _ (ScalarOf x) = pure $ Scalar $ S.serialize x
-  fieldType _ = ObjectField [] . S.asField (Proxy @a)
-  introspect _ = S.introspect (Proxy @a)
-
+--instance (Show a, GQLKind a, E.GQLEnum a) => GQLObject (EnumOf a) where
+--  encode _ = pure . Scalar . String . pack . show . unpackEnum
+--  fieldType _ = ObjectField [] . E.asField (Proxy @a)
+--  introspect _ = E.introspect (Proxy @a)
+--instance S.GQLScalar a => GQLObject (ScalarOf a) where
+--  encode _ (ScalarOf x) = pure $ Scalar $ S.serialize x
+--  fieldType _ = ObjectField [] . S.asField (Proxy @a)
+--  introspect _ = S.introspect (Proxy @a)
 instance GQLObject EnumValue
 
 instance GQLObject Type
@@ -181,10 +178,13 @@ type instance GQL InputValue = OBJECT
 type instance GQL Schema = OBJECT
 
 type instance GQL Directive = OBJECT
--- type instance GQL
-  
 
+-- type instance GQL
 instance (GQLObject a, GQLKind a) => IntrospectionRouter a OBJECT where
   __encode _ = encode
   __introspect _ = introspect
   __objectField _ = fieldType
+
+type instance GQL (WithDeprecationArgs a) = GQL a
+
+type instance GQL (p ::-> a) = GQL a
