@@ -10,7 +10,7 @@
 
 module Data.Morpheus.Kind.Internal
   ( GQLObject
-  , GQLScalar
+ -- , GQLScalar
   , introspection
   , PRIMITIVE
   , SCALAR
@@ -93,13 +93,13 @@ instance GQLObject a => IntrospectionRouter a OBJECT where
   routeIntrospection _ = introspectObject
 
 -- Define and bind GQLScalar
-class GQLScalar a where
-  introspectScalar :: a -> Text
-  default introspectScalar :: (Show a, Read a) =>
-    a -> Text
-  introspectScalar x = concat ["Resolved Scalar:: ", pack (show x)]
+--class GQLScalar a where
+--  introspectScalar :: a -> Text
+--  default introspectScalar :: (Show a, Read a) =>
+--    a -> Text
+--  introspectScalar x = concat ["Resolved Scalar:: ", pack (show x)]
 
-type instance GQLConstraint a SCALAR = GQLScalar a
+--type instance GQLConstraint a SCALAR = GQLScalar a
 
-instance GQLScalar a => IntrospectionRouter a SCALAR where
-  routeIntrospection _ = introspectScalar
+--instance GQLScalar a => IntrospectionRouter a SCALAR where
+--  routeIntrospection _ = introspectScalar

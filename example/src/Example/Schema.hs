@@ -3,24 +3,25 @@
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
 module Example.Schema
   ( gqlApi
   ) where
 
-import qualified Data.ByteString.Lazy.Char8 as B
-import           Data.Maybe                 (fromMaybe)
-import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLObject, GQLQuery,
-                                             GQLScalar (..))
-import           Data.Morpheus.Types        (ScalarValue (..))
-import           Data.Morpheus.Wrapper      ((::->) (..), EnumOf, GQLRoot (..), ScalarOf, unwrap)
-import           Data.Text                  (Text, pack)
-import qualified Data.Text                  as T (concat)
-import           Data.Typeable              (Typeable)
-import qualified Example.Model              as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
-import           GHC.Generics               (Generic)
+import qualified Data.ByteString.Lazy.Char8  as B
+import           Data.Maybe                  (fromMaybe)
+import           Data.Morpheus               (interpreter)
+import           Data.Morpheus.Kind          (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLObject,
+                                              GQLQuery, GQLScalar (..))
+import           Data.Morpheus.Kind.Internal (GQL, PRIMITIVE)
+import           Data.Morpheus.Types         (ScalarValue (..))
+import           Data.Morpheus.Wrapper       ((::->) (..), EnumOf, GQLRoot (..), unwrap)
+import           Data.Text                   (Text, pack)
+import           Data.Typeable               (Typeable)
+import qualified Example.Model               as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
+import           GHC.Generics                (Generic)
 
 data CityID
   = Paris
@@ -31,23 +32,27 @@ data CityID
 instance GQLKind CityID where
   description _ = "ID of Cities in Zip Format"
 
-data Modulo7 =
-  Modulo7 Int
-          Int
-  deriving (Typeable, Generic, GQLKind)
+data Seven =
+  Seven
+  deriving (Typeable, Generic, GQLKind, GQLInput)
 
-instance GQLScalar Modulo7 where
-  parseValue (Int x) = pure $ Modulo7 (x `div` 7) (x `mod` 7)
-  parseValue _       = pure $ Modulo7 0 0
-  serialize (Modulo7 value _) = Int value
+instance GQLScalar Seven where
+  parseValue _ = pure Seven
+  serialize Seven = Int 7
+
+type instance GQL Seven = PRIMITIVE
+
+type instance GQL Text = PRIMITIVE
+
+type instance GQL UID = PRIMITIVE
 
 data UID = UID
   { uid :: Text
   } deriving (Show, Generic, Typeable, GQLKind, GQLInput)
 
 data Coordinates = Coordinates
-  { latitude  :: ScalarOf Modulo7
-  , longitude :: [UID]
+  { latitude  :: Seven
+  , longitude :: UID
   } deriving (Generic, Typeable, GQLInput)
 
 instance GQLKind Coordinates where
@@ -90,28 +95,23 @@ newtype Mutation = Mutation
   { createUser :: LocationByCoordinates ::-> User
   } deriving (Generic, GQLMutation)
 
-fetchAddress :: Modulo7 -> Text -> IO (Either String Address)
-fetchAddress (Modulo7 x y) streetName = do
+fetchAddress :: Seven -> Text -> IO (Either String Address)
+fetchAddress Seven streetName = do
   address' <- M.jsonAddress
   pure (modify <$> address')
   where
     modify mAddress =
-      Address
-        { city = T.concat [pack $ show x, pack $ show y, " ", M.city mAddress]
-        , houseNumber = M.houseNumber mAddress
-        , street = streetName
-        , owner = Nothing
-        }
+      Address {city = M.city mAddress, houseNumber = M.houseNumber mAddress, street = streetName, owner = Nothing}
 
 resolveAddress :: LocationByCoordinates ::-> Address
 resolveAddress = Resolver res
   where
-    res args = fetchAddress (unwrap $ latitude $ coordinates args) (pack $ show $ longitude $ coordinates args)
+    res args = fetchAddress Seven (pack $ show $ longitude $ coordinates args)
 
 addressByCityID :: CityID -> Int -> IO (Either String Address)
-addressByCityID Paris code = fetchAddress (Modulo7 75 code) "Paris"
-addressByCityID BLN code   = fetchAddress (Modulo7 10 code) "Berlin"
-addressByCityID HH code    = fetchAddress (Modulo7 20 code) "Hamburg"
+addressByCityID Paris code = fetchAddress Seven "Paris"
+addressByCityID BLN code   = fetchAddress Seven "Berlin"
+addressByCityID HH code    = fetchAddress Seven "Hamburg"
 
 resolveOffice :: M.JSONUser -> Location ::-> Address
 resolveOffice _ = Resolver resolve'

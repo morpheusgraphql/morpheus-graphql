@@ -28,7 +28,9 @@ library:
   exposed-modules:
       -  Data.Morpheus
       -  Data.Morpheus.Kind
+      -  Data.Morpheus.Kind.Internal
       -  Data.Morpheus.Types
       -  Data.Morpheus.Wrapper
+
   ghc-options:
       -Wall

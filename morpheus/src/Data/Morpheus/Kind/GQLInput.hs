@@ -115,5 +115,10 @@ instance (GQLInput a, GQLKind a) => GQLInput [a] where
 
 type instance GQLConstraint a PRIMITIVE = GQLKind a
 
-instance GQLKind a => IntrospectionRouter a PRIMITIVE where
-  __introspect _ = introspectScalar
+type instance GQLConstraint (ScalarOf a) SCALAR = S.GQLScalar a
+
+instance GQLInput a => IntrospectionRouter a PRIMITIVE where
+  __decode _ = decode
+
+instance (S.GQLScalar a, GQLKind a) => IntrospectionRouter (ScalarOf a) SCALAR where
+  __decode _ text = ScalarOf <$> S.decode text
