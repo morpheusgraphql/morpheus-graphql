@@ -22,7 +22,6 @@ module Data.Morpheus.Kind.Internal
   ) where
 
 import Data.Morpheus.Schema.Internal.Types (TypeLib)
-import Data.Morpheus.Types.Describer (ScalarOf(..))
 import Data.Morpheus.Types.Error (ResolveIO, Validation)
 import Data.Morpheus.Types.JSType (JSType(..))
 import Data.Morpheus.Types.Query.Selection (Selection)
@@ -33,6 +32,20 @@ import GHC.Exts (Constraint)
 -- Hidden GQL type System API
 type family GQL a :: *
 
+-- default Type Instances
+type instance GQL Text = PRIMITIVE
+
+type instance GQL Int = PRIMITIVE
+
+type instance GQL Float = PRIMITIVE
+
+type instance GQL Bool = PRIMITIVE
+
+type instance GQL (Maybe a) = GQL a
+
+type instance GQL [a] = GQL a
+
+-- default Data Kinds
 data PRIMITIVE
 
 data SCALAR
@@ -64,7 +77,6 @@ instance IntrospectionRouter a b => IntrospectionRouter (Maybe a) b where
 --  __decode proxy value = ScalarOf <$> __decode proxy value
 --  __encode proxyB sel (ScalarOf x) = __encode proxyB sel x
 --  __field proxyB _ = __field proxyB (Proxy @a)
-
 _field ::
      forall a. IntrospectionRouter a (GQL a)
   => Proxy a

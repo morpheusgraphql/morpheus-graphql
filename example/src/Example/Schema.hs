@@ -42,8 +42,6 @@ instance GQLScalar Seven where
 
 type instance GQL Seven = SCALAR
 
-type instance GQL Text = PRIMITIVE
-
 type instance GQL UID = PRIMITIVE
 
 data UID = UID
