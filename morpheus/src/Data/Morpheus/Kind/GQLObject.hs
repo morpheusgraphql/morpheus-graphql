@@ -1,4 +1,4 @@
-{-# LANGUAGE DefaultSignatures     #-}
+{-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -24,7 +24,6 @@ import           Data.Morpheus.Kind.OutputRouter        (OutputTypeRouter (..), 
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib)
-import qualified Data.Morpheus.Schema.Internal.Types    as I (Field (..))
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
@@ -36,10 +35,13 @@ import           Data.Proxy
 import           Data.Text                              (Text, pack)
 import           GHC.Generics
 
-instance (GQLObject a, GQLKind a) => OutputTypeRouter a OBJECT where
+type ObjectConstraint a
+   = (GQLObject a, Generic a, DeriveResolvers (Rep a), Selectors (Rep a) (Text, ObjectField), GQLKind a)
+
+instance ObjectConstraint a => OutputTypeRouter a OBJECT where
   __encode _ = encode
   __introspect _ = introspect
-  __objectField _ = fieldType
+  __objectField _ = field
 
 instance OutputTypeRouter a (GQL a) => DeriveResolvers (K1 s a) where
   deriveResolvers meta (K1 src) = [(Meta.key meta, (`_encode` src))]
@@ -50,22 +52,14 @@ instance (Selector s, OutputTypeRouter a (GQL a)) => Selectors (RecSel s a) (Tex
       name = pack $ selName (undefined :: SelOf s)
 
 class GQLObject a where
-  encode :: (Text, Selection) -> a -> ResolveIO JSType
-  default encode :: (Generic a, DeriveResolvers (Rep a)) =>
-    (Text, Selection) -> a -> ResolveIO JSType
+  encode :: (Generic a, DeriveResolvers (Rep a)) => (Text, Selection) -> a -> ResolveIO JSType
   encode (_, SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers Meta.initialMeta . from
   encode (_, Field _ key pos) = const $ failResolveIO $ subfieldsNotSelected meta -- TODO: must be internal Error
     where
       meta = Meta.MetaInfo {Meta.typeName = "", Meta.key = key, Meta.position = pos}
-  fieldType :: Proxy a -> Text -> ObjectField
-  default fieldType :: (Selectors (Rep a) (Text, ObjectField), GQLKind a) =>
-    Proxy a -> Text -> ObjectField
-  fieldType proxy name =
-    ObjectField [] $
-    I.Field {I.fieldName = name, I.notNull = True, I.asList = False, I.kind = OBJECT, I.fieldType = typeID proxy}
-  introspect :: Proxy a -> TypeLib -> TypeLib
-  default introspect :: (Selectors (Rep a) (Text, ObjectField), GQLKind a) =>
-    Proxy a -> TypeLib -> TypeLib
+  field :: (Selectors (Rep a) (Text, ObjectField), GQLKind a) => Proxy a -> Text -> ObjectField
+  field proxy = ObjectField [] . buildField OBJECT proxy
+  introspect :: (Selectors (Rep a) (Text, ObjectField), GQLKind a) => Proxy a -> TypeLib -> TypeLib
   introspect = updateLib (asObjectType fields) stack
     where
       fieldTypes = getFields (Proxy @(Rep a))
