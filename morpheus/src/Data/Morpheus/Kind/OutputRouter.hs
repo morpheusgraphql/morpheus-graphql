@@ -13,7 +13,7 @@ import           Data.Morpheus.Kind.GQLKind          (GQLKind)
 import qualified Data.Morpheus.Kind.GQLPrimitive     as P (GQLPrimitive (..))
 import qualified Data.Morpheus.Kind.GQLScalar        as S (GQLScalar (..))
 import           Data.Morpheus.Kind.Internal         (ENUM, Encode_, GQL, Intro_, OField_, PRIMITIVE, SCALAR, WRAPPER)
-import           Data.Morpheus.Kind.Utils            (encodeList, encodeMaybe, listField, nullableField)
+import           Data.Morpheus.Kind.Utils            (encodeList, encodeMaybe, listField, maybeField)
 import           Data.Morpheus.Schema.Internal.Types (ObjectField (..))
 import           Data.Morpheus.Types.Describer       ((::->) (..))
 import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
@@ -58,7 +58,7 @@ instance (P.GQLPrimitive a, GQLKind a) => OutputTypeRouter a PRIMITIVE where
 instance OutputTypeRouter a (GQL a) => OutputTypeRouter (Maybe a) WRAPPER where
   __encode _ = encodeMaybe _encode
   __introspect _ _ = _introspect (Proxy @a)
-  __objectField _ _ name = nullableField (_objectField (Proxy @a) name)
+  __objectField _ _ name = maybeField (_objectField (Proxy @a) name)
 
 instance OutputTypeRouter a (GQL a) => OutputTypeRouter [a] WRAPPER where
   __encode _ = encodeList _encode
