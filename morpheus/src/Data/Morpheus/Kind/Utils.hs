@@ -1,18 +1,36 @@
 module Data.Morpheus.Kind.Utils
-  (listField, nullableField, encodeList, encodeMaybe)where
+  ( maybeField
+  , listField
+  , maybeInputField
+  , listInputField
+  , encodeMaybe
+  , encodeList
+  ) where
 
-import           Data.Morpheus.Schema.Internal.Types (ObjectField (..))
+import           Data.Morpheus.Schema.Internal.Types (InputField (..), ObjectField (..))
 import qualified Data.Morpheus.Schema.Internal.Types as I (Field (..))
 import           Data.Morpheus.Types.Error           (ResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType (..))
 import           Data.Morpheus.Types.Query.Selection (Selection (..))
 import           Data.Text                           (Text)
 
-listField :: ObjectField -> ObjectField
-listField x = x {fieldContent = (fieldContent x) {I.notNull = False}}
+setNull :: I.Field -> I.Field
+setNull x = x {I.notNull = False}
 
-nullableField :: ObjectField -> ObjectField
-nullableField x = x {fieldContent = (fieldContent x) {I.asList = True}}
+setList :: I.Field -> I.Field
+setList x = x {I.asList = True}
+
+maybeInputField :: InputField -> InputField
+maybeInputField = InputField . setNull . unpackInputField
+
+listInputField :: InputField -> InputField
+listInputField = InputField . setList . unpackInputField
+
+maybeField :: ObjectField -> ObjectField
+maybeField x = x {fieldContent = setNull (fieldContent x)}
+
+listField :: ObjectField -> ObjectField
+listField x = x {fieldContent = setList (fieldContent x)}
 
 type Encode a = (Text, Selection) -> a -> ResolveIO JSType
 
