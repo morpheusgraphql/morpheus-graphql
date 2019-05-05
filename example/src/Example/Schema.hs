@@ -13,8 +13,7 @@ module Example.Schema
 import qualified Data.ByteString.Lazy.Char8  as B
 import           Data.Maybe                  (fromMaybe)
 import           Data.Morpheus               (interpreter)
-import           Data.Morpheus.Kind          (GQLArgs, GQLEnum, GQLInputObject, GQLKind (..), GQLMutation, GQLObject,
-                                              GQLQuery, GQLScalar (..))
+import           Data.Morpheus.Kind          (GQLArgs, GQLKind (..), GQLMutation, GQLQuery, GQLScalar (..))
 import           Data.Morpheus.Kind.Internal (ENUM, GQL, INPUT_OBJECT, OBJECT, SCALAR)
 import           Data.Morpheus.Types         ((::->) (..), GQLRoot (..), ScalarValue (..))
 import           Data.Text                   (Text, pack)
@@ -38,10 +37,7 @@ data CityID
   = Paris
   | BLN
   | HH
-  deriving (Show, Generic, Typeable, GQLEnum)
-
-instance GQLKind CityID where
-  description _ = "ID of Cities in Zip Format"
+  deriving (Show, Generic, Typeable, GQLKind)
 
 data Euro =
   Euro Int
@@ -54,12 +50,12 @@ instance GQLScalar Euro where
 
 data UID = UID
   { uid :: Text
-  } deriving (Show, Generic, Typeable, GQLKind, GQLInputObject)
+  } deriving (Show, Generic, Typeable, GQLKind)
 
 data Coordinates = Coordinates
   { latitude  :: Euro
   , longitude :: [UID]
-  } deriving (Generic, Typeable, GQLInputObject)
+  } deriving (Generic, Typeable)
 
 instance GQLKind Coordinates where
   description _ = "just random latitude and longitude"
@@ -79,7 +75,7 @@ data Address = Address
   , street      :: Text
   , houseNumber :: Int
   , owner       :: Maybe User
-  } deriving (Generic, GQLKind, GQLObject, Typeable)
+  } deriving (Generic, GQLKind, Typeable)
 
 data User = User
   { name    :: Text
@@ -88,7 +84,7 @@ data User = User
   , office  :: Location ::-> Address
   , friend  :: () ::-> Maybe User
   , home    :: Maybe Address
-  } deriving (Generic, Typeable, GQLObject)
+  } deriving (Generic, Typeable)
 
 instance GQLKind User where
   description _ = "Custom Description for Client Defined User Type"

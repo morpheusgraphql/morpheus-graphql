@@ -1,5 +1,4 @@
 {-# LANGUAGE ConstrainedClassMethods #-}
-{-# LANGUAGE DefaultSignatures       #-}
 {-# LANGUAGE OverloadedStrings       #-}
 
 module Data.Morpheus.Kind.GQLScalar where
@@ -13,6 +12,7 @@ import           Data.Morpheus.Types.Core            (Key)
 import           Data.Morpheus.Types.Error           (Validation)
 import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
 import           Data.Proxy                          (Proxy (..))
+import           Data.Text                           (Text)
 
 toScalar :: JSType -> Validation ScalarValue
 toScalar (Scalar x) = pure x
@@ -27,11 +27,27 @@ class GQLScalar a where
   encode = Scalar . serialize
   asInputField :: GQLKind a => Proxy a -> Key -> InputField
   asInputField proxy = InputField . asField proxy
-  asField :: Proxy a -> Key -> Field
-  default asField :: GQLKind a =>
-    Proxy a -> Key -> Field
+  asField :: GQLKind a => Proxy a -> Key -> Field
   asField proxy name = Field {fieldName = name, notNull = True, asList = False, kind = SCALAR, fieldType = typeID proxy}
-  introspect :: Proxy a -> TypeLib -> TypeLib
-  default introspect :: GQLKind a =>
-    Proxy a -> TypeLib -> TypeLib
+  introspect :: GQLKind a => Proxy a -> TypeLib -> TypeLib
   introspect = updateLib scalarTypeOf []
+
+instance GQLScalar Text where
+  parseValue (String x) = pure x
+  parseValue isType     = internalTypeMismatch "String" (Scalar isType)
+  serialize = String
+
+instance GQLScalar Bool where
+  parseValue (Boolean x) = pure x
+  parseValue isType      = internalTypeMismatch "Boolean" (Scalar isType)
+  serialize = Boolean
+
+instance GQLScalar Int where
+  parseValue (Int x) = pure x
+  parseValue isType  = internalTypeMismatch "Int" (Scalar isType)
+  serialize = Int
+
+instance GQLScalar Float where
+  parseValue (Float x) = pure x
+  parseValue isType    = internalTypeMismatch "Float" (Scalar isType)
+  serialize = Float

@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes     #-}
 {-# LANGUAGE ConstrainedClassMethods #-}
-{-# LANGUAGE DefaultSignatures       #-}
+{-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE FlexibleContexts        #-}
 {-# LANGUAGE ScopedTypeVariables     #-}
 {-# LANGUAGE TypeApplications        #-}
@@ -8,7 +8,11 @@
 {-# LANGUAGE UndecidableInstances    #-}
 
 module Data.Morpheus.Kind.GQLEnum
-  ( GQLEnum(..)
+  ( EnumConstraint
+  , decode
+  , inputField
+  , field
+  , introspect
   ) where
 
 import           Data.Morpheus.Generics.GDecodeEnum     (GDecodeEnum (..))
@@ -21,27 +25,23 @@ import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 import           GHC.Generics
 
-class GQLEnum a where
-  decode :: Text -> a
-  default decode :: (Generic a, GDecodeEnum (Rep a)) =>
-    Text -> a
-  decode text = to $ gToEnum text
-  asInputField :: Proxy a -> Text -> InputField
-  default asInputField :: GQLKind a =>
-    Proxy a -> Text -> InputField
-  asInputField proxy = InputField . asField proxy
-  asField :: Proxy a -> Text -> Field
-  default asField :: GQLKind a =>
-    Proxy a -> Text -> Field
-  asField proxy name = Field {fieldName = name, notNull = True, kind = ENUM, fieldType = typeID proxy, asList = False}
-  introspect :: Proxy a -> TypeLib -> TypeLib
-  default introspect :: (GQLKind a, GDecodeEnum (Rep a)) =>
-    Proxy a -> TypeLib -> TypeLib
-  introspect = updateLib (enumTypeOf $ getTags (Proxy @(Rep a))) []
+type EnumConstraint a = (Generic a, GDecodeEnum (Rep a), Show a, GQLKind a)
 
-instance GQLEnum TypeKind
+decode :: (Generic a, GDecodeEnum (Rep a)) => Text -> a
+decode text = to $ gToEnum text
 
-instance GQLEnum DirectiveLocation
+inputField :: GQLKind a => Proxy a -> Text -> InputField
+inputField proxy = InputField . field proxy
+
+field :: GQLKind a => Proxy a -> Text -> Field
+field = buildField ENUM
+
+introspect ::
+     forall a. (GQLKind a, GDecodeEnum (Rep a))
+  => Proxy a
+  -> TypeLib
+  -> TypeLib
+introspect = updateLib (enumTypeOf $ getTags (Proxy @(Rep a))) []
 
 type instance GQL TypeKind = ENUM
 
