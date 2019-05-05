@@ -25,7 +25,7 @@ import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..)
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
-import           Data.Morpheus.Types.Describer          ((::->), WithDeprecationArgs)
+import           Data.Morpheus.Types.Describer          ((::->))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 import           Data.Typeable                          (Typeable)
@@ -100,10 +100,6 @@ instance GQLKind a => GQLKind (Maybe a) where
   typeID _ = typeID (Proxy @a)
 
 instance GQLKind a => GQLKind [a] where
-  typeID _ = typeID (Proxy @a)
-
--- TODO: delete it before merge
-instance GQLKind a => GQLKind (WithDeprecationArgs a) where
   typeID _ = typeID (Proxy @a)
 
 instance GQLKind a => GQLKind (p ::-> a) where

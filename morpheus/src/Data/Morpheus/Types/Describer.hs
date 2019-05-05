@@ -1,20 +1,14 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE TypeOperators      #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module Data.Morpheus.Types.Describer
   ( (::->)(..)
-  , WithDeprecationArgs(..)
   ) where
 
 import           Data.Data    (Constr, Data, DataType, Fixity (Prefix), dataTypeOf, gfoldl, gunfold, mkConstr,
                                mkDataType, toConstr)
 import           GHC.Generics (Generic)
-
-newtype WithDeprecationArgs a = WithDeprecationArgs
-  { unpackDeprecationArgs :: a
-  } deriving (Show, Generic, Data)
 
 newtype a ::-> b =
   Resolver (a -> IO (Either String b))
