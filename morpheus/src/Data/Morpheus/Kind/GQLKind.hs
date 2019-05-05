@@ -21,6 +21,7 @@ import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), InputField, Leaf (..), LibType (..),
                                                          ObjectField (..), TypeLib, defineType, isTypeDefined)
+import qualified Data.Morpheus.Schema.Internal.Types    as I (Field (..))
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
@@ -48,6 +49,9 @@ class GQLKind a where
   default typeID :: Typeable a =>
     Proxy a -> Text
   typeID = typeOf
+  buildField :: TypeKind -> Proxy a -> Text -> I.Field
+  buildField kind' proxy' name' =
+    I.Field {I.fieldName = name', I.notNull = True, I.asList = False, I.kind = kind', I.fieldType = typeID proxy'}
   buildType :: Proxy a -> Core
   buildType proxy = Core {name = typeID proxy, typeDescription = description proxy}
   updateLib :: (Proxy a -> LibType) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib
