@@ -13,7 +13,7 @@ module Example.Schema
 import qualified Data.ByteString.Lazy.Char8  as B
 import           Data.Maybe                  (fromMaybe)
 import           Data.Morpheus               (interpreter)
-import           Data.Morpheus.Kind          (GQLArgs, GQLKind (..), GQLMutation, GQLObject, GQLQuery, GQLScalar (..))
+import           Data.Morpheus.Kind          (GQLArgs, GQLKind (..), GQLMutation, GQLQuery, GQLScalar (..))
 import           Data.Morpheus.Kind.Internal (ENUM, GQL, INPUT_OBJECT, OBJECT, SCALAR)
 import           Data.Morpheus.Types         ((::->) (..), GQLRoot (..), ScalarValue (..))
 import           Data.Text                   (Text, pack)
@@ -75,7 +75,7 @@ data Address = Address
   , street      :: Text
   , houseNumber :: Int
   , owner       :: Maybe User
-  } deriving (Generic, GQLKind, GQLObject, Typeable)
+  } deriving (Generic, GQLKind, Typeable)
 
 data User = User
   { name    :: Text
@@ -84,7 +84,7 @@ data User = User
   , office  :: Location ::-> Address
   , friend  :: () ::-> Maybe User
   , home    :: Maybe Address
-  } deriving (Generic, Typeable, GQLObject)
+  } deriving (Generic, Typeable)
 
 instance GQLKind User where
   description _ = "Custom Description for Client Defined User Type"

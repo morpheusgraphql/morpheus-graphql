@@ -11,7 +11,9 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Morpheus.Kind.GQLObject
-  ( GQLObject(..)
+  ( encode
+  , field
+  , introspect
   ) where
 
 import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
@@ -19,7 +21,7 @@ import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), r
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..))
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType)
-import           Data.Morpheus.Kind.Internal            (GQL, GQLConstraint, OBJECT)
+import           Data.Morpheus.Kind.Internal            (GQL, OBJECT)
 import           Data.Morpheus.Kind.OutputRouter        (OutputTypeRouter (..), _encode, _introspect, _objectField)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
@@ -35,8 +37,7 @@ import           Data.Proxy
 import           Data.Text                              (Text, pack)
 import           GHC.Generics
 
-type ObjectConstraint a
-   = (GQLObject a, Generic a, DeriveResolvers (Rep a), Selectors (Rep a) (Text, ObjectField), GQLKind a)
+type ObjectConstraint a = (Generic a, DeriveResolvers (Rep a), Selectors (Rep a) (Text, ObjectField), GQLKind a)
 
 instance ObjectConstraint a => OutputTypeRouter a OBJECT where
   __encode _ = encode
@@ -51,34 +52,29 @@ instance (Selector s, OutputTypeRouter a (GQL a)) => Selectors (RecSel s a) (Tex
     where
       name = pack $ selName (undefined :: SelOf s)
 
-class GQLObject a where
-  encode :: (Generic a, DeriveResolvers (Rep a)) => (Text, Selection) -> a -> ResolveIO JSType
-  encode (_, SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers Meta.initialMeta . from
-  encode (_, Field _ key pos) = const $ failResolveIO $ subfieldsNotSelected meta -- TODO: must be internal Error
-    where
-      meta = Meta.MetaInfo {Meta.typeName = "", Meta.key = key, Meta.position = pos}
-  field :: (Selectors (Rep a) (Text, ObjectField), GQLKind a) => Proxy a -> Text -> ObjectField
-  field proxy = ObjectField [] . buildField OBJECT proxy
-  introspect :: (Selectors (Rep a) (Text, ObjectField), GQLKind a) => Proxy a -> TypeLib -> TypeLib
-  introspect = updateLib (asObjectType fields) stack
-    where
-      fieldTypes = getFields (Proxy @(Rep a))
-      fields = map fst fieldTypes
-      stack = map snd fieldTypes
+encode :: (Generic a, DeriveResolvers (Rep a)) => (Text, Selection) -> a -> ResolveIO JSType
+encode (_, SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers Meta.initialMeta . from
+encode (_, Field _ key pos) = const $ failResolveIO $ subfieldsNotSelected meta -- TODO: must be internal Error
+  where
+    meta = Meta.MetaInfo {Meta.typeName = "", Meta.key = key, Meta.position = pos}
 
-instance GQLObject EnumValue
+field ::
+     forall a. (Selectors (Rep a) (Text, ObjectField), GQLKind a)
+  => Proxy a
+  -> Text
+  -> ObjectField
+field proxy = ObjectField [] . buildField OBJECT proxy
 
-instance GQLObject Type
-
-instance GQLObject Field
-
-instance GQLObject InputValue
-
-instance GQLObject Schema
-
-instance GQLObject Directive
-
-type instance GQLConstraint a OBJECT = (GQLObject a, GQLKind a)
+introspect ::
+     forall a. (Selectors (Rep a) (Text, ObjectField), GQLKind a)
+  => Proxy a
+  -> TypeLib
+  -> TypeLib
+introspect = updateLib (asObjectType fields) stack
+  where
+    fieldTypes = getFields (Proxy @(Rep a))
+    fields = map fst fieldTypes
+    stack = map snd fieldTypes
 
 type instance GQL EnumValue = OBJECT
 

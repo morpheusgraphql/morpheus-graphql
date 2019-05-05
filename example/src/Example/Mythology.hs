@@ -13,7 +13,7 @@ module Example.Mythology
 import qualified Data.ByteString.Lazy.Char8  as B
 
 import           Data.Morpheus               (interpreter)
-import           Data.Morpheus.Kind          (GQLArgs, GQLKind (..), GQLObject, GQLQuery)
+import           Data.Morpheus.Kind          (GQLArgs, GQLKind (..), GQLQuery)
 import           Data.Morpheus.Kind.Internal (GQL, OBJECT)
 import           Data.Morpheus.Types         ((::->) (..), GQLRoot (..))
 import           Data.Text                   (Text)
@@ -29,7 +29,7 @@ type instance GQL Deity = OBJECT
 data Deity = Deity
   { fullName :: Text -- Non-Nullable Field
   , power    :: Maybe Text -- Nullable Field
-  } deriving (Generic, GQLObject, Typeable)
+  } deriving (Generic, Typeable)
 
 instance GQLKind Deity where
   description _ = "Custom Description for Client Defined User Type"
