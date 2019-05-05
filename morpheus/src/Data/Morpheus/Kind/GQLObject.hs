@@ -33,7 +33,7 @@ import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.Type              (DeprecationArgs)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
-import           Data.Morpheus.Types.Describer          ((::->) (..), WithDeprecationArgs (..))
+import           Data.Morpheus.Types.Describer          ((::->) (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
@@ -98,25 +98,6 @@ instance (GQLObject a, Args.GQLArgs p) => GQLObject (p ::-> a) where
       fields = [introspect (Proxy @a)]
   fieldType _ name = (fieldType (Proxy @a) name) {args = map fst $ Args.introspect (Proxy @p)}
 
--- manual deriving of  DeprecationArgs ::-> a
-instance GQLObject a => GQLObject (WithDeprecationArgs a) where
-  encode sel (WithDeprecationArgs val) = encode sel val
-  introspect _ typeLib = resolveTypes typeLib $ args' ++ fields
-    where
-      args' = map snd $ Args.introspect (Proxy @DeprecationArgs)
-      fields = [introspect (Proxy @a)]
-  fieldType _ name = (fieldType (Proxy @a) name) {args = map fst $ Args.introspect (Proxy @DeprecationArgs)}
-
-instance GQLObject a => GQLObject (Maybe a) where
-  encode = encodeMaybe encode
-  introspect _ = introspect (Proxy @a)
-  fieldType _ name = nullableField (fieldType (Proxy @a) name)
-
-instance GQLObject a => GQLObject [a] where
-  encode = encodeList encode
-  introspect _ = introspect (Proxy @a)
-  fieldType _ name = listField (fieldType (Proxy @a) name)
-
 instance GQLObject EnumValue
 
 instance GQLObject Type
@@ -142,7 +123,5 @@ type instance GQL InputValue = OBJECT
 type instance GQL Schema = OBJECT
 
 type instance GQL Directive = OBJECT
-
-type instance GQL (WithDeprecationArgs a) = GQL a
 
 type instance GQL (p ::-> a) = GQL a
