@@ -14,16 +14,13 @@ module Data.Morpheus.Kind.GQLObject
   ( GQLObject(..)
   ) where
 
-import           Control.Monad.Trans.Except
 import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
-import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
+import           Data.Morpheus.Generics.TypeRep         (Selectors (..))
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
-import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType)
 import           Data.Morpheus.Kind.Internal            (GQL, GQLConstraint, OBJECT)
-import           Data.Morpheus.Kind.OutputRouter        (OutputTypeRouter (..), liftResolver, _encode, _introspect,
-                                                         _objectField)
+import           Data.Morpheus.Kind.OutputRouter        (OutputTypeRouter (..), _encode, _introspect, _objectField)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib)
@@ -31,7 +28,6 @@ import qualified Data.Morpheus.Schema.Internal.Types    as I (Field (..))
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
-import           Data.Morpheus.Types.Describer          ((::->) (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
@@ -76,19 +72,6 @@ class GQLObject a where
       fields = map fst fieldTypes
       stack = map snd fieldTypes
 
-instance (GQLObject a, Args.GQLArgs p) => GQLObject (p ::-> a) where
-  encode (key', SelectionSet gqlArgs body position') (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
-    encode (key', SelectionSet gqlArgs body position')
-  encode (key', Field gqlArgs field position') (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
-    encode (key', Field gqlArgs field position')
-  introspect _ typeLib = resolveTypes typeLib $ args' ++ fields
-    where
-      args' = map snd $ Args.introspect (Proxy @p)
-      fields = [introspect (Proxy @a)]
-  fieldType _ name = (fieldType (Proxy @a) name) {args = map fst $ Args.introspect (Proxy @p)}
-
 instance GQLObject EnumValue
 
 instance GQLObject Type
@@ -114,5 +97,3 @@ type instance GQL InputValue = OBJECT
 type instance GQL Schema = OBJECT
 
 type instance GQL Directive = OBJECT
-
-type instance GQL (p ::-> a) = GQL a

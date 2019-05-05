@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies, TypeOperators #-}
 
 module Data.Morpheus.Kind.Internal
   ( PRIMITIVE
@@ -17,6 +17,7 @@ module Data.Morpheus.Kind.Internal
   ) where
 
 import Data.Morpheus.Schema.Internal.Types (InputField, ObjectField, TypeLib)
+import Data.Morpheus.Types.Describer ((::->))
 import Data.Morpheus.Types.Error (ResolveIO, Validation)
 import Data.Morpheus.Types.JSType (JSType(..))
 import Data.Morpheus.Types.Query.Selection (Selection)
@@ -39,6 +40,8 @@ type instance GQL Bool = PRIMITIVE
 type instance GQL (Maybe a) = WRAPPER
 
 type instance GQL [a] = WRAPPER
+
+type instance GQL (p ::-> a) = WRAPPER
 
 -- default Data Kinds
 data PRIMITIVE
