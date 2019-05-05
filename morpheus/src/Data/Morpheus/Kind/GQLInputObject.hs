@@ -9,8 +9,8 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Morpheus.Kind.GQLInput
-  ( GQLInput(..)
+module Data.Morpheus.Kind.GQLInputObject
+  ( GQLInputObject(..)
   ) where
 
 import           Data.Morpheus.Error.Internal        (internalTypeMismatch)
@@ -26,7 +26,7 @@ import           Data.Proxy                          (Proxy (..))
 import           Data.Text                           (Text)
 import           GHC.Generics
 
-class GQLInput a where
+class GQLInputObject a where
   decode :: JSType -> Validation a
   default decode :: (Generic a, GDecode JSType (Rep a)) =>
     JSType -> Validation a
@@ -52,13 +52,13 @@ setNullable x = x {notNull = False}
 wrapMaybe :: InputField -> InputField
 wrapMaybe = InputField . setNullable . unpackInputField
 
-instance (GQLInput a, GQLKind a) => GQLInput (Maybe a) where
+instance (GQLInputObject a, GQLKind a) => GQLInputObject (Maybe a) where
   decode JSNull = pure Nothing
   decode x      = Just <$> decode x
   asArgument _ name = wrapMaybe $ asArgument (Proxy @a) name
   introInput _ = introInput (Proxy @a)
 
-instance (GQLInput a, GQLKind a) => GQLInput [a] where
+instance (GQLInputObject a, GQLKind a) => GQLInputObject [a] where
   decode (JSList li) = mapM decode li
   decode isType      = internalTypeMismatch "List" isType
   asArgument _ name = fType {unpackInputField = (unpackInputField fType) {asList = True}}
