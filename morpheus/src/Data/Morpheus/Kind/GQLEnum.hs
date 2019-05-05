@@ -27,10 +27,10 @@ type EnumConstraint a = (GQLEnum a, Generic a, GDecodeEnum (Rep a), Show a, GQLK
 class GQLEnum a where
   decode :: (Generic a, GDecodeEnum (Rep a)) => Text -> a
   decode text = to $ gToEnum text
-  asInputField :: GQLKind a => Proxy a -> Text -> InputField
-  asInputField proxy = InputField . asField proxy
-  asField :: GQLKind a => Proxy a -> Text -> Field
-  asField proxy name = Field {fieldName = name, notNull = True, kind = ENUM, fieldType = typeID proxy, asList = False}
+  inputField :: GQLKind a => Proxy a -> Text -> InputField
+  inputField proxy = InputField . field proxy
+  field :: GQLKind a => Proxy a -> Text -> Field
+  field = buildField ENUM
   introspect :: (GQLKind a, GDecodeEnum (Rep a)) => Proxy a -> TypeLib -> TypeLib
   introspect = updateLib (enumTypeOf $ getTags (Proxy @(Rep a))) []
 
