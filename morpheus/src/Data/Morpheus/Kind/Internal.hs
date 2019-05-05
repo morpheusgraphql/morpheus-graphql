@@ -5,8 +5,7 @@ module Data.Morpheus.Kind.Internal
   , SCALAR
   , OBJECT
   , ENUM
-  , MAYBE
-  , LIST
+  , WRAPPER
   , INPUT_OBJECT
   , GQL
   , GQLConstraint
@@ -37,9 +36,9 @@ type instance GQL Float = PRIMITIVE
 
 type instance GQL Bool = PRIMITIVE
 
-type instance GQL (Maybe a) = LIST
+type instance GQL (Maybe a) = WRAPPER
 
-type instance GQL [a] = MAYBE
+type instance GQL [a] = WRAPPER
 
 -- default Data Kinds
 data PRIMITIVE
@@ -52,10 +51,9 @@ data ENUM
 
 data INPUT_OBJECT
 
-data MAYBE
+data WRAPPER
 
-data LIST
-
+--data LIST
 type family GQLConstraint a b :: Constraint
 
 -- class Types class
