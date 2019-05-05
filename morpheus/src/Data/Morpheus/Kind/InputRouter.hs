@@ -12,7 +12,7 @@ module Data.Morpheus.Kind.InputRouter where
 import           Data.Morpheus.Error.Internal      (internalArgumentError, internalTypeMismatch)
 import           Data.Morpheus.Generics.GDecode    (GDecode (..))
 import qualified Data.Morpheus.Kind.GQLEnum        as E (EnumConstraint, decode, inputField, introspect)
-import qualified Data.Morpheus.Kind.GQLInputObject as I (GQLInputObject (..))
+import qualified Data.Morpheus.Kind.GQLInputObject as I (IObjectConstraint, decode, inputField, introspect)
 import           Data.Morpheus.Kind.GQLKind        (GQLKind)
 import qualified Data.Morpheus.Kind.GQLScalar      as S (GQLScalar (..))
 import           Data.Morpheus.Kind.Internal       (Decode_, ENUM, GQL, IField_, INPUT_OBJECT, Intro_, SCALAR, WRAPPER)
@@ -60,10 +60,10 @@ instance E.EnumConstraint a => InputTypeRouter a ENUM where
   __introspect _ _ = E.introspect (Proxy @a)
   __field _ _ = E.inputField (Proxy @a)
 
-instance (I.GQLInputObject a, GQLKind a) => InputTypeRouter a INPUT_OBJECT where
+instance I.IObjectConstraint a => InputTypeRouter a INPUT_OBJECT where
   __decode _ = I.decode
-  __introspect _ = I.introInput
-  __field _ = I.asArgument
+  __field _ = I.inputField
+  __introspect _ = I.introspect
 
 instance InputTypeRouter a (GQL a) => InputTypeRouter (Maybe a) WRAPPER where
   __decode _ JSNull = pure Nothing
