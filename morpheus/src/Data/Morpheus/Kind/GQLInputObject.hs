@@ -45,23 +45,3 @@ class GQLInputObject a where
       fieldTypes = getFields (Proxy @(Rep a))
       stack = map snd fieldTypes
       fields = map fst fieldTypes
-
-setNullable :: Field -> Field
-setNullable x = x {notNull = False}
-
-wrapMaybe :: InputField -> InputField
-wrapMaybe = InputField . setNullable . unpackInputField
-
-instance (GQLInputObject a, GQLKind a) => GQLInputObject (Maybe a) where
-  decode JSNull = pure Nothing
-  decode x      = Just <$> decode x
-  asArgument _ name = wrapMaybe $ asArgument (Proxy @a) name
-  introInput _ = introInput (Proxy @a)
-
-instance (GQLInputObject a, GQLKind a) => GQLInputObject [a] where
-  decode (JSList li) = mapM decode li
-  decode isType      = internalTypeMismatch "List" isType
-  asArgument _ name = fType {unpackInputField = (unpackInputField fType) {asList = True}}
-    where
-      fType = asArgument (Proxy @a) name
-  introInput _ = introInput (Proxy @a)
