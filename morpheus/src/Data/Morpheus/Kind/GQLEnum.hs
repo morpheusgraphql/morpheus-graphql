@@ -46,19 +46,3 @@ instance GQLEnum DirectiveLocation
 type instance GQL TypeKind = ENUM
 
 type instance GQL DirectiveLocation = ENUM
-
-setNullable :: Field -> Field
-setNullable x = x {notNull = False}
-
-wrapMaybe :: InputField -> InputField
-wrapMaybe = InputField . setNullable . unpackInputField
-
-instance (GQLEnum a, GQLKind a) => GQLEnum (Maybe a) where
-  decode x = Just (decode x)
-  asInputField _ name = wrapMaybe $ asInputField (Proxy @a) name
-  introspect _ = introspect (Proxy @a)
-
--- TODO: fix before merge it
-instance (GQLEnum a, GQLKind a) => GQLEnum [a] where
-  decode x = [decode x]
-  introspect _ = introspect (Proxy @a)
