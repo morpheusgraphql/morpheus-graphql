@@ -11,12 +11,11 @@ module Data.Morpheus.Kind.InputRouter where
 
 import           Data.Morpheus.Error.Internal      (internalArgumentError, internalTypeMismatch)
 import           Data.Morpheus.Generics.GDecode    (GDecode (..))
-import qualified Data.Morpheus.Kind.GQLEnum        as E (EnumConstraint, GQLEnum (..))
+import qualified Data.Morpheus.Kind.GQLEnum        as E (EnumConstraint, decode, inputField, introspect)
 import qualified Data.Morpheus.Kind.GQLInputObject as I (GQLInputObject (..))
 import           Data.Morpheus.Kind.GQLKind        (GQLKind)
 import qualified Data.Morpheus.Kind.GQLScalar      as S (GQLScalar (..))
-import           Data.Morpheus.Kind.Internal       (Decode_, ENUM, GQL, GQLConstraint, IField_, INPUT_OBJECT, Intro_,
-                                                    SCALAR, WRAPPER)
+import           Data.Morpheus.Kind.Internal       (Decode_, ENUM, GQL, IField_, INPUT_OBJECT, Intro_, SCALAR, WRAPPER)
 import           Data.Morpheus.Kind.Utils          (listInputField, maybeInputField)
 import           Data.Morpheus.Types.JSType        (JSType (..))
 import           Data.Morpheus.Types.MetaInfo      (MetaInfo (..))
@@ -42,12 +41,6 @@ _introspect ::
      forall a. InputTypeRouter a (GQL a)
   => Intro_ a
 _introspect = __introspect (Proxy @(GQL a))
-
-type instance GQLConstraint a SCALAR = S.GQLScalar a
-
-type instance GQLConstraint a ENUM = E.GQLEnum a
-
-type instance GQLConstraint a INPUT_OBJECT = I.GQLInputObject a
 
 instance (InputTypeRouter a (GQL a)) => GDecode JSType (K1 i a) where
   gDecode meta (JSObject object) =

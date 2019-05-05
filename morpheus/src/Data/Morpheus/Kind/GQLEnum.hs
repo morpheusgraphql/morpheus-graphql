@@ -8,8 +8,11 @@
 {-# LANGUAGE UndecidableInstances    #-}
 
 module Data.Morpheus.Kind.GQLEnum
-  ( GQLEnum(..)
-  , EnumConstraint
+  ( EnumConstraint
+  , decode
+  , inputField
+  , field
+  , introspect
   ) where
 
 import           Data.Morpheus.Generics.GDecodeEnum     (GDecodeEnum (..))
@@ -22,21 +25,23 @@ import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 import           GHC.Generics
 
-type EnumConstraint a = (GQLEnum a, Generic a, GDecodeEnum (Rep a), Show a, GQLKind a)
+type EnumConstraint a = (Generic a, GDecodeEnum (Rep a), Show a, GQLKind a)
 
-class GQLEnum a where
-  decode :: (Generic a, GDecodeEnum (Rep a)) => Text -> a
-  decode text = to $ gToEnum text
-  inputField :: GQLKind a => Proxy a -> Text -> InputField
-  inputField proxy = InputField . field proxy
-  field :: GQLKind a => Proxy a -> Text -> Field
-  field = buildField ENUM
-  introspect :: (GQLKind a, GDecodeEnum (Rep a)) => Proxy a -> TypeLib -> TypeLib
-  introspect = updateLib (enumTypeOf $ getTags (Proxy @(Rep a))) []
+decode :: (Generic a, GDecodeEnum (Rep a)) => Text -> a
+decode text = to $ gToEnum text
 
-instance GQLEnum TypeKind
+inputField :: GQLKind a => Proxy a -> Text -> InputField
+inputField proxy = InputField . field proxy
 
-instance GQLEnum DirectiveLocation
+field :: GQLKind a => Proxy a -> Text -> Field
+field = buildField ENUM
+
+introspect ::
+     forall a. (GQLKind a, GDecodeEnum (Rep a))
+  => Proxy a
+  -> TypeLib
+  -> TypeLib
+introspect = updateLib (enumTypeOf $ getTags (Proxy @(Rep a))) []
 
 type instance GQL TypeKind = ENUM
 

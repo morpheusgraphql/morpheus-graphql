@@ -13,8 +13,8 @@ module Example.Schema
 import qualified Data.ByteString.Lazy.Char8  as B
 import           Data.Maybe                  (fromMaybe)
 import           Data.Morpheus               (interpreter)
-import           Data.Morpheus.Kind          (GQLArgs, GQLEnum, GQLInputObject, GQLKind (..), GQLMutation, GQLObject,
-                                              GQLQuery, GQLScalar (..))
+import           Data.Morpheus.Kind          (GQLArgs, GQLInputObject, GQLKind (..), GQLMutation, GQLObject, GQLQuery,
+                                              GQLScalar (..))
 import           Data.Morpheus.Kind.Internal (ENUM, GQL, INPUT_OBJECT, OBJECT, SCALAR)
 import           Data.Morpheus.Types         ((::->) (..), GQLRoot (..), ScalarValue (..))
 import           Data.Text                   (Text, pack)
@@ -38,10 +38,7 @@ data CityID
   = Paris
   | BLN
   | HH
-  deriving (Show, Generic, Typeable, GQLEnum)
-
-instance GQLKind CityID where
-  description _ = "ID of Cities in Zip Format"
+  deriving (Show, Generic, Typeable, GQLKind)
 
 data Euro =
   Euro Int

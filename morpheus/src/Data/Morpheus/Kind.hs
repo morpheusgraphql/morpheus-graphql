@@ -4,13 +4,11 @@ module Data.Morpheus.Kind
   , GQLQuery
   , GQLArgs
   , GQLInputObject
-  , GQLEnum
   , GQLMutation
   , GQLScalar(..)
   ) where
 
 import           Data.Morpheus.Kind.GQLArgs        (GQLArgs)
-import           Data.Morpheus.Kind.GQLEnum        (GQLEnum)
 import           Data.Morpheus.Kind.GQLInputObject (GQLInputObject)
 import           Data.Morpheus.Kind.GQLKind        (GQLKind (description))
 import           Data.Morpheus.Kind.GQLMutation    (GQLMutation (..))

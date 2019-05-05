@@ -13,7 +13,7 @@ import           Control.Monad.Trans.Except
 import           Data.Morpheus.Error.Selection       (fieldNotResolved)
 import           Data.Morpheus.Generics.TypeRep      (resolveTypes)
 import qualified Data.Morpheus.Kind.GQLArgs          as Args (GQLArgs (..))
-import qualified Data.Morpheus.Kind.GQLEnum          as E (EnumConstraint, GQLEnum (..))
+import qualified Data.Morpheus.Kind.GQLEnum          as E (EnumConstraint, field, introspect)
 import           Data.Morpheus.Kind.GQLKind          (GQLKind)
 import qualified Data.Morpheus.Kind.GQLScalar        as S (GQLScalar (..))
 import           Data.Morpheus.Kind.Internal         (ENUM, Encode_, GQL, Intro_, OField_, SCALAR, WRAPPER)
