@@ -6,45 +6,46 @@
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Morpheus.Kind.GQLObject
   ( GQLObject(..)
   ) where
 
-import           Control.Monad.Trans                    (lift)
-import           Control.Monad.Trans.Except
-import           Data.Morpheus.Error.Selection          (fieldNotResolved, subfieldsNotSelected)
+import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
-import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
+import           Data.Morpheus.Generics.TypeRep         (Selectors (..))
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
-import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
-import qualified Data.Morpheus.Kind.GQLEnum             as E (GQLEnum (..))
-import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType, introspectScalar)
-import qualified Data.Morpheus.Kind.GQLScalar           as S (GQLScalar (..))
+import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType)
+import           Data.Morpheus.Kind.Internal            (GQL, GQLConstraint, OBJECT)
+import           Data.Morpheus.Kind.OutputRouter        (OutputTypeRouter (..), _encode, _introspect, _objectField)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib)
 import qualified Data.Morpheus.Schema.Internal.Types    as I (Field (..))
 import           Data.Morpheus.Schema.Schema            (Schema)
-import           Data.Morpheus.Schema.Type              (DeprecationArgs)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
-import           Data.Morpheus.Types.Describer          ((::->) (..), EnumOf (..), ScalarOf (..),
-                                                         WithDeprecationArgs (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
-import           Data.Morpheus.Types.JSType             (JSType (..), ScalarValue (..))
+import           Data.Morpheus.Types.JSType             (JSType (..))
 import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..))
 import           Data.Proxy
 import           Data.Text                              (Text, pack)
 import           GHC.Generics
 
-instance GQLObject a => DeriveResolvers (K1 i a) where
-  deriveResolvers meta (K1 src) = [(Meta.key meta, (`encode` src))]
+instance (GQLObject a, GQLKind a) => OutputTypeRouter a OBJECT where
+  __encode _ = encode
+  __introspect _ = introspect
+  __objectField _ = fieldType
 
-instance (Selector s, GQLObject a) => Selectors (RecSel s a) (Text, ObjectField) where
-  getFields _ = [((name, fieldType (Proxy @a) name), introspect (Proxy @a))]
+instance OutputTypeRouter a (GQL a) => DeriveResolvers (K1 s a) where
+  deriveResolvers meta (K1 src) = [(Meta.key meta, (`_encode` src))]
+
+instance (Selector s, OutputTypeRouter a (GQL a)) => Selectors (RecSel s a) (Text, ObjectField) where
+  getFields _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)
 
@@ -71,87 +72,6 @@ class GQLObject a where
       fields = map fst fieldTypes
       stack = map snd fieldTypes
 
-liftResolver :: Int -> Text -> IO (Either String a) -> ResolveIO a
-liftResolver position' typeName' x = do
-  result <- lift x
-  case result of
-    Left message' -> failResolveIO $ fieldNotResolved position' typeName' (pack message')
-    Right value   -> pure value
-
-instance (GQLObject a, Args.GQLArgs p) => GQLObject (p ::-> a) where
-  encode (key', SelectionSet gqlArgs body position') (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
-    encode (key', SelectionSet gqlArgs body position')
-  encode (key', Field gqlArgs field position') (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
-    encode (key', Field gqlArgs field position')
-  introspect _ typeLib = resolveTypes typeLib $ args' ++ fields
-    where
-      args' = map snd $ Args.introspect (Proxy @p)
-      fields = [introspect (Proxy @a)]
-  fieldType _ name = (fieldType (Proxy @a) name) {args = map fst $ Args.introspect (Proxy @p)}
-
--- manual deriving of  DeprecationArgs ::-> a
-instance GQLObject a => GQLObject (WithDeprecationArgs a) where
-  encode sel (WithDeprecationArgs val) = encode sel val
-  introspect _ typeLib = resolveTypes typeLib $ args' ++ fields
-    where
-      args' = map snd $ Args.introspect (Proxy @DeprecationArgs)
-      fields = [introspect (Proxy @a)]
-  fieldType _ name = (fieldType (Proxy @a) name) {args = map fst $ Args.introspect (Proxy @DeprecationArgs)}
-
-instance GQLObject a => GQLObject (Maybe a) where
-  encode _ Nothing          = pure JSNull
-  encode query (Just value) = encode query value
-  introspect _ = introspect (Proxy @a)
-  fieldType _ name = (fType name) {fieldContent = (fieldContent $ fType name) {I.notNull = False}}
-    where
-      fType = fieldType (Proxy @a)
-
-scalarField :: GQLKind a => Proxy a -> Text -> ObjectField
-scalarField proxy name =
-  ObjectField
-    []
-    I.Field {I.fieldName = name, I.notNull = True, I.asList = False, I.kind = SCALAR, I.fieldType = typeID proxy}
-
-instance GQLObject Int where
-  encode _ = pure . Scalar . Int
-  introspect = introspectScalar
-  fieldType = scalarField
-
-instance GQLObject Float where
-  encode _ = pure . Scalar . Float
-  introspect = introspectScalar
-  fieldType = scalarField
-
-instance GQLObject Text where
-  encode _ = pure . Scalar . String
-  introspect = introspectScalar
-  fieldType = scalarField
-
-instance GQLObject Bool where
-  encode _ = pure . Scalar . Boolean
-  introspect = introspectScalar
-  fieldType = scalarField
-
-instance GQLObject a => GQLObject [a] where
-  encode (_, Field {}) _ = pure $ JSList []
-  encode query list      = JSList <$> mapM (encode query) list
-  introspect _ = introspect (Proxy @a)
-  fieldType _ name = fType {fieldContent = (fieldContent fType) {I.asList = True}}
-    where
-      fType = fieldType (Proxy @a) name
-
-instance (Show a, GQLKind a, E.GQLEnum a) => GQLObject (EnumOf a) where
-  encode _ = pure . Scalar . String . pack . show . unpackEnum
-  fieldType _ = ObjectField [] . E.asField (Proxy @a)
-  introspect _ = E.introspect (Proxy @a)
-
-instance S.GQLScalar a => GQLObject (ScalarOf a) where
-  encode _ (ScalarOf x) = pure $ Scalar $ S.serialize x
-  fieldType _ = ObjectField [] . S.asField (Proxy @a)
-  introspect _ = S.introspect (Proxy @a)
-
 instance GQLObject EnumValue
 
 instance GQLObject Type
@@ -163,3 +83,17 @@ instance GQLObject InputValue
 instance GQLObject Schema
 
 instance GQLObject Directive
+
+type instance GQLConstraint a OBJECT = (GQLObject a, GQLKind a)
+
+type instance GQL EnumValue = OBJECT
+
+type instance GQL Type = OBJECT
+
+type instance GQL Field = OBJECT
+
+type instance GQL InputValue = OBJECT
+
+type instance GQL Schema = OBJECT
+
+type instance GQL Directive = OBJECT

@@ -4,6 +4,8 @@
 {-# LANGUAGE FlexibleContexts        #-}
 {-# LANGUAGE ScopedTypeVariables     #-}
 {-# LANGUAGE TypeApplications        #-}
+{-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE UndecidableInstances    #-}
 
 module Data.Morpheus.Kind.GQLEnum
   ( GQLEnum(..)
@@ -11,6 +13,7 @@ module Data.Morpheus.Kind.GQLEnum
 
 import           Data.Morpheus.Generics.GDecodeEnum     (GDecodeEnum (..))
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), enumTypeOf)
+import           Data.Morpheus.Kind.Internal            (ENUM, GQL)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
@@ -39,3 +42,7 @@ class GQLEnum a where
 instance GQLEnum TypeKind
 
 instance GQLEnum DirectiveLocation
+
+type instance GQL TypeKind = ENUM
+
+type instance GQL DirectiveLocation = ENUM

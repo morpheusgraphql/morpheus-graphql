@@ -3,24 +3,28 @@
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
 module Example.Mythology
   ( mythologyApi
   ) where
 
-import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Data.ByteString.Lazy.Char8  as B
 
-import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (GQLArgs, GQLKind (..), GQLObject, GQLQuery)
-import           Data.Morpheus.Wrapper      ((::->) (..), GQLRoot (..))
-import           Data.Text                  (Text)
-import           Data.Typeable              (Typeable)
-import           GHC.Generics               (Generic)
+import           Data.Morpheus               (interpreter)
+import           Data.Morpheus.Kind          (GQLArgs, GQLKind (..), GQLObject, GQLQuery)
+import           Data.Morpheus.Kind.Internal (GQL, OBJECT)
+import           Data.Morpheus.Types         ((::->) (..), GQLRoot (..))
+import           Data.Text                   (Text)
+import           Data.Typeable               (Typeable)
+import           GHC.Generics                (Generic)
 
 data Query = Query
   { deity :: DeityArgs ::-> Deity
   } deriving (Generic, GQLQuery)
+
+type instance GQL Deity = OBJECT
 
 data Deity = Deity
   { fullName :: Text -- Non-Nullable Field

@@ -18,7 +18,7 @@ import qualified Data.Morpheus.Schema.Internal.Types as I (Core (..), Field (..)
                                                            InputObject, Leaf (..), ObjectField (..), OutputObject)
 import           Data.Morpheus.Schema.Type           (Type (..))
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
-import           Data.Morpheus.Types.Describer       (EnumOf (..), WithDeprecationArgs (..))
+import           Data.Morpheus.Types.Describer       ((::->) (Resolver))
 import           Data.Text                           (Text)
 
 type InputValue = IN.InputValue Type
@@ -57,17 +57,23 @@ typeFromLeaf :: (Text, I.Leaf) -> Type
 typeFromLeaf (key', I.LScalar (I.Core _ desc'))     = createLeafType SCALAR key' desc' []
 typeFromLeaf (key', I.LEnum tags' (I.Core _ desc')) = createLeafType ENUM key' desc' (map createEnumValue tags')
 
+resolveNothing :: a ::-> Maybe b
+resolveNothing = Resolver (\_ -> pure $ return Nothing)
+
+resolveMaybeList :: [b] -> a ::-> Maybe [b]
+resolveMaybeList list' = Resolver (\_ -> pure $ return (Just list'))
+
 createLeafType :: TypeKind -> Text -> Text -> [EnumValue] -> Type
 createLeafType kind' name' desc' enums' =
   Type
-    { kind = EnumOf kind'
+    { kind = kind'
     , name = Just name'
     , description = Just desc'
-    , fields = Nothing
+    , fields = resolveNothing
     , ofType = Nothing
     , interfaces = Nothing
     , possibleTypes = Nothing
-    , enumValues = Just $ WithDeprecationArgs enums'
+    , enumValues = resolveMaybeList enums'
     , inputFields = Nothing
     }
 
@@ -85,41 +91,41 @@ createObjectType = createType OBJECT
 createInputObject :: Text -> Text -> [InputValue] -> Type
 createInputObject name' desc' fields' =
   Type
-    { kind = EnumOf INPUT_OBJECT
+    { kind = INPUT_OBJECT
     , name = Just name'
     , description = Just desc'
-    , fields = Just $ WithDeprecationArgs []
+    , fields = resolveMaybeList []
     , ofType = Nothing
     , interfaces = Nothing
     , possibleTypes = Nothing
-    , enumValues = Nothing
+    , enumValues = resolveNothing
     , inputFields = Just fields'
     }
 
 createType :: TypeKind -> Text -> Text -> [Field] -> Type
 createType kind' name' desc' fields' =
   Type
-    { kind = EnumOf kind'
+    { kind = kind'
     , name = Just name'
     , description = Just desc'
-    , fields = Just $ WithDeprecationArgs fields'
+    , fields = resolveMaybeList fields'
     , ofType = Nothing
     , interfaces = Just []
     , possibleTypes = Just []
-    , enumValues = Just $ WithDeprecationArgs []
+    , enumValues = resolveMaybeList []
     , inputFields = Just []
     }
 
 wrapAs :: TypeKind -> Type -> Type
 wrapAs kind' contentType =
   Type
-    { kind = EnumOf kind'
+    { kind = kind'
     , name = Nothing
     , description = Nothing
-    , fields = Nothing
+    , fields = resolveNothing
     , ofType = Just contentType
     , interfaces = Nothing
     , possibleTypes = Nothing
-    , enumValues = Nothing
+    , enumValues = resolveNothing
     , inputFields = Nothing
     }

@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators     #-}
-
 module Data.Morpheus
   ( interpreter
   ) where

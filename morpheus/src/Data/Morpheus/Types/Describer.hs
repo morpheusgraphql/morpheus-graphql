@@ -1,37 +1,14 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE TypeOperators      #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module Data.Morpheus.Types.Describer
   ( (::->)(..)
-  , WithDeprecationArgs(..)
-  , EnumOf(..)
-  , ScalarOf(..)
   ) where
 
 import           Data.Data    (Constr, Data, DataType, Fixity (Prefix), dataTypeOf, gfoldl, gunfold, mkConstr,
                                mkDataType, toConstr)
 import           GHC.Generics (Generic)
-
-newtype EnumOf a = EnumOf
-  { unpackEnum :: a
-  } deriving (Show, Generic, Data)
-
-instance Functor EnumOf where
-  fmap f (EnumOf x) = EnumOf (f x)
-
-instance Applicative EnumOf where
-  pure = EnumOf
-  (<*>) (EnumOf x) y = x <$> y
-
-newtype ScalarOf a = ScalarOf
-  { unpackScalar :: a
-  } deriving (Show, Generic, Data)
-
-newtype WithDeprecationArgs a = WithDeprecationArgs
-  { unpackDeprecationArgs :: a
-  } deriving (Show, Generic, Data)
 
 newtype a ::-> b =
   Resolver (a -> IO (Either String b))
