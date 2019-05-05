@@ -8,6 +8,8 @@
 
 module Data.Morpheus.Kind.OutputRouter where
 
+import           Data.Morpheus.Generics.TypeRep      (Selectors (..), resolveTypes)
+import qualified Data.Morpheus.Kind.GQLArgs          as Args (GQLArgs (..))
 import qualified Data.Morpheus.Kind.GQLEnum          as E (GQLEnum (..))
 import           Data.Morpheus.Kind.GQLKind          (GQLKind)
 import qualified Data.Morpheus.Kind.GQLPrimitive     as P (GQLPrimitive (..))
@@ -66,4 +68,15 @@ instance OutputTypeRouter a (GQL a) => OutputTypeRouter [a] WRAPPER where
   __objectField _ _ name = listField (_objectField (Proxy @a) name)
 
 -- TODO: write instances !
-instance OutputTypeRouter a (GQL a) => OutputTypeRouter (p ::-> a) WRAPPER
+instance (OutputTypeRouter a (GQL a), Args.GQLArgs p) => OutputTypeRouter (p ::-> a) WRAPPER
+  --encode (key', SelectionSet gqlArgs body position') (Resolver resolver) =
+  --  (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
+  --  encode (key', SelectionSet gqlArgs body position')
+  --encode (key', Field gqlArgs field position') (Resolver resolver) =
+  --  (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
+  --  encode (key', Field gqlArgs field position')
+                                                   where
+  __introspect _ _ typeLib = resolveTypes typeLib $ inputTypes' ++ [_introspect (Proxy @a)]
+    where
+      inputTypes' = map snd $ Args.introspect (Proxy @p)
+  __objectField _ _ name = (_objectField (Proxy @a) name) {args = map fst $ Args.introspect (Proxy @p)}
