@@ -19,11 +19,9 @@ import           Control.Monad.Trans.Except
 import           Data.Morpheus.Error.Selection          (fieldNotResolved, subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
-import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType)
-import           Data.Morpheus.Kind.Internal            (GQL, GQLConstraint, IntrospectionRouter (..), OBJECT, _encode,
-                                                         _introspect, _objectField)
+import           Data.Morpheus.Kind.Internal            (GQL, GQLConstraint, OBJECT)
 import           Data.Morpheus.Kind.Utils               (encodeList, encodeMaybe, listField, nullableField)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
@@ -41,14 +39,6 @@ import           Data.Morpheus.Types.Query.Selection    (Selection (..))
 import           Data.Proxy
 import           Data.Text                              (Text, pack)
 import           GHC.Generics
-
-instance IntrospectionRouter a (GQL a) => DeriveResolvers (K1 s a) where
-  deriveResolvers meta (K1 src) = [(Meta.key meta, (`_encode` src))]
-
-instance (Selector s, IntrospectionRouter a (GQL a)) => Selectors (RecSel s a) (Text, ObjectField) where
-  getFields _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
-    where
-      name = pack $ selName (undefined :: SelOf s)
 
 class GQLObject a where
   encode :: (Text, Selection) -> a -> ResolveIO JSType
@@ -137,11 +127,6 @@ type instance GQL InputValue = OBJECT
 type instance GQL Schema = OBJECT
 
 type instance GQL Directive = OBJECT
-
-instance (GQLObject a, GQLKind a) => IntrospectionRouter a OBJECT where
-  __encode _ = encode
-  __introspect _ = introspect
-  __objectField _ = fieldType
 
 type instance GQL (WithDeprecationArgs a) = GQL a
 

@@ -3,18 +3,25 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Morpheus.Kind.OutputRouter where
 
-import qualified Data.Morpheus.Kind.GQLEnum          as E (GQLEnum (..))
-import           Data.Morpheus.Kind.GQLKind          (GQLKind)
-import qualified Data.Morpheus.Kind.GQLPrimitive     as P (GQLPrimitive (..))
-import qualified Data.Morpheus.Kind.GQLScalar        as S (GQLScalar (..))
-import           Data.Morpheus.Kind.Internal         (ENUM, Encode_, GQL, Intro_, OField_, PRIMITIVE, SCALAR)
-import           Data.Morpheus.Schema.Internal.Types (ObjectField (..))
-import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
-import           Data.Proxy                          (Proxy (..))
-import           Data.Text                           (pack)
+import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..))
+import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
+import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
+import qualified Data.Morpheus.Kind.GQLEnum             as E (GQLEnum (..))
+import           Data.Morpheus.Kind.GQLKind             (GQLKind)
+import qualified Data.Morpheus.Kind.GQLObject           as O (GQLObject (..))
+import qualified Data.Morpheus.Kind.GQLPrimitive        as P (GQLPrimitive (..))
+import qualified Data.Morpheus.Kind.GQLScalar           as S (GQLScalar (..))
+import           Data.Morpheus.Kind.Internal            (ENUM, Encode_, GQL, Intro_, OBJECT, OField_, PRIMITIVE, SCALAR)
+import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..))
+import           Data.Morpheus.Types.JSType             (JSType (..), ScalarValue (..))
+import           Data.Morpheus.Types.MetaInfo           (MetaInfo (key))
+import           Data.Proxy                             (Proxy (..))
+import           Data.Text                              (Text, pack)
+import           GHC.Generics
 
 class OutputTypeRouter a b where
   __introspect :: Proxy b -> Intro_ a
@@ -50,3 +57,16 @@ instance (P.GQLPrimitive a, GQLKind a) => OutputTypeRouter a PRIMITIVE where
   __introspect _ = P.introspect'
   __encode _ = P.encode'
   __objectField _ = P.objectField'
+
+instance (O.GQLObject a, GQLKind a) => OutputTypeRouter a OBJECT where
+  __encode _ = O.encode
+  __introspect _ = O.introspect
+  __objectField _ = O.fieldType
+
+instance OutputTypeRouter a (GQL a) => DeriveResolvers (K1 s a) where
+  deriveResolvers meta (K1 src) = [(key meta, (`_encode` src))]
+
+instance (Selector s, OutputTypeRouter a (GQL a)) => Selectors (RecSel s a) (Text, ObjectField) where
+  getFields _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
+    where
+      name = pack $ selName (undefined :: SelOf s)
