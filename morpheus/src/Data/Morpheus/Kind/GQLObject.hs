@@ -19,9 +19,11 @@ import           Control.Monad.Trans.Except
 import           Data.Morpheus.Error.Selection          (fieldNotResolved, subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
+import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType)
 import           Data.Morpheus.Kind.Internal            (GQL, GQLConstraint, OBJECT)
+import           Data.Morpheus.Kind.OutputRouter        (OutputTypeRouter (..), _encode, _introspect, _objectField)
 import           Data.Morpheus.Kind.Utils               (encodeList, encodeMaybe, listField, nullableField)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
@@ -39,6 +41,19 @@ import           Data.Morpheus.Types.Query.Selection    (Selection (..))
 import           Data.Proxy
 import           Data.Text                              (Text, pack)
 import           GHC.Generics
+
+instance (GQLObject a, GQLKind a) => OutputTypeRouter a OBJECT where
+  __encode _ = encode
+  __introspect _ = introspect
+  __objectField _ = fieldType
+
+instance OutputTypeRouter a (GQL a) => DeriveResolvers (K1 s a) where
+  deriveResolvers meta (K1 src) = [(Meta.key meta, (`_encode` src))]
+
+instance (Selector s, OutputTypeRouter a (GQL a)) => Selectors (RecSel s a) (Text, ObjectField) where
+  getFields _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
+    where
+      name = pack $ selName (undefined :: SelOf s)
 
 class GQLObject a where
   encode :: (Text, Selection) -> a -> ResolveIO JSType

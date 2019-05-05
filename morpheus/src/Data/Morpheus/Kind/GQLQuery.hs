@@ -15,7 +15,7 @@ module Data.Morpheus.Kind.GQLQuery
 
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
-import           Data.Morpheus.Kind.GQLObject           (GQLObject (..))
+import           Data.Morpheus.Kind.GQLObject           (encode, introspect)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField, TypeLib, initTypeLib)
 import           Data.Morpheus.Schema.Schema            (Schema, initSchema)
 import           Data.Morpheus.Types.Error              (ResolveIO)
