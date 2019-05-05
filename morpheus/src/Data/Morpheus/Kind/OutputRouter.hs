@@ -8,7 +8,10 @@
 
 module Data.Morpheus.Kind.OutputRouter where
 
-import           Data.Morpheus.Generics.TypeRep      (Selectors (..), resolveTypes)
+import           Control.Monad.Trans                 (lift)
+import           Control.Monad.Trans.Except
+import           Data.Morpheus.Error.Selection       (fieldNotResolved)
+import           Data.Morpheus.Generics.TypeRep      (resolveTypes)
 import qualified Data.Morpheus.Kind.GQLArgs          as Args (GQLArgs (..))
 import qualified Data.Morpheus.Kind.GQLEnum          as E (GQLEnum (..))
 import           Data.Morpheus.Kind.GQLKind          (GQLKind)
@@ -18,9 +21,11 @@ import           Data.Morpheus.Kind.Internal         (ENUM, Encode_, GQL, Intro_
 import           Data.Morpheus.Kind.Utils            (encodeList, encodeMaybe, listField, maybeField)
 import           Data.Morpheus.Schema.Internal.Types (ObjectField (..))
 import           Data.Morpheus.Types.Describer       ((::->) (..))
+import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
+import           Data.Morpheus.Types.Query.Selection (Selection (..))
 import           Data.Proxy                          (Proxy (..))
-import           Data.Text                           (pack)
+import           Data.Text                           (Text, pack)
 
 class OutputTypeRouter a b where
   __introspect :: Proxy b -> Intro_ a
@@ -67,15 +72,21 @@ instance OutputTypeRouter a (GQL a) => OutputTypeRouter [a] WRAPPER where
   __introspect _ _ = _introspect (Proxy @a)
   __objectField _ _ name = listField (_objectField (Proxy @a) name)
 
+liftResolver :: Int -> Text -> IO (Either String a) -> ResolveIO a
+liftResolver position' typeName' x = do
+  result <- lift x
+  case result of
+    Left message' -> failResolveIO $ fieldNotResolved position' typeName' (pack message')
+    Right value   -> pure value
+
 -- TODO: write instances !
-instance (OutputTypeRouter a (GQL a), Args.GQLArgs p) => OutputTypeRouter (p ::-> a) WRAPPER
-  --encode (key', SelectionSet gqlArgs body position') (Resolver resolver) =
-  --  (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
-  --  encode (key', SelectionSet gqlArgs body position')
-  --encode (key', Field gqlArgs field position') (Resolver resolver) =
-  --  (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
-  --  encode (key', Field gqlArgs field position')
-                                                   where
+instance (OutputTypeRouter a (GQL a), Args.GQLArgs p) => OutputTypeRouter (p ::-> a) WRAPPER where
+  __encode _ (key', SelectionSet gqlArgs body position') (Resolver resolver) =
+    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
+    _encode (key', SelectionSet gqlArgs body position')
+  __encode _ (key', Field gqlArgs field position') (Resolver resolver) =
+    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
+    _encode (key', Field gqlArgs field position')
   __introspect _ _ typeLib = resolveTypes typeLib $ inputTypes' ++ [_introspect (Proxy @a)]
     where
       inputTypes' = map snd $ Args.introspect (Proxy @p)

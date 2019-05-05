@@ -14,16 +14,16 @@ module Data.Morpheus.Kind.GQLObject
   ( GQLObject(..)
   ) where
 
-import           Control.Monad.Trans                    (lift)
 import           Control.Monad.Trans.Except
-import           Data.Morpheus.Error.Selection          (fieldNotResolved, subfieldsNotSelected)
+import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType)
 import           Data.Morpheus.Kind.Internal            (GQL, GQLConstraint, OBJECT)
-import           Data.Morpheus.Kind.OutputRouter        (OutputTypeRouter (..), _encode, _introspect, _objectField)
+import           Data.Morpheus.Kind.OutputRouter        (OutputTypeRouter (..), liftResolver, _encode, _introspect,
+                                                         _objectField)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
 import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib)
@@ -75,13 +75,6 @@ class GQLObject a where
       fieldTypes = getFields (Proxy @(Rep a))
       fields = map fst fieldTypes
       stack = map snd fieldTypes
-
-liftResolver :: Int -> Text -> IO (Either String a) -> ResolveIO a
-liftResolver position' typeName' x = do
-  result <- lift x
-  case result of
-    Left message' -> failResolveIO $ fieldNotResolved position' typeName' (pack message')
-    Right value   -> pure value
 
 instance (GQLObject a, Args.GQLArgs p) => GQLObject (p ::-> a) where
   encode (key', SelectionSet gqlArgs body position') (Resolver resolver) =
