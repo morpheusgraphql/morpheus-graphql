@@ -17,7 +17,8 @@ import           Data.Morpheus.Kind.GQLKind        (GQLKind)
 import qualified Data.Morpheus.Kind.GQLPrimitive   as P (GQLPrimitive (..))
 import qualified Data.Morpheus.Kind.GQLScalar      as S (GQLScalar (..))
 import           Data.Morpheus.Kind.Internal       (Decode_, ENUM, GQL, GQLConstraint, IField_, INPUT_OBJECT, Intro_,
-                                                    PRIMITIVE, SCALAR)
+                                                    PRIMITIVE, SCALAR, WRAPPER)
+import           Data.Morpheus.Kind.Utils          (listInputField, maybeInputField)
 import           Data.Morpheus.Types.JSType        (JSType (..))
 import           Data.Morpheus.Types.MetaInfo      (MetaInfo (..))
 import           Data.Proxy                        (Proxy (..))
@@ -76,3 +77,15 @@ instance (P.GQLPrimitive a, GQLKind a) => InputTypeRouter a PRIMITIVE where
   __decode _ = P.decode'
   __field _ = P.inputField'
   __introspect _ = P.introspect'
+
+instance InputTypeRouter a (GQL a) => InputTypeRouter (Maybe a) WRAPPER where
+  __decode _ JSNull = pure Nothing
+  __decode _ x      = Just <$> _decode x
+  __field _ _ name = maybeInputField $ _field (Proxy @a) name
+  __introspect _ _ = _introspect (Proxy @a)
+
+instance InputTypeRouter a (GQL a) => InputTypeRouter [a] WRAPPER where
+  __decode _ (JSList li) = mapM _decode li
+  __decode _ isType      = internalTypeMismatch "List" isType
+  __field _ _ name = listInputField $ _field (Proxy @a) name
+  __introspect _ _ = _introspect (Proxy @a)
