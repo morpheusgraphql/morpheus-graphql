@@ -1,5 +1,4 @@
 {-# LANGUAGE ConstrainedClassMethods #-}
-{-# LANGUAGE DefaultSignatures       #-}
 {-# LANGUAGE OverloadedStrings       #-}
 
 module Data.Morpheus.Kind.GQLScalar where
@@ -28,13 +27,9 @@ class GQLScalar a where
   encode = Scalar . serialize
   asInputField :: GQLKind a => Proxy a -> Key -> InputField
   asInputField proxy = InputField . asField proxy
-  asField :: Proxy a -> Key -> Field
-  default asField :: GQLKind a =>
-    Proxy a -> Key -> Field
+  asField :: GQLKind a => Proxy a -> Key -> Field
   asField proxy name = Field {fieldName = name, notNull = True, asList = False, kind = SCALAR, fieldType = typeID proxy}
-  introspect :: Proxy a -> TypeLib -> TypeLib
-  default introspect :: GQLKind a =>
-    Proxy a -> TypeLib -> TypeLib
+  introspect :: GQLKind a => Proxy a -> TypeLib -> TypeLib
   introspect = updateLib scalarTypeOf []
 
 instance GQLScalar Text where
