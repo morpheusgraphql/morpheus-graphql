@@ -79,7 +79,6 @@ liftResolver position' typeName' x = do
     Left message' -> failResolveIO $ fieldNotResolved position' typeName' (pack message')
     Right value   -> pure value
 
--- TODO: write instances !
 instance (OutputTypeRouter a (GQL a), Args.GQLArgs p) => OutputTypeRouter (p ::-> a) WRAPPER where
   __encode _ (key', SelectionSet gqlArgs body position') (Resolver resolver) =
     (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
