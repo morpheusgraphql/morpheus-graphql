@@ -11,7 +11,7 @@ module Data.Morpheus.Kind.InputRouter where
 
 import           Data.Morpheus.Error.Internal      (internalArgumentError, internalTypeMismatch)
 import           Data.Morpheus.Generics.GDecode    (GDecode (..))
-import qualified Data.Morpheus.Kind.GQLEnum        as E (GQLEnum (..))
+import qualified Data.Morpheus.Kind.GQLEnum        as E (EnumConstraint, GQLEnum (..))
 import qualified Data.Morpheus.Kind.GQLInputObject as I (GQLInputObject (..))
 import           Data.Morpheus.Kind.GQLKind        (GQLKind)
 import qualified Data.Morpheus.Kind.GQLScalar      as S (GQLScalar (..))
@@ -61,7 +61,7 @@ instance (S.GQLScalar a, GQLKind a) => InputTypeRouter a SCALAR where
   __introspect _ _ = S.introspect (Proxy @a)
   __field _ _ = S.asInputField (Proxy @a)
 
-instance (E.GQLEnum a, Show a, GQLKind a) => InputTypeRouter a ENUM where
+instance E.EnumConstraint a => InputTypeRouter a ENUM where
   __decode _ (JSEnum value) = pure (E.decode value)
   __decode _ isType         = internalTypeMismatch "Enum" isType
   __introspect _ _ = E.introspect (Proxy @a)

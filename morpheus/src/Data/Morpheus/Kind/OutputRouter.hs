@@ -13,7 +13,7 @@ import           Control.Monad.Trans.Except
 import           Data.Morpheus.Error.Selection       (fieldNotResolved)
 import           Data.Morpheus.Generics.TypeRep      (resolveTypes)
 import qualified Data.Morpheus.Kind.GQLArgs          as Args (GQLArgs (..))
-import qualified Data.Morpheus.Kind.GQLEnum          as E (GQLEnum (..))
+import qualified Data.Morpheus.Kind.GQLEnum          as E (EnumConstraint, GQLEnum (..))
 import           Data.Morpheus.Kind.GQLKind          (GQLKind)
 import qualified Data.Morpheus.Kind.GQLScalar        as S (GQLScalar (..))
 import           Data.Morpheus.Kind.Internal         (ENUM, Encode_, GQL, Intro_, OField_, SCALAR, WRAPPER)
@@ -51,7 +51,7 @@ instance (S.GQLScalar a, GQLKind a) => OutputTypeRouter a SCALAR where
   __encode _ _ = pure . S.encode
   __objectField _ _ = ObjectField [] . S.asField (Proxy @a)
 
-instance (E.GQLEnum a, Show a, GQLKind a) => OutputTypeRouter a ENUM where
+instance E.EnumConstraint a => OutputTypeRouter a ENUM where
   __introspect _ _ = E.introspect (Proxy @a)
   __encode _ _ = pure . Scalar . String . pack . show
   __objectField _ _ = ObjectField [] . E.asField (Proxy @a)
