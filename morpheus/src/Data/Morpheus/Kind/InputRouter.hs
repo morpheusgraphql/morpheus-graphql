@@ -65,7 +65,7 @@ instance E.EnumConstraint a => InputTypeRouter a ENUM where
   __decode _ (JSEnum value) = pure (E.decode value)
   __decode _ isType         = internalTypeMismatch "Enum" isType
   __introspect _ _ = E.introspect (Proxy @a)
-  __field _ _ = E.asInputField (Proxy @a)
+  __field _ _ = E.inputField (Proxy @a)
 
 instance (I.GQLInputObject a, GQLKind a) => InputTypeRouter a INPUT_OBJECT where
   __decode _ = I.decode

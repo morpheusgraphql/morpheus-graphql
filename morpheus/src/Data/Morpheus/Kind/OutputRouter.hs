@@ -54,7 +54,7 @@ instance (S.GQLScalar a, GQLKind a) => OutputTypeRouter a SCALAR where
 instance E.EnumConstraint a => OutputTypeRouter a ENUM where
   __introspect _ _ = E.introspect (Proxy @a)
   __encode _ _ = pure . Scalar . String . pack . show
-  __objectField _ _ = ObjectField [] . E.asField (Proxy @a)
+  __objectField _ _ = ObjectField [] . E.field (Proxy @a)
 
 instance OutputTypeRouter a (GQL a) => OutputTypeRouter (Maybe a) WRAPPER where
   __encode _ = encodeMaybe _encode
