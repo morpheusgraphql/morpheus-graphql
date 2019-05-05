@@ -13,7 +13,7 @@ module Example.Schema
 import qualified Data.ByteString.Lazy.Char8  as B
 import           Data.Maybe                  (fromMaybe)
 import           Data.Morpheus               (interpreter)
-import           Data.Morpheus.Kind          (GQLArgs, GQLEnum, GQLInput, GQLKind (..), GQLMutation, GQLObject,
+import           Data.Morpheus.Kind          (GQLArgs, GQLEnum, GQLInputObject, GQLKind (..), GQLMutation, GQLObject,
                                               GQLQuery, GQLScalar (..))
 import           Data.Morpheus.Kind.Internal (ENUM, GQL, INPUT_OBJECT, OBJECT, SCALAR)
 import           Data.Morpheus.Types         ((::->) (..), GQLRoot (..), ScalarValue (..))
@@ -54,12 +54,12 @@ instance GQLScalar Euro where
 
 data UID = UID
   { uid :: Text
-  } deriving (Show, Generic, Typeable, GQLKind, GQLInput)
+  } deriving (Show, Generic, Typeable, GQLKind, GQLInputObject)
 
 data Coordinates = Coordinates
   { latitude  :: Euro
   , longitude :: [UID]
-  } deriving (Generic, Typeable, GQLInput)
+  } deriving (Generic, Typeable, GQLInputObject)
 
 instance GQLKind Coordinates where
   description _ = "just random latitude and longitude"
