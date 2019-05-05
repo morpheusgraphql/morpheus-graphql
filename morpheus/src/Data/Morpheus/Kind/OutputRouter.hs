@@ -15,9 +15,8 @@ import           Data.Morpheus.Generics.TypeRep      (resolveTypes)
 import qualified Data.Morpheus.Kind.GQLArgs          as Args (GQLArgs (..))
 import qualified Data.Morpheus.Kind.GQLEnum          as E (GQLEnum (..))
 import           Data.Morpheus.Kind.GQLKind          (GQLKind)
-import qualified Data.Morpheus.Kind.GQLPrimitive     as P (GQLPrimitive (..))
 import qualified Data.Morpheus.Kind.GQLScalar        as S (GQLScalar (..))
-import           Data.Morpheus.Kind.Internal         (ENUM, Encode_, GQL, Intro_, OField_, PRIMITIVE, SCALAR, WRAPPER)
+import           Data.Morpheus.Kind.Internal         (ENUM, Encode_, GQL, Intro_, OField_, SCALAR, WRAPPER)
 import           Data.Morpheus.Kind.Utils            (encodeList, encodeMaybe, listField, maybeField)
 import           Data.Morpheus.Schema.Internal.Types (ObjectField (..))
 import           Data.Morpheus.Types.Describer       ((::->) (..))
@@ -56,11 +55,6 @@ instance (E.GQLEnum a, Show a, GQLKind a) => OutputTypeRouter a ENUM where
   __introspect _ _ = E.introspect (Proxy @a)
   __encode _ _ = pure . Scalar . String . pack . show
   __objectField _ _ = ObjectField [] . E.asField (Proxy @a)
-
-instance (P.GQLPrimitive a, GQLKind a) => OutputTypeRouter a PRIMITIVE where
-  __introspect _ = P.introspect'
-  __encode _ = P.encode'
-  __objectField _ = P.objectField'
 
 instance OutputTypeRouter a (GQL a) => OutputTypeRouter (Maybe a) WRAPPER where
   __encode _ = encodeMaybe _encode

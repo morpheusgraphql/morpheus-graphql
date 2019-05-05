@@ -13,6 +13,7 @@ import           Data.Morpheus.Types.Core            (Key)
 import           Data.Morpheus.Types.Error           (Validation)
 import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
 import           Data.Proxy                          (Proxy (..))
+import           Data.Text                           (Text)
 
 toScalar :: JSType -> Validation ScalarValue
 toScalar (Scalar x) = pure x
@@ -35,3 +36,23 @@ class GQLScalar a where
   default introspect :: GQLKind a =>
     Proxy a -> TypeLib -> TypeLib
   introspect = updateLib scalarTypeOf []
+
+instance GQLScalar Text where
+  parseValue (String x) = pure x
+  parseValue isType     = internalTypeMismatch "String" (Scalar isType)
+  serialize = String
+
+instance GQLScalar Bool where
+  parseValue (Boolean x) = pure x
+  parseValue isType      = internalTypeMismatch "Boolean" (Scalar isType)
+  serialize = Boolean
+
+instance GQLScalar Int where
+  parseValue (Int x) = pure x
+  parseValue isType  = internalTypeMismatch "Int" (Scalar isType)
+  serialize = Int
+
+instance GQLScalar Float where
+  parseValue (Float x) = pure x
+  parseValue isType    = internalTypeMismatch "Float" (Scalar isType)
+  serialize = Float

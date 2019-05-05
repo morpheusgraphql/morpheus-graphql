@@ -14,10 +14,9 @@ import           Data.Morpheus.Generics.GDecode    (GDecode (..))
 import qualified Data.Morpheus.Kind.GQLEnum        as E (GQLEnum (..))
 import qualified Data.Morpheus.Kind.GQLInputObject as I (GQLInputObject (..))
 import           Data.Morpheus.Kind.GQLKind        (GQLKind)
-import qualified Data.Morpheus.Kind.GQLPrimitive   as P (GQLPrimitive (..))
 import qualified Data.Morpheus.Kind.GQLScalar      as S (GQLScalar (..))
 import           Data.Morpheus.Kind.Internal       (Decode_, ENUM, GQL, GQLConstraint, IField_, INPUT_OBJECT, Intro_,
-                                                    PRIMITIVE, SCALAR, WRAPPER)
+                                                    SCALAR, WRAPPER)
 import           Data.Morpheus.Kind.Utils          (listInputField, maybeInputField)
 import           Data.Morpheus.Types.JSType        (JSType (..))
 import           Data.Morpheus.Types.MetaInfo      (MetaInfo (..))
@@ -72,11 +71,6 @@ instance (I.GQLInputObject a, GQLKind a) => InputTypeRouter a INPUT_OBJECT where
   __decode _ = I.decode
   __introspect _ = I.introInput
   __field _ = I.asArgument
-
-instance (P.GQLPrimitive a, GQLKind a) => InputTypeRouter a PRIMITIVE where
-  __decode _ = P.decode'
-  __field _ = P.inputField'
-  __introspect _ = P.introspect'
 
 instance InputTypeRouter a (GQL a) => InputTypeRouter (Maybe a) WRAPPER where
   __decode _ JSNull = pure Nothing

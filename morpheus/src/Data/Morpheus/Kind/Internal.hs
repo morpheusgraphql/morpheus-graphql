@@ -1,8 +1,7 @@
 {-# LANGUAGE TypeFamilies, TypeOperators #-}
 
 module Data.Morpheus.Kind.Internal
-  ( PRIMITIVE
-  , SCALAR
+  ( SCALAR
   , OBJECT
   , ENUM
   , WRAPPER
@@ -29,13 +28,13 @@ import GHC.Exts (Constraint)
 type family GQL a :: *
 
 -- default Type Instances
-type instance GQL Text = PRIMITIVE
+type instance GQL Text = SCALAR
 
-type instance GQL Int = PRIMITIVE
+type instance GQL Int = SCALAR
 
-type instance GQL Float = PRIMITIVE
+type instance GQL Float = SCALAR
 
-type instance GQL Bool = PRIMITIVE
+type instance GQL Bool = SCALAR
 
 type instance GQL (Maybe a) = WRAPPER
 
@@ -44,8 +43,6 @@ type instance GQL [a] = WRAPPER
 type instance GQL (p ::-> a) = WRAPPER
 
 -- default Data Kinds
-data PRIMITIVE
-
 data SCALAR
 
 data OBJECT
