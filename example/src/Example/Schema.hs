@@ -1,23 +1,20 @@
-{-# LANGUAGE DeriveAnyClass        #-}
-{-# LANGUAGE DeriveDataTypeable    #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module Example.Schema
   ( gqlApi
   ) where
 
-import qualified Data.ByteString.Lazy.Char8  as B
+import           Data.ByteString.Lazy.Char8  (ByteString)
 import           Data.Maybe                  (fromMaybe)
 import           Data.Morpheus               (interpreter)
 import           Data.Morpheus.Kind          (GQLArgs, GQLKind (..), GQLMutation, GQLQuery, GQLScalar (..))
 import           Data.Morpheus.Kind.Internal (ENUM, GQL, INPUT_OBJECT, OBJECT, SCALAR)
 import           Data.Morpheus.Types         ((::->) (..), GQLRoot (..), ScalarValue (..))
 import           Data.Text                   (Text, pack)
-import           Data.Typeable               (Typeable)
 import qualified Example.Model               as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
 import           GHC.Generics                (Generic)
 
@@ -37,12 +34,12 @@ data CityID
   = Paris
   | BLN
   | HH
-  deriving (Generic, GQLKind, Typeable)
+  deriving (Generic, GQLKind)
 
 data Euro =
   Euro Int
        Int
-  deriving (Generic, GQLKind, Typeable)
+  deriving (Generic, GQLKind)
 
 instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
@@ -50,12 +47,12 @@ instance GQLScalar Euro where
 
 newtype UID = UID
   { uid :: Text
-  } deriving (Show, Generic, Typeable, GQLKind)
+  } deriving (Show, Generic, GQLKind)
 
 data Coordinates = Coordinates
   { latitude  :: Euro
   , longitude :: [UID]
-  } deriving (Generic, Typeable)
+  } deriving (Generic)
 
 instance GQLKind Coordinates where
   description _ = "just random latitude and longitude"
@@ -75,7 +72,7 @@ data Address = Address
   , street      :: Text
   , houseNumber :: Int
   , owner       :: Maybe User
-  } deriving (Generic, GQLKind, Typeable)
+  } deriving (Generic, GQLKind)
 
 data User = User
   { name    :: Text
@@ -84,7 +81,7 @@ data User = User
   , office  :: Location ::-> Address
   , friend  :: () ::-> Maybe User
   , home    :: CityID
-  } deriving (Generic, Typeable)
+  } deriving (Generic)
 
 instance GQLKind User where
   description _ = "Custom Description for Client Defined User Type"
@@ -149,5 +146,5 @@ createUserMutation = Resolver resolve'
         , friend = Resolver $ \_ -> pure (pure Nothing)
         }
 
-gqlApi :: B.ByteString -> IO B.ByteString
+gqlApi :: ByteString -> IO ByteString
 gqlApi = interpreter GQLRoot {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}}

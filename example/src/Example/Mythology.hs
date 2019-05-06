@@ -1,7 +1,5 @@
 {-# LANGUAGE DeriveAnyClass        #-}
-{-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -17,10 +15,9 @@ import           Data.Morpheus.Kind          (GQLArgs, GQLKind (..), GQLQuery)
 import           Data.Morpheus.Kind.Internal (GQL, OBJECT)
 import           Data.Morpheus.Types         ((::->) (..), GQLRoot (..))
 import           Data.Text                   (Text)
-import           Data.Typeable               (Typeable)
 import           GHC.Generics                (Generic)
 
-data Query = Query
+newtype Query = Query
   { deity :: DeityArgs ::-> Deity
   } deriving (Generic, GQLQuery)
 
@@ -29,7 +26,7 @@ type instance GQL Deity = OBJECT
 data Deity = Deity
   { fullName :: Text -- Non-Nullable Field
   , power    :: Maybe Text -- Nullable Field
-  } deriving (Generic, Typeable)
+  } deriving (Generic)
 
 instance GQLKind Deity where
   description _ = "Custom Description for Client Defined User Type"
