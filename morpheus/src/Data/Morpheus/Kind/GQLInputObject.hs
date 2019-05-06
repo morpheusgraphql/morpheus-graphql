@@ -24,7 +24,6 @@ import           Data.Morpheus.Schema.Internal.Types (InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Error           (Validation)
 import           Data.Morpheus.Types.JSType          (JSType (..))
-import           Data.Morpheus.Types.MetaInfo        (initialMeta)
 import           Data.Proxy                          (Proxy (..))
 import           Data.Text                           (Text)
 import           GHC.Generics
@@ -32,7 +31,7 @@ import           GHC.Generics
 type IObjectConstraint a = (GQLKind a, Generic a, GDecode JSType (Rep a), Selectors (Rep a) (Text, InputField))
 
 decode :: (Generic a, GDecode JSType (Rep a)) => JSType -> Validation a
-decode (JSObject x) = to <$> gDecode initialMeta (JSObject x)
+decode (JSObject x) = to <$> gDecode "" (JSObject x)
 decode isType       = internalTypeMismatch "InputObject" isType
 
 inputField :: GQLKind a => Proxy a -> Text -> InputField

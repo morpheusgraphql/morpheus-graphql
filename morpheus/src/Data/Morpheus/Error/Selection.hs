@@ -11,35 +11,34 @@ module Data.Morpheus.Error.Selection
 import           Data.Morpheus.Error.Utils    (errorMessage)
 import           Data.Morpheus.Types.Core     (EnhancedKey (..))
 import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors)
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
-import qualified Data.Text                    as T (Text, concat)
+import           Data.Morpheus.Types.MetaInfo (Position)
+import           Data.Text                    (Text)
+import qualified Data.Text                    as T (concat)
 
-fieldNotResolved :: Position -> T.Text -> T.Text -> GQLErrors
+fieldNotResolved :: Position -> Text -> Text -> GQLErrors
 fieldNotResolved position' key' message' = errorMessage position' text
   where
     text = T.concat ["Failure on Resolving Field \"", key', "\": ", message']
 
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
-hasNoSubfields :: MetaInfo -> GQLErrors
-hasNoSubfields meta = errorMessage (position meta) text
+hasNoSubfields :: Text -> Text -> Position -> GQLErrors
+hasNoSubfields key typeName position = errorMessage position text
   where
-    text =
-      T.concat
-        ["Field \"", key meta, "\" must not have a selection since type \"", typeName meta, "\" has no subfields."]
+    text = T.concat ["Field \"", key, "\" must not have a selection since type \"", typeName, "\" has no subfields."]
 
-cannotQueryField :: MetaInfo -> GQLErrors
-cannotQueryField meta = errorMessage (position meta) text
+cannotQueryField :: Text -> Text -> Position -> GQLErrors
+cannotQueryField key typeName position = errorMessage position text
   where
-    text = T.concat ["Cannot query field \"", key meta, "\" on type \"", typeName meta, "\"."]
+    text = T.concat ["Cannot query field \"", key, "\" on type \"", typeName, "\"."]
 
-duplicateQuerySelections :: T.Text -> [EnhancedKey] -> GQLErrors
+duplicateQuerySelections :: Text -> [EnhancedKey] -> GQLErrors
 duplicateQuerySelections parentType = map keyToError
   where
     keyToError (EnhancedKey key' pos) = GQLError {desc = toMessage key', posIndex = [pos]}
     toMessage key' = T.concat ["duplicate selection of key \"", key', "\" on type \"", parentType, "\"."]
 
 -- GQL:: Field \"hobby\" of type \"Hobby!\" must have a selection of subfields. Did you mean \"hobby { ... }\"?
-subfieldsNotSelected :: MetaInfo -> GQLErrors
-subfieldsNotSelected meta = errorMessage (position meta) text
+subfieldsNotSelected :: Text -> Text -> Position -> GQLErrors
+subfieldsNotSelected key typeName position = errorMessage position text
   where
-    text = T.concat ["Field \"", key meta, "\" of type \"", typeName meta, "\" must have a selection of subfields"]
+    text = T.concat ["Field \"", key, "\" of type \"", typeName, "\" must have a selection of subfields"]
