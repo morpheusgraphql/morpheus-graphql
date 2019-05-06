@@ -18,7 +18,7 @@ module Data.Morpheus.Kind.GQLObject
 
 import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
-import           Data.Morpheus.Generics.TypeRep         (Selectors (..))
+import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..))
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType)
 import           Data.Morpheus.Kind.Internal            (GQL, OBJECT)
@@ -36,7 +36,7 @@ import           Data.Proxy
 import           Data.Text                              (Text, pack)
 import           GHC.Generics
 
-type ObjectConstraint a = (Generic a, DeriveResolvers (Rep a), Selectors (Rep a) (Text, ObjectField), GQLKind a)
+type ObjectConstraint a = (Generic a, DeriveResolvers (Rep a), ObjectRep (Rep a) (Text, ObjectField), GQLKind a)
 
 instance ObjectConstraint a => OutputTypeRouter a OBJECT where
   __encode _ = encode
@@ -46,7 +46,7 @@ instance ObjectConstraint a => OutputTypeRouter a OBJECT where
 instance OutputTypeRouter a (GQL a) => DeriveResolvers (K1 s a) where
   deriveResolvers key' (K1 src) = [(key', (`_encode` src))]
 
-instance (Selector s, OutputTypeRouter a (GQL a)) => Selectors (RecSel s a) (Text, ObjectField) where
+instance (Selector s, OutputTypeRouter a (GQL a)) => ObjectRep (RecSel s a) (Text, ObjectField) where
   getFields _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)
@@ -56,14 +56,14 @@ encode (_, SelectionSet _ selection _pos) = resolveBySelection selection . deriv
 encode (_, Field _ key pos)               = const $ failResolveIO $ subfieldsNotSelected key "" pos -- TODO: must be internal Error
 
 field ::
-     forall a. (Selectors (Rep a) (Text, ObjectField), GQLKind a)
+     forall a. (ObjectRep (Rep a) (Text, ObjectField), GQLKind a)
   => Proxy a
   -> Text
   -> ObjectField
 field proxy = ObjectField [] . buildField OBJECT proxy
 
 introspect ::
-     forall a. (Selectors (Rep a) (Text, ObjectField), GQLKind a)
+     forall a. (ObjectRep (Rep a) (Text, ObjectField), GQLKind a)
   => Proxy a
   -> TypeLib
   -> TypeLib

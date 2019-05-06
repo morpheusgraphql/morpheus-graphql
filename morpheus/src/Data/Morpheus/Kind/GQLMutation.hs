@@ -13,7 +13,7 @@ module Data.Morpheus.Kind.GQLMutation
   ) where
 
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
-import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
+import           Data.Morpheus.Generics.ObjectRep         (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField, TypeLib (..))
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
@@ -28,7 +28,7 @@ class GQLMutation a where
     a -> SelectionSet -> ResolveIO JSType
   encodeMutation rootResolver sel = resolveBySelection sel $ deriveResolvers "" $ from rootResolver
   mutationSchema :: a -> TypeLib -> TypeLib
-  default mutationSchema :: (Selectors (Rep a) (Text, ObjectField)) =>
+  default mutationSchema :: (ObjectRep (Rep a) (Text, ObjectField)) =>
     a -> TypeLib -> TypeLib
   mutationSchema _ initialType = resolveTypes mutationType types
     where

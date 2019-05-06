@@ -13,7 +13,7 @@ module Data.Morpheus.Kind.GQLArgs
 
 import           Data.Morpheus.Error.Internal        (internalArgumentError)
 import           Data.Morpheus.Generics.GDecode      (GDecode (..))
-import           Data.Morpheus.Generics.TypeRep      (Selectors (..))
+import           Data.Morpheus.Generics.ObjectRep    (ObjectRep (..))
 import           Data.Morpheus.Generics.Utils        (RecSel, SelOf)
 import           Data.Morpheus.Kind.InputRouter      (InputTypeRouter, _decode, _field, _introspect)
 import           Data.Morpheus.Kind.Internal         (GQL)
@@ -25,7 +25,7 @@ import           Data.Proxy                          (Proxy (..))
 import           Data.Text                           (Text, pack)
 import           GHC.Generics
 
-instance (Selector s, InputTypeRouter a (GQL a)) => Selectors (RecSel s a) (Text, InputField) where
+instance (Selector s, InputTypeRouter a (GQL a)) => ObjectRep (RecSel s a) (Text, InputField) where
   getFields _ = [((name, _field (Proxy @a) name), _introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)
@@ -42,7 +42,7 @@ class GQLArgs p where
     Arguments -> Validation p
   decode args = to <$> gDecode "" args
   introspect :: Proxy p -> [((Text, InputField), TypeLib -> TypeLib)]
-  default introspect :: Selectors (Rep p) (Text, InputField) =>
+  default introspect :: ObjectRep (Rep p) (Text, InputField) =>
     Proxy p -> [((Text, InputField), TypeLib -> TypeLib)]
   introspect _ = getFields (Proxy @(Rep p))
 

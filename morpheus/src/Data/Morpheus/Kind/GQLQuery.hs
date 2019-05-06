@@ -14,7 +14,7 @@ module Data.Morpheus.Kind.GQLQuery
   ) where
 
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
-import           Data.Morpheus.Generics.TypeRep         (Selectors (..), resolveTypes)
+import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Kind.GQLObject           (encode, introspect)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField, TypeLib, initTypeLib)
 import           Data.Morpheus.Schema.Schema            (Schema, initSchema)
@@ -34,7 +34,7 @@ class GQLQuery a where
       schemaResolver = [("__schema", (`encode` initSchema types))]
       resolvers = deriveResolvers "" $ from rootResolver
   querySchema :: a -> TypeLib
-  default querySchema :: (Selectors (Rep a) (Text, ObjectField)) =>
+  default querySchema :: (ObjectRep (Rep a) (Text, ObjectField)) =>
     a -> TypeLib
   querySchema _ = resolveTypes typeLib stack
     where

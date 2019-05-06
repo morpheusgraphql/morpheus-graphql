@@ -11,7 +11,7 @@ module Data.Morpheus.Kind.OutputRouter where
 import           Control.Monad.Trans                 (lift)
 import           Control.Monad.Trans.Except
 import           Data.Morpheus.Error.Selection       (fieldNotResolved)
-import           Data.Morpheus.Generics.TypeRep      (resolveTypes)
+import           Data.Morpheus.Generics.ObjectRep    (resolveTypes)
 import qualified Data.Morpheus.Kind.GQLArgs          as Args (GQLArgs (..))
 import qualified Data.Morpheus.Kind.GQLEnum          as E (EnumConstraint, field, introspect)
 import           Data.Morpheus.Kind.GQLKind          (GQLKind)

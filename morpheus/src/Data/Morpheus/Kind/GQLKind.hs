@@ -14,7 +14,7 @@ module Data.Morpheus.Kind.GQLKind
   , inputObjectOf
   ) where
 
-import           Data.Morpheus.Generics.TypeRep         (resolveTypes)
+import           Data.Morpheus.Generics.ObjectRep         (resolveTypes)
 import           Data.Morpheus.Generics.Utils           (typeOf)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)

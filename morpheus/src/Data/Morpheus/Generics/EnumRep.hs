@@ -4,30 +4,30 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Data.Morpheus.Generics.GDecodeEnum
-  ( GDecodeEnum(..)
+module Data.Morpheus.Generics.EnumRep
+  ( EnumRep(..)
   ) where
 
 import           Data.Proxy   (Proxy (..))
 import qualified Data.Text    as T
 import           GHC.Generics
 
-class GDecodeEnum f where
+class EnumRep f where
   gToEnum :: T.Text -> f a
   tagName :: Proxy f -> T.Text
   getTags :: Proxy f -> [T.Text]
 
-instance (Datatype c, GDecodeEnum f) => GDecodeEnum (M1 D c f) where
+instance (Datatype c, EnumRep f) => EnumRep (M1 D c f) where
   gToEnum = M1 . gToEnum
   tagName _ = ""
   getTags _ = getTags (Proxy :: Proxy f)
 
-instance (Constructor c) => GDecodeEnum (M1 C c U1) where
+instance (Constructor c) => EnumRep (M1 C c U1) where
   gToEnum _ = M1 U1
   tagName _ = T.pack $ conName (undefined :: (M1 C c U1 x))
   getTags proxy = [tagName proxy]
 
-instance (GDecodeEnum a, GDecodeEnum b) => GDecodeEnum (a :+: b) where
+instance (EnumRep a, EnumRep b) => EnumRep (a :+: b) where
   gToEnum name =
     if tagName (Proxy @a) == name
       then L1 $ gToEnum name
