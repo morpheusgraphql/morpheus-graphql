@@ -1,12 +1,10 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Data.Morpheus.Schema.InputValue
   ( InputValue(..)
   , createInputValueWith
   ) where
 
-import           Data.Data    (Data)
 import           Data.Text    (Text)
 import           GHC.Generics
 
@@ -15,7 +13,7 @@ data InputValue t = InputValue
   , description  :: Maybe Text
   , _type        :: t
   , defaultValue :: Maybe Text
-  } deriving (Show, Data, Generic)
+  } deriving (Generic)
 
 createInputValueWith :: Text -> a -> InputValue a
 createInputValueWith _name ofType =

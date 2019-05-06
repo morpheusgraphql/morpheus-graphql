@@ -1,10 +1,8 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Schema.Schema where
 
-import           Data.Data                           (Data)
 import           Data.Morpheus.Schema.Directive      (Directive)
 import           Data.Morpheus.Schema.Internal.Types (OutputObject, TypeLib (..))
 import           Data.Morpheus.Schema.Utils.Utils    (Type, createObjectType, typeFromInputObject, typeFromLeaf,
@@ -18,7 +16,7 @@ data Schema = Schema
   , mutationType     :: Maybe Type
   , subscriptionType :: Maybe Type
   , directives       :: [Directive]
-  } deriving (Show, Data, Generic)
+  } deriving (Generic)
 
 convertTypes :: TypeLib -> [Type]
 convertTypes lib' =

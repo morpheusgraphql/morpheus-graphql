@@ -1,11 +1,9 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Data.Morpheus.Schema.TypeKind
   ( TypeKind(..)
   ) where
 
-import           Data.Data    (Data)
 import           GHC.Generics
 
 data TypeKind
@@ -17,4 +15,4 @@ data TypeKind
   | INPUT_OBJECT
   | LIST
   | NON_NULL
-  deriving (Show, Eq, Data, Generic)
+  deriving (Eq, Generic)

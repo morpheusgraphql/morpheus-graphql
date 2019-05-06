@@ -1,5 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Data.Morpheus.Schema.EnumValue
   ( EnumValue(..)
@@ -7,7 +6,6 @@ module Data.Morpheus.Schema.EnumValue
   , isEnumOf
   ) where
 
-import           Data.Data    (Data)
 import           Data.Text    (Text)
 import           GHC.Generics
 
@@ -16,7 +14,7 @@ data EnumValue = EnumValue
   , description       :: Maybe Text
   , isDeprecated      :: Bool
   , deprecationReason :: Maybe Text
-  } deriving (Show, Data, Generic)
+  } deriving (Generic)
 
 createEnumValue :: Text -> EnumValue
 createEnumValue enumName =

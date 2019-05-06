@@ -1,11 +1,9 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Data.Morpheus.Schema.DirectiveLocation
   ( DirectiveLocation(..)
   ) where
 
-import           Data.Data    (Data)
 import           GHC.Generics
 
 data DirectiveLocation
@@ -27,4 +25,4 @@ data DirectiveLocation
   | ENUM_VALUE
   | INPUT_OBJECT
   | INPUT_FIELD_DEFINITION
-  deriving (Show, Data, Generic)
+  deriving (Generic)
