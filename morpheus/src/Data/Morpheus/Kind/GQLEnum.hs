@@ -2,6 +2,7 @@
 {-# LANGUAGE ConstrainedClassMethods #-}
 {-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE OverloadedStrings       #-}
 {-# LANGUAGE ScopedTypeVariables     #-}
 {-# LANGUAGE TypeApplications        #-}
 {-# LANGUAGE TypeFamilies            #-}
@@ -13,6 +14,7 @@ module Data.Morpheus.Kind.GQLEnum
   , inputField
   , field
   , introspect
+  , encode
   ) where
 
 import           Data.Morpheus.Generics.EnumRep         (EnumRep (..))
@@ -21,6 +23,7 @@ import           Data.Morpheus.Kind.Internal            (ENUM, GQL)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
+import           Data.Morpheus.Types.JSType             (JSType (..), ScalarValue (..))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 import           GHC.Generics
@@ -29,6 +32,9 @@ type EnumConstraint a = (Generic a, EnumRep (Rep a), Show a, GQLKind a)
 
 decode :: (Generic a, EnumRep (Rep a)) => Text -> a
 decode text = to $ gToEnum text
+
+encode :: (Generic a, EnumRep (Rep a)) => a -> JSType
+encode = Scalar . String . encodeRep . from
 
 inputField :: GQLKind a => Proxy a -> Text -> InputField
 inputField proxy = InputField . field proxy

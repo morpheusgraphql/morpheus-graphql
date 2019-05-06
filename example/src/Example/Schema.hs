@@ -83,7 +83,7 @@ data User = User
   , address :: LocationByCoordinates ::-> Address
   , office  :: Location ::-> Address
   , friend  :: () ::-> Maybe User
-  , home    :: Maybe Address
+  , home    :: CityID
   } deriving (Generic, Typeable)
 
 instance GQLKind User where
@@ -129,7 +129,7 @@ resolveUser = Resolver $ const (M.jsonUser >>= \x -> return (buildResolverBy <$>
         , email = M.email user'
         , address = resolveAddress
         , office = resolveOffice user'
-        , home = Nothing
+        , home = HH
         , friend = Resolver $ \_ -> pure (pure Nothing)
         }
 
@@ -145,7 +145,7 @@ createUserMutation = Resolver resolve'
         , email = M.email user'
         , address = resolveAddress
         , office = resolveOffice user'
-        , home = Nothing
+        , home = HH
         , friend = Resolver $ \_ -> pure (pure Nothing)
         }
 
