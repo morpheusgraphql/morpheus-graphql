@@ -1,9 +1,13 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators       #-}
 
-module Data.Morpheus.Generics.TypeID where
+--{-# LANGUAGE OverloadedStrings   #-}
+module Data.Morpheus.Generics.TypeID
+  ( typeId
+  , TypeID
+  ) where
 
 import           Data.Proxy   (Proxy)
 import           Data.Text    (Text, pack)
@@ -15,11 +19,23 @@ typeId ::
   -> Text
 typeId _ = key $ from (undefined :: a)
 
+keyName :: Datatype c => M1 D c f a -> Text
+keyName m@(M1 _) = pack $ datatypeName m
+
 class TypeID f where
   key :: f a -> Text
 
-instance (Datatype c, TypeID f) => TypeID (M1 D c f) where
-  key m@(M1 _) = pack $ datatypeName m
+instance Datatype c => TypeID (M1 D c f) where
+  key = keyName
+{--
 
-instance (Constructor c) => TypeID (M1 C c U1) where
+instance (Constructor c) => TypeID (M1 C c f) where
   key _ = ""
+instance (Selector c) => TypeID (M1 S c f) where
+  key _ = ""
+instance TypeID (f :*: g) where
+  key _ = ""
+instance TypeID (f :+: g) where
+  key _ = ""
+
+--}
