@@ -37,12 +37,12 @@ data CityID
   = Paris
   | BLN
   | HH
-  deriving (Show, Generic, Typeable, GQLKind)
+  deriving (Generic, GQLKind, Typeable)
 
 data Euro =
   Euro Int
        Int
-  deriving (Typeable, Generic, GQLKind)
+  deriving (Generic, GQLKind, Typeable)
 
 instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
