@@ -48,7 +48,7 @@ instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
   serialize (Euro x y) = Int (x * 100 + y)
 
-data UID = UID
+newtype UID = UID
   { uid :: Text
   } deriving (Show, Generic, Typeable, GQLKind)
 

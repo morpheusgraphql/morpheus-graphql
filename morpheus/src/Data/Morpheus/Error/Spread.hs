@@ -7,7 +7,7 @@ module Data.Morpheus.Error.Spread
 
 import           Data.Morpheus.Error.Utils    (errorMessage)
 import           Data.Morpheus.Types.Error    (GQLErrors)
-import           Data.Morpheus.Types.MetaInfo (MetaInfo (..), Position)
+import           Data.Morpheus.Types.MetaInfo (Position)
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
 
@@ -18,15 +18,15 @@ unknownFragment key' position' = errorMessage position' text
     text = T.concat ["Unknown Fragment \"", key', "\"."]
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
-cannotBeSpreadOnType :: MetaInfo -> T.Text -> GQLErrors
-cannotBeSpreadOnType spread selectionType = errorMessage (position spread) text
+cannotBeSpreadOnType :: Text -> Text -> Position -> Text -> GQLErrors
+cannotBeSpreadOnType key' type' position' selectionType = errorMessage position' text
   where
     text =
       T.concat
         [ "Fragment \""
-        , key spread
+        , key'
         , "\" cannot be spread here as objects of type \""
-        , typeName spread
+        , type'
         , "\" can never be of type \""
         , selectionType
         , "\"."

@@ -6,26 +6,27 @@ module Data.Morpheus.Generics.GDecode
   ( GDecode(..)
   ) where
 
-import           Data.Morpheus.Types.Error    (Validation)
-import           Data.Morpheus.Types.MetaInfo
-import qualified Data.Text                    as T
+import           Data.Morpheus.Types.Error (Validation)
+import           Data.Text                 (Text, pack)
 import           GHC.Generics
 
 fixProxy :: (a -> f a) -> f a
 fixProxy f = f undefined
 
 class GDecode i f where
-  gDecode :: MetaInfo -> i -> Validation (f a)
+  gDecode :: Text -> i -> Validation (f a)
 
 instance GDecode i U1 where
   gDecode _ _ = pure U1
 
 instance (Selector c, GDecode i f) => GDecode i (M1 S c f) where
-  gDecode meta gql = fixProxy (\x -> M1 <$> gDecode (meta {key = T.pack $ selName x}) gql)
+  gDecode _ gql = fixProxy (\x -> M1 <$> gDecode (pack $ selName x) gql)
 
 instance (Datatype c, GDecode i f) => GDecode i (M1 D c f) where
-  gDecode meta gql = fixProxy (\x -> M1 <$> gDecode (meta {typeName = T.pack $ datatypeName x}) gql)
+  gDecode key gql = fixProxy $ const (M1 <$> gDecode key gql)
 
+--instance (Datatype c, GDecode i f) => GDecode i (M1 D c f) where
+--  gDecode meta gql = fixProxy (\x -> M1 <$> gDecode (meta {pack $ datatypeName x}) gql)
 instance GDecode i f => GDecode i (M1 C c f) where
   gDecode meta gql = M1 <$> gDecode meta gql
 
