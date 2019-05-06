@@ -1,4 +1,5 @@
 {-# LANGUAGE DefaultSignatures    #-}
+{-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
@@ -14,8 +15,8 @@ module Data.Morpheus.Kind.GQLKind
   , inputObjectOf
   ) where
 
-import           Data.Morpheus.Generics.TypeRep         (resolveTypes)
-import           Data.Morpheus.Generics.Utils           (typeOf)
+import           Data.Morpheus.Generics.ObjectRep       (resolveTypes)
+import           Data.Morpheus.Generics.TypeID          (TypeID, typeId)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
@@ -28,7 +29,7 @@ import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type
 import           Data.Morpheus.Types.Describer          ((::->))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
-import           Data.Typeable                          (Typeable)
+import           GHC.Generics
 
 scalarTypeOf :: GQLKind a => Proxy a -> LibType
 scalarTypeOf = Leaf . LScalar . buildType
@@ -46,9 +47,9 @@ class GQLKind a where
   description :: Proxy a -> Text
   description _ = "default selection Description"
   typeID :: Proxy a -> Text
-  default typeID :: Typeable a =>
+  default typeID :: (TypeID (Rep a), Generic a) =>
     Proxy a -> Text
-  typeID = typeOf
+  typeID = typeId
   buildField :: TypeKind -> Proxy a -> Text -> I.Field
   buildField kind' proxy' name' =
     I.Field {I.fieldName = name', I.notNull = True, I.asList = False, I.kind = kind', I.fieldType = typeID proxy'}

@@ -25,8 +25,6 @@ instance (Selector c, GDecode i f) => GDecode i (M1 S c f) where
 instance (Datatype c, GDecode i f) => GDecode i (M1 D c f) where
   gDecode key gql = fixProxy $ const (M1 <$> gDecode key gql)
 
---instance (Datatype c, GDecode i f) => GDecode i (M1 D c f) where
---  gDecode meta gql = fixProxy (\x -> M1 <$> gDecode (meta {pack $ datatypeName x}) gql)
 instance GDecode i f => GDecode i (M1 C c f) where
   gDecode meta gql = M1 <$> gDecode meta gql
 

@@ -1,13 +1,11 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE TypeOperators      #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Schema.Type
   ( Type(..)
   , DeprecationArgs(..)
   ) where
 
-import           Data.Data                       (Data)
 import           Data.Morpheus.Schema.EnumValue  (EnumValue)
 import qualified Data.Morpheus.Schema.Field      as F (Field (..))
 import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..))
@@ -26,8 +24,8 @@ data Type = Type
   , possibleTypes :: Maybe [Type]
   , enumValues    :: DeprecationArgs ::-> Maybe [EnumValue]
   , inputFields   :: Maybe [I.InputValue Type]
-  } deriving (Show, Data, Generic)
+  } deriving (Generic)
 
 newtype DeprecationArgs = DeprecationArgs
   { includeDeprecated :: Maybe Bool
-  } deriving (Show, Data, Generic)
+  } deriving (Generic)

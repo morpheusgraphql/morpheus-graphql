@@ -8,8 +8,8 @@
 {-# LANGUAGE TypeApplications          #-}
 {-# LANGUAGE TypeOperators             #-}
 
-module Data.Morpheus.Generics.TypeRep
-  ( Selectors(..)
+module Data.Morpheus.Generics.ObjectRep
+  ( ObjectRep(..)
   , resolveTypes
   ) where
 
@@ -23,17 +23,17 @@ shift x y = y x
 resolveTypes :: TypeLib -> [TypeLib -> TypeLib] -> TypeLib
 resolveTypes = foldl shift
 
-class Selectors rep t where
+class ObjectRep rep t where
   getFields :: Proxy rep -> [(t, TypeLib -> TypeLib)]
 
-instance Selectors f t => Selectors (M1 D x f) t where
+instance ObjectRep f t => ObjectRep (M1 D x f) t where
   getFields _ = getFields (Proxy @f)
 
-instance Selectors f t => Selectors (M1 C x f) t where
+instance ObjectRep f t => ObjectRep (M1 C x f) t where
   getFields _ = getFields (Proxy @f)
 
-instance (Selectors a t, Selectors b t) => Selectors (a :*: b) t where
+instance (ObjectRep a t, ObjectRep b t) => ObjectRep (a :*: b) t where
   getFields _ = getFields (Proxy @a) ++ getFields (Proxy @b)
 
-instance Selectors U1 t where
+instance ObjectRep U1 t where
   getFields _ = []
