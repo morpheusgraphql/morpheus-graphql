@@ -20,7 +20,6 @@ import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..)
 import           Data.Morpheus.Schema.Schema            (Schema, initSchema)
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
-import           Data.Morpheus.Types.MetaInfo           (initialMeta)
 import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
 import           Data.Proxy
 import           Data.Text                              (Text)
@@ -33,7 +32,7 @@ class GQLQuery a where
   encodeQuery rootResolver types sel = resolveBySelection sel (schemaResolver ++ resolvers)
     where
       schemaResolver = [("__schema", (`encode` initSchema types))]
-      resolvers = deriveResolvers initialMeta $ from rootResolver
+      resolvers = deriveResolvers "" $ from rootResolver
   querySchema :: a -> TypeLib
   default querySchema :: (Selectors (Rep a) (Text, ObjectField)) =>
     a -> TypeLib
