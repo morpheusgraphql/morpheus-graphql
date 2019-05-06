@@ -31,7 +31,6 @@ import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
-import qualified Data.Morpheus.Types.MetaInfo           as Meta (MetaInfo (..), initialMeta)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..))
 import           Data.Proxy
 import           Data.Text                              (Text, pack)
@@ -45,7 +44,7 @@ instance ObjectConstraint a => OutputTypeRouter a OBJECT where
   __objectField _ = field
 
 instance OutputTypeRouter a (GQL a) => DeriveResolvers (K1 s a) where
-  deriveResolvers meta (K1 src) = [(Meta.key meta, (`_encode` src))]
+  deriveResolvers key' (K1 src) = [(key', (`_encode` src))]
 
 instance (Selector s, OutputTypeRouter a (GQL a)) => Selectors (RecSel s a) (Text, ObjectField) where
   getFields _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
@@ -53,10 +52,8 @@ instance (Selector s, OutputTypeRouter a (GQL a)) => Selectors (RecSel s a) (Tex
       name = pack $ selName (undefined :: SelOf s)
 
 encode :: (Generic a, DeriveResolvers (Rep a)) => (Text, Selection) -> a -> ResolveIO JSType
-encode (_, SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers Meta.initialMeta . from
-encode (_, Field _ key pos) = const $ failResolveIO $ subfieldsNotSelected meta -- TODO: must be internal Error
-  where
-    meta = Meta.MetaInfo {Meta.typeName = "", Meta.key = key, Meta.position = pos}
+encode (_, SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers "" . from
+encode (_, Field _ key pos)               = const $ failResolveIO $ subfieldsNotSelected key "" pos -- TODO: must be internal Error
 
 field ::
      forall a. (Selectors (Rep a) (Text, ObjectField), GQLKind a)

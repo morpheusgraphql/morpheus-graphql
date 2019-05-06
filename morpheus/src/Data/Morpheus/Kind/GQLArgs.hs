@@ -20,7 +20,6 @@ import           Data.Morpheus.Kind.Internal         (GQL)
 import           Data.Morpheus.Schema.Internal.Types (InputField, TypeLib)
 import           Data.Morpheus.Schema.Type           (DeprecationArgs)
 import           Data.Morpheus.Types.Error           (Validation)
-import           Data.Morpheus.Types.MetaInfo        (MetaInfo (..), initialMeta)
 import           Data.Morpheus.Types.Query.Selection (Argument (..), Arguments)
 import           Data.Proxy                          (Proxy (..))
 import           Data.Text                           (Text, pack)
@@ -32,8 +31,8 @@ instance (Selector s, InputTypeRouter a (GQL a)) => Selectors (RecSel s a) (Text
       name = pack $ selName (undefined :: SelOf s)
 
 instance InputTypeRouter a (GQL a) => GDecode Arguments (K1 i a) where
-  gDecode meta args =
-    case lookup (key meta) args of
+  gDecode key' args =
+    case lookup key' args of
       Nothing                -> internalArgumentError "Required Argument Not Found"
       Just (Argument x _pos) -> K1 <$> _decode x
 
@@ -41,7 +40,7 @@ class GQLArgs p where
   decode :: Arguments -> Validation p
   default decode :: (Generic p, GDecode Arguments (Rep p)) =>
     Arguments -> Validation p
-  decode args = to <$> gDecode initialMeta args
+  decode args = to <$> gDecode "" args
   introspect :: Proxy p -> [((Text, InputField), TypeLib -> TypeLib)]
   default introspect :: Selectors (Rep p) (Text, InputField) =>
     Proxy p -> [((Text, InputField), TypeLib -> TypeLib)]

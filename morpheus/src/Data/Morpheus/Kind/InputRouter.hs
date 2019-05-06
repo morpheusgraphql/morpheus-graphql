@@ -18,7 +18,6 @@ import qualified Data.Morpheus.Kind.GQLScalar      as S (GQLScalar (..))
 import           Data.Morpheus.Kind.Internal       (Decode_, ENUM, GQL, IField_, INPUT_OBJECT, Intro_, SCALAR, WRAPPER)
 import           Data.Morpheus.Kind.Utils          (listInputField, maybeInputField)
 import           Data.Morpheus.Types.JSType        (JSType (..))
-import           Data.Morpheus.Types.MetaInfo      (MetaInfo (..))
 import           Data.Proxy                        (Proxy (..))
 import           GHC.Generics
 
@@ -43,8 +42,8 @@ _introspect ::
 _introspect = __introspect (Proxy @(GQL a))
 
 instance (InputTypeRouter a (GQL a)) => GDecode JSType (K1 i a) where
-  gDecode meta (JSObject object) =
-    case lookup (key meta) object of
+  gDecode key' (JSObject object) =
+    case lookup key' object of
       Nothing    -> internalArgumentError "Missing Argument"
       Just value -> K1 <$> _decode value
   gDecode _ isType = internalTypeMismatch "InputObject" isType
