@@ -2,7 +2,6 @@
 {-# LANGUAGE ConstrainedClassMethods #-}
 {-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE FlexibleContexts        #-}
-{-# LANGUAGE OverloadedStrings       #-}
 {-# LANGUAGE ScopedTypeVariables     #-}
 {-# LANGUAGE TypeApplications        #-}
 {-# LANGUAGE TypeFamilies            #-}
@@ -28,7 +27,7 @@ import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 import           GHC.Generics
 
-type EnumConstraint a = (Generic a, EnumRep (Rep a), Show a, GQLKind a)
+type EnumConstraint a = (Generic a, EnumRep (Rep a), GQLKind a)
 
 decode :: (Generic a, EnumRep (Rep a)) => Text -> a
 decode text = to $ gToEnum text
