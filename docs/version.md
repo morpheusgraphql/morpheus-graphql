@@ -1,7 +1,7 @@
 ---
 layout: page
-title: Version 0.1.0
-permalink: /version-0.1.0/
+title: Version
+permalink: /version
 ---
 
 # 0.0.1 to 0.1.0
