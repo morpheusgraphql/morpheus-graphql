@@ -2,8 +2,23 @@ body {
     background: #f9f9f9;
 }
 
-
 .page-header {
-    background: #ececec5c;
+    background: #1c1629;
+    color: #6d78b1;
+}
+
+.page-header a {
+    color: #df0098;
+}
+
+.main-content h1,
+.main-content h2,
+.main-content h3,
+.main-content h4,
+.main-content h5,
+.main-content h6 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: normal;
     color: #464d71;
 }
