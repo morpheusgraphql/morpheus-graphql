@@ -1,0 +1,1 @@
+{"errors":[{"message":"Variable \"$num\" is never used in operation \"Query\".","locations":[{"line":1,"column":36}]},{"message":"Variable \"$list\" is never used in operation \"Query\".","locations":[{"line":1,"column":47}]}]}

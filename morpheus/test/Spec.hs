@@ -17,6 +17,7 @@ requestTests :: [(Text, Text)]
 requestTests =
   [ ("loopingFragment", "looping Fragment should throw an Error")
   , ("unknownArguments", "unknown Argument should Throw an Error")
+  , ("unusedVariables", "unused variable schould throw Error")
   ]
 
 testByFiles :: (Text, Text) -> IO TestTree
