@@ -3,4 +3,5 @@
 - fix: argument supports nonNull and List Types in introspection
 - add class Interpreter and instances for: ByteString , Text , Lazy ByteString, Lazy Text
 - define public API, hide all internal modules.
-  exposed-modules: Data.Morpheus, Data.Morpheus.Kind, Data.Morpheus.Types, Data.Morpheus.Wrapper
+  exposed-modules: Data.Morpheus, Data.Morpheus.Kind, Data.Morpheus.Types
+- ::-> Resolver is now Monad
