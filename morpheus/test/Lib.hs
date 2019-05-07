@@ -13,10 +13,10 @@ path :: String -> String
 path name = "test/lib/" ++ name
 
 gqlLib :: String -> String
-gqlLib x = path x ++ ".gql"
+gqlLib x = path x ++ "/query.gql"
 
 resLib :: String -> String
-resLib x = path x ++ ".res.json"
+resLib x = path x ++ "/response.json"
 
 getGQLBody :: Text -> IO ByteString
 getGQLBody p = L.readFile (gqlLib $ unpack p)
