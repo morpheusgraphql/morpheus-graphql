@@ -15,7 +15,8 @@ import           Data.Morpheus.Kind          (GQLArgs, GQLKind (..), GQLMutation
 import           Data.Morpheus.Kind.Internal (ENUM, GQL, INPUT_OBJECT, OBJECT, SCALAR)
 import           Data.Morpheus.Types         ((::->) (..), GQLRoot (..), ScalarValue (..))
 import           Data.Text                   (Text, pack)
-import qualified Example.Model               as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
+import           Example.Model               (JSONUser, jsonAddress, jsonUser)
+import qualified Example.Model               as M (JSONAddress (..), JSONUser (..))
 import           GHC.Generics                (Generic)
 
 type instance GQL CityID = ENUM
@@ -96,45 +97,42 @@ newtype Mutation = Mutation
 
 fetchAddress :: Euro -> Text -> IO (Either String Address)
 fetchAddress _ streetName = do
-  address' <- M.jsonAddress
+  address' <- jsonAddress
   pure (modify <$> address')
   where
     modify mAddress =
       Address {city = M.city mAddress, houseNumber = M.houseNumber mAddress, street = streetName, owner = Nothing}
 
 resolveAddress :: LocationByCoordinates ::-> Address
-resolveAddress = Resolver res
-  where
-    res args = fetchAddress (Euro 1 0) (pack $ show $ longitude $ coordinates args)
+resolveAddress = Resolver $ \args -> fetchAddress (Euro 1 0) (pack $ show $ longitude $ coordinates args)
 
 addressByCityID :: CityID -> Int -> IO (Either String Address)
 addressByCityID Paris code = fetchAddress (Euro 1 code) "Paris"
 addressByCityID BLN code   = fetchAddress (Euro 1 code) "Berlin"
 addressByCityID HH code    = fetchAddress (Euro 1 code) "Hamburg"
 
-resolveOffice :: M.JSONUser -> Location ::-> Address
-resolveOffice _ = Resolver resolve'
-  where
-    resolve' args = addressByCityID (cityID args) (head $ fromMaybe [101] (zipCode args))
+resolveOffice :: JSONUser -> Location ::-> Address
+resolveOffice _ = Resolver $ \args -> addressByCityID (cityID args) (head $ fromMaybe [101] (zipCode args))
 
 resolveUser :: () ::-> User
-resolveUser = Resolver $ const (M.jsonUser >>= \x -> return (buildResolverBy <$> x))
-  where
-    buildResolverBy user' =
-      User
-        { name = M.name user'
-        , email = M.email user'
-        , address = resolveAddress
-        , office = resolveOffice user'
-        , home = HH
-        , friend = Resolver $ \_ -> pure (pure Nothing)
-        }
+resolveUser = transformUser <$> Resolver (const jsonUser)
+
+transformUser :: JSONUser -> User
+transformUser user' =
+  User
+    { name = M.name user'
+    , email = M.email user'
+    , address = resolveAddress
+    , office = resolveOffice user'
+    , home = HH
+    , friend = return Nothing
+    }
 
 createUserMutation :: LocationByCoordinates ::-> User
 createUserMutation = Resolver resolve'
   where
     resolve' _ = do
-      result <- M.jsonUser
+      result <- jsonUser
       pure (modify <$> result)
     modify user' =
       User
