@@ -8,12 +8,13 @@ module TestAPI
   ( api
   ) where
 
-import           Data.Morpheus       (interpreter)
-import           Data.Morpheus.Kind  (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..), INPUT_OBJECT,
-                                      KIND, OBJECT, SCALAR)
-import           Data.Morpheus.Types ((::->) (..), GQLRoot (..), ScalarValue (..))
-import           Data.Text           (Text)
-import           GHC.Generics        (Generic)
+import           Data.ByteString.Lazy.Char8 (ByteString)
+import           Data.Morpheus              (interpreter)
+import           Data.Morpheus.Kind         (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..),
+                                             INPUT_OBJECT, KIND, OBJECT, SCALAR)
+import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..), ScalarValue (..))
+import           Data.Text                  (Text)
+import           GHC.Generics               (Generic)
 
 type instance KIND CityID = ENUM
 
@@ -99,5 +100,5 @@ resolveUser =
 createUserMutation :: AddressArgs ::-> User
 createUserMutation = resolveUser
 
-api :: Text -> IO Text
+api :: ByteString -> IO ByteString
 api = interpreter GQLRoot {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}}

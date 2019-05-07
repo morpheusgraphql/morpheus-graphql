@@ -1,5 +1,5 @@
 {
-  user (name:bal , kaka:sa ){
+  user (name:bal , parent:sa ){
     name
   }
 }

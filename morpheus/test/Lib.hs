@@ -3,8 +3,11 @@ module Lib
   , getResponseBody
   ) where
 
-import           Data.Text    (Text, unpack)
-import qualified Data.Text.IO as TIO (readFile)
+import           Data.Aeson                 (Value (..), decode)
+import qualified Data.ByteString.Lazy       as L (readFile)
+import           Data.ByteString.Lazy.Char8 (ByteString)
+import           Data.Maybe                 (fromMaybe)
+import           Data.Text                  (Text, unpack)
 
 path :: String -> String
 path name = "test/lib/" ++ name
@@ -15,8 +18,8 @@ gqlLib x = path x ++ ".gql"
 resLib :: String -> String
 resLib x = path x ++ ".res.json"
 
-getGQLBody :: Text -> IO Text
-getGQLBody p = TIO.readFile (gqlLib $ unpack p)
+getGQLBody :: Text -> IO ByteString
+getGQLBody p = L.readFile (gqlLib $ unpack p)
 
-getResponseBody :: Text -> IO Text
-getResponseBody p = TIO.readFile (resLib $ unpack p)
+getResponseBody :: Text -> IO Value
+getResponseBody p = fromMaybe Null . decode <$> L.readFile (resLib $ unpack p)
