@@ -17,7 +17,7 @@ module Data.Morpheus.Kind.GQLEnum
   ) where
 
 import           Data.Morpheus.Generics.EnumRep         (EnumRep (..))
-import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), enumTypeOf)
+import           Data.Morpheus.Kind.GQLType             (GQLType (..), enumTypeOf)
 import           Data.Morpheus.Kind.Internal            (ENUM, GQL)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField (..), TypeLib)
@@ -27,7 +27,7 @@ import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 import           GHC.Generics
 
-type EnumConstraint a = (Generic a, EnumRep (Rep a), GQLKind a)
+type EnumConstraint a = (Generic a, EnumRep (Rep a), GQLType a)
 
 decode :: (Generic a, EnumRep (Rep a)) => Text -> a
 decode text = to $ gToEnum text
@@ -35,14 +35,14 @@ decode text = to $ gToEnum text
 encode :: (Generic a, EnumRep (Rep a)) => a -> JSType
 encode = Scalar . String . encodeRep . from
 
-inputField :: GQLKind a => Proxy a -> Text -> InputField
+inputField :: GQLType a => Proxy a -> Text -> InputField
 inputField proxy = InputField . field proxy
 
-field :: GQLKind a => Proxy a -> Text -> Field
+field :: GQLType a => Proxy a -> Text -> Field
 field = buildField ENUM
 
 introspect ::
-     forall a. (GQLKind a, EnumRep (Rep a))
+     forall a. (GQLType a, EnumRep (Rep a))
   => Proxy a
   -> TypeLib
   -> TypeLib

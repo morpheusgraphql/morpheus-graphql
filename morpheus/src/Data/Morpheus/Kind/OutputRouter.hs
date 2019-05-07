@@ -14,8 +14,8 @@ import           Data.Morpheus.Error.Selection       (fieldNotResolved)
 import           Data.Morpheus.Generics.ObjectRep    (resolveTypes)
 import qualified Data.Morpheus.Kind.GQLArgs          as Args (GQLArgs (..))
 import qualified Data.Morpheus.Kind.GQLEnum          as E (EnumConstraint, encode, field, introspect)
-import           Data.Morpheus.Kind.GQLKind          (GQLKind)
 import qualified Data.Morpheus.Kind.GQLScalar        as S (GQLScalar (..))
+import           Data.Morpheus.Kind.GQLType          (GQLType)
 import           Data.Morpheus.Kind.Internal         (ENUM, Encode_, GQL, Intro_, OField_, SCALAR, WRAPPER)
 import           Data.Morpheus.Kind.Utils            (encodeList, encodeMaybe, listField, maybeField)
 import           Data.Morpheus.Schema.Internal.Types (ObjectField (..))
@@ -46,7 +46,7 @@ _encode ::
   => Encode_ a
 _encode = __encode (Proxy @(GQL a))
 
-instance (S.GQLScalar a, GQLKind a) => OutputTypeRouter a SCALAR where
+instance (S.GQLScalar a, GQLType a) => OutputTypeRouter a SCALAR where
   __introspect _ _ = S.introspect (Proxy @a)
   __encode _ _ = pure . S.encode
   __objectField _ _ = ObjectField [] . S.asField (Proxy @a)

@@ -20,7 +20,7 @@ import           Data.Morpheus.Error.Selection          (subfieldsNotSelected)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..))
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
-import           Data.Morpheus.Kind.GQLKind             (GQLKind (..), asObjectType)
+import           Data.Morpheus.Kind.GQLType             (GQLType (..), asObjectType)
 import           Data.Morpheus.Kind.Internal            (GQL, OBJECT)
 import           Data.Morpheus.Kind.OutputRouter        (OutputTypeRouter (..), _encode, _introspect, _objectField)
 import           Data.Morpheus.Schema.Directive         (Directive)
@@ -36,7 +36,7 @@ import           Data.Proxy
 import           Data.Text                              (Text, pack)
 import           GHC.Generics
 
-type ObjectConstraint a = (Generic a, DeriveResolvers (Rep a), ObjectRep (Rep a) (Text, ObjectField), GQLKind a)
+type ObjectConstraint a = (Generic a, DeriveResolvers (Rep a), ObjectRep (Rep a) (Text, ObjectField), GQLType a)
 
 instance ObjectConstraint a => OutputTypeRouter a OBJECT where
   __encode _ = encode
@@ -56,14 +56,14 @@ encode (_, SelectionSet _ selection _pos) = resolveBySelection selection . deriv
 encode (_, Field _ key pos)               = const $ failResolveIO $ subfieldsNotSelected key "" pos -- TODO: must be internal Error
 
 field ::
-     forall a. (ObjectRep (Rep a) (Text, ObjectField), GQLKind a)
+     forall a. (ObjectRep (Rep a) (Text, ObjectField), GQLType a)
   => Proxy a
   -> Text
   -> ObjectField
 field proxy = ObjectField [] . buildField OBJECT proxy
 
 introspect ::
-     forall a. (ObjectRep (Rep a) (Text, ObjectField), GQLKind a)
+     forall a. (ObjectRep (Rep a) (Text, ObjectField), GQLType a)
   => Proxy a
   -> TypeLib
   -> TypeLib

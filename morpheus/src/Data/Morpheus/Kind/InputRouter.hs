@@ -13,8 +13,8 @@ import           Data.Morpheus.Error.Internal      (internalArgumentError, inter
 import           Data.Morpheus.Generics.GDecode    (GDecode (..))
 import qualified Data.Morpheus.Kind.GQLEnum        as E (EnumConstraint, decode, inputField, introspect)
 import qualified Data.Morpheus.Kind.GQLInputObject as I (IObjectConstraint, decode, inputField, introspect)
-import           Data.Morpheus.Kind.GQLKind        (GQLKind)
 import qualified Data.Morpheus.Kind.GQLScalar      as S (GQLScalar (..))
+import           Data.Morpheus.Kind.GQLType        (GQLType)
 import           Data.Morpheus.Kind.Internal       (Decode_, ENUM, GQL, IField_, INPUT_OBJECT, Intro_, SCALAR, WRAPPER)
 import           Data.Morpheus.Kind.Utils          (listInputField, maybeInputField)
 import           Data.Morpheus.Types.JSType        (JSType (..))
@@ -48,7 +48,7 @@ instance (InputTypeRouter a (GQL a)) => GDecode JSType (K1 i a) where
       Just value -> K1 <$> _decode value
   gDecode _ isType = internalTypeMismatch "InputObject" isType
 
-instance (S.GQLScalar a, GQLKind a) => InputTypeRouter a SCALAR where
+instance (S.GQLScalar a, GQLType a) => InputTypeRouter a SCALAR where
   __decode _ = S.decode
   __introspect _ _ = S.introspect (Proxy @a)
   __field _ _ = S.asInputField (Proxy @a)
