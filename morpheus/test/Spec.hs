@@ -29,7 +29,7 @@ testByFiles (fileName', description') = do
   response' <- getResponseBody fileName'
   result' <- api $ packGQLRequest query'
   case decode result' of
-    Nothing -> assertFailure "Bard Responce"
+    Nothing -> assertFailure "Bad Responce"
     Just x  -> return $ testCase (unpack description') $ x @=? response'
 
 main :: IO ()
