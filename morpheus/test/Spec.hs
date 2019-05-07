@@ -14,10 +14,10 @@ packGQLRequest :: Text -> Text
 packGQLRequest x = pack $ "{\"query\":" ++ show x ++ "}"
 
 unknownArguments :: IO TestTree
-unknownArguments = testByFiles "looping Fragment should throw error" "unknownArguments"
+unknownArguments = testByFiles "unknown Argument should Throw an Error" "unknownArguments"
 
 testFragmentLoop :: IO TestTree
-testFragmentLoop = testByFiles "looping Fragment should throw error" "loopingFragment"
+testFragmentLoop = testByFiles "looping Fragment should throw an Error" "loopingFragment"
 
 testByFiles :: Text -> Text -> IO TestTree
 testByFiles description' fileName' = do
