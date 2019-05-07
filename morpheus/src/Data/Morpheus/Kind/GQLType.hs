@@ -7,8 +7,8 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Data.Morpheus.Kind.GQLKind
-  ( GQLKind(..)
+module Data.Morpheus.Kind.GQLType
+  ( GQLType(..)
   , scalarTypeOf
   , asObjectType
   , enumTypeOf
@@ -31,19 +31,19 @@ import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 import           GHC.Generics
 
-scalarTypeOf :: GQLKind a => Proxy a -> LibType
+scalarTypeOf :: GQLType a => Proxy a -> LibType
 scalarTypeOf = Leaf . LScalar . buildType
 
-enumTypeOf :: GQLKind a => [Text] -> Proxy a -> LibType
+enumTypeOf :: GQLType a => [Text] -> Proxy a -> LibType
 enumTypeOf tags = Leaf . LEnum tags . buildType
 
-asObjectType :: GQLKind a => [(Text, ObjectField)] -> Proxy a -> LibType
+asObjectType :: GQLType a => [(Text, ObjectField)] -> Proxy a -> LibType
 asObjectType fields = OutputObject . GObject fields . buildType
 
-inputObjectOf :: GQLKind a => [(Text, InputField)] -> Proxy a -> LibType
+inputObjectOf :: GQLType a => [(Text, InputField)] -> Proxy a -> LibType
 inputObjectOf inputFields = InputObject . GObject inputFields . buildType
 
-class GQLKind a where
+class GQLType a where
   description :: Proxy a -> Text
   description _ = "default selection Description"
   typeID :: Proxy a -> Text
@@ -61,47 +61,47 @@ class GQLKind a where
       then lib'
       else resolveTypes lib' (defineType (typeID proxy, typeBuilder proxy) : stack)
 
-instance GQLKind EnumValue where
+instance GQLType EnumValue where
   typeID _ = "__EnumValue"
 
-instance GQLKind Type where
+instance GQLType Type where
   typeID _ = "__Type"
 
-instance GQLKind Field where
+instance GQLType Field where
   typeID _ = "__Field"
 
-instance GQLKind InputValue where
+instance GQLType InputValue where
   typeID _ = "__InputValue"
 
-instance GQLKind Schema where
+instance GQLType Schema where
   typeID _ = "__Schema"
 
-instance GQLKind Directive where
+instance GQLType Directive where
   typeID _ = "__Directive"
 
-instance GQLKind TypeKind where
+instance GQLType TypeKind where
   typeID _ = "__TypeKind"
 
-instance GQLKind DirectiveLocation where
+instance GQLType DirectiveLocation where
   typeID _ = "__DirectiveLocation"
 
-instance GQLKind Int where
+instance GQLType Int where
   typeID _ = "Int"
 
-instance GQLKind Float where
+instance GQLType Float where
   typeID _ = "Int"
 
-instance GQLKind Text where
+instance GQLType Text where
   typeID _ = "String"
 
-instance GQLKind Bool where
+instance GQLType Bool where
   typeID _ = "Boolean"
 
-instance GQLKind a => GQLKind (Maybe a) where
+instance GQLType a => GQLType (Maybe a) where
   typeID _ = typeID (Proxy @a)
 
-instance GQLKind a => GQLKind [a] where
+instance GQLType a => GQLType [a] where
   typeID _ = typeID (Proxy @a)
 
-instance GQLKind a => GQLKind (p ::-> a) where
+instance GQLType a => GQLType (p ::-> a) where
   typeID _ = typeID (Proxy @a)

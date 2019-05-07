@@ -5,7 +5,7 @@ module Data.Morpheus.Kind.GQLScalar where
 
 import           Control.Monad                       ((>=>))
 import           Data.Morpheus.Error.Internal        (internalTypeMismatch)
-import           Data.Morpheus.Kind.GQLKind          (GQLKind (..), scalarTypeOf)
+import           Data.Morpheus.Kind.GQLType          (GQLType (..), scalarTypeOf)
 import           Data.Morpheus.Schema.Internal.Types (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Core            (Key)
@@ -25,11 +25,11 @@ class GQLScalar a where
   serialize :: a -> ScalarValue
   encode :: a -> JSType
   encode = Scalar . serialize
-  asInputField :: GQLKind a => Proxy a -> Key -> InputField
+  asInputField :: GQLType a => Proxy a -> Key -> InputField
   asInputField proxy = InputField . asField proxy
-  asField :: GQLKind a => Proxy a -> Key -> Field
+  asField :: GQLType a => Proxy a -> Key -> Field
   asField proxy name = Field {fieldName = name, notNull = True, asList = False, kind = SCALAR, fieldType = typeID proxy}
-  introspect :: GQLKind a => Proxy a -> TypeLib -> TypeLib
+  introspect :: GQLType a => Proxy a -> TypeLib -> TypeLib
   introspect = updateLib scalarTypeOf []
 
 instance GQLScalar Text where

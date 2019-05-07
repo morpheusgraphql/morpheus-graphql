@@ -19,7 +19,7 @@ module Data.Morpheus.Kind.GQLInputObject
 import           Data.Morpheus.Error.Internal        (internalTypeMismatch)
 import           Data.Morpheus.Generics.GDecode      (GDecode (..))
 import           Data.Morpheus.Generics.ObjectRep    (ObjectRep (..))
-import           Data.Morpheus.Kind.GQLKind          (GQLKind (..), inputObjectOf)
+import           Data.Morpheus.Kind.GQLType          (GQLType (..), inputObjectOf)
 import           Data.Morpheus.Schema.Internal.Types (InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Error           (Validation)
@@ -30,17 +30,17 @@ import           GHC.Generics
 
 type IOObjectRep a = ObjectRep (Rep a) (Text, InputField)
 
-type IObjectConstraint a = (GQLKind a, Generic a, GDecode JSType (Rep a), IOObjectRep a)
+type IObjectConstraint a = (GQLType a, Generic a, GDecode JSType (Rep a), IOObjectRep a)
 
 decode :: (Generic a, GDecode JSType (Rep a)) => JSType -> Validation a
 decode (JSObject x) = to <$> gDecode "" (JSObject x)
 decode isType       = internalTypeMismatch "InputObject" isType
 
-inputField :: GQLKind a => Proxy a -> Text -> InputField
+inputField :: GQLType a => Proxy a -> Text -> InputField
 inputField proxy = InputField . buildField INPUT_OBJECT proxy
 
 introspect ::
-     forall a. (GQLKind a, IOObjectRep a)
+     forall a. (GQLType a, IOObjectRep a)
   => Proxy a
   -> TypeLib
   -> TypeLib

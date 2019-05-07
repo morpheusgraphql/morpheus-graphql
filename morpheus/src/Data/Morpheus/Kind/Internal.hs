@@ -6,7 +6,7 @@ module Data.Morpheus.Kind.Internal
   , ENUM
   , WRAPPER
   , INPUT_OBJECT
-  , GQL
+  , KIND
   , GQLConstraint
   , IField_
   , OField_
@@ -24,23 +24,23 @@ import Data.Proxy (Proxy(..))
 import Data.Text (Text)
 import GHC.Exts (Constraint)
 
--- Hidden GQL type System API
-type family GQL a :: *
+-- Hidden KIND type System API
+type family KIND a :: *
 
 -- default Type Instances
-type instance GQL Text = SCALAR
+type instance KIND Text = SCALAR
 
-type instance GQL Int = SCALAR
+type instance KIND Int = SCALAR
 
-type instance GQL Float = SCALAR
+type instance KIND Float = SCALAR
 
-type instance GQL Bool = SCALAR
+type instance KIND Bool = SCALAR
 
-type instance GQL (Maybe a) = WRAPPER
+type instance KIND (Maybe a) = WRAPPER
 
-type instance GQL [a] = WRAPPER
+type instance KIND [a] = WRAPPER
 
-type instance GQL (p ::-> a) = WRAPPER
+type instance KIND (p ::-> a) = WRAPPER
 
 -- default Data Kinds
 data SCALAR

@@ -7,7 +7,7 @@ module Data.Morpheus.PreProcess.Resolve.Spread
 import qualified Data.Map                               as M (lookup)
 import           Data.Morpheus.Error.Spread             (cannotBeSpreadOnType, unknownFragment)
 import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField (..))
-import           Data.Morpheus.Types.Error              (GQLErrors, Validation)
+import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.MetaInfo           (Position)
 import           Data.Morpheus.Types.Query.Fragment     (Fragment (..), FragmentLib)
 import           Data.Morpheus.Types.Query.RawSelection (RawSelectionSet)
