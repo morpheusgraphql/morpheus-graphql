@@ -7,7 +7,7 @@ import           Data.Text    (Text, unpack)
 import qualified Data.Text.IO as TIO (readFile)
 
 path :: String -> String
-path name = "test/lib/" ++ name ++ ".gql"
+path name = "test/lib/" ++ name
 
 gqlLib :: String -> String
 gqlLib x = path x ++ ".gql"
