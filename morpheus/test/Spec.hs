@@ -13,14 +13,14 @@ import           TestAPI          (api)
 packGQLRequest :: Text -> Text
 packGQLRequest x = pack $ "{\"query\":" ++ show x ++ "}"
 
-unknownArguments :: IO TestTree
-unknownArguments = testByFiles "unknown Argument should Throw an Error" "unknownArguments"
+requestTests :: [(Text, Text)]
+requestTests =
+  [ ("loopingFragment", "looping Fragment should throw an Error")
+  , ("unknownArguments", "unknown Argument should Throw an Error")
+  ]
 
-testFragmentLoop :: IO TestTree
-testFragmentLoop = testByFiles "looping Fragment should throw an Error" "loopingFragment"
-
-testByFiles :: Text -> Text -> IO TestTree
-testByFiles description' fileName' = do
+testByFiles :: (Text, Text) -> IO TestTree
+testByFiles (fileName', description') = do
   query' <- getGQLBody fileName'
   response' <- getResponseBody fileName'
   result' <- api $ packGQLRequest query'
@@ -28,5 +28,5 @@ testByFiles description' fileName' = do
 
 main :: IO ()
 main = do
-  ioTests <- sequence [unknownArguments, testFragmentLoop]
+  ioTests <- sequence $ testByFiles <$> requestTests
   defaultMain (testGroup "Integration Tests" ioTests)
