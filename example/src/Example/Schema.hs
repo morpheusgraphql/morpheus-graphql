@@ -11,25 +11,25 @@ module Example.Schema
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Maybe                 (fromMaybe)
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (ENUM, GQL, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..),
-                                             INPUT_OBJECT, OBJECT, SCALAR)
+import           Data.Morpheus.Kind         (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..),
+                                             INPUT_OBJECT, KIND, OBJECT, SCALAR)
 import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..), ScalarValue (..))
 import           Data.Text                  (Text, pack)
 import           Example.Model              (JSONAddress, JSONUser, jsonAddress, jsonUser)
 import qualified Example.Model              as M (JSONAddress (..), JSONUser (..))
 import           GHC.Generics               (Generic)
 
-type instance GQL CityID = ENUM
+type instance KIND CityID = ENUM
 
-type instance GQL Euro = SCALAR
+type instance KIND Euro = SCALAR
 
-type instance GQL UID = INPUT_OBJECT
+type instance KIND UID = INPUT_OBJECT
 
-type instance GQL Coordinates = INPUT_OBJECT
+type instance KIND Coordinates = INPUT_OBJECT
 
-type instance GQL Address = OBJECT
+type instance KIND Address = OBJECT
 
-type instance GQL User = OBJECT
+type instance KIND User = OBJECT
 
 data CityID
   = Paris
