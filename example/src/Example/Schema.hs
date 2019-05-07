@@ -129,20 +129,7 @@ transformUser user' =
     }
 
 createUserMutation :: LocationByCoordinates ::-> User
-createUserMutation = Resolver resolve'
-  where
-    resolve' _ = do
-      result <- jsonUser
-      pure (modify <$> result)
-    modify user' =
-      User
-        { name = M.name user'
-        , email = M.email user'
-        , address = resolveAddress
-        , office = resolveOffice user'
-        , home = HH
-        , friend = Resolver $ \_ -> pure (pure Nothing)
-        }
+createUserMutation = transformUser <$> Resolver (const jsonUser)
 
 gqlApi :: ByteString -> IO ByteString
 gqlApi = interpreter GQLRoot {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}}
