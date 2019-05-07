@@ -6,6 +6,10 @@ url: "https://morpheusgraphql.com"
 twitter_username: jekyllrb
 github_username: jekyll
 
+github:
+  is_project_page: true
+  repository_url: https://github.com/morpheusgraphql/morpheus-graphql
+
 markdown: kramdown
 theme: jekyll-theme-cayman
 plugins:

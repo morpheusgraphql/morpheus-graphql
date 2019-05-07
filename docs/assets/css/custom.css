@@ -5,10 +5,11 @@ body {
 .page-header {
     background: #1c1629;
     color: #6d78b1;
+    background-image: linear-gradient(138deg, #14101d, #1f124a);
 }
 
-.page-header a {
-    color: #df0098;
+.page-header .project-name {
+    color: #9f5cf1;
 }
 
 .main-content h1,
@@ -21,4 +22,26 @@ body {
     margin-bottom: 1rem;
     font-weight: normal;
     color: #464d71;
+}
+
+.navigation {
+    display: flex;
+    justify-content: start;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+}
+
+.page-header .btn {
+    color: #6174c5;
+}
+
+.page-header .nav-link {
+    padding: 20px 20px;
+    color: #45528a;
+}
+
+.page-header .nav-link.active {
+    color: #7384d1;
 }
