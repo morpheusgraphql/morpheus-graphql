@@ -16,7 +16,7 @@ import           Data.Morpheus.Generics.GDecode      (GDecode (..))
 import           Data.Morpheus.Generics.ObjectRep    (ObjectRep (..))
 import           Data.Morpheus.Generics.Utils        (RecSel, SelOf)
 import           Data.Morpheus.Kind.InputRouter      (InputTypeRouter, _decode, _field, _introspect)
-import           Data.Morpheus.Kind.Internal         (GQL)
+import           Data.Morpheus.Kind.Internal         (KIND)
 import           Data.Morpheus.Schema.Internal.Types (InputField, TypeLib)
 import           Data.Morpheus.Schema.Type           (DeprecationArgs)
 import           Data.Morpheus.Types.Error           (Validation)
@@ -25,12 +25,12 @@ import           Data.Proxy                          (Proxy (..))
 import           Data.Text                           (Text, pack)
 import           GHC.Generics
 
-instance (Selector s, InputTypeRouter a (GQL a)) => ObjectRep (RecSel s a) (Text, InputField) where
+instance (Selector s, InputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Text, InputField) where
   getFields _ = [((name, _field (Proxy @a) name), _introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)
 
-instance InputTypeRouter a (GQL a) => GDecode Arguments (K1 i a) where
+instance InputTypeRouter a (KIND a) => GDecode Arguments (K1 i a) where
   gDecode key' args =
     case lookup key' args of
       Nothing                -> internalArgumentError "Required Argument Not Found"

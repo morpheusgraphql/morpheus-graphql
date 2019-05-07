@@ -21,7 +21,7 @@ import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), r
 import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..))
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import           Data.Morpheus.Kind.GQLType             (GQLType (..), asObjectType)
-import           Data.Morpheus.Kind.Internal            (GQL, OBJECT)
+import           Data.Morpheus.Kind.Internal            (KIND, OBJECT)
 import           Data.Morpheus.Kind.OutputRouter        (OutputTypeRouter (..), _encode, _introspect, _objectField)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
@@ -43,10 +43,10 @@ instance ObjectConstraint a => OutputTypeRouter a OBJECT where
   __introspect _ = introspect
   __objectField _ = field
 
-instance OutputTypeRouter a (GQL a) => DeriveResolvers (K1 s a) where
+instance OutputTypeRouter a (KIND a) => DeriveResolvers (K1 s a) where
   deriveResolvers key' (K1 src) = [(key', (`_encode` src))]
 
-instance (Selector s, OutputTypeRouter a (GQL a)) => ObjectRep (RecSel s a) (Text, ObjectField) where
+instance (Selector s, OutputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Text, ObjectField) where
   getFields _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)
@@ -73,14 +73,14 @@ introspect = updateLib (asObjectType fields) stack
     fields = map fst fieldTypes
     stack = map snd fieldTypes
 
-type instance GQL EnumValue = OBJECT
+type instance KIND EnumValue = OBJECT
 
-type instance GQL Type = OBJECT
+type instance KIND Type = OBJECT
 
-type instance GQL Field = OBJECT
+type instance KIND Field = OBJECT
 
-type instance GQL InputValue = OBJECT
+type instance KIND InputValue = OBJECT
 
-type instance GQL Schema = OBJECT
+type instance KIND Schema = OBJECT
 
-type instance GQL Directive = OBJECT
+type instance KIND Directive = OBJECT

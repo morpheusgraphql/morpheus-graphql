@@ -15,7 +15,7 @@ import qualified Data.Morpheus.Kind.GQLEnum        as E (EnumConstraint, decode,
 import qualified Data.Morpheus.Kind.GQLInputObject as I (IObjectConstraint, decode, inputField, introspect)
 import qualified Data.Morpheus.Kind.GQLScalar      as S (GQLScalar (..))
 import           Data.Morpheus.Kind.GQLType        (GQLType)
-import           Data.Morpheus.Kind.Internal       (Decode_, ENUM, GQL, IField_, INPUT_OBJECT, Intro_, SCALAR, WRAPPER)
+import           Data.Morpheus.Kind.Internal       (Decode_, ENUM, KIND, IField_, INPUT_OBJECT, Intro_, SCALAR, WRAPPER)
 import           Data.Morpheus.Kind.Utils          (listInputField, maybeInputField)
 import           Data.Morpheus.Types.JSType        (JSType (..))
 import           Data.Proxy                        (Proxy (..))
@@ -27,21 +27,21 @@ class InputTypeRouter a b where
   __field :: Proxy b -> IField_ a
 
 _field ::
-     forall a. InputTypeRouter a (GQL a)
+     forall a. InputTypeRouter a (KIND a)
   => IField_ a
-_field = __field (Proxy @(GQL a))
+_field = __field (Proxy @(KIND a))
 
 _decode ::
-     forall a. InputTypeRouter a (GQL a)
+     forall a. InputTypeRouter a (KIND a)
   => Decode_ a
-_decode = __decode (Proxy @(GQL a))
+_decode = __decode (Proxy @(KIND a))
 
 _introspect ::
-     forall a. InputTypeRouter a (GQL a)
+     forall a. InputTypeRouter a (KIND a)
   => Intro_ a
-_introspect = __introspect (Proxy @(GQL a))
+_introspect = __introspect (Proxy @(KIND a))
 
-instance (InputTypeRouter a (GQL a)) => GDecode JSType (K1 i a) where
+instance (InputTypeRouter a (KIND a)) => GDecode JSType (K1 i a) where
   gDecode key' (JSObject object) =
     case lookup key' object of
       Nothing    -> internalArgumentError "Missing Argument"
@@ -64,13 +64,13 @@ instance I.IObjectConstraint a => InputTypeRouter a INPUT_OBJECT where
   __field _ = I.inputField
   __introspect _ = I.introspect
 
-instance InputTypeRouter a (GQL a) => InputTypeRouter (Maybe a) WRAPPER where
+instance InputTypeRouter a (KIND a) => InputTypeRouter (Maybe a) WRAPPER where
   __decode _ JSNull = pure Nothing
   __decode _ x      = Just <$> _decode x
   __field _ _ name = maybeInputField $ _field (Proxy @a) name
   __introspect _ _ = _introspect (Proxy @a)
 
-instance InputTypeRouter a (GQL a) => InputTypeRouter [a] WRAPPER where
+instance InputTypeRouter a (KIND a) => InputTypeRouter [a] WRAPPER where
   __decode _ (JSList li) = mapM _decode li
   __decode _ isType      = internalTypeMismatch "List" isType
   __field _ _ name = listInputField $ _field (Proxy @a) name

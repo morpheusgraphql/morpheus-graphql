@@ -18,7 +18,7 @@ module Data.Morpheus.Kind.GQLEnum
 
 import           Data.Morpheus.Generics.EnumRep         (EnumRep (..))
 import           Data.Morpheus.Kind.GQLType             (GQLType (..), enumTypeOf)
-import           Data.Morpheus.Kind.Internal            (ENUM, GQL)
+import           Data.Morpheus.Kind.Internal            (ENUM, KIND)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.Internal.Types    (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
@@ -48,6 +48,6 @@ introspect ::
   -> TypeLib
 introspect = updateLib (enumTypeOf $ getTags (Proxy @(Rep a))) []
 
-type instance GQL TypeKind = ENUM
+type instance KIND TypeKind = ENUM
 
-type instance GQL DirectiveLocation = ENUM
+type instance KIND DirectiveLocation = ENUM
