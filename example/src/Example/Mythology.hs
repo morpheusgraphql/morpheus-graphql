@@ -11,7 +11,7 @@ module Example.Mythology
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (GQL, GQLArgs, GQLKind (..), GQLQuery, OBJECT)
+import           Data.Morpheus.Kind         (GQL, GQLArgs, GQLQuery, GQLType (..), OBJECT)
 import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
@@ -27,7 +27,7 @@ data Deity = Deity
   , power    :: Maybe Text -- Nullable Field
   } deriving (Generic)
 
-instance GQLKind Deity where
+instance GQLType Deity where
   description _ = "Custom Description for Client Defined User Type"
 
 data DeityArgs = DeityArgs

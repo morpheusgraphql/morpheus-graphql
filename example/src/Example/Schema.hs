@@ -11,7 +11,7 @@ module Example.Schema
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Maybe                 (fromMaybe)
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (ENUM, GQL, GQLArgs, GQLKind (..), GQLMutation, GQLQuery, GQLScalar (..),
+import           Data.Morpheus.Kind         (ENUM, GQL, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..),
                                              INPUT_OBJECT, OBJECT, SCALAR)
 import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..), ScalarValue (..))
 import           Data.Text                  (Text, pack)
@@ -35,12 +35,12 @@ data CityID
   = Paris
   | BLN
   | HH
-  deriving (Generic, GQLKind)
+  deriving (Generic, GQLType)
 
 data Euro =
   Euro Int
        Int
-  deriving (Generic, GQLKind)
+  deriving (Generic, GQLType)
 
 instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
@@ -48,14 +48,14 @@ instance GQLScalar Euro where
 
 newtype UID = UID
   { uid :: Text
-  } deriving (Show, Generic, GQLKind)
+  } deriving (Show, Generic, GQLType)
 
 data Coordinates = Coordinates
   { latitude  :: Euro
   , longitude :: [UID]
   } deriving (Generic)
 
-instance GQLKind Coordinates where
+instance GQLType Coordinates where
   description _ = "just random latitude and longitude"
 
 data Address = Address
@@ -63,7 +63,7 @@ data Address = Address
   , street      :: Text
   , houseNumber :: Int
   , owner       :: Maybe User
-  } deriving (Generic, GQLKind)
+  } deriving (Generic, GQLType)
 
 data AddressArgs = AddressArgs
   { coordinates :: Coordinates
@@ -84,7 +84,7 @@ data User = User
   , home    :: CityID
   } deriving (Generic)
 
-instance GQLKind User where
+instance GQLType User where
   description _ = "Custom Description for Client Defined User Type"
 
 newtype Query = Query
