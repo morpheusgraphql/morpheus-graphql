@@ -34,7 +34,7 @@ library:
 
 
 tests:
-  haskell-bff-test:
+  morpheus-test:
     main: Spec.hs
     source-dirs: test
     ghc-options:
