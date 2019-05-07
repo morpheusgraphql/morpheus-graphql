@@ -1,21 +1,20 @@
-{-# LANGUAGE DeriveAnyClass        #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module Example.Mythology
   ( mythologyApi
   ) where
 
-import qualified Data.ByteString.Lazy.Char8  as B
+import qualified Data.ByteString.Lazy.Char8 as B
 
-import           Data.Morpheus               (interpreter)
-import           Data.Morpheus.Kind          (GQLArgs, GQLKind (..), GQLQuery)
-import           Data.Morpheus.Kind.Internal (GQL, OBJECT)
-import           Data.Morpheus.Types         ((::->) (..), GQLRoot (..))
-import           Data.Text                   (Text)
-import           GHC.Generics                (Generic)
+import           Data.Morpheus              (interpreter)
+import           Data.Morpheus.Kind         (GQL, GQLArgs, GQLKind (..), GQLQuery, OBJECT)
+import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..))
+import           Data.Text                  (Text)
+import           GHC.Generics               (Generic)
 
 newtype Query = Query
   { deity :: DeityArgs ::-> Deity

@@ -8,16 +8,16 @@ module Example.Schema
   ( gqlApi
   ) where
 
-import           Data.ByteString.Lazy.Char8  (ByteString)
-import           Data.Maybe                  (fromMaybe)
-import           Data.Morpheus               (interpreter)
-import           Data.Morpheus.Kind          (GQLArgs, GQLKind (..), GQLMutation, GQLQuery, GQLScalar (..))
-import           Data.Morpheus.Kind.Internal (ENUM, GQL, INPUT_OBJECT, OBJECT, SCALAR)
-import           Data.Morpheus.Types         ((::->) (..), GQLRoot (..), ScalarValue (..))
-import           Data.Text                   (Text, pack)
-import           Example.Model               (JSONAddress, JSONUser, jsonAddress, jsonUser)
-import qualified Example.Model               as M (JSONAddress (..), JSONUser (..))
-import           GHC.Generics                (Generic)
+import           Data.ByteString.Lazy.Char8 (ByteString)
+import           Data.Maybe                 (fromMaybe)
+import           Data.Morpheus              (interpreter)
+import           Data.Morpheus.Kind         (ENUM, GQL, GQLArgs, GQLKind (..), GQLMutation, GQLQuery, GQLScalar (..),
+                                             INPUT_OBJECT, OBJECT, SCALAR)
+import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..), ScalarValue (..))
+import           Data.Text                  (Text, pack)
+import           Example.Model              (JSONAddress, JSONUser, jsonAddress, jsonUser)
+import qualified Example.Model              as M (JSONAddress (..), JSONUser (..))
+import           GHC.Generics               (Generic)
 
 type instance GQL CityID = ENUM
 
