@@ -1,6 +1,7 @@
 module Lib
   ( getGQLBody
   , getResponseBody
+  , getInfo
   ) where
 
 import           Data.Aeson                 (Value (..), decode)
@@ -9,17 +10,20 @@ import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Maybe                 (fromMaybe)
 import           Data.Text                  (Text, unpack)
 
-path :: String -> String
-path name = "test/lib/" ++ name
+path :: Text -> String
+path name = "test/lib/" ++ unpack name
 
-gqlLib :: String -> String
+gqlLib :: Text -> String
 gqlLib x = path x ++ "/query.gql"
 
-resLib :: String -> String
+resLib :: Text -> String
 resLib x = path x ++ "/response.json"
 
 getGQLBody :: Text -> IO ByteString
-getGQLBody p = L.readFile (gqlLib $ unpack p)
+getGQLBody p = L.readFile (gqlLib p)
+
+getInfo :: Text -> IO String
+getInfo p = readFile (path p ++ "/info.md")
 
 getResponseBody :: Text -> IO Value
-getResponseBody p = fromMaybe Null . decode <$> L.readFile (resLib $ unpack p)
+getResponseBody p = fromMaybe Null . decode <$> L.readFile (resLib p)

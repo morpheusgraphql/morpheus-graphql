@@ -1,0 +1,1 @@
+looping Fragment should throw an Error
