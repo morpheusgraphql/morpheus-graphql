@@ -5,4 +5,6 @@
 - define public API, hide all internal modules.
   exposed-modules: Data.Morpheus, Data.Morpheus.Kind, Data.Morpheus.Types
 - ::-> Resolver is now Monad
-- Remove GQLObject, GQLEnum, GQLInput and Typeable, all objects can be derived just with (Generic,GQLKind)
+- TypeFamilies: Wrapper was deleted and Wrapper was Replaced with Type Family Instances
+- all Types (exception GQLScalar) can be derived just with (Generic,GQLKind) ,
+  GQLObject, GQLEnum, GQLInput and Typeable was Removed,
