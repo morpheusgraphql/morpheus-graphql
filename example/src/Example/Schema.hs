@@ -8,15 +8,16 @@ module Example.Schema
   ( gqlApi
   ) where
 
-import           Data.ByteString.Lazy.Char8  (ByteString)
-import           Data.Maybe                  (fromMaybe)
-import           Data.Morpheus               (interpreter)
-import           Data.Morpheus.Kind          (GQLArgs, GQLKind (..), GQLMutation, GQLQuery, GQLScalar (..))
-import           Data.Morpheus.Kind.Internal (ENUM, GQL, INPUT_OBJECT, OBJECT, SCALAR)
-import           Data.Morpheus.Types         ((::->) (..), GQLRoot (..), ScalarValue (..))
-import           Data.Text                   (Text, pack)
-import qualified Example.Model               as M (JSONAddress (..), JSONUser (..), jsonAddress, jsonUser)
-import           GHC.Generics                (Generic)
+import           Data.ByteString.Lazy.Char8 (ByteString)
+import           Data.Maybe                 (fromMaybe)
+import           Data.Morpheus              (interpreter)
+import           Data.Morpheus.Kind         (ENUM, GQL, GQLArgs, GQLKind (..), GQLMutation, GQLQuery, GQLScalar (..),
+                                             INPUT_OBJECT, OBJECT, SCALAR)
+import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..), ScalarValue (..))
+import           Data.Text                  (Text, pack)
+import           Example.Model              (JSONAddress, JSONUser, jsonAddress, jsonUser)
+import qualified Example.Model              as M (JSONAddress (..), JSONUser (..))
+import           GHC.Generics               (Generic)
 
 type instance GQL CityID = ENUM
 
@@ -57,16 +58,6 @@ data Coordinates = Coordinates
 instance GQLKind Coordinates where
   description _ = "just random latitude and longitude"
 
-data LocationByCoordinates = LocationByCoordinates
-  { coordinates :: Coordinates
-  , comment     :: Maybe Text
-  } deriving (Generic, GQLArgs)
-
-data Location = Location
-  { zipCode :: Maybe [Int]
-  , cityID  :: CityID
-  } deriving (Generic, GQLArgs)
-
 data Address = Address
   { city        :: Text
   , street      :: Text
@@ -74,11 +65,21 @@ data Address = Address
   , owner       :: Maybe User
   } deriving (Generic, GQLKind)
 
+data AddressArgs = AddressArgs
+  { coordinates :: Coordinates
+  , comment     :: Maybe Text
+  } deriving (Generic, GQLArgs)
+
+data OfficeArgs = OfficeArgs
+  { zipCode :: Maybe [Int]
+  , cityID  :: CityID
+  } deriving (Generic, GQLArgs)
+
 data User = User
   { name    :: Text
   , email   :: Text
-  , address :: LocationByCoordinates ::-> Address
-  , office  :: Location ::-> Address
+  , address :: AddressArgs ::-> Address
+  , office  :: OfficeArgs ::-> Address
   , friend  :: () ::-> Maybe User
   , home    :: CityID
   } deriving (Generic)
@@ -91,60 +92,45 @@ newtype Query = Query
   } deriving (Generic, GQLQuery)
 
 newtype Mutation = Mutation
-  { createUser :: LocationByCoordinates ::-> User
+  { createUser :: AddressArgs ::-> User
   } deriving (Generic, GQLMutation)
 
 fetchAddress :: Euro -> Text -> IO (Either String Address)
 fetchAddress _ streetName = do
-  address' <- M.jsonAddress
-  pure (modify <$> address')
-  where
-    modify mAddress =
-      Address {city = M.city mAddress, houseNumber = M.houseNumber mAddress, street = streetName, owner = Nothing}
+  address' <- jsonAddress
+  pure (transformAddress streetName <$> address')
 
-resolveAddress :: LocationByCoordinates ::-> Address
-resolveAddress = Resolver res
-  where
-    res args = fetchAddress (Euro 1 0) (pack $ show $ longitude $ coordinates args)
+transformAddress :: Text -> JSONAddress -> Address
+transformAddress street' address' =
+  Address {city = M.city address', houseNumber = M.houseNumber address', street = street', owner = Nothing}
+
+resolveAddress :: AddressArgs ::-> Address
+resolveAddress = Resolver $ \args -> fetchAddress (Euro 1 0) (pack $ show $ longitude $ coordinates args)
 
 addressByCityID :: CityID -> Int -> IO (Either String Address)
 addressByCityID Paris code = fetchAddress (Euro 1 code) "Paris"
 addressByCityID BLN code   = fetchAddress (Euro 1 code) "Berlin"
 addressByCityID HH code    = fetchAddress (Euro 1 code) "Hamburg"
 
-resolveOffice :: M.JSONUser -> Location ::-> Address
-resolveOffice _ = Resolver resolve'
-  where
-    resolve' args = addressByCityID (cityID args) (head $ fromMaybe [101] (zipCode args))
+resolveOffice :: JSONUser -> OfficeArgs ::-> Address
+resolveOffice _ = Resolver $ \args -> addressByCityID (cityID args) (head $ fromMaybe [101] (zipCode args))
 
 resolveUser :: () ::-> User
-resolveUser = Resolver $ const (M.jsonUser >>= \x -> return (buildResolverBy <$> x))
-  where
-    buildResolverBy user' =
-      User
-        { name = M.name user'
-        , email = M.email user'
-        , address = resolveAddress
-        , office = resolveOffice user'
-        , home = HH
-        , friend = Resolver $ \_ -> pure (pure Nothing)
-        }
+resolveUser = transformUser <$> Resolver (const jsonUser)
 
-createUserMutation :: LocationByCoordinates ::-> User
-createUserMutation = Resolver resolve'
-  where
-    resolve' _ = do
-      result <- M.jsonUser
-      pure (modify <$> result)
-    modify user' =
-      User
-        { name = M.name user'
-        , email = M.email user'
-        , address = resolveAddress
-        , office = resolveOffice user'
-        , home = HH
-        , friend = Resolver $ \_ -> pure (pure Nothing)
-        }
+transformUser :: JSONUser -> User
+transformUser user' =
+  User
+    { name = M.name user'
+    , email = M.email user'
+    , address = resolveAddress
+    , office = resolveOffice user'
+    , home = HH
+    , friend = return Nothing
+    }
+
+createUserMutation :: AddressArgs ::-> User
+createUserMutation = transformUser <$> Resolver (const jsonUser)
 
 gqlApi :: ByteString -> IO ByteString
 gqlApi = interpreter GQLRoot {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}}

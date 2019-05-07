@@ -18,7 +18,7 @@ import qualified Data.Morpheus.Schema.Internal.Types as I (Core (..), Field (..)
                                                            InputObject, Leaf (..), ObjectField (..), OutputObject)
 import           Data.Morpheus.Schema.Type           (Type (..))
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
-import           Data.Morpheus.Types.Describer       ((::->) (Resolver))
+import           Data.Morpheus.Types.Describer       ((::->))
 import           Data.Text                           (Text)
 
 type InputValue = IN.InputValue Type
@@ -58,10 +58,10 @@ typeFromLeaf (key', I.LScalar (I.Core _ desc'))     = createLeafType SCALAR key'
 typeFromLeaf (key', I.LEnum tags' (I.Core _ desc')) = createLeafType ENUM key' desc' (map createEnumValue tags')
 
 resolveNothing :: a ::-> Maybe b
-resolveNothing = Resolver (\_ -> pure $ return Nothing)
+resolveNothing = return Nothing
 
 resolveMaybeList :: [b] -> a ::-> Maybe [b]
-resolveMaybeList list' = Resolver (\_ -> pure $ return (Just list'))
+resolveMaybeList list' = return (Just list')
 
 createLeafType :: TypeKind -> Text -> Text -> [EnumValue] -> Type
 createLeafType kind' name' desc' enums' =
