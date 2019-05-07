@@ -21,7 +21,6 @@ import           Data.Morpheus.Kind.Utils            (encodeList, encodeMaybe, l
 import           Data.Morpheus.Schema.Internal.Types (ObjectField (..))
 import           Data.Morpheus.Types.Describer       ((::->) (..))
 import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
-import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
 import           Data.Morpheus.Types.Query.Selection (Selection (..))
 import           Data.Proxy                          (Proxy (..))
 import           Data.Text                           (Text, pack)
