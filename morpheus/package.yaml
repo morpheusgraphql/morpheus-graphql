@@ -31,3 +31,15 @@ library:
       -  Data.Morpheus.Types
   ghc-options:
       -Wall
+
+
+tests:
+  haskell-bff-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+      -Wall
+    dependencies:
+      - morpheus-graphql
+      - tasty
+      - tasty-hunit
