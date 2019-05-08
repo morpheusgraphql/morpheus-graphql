@@ -1,0 +1,1 @@
+unused variable should throw Error

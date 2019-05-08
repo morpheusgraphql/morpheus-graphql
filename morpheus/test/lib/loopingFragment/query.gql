@@ -1,0 +1,22 @@
+{
+  user {
+    email
+  }
+}
+
+fragment A on User {
+  ...D
+  ...C
+}
+
+fragment B on User {
+  ...C
+}
+
+fragment C on User {
+  ...A
+}
+
+fragment D on User {
+	name
+}
