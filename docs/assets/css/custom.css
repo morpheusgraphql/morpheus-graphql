@@ -50,13 +50,13 @@ body {
 }
 
 .effect {
-  background-image: url("/assets/img/lines.png");
+  background-image: url("/assets/img/graph.png");
   position: absolute;
   width: 100%;
   height: 100%;
   top: 0;
   left: 0;
   background-size: cover;
-  opacity: 0.3;
+  opacity: 0.7;
   background-blend-mode: overlay;
 }
