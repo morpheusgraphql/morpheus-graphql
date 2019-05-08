@@ -1,0 +1,15 @@
+title: Morpheus GraphQL
+email: d.nalchevanidze@gmail.com
+description: Haskell GraphQL library, Build GraphQL APIs with your favourite functional language!
+baseurl: ""
+url: "https://morpheusgraphql.com"
+github_username: morpheusgraphql
+
+github:
+  is_project_page: true
+  repository_url: https://github.com/morpheusgraphql/morpheus-graphql
+
+markdown: kramdown
+theme: jekyll-theme-cayman
+plugins:
+  - jekyll-feed
