@@ -126,7 +126,7 @@ where you can query different mythology characters with `GraphiQL`.
 
 Mythology API is deployed on : [_api.morpheusgraphql.com_](https://api.morpheusgraphql.com) where you can test it with `GraphiQL`
 
-![Mythology Api](./assets/mythology-api.png "mythology-api")
+![Mythology Api](./assets/img/mythology-api.png "mythology-api")
 
 ## Advanced topics
 
@@ -189,9 +189,9 @@ instance GQLKind Deity where
 
 screenshots from `Insomnia`
 
-![alt text](./assets/introspection/spelling.png "spelling")
-![alt text](./assets/introspection/autocomplete.png "autocomplete")
-![alt text](./assets/introspection/type.png "type")
+![alt text](./assets/img/introspection/spelling.png "spelling")
+![alt text](./assets/img/introspection/autocomplete.png "autocomplete")
+![alt text](./assets/img/introspection/type.png "type")
 
 ### Mutations
 
