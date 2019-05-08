@@ -1,0 +1,62 @@
+body {
+  background: #f9f9f9;
+}
+
+.page-header {
+  background: #1c1629;
+  color: #6d78b1;
+  background-image: linear-gradient(138deg, #14101d, #1f124a);
+}
+
+.page-header .project-name {
+  color: hsla(260, 90%, 60%, 1);
+}
+
+.main-content h1,
+.main-content h2,
+.main-content h3,
+.main-content h4,
+.main-content h5,
+.main-content h6 {
+  color: #5d518c;
+}
+
+.navigation {
+  display: flex;
+  justify-content: start;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.page-header {
+  position: relative;
+}
+
+.page-header .btn {
+  color: #6174c5;
+}
+
+.page-header .nav-link {
+  padding-top: 1rem;
+  padding-left: 2rem;
+  color: #45528a;
+}
+
+.page-header .nav-link.active {
+  color: #7384d1;
+  text-shadow: 1px 1px 14px hsla(250, 100%, 59%, 1);
+}
+
+.effect {
+  background-image: url("/assets/img/lines.png");
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background-size: cover;
+  opacity: 0.3;
+  background-blend-mode: overlay;
+}
