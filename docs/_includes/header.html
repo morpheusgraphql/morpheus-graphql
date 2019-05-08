@@ -1,13 +1,15 @@
 <header class="page-header" role="banner">
-  {% include logo.svg %}
-  <h1 class="project-name">{{ site.title | default: site.github.repository_name }}</h1>
-  <h2 class="project-tagline">
-    {{ page.description | default: site.description | default: site.github.project_tagline }}</h2>
+  <div class="effect"> </div>
+  <div style="position: relative;">
+    {% include logo.svg %}
+    <h1 class="project-name">{{ site.title | default: site.github.repository_name }}</h1>
+    <h2 class="project-tagline">
+      {{ page.description | default: site.description | default: site.github.project_tagline }}</h2>
 
-  {% if site.github.is_project_page %}
-  <a href="{{ site.github.repository_url }}" class="btn">View on GitHub</a>
-  {% endif %}
-
+    {% if site.github.is_project_page %}
+    <a href="{{ site.github.repository_url }}" class="btn">View on GitHub</a>
+    {% endif %}
+  </div>
   <nav class="navigation">
     <a href="/" class="nav-link  {% if '/' == page.url %} active{% endif %}"> Getting Started </a>
     {% assign pages_list = site.html_pages  %}
