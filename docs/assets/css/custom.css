@@ -49,12 +49,13 @@ body {
 }
 
 .effect {
-    background-image: url("/assets/img/particles.jpg");
+    background-image: url("/assets/img/lines.png");
     position: absolute;
     width: 100%;
     height: 100%;
     top: 0;
     left: 0;
     background-size: cover;
-    opacity: 0.05;
+    opacity: 0.3;
+    background-blend-mode: overlay;
 }
