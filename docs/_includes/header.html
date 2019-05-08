@@ -14,7 +14,7 @@
     <a href="/" class="nav-link  {% if '/' == page.url %} active{% endif %}"> Getting Started </a>
     {% assign pages_list = site.html_pages  %}
     {% for node in pages_list %}
-    {% if node.title %}
+    {% if node.navOrder %}
     <a href="{{ node.url | absolute_url }}"
       class="nav-link  {% if page.url == node.url %} active{% endif %}">{{ node.title }}
     </a>
