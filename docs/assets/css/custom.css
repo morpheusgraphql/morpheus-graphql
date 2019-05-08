@@ -45,7 +45,7 @@ body {
 
 .page-header .nav-link.active {
   color: #7384d1;
-  text-shadow: 1px 1px 14px #a62dff;
+  text-shadow: 1px 1px 14px hsla(250, 100%, 59%, 1);
 }
 
 .effect {
