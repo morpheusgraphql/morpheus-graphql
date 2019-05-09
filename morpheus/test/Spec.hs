@@ -1,14 +1,17 @@
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main
   ( main
   ) where
 
-import           Data.Aeson                 (decode)
+import           Data.Aeson                 (FromJSON, decode)
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB (concat, pack)
 import           Data.Text                  (Text)
-import           Lib                        (getGQLBody, getInfo, getResponseBody)
+import           GHC.Generics
+import           Lib                        (getCases, getGQLBody, getResponseBody)
 import           Test.Tasty                 (TestTree, defaultMain, testGroup)
 import           Test.Tasty.HUnit           (assertFailure, testCase, (@=?))
 import           TestAPI                    (api)
@@ -16,14 +19,20 @@ import           TestAPI                    (api)
 packGQLRequest :: ByteString -> ByteString
 packGQLRequest x = LB.concat ["{\"query\":", LB.pack $ show x, "}"]
 
-holisticAPITest :: IO [TestTree]
-holisticAPITest = sequence $ testByFiles <$> ["loopingFragment", "unknownArguments", "unusedVariables"]
+data Case = Case
+  { id          :: Text
+  , description :: String
+  } deriving (Generic, FromJSON)
 
-testByFiles :: Text -> IO TestTree
-testByFiles fileName' = do
-  description' <- getInfo fileName'
-  query' <- getGQLBody fileName'
-  response' <- getResponseBody fileName'
+holisticAPITest :: IO [TestTree]
+holisticAPITest = do
+  cases' <- getCases
+  sequence $ testByFiles <$> cases'
+
+testByFiles :: Case -> IO TestTree
+testByFiles (Case path' description') = do
+  query' <- getGQLBody path'
+  response' <- getResponseBody path'
   result' <- api $ packGQLRequest query'
   case decode result' of
     Nothing -> assertFailure "Bad Responce"
