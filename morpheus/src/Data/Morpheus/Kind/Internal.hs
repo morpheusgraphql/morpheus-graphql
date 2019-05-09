@@ -5,6 +5,7 @@ module Data.Morpheus.Kind.Internal
   , OBJECT
   , ENUM
   , WRAPPER
+  , UNION
   , INPUT_OBJECT
   , KIND
   , GQLConstraint
@@ -52,6 +53,8 @@ data ENUM
 data INPUT_OBJECT
 
 data WRAPPER
+
+data UNION
 
 --data LIST
 type family GQLConstraint a b :: Constraint
