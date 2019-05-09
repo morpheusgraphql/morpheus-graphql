@@ -53,6 +53,7 @@ data InternalType a
   | Enum [EnumValue]
          Core
   | Object (GObject a)
+  | Union [GObject a]
 
 type OutputType = InternalType ObjectField
 
