@@ -31,9 +31,9 @@ type instance KIND Address = OBJECT
 
 type instance KIND User = OBJECT
 
-type instance Person = UNION
+type instance KIND MyUnion = UNION
 
-data Person
+data MyUnion
   = US User
   | AD Address
 
