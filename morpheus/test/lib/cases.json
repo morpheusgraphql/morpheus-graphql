@@ -1,14 +1,18 @@
 [
   {
     "id": "loopingFragment",
-    "description":"looping Fragment should throw an Error"
+    "description": "fail when: fragment directly or indirectly references itself"
   },
   {
-    "id": "unknownArguments",
-    "description":"unknown Argument should Throw an Error"
+    "id": "arguments/unknownArguments",
+    "description": "fail when: argument on field is not recognised by the schema"
+  },
+  {
+    "id": "arguments/nameConflict",
+    "description": "fail when: argument names on field are not unique"
   },
   {
     "id": "unusedVariables",
-    "description":"unused variable should throw Error"
+    "description": "fail when: variable is defined by the operation but did not used in selection"
   }
 ]

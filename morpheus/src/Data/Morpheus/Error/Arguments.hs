@@ -42,7 +42,7 @@ argumentNameCollision :: [EnhancedKey] -> GQLErrors
 argumentNameCollision = map keyToError
   where
     keyToError (EnhancedKey argName pos) = GQLError {desc = toMessage argName, posIndex = [pos]}
-    toMessage argName = T.concat ["There can Be only One Argument Named \"", argName]
+    toMessage argName = T.concat ["There can Be only One Argument Named \"", argName,"\""]
 
 undefinedArgument :: EnhancedKey -> GQLErrors
 undefinedArgument (EnhancedKey key' position') = errorMessage position' text
