@@ -8,22 +8,26 @@
 
 module Data.Morpheus.Kind.OutputRouter where
 
-import           Control.Monad.Trans                 (lift)
+import           Control.Monad.Trans                    (lift)
 import           Control.Monad.Trans.Except
-import           Data.Morpheus.Error.Selection       (fieldNotResolved)
-import           Data.Morpheus.Generics.ObjectRep    (resolveTypes)
-import qualified Data.Morpheus.Kind.GQLArgs          as Args (GQLArgs (..))
-import qualified Data.Morpheus.Kind.GQLEnum          as E (EnumConstraint, encode, field, introspect)
-import qualified Data.Morpheus.Kind.GQLScalar        as S (GQLScalar (..))
-import           Data.Morpheus.Kind.GQLType          (GQLType)
-import           Data.Morpheus.Kind.Internal         (ENUM, Encode_, Intro_, KIND, OField_, SCALAR, WRAPPER)
-import           Data.Morpheus.Kind.Utils            (encodeList, encodeMaybe, listField, maybeField)
-import           Data.Morpheus.Schema.Internal.Types (ObjectField (..))
-import           Data.Morpheus.Types.Describer       ((::->) (..))
-import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
-import           Data.Morpheus.Types.Query.Selection (Selection (..))
-import           Data.Proxy                          (Proxy (..))
-import           Data.Text                           (Text, pack)
+import           Data.Morpheus.Error.Selection          (fieldNotResolved)
+import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..))
+import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
+import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
+import qualified Data.Morpheus.Kind.GQLEnum             as E (EnumConstraint, encode, field, introspect)
+import qualified Data.Morpheus.Kind.GQLObject           as O (ObjectConstraint, encode, field, introspect)
+import qualified Data.Morpheus.Kind.GQLScalar           as S (GQLScalar (..))
+import           Data.Morpheus.Kind.GQLType             (GQLType)
+import           Data.Morpheus.Kind.Internal            (ENUM, Encode_, Intro_, KIND, OBJECT, OField_, SCALAR, WRAPPER)
+import           Data.Morpheus.Kind.Utils               (encodeList, encodeMaybe, listField, maybeField)
+import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..))
+import           Data.Morpheus.Types.Describer          ((::->) (..))
+import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
+import           Data.Morpheus.Types.Query.Selection    (Selection (..))
+import           Data.Proxy                             (Proxy (..))
+import           Data.Text                              (Text, pack)
+import           GHC.Generics
 
 class OutputTypeRouter a b where
   __introspect :: Proxy b -> Intro_ a
@@ -54,6 +58,19 @@ instance E.EnumConstraint a => OutputTypeRouter a ENUM where
   __introspect _ _ = E.introspect (Proxy @a)
   __encode _ _ = pure . E.encode
   __objectField _ _ = ObjectField [] . E.field (Proxy @a)
+
+instance O.ObjectConstraint a => OutputTypeRouter a OBJECT where
+  __encode _ = O.encode
+  __introspect _ = O.introspect
+  __objectField _ = O.field
+
+instance OutputTypeRouter a (KIND a) => DeriveResolvers (K1 s a) where
+  deriveResolvers key' (K1 src) = [(key', (`_encode` src))]
+
+instance (Selector s, OutputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Text, ObjectField) where
+  getFields _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
+    where
+      name = pack $ selName (undefined :: SelOf s)
 
 instance OutputTypeRouter a (KIND a) => OutputTypeRouter (Maybe a) WRAPPER where
   __encode _ = encodeMaybe _encode
