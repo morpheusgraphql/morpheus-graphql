@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Field \"user\" of type \"User\" must have a selection of subfields",
+      "locations": [
+        {
+          "line": 2,
+          "column": 2
+        }
+      ]
+    }
+  ]
+}

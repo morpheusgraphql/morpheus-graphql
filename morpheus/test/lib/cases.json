@@ -21,7 +21,15 @@
   },
   {
     "id":"selection/hasNoSubFields",
-    "description":"fail when: selected subFields on not object type"
+    "description":"fail when: selected subFields on non object type"
+  },
+  {
+    "id":"selection/mustHaveSubFields",
+    "description":"fail when: is not selected subFields on object type"
+  },
+  {
+    "id":"selection/nameConflict",
+    "description":"fail when: selected fields has same name"
   },
   {
     "id": "unusedVariables",
