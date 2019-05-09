@@ -16,6 +16,10 @@
     "description":"fail when: required argument is not defined in selection "
   },
   {
+    "id":"selection/unknownField",
+    "description":"fail when: selected field does not exist on type"
+  },
+  {
     "id": "unusedVariables",
     "description": "fail when: variable is defined by the operation but did not used in selection"
   }

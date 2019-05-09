@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Cannot query field \"bla\" on type \"User\".",
+      "locations": [
+        {
+          "line": 3,
+          "column": 4
+        }
+      ]
+    }
+  ]
+}
