@@ -12,7 +12,7 @@ import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Maybe                 (fromMaybe)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..),
-                                             INPUT_OBJECT, KIND, OBJECT, SCALAR)
+                                             INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..), ScalarValue (..))
 import           Data.Text                  (Text, pack)
 import           Example.Model              (JSONAddress, JSONUser, jsonAddress, jsonUser)
@@ -30,6 +30,12 @@ type instance KIND Coordinates = INPUT_OBJECT
 type instance KIND Address = OBJECT
 
 type instance KIND User = OBJECT
+
+type instance Person = UNION
+
+data Person
+  = US User
+  | AD Address
 
 data CityID
   = Paris
