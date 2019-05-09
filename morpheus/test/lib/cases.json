@@ -1,6 +1,6 @@
 [
   {
-    "id": "loopingFragment",
+    "id": "fragment/loopingFragment",
     "description": "fail when: fragment directly or indirectly references itself"
   },
   {
