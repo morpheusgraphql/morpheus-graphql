@@ -36,6 +36,7 @@ type instance KIND MyUnion = UNION
 data MyUnion
   = US User
   | AD Address
+  deriving (Generic, GQLType)
 
 data CityID
   = Paris
@@ -86,7 +87,7 @@ data User = User
   , email   :: Text
   , address :: AddressArgs ::-> Address
   , office  :: OfficeArgs ::-> Address
-  , friend  :: () ::-> Maybe User
+  , myUnion :: () ::-> MyUnion
   , home    :: CityID
   } deriving (Generic)
 
@@ -132,7 +133,7 @@ transformUser user' =
     , address = resolveAddress
     , office = resolveOffice user'
     , home = HH
-    , friend = return Nothing
+    , myUnion = return $ AD (Address "" "" 0 Nothing)
     }
 
 createUserMutation :: AddressArgs ::-> User
