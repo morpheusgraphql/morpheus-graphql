@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Unknown type \"XYZ\".",
+      "locations": [
+        {
+          "line": 7,
+          "column": 0
+        }
+      ]
+    }
+  ]
+}

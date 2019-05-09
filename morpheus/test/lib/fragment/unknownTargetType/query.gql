@@ -1,0 +1,9 @@
+{
+  user {
+    name
+  }
+}
+
+fragment Bo on XYZ {
+  name
+}
