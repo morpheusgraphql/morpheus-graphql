@@ -1,0 +1,14 @@
+[
+  {
+    "id": "loopingFragment",
+    "description":"looping Fragment should throw an Error"
+  },
+  {
+    "id": "unknownArguments",
+    "description":"unknown Argument should Throw an Error"
+  },
+  {
+    "id": "unusedVariables",
+    "description":"unused variable should throw Error"
+  }
+]

@@ -1,10 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Lib
   ( getGQLBody
   , getResponseBody
-  , getInfo
+  , getCases
   ) where
 
-import           Data.Aeson                 (Value (..), decode)
+import           Data.Aeson                 (FromJSON, Value (..), decode)
 import qualified Data.ByteString.Lazy       as L (readFile)
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Maybe                 (fromMaybe)
@@ -22,8 +23,8 @@ resLib x = path x ++ "/response.json"
 getGQLBody :: Text -> IO ByteString
 getGQLBody p = L.readFile (gqlLib p)
 
-getInfo :: Text -> IO String
-getInfo p = readFile (path p ++ "/info.md")
+getCases :: FromJSON a => IO [a]
+getCases = fromMaybe [] . decode <$> L.readFile (path "cases.json")
 
 getResponseBody :: Text -> IO Value
 getResponseBody p = fromMaybe Null . decode <$> L.readFile (resLib p)
