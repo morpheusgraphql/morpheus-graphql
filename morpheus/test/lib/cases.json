@@ -32,7 +32,7 @@
     "description":"fail when: selected fields has same name"
   },
   {
-    "id": "unusedVariables",
+    "id": "variables/unusedVariables",
     "description": "fail when: variable is defined by the operation but did not used in selection"
   }
 ]
