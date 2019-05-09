@@ -20,6 +20,10 @@
     "description":"fail when: selected field does not exist on type"
   },
   {
+    "id":"selection/hasNoSubFields",
+    "description":"fail when: selected subFields on not object type"
+  },
+  {
     "id": "unusedVariables",
     "description": "fail when: variable is defined by the operation but did not used in selection"
   }
