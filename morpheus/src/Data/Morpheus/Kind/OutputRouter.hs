@@ -19,7 +19,9 @@ import qualified Data.Morpheus.Kind.GQLEnum             as E (EnumConstraint, en
 import qualified Data.Morpheus.Kind.GQLObject           as O (ObjectConstraint, encode, field, introspect)
 import qualified Data.Morpheus.Kind.GQLScalar           as S (GQLScalar (..))
 import           Data.Morpheus.Kind.GQLType             (GQLType)
-import           Data.Morpheus.Kind.Internal            (ENUM, Encode_, Intro_, KIND, OBJECT, OField_, SCALAR, WRAPPER)
+import qualified Data.Morpheus.Kind.GQLUnion            as U (Constraint, encode, field, introspect)
+import           Data.Morpheus.Kind.Internal            (ENUM, Encode_, Intro_, KIND, OBJECT, OField_, SCALAR, UNION,
+                                                         WRAPPER)
 import           Data.Morpheus.Kind.Utils               (encodeList, encodeMaybe, listField, maybeField)
 import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..))
 import           Data.Morpheus.Types.Describer          ((::->) (..))
@@ -71,6 +73,11 @@ instance (Selector s, OutputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Te
   getFields _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)
+
+instance U.Constraint a => OutputTypeRouter a UNION where
+  __encode _ = U.encode
+  __introspect _ = U.introspect
+  __objectField _ = U.field
 
 instance OutputTypeRouter a (KIND a) => OutputTypeRouter (Maybe a) WRAPPER where
   __encode _ = encodeMaybe _encode
