@@ -1,17 +1,15 @@
 module Data.Morpheus.Validation.Spread
   ( getFragment
-  , castFragmentType
   , resolveSpread
   ) where
 
-import qualified Data.Map                               as M (lookup)
-import           Data.Morpheus.Error.Spread             (cannotBeSpreadOnType, unknownFragment)
-import           Data.Morpheus.Schema.Internal.AST      (Core (..), GObject (..), ObjectField (..))
-import           Data.Morpheus.Types.Error              (Validation)
-import           Data.Morpheus.Types.MetaInfo           (Position)
-import           Data.Morpheus.Types.Query.Fragment     (Fragment (..), FragmentLib, RawFragment)
-import           Data.Morpheus.Types.Query.RawSelection (RawSelectionSet)
-import           Data.Text                              (Text)
+import qualified Data.Map                           as M (lookup)
+import           Data.Morpheus.Error.Spread         (cannotBeSpreadOnType, unknownFragment)
+import           Data.Morpheus.Schema.Internal.AST  (Core (..), GObject (..), ObjectField (..))
+import           Data.Morpheus.Types.Error          (Validation)
+import           Data.Morpheus.Types.MetaInfo       (Position)
+import           Data.Morpheus.Types.Query.Fragment (Fragment (..), FragmentLib, RawFragment)
+import           Data.Text                          (Text)
 
 getFragment :: Position -> Text -> FragmentLib -> Validation RawFragment
 getFragment position' id' lib =
@@ -25,7 +23,6 @@ castFragmentType key' position' (GObject _ core) fragment =
     then pure fragment
     else Left $ cannotBeSpreadOnType key' (target fragment) position' (name core)
 
-resolveSpread :: FragmentLib -> GObject ObjectField -> Position -> Text -> Validation RawSelectionSet
-resolveSpread fragments' parentType' position' key' = content <$> (getFragment position' key' fragments' >>= cast)
-  where
-    cast = castFragmentType key' position' parentType'
+resolveSpread :: FragmentLib -> GObject ObjectField -> Position -> Text -> Validation RawFragment
+resolveSpread fragments' parentType' position' key' =
+  getFragment position' key' fragments' >>= castFragmentType key' position' parentType'

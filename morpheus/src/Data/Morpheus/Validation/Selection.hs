@@ -14,7 +14,7 @@ import qualified Data.Morpheus.Schema.Internal.AST        as AST (Field (..))
 import           Data.Morpheus.Schema.TypeKind            (TypeKind (..))
 import           Data.Morpheus.Types.Core                 (EnhancedKey (..))
 import           Data.Morpheus.Types.Error                (Validation)
-import           Data.Morpheus.Types.Query.Fragment       (FragmentLib)
+import           Data.Morpheus.Types.Query.Fragment       (Fragment, FragmentLib, RawFragment)
 import qualified Data.Morpheus.Types.Query.Fragment       as F (Fragment (..))
 import           Data.Morpheus.Types.Query.RawSelection   (RawSelection (..), RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection      (Selection (..), SelectionSet)
@@ -59,9 +59,13 @@ validateSelection lib' _ variables' parent' (key', RawField rawArgs field positi
   args' <- resolveArguments variables' rawArgs
   arguments' <- validateArguments lib' (key', field') position' args'
   pure (key', Field arguments' field position')
-validateSelection lib' fragments' variables' parent' (key', Spread id' position') =
-  pure (key', FragmentSpread (F.Fragment key' "" position' $ SelectionSet [] [] position'))
--- TODO: validate spreads
---  concat <$> (resolveSpread fragments' parent' sPos spreadID >>= recursiveResolve)
---  where
---    recursiveResolve = mapM (validateSelection lib' fragments' variables' parent')
+validateSelection lib' fragments' variables' parent' (key', Spread id' position') = do
+  rawFragment' <- resolveSpread fragments' parent' position' id'
+  fragment' <- castFragment lib' fragments' variables' parent' rawFragment'
+  pure $ (key', FragmentSpread fragment')
+
+castFragment ::
+     TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> RawFragment -> Validation (Fragment SelectionSet)
+castFragment lib' fragments' variables' onType' fragment' = do
+  selection' <- validateSelectionSet lib' fragments' variables' onType' (F.content fragment')
+  return (fragment' {F.content = selection'})
