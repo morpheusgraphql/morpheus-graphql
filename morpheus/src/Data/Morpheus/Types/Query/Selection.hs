@@ -5,9 +5,10 @@ module Data.Morpheus.Types.Query.Selection
   , Selection(..)
   ) where
 
-import           Data.Morpheus.Types.Core     (Collection, Key)
-import           Data.Morpheus.Types.JSType   (JSType)
-import           Data.Morpheus.Types.MetaInfo (Position)
+import           Data.Morpheus.Types.Core           (Collection, Key)
+import           Data.Morpheus.Types.JSType         (JSType)
+import           Data.Morpheus.Types.MetaInfo       (Position)
+import           Data.Morpheus.Types.Query.Fragment (Fragment)
 
 data Argument =
   Argument JSType
@@ -25,6 +26,5 @@ data Selection
   | Field Arguments
           Key
           Position
-  | FragmentSpread Key
-                   Position
+  | FragmentSpread (Fragment Selection)
   deriving (Show)
