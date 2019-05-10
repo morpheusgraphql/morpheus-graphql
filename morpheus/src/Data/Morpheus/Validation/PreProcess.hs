@@ -3,16 +3,16 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Data.Morpheus.PreProcess.PreProcess
-  ( preProcessQuery
+module Data.Morpheus.Validation.Validation
+  ( ValidationQuery
   ) where
 
 import           Data.Map                                         (fromList)
 import           Data.Morpheus.Error.Mutation                     (mutationIsNotDefined)
-import           Data.Morpheus.PreProcess.Fragment                (validateFragments)
-import           Data.Morpheus.PreProcess.Resolve.ResolveRawQuery (resolveRawQuery)
-import           Data.Morpheus.PreProcess.Validate.Validate       (mapSelectorValidation)
-import           Data.Morpheus.PreProcess.Variable                (allVariableReferences, resolveOperationVariables)
+import           Data.Morpheus.Validation.Fragment                (validateFragments)
+import           Data.Morpheus.Validation.Resolve.ResolveRawQuery (resolveRawQuery)
+import           Data.Morpheus.Validation.Validate.Validate       (mapSelectorValidation)
+import           Data.Morpheus.Validation.Variable                (allVariableReferences, resolveOperationVariables)
 import           Data.Morpheus.Schema.Internal.Types              (GObject (..), ObjectField (..), OutputObject,
                                                                    TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.Types              as SC (Field (..))
@@ -65,8 +65,8 @@ resolveValues typesLib root = do
   selection' <- resolveRawQuery typesLib (fragments root) variables' rawSel operator'
   pure (operator', selection')
 
-preProcessQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
-preProcessQuery lib' root' = do
+ValidationQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
+ValidationQuery lib' root' = do
   (operatorType', selection') <- resolveValues lib' root'
   selectors <- mapSelectorValidation lib' operatorType' selection'
   pure $ updateQuery (queryBody root') selectors

@@ -1,11 +1,11 @@
-module Data.Morpheus.PreProcess.Resolve.ResolveRawQuery
+module Data.Morpheus.Validation.Resolve.ResolveRawQuery
   ( resolveRawQuery
   ) where
 
 import           Data.Morpheus.Error.Selection              (hasNoSubfields)
-import           Data.Morpheus.PreProcess.Resolve.Arguments (resolveArguments)
-import           Data.Morpheus.PreProcess.Resolve.Spread    (resolveSpread)
-import           Data.Morpheus.PreProcess.Selection         (lookupSelectionField, lookupSelectionObjectFieldType)
+import           Data.Morpheus.Validation.Resolve.Arguments (resolveArguments)
+import           Data.Morpheus.Validation.Resolve.Spread    (resolveSpread)
+import           Data.Morpheus.Validation.Selection         (lookupSelectionField, lookupSelectionObjectFieldType)
 import           Data.Morpheus.Schema.Internal.Types        (GObject (..), ObjectField (..), OutputObject, TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.Types        as AST (Field (..))
 import           Data.Morpheus.Schema.TypeKind              (TypeKind (..))

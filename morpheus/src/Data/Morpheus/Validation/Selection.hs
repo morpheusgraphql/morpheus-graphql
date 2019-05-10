@@ -1,4 +1,4 @@
-module Data.Morpheus.PreProcess.Selection
+module Data.Morpheus.Validation.Selection
   ( lookupFieldAsSelectionSet
   , lookupSelectionObjectFieldType
   , mustBeObject
@@ -7,12 +7,12 @@ module Data.Morpheus.PreProcess.Selection
   ) where
 
 import           Data.Morpheus.Error.Selection       (cannotQueryField, hasNoSubfields, subfieldsNotSelected)
-import           Data.Morpheus.PreProcess.Utils      (lookupField, lookupType)
 import           Data.Morpheus.Schema.Internal.Types (Core (..), Field (..), GObject (..), ObjectField (..),
                                                       OutputObject, TypeLib (..))
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Error           (Validation)
 import           Data.Morpheus.Types.MetaInfo        (Position)
+import           Data.Morpheus.Validation.Utils      (lookupField, lookupType)
 import           Data.Text                           (Text)
 
 isObjectKind :: ObjectField -> Bool

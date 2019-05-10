@@ -1,4 +1,4 @@
-module Data.Morpheus.PreProcess.Utils
+module Data.Morpheus.Validation.Utils
   ( differKeys
   , existsObjectType
   , lookupType

@@ -2,15 +2,15 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Data.Morpheus.PreProcess.Validate.Validate
+module Data.Morpheus.Validation.Validate.Validate
   ( mapSelectorValidation
   ) where
 
 import           Data.Morpheus.Error.Selection               (duplicateQuerySelections, hasNoSubfields)
-import           Data.Morpheus.PreProcess.Selection          (lookupFieldAsSelectionSet, lookupSelectionField,
+import           Data.Morpheus.Validation.Selection          (lookupFieldAsSelectionSet, lookupSelectionField,
                                                               notObject)
-import           Data.Morpheus.PreProcess.Utils              (checkNameCollision)
-import           Data.Morpheus.PreProcess.Validate.Arguments (validateArguments)
+import           Data.Morpheus.Validation.Utils              (checkNameCollision)
+import           Data.Morpheus.Validation.Validate.Arguments (validateArguments)
 import           Data.Morpheus.Schema.Internal.Types         (Core (..), GObject (..), ObjectField (..), TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.Types         as AST (Field (..))
 import           Data.Morpheus.Schema.TypeKind               (TypeKind (..))

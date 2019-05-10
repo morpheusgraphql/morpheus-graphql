@@ -1,4 +1,4 @@
-module Data.Morpheus.PreProcess.Validate.Arguments
+module Data.Morpheus.Validation.Validate.Arguments
   ( validateArguments
   ) where
 
@@ -6,14 +6,14 @@ import           Data.Morpheus.Error.Arguments         (argumentGotInvalidValue,
                                                         undefinedArgument, unknownArguments)
 import           Data.Morpheus.Error.Input             (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Internal          (internalUnknownTypeMessage)
-import           Data.Morpheus.PreProcess.Input.Object (validateInputValue)
-import           Data.Morpheus.PreProcess.Utils        (checkForUnknownKeys, checkNameCollision, getInputType)
 import           Data.Morpheus.Schema.Internal.Types   (Field (..), InputField (..), ObjectField (..), TypeLib)
 import           Data.Morpheus.Types.Core              (EnhancedKey (..))
 import           Data.Morpheus.Types.Error             (Validation)
 import           Data.Morpheus.Types.JSType            (JSType (JSNull))
 import           Data.Morpheus.Types.MetaInfo          (Position)
 import           Data.Morpheus.Types.Query.Selection   (Argument (..), Arguments)
+import           Data.Morpheus.Validation.Input.Object (validateInputValue)
+import           Data.Morpheus.Validation.Utils        (checkForUnknownKeys, checkNameCollision, getInputType)
 import           Data.Text                             (Text)
 
 handleInputError :: Text -> Int -> InputValidation a -> Validation ()
