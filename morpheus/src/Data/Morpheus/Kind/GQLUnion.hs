@@ -1,6 +1,7 @@
 {-# LANGUAGE ConstraintKinds      #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeApplications     #-}
@@ -15,10 +16,9 @@ module Data.Morpheus.Kind.GQLUnion
 
 import           Data.Morpheus.Generics.UnionRep     (UnionRep (..))
 import           Data.Morpheus.Kind.GQLType          (GQLType (..))
-import           Data.Morpheus.Schema.Internal.Types (Field, LibType (..), TypeLib)
-import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
+import           Data.Morpheus.Schema.Internal.Types (LibType (..), TypeLib)
 import           Data.Morpheus.Types.Error           (ResolveIO)
-import           Data.Morpheus.Types.JSType          (JSType (..))
+import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
 import           Data.Morpheus.Types.Query.Selection (Selection (..))
 import           Data.Proxy
 import           Data.Text                           (Text)
@@ -27,8 +27,8 @@ import           GHC.Generics
 type Constraint a = (Generic a, GQLType a, UnionRep (Rep a))
 
 encode :: Generic a => (Text, Selection) -> a -> ResolveIO JSType
-encode (_, SelectionSet _ selection _pos) _ = pure JSNull
-encode (_, Field _ key pos) _               = pure JSNull
+encode (_, SelectionSet _ selection _pos) _ = pure $ Scalar $ String "TODO"
+encode (_, Field _ key pos) _               = pure $ Scalar $ String "TODO"
 
 introspect ::
      forall a. (GQLType a, UnionRep (Rep a))
