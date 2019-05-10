@@ -6,9 +6,9 @@ module Data.Morpheus.PreProcess.Validate.Validate
   ( mapSelectorValidation
   ) where
 
-import           Data.Morpheus.Error.Selection               (duplicateQuerySelections)
+import           Data.Morpheus.Error.Selection               (duplicateQuerySelections, subfieldsNotSelected)
 import           Data.Morpheus.PreProcess.Selection          (lookupFieldAsSelectionSet, lookupSelectionField,
-                                                              mustBeObject, notObject)
+                                                              notObject)
 import           Data.Morpheus.PreProcess.Utils              (checkNameCollision)
 import           Data.Morpheus.PreProcess.Validate.Arguments (validateArguments)
 import           Data.Morpheus.Schema.Internal.Types         (Core (..), GObject (..), ObjectField (..), TypeLib (..))
@@ -31,7 +31,7 @@ checkDuplicatesOn (GObject _ core) keys = checkNameCollision enhancedKeys (map f
 
 validateBySchema :: TypeLib -> GObject ObjectField -> (Text, Selection) -> Validation (Text, Selection)
 validateBySchema lib' parent' (key', SelectionSet args' selectors position') = do
-  field' <- lookupSelectionField position' key' parent' >>= mustBeObject (key', position')
+  field' <- lookupSelectionField position' key' parent'
   case AST.kind $ fieldContent field' of
     UNION -> pure (key', SelectionSet args' selectors position')
     OBJECT -> do
@@ -39,7 +39,7 @@ validateBySchema lib' parent' (key', SelectionSet args' selectors position') = d
       arguments' <- validateArguments lib' (key', field') position' args'
       selectorsQS <- mapSelectorValidation lib' fieldType' selectors
       pure (key', SelectionSet arguments' selectorsQS position')
-    _ -> pure (key', SelectionSet args' selectors position') -- TODO: thorw internal Error
+    _ -> Left $ subfieldsNotSelected key' (AST.fieldType $ fieldContent field') position'
 validateBySchema lib' parent' (key', Field args' field position') = do
   field' <- lookupSelectionField position' key' parent' >>= notObject (key', position')
   arguments' <- validateArguments lib' (key', field') position' args'
