@@ -6,7 +6,7 @@ module Data.Morpheus.Schema.Schema where
 import           Data.Morpheus.Schema.Directive      (Directive)
 import           Data.Morpheus.Schema.Internal.Types (OutputObject, TypeLib (..))
 import           Data.Morpheus.Schema.Utils.Utils    (Type, createObjectType, typeFromInputObject, typeFromLeaf,
-                                                      typeFromObject)
+                                                      typeFromObject, typeFromUnion)
 import           Data.Text                           (Text)
 import           GHC.Generics                        (Generic)
 
@@ -22,7 +22,8 @@ convertTypes :: TypeLib -> [Type]
 convertTypes lib' =
   [typeFromObject $ query lib'] ++
   typeFromMutation (mutation lib') ++
-  map typeFromObject (object lib') ++ map typeFromInputObject (inputObject lib') ++ map typeFromLeaf (leaf lib')
+  map typeFromObject (object lib') ++
+  map typeFromInputObject (inputObject lib') ++ map typeFromLeaf (leaf lib') ++ map typeFromUnion (union lib')
 
 typeFromMutation :: Maybe (Text, OutputObject) -> [Type]
 typeFromMutation (Just x) = [typeFromObject x]

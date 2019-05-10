@@ -77,7 +77,7 @@ data TypeLib = TypeLib
   }
 
 initTypeLib :: (Text, OutputObject) -> TypeLib
-initTypeLib query' = TypeLib {leaf = [], inputObject = [], query = query', object = [], mutation = Nothing}
+initTypeLib query' = TypeLib {leaf = [], inputObject = [], query = query', object = [], mutation = Nothing, union = []}
 
 data LibType
   = Leaf Leaf
@@ -90,8 +90,8 @@ mutationName (Just (key', _)) = [key']
 mutationName Nothing          = []
 
 getAllTypeKeys :: TypeLib -> [Text]
-getAllTypeKeys (TypeLib leaf' inputObject' object' (queryName, _) mutation' _) =
-  [queryName] ++ map fst leaf' ++ map fst inputObject' ++ map fst object' ++ mutationName mutation'
+getAllTypeKeys (TypeLib leaf' inputObject' object' (queryName, _) mutation' union') =
+  [queryName] ++ map fst leaf' ++ map fst inputObject' ++ map fst object' ++ mutationName mutation' ++ map fst union'
 
 isTypeDefined :: Text -> TypeLib -> Bool
 isTypeDefined name' lib' = name' `elem` getAllTypeKeys lib'

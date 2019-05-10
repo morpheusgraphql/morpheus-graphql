@@ -9,6 +9,7 @@ module Data.Morpheus.Schema.Utils.Utils
   , typeFromObject
   , typeFromInputObject
   , typeFromLeaf
+  , typeFromUnion
   ) where
 
 import           Data.Morpheus.Schema.EnumValue      (EnumValue, createEnumValue)
@@ -74,6 +75,20 @@ createLeafType kind' name' desc' enums' =
     , interfaces = Nothing
     , possibleTypes = Nothing
     , enumValues = resolveMaybeList enums'
+    , inputFields = Nothing
+    }
+
+typeFromUnion :: (Text, [I.Field]) -> Type
+typeFromUnion (name', fields') =
+  Type
+    { kind = UNION
+    , name = Just name'
+    , description = Just "TODO"
+    , fields = resolveNothing
+    , ofType = Nothing
+    , interfaces = Nothing
+    , possibleTypes = Just (map (\x -> createObjectType (I.fieldType x) "" []) fields')
+    , enumValues = return Nothing
     , inputFields = Nothing
     }
 
