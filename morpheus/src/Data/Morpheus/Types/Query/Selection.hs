@@ -25,6 +25,6 @@ data Selection
   | Field Arguments
           Key
           Position
-  | Spread Key
-           Position
+  | FragmentSpread Key
+                   Position
   deriving (Show)
