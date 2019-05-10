@@ -16,7 +16,7 @@ module Data.Morpheus.Kind.GQLUnion
 
 import           Data.Morpheus.Generics.UnionRep     (UnionRep (..))
 import           Data.Morpheus.Kind.GQLType          (GQLType (..))
-import           Data.Morpheus.Schema.Internal.Types (LibType (..), ObjectField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.Types (Field, LibType (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Error           (ResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType (..))
@@ -32,11 +32,11 @@ encode (_, SelectionSet _ selection _pos) _ = pure JSNull
 encode (_, Field _ key pos) _               = pure JSNull
 
 field ::
-     forall a. (GQLType a)
+     forall a. GQLType a
   => Proxy a
   -> Text
-  -> ObjectField
-field proxy = ObjectField [] . buildField UNION proxy
+  -> Field
+field _ = buildField UNION (Proxy @a)
 
 introspect ::
      forall a. (GQLType a, UnionRep (Rep a))
