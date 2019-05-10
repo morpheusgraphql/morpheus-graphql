@@ -49,10 +49,11 @@ wrapList field' type' =
 
 fieldFromObjectField :: (Text, I.ObjectField) -> Field
 fieldFromObjectField (key', field') =
-  F.createFieldWith key' (wrap (I.fieldContent field') $ createObjectType getType "" []) args'
+  F.createFieldWith key' (wrap (I.fieldContent field') $ createType kind' getType "" []) args'
   where
     getType = I.fieldType $ I.fieldContent field'
     args' = map inputValueFromArg $ I.args field'
+    kind' = I.kind $ I.fieldContent field'
 
 typeFromLeaf :: (Text, I.Leaf) -> Type
 typeFromLeaf (key', I.LScalar (I.Core _ desc'))     = createLeafType SCALAR key' desc' []
