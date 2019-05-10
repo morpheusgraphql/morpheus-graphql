@@ -16,7 +16,7 @@ module Data.Morpheus.Kind.GQLUnion
 
 import           Data.Morpheus.Generics.UnionRep     (UnionRep (..))
 import           Data.Morpheus.Kind.GQLType          (GQLType (..))
-import           Data.Morpheus.Schema.Internal.Types (LibType (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.AST (LibType (..), TypeLib)
 import           Data.Morpheus.Types.Error           (ResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
 import           Data.Morpheus.Types.Query.Selection (Selection (..))

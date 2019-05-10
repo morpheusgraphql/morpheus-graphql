@@ -7,7 +7,7 @@ module Data.Morpheus.Validation.Selection
   ) where
 
 import           Data.Morpheus.Error.Selection       (cannotQueryField, hasNoSubfields, subfieldsNotSelected)
-import           Data.Morpheus.Schema.Internal.Types (Core (..), Field (..), GObject (..), ObjectField (..),
+import           Data.Morpheus.Schema.Internal.AST (Core (..), Field (..), GObject (..), ObjectField (..),
                                                       OutputObject, TypeLib (..))
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Error           (Validation)

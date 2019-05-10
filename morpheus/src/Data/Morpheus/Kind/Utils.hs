@@ -7,8 +7,8 @@ module Data.Morpheus.Kind.Utils
   , encodeList
   ) where
 
-import           Data.Morpheus.Schema.Internal.Types (InputField (..), ObjectField (..))
-import qualified Data.Morpheus.Schema.Internal.Types as I (Field (..))
+import           Data.Morpheus.Schema.Internal.AST (InputField (..), ObjectField (..))
+import qualified Data.Morpheus.Schema.Internal.AST as I (Field (..))
 import           Data.Morpheus.Types.Error           (ResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType (..))
 import           Data.Morpheus.Types.Query.Selection (Selection (..))

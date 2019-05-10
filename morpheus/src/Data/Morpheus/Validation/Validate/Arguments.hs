@@ -6,7 +6,7 @@ import           Data.Morpheus.Error.Arguments         (argumentGotInvalidValue,
                                                         undefinedArgument, unknownArguments)
 import           Data.Morpheus.Error.Input             (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Internal          (internalUnknownTypeMessage)
-import           Data.Morpheus.Schema.Internal.Types   (Field (..), InputField (..), ObjectField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.AST     (Field (..), InputField (..), ObjectField (..), TypeLib)
 import           Data.Morpheus.Types.Core              (EnhancedKey (..))
 import           Data.Morpheus.Types.Error             (Validation)
 import           Data.Morpheus.Types.JSType            (JSType (JSNull))

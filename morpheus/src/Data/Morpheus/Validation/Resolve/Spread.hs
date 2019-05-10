@@ -6,7 +6,7 @@ module Data.Morpheus.Validation.Resolve.Spread
 
 import qualified Data.Map                               as M (lookup)
 import           Data.Morpheus.Error.Spread             (cannotBeSpreadOnType, unknownFragment)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField (..))
+import           Data.Morpheus.Schema.Internal.AST    (Core (..), GObject (..), ObjectField (..))
 import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.MetaInfo           (Position)
 import           Data.Morpheus.Types.Query.Fragment     (Fragment (..), FragmentLib)

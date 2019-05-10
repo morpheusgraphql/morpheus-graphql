@@ -10,7 +10,7 @@ module Data.Morpheus.Validation.Utils
 
 import           Data.List                           ((\\))
 import           Data.Morpheus.Error.Variable        (unknownType)
-import           Data.Morpheus.Schema.Internal.Types (InputType, InternalType (..), Leaf (..), OutputObject,
+import           Data.Morpheus.Schema.Internal.AST (InputType, InternalType (..), Leaf (..), OutputObject,
                                                       TypeLib (..))
 import           Data.Morpheus.Types.Core            (EnhancedKey (..), Key, enhanceKeyWithNull)
 import           Data.Morpheus.Types.Error           (Validation)

@@ -1,4 +1,4 @@
-module Data.Morpheus.Schema.Internal.Types
+module Data.Morpheus.Schema.Internal.AST
   ( OutputType
   , InternalType(..)
   , Core(..)

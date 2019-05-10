@@ -11,7 +11,7 @@ import qualified Data.Map                               as M (fromList, lookup)
 import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Variable           (undefinedVariable, uninitializedVariable, unknownType,
                                                          unusedVariables, variableGotInvalidValue)
-import           Data.Morpheus.Schema.Internal.Types    (InputType, TypeLib)
+import           Data.Morpheus.Schema.Internal.AST    (InputType, TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.JSType             (JSType (..))

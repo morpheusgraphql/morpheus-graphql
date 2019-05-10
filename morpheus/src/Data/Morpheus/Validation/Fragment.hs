@@ -4,7 +4,7 @@ module Data.Morpheus.Validation.Fragment
 
 import qualified Data.Map                               as M (toList)
 import           Data.Morpheus.Error.Fragment           (cannotSpreadWithinItself)
-import           Data.Morpheus.Schema.Internal.Types    (TypeLib)
+import           Data.Morpheus.Schema.Internal.AST      (TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.Query.Fragment     (Fragment (..))

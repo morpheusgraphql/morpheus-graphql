@@ -23,7 +23,7 @@ import           Data.Morpheus.Kind.GQLType             (GQLType (..), asObjectT
 import           Data.Morpheus.Kind.Internal            (KIND, OBJECT)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
-import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.AST    (ObjectField (..), TypeLib)
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)

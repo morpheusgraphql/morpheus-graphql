@@ -6,9 +6,9 @@ module Data.Morpheus.Validation.Input.Object
   ) where
 
 import           Data.Morpheus.Error.Input           (InputError (..), InputValidation, Prop (..))
-import           Data.Morpheus.Schema.Internal.Types (Core (..), Field (..), GObject (..), InputField (..), InputObject,
+import           Data.Morpheus.Schema.Internal.AST (Core (..), Field (..), GObject (..), InputField (..), InputObject,
                                                       InputType, Leaf (..), TypeLib (..))
-import qualified Data.Morpheus.Schema.Internal.Types as T (InternalType (..))
+import qualified Data.Morpheus.Schema.Internal.AST as T (InternalType (..))
 import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
 import           Data.Morpheus.Validation.Input.Enum (validateEnum)
 import           Data.Morpheus.Validation.Utils      (lookupField, lookupType)

@@ -20,9 +20,9 @@ import           Data.Morpheus.Generics.TypeID          (TypeID, typeId)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), InputField, Leaf (..), LibType (..),
+import           Data.Morpheus.Schema.Internal.AST    (Core (..), GObject (..), InputField, Leaf (..), LibType (..),
                                                          ObjectField (..), TypeLib, defineType, isTypeDefined)
-import qualified Data.Morpheus.Schema.Internal.Types    as I (Field (..))
+import qualified Data.Morpheus.Schema.Internal.AST    as I (Field (..))
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)

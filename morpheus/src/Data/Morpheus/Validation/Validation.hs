@@ -4,18 +4,14 @@
 {-# LANGUAGE TypeOperators       #-}
 
 module Data.Morpheus.Validation.Validation
-  ( ValidationQuery
+  ( validateQuery
   ) where
 
 import           Data.Map                                         (fromList)
 import           Data.Morpheus.Error.Mutation                     (mutationIsNotDefined)
-import           Data.Morpheus.Validation.Fragment                (validateFragments)
-import           Data.Morpheus.Validation.Resolve.ResolveRawQuery (resolveRawQuery)
-import           Data.Morpheus.Validation.Validate.Validate       (mapSelectorValidation)
-import           Data.Morpheus.Validation.Variable                (allVariableReferences, resolveOperationVariables)
-import           Data.Morpheus.Schema.Internal.Types              (GObject (..), ObjectField (..), OutputObject,
+import           Data.Morpheus.Schema.Internal.AST                (GObject (..), ObjectField (..), OutputObject,
                                                                    TypeLib (..))
-import qualified Data.Morpheus.Schema.Internal.Types              as SC (Field (..))
+import qualified Data.Morpheus.Schema.Internal.AST                as SC (Field (..))
 import           Data.Morpheus.Schema.TypeKind                    (TypeKind (..))
 import           Data.Morpheus.Types.Error                        (Validation)
 import           Data.Morpheus.Types.Query.Operator               (Operator (..), RawOperator, ValidOperator,
@@ -23,6 +19,10 @@ import           Data.Morpheus.Types.Query.Operator               (Operator (..)
 import           Data.Morpheus.Types.Query.RawSelection           (RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection              (SelectionSet)
 import           Data.Morpheus.Types.Types                        (GQLQueryRoot (..))
+import           Data.Morpheus.Validation.Fragment                (validateFragments)
+import           Data.Morpheus.Validation.Resolve.ResolveRawQuery (resolveRawQuery)
+import           Data.Morpheus.Validation.Validate.Validate       (mapSelectorValidation)
+import           Data.Morpheus.Validation.Variable                (allVariableReferences, resolveOperationVariables)
 import           Data.Text                                        (Text)
 
 updateQuery :: RawOperator -> SelectionSet -> ValidOperator
@@ -65,8 +65,8 @@ resolveValues typesLib root = do
   selection' <- resolveRawQuery typesLib (fragments root) variables' rawSel operator'
   pure (operator', selection')
 
-ValidationQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
-ValidationQuery lib' root' = do
+validateQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
+validateQuery lib' root' = do
   (operatorType', selection') <- resolveValues lib' root'
   selectors <- mapSelectorValidation lib' operatorType' selection'
   pure $ updateQuery (queryBody root') selectors

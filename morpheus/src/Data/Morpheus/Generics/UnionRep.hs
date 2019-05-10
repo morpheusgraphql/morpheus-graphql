@@ -12,7 +12,7 @@ module Data.Morpheus.Generics.UnionRep
   ( UnionRep(..)
   ) where
 
-import           Data.Morpheus.Schema.Internal.Types (Field, TypeLib)
+import           Data.Morpheus.Schema.Internal.AST (Field, TypeLib)
 import           Data.Proxy                          (Proxy (..))
 import           GHC.Generics
 

@@ -16,7 +16,7 @@ module Data.Morpheus.Kind.Internal
   , Decode_
   ) where
 
-import Data.Morpheus.Schema.Internal.Types (InputField, ObjectField, TypeLib)
+import Data.Morpheus.Schema.Internal.AST (InputField, ObjectField, TypeLib)
 import Data.Morpheus.Types.Describer ((::->))
 import Data.Morpheus.Types.Error (ResolveIO, Validation)
 import Data.Morpheus.Types.JSType (JSType(..))

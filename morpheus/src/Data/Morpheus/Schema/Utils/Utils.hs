@@ -15,7 +15,7 @@ module Data.Morpheus.Schema.Utils.Utils
 import           Data.Morpheus.Schema.EnumValue      (EnumValue, createEnumValue)
 import qualified Data.Morpheus.Schema.Field          as F (Field (..), createFieldWith)
 import qualified Data.Morpheus.Schema.InputValue     as IN (InputValue (..), createInputValueWith)
-import qualified Data.Morpheus.Schema.Internal.Types as I (Core (..), Field (..), GObject (..), InputField (..),
+import qualified Data.Morpheus.Schema.Internal.AST as I (Core (..), Field (..), GObject (..), InputField (..),
                                                            InputObject, Leaf (..), ObjectField (..), OutputObject)
 import           Data.Morpheus.Schema.Type           (Type (..))
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))

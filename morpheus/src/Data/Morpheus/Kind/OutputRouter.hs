@@ -25,7 +25,7 @@ import qualified Data.Morpheus.Kind.GQLUnion            as U (Constraint, encode
 import           Data.Morpheus.Kind.Internal            (ENUM, Encode_, Intro_, KIND, OBJECT, OField_, SCALAR, UNION,
                                                          WRAPPER)
 import           Data.Morpheus.Kind.Utils               (encodeList, encodeMaybe, listField, maybeField)
-import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..))
+import           Data.Morpheus.Schema.Internal.AST    (ObjectField (..))
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Types.Describer          ((::->) (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)

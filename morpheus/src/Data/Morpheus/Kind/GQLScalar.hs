@@ -8,7 +8,7 @@ module Data.Morpheus.Kind.GQLScalar where
 import           Control.Monad                       ((>=>))
 import           Data.Morpheus.Error.Internal        (internalTypeMismatch)
 import           Data.Morpheus.Kind.GQLType          (GQLType (..), scalarTypeOf)
-import           Data.Morpheus.Schema.Internal.Types (Field (..), InputField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.AST (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Core            (Key)
 import           Data.Morpheus.Types.Error           (Validation)
