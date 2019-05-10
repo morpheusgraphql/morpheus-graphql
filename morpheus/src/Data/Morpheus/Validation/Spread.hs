@@ -1,4 +1,4 @@
-module Data.Morpheus.Validation.Resolve.Spread
+module Data.Morpheus.Validation.Spread
   ( getFragment
   , castFragmentType
   , resolveSpread

@@ -12,7 +12,7 @@ import           Data.Morpheus.Types.Query.RawSelection   (RawSelection (..), Ra
 import           Data.Morpheus.Types.Query.Selection      (Selection (..), SelectionSet)
 import           Data.Morpheus.Types.Types                (Variables)
 import           Data.Morpheus.Validation.Arguments       (resolveArguments)
-import           Data.Morpheus.Validation.Resolve.Spread  (resolveSpread)
+import           Data.Morpheus.Validation.Spread          (resolveSpread)
 import           Data.Morpheus.Validation.Utils.Selection (lookupSelectionField, lookupSelectionObjectFieldType)
 import           Data.Text                                (Text)
 
