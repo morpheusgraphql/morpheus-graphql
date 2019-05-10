@@ -25,4 +25,6 @@ data Selection
   | Field Arguments
           Key
           Position
+  | Spread Key
+           Position
   deriving (Show)
