@@ -6,7 +6,7 @@ module Data.Morpheus.PreProcess.Validate.Validate
   ( mapSelectorValidation
   ) where
 
-import           Data.Morpheus.Error.Selection               (duplicateQuerySelections, subfieldsNotSelected)
+import           Data.Morpheus.Error.Selection               (duplicateQuerySelections, hasNoSubfields)
 import           Data.Morpheus.PreProcess.Selection          (lookupFieldAsSelectionSet, lookupSelectionField,
                                                               notObject)
 import           Data.Morpheus.PreProcess.Utils              (checkNameCollision)
@@ -39,7 +39,7 @@ validateBySchema lib' parent' (key', SelectionSet args' selectors position') = d
       arguments' <- validateArguments lib' (key', field') position' args'
       selectorsQS <- mapSelectorValidation lib' fieldType' selectors
       pure (key', SelectionSet arguments' selectorsQS position')
-    _ -> Left $ subfieldsNotSelected key' (AST.fieldType $ fieldContent field') position'
+    _ -> Left $ hasNoSubfields key' (AST.fieldType $ fieldContent field') position'
 validateBySchema lib' parent' (key', Field args' field position') = do
   field' <- lookupSelectionField position' key' parent' >>= notObject (key', position')
   arguments' <- validateArguments lib' (key', field') position' args'
