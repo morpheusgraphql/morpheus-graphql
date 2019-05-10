@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -13,18 +14,18 @@ module Data.Morpheus.Kind.GQLUnion
   , Constraint
   ) where
 
+import           Data.Morpheus.Generics.UnionRep     (UnionRep (..))
 import           Data.Morpheus.Kind.GQLType          (GQLType (..))
-import           Data.Morpheus.Schema.Internal.Types (ObjectField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.Types (LibType (..), ObjectField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
-import           Data.Morpheus.Schema.Utils.Utils    (Field, InputValue, Type)
-import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
+import           Data.Morpheus.Types.Error           (ResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType (..))
 import           Data.Morpheus.Types.Query.Selection (Selection (..))
 import           Data.Proxy
 import           Data.Text                           (Text)
 import           GHC.Generics
 
-type Constraint a = (Generic a, GQLType a)
+type Constraint a = (Generic a, GQLType a, UnionRep (Rep a))
 
 encode :: Generic a => (Text, Selection) -> a -> ResolveIO JSType
 encode (_, SelectionSet _ selection _pos) _ = pure JSNull
@@ -38,8 +39,12 @@ field ::
 field proxy = ObjectField [] . buildField UNION proxy
 
 introspect ::
-     forall a. (GQLType a)
+     forall a. (GQLType a, UnionRep (Rep a))
   => Proxy a
   -> TypeLib
   -> TypeLib
-introspect _ stack = stack
+introspect = updateLib (const $ Union fields) stack
+  where
+    fieldTypes = possibleTypes (Proxy @(Rep a))
+    fields = map fst fieldTypes
+    stack = map snd fieldTypes
