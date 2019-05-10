@@ -1,47 +1,49 @@
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators       #-}
+
 module Data.Morpheus.Validation.Selection
-  ( lookupFieldAsSelectionSet
-  , lookupSelectionObjectFieldType
-  , mustBeObject
-  , notObject
-  , lookupSelectionField
+  ( validateSelectionSet
   ) where
 
-import           Data.Morpheus.Error.Selection       (cannotQueryField, hasNoSubfields, subfieldsNotSelected)
-import           Data.Morpheus.Schema.Internal.AST (Core (..), Field (..), GObject (..), ObjectField (..),
-                                                      OutputObject, TypeLib (..))
-import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
-import           Data.Morpheus.Types.Error           (Validation)
-import           Data.Morpheus.Types.MetaInfo        (Position)
-import           Data.Morpheus.Validation.Utils      (lookupField, lookupType)
-import           Data.Text                           (Text)
+import           Data.Morpheus.Error.Selection            (duplicateQuerySelections, hasNoSubfields)
+import           Data.Morpheus.Schema.Internal.AST        (Core (..), GObject (..), ObjectField (..), TypeLib (..))
+import qualified Data.Morpheus.Schema.Internal.AST        as AST (Field (..))
+import           Data.Morpheus.Schema.TypeKind            (TypeKind (..))
+import           Data.Morpheus.Types.Core                 (EnhancedKey (..))
+import           Data.Morpheus.Types.Error                (Validation)
+import           Data.Morpheus.Types.Query.Selection      (Selection (..), SelectionSet)
+import           Data.Morpheus.Validation.Arguments       (validateArguments)
+import           Data.Morpheus.Validation.Utils           (checkNameCollision)
+import           Data.Morpheus.Validation.Utils.Selection (lookupFieldAsSelectionSet, lookupSelectionField, notObject)
+import           Data.Text                                (Text)
 
-isObjectKind :: ObjectField -> Bool
-isObjectKind (ObjectField _ field') = OBJECT == kind field'
+selToKey :: (Text, Selection) -> EnhancedKey
+selToKey (sName, Field _ _ pos)        = EnhancedKey sName pos
+selToKey (sName, SelectionSet _ _ pos) = EnhancedKey sName pos
 
-mustBeObject :: (Text, Position) -> ObjectField -> Validation ObjectField
-mustBeObject (key', position') field' =
-  if isObjectKind field'
-    then pure field'
-    else Left $ hasNoSubfields key' (fieldType $ fieldContent field') position'
-
-notObject :: (Text, Position) -> ObjectField -> Validation ObjectField
-notObject (key', position') field' =
-  if isObjectKind field'
-    then Left $ subfieldsNotSelected key' (fieldType $ fieldContent field') position'
-    else pure field'
-
-lookupFieldAsSelectionSet :: Position -> Text -> TypeLib -> ObjectField -> Validation OutputObject
-lookupFieldAsSelectionSet position' key' lib' field' = lookupType error' (object lib') type'
+checkDuplicatesOn :: GObject ObjectField -> SelectionSet -> Validation SelectionSet
+checkDuplicatesOn (GObject _ core) keys = checkNameCollision enhancedKeys (map fst keys) error' >> pure keys
   where
-    error' = hasNoSubfields key' type' position'
-    type' = fieldType $ fieldContent field'
+    error' = duplicateQuerySelections (name core)
+    enhancedKeys = map selToKey keys
 
-lookupSelectionField :: Position -> Text -> GObject ObjectField -> Validation ObjectField
-lookupSelectionField position' key' (GObject fields' core') = lookupField key' fields' error'
-  where
-    error' = cannotQueryField key' (name core') position'
+validateBySchema :: TypeLib -> GObject ObjectField -> (Text, Selection) -> Validation (Text, Selection)
+validateBySchema lib' parent' (key', SelectionSet args' selectors position') = do
+  field' <- lookupSelectionField position' key' parent'
+  case AST.kind $ fieldContent field' of
+    UNION -> pure (key', SelectionSet args' selectors position')
+    OBJECT -> do
+      fieldType' <- lookupFieldAsSelectionSet position' key' lib' field'
+      arguments' <- validateArguments lib' (key', field') position' args'
+      selectorsQS <- validateSelectionSet lib' fieldType' selectors
+      pure (key', SelectionSet arguments' selectorsQS position')
+    _ -> Left $ hasNoSubfields key' (AST.fieldType $ fieldContent field') position'
+validateBySchema lib' parent' (key', Field args' field position') = do
+  field' <- lookupSelectionField position' key' parent' >>= notObject (key', position')
+  arguments' <- validateArguments lib' (key', field') position' args'
+  pure (key', Field arguments' field position')
 
-lookupSelectionObjectFieldType :: Position -> Text -> TypeLib -> GObject ObjectField -> Validation OutputObject
-lookupSelectionObjectFieldType position' key' lib' object' =
-  lookupSelectionField position' key' object' >>= mustBeObject (key', position') >>=
-  lookupFieldAsSelectionSet position' key' lib'
+validateSelectionSet :: TypeLib -> GObject ObjectField -> SelectionSet -> Validation SelectionSet
+validateSelectionSet typeLib type' selectors =
+  checkDuplicatesOn type' selectors >>= mapM (validateBySchema typeLib type')

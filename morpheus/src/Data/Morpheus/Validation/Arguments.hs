@@ -1,4 +1,4 @@
-module Data.Morpheus.Validation.Validate.Arguments
+module Data.Morpheus.Validation.Arguments
   ( validateArguments
   ) where
 

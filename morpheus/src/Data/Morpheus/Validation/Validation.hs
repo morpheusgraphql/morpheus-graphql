@@ -21,7 +21,7 @@ import           Data.Morpheus.Types.Query.Selection              (SelectionSet)
 import           Data.Morpheus.Types.Types                        (GQLQueryRoot (..))
 import           Data.Morpheus.Validation.Fragment                (validateFragments)
 import           Data.Morpheus.Validation.Resolve.ResolveRawQuery (resolveRawQuery)
-import           Data.Morpheus.Validation.Validate.Validate       (mapSelectorValidation)
+import           Data.Morpheus.Validation.Selection               (validateSelectionSet)
 import           Data.Morpheus.Validation.Variable                (allVariableReferences, resolveOperationVariables)
 import           Data.Text                                        (Text)
 
@@ -68,5 +68,5 @@ resolveValues typesLib root = do
 validateRequest :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
 validateRequest lib' root' = do
   (operatorType', selection') <- resolveValues lib' root'
-  selectors <- mapSelectorValidation lib' operatorType' selection'
+  selectors <- validateSelectionSet lib' operatorType' selection'
   pure $ updateQuery (queryBody root') selectors
