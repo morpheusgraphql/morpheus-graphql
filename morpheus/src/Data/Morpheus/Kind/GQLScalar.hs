@@ -1,5 +1,7 @@
 {-# LANGUAGE ConstrainedClassMethods #-}
 {-# LANGUAGE OverloadedStrings       #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE TypeApplications        #-}
 
 module Data.Morpheus.Kind.GQLScalar where
 
@@ -26,11 +28,11 @@ class GQLScalar a where
   encode :: a -> JSType
   encode = Scalar . serialize
   asInputField :: GQLType a => Proxy a -> Key -> InputField
-  asInputField proxy = InputField . asField proxy
+  asInputField _ = InputField . asField (Proxy @a)
   asField :: GQLType a => Proxy a -> Key -> Field
-  asField proxy name = Field {fieldName = name, notNull = True, asList = False, kind = SCALAR, fieldType = typeID proxy}
+  asField _ = buildField SCALAR (Proxy @a)
   introspect :: GQLType a => Proxy a -> TypeLib -> TypeLib
-  introspect = updateLib scalarTypeOf []
+  introspect _ = updateLib scalarTypeOf [] (Proxy @a)
 
 instance GQLScalar Text where
   parseValue (String x) = pure x
