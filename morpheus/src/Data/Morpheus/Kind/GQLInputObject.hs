@@ -37,7 +37,7 @@ decode (JSObject x) = to <$> gDecode "" (JSObject x)
 decode isType       = internalTypeMismatch "InputObject" isType
 
 inputField :: GQLType a => Proxy a -> Text -> InputField
-inputField proxy = InputField . buildField INPUT_OBJECT proxy
+inputField proxy = InputField . field_ INPUT_OBJECT proxy
 
 introspect ::
      forall a. (GQLType a, IOObjectRep a)

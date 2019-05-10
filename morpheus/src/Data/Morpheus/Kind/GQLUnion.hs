@@ -9,7 +9,6 @@
 
 module Data.Morpheus.Kind.GQLUnion
   ( encode
-  , field
   , introspect
   , Constraint
   ) where
@@ -30,13 +29,6 @@ type Constraint a = (Generic a, GQLType a, UnionRep (Rep a))
 encode :: Generic a => (Text, Selection) -> a -> ResolveIO JSType
 encode (_, SelectionSet _ selection _pos) _ = pure JSNull
 encode (_, Field _ key pos) _               = pure JSNull
-
-field ::
-     forall a. GQLType a
-  => Proxy a
-  -> Text
-  -> Field
-field _ = buildField UNION (Proxy @a)
 
 introspect ::
      forall a. (GQLType a, UnionRep (Rep a))

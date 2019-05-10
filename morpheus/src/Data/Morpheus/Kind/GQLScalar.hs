@@ -30,7 +30,7 @@ class GQLScalar a where
   asInputField :: GQLType a => Proxy a -> Key -> InputField
   asInputField _ = InputField . asField (Proxy @a)
   asField :: GQLType a => Proxy a -> Key -> Field
-  asField _ = buildField SCALAR (Proxy @a)
+  asField _ = field_ SCALAR (Proxy @a)
   introspect :: GQLType a => Proxy a -> TypeLib -> TypeLib
   introspect _ = updateLib scalarTypeOf [] (Proxy @a)
 

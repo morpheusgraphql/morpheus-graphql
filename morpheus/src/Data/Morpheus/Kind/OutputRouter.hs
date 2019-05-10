@@ -21,7 +21,7 @@ import qualified Data.Morpheus.Kind.GQLEnum             as E (EnumConstraint, en
 import qualified Data.Morpheus.Kind.GQLObject           as O (ObjectConstraint, encode, field, introspect)
 import qualified Data.Morpheus.Kind.GQLScalar           as S (GQLScalar (..))
 import           Data.Morpheus.Kind.GQLType             (GQLType (..))
-import qualified Data.Morpheus.Kind.GQLUnion            as U (Constraint, encode, field, introspect)
+import qualified Data.Morpheus.Kind.GQLUnion            as U (Constraint, encode, introspect)
 import           Data.Morpheus.Kind.Internal            (ENUM, Encode_, Intro_, KIND, OBJECT, OField_, SCALAR, UNION,
                                                          WRAPPER)
 import           Data.Morpheus.Kind.Utils               (encodeList, encodeMaybe, listField, maybeField)
@@ -57,12 +57,12 @@ _encode = __encode (Proxy @(KIND a))
 instance (S.GQLScalar a, GQLType a) => OutputTypeRouter a SCALAR where
   __introspect _ _ = S.introspect (Proxy @a)
   __encode _ _ = pure . S.encode
-  __objectField _ _ = ObjectField [] . S.asField (Proxy @a)
+  __objectField _ _ = ObjectField [] . field_ SCALAR (Proxy @a)
 
 instance E.EnumConstraint a => OutputTypeRouter a ENUM where
   __introspect _ _ = E.introspect (Proxy @a)
   __encode _ _ = pure . E.encode
-  __objectField _ _ = ObjectField [] . E.field (Proxy @a)
+  __objectField _ _ = ObjectField [] . field_ ENUM (Proxy @a)
 
 instance O.ObjectConstraint a => OutputTypeRouter a OBJECT where
   __encode _ = O.encode
@@ -78,12 +78,12 @@ instance (Selector s, OutputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Te
       name = pack $ selName (undefined :: SelOf s)
 
 instance (OutputTypeRouter a OBJECT, O.ObjectConstraint a) => UnionRep (RecSel s a) where
-  possibleTypes _ = [(buildField OBJECT (Proxy @a) "", O.introspect (Proxy @a))]
+  possibleTypes _ = [(field_ OBJECT (Proxy @a) "", O.introspect (Proxy @a))]
 
 instance U.Constraint a => OutputTypeRouter a UNION where
   __encode _ = U.encode
-  __introspect _ = U.introspect
-  __objectField _ = U.field
+  __introspect _ _ = U.introspect (Proxy @a)
+  __objectField _ _ = ObjectField [] . field_ UNION (Proxy @a)
 
 instance OutputTypeRouter a (KIND a) => OutputTypeRouter (Maybe a) WRAPPER where
   __encode _ = encodeMaybe _encode

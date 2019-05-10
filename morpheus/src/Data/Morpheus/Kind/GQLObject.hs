@@ -46,7 +46,7 @@ field ::
   => Proxy a
   -> Text
   -> ObjectField
-field proxy = ObjectField [] . buildField OBJECT proxy
+field proxy = ObjectField [] . field_ OBJECT proxy
 
 introspect ::
      forall a. (ObjectRep (Rep a) (Text, ObjectField), GQLType a)

@@ -39,7 +39,7 @@ inputField :: GQLType a => Proxy a -> Text -> InputField
 inputField proxy = InputField . field proxy
 
 field :: GQLType a => Proxy a -> Text -> Field
-field = buildField ENUM
+field = field_ ENUM
 
 introspect ::
      forall a. (GQLType a, EnumRep (Rep a))

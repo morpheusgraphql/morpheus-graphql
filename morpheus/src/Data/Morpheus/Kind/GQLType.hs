@@ -50,8 +50,8 @@ class GQLType a where
   default typeID :: (TypeID (Rep a), Generic a) =>
     Proxy a -> Text
   typeID = typeId
-  buildField :: TypeKind -> Proxy a -> Text -> I.Field
-  buildField kind' proxy' name' =
+  field_ :: TypeKind -> Proxy a -> Text -> I.Field
+  field_ kind' proxy' name' =
     I.Field {I.fieldName = name', I.notNull = True, I.asList = False, I.kind = kind', I.fieldType = typeID proxy'}
   buildType :: Proxy a -> Core
   buildType proxy = Core {name = typeID proxy, typeDescription = description proxy}
