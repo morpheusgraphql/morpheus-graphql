@@ -7,7 +7,7 @@ import           Data.Morpheus.Error.Fragment           (cannotSpreadWithinItsel
 import           Data.Morpheus.Schema.Internal.AST      (TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
-import           Data.Morpheus.Types.Query.Fragment     (Fragment (..))
+import           Data.Morpheus.Types.Query.Fragment     (Fragment (..), RawFragment)
 import           Data.Morpheus.Types.Query.RawSelection (RawSelection (..))
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Morpheus.Validation.Utils.Utils   (existsObjectType)
@@ -24,7 +24,7 @@ scanForSpread lib' root (_', RawSelectionSet _ selectors _) = concatMap (scanFor
 scanForSpread _ _ (_, RawField {})                          = []
 scanForSpread _ _ (_, Spread value pos)                     = [EnhancedKey value pos]
 
-validateFragment :: TypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation NodeEdges
+validateFragment :: TypeLib -> GQLQueryRoot -> (Text, RawFragment) -> Validation NodeEdges
 validateFragment lib' root (fName, Fragment {content = selection, target = target', position = position'}) =
   existsObjectType position' target' lib' >>
   pure (EnhancedKey fName position', concatMap (scanForSpread lib' root) selection)

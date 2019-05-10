@@ -6,20 +6,20 @@ module Data.Morpheus.Validation.Spread
 
 import qualified Data.Map                               as M (lookup)
 import           Data.Morpheus.Error.Spread             (cannotBeSpreadOnType, unknownFragment)
-import           Data.Morpheus.Schema.Internal.AST    (Core (..), GObject (..), ObjectField (..))
+import           Data.Morpheus.Schema.Internal.AST      (Core (..), GObject (..), ObjectField (..))
 import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.MetaInfo           (Position)
-import           Data.Morpheus.Types.Query.Fragment     (Fragment (..), FragmentLib)
+import           Data.Morpheus.Types.Query.Fragment     (Fragment (..), FragmentLib, RawFragment)
 import           Data.Morpheus.Types.Query.RawSelection (RawSelectionSet)
 import           Data.Text                              (Text)
 
-getFragment :: Position -> Text -> FragmentLib -> Validation Fragment
+getFragment :: Position -> Text -> FragmentLib -> Validation RawFragment
 getFragment position' id' lib =
   case M.lookup id' lib of
     Nothing       -> Left $ unknownFragment id' position'
     Just fragment -> pure fragment
 
-castFragmentType :: Text -> Position -> GObject ObjectField -> Fragment -> Validation Fragment
+castFragmentType :: Text -> Position -> GObject ObjectField -> RawFragment -> Validation RawFragment
 castFragmentType key' position' (GObject _ core) fragment =
   if name core == target fragment
     then pure fragment
