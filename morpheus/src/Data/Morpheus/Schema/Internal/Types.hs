@@ -53,7 +53,7 @@ data InternalType a
   | Enum [EnumValue]
          Core
   | Object (GObject a)
-  | Union [GObject a]
+
 
 type OutputType = InternalType ObjectField
 
@@ -83,6 +83,7 @@ data LibType
   = Leaf Leaf
   | InputObject InputObject
   | OutputObject OutputObject
+  | Union [Field]
 
 mutationName :: Maybe (Text, OutputObject) -> [Text]
 mutationName (Just (key', _)) = [key']
