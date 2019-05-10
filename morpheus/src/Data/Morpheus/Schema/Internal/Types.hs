@@ -54,7 +54,6 @@ data InternalType a
          Core
   | Object (GObject a)
 
-
 type OutputType = InternalType ObjectField
 
 type InputType = InternalType InputField
@@ -74,6 +73,7 @@ data TypeLib = TypeLib
   , object      :: [(Text, OutputObject)]
   , query       :: (Text, OutputObject)
   , mutation    :: Maybe (Text, OutputObject)
+  , union       :: [(Text, [Field])]
   }
 
 initTypeLib :: (Text, OutputObject) -> TypeLib
@@ -90,7 +90,7 @@ mutationName (Just (key', _)) = [key']
 mutationName Nothing          = []
 
 getAllTypeKeys :: TypeLib -> [Text]
-getAllTypeKeys (TypeLib leaf' inputObject' object' (queryName, _) mutation') =
+getAllTypeKeys (TypeLib leaf' inputObject' object' (queryName, _) mutation' _) =
   [queryName] ++ map fst leaf' ++ map fst inputObject' ++ map fst object' ++ mutationName mutation'
 
 isTypeDefined :: Text -> TypeLib -> Bool
@@ -100,3 +100,4 @@ defineType :: (Text, LibType) -> TypeLib -> TypeLib
 defineType (key', Leaf type') lib         = lib {leaf = (key', type') : leaf lib}
 defineType (key', InputObject type') lib  = lib {inputObject = (key', type') : inputObject lib}
 defineType (key', OutputObject type') lib = lib {object = (key', type') : object lib}
+defineType (key', Union type') lib        = lib {union = (key', type') : union lib}
