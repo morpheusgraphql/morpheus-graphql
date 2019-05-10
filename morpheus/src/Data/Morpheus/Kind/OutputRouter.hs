@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -13,17 +14,19 @@ import           Control.Monad.Trans.Except
 import           Data.Morpheus.Error.Selection          (fieldNotResolved)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..))
 import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Generics.UnionRep        (UnionRep (..))
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
 import qualified Data.Morpheus.Kind.GQLEnum             as E (EnumConstraint, encode, field, introspect)
 import qualified Data.Morpheus.Kind.GQLObject           as O (ObjectConstraint, encode, field, introspect)
 import qualified Data.Morpheus.Kind.GQLScalar           as S (GQLScalar (..))
-import           Data.Morpheus.Kind.GQLType             (GQLType)
+import           Data.Morpheus.Kind.GQLType             (GQLType (..))
 import qualified Data.Morpheus.Kind.GQLUnion            as U (Constraint, encode, field, introspect)
 import           Data.Morpheus.Kind.Internal            (ENUM, Encode_, Intro_, KIND, OBJECT, OField_, SCALAR, UNION,
                                                          WRAPPER)
 import           Data.Morpheus.Kind.Utils               (encodeList, encodeMaybe, listField, maybeField)
 import           Data.Morpheus.Schema.Internal.Types    (ObjectField (..))
+import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Types.Describer          ((::->) (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..))
@@ -73,6 +76,9 @@ instance (Selector s, OutputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Te
   getFields _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)
+
+instance (OutputTypeRouter a OBJECT, O.ObjectConstraint a) => UnionRep (RecSel s a) where
+  possibleTypes _ = [(buildField OBJECT (Proxy @a) "", O.introspect (Proxy @a))]
 
 instance U.Constraint a => OutputTypeRouter a UNION where
   __encode _ = U.encode
