@@ -18,7 +18,7 @@ import           Data.Morpheus.Types.Query.RawSelection (RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
 import           Data.Morpheus.Validation.Fragment      (validateFragments)
-import           Data.Morpheus.Validation.Selection     (resolveSelection, validateSelectionSet)
+import           Data.Morpheus.Validation.Selection     (validateSelectionSet)
 import           Data.Morpheus.Validation.Variable      (allVariableReferences, resolveOperationVariables)
 import           Data.Text                              (Text)
 
@@ -52,18 +52,11 @@ getOperator (Mutation _ args' sel position') lib' =
     Just (_, mutation') -> pure (mutation', args', sel)
     Nothing             -> Left $ mutationIsNotDefined position'
 
-resolveValues :: TypeLib -> GQLQueryRoot -> Validation (OutputObject, SelectionSet)
-resolveValues typesLib root = do
-  (query', args', rawSel) <- getOperator (queryBody root) typesLib
-  variables' <-
-    resolveOperationVariables typesLib (fromList $ inputVariables root) (allVariableReferences [rawSel]) args'
-  validateFragments typesLib root
-  let operator' = setFieldSchema query'
-  selection' <- resolveSelection typesLib (fragments root) variables' rawSel operator'
-  pure (operator', selection')
-
 validateRequest :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
 validateRequest lib' root' = do
-  (operatorType', selection') <- resolveValues lib' root'
-  selectors <- validateSelectionSet lib' operatorType' selection'
+  (operator', args', rawSelection') <- getOperator (queryBody root') lib'
+  variables' <-
+    resolveOperationVariables lib' (fromList $ inputVariables root') (allVariableReferences [rawSelection']) args'
+  validateFragments lib' root'
+  selectors <- validateSelectionSet lib' (fragments root') variables' (setFieldSchema operator') rawSelection'
   pure $ updateQuery (queryBody root') selectors

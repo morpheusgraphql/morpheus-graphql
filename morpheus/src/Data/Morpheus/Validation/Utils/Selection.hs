@@ -1,6 +1,5 @@
 module Data.Morpheus.Validation.Utils.Selection
   ( lookupFieldAsSelectionSet
-  , lookupSelectionObjectFieldType
   , mustBeObject
   , notObject
   , lookupSelectionField
@@ -40,8 +39,3 @@ lookupSelectionField :: Position -> Text -> GObject ObjectField -> Validation Ob
 lookupSelectionField position' key' (GObject fields' core') = lookupField key' fields' error'
   where
     error' = cannotQueryField key' (name core') position'
-
-lookupSelectionObjectFieldType :: Position -> Text -> TypeLib -> GObject ObjectField -> Validation OutputObject
-lookupSelectionObjectFieldType position' key' lib' object' =
-  lookupSelectionField position' key' object' >>= mustBeObject (key', position') >>=
-  lookupFieldAsSelectionSet position' key' lib'
