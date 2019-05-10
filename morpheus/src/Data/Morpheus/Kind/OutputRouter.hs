@@ -17,8 +17,8 @@ import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolve
 import           Data.Morpheus.Generics.UnionRep        (UnionRep (..))
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
-import qualified Data.Morpheus.Kind.GQLEnum             as E (EnumConstraint, encode, field, introspect)
-import qualified Data.Morpheus.Kind.GQLObject           as O (ObjectConstraint, encode, field, introspect)
+import qualified Data.Morpheus.Kind.GQLEnum             as E (EnumConstraint, encode, introspect)
+import qualified Data.Morpheus.Kind.GQLObject           as O (ObjectConstraint, encode, introspect)
 import qualified Data.Morpheus.Kind.GQLScalar           as S (GQLScalar (..))
 import           Data.Morpheus.Kind.GQLType             (GQLType (..))
 import qualified Data.Morpheus.Kind.GQLUnion            as U (Constraint, encode, introspect)
@@ -67,7 +67,7 @@ instance E.EnumConstraint a => OutputTypeRouter a ENUM where
 instance O.ObjectConstraint a => OutputTypeRouter a OBJECT where
   __encode _ = O.encode
   __introspect _ = O.introspect
-  __objectField _ = O.field
+  __objectField _ _ = ObjectField [] . field_ OBJECT (Proxy @a)
 
 instance OutputTypeRouter a (KIND a) => DeriveResolvers (K1 s a) where
   deriveResolvers key' (K1 src) = [(key', (`_encode` src))]

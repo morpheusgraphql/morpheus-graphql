@@ -12,7 +12,6 @@
 
 module Data.Morpheus.Kind.GQLObject
   ( encode
-  , field
   , introspect
   , ObjectConstraint
   ) where
@@ -40,13 +39,6 @@ type ObjectConstraint a = (Generic a, DeriveResolvers (Rep a), ObjectRep (Rep a)
 encode :: (Generic a, DeriveResolvers (Rep a)) => (Text, Selection) -> a -> ResolveIO JSType
 encode (_, SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers "" . from
 encode (_, Field _ key pos)               = const $ failResolveIO $ subfieldsNotSelected key "" pos -- TODO: must be internal Error
-
-field ::
-     forall a. (ObjectRep (Rep a) (Text, ObjectField), GQLType a)
-  => Proxy a
-  -> Text
-  -> ObjectField
-field proxy = ObjectField [] . field_ OBJECT proxy
 
 introspect ::
      forall a. (ObjectRep (Rep a) (Text, ObjectField), GQLType a)
