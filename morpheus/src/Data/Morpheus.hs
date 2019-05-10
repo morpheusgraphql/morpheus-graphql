@@ -17,7 +17,7 @@ import           Data.Morpheus.Types.Query.Operator  (Operator (..))
 import           Data.Morpheus.Types.Request         (GQLRequest)
 import           Data.Morpheus.Types.Response        (GQLResponse (..))
 import           Data.Morpheus.Types.Types           (GQLRoot (..))
-import           Data.Morpheus.Validation.Validation (validateQuery)
+import           Data.Morpheus.Validation.Validation (validateRequest)
 import           Data.Text                           (Text, pack)
 import qualified Data.Text.Lazy                      as LT (Text, fromStrict, toStrict)
 import           Data.Text.Lazy.Encoding             (decodeUtf8, encodeUtf8)
@@ -27,7 +27,7 @@ schema queryRes mutationRes = mutationSchema mutationRes $ querySchema queryRes
 
 resolve :: (GQLQuery a, GQLMutation b) => GQLRoot a b -> GQLRequest -> ResolveIO JSType
 resolve rootResolver body = do
-  rootGQL <- ExceptT $ pure (parseGQL body >>= validateQuery gqlSchema)
+  rootGQL <- ExceptT $ pure (parseGQL body >>= validateRequest gqlSchema)
   case rootGQL of
     Query _ _args selection _pos    -> encodeQuery queryRes gqlSchema selection
     Mutation _ _args selection _pos -> encodeMutation mutationRes selection

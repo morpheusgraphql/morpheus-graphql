@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators       #-}
 
 module Data.Morpheus.Validation.Validation
-  ( validateQuery
+  ( validateRequest
   ) where
 
 import           Data.Map                                         (fromList)
@@ -65,8 +65,8 @@ resolveValues typesLib root = do
   selection' <- resolveRawQuery typesLib (fragments root) variables' rawSel operator'
   pure (operator', selection')
 
-validateQuery :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
-validateQuery lib' root' = do
+validateRequest :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
+validateRequest lib' root' = do
   (operatorType', selection') <- resolveValues lib' root'
   selectors <- mapSelectorValidation lib' operatorType' selection'
   pure $ updateQuery (queryBody root') selectors
