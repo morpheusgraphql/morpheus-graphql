@@ -14,8 +14,8 @@ import           Data.Morpheus.Types.Core                 (EnhancedKey (..))
 import           Data.Morpheus.Types.Error                (Validation)
 import           Data.Morpheus.Types.Query.Selection      (Selection (..), SelectionSet)
 import           Data.Morpheus.Validation.Arguments       (validateArguments)
-import           Data.Morpheus.Validation.Utils           (checkNameCollision)
 import           Data.Morpheus.Validation.Utils.Selection (lookupFieldAsSelectionSet, lookupSelectionField, notObject)
+import           Data.Morpheus.Validation.Utils.Utils     (checkNameCollision)
 import           Data.Text                                (Text)
 
 selToKey :: (Text, Selection) -> EnhancedKey

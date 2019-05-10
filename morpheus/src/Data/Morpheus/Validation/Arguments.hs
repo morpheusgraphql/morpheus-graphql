@@ -13,7 +13,7 @@ import           Data.Morpheus.Types.JSType            (JSType (JSNull))
 import           Data.Morpheus.Types.MetaInfo          (Position)
 import           Data.Morpheus.Types.Query.Selection   (Argument (..), Arguments)
 import           Data.Morpheus.Validation.Input.Object (validateInputValue)
-import           Data.Morpheus.Validation.Utils        (checkForUnknownKeys, checkNameCollision, getInputType)
+import           Data.Morpheus.Validation.Utils.Utils  (checkForUnknownKeys, checkNameCollision, getInputType)
 import           Data.Text                             (Text)
 
 handleInputError :: Text -> Int -> InputValidation a -> Validation ()

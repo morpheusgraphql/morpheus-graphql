@@ -6,14 +6,14 @@ module Data.Morpheus.Validation.Utils.Selection
   , lookupSelectionField
   ) where
 
-import           Data.Morpheus.Error.Selection     (cannotQueryField, hasNoSubfields, subfieldsNotSelected)
-import           Data.Morpheus.Schema.Internal.AST (Core (..), Field (..), GObject (..), ObjectField (..), OutputObject,
-                                                    TypeLib (..))
-import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
-import           Data.Morpheus.Types.Error         (Validation)
-import           Data.Morpheus.Types.MetaInfo      (Position)
-import           Data.Morpheus.Validation.Utils    (lookupField, lookupType)
-import           Data.Text                         (Text)
+import           Data.Morpheus.Error.Selection        (cannotQueryField, hasNoSubfields, subfieldsNotSelected)
+import           Data.Morpheus.Schema.Internal.AST    (Core (..), Field (..), GObject (..), ObjectField (..),
+                                                       OutputObject, TypeLib (..))
+import           Data.Morpheus.Schema.TypeKind        (TypeKind (..))
+import           Data.Morpheus.Types.Error            (Validation)
+import           Data.Morpheus.Types.MetaInfo         (Position)
+import           Data.Morpheus.Validation.Utils.Utils (lookupField, lookupType)
+import           Data.Text                            (Text)
 
 isObjectKind :: ObjectField -> Bool
 isObjectKind (ObjectField _ field') = OBJECT == kind field'

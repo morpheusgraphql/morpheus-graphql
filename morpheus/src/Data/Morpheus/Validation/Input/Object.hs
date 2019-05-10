@@ -5,15 +5,15 @@ module Data.Morpheus.Validation.Input.Object
   , validateInputValue
   ) where
 
-import           Data.Morpheus.Error.Input           (InputError (..), InputValidation, Prop (..))
-import           Data.Morpheus.Schema.Internal.AST (Core (..), Field (..), GObject (..), InputField (..), InputObject,
-                                                      InputType, Leaf (..), TypeLib (..))
-import qualified Data.Morpheus.Schema.Internal.AST as T (InternalType (..))
-import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
-import           Data.Morpheus.Validation.Input.Enum (validateEnum)
-import           Data.Morpheus.Validation.Utils      (lookupField, lookupType)
-import           Data.Text                           (Text)
-import qualified Data.Text                           as T (concat)
+import           Data.Morpheus.Error.Input            (InputError (..), InputValidation, Prop (..))
+import           Data.Morpheus.Schema.Internal.AST    (Core (..), Field (..), GObject (..), InputField (..),
+                                                       InputObject, InputType, Leaf (..), TypeLib (..))
+import qualified Data.Morpheus.Schema.Internal.AST    as T (InternalType (..))
+import           Data.Morpheus.Types.JSType           (JSType (..), ScalarValue (..))
+import           Data.Morpheus.Validation.Input.Enum  (validateEnum)
+import           Data.Morpheus.Validation.Utils.Utils (lookupField, lookupType)
+import           Data.Text                            (Text)
+import qualified Data.Text                            as T (concat)
 
 generateError :: JSType -> Text -> [Prop] -> InputError
 generateError jsType expected' path' = UnexpectedType path' expected' jsType

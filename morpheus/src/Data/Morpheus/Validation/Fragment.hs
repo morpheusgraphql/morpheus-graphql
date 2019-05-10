@@ -10,7 +10,7 @@ import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.Query.Fragment     (Fragment (..))
 import           Data.Morpheus.Types.Query.RawSelection (RawSelection (..))
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
-import           Data.Morpheus.Validation.Utils         (existsObjectType)
+import           Data.Morpheus.Validation.Utils.Utils   (existsObjectType)
 import           Data.Text                              (Text)
 
 type Node = EnhancedKey
