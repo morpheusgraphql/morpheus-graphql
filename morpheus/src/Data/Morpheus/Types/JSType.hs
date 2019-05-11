@@ -7,7 +7,7 @@ module Data.Morpheus.Types.JSType
   , decodeScientific
   ) where
 
-import qualified Data.Aeson          as A (FromJSON (..), ToJSON (..), Value (..), pairs, (.=))
+import qualified Data.Aeson          as A (FromJSON (..), ToJSON (..), Value (..), object, pairs, (.=))
 import qualified Data.HashMap.Strict as M (toList)
 import           Data.Scientific     (Scientific, floatingOrInteger)
 import           Data.Text           (Text)
@@ -44,6 +44,7 @@ instance A.ToJSON JSType where
   toEncoding (JSEnum x) = A.toEncoding x
   toEncoding (JSList x) = A.toEncoding x
   toEncoding (Scalar x) = A.toEncoding x
+  toEncoding (JSObject []) = A.toEncoding $ A.object []
   toEncoding (JSObject x) = A.pairs $ foldl1 (<>) $ map encodeField x
     where
       encodeField (key, value) = replaceType key A..= value
