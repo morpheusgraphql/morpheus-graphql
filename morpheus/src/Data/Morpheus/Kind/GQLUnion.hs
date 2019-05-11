@@ -47,6 +47,4 @@ introspect ::
   -> TypeLib
 introspect = updateLib (const $ Union fields) stack
   where
-    fieldTypes = possibleTypes (Proxy @(Rep a))
-    fields = map fst fieldTypes
-    stack = map snd fieldTypes
+    (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
