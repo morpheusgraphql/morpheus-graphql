@@ -15,7 +15,7 @@ import qualified Data.Morpheus.Schema.Internal.AST        as AST (Field (..))
 import           Data.Morpheus.Schema.TypeKind            (TypeKind (..))
 import           Data.Morpheus.Types.Core                 (EnhancedKey (..))
 import           Data.Morpheus.Types.Error                (Validation)
-import           Data.Morpheus.Types.Query.Fragment       (FragmentLib, RawFragment)
+import           Data.Morpheus.Types.Query.Fragment       (Fragment, FragmentLib)
 import qualified Data.Morpheus.Types.Query.Fragment       as F (Fragment (..))
 import           Data.Morpheus.Types.Query.RawSelection   (RawSelection (..), RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection      (Selection (..), SelectionSet)
@@ -43,22 +43,22 @@ validateSelectionSet ::
 validateSelectionSet lib' fragments' variables' type' selection' =
   concat <$> mapM (validateSelection lib' fragments' variables' type') selection' >>= checkDuplicatesOn type'
 
-castFragment :: TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> RawFragment -> Validation SelectionSet
+castFragment :: TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> Fragment -> Validation SelectionSet
 castFragment lib' fragments' variables' onType' fragment' =
   validateSelectionSet lib' fragments' variables' onType' (F.content fragment')
 
-isolateFragment :: FragmentLib -> [Text] -> (Text, RawSelection) -> Validation [RawFragment]
+isolateFragment :: FragmentLib -> [Text] -> (Text, RawSelection) -> Validation [Fragment]
 isolateFragment fragments' posTypes' (_, Spread key' position') = do
   fragment' <- resolveSpread fragments' posTypes' position' key'
   return [fragment']
 isolateFragment _ _ _ = internalError "selection without fragment are not allowed on union type"
 
-categorizeType :: [RawFragment] -> OutputObject -> (OutputObject, [RawFragment])
+categorizeType :: [Fragment] -> OutputObject -> (OutputObject, [Fragment])
 categorizeType fragments' type'@(GObject _ core) = (type', filter matches fragments')
   where
     matches fragment' = F.target fragment' == name core
 
-categorizeTypes :: [OutputObject] -> [RawFragment] -> [(OutputObject, [RawFragment])]
+categorizeTypes :: [OutputObject] -> [Fragment] -> [(OutputObject, [Fragment])]
 categorizeTypes types' fragments' = map (categorizeType fragments') types'
 
 validateSelection ::
@@ -75,7 +75,7 @@ validateSelection lib' fragments' variables' parent' (key', RawSelectionSet rawA
       let zippedSpreads' = categorizeTypes possibleFieldTypes' spreads'
       unionSelections' <- mapM validateCategory zippedSpreads'
       pure [(key', UnionSelection arguments' unionSelections' position')]
-      where validateCategory :: (OutputObject, [RawFragment]) -> Validation (Text, SelectionSet)
+      where validateCategory :: (OutputObject, [Fragment]) -> Validation (Text, SelectionSet)
             validateCategory (type'@(GObject _ core), frags') = do
               selection' <- validateSelectionSet lib' fragments' variables' type' (concatMap F.content frags')
               return (name core, selection')
