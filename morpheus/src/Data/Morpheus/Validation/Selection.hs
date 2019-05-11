@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 
@@ -7,9 +6,9 @@ module Data.Morpheus.Validation.Selection
   ( validateSelectionSet
   ) where
 
+import           Control.Monad                            ((>=>))
 import           Data.Morpheus.Error.Selection            (duplicateQuerySelections, hasNoSubfields)
-import           Data.Morpheus.Schema.Internal.AST        (Core (..), GObject (..), ObjectField (..), OutputObject,
-                                                           TypeLib (..))
+import           Data.Morpheus.Schema.Internal.AST        (Core (..), GObject (..), ObjectField (..), TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.AST        as AST (Field (..))
 import           Data.Morpheus.Schema.TypeKind            (TypeKind (..))
 import           Data.Morpheus.Types.Core                 (EnhancedKey (..))
@@ -37,9 +36,8 @@ checkDuplicatesOn (GObject _ core) keys = checkNameCollision enhancedKeys (map f
 
 validateSelectionSet ::
      TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> RawSelectionSet -> Validation SelectionSet
-validateSelectionSet lib' fragments' variables' type'
-  -- checkDuplicatesOn type' selectors >>= todo : make it work again
- = mapM (validateSelection lib' fragments' variables' type')
+validateSelectionSet lib' fragments' variables' type' =
+  mapM (validateSelection lib' fragments' variables' type') >=> checkDuplicatesOn type'
 
 validateSelection ::
      TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> (Text, RawSelection) -> Validation (Text, Selection)
@@ -62,7 +60,7 @@ validateSelection lib' _ variables' parent' (key', RawField rawArgs field positi
 validateSelection lib' fragments' variables' parent' (key', Spread id' position') = do
   rawFragment' <- resolveSpread fragments' parent' position' id'
   fragment' <- castFragment lib' fragments' variables' parent' rawFragment'
-  pure $ (key', FragmentSpread fragment')
+  pure (key', FragmentSpread fragment')
 
 castFragment ::
      TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> RawFragment -> Validation (Fragment SelectionSet)
