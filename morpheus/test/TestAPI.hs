@@ -10,7 +10,7 @@ module TestAPI
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..),
+import           Data.Morpheus.Kind         (ENUM, GQLArgs, GQLSubscription, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..),
                                              INPUT_OBJECT, KIND, OBJECT, SCALAR)
 import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..), ScalarValue (..))
 import           Data.Text                  (Text)
@@ -89,6 +89,10 @@ newtype Mutation = Mutation
   { createUser :: AddressArgs ::-> User
   } deriving (Generic, GQLMutation)
 
+newtype Subscription = Subscription
+  { newUser :: AddressArgs ::-> User
+  } deriving (Generic, GQLSubscription)
+
 resolveAddress :: a ::-> Address
 resolveAddress = return Address {city = "", houseNumber = 1, street = "", owner = Nothing}
 
@@ -100,5 +104,8 @@ resolveUser =
 createUserMutation :: AddressArgs ::-> User
 createUserMutation = resolveUser
 
+newUserSubscription :: AddressArgs ::-> User
+newUserSubscription = resolveUser
+
 api :: ByteString -> IO ByteString
-api = interpreter GQLRoot {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}}
+api = interpreter GQLRoot {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}, subscription = Subscription {newUser = newUserSubscription}}

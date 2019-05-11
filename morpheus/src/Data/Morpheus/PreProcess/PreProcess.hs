@@ -9,6 +9,7 @@ module Data.Morpheus.PreProcess.PreProcess
 
 import           Data.Map                                         (fromList)
 import           Data.Morpheus.Error.Mutation                     (mutationIsNotDefined)
+import           Data.Morpheus.Error.Subscription                 (subscriptionIsNotDefined)
 import           Data.Morpheus.PreProcess.Fragment                (validateFragments)
 import           Data.Morpheus.PreProcess.Resolve.ResolveRawQuery (resolveRawQuery)
 import           Data.Morpheus.PreProcess.Validate.Validate       (mapSelectorValidation)
@@ -28,6 +29,7 @@ import           Data.Text                                        (Text)
 updateQuery :: RawOperator -> SelectionSet -> ValidOperator
 updateQuery (Query name' _ _ pos) sel    = Query name' [] sel pos
 updateQuery (Mutation name' _ _ pos) sel = Mutation name' [] sel pos
+updateQuery (Subscription name' _ _ pos) sel = Subscription name' [] sel pos
 
 fieldSchema :: [(Text, ObjectField)]
 fieldSchema =
@@ -54,6 +56,10 @@ getOperator (Mutation _ args' sel position') lib' =
   case mutation lib' of
     Just (_, mutation') -> pure (mutation', args', sel)
     Nothing             -> Left $ mutationIsNotDefined position'
+getOperator (Subscription _ args' sel position') lib' =
+  case subscription lib' of
+    Just (_, subscription') -> pure (subscription', args', sel)
+    Nothing             -> Left $ subscriptionIsNotDefined position'
 
 resolveValues :: TypeLib -> GQLQueryRoot -> Validation (OutputObject, SelectionSet)
 resolveValues typesLib root = do

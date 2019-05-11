@@ -133,4 +133,4 @@ createUserMutation :: AddressArgs ::-> User
 createUserMutation = transformUser <$> Resolver (const jsonUser)
 
 gqlApi :: ByteString -> IO ByteString
-gqlApi = interpreter GQLRoot {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}}
+gqlApi = interpreter GQLRoot {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}, subscription = ()}

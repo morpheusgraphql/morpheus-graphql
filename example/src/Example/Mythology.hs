@@ -42,4 +42,4 @@ dbDeity :: Text -> Maybe Text -> IO (Either String Deity)
 dbDeity _ _ = return $ Right $ Deity {fullName = "Morpheus", power = Just "Shapeshifting"}
 
 mythologyApi :: B.ByteString -> IO B.ByteString
-mythologyApi = interpreter GQLRoot {query = Query {deity = resolveDeity}, mutation = ()}
+mythologyApi = interpreter GQLRoot {query = Query {deity = resolveDeity}, mutation = (), subscription = ()}
