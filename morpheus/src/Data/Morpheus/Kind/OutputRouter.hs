@@ -15,6 +15,7 @@ import           Data.Morpheus.Error.Selection          (fieldNotResolved)
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..))
 import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Generics.UnionRep        (UnionRep (..))
+import           Data.Morpheus.Generics.UnionResolvers  (UnionResolvers (..))
 import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
 import qualified Data.Morpheus.Kind.GQLEnum             as E (EnumConstraint, encode, introspect)
@@ -79,6 +80,9 @@ instance (Selector s, OutputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Te
 
 instance (OutputTypeRouter a OBJECT, O.ObjectConstraint a) => UnionRep (RecSel s a) where
   possibleTypes _ = [(field_ OBJECT (Proxy @a) "", O.introspect (Proxy @a))]
+
+instance (GQLType a, OutputTypeRouter a (KIND a)) => UnionResolvers (K1 s a) where
+  currentResolver (K1 src) = (typeID (Proxy @a), (`_encode` src))
 
 instance U.Constraint a => OutputTypeRouter a UNION where
   __encode _ = U.encode
