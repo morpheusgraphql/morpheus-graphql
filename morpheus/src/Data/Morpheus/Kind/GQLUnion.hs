@@ -14,23 +14,30 @@ module Data.Morpheus.Kind.GQLUnion
   , Constraint
   ) where
 
+import           Data.Maybe                            (fromMaybe)
 import           Data.Morpheus.Generics.UnionRep       (UnionRep (..))
 import           Data.Morpheus.Generics.UnionResolvers (UnionResolvers (..))
 import           Data.Morpheus.Kind.GQLType            (GQLType (..))
 import           Data.Morpheus.Schema.Internal.AST     (LibType (..), TypeLib)
 import           Data.Morpheus.Types.Error             (ResolveIO)
 import           Data.Morpheus.Types.JSType            (JSType (..), ScalarValue (..))
-import           Data.Morpheus.Types.Query.Selection   (Selection (..))
+import           Data.Morpheus.Types.Query.Selection   (Selection (..), SelectionSet)
 import           Data.Proxy
-import           Data.Text                             (Text, pack)
-import           Debug.Trace
+import           Data.Text                             (Text)
 import           GHC.Generics
 
 type Constraint a = (Generic a, GQLType a, UnionRep (Rep a), UnionResolvers (Rep a))
 
+lookupSelection :: Text -> [(Text, SelectionSet)] -> SelectionSet
+lookupSelection type' sel = fromMaybe [] $ lookup type' sel
+
 encode :: (Generic a, UnionResolvers (Rep a)) => (Text, Selection) -> a -> ResolveIO JSType
-encode (_, UnionSelection _ selection _pos) _ = pure $ Scalar $ String (trace (show selection) (pack (show selection)))
-encode (_, _) _ = pure $ Scalar $ String "ERROR"
+encode (key', UnionSelection args selection pos) value = do
+  let sel = lookupSelection (fst resolver) selection
+  snd resolver (key', SelectionSet args sel pos)
+  where
+    resolver = currentResolver (from value)
+encode _ _ = pure $ Scalar $ String "ERROR"
 
 introspect ::
      forall a. (GQLType a, UnionRep (Rep a))
