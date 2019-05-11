@@ -26,5 +26,5 @@ data Selection
   | Field Arguments
           Key
           Position
-  | FragmentSpread (Fragment SelectionSet)
+  | FragmentSpread (Fragment SelectionSet) Position
   deriving (Show)

@@ -27,6 +27,7 @@ import           Data.Text                                (Text)
 selToKey :: (Text, Selection) -> EnhancedKey
 selToKey (sName, Field _ _ pos)        = EnhancedKey sName pos
 selToKey (sName, SelectionSet _ _ pos) = EnhancedKey sName pos
+selToKey (sName, FragmentSpread _ pos) = EnhancedKey sName pos
 
 checkDuplicatesOn :: GObject ObjectField -> SelectionSet -> Validation SelectionSet
 checkDuplicatesOn (GObject _ core) keys = checkNameCollision enhancedKeys (map fst keys) error' >> pure keys
@@ -60,7 +61,7 @@ validateSelection lib' _ variables' parent' (key', RawField rawArgs field positi
 validateSelection lib' fragments' variables' parent' (key', Spread id' position') = do
   rawFragment' <- resolveSpread fragments' parent' position' id'
   fragment' <- castFragment lib' fragments' variables' parent' rawFragment'
-  pure (key', FragmentSpread fragment')
+  pure (key', FragmentSpread fragment' position')
 
 castFragment ::
      TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> RawFragment -> Validation (Fragment SelectionSet)
