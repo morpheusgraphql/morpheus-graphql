@@ -133,7 +133,7 @@ transformUser user' =
     , address = resolveAddress
     , office = resolveOffice user'
     , home = HH
-    , myUnion = return $ AD (Address "" "" 0 Nothing)
+    , myUnion = return $ AD (Address "bla" "blu" 0 Nothing)
     }
 
 createUserMutation :: AddressArgs ::-> User
