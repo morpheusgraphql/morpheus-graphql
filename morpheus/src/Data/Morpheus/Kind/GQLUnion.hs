@@ -28,7 +28,7 @@ import           GHC.Generics
 
 type Constraint a = (Generic a, GQLType a, UnionRep (Rep a), UnionResolvers (Rep a))
 
-encode :: Generic a => (Text, Selection) -> a -> ResolveIO JSType
+encode :: (Generic a, UnionResolvers (Rep a)) => (Text, Selection) -> a -> ResolveIO JSType
 encode (_, UnionSelection _ selection _pos) _ = pure $ Scalar $ String (trace (show selection) (pack (show selection)))
 encode (_, _) _ = pure $ Scalar $ String "ERROR"
 
