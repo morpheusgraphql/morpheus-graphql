@@ -14,18 +14,19 @@ module Data.Morpheus.Kind.GQLUnion
   , Constraint
   ) where
 
-import           Data.Morpheus.Generics.UnionRep     (UnionRep (..))
-import           Data.Morpheus.Kind.GQLType          (GQLType (..))
-import           Data.Morpheus.Schema.Internal.AST   (LibType (..), TypeLib)
-import           Data.Morpheus.Types.Error           (ResolveIO)
-import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
-import           Data.Morpheus.Types.Query.Selection (Selection (..))
+import           Data.Morpheus.Generics.UnionRep       (UnionRep (..))
+import           Data.Morpheus.Generics.UnionResolvers (UnionResolvers (..))
+import           Data.Morpheus.Kind.GQLType            (GQLType (..))
+import           Data.Morpheus.Schema.Internal.AST     (LibType (..), TypeLib)
+import           Data.Morpheus.Types.Error             (ResolveIO)
+import           Data.Morpheus.Types.JSType            (JSType (..), ScalarValue (..))
+import           Data.Morpheus.Types.Query.Selection   (Selection (..))
 import           Data.Proxy
-import           Data.Text                           (Text, pack)
+import           Data.Text                             (Text, pack)
 import           Debug.Trace
 import           GHC.Generics
 
-type Constraint a = (Generic a, GQLType a, UnionRep (Rep a))
+type Constraint a = (Generic a, GQLType a, UnionRep (Rep a), UnionResolvers (Rep a))
 
 encode :: Generic a => (Text, Selection) -> a -> ResolveIO JSType
 encode (_, UnionSelection _ selection _pos) _ = pure $ Scalar $ String (trace (show selection) (pack (show selection)))

@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators     #-}
 
-module Data.Morpheus.Generics.DeriveResolvers
+module Data.Morpheus.Generics.UnionResolvers
   ( UnionResolvers(..)
   ) where
 
