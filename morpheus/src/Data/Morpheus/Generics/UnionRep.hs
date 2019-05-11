@@ -14,7 +14,6 @@ module Data.Morpheus.Generics.UnionRep
 
 import           Data.Morpheus.Schema.Internal.AST (Field, TypeLib)
 import           Data.Proxy                        (Proxy (..))
-import           Data.Text                         (Text)
 import           GHC.Generics
 
 class UnionRep f where
