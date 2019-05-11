@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 
@@ -7,8 +6,7 @@ module Data.Morpheus.Validation.Selection
   ( validateSelectionSet
   ) where
 
-import           Data.Morpheus.Error.Internal             (internalError)
-import           Data.Morpheus.Error.Selection            (duplicateQuerySelections, hasNoSubfields)
+import           Data.Morpheus.Error.Selection            (cannotQueryField, duplicateQuerySelections, hasNoSubfields)
 import           Data.Morpheus.Schema.Internal.AST        (Core (..), GObject (..), ObjectField (..), OutputObject,
                                                            TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.AST        as AST (Field (..))
@@ -47,13 +45,14 @@ castFragment :: TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> Fr
 castFragment lib' fragments' variables' onType' fragment' =
   validateSelectionSet lib' fragments' variables' onType' (F.content fragment')
 
-isolateFragment :: FragmentLib -> [Text] -> (Text, RawSelection) -> Validation [Fragment]
-isolateFragment fragments' posTypes' (_, Spread key' position') = do
+isolateFragment :: FragmentLib -> Text -> [Text] -> (Text, RawSelection) -> Validation [Fragment]
+isolateFragment fragments' _ posTypes' (_, Spread key' position') = do
   fragment' <- resolveSpread fragments' posTypes' position' key'
   return [fragment']
--- TODO: if there is any selection non system selection GQL returns
--- "Cannot query field \"name\" on type \"MyUnion\". Did you mean to use an inline fragment on \"User\"?",
-isolateFragment _ _ _ = internalError "selection without fragment are not allowed on union type"
+isolateFragment _ unionTypeName' _ (key', RawSelectionSet _ _ position') =
+  Left $ cannotQueryField key' unionTypeName' position'
+isolateFragment _ unionTypeName' _ (key', RawField _ _ position') =
+  Left $ cannotQueryField key' unionTypeName' position'
 
 categorizeType :: [Fragment] -> OutputObject -> (OutputObject, [Fragment])
 categorizeType fragments' type'@(GObject _ core) = (type', filter matches fragments')
@@ -65,22 +64,22 @@ categorizeTypes types' fragments' = map (categorizeType fragments') types'
 
 validateSelection ::
      TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> (Text, RawSelection) -> Validation SelectionSet
-validateSelection lib' fragments' variables' parent' (key', RawSelectionSet rawArgs rawSelectors position') = do
+validateSelection lib' fragments' variables' parent'@(GObject _ core) (key', RawSelectionSet rawArgs rawSelectors position') = do
   field' <- lookupSelectionField position' key' parent'
   resolvedArgs' <- resolveArguments variables' rawArgs
   arguments' <- validateArguments lib' (key', field') position' resolvedArgs'
   case AST.kind $ fieldContent field' of
     UNION -> do
       keys' <- lookupPossibleTypeKeys position' key' lib' field'
-      spreads' <- concat <$> mapM (isolateFragment fragments' keys') rawSelectors
+      spreads' <- concat <$> mapM (isolateFragment fragments' (name core) keys') rawSelectors
       possibleFieldTypes' <- lookupPossibleTypes position' key' lib' keys'
       let zippedSpreads' = categorizeTypes possibleFieldTypes' spreads'
       unionSelections' <- mapM validateCategory zippedSpreads'
       pure [(key', UnionSelection arguments' unionSelections' position')]
       where validateCategory :: (OutputObject, [Fragment]) -> Validation (Text, SelectionSet)
-            validateCategory (type'@(GObject _ core), frags') = do
+            validateCategory (type'@(GObject _ core'), frags') = do
               selection' <- validateSelectionSet lib' fragments' variables' type' (concatMap F.content frags')
-              return (name core, selection')
+              return (name core', selection')
     OBJECT -> do
       fieldType' <- lookupFieldAsSelectionSet position' key' lib' field'
       selections' <- validateSelectionSet lib' fragments' variables' fieldType' rawSelectors
