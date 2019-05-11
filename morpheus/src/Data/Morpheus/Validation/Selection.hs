@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 
@@ -6,6 +7,7 @@ module Data.Morpheus.Validation.Selection
   ( validateSelectionSet
   ) where
 
+import           Data.Morpheus.Error.Internal             (internalError)
 import           Data.Morpheus.Error.Selection            (duplicateQuerySelections, hasNoSubfields)
 import           Data.Morpheus.Schema.Internal.AST        (Core (..), GObject (..), ObjectField (..), TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.AST        as AST (Field (..))
@@ -45,6 +47,12 @@ castFragment :: TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> Ra
 castFragment lib' fragments' variables' onType' fragment' =
   validateSelectionSet lib' fragments' variables' onType' (F.content fragment')
 
+isolateFragment :: FragmentLib -> [Text] -> (Text, RawSelection) -> Validation [RawFragment]
+isolateFragment fragments' posTypes' (_, Spread key' position') = do
+  fragment' <- resolveSpread fragments' posTypes' position' key'
+  return [fragment']
+isolateFragment _ _ _ = internalError "selection without fragment are not allowed on union type"
+
 validateSelection ::
      TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> (Text, RawSelection) -> Validation SelectionSet
 validateSelection lib' fragments' variables' parent' (key', RawSelectionSet rawArgs rawSelectors position') = do
@@ -54,8 +62,9 @@ validateSelection lib' fragments' variables' parent' (key', RawSelectionSet rawA
   case AST.kind $ fieldContent field' of
     UNION -> do
       keys' <- lookupPossibleTypeKeys position' key' lib' field'
+      spreads' <- mapM (isolateFragment fragments' keys') rawSelectors
       possibleFieldTypes' <- lookupPossibleTypes position' key' lib' keys'
-      pure (trace (show possibleFieldTypes') [(key', UnionSelection [] [] position')]) -- TODO: implement it
+      pure (trace (show spreads') [(key', UnionSelection [] [] position')]) -- TODO: implement it
     OBJECT -> do
       fieldType' <- lookupFieldAsSelectionSet position' key' lib' field'
       selections' <- validateSelectionSet lib' fragments' variables' fieldType' rawSelectors
@@ -66,5 +75,5 @@ validateSelection lib' _ variables' parent' (key', RawField rawArgs field positi
   args' <- resolveArguments variables' rawArgs
   arguments' <- validateArguments lib' (key', field') position' args'
   pure [(key', Field arguments' field position')]
-validateSelection lib' fragments' variables' parent' (key', Spread _ position') =
-  resolveSpread fragments' parent' position' key' >>= castFragment lib' fragments' variables' parent'
+validateSelection lib' fragments' variables' parent'@(GObject _ core) (key', Spread _ position') =
+  resolveSpread fragments' [name core] position' key' >>= castFragment lib' fragments' variables' parent'

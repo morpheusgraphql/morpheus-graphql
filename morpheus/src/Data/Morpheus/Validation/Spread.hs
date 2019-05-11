@@ -5,11 +5,11 @@ module Data.Morpheus.Validation.Spread
 
 import qualified Data.Map                           as M (lookup)
 import           Data.Morpheus.Error.Spread         (cannotBeSpreadOnType, unknownFragment)
-import           Data.Morpheus.Schema.Internal.AST  (Core (..), GObject (..), ObjectField (..))
 import           Data.Morpheus.Types.Error          (Validation)
 import           Data.Morpheus.Types.MetaInfo       (Position)
 import           Data.Morpheus.Types.Query.Fragment (Fragment (..), FragmentLib, RawFragment)
 import           Data.Text                          (Text)
+import qualified Data.Text                          as T (concat)
 
 getFragment :: Position -> Text -> FragmentLib -> Validation RawFragment
 getFragment position' id' lib =
@@ -17,12 +17,12 @@ getFragment position' id' lib =
     Nothing       -> Left $ unknownFragment id' position'
     Just fragment -> pure fragment
 
-castFragmentType :: Text -> Position -> GObject ObjectField -> RawFragment -> Validation RawFragment
-castFragmentType key' position' (GObject _ core) fragment =
-  if name core == target fragment
+castFragmentType :: Text -> Position -> [Text] -> RawFragment -> Validation RawFragment
+castFragmentType key' position' targets' fragment =
+  if target fragment `elem` targets'
     then pure fragment
-    else Left $ cannotBeSpreadOnType key' (target fragment) position' (name core)
+    else Left $ cannotBeSpreadOnType key' (target fragment) position' (T.concat targets')
 
-resolveSpread :: FragmentLib -> GObject ObjectField -> Position -> Text -> Validation RawFragment
-resolveSpread fragments' parentType' position' key' =
-  getFragment position' key' fragments' >>= castFragmentType key' position' parentType'
+resolveSpread :: FragmentLib -> [Text] -> Position -> Text -> Validation RawFragment
+resolveSpread fragments' allowedTargets' position' key' =
+  getFragment position' key' fragments' >>= castFragmentType key' position' allowedTargets'
