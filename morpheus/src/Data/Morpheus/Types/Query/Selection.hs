@@ -5,10 +5,9 @@ module Data.Morpheus.Types.Query.Selection
   , Selection(..)
   ) where
 
-import           Data.Morpheus.Types.Core           (Collection, Key)
-import           Data.Morpheus.Types.JSType         (JSType)
-import           Data.Morpheus.Types.MetaInfo       (Position)
-import           Data.Morpheus.Types.Query.Fragment (Fragment)
+import           Data.Morpheus.Types.Core     (Collection, Key)
+import           Data.Morpheus.Types.JSType   (JSType)
+import           Data.Morpheus.Types.MetaInfo (Position)
 
 data Argument =
   Argument JSType
@@ -22,8 +21,10 @@ type SelectionSet = Collection Selection
 data Selection
   = SelectionSet Arguments
                  SelectionSet
-                 [Fragment SelectionSet]
                  Position
+  | UnionSelection Arguments
+                   (Collection SelectionSet)
+                   Position
   | Field Arguments
           Key
           Position
