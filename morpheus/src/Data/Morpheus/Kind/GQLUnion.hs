@@ -16,7 +16,7 @@ module Data.Morpheus.Kind.GQLUnion
 
 import           Data.Morpheus.Generics.UnionRep     (UnionRep (..))
 import           Data.Morpheus.Kind.GQLType          (GQLType (..))
-import           Data.Morpheus.Schema.Internal.AST (LibType (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.AST   (LibType (..), TypeLib)
 import           Data.Morpheus.Types.Error           (ResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
 import           Data.Morpheus.Types.Query.Selection (Selection (..))
@@ -27,8 +27,8 @@ import           GHC.Generics
 type Constraint a = (Generic a, GQLType a, UnionRep (Rep a))
 
 encode :: Generic a => (Text, Selection) -> a -> ResolveIO JSType
-encode (_, SelectionSet _ selection _pos) _ = pure $ Scalar $ String "TODO"
-encode (_, Field _ key pos) _               = pure $ Scalar $ String "TODO"
+encode (_, SelectionSet _ selection fragments _pos) _ = pure $ Scalar $ String "TODO"
+encode (_, Field _ key pos) _                         = pure $ Scalar $ String "TODO"
 
 introspect ::
      forall a. (GQLType a, UnionRep (Rep a))

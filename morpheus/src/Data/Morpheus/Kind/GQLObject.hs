@@ -23,7 +23,7 @@ import           Data.Morpheus.Kind.GQLType             (GQLType (..), asObjectT
 import           Data.Morpheus.Kind.Internal            (KIND, OBJECT)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
-import           Data.Morpheus.Schema.Internal.AST    (ObjectField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.AST      (ObjectField (..), TypeLib)
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
@@ -37,8 +37,8 @@ import           GHC.Generics
 type ObjectConstraint a = (Generic a, DeriveResolvers (Rep a), ObjectRep (Rep a) (Text, ObjectField), GQLType a)
 
 encode :: (Generic a, DeriveResolvers (Rep a)) => (Text, Selection) -> a -> ResolveIO JSType
-encode (_, SelectionSet _ selection _pos) = resolveBySelection selection . deriveResolvers "" . from
-encode (_, Field _ key pos)               = const $ failResolveIO $ subfieldsNotSelected key "" pos -- TODO: must be internal Error
+encode (_, SelectionSet _ selection fragments' _pos) = resolveBySelection selection . deriveResolvers "" . from
+encode (_, Field _ key pos)                          = const $ failResolveIO $ subfieldsNotSelected key "" pos -- TODO: must be internal Error
 
 introspect ::
      forall a. (ObjectRep (Rep a) (Text, ObjectField), GQLType a)
