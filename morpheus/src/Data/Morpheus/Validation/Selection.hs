@@ -19,10 +19,11 @@ import           Data.Morpheus.Types.Query.Selection      (Selection (..), Selec
 import           Data.Morpheus.Types.Types                (Variables)
 import           Data.Morpheus.Validation.Arguments       (resolveArguments, validateArguments)
 import           Data.Morpheus.Validation.Spread          (resolveSpread)
-import           Data.Morpheus.Validation.Utils.Selection (lookupFieldAsSelectionSet, lookupPossibleTypes,
-                                                           lookupSelectionField, notObject)
+import           Data.Morpheus.Validation.Utils.Selection (lookupFieldAsSelectionSet, lookupPossibleTypeKeys,
+                                                           lookupPossibleTypes, lookupSelectionField, notObject)
 import           Data.Morpheus.Validation.Utils.Utils     (checkNameCollision)
 import           Data.Text                                (Text)
+import           Debug.Trace
 
 selToKey :: (Text, Selection) -> EnhancedKey
 selToKey (sName, Field _ _ pos)          = EnhancedKey sName pos
@@ -52,8 +53,9 @@ validateSelection lib' fragments' variables' parent' (key', RawSelectionSet rawA
   arguments' <- validateArguments lib' (key', field') position' resolvedArgs'
   case AST.kind $ fieldContent field' of
     UNION -> do
-      possibleFieldTypes' <- lookupPossibleTypes position' key' lib' field'
-      pure [(key', UnionSelection [] [] position')] -- TODO: implement it
+      keys' <- lookupPossibleTypeKeys position' key' lib' field'
+      possibleFieldTypes' <- lookupPossibleTypes position' key' lib' keys'
+      pure (trace (show possibleFieldTypes') [(key', UnionSelection [] [] position')]) -- TODO: implement it
     OBJECT -> do
       fieldType' <- lookupFieldAsSelectionSet position' key' lib' field'
       selections' <- validateSelectionSet lib' fragments' variables' fieldType' rawSelectors
