@@ -3,6 +3,7 @@ module Data.Morpheus.Validation.Utils.Selection
   , mustBeObject
   , notObject
   , lookupSelectionField
+  , lookupPossibleTypes
   ) where
 
 import           Data.Morpheus.Error.Selection        (cannotQueryField, hasNoSubfields, subfieldsNotSelected)
@@ -28,6 +29,13 @@ notObject (key', position') field' =
   if isObjectKind field'
     then Left $ subfieldsNotSelected key' (fieldType $ fieldContent field') position'
     else pure field'
+
+lookupPossibleTypes :: Position -> Text -> TypeLib -> ObjectField -> Validation [OutputObject]
+lookupPossibleTypes position' key' lib' field' = lookupType error' (union lib') type' >>= mapM lookupPosType
+  where
+    error' = hasNoSubfields key' type' position'
+    type' = fieldType $ fieldContent field'
+    lookupPosType = lookupType error' (object lib') . fieldType
 
 lookupFieldAsSelectionSet :: Position -> Text -> TypeLib -> ObjectField -> Validation OutputObject
 lookupFieldAsSelectionSet position' key' lib' field' = lookupType error' (object lib') type'

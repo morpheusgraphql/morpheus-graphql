@@ -19,7 +19,8 @@ import           Data.Morpheus.Types.Query.Selection      (Selection (..), Selec
 import           Data.Morpheus.Types.Types                (Variables)
 import           Data.Morpheus.Validation.Arguments       (resolveArguments, validateArguments)
 import           Data.Morpheus.Validation.Spread          (resolveSpread)
-import           Data.Morpheus.Validation.Utils.Selection (lookupFieldAsSelectionSet, lookupSelectionField, notObject)
+import           Data.Morpheus.Validation.Utils.Selection (lookupFieldAsSelectionSet, lookupPossibleTypes,
+                                                           lookupSelectionField, notObject)
 import           Data.Morpheus.Validation.Utils.Utils     (checkNameCollision)
 import           Data.Text                                (Text)
 
@@ -47,12 +48,14 @@ validateSelection ::
      TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> (Text, RawSelection) -> Validation SelectionSet
 validateSelection lib' fragments' variables' parent' (key', RawSelectionSet rawArgs rawSelectors position') = do
   field' <- lookupSelectionField position' key' parent'
+  resolvedArgs' <- resolveArguments variables' rawArgs
+  arguments' <- validateArguments lib' (key', field') position' resolvedArgs'
   case AST.kind $ fieldContent field' of
-    UNION -> pure [(key', SelectionSet [] [] position')] -- TODO: implement it
+    UNION -> do
+      possibleFieldTypes' <- lookupPossibleTypes position' key' lib' field'
+      pure [(key', UnionSelection [] [] position')] -- TODO: implement it
     OBJECT -> do
       fieldType' <- lookupFieldAsSelectionSet position' key' lib' field'
-      resolvedArgs' <- resolveArguments variables' rawArgs
-      arguments' <- validateArguments lib' (key', field') position' resolvedArgs'
       selections' <- validateSelectionSet lib' fragments' variables' fieldType' rawSelectors
       pure [(key', SelectionSet arguments' selections' position')]
     _ -> Left $ hasNoSubfields key' (AST.fieldType $ fieldContent field') position'
