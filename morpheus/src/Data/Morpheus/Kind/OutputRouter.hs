@@ -103,7 +103,7 @@ liftResolver position' typeName' x = do
     Right value   -> pure value
 
 instance (OutputTypeRouter a (KIND a), Args.GQLArgs p) => OutputTypeRouter (p ::-> a) WRAPPER where
-  __encode _ selection'@(key', SelectionSet gqlArgs _ _ position') (Resolver resolver) =
+  __encode _ selection'@(key', SelectionSet gqlArgs _ position') (Resolver resolver) =
     (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>= _encode selection'
   __encode _ selection'@(key', Field gqlArgs _ position') (Resolver resolver) =
     (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>= _encode selection'
