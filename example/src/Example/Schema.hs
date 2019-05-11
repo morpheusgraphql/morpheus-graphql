@@ -34,8 +34,8 @@ type instance KIND User = OBJECT
 type instance KIND MyUnion = UNION
 
 data MyUnion
-  = US User
-  | AD Address
+  = USER User
+  | ADDRESS Address
   deriving (Generic, GQLType)
 
 data CityID
@@ -135,13 +135,13 @@ transformUser user' =
     , home = HH
     , myUnion =
         return $
-        US
+        USER
           (User
              "unionUserName"
              "unionUserMail"
              resolveAddress
              (resolveOffice user')
-             (return $ AD (Address "unionAdressStreet" "unionAdresser" 1 Nothing))
+             (return $ ADDRESS (Address "unionAdressStreet" "unionAdresser" 1 Nothing))
              HH)
     }
 
