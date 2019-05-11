@@ -9,8 +9,9 @@ module Data.Morpheus.Validation.Selection
 
 import           Data.Morpheus.Error.Internal             (internalError)
 import           Data.Morpheus.Error.Selection            (duplicateQuerySelections, hasNoSubfields)
-import           Data.Morpheus.Schema.Internal.AST        (Core (..), GObject (..), ObjectField (..), TypeLib (..))
-import qualified Data.Morpheus.Schema.Internal.AST        as AST (Field (..))
+import           Data.Morpheus.Schema.Internal.AST        (Core (..), GObject (..), ObjectField (..), OutputObject,
+                                                           TypeLib (..))
+import qualified Data.Morpheus.Schema.Internal.AST        as AST (Field (..), OutputObject (..))
 import           Data.Morpheus.Schema.TypeKind            (TypeKind (..))
 import           Data.Morpheus.Types.Core                 (EnhancedKey (..))
 import           Data.Morpheus.Types.Error                (Validation)
@@ -53,6 +54,14 @@ isolateFragment fragments' posTypes' (_, Spread key' position') = do
   return [fragment']
 isolateFragment _ _ _ = internalError "selection without fragment are not allowed on union type"
 
+categorizeType :: [RawFragment] -> OutputObject -> (OutputObject, [RawFragment])
+categorizeType fragments' type'@(GObject _ core) = (type', filter matches fragments')
+  where
+    matches fragment' = F.key fragment' == name core
+
+categorizeTypes :: [OutputObject] -> [RawFragment] -> [(OutputObject, [RawFragment])]
+categorizeTypes types' fragments' = map (categorizeType fragments') types'
+
 validateSelection ::
      TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> (Text, RawSelection) -> Validation SelectionSet
 validateSelection lib' fragments' variables' parent' (key', RawSelectionSet rawArgs rawSelectors position') = do
@@ -62,9 +71,11 @@ validateSelection lib' fragments' variables' parent' (key', RawSelectionSet rawA
   case AST.kind $ fieldContent field' of
     UNION -> do
       keys' <- lookupPossibleTypeKeys position' key' lib' field'
-      spreads' <- mapM (isolateFragment fragments' keys') rawSelectors
+      spreads' <- concat <$> mapM (isolateFragment fragments' keys') rawSelectors
       possibleFieldTypes' <- lookupPossibleTypes position' key' lib' keys'
-      pure (trace (show spreads') [(key', UnionSelection [] [] position')]) -- TODO: implement it
+      let zippedSpreads' = categorizeTypes possibleFieldTypes' spreads'
+      --mapM  validateSelectionSet  lib' fragments' variables' fieldType' rawSelectors
+      pure (trace (show zippedSpreads') [(key', UnionSelection [] [] position')]) -- TODO: implement it
     OBJECT -> do
       fieldType' <- lookupFieldAsSelectionSet position' key' lib' field'
       selections' <- validateSelectionSet lib' fragments' variables' fieldType' rawSelectors
