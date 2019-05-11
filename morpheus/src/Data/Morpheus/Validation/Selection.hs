@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 
@@ -45,14 +46,14 @@ castFragment :: TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> Fr
 castFragment lib' fragments' variables' onType' fragment' =
   validateSelectionSet lib' fragments' variables' onType' (F.content fragment')
 
-isolateFragment :: FragmentLib -> Text -> [Text] -> (Text, RawSelection) -> Validation [Fragment]
-isolateFragment fragments' _ posTypes' (_, Spread key' position') = do
+splitFragment :: FragmentLib -> Text -> [Text] -> (Text, RawSelection) -> Validation ([Fragment], SelectionSet)
+splitFragment fragments' _ posTypes' (_, Spread key' position') = do
   fragment' <- resolveSpread fragments' posTypes' position' key'
-  return [fragment']
-isolateFragment _ unionTypeName' _ (key', RawSelectionSet _ _ position') =
-  Left $ cannotQueryField key' unionTypeName' position'
-isolateFragment _ unionTypeName' _ (key', RawField _ _ position') =
-  Left $ cannotQueryField key' unionTypeName' position'
+  return ([fragment'], [])
+splitFragment _ _ _ ("__typename", RawField [] field' position') =
+  return ([], [("__typename", Field [] field' position')])
+splitFragment _ type' _ (key', RawSelectionSet _ _ position') = Left $ cannotQueryField key' type' position'
+splitFragment _ type' _ (key', RawField _ _ position') = Left $ cannotQueryField key' type' position'
 
 categorizeType :: [Fragment] -> OutputObject -> (OutputObject, [Fragment])
 categorizeType fragments' type'@(GObject _ core) = (type', filter matches fragments')
@@ -61,6 +62,9 @@ categorizeType fragments' type'@(GObject _ core) = (type', filter matches fragme
 
 categorizeTypes :: [OutputObject] -> [Fragment] -> [(OutputObject, [Fragment])]
 categorizeTypes types' fragments' = map (categorizeType fragments') types'
+
+flatTuple :: [([a], [b])] -> ([a], [b])
+flatTuple list' = (concatMap fst list', concatMap snd list')
 
 validateSelection ::
      TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> (Text, RawSelection) -> Validation SelectionSet
@@ -71,15 +75,15 @@ validateSelection lib' fragments' variables' parent'@(GObject _ core) (key', Raw
   case AST.kind $ fieldContent field' of
     UNION -> do
       keys' <- lookupPossibleTypeKeys position' key' lib' field'
-      spreads' <- concat <$> mapM (isolateFragment fragments' (name core) keys') rawSelectors
+      (spreads', selections') <- flatTuple <$> mapM (splitFragment fragments' (name core) keys') rawSelectors
       possibleFieldTypes' <- lookupPossibleTypes position' key' lib' keys'
       let zippedSpreads' = categorizeTypes possibleFieldTypes' spreads'
-      unionSelections' <- mapM validateCategory zippedSpreads'
+      unionSelections' <- mapM (validateCategory []) zippedSpreads'
       pure [(key', UnionSelection arguments' unionSelections' position')]
-      where validateCategory :: (OutputObject, [Fragment]) -> Validation (Text, SelectionSet)
-            validateCategory (type'@(GObject _ core'), frags') = do
+      where validateCategory :: SelectionSet -> (OutputObject, [Fragment]) -> Validation (Text, SelectionSet)
+            validateCategory sysSelection' (type'@(GObject _ core'), frags') = do
               selection' <- validateSelectionSet lib' fragments' variables' type' (concatMap F.content frags')
-              return (name core', selection')
+              return (name core', sysSelection' ++ selection')
     OBJECT -> do
       fieldType' <- lookupFieldAsSelectionSet position' key' lib' field'
       selections' <- validateSelectionSet lib' fragments' variables' fieldType' rawSelectors
