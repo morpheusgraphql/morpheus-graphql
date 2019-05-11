@@ -28,15 +28,15 @@ import           GHC.Generics
 
 type Constraint a = (Generic a, GQLType a, UnionRep (Rep a), UnionResolvers (Rep a))
 
-lookupSelection :: Text -> [(Text, SelectionSet)] -> SelectionSet
-lookupSelection type' sel = fromMaybe [] $ lookup type' sel
+-- SPEC: if there is no any fragment that supports current object Type GQL returns {}
+lookupSelectionByType :: Text -> [(Text, SelectionSet)] -> SelectionSet
+lookupSelectionByType type' sel = fromMaybe [] $ lookup type' sel
 
 encode :: (Generic a, UnionResolvers (Rep a)) => (Text, Selection) -> a -> ResolveIO JSType
-encode (key', UnionSelection args selection pos) value = do
-  let sel = lookupSelection (fst resolver) selection
-  snd resolver (key', SelectionSet args sel pos)
+encode (key', UnionSelection args selection pos) value =
+  resolver (key', SelectionSet args (lookupSelectionByType type' selection) pos)
   where
-    resolver = currentResolver (from value)
+    (type', resolver) = currentResolver (from value)
 encode _ _ = pure $ Scalar $ String "ERROR"
 
 introspect ::
