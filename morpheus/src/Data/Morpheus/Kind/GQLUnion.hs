@@ -21,14 +21,15 @@ import           Data.Morpheus.Types.Error           (ResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
 import           Data.Morpheus.Types.Query.Selection (Selection (..))
 import           Data.Proxy
-import           Data.Text                           (Text)
+import           Data.Text                           (Text, pack)
+import           Debug.Trace
 import           GHC.Generics
 
 type Constraint a = (Generic a, GQLType a, UnionRep (Rep a))
 
 encode :: Generic a => (Text, Selection) -> a -> ResolveIO JSType
-encode (_, UnionSelection _ selection _pos) _ = pure $ Scalar $ String "TODO"
-encode (_, _) _                               = pure $ Scalar $ String "ERROR"
+encode (_, UnionSelection _ selection _pos) _ = pure $ Scalar $ String (trace (show selection) (pack (show selection)))
+encode (_, _) _ = pure $ Scalar $ String "ERROR"
 
 introspect ::
      forall a. (GQLType a, UnionRep (Rep a))
