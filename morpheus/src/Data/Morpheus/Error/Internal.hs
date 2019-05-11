@@ -4,6 +4,7 @@ module Data.Morpheus.Error.Internal
   ( internalTypeMismatch
   , internalArgumentError
   , internalUnknownTypeMessage
+  , internalError
   ) where
 
 import           Data.Morpheus.Error.Utils  (errorMessage)
