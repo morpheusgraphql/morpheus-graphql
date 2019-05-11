@@ -22,7 +22,7 @@ type SelectionSet = Collection Selection
 data Selection
   = SelectionSet Arguments
                  SelectionSet
-                 (Fragment SelectionSet)
+                 [Fragment SelectionSet]
                  Position
   | Field Arguments
           Key
