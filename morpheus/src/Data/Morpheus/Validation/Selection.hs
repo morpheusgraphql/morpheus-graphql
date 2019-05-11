@@ -51,7 +51,7 @@ validateFragment ::
   -> Variables
   -> GObject ObjectField
   -> (Text, RawSelection)
-  -> Validation [(Fragment SelectionSet)]
+  -> Validation [Fragment SelectionSet]
 validateFragment lib' fragments' variables' parent' (key', Spread _ position') =
   resolveSpread fragments' parent' position' key' >>= castFragment lib' fragments' variables' parent' >>= \x ->
     return [x]
@@ -76,7 +76,7 @@ validateSelection lib' _ variables' parent' (key', RawField rawArgs field positi
   args' <- resolveArguments variables' rawArgs
   arguments' <- validateArguments lib' (key', field') position' args'
   pure (key', Field arguments' field position')
-validateSelection lib' fragments' variables' parent' (key', Spread id' position') = internalError "Spread: TODO"
+validateSelection _ _ _ _ _ = internalError "Spread: TODO"
 
 castFragment ::
      TypeLib -> FragmentLib -> Variables -> GObject ObjectField -> RawFragment -> Validation (Fragment SelectionSet)
