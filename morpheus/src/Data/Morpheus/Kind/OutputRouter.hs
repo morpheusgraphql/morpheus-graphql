@@ -25,7 +25,7 @@ import qualified Data.Morpheus.Kind.GQLUnion            as U (Constraint, encode
 import           Data.Morpheus.Kind.Internal            (ENUM, Encode_, Intro_, KIND, OBJECT, OField_, SCALAR, UNION,
                                                          WRAPPER)
 import           Data.Morpheus.Kind.Utils               (encodeList, encodeMaybe, listField, maybeField)
-import           Data.Morpheus.Schema.Internal.AST    (ObjectField (..))
+import           Data.Morpheus.Schema.Internal.AST      (ObjectField (..))
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Types.Describer          ((::->) (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
@@ -103,12 +103,10 @@ liftResolver position' typeName' x = do
     Right value   -> pure value
 
 instance (OutputTypeRouter a (KIND a), Args.GQLArgs p) => OutputTypeRouter (p ::-> a) WRAPPER where
-  __encode _ (key', SelectionSet gqlArgs body position') (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
-    _encode (key', SelectionSet gqlArgs body position')
-  __encode _ (key', Field gqlArgs field position') (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>=
-    _encode (key', Field gqlArgs field position')
+  __encode _ selection'@(key', SelectionSet gqlArgs _ _ position') (Resolver resolver) =
+    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>= _encode selection'
+  __encode _ selection'@(key', Field gqlArgs _ position') (Resolver resolver) =
+    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>= _encode selection'
   __introspect _ _ typeLib = resolveTypes typeLib $ inputTypes' ++ [_introspect (Proxy @a)]
     where
       inputTypes' = map snd $ Args.introspect (Proxy @p)
