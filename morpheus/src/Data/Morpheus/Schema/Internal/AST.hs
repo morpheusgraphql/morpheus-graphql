@@ -24,12 +24,12 @@ type EnumValue = Text
 
 newtype InputField = InputField
   { unpackInputField :: Field
-  }
+  } deriving (Show)
 
 data Core = Core
   { name            :: Text
   , typeDescription :: Text
-  }
+  } deriving (Show)
 
 data Field = Field
   { fieldName :: Text
@@ -37,22 +37,24 @@ data Field = Field
   , kind      :: TypeKind
   , fieldType :: Text
   , asList    :: Bool
-  }
+  } deriving (Show)
 
 data ObjectField = ObjectField
   { args         :: [(Text, InputField)]
   , fieldContent :: Field
-  }
+  } deriving (Show)
 
 data GObject a =
   GObject [(Text, a)]
           Core
+  deriving (Show)
 
 data InternalType a
   = Scalar Core
   | Enum [EnumValue]
          Core
   | Object (GObject a)
+  deriving (Show)
 
 type OutputType = InternalType ObjectField
 
@@ -66,6 +68,7 @@ data Leaf
   = LScalar Core
   | LEnum [EnumValue]
           Core
+  deriving (Show)
 
 data TypeLib = TypeLib
   { leaf        :: [(Text, Leaf)]
@@ -84,6 +87,7 @@ data LibType
   | InputObject InputObject
   | OutputObject OutputObject
   | Union [Field]
+  deriving (Show)
 
 mutationName :: Maybe (Text, OutputObject) -> [Text]
 mutationName (Just (key', _)) = [key']
