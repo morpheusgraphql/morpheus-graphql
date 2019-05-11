@@ -75,10 +75,10 @@ validateSelection lib' fragments' variables' parent'@(GObject _ core) (key', Raw
   case AST.kind $ fieldContent field' of
     UNION -> do
       keys' <- lookupPossibleTypeKeys position' key' lib' field'
-      (spreads', selections') <- flatTuple <$> mapM (splitFragment fragments' (name core) keys') rawSelectors
+      (spreads', __typename') <- flatTuple <$> mapM (splitFragment fragments' (name core) keys') rawSelectors
       possibleFieldTypes' <- lookupPossibleTypes position' key' lib' keys'
       let zippedSpreads' = categorizeTypes possibleFieldTypes' spreads'
-      unionSelections' <- mapM (validateCategory []) zippedSpreads'
+      unionSelections' <- mapM (validateCategory __typename') zippedSpreads'
       pure [(key', UnionSelection arguments' unionSelections' position')]
       where validateCategory :: SelectionSet -> (OutputObject, [Fragment]) -> Validation (Text, SelectionSet)
             validateCategory sysSelection' (type'@(GObject _ core'), frags') = do
