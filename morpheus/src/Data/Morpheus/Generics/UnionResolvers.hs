@@ -12,7 +12,7 @@ import           Data.Text                           (Text)
 import           GHC.Generics
 
 class UnionResolvers f where
-  currentResolver :: f a -> (Text, [(Text, (Text, Selection) -> ResolveIO JSType)])
+  currentResolver :: f a -> (Text, (Text, Selection) -> ResolveIO JSType)
 
 instance UnionResolvers f => UnionResolvers (M1 D c f) where
   currentResolver (M1 x) = currentResolver x
