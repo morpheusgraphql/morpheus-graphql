@@ -51,6 +51,8 @@ isolateFragment :: FragmentLib -> [Text] -> (Text, RawSelection) -> Validation [
 isolateFragment fragments' posTypes' (_, Spread key' position') = do
   fragment' <- resolveSpread fragments' posTypes' position' key'
   return [fragment']
+-- TODO: if there is any selection non system selection GQL returns
+-- "Cannot query field \"name\" on type \"MyUnion\". Did you mean to use an inline fragment on \"User\"?",
 isolateFragment _ _ _ = internalError "selection without fragment are not allowed on union type"
 
 categorizeType :: [Fragment] -> OutputObject -> (OutputObject, [Fragment])
