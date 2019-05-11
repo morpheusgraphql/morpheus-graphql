@@ -20,13 +20,14 @@ type RawArguments = Collection RawArgument
 
 type RawSelectionSet = Collection RawSelection
 
+type Spread = (Key, Position)
+
 data RawSelection
   = RawSelectionSet RawArguments
                     RawSelectionSet
+                    [Spread]
                     Position
   | RawField RawArguments
              Key
              Position
-  | Spread Key
-           Position
   deriving (Show)
