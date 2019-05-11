@@ -1,8 +1,11 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators     #-}
 
 module Data.Morpheus.Generics.DeriveResolvers
   ( DeriveResolvers(..)
+  , resolversBy
   , resolveBySelection
   ) where
 
@@ -29,6 +32,9 @@ selectResolver x (key, gql) = unwrapMonadTuple (key, (fromMaybe (\_ -> pure JSNu
 
 resolveBySelection :: [(Text, Selection)] -> [(Text, (Text, Selection) -> ResolveIO JSType)] -> ResolveIO JSType
 resolveBySelection selection resolvers = JSObject <$> mapM (selectResolver resolvers) selection
+
+resolversBy :: (Generic a, DeriveResolvers (Rep a)) => a -> [(Text, (Text, Selection) -> ResolveIO JSType)]
+resolversBy = deriveResolvers "" . from
 
 class DeriveResolvers f where
   deriveResolvers :: Text -> f a -> [(Text, (Text, Selection) -> ResolveIO JSType)]
