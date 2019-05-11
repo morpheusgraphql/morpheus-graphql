@@ -107,6 +107,8 @@ instance (OutputTypeRouter a (KIND a), Args.GQLArgs p) => OutputTypeRouter (p ::
     (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>= _encode selection'
   __encode _ selection'@(key', Field gqlArgs _ position') (Resolver resolver) =
     (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>= _encode selection'
+  __encode _ selection'@(key', UnionSelection gqlArgs _ position') (Resolver resolver) =
+    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>= _encode selection'
   __introspect _ _ typeLib = resolveTypes typeLib $ inputTypes' ++ [_introspect (Proxy @a)]
     where
       inputTypes' = map snd $ Args.introspect (Proxy @p)
