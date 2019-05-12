@@ -66,7 +66,7 @@ Note that the infix type `a ::-> b` is just syntactic sugar for `Resolver (a -> 
 
 
 To make this `Query` type available as an API, we define a `GQLRoot` and feed it to the Morpheus `interpreter`. A `GQLRoot` consists
-of `query` and `mutation` definitions, while we omit the latter for this example:
+of `query`, `mutation` and `subscription` definitions, while we omit the latter for this example:
 
 ```haskell
 gqlApi :: ByteString -> IO ByteString
@@ -75,7 +75,8 @@ gqlApi = interpreter
       query = Query {
         deity = resolveDeity
       },
-      mutation = ()
+      mutation = (),
+      subscription = ()
     }
 ```
 As you can see, the API is defined as `ByteString -> IO ByteString` which we can either invoke directly or use inside an arbitrary web framework
@@ -190,9 +191,13 @@ gqlApi = interpreter
     query = Query {...},
     mutation = Mutation {
        createDeity = createDeityMutation
-    }
+    },
+    subscription = ()
   }
 ```
+
+### Subscriptions
+TODO.
 
 # About
 

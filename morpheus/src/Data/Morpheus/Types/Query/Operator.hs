@@ -30,3 +30,7 @@ data Operator args sel
              args
              sel
              Position
+  | Subscription Key
+                 args
+                 sel
+                 Position
