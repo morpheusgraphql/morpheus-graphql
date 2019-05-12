@@ -31,7 +31,7 @@
   - Data.Morpheus.Kind
   - Data.Morpheus.Types
 
-## Fixed:
+### Fixed:
 
 - introspection:
   - argument supports `Non-Null` and `List`
