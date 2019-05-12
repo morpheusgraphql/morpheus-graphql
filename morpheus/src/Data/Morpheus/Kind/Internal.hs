@@ -5,6 +5,7 @@ module Data.Morpheus.Kind.Internal
   , OBJECT
   , ENUM
   , WRAPPER
+  , UNION
   , INPUT_OBJECT
   , KIND
   , GQLConstraint
@@ -15,7 +16,7 @@ module Data.Morpheus.Kind.Internal
   , Decode_
   ) where
 
-import Data.Morpheus.Schema.Internal.Types (InputField, ObjectField, TypeLib)
+import Data.Morpheus.Schema.Internal.AST (InputField, ObjectField, TypeLib)
 import Data.Morpheus.Types.Describer ((::->))
 import Data.Morpheus.Types.Error (ResolveIO, Validation)
 import Data.Morpheus.Types.JSType (JSType(..))
@@ -52,6 +53,8 @@ data ENUM
 data INPUT_OBJECT
 
 data WRAPPER
+
+data UNION
 
 --data LIST
 type family GQLConstraint a b :: Constraint

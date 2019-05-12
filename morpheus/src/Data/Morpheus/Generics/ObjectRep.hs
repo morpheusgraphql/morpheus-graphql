@@ -13,7 +13,7 @@ module Data.Morpheus.Generics.ObjectRep
   , resolveTypes
   ) where
 
-import           Data.Morpheus.Schema.Internal.Types (TypeLib)
+import           Data.Morpheus.Schema.Internal.AST (TypeLib)
 import           Data.Proxy                          (Proxy (..))
 import           GHC.Generics
 

@@ -11,14 +11,14 @@ import           Data.Morpheus.Kind.GQLSubscription  (GQLSubscription (..))
 import           Data.Morpheus.Kind.GQLMutation      (GQLMutation (..))
 import           Data.Morpheus.Kind.GQLQuery         (GQLQuery (..))
 import           Data.Morpheus.Parser.Parser         (parseGQL, parseLineBreaks)
-import           Data.Morpheus.PreProcess.PreProcess (preProcessQuery)
-import           Data.Morpheus.Schema.Internal.Types (TypeLib)
+import           Data.Morpheus.Schema.Internal.AST   (TypeLib)
 import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType)
 import           Data.Morpheus.Types.Query.Operator  (Operator (..))
 import           Data.Morpheus.Types.Request         (GQLRequest)
 import           Data.Morpheus.Types.Response        (GQLResponse (..))
 import           Data.Morpheus.Types.Types           (GQLRoot (..))
+import           Data.Morpheus.Validation.Validation (validateRequest)
 import           Data.Text                           (Text, pack)
 import qualified Data.Text.Lazy                      as LT (Text, fromStrict, toStrict)
 import           Data.Text.Lazy.Encoding             (decodeUtf8, encodeUtf8)
@@ -28,7 +28,7 @@ schema queryRes mutationRes subscriptionRes = subscriptionSchema subscriptionRes
 
 resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> GQLRequest -> ResolveIO JSType
 resolve rootResolver body = do
-  rootGQL <- ExceptT $ pure (parseGQL body >>= preProcessQuery gqlSchema)
+  rootGQL <- ExceptT $ pure (parseGQL body >>= validateRequest gqlSchema)
   case rootGQL of
     Query _ _args selection _pos        -> encodeQuery queryRes gqlSchema selection
     Mutation _ _args selection _pos     -> encodeMutation mutationRes selection

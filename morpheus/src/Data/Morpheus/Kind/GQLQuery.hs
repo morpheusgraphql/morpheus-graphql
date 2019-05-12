@@ -15,8 +15,8 @@ module Data.Morpheus.Kind.GQLQuery
 
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
-import           Data.Morpheus.Kind.GQLObject           (encode, introspect)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField, TypeLib, initTypeLib)
+import           Data.Morpheus.Kind.OutputRouter        (_encode, _introspect)
+import           Data.Morpheus.Schema.Internal.AST    (Core (..), GObject (..), ObjectField, TypeLib, initTypeLib)
 import           Data.Morpheus.Schema.Schema            (Schema, initSchema)
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
@@ -31,14 +31,14 @@ class GQLQuery a where
     a -> TypeLib -> SelectionSet -> ResolveIO JSType
   encodeQuery rootResolver types sel = resolveBySelection sel (schemaResolver ++ resolvers)
     where
-      schemaResolver = [("__schema", (`encode` initSchema types))]
+      schemaResolver = [("__schema", (`_encode` initSchema types))]
       resolvers = deriveResolvers "" $ from rootResolver
   querySchema :: a -> TypeLib
   default querySchema :: (ObjectRep (Rep a) (Text, ObjectField)) =>
     a -> TypeLib
   querySchema _ = resolveTypes typeLib stack
     where
-      typeLib = introspect (Proxy @Schema) queryType
+      typeLib = _introspect (Proxy @Schema) queryType
       queryType = initTypeLib ("Query", GObject fields (Core "Query" "Description"))
       fieldTypes = getFields (Proxy @(Rep a))
       stack = map snd fieldTypes

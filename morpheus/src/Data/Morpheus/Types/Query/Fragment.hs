@@ -9,10 +9,10 @@ import           Data.Morpheus.Types.MetaInfo           (Position)
 import           Data.Morpheus.Types.Query.RawSelection (RawSelectionSet)
 
 data Fragment = Fragment
-  { key     :: Key
-  , target  :: Key
-  , position     :: Position
-  , content :: RawSelectionSet
+  { key      :: Key
+  , target   :: Key
+  , position :: Position
+  , content  :: RawSelectionSet
   } deriving (Show)
 
 type FragmentLib = Map Key Fragment

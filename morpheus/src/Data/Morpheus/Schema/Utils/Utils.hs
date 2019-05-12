@@ -9,12 +9,13 @@ module Data.Morpheus.Schema.Utils.Utils
   , typeFromObject
   , typeFromInputObject
   , typeFromLeaf
+  , typeFromUnion
   ) where
 
 import           Data.Morpheus.Schema.EnumValue      (EnumValue, createEnumValue)
 import qualified Data.Morpheus.Schema.Field          as F (Field (..), createFieldWith)
 import qualified Data.Morpheus.Schema.InputValue     as IN (InputValue (..), createInputValueWith)
-import qualified Data.Morpheus.Schema.Internal.Types as I (Core (..), Field (..), GObject (..), InputField (..),
+import qualified Data.Morpheus.Schema.Internal.AST as I (Core (..), Field (..), GObject (..), InputField (..),
                                                            InputObject, Leaf (..), ObjectField (..), OutputObject)
 import           Data.Morpheus.Schema.Type           (Type (..))
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
@@ -48,10 +49,11 @@ wrapList field' type' =
 
 fieldFromObjectField :: (Text, I.ObjectField) -> Field
 fieldFromObjectField (key', field') =
-  F.createFieldWith key' (wrap (I.fieldContent field') $ createObjectType getType "" []) args'
+  F.createFieldWith key' (wrap (I.fieldContent field') $ createType kind' getType "" []) args'
   where
     getType = I.fieldType $ I.fieldContent field'
     args' = map inputValueFromArg $ I.args field'
+    kind' = I.kind $ I.fieldContent field'
 
 typeFromLeaf :: (Text, I.Leaf) -> Type
 typeFromLeaf (key', I.LScalar (I.Core _ desc'))     = createLeafType SCALAR key' desc' []
@@ -74,6 +76,20 @@ createLeafType kind' name' desc' enums' =
     , interfaces = Nothing
     , possibleTypes = Nothing
     , enumValues = resolveMaybeList enums'
+    , inputFields = Nothing
+    }
+
+typeFromUnion :: (Text, [I.Field]) -> Type
+typeFromUnion (name', fields') =
+  Type
+    { kind = UNION
+    , name = Just name'
+    , description = Just "TODO"
+    , fields = resolveNothing
+    , ofType = Nothing
+    , interfaces = Nothing
+    , possibleTypes = Just (map (\x -> createObjectType (I.fieldType x) "" []) fields')
+    , enumValues = return Nothing
     , inputFields = Nothing
     }
 

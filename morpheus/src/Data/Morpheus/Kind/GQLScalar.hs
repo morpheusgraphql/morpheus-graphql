@@ -1,12 +1,14 @@
 {-# LANGUAGE ConstrainedClassMethods #-}
 {-# LANGUAGE OverloadedStrings       #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE TypeApplications        #-}
 
 module Data.Morpheus.Kind.GQLScalar where
 
 import           Control.Monad                       ((>=>))
 import           Data.Morpheus.Error.Internal        (internalTypeMismatch)
 import           Data.Morpheus.Kind.GQLType          (GQLType (..), scalarTypeOf)
-import           Data.Morpheus.Schema.Internal.Types (Field (..), InputField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.AST (Field (..), InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Core            (Key)
 import           Data.Morpheus.Types.Error           (Validation)
@@ -26,11 +28,11 @@ class GQLScalar a where
   encode :: a -> JSType
   encode = Scalar . serialize
   asInputField :: GQLType a => Proxy a -> Key -> InputField
-  asInputField proxy = InputField . asField proxy
+  asInputField _ = InputField . asField (Proxy @a)
   asField :: GQLType a => Proxy a -> Key -> Field
-  asField proxy name = Field {fieldName = name, notNull = True, asList = False, kind = SCALAR, fieldType = typeID proxy}
+  asField _ = field_ SCALAR (Proxy @a)
   introspect :: GQLType a => Proxy a -> TypeLib -> TypeLib
-  introspect = updateLib scalarTypeOf []
+  introspect _ = updateLib scalarTypeOf [] (Proxy @a)
 
 instance GQLScalar Text where
   parseValue (String x) = pure x

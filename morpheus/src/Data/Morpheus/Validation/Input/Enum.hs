@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Data.Morpheus.PreProcess.Input.Enum
+module Data.Morpheus.Validation.Input.Enum
   ( validateEnum
   ) where
 

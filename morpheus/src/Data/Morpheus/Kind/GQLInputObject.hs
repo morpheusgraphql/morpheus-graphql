@@ -20,7 +20,7 @@ import           Data.Morpheus.Error.Internal        (internalTypeMismatch)
 import           Data.Morpheus.Generics.GDecode      (GDecode (..))
 import           Data.Morpheus.Generics.ObjectRep    (ObjectRep (..))
 import           Data.Morpheus.Kind.GQLType          (GQLType (..), inputObjectOf)
-import           Data.Morpheus.Schema.Internal.Types (InputField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.AST (InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Error           (Validation)
 import           Data.Morpheus.Types.JSType          (JSType (..))
@@ -37,7 +37,7 @@ decode (JSObject x) = to <$> gDecode "" (JSObject x)
 decode isType       = internalTypeMismatch "InputObject" isType
 
 inputField :: GQLType a => Proxy a -> Text -> InputField
-inputField proxy = InputField . buildField INPUT_OBJECT proxy
+inputField proxy = InputField . field_ INPUT_OBJECT proxy
 
 introspect ::
      forall a. (GQLType a, IOObjectRep a)

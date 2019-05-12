@@ -1,19 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.PreProcess.Input.Object
+module Data.Morpheus.Validation.Input.Object
   ( validateInputObject
   , validateInputValue
   ) where
 
-import           Data.Morpheus.Error.Input           (InputError (..), InputValidation, Prop (..))
-import           Data.Morpheus.PreProcess.Input.Enum (validateEnum)
-import           Data.Morpheus.PreProcess.Utils      (lookupField, lookupType)
-import           Data.Morpheus.Schema.Internal.Types (Core (..), Field (..), GObject (..), InputField (..), InputObject,
-                                                      InputType, Leaf (..), TypeLib (..))
-import qualified Data.Morpheus.Schema.Internal.Types as T (InternalType (..))
-import           Data.Morpheus.Types.JSType          (JSType (..), ScalarValue (..))
-import           Data.Text                           (Text)
-import qualified Data.Text                           as T (concat)
+import           Data.Morpheus.Error.Input            (InputError (..), InputValidation, Prop (..))
+import           Data.Morpheus.Schema.Internal.AST    (Core (..), Field (..), GObject (..), InputField (..),
+                                                       InputObject, InputType, Leaf (..), TypeLib (..))
+import qualified Data.Morpheus.Schema.Internal.AST    as T (InternalType (..))
+import           Data.Morpheus.Types.JSType           (JSType (..), ScalarValue (..))
+import           Data.Morpheus.Validation.Input.Enum  (validateEnum)
+import           Data.Morpheus.Validation.Utils.Utils (lookupField, lookupType)
+import           Data.Text                            (Text)
+import qualified Data.Text                            as T (concat)
 
 generateError :: JSType -> Text -> [Prop] -> InputError
 generateError jsType expected' path' = UnexpectedType path' expected' jsType

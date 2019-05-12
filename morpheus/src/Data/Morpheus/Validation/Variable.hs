@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.PreProcess.Variable
+module Data.Morpheus.Validation.Variable
   ( resolveOperationVariables
   , resolveArgumentValue
   , allVariableReferences
@@ -11,9 +11,7 @@ import qualified Data.Map                               as M (fromList, lookup)
 import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Variable           (undefinedVariable, uninitializedVariable, unknownType,
                                                          unusedVariables, variableGotInvalidValue)
-import           Data.Morpheus.PreProcess.Input.Object  (validateInputValue)
-import           Data.Morpheus.PreProcess.Utils         (getInputType)
-import           Data.Morpheus.Schema.Internal.Types    (InputType, TypeLib)
+import           Data.Morpheus.Schema.Internal.AST      (InputType, TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.JSType             (JSType (..))
@@ -22,6 +20,8 @@ import           Data.Morpheus.Types.Query.Operator     (Variable (..))
 import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..), RawSelection (..), RawSelectionSet)
 import qualified Data.Morpheus.Types.Query.Selection    as Valid (Argument (..))
 import           Data.Morpheus.Types.Types              (Variables)
+import           Data.Morpheus.Validation.Input.Object  (validateInputValue)
+import           Data.Morpheus.Validation.Utils.Utils   (getInputType)
 import           Data.Text                              (Text)
 
 getVariableType :: Text -> Position -> TypeLib -> Validation InputType

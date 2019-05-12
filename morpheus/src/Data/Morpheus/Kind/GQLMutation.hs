@@ -14,7 +14,7 @@ module Data.Morpheus.Kind.GQLMutation
 
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.ObjectRep         (ObjectRep (..), resolveTypes)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField, TypeLib (..))
+import           Data.Morpheus.Schema.Internal.AST    (Core (..), GObject (..), ObjectField, TypeLib (..))
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.Query.Selection    (SelectionSet)

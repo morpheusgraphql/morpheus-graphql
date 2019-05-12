@@ -22,6 +22,9 @@ data Selection
   = SelectionSet Arguments
                  SelectionSet
                  Position
+  | UnionSelection Arguments
+                   (Collection SelectionSet)
+                   Position
   | Field Arguments
           Key
           Position

@@ -12,7 +12,7 @@ import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Maybe                 (fromMaybe)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..),
-                                             INPUT_OBJECT, KIND, OBJECT, SCALAR)
+                                             INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..), ScalarValue (..))
 import           Data.Text                  (Text, pack)
 import           Example.Model              (JSONAddress, JSONUser, jsonAddress, jsonUser)
@@ -30,6 +30,13 @@ type instance KIND Coordinates = INPUT_OBJECT
 type instance KIND Address = OBJECT
 
 type instance KIND User = OBJECT
+
+type instance KIND MyUnion = UNION
+
+data MyUnion
+  = USER User
+  | ADDRESS Address
+  deriving (Generic, GQLType)
 
 data CityID
   = Paris
@@ -80,7 +87,7 @@ data User = User
   , email   :: Text
   , address :: AddressArgs ::-> Address
   , office  :: OfficeArgs ::-> Address
-  , friend  :: () ::-> Maybe User
+  , myUnion :: () ::-> MyUnion
   , home    :: CityID
   } deriving (Generic)
 
@@ -126,7 +133,16 @@ transformUser user' =
     , address = resolveAddress
     , office = resolveOffice user'
     , home = HH
-    , friend = return Nothing
+    , myUnion =
+        return $
+        USER
+          (User
+             "unionUserName"
+             "unionUserMail"
+             resolveAddress
+             (resolveOffice user')
+             (return $ ADDRESS (Address "unionAdressStreet" "unionAdresser" 1 Nothing))
+             HH)
     }
 
 createUserMutation :: AddressArgs ::-> User
