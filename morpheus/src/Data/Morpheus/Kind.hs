@@ -11,24 +11,12 @@ module Data.Morpheus.Kind
   , OBJECT
   , SCALAR
   , UNION
-  )
-where
+  ) where
 
-import           Data.Morpheus.Kind.GQLArgs     ( GQLArgs )
-import           Data.Morpheus.Kind.GQLSubscription
-                                                ( GQLSubscription(..) )
-import           Data.Morpheus.Kind.GQLMutation ( GQLMutation(..) )
-import           Data.Morpheus.Kind.GQLQuery    ( GQLQuery(..) )
-import           Data.Morpheus.Kind.GQLScalar   ( GQLScalar
-                                                  ( parseValue
-                                                  , serialize
-                                                  )
-                                                )
-import           Data.Morpheus.Kind.GQLType     ( GQLType(description) )
-import           Data.Morpheus.Kind.Internal    ( ENUM
-                                                , INPUT_OBJECT
-                                                , KIND
-                                                , OBJECT
-                                                , SCALAR
-                                                , UNION
-                                                )
+import           Data.Morpheus.Kind.GQLArgs         (GQLArgs)
+import           Data.Morpheus.Kind.GQLMutation     (GQLMutation (..))
+import           Data.Morpheus.Kind.GQLQuery        (GQLQuery (..))
+import           Data.Morpheus.Kind.GQLScalar       (GQLScalar (parseValue, serialize))
+import           Data.Morpheus.Kind.GQLSubscription (GQLSubscription (..))
+import           Data.Morpheus.Kind.GQLType         (GQLType (description))
+import           Data.Morpheus.Kind.Internal        (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
