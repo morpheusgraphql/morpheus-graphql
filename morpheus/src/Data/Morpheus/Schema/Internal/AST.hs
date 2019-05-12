@@ -75,10 +75,10 @@ data TypeLib = TypeLib
   { leaf         :: [(Text, Leaf)]
   , inputObject  :: [(Text, InputObject)]
   , object       :: [(Text, OutputObject)]
+  , union        :: [(Text, [Field])]
   , query        :: (Text, OutputObject)
   , mutation     :: Maybe (Text, OutputObject)
   , subscription :: Maybe (Text, OutputObject)
-  , union       :: [(Text, [Field])]
   }
 
 initTypeLib :: (Text, OutputObject) -> TypeLib
@@ -100,8 +100,8 @@ subscriptionName (Just (key', _)) = [key']
 subscriptionName Nothing          = []
 
 getAllTypeKeys :: TypeLib -> [Text]
-getAllTypeKeys (TypeLib leaf' inputObject' object' (queryName, _) mutation' subscription') =
-  [queryName] ++ map fst leaf' ++ map fst inputObject' ++ map fst object' ++ mutationName mutation' ++ subscriptionName subscription' ++ ++ map fst union'
+getAllTypeKeys (TypeLib leaf' inputObject' object' union' (queryName, _) mutation' subscription') =
+  [queryName] ++ map fst leaf' ++ map fst inputObject' ++ map fst object' ++ mutationName mutation' ++ subscriptionName subscription' ++  map fst union'
 
 isTypeDefined :: Text -> TypeLib -> Bool
 isTypeDefined name' lib' = name' `elem` getAllTypeKeys lib'

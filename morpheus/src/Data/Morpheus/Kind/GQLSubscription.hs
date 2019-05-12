@@ -13,8 +13,8 @@ module Data.Morpheus.Kind.GQLSubscription
   ) where
 
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
-import           Data.Morpheus.Generics.ObjectRep         (ObjectRep (..), resolveTypes)
-import           Data.Morpheus.Schema.Internal.Types    (Core (..), GObject (..), ObjectField, TypeLib (..))
+import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Schema.Internal.AST      (Core (..), GObject (..), ObjectField, TypeLib (..))
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
@@ -32,7 +32,8 @@ class GQLSubscription a where
     a -> TypeLib -> TypeLib
   subscriptionSchema _ initialType = resolveTypes subscriptionType types
     where
-      subscriptionType = initialType {subscription = Just ("Subscription", GObject fields $ Core "Subscription" "Description")}
+      subscriptionType =
+        initialType {subscription = Just ("Subscription", GObject fields $ Core "Subscription" "Description")}
       fieldTypes = getFields (Proxy :: Proxy (Rep a))
       types = map snd fieldTypes
       fields = map fst fieldTypes
