@@ -30,7 +30,10 @@
   - Data.Morpheus
   - Data.Morpheus.Kind
   - Data.Morpheus.Types
-- fix introspection:
+
+## Fixed:
+
+- introspection:
   - argument supports `Non-Null` and `List`
   - every field has correct kind
 
