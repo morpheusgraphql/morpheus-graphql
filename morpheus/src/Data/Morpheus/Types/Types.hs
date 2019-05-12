@@ -18,7 +18,8 @@ data GQLQueryRoot = GQLQueryRoot
   , inputVariables :: [(Key, JSType)]
   }
 
-data GQLRoot a b = GQLRoot
+data GQLRoot a b c = GQLRoot
   { query    :: a
   , mutation :: b
+  , subscription :: c
   }

@@ -21,12 +21,13 @@ data Schema = Schema
 convertTypes :: TypeLib -> [Type]
 convertTypes lib' =
   [typeFromObject $ query lib'] ++
-  typeFromMutation (mutation lib') ++
+  typeFromMaybe (mutation lib') ++
+  typeFromMaybe (subscription lib') ++
   map typeFromObject (object lib') ++ map typeFromInputObject (inputObject lib') ++ map typeFromLeaf (leaf lib')
 
-typeFromMutation :: Maybe (Text, OutputObject) -> [Type]
-typeFromMutation (Just x) = [typeFromObject x]
-typeFromMutation Nothing  = []
+typeFromMaybe :: Maybe (Text, OutputObject) -> [Type]
+typeFromMaybe (Just x) = [typeFromObject x]
+typeFromMaybe Nothing  = []
 
 buildSchemaLinkType :: (Text, OutputObject) -> Type
 buildSchemaLinkType (key', _) = createObjectType key' "Query Description" []
@@ -37,6 +38,6 @@ initSchema types' =
     { types = convertTypes types'
     , queryType = buildSchemaLinkType $ query types'
     , mutationType = buildSchemaLinkType <$> mutation types'
-    , subscriptionType = Nothing
+    , subscriptionType = buildSchemaLinkType <$> subscription types'
     , directives = []
     }

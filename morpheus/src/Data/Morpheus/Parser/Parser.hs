@@ -9,6 +9,7 @@ import           Data.Map                       (fromList, toList)
 import           Data.Maybe                     (fromMaybe)
 import           Data.Morpheus.Error.Syntax     (syntaxError)
 import           Data.Morpheus.Parser.Fragment  (fragment)
+import qualified Data.Morpheus.Parser.Subscription as S 
 import qualified Data.Morpheus.Parser.Mutation  as M
 import           Data.Morpheus.Parser.Primitive (getLines)
 import qualified Data.Morpheus.Parser.Query     as Q
@@ -20,7 +21,7 @@ import           Data.Text                      (Text, pack)
 
 request :: Parser GQLQueryRoot
 request = do
-  queryValue <- Q.query <|> M.mutation
+  queryValue <- Q.query <|> M.mutation <|> S.subscription
   fragmentLib <- fromList <$> many fragment
   skipSpace
   endOfInput

@@ -10,6 +10,10 @@
 
 - **mutationNotSupported**: mutation is not defined by schema ✅
 
+### Subscription:
+
+- **subscriptionNotSupported**: subscription is not defined by schema ✅
+
 ### Query
 
 - **Arguments:** ✅

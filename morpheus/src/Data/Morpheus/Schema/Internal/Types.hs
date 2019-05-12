@@ -68,15 +68,16 @@ data Leaf
           Core
 
 data TypeLib = TypeLib
-  { leaf        :: [(Text, Leaf)]
-  , inputObject :: [(Text, InputObject)]
-  , object      :: [(Text, OutputObject)]
-  , query       :: (Text, OutputObject)
-  , mutation    :: Maybe (Text, OutputObject)
+  { leaf         :: [(Text, Leaf)]
+  , inputObject  :: [(Text, InputObject)]
+  , object       :: [(Text, OutputObject)]
+  , query        :: (Text, OutputObject)
+  , mutation     :: Maybe (Text, OutputObject)
+  , subscription :: Maybe (Text, OutputObject)
   }
 
 initTypeLib :: (Text, OutputObject) -> TypeLib
-initTypeLib query' = TypeLib {leaf = [], inputObject = [], query = query', object = [], mutation = Nothing}
+initTypeLib query' = TypeLib {leaf = [], inputObject = [], query = query', object = [], mutation = Nothing, subscription = Nothing}
 
 data LibType
   = Leaf Leaf
@@ -87,9 +88,13 @@ mutationName :: Maybe (Text, OutputObject) -> [Text]
 mutationName (Just (key', _)) = [key']
 mutationName Nothing          = []
 
+subscriptionName :: Maybe (Text, OutputObject) -> [Text]
+subscriptionName (Just (key', _)) = [key']
+subscriptionName Nothing          = []
+
 getAllTypeKeys :: TypeLib -> [Text]
-getAllTypeKeys (TypeLib leaf' inputObject' object' (queryName, _) mutation') =
-  [queryName] ++ map fst leaf' ++ map fst inputObject' ++ map fst object' ++ mutationName mutation'
+getAllTypeKeys (TypeLib leaf' inputObject' object' (queryName, _) mutation' subscription') =
+  [queryName] ++ map fst leaf' ++ map fst inputObject' ++ map fst object' ++ mutationName mutation' ++ subscriptionName subscription'
 
 isTypeDefined :: Text -> TypeLib -> Bool
 isTypeDefined name' lib' = name' `elem` getAllTypeKeys lib'
