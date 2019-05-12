@@ -3,7 +3,7 @@
 ### Added
 
 - support for Union Types: `type instance KIND <type> = UNION`
-- add `Interpreter` as `class` with `instances`:
+- add `Interpreter` class with instances:
 
   - `ByteString`
   - `Text`
@@ -26,12 +26,13 @@
 
 - `GQLKind` renamed as `GQLType`
 - types can be derived just with `(Generic,GQLType)`
-- public API:
+- public API (all other modules are hidden):
   - Data.Morpheus
   - Data.Morpheus.Kind
   - Data.Morpheus.Types
-    hide other modules are hidden
-- fix: argument supports `Non-Null` and `List` Types in introspection
+- fix introspection:
+  - argument supports `Non-Null` and `List`
+  - every field has correct kind
 
 ### Removed
 
