@@ -26,21 +26,35 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
-      -  Data.Morpheus
-      -  Data.Morpheus.Kind
-      -  Data.Morpheus.Types
-  ghc-options:
-      -Wall
-
+    - Data.Morpheus
+    - Data.Morpheus.Kind
+    - Data.Morpheus.Types
+  ghc-options: -Wall
 
 tests:
   morpheus-test:
     main: Spec.hs
     source-dirs: test
-    ghc-options:
-      -Wall
+    ghc-options: -Wall
     dependencies:
       - morpheus-graphql
       - tasty
       - tasty-hunit
       - aeson
+
+executables:
+  api:
+    main: Main.hs
+    source-dirs: examples
+    ghc-options: -threaded
+      -rtsopts
+      -with-rtsopts=-N
+      -Wall
+    dependencies:
+      - base >= 4.7 && < 5
+      - morpheus-graphql
+      - scotty
+      - aeson
+      - bytestring
+      - mtl
+      - text

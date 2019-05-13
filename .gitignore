@@ -1,9 +1,6 @@
-.stack-work/
 .DS_Store
+.stack-work/
+.idea/
 morpheus-graphql.cabal
-node_modules/
-morpheus-graphql.js
-package-lock.json
-api
-/.idea
+morpheus-graphql.iml
 docs/vendor

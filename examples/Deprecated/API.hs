@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 
-module Example.Schema
+module Deprecated.API
   ( gqlApi
   ) where
 
@@ -15,8 +15,8 @@ import           Data.Morpheus.Kind         (ENUM, GQLArgs, GQLMutation, GQLQuer
                                              INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..), ScalarValue (..))
 import           Data.Text                  (Text, pack)
-import           Example.Model              (JSONAddress, JSONUser, jsonAddress, jsonUser)
-import qualified Example.Model              as M (JSONAddress (..), JSONUser (..))
+import           Deprecated.Model           (JSONAddress, JSONUser, jsonAddress, jsonUser)
+import qualified Deprecated.Model           as M (JSONAddress (..), JSONUser (..))
 import           GHC.Generics               (Generic)
 
 type instance KIND CityID = ENUM
@@ -149,4 +149,7 @@ createUserMutation :: AddressArgs ::-> User
 createUserMutation = transformUser <$> Resolver (const jsonUser)
 
 gqlApi :: ByteString -> IO ByteString
-gqlApi = interpreter GQLRoot {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}, subscription = ()}
+gqlApi =
+  interpreter
+    GQLRoot
+      {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}, subscription = ()}

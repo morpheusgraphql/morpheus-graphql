@@ -3,14 +3,14 @@
 {-# LANGUAGE TypeFamilies   #-}
 {-# LANGUAGE TypeOperators  #-}
 
-module Example.Character.Human
+module Mythology.Character.Human
   ( Human(..)
   ) where
 
-import           Data.Morpheus.Kind   (GQLType, KIND, OBJECT)
-import           Data.Text            (Text)
-import           Example.Place.Places (City (..))
-import           GHC.Generics         (Generic)
+import           Data.Morpheus.Kind     (GQLType, KIND, OBJECT)
+import           Data.Text              (Text)
+import           GHC.Generics           (Generic)
+import           Mythology.Place.Places (City (..))
 
 type instance KIND Human = OBJECT
 

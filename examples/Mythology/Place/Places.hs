@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveGeneric  #-}
 {-# LANGUAGE TypeFamilies   #-}
 
-module Example.Place.Places
+module Mythology.Place.Places
   ( Realm(..)
   , City(..)
   ) where
