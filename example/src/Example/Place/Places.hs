@@ -2,8 +2,8 @@
 {-# LANGUAGE DeriveGeneric  #-}
 {-# LANGUAGE TypeFamilies   #-}
 
-module Example.Places.Places
-  ( Places
+module Example.Place.Places
+  ( Places(..)
   ) where
 
 import           Data.Morpheus.Kind (ENUM, GQLType, KIND)

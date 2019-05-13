@@ -11,11 +11,11 @@ module Example.Mythology
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (ENUM, GQLArgs, GQLQuery, GQLType (..), KIND, OBJECT)
+import           Data.Morpheus.Kind         (GQLArgs, GQLQuery)
 import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..))
 import           Data.Text                  (Text)
 import           Example.Character.Deity    (Deity (..))
-import           Example.Place.Places      (Places (..))
+import           Example.Place.Places       (Places (..))
 import           GHC.Generics               (Generic)
 
 newtype Query = Query
