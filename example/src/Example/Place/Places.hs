@@ -15,6 +15,7 @@ type instance KIND Realm = ENUM
 data Realm
   = MountOlympus
   | Sky
+  | Sea
   | Underworld
   | Dream
   deriving (Generic, GQLType)
