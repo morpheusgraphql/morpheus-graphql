@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveGeneric  #-}
 {-# LANGUAGE TypeFamilies   #-}
 
-module Example.Places
+module Example.Places.Places
   ( Places
   ) where
 
@@ -16,4 +16,5 @@ data Places
   | Athens
   | Colchis
   | Underworld
+  | Fantasy
   deriving (Generic, GQLType)
