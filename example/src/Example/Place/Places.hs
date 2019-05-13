@@ -9,12 +9,21 @@ module Example.Place.Places
 import           Data.Morpheus.Kind (ENUM, GQLType, KIND)
 import           GHC.Generics       (Generic)
 
-type instance KIND Places = ENUM
+type instance KIND Realms = ENUM
 
-data Places
-  = Olympus
-  | Athens
-  | Colchis
+data Realms
+  = MountOlympus
+  | Sky
   | Underworld
   | Fantasy
   deriving (Generic, GQLType)
+
+type instance KIND Cities = ENUM
+
+data Cities
+  = Athens
+  | Colchis
+  | Delphi
+  | Ithaca
+  | Sparta
+  | Troy
