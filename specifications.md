@@ -1,6 +1,6 @@
 # Definitions:
 
-- ✅ : done
+- ✅ : supports for all version
 - ✅ (>= x.y.z) : supports from version x.y.z
 - ⛔️ : does not supports
 - 🚧 : work In Progress
@@ -12,8 +12,8 @@
 - 8.0 (ghc-8.0.2): ?
 - 10.2 (ghc-8.2.2): ?
 - 11.10 (ghc-8.2.2): ⛔️ crashes
-- lts-12.0 (ghc-8.4.3): ✅ (>=v0.01)
-- nightly-2018-09-26: ✅ (>=v0.01)
+- lts-12.0 (ghc-8.4.3): ✅
+- nightly-2018-09-26: ✅
 
 # Feature Checklist
 
