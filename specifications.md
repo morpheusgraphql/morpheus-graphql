@@ -1,4 +1,32 @@
-# Errors:
+# build:
+
+- 7.10 (ghc-8.0.1): ?
+- 8.0 (ghc-8.0.2): ?
+- 10.2 (ghc-8.2.2): ?
+- 11.10 (ghc-8.2.2): ⛔️
+- lts-12.0 (ghc-8.4.3): ✅ (>=v0.01)
+- nightly-2018-09-26: ✅ (>=v0.01)
+
+# Feature Checklist
+
+- Types:
+  - `ID`: ⛔️ (will be in v0.1.0)
+  - `Float`: ✅
+  - `Int`: ✅
+  - `String`: ✅
+  - `Enum`: ✅
+  - `Scalar`: ✅
+  - `List`: ✅
+  - `Object`: ✅
+  - `Union`: ✅ (>= 0.1.0 )
+  - `InputObject`: ✅
+  - `Query`: ✅
+  - `Mutation`: ✅
+  - `Subscription`: 🚧 (>= 0.1.0)
+
+# Case Definitions:
+
+## Errors:
 
 ### InputValue:
 
@@ -12,7 +40,7 @@
 
 ### Subscription:
 
-- **subscriptionNotSupported**: subscription is not defined by schema ✅
+- **subscriptionNotSupported**: subscription is not defined by schema ✅ (>= 0.1.0)
 
 ### Query
 
