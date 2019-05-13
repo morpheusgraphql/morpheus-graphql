@@ -1,3 +1,11 @@
+# Definitions:
+
+- ✅ : done
+- ✅ (>= x.y.z) : supports from version x.y.z
+- ⛔️ : does not supports
+- 🚧 : work In Progress
+- 🧪 : Unit Test
+
 # GHC and LTS Haskell Versions:
 
 - 7.10 (ghc-8.0.1): ?
@@ -24,32 +32,50 @@
   - `Mutation`: ✅
   - `Subscription`: 🚧 (>= 0.1.0)
 
-# Case Definitions:
+# Rules:
 
-## Errors:
+### Operator Errors:
 
-### InputValue:
+- `Mutation`:
 
-- **expectedAFoundB**: input value does matches to schema type ✅
-- **undefinedField**: required field not found on input value ✅
-- **unknownField**: field does not exists on inputObject ✅
+  - **mutationNotSupported**: mutation is not defined by schema ✅
 
-### Mutation:
+- `Subscription`:
 
-- **mutationNotSupported**: mutation is not defined by schema ✅
+  - **subscriptionNotSupported**: subscription is not defined by schema ✅ (>= 0.1.0)
 
-### Subscription:
+## Selection Errors:
 
-- **subscriptionNotSupported**: subscription is not defined by schema ✅ (>= 0.1.0)
-
-### Query
-
-- **Arguments:** ✅
+- `Arguments`: ✅
 
   - **unknownArgument**: ✅
   - **undefinedArgument**: ✅
   - **invalidInputValue -> InputValue**: ✅
   - **nameConflict**: ✅
+
+- `Selection`: ✅ + 🧪
+
+  - **unknownField**: requested field does not exist on type ✅ + 🧪
+  - **hasNoSubFields**: requested subFields but type is scalar Type ✅ + 🧪
+  - **mustHaveSubFields**: requested as scalar but is object ✅ + 🧪
+  - **nameConflict**: ✅ + 🧪
+
+* **Spread:**
+
+  - **unknownFragment**: ✅
+  - **cannotBeSpreadOnType**: ✅
+  - **nameConflict**: ⛔️
+
+### Fragment Errors:
+
+**Fragment**: whole spread will be done there (for performance reason), Selection and Argument will be Validated on Query, because there will be no unused fragment we will validate all subfields.
+
+- **unusedFragment**: ⛔️
+- **unknownTargetType**: ✅
+- **cannotSpreadWithinItself**: ✅ + 🧪
+- **nameConflict**: duplicate fragment with same name ⛔️
+
+### Variable Errors:
 
 - **Variable:** input Value Will be validated on query argument validation, because there will not be unused Variable all inputValues(variables) will be checked
 
@@ -61,22 +87,8 @@
   - **invalidInputValue**: validation of input fails ✅
   - **unusedVariable**: ✅
 
-- **Selection:** ✅ +tests
+### InputValue Errors:
 
-  - **unknownField**: requested field does not exist on type ✅
-  - **hasNoSubFields**: requested subFields but type is scalar Type ✅
-  - **mustHaveSubFields**: requested as scalar but is object ✅
-  - **nameConflict**: ✅
-
-- **Spread:**
-
-  - **unknownFragment**: ✅
-  - **cannotBeSpreadOnType**: ✅
-  - **nameConflict**: ⛔️
-
-- **Fragment**: whole spread will be done there (for performance reason), Selection and Argument will be Validated on Query, because there will be no unused fragment we will validate all subfields.
-
-  - **unusedFragment**: ⛔️
-  - **unknownTargetType**: ✅
-  - **cannotSpreadWithinItself**: ✅
-  - **nameConflict**: duplicate fragment with same name ⛔️
+- **expectedAFoundB**: input value does matches to schema type ✅
+- **undefinedField**: required field not found on input value ✅
+- **unknownField**: field does not exists on inputObject ✅
