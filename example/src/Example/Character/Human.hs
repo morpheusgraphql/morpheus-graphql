@@ -16,5 +16,5 @@ type instance KIND Human = OBJECT
 
 data Human = Human
   { name  :: Text
-  , place :: Places
+  , home :: Places
   } deriving (Generic, GQLType)
