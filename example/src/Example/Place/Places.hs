@@ -3,24 +3,25 @@
 {-# LANGUAGE TypeFamilies   #-}
 
 module Example.Place.Places
-  ( Places(..)
+  ( Realm(..)
+  , City(..)
   ) where
 
 import           Data.Morpheus.Kind (ENUM, GQLType, KIND)
 import           GHC.Generics       (Generic)
 
-type instance KIND Realms = ENUM
+type instance KIND Realm = ENUM
 
-data Realms
+data Realm
   = MountOlympus
   | Sky
   | Underworld
-  | Fantasy
+  | Dream
   deriving (Generic, GQLType)
 
-type instance KIND Cities = ENUM
+type instance KIND City = ENUM
 
-data Cities
+data City
   = Athens
   | Colchis
   | Delphi

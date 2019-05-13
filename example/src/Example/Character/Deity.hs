@@ -5,11 +5,12 @@
 
 module Example.Character.Deity
   ( Deity(..)
+  , dbDeity
   ) where
 
 import           Data.Morpheus.Kind   (GQLType (..), KIND, OBJECT)
 import           Data.Text            (Text)
-import           Example.Place.Places (Places)
+import           Example.Place.Places (Realm (..))
 import           GHC.Generics         (Generic)
 
 type instance KIND Deity = OBJECT
@@ -20,5 +21,8 @@ instance GQLType Deity where
 data Deity = Deity
   { fullName :: Text -- Non-Nullable Field
   , power    :: Maybe Text -- Nullable Field
-  , realm    :: Places
+  , realm    :: Realm
   } deriving (Generic)
+
+dbDeity :: Text -> Maybe Text -> IO (Either String Deity)
+dbDeity _ _ = return $ Right $ Deity {fullName = "Morpheus", power = Just "Shapeshifting", realm = Dream}

@@ -9,12 +9,12 @@ module Example.Character.Human
 
 import           Data.Morpheus.Kind   (GQLType, KIND, OBJECT)
 import           Data.Text            (Text)
-import           Example.Place.Places (Places)
+import           Example.Place.Places (City (..))
 import           GHC.Generics         (Generic)
 
 type instance KIND Human = OBJECT
 
 data Human = Human
-  { name  :: Text
-  , home :: Places
+  { name :: Text
+  , home :: City
   } deriving (Generic, GQLType)
