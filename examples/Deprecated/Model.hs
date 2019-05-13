@@ -3,17 +3,17 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeOperators         #-}
 
-module Example.Model
+module Deprecated.Model
   ( jsonAddress
   , jsonUser
   , JSONUser(..)
   , JSONAddress(..)
   ) where
 
-import           Data.Aeson    (FromJSON)
-import           Data.Text     (Text)
-import           Example.Files (getJson)
-import           GHC.Generics  (Generic)
+import           Data.Aeson   (FromJSON)
+import           Data.Text    (Text)
+import           Files        (getJson)
+import           GHC.Generics (Generic)
 
 data JSONUser = JSONUser
   { name  :: Text
@@ -27,7 +27,7 @@ data JSONAddress = JSONAddress
   } deriving (Generic, Show, FromJSON)
 
 jsonUser :: IO (Either String JSONUser)
-jsonUser = getJson "user"
+jsonUser = getJson "deprecated/user"
 
 jsonAddress :: IO (Either String JSONAddress)
-jsonAddress = getJson "address"
+jsonAddress = getJson "deprecated/address"

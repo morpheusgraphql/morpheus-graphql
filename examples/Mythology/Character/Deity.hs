@@ -3,15 +3,15 @@
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 
-module Example.Character.Deity
+module Mythology.Character.Deity
   ( Deity(..)
   , dbDeity
   ) where
 
-import           Data.Morpheus.Kind   (GQLType (..), KIND, OBJECT)
-import           Data.Text            (Text)
-import           Example.Place.Places (Realm (..))
-import           GHC.Generics         (Generic)
+import           Data.Morpheus.Kind     (GQLType (..), KIND, OBJECT)
+import           Data.Text              (Text)
+import           GHC.Generics           (Generic)
+import           Mythology.Place.Places (Realm (..))
 
 type instance KIND Deity = OBJECT
 

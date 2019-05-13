@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveGeneric  #-}
 {-# LANGUAGE TypeOperators  #-}
 
-module Example.Mythology
+module Mythology.API
   ( mythologyApi
   ) where
 
@@ -12,8 +12,8 @@ import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (GQLArgs, GQLQuery)
 import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..))
 import           Data.Text                  (Text)
-import           Example.Character.Deity    (Deity (..), dbDeity)
 import           GHC.Generics               (Generic)
+import           Mythology.Character.Deity  (Deity (..), dbDeity)
 
 newtype Query = Query
   { deity :: DeityArgs ::-> Deity

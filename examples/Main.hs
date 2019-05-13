@@ -2,14 +2,15 @@
 
 module Main
   ( main
-  )
-where
+  ) where
 
-import           Control.Monad.IO.Class         ( liftIO )
+import           Control.Monad.IO.Class (liftIO)
 
-import           Mythology.Mythology            ( mythologyApi )
-import           Mythology.Schema               ( gqlApi )
+import           Deprecated.API         (gqlApi)
+import           Mythology.API          (mythologyApi)
 import           Web.Scotty
 
 main :: IO ()
-main = scotty 3000 $ post "/api" $ raw =<< (liftIO . gqlApi =<< body)
+main = scotty 3000 $ do
+  post "/api" $ raw =<< (liftIO . gqlApi =<< body)
+  post "/" $ raw =<< (liftIO . mythologyApi =<< body)
