@@ -6,5 +6,10 @@
   {
     "path": "fragmentOnlyOnA",
     "description": "when there is no any fragment for Type B returns empty object {}"
+  },
+  {
+    "path": "cannotBeSpreadOnType",
+    "description": "Fail: when there is fragment with incompatible type"
   }
+
 ]

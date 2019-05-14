@@ -1,0 +1,9 @@
+{
+  union {
+    ...FC
+  }
+}
+
+fragment FC on C {
+  aText
+}

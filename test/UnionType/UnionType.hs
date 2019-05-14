@@ -19,6 +19,8 @@ type instance KIND A = OBJECT
 
 type instance KIND B = OBJECT
 
+type instance KIND C = OBJECT
+
 type instance KIND AOrB = UNION
 
 data A = A
@@ -31,17 +33,25 @@ data B = B
   , bInt  :: Int
   } deriving (Generic, GQLType)
 
+data C = C
+  { cText :: Text
+  , cInt  :: Int
+  } deriving (Generic, GQLType)
+
 data AOrB
   = A' A
   | B' B
   deriving (Generic, GQLType)
 
-newtype Query = Query
+data Query = Query
   { union :: () ::-> [AOrB]
+  , fc    :: C
   } deriving (Generic, GQLQuery)
 
 resolveUnion :: () ::-> [AOrB]
 resolveUnion = return [A' A {aText = "at", aInt = 1}, B' B {bText = "bt", bInt = 2}]
 
 api :: ByteString -> IO ByteString
-api = interpreter GQLRoot {query = Query {union = resolveUnion}, mutation = (), subscription = ()}
+api =
+  interpreter
+    GQLRoot {query = Query {union = resolveUnion, fc = C {cText = "", cInt = 3}}, mutation = (), subscription = ()}
