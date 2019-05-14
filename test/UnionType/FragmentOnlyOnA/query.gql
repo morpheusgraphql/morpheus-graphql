@@ -1,0 +1,9 @@
+{
+  union {
+    ...OnA
+  }
+}
+
+fragment OnA on A {
+    a1
+}

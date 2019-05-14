@@ -1,0 +1,14 @@
+{
+  union {
+    ...OnA
+    ...OnB
+  }
+}
+
+fragment OnA on A {
+    a1
+}
+
+fragment OnA on B {
+    b1
+}
