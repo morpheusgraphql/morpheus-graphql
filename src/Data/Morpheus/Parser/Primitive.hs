@@ -50,9 +50,9 @@ jsString = do
 
 token :: Parser T.Text
 token = do
-  startChar <- letter <|> char '_'
+  firstChar <- letter <|> char '_'
   restToken <- many $ letter <|> char '_' <|> digit
-  return $ replaceType $ T.pack $ startChar : restToken
+  return $ replaceType $ T.pack $ firstChar : restToken
 
 variable :: Parser T.Text
 variable = skipSpace *> char '$' *> token
