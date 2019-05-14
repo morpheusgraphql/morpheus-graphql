@@ -1,0 +1,10 @@
+[
+  {
+    "id": "fragmentOnAAndB",
+    "description": "returns A and B fields with it __typename"
+  },
+  {
+    "id": "fragmentOnlyOnA",
+    "description": "when there is no any fragment for Type B returns empty object {}"
+  }
+]

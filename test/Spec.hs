@@ -26,14 +26,14 @@ data Case = Case
 
 holisticAPITest :: IO [TestTree]
 holisticAPITest = do
-  cases' <- getCases
-  sequence $ testByFiles <$> cases'
+  cases' <- getCases "lib"
+  sequence $ testByFiles api <$> cases'
 
-testByFiles :: Case -> IO TestTree
-testByFiles (Case path' description') = do
+testByFiles :: (ByteString -> IO ByteString) -> Case -> IO TestTree
+testByFiles api' (Case path' description') = do
   query' <- getGQLBody path'
   response' <- getResponseBody path'
-  result' <- api $ packGQLRequest query'
+  result' <- api' $ packGQLRequest query'
   case decode result' of
     Nothing -> assertFailure "Bad Responce"
     Just x  -> return $ testCase description' $ x @=? response'
