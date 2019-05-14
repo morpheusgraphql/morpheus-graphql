@@ -13,7 +13,7 @@ import           Data.Maybe                 (fromMaybe)
 import           Data.Text                  (Text, unpack)
 
 path :: Text -> String
-path name = "test/lib/" ++ unpack name
+path name = "test/" ++ unpack name
 
 gqlLib :: Text -> String
 gqlLib x = path x ++ "/query.gql"
