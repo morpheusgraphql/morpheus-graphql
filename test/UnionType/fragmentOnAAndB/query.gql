@@ -1,9 +1,15 @@
 {
   union {
-    ...D
+    __typename
+    ...FA
+    ...FB
   }
 }
 
-fragment D on A {
-	a
+fragment FA on A {
+  aText
+}
+
+fragment FB on B {
+  bText
 }

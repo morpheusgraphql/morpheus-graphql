@@ -1,13 +1,14 @@
 {
-  "errors": [
-    {
-      "message": "Required Argument: \"coordinates\" was not Defined",
-      "locations": [
-        {
-          "line": 3,
-          "column": 12
-        }
-      ]
-    }
-  ]
+  "data": {
+    "union": [
+      {
+        "__typename": "A",
+        "aText": "at"
+      },
+      {
+        "__typename": "B",
+        "bText": "bt"
+      }
+    ]
+  }
 }
