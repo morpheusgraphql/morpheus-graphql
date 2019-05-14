@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 
-module UnionType.UnionType
+module UnionType.API
   ( api
   ) where
 
