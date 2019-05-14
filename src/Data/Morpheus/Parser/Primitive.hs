@@ -51,7 +51,7 @@ jsString = do
 token :: Parser T.Text
 token = do
   startChar <- letter <|> char '_'
-  restToken <- some $ letter <|> char '_' <|> digit
+  restToken <- many $ letter <|> char '_' <|> digit
   return $ replaceType $ T.pack $ startChar : restToken
 
 variable :: Parser T.Text
