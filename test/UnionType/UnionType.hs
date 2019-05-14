@@ -22,13 +22,13 @@ type instance KIND B = OBJECT
 type instance KIND AOrB = UNION
 
 data A = A
-  { a1 :: Text
-  , a2 :: Text
+  { aText :: Text
+  , aInt  :: Int
   } deriving (Generic, GQLType)
 
 data B = B
-  { b1 :: Text
-  , b2 :: Text
+  { bText :: Text
+  , bInt  :: Int
   } deriving (Generic, GQLType)
 
 data AOrB
@@ -41,7 +41,7 @@ newtype Query = Query
   } deriving (Generic, GQLQuery)
 
 resolveUnion :: () ::-> [AOrB]
-resolveUnion = return [A' A {a1 = "A1", a2 = "A2"}, B' B {b1 = "B1", b2 = "B2"}]
+resolveUnion = return [A' A {aText = "FA", aInt = 1}, B' B {bText = "FB", bInt = 2}]
 
 api :: ByteString -> IO ByteString
 api = interpreter GQLRoot {query = Query {union = resolveUnion}, mutation = (), subscription = ()}

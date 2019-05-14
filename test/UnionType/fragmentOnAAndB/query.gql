@@ -1,14 +1,9 @@
 {
   union {
-    ...OnA
-    ...OnB
+    ...D
   }
 }
 
-fragment OnA on A {
-    a1
-}
-
-fragment OnA on B {
-    b1
+fragment D on A {
+	a
 }

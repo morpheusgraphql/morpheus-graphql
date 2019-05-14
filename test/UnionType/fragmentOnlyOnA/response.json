@@ -1,22 +1,3 @@
 {
-  "errors": [
-    {
-      "message": "Unknown Argument \"name\" on Field \"user\".",
-      "locations": [
-        {
-          "line": 2,
-          "column": 13
-        }
-      ]
-    },
-    {
-      "message": "Unknown Argument \"parent\" on Field \"user\".",
-      "locations": [
-        {
-          "line": 2,
-          "column": 26
-        }
-      ]
-    }
-  ]
+  "data": []
 }

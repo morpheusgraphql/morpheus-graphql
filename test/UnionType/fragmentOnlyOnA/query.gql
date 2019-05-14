@@ -1,9 +1,9 @@
-{
+query FAUnity {
   union {
-    ...OnA
+    ...FA
   }
 }
 
-fragment OnA on A {
-    a1
+fragment FA on A {
+  a1
 }

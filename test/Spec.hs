@@ -34,7 +34,7 @@ holisticAPITest = do
 testUnionType :: IO [TestTree]
 testUnionType = do
   cases' <- getCases "UnionType"
-  sequence $ testByFiles Holistic.api <$> map (\x -> x {path = T.concat ["UnionType", "/", path x]}) cases'
+  sequence $ testByFiles Union.api <$> map (\x -> x {path = T.concat ["UnionType", "/", path x]}) cases'
 
 testByFiles :: (ByteString -> IO ByteString) -> Case -> IO TestTree
 testByFiles api' (Case path' description') = do
