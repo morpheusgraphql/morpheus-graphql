@@ -1,0 +1,21 @@
+{
+  "errors": [
+    {
+      "message": "Cannot spread fragment \"A\" within itself via A,C,A.",
+      "locations": [
+        {
+          "line": 7,
+          "column": 0
+        },
+        {
+          "line": 9,
+          "column": 2
+        },
+        {
+          "line": 17,
+          "column": 2
+        }
+      ]
+    }
+  ]
+}
