@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 
-module Holistic.API
+module Feature.Holistic.API
   ( api
   ) where
 

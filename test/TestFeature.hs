@@ -27,8 +27,8 @@ data Case = Case
 testFeature :: (ByteString -> IO ByteString) -> Text -> IO TestTree
 testFeature api' dir' = do
   cases' <- getCases (unpack dir')
-  tests' <- sequence $ testByFiles api' <$> map (\x -> x {path = T.concat [dir', "/", path x]}) cases'
-  return $ testGroup (unpack dir') tests'
+  test' <- sequence $ testByFiles api' <$> map (\x -> x {path = T.concat [dir', "/", path x]}) cases'
+  return $ testGroup (unpack dir') test'
 
 testByFiles :: (ByteString -> IO ByteString) -> Case -> IO TestTree
 testByFiles api' (Case path' description') = do

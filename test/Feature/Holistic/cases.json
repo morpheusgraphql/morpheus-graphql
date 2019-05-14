@@ -1,38 +1,38 @@
 [
   {
-    "id": "fragment/loopingFragment",
+    "path": "fragment/loopingFragment",
     "description": "fail when: fragment directly or indirectly references itself"
   },
   {
-    "id": "arguments/unknownArguments",
+    "path": "arguments/unknownArguments",
     "description": "fail when: argument on field is not recognised by the schema"
   },
   {
-    "id": "arguments/nameConflict",
+    "path": "arguments/nameConflict",
     "description": "fail when: argument names on field are not unique"
   },
   {
-    "id":"arguments/undefinedArgument",
+    "path":"arguments/undefinedArgument",
     "description":"fail when: required argument is not defined in selection "
   },
   {
-    "id":"selection/unknownField",
+    "path":"selection/unknownField",
     "description":"fail when: selected field does not exist on type"
   },
   {
-    "id":"selection/hasNoSubFields",
+    "path":"selection/hasNoSubFields",
     "description":"fail when: selected subFields on non object type"
   },
   {
-    "id":"selection/mustHaveSubFields",
+    "path":"selection/mustHaveSubFields",
     "description":"fail when: is not selected subFields on object type"
   },
   {
-    "id":"selection/nameConflict",
+    "path":"selection/nameConflict",
     "description":"fail when: selected fields has same name"
   },
   {
-    "id": "variables/unusedVariables",
+    "path": "variables/unusedVariables",
     "description": "fail when: variable is defined by the operation but did not used in selection"
   }
 ]
