@@ -1,9 +1,9 @@
-query FAUnity {
+{
   union {
     ...FA
   }
 }
 
 fragment FA on A {
-  a1
+  aText
 }

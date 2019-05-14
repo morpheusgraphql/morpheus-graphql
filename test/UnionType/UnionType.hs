@@ -41,7 +41,7 @@ newtype Query = Query
   } deriving (Generic, GQLQuery)
 
 resolveUnion :: () ::-> [AOrB]
-resolveUnion = return [A' A {aText = "FA", aInt = 1}, B' B {bText = "FB", bInt = 2}]
+resolveUnion = return [A' A {aText = "at", aInt = 1}, B' B {bText = "bt", bInt = 2}]
 
 api :: ByteString -> IO ByteString
 api = interpreter GQLRoot {query = Query {union = resolveUnion}, mutation = (), subscription = ()}
