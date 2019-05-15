@@ -19,15 +19,15 @@ unknownFragment key' position' = errorMessage position' text
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
 cannotBeSpreadOnType :: Text -> Text -> Position -> Text -> GQLErrors
-cannotBeSpreadOnType key' type' position' selectionType = errorMessage position' text
+cannotBeSpreadOnType key' type' position' selectionType' = errorMessage position' text
   where
     text =
       T.concat
         [ "Fragment \""
         , key'
         , "\" cannot be spread here as objects of type \""
-        , type'
+        , selectionType'
         , "\" can never be of type \""
-        , selectionType
+        , type'
         , "\"."
         ]
