@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Lib
   ( getGQLBody
   , getResponseBody
@@ -12,7 +13,7 @@ import           Data.Maybe                 (fromMaybe)
 import           Data.Text                  (Text, unpack)
 
 path :: Text -> String
-path name = "test/lib/" ++ unpack name
+path name = "test/" ++ unpack name
 
 gqlLib :: Text -> String
 gqlLib x = path x ++ "/query.gql"
@@ -23,8 +24,8 @@ resLib x = path x ++ "/response.json"
 getGQLBody :: Text -> IO ByteString
 getGQLBody p = L.readFile (gqlLib p)
 
-getCases :: FromJSON a => IO [a]
-getCases = fromMaybe [] . decode <$> L.readFile (path "cases.json")
+getCases :: FromJSON a => String -> IO [a]
+getCases dir = fromMaybe [] . decode <$> L.readFile ("test/" ++ dir ++ "/cases.json")
 
 getResponseBody :: Text -> IO Value
 getResponseBody p = fromMaybe Null . decode <$> L.readFile (resLib p)
