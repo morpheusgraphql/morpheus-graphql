@@ -35,6 +35,7 @@
 
 ### Fixed:
 
+- parser can read fields with digits like: a1 , _1
 - introspection:
   - argument supports `Non-Null` and `List`
   - every field has correct kind

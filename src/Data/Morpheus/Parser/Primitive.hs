@@ -49,7 +49,10 @@ jsString = do
   pure $ Scalar $ String $ T.pack value
 
 token :: Parser T.Text
-token = replaceType . T.pack <$> some (letter <|> char '_')
+token = do
+  firstChar <- letter <|> char '_'
+  restToken <- many $ letter <|> char '_' <|> digit
+  return $ replaceType $ T.pack $ firstChar : restToken
 
 variable :: Parser T.Text
 variable = skipSpace *> char '$' *> token
