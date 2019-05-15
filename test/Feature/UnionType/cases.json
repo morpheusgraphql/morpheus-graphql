@@ -1,0 +1,18 @@
+[
+  {
+    "path": "fragmentOnAAndB",
+    "description": "returns field __typename and fields by Fragment Type "
+  },
+  {
+    "path": "fragmentOnlyOnA",
+    "description": "returns empty object {}, when there is no any fragment for Type this Type"
+  },
+  {
+    "path": "cannotBeSpreadOnType",
+    "description": "Fail when: there is fragment with incompatible type"
+  },
+  {
+    "path": "selectionWithoutFragmentNotAllowed",
+    "description": "Fail when: user tries to directly select field without any Fragment"
+  }
+]
