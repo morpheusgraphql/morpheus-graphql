@@ -44,7 +44,7 @@
       - Input Object: ✅ (>= 0.1.0 )
       - Enum: ✅
   - Fragments: ✅
-  - Inline Fragments: ⛔️
+  - Inline Fragments: (>= 0.1.0)
   - Aliases: ⛔️
   - Operator
     - Query: ✅
