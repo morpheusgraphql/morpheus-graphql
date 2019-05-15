@@ -48,7 +48,7 @@
   - Aliases: ⛔️
   - Operator
     - Query: ✅
-    - Muatation: ✅
+    - Mutation: ✅
     - Subscription : ✅ (>= 0.1.0 )
     - Operator Arguments:
       - argumentTypes : ✅
@@ -85,7 +85,7 @@
 * **Spread:**
 
   - **unknownFragment**: ✅
-  - **cannotBeSpreadOnType**: ✅
+  - **cannotBeSpreadOnType**: ✅ + 🧪
   - **nameConflict**: ⛔️
 
 ### Fragment Errors:
@@ -93,7 +93,7 @@
 **Fragment**: whole spread will be done there (for performance reason), Selection and Argument will be Validated on Query, because there will be no unused fragment we will validate all subfields.
 
 - **unusedFragment**: ⛔️
-- **unknownTargetType**: ✅
+- **unknownTargetType**: ✅ + 🧪
 - **cannotSpreadWithinItself**: ✅ + 🧪
 - **nameConflict**: duplicate fragment with same name ⛔️
 
