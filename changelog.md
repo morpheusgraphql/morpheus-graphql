@@ -23,6 +23,7 @@
 - `::->` Resolver is Monad
 
 - Basic skeleton for subscriptions. An actual way to use subscriptions is still work in progress.
+- inline Fragment Parsing
 
 ### Changed
 
@@ -35,7 +36,7 @@
 
 ### Fixed:
 
-- parser can read fields with digits like: a1 , _1
+- parser can read fields with digits like: a1 , \_1
 - introspection:
   - argument supports `Non-Null` and `List`
   - every field has correct kind
