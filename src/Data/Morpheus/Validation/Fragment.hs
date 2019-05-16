@@ -20,7 +20,8 @@ type NodeEdges = (Node, [Node])
 type Graph = [NodeEdges]
 
 scanForSpread :: TypeLib -> GQLQueryRoot -> (Text, RawSelection) -> [Node]
-scanForSpread lib' root (_', RawSelectionSet _ selectors _) = concatMap (scanForSpread lib' root) selectors
+scanForSpread lib' root' (_, RawSelectionSet _ selectors _) = concatMap (scanForSpread lib' root') selectors
+scanForSpread lib' root' (_, InlineFragment _ selectors _)  = concatMap (scanForSpread lib' root') selectors
 scanForSpread _ _ (_, RawField {})                          = []
 scanForSpread _ _ (_, Spread value pos)                     = [EnhancedKey value pos]
 
