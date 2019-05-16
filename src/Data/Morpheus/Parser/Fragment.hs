@@ -18,7 +18,7 @@ fragment = do
   skipSpace
   name <- token
   skipSpace
-  _ <- string "on"
+  _ <- string "on "
   skipSpace
   targetName <- token
   skipSpace

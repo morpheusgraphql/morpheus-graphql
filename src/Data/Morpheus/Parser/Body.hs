@@ -12,21 +12,25 @@ import           Data.Morpheus.Parser.Primitive         (getPosition, separator,
 import           Data.Morpheus.Types.Query.RawSelection (RawArguments, RawSelection (..), RawSelectionSet)
 import           Data.Text                              (Text)
 
-spread :: Parser (Text, RawSelection)
-spread = do
+spreadLiteral :: Parser Int
+spreadLiteral = do
   skipSpace
   index <- getPosition
   _ <- string "..."
+  return index
+
+spread :: Parser (Text, RawSelection)
+spread = do
+  index <- spreadLiteral
+  skipSpace
   key' <- token
   return (key', Spread key' index)
 
 inlineFragment :: Parser (Text, RawSelection)
 inlineFragment = do
+  index <- spreadLiteral
   skipSpace
-  index <- getPosition
-  _ <- string "..."
-  skipSpace
-  _ <- string "on"
+  _ <- string "on "
   skipSpace
   onType' <- token
   skipSpace
