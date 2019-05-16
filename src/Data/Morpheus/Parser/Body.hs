@@ -6,18 +6,12 @@ module Data.Morpheus.Parser.Body
   ) where
 
 import           Control.Applicative                    ((<|>))
-import           Data.Attoparsec.Text                   (Parser, char, sepBy, skipSpace, string, try)
+import           Data.Attoparsec.Text                   (Parser, char, sepBy, skipSpace, try)
 import           Data.Morpheus.Parser.Arguments         (arguments)
 import           Data.Morpheus.Parser.Primitive         (getPosition, separator, token)
+import           Data.Morpheus.Parser.Therms            (onType, spreadLiteral)
 import           Data.Morpheus.Types.Query.RawSelection (RawArguments, RawSelection (..), RawSelectionSet)
 import           Data.Text                              (Text)
-
-spreadLiteral :: Parser Int
-spreadLiteral = do
-  skipSpace
-  index <- getPosition
-  _ <- string "..."
-  return index
 
 spread :: Parser (Text, RawSelection)
 spread = do
@@ -29,10 +23,7 @@ spread = do
 inlineFragment :: Parser (Text, RawSelection)
 inlineFragment = do
   index <- spreadLiteral
-  skipSpace
-  _ <- string "on "
-  skipSpace
-  onType' <- token
+  onType' <- onType
   skipSpace
   fragmentBody <- entries
   pure ("INLINE_FRAGMENT", InlineFragment onType' fragmentBody index)
