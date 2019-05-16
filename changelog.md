@@ -23,7 +23,7 @@
 - `::->` Resolver is Monad
 
 - Basic skeleton for subscriptions. An actual way to use subscriptions is still work in progress.
-- inline Fragment Parsing
+- inline Fragments
 
 ### Changed
 
