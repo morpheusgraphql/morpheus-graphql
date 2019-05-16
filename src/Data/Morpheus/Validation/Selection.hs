@@ -55,7 +55,7 @@ splitFragment _ _ _ ("__typename", RawField [] field' position') =
 splitFragment _ type' _ (key', RawSelectionSet _ _ position') = Left $ cannotQueryField key' type' position'
 splitFragment _ type' _ (key', RawField _ _ position') = Left $ cannotQueryField key' type' position'
 splitFragment _ _ posTypes' (key', InlineFragment target' selectors' position') = do
-  validatedFragment' <- castFragmentType "TODO: inline fragment has no Name in error" position' posTypes' fragment'
+  validatedFragment' <- castFragmentType Nothing position' posTypes' fragment'
   return ([validatedFragment'], [])
   where
     fragment' = F.Fragment {F.key = key', F.target = target', F.position = position', F.content = selectors'}
@@ -104,5 +104,5 @@ validateSelection lib' fragments' variables' parent'@(GObject _ core) (key', Spr
 validateSelection lib' fragments' variables' parent'@(GObject _ core) (key', InlineFragment target' selectors' position') =
   validateType >>= castFragment lib' fragments' variables' parent'
   where
-    validateType = castFragmentType "TODO: inline fragment has no Name in error" position' [name core] fragment'
+    validateType = castFragmentType Nothing position' [name core] fragment'
     fragment' = F.Fragment {F.key = key', F.target = target', F.position = position', F.content = selectors'}

@@ -18,7 +18,7 @@ getFragment position' id' lib =
     Nothing       -> Left $ unknownFragment id' position'
     Just fragment -> pure fragment
 
-castFragmentType :: Text -> Position -> [Text] -> Fragment -> Validation Fragment
+castFragmentType :: Maybe Text -> Position -> [Text] -> Fragment -> Validation Fragment
 castFragmentType key' position' targets' fragment =
   if target fragment `elem` targets'
     then pure fragment
@@ -26,4 +26,4 @@ castFragmentType key' position' targets' fragment =
 
 resolveSpread :: FragmentLib -> [Text] -> Position -> Text -> Validation Fragment
 resolveSpread fragments' allowedTargets' position' key' =
-  getFragment position' key' fragments' >>= castFragmentType key' position' allowedTargets'
+  getFragment position' key' fragments' >>= castFragmentType (Just key') position' allowedTargets'
