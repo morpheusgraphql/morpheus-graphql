@@ -54,6 +54,11 @@ splitFragment _ _ _ ("__typename", RawField [] field' position') =
   return ([], [("__typename", Field [] field' position')])
 splitFragment _ type' _ (key', RawSelectionSet _ _ position') = Left $ cannotQueryField key' type' position'
 splitFragment _ type' _ (key', RawField _ _ position') = Left $ cannotQueryField key' type' position'
+splitFragment _ _ posTypes' (key', InlineFragment target' selectors' position') = do
+  validatedFragment' <- castFragmentType "TODO: inline fragment has no Name in error" position' posTypes' fragment'
+  return ([validatedFragment'], [])
+  where
+    fragment' = F.Fragment {F.key = key', F.target = target', F.position = position', F.content = selectors'}
 
 categorizeType :: [Fragment] -> OutputObject -> (OutputObject, [Fragment])
 categorizeType fragments' type'@(GObject _ core) = (type', filter matches fragments')
