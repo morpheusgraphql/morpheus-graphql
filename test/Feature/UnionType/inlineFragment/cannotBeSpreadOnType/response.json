@@ -1,0 +1,9 @@
+{
+  "errors": [{
+    "message": "Fragment \"FC\" cannot be spread here as objects of type \"AB\" can never be of type \"C\".",
+    "locations": [{
+      "line": 3,
+      "column": 4
+    }]
+  }]
+}
