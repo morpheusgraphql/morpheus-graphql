@@ -1,6 +1,6 @@
 {
   user {
-    ... on user {
+    ... on User {
       name
     }
   }

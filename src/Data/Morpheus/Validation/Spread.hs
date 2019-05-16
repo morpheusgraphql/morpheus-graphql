@@ -1,6 +1,7 @@
 module Data.Morpheus.Validation.Spread
   ( getFragment
   , resolveSpread
+  , castFragmentType
   ) where
 
 import qualified Data.Map                           as M (lookup)
