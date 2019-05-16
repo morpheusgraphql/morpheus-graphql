@@ -49,7 +49,7 @@ entries :: Parser RawSelectionSet
 entries = do
   _ <- char '{'
   skipSpace
-  entries' <- separated (entry <|> spread <|> inlineFragment)
+  entries' <- separated (entry <|> inlineFragment <|> spread)
   skipSpace
   _ <- char '}'
   return entries'
