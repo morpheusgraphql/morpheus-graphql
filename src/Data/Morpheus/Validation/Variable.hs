@@ -46,7 +46,8 @@ handleInputError key' position' (Left error') = Left $ variableGotInvalidValue k
 handleInputError key' _ (Right value') = pure (key', value')
 
 lookupAndValidateValueOnBody :: TypeLib -> Variables -> (Text, Variable) -> Validation (Text, JSType)
-lookupAndValidateValueOnBody typeLib root (key', Variable type' pos) = getVariableType type' pos typeLib >>= checkType
+lookupAndValidateValueOnBody typeLib root (key', Variable _ type' _ pos) =
+  getVariableType type' pos typeLib >>= checkType
   where
     checkType _type = do
       variableValue <- lookupBodyValue pos root key'
@@ -58,7 +59,7 @@ resolveOperationVariables typeLib root references' variables' = do
   M.fromList <$> mapM (lookupAndValidateValueOnBody typeLib root) variables'
 
 varToKey :: (Text, Variable) -> EnhancedKey
-varToKey (key', Variable _ position') = EnhancedKey key' position'
+varToKey (key', Variable _ _ _ position') = EnhancedKey key' position'
 
 checkUnusedVariable :: [EnhancedKey] -> [(Text, Variable)] -> Validation ()
 checkUnusedVariable references' variables' =
