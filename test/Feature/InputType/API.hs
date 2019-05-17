@@ -22,9 +22,13 @@ data F1Args = F1Args
   , arg2 :: Maybe Int
   } deriving (Generic, GQLArgs)
 
+newtype F2Args = F2Args
+  { argList :: [Text]
+  } deriving (Generic, GQLArgs)
+
 data A = A
   { a1 :: F1Args ::-> Text
-  , a2 :: Int
+  , a2 :: F2Args ::-> Int
   } deriving (Generic, GQLType)
 
 newtype Query = Query
@@ -32,4 +36,5 @@ newtype Query = Query
   } deriving (Generic, GQLQuery)
 
 api :: ByteString -> IO ByteString
-api = interpreter GQLRoot {query = Query {q1 = A {a1 = return "a1Test", a2 = 1}}, mutation = (), subscription = ()}
+api =
+  interpreter GQLRoot {query = Query {q1 = A {a1 = return "a1Test", a2 = return 1}}, mutation = (), subscription = ()}

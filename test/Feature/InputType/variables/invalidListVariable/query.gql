@@ -1,4 +1,4 @@
-query invalidListVariable($v1: [String!]! ) {
+query invalidListVariable($v1: [String!] ) {
   q1 {
     a2(arg1: $v1)
   }
