@@ -4,22 +4,15 @@ module Data.Morpheus.Parser.Operator
 
 import           Control.Applicative                ((<|>))
 import           Data.Attoparsec.Text               (Parser, char, sepBy, skipSpace, string, try)
-import           Data.Morpheus.Parser.Primitive     (getPosition, token, variable)
-import           Data.Morpheus.Types.Query.Operator (TypeWrappers (..), Variable (..), VariableDefinitions)
+import           Data.Morpheus.Parser.Primitive     (getPosition, nonNUll, token, variable)
+import           Data.Morpheus.Types.Query.Operator (ListWrapper (..), Variable (..), VariableDefinitions)
 import           Data.Text                          (Text)
 
-nonNUll :: Parser [TypeWrappers]
-nonNUll = do
-  skipSpace
-  _ <- char '!'
-  return [NON_NULL]
-
-wrapped :: Parser ([TypeWrappers], Text)
+wrapped :: Parser ([ListWrapper], Text)
 wrapped = do
   skipSpace
   variableType <- token
-  nonNull' <- nonNUll
-  return (nonNull', variableType)
+  return ([], variableType)
 
 operatorArgument :: Parser (Text, Variable)
 operatorArgument = do
@@ -29,7 +22,8 @@ operatorArgument = do
   skipSpace
   _ <- char ':'
   (wrappers', type') <- wrapped
-  pure (variableName, Variable wrappers' type' pos)
+  nonNull' <- nonNUll
+  pure (variableName, Variable wrappers' type' nonNull' pos)
 
 operatorArguments :: Parser VariableDefinitions
 operatorArguments = do

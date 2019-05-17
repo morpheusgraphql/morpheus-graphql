@@ -14,6 +14,9 @@ replaceType :: T.Text -> T.Text
 replaceType "type" = "_type"
 replaceType x      = x
 
+nonNUll :: Parser Bool
+nonNUll = (char '!' $> True) <|> pure False
+
 boolTrue :: Parser JSType
 boolTrue = string "true" $> Scalar (Boolean True)
 
