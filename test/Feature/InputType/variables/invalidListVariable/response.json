@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Variable \"$i1\" got invalid value [null]; Expected non-nullable type String! not to be null at value[0].",
+      "locations": [
+        {
+          "line": 1,
+          "column": 25
+        }
+      ]
+    }
+  ]
+}
