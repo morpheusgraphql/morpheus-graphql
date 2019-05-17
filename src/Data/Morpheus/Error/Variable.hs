@@ -58,7 +58,7 @@ undefinedVariable operation' position' key' = errorMessage position' text
   where
     text = T.concat ["Variable \"", key', "\" is not defined by operation \"", operation', "\"."]
 
-uninitializedVariable :: Position -> Text -> GQLErrors
-uninitializedVariable position' key' = errorMessage position' text
+uninitializedVariable :: Position -> Text -> Text -> GQLErrors
+uninitializedVariable position' type' key' = errorMessage position' text
   where
-    text = T.concat ["Value for Variable \"$", key', "\" is not initialized in Query body."]
+    text = T.concat ["Variable \"$", key', "\" of required type \"", type', "!\" was not provided."]

@@ -41,8 +41,8 @@ handleInputError :: Text -> Int -> InputValidation JSType -> Validation (Text, J
 handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
 handleInputError key' _ (Right value') = pure (key', value')
 
-lookupBodyValue :: Position -> Variables -> Text -> Validation JSType
-lookupBodyValue position' variables' key' = lookupVariable variables' key' (uninitializedVariable position')
+lookupBodyValue :: Position -> Variables -> Text -> Text -> Validation JSType
+lookupBodyValue position' variables' key' type' = lookupVariable variables' key' (uninitializedVariable position' type')
 
 lookupNullableValue :: Variables -> Text -> Validation (Text, JSType)
 lookupNullableValue variables' key' =
@@ -51,14 +51,14 @@ lookupNullableValue variables' key' =
     Just value -> pure (key', value)
 
 lookupAndValidateValueOnBody :: TypeLib -> Variables -> (Text, Variable) -> Validation (Text, JSType)
-lookupAndValidateValueOnBody typeLib variables' (key', Variable _ type' required' pos) =
+lookupAndValidateValueOnBody typeLib variables' (key', Variable _ type' required' position') =
   if required'
-    then getVariableType type' pos typeLib >>= checkType
+    then getVariableType type' position' typeLib >>= checkType
     else lookupNullableValue variables' key'
   where
     checkType _type = do
-      variableValue <- lookupBodyValue pos variables' key'
-      handleInputError key' pos $ validateInputValue False typeLib _type (key', variableValue)
+      variableValue <- lookupBodyValue position' variables' key' type'
+      handleInputError key' position' $ validateInputValue False typeLib _type (key', variableValue)
 
 varToKey :: (Text, Variable) -> EnhancedKey
 varToKey (key', Variable _ _ _ position') = EnhancedKey key' position'
