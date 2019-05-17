@@ -19,8 +19,9 @@ type ValidOperator = Operator Arguments SelectionSet
 
 type ValidOperator' = Operator' Arguments SelectionSet
 
-newtype ListWrapper =
-  ListWrapper Bool
+newtype ListWrapper = ListWrapper
+  { nonNullElements :: Bool
+  } deriving (Show)
 
 data Variable = Variable
   { variableType         :: Key
