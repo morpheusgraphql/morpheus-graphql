@@ -13,6 +13,7 @@ import           Data.Morpheus.Types.Query.Operator (Operator (..), Operator' (.
 
 query :: Parser RawOperator
 query = do
+  skipSpace
   pos <- getPosition
   (name, args) <- try (operatorHead "query") <|> pure ("", [])
   skipSpace
