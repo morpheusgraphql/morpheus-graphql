@@ -4,20 +4,16 @@ module Data.Morpheus.Parser.Mutation
   ( mutation
   ) where
 
-import           Control.Applicative                ((<|>))
-import           Data.Attoparsec.Text               (Parser, skipSpace, string, try)
+import           Data.Attoparsec.Text               (Parser, skipSpace)
 import           Data.Morpheus.Parser.Body          (entries)
-import           Data.Morpheus.Parser.Operator      (operatorArguments)
-import           Data.Morpheus.Parser.Primitive     (getPosition, token)
+import           Data.Morpheus.Parser.Operator      (operatorHead)
+import           Data.Morpheus.Parser.Primitive     (getPosition)
 import           Data.Morpheus.Types.Query.Operator (Operator (..), RawOperator)
 
 mutation :: Parser RawOperator
 mutation = do
   pos <- getPosition
-  _ <- string "mutation "
-  skipSpace
-  name <- token
-  variables <- try (skipSpace *> operatorArguments) <|> pure []
+  (name, variables) <- operatorHead "mutation"
   skipSpace
   sel <- entries
   pure $ Mutation name variables sel pos

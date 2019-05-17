@@ -1,8 +1,9 @@
 module Data.Morpheus.Parser.Operator
-  ( operatorArguments
+  ( operatorHead
   ) where
 
-import           Data.Attoparsec.Text               (Parser, char, sepBy, skipSpace)
+import           Control.Applicative                ((<|>))
+import           Data.Attoparsec.Text               (Parser, char, sepBy, skipSpace, string, try)
 import           Data.Morpheus.Parser.Primitive     (getPosition, token, variable)
 import           Data.Morpheus.Types.Query.Operator (Variable (..), VariableDefinitions)
 import           Data.Text                          (Text)
@@ -27,3 +28,12 @@ operatorArguments = do
   skipSpace
   _ <- char ')'
   pure parameters
+
+operatorHead :: Text -> Parser (Text, VariableDefinitions)
+operatorHead kind' = do
+  _ <- string kind'
+  _ <- char ' '
+  skipSpace
+  queryName <- token
+  variables <- try (skipSpace *> operatorArguments) <|> pure []
+  pure (queryName, variables)
