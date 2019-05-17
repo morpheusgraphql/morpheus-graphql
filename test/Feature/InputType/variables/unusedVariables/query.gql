@@ -1,8 +1,5 @@
-query unusedVariables($city: CityID, $num: Int, $list: Int) {
-  user {
-    name
-    office(cityID: $city) {
-      street
-    }
+query TestUnusedVariables ($v1: String, $v2: String, $v3: Int) {
+  q1 {
+    a1(arg1: $v1)
   }
 }

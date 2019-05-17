@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Variable \"$num\" is never used in operation \"Query\".",
+      "message": "Variable \"$v2\" is never used in operation \"TestUnusedVariables\".",
       "locations": [
         {
           "line": 1,
@@ -10,7 +10,7 @@
       ]
     },
     {
-      "message": "Variable \"$list\" is never used in operation \"Query\".",
+      "message": "Variable \"$v3\" is never used in operation \"TestUnusedVariables\".",
       "locations": [
         {
           "line": 1,

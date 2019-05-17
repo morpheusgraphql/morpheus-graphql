@@ -1,0 +1,5 @@
+query TestNullableVariable($i1: String) {
+  q1 {
+    a1(arg1: $i1)
+  }
+}
