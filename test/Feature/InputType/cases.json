@@ -1,0 +1,14 @@
+[
+  {
+    "path": "variables/unusedVariables",
+    "description": "fail when: variable is defined by the operation but did not used in selection"
+  },
+  {
+    "path": "variables/nonNullVariable",
+    "description": "fail when: variable is defined by the operation but can't found on request body"
+  },
+  {
+    "path": "variables/nullableVariable",
+    "description": "don't fail when: variable is defined by the operation but can't found on request body"
+  }
+]

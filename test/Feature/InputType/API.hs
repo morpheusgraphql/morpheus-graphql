@@ -32,4 +32,4 @@ newtype Query = Query
   } deriving (Generic, GQLQuery)
 
 api :: ByteString -> IO ByteString
-api = interpreter GQLRoot {query = Query {q1 = A {a1 = return "at", a2 = 1}}, mutation = (), subscription = ()}
+api = interpreter GQLRoot {query = Query {q1 = A {a1 = return "a1Test", a2 = 1}}, mutation = (), subscription = ()}
