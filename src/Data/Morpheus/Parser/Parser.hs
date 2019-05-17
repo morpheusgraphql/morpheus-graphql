@@ -9,6 +9,7 @@ import           Data.Map                          (fromList, toList)
 import           Data.Maybe                        (maybe)
 import           Data.Morpheus.Error.Syntax        (syntaxError)
 import           Data.Morpheus.Parser.Fragment     (fragment)
+import           Data.Morpheus.Parser.Internal     (GQLSyntax (..), endParsing)
 import qualified Data.Morpheus.Parser.Mutation     as M
 import           Data.Morpheus.Parser.Primitive    (getLines)
 import qualified Data.Morpheus.Parser.Query        as Q
@@ -23,15 +24,13 @@ request :: Parser GQLQueryRoot
 request = do
   queryValue <- Q.query <|> M.mutation <|> S.subscription
   fragmentLib <- fromList <$> many fragment
-  skipSpace
-  endOfInput
   pure GQLQueryRoot {queryBody = queryValue, fragments = fragmentLib, inputVariables = []}
 
 getVariables :: GQLRequest -> [(Text, JSType)]
 getVariables request' = maybe [] toList (variables request')
 
-parseReq :: GQLRequest -> Either String GQLQueryRoot
-parseReq requestBody = parseOnly request $ query requestBody
+parseReq :: GQLRequest -> Either String (GQLSyntax GQLQueryRoot)
+parseReq requestBody = parseOnly (request >>= endParsing) $ query requestBody
 
 parseLineBreaks :: GQLRequest -> [Int]
 parseLineBreaks requestBody =
@@ -42,5 +41,6 @@ parseLineBreaks requestBody =
 parseGQL :: GQLRequest -> Validation GQLQueryRoot
 parseGQL requestBody =
   case parseReq requestBody of
-    Right root      -> Right $ root {inputVariables = getVariables requestBody}
-    Left parseError -> Left $ syntaxError (pack $ show parseError) 0
+    Right (Valid root)         -> Right $ root {inputVariables = getVariables requestBody}
+    Right (Invalid text index) -> Left $ syntaxError text index
+    Left parseError            -> Left $ syntaxError (pack $ show parseError) 0
