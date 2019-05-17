@@ -4,7 +4,7 @@ module Data.Morpheus.Parser.Parser
   ) where
 
 import           Control.Applicative               (many, (<|>))
-import           Data.Attoparsec.Text              (Parser, endOfInput, parseOnly, skipSpace)
+import           Data.Attoparsec.Text              (Parser, parseOnly)
 import           Data.Map                          (fromList, toList)
 import           Data.Maybe                        (maybe)
 import           Data.Morpheus.Error.Syntax        (syntaxError)
