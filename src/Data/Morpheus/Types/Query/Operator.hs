@@ -5,6 +5,7 @@ module Data.Morpheus.Types.Query.Operator
   , Variable(..)
   , VariableDefinitions
   , ListWrapper(..)
+  , Operator'(..)
   ) where
 
 import           Data.Morpheus.Types.Core               (Collection, Key)
@@ -27,16 +28,13 @@ type VariableDefinitions = Collection Variable
 
 type RawOperator = Operator VariableDefinitions RawSelectionSet
 
+data Operator' args sel =
+  Operator' Key
+            args
+            sel
+            Position
+
 data Operator args sel
-  = Query Key
-          args
-          sel
-          Position
-  | Mutation Key
-             args
-             sel
-             Position
-  | Subscription Key
-                 args
-                 sel
-                 Position
+  = Query (Operator' args sel)
+  | Mutation (Operator' args sel)
+  | Subscription (Operator' args sel)

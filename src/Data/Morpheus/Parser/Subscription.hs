@@ -8,7 +8,7 @@ import           Data.Attoparsec.Text               (Parser, skipSpace)
 import           Data.Morpheus.Parser.Body          (entries)
 import           Data.Morpheus.Parser.Operator      (operatorHead)
 import           Data.Morpheus.Parser.Primitive     (getPosition)
-import           Data.Morpheus.Types.Query.Operator (Operator (..), RawOperator)
+import           Data.Morpheus.Types.Query.Operator (Operator (..), Operator' (..), RawOperator)
 
 subscription :: Parser RawOperator
 subscription = do
@@ -16,4 +16,4 @@ subscription = do
   (name, variables) <- operatorHead "subscription"
   skipSpace
   sel <- entries
-  pure $ Subscription name variables sel pos
+  pure $ Subscription (Operator' name variables sel pos)

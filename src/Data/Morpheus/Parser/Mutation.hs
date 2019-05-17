@@ -8,7 +8,7 @@ import           Data.Attoparsec.Text               (Parser, skipSpace)
 import           Data.Morpheus.Parser.Body          (entries)
 import           Data.Morpheus.Parser.Operator      (operatorHead)
 import           Data.Morpheus.Parser.Primitive     (getPosition)
-import           Data.Morpheus.Types.Query.Operator (Operator (..), RawOperator)
+import           Data.Morpheus.Types.Query.Operator (Operator (..), Operator' (..), RawOperator)
 
 mutation :: Parser RawOperator
 mutation = do
@@ -16,4 +16,4 @@ mutation = do
   (name, variables) <- operatorHead "mutation"
   skipSpace
   sel <- entries
-  pure $ Mutation name variables sel pos
+  pure $ Mutation (Operator' name variables sel pos)
