@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Parser.Therms
+module Data.Morpheus.Parser.Terms
   ( onType
   , spreadLiteral
   ) where

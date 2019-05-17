@@ -7,7 +7,7 @@ module Data.Morpheus.Parser.Fragment
 import           Data.Attoparsec.Text               (Parser, skipSpace, string)
 import           Data.Morpheus.Parser.Body          (entries)
 import           Data.Morpheus.Parser.Primitive     (getPosition, token)
-import           Data.Morpheus.Parser.Therms        (onType)
+import           Data.Morpheus.Parser.Terms         (onType)
 import           Data.Morpheus.Types.Query.Fragment (Fragment (..))
 import           Data.Text                          (Text)
 
