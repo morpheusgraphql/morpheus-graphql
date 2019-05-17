@@ -22,7 +22,14 @@ operatorArgument = do
   _ <- char ':'
   (wrappers', type') <- wrapped
   nonNull' <- nonNUll
-  pure (name', Variable wrappers' type' nonNull' position')
+  pure
+    ( name'
+    , Variable
+        { variableType = type'
+        , isVariableRequired = nonNull'
+        , variableTypeWrappers = wrappers'
+        , variablePosition = position'
+        })
 
 operatorArguments :: Parser VariableDefinitions
 operatorArguments = do

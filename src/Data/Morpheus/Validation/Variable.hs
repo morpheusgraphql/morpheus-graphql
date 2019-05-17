@@ -51,8 +51,11 @@ lookupNullableValue variables' key' =
     Just value -> pure (key', value)
 
 lookupAndValidateValueOnBody :: TypeLib -> Variables -> (Text, Variable) -> Validation (Text, JSType)
-lookupAndValidateValueOnBody typeLib variables' (key', Variable _ type' required' position') =
-  if required'
+lookupAndValidateValueOnBody typeLib variables' (key', Variable { variableType = type'
+                                                                , variablePosition = position'
+                                                                , isVariableRequired = isRequired'
+                                                                }) =
+  if isRequired'
     then getVariableType type' position' typeLib >>= checkType
     else lookupNullableValue variables' key'
   where

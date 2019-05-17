@@ -22,11 +22,12 @@ type ValidOperator' = Operator' Arguments SelectionSet
 newtype ListWrapper =
   ListWrapper Bool
 
-data Variable =
-  Variable [ListWrapper]
-           Key
-           Bool
-           Position
+data Variable = Variable
+  { variableType         :: Key
+  , isVariableRequired   :: Bool
+  , variableTypeWrappers :: [ListWrapper]
+  , variablePosition     :: Position
+  }
 
 type VariableDefinitions = Collection Variable
 
