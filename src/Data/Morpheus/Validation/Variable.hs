@@ -1,9 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Validation.Variable
-  ( resolveOperationVariables
+  ( resolveOperatorVariables
   , resolveArgumentValue
-  , allVariableReferences
   ) where
 
 import           Data.List                              ((\\))
@@ -16,7 +15,7 @@ import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.MetaInfo           (Position)
-import           Data.Morpheus.Types.Query.Operator     (Variable (..))
+import           Data.Morpheus.Types.Query.Operator     (Operator' (..), RawOperator', Variable (..))
 import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..), RawSelection (..), RawSelectionSet)
 import qualified Data.Morpheus.Types.Query.Selection    as Valid (Argument (..))
 import           Data.Morpheus.Types.Types              (Variables)
@@ -53,19 +52,14 @@ lookupAndValidateValueOnBody typeLib root (key', Variable _ type' _ pos) =
       variableValue <- lookupBodyValue pos root key'
       handleInputError key' pos $ validateInputValue False typeLib _type (key', variableValue)
 
-resolveOperationVariables :: TypeLib -> Variables -> [EnhancedKey] -> [(Text, Variable)] -> Validation Variables
-resolveOperationVariables typeLib root references' variables' = do
-  checkUnusedVariable references' variables'
-  M.fromList <$> mapM (lookupAndValidateValueOnBody typeLib root) variables'
-
 varToKey :: (Text, Variable) -> EnhancedKey
 varToKey (key', Variable _ _ _ position') = EnhancedKey key' position'
 
-checkUnusedVariable :: [EnhancedKey] -> [(Text, Variable)] -> Validation ()
-checkUnusedVariable references' variables' =
-  case map varToKey variables' \\ references' of
+checkUnusedVariable :: [EnhancedKey] -> RawOperator' -> Validation ()
+checkUnusedVariable references' operator' =
+  case map varToKey (operatorArgs operator') \\ references' of
     []      -> pure ()
-    unused' -> Left $ unusedVariables unused'
+    unused' -> Left $ unusedVariables (operatorName operator') unused'
 
 allVariableReferences :: [RawSelectionSet] -> [EnhancedKey]
 allVariableReferences = concatMap (concatMap searchReferencesIn)
@@ -86,3 +80,8 @@ resolveArgumentValue root (key', VariableReference variableID pos) = do
   value <- getVariable pos root variableID
   pure (key', Valid.Argument value pos)
 resolveArgumentValue _ (key', Argument value pos) = pure (key', Valid.Argument value pos)
+
+resolveOperatorVariables :: TypeLib -> Variables -> RawOperator' -> Validation Variables
+resolveOperatorVariables typeLib root operator' = do
+  checkUnusedVariable (allVariableReferences [operatorSelection operator']) operator'
+  M.fromList <$> mapM (lookupAndValidateValueOnBody typeLib root) (operatorArgs operator')

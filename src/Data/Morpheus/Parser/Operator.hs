@@ -17,13 +17,12 @@ wrapped = do
 operatorArgument :: Parser (Text, Variable)
 operatorArgument = do
   skipSpace
-  pos <- getPosition
-  variableName <- variable
+  (name', position') <- variable
   skipSpace
   _ <- char ':'
   (wrappers', type') <- wrapped
   nonNull' <- nonNUll
-  pure (variableName, Variable wrappers' type' nonNull' pos)
+  pure (name', Variable wrappers' type' nonNull' position')
 
 operatorArguments :: Parser VariableDefinitions
 operatorArguments = do

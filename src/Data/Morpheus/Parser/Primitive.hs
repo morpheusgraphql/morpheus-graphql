@@ -57,8 +57,13 @@ token = do
   restToken <- many $ letter <|> char '_' <|> digit
   return $ replaceType $ T.pack $ firstChar : restToken
 
-variable :: Parser T.Text
-variable = skipSpace *> char '$' *> token
+variable :: Parser (T.Text, Int)
+variable = do
+  skipSpace
+  position' <- getPosition
+  _ <- char '$'
+  varName' <- token
+  return (varName', position')
 
 separator :: Parser Char
 separator = char ',' <|> char ' ' <|> char '\n' <|> char '\t'

@@ -6,6 +6,8 @@ module Data.Morpheus.Types.Query.Operator
   , VariableDefinitions
   , ListWrapper(..)
   , Operator'(..)
+  , ValidOperator'
+  , RawOperator'
   ) where
 
 import           Data.Morpheus.Types.Core               (Collection, Key)
@@ -14,6 +16,8 @@ import           Data.Morpheus.Types.Query.RawSelection (RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection    (Arguments, SelectionSet)
 
 type ValidOperator = Operator Arguments SelectionSet
+
+type ValidOperator' = Operator' Arguments SelectionSet
 
 newtype ListWrapper =
   ListWrapper Bool
@@ -28,11 +32,14 @@ type VariableDefinitions = Collection Variable
 
 type RawOperator = Operator VariableDefinitions RawSelectionSet
 
-data Operator' args sel =
-  Operator' Key
-            args
-            sel
-            Position
+type RawOperator' = Operator' VariableDefinitions RawSelectionSet
+
+data Operator' args sel = Operator'
+  { operatorName      :: Key
+  , operatorArgs      :: args
+  , operatorSelection :: sel
+  , operatorPosition  :: Position
+  }
 
 data Operator args sel
   = Query (Operator' args sel)

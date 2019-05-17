@@ -7,26 +7,26 @@ module Data.Morpheus.Validation.Validation
   ( validateRequest
   ) where
 
-import           Data.Map                               (fromList)
-import           Data.Morpheus.Error.Mutation           (mutationIsNotDefined)
-import           Data.Morpheus.Error.Subscription       (subscriptionIsNotDefined)
-import           Data.Morpheus.Schema.Internal.AST      (GObject (..), ObjectField (..), OutputObject, TypeLib (..))
-import qualified Data.Morpheus.Schema.Internal.AST      as SC (Field (..))
-import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Types.Error              (Validation)
-import           Data.Morpheus.Types.Query.Operator     (Operator (..), RawOperator, ValidOperator, VariableDefinitions)
-import           Data.Morpheus.Types.Query.RawSelection (RawSelectionSet)
-import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
-import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
-import           Data.Morpheus.Validation.Fragment      (validateFragments)
-import           Data.Morpheus.Validation.Selection     (validateSelectionSet)
-import           Data.Morpheus.Validation.Variable      (allVariableReferences, resolveOperationVariables)
-import           Data.Text                              (Text)
+import           Data.Map                            (fromList)
+import           Data.Morpheus.Error.Mutation        (mutationIsNotDefined)
+import           Data.Morpheus.Error.Subscription    (subscriptionIsNotDefined)
+import           Data.Morpheus.Schema.Internal.AST   (GObject (..), ObjectField (..), OutputObject, TypeLib (..))
+import qualified Data.Morpheus.Schema.Internal.AST   as SC (Field (..))
+import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
+import           Data.Morpheus.Types.Error           (Validation)
+import           Data.Morpheus.Types.Query.Operator  (Operator (..), Operator' (..), RawOperator, RawOperator',
+                                                      ValidOperator)
+import           Data.Morpheus.Types.Query.Selection (SelectionSet)
+import           Data.Morpheus.Types.Types           (GQLQueryRoot (..))
+import           Data.Morpheus.Validation.Fragment   (validateFragments)
+import           Data.Morpheus.Validation.Selection  (validateSelectionSet)
+import           Data.Morpheus.Validation.Variable   (resolveOperatorVariables)
+import           Data.Text                           (Text)
 
 updateQuery :: RawOperator -> SelectionSet -> ValidOperator
-updateQuery (Query name' _ _ pos) sel        = Query name' [] sel pos
-updateQuery (Mutation name' _ _ pos) sel     = Mutation name' [] sel pos
-updateQuery (Subscription name' _ _ pos) sel = Subscription name' [] sel pos
+updateQuery (Query (Operator' name' _ _ pos)) sel        = Query (Operator' name' [] sel pos)
+updateQuery (Mutation (Operator' name' _ _ pos)) sel     = Mutation (Operator' name' [] sel pos)
+updateQuery (Subscription (Operator' name' _ _ pos)) sel = Subscription (Operator' name' [] sel pos)
 
 fieldSchema :: [(Text, ObjectField)]
 fieldSchema =
@@ -47,22 +47,22 @@ fieldSchema =
 setFieldSchema :: GObject ObjectField -> GObject ObjectField
 setFieldSchema (GObject fields core) = GObject (fields ++ fieldSchema) core
 
-getOperator :: RawOperator -> TypeLib -> Validation (OutputObject, VariableDefinitions, RawSelectionSet)
-getOperator (Query _ args' sel _) lib' = pure (snd $ query lib', args', sel)
-getOperator (Mutation _ args' sel position') lib' =
+getOperator :: RawOperator -> TypeLib -> Validation (OutputObject, RawOperator')
+getOperator (Query operator') lib' = pure (snd $ query lib', operator')
+getOperator (Mutation operator') lib' =
   case mutation lib' of
-    Just (_, mutation') -> pure (mutation', args', sel)
-    Nothing             -> Left $ mutationIsNotDefined position'
-getOperator (Subscription _ args' sel position') lib' =
+    Just (_, mutation') -> pure (mutation', operator')
+    Nothing             -> Left $ mutationIsNotDefined (operatorPosition operator')
+getOperator (Subscription operator') lib' =
   case subscription lib' of
-    Just (_, subscription') -> pure (subscription', args', sel)
-    Nothing                 -> Left $ subscriptionIsNotDefined position'
+    Just (_, subscription') -> pure (subscription', operator')
+    Nothing                 -> Left $ subscriptionIsNotDefined (operatorPosition operator')
 
 validateRequest :: TypeLib -> GQLQueryRoot -> Validation ValidOperator
 validateRequest lib' root' = do
-  (operator', args', rawSelection') <- getOperator (queryBody root') lib'
-  variables' <-
-    resolveOperationVariables lib' (fromList $ inputVariables root') (allVariableReferences [rawSelection']) args'
+  (operatorType', operator') <- getOperator (queryBody root') lib'
+  variables' <- resolveOperatorVariables lib' (fromList $ inputVariables root') operator'
   validateFragments lib' root'
-  selectors <- validateSelectionSet lib' (fragments root') variables' (setFieldSchema operator') rawSelection'
+  selectors <-
+    validateSelectionSet lib' (fragments root') variables' (setFieldSchema operatorType') (operatorSelection operator')
   pure $ updateQuery (queryBody root') selectors

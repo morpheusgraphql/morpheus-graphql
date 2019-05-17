@@ -37,4 +37,4 @@ testByFiles api' (Case path' description') = do
   result' <- api' $ packGQLRequest query'
   case decode result' of
     Nothing -> assertFailure "Bad Responce"
-    Just x  -> return $ testCase description' $ x @=? response'
+    Just x  -> return $ testCase (unpack path' ++ " | " ++ description') $ x @=? response'
