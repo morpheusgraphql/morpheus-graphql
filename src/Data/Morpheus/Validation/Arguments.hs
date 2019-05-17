@@ -36,11 +36,14 @@ validateArgumentValue isList' lib' typeID' (key', Argument value' position') =
 validateArgument :: TypeLib -> Position -> Arguments -> (Text, InputField) -> Validation (Text, Argument)
 validateArgument types position' requestArgs (key', InputField arg) =
   case lookup key' requestArgs of
-    Nothing ->
+    Nothing                   -> handleNullable
+    Just (Argument JSNull _)  -> handleNullable
+    Just (Argument value pos) -> validateArgumentValue (asList arg) types (fieldType arg) (key', Argument value pos)
+  where
+    handleNullable =
       if notNull arg
         then Left $ undefinedArgument (EnhancedKey key' position')
         else pure (key', Argument JSNull position')
-    Just (Argument value pos) -> validateArgumentValue (asList arg) types (fieldType arg) (key', Argument value pos)
 
 checkForUnknownArguments :: (Text, ObjectField) -> Arguments -> Validation [(Text, InputField)]
 checkForUnknownArguments (fieldKey', ObjectField fieldArgs _) args' =
