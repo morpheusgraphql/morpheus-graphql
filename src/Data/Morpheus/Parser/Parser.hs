@@ -3,21 +3,21 @@ module Data.Morpheus.Parser.Parser
   , parseLineBreaks
   ) where
 
-import           Control.Applicative            (many, (<|>))
-import           Data.Attoparsec.Text           (Parser, endOfInput, parseOnly, skipSpace)
-import           Data.Map                       (fromList, toList)
-import           Data.Maybe                     (fromMaybe)
-import           Data.Morpheus.Error.Syntax     (syntaxError)
-import           Data.Morpheus.Parser.Fragment  (fragment)
-import qualified Data.Morpheus.Parser.Subscription as S 
-import qualified Data.Morpheus.Parser.Mutation  as M
-import           Data.Morpheus.Parser.Primitive (getLines)
-import qualified Data.Morpheus.Parser.Query     as Q
-import           Data.Morpheus.Types.Error      (Validation)
-import           Data.Morpheus.Types.JSType     (JSType (..))
-import           Data.Morpheus.Types.Request    (GQLRequest (..))
-import           Data.Morpheus.Types.Types      (GQLQueryRoot (..))
-import           Data.Text                      (Text, pack)
+import           Control.Applicative               (many, (<|>))
+import           Data.Attoparsec.Text              (Parser, endOfInput, parseOnly, skipSpace)
+import           Data.Map                          (fromList, toList)
+import           Data.Maybe                        (maybe)
+import           Data.Morpheus.Error.Syntax        (syntaxError)
+import           Data.Morpheus.Parser.Fragment     (fragment)
+import qualified Data.Morpheus.Parser.Mutation     as M
+import           Data.Morpheus.Parser.Primitive    (getLines)
+import qualified Data.Morpheus.Parser.Query        as Q
+import qualified Data.Morpheus.Parser.Subscription as S
+import           Data.Morpheus.Types.Error         (Validation)
+import           Data.Morpheus.Types.JSType        (JSType (..))
+import           Data.Morpheus.Types.Request       (GQLRequest (..))
+import           Data.Morpheus.Types.Types         (GQLQueryRoot (..))
+import           Data.Text                         (Text, pack)
 
 request :: Parser GQLQueryRoot
 request = do
@@ -28,7 +28,7 @@ request = do
   pure GQLQueryRoot {queryBody = queryValue, fragments = fragmentLib, inputVariables = []}
 
 getVariables :: GQLRequest -> [(Text, JSType)]
-getVariables request' = fromMaybe [] (toList <$> variables request')
+getVariables request' = maybe [] toList (variables request')
 
 parseReq :: GQLRequest -> Either String GQLQueryRoot
 parseReq requestBody = parseOnly request $ query requestBody
