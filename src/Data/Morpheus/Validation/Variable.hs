@@ -76,6 +76,7 @@ referencesFromArgument (_, VariableReference value' position') = [EnhancedKey va
 searchReferencesIn :: (Text, RawSelection) -> [EnhancedKey]
 searchReferencesIn (_, RawSelectionSet rawArgs rawSelectors _) =
   concatMap referencesFromArgument rawArgs ++ concatMap searchReferencesIn rawSelectors
+searchReferencesIn (_, InlineFragment _ rawSelector' _) = concatMap searchReferencesIn rawSelector'
 searchReferencesIn (_, RawField rawArgs _ _) = concatMap referencesFromArgument rawArgs
 searchReferencesIn (_, Spread _ _) = []
 

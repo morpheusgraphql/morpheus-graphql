@@ -1,5 +1,4 @@
-[
-  {
+[{
     "path": "fragment/loopingFragment",
     "description": "fail when: fragment directly or indirectly references itself"
   },
@@ -12,27 +11,39 @@
     "description": "fail when: argument names on field are not unique"
   },
   {
-    "path":"arguments/undefinedArgument",
-    "description":"fail when: required argument is not defined in selection "
+    "path": "arguments/undefinedArgument",
+    "description": "fail when: required argument is not defined in selection "
   },
   {
-    "path":"selection/unknownField",
-    "description":"fail when: selected field does not exist on type"
+    "path": "selection/unknownField",
+    "description": "fail when: selected field does not exist on type"
   },
   {
-    "path":"selection/hasNoSubFields",
-    "description":"fail when: selected subFields on non object type"
+    "path": "selection/hasNoSubFields",
+    "description": "fail when: selected subFields on non object type"
   },
   {
-    "path":"selection/mustHaveSubFields",
-    "description":"fail when: is not selected subFields on object type"
+    "path": "selection/mustHaveSubFields",
+    "description": "fail when: is not selected subFields on object type"
   },
   {
-    "path":"selection/nameConflict",
-    "description":"fail when: selected fields has same name"
+    "path": "selection/nameConflict",
+    "description": "fail when: selected fields has same name"
   },
   {
     "path": "variables/unusedVariables",
     "description": "fail when: variable is defined by the operation but did not used in selection"
+  },
+  {
+    "path": "fragment/inlineFragment",
+    "description": "returns field selected by inline Fragment"
+  },
+  {
+    "path": "fragment/inlineFragmentTypeMismatch",
+    "description": "feil when: inline fragment type is incompatible with object type"
+  },
+  {
+    "path": "fragment/cannotBeSpreadOnType",
+    "description": "feil when: fragment type is incompatible with object type"
   }
 ]

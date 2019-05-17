@@ -1,0 +1,11 @@
+{
+  union {
+    __typename
+    ... on A {
+      aText
+    }
+    ... on B {
+      bText
+    }
+  }
+}

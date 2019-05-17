@@ -5,22 +5,28 @@ module Data.Morpheus.Parser.Body
   , entries
   ) where
 
-import           Control.Applicative                    (some, (<|>))
-import           Data.Attoparsec.Text                   (Parser, char, letter, sepBy, skipSpace,
-                                                         string, try)
+import           Control.Applicative                    ((<|>))
+import           Data.Attoparsec.Text                   (Parser, char, sepBy, skipSpace, try)
 import           Data.Morpheus.Parser.Arguments         (arguments)
 import           Data.Morpheus.Parser.Primitive         (getPosition, separator, token)
-import           Data.Morpheus.Types.Query.RawSelection (RawArguments, RawSelection (..),
-                                                         RawSelectionSet)
-import           Data.Text                              (Text, pack)
+import           Data.Morpheus.Parser.Terms            (onType, spreadLiteral)
+import           Data.Morpheus.Types.Query.RawSelection (RawArguments, RawSelection (..), RawSelectionSet)
+import           Data.Text                              (Text)
 
 spread :: Parser (Text, RawSelection)
 spread = do
+  index <- spreadLiteral
   skipSpace
-  index <- getPosition
-  _ <- string "..."
-  key <- some (letter <|> char '_')
-  return (pack key, Spread (pack key) index)
+  key' <- token
+  return (key', Spread key' index)
+
+inlineFragment :: Parser (Text, RawSelection)
+inlineFragment = do
+  index <- spreadLiteral
+  onType' <- onType
+  skipSpace
+  fragmentBody <- entries
+  pure ("INLINE_FRAGMENT", InlineFragment onType' fragmentBody index)
 
 entry :: Parser (Text, RawSelection)
 entry = do
@@ -38,7 +44,7 @@ entries :: Parser RawSelectionSet
 entries = do
   _ <- char '{'
   skipSpace
-  entries' <- separated $ entry <|> spread
+  entries' <- separated (entry <|> inlineFragment <|> spread)
   skipSpace
   _ <- char '}'
   return entries'
