@@ -7,8 +7,8 @@ module Data.Morpheus.Parser.Query
 import           Control.Applicative                ((<|>))
 import           Data.Attoparsec.Text               (Parser, skipSpace, string, try)
 import           Data.Morpheus.Parser.Body          (entries)
+import           Data.Morpheus.Parser.Operator      (operatorArguments)
 import           Data.Morpheus.Parser.Primitive     (getPosition, token)
-import           Data.Morpheus.Parser.RootHead      (rootHeadArguments)
 import           Data.Morpheus.Types.Query.Operator (Operator (..), RawOperator, VariableDefinitions)
 import           Data.Text                          (Text)
 
@@ -17,7 +17,7 @@ queryHead = do
   _ <- string "query "
   skipSpace
   queryName <- token
-  variables <- try (skipSpace *> rootHeadArguments) <|> pure []
+  variables <- try (skipSpace *> operatorArguments) <|> pure []
   pure (queryName, variables)
 
 query :: Parser RawOperator

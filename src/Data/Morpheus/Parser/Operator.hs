@@ -1,5 +1,5 @@
-module Data.Morpheus.Parser.RootHead
-  ( rootHeadArguments
+module Data.Morpheus.Parser.Operator
+  ( operatorArguments
   ) where
 
 import           Data.Attoparsec.Text               (Parser, char, sepBy, skipSpace)
@@ -18,8 +18,8 @@ rootHeadVariable = do
   variableType <- token
   pure (variableName, Variable variableType pos)
 
-rootHeadArguments :: Parser VariableDefinitions
-rootHeadArguments = do
+operatorArguments :: Parser VariableDefinitions
+operatorArguments = do
   skipSpace
   _ <- char '('
   skipSpace
