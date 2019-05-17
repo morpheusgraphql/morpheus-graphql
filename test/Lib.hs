@@ -4,8 +4,10 @@ module Lib
   ( getGQLBody
   , getResponseBody
   , getCases
+  , maybeVariables
   ) where
 
+import           Control.Applicative        ((<|>))
 import           Data.Aeson                 (FromJSON, Value (..), decode)
 import qualified Data.ByteString.Lazy       as L (readFile)
 import           Data.ByteString.Lazy.Char8 (ByteString)
@@ -20,6 +22,9 @@ gqlLib x = path x ++ "/query.gql"
 
 resLib :: Text -> String
 resLib x = path x ++ "/response.json"
+
+maybeVariables :: Text -> IO ByteString
+maybeVariables x = L.readFile (path x ++ "/variables.json") <|> return "{}"
 
 getGQLBody :: Text -> IO ByteString
 getGQLBody p = L.readFile (gqlLib p)
