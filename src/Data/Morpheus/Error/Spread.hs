@@ -18,16 +18,18 @@ unknownFragment key' position' = errorMessage position' text
     text = T.concat ["Unknown Fragment \"", key', "\"."]
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
-cannotBeSpreadOnType :: Text -> Text -> Position -> Text -> GQLErrors
-cannotBeSpreadOnType key' type' position' selectionType = errorMessage position' text
+cannotBeSpreadOnType :: Maybe Text -> Text -> Position -> Text -> GQLErrors
+cannotBeSpreadOnType key' type' position' selectionType' = errorMessage position' text
   where
     text =
       T.concat
-        [ "Fragment \""
-        , key'
-        , "\" cannot be spread here as objects of type \""
-        , type'
+        [ "Fragment"
+        , getName key'
+        , " cannot be spread here as objects of type \""
+        , selectionType'
         , "\" can never be of type \""
-        , selectionType
+        , type'
         , "\"."
         ]
+    getName (Just x') = T.concat [" \"", x', "\""]
+    getName Nothing   = ""

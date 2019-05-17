@@ -27,6 +27,9 @@ data RawSelection
   | RawField RawArguments
              Key
              Position
+  | InlineFragment Key
+                   RawSelectionSet
+                   Position
   | Spread Key
            Position
   deriving (Show)

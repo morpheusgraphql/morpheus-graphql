@@ -20,7 +20,7 @@ import           Data.Morpheus.Types.Query.RawSelection   (RawSelection (..), Ra
 import           Data.Morpheus.Types.Query.Selection      (Selection (..), SelectionSet)
 import           Data.Morpheus.Types.Types                (Variables)
 import           Data.Morpheus.Validation.Arguments       (resolveArguments, validateArguments)
-import           Data.Morpheus.Validation.Spread          (resolveSpread)
+import           Data.Morpheus.Validation.Spread          (castFragmentType, resolveSpread)
 import           Data.Morpheus.Validation.Utils.Selection (lookupFieldAsSelectionSet, lookupPossibleTypeKeys,
                                                            lookupPossibleTypes, lookupSelectionField, notObject)
 import           Data.Morpheus.Validation.Utils.Utils     (checkNameCollision)
@@ -54,6 +54,11 @@ splitFragment _ _ _ ("__typename", RawField [] field' position') =
   return ([], [("__typename", Field [] field' position')])
 splitFragment _ type' _ (key', RawSelectionSet _ _ position') = Left $ cannotQueryField key' type' position'
 splitFragment _ type' _ (key', RawField _ _ position') = Left $ cannotQueryField key' type' position'
+splitFragment _ _ posTypes' (key', InlineFragment target' selectors' position') = do
+  validatedFragment' <- castFragmentType Nothing position' posTypes' fragment'
+  return ([validatedFragment'], [])
+  where
+    fragment' = F.Fragment {F.key = key', F.target = target', F.position = position', F.content = selectors'}
 
 categorizeType :: [Fragment] -> OutputObject -> (OutputObject, [Fragment])
 categorizeType fragments' type'@(GObject _ core) = (type', filter matches fragments')
@@ -96,3 +101,8 @@ validateSelection lib' _ variables' parent' (key', RawField rawArgs field positi
   pure [(key', Field arguments' field position')]
 validateSelection lib' fragments' variables' parent'@(GObject _ core) (key', Spread _ position') =
   resolveSpread fragments' [name core] position' key' >>= castFragment lib' fragments' variables' parent'
+validateSelection lib' fragments' variables' parent'@(GObject _ core) (key', InlineFragment target' selectors' position') =
+  validateType >>= castFragment lib' fragments' variables' parent'
+  where
+    validateType = castFragmentType Nothing position' [name core] fragment'
+    fragment' = F.Fragment {F.key = key', F.target = target', F.position = position', F.content = selectors'}
