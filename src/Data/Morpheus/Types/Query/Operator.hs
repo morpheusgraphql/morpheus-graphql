@@ -4,6 +4,7 @@ module Data.Morpheus.Types.Query.Operator
   , RawOperator
   , Variable(..)
   , VariableDefinitions
+  , TypeWrappers(..)
   ) where
 
 import           Data.Morpheus.Types.Core               (Collection, Key)
@@ -13,8 +14,13 @@ import           Data.Morpheus.Types.Query.Selection    (Arguments, SelectionSet
 
 type ValidOperator = Operator Arguments SelectionSet
 
+data TypeWrappers
+  = LIST
+  | NON_NULL
+
 data Variable =
-  Variable Key
+  Variable [TypeWrappers]
+           Key
            Position
 
 type VariableDefinitions = Collection Variable
