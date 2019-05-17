@@ -8,8 +8,8 @@ import           Data.Morpheus.Parser.Primitive     (getPosition, token, variabl
 import           Data.Morpheus.Types.Query.Operator (Variable (..), VariableDefinitions)
 import           Data.Text                          (Text)
 
-rootHeadVariable :: Parser (Text, Variable)
-rootHeadVariable = do
+operatorArgument :: Parser (Text, Variable)
+operatorArgument = do
   skipSpace
   pos <- getPosition
   variableName <- variable
@@ -24,7 +24,7 @@ operatorArguments = do
   skipSpace
   _ <- char '('
   skipSpace
-  parameters <- rootHeadVariable `sepBy` (skipSpace *> char ',')
+  parameters <- operatorArgument `sepBy` (skipSpace *> char ',')
   skipSpace
   _ <- char ')'
   pure parameters
