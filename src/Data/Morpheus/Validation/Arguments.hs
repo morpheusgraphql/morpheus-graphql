@@ -27,19 +27,19 @@ handleInputError :: Text -> Int -> InputValidation a -> Validation ()
 handleInputError key' position' (Left error') = Left $ argumentGotInvalidValue key' (inputErrorMessage error') position'
 handleInputError _ _ _ = pure ()
 
-validateArgumentValue :: Bool -> TypeLib -> Text -> (Text, Argument) -> Validation (Text, Argument)
-validateArgumentValue isList' lib' typeID' (key', Argument value' position') =
-  getInputType typeID' lib' (internalUnknownTypeMessage typeID') >>= checkType >> pure (key', Argument value' position')
+validateArgumentValue :: TypeLib -> Field -> (Text, Argument) -> Validation (Text, Argument)
+validateArgumentValue lib' Field {fieldType = typeName', fieldTypeWrappers = wrappers'} (key', Argument value' position') =
+  getInputType typeName' lib' (internalUnknownTypeMessage typeName') >>= checkType >>
+  pure (key', Argument value' position')
   where
-    checkType type' = handleInputError key' position' (validateInputValue isList' lib' type' (key', value'))
+    checkType type' = handleInputError key' position' (validateInputValue wrappers' lib' type' (key', value'))
 
 validateArgument :: TypeLib -> Position -> Arguments -> (Text, InputField) -> Validation (Text, Argument)
 validateArgument types position' requestArgs (key', InputField arg) =
   case lookup key' requestArgs of
-    Nothing -> handleNullable
-    Just (Argument JSNull _) -> handleNullable
-    Just (Argument value pos) ->
-      validateArgumentValue (0 < length (fieldTypeWrappers arg)) types (fieldType arg) (key', Argument value pos)
+    Nothing                   -> handleNullable
+    Just (Argument JSNull _)  -> handleNullable
+    Just (Argument value pos) -> validateArgumentValue types arg (key', Argument value pos)
   where
     handleNullable =
       if notNull arg
