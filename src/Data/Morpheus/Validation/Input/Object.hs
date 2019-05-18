@@ -44,32 +44,32 @@ validateLeaf (LScalar core) jsType props         = Left $ generateError jsType (
 
 validateInputObject ::
      [Prop] -> TypeLib -> Int -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
-validateInputObject prop' lib' listDeep' (GObject parentFields _) (_name, JSObject fields) = do
+validateInputObject prop' lib' listDeep' (GObject parentFields pos) (_name, value') = do
   field' <- unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
-  let fieldTypeName' = fieldType field'
-  let currentProp = prop' ++ [Prop _name fieldTypeName']
-  let error' = generateError (JSObject fields) fieldTypeName' currentProp
-  inputObject' <- existsInputObjectType error' lib' fieldTypeName'
-  if listDeep' > 0 && listDeep' < length (fieldTypeWrappers field')
-    then Left $ UnexpectedType prop' (T.concat ["[", fieldTypeName', "]"]) (JSObject fields)
-    else mapM (validateInputObject currentProp lib' 0 inputObject') fields >>= \x -> pure (_name, JSObject x)
-validateInputObject prop' lib' listDeep' (GObject parentFields pos) (_name, JSList list') = do
-  field' <- unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
-  if listDeep' < length (fieldTypeWrappers field')
-    then mapM_ (recValidate (listDeep' + 1)) list' >> pure (_name, JSList list')
-    else Left $ generateError (JSList list') (fieldType field') prop'
+  case value' of
+    JSList list'
+      | listDeep' < length (fieldTypeWrappers field') ->
+        mapM_ (recValidate (listDeep' + 1)) list' >> pure (_name, JSList list')
+    JSList list' -> Left $ generateError (JSList list') (fieldType field') prop'
+    JSObject fields -> do
+      let fieldTypeName' = fieldType field'
+      let currentProp = prop' ++ [Prop _name fieldTypeName']
+      let error' = generateError (JSObject fields) fieldTypeName' currentProp
+      inputObject' <- existsInputObjectType error' lib' fieldTypeName'
+      if listDeep' > 0 && listDeep' < length (fieldTypeWrappers field')
+        then Left $ UnexpectedType prop' (T.concat ["[", fieldTypeName', "]"]) (JSObject fields)
+        else mapM (validateInputObject currentProp lib' 0 inputObject') fields >>= \x -> pure (_name, JSObject x)
+    jsType -> do
+      let fieldTypeName' = fieldType field'
+      let currentProp = prop' ++ [Prop _name fieldTypeName']
+      let error' = generateError jsType fieldTypeName' currentProp
+      if listDeep' > 0 && listDeep' < length (fieldTypeWrappers field')
+        then Left $ UnexpectedType prop' (T.concat ["[", fieldTypeName', "]"]) jsType
+        else do
+          fieldType' <- existsLeafType error' lib' fieldTypeName'
+          validateLeaf fieldType' jsType currentProp >> pure (_name, jsType)
   where
     recValidate newDeep' x = validateInputObject prop' lib' newDeep' (GObject parentFields pos) (_name, x)
-validateInputObject prop' lib' listDeep' (GObject parentFields _) (_name, jsType) = do
-  field' <- unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
-  let fieldTypeName' = fieldType field'
-  let currentProp = prop' ++ [Prop _name fieldTypeName']
-  let error' = generateError jsType fieldTypeName' currentProp
-  if listDeep' > 0 && listDeep' < length (fieldTypeWrappers field')
-    then Left $ UnexpectedType prop' (T.concat ["[", fieldTypeName', "]"]) jsType
-    else do
-      fieldType' <- existsLeafType error' lib' fieldTypeName'
-      validateLeaf fieldType' jsType currentProp >> pure (_name, jsType)
 
 validateInput :: TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
 validateInput typeLib (T.Object oType) (_, JSObject fields) =
