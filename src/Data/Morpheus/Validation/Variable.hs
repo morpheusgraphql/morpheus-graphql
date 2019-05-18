@@ -7,6 +7,7 @@ module Data.Morpheus.Validation.Variable
 
 import           Data.List                              ((\\))
 import qualified Data.Map                               as M (fromList, lookup)
+import           Data.Maybe                             (maybe)
 import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Variable           (undefinedVariable, uninitializedVariable, unknownType,
                                                          unusedVariables, variableGotInvalidValue)
@@ -44,24 +45,18 @@ handleInputError key' _ (Right value') = pure (key', value')
 lookupBodyValue :: Position -> Variables -> Text -> Text -> Validation JSType
 lookupBodyValue position' variables' key' type' = lookupVariable variables' key' (uninitializedVariable position' type')
 
-lookupNullableValue :: Variables -> Text -> Validation (Text, JSType)
-lookupNullableValue variables' key' =
-  case M.lookup key' variables' of
-    Nothing    -> pure (key', JSNull)
-    Just value -> pure (key', value)
-
 lookupAndValidateValueOnBody :: TypeLib -> Variables -> (Text, Variable) -> Validation (Text, JSType)
 lookupAndValidateValueOnBody typeLib variables' (key', Variable { variableType = type'
                                                                 , variablePosition = position'
                                                                 , isVariableRequired = isRequired'
+                                                                , variableTypeWrappers = wrappers'
                                                                 }) =
-  if isRequired'
-    then getVariableType type' position' typeLib >>= checkType
-    else lookupNullableValue variables' key'
+  getVariableType type' position' typeLib >>= checkType isRequired'
   where
-    checkType _type = do
-      variableValue <- lookupBodyValue position' variables' key' type'
-      handleInputError key' position' $ validateInputValue False typeLib _type (key', variableValue)
+    validator _type variableValue =
+      handleInputError key' position' $ validateInputValue wrappers' typeLib _type (key', variableValue)
+    checkType True _type  = lookupBodyValue position' variables' key' type' >>= validator _type
+    checkType False _type = maybe (pure (key', JSNull)) (validator _type) (M.lookup key' variables')
 
 varToKey :: (Text, Variable) -> EnhancedKey
 varToKey (key', Variable _ _ _ position') = EnhancedKey key' position'
