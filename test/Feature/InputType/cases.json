@@ -16,7 +16,11 @@
     "description": "fail when: variable receives invalid List value"
   },
   {
-    "path": "variables/validListVariable",
-    "description": "resolve valid list variables"
+    "path": "variables/nestedListNonNullListReceivedNull",
+    "description": "resolve: if list of nonNull elements receives null"
+  },
+  {
+    "path": "variables/nestedListNullableListReceivedNull",
+    "description": "resolve: if list of nullable elements receives null"
   }
 ]
