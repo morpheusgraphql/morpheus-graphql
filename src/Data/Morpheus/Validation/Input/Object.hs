@@ -34,11 +34,8 @@ validateScalarTypes "Boolean" (Boolean x) = pure . const (Boolean x)
 validateScalarTypes "Boolean" scalar      = Left . generateError (Scalar scalar) "Boolean"
 validateScalarTypes _ scalar              = pure . const scalar
 
-validateEnumType :: Text -> [Text] -> JSType -> [Prop] -> InputValidation JSType
-validateEnumType expected' tags jsType props = validateEnum (UnexpectedType props expected' jsType) tags jsType
-
 validateLeaf :: Leaf -> JSType -> [Prop] -> InputValidation JSType
-validateLeaf (LEnum tags core) jsType props      = validateEnumType (name core) tags jsType props
+validateLeaf (LEnum tags core) jsType props      = validateEnum (UnexpectedType props (name core) jsType) tags jsType
 validateLeaf (LScalar core) (Scalar found) props = Scalar <$> validateScalarTypes (name core) found props
 validateLeaf (LScalar core) jsType props         = Left $ generateError jsType (name core) props
 
@@ -48,22 +45,22 @@ validateInputObject prop' lib' listDeep' (GObject parentFields pos) (_name, valu
   field' <- getField
   case value' of
     JSList list'
-      | listDeep' < length (fieldTypeWrappers field') ->
-        mapM_ (recValidate (listDeep' + 1)) list' >> pure (_name, JSList list')
+      | isWrappedInList field' -> mapM_ (recValidate (listDeep' + 1)) list' >> pure (_name, JSList list')
     JSList list' -> Left $ generateError (JSList list') (fieldType field') prop'
     JSObject fields
-      | notWrappedInList field' -> do
+      | isNotWrappedInList field' -> do
         (fieldTypeName', currentProp, error') <- validationData (JSObject fields)
         inputObject' <- existsInputObjectType error' lib' fieldTypeName'
         mapM (validateInputObject currentProp lib' 0 inputObject') fields >>= \x -> pure (_name, JSObject x)
-    jsType
-      | notWrappedInList field' -> do
-        (fieldTypeName', currentProp, error') <- validationData jsType
+    leafValue'
+      | isNotWrappedInList field' -> do
+        (fieldTypeName', currentProp, error') <- validationData leafValue'
         fieldType' <- existsLeafType error' lib' fieldTypeName'
-        validateLeaf fieldType' jsType currentProp >> pure (_name, jsType)
+        validateLeaf fieldType' leafValue' currentProp >> pure (_name, leafValue')
     invalidValue' -> Left $ UnexpectedType prop' (T.concat ["[", fieldType field', "]"]) invalidValue'
   where
-    notWrappedInList field' = not $ listDeep' > 0 && listDeep' < length (fieldTypeWrappers field')
+    isWrappedInList field' = listDeep' < length (fieldTypeWrappers field')
+    isNotWrappedInList field' = not $ listDeep' > 0 && isWrappedInList field'
     validationData x = do
       fieldTypeName' <- fieldType <$> getField
       let currentProp = prop' ++ [Prop _name fieldTypeName']
