@@ -36,9 +36,10 @@ validateArgumentValue isList' lib' typeID' (key', Argument value' position') =
 validateArgument :: TypeLib -> Position -> Arguments -> (Text, InputField) -> Validation (Text, Argument)
 validateArgument types position' requestArgs (key', InputField arg) =
   case lookup key' requestArgs of
-    Nothing                   -> handleNullable
-    Just (Argument JSNull _)  -> handleNullable
-    Just (Argument value pos) -> validateArgumentValue (asList arg) types (fieldType arg) (key', Argument value pos)
+    Nothing -> handleNullable
+    Just (Argument JSNull _) -> handleNullable
+    Just (Argument value pos) ->
+      validateArgumentValue (0 < length (fieldTypeWrappers arg)) types (fieldType arg) (key', Argument value pos)
   where
     handleNullable =
       if notNull arg

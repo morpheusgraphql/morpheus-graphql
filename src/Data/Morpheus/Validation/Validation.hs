@@ -37,7 +37,7 @@ fieldSchema =
             SC.Field
               { SC.fieldName = "__schema"
               , SC.notNull = True
-              , SC.asList = False
+              , SC.fieldTypeWrappers = []
               , SC.kind = OBJECT
               , SC.fieldType = "__Schema"
               }

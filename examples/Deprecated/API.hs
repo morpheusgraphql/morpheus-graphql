@@ -59,7 +59,7 @@ newtype UID = UID
 
 data Coordinates = Coordinates
   { latitude  :: Euro
-  , longitude :: [UID]
+  , longitude :: [[[UID]]]
   } deriving (Generic)
 
 instance GQLType Coordinates where
@@ -78,7 +78,7 @@ data AddressArgs = AddressArgs
   } deriving (Generic, GQLArgs)
 
 data OfficeArgs = OfficeArgs
-  { zipCode :: Maybe [Int]
+  { zipCode :: Maybe [[[Int]]]
   , cityID  :: CityID
   } deriving (Generic, GQLArgs)
 
@@ -120,7 +120,7 @@ addressByCityID BLN code   = fetchAddress (Euro 1 code) "Berlin"
 addressByCityID HH code    = fetchAddress (Euro 1 code) "Hamburg"
 
 resolveOffice :: JSONUser -> OfficeArgs ::-> Address
-resolveOffice _ = Resolver $ \args -> addressByCityID (cityID args) (head $ fromMaybe [101] (zipCode args))
+resolveOffice _ = Resolver $ \args -> addressByCityID (cityID args) (12)
 
 resolveUser :: () ::-> User
 resolveUser = transformUser <$> Resolver (const jsonUser)

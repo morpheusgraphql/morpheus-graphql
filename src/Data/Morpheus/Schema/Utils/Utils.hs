@@ -12,15 +12,16 @@ module Data.Morpheus.Schema.Utils.Utils
   , typeFromUnion
   ) where
 
-import           Data.Morpheus.Schema.EnumValue      (EnumValue, createEnumValue)
-import qualified Data.Morpheus.Schema.Field          as F (Field (..), createFieldWith)
-import qualified Data.Morpheus.Schema.InputValue     as IN (InputValue (..), createInputValueWith)
-import qualified Data.Morpheus.Schema.Internal.AST as I (Core (..), Field (..), GObject (..), InputField (..),
-                                                           InputObject, Leaf (..), ObjectField (..), OutputObject)
-import           Data.Morpheus.Schema.Type           (Type (..))
-import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
-import           Data.Morpheus.Types.Describer       ((::->))
-import           Data.Text                           (Text)
+import           Data.Morpheus.Schema.EnumValue     (EnumValue, createEnumValue)
+import qualified Data.Morpheus.Schema.Field         as F (Field (..), createFieldWith)
+import qualified Data.Morpheus.Schema.InputValue    as IN (InputValue (..), createInputValueWith)
+import qualified Data.Morpheus.Schema.Internal.AST  as I (Core (..), Field (..), GObject (..), InputField (..),
+                                                          InputObject, Leaf (..), ObjectField (..), OutputObject)
+import           Data.Morpheus.Schema.Type          (Type (..))
+import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
+import           Data.Morpheus.Types.Describer      ((::->))
+import           Data.Morpheus.Types.Query.Operator (ListWrapper (..))
+import           Data.Text                          (Text)
 
 type InputValue = IN.InputValue Type
 
@@ -41,11 +42,16 @@ wrapNotNull field' type' =
     then wrapAs NON_NULL type'
     else type'
 
+wrapListSingle :: ListWrapper -> Type -> Type
+wrapListSingle (ListWrapper True) type'  = wrapAs LIST (wrapAs NON_NULL type')
+wrapListSingle (ListWrapper False) type' = wrapAs LIST type'
+
+wrapListRec :: [ListWrapper] -> Type -> Type
+wrapListRec [] type'     = type'
+wrapListRec (x:xs) type' = wrapListRec xs (wrapListSingle x type')
+
 wrapList :: I.Field -> Type -> Type
-wrapList field' type' =
-  if I.asList field'
-    then wrapAs LIST type'
-    else type'
+wrapList field' = wrapListRec (I.fieldTypeWrappers field')
 
 fieldFromObjectField :: (Text, I.ObjectField) -> Field
 fieldFromObjectField (key', field') =

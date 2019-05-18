@@ -17,8 +17,9 @@ module Data.Morpheus.Schema.Internal.AST
   , LibType(..)
   ) where
 
-import           Data.Morpheus.Schema.TypeKind (TypeKind)
-import           Data.Text                     (Text)
+import           Data.Morpheus.Schema.TypeKind      (TypeKind)
+import           Data.Morpheus.Types.Query.Operator (ListWrapper)
+import           Data.Text                          (Text)
 
 type EnumValue = Text
 
@@ -32,11 +33,11 @@ data Core = Core
   } deriving (Show)
 
 data Field = Field
-  { fieldName :: Text
-  , notNull   :: Bool
-  , kind      :: TypeKind
-  , fieldType :: Text
-  , asList    :: Bool
+  { fieldName         :: Text
+  , notNull           :: Bool
+  , kind              :: TypeKind
+  , fieldType         :: Text
+  , fieldTypeWrappers :: [ListWrapper]
   } deriving (Show)
 
 data ObjectField = ObjectField
@@ -71,7 +72,6 @@ data Leaf
   deriving (Show)
 
 data TypeLib = TypeLib
-
   { leaf         :: [(Text, Leaf)]
   , inputObject  :: [(Text, InputObject)]
   , object       :: [(Text, OutputObject)]
@@ -82,7 +82,9 @@ data TypeLib = TypeLib
   }
 
 initTypeLib :: (Text, OutputObject) -> TypeLib
-initTypeLib query' = TypeLib {leaf = [], inputObject = [], query = query', object = [], union = [], mutation = Nothing, subscription = Nothing}
+initTypeLib query' =
+  TypeLib
+    {leaf = [], inputObject = [], query = query', object = [], union = [], mutation = Nothing, subscription = Nothing}
 
 data LibType
   = Leaf Leaf
@@ -101,7 +103,9 @@ subscriptionName Nothing          = []
 
 getAllTypeKeys :: TypeLib -> [Text]
 getAllTypeKeys (TypeLib leaf' inputObject' object' union' (queryName, _) mutation' subscription') =
-  [queryName] ++ map fst leaf' ++ map fst inputObject' ++ map fst object' ++ mutationName mutation' ++ subscriptionName subscription' ++  map fst union'
+  [queryName] ++
+  map fst leaf' ++
+  map fst inputObject' ++ map fst object' ++ mutationName mutation' ++ subscriptionName subscription' ++ map fst union'
 
 isTypeDefined :: Text -> TypeLib -> Bool
 isTypeDefined name' lib' = name' `elem` getAllTypeKeys lib'

@@ -10,6 +10,7 @@ import           Data.Morpheus.Schema.Internal.AST    (Core (..), Field (..), GO
                                                        InputObject, InputType, Leaf (..), TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.AST    as T (InternalType (..))
 import           Data.Morpheus.Types.JSType           (JSType (..), ScalarValue (..))
+import           Data.Morpheus.Types.Query.Operator   (ListWrapper (..))
 import           Data.Morpheus.Validation.Input.Enum  (validateEnum)
 import           Data.Morpheus.Validation.Utils.Utils (lookupField, lookupType)
 import           Data.Text                            (Text)
@@ -47,29 +48,29 @@ validateLeaf (LScalar core) (Scalar found) props = Scalar <$> validateScalarType
 validateLeaf (LScalar core) jsType props         = Left $ generateError jsType (name core) props
 
 validateInputObject ::
-     [Prop] -> TypeLib -> Bool -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
-validateInputObject prop' lib' fromList' (GObject parentFields _) (_name, JSObject fields) = do
+     [Prop] -> TypeLib -> Int -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
+validateInputObject prop' lib' listDeep' (GObject parentFields _) (_name, JSObject fields) = do
   field' <- unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
   let fieldTypeName' = fieldType field'
   let currentProp = prop' ++ [Prop _name fieldTypeName']
   let error' = generateError (JSObject fields) fieldTypeName' currentProp
   inputObject' <- existsInputObjectType error' lib' fieldTypeName'
-  if not fromList' && asList field'
+  if listDeep' > 0 && listDeep' < length (fieldTypeWrappers field')
     then Left $ UnexpectedType prop' (T.concat ["[", fieldTypeName', "]"]) (JSObject fields)
-    else mapM (validateInputObject currentProp lib' False inputObject') fields >>= \x -> pure (_name, JSObject x)
-validateInputObject prop' lib' _ (GObject parentFields pos) (_name, JSList list') = do
+    else mapM (validateInputObject currentProp lib' 0 inputObject') fields >>= \x -> pure (_name, JSObject x)
+validateInputObject prop' lib' listDeep' (GObject parentFields pos) (_name, JSList list') = do
   field' <- unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
-  if asList field'
-    then mapM_ recValidate list' >> pure (_name, JSList list')
+  if listDeep' < length (fieldTypeWrappers field')
+    then mapM_ (recValidate (listDeep' + 1)) list' >> pure (_name, JSList list')
     else Left $ generateError (JSList list') (fieldType field') prop'
   where
-    recValidate x = validateInputObject prop' lib' True (GObject parentFields pos) (_name, x)
-validateInputObject prop' lib' fromList' (GObject parentFields _) (_name, jsType) = do
+    recValidate newDeep' x = validateInputObject prop' lib' newDeep' (GObject parentFields pos) (_name, x)
+validateInputObject prop' lib' listDeep' (GObject parentFields _) (_name, jsType) = do
   field' <- unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
   let fieldTypeName' = fieldType field'
   let currentProp = prop' ++ [Prop _name fieldTypeName']
   let error' = generateError jsType fieldTypeName' currentProp
-  if not fromList' && asList field'
+  if listDeep' > 0 && listDeep' < length (fieldTypeWrappers field')
     then Left $ UnexpectedType prop' (T.concat ["[", fieldTypeName', "]"]) jsType
     else do
       fieldType' <- existsLeafType error' lib' fieldTypeName'
@@ -77,7 +78,7 @@ validateInputObject prop' lib' fromList' (GObject parentFields _) (_name, jsType
 
 validateInput :: TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
 validateInput typeLib (T.Object oType) (_, JSObject fields) =
-  JSObject <$> mapM (validateInputObject [] typeLib False oType) fields
+  JSObject <$> mapM (validateInputObject [] typeLib 0 oType) fields
 validateInput _ (T.Object (GObject _ core)) (_, jsType) = Left $ generateError jsType (name core) []
 validateInput _ (T.Scalar core) (_, jsValue) = validateLeaf (LScalar core) jsValue []
 validateInput _ (T.Enum tags core) (_, jsValue) = validateLeaf (LEnum tags core) jsValue []

@@ -20,9 +20,9 @@ import           Data.Morpheus.Generics.TypeID          (TypeID, typeId)
 import           Data.Morpheus.Schema.Directive         (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.EnumValue         (EnumValue)
-import           Data.Morpheus.Schema.Internal.AST    (Core (..), GObject (..), InputField, Leaf (..), LibType (..),
+import           Data.Morpheus.Schema.Internal.AST      (Core (..), GObject (..), InputField, Leaf (..), LibType (..),
                                                          ObjectField (..), TypeLib, defineType, isTypeDefined)
-import qualified Data.Morpheus.Schema.Internal.AST    as I (Field (..))
+import qualified Data.Morpheus.Schema.Internal.AST      as I (Field (..))
 import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
@@ -52,7 +52,7 @@ class GQLType a where
   typeID = typeId
   field_ :: TypeKind -> Proxy a -> Text -> I.Field
   field_ kind' proxy' name' =
-    I.Field {I.fieldName = name', I.notNull = True, I.asList = False, I.kind = kind', I.fieldType = typeID proxy'}
+    I.Field {I.fieldName = name', I.notNull = True, I.fieldTypeWrappers = [], I.kind = kind', I.fieldType = typeID proxy'}
   buildType :: Proxy a -> Core
   buildType proxy = Core {name = typeID proxy, typeDescription = description proxy}
   updateLib :: (Proxy a -> LibType) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib

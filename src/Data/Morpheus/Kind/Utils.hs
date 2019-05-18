@@ -7,10 +7,11 @@ module Data.Morpheus.Kind.Utils
   , encodeList
   ) where
 
-import           Data.Morpheus.Schema.Internal.AST (InputField (..), ObjectField (..))
-import qualified Data.Morpheus.Schema.Internal.AST as I (Field (..))
+import           Data.Morpheus.Schema.Internal.AST   (InputField (..), ObjectField (..))
+import qualified Data.Morpheus.Schema.Internal.AST   as I (Field (..))
 import           Data.Morpheus.Types.Error           (ResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType (..))
+import           Data.Morpheus.Types.Query.Operator  (ListWrapper (..))
 import           Data.Morpheus.Types.Query.Selection (Selection (..))
 import           Data.Text                           (Text)
 
@@ -18,7 +19,7 @@ setNull :: I.Field -> I.Field
 setNull x = x {I.notNull = False}
 
 setList :: I.Field -> I.Field
-setList x = x {I.asList = True}
+setList x = x {I.fieldTypeWrappers = ListWrapper False : I.fieldTypeWrappers x}
 
 maybeInputField :: InputField -> InputField
 maybeInputField = InputField . setNull . unpackInputField
