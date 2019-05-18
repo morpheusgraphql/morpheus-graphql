@@ -59,7 +59,7 @@ newtype UID = UID
 
 data Coordinates = Coordinates
   { latitude  :: Euro
-  , longitude :: [[[UID]]]
+  , longitude :: [Maybe[[UID]]]
   } deriving (Generic)
 
 instance GQLType Coordinates where
