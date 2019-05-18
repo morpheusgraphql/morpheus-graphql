@@ -16,10 +16,12 @@ import           Data.Morpheus.Types.Query.Selection (Selection (..))
 import           Data.Text                           (Text)
 
 setNull :: I.Field -> I.Field
-setNull x = x {I.notNull = False}
+setNull field@I.Field {I.fieldTypeWrappers = []} = field {I.notNull = False}
+setNull field@I.Field {I.fieldTypeWrappers = _:xs} =
+  field {I.fieldTypeWrappers = ListWrapper {nonNullElements = False} : xs}
 
 setList :: I.Field -> I.Field
-setList x = x {I.fieldTypeWrappers = ListWrapper False : I.fieldTypeWrappers x}
+setList x = x {I.fieldTypeWrappers = ListWrapper {nonNullElements = True} : I.fieldTypeWrappers x}
 
 maybeInputField :: InputField -> InputField
 maybeInputField = InputField . setNull . unpackInputField
