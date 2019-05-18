@@ -34,11 +34,6 @@ validateScalarTypes "Boolean" (Boolean x) = pure . const (Boolean x)
 validateScalarTypes "Boolean" scalar      = Left . generateError (Scalar scalar) "Boolean"
 validateScalarTypes _ scalar              = pure . const scalar
 
-validateList :: Bool -> (JSType -> InputValidation JSType) -> JSType -> [Prop] -> InputValidation JSType
-validateList True validator' (JSList list') _ = JSList <$> mapM validator' list'
-validateList True _ value' currentProp        = Left $ UnexpectedType currentProp "LIST" value'
-validateList False validator' value' _        = validator' value'
-
 validateEnumType :: Text -> [Text] -> JSType -> [Prop] -> InputValidation JSType
 validateEnumType expected' tags jsType props = validateEnum (UnexpectedType props expected' jsType) tags jsType
 
@@ -83,6 +78,9 @@ validateInput _ (T.Object (GObject _ core)) (_, jsType) = Left $ generateError j
 validateInput _ (T.Scalar core) (_, jsValue) = validateLeaf (LScalar core) jsValue []
 validateInput _ (T.Enum tags core) (_, jsValue) = validateLeaf (LEnum tags core) jsValue []
 
-validateInputValue :: Bool -> TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
-validateInputValue isList lib' iType' (key', value') =
-  validateList isList (\x -> validateInput lib' iType' (key', x)) value' []
+validateInputValue :: [ListWrapper] -> TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
+validateInputValue [] _ _ (_, list'@(JSList _)) = Left $ UnexpectedType [] "TODO:Not List" list'
+validateInputValue (_:xs) lib' iType' (key', JSList list') =
+  JSList <$> mapM (\x -> validateInputValue xs lib' iType' (key', x)) list'
+validateInputValue [] lib' iType' value' = validateInput lib' iType' value'
+validateInputValue _ _ _ (_, value') = Left $ UnexpectedType [] "TODO:LIST" value'
