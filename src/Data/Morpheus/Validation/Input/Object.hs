@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Validation.Input.Object
-  ( validateInputObject
-  , validateInputValue
+  ( validateInputValue
   ) where
 
 import           Data.Morpheus.Error.Input            (InputError (..), InputValidation, Prop (..))
@@ -46,7 +45,6 @@ validateInputObject prop' lib' listDeep' (GObject parentFields pos) (_name, valu
   case value' of
     JSList list'
       | isWrappedInList field' -> mapM_ (recValidate (listDeep' + 1)) list' >> pure (_name, JSList list')
-    JSList list' -> Left $ generateError (JSList list') (fieldType field') prop'
     JSObject fields
       | isNotWrappedInList field' -> do
         (fieldTypeName', currentProp, error') <- validationData (JSObject fields)
@@ -55,8 +53,8 @@ validateInputObject prop' lib' listDeep' (GObject parentFields pos) (_name, valu
     leafValue'
       | isNotWrappedInList field' -> do
         (fieldTypeName', currentProp, error') <- validationData leafValue'
-        fieldType' <- existsLeafType error' lib' fieldTypeName'
-        validateLeaf fieldType' leafValue' currentProp >> pure (_name, leafValue')
+        leafType' <- existsLeafType error' lib' fieldTypeName'
+        validateLeaf leafType' leafValue' currentProp >> pure (_name, leafValue')
     invalidValue' -> Left $ UnexpectedType prop' (T.concat ["[", fieldType field', "]"]) invalidValue'
   where
     isWrappedInList field' = listDeep' < length (fieldTypeWrappers field')
