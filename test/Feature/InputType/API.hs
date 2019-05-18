@@ -22,8 +22,9 @@ data F1Args = F1Args
   , arg2 :: Maybe Int
   } deriving (Generic, GQLArgs)
 
-newtype F2Args = F2Args
-  { argList :: [Text]
+data F2Args = F2Args
+  { argList       :: [Text]
+  , argNestedList :: [Maybe [[Int]]]
   } deriving (Generic, GQLArgs)
 
 data A = A

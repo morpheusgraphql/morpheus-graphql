@@ -17,7 +17,7 @@
   },
   {
     "path": "variables/nestedListNonNullListReceivedNull",
-    "description": "resolve: if list of nonNull elements receives null"
+    "description": "fail: if list of nonNull elements receives null"
   },
   {
     "path": "variables/nestedListNullableListReceivedNull",

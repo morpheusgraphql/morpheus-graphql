@@ -1,5 +1,5 @@
-query invalidListVariable($v1: [String!]! ) {
+query NonNullListReceivedNull($v1: [[[Int!]!]]!) {
   q1 {
-    a2(argList: $v1)
+    a2(argNestedList: $v1)
   }
 }
