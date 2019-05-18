@@ -51,20 +51,19 @@ validateInputObject prop' lib' listDeep' (GObject parentFields pos) (_name, valu
       | listDeep' < length (fieldTypeWrappers field') ->
         mapM_ (recValidate (listDeep' + 1)) list' >> pure (_name, JSList list')
     JSList list' -> Left $ generateError (JSList list') (fieldType field') prop'
-    JSObject fields -> do
-      (fieldTypeName', currentProp, error') <- validationData (JSObject fields)
-      inputObject' <- existsInputObjectType error' lib' fieldTypeName'
-      if listDeep' > 0 && listDeep' < length (fieldTypeWrappers field')
-        then Left $ UnexpectedType prop' (T.concat ["[", fieldTypeName', "]"]) (JSObject fields)
-        else mapM (validateInputObject currentProp lib' 0 inputObject') fields >>= \x -> pure (_name, JSObject x)
-    jsType -> do
-      (fieldTypeName', currentProp, error') <- validationData jsType
-      if listDeep' > 0 && listDeep' < length (fieldTypeWrappers field')
-        then Left $ UnexpectedType prop' (T.concat ["[", fieldTypeName', "]"]) jsType
-        else do
-          fieldType' <- existsLeafType error' lib' fieldTypeName'
-          validateLeaf fieldType' jsType currentProp >> pure (_name, jsType)
+    JSObject fields
+      | notWrappedInList field' -> do
+        (fieldTypeName', currentProp, error') <- validationData (JSObject fields)
+        inputObject' <- existsInputObjectType error' lib' fieldTypeName'
+        mapM (validateInputObject currentProp lib' 0 inputObject') fields >>= \x -> pure (_name, JSObject x)
+    jsType
+      | notWrappedInList field' -> do
+        (fieldTypeName', currentProp, error') <- validationData jsType
+        fieldType' <- existsLeafType error' lib' fieldTypeName'
+        validateLeaf fieldType' jsType currentProp >> pure (_name, jsType)
+    invalidValue' -> Left $ UnexpectedType prop' (T.concat ["[", fieldType field', "]"]) invalidValue'
   where
+    notWrappedInList field' = not $ listDeep' > 0 && listDeep' < length (fieldTypeWrappers field')
     validationData x = do
       fieldTypeName' <- fieldType <$> getField
       let currentProp = prop' ++ [Prop _name fieldTypeName']
