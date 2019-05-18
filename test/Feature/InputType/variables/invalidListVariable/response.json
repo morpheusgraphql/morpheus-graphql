@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Variable \"$i1\" got invalid value [null]; Expected non-nullable type String! not to be null at value[0].",
+      "message": "Variable \"$v1\" got invalid value;  Expected type \"String\" found null.",
       "locations": [
         {
           "line": 1,
