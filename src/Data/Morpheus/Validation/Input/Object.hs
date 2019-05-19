@@ -83,17 +83,26 @@ validateInputObject prop' lib' wrappers' (GObject parentFields _) (_name, value'
       return (fieldTypeName', currentProp, inputError)
     getField = unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
 
-validateInputValue :: [TypeWrapper] -> TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
-validateInputValue (NonNullType:wrappers') _ type' (_, JSNull) =
-  Left $ UnexpectedType [] (showFullAstType wrappers' type') JSNull
-validateInputValue _ _ _ (_, JSNull) = return JSNull
-validateInputValue (NonNullType:wrappers') lib' type' value' = validateInputValue wrappers' lib' type' value'
-validateInputValue (ListType:xs) lib' iType' (key', JSList list') = JSList <$> mapM listCheck list'
+-- Validate Variable Argument or all Possible input Values
+validateInputValue :: TypeLib -> [Prop] -> [TypeWrapper] -> InputType -> (Text, JSType) -> InputValidation JSType
+-- handle nullable fields
+validateInputValue _ prop' (NonNullType:wrappers') type' (_, JSNull) =
+  Left $ UnexpectedType prop' (showFullAstType wrappers' type') JSNull
+validateInputValue _ _ _ _ (_, JSNull) = return JSNull
+-- ignores NonNUllTypes if value /= null
+validateInputValue lib' prop' (NonNullType:wrappers') type' value' =
+  validateInputValue lib' prop' wrappers' type' value'
+-- recursively validates array
+validateInputValue lib' prop' (ListType:wrappers') type' (key', JSList list') = JSList <$> mapM listCheck list'
   where
-    listCheck element' = validateInputValue xs lib' iType' (key', element')
-validateInputValue [] typeLib (T.Object oType) (_, JSObject fields) =
-  JSObject <$> mapM (validateI [] typeLib oType) fields
-validateInputValue [] _ (T.Object (GObject _ core)) (_, jsType) = Left $ generateError jsType (name core) []
-validateInputValue [] _ (T.Scalar core) (_, jsValue) = validateLeaf (LScalar core) jsValue []
-validateInputValue [] _ (T.Enum tags core) (_, jsValue) = validateLeaf (LEnum tags core) jsValue []
-validateInputValue wrappers' _ type' (_, value') = Left $ UnexpectedType [] (showFullAstType wrappers' type') value'
+    listCheck element' = validateInputValue lib' prop' wrappers' type' (key', element')
+{--
+validates concrete types
+when all wrapper validation are done --}
+validateInputValue lib' prop' [] (T.Object type') (_, JSObject fields) =
+  JSObject <$> mapM (validateI prop' lib' type') fields
+validateInputValue _ prop' [] (T.Scalar core) (_, jsValue) = validateLeaf (LScalar core) jsValue prop'
+validateInputValue _ prop' [] (T.Enum tags core) (_, jsValue) = validateLeaf (LEnum tags core) jsValue prop'
+-- throw error on invalid values
+validateInputValue _ prop' wrappers' type' (_, value') =
+  Left $ UnexpectedType prop' (showFullAstType wrappers' type') value'
