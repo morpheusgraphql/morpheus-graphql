@@ -9,7 +9,7 @@ import           Data.Morpheus.Schema.Internal.AST    (Core (..), Field (..), GO
                                                        InputObject, InputType, Leaf (..), TypeLib (..))
 import qualified Data.Morpheus.Schema.Internal.AST    as T (InternalType (..))
 import           Data.Morpheus.Types.JSType           (JSType (..), ScalarValue (..))
-import           Data.Morpheus.Types.Query.Operator   (ListWrapper (..))
+import           Data.Morpheus.Types.Query.Operator   (TypeWrapper (..))
 import           Data.Morpheus.Validation.Input.Enum  (validateEnum)
 import           Data.Morpheus.Validation.Utils.Utils (lookupField, lookupType)
 import           Data.Text                            (Text)
@@ -44,7 +44,7 @@ validateI prop' lib' parent'@(GObject fields' _) (_name, value') = do
   validateInputObject prop' lib' wrappers' parent' (_name, value')
 
 validateInputObject ::
-     [Prop] -> TypeLib -> [ListWrapper] -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
+     [Prop] -> TypeLib -> [TypeWrapper] -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
 validateInputObject prop' lib' wrappers' (GObject parentFields pos) (_name, value') = do
   field' <- getField
   case value' of
@@ -80,11 +80,11 @@ validateInput _ (T.Object (GObject _ core)) (_, jsType)     = Left $ generateErr
 validateInput _ (T.Scalar core) (_, jsValue)                = validateLeaf (LScalar core) jsValue []
 validateInput _ (T.Enum tags core) (_, jsValue)             = validateLeaf (LEnum tags core) jsValue []
 
-hasListNullableElements :: [ListWrapper] -> Bool
-hasListNullableElements (ListWrapper True:_) = False
-hasListNullableElements _                    = True
+hasListNullableElements :: [TypeWrapper] -> Bool
+hasListNullableElements (NonNullType:_) = False
+hasListNullableElements _               = True
 
-validateInputValue :: [ListWrapper] -> TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
+validateInputValue :: [TypeWrapper] -> TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
 validateInputValue [] _ _ (_, list'@(JSList _)) = Left $ UnexpectedType [] "TODO:Not List" list'
 validateInputValue w@(_:xs) lib' iType' (key', JSList list') = JSList <$> mapM listCheck list'
   where

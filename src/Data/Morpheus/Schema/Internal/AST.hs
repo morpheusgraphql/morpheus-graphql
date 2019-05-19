@@ -15,10 +15,11 @@ module Data.Morpheus.Schema.Internal.AST
   , initTypeLib
   , defineType
   , LibType(..)
+  , isFieldNullable
   ) where
 
 import           Data.Morpheus.Schema.TypeKind      (TypeKind)
-import           Data.Morpheus.Types.Query.Operator (TypeWrapper)
+import           Data.Morpheus.Types.Query.Operator (TypeWrapper (..))
 import           Data.Text                          (Text)
 
 type EnumValue = Text
@@ -31,6 +32,10 @@ data Core = Core
   { name            :: Text
   , typeDescription :: Text
   } deriving (Show)
+
+isFieldNullable :: Field -> Bool
+isFieldNullable Field {fieldTypeWrappers = NonNullType:_} = False
+isFieldNullable _                                         = True
 
 data Field = Field
   { fieldName         :: Text

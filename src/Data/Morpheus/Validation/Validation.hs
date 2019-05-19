@@ -15,7 +15,7 @@ import qualified Data.Morpheus.Schema.Internal.AST   as SC (Field (..))
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Error           (Validation)
 import           Data.Morpheus.Types.Query.Operator  (Operator (..), Operator' (..), RawOperator, RawOperator',
-                                                      ValidOperator)
+                                                      TypeWrapper (..), ValidOperator)
 import           Data.Morpheus.Types.Query.Selection (SelectionSet)
 import           Data.Morpheus.Types.Types           (GQLQueryRoot (..))
 import           Data.Morpheus.Validation.Fragment   (validateFragments)
@@ -36,9 +36,8 @@ fieldSchema =
         , fieldContent =
             SC.Field
               { SC.fieldName = "__schema"
-              , SC.notNull = True
-              , SC.fieldTypeWrappers = []
-              , SC.kind = OBJECT
+              , SC.fieldTypeWrappers = [NonNullType]
+              , SC.fieldKind = OBJECT
               , SC.fieldType = "__Schema"
               }
         })

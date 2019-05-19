@@ -7,7 +7,8 @@ import           Data.Morpheus.Error.Arguments          (argumentGotInvalidValue
                                                          undefinedArgument, unknownArguments)
 import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Internal           (internalUnknownTypeMessage)
-import           Data.Morpheus.Schema.Internal.AST      (Field (..), InputField (..), ObjectField (..), TypeLib)
+import           Data.Morpheus.Schema.Internal.AST      (Field (..), InputField (..), ObjectField (..), TypeLib,
+                                                         isFieldNullable)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.JSType             (JSType (JSNull))
@@ -42,9 +43,9 @@ validateArgument types position' requestArgs (key', InputField arg) =
     Just (Argument value pos) -> validateArgumentValue types arg (key', Argument value pos)
   where
     handleNullable =
-      if notNull arg
-        then Left $ undefinedArgument (EnhancedKey key' position')
-        else pure (key', Argument JSNull position')
+      if isFieldNullable arg
+        then pure (key', Argument JSNull position')
+        else Left $ undefinedArgument (EnhancedKey key' position')
 
 checkForUnknownArguments :: (Text, ObjectField) -> Arguments -> Validation [(Text, InputField)]
 checkForUnknownArguments (fieldKey', ObjectField fieldArgs _) args' =

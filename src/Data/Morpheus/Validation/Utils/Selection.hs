@@ -19,7 +19,7 @@ import           Data.Morpheus.Validation.Utils.Utils (lookupField, lookupType)
 import           Data.Text                            (Text)
 
 isObjectKind :: ObjectField -> Bool
-isObjectKind (ObjectField _ field') = OBJECT == kind field'
+isObjectKind (ObjectField _ field') = OBJECT == fieldKind field'
 
 mustBeObject :: (Text, Position) -> ObjectField -> Validation ObjectField
 mustBeObject (key', position') field' =
