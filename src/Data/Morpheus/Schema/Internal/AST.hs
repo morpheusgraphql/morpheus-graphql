@@ -75,7 +75,7 @@ astTypeName (Object (GObject _ core)) = name core
 showWrappedType :: [TypeWrapper] -> Text -> Text
 showWrappedType [] type'               = type'
 showWrappedType (ListType:xs) type'    = T.concat ["[", showWrappedType xs type', "]"]
-showWrappedType (NonNullType:xs) type' = showWrappedType xs $ T.concat [type', "!"]
+showWrappedType (NonNullType:xs) type' = T.concat [showWrappedType xs type', "!"]
 
 showFullAstType :: [TypeWrapper] -> InternalType a -> Text
 showFullAstType wrappers' = showWrappedType wrappers' . astTypeName
