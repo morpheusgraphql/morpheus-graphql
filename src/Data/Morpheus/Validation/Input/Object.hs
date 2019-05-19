@@ -81,15 +81,15 @@ validateInput _ (T.Scalar core) (_, jsValue)                = validateLeaf (LSca
 validateInput _ (T.Enum tags core) (_, jsValue)             = validateLeaf (LEnum tags core) jsValue []
 
 hasListNullableElements :: [ListWrapper] -> Bool
-hasListNullableElements (ListWrapper True:_) = True
-hasListNullableElements _                    = False
+hasListNullableElements (ListWrapper True:_) = False
+hasListNullableElements _                    = True
 
 validateInputValue :: [ListWrapper] -> TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
 validateInputValue [] _ _ (_, list'@(JSList _)) = Left $ UnexpectedType [] "TODO:Not List" list'
 validateInputValue w@(_:xs) lib' iType' (key', JSList list') = JSList <$> mapM listCheck list'
   where
     listCheck JSNull
-      | hasListNullableElements w = validateInputValue xs lib' iType' (key', JSNull)
+      | hasListNullableElements w = return JSNull
     listCheck element' = validateInputValue xs lib' iType' (key', element')
 validateInputValue [] lib' iType' value' = validateInput lib' iType' value'
 validateInputValue _ _ _ (_, value') = Left $ UnexpectedType [] "TODO:LIST" value'
