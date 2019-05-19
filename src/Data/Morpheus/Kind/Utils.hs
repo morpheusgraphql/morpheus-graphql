@@ -20,7 +20,7 @@ setNull field@I.Field {I.fieldTypeWrappers = NonNullType:xs} = field {I.fieldTyp
 setNull field                                                = field
 
 setList :: I.Field -> I.Field
-setList x = x {I.fieldTypeWrappers = ListType : I.fieldTypeWrappers x}
+setList x = x {I.fieldTypeWrappers = [NonNullType, ListType] ++ I.fieldTypeWrappers x}
 
 maybeInputField :: InputField -> InputField
 maybeInputField = InputField . setNull . unpackInputField
