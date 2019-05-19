@@ -20,7 +20,7 @@ import qualified Data.Morpheus.Schema.Internal.AST  as I (Core (..), Field (..),
 import           Data.Morpheus.Schema.Type          (Type (..))
 import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
 import           Data.Morpheus.Types.Describer      ((::->))
-import           Data.Morpheus.Types.Query.Operator (ListWrapper (..))
+import           Data.Morpheus.Types.Query.Operator (TypeWrapper (..))
 import           Data.Text                          (Text)
 
 type InputValue = IN.InputValue Type
@@ -31,27 +31,18 @@ inputValueFromArg :: (Text, I.InputField) -> InputValue
 inputValueFromArg (key', input') = IN.createInputValueWith key' (createInputObjectType input')
 
 createInputObjectType :: I.InputField -> Type
-createInputObjectType (I.InputField field') = wrap field' $ createType (I.kind field') (I.fieldType field') "" []
+createInputObjectType (I.InputField field') = wrap field' $ createType (I.fieldKind field') (I.fieldType field') "" []
 
 wrap :: I.Field -> Type -> Type
-wrap field' = wrapNotNull field' . wrapList field'
+wrap field' = wrapListRec (I.fieldTypeWrappers field')
 
-wrapNotNull :: I.Field -> Type -> Type
-wrapNotNull field' type' =
-  if I.notNull field'
-    then wrapAs NON_NULL type'
-    else type'
-
-wrapListSingle :: ListWrapper -> Type -> Type
-wrapListSingle (ListWrapper True) type'  = wrapAs LIST (wrapAs NON_NULL type')
-wrapListSingle (ListWrapper False) type' = wrapAs LIST type'
-
-wrapListRec :: [ListWrapper] -> Type -> Type
+wrapListRec :: [TypeWrapper] -> Type -> Type
 wrapListRec [] type'     = type'
-wrapListRec (x:xs) type' = wrapListRec xs (wrapListSingle x type')
+wrapListRec (x:xs) type' = wrapListRec xs (wrapByTypeWrapper x type')
 
-wrapList :: I.Field -> Type -> Type
-wrapList field' = wrapListRec (I.fieldTypeWrappers field')
+wrapByTypeWrapper :: TypeWrapper -> Type -> Type
+wrapByTypeWrapper ListType    = wrapAs LIST
+wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 
 fieldFromObjectField :: (Text, I.ObjectField) -> Field
 fieldFromObjectField (key', field') =
@@ -59,7 +50,7 @@ fieldFromObjectField (key', field') =
   where
     getType = I.fieldType $ I.fieldContent field'
     args' = map inputValueFromArg $ I.args field'
-    kind' = I.kind $ I.fieldContent field'
+    kind' = I.fieldKind $ I.fieldContent field'
 
 typeFromLeaf :: (Text, I.Leaf) -> Type
 typeFromLeaf (key', I.LScalar (I.Core _ desc'))     = createLeafType SCALAR key' desc' []

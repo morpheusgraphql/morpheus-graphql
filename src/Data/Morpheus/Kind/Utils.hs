@@ -11,17 +11,16 @@ import           Data.Morpheus.Schema.Internal.AST   (InputField (..), ObjectFie
 import qualified Data.Morpheus.Schema.Internal.AST   as I (Field (..))
 import           Data.Morpheus.Types.Error           (ResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType (..))
-import           Data.Morpheus.Types.Query.Operator  (ListWrapper (..))
+import           Data.Morpheus.Types.Query.Operator  (TypeWrapper (..))
 import           Data.Morpheus.Types.Query.Selection (Selection (..))
 import           Data.Text                           (Text)
 
 setNull :: I.Field -> I.Field
-setNull field@I.Field {I.fieldTypeWrappers = []} = field {I.notNull = False}
-setNull field@I.Field {I.fieldTypeWrappers = _:xs} =
-  field {I.fieldTypeWrappers = ListWrapper {nonNullElements = False} : xs}
+setNull field@I.Field {I.fieldTypeWrappers = NonNullType:xs} = field {I.fieldTypeWrappers = xs}
+setNull field                                                = field
 
 setList :: I.Field -> I.Field
-setList x = x {I.fieldTypeWrappers = ListWrapper {nonNullElements = True} : I.fieldTypeWrappers x}
+setList x = x {I.fieldTypeWrappers = ListType : I.fieldTypeWrappers x}
 
 maybeInputField :: InputField -> InputField
 maybeInputField = InputField . setNull . unpackInputField
