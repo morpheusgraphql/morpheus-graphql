@@ -6,14 +6,14 @@ module Data.Morpheus.Validation.Input.Object
 
 import           Data.Morpheus.Error.Input            (InputError (..), InputValidation, Prop (..))
 import           Data.Morpheus.Schema.Internal.AST    (Core (..), Field (..), GObject (..), InputField (..),
-                                                       InputObject, InputType, Leaf (..), TypeLib (..))
+                                                       InputObject, InputType, Leaf (..), TypeLib (..), showFullAstType,
+                                                       showWrappedType)
 import qualified Data.Morpheus.Schema.Internal.AST    as T (InternalType (..))
 import           Data.Morpheus.Types.JSType           (JSType (..), ScalarValue (..))
 import           Data.Morpheus.Types.Query.Operator   (TypeWrapper (..))
 import           Data.Morpheus.Validation.Input.Enum  (validateEnum)
 import           Data.Morpheus.Validation.Utils.Utils (lookupField, lookupType)
 import           Data.Text                            (Text)
-import qualified Data.Text                            as T (concat)
 
 generateError :: JSType -> Text -> [Prop] -> InputError
 generateError jsType expected' path' = UnexpectedType path' expected' jsType
@@ -74,7 +74,7 @@ validateInputObject prop' lib' wrappers' (GObject parentFields _) (_name, value'
         (fieldTypeName', currentProp, error') <- validationData leafValue'
         leafType' <- existsLeafType error' lib' fieldTypeName'
         validateLeaf leafType' leafValue' currentProp >> pure (_name, leafValue')
-    invalidValue' -> Left $ unexpectedType wrappers' prop' (fieldType field') invalidValue'
+    invalidValue' -> Left $ UnexpectedType prop' (showWrappedType wrappers' $ fieldType field') invalidValue'
   where
     validationData x = do
       fieldTypeName' <- fieldType <$> getField
@@ -83,14 +83,6 @@ validateInputObject prop' lib' wrappers' (GObject parentFields _) (_name, value'
       return (fieldTypeName', currentProp, inputError)
     getField = unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
 
-showTypeSignature :: [TypeWrapper] -> Text -> Text
-showTypeSignature [] type'               = type'
-showTypeSignature (ListType:xs) type'    = showTypeSignature xs $ T.concat ["[", type', "]"]
-showTypeSignature (NonNullType:xs) type' = showTypeSignature xs $ T.concat [type', "!"]
-
-unexpectedType :: [TypeWrapper] -> [Prop] -> Text -> JSType -> InputError
-unexpectedType wrappers' prop' type' = UnexpectedType prop' (showTypeSignature wrappers' type')
-
 validateInput :: TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
 validateInput typeLib (T.Object oType) (_, JSObject fields) = JSObject <$> mapM (validateI [] typeLib oType) fields
 validateInput _ (T.Object (GObject _ core)) (_, jsType)     = Left $ generateError jsType (name core) []
@@ -98,11 +90,12 @@ validateInput _ (T.Scalar core) (_, jsValue)                = validateLeaf (LSca
 validateInput _ (T.Enum tags core) (_, jsValue)             = validateLeaf (LEnum tags core) jsValue []
 
 validateInputValue :: [TypeWrapper] -> TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
-validateInputValue w'@(NonNullType:_) _ _ (_, JSNull) = Left $ unexpectedType w' [] "TODO:Type" JSNull
+validateInputValue (NonNullType:wrappers') _ type' (_, JSNull) =
+  Left $ UnexpectedType [] (showFullAstType wrappers' type') JSNull
 validateInputValue _ _ _ (_, JSNull) = return JSNull
 validateInputValue (NonNullType:wrappers') lib' type' value' = validateInputValue wrappers' lib' type' value'
 validateInputValue (ListType:xs) lib' iType' (key', JSList list') = JSList <$> mapM listCheck list'
   where
     listCheck element' = validateInputValue xs lib' iType' (key', element')
 validateInputValue [] lib' iType' value' = validateInput lib' iType' value'
-validateInputValue wrappers' _ _ (_, value') = Left $ unexpectedType wrappers' [] "TODO:Type" value'
+validateInputValue wrappers' _ type' (_, value') = Left $ UnexpectedType [] (showFullAstType wrappers' type') value'

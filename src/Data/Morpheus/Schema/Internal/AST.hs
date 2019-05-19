@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Data.Morpheus.Schema.Internal.AST
   ( OutputType
   , InternalType(..)
@@ -14,6 +16,9 @@ module Data.Morpheus.Schema.Internal.AST
   , isTypeDefined
   , initTypeLib
   , defineType
+  , showWrappedType
+  , astTypeName
+  , showFullAstType
   , LibType(..)
   , isFieldNullable
   ) where
@@ -21,6 +26,7 @@ module Data.Morpheus.Schema.Internal.AST
 import           Data.Morpheus.Schema.TypeKind      (TypeKind)
 import           Data.Morpheus.Types.Query.Operator (TypeWrapper (..))
 import           Data.Text                          (Text)
+import qualified Data.Text                          as T (concat)
 
 type EnumValue = Text
 
@@ -60,6 +66,19 @@ data InternalType a
          Core
   | Object (GObject a)
   deriving (Show)
+
+astTypeName :: InternalType a -> Text
+astTypeName (Scalar core)             = name core
+astTypeName (Enum _ core)             = name core
+astTypeName (Object (GObject _ core)) = name core
+
+showWrappedType :: [TypeWrapper] -> Text -> Text
+showWrappedType [] type'               = type'
+showWrappedType (ListType:xs) type'    = T.concat ["[", showWrappedType xs type', "]"]
+showWrappedType (NonNullType:xs) type' = showWrappedType xs $ T.concat [type', "!"]
+
+showFullAstType :: [TypeWrapper] -> InternalType a -> Text
+showFullAstType wrappers' = showWrappedType wrappers' . astTypeName
 
 type OutputType = InternalType ObjectField
 
