@@ -22,6 +22,7 @@ import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
 import           Data.Morpheus.Types.Describer      ((::->))
 import           Data.Morpheus.Types.Query.Operator (TypeWrapper (..))
 import           Data.Text                          (Text)
+import           Debug.Trace
 
 type InputValue = IN.InputValue Type
 
@@ -34,11 +35,11 @@ createInputObjectType :: I.InputField -> Type
 createInputObjectType (I.InputField field') = wrap field' $ createType (I.fieldKind field') (I.fieldType field') "" []
 
 wrap :: I.Field -> Type -> Type
-wrap field' = wrapListRec (I.fieldTypeWrappers field')
+wrap field' = wrapRec (I.fieldTypeWrappers field')
 
-wrapListRec :: [TypeWrapper] -> Type -> Type
-wrapListRec [] type'     = type'
-wrapListRec (x:xs) type' = wrapListRec xs (wrapByTypeWrapper x type')
+wrapRec :: [TypeWrapper] -> Type -> Type
+wrapRec [] type'     = type'
+wrapRec (x:xs) type' = wrapByTypeWrapper x (wrapRec xs type')
 
 wrapByTypeWrapper :: TypeWrapper -> Type -> Type
 wrapByTypeWrapper ListType    = wrapAs LIST
