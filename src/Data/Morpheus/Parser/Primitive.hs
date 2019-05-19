@@ -2,9 +2,9 @@
 
 module Data.Morpheus.Parser.Primitive where
 
-import           Control.Applicative
+import           Control.Applicative            (many, (<|>))
 import           Data.Attoparsec.Text
-import           Data.Functor
+import           Data.Functor                   (($>))
 import           Data.Morpheus.Types.JSType     (JSType (..), ScalarValue (..), decodeScientific)
 import qualified Data.Text                      as T (Text, pack)
 
@@ -13,9 +13,6 @@ import qualified Data.Attoparsec.Internal.Types as AT
 replaceType :: T.Text -> T.Text
 replaceType "type" = "_type"
 replaceType x      = x
-
-nonNUll :: Parser Bool
-nonNUll = (char '!' $> True) <|> pure False
 
 boolTrue :: Parser JSType
 boolTrue = string "true" $> Scalar (Boolean True)

@@ -4,14 +4,15 @@ module Data.Morpheus.Parser.Operator
 
 import           Control.Applicative                ((<|>))
 import           Data.Attoparsec.Text               (Parser, char, sepBy, skipSpace, string, try)
-import           Data.Morpheus.Parser.Primitive     (nonNUll, token, variable)
-import           Data.Morpheus.Types.Query.Operator (ListWrapper (..), Variable (..), VariableDefinitions)
+import           Data.Morpheus.Parser.Primitive     (token, variable)
+import           Data.Morpheus.Parser.Terms         (nonNUll)
+import           Data.Morpheus.Types.Query.Operator (TypeWrapper (..), Variable (..), VariableDefinitions)
 import           Data.Text                          (Text)
 
-wrapMock :: Parser ([ListWrapper], Text)
+wrapMock :: Parser ([TypeWrapper], Text)
 wrapMock = skipSpace >> token >>= \x -> pure ([], x)
 
-insideList :: Parser ([ListWrapper], Text)
+insideList :: Parser ([TypeWrapper], Text)
 insideList = do
   skipSpace
   _ <- char '['
@@ -21,9 +22,9 @@ insideList = do
   nonNull' <- nonNUll
   skipSpace
   _ <- char ']'
-  return (ListWrapper nonNull' : list, name)
+  return ((ListType : nonNull') ++ list, name)
 
-wrapped :: Parser ([ListWrapper], Text)
+wrapped :: Parser ([TypeWrapper], Text)
 wrapped = try insideList <|> wrapMock
 
 operatorArgument :: Parser (Text, Variable)
@@ -38,8 +39,8 @@ operatorArgument = do
     ( name'
     , Variable
         { variableType = type'
-        , isVariableRequired = nonNull'
-        , variableTypeWrappers = wrappers'
+        , isVariableRequired = 0 < length nonNull'
+        , variableTypeWrappers = nonNull' ++ wrappers'
         , variablePosition = position'
         })
 
