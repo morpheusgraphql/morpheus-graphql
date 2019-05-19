@@ -63,8 +63,6 @@ validateInputObject prop' lib' wrappers' (GObject parentFields pos) (_name, valu
         validateLeaf leafType' leafValue' currentProp >> pure (_name, leafValue')
     invalidValue' -> Left $ UnexpectedType prop' (T.concat ["[", fieldType field', "]"]) invalidValue'
   where
-    hasListNullableElements (ListWrapper True:_) = True
-    hasListNullableElements _ = False
     isWrappedInList = 0 < length wrappers'
     validationData x = do
       fieldTypeName' <- fieldType <$> getField
@@ -82,9 +80,16 @@ validateInput _ (T.Object (GObject _ core)) (_, jsType)     = Left $ generateErr
 validateInput _ (T.Scalar core) (_, jsValue)                = validateLeaf (LScalar core) jsValue []
 validateInput _ (T.Enum tags core) (_, jsValue)             = validateLeaf (LEnum tags core) jsValue []
 
+hasListNullableElements :: [ListWrapper] -> Bool
+hasListNullableElements (ListWrapper True:_) = True
+hasListNullableElements _                    = False
+
 validateInputValue :: [ListWrapper] -> TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
 validateInputValue [] _ _ (_, list'@(JSList _)) = Left $ UnexpectedType [] "TODO:Not List" list'
-validateInputValue (_:xs) lib' iType' (key', JSList list') =
-  JSList <$> mapM (\x -> validateInputValue xs lib' iType' (key', x)) list'
+validateInputValue w@(_:xs) lib' iType' (key', JSList list') = JSList <$> mapM listCheck list'
+  where
+    listCheck JSNull
+      | hasListNullableElements w = validateInputValue xs lib' iType' (key', JSNull)
+    listCheck element' = validateInputValue xs lib' iType' (key', element')
 validateInputValue [] lib' iType' value' = validateInput lib' iType' value'
 validateInputValue _ _ _ (_, value') = Left $ UnexpectedType [] "TODO:LIST" value'
