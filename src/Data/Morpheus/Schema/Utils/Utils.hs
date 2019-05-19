@@ -22,7 +22,6 @@ import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
 import           Data.Morpheus.Types.Describer      ((::->))
 import           Data.Morpheus.Types.Query.Operator (TypeWrapper (..))
 import           Data.Text                          (Text)
-import           Debug.Trace
 
 type InputValue = IN.InputValue Type
 
