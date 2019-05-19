@@ -38,11 +38,6 @@ validateLeaf (LEnum tags core) jsType props      = validateEnum (UnexpectedType 
 validateLeaf (LScalar core) (Scalar found) props = Scalar <$> validateScalarTypes (name core) found props
 validateLeaf (LScalar core) jsType props         = Left $ generateError jsType (name core) props
 
-validateI :: [Prop] -> TypeLib -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
-validateI prop' lib' parent'@(GObject fields' _) (_name, value') = do
-  wrappers' <- fieldTypeWrappers . unpackInputField <$> lookupField _name fields' (UnknownField prop' _name)
-  validateInputObject prop' lib' wrappers' parent' (_name, value')
-
 isNullableType :: [TypeWrapper] -> Bool
 isNullableType (NonNullType:_) = False
 isNullableType _               = True
@@ -51,6 +46,11 @@ unwrapped :: [TypeWrapper] -> Bool
 unwrapped []            = True
 unwrapped [NonNullType] = True
 unwrapped _             = False
+
+validateI :: [Prop] -> TypeLib -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
+validateI prop' lib' parent'@(GObject fields' _) (_name, value') = do
+  wrappers' <- fieldTypeWrappers . unpackInputField <$> lookupField _name fields' (UnknownField prop' _name)
+  validateInputObject prop' lib' wrappers' parent' (_name, value')
 
 validateInputObject ::
      [Prop] -> TypeLib -> [TypeWrapper] -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
@@ -83,12 +83,6 @@ validateInputObject prop' lib' wrappers' (GObject parentFields _) (_name, value'
       return (fieldTypeName', currentProp, inputError)
     getField = unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
 
-validateInput :: TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
-validateInput typeLib (T.Object oType) (_, JSObject fields) = JSObject <$> mapM (validateI [] typeLib oType) fields
-validateInput _ (T.Object (GObject _ core)) (_, jsType)     = Left $ generateError jsType (name core) []
-validateInput _ (T.Scalar core) (_, jsValue)                = validateLeaf (LScalar core) jsValue []
-validateInput _ (T.Enum tags core) (_, jsValue)             = validateLeaf (LEnum tags core) jsValue []
-
 validateInputValue :: [TypeWrapper] -> TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
 validateInputValue (NonNullType:wrappers') _ type' (_, JSNull) =
   Left $ UnexpectedType [] (showFullAstType wrappers' type') JSNull
@@ -97,5 +91,9 @@ validateInputValue (NonNullType:wrappers') lib' type' value' = validateInputValu
 validateInputValue (ListType:xs) lib' iType' (key', JSList list') = JSList <$> mapM listCheck list'
   where
     listCheck element' = validateInputValue xs lib' iType' (key', element')
-validateInputValue [] lib' iType' value' = validateInput lib' iType' value'
+validateInputValue [] typeLib (T.Object oType) (_, JSObject fields) =
+  JSObject <$> mapM (validateI [] typeLib oType) fields
+validateInputValue [] _ (T.Object (GObject _ core)) (_, jsType) = Left $ generateError jsType (name core) []
+validateInputValue [] _ (T.Scalar core) (_, jsValue) = validateLeaf (LScalar core) jsValue []
+validateInputValue [] _ (T.Enum tags core) (_, jsValue) = validateLeaf (LEnum tags core) jsValue []
 validateInputValue wrappers' _ type' (_, value') = Left $ UnexpectedType [] (showFullAstType wrappers' type') value'
