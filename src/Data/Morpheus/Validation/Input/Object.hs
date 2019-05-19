@@ -38,27 +38,32 @@ validateLeaf (LEnum tags core) jsType props      = validateEnum (UnexpectedType 
 validateLeaf (LScalar core) (Scalar found) props = Scalar <$> validateScalarTypes (name core) found props
 validateLeaf (LScalar core) jsType props         = Left $ generateError jsType (name core) props
 
+validateI :: [Prop] -> TypeLib -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
+validateI prop' lib' parent'@(GObject fields' _) (_name, value') = do
+  wrappers' <- fieldTypeWrappers . unpackInputField <$> lookupField _name fields' (UnknownField prop' _name)
+  validateInputObject prop' lib' wrappers' parent' (_name, value')
+
 validateInputObject ::
-     [Prop] -> TypeLib -> Int -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
-validateInputObject prop' lib' listDeep' (GObject parentFields pos) (_name, value') = do
+     [Prop] -> TypeLib -> [ListWrapper] -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
+validateInputObject prop' lib' wrappers' (GObject parentFields pos) (_name, value') = do
   field' <- getField
   case value' of
     JSList list'
-      | isWrappedInList field' -> mapM_ (recValidate (listDeep' + 1)) list' >> pure (_name, JSList list')
+      | isWrappedInList -> mapM_ (recValidate (tail wrappers')) list' >> pure (_name, JSList list')
     JSObject fields
-      | isNotWrappedInList field' -> do
-        (fieldTypeName', currentProp, error') <- validationData (JSObject fields)
-        inputObject' <- existsInputObjectType error' lib' fieldTypeName'
-        mapM (validateInputObject currentProp lib' 0 inputObject') fields >>= \x -> pure (_name, JSObject x)
+      | not isWrappedInList -> mapM recVal fields >>= \x -> pure (_name, JSObject x)
+      where recVal v' = do
+              (fieldTypeName', currentProp, error') <- validationData (JSObject fields)
+              inputObject' <- existsInputObjectType error' lib' fieldTypeName'
+              validateI currentProp lib' inputObject' v'
     leafValue'
-      | isNotWrappedInList field' -> do
+      | not isWrappedInList -> do
         (fieldTypeName', currentProp, error') <- validationData leafValue'
         leafType' <- existsLeafType error' lib' fieldTypeName'
         validateLeaf leafType' leafValue' currentProp >> pure (_name, leafValue')
     invalidValue' -> Left $ UnexpectedType prop' (T.concat ["[", fieldType field', "]"]) invalidValue'
   where
-    isWrappedInList field' = listDeep' < length (fieldTypeWrappers field')
-    isNotWrappedInList field' = not $ listDeep' > 0 && isWrappedInList field'
+    isWrappedInList = 0 < length wrappers'
     validationData x = do
       fieldTypeName' <- fieldType <$> getField
       let currentProp = prop' ++ [Prop _name fieldTypeName']
@@ -68,11 +73,10 @@ validateInputObject prop' lib' listDeep' (GObject parentFields pos) (_name, valu
     recValidate newDeep' x = validateInputObject prop' lib' newDeep' (GObject parentFields pos) (_name, x)
 
 validateInput :: TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
-validateInput typeLib (T.Object oType) (_, JSObject fields) =
-  JSObject <$> mapM (validateInputObject [] typeLib 0 oType) fields
-validateInput _ (T.Object (GObject _ core)) (_, jsType) = Left $ generateError jsType (name core) []
-validateInput _ (T.Scalar core) (_, jsValue) = validateLeaf (LScalar core) jsValue []
-validateInput _ (T.Enum tags core) (_, jsValue) = validateLeaf (LEnum tags core) jsValue []
+validateInput typeLib (T.Object oType) (_, JSObject fields) = JSObject <$> mapM (validateI [] typeLib oType) fields
+validateInput _ (T.Object (GObject _ core)) (_, jsType)     = Left $ generateError jsType (name core) []
+validateInput _ (T.Scalar core) (_, jsValue)                = validateLeaf (LScalar core) jsValue []
+validateInput _ (T.Enum tags core) (_, jsValue)             = validateLeaf (LEnum tags core) jsValue []
 
 validateInputValue :: [ListWrapper] -> TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
 validateInputValue [] _ _ (_, list'@(JSList _)) = Left $ UnexpectedType [] "TODO:Not List" list'
