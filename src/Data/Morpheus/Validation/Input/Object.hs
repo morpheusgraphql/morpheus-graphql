@@ -43,36 +43,53 @@ validateI prop' lib' parent'@(GObject fields' _) (_name, value') = do
   wrappers' <- fieldTypeWrappers . unpackInputField <$> lookupField _name fields' (UnknownField prop' _name)
   validateInputObject prop' lib' wrappers' parent' (_name, value')
 
+isNullableType :: [TypeWrapper] -> Bool
+isNullableType (NonNullType:_) = False
+isNullableType _               = True
+
+unwrapped :: [TypeWrapper] -> Bool
+unwrapped []            = True
+unwrapped [NonNullType] = True
+unwrapped _             = False
+
 validateInputObject ::
      [Prop] -> TypeLib -> [TypeWrapper] -> GObject InputField -> (Text, JSType) -> InputValidation (Text, JSType)
-validateInputObject prop' lib' wrappers' (GObject parentFields pos) (_name, value') = do
+validateInputObject prop' lib' (ListType:wrappers') (GObject parentFields pos) (_name, JSList list') =
+  mapM_ recValidate list' >> pure (_name, JSList list')
+  where
+    recValidate x = validateInputObject prop' lib' wrappers' (GObject parentFields pos) (_name, x)
+validateInputObject prop' lib' wrappers' (GObject parentFields _) (_name, value') = do
   field' <- getField
   case value' of
-    JSList list'
-      | isWrappedInList -> mapM_ (recValidate (tail wrappers')) list' >> pure (_name, JSList list')
+    JSNull
+      | isNullableType wrappers' -> return (_name, value')
     JSObject fields
-      | not isWrappedInList -> mapM recVal fields >>= \x -> pure (_name, JSObject x)
+      | unwrapped wrappers' -> mapM_ recVal fields >> return (_name, value')
       where recVal v' = do
               (fieldTypeName', currentProp, error') <- validationData (JSObject fields)
               inputObject' <- existsInputObjectType error' lib' fieldTypeName'
               validateI currentProp lib' inputObject' v'
     leafValue'
-      | not isWrappedInList -> do
+      | unwrapped wrappers' -> do
         (fieldTypeName', currentProp, error') <- validationData leafValue'
         leafType' <- existsLeafType error' lib' fieldTypeName'
         validateLeaf leafType' leafValue' currentProp >> pure (_name, leafValue')
-    invalidValue' -> Left $ UnexpectedType prop' (T.concat ["[", fieldType field', "]"]) invalidValue'
+    invalidValue' -> Left $ unexpectedType wrappers' prop' (fieldType field') invalidValue'
   where
-    isWrappedInList = 0 < length wrappers'
     validationData x = do
       fieldTypeName' <- fieldType <$> getField
       let currentProp = prop' ++ [Prop _name fieldTypeName']
       let inputError = generateError x fieldTypeName' currentProp
       return (fieldTypeName', currentProp, inputError)
     getField = unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
-    recValidate _ JSNull
-      | hasListNullableElements wrappers' = pure (_name, JSNull)
-    recValidate list' x = validateInputObject prop' lib' list' (GObject parentFields pos) (_name, x)
+
+showTypeSignature :: [TypeWrapper] -> Text -> Text
+showTypeSignature [] type'               = type'
+showTypeSignature (ListType:xs) type'    = showTypeSignature xs $ T.concat ["[", type', "]"]
+showTypeSignature (NonNullType:xs) type' = showTypeSignature xs $ T.concat [type', "!"]
+
+unexpectedType :: [TypeWrapper] -> [Prop] -> Text -> JSType -> InputError
+unexpectedType wrappers' prop' type' = UnexpectedType prop' (showTypeSignature wrappers' type')
 
 validateInput :: TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
 validateInput typeLib (T.Object oType) (_, JSObject fields) = JSObject <$> mapM (validateI [] typeLib oType) fields
@@ -80,16 +97,12 @@ validateInput _ (T.Object (GObject _ core)) (_, jsType)     = Left $ generateErr
 validateInput _ (T.Scalar core) (_, jsValue)                = validateLeaf (LScalar core) jsValue []
 validateInput _ (T.Enum tags core) (_, jsValue)             = validateLeaf (LEnum tags core) jsValue []
 
-hasListNullableElements :: [TypeWrapper] -> Bool
-hasListNullableElements (NonNullType:_) = False
-hasListNullableElements _               = True
-
 validateInputValue :: [TypeWrapper] -> TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
-validateInputValue [] _ _ (_, list'@(JSList _)) = Left $ UnexpectedType [] "TODO:Not List" list'
-validateInputValue w@(_:xs) lib' iType' (key', JSList list') = JSList <$> mapM listCheck list'
+validateInputValue w'@(NonNullType:_) _ _ (_, JSNull) = Left $ unexpectedType w' [] "TODO:Type" JSNull
+validateInputValue _ _ _ (_, JSNull) = return JSNull
+validateInputValue (NonNullType:wrappers') lib' type' value' = validateInputValue wrappers' lib' type' value'
+validateInputValue (ListType:xs) lib' iType' (key', JSList list') = JSList <$> mapM listCheck list'
   where
-    listCheck JSNull
-      | hasListNullableElements w = return JSNull
     listCheck element' = validateInputValue xs lib' iType' (key', element')
 validateInputValue [] lib' iType' value' = validateInput lib' iType' value'
-validateInputValue _ _ _ (_, value') = Left $ UnexpectedType [] "TODO:LIST" value'
+validateInputValue wrappers' _ _ (_, value') = Left $ unexpectedType wrappers' [] "TODO:Type" value'
