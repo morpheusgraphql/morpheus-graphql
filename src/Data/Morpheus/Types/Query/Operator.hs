@@ -4,7 +4,7 @@ module Data.Morpheus.Types.Query.Operator
   , RawOperator
   , Variable(..)
   , VariableDefinitions
-  , ListWrapper(..)
+  , Wrapper(..)
   , Operator'(..)
   , ValidOperator'
   , RawOperator'
@@ -19,14 +19,15 @@ type ValidOperator = Operator Arguments SelectionSet
 
 type ValidOperator' = Operator' Arguments SelectionSet
 
-newtype ListWrapper = ListWrapper
-  { nonNullElements :: Bool
-  } deriving (Show)
+data Wrapper
+  = ListWrapper
+  | NonNullWrapper
+  deriving (Show)
 
 data Variable = Variable
   { variableType         :: Key
   , isVariableRequired   :: Bool
-  , variableTypeWrappers :: [ListWrapper]
+  , variableTypeWrappers :: [Wrapper]
   , variablePosition     :: Position
   }
 
