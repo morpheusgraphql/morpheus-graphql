@@ -33,7 +33,7 @@ validateArgumentValue lib' Field {fieldType = typeName', fieldTypeWrappers = wra
   getInputType typeName' lib' (internalUnknownTypeMessage typeName') >>= checkType >>
   pure (key', Argument value' position')
   where
-    checkType type' = handleInputError key' position' (validateInputValue wrappers' lib' type' (key', value'))
+    checkType type' = handleInputError key' position' (validateInputValue lib' [] wrappers' type' (key', value'))
 
 validateArgument :: TypeLib -> Position -> Arguments -> (Text, InputField) -> Validation (Text, Argument)
 validateArgument types position' requestArgs (key', InputField arg) =

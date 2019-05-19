@@ -54,7 +54,7 @@ lookupAndValidateValueOnBody typeLib variables' (key', Variable { variableType =
   getVariableType type' position' typeLib >>= checkType isRequired'
   where
     validator _type variableValue =
-      handleInputError key' position' $ validateInputValue wrappers' typeLib _type (key', variableValue)
+      handleInputError key' position' $ validateInputValue typeLib [] wrappers' _type (key', variableValue)
     checkType True _type  = lookupBodyValue position' variables' key' type' >>= validator _type
     checkType False _type = maybe (pure (key', JSNull)) (validator _type) (M.lookup key' variables')
 
