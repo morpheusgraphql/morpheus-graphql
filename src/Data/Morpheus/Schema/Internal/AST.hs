@@ -18,7 +18,7 @@ module Data.Morpheus.Schema.Internal.AST
   ) where
 
 import           Data.Morpheus.Schema.TypeKind      (TypeKind)
-import           Data.Morpheus.Types.Query.Operator (ListWrapper)
+import           Data.Morpheus.Types.Query.Operator (TypeWrapper)
 import           Data.Text                          (Text)
 
 type EnumValue = Text
@@ -34,10 +34,9 @@ data Core = Core
 
 data Field = Field
   { fieldName         :: Text
-  , notNull           :: Bool
-  , kind              :: TypeKind
+  , fieldKind         :: TypeKind
   , fieldType         :: Text
-  , fieldTypeWrappers :: [ListWrapper]
+  , fieldTypeWrappers :: [TypeWrapper]
   } deriving (Show)
 
 data ObjectField = ObjectField

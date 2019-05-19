@@ -27,6 +27,7 @@ import           Data.Morpheus.Schema.Schema            (Schema)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
 import           Data.Morpheus.Types.Describer          ((::->))
+import           Data.Morpheus.Types.Query.Operator     (TypeWrapper (..))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 import           GHC.Generics
@@ -52,7 +53,7 @@ class GQLType a where
   typeID = typeId
   field_ :: TypeKind -> Proxy a -> Text -> I.Field
   field_ kind' proxy' name' =
-    I.Field {I.fieldName = name', I.notNull = True, I.fieldTypeWrappers = [], I.kind = kind', I.fieldType = typeID proxy'}
+    I.Field {I.fieldName = name', I.fieldTypeWrappers = [NonNullType], I.fieldKind = kind', I.fieldType = typeID proxy'}
   buildType :: Proxy a -> Core
   buildType proxy = Core {name = typeID proxy, typeDescription = description proxy}
   updateLib :: (Proxy a -> LibType) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib
