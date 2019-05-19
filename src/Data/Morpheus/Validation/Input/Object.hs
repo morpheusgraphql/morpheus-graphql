@@ -63,6 +63,8 @@ validateInputObject prop' lib' wrappers' (GObject parentFields pos) (_name, valu
         validateLeaf leafType' leafValue' currentProp >> pure (_name, leafValue')
     invalidValue' -> Left $ UnexpectedType prop' (T.concat ["[", fieldType field', "]"]) invalidValue'
   where
+    hasListNullableElements (ListWrapper True:_) = True
+    hasListNullableElements _ = False
     isWrappedInList = 0 < length wrappers'
     validationData x = do
       fieldTypeName' <- fieldType <$> getField
@@ -70,7 +72,9 @@ validateInputObject prop' lib' wrappers' (GObject parentFields pos) (_name, valu
       let inputError = generateError x fieldTypeName' currentProp
       return (fieldTypeName', currentProp, inputError)
     getField = unpackInputField <$> lookupField _name parentFields (UnknownField prop' _name)
-    recValidate newDeep' x = validateInputObject prop' lib' newDeep' (GObject parentFields pos) (_name, x)
+    recValidate _ JSNull
+      | hasListNullableElements wrappers' = pure (_name, JSNull)
+    recValidate list' x = validateInputObject prop' lib' list' (GObject parentFields pos) (_name, x)
 
 validateInput :: TypeLib -> InputType -> (Text, JSType) -> InputValidation JSType
 validateInput typeLib (T.Object oType) (_, JSObject fields) = JSObject <$> mapM (validateI [] typeLib oType) fields
