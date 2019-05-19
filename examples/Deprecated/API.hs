@@ -9,7 +9,6 @@ module Deprecated.API
   ) where
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Maybe                 (fromMaybe)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..),
                                              INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
@@ -78,7 +77,7 @@ data AddressArgs = AddressArgs
   } deriving (Generic, GQLArgs)
 
 data OfficeArgs = OfficeArgs
-  { zipCode :: Maybe [[[Int]]]
+  { zipCode :: Maybe [[Maybe[Int]]]
   , cityID  :: CityID
   } deriving (Generic, GQLArgs)
 
@@ -120,7 +119,7 @@ addressByCityID BLN code   = fetchAddress (Euro 1 code) "Berlin"
 addressByCityID HH code    = fetchAddress (Euro 1 code) "Hamburg"
 
 resolveOffice :: JSONUser -> OfficeArgs ::-> Address
-resolveOffice _ = Resolver $ \args -> addressByCityID (cityID args) (12)
+resolveOffice _ = Resolver $ \args -> addressByCityID (cityID args) 12
 
 resolveUser :: () ::-> User
 resolveUser = transformUser <$> Resolver (const jsonUser)
