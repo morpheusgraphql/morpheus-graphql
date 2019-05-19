@@ -41,16 +41,15 @@ validateInputValue lib' prop' = validate
     -- ignores NonNUllTypes if value /= null
     validate (NonNullType:wrappers') type' value' = validateInputValue lib' prop' wrappers' type' value'
     {-- VALIDATE LIST -}
-    validate (ListType:wrappers') type' (key', JSList list') = JSList <$> mapM listCheck list'
+    validate (ListType:wrappers') type' (key', JSList list') = JSList <$> mapM validateElement list'
       where
-        listCheck element' = validateInputValue lib' prop' wrappers' type' (key', element')
+        validateElement element' = validateInputValue lib' prop' wrappers' type' (key', element')
     {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
     {-- VALIDATE OBJECT--}
-    validate [] (T.Object (GObject parentFields' _)) (_, JSObject fields) = JSObject <$> mapM validateObject fields
+    validate [] (T.Object (GObject parentFields' _)) (_, JSObject fields) = JSObject <$> mapM validateField fields
       where
-        validateObject (_name, value') = do
-          (fieldTypeName', currentProp', error') <- validationData value'
-          type' <- getInputType fieldTypeName' lib' error'
+        validateField (_name, value') = do
+          (type', currentProp') <- validationData value'
           wrappers' <- fieldTypeWrappers <$> getField
           value'' <- validateInputValue lib' currentProp' wrappers' type' (_name, value')
           return (_name, value'')
@@ -58,8 +57,8 @@ validateInputValue lib' prop' = validate
             validationData x = do
               fieldTypeName' <- fieldType <$> getField
               let currentProp = prop' ++ [Prop _name fieldTypeName']
-              let inputError = typeMismatch x fieldTypeName' currentProp
-              return (fieldTypeName', currentProp, inputError)
+              type' <- getInputType fieldTypeName' lib' (typeMismatch x fieldTypeName' currentProp)
+              return (type', currentProp)
             getField = unpackInputField <$> lookupField _name parentFields' (UnknownField prop' _name)
     {-- VALIDATE SCALAR --}
     validate [] (T.Enum tags core) (_, value') = validateEnum (UnexpectedType prop' (name core) value') tags value'
