@@ -85,24 +85,27 @@ validateInputObject prop' lib' wrappers' (GObject parentFields _) (_name, value'
 
 -- Validate Variable Argument or all Possible input Values
 validateInputValue :: TypeLib -> [Prop] -> [TypeWrapper] -> InputType -> (Text, JSType) -> InputValidation JSType
--- handle nullable fields
-validateInputValue _ prop' (NonNullType:wrappers') type' (_, JSNull) =
-  Left $ UnexpectedType prop' (showFullAstType wrappers' type') JSNull
-validateInputValue _ _ _ _ (_, JSNull) = return JSNull
--- ignores NonNUllTypes if value /= null
-validateInputValue lib' prop' (NonNullType:wrappers') type' value' =
-  validateInputValue lib' prop' wrappers' type' value'
--- recursively validates array
-validateInputValue lib' prop' (ListType:wrappers') type' (key', JSList list') = JSList <$> mapM listCheck list'
+validateInputValue lib' prop' = validateInput
+    -- handle nullable fields
   where
-    listCheck element' = validateInputValue lib' prop' wrappers' type' (key', element')
-{--
-validates concrete types
-when all wrapper validation are done --}
-validateInputValue lib' prop' [] (T.Object type') (_, JSObject fields) =
-  JSObject <$> mapM (validateI prop' lib' type') fields
-validateInputValue _ prop' [] (T.Scalar core) (_, jsValue) = validateLeaf (LScalar core) jsValue prop'
-validateInputValue _ prop' [] (T.Enum tags core) (_, jsValue) = validateLeaf (LEnum tags core) jsValue prop'
--- throw error on invalid values
-validateInputValue _ prop' wrappers' type' (_, value') =
-  Left $ UnexpectedType prop' (showFullAstType wrappers' type') value'
+    throwError wrappers' type' value' = Left $ UnexpectedType prop' (showFullAstType wrappers' type') value'
+    {--
+      actual validation
+    --}
+    validateInput :: [TypeWrapper] -> InputType -> (Text, JSType) -> InputValidation JSType
+    validateInput (NonNullType:wrappers') type' (_, JSNull) = throwError wrappers' type' JSNull
+    validateInput _ _ (_, JSNull) = return JSNull
+    -- ignores NonNUllTypes if value /= null
+    validateInput (NonNullType:wrappers') type' value' = validateInputValue lib' prop' wrappers' type' value'
+    -- recursively validates array
+    validateInput (ListType:wrappers') type' (key', JSList list') = JSList <$> mapM listCheck list'
+      where
+        listCheck element' = validateInputValue lib' prop' wrappers' type' (key', element')
+    {--
+      validates concrete types
+     when all wrapper validation are done --}
+    validateInput [] (T.Object type') (_, JSObject fields) = JSObject <$> mapM (validateI prop' lib' type') fields
+    validateInput [] (T.Scalar core) (_, jsValue) = validateLeaf (LScalar core) jsValue prop'
+    validateInput [] (T.Enum tags core) (_, jsValue) = validateLeaf (LEnum tags core) jsValue prop'
+    -- throw error on invalid values
+    validateInput wrappers' type' (_, value') = throwError wrappers' type' value'
