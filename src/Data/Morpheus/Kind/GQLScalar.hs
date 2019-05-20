@@ -11,7 +11,7 @@ import           Data.Morpheus.Kind.GQLType         (GQLType (..), scalarTypeOf)
 import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
 import           Data.Morpheus.Types.Core           (Key)
 import           Data.Morpheus.Types.Error          (Validation)
-import           Data.Morpheus.Types.Internal.AST   (ASTField, ASTTypeLib)
+import           Data.Morpheus.Types.Internal.Data  (DataField, DataTypeLib)
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..), Value (..))
 import           Data.Proxy                         (Proxy (..))
 import           Data.Text                          (Text)
@@ -27,9 +27,9 @@ class GQLScalar a where
   serialize :: a -> ScalarValue
   encode :: a -> Value
   encode = Scalar . serialize
-  asField :: GQLType a => Proxy a -> t -> Key -> ASTField t
+  asField :: GQLType a => Proxy a -> t -> Key -> DataField t
   asField _ = field_ SCALAR (Proxy @a)
-  introspect :: GQLType a => Proxy a -> ASTTypeLib -> ASTTypeLib
+  introspect :: GQLType a => Proxy a -> DataTypeLib -> DataTypeLib
   introspect _ = updateLib scalarTypeOf [] (Proxy @a)
 
 instance GQLScalar Text where

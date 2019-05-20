@@ -6,7 +6,7 @@ module Data.Morpheus.Schema.Schema where
 import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.Internal.RenderIntrospection (Type, createObjectType, typeFromInputObject,
                                                                     typeFromLeaf, typeFromObject, typeFromUnion)
-import           Data.Morpheus.Types.Internal.AST                  (ASTOutputObject, ASTTypeLib (..))
+import           Data.Morpheus.Types.Internal.Data                 (DataOutputObject, DataTypeLib (..))
 import           Data.Text                                         (Text)
 import           GHC.Generics                                      (Generic)
 
@@ -18,7 +18,7 @@ data Schema = Schema
   , directives       :: [Directive]
   } deriving (Generic)
 
-convertTypes :: ASTTypeLib -> [Type]
+convertTypes :: DataTypeLib -> [Type]
 convertTypes lib' =
   [typeFromObject $ query lib'] ++
   typeFromMaybe (mutation lib') ++
@@ -26,14 +26,14 @@ convertTypes lib' =
   map typeFromObject (object lib') ++
   map typeFromInputObject (inputObject lib') ++ map typeFromLeaf (leaf lib') ++ map typeFromUnion (union lib')
 
-typeFromMaybe :: Maybe (Text, ASTOutputObject) -> [Type]
+typeFromMaybe :: Maybe (Text, DataOutputObject) -> [Type]
 typeFromMaybe (Just x) = [typeFromObject x]
 typeFromMaybe Nothing  = []
 
-buildSchemaLinkType :: (Text, ASTOutputObject) -> Type
+buildSchemaLinkType :: (Text, DataOutputObject) -> Type
 buildSchemaLinkType (key', _) = createObjectType key' "Query Description" []
 
-initSchema :: ASTTypeLib -> Schema
+initSchema :: DataTypeLib -> Schema
 initSchema types' =
   Schema
     { types = convertTypes types'

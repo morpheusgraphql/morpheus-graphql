@@ -18,7 +18,7 @@ module Data.Morpheus.Kind.Internal
 
 import Data.Morpheus.Types.Describer ((::->))
 import Data.Morpheus.Types.Error (ResolveIO, Validation)
-import Data.Morpheus.Types.Internal.AST (ASTInputField, ASTOutputField, ASTTypeLib)
+import Data.Morpheus.Types.Internal.Data (DataInputField, DataOutputField, DataTypeLib)
 import Data.Morpheus.Types.Internal.Value (Value(..))
 import Data.Morpheus.Types.Query.Selection (Selection)
 import Data.Proxy (Proxy(..))
@@ -60,12 +60,12 @@ data UNION
 type family GQLConstraint a b :: Constraint
 
 -- class Types class
-type Intro_ a = Proxy a -> ASTTypeLib -> ASTTypeLib
+type Intro_ a = Proxy a -> DataTypeLib -> DataTypeLib
 
 type Decode_ a = Value -> Validation a
 
 type Encode_ a = (Text, Selection) -> a -> ResolveIO Value
 
-type IField_ a = Proxy a -> Text -> ASTInputField
+type IField_ a = Proxy a -> Text -> DataInputField
 
-type OField_ a = Proxy a -> Text -> ASTOutputField
+type OField_ a = Proxy a -> Text -> DataOutputField

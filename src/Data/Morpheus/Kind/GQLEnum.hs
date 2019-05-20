@@ -19,7 +19,7 @@ import           Data.Morpheus.Kind.GQLType             (GQLType (..), enumTypeO
 import           Data.Morpheus.Kind.Internal            (ENUM, KIND)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Types.Internal.AST       (ASTTypeLib)
+import           Data.Morpheus.Types.Internal.Data      (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Value     (ScalarValue (..), Value (..))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
@@ -36,8 +36,8 @@ encode = Scalar . String . encodeRep . from
 introspect ::
      forall a. (GQLType a, EnumRep (Rep a))
   => Proxy a
-  -> ASTTypeLib
-  -> ASTTypeLib
+  -> DataTypeLib
+  -> DataTypeLib
 introspect = updateLib (enumTypeOf $ getTags (Proxy @(Rep a))) []
 
 type instance KIND TypeKind = ENUM

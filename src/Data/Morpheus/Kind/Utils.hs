@@ -6,16 +6,16 @@ module Data.Morpheus.Kind.Utils
   ) where
 
 import           Data.Morpheus.Types.Error           (ResolveIO)
-import           Data.Morpheus.Types.Internal.AST    (ASTField (..), ASTTypeWrapper (..))
+import           Data.Morpheus.Types.Internal.Data   (DataField (..), DataTypeWrapper (..))
 import           Data.Morpheus.Types.Internal.Value  (Value (..))
 import           Data.Morpheus.Types.Query.Selection (Selection (..))
 import           Data.Text                           (Text)
 
-maybeField :: ASTField a -> ASTField a
-maybeField field@ASTField {fieldTypeWrappers = NonNullType:xs} = field {fieldTypeWrappers = xs}
-maybeField field                                               = field
+maybeField :: DataField a -> DataField a
+maybeField field@DataField {fieldTypeWrappers = NonNullType:xs} = field {fieldTypeWrappers = xs}
+maybeField field                                                = field
 
-listField :: ASTField a -> ASTField a
+listField :: DataField a -> DataField a
 listField x = x {fieldTypeWrappers = [NonNullType, ListType] ++ fieldTypeWrappers x}
 
 type Encode a = (Text, Selection) -> a -> ResolveIO Value

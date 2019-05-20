@@ -13,7 +13,7 @@ import           Data.Morpheus.Error.Variable           (undefinedVariable, unin
                                                          unusedVariables, variableGotInvalidValue)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
-import           Data.Morpheus.Types.Internal.AST       (ASTInputType, ASTTypeLib)
+import           Data.Morpheus.Types.Internal.Data      (DataInputType, DataTypeLib)
 import           Data.Morpheus.Types.Internal.Value     (Value (..))
 import           Data.Morpheus.Types.MetaInfo           (Position)
 import           Data.Morpheus.Types.Query.Operator     (Operator' (..), RawOperator', Variable (..))
@@ -24,7 +24,7 @@ import           Data.Morpheus.Validation.Input.Object  (validateInputValue)
 import           Data.Morpheus.Validation.Utils.Utils   (getInputType)
 import           Data.Text                              (Text)
 
-getVariableType :: Text -> Position -> ASTTypeLib -> Validation ASTInputType
+getVariableType :: Text -> Position -> DataTypeLib -> Validation DataInputType
 getVariableType type' position' lib' = getInputType type' lib' error'
   where
     error' = unknownType type' position'
@@ -45,7 +45,7 @@ handleInputError key' _ (Right value') = pure (key', value')
 lookupBodyValue :: Position -> Variables -> Text -> Text -> Validation Value
 lookupBodyValue position' variables' key' type' = lookupVariable variables' key' (uninitializedVariable position' type')
 
-lookupAndValidateValueOnBody :: ASTTypeLib -> Variables -> (Text, Variable) -> Validation (Text, Value)
+lookupAndValidateValueOnBody :: DataTypeLib -> Variables -> (Text, Variable) -> Validation (Text, Value)
 lookupAndValidateValueOnBody typeLib variables' (key', Variable { variableType = type'
                                                                 , variablePosition = position'
                                                                 , isVariableRequired = isRequired'
@@ -87,7 +87,7 @@ resolveArgumentValue root (key', VariableReference variableID pos) = do
   pure (key', Valid.Argument value pos)
 resolveArgumentValue _ (key', Argument value pos) = pure (key', Valid.Argument value pos)
 
-resolveOperatorVariables :: ASTTypeLib -> Variables -> RawOperator' -> Validation Variables
+resolveOperatorVariables :: DataTypeLib -> Variables -> RawOperator' -> Validation Variables
 resolveOperatorVariables typeLib root operator' = do
   checkUnusedVariable (allVariableReferences [operatorSelection operator']) operator'
   M.fromList <$> mapM (lookupAndValidateValueOnBody typeLib root) (operatorArgs operator')

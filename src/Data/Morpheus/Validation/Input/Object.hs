@@ -5,8 +5,8 @@ module Data.Morpheus.Validation.Input.Object
   ) where
 
 import           Data.Morpheus.Error.Input            (InputError (..), InputValidation, Prop (..))
-import           Data.Morpheus.Types.Internal.AST     (ASTField (..), ASTInputField, ASTInputType, ASTKind (..),
-                                                       ASTType (..), ASTTypeLib (..), ASTTypeWrapper (..),
+import           Data.Morpheus.Types.Internal.Data    (DataField (..), DataInputField, DataInputType, DataKind (..),
+                                                       DataType (..), DataTypeLib (..), DataTypeWrapper (..),
                                                        showFullAstType)
 import           Data.Morpheus.Types.Internal.Value   (ScalarValue (..), Value (..))
 import           Data.Morpheus.Validation.Input.Enum  (validateEnum)
@@ -26,14 +26,15 @@ validateScalarTypes "Boolean" scalar      = Left . typeMismatch (Scalar scalar) 
 validateScalarTypes _ scalar              = pure . const scalar
 
 -- Validate Variable Argument or all Possible input Values
-validateInputValue :: ASTTypeLib -> [Prop] -> [ASTTypeWrapper] -> ASTInputType -> (Text, Value) -> InputValidation Value
+validateInputValue ::
+     DataTypeLib -> [Prop] -> [DataTypeWrapper] -> DataInputType -> (Text, Value) -> InputValidation Value
 validateInputValue lib' prop' = validate
   where
-    throwError :: [ASTTypeWrapper] -> ASTInputType -> Value -> InputValidation Value
+    throwError :: [DataTypeWrapper] -> DataInputType -> Value -> InputValidation Value
     throwError wrappers' type' value' = Left $ UnexpectedType prop' (showFullAstType wrappers' type') value'
     {-- VALIDATION --}
     {-- 1. VALIDATE WRAPPERS -}
-    validate :: [ASTTypeWrapper] -> ASTInputType -> (Text, Value) -> InputValidation Value
+    validate :: [DataTypeWrapper] -> DataInputType -> (Text, Value) -> InputValidation Value
     -- throw error on not nullable type if value = null
     validate (NonNullType:wrappers') type' (_, Null) = throwError wrappers' type' Null
     -- resolves nullable value as null
@@ -46,7 +47,7 @@ validateInputValue lib' prop' = validate
         validateElement element' = validateInputValue lib' prop' wrappers' type' (key', element')
     {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
     {-- VALIDATE OBJECT--}
-    validate [] (ObjectKind ASTType {typeData = parentFields'}) (_, Object fields) =
+    validate [] (ObjectKind DataType {typeData = parentFields'}) (_, Object fields) =
       Object <$> mapM validateField fields
       where
         validateField (_name, value') = do
@@ -62,10 +63,10 @@ validateInputValue lib' prop' = validate
               return (type', currentProp)
             getField = lookupField _name parentFields' (UnknownField prop' _name)
     {-- VALIDATE SCALAR --}
-    validate [] (EnumKind ASTType {typeData = tags', typeName = name'}) (_, value') =
+    validate [] (EnumKind DataType {typeData = tags', typeName = name'}) (_, value') =
       validateEnum (UnexpectedType prop' name' value') tags' value'
     {-- VALIDATE ENUM --}
-    validate [] (ScalarKind ASTType {typeName = name'}) (_, Scalar value') =
+    validate [] (ScalarKind DataType {typeName = name'}) (_, Scalar value') =
       Scalar <$> validateScalarTypes name' value' prop'
     {-- 3. THROW ERROR: on invalid values --}
     validate wrappers' type' (_, value') = throwError wrappers' type' value'

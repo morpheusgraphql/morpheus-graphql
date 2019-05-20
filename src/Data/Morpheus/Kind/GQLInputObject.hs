@@ -22,13 +22,13 @@ import           Data.Morpheus.Generics.ObjectRep   (ObjectRep (..))
 import           Data.Morpheus.Kind.GQLType         (GQLType (..), inputObjectOf)
 import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
 import           Data.Morpheus.Types.Error          (Validation)
-import           Data.Morpheus.Types.Internal.AST   (ASTInputField, ASTTypeLib)
+import           Data.Morpheus.Types.Internal.Data   (DataInputField, DataTypeLib)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
 import           Data.Proxy                         (Proxy (..))
 import           Data.Text                          (Text)
 import           GHC.Generics
 
-type IOObjectRep a = ObjectRep (Rep a) (Text, ASTInputField)
+type IOObjectRep a = ObjectRep (Rep a) (Text, DataInputField)
 
 type IObjectConstraint a = (GQLType a, Generic a, GDecode Value (Rep a), IOObjectRep a)
 
@@ -36,14 +36,14 @@ decode :: (Generic a, GDecode Value (Rep a)) => Value -> Validation a
 decode (Object x) = to <$> gDecode "" (Object x)
 decode isType     = internalTypeMismatch "InputObject" isType
 
-inputField :: GQLType a => Proxy a -> Text -> ASTInputField
+inputField :: GQLType a => Proxy a -> Text -> DataInputField
 inputField proxy = field_ INPUT_OBJECT proxy ()
 
 introspect ::
      forall a. (GQLType a, IOObjectRep a)
   => Proxy a
-  -> ASTTypeLib
-  -> ASTTypeLib
+  -> DataTypeLib
+  -> DataTypeLib
 introspect = updateLib (inputObjectOf fields') stack'
   where
     (fields', stack') = unzip $ getFields (Proxy @(Rep a))

@@ -24,24 +24,24 @@ import           Data.Morpheus.Schema.Internal.RenderIntrospection (Field, Input
 import           Data.Morpheus.Schema.Schema                       (Schema)
 import           Data.Morpheus.Schema.TypeKind                     (TypeKind (..))
 import           Data.Morpheus.Types.Describer                     ((::->))
-import           Data.Morpheus.Types.Internal.AST                  (ASTField (..), ASTFullType (..), ASTInputField,
-                                                                    ASTLeaf (..), ASTOutputField, ASTType (..),
-                                                                    ASTTypeLib, ASTTypeWrapper (..), defineType,
+import           Data.Morpheus.Types.Internal.Data                 (DataField (..), DataFullType (..), DataInputField,
+                                                                    DataLeaf (..), DataOutputField, DataType (..),
+                                                                    DataTypeLib, DataTypeWrapper (..), defineType,
                                                                     isTypeDefined)
 import           Data.Proxy                                        (Proxy (..))
 import           Data.Text                                         (Text)
 import           GHC.Generics
 
-scalarTypeOf :: GQLType a => Proxy a -> ASTFullType
+scalarTypeOf :: GQLType a => Proxy a -> DataFullType
 scalarTypeOf = Leaf . LeafScalar . buildType ()
 
-enumTypeOf :: GQLType a => [Text] -> Proxy a -> ASTFullType
+enumTypeOf :: GQLType a => [Text] -> Proxy a -> DataFullType
 enumTypeOf tags' = Leaf . LeafEnum . buildType tags'
 
-asObjectType :: GQLType a => [(Text, ASTOutputField)] -> Proxy a -> ASTFullType
+asObjectType :: GQLType a => [(Text, DataOutputField)] -> Proxy a -> DataFullType
 asObjectType fields' = OutputObject . buildType fields'
 
-inputObjectOf :: GQLType a => [(Text, ASTInputField)] -> Proxy a -> ASTFullType
+inputObjectOf :: GQLType a => [(Text, DataInputField)] -> Proxy a -> DataFullType
 inputObjectOf fields' = InputObject . buildType fields'
 
 class GQLType a where
@@ -51,19 +51,19 @@ class GQLType a where
   default typeID :: (TypeID (Rep a), Generic a) =>
     Proxy a -> Text
   typeID = typeId
-  field_ :: TypeKind -> Proxy a -> t -> Text -> ASTField t
+  field_ :: TypeKind -> Proxy a -> t -> Text -> DataField t
   field_ kind' proxy' args' name' =
-    ASTField
+    DataField
       { fieldName = name'
       , fieldTypeWrappers = [NonNullType]
       , fieldKind = kind'
       , fieldType = typeID proxy'
       , fieldArgs = args'
       }
-  buildType :: t -> Proxy a -> ASTType t
+  buildType :: t -> Proxy a -> DataType t
   buildType typeData' proxy =
-    ASTType {typeName = typeID proxy, typeDescription = description proxy, typeData = typeData'}
-  updateLib :: (Proxy a -> ASTFullType) -> [ASTTypeLib -> ASTTypeLib] -> Proxy a -> ASTTypeLib -> ASTTypeLib
+    DataType {typeName = typeID proxy, typeDescription = description proxy, typeData = typeData'}
+  updateLib :: (Proxy a -> DataFullType) -> [DataTypeLib -> DataTypeLib] -> Proxy a -> DataTypeLib -> DataTypeLib
   updateLib typeBuilder stack proxy lib' =
     if isTypeDefined (typeID proxy) lib'
       then lib'

@@ -29,7 +29,7 @@ import           Data.Morpheus.Kind.Utils               (encodeList, encodeMaybe
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Types.Describer          ((::->) (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
-import           Data.Morpheus.Types.Internal.AST       (ASTField (..), ASTOutputField)
+import           Data.Morpheus.Types.Internal.Data      (DataField (..), DataOutputField)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text, pack)
@@ -73,7 +73,7 @@ instance O.ObjectConstraint a => OutputTypeRouter a OBJECT where
 instance OutputTypeRouter a (KIND a) => DeriveResolvers (K1 s a) where
   deriveResolvers key' (K1 src) = [(key', (`_encode` src))]
 
-instance (Selector s, OutputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Text, ASTOutputField) where
+instance (Selector s, OutputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Text, DataOutputField) where
   getFields _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)

@@ -11,8 +11,8 @@ import           Data.Morpheus.Error.Selection            (cannotQueryField, dup
 import           Data.Morpheus.Schema.TypeKind            (TypeKind (..))
 import           Data.Morpheus.Types.Core                 (EnhancedKey (..))
 import           Data.Morpheus.Types.Error                (Validation)
-import           Data.Morpheus.Types.Internal.AST         (ASTField (..), ASTOutputObject, ASTType (..),
-                                                           ASTTypeLib (..))
+import           Data.Morpheus.Types.Internal.Data        (DataField (..), DataOutputObject, DataType (..),
+                                                           DataTypeLib (..))
 import           Data.Morpheus.Types.Query.Fragment       (Fragment, FragmentLib)
 import qualified Data.Morpheus.Types.Query.Fragment       as F (Fragment (..))
 import           Data.Morpheus.Types.Query.RawSelection   (RawSelection (..), RawSelectionSet)
@@ -30,18 +30,18 @@ selToKey (sName, SelectionField _ pos)   = EnhancedKey sName pos
 selToKey (sName, SelectionSet _ _ pos)   = EnhancedKey sName pos
 selToKey (sName, UnionSelection _ _ pos) = EnhancedKey sName pos
 
-checkDuplicatesOn :: ASTOutputObject -> SelectionSet -> Validation SelectionSet
-checkDuplicatesOn ASTType {typeName = name'} keys = checkNameCollision enhancedKeys (map fst keys) error' >> pure keys
+checkDuplicatesOn :: DataOutputObject -> SelectionSet -> Validation SelectionSet
+checkDuplicatesOn DataType {typeName = name'} keys = checkNameCollision enhancedKeys (map fst keys) error' >> pure keys
   where
     error' = duplicateQuerySelections name'
     enhancedKeys = map selToKey keys
 
 validateSelectionSet ::
-     ASTTypeLib -> FragmentLib -> Variables -> ASTOutputObject -> RawSelectionSet -> Validation SelectionSet
+     DataTypeLib -> FragmentLib -> Variables -> DataOutputObject -> RawSelectionSet -> Validation SelectionSet
 validateSelectionSet lib' fragments' variables' type' selection' =
   concat <$> mapM (validateSelection lib' fragments' variables' type') selection' >>= checkDuplicatesOn type'
 
-castFragment :: ASTTypeLib -> FragmentLib -> Variables -> ASTOutputObject -> Fragment -> Validation SelectionSet
+castFragment :: DataTypeLib -> FragmentLib -> Variables -> DataOutputObject -> Fragment -> Validation SelectionSet
 castFragment lib' fragments' variables' onType' fragment' =
   validateSelectionSet lib' fragments' variables' onType' (F.content fragment')
 
@@ -58,19 +58,19 @@ splitFragment _ _ posTypes' (key', InlineFragment target' selectors' position') 
   where
     fragment' = F.Fragment {F.key = key', F.target = target', F.position = position', F.content = selectors'}
 
-categorizeType :: [Fragment] -> ASTOutputObject -> (ASTOutputObject, [Fragment])
+categorizeType :: [Fragment] -> DataOutputObject -> (DataOutputObject, [Fragment])
 categorizeType fragments' type' = (type', filter matches fragments')
   where
     matches fragment' = F.target fragment' == typeName type'
 
-categorizeTypes :: [ASTOutputObject] -> [Fragment] -> [(ASTOutputObject, [Fragment])]
+categorizeTypes :: [DataOutputObject] -> [Fragment] -> [(DataOutputObject, [Fragment])]
 categorizeTypes types' fragments' = map (categorizeType fragments') types'
 
 flatTuple :: [([a], [b])] -> ([a], [b])
 flatTuple list' = (concatMap fst list', concatMap snd list')
 
 validateSelection ::
-     ASTTypeLib -> FragmentLib -> Variables -> ASTOutputObject -> (Text, RawSelection) -> Validation SelectionSet
+     DataTypeLib -> FragmentLib -> Variables -> DataOutputObject -> (Text, RawSelection) -> Validation SelectionSet
 validateSelection lib' fragments' variables' parent' (key', RawSelectionSet rawArgs rawSelectors position') = do
   field' <- lookupSelectionField position' key' parent'
   resolvedArgs' <- resolveArguments variables' rawArgs
@@ -83,7 +83,7 @@ validateSelection lib' fragments' variables' parent' (key', RawSelectionSet rawA
       let zippedSpreads' = categorizeTypes possibleFieldTypes' spreads'
       unionSelections' <- mapM (validateCategory __typename') zippedSpreads'
       pure [(key', UnionSelection arguments' unionSelections' position')]
-      where validateCategory :: SelectionSet -> (ASTOutputObject, [Fragment]) -> Validation (Text, SelectionSet)
+      where validateCategory :: SelectionSet -> (DataOutputObject, [Fragment]) -> Validation (Text, SelectionSet)
             validateCategory sysSelection' (type', frags') = do
               selection' <- validateSelectionSet lib' fragments' variables' type' (concatMap F.content frags')
               return (typeName type', sysSelection' ++ selection')

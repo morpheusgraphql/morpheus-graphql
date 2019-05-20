@@ -26,14 +26,14 @@ import           Data.Morpheus.Schema.EnumValue                    (EnumValue)
 import           Data.Morpheus.Schema.Internal.RenderIntrospection (Field, InputValue, Type)
 import           Data.Morpheus.Schema.Schema                       (Schema)
 import           Data.Morpheus.Types.Error                         (ResolveIO, failResolveIO)
-import           Data.Morpheus.Types.Internal.AST                  (ASTOutputField, ASTTypeLib)
+import           Data.Morpheus.Types.Internal.Data                 (DataOutputField, DataTypeLib)
 import           Data.Morpheus.Types.Internal.Value                (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Query.Selection               (Selection (..))
 import           Data.Proxy
 import           Data.Text                                         (Text)
 import           GHC.Generics
 
-type ObjectConstraint a = (Generic a, DeriveResolvers (Rep a), ObjectRep (Rep a) (Text, ASTOutputField), GQLType a)
+type ObjectConstraint a = (Generic a, DeriveResolvers (Rep a), ObjectRep (Rep a) (Text, DataOutputField), GQLType a)
 
 encode ::
      forall a. (GQLType a, Generic a, DeriveResolvers (Rep a))
@@ -46,10 +46,10 @@ encode (_, SelectionSet _ selection _pos) value = resolveBySelection selection (
 encode (key, SelectionField _ pos) _ = failResolveIO $ subfieldsNotSelected key "" pos -- TODO: must be internal Error
 
 introspect ::
-     forall a. (ObjectRep (Rep a) (Text, ASTOutputField), GQLType a)
+     forall a. (ObjectRep (Rep a) (Text, DataOutputField), GQLType a)
   => Proxy a
-  -> ASTTypeLib
-  -> ASTTypeLib
+  -> DataTypeLib
+  -> DataTypeLib
 introspect = updateLib (asObjectType fields') stack'
   where
     (fields', stack') = unzip $ getFields (Proxy @(Rep a))

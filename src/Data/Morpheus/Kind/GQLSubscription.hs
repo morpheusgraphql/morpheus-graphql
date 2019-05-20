@@ -15,7 +15,7 @@ module Data.Morpheus.Kind.GQLSubscription
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Types.Error              (ResolveIO)
-import           Data.Morpheus.Types.Internal.AST       (ASTOutputField, ASTType (..), ASTTypeLib (..))
+import           Data.Morpheus.Types.Internal.Data      (DataOutputField, DataType (..), DataTypeLib (..))
 import           Data.Morpheus.Types.Internal.Value     (Value (..))
 import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
 import           Data.Proxy
@@ -27,15 +27,15 @@ class GQLSubscription a where
   default encodeSubscription :: (Generic a, DeriveResolvers (Rep a)) =>
     a -> SelectionSet -> ResolveIO Value
   encodeSubscription rootResolver sel = resolveBySelection sel $ deriveResolvers "" $ from rootResolver
-  subscriptionSchema :: a -> ASTTypeLib -> ASTTypeLib
-  default subscriptionSchema :: (ObjectRep (Rep a) (Text, ASTOutputField)) =>
-    a -> ASTTypeLib -> ASTTypeLib
+  subscriptionSchema :: a -> DataTypeLib -> DataTypeLib
+  default subscriptionSchema :: (ObjectRep (Rep a) (Text, DataOutputField)) =>
+    a -> DataTypeLib -> DataTypeLib
   subscriptionSchema _ initialType = resolveTypes subscriptionType types'
     where
       subscriptionType =
         initialType
           { subscription =
-              Just ("Subscription", ASTType {typeData = fields', typeName = "Subscription", typeDescription = ""})
+              Just ("Subscription", DataType {typeData = fields', typeName = "Subscription", typeDescription = ""})
           }
       (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
 

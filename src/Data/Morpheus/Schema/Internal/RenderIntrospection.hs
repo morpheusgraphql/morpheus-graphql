@@ -12,45 +12,45 @@ module Data.Morpheus.Schema.Internal.RenderIntrospection
   , typeFromUnion
   ) where
 
-import           Data.Morpheus.Schema.EnumValue   (EnumValue, createEnumValue)
-import qualified Data.Morpheus.Schema.Field       as F (Field (..), createFieldWith)
-import qualified Data.Morpheus.Schema.InputValue  as IN (InputValue (..), createInputValueWith)
-import           Data.Morpheus.Schema.Type        (Type (..))
-import           Data.Morpheus.Schema.TypeKind    (TypeKind (..))
-import           Data.Morpheus.Types.Describer    ((::->))
-import           Data.Morpheus.Types.Internal.AST (ASTField (..), ASTInputField, ASTInputObject, ASTLeaf (..),
-                                                   ASTOutputField, ASTOutputObject, ASTType (..), ASTTypeWrapper (..),
-                                                   ASTUnion)
-import           Data.Text                        (Text)
+import           Data.Morpheus.Schema.EnumValue    (EnumValue, createEnumValue)
+import qualified Data.Morpheus.Schema.Field        as F (Field (..), createFieldWith)
+import qualified Data.Morpheus.Schema.InputValue   as IN (InputValue (..), createInputValueWith)
+import           Data.Morpheus.Schema.Type         (Type (..))
+import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
+import           Data.Morpheus.Types.Describer     ((::->))
+import           Data.Morpheus.Types.Internal.Data (DataField (..), DataInputField, DataInputObject, DataLeaf (..),
+                                                    DataOutputField, DataOutputObject, DataType (..),
+                                                    DataTypeWrapper (..), DataUnion)
+import           Data.Text                         (Text)
 
 type InputValue = IN.InputValue Type
 
 type Field = F.Field Type
 
-inputValueFromArg :: (Text, ASTInputField) -> InputValue
+inputValueFromArg :: (Text, DataInputField) -> InputValue
 inputValueFromArg (key', input') = IN.createInputValueWith key' (createInputObjectType input')
 
-createInputObjectType :: ASTInputField -> Type
+createInputObjectType :: DataInputField -> Type
 createInputObjectType field' = wrap field' $ createType (fieldKind field') (fieldType field') "" []
 
-wrap :: ASTField a -> Type -> Type
+wrap :: DataField a -> Type -> Type
 wrap field' = wrapRec (fieldTypeWrappers field')
 
-wrapRec :: [ASTTypeWrapper] -> Type -> Type
+wrapRec :: [DataTypeWrapper] -> Type -> Type
 wrapRec [] type'     = type'
 wrapRec (x:xs) type' = wrapByTypeWrapper x (wrapRec xs type')
 
-wrapByTypeWrapper :: ASTTypeWrapper -> Type -> Type
+wrapByTypeWrapper :: DataTypeWrapper -> Type -> Type
 wrapByTypeWrapper ListType    = wrapAs LIST
 wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 
-fieldFromObjectField :: (Text, ASTOutputField) -> Field
-fieldFromObjectField (key', field'@ASTField {fieldType = type', fieldKind = kind', fieldArgs = args'}) =
+fieldFromObjectField :: (Text, DataOutputField) -> Field
+fieldFromObjectField (key', field'@DataField {fieldType = type', fieldKind = kind', fieldArgs = args'}) =
   F.createFieldWith key' (wrap field' $ createType kind' type' "" []) (map inputValueFromArg args')
 
-typeFromLeaf :: (Text, ASTLeaf) -> Type
-typeFromLeaf (key', LeafScalar ASTType {typeDescription = desc'}) = createLeafType SCALAR key' desc' []
-typeFromLeaf (key', LeafEnum ASTType {typeDescription = desc', typeData = tags'}) =
+typeFromLeaf :: (Text, DataLeaf) -> Type
+typeFromLeaf (key', LeafScalar DataType {typeDescription = desc'}) = createLeafType SCALAR key' desc' []
+typeFromLeaf (key', LeafEnum DataType {typeDescription = desc', typeData = tags'}) =
   createLeafType ENUM key' desc' (map createEnumValue tags')
 
 resolveNothing :: a ::-> Maybe b
@@ -73,7 +73,7 @@ createLeafType kind' name' desc' enums' =
     , inputFields = Nothing
     }
 
-typeFromUnion :: (Text, ASTUnion) -> Type
+typeFromUnion :: (Text, DataUnion) -> Type
 typeFromUnion (name', fields') =
   Type
     { kind = UNION
@@ -87,12 +87,12 @@ typeFromUnion (name', fields') =
     , inputFields = Nothing
     }
 
-typeFromObject :: (Text, ASTOutputObject) -> Type
-typeFromObject (key', ASTType {typeData = fields', typeDescription = description'}) =
+typeFromObject :: (Text, DataOutputObject) -> Type
+typeFromObject (key', DataType {typeData = fields', typeDescription = description'}) =
   createObjectType key' description' (map fieldFromObjectField fields')
 
-typeFromInputObject :: (Text, ASTInputObject) -> Type
-typeFromInputObject (key', ASTType {typeData = fields', typeDescription = description'}) =
+typeFromInputObject :: (Text, DataInputObject) -> Type
+typeFromInputObject (key', DataType {typeData = fields', typeDescription = description'}) =
   createInputObject key' description' (map inputValueFromArg fields')
 
 createObjectType :: Text -> Text -> [Field] -> Type

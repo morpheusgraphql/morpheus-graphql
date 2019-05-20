@@ -18,7 +18,7 @@ import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolve
 import           Data.Morpheus.Kind.OutputRouter        (_encode, _introspect)
 import           Data.Morpheus.Schema.Schema            (Schema, initSchema)
 import           Data.Morpheus.Types.Error              (ResolveIO)
-import           Data.Morpheus.Types.Internal.AST       (ASTOutputField, ASTType (..), ASTTypeLib (..), initTypeLib)
+import           Data.Morpheus.Types.Internal.Data      (DataOutputField, DataType (..), DataTypeLib (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Value     (Value (..))
 import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
 import           Data.Proxy
@@ -26,18 +26,18 @@ import           Data.Text                              (Text)
 import           GHC.Generics
 
 class GQLQuery a where
-  encodeQuery :: a -> ASTTypeLib -> SelectionSet -> ResolveIO Value
+  encodeQuery :: a -> DataTypeLib -> SelectionSet -> ResolveIO Value
   default encodeQuery :: (Generic a, DeriveResolvers (Rep a)) =>
-    a -> ASTTypeLib -> SelectionSet -> ResolveIO Value
+    a -> DataTypeLib -> SelectionSet -> ResolveIO Value
   encodeQuery rootResolver types sel = resolveBySelection sel (schemaResolver ++ resolvers)
     where
       schemaResolver = [("__schema", (`_encode` initSchema types))]
       resolvers = deriveResolvers "" $ from rootResolver
-  querySchema :: a -> ASTTypeLib
-  default querySchema :: (ObjectRep (Rep a) (Text, ASTOutputField)) =>
-    a -> ASTTypeLib
+  querySchema :: a -> DataTypeLib
+  default querySchema :: (ObjectRep (Rep a) (Text, DataOutputField)) =>
+    a -> DataTypeLib
   querySchema _ = resolveTypes typeLib stack'
     where
       typeLib = _introspect (Proxy @Schema) queryType
-      queryType = initTypeLib ("Query", ASTType {typeData = fields', typeName = "Query", typeDescription = ""})
+      queryType = initTypeLib ("Query", DataType {typeData = fields', typeName = "Query", typeDescription = ""})
       (fields', stack') = unzip $ getFields (Proxy @(Rep a))

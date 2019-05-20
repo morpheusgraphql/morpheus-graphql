@@ -12,8 +12,8 @@ import           Data.Morpheus.Error.Mutation        (mutationIsNotDefined)
 import           Data.Morpheus.Error.Subscription    (subscriptionIsNotDefined)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Error           (Validation)
-import           Data.Morpheus.Types.Internal.AST    (ASTField (..), ASTOutputObject, ASTType (..), ASTTypeLib (..),
-                                                      ASTTypeWrapper (..))
+import           Data.Morpheus.Types.Internal.Data    (DataField (..), DataOutputObject, DataType (..), DataTypeLib (..),
+                                                      DataTypeWrapper (..))
 import           Data.Morpheus.Types.Query.Operator  (Operator (..), Operator' (..), RawOperator, RawOperator',
                                                       ValidOperator)
 import           Data.Morpheus.Types.Query.Selection (SelectionSet)
@@ -27,11 +27,11 @@ updateQuery (Query (Operator' name' _ _ pos)) sel        = Query (Operator' name
 updateQuery (Mutation (Operator' name' _ _ pos)) sel     = Mutation (Operator' name' [] sel pos)
 updateQuery (Subscription (Operator' name' _ _ pos)) sel = Subscription (Operator' name' [] sel pos)
 
-setFieldSchema :: ASTOutputObject -> ASTOutputObject
+setFieldSchema :: DataOutputObject -> DataOutputObject
 setFieldSchema type' = type' {typeData = ("__schema", __schema) : typeData type'}
   where
     __schema =
-      ASTField
+      DataField
         { fieldArgs = []
         , fieldName = "__schema"
         , fieldTypeWrappers = [NonNullType]
@@ -39,7 +39,7 @@ setFieldSchema type' = type' {typeData = ("__schema", __schema) : typeData type'
         , fieldType = "__Schema"
         }
 
-getOperator :: RawOperator -> ASTTypeLib -> Validation (ASTOutputObject, RawOperator')
+getOperator :: RawOperator -> DataTypeLib -> Validation (DataOutputObject, RawOperator')
 getOperator (Query operator') lib' = pure (snd $ query lib', operator')
 getOperator (Mutation operator') lib' =
   case mutation lib' of
@@ -50,7 +50,7 @@ getOperator (Subscription operator') lib' =
     Just (_, subscription') -> pure (subscription', operator')
     Nothing                 -> Left $ subscriptionIsNotDefined (operatorPosition operator')
 
-validateRequest :: ASTTypeLib -> GQLQueryRoot -> Validation ValidOperator
+validateRequest :: DataTypeLib -> GQLQueryRoot -> Validation ValidOperator
 validateRequest lib' root' = do
   (operatorType', operator') <- getOperator (queryBody root') lib'
   variables' <- resolveOperatorVariables lib' (fromList $ inputVariables root') operator'

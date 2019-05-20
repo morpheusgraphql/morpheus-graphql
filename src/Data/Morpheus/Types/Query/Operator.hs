@@ -10,7 +10,7 @@ module Data.Morpheus.Types.Query.Operator
   ) where
 
 import           Data.Morpheus.Types.Core               (Collection, Key)
-import           Data.Morpheus.Types.Internal.AST       (ASTTypeWrapper)
+import           Data.Morpheus.Types.Internal.Data      (DataTypeWrapper)
 import           Data.Morpheus.Types.MetaInfo           (Position)
 import           Data.Morpheus.Types.Query.RawSelection (RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection    (Arguments, SelectionSet)
@@ -22,7 +22,7 @@ type ValidOperator' = Operator' Arguments SelectionSet
 data Variable = Variable
   { variableType         :: Key
   , isVariableRequired   :: Bool
-  , variableTypeWrappers :: [ASTTypeWrapper]
+  , variableTypeWrappers :: [DataTypeWrapper]
   , variablePosition     :: Position
   }
 
