@@ -2,28 +2,28 @@
 
 module Data.Morpheus.Parser.Primitive where
 
-import           Control.Applicative            (many, (<|>))
+import           Control.Applicative                (many, (<|>))
 import           Data.Attoparsec.Text
-import           Data.Functor                   (($>))
-import           Data.Morpheus.Types.JSType     (JSType (..), ScalarValue (..), decodeScientific)
-import qualified Data.Text                      as T (Text, pack)
+import           Data.Functor                       (($>))
+import           Data.Morpheus.Types.Internal.Value (ScalarValue (..), Value (..), decodeScientific)
+import qualified Data.Text                          as T (Text, pack)
 
-import qualified Data.Attoparsec.Internal.Types as AT
+import qualified Data.Attoparsec.Internal.Types     as AT
 
 replaceType :: T.Text -> T.Text
 replaceType "type" = "_type"
 replaceType x      = x
 
-boolTrue :: Parser JSType
+boolTrue :: Parser Value
 boolTrue = string "true" $> Scalar (Boolean True)
 
-boolFalse :: Parser JSType
+boolFalse :: Parser Value
 boolFalse = string "false" $> Scalar (Boolean False)
 
-jsBool :: Parser JSType
+jsBool :: Parser Value
 jsBool = boolTrue <|> boolFalse
 
-jsNumber :: Parser JSType
+jsNumber :: Parser Value
 jsNumber = Scalar . decodeScientific <$> scientific
 
 codes :: String
@@ -41,7 +41,7 @@ escaped = do
   where
     escapeChar code replacement = char code >> return replacement
 
-jsString :: Parser JSType
+jsString :: Parser Value
 jsString = do
   _ <- char '"'
   value <- many escaped

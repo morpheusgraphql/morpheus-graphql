@@ -11,7 +11,7 @@ module Data.Morpheus.Generics.DeriveResolvers
 
 import           Data.Maybe                          (fromMaybe)
 import           Data.Morpheus.Types.Error           (ResolveIO)
-import           Data.Morpheus.Types.JSType          (JSType (..))
+import           Data.Morpheus.Types.Internal.Value  (Value (..))
 import           Data.Morpheus.Types.Query.Selection (Selection)
 import           Data.Text                           (Text, pack)
 import           GHC.Generics
@@ -27,17 +27,17 @@ import           GHC.Generics
 unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
-selectResolver :: [(Text, (Text, Selection) -> ResolveIO JSType)] -> (Text, Selection) -> ResolveIO (Text, JSType)
+selectResolver :: [(Text, (Text, Selection) -> ResolveIO Value)] -> (Text, Selection) -> ResolveIO (Text, Value)
 selectResolver x (key, gql) = unwrapMonadTuple (key, (fromMaybe (\_ -> pure JSNull) $ lookup key x) (key, gql))
 
-resolveBySelection :: [(Text, Selection)] -> [(Text, (Text, Selection) -> ResolveIO JSType)] -> ResolveIO JSType
+resolveBySelection :: [(Text, Selection)] -> [(Text, (Text, Selection) -> ResolveIO Value)] -> ResolveIO Value
 resolveBySelection selection resolvers = JSObject <$> mapM (selectResolver resolvers) selection
 
-resolversBy :: (Generic a, DeriveResolvers (Rep a)) => a -> [(Text, (Text, Selection) -> ResolveIO JSType)]
+resolversBy :: (Generic a, DeriveResolvers (Rep a)) => a -> [(Text, (Text, Selection) -> ResolveIO Value)]
 resolversBy = deriveResolvers "" . from
 
 class DeriveResolvers f where
-  deriveResolvers :: Text -> f a -> [(Text, (Text, Selection) -> ResolveIO JSType)]
+  deriveResolvers :: Text -> f a -> [(Text, (Text, Selection) -> ResolveIO Value)]
 
 instance DeriveResolvers U1 where
   deriveResolvers _ _ = []

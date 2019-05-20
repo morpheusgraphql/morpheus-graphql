@@ -20,7 +20,7 @@ import           Data.Morpheus.Kind.Internal            (ENUM, KIND)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Types.Internal.AST       (ASTTypeLib)
-import           Data.Morpheus.Types.JSType             (JSType (..), ScalarValue (..))
+import           Data.Morpheus.Types.Internal.Value     (ScalarValue (..), Value (..))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
 import           GHC.Generics
@@ -30,7 +30,7 @@ type EnumConstraint a = (Generic a, EnumRep (Rep a), GQLType a)
 decode :: (Generic a, EnumRep (Rep a)) => Text -> a
 decode text = to $ gToEnum text
 
-encode :: (Generic a, EnumRep (Rep a)) => a -> JSType
+encode :: (Generic a, EnumRep (Rep a)) => a -> Value
 encode = Scalar . String . encodeRep . from
 
 introspect ::

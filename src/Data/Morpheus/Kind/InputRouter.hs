@@ -9,17 +9,18 @@
 
 module Data.Morpheus.Kind.InputRouter where
 
-import           Data.Morpheus.Error.Internal      (internalArgumentError, internalTypeMismatch)
-import           Data.Morpheus.Generics.GDecode    (GDecode (..))
-import qualified Data.Morpheus.Kind.GQLEnum        as E (EnumConstraint, decode, introspect)
-import qualified Data.Morpheus.Kind.GQLInputObject as I (IObjectConstraint, decode, inputField, introspect)
-import qualified Data.Morpheus.Kind.GQLScalar      as S (GQLScalar (..))
-import           Data.Morpheus.Kind.GQLType        (GQLType, field_)
-import           Data.Morpheus.Kind.Internal       (Decode_, ENUM, IField_, INPUT_OBJECT, Intro_, KIND, SCALAR, WRAPPER)
-import           Data.Morpheus.Kind.Utils          (listField, maybeField)
-import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
-import           Data.Morpheus.Types.JSType        (JSType (..))
-import           Data.Proxy                        (Proxy (..))
+import           Data.Morpheus.Error.Internal       (internalArgumentError, internalTypeMismatch)
+import           Data.Morpheus.Generics.GDecode     (GDecode (..))
+import qualified Data.Morpheus.Kind.GQLEnum         as E (EnumConstraint, decode, introspect)
+import qualified Data.Morpheus.Kind.GQLInputObject  as I (IObjectConstraint, decode, inputField, introspect)
+import qualified Data.Morpheus.Kind.GQLScalar       as S (GQLScalar (..))
+import           Data.Morpheus.Kind.GQLType         (GQLType, field_)
+import           Data.Morpheus.Kind.Internal        (Decode_, ENUM, IField_, INPUT_OBJECT, Intro_, KIND, SCALAR,
+                                                     WRAPPER)
+import           Data.Morpheus.Kind.Utils           (listField, maybeField)
+import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
+import           Data.Morpheus.Types.Internal.Value (Value (..))
+import           Data.Proxy                         (Proxy (..))
 import           GHC.Generics
 
 class InputTypeRouter a b where
@@ -42,7 +43,7 @@ _introspect ::
   => Intro_ a
 _introspect = __introspect (Proxy @(KIND a))
 
-instance (InputTypeRouter a (KIND a)) => GDecode JSType (K1 i a) where
+instance (InputTypeRouter a (KIND a)) => GDecode Value (K1 i a) where
   gDecode key' (JSObject object) =
     case lookup key' object of
       Nothing    -> internalArgumentError "Missing Argument"

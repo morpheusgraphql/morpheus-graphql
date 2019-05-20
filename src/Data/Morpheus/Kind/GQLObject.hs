@@ -27,7 +27,7 @@ import           Data.Morpheus.Schema.Internal.RenderIntrospection (Field, Input
 import           Data.Morpheus.Schema.Schema                       (Schema)
 import           Data.Morpheus.Types.Error                         (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.Internal.AST                  (ASTOutputField, ASTTypeLib)
-import           Data.Morpheus.Types.JSType                        (JSType (..), ScalarValue (..))
+import           Data.Morpheus.Types.Internal.Value                (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Query.Selection               (Selection (..))
 import           Data.Proxy
 import           Data.Text                                         (Text)
@@ -39,7 +39,7 @@ encode ::
      forall a. (GQLType a, Generic a, DeriveResolvers (Rep a))
   => (Text, Selection)
   -> a
-  -> ResolveIO JSType
+  -> ResolveIO Value
 encode (_, SelectionSet _ selection _pos) value = resolveBySelection selection (resolversBy value ++ [__typename])
   where
     __typename = ("__typename", \_ -> return $ Scalar $ String (typeID (Proxy @a)))

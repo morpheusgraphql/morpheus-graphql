@@ -16,16 +16,16 @@ import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), r
 import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.Internal.AST       (ASTOutputField, ASTType (..), ASTTypeLib (..))
-import           Data.Morpheus.Types.JSType             (JSType (..))
+import           Data.Morpheus.Types.Internal.Value     (Value (..))
 import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
 import           Data.Proxy
 import           Data.Text                              (Text)
 import           GHC.Generics
 
 class GQLSubscription a where
-  encodeSubscription :: a -> SelectionSet -> ResolveIO JSType
+  encodeSubscription :: a -> SelectionSet -> ResolveIO Value
   default encodeSubscription :: (Generic a, DeriveResolvers (Rep a)) =>
-    a -> SelectionSet -> ResolveIO JSType
+    a -> SelectionSet -> ResolveIO Value
   encodeSubscription rootResolver sel = resolveBySelection sel $ deriveResolvers "" $ from rootResolver
   subscriptionSchema :: a -> ASTTypeLib -> ASTTypeLib
   default subscriptionSchema :: (ObjectRep (Rep a) (Text, ASTOutputField)) =>

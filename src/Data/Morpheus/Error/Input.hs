@@ -7,18 +7,18 @@ module Data.Morpheus.Error.Input
   , InputValidation
   ) where
 
-import           Data.Aeson                 (encode)
-import           Data.ByteString.Lazy.Char8 (unpack)
-import           Data.Morpheus.Types.JSType (JSType)
-import           Data.Text                  (Text)
-import qualified Data.Text                  as T (concat, intercalate, pack)
+import           Data.Aeson                         (encode)
+import           Data.ByteString.Lazy.Char8         (unpack)
+import           Data.Morpheus.Types.Internal.Value (Value)
+import           Data.Text                          (Text)
+import qualified Data.Text                          as T (concat, intercalate, pack)
 
 type InputValidation a = Either InputError a
 
 data InputError
   = UnexpectedType [Prop]
                    Text
-                   JSType
+                   Value
   | UndefinedField [Prop]
                    Text
   | UnknownField [Prop]
@@ -38,7 +38,7 @@ pathToText :: [Prop] -> Text
 pathToText []    = ""
 pathToText path' = T.concat ["on ", T.intercalate "." $ fmap propKey path']
 
-expectedTypeAFoundB :: [Prop] -> Text -> JSType -> Text
+expectedTypeAFoundB :: [Prop] -> Text -> Value -> Text
 expectedTypeAFoundB path' expected found =
   T.concat [pathToText path', " Expected type \"", expected, "\" found ", T.pack (unpack $ encode found), "."]
 

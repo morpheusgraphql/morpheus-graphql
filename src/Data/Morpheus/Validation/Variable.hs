@@ -14,7 +14,7 @@ import           Data.Morpheus.Error.Variable           (undefinedVariable, unin
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.Internal.AST       (ASTInputType, ASTTypeLib)
-import           Data.Morpheus.Types.JSType             (JSType (..))
+import           Data.Morpheus.Types.Internal.Value     (Value (..))
 import           Data.Morpheus.Types.MetaInfo           (Position)
 import           Data.Morpheus.Types.Query.Operator     (Operator' (..), RawOperator', Variable (..))
 import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..), RawSelection (..), RawSelectionSet)
@@ -29,23 +29,23 @@ getVariableType type' position' lib' = getInputType type' lib' error'
   where
     error' = unknownType type' position'
 
-lookupVariable :: Variables -> Text -> (Text -> error) -> Either error JSType
+lookupVariable :: Variables -> Text -> (Text -> error) -> Either error Value
 lookupVariable variables' key' error' =
   case M.lookup key' variables' of
     Nothing    -> Left $ error' key'
     Just value -> pure value
 
-getVariable :: Position -> Variables -> Text -> Validation JSType
+getVariable :: Position -> Variables -> Text -> Validation Value
 getVariable position' variables' key' = lookupVariable variables' key' (undefinedVariable "Query" position')
 
-handleInputError :: Text -> Int -> InputValidation JSType -> Validation (Text, JSType)
+handleInputError :: Text -> Int -> InputValidation Value -> Validation (Text, Value)
 handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
 handleInputError key' _ (Right value') = pure (key', value')
 
-lookupBodyValue :: Position -> Variables -> Text -> Text -> Validation JSType
+lookupBodyValue :: Position -> Variables -> Text -> Text -> Validation Value
 lookupBodyValue position' variables' key' type' = lookupVariable variables' key' (uninitializedVariable position' type')
 
-lookupAndValidateValueOnBody :: ASTTypeLib -> Variables -> (Text, Variable) -> Validation (Text, JSType)
+lookupAndValidateValueOnBody :: ASTTypeLib -> Variables -> (Text, Variable) -> Validation (Text, Value)
 lookupAndValidateValueOnBody typeLib variables' (key', Variable { variableType = type'
                                                                 , variablePosition = position'
                                                                 , isVariableRequired = isRequired'

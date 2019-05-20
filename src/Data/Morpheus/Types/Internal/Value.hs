@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Types.JSType
-  ( JSType(..)
+module Data.Morpheus.Types.Internal.Value
+  ( Value(..)
   , ScalarValue(..)
   , decodeScientific
   ) where
@@ -31,15 +31,15 @@ instance A.ToJSON ScalarValue where
   toEncoding (Boolean x) = A.toEncoding x
   toEncoding (String x)  = A.toEncoding x
 
-data JSType
-  = JSObject [(Text, JSType)]
-  | JSList [JSType]
+data Value
+  = JSObject [(Text, Value)]
+  | JSList [Value]
   | JSEnum Text
   | Scalar ScalarValue
   | JSNull
   deriving (Show, Generic)
 
-instance A.ToJSON JSType where
+instance A.ToJSON Value where
   toEncoding JSNull = A.toEncoding A.Null
   toEncoding (JSEnum x) = A.toEncoding x
   toEncoding (JSList x) = A.toEncoding x
@@ -49,7 +49,7 @@ instance A.ToJSON JSType where
     where
       encodeField (key, value) = replaceType key A..= value
 
-replace :: (a, A.Value) -> (a, JSType)
+replace :: (a, A.Value) -> (a, Value)
 replace (key, val) = (key, replaceValue val)
 
 decodeScientific :: Scientific -> ScalarValue
@@ -58,7 +58,7 @@ decodeScientific v =
     Left float -> Float float
     Right int  -> Int int
 
-replaceValue :: A.Value -> JSType
+replaceValue :: A.Value -> Value
 replaceValue (A.Bool v)   = Scalar $ Boolean v
 replaceValue (A.Number v) = Scalar $ decodeScientific v
 replaceValue (A.String v) = Scalar $ String v
@@ -66,5 +66,5 @@ replaceValue (A.Object v) = JSObject $ map replace (M.toList v)
 replaceValue (A.Array li) = JSList (map replaceValue (V.toList li))
 replaceValue A.Null       = JSNull
 
-instance A.FromJSON JSType where
+instance A.FromJSON Value where
   parseJSON = pure . replaceValue

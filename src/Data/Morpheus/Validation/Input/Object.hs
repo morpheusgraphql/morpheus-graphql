@@ -7,13 +7,13 @@ module Data.Morpheus.Validation.Input.Object
 import           Data.Morpheus.Error.Input            (InputError (..), InputValidation, Prop (..))
 import           Data.Morpheus.Types.Internal.AST     (ASTField (..), ASTInputField, ASTInputType, ASTKind (..),
                                                        ASTType (..), ASTTypeLib (..), showFullAstType)
-import           Data.Morpheus.Types.JSType           (JSType (..), ScalarValue (..))
+import           Data.Morpheus.Types.Internal.Value   (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Query.Operator   (TypeWrapper (..))
 import           Data.Morpheus.Validation.Input.Enum  (validateEnum)
 import           Data.Morpheus.Validation.Utils.Utils (getInputType, lookupField)
 import           Data.Text                            (Text)
 
-typeMismatch :: JSType -> Text -> [Prop] -> InputError
+typeMismatch :: Value -> Text -> [Prop] -> InputError
 typeMismatch jsType expected' path' = UnexpectedType path' expected' jsType
 
 validateScalarTypes :: Text -> ScalarValue -> [Prop] -> InputValidation ScalarValue
@@ -26,14 +26,14 @@ validateScalarTypes "Boolean" scalar      = Left . typeMismatch (Scalar scalar) 
 validateScalarTypes _ scalar              = pure . const scalar
 
 -- Validate Variable Argument or all Possible input Values
-validateInputValue :: ASTTypeLib -> [Prop] -> [TypeWrapper] -> ASTInputType -> (Text, JSType) -> InputValidation JSType
+validateInputValue :: ASTTypeLib -> [Prop] -> [TypeWrapper] -> ASTInputType -> (Text, Value) -> InputValidation Value
 validateInputValue lib' prop' = validate
   where
-    throwError :: [TypeWrapper] -> ASTInputType -> JSType -> InputValidation JSType
+    throwError :: [TypeWrapper] -> ASTInputType -> Value -> InputValidation Value
     throwError wrappers' type' value' = Left $ UnexpectedType prop' (showFullAstType wrappers' type') value'
     {-- VALIDATION --}
     {-- 1. VALIDATE WRAPPERS -}
-    validate :: [TypeWrapper] -> ASTInputType -> (Text, JSType) -> InputValidation JSType
+    validate :: [TypeWrapper] -> ASTInputType -> (Text, Value) -> InputValidation Value
     -- throw error on not nullable type if value = null
     validate (NonNullType:wrappers') type' (_, JSNull) = throwError wrappers' type' JSNull
     -- resolves nullable value as null

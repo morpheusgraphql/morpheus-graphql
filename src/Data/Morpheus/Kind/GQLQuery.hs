@@ -19,16 +19,16 @@ import           Data.Morpheus.Kind.OutputRouter        (_encode, _introspect)
 import           Data.Morpheus.Schema.Schema            (Schema, initSchema)
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.Internal.AST       (ASTOutputField, ASTType (..), ASTTypeLib (..), initTypeLib)
-import           Data.Morpheus.Types.JSType             (JSType (..))
+import           Data.Morpheus.Types.Internal.Value     (Value (..))
 import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
 import           Data.Proxy
 import           Data.Text                              (Text)
 import           GHC.Generics
 
 class GQLQuery a where
-  encodeQuery :: a -> ASTTypeLib -> SelectionSet -> ResolveIO JSType
+  encodeQuery :: a -> ASTTypeLib -> SelectionSet -> ResolveIO Value
   default encodeQuery :: (Generic a, DeriveResolvers (Rep a)) =>
-    a -> ASTTypeLib -> SelectionSet -> ResolveIO JSType
+    a -> ASTTypeLib -> SelectionSet -> ResolveIO Value
   encodeQuery rootResolver types sel = resolveBySelection sel (schemaResolver ++ resolvers)
     where
       schemaResolver = [("__schema", (`_encode` initSchema types))]

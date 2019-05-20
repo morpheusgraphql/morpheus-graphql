@@ -13,7 +13,7 @@ import           Data.Morpheus.Kind.GQLSubscription  (GQLSubscription (..))
 import           Data.Morpheus.Parser.Parser         (parseGQL, parseLineBreaks)
 import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.Internal.AST    (ASTTypeLib)
-import           Data.Morpheus.Types.JSType          (JSType)
+import           Data.Morpheus.Types.Internal.Value  (Value)
 import           Data.Morpheus.Types.Query.Operator  (Operator (..), Operator' (..))
 import           Data.Morpheus.Types.Request         (GQLRequest)
 import           Data.Morpheus.Types.Response        (GQLResponse (..))
@@ -27,7 +27,7 @@ schema :: (GQLQuery a, GQLMutation b, GQLSubscription c) => a -> b -> c -> ASTTy
 schema queryRes mutationRes subscriptionRes =
   subscriptionSchema subscriptionRes $ mutationSchema mutationRes $ querySchema queryRes
 
-resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> GQLRequest -> ResolveIO JSType
+resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> GQLRequest -> ResolveIO Value
 resolve rootResolver body = do
   rootGQL <- ExceptT $ pure (parseGQL body >>= validateRequest gqlSchema)
   case rootGQL of

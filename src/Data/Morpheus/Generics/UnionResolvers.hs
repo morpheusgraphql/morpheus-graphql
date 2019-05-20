@@ -6,13 +6,13 @@ module Data.Morpheus.Generics.UnionResolvers
   ) where
 
 import           Data.Morpheus.Types.Error           (ResolveIO)
-import           Data.Morpheus.Types.JSType          (JSType (..))
+import           Data.Morpheus.Types.Internal.Value  (Value (..))
 import           Data.Morpheus.Types.Query.Selection (Selection)
 import           Data.Text                           (Text)
 import           GHC.Generics
 
 class UnionResolvers f where
-  currentResolver :: f a -> (Text, (Text, Selection) -> ResolveIO JSType)
+  currentResolver :: f a -> (Text, (Text, Selection) -> ResolveIO Value)
 
 instance UnionResolvers f => UnionResolvers (M1 S s f) where
   currentResolver (M1 x) = currentResolver x

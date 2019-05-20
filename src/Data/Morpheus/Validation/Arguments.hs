@@ -11,7 +11,7 @@ import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.Internal.AST       (ASTArgument, ASTField (..), ASTInputField, ASTOutputField,
                                                          ASTTypeLib, isFieldNullable)
-import           Data.Morpheus.Types.JSType             (JSType (JSNull))
+import           Data.Morpheus.Types.Internal.Value     (Value (JSNull))
 import           Data.Morpheus.Types.MetaInfo           (Position)
 import qualified Data.Morpheus.Types.Query.RawSelection as Raw (RawArguments)
 import           Data.Morpheus.Types.Query.Selection    (Argument (..), Arguments)

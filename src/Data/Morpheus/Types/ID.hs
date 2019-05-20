@@ -7,13 +7,13 @@ module Data.Morpheus.Types.ID
   ( ID(..)
   ) where
 
-import           Data.Morpheus.Error.Internal (internalTypeMismatch)
-import           Data.Morpheus.Kind.GQLScalar (GQLScalar (..))
-import           Data.Morpheus.Kind.GQLType   (GQLType)
-import           Data.Morpheus.Kind.Internal  (KIND, SCALAR)
-import           Data.Morpheus.Types.JSType   (JSType (..), ScalarValue (..))
-import           Data.Text                    (Text, pack)
-import           GHC.Generics                 (Generic)
+import           Data.Morpheus.Error.Internal       (internalTypeMismatch)
+import           Data.Morpheus.Kind.GQLScalar       (GQLScalar (..))
+import           Data.Morpheus.Kind.GQLType         (GQLType)
+import           Data.Morpheus.Kind.Internal        (KIND, SCALAR)
+import           Data.Morpheus.Types.Internal.Value (ScalarValue (..), Value (..))
+import           Data.Text                          (Text, pack)
+import           GHC.Generics                       (Generic)
 
 type instance KIND ID = SCALAR
 

@@ -4,11 +4,11 @@ module Data.Morpheus.Validation.Input.Enum
   ( validateEnum
   ) where
 
-import           Data.List                  (elem)
-import           Data.Morpheus.Types.JSType (JSType (..))
-import           Data.Text                  (Text)
+import           Data.List                          (elem)
+import           Data.Morpheus.Types.Internal.Value (Value (..))
+import           Data.Text                          (Text)
 
-validateEnum :: error -> [Text] -> JSType -> Either error JSType
+validateEnum :: error -> [Text] -> Value -> Either error Value
 validateEnum error' tags' (JSEnum enumValue) =
   if enumValue `elem` tags'
     then pure (JSEnum enumValue)

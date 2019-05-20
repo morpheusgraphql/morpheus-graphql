@@ -16,16 +16,16 @@ import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), r
 import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Types.Error              (ResolveIO)
 import           Data.Morpheus.Types.Internal.AST       (ASTOutputField, ASTType (..), ASTTypeLib (..))
-import           Data.Morpheus.Types.JSType             (JSType (..))
+import           Data.Morpheus.Types.Internal.Value     (Value (..))
 import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
 import           Data.Proxy
 import           Data.Text                              (Text)
 import           GHC.Generics
 
 class GQLMutation a where
-  encodeMutation :: a -> SelectionSet -> ResolveIO JSType
+  encodeMutation :: a -> SelectionSet -> ResolveIO Value
   default encodeMutation :: (Generic a, DeriveResolvers (Rep a)) =>
-    a -> SelectionSet -> ResolveIO JSType
+    a -> SelectionSet -> ResolveIO Value
   encodeMutation rootResolver sel = resolveBySelection sel $ deriveResolvers "" $ from rootResolver
   mutationSchema :: a -> ASTTypeLib -> ASTTypeLib
   default mutationSchema :: (ObjectRep (Rep a) (Text, ASTOutputField)) =>

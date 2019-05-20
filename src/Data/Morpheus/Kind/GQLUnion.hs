@@ -21,7 +21,7 @@ import           Data.Morpheus.Generics.UnionResolvers (UnionResolvers (..))
 import           Data.Morpheus.Kind.GQLType            (GQLType (..))
 import           Data.Morpheus.Types.Error             (ResolveIO)
 import           Data.Morpheus.Types.Internal.AST      (ASTFullType (..), ASTTypeLib)
-import           Data.Morpheus.Types.JSType            (JSType (..))
+import           Data.Morpheus.Types.Internal.Value    (Value (..))
 import           Data.Morpheus.Types.Query.Selection   (Selection (..), SelectionSet)
 import           Data.Proxy
 import           Data.Text                             (Text)
@@ -33,7 +33,7 @@ type Constraint a = (Generic a, GQLType a, UnionRep (Rep a), UnionResolvers (Rep
 lookupSelectionByType :: Text -> [(Text, SelectionSet)] -> SelectionSet
 lookupSelectionByType type' sel = fromMaybe [] $ lookup type' sel
 
-encode :: (Generic a, UnionResolvers (Rep a)) => (Text, Selection) -> a -> ResolveIO JSType
+encode :: (Generic a, UnionResolvers (Rep a)) => (Text, Selection) -> a -> ResolveIO Value
 encode (key', UnionSelection args selection pos) value =
   resolver (key', SelectionSet args (lookupSelectionByType type' selection) pos)
   where
