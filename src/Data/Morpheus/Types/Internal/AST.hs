@@ -17,8 +17,8 @@ module Data.Morpheus.Types.Internal.AST
   , ASTType(..)
   , ASTLeaf(..)
   , ASTKind(..)
-  , ASTFullType
-  , ASTTypeLib
+  , ASTFullType(..)
+  , ASTTypeLib(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -34,11 +34,11 @@ import qualified Data.Text                          as T (concat)
 
 type Key = Text
 
-type ASTScalar = ()
+type ASTScalar = ASTType ()
 
-type ASTEnum = [Key]
+type ASTEnum = ASTType [Key]
 
-type ASTObject a = [(Key, a)]
+type ASTObject a = ASTType [(Key, a)]
 
 type ASTInputField = ASTField ()
 
@@ -50,7 +50,7 @@ type ASTInputObject = ASTObject ASTInputField
 
 type ASTOutputObject = ASTObject ASTOutputField
 
-type ASTUnion = [ASTOutputObject]
+type ASTUnion = [ASTField ()]
 
 type ASTOutputType = ASTKind ASTOutputField
 
