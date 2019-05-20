@@ -3,12 +3,12 @@
 
 module Data.Morpheus.Schema.Schema where
 
-import           Data.Morpheus.Schema.Directive    (Directive)
-import           Data.Morpheus.Schema.Internal.AST (OutputObject, TypeLib (..))
-import           Data.Morpheus.Schema.Utils.Utils  (Type, createObjectType, typeFromInputObject, typeFromLeaf,
-                                                    typeFromObject, typeFromUnion)
-import           Data.Text                         (Text)
-import           GHC.Generics                      (Generic)
+import           Data.Morpheus.Schema.Directive                    (Directive)
+import           Data.Morpheus.Schema.Internal.RenderIntrospection (Type, createObjectType, typeFromInputObject,
+                                                                    typeFromLeaf, typeFromObject, typeFromUnion)
+import           Data.Morpheus.Types.Internal.AST                  (ASTOutputObject, ASTTypeLib (..))
+import           Data.Text                                         (Text)
+import           GHC.Generics                                      (Generic)
 
 data Schema = Schema
   { types            :: [Type]
@@ -18,7 +18,7 @@ data Schema = Schema
   , directives       :: [Directive]
   } deriving (Generic)
 
-convertTypes :: TypeLib -> [Type]
+convertTypes :: ASTTypeLib -> [Type]
 convertTypes lib' =
   [typeFromObject $ query lib'] ++
   typeFromMaybe (mutation lib') ++
@@ -26,14 +26,14 @@ convertTypes lib' =
   map typeFromObject (object lib') ++
   map typeFromInputObject (inputObject lib') ++ map typeFromLeaf (leaf lib') ++ map typeFromUnion (union lib')
 
-typeFromMaybe :: Maybe (Text, OutputObject) -> [Type]
+typeFromMaybe :: Maybe (Text, ASTOutputObject) -> [Type]
 typeFromMaybe (Just x) = [typeFromObject x]
 typeFromMaybe Nothing  = []
 
-buildSchemaLinkType :: (Text, OutputObject) -> Type
+buildSchemaLinkType :: (Text, ASTOutputObject) -> Type
 buildSchemaLinkType (key', _) = createObjectType key' "Query Description" []
 
-initSchema :: TypeLib -> Schema
+initSchema :: ASTTypeLib -> Schema
 initSchema types' =
   Schema
     { types = convertTypes types'
