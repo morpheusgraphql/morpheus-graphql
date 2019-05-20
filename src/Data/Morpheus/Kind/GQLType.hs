@@ -46,7 +46,7 @@ inputObjectOf fields' = InputObject . buildType fields'
 
 class GQLType a where
   description :: Proxy a -> Text
-  description _ = "default selection Description"
+  description _ = ""
   typeID :: Proxy a -> Text
   default typeID :: (TypeID (Rep a), Generic a) =>
     Proxy a -> Text
