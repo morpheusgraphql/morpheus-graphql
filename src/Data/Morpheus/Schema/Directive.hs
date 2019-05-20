@@ -5,10 +5,10 @@ module Data.Morpheus.Schema.Directive
   ( Directive(..)
   ) where
 
-import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
-import           Data.Morpheus.Schema.Utils.Utils       (InputValue)
-import           Data.Text                              (Text)
-import           GHC.Generics
+import           Data.Morpheus.Schema.DirectiveLocation            (DirectiveLocation)
+import           Data.Morpheus.Schema.Internal.RenderIntrospection (InputValue)
+import           Data.Text                                         (Text)
+import           GHC.Generics                                      (Generic)
 
 data Directive = Directive
   { name        :: Text
@@ -16,3 +16,4 @@ data Directive = Directive
   , locations   :: [DirectiveLocation]
   , args        :: [InputValue]
   } deriving (Generic)
+
