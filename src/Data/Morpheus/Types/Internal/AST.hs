@@ -80,9 +80,9 @@ data ASTLeaf
   deriving (Show)
 
 data ASTKind a
-  = Scalar ASTScalar
-  | Enum ASTEnum
-  | Object (ASTObject a)
+  = ScalarKind ASTScalar
+  | EnumKind ASTEnum
+  | ObjectKind (ASTObject a)
   deriving (Show)
 
 data ASTFullType
@@ -107,8 +107,10 @@ showWrappedType [] type'               = type'
 showWrappedType (ListType:xs) type'    = T.concat ["[", showWrappedType xs type', "]"]
 showWrappedType (NonNullType:xs) type' = T.concat [showWrappedType xs type', "!"]
 
-showFullAstType :: [TypeWrapper] -> ASTType a -> Text
-showFullAstType wrappers' = showWrappedType wrappers' . typeName
+showFullAstType :: [TypeWrapper] -> ASTKind a -> Text
+showFullAstType wrappers' (ScalarKind x) = showWrappedType wrappers' (typeName x)
+showFullAstType wrappers' (EnumKind x)   = showWrappedType wrappers' (typeName x)
+showFullAstType wrappers' (ObjectKind x) = showWrappedType wrappers' (typeName x)
 
 initTypeLib :: (Text, ASTOutputObject) -> ASTTypeLib
 initTypeLib query' =
