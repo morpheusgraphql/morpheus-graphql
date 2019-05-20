@@ -16,30 +16,28 @@ module Data.Morpheus.Kind.GQLQuery
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Kind.OutputRouter        (_encode, _introspect)
-import           Data.Morpheus.Schema.Internal.AST    (Core (..), GObject (..), ObjectField, TypeLib, initTypeLib)
 import           Data.Morpheus.Schema.Schema            (Schema, initSchema)
 import           Data.Morpheus.Types.Error              (ResolveIO)
-import           Data.Morpheus.Types.JSType             (JSType (..))
+import           Data.Morpheus.Types.Internal.Data      (DataOutputField, DataType (..), DataTypeLib (..), initTypeLib)
+import           Data.Morpheus.Types.Internal.Value     (Value (..))
 import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
 import           Data.Proxy
 import           Data.Text                              (Text)
 import           GHC.Generics
 
 class GQLQuery a where
-  encodeQuery :: a -> TypeLib -> SelectionSet -> ResolveIO JSType
+  encodeQuery :: a -> DataTypeLib -> SelectionSet -> ResolveIO Value
   default encodeQuery :: (Generic a, DeriveResolvers (Rep a)) =>
-    a -> TypeLib -> SelectionSet -> ResolveIO JSType
+    a -> DataTypeLib -> SelectionSet -> ResolveIO Value
   encodeQuery rootResolver types sel = resolveBySelection sel (schemaResolver ++ resolvers)
     where
       schemaResolver = [("__schema", (`_encode` initSchema types))]
       resolvers = deriveResolvers "" $ from rootResolver
-  querySchema :: a -> TypeLib
-  default querySchema :: (ObjectRep (Rep a) (Text, ObjectField)) =>
-    a -> TypeLib
-  querySchema _ = resolveTypes typeLib stack
+  querySchema :: a -> DataTypeLib
+  default querySchema :: (ObjectRep (Rep a) (Text, DataOutputField)) =>
+    a -> DataTypeLib
+  querySchema _ = resolveTypes typeLib stack'
     where
       typeLib = _introspect (Proxy @Schema) queryType
-      queryType = initTypeLib ("Query", GObject fields (Core "Query" "Description"))
-      fieldTypes = getFields (Proxy @(Rep a))
-      stack = map snd fieldTypes
-      fields = map fst fieldTypes
+      queryType = initTypeLib ("Query", DataType {typeData = fields', typeName = "Query", typeDescription = ""})
+      (fields', stack') = unzip $ getFields (Proxy @(Rep a))

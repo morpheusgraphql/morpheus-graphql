@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Types.JSType
-  ( JSType(..)
+module Data.Morpheus.Types.Internal.Value
+  ( Value(..)
   , ScalarValue(..)
   , decodeScientific
   ) where
@@ -31,25 +31,25 @@ instance A.ToJSON ScalarValue where
   toEncoding (Boolean x) = A.toEncoding x
   toEncoding (String x)  = A.toEncoding x
 
-data JSType
-  = JSObject [(Text, JSType)]
-  | JSList [JSType]
-  | JSEnum Text
+data Value
+  = Object [(Text, Value)]
+  | List [Value]
+  | Enum Text
   | Scalar ScalarValue
-  | JSNull
+  | Null
   deriving (Show, Generic)
 
-instance A.ToJSON JSType where
-  toEncoding JSNull = A.toEncoding A.Null
-  toEncoding (JSEnum x) = A.toEncoding x
-  toEncoding (JSList x) = A.toEncoding x
+instance A.ToJSON Value where
+  toEncoding Null = A.toEncoding A.Null
+  toEncoding (Enum x) = A.toEncoding x
+  toEncoding (List x) = A.toEncoding x
   toEncoding (Scalar x) = A.toEncoding x
-  toEncoding (JSObject []) = A.toEncoding $ A.object []
-  toEncoding (JSObject x) = A.pairs $ foldl1 (<>) $ map encodeField x
+  toEncoding (Object []) = A.toEncoding $ A.object []
+  toEncoding (Object x) = A.pairs $ foldl1 (<>) $ map encodeField x
     where
       encodeField (key, value) = replaceType key A..= value
 
-replace :: (a, A.Value) -> (a, JSType)
+replace :: (a, A.Value) -> (a, Value)
 replace (key, val) = (key, replaceValue val)
 
 decodeScientific :: Scientific -> ScalarValue
@@ -58,13 +58,13 @@ decodeScientific v =
     Left float -> Float float
     Right int  -> Int int
 
-replaceValue :: A.Value -> JSType
+replaceValue :: A.Value -> Value
 replaceValue (A.Bool v)   = Scalar $ Boolean v
 replaceValue (A.Number v) = Scalar $ decodeScientific v
 replaceValue (A.String v) = Scalar $ String v
-replaceValue (A.Object v) = JSObject $ map replace (M.toList v)
-replaceValue (A.Array li) = JSList (map replaceValue (V.toList li))
-replaceValue A.Null       = JSNull
+replaceValue (A.Object v) = Object $ map replace (M.toList v)
+replaceValue (A.Array li) = List (map replaceValue (V.toList li))
+replaceValue A.Null       = Null
 
-instance A.FromJSON JSType where
+instance A.FromJSON Value where
   parseJSON = pure . replaceValue

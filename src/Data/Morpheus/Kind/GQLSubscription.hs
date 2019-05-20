@@ -14,30 +14,31 @@ module Data.Morpheus.Kind.GQLSubscription
 
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
-import           Data.Morpheus.Schema.Internal.AST      (Core (..), GObject (..), ObjectField, TypeLib (..))
 import           Data.Morpheus.Types.Error              (ResolveIO)
-import           Data.Morpheus.Types.JSType             (JSType (..))
+import           Data.Morpheus.Types.Internal.Data      (DataOutputField, DataType (..), DataTypeLib (..))
+import           Data.Morpheus.Types.Internal.Value     (Value (..))
 import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
 import           Data.Proxy
 import           Data.Text                              (Text)
 import           GHC.Generics
 
 class GQLSubscription a where
-  encodeSubscription :: a -> SelectionSet -> ResolveIO JSType
+  encodeSubscription :: a -> SelectionSet -> ResolveIO Value
   default encodeSubscription :: (Generic a, DeriveResolvers (Rep a)) =>
-    a -> SelectionSet -> ResolveIO JSType
+    a -> SelectionSet -> ResolveIO Value
   encodeSubscription rootResolver sel = resolveBySelection sel $ deriveResolvers "" $ from rootResolver
-  subscriptionSchema :: a -> TypeLib -> TypeLib
-  default subscriptionSchema :: (ObjectRep (Rep a) (Text, ObjectField)) =>
-    a -> TypeLib -> TypeLib
-  subscriptionSchema _ initialType = resolveTypes subscriptionType types
+  subscriptionSchema :: a -> DataTypeLib -> DataTypeLib
+  default subscriptionSchema :: (ObjectRep (Rep a) (Text, DataOutputField)) =>
+    a -> DataTypeLib -> DataTypeLib
+  subscriptionSchema _ initialType = resolveTypes subscriptionType types'
     where
       subscriptionType =
-        initialType {subscription = Just ("Subscription", GObject fields $ Core "Subscription" "Description")}
-      fieldTypes = getFields (Proxy :: Proxy (Rep a))
-      types = map snd fieldTypes
-      fields = map fst fieldTypes
+        initialType
+          { subscription =
+              Just ("Subscription", DataType {typeData = fields', typeName = "Subscription", typeDescription = ""})
+          }
+      (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
 
 instance GQLSubscription () where
-  encodeSubscription _ _ = pure JSNull
+  encodeSubscription _ _ = pure Null
   subscriptionSchema _ = id

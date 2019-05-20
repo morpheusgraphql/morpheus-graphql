@@ -13,30 +13,32 @@ module Data.Morpheus.Kind.GQLMutation
   ) where
 
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
-import           Data.Morpheus.Generics.ObjectRep         (ObjectRep (..), resolveTypes)
-import           Data.Morpheus.Schema.Internal.AST    (Core (..), GObject (..), ObjectField, TypeLib (..))
+import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Types.Error              (ResolveIO)
-import           Data.Morpheus.Types.JSType             (JSType (..))
+import           Data.Morpheus.Types.Internal.Data      (DataOutputField, DataType (..), DataTypeLib (..))
+import           Data.Morpheus.Types.Internal.Value     (Value (..))
 import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
 import           Data.Proxy
 import           Data.Text                              (Text)
 import           GHC.Generics
 
 class GQLMutation a where
-  encodeMutation :: a -> SelectionSet -> ResolveIO JSType
+  encodeMutation :: a -> SelectionSet -> ResolveIO Value
   default encodeMutation :: (Generic a, DeriveResolvers (Rep a)) =>
-    a -> SelectionSet -> ResolveIO JSType
+    a -> SelectionSet -> ResolveIO Value
   encodeMutation rootResolver sel = resolveBySelection sel $ deriveResolvers "" $ from rootResolver
-  mutationSchema :: a -> TypeLib -> TypeLib
-  default mutationSchema :: (ObjectRep (Rep a) (Text, ObjectField)) =>
-    a -> TypeLib -> TypeLib
-  mutationSchema _ initialType = resolveTypes mutationType types
+  mutationSchema :: a -> DataTypeLib -> DataTypeLib
+  default mutationSchema :: (ObjectRep (Rep a) (Text, DataOutputField)) =>
+    a -> DataTypeLib -> DataTypeLib
+  mutationSchema _ initialType = resolveTypes mutationType types'
     where
-      mutationType = initialType {mutation = Just ("Mutation", GObject fields $ Core "Mutation" "Description")}
-      fieldTypes = getFields (Proxy :: Proxy (Rep a))
-      types = map snd fieldTypes
-      fields = map fst fieldTypes
+      mutationType =
+        initialType
+          { mutation =
+              Just ("Mutation", DataType {typeData = fields', typeName = "Mutation", typeDescription = "Description"})
+          }
+      (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
 
 instance GQLMutation () where
-  encodeMutation _ _ = pure JSNull
+  encodeMutation _ _ = pure Null
   mutationSchema _ = id

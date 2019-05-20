@@ -5,14 +5,14 @@ module Data.Morpheus.Types.Query.RawSelection
   , RawSelection(..)
   ) where
 
-import           Data.Morpheus.Types.Core     (Collection, Key)
-import           Data.Morpheus.Types.JSType   (JSType)
-import           Data.Morpheus.Types.MetaInfo (Position)
+import           Data.Morpheus.Types.Core           (Collection, Key)
+import           Data.Morpheus.Types.Internal.Value (Value)
+import           Data.Morpheus.Types.MetaInfo       (Position)
 
 data RawArgument
   = VariableReference Key
                       Position
-  | Argument JSType
+  | Argument Value
              Position
   deriving (Show)
 

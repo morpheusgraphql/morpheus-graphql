@@ -17,15 +17,15 @@ import           Data.Morpheus.Generics.ObjectRep    (ObjectRep (..))
 import           Data.Morpheus.Generics.Utils        (RecSel, SelOf)
 import           Data.Morpheus.Kind.InputRouter      (InputTypeRouter, _decode, _field, _introspect)
 import           Data.Morpheus.Kind.Internal         (KIND)
-import           Data.Morpheus.Schema.Internal.AST (InputField, TypeLib)
 import           Data.Morpheus.Schema.Type           (DeprecationArgs)
 import           Data.Morpheus.Types.Error           (Validation)
+import           Data.Morpheus.Types.Internal.Data   (DataInputField, DataTypeLib)
 import           Data.Morpheus.Types.Query.Selection (Argument (..), Arguments)
 import           Data.Proxy                          (Proxy (..))
 import           Data.Text                           (Text, pack)
 import           GHC.Generics
 
-instance (Selector s, InputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Text, InputField) where
+instance (Selector s, InputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Text, DataInputField) where
   getFields _ = [((name, _field (Proxy @a) name), _introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)
@@ -41,9 +41,9 @@ class GQLArgs p where
   default decode :: (Generic p, GDecode Arguments (Rep p)) =>
     Arguments -> Validation p
   decode args = to <$> gDecode "" args
-  introspect :: Proxy p -> [((Text, InputField), TypeLib -> TypeLib)]
-  default introspect :: ObjectRep (Rep p) (Text, InputField) =>
-    Proxy p -> [((Text, InputField), TypeLib -> TypeLib)]
+  introspect :: Proxy p -> [((Text, DataInputField), DataTypeLib -> DataTypeLib)]
+  default introspect :: ObjectRep (Rep p) (Text, DataInputField) =>
+    Proxy p -> [((Text, DataInputField), DataTypeLib -> DataTypeLib)]
   introspect _ = getFields (Proxy @(Rep p))
 
 instance GQLArgs () where

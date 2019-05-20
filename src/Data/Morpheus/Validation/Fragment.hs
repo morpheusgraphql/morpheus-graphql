@@ -4,9 +4,9 @@ module Data.Morpheus.Validation.Fragment
 
 import qualified Data.Map                               as M (toList)
 import           Data.Morpheus.Error.Fragment           (cannotSpreadWithinItself)
-import           Data.Morpheus.Schema.Internal.AST      (TypeLib)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
+import           Data.Morpheus.Types.Internal.Data      (DataTypeLib)
 import           Data.Morpheus.Types.Query.Fragment     (Fragment (..))
 import           Data.Morpheus.Types.Query.RawSelection (RawSelection (..))
 import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
@@ -19,18 +19,18 @@ type NodeEdges = (Node, [Node])
 
 type Graph = [NodeEdges]
 
-scanForSpread :: TypeLib -> GQLQueryRoot -> (Text, RawSelection) -> [Node]
+scanForSpread :: DataTypeLib -> GQLQueryRoot -> (Text, RawSelection) -> [Node]
 scanForSpread lib' root' (_, RawSelectionSet _ selectors _) = concatMap (scanForSpread lib' root') selectors
 scanForSpread lib' root' (_, InlineFragment _ selectors _)  = concatMap (scanForSpread lib' root') selectors
 scanForSpread _ _ (_, RawField {})                          = []
 scanForSpread _ _ (_, Spread value pos)                     = [EnhancedKey value pos]
 
-validateFragment :: TypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation NodeEdges
+validateFragment :: DataTypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation NodeEdges
 validateFragment lib' root (fName, Fragment {content = selection, target = target', position = position'}) =
   existsObjectType position' target' lib' >>
   pure (EnhancedKey fName position', concatMap (scanForSpread lib' root) selection)
 
-validateFragments :: TypeLib -> GQLQueryRoot -> Validation ()
+validateFragments :: DataTypeLib -> GQLQueryRoot -> Validation ()
 validateFragments lib root = mapM (validateFragment lib root) (M.toList $ fragments root) >>= detectLoopOnFragments
 
 detectLoopOnFragments :: Graph -> Validation ()

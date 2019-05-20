@@ -2,12 +2,12 @@ module Data.Morpheus.Parser.InputValues.InputObject
   ( inputObject
   ) where
 
-import           Data.Attoparsec.Text           (Parser, char, sepBy, skipSpace, try)
-import           Data.Morpheus.Parser.Primitive (token)
-import           Data.Morpheus.Types.JSType     (JSType (..))
-import           Data.Text                      (Text)
+import           Data.Attoparsec.Text               (Parser, char, sepBy, skipSpace, try)
+import           Data.Morpheus.Parser.Primitive     (token)
+import           Data.Morpheus.Types.Internal.Value (Value (..))
+import           Data.Text                          (Text)
 
-entry :: Parser JSType -> Parser (Text, JSType)
+entry :: Parser Value -> Parser (Text, Value)
 entry parser = do
   skipSpace
   key <- token
@@ -18,7 +18,7 @@ entry parser = do
   skipSpace
   return (key, value)
 
-entries :: Parser JSType -> Parser [(Text, JSType)]
+entries :: Parser Value -> Parser [(Text, Value)]
 entries parser = do
   _ <- char '{'
   skipSpace
@@ -27,7 +27,7 @@ entries parser = do
   _ <- char '}'
   return entries'
 
-inputObject :: Parser JSType -> Parser JSType
+inputObject :: Parser Value -> Parser Value
 inputObject parser = do
   skipSpace
-  JSObject <$> entries parser
+  Object <$> entries parser

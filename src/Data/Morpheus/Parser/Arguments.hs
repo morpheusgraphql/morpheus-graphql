@@ -7,14 +7,14 @@ import           Data.Attoparsec.Text                         (Parser, char, sep
 import           Data.Morpheus.Parser.InputValues.InputList   (inputList)
 import           Data.Morpheus.Parser.InputValues.InputObject (inputObject)
 import           Data.Morpheus.Parser.Primitive               (getPosition, jsBool, jsNumber, jsString, token, variable)
-import           Data.Morpheus.Types.JSType                   (JSType (JSEnum))
+import           Data.Morpheus.Types.Internal.Value           (Value (Enum))
 import           Data.Morpheus.Types.Query.RawSelection       (RawArgument (..), RawArguments)
 import           Data.Text                                    (Text)
 
-enum :: Parser JSType
-enum = JSEnum <$> token
+enum :: Parser Value
+enum = Enum <$> token
 
-jsValue :: Parser JSType
+jsValue :: Parser Value
 jsValue = jsString <|> jsNumber <|> jsBool <|> inputObject jsValue <|> inputList jsValue
 
 argumentType :: Parser RawArgument

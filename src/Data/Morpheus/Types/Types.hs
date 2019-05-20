@@ -6,20 +6,20 @@ module Data.Morpheus.Types.Types
 
 import           Data.Map                           (Map)
 import           Data.Morpheus.Types.Core           (Key)
-import           Data.Morpheus.Types.JSType         (JSType)
+import           Data.Morpheus.Types.Internal.Value (Value)
 import           Data.Morpheus.Types.Query.Fragment (FragmentLib)
 import           Data.Morpheus.Types.Query.Operator (RawOperator)
 
-type Variables = Map Key JSType
+type Variables = Map Key Value
 
 data GQLQueryRoot = GQLQueryRoot
   { fragments      :: FragmentLib
   , queryBody      :: RawOperator
-  , inputVariables :: [(Key, JSType)]
+  , inputVariables :: [(Key, Value)]
   }
 
 data GQLRoot a b c = GQLRoot
-  { query    :: a
-  , mutation :: b
+  { query        :: a
+  , mutation     :: b
   , subscription :: c
   }

@@ -11,9 +11,9 @@ import           Data.Morpheus.Kind.GQLMutation      (GQLMutation (..))
 import           Data.Morpheus.Kind.GQLQuery         (GQLQuery (..))
 import           Data.Morpheus.Kind.GQLSubscription  (GQLSubscription (..))
 import           Data.Morpheus.Parser.Parser         (parseGQL, parseLineBreaks)
-import           Data.Morpheus.Schema.Internal.AST   (TypeLib)
 import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
-import           Data.Morpheus.Types.JSType          (JSType)
+import           Data.Morpheus.Types.Internal.Data   (DataTypeLib)
+import           Data.Morpheus.Types.Internal.Value  (Value)
 import           Data.Morpheus.Types.Query.Operator  (Operator (..), Operator' (..))
 import           Data.Morpheus.Types.Request         (GQLRequest)
 import           Data.Morpheus.Types.Response        (GQLResponse (..))
@@ -23,11 +23,11 @@ import           Data.Text                           (Text, pack)
 import qualified Data.Text.Lazy                      as LT (Text, fromStrict, toStrict)
 import           Data.Text.Lazy.Encoding             (decodeUtf8, encodeUtf8)
 
-schema :: (GQLQuery a, GQLMutation b, GQLSubscription c) => a -> b -> c -> TypeLib
+schema :: (GQLQuery a, GQLMutation b, GQLSubscription c) => a -> b -> c -> DataTypeLib
 schema queryRes mutationRes subscriptionRes =
   subscriptionSchema subscriptionRes $ mutationSchema mutationRes $ querySchema queryRes
 
-resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> GQLRequest -> ResolveIO JSType
+resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> GQLRequest -> ResolveIO Value
 resolve rootResolver body = do
   rootGQL <- ExceptT $ pure (parseGQL body >>= validateRequest gqlSchema)
   case rootGQL of

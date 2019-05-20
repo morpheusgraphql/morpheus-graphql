@@ -15,48 +15,55 @@ module Data.Morpheus.Kind.GQLType
   , inputObjectOf
   ) where
 
-import           Data.Morpheus.Generics.ObjectRep       (resolveTypes)
-import           Data.Morpheus.Generics.TypeID          (TypeID, typeId)
-import           Data.Morpheus.Schema.Directive         (Directive)
-import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
-import           Data.Morpheus.Schema.EnumValue         (EnumValue)
-import           Data.Morpheus.Schema.Internal.AST      (Core (..), GObject (..), InputField, Leaf (..), LibType (..),
-                                                         ObjectField (..), TypeLib, defineType, isTypeDefined)
-import qualified Data.Morpheus.Schema.Internal.AST      as I (Field (..))
-import           Data.Morpheus.Schema.Schema            (Schema)
-import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Schema.Utils.Utils       (Field, InputValue, Type)
-import           Data.Morpheus.Types.Describer          ((::->))
-import           Data.Morpheus.Types.Query.Operator     (TypeWrapper (..))
-import           Data.Proxy                             (Proxy (..))
-import           Data.Text                              (Text)
+import           Data.Morpheus.Generics.ObjectRep                  (resolveTypes)
+import           Data.Morpheus.Generics.TypeID                     (TypeID, typeId)
+import           Data.Morpheus.Schema.Directive                    (Directive)
+import           Data.Morpheus.Schema.DirectiveLocation            (DirectiveLocation)
+import           Data.Morpheus.Schema.EnumValue                    (EnumValue)
+import           Data.Morpheus.Schema.Internal.RenderIntrospection (Field, InputValue, Type)
+import           Data.Morpheus.Schema.Schema                       (Schema)
+import           Data.Morpheus.Schema.TypeKind                     (TypeKind (..))
+import           Data.Morpheus.Types.Describer                     ((::->))
+import           Data.Morpheus.Types.Internal.Data                 (DataField (..), DataFullType (..), DataInputField,
+                                                                    DataLeaf (..), DataOutputField, DataType (..),
+                                                                    DataTypeLib, DataTypeWrapper (..), defineType,
+                                                                    isTypeDefined)
+import           Data.Proxy                                        (Proxy (..))
+import           Data.Text                                         (Text)
 import           GHC.Generics
 
-scalarTypeOf :: GQLType a => Proxy a -> LibType
-scalarTypeOf = Leaf . LScalar . buildType
+scalarTypeOf :: GQLType a => Proxy a -> DataFullType
+scalarTypeOf = Leaf . LeafScalar . buildType ()
 
-enumTypeOf :: GQLType a => [Text] -> Proxy a -> LibType
-enumTypeOf tags = Leaf . LEnum tags . buildType
+enumTypeOf :: GQLType a => [Text] -> Proxy a -> DataFullType
+enumTypeOf tags' = Leaf . LeafEnum . buildType tags'
 
-asObjectType :: GQLType a => [(Text, ObjectField)] -> Proxy a -> LibType
-asObjectType fields = OutputObject . GObject fields . buildType
+asObjectType :: GQLType a => [(Text, DataOutputField)] -> Proxy a -> DataFullType
+asObjectType fields' = OutputObject . buildType fields'
 
-inputObjectOf :: GQLType a => [(Text, InputField)] -> Proxy a -> LibType
-inputObjectOf inputFields = InputObject . GObject inputFields . buildType
+inputObjectOf :: GQLType a => [(Text, DataInputField)] -> Proxy a -> DataFullType
+inputObjectOf fields' = InputObject . buildType fields'
 
 class GQLType a where
   description :: Proxy a -> Text
-  description _ = "default selection Description"
+  description _ = ""
   typeID :: Proxy a -> Text
   default typeID :: (TypeID (Rep a), Generic a) =>
     Proxy a -> Text
   typeID = typeId
-  field_ :: TypeKind -> Proxy a -> Text -> I.Field
-  field_ kind' proxy' name' =
-    I.Field {I.fieldName = name', I.fieldTypeWrappers = [NonNullType], I.fieldKind = kind', I.fieldType = typeID proxy'}
-  buildType :: Proxy a -> Core
-  buildType proxy = Core {name = typeID proxy, typeDescription = description proxy}
-  updateLib :: (Proxy a -> LibType) -> [TypeLib -> TypeLib] -> Proxy a -> TypeLib -> TypeLib
+  field_ :: TypeKind -> Proxy a -> t -> Text -> DataField t
+  field_ kind' proxy' args' name' =
+    DataField
+      { fieldName = name'
+      , fieldTypeWrappers = [NonNullType]
+      , fieldKind = kind'
+      , fieldType = typeID proxy'
+      , fieldArgs = args'
+      }
+  buildType :: t -> Proxy a -> DataType t
+  buildType typeData' proxy =
+    DataType {typeName = typeID proxy, typeDescription = description proxy, typeData = typeData'}
+  updateLib :: (Proxy a -> DataFullType) -> [DataTypeLib -> DataTypeLib] -> Proxy a -> DataTypeLib -> DataTypeLib
   updateLib typeBuilder stack proxy lib' =
     if isTypeDefined (typeID proxy) lib'
       then lib'
