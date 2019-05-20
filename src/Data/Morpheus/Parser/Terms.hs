@@ -3,11 +3,18 @@
 module Data.Morpheus.Parser.Terms
   ( onType
   , spreadLiteral
+  , nonNUll
   ) where
 
-import           Data.Attoparsec.Text           (Parser, skipSpace, string)
-import           Data.Morpheus.Parser.Primitive (getPosition, token)
-import           Data.Text                      (Text)
+import           Control.Applicative                ((<|>))
+import           Data.Attoparsec.Text               (Parser, char, skipSpace, string)
+import           Data.Functor                       (($>))
+import           Data.Morpheus.Parser.Primitive     (getPosition, token)
+import           Data.Morpheus.Types.Query.Operator (TypeWrapper (..))
+import           Data.Text                          (Text)
+
+nonNUll :: Parser [TypeWrapper]
+nonNUll = (char '!' $> [NonNullType]) <|> pure []
 
 onType :: Parser Text
 onType = do

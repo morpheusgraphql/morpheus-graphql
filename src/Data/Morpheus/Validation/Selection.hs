@@ -77,7 +77,7 @@ validateSelection lib' fragments' variables' parent'@(GObject _ core) (key', Raw
   field' <- lookupSelectionField position' key' parent'
   resolvedArgs' <- resolveArguments variables' rawArgs
   arguments' <- validateArguments lib' (key', field') position' resolvedArgs'
-  case AST.kind $ fieldContent field' of
+  case AST.fieldKind $ fieldContent field' of
     UNION -> do
       keys' <- lookupPossibleTypeKeys position' key' lib' field'
       (spreads', __typename') <- flatTuple <$> mapM (splitFragment fragments' (name core) keys') rawSelectors

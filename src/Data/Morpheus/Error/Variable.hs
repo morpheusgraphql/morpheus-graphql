@@ -37,11 +37,11 @@ case type mismatch
 TODO: variable does not match to argument type
   - query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
 |-}
-unusedVariables :: [EnhancedKey] -> GQLErrors
-unusedVariables = map keyToError
+unusedVariables :: Text -> [EnhancedKey] -> GQLErrors
+unusedVariables operator' = map keyToError
   where
     keyToError (EnhancedKey key' position') = GQLError {desc = text key', posIndex = [position']}
-    text key' = T.concat ["Variable \"$", key', "\" is never used in operation \"Query\"."]
+    text key' = T.concat ["Variable \"$", key', "\" is never used in operation \"", operator', "\"."]
 
 variableGotInvalidValue :: Text -> Text -> Position -> GQLErrors
 variableGotInvalidValue name' inputMessage' position' = errorMessage position' text
@@ -58,7 +58,7 @@ undefinedVariable operation' position' key' = errorMessage position' text
   where
     text = T.concat ["Variable \"", key', "\" is not defined by operation \"", operation', "\"."]
 
-uninitializedVariable :: Position -> Text -> GQLErrors
-uninitializedVariable position' key' = errorMessage position' text
+uninitializedVariable :: Position -> Text -> Text -> GQLErrors
+uninitializedVariable position' type' key' = errorMessage position' text
   where
-    text = T.concat ["Value for Variable \"$", key', "\" is not initialized in Query body."]
+    text = T.concat ["Variable \"$", key', "\" of required type \"", type', "!\" was not provided."]

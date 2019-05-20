@@ -1,4 +1,5 @@
-[{
+[
+  {
     "path": "fragment/loopingFragment",
     "description": "fail when: fragment directly or indirectly references itself"
   },
@@ -29,10 +30,6 @@
   {
     "path": "selection/nameConflict",
     "description": "fail when: selected fields has same name"
-  },
-  {
-    "path": "variables/unusedVariables",
-    "description": "fail when: variable is defined by the operation but did not used in selection"
   },
   {
     "path": "fragment/inlineFragment",

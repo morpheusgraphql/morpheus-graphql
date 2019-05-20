@@ -1,0 +1,26 @@
+[
+  {
+    "path": "variables/unusedVariables",
+    "description": "fail when: variable is defined by the operation but did not used in selection"
+  },
+  {
+    "path": "variables/nonNullVariable",
+    "description": "fail when: variable is defined by the operation but can't found on request body"
+  },
+  {
+    "path": "variables/nullableVariable",
+    "description": "don't fail when: variable is defined by the operation but can't found on request body"
+  },
+  {
+    "path": "variables/invalidListVariable",
+    "description": "fail when: variable receives invalid List value"
+  },
+  {
+    "path": "variables/nestedListNonNullListReceivedNull",
+    "description": "fail: if list of nonNull elements receives null"
+  },
+  {
+    "path": "variables/nestedListNullableListReceivedNull",
+    "description": "resolve: if list of nullable elements receives null"
+  }
+]
