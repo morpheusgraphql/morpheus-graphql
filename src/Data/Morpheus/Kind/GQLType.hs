@@ -26,8 +26,8 @@ import           Data.Morpheus.Schema.TypeKind                     (TypeKind (..
 import           Data.Morpheus.Types.Describer                     ((::->))
 import           Data.Morpheus.Types.Internal.AST                  (ASTField (..), ASTFullType (..), ASTInputField,
                                                                     ASTLeaf (..), ASTOutputField, ASTType (..),
-                                                                    ASTTypeLib, defineType, isTypeDefined)
-import           Data.Morpheus.Types.Query.Operator                (TypeWrapper (..))
+                                                                    ASTTypeLib, ASTTypeWrapper (..), defineType,
+                                                                    isTypeDefined)
 import           Data.Proxy                                        (Proxy (..))
 import           Data.Text                                         (Text)
 import           GHC.Generics

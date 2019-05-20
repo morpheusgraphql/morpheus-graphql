@@ -6,9 +6,9 @@ module Data.Morpheus.Validation.Input.Object
 
 import           Data.Morpheus.Error.Input            (InputError (..), InputValidation, Prop (..))
 import           Data.Morpheus.Types.Internal.AST     (ASTField (..), ASTInputField, ASTInputType, ASTKind (..),
-                                                       ASTType (..), ASTTypeLib (..), showFullAstType)
+                                                       ASTType (..), ASTTypeLib (..), ASTTypeWrapper (..),
+                                                       showFullAstType)
 import           Data.Morpheus.Types.Internal.Value   (ScalarValue (..), Value (..))
-import           Data.Morpheus.Types.Query.Operator   (TypeWrapper (..))
 import           Data.Morpheus.Validation.Input.Enum  (validateEnum)
 import           Data.Morpheus.Validation.Utils.Utils (getInputType, lookupField)
 import           Data.Text                            (Text)
@@ -26,14 +26,14 @@ validateScalarTypes "Boolean" scalar      = Left . typeMismatch (Scalar scalar) 
 validateScalarTypes _ scalar              = pure . const scalar
 
 -- Validate Variable Argument or all Possible input Values
-validateInputValue :: ASTTypeLib -> [Prop] -> [TypeWrapper] -> ASTInputType -> (Text, Value) -> InputValidation Value
+validateInputValue :: ASTTypeLib -> [Prop] -> [ASTTypeWrapper] -> ASTInputType -> (Text, Value) -> InputValidation Value
 validateInputValue lib' prop' = validate
   where
-    throwError :: [TypeWrapper] -> ASTInputType -> Value -> InputValidation Value
+    throwError :: [ASTTypeWrapper] -> ASTInputType -> Value -> InputValidation Value
     throwError wrappers' type' value' = Left $ UnexpectedType prop' (showFullAstType wrappers' type') value'
     {-- VALIDATION --}
     {-- 1. VALIDATE WRAPPERS -}
-    validate :: [TypeWrapper] -> ASTInputType -> (Text, Value) -> InputValidation Value
+    validate :: [ASTTypeWrapper] -> ASTInputType -> (Text, Value) -> InputValidation Value
     -- throw error on not nullable type if value = null
     validate (NonNullType:wrappers') type' (_, Null) = throwError wrappers' type' Null
     -- resolves nullable value as null

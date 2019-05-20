@@ -4,13 +4,13 @@ module Data.Morpheus.Types.Query.Operator
   , RawOperator
   , Variable(..)
   , VariableDefinitions
-  , TypeWrapper(..)
   , Operator'(..)
   , ValidOperator'
   , RawOperator'
   ) where
 
 import           Data.Morpheus.Types.Core               (Collection, Key)
+import           Data.Morpheus.Types.Internal.AST       (ASTTypeWrapper)
 import           Data.Morpheus.Types.MetaInfo           (Position)
 import           Data.Morpheus.Types.Query.RawSelection (RawSelectionSet)
 import           Data.Morpheus.Types.Query.Selection    (Arguments, SelectionSet)
@@ -19,15 +19,10 @@ type ValidOperator = Operator Arguments SelectionSet
 
 type ValidOperator' = Operator' Arguments SelectionSet
 
-data TypeWrapper
-  = ListType
-  | NonNullType
-  deriving (Show)
-
 data Variable = Variable
   { variableType         :: Key
   , isVariableRequired   :: Bool
-  , variableTypeWrappers :: [TypeWrapper]
+  , variableTypeWrappers :: [ASTTypeWrapper]
   , variablePosition     :: Position
   }
 

@@ -12,9 +12,10 @@ import           Data.Morpheus.Error.Mutation        (mutationIsNotDefined)
 import           Data.Morpheus.Error.Subscription    (subscriptionIsNotDefined)
 import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
 import           Data.Morpheus.Types.Error           (Validation)
-import           Data.Morpheus.Types.Internal.AST    (ASTField (..), ASTOutputObject, ASTType (..), ASTTypeLib (..))
+import           Data.Morpheus.Types.Internal.AST    (ASTField (..), ASTOutputObject, ASTType (..), ASTTypeLib (..),
+                                                      ASTTypeWrapper (..))
 import           Data.Morpheus.Types.Query.Operator  (Operator (..), Operator' (..), RawOperator, RawOperator',
-                                                      TypeWrapper (..), ValidOperator)
+                                                      ValidOperator)
 import           Data.Morpheus.Types.Query.Selection (SelectionSet)
 import           Data.Morpheus.Types.Types           (GQLQueryRoot (..))
 import           Data.Morpheus.Validation.Fragment   (validateFragments)

@@ -12,16 +12,16 @@ module Data.Morpheus.Schema.Internal.RenderIntrospection
   , typeFromUnion
   ) where
 
-import           Data.Morpheus.Schema.EnumValue     (EnumValue, createEnumValue)
-import qualified Data.Morpheus.Schema.Field         as F (Field (..), createFieldWith)
-import qualified Data.Morpheus.Schema.InputValue    as IN (InputValue (..), createInputValueWith)
-import           Data.Morpheus.Schema.Type          (Type (..))
-import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
-import           Data.Morpheus.Types.Describer      ((::->))
-import           Data.Morpheus.Types.Internal.AST   (ASTField (..), ASTInputField, ASTInputObject, ASTLeaf (..),
-                                                     ASTOutputField, ASTOutputObject, ASTType (..), ASTUnion)
-import           Data.Morpheus.Types.Query.Operator (TypeWrapper (..))
-import           Data.Text                          (Text)
+import           Data.Morpheus.Schema.EnumValue   (EnumValue, createEnumValue)
+import qualified Data.Morpheus.Schema.Field       as F (Field (..), createFieldWith)
+import qualified Data.Morpheus.Schema.InputValue  as IN (InputValue (..), createInputValueWith)
+import           Data.Morpheus.Schema.Type        (Type (..))
+import           Data.Morpheus.Schema.TypeKind    (TypeKind (..))
+import           Data.Morpheus.Types.Describer    ((::->))
+import           Data.Morpheus.Types.Internal.AST (ASTField (..), ASTInputField, ASTInputObject, ASTLeaf (..),
+                                                   ASTOutputField, ASTOutputObject, ASTType (..), ASTTypeWrapper (..),
+                                                   ASTUnion)
+import           Data.Text                        (Text)
 
 type InputValue = IN.InputValue Type
 
@@ -36,11 +36,11 @@ createInputObjectType field' = wrap field' $ createType (fieldKind field') (fiel
 wrap :: ASTField a -> Type -> Type
 wrap field' = wrapRec (fieldTypeWrappers field')
 
-wrapRec :: [TypeWrapper] -> Type -> Type
+wrapRec :: [ASTTypeWrapper] -> Type -> Type
 wrapRec [] type'     = type'
 wrapRec (x:xs) type' = wrapByTypeWrapper x (wrapRec xs type')
 
-wrapByTypeWrapper :: TypeWrapper -> Type -> Type
+wrapByTypeWrapper :: ASTTypeWrapper -> Type -> Type
 wrapByTypeWrapper ListType    = wrapAs LIST
 wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 

@@ -6,13 +6,14 @@ import           Control.Applicative                ((<|>))
 import           Data.Attoparsec.Text               (Parser, char, sepBy, skipSpace, string, try)
 import           Data.Morpheus.Parser.Primitive     (token, variable)
 import           Data.Morpheus.Parser.Terms         (nonNUll)
-import           Data.Morpheus.Types.Query.Operator (TypeWrapper (..), Variable (..), VariableDefinitions)
+import           Data.Morpheus.Types.Internal.AST   (ASTTypeWrapper (..))
+import           Data.Morpheus.Types.Query.Operator (Variable (..), VariableDefinitions)
 import           Data.Text                          (Text)
 
-wrapMock :: Parser ([TypeWrapper], Text)
+wrapMock :: Parser ([ASTTypeWrapper], Text)
 wrapMock = skipSpace >> token >>= \x -> pure ([], x)
 
-insideList :: Parser ([TypeWrapper], Text)
+insideList :: Parser ([ASTTypeWrapper], Text)
 insideList = do
   skipSpace
   _ <- char '['
@@ -24,7 +25,7 @@ insideList = do
   _ <- char ']'
   return ((ListType : nonNull') ++ list, name)
 
-wrapped :: Parser ([TypeWrapper], Text)
+wrapped :: Parser ([ASTTypeWrapper], Text)
 wrapped = try insideList <|> wrapMock
 
 operatorArgument :: Parser (Text, Variable)

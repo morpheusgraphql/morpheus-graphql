@@ -19,6 +19,7 @@ module Data.Morpheus.Types.Internal.AST
   , ASTKind(..)
   , ASTFullType(..)
   , ASTTypeLib(..)
+  , ASTTypeWrapper(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -27,10 +28,9 @@ module Data.Morpheus.Types.Internal.AST
   , isFieldNullable
   ) where
 
-import           Data.Morpheus.Schema.TypeKind      (TypeKind)
-import           Data.Morpheus.Types.Query.Operator (TypeWrapper (..))
-import           Data.Text                          (Text)
-import qualified Data.Text                          as T (concat)
+import           Data.Morpheus.Schema.TypeKind (TypeKind)
+import           Data.Text                     (Text)
+import qualified Data.Text                     as T (concat)
 
 type Key = Text
 
@@ -56,12 +56,17 @@ type ASTOutputType = ASTKind ASTOutputField
 
 type ASTInputType = ASTKind ASTInputField
 
+data ASTTypeWrapper
+  = ListType
+  | NonNullType
+  deriving (Show)
+
 data ASTField a = ASTField
   { fieldArgs         :: a
   , fieldName         :: Text
   , fieldKind         :: TypeKind
   , fieldType         :: Text
-  , fieldTypeWrappers :: [TypeWrapper]
+  , fieldTypeWrappers :: [ASTTypeWrapper]
   } deriving (Show)
 
 isFieldNullable :: ASTField a -> Bool
@@ -102,12 +107,12 @@ data ASTTypeLib = ASTTypeLib
   , subscription :: Maybe (Text, ASTOutputObject)
   }
 
-showWrappedType :: [TypeWrapper] -> Text -> Text
+showWrappedType :: [ASTTypeWrapper] -> Text -> Text
 showWrappedType [] type'               = type'
 showWrappedType (ListType:xs) type'    = T.concat ["[", showWrappedType xs type', "]"]
 showWrappedType (NonNullType:xs) type' = T.concat [showWrappedType xs type', "!"]
 
-showFullAstType :: [TypeWrapper] -> ASTKind a -> Text
+showFullAstType :: [ASTTypeWrapper] -> ASTKind a -> Text
 showFullAstType wrappers' (ScalarKind x) = showWrappedType wrappers' (typeName x)
 showFullAstType wrappers' (EnumKind x)   = showWrappedType wrappers' (typeName x)
 showFullAstType wrappers' (ObjectKind x) = showWrappedType wrappers' (typeName x)

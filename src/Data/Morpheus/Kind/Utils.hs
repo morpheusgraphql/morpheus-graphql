@@ -6,9 +6,8 @@ module Data.Morpheus.Kind.Utils
   ) where
 
 import           Data.Morpheus.Types.Error           (ResolveIO)
-import           Data.Morpheus.Types.Internal.AST    (ASTField (..))
+import           Data.Morpheus.Types.Internal.AST    (ASTField (..), ASTTypeWrapper (..))
 import           Data.Morpheus.Types.Internal.Value  (Value (..))
-import           Data.Morpheus.Types.Query.Operator  (TypeWrapper (..))
 import           Data.Morpheus.Types.Query.Selection (Selection (..))
 import           Data.Text                           (Text)
 
