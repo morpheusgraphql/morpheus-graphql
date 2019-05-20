@@ -13,18 +13,18 @@ module Data.Morpheus.Generics.ObjectRep
   , resolveTypes
   ) where
 
-import           Data.Morpheus.Schema.Internal.AST (TypeLib)
-import           Data.Proxy                          (Proxy (..))
+import           Data.Morpheus.Types.Internal.AST (ASTTypeLib)
+import           Data.Proxy                       (Proxy (..))
 import           GHC.Generics
 
 shift :: a -> (a -> b) -> b
 shift x y = y x
 
-resolveTypes :: TypeLib -> [TypeLib -> TypeLib] -> TypeLib
+resolveTypes :: ASTTypeLib -> [ASTTypeLib -> ASTTypeLib] -> ASTTypeLib
 resolveTypes = foldl shift
 
 class ObjectRep rep t where
-  getFields :: Proxy rep -> [(t, TypeLib -> TypeLib)]
+  getFields :: Proxy rep -> [(t, ASTTypeLib -> ASTTypeLib)]
 
 instance ObjectRep f t => ObjectRep (M1 D x f) t where
   getFields _ = getFields (Proxy @f)

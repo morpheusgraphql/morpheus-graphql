@@ -12,12 +12,12 @@ module Data.Morpheus.Generics.UnionRep
   ( UnionRep(..)
   ) where
 
-import           Data.Morpheus.Schema.Internal.AST (Field, TypeLib)
-import           Data.Proxy                        (Proxy (..))
+import           Data.Morpheus.Types.Internal.AST (ASTOutputField, ASTTypeLib)
+import           Data.Proxy                       (Proxy (..))
 import           GHC.Generics
 
 class UnionRep f where
-  possibleTypes :: Proxy f -> [(Field, TypeLib -> TypeLib)]
+  possibleTypes :: Proxy f -> [(ASTOutputField, ASTTypeLib -> ASTTypeLib)]
 
 instance UnionRep f => UnionRep (M1 D x f) where
   possibleTypes _ = possibleTypes (Proxy @f)
