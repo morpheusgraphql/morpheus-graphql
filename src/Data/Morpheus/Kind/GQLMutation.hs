@@ -13,9 +13,9 @@ module Data.Morpheus.Kind.GQLMutation
   ) where
 
 import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
-import           Data.Morpheus.Generics.ObjectRep         (ObjectRep (..), resolveTypes)
-import           Data.Morpheus.Schema.Internal.AST    (Core (..), GObject (..), ObjectField, TypeLib (..))
+import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Types.Error              (ResolveIO)
+import           Data.Morpheus.Types.Internal.AST       (ASTOutputField, ASTType (..), ASTTypeLib (..))
 import           Data.Morpheus.Types.JSType             (JSType (..))
 import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
 import           Data.Proxy
@@ -27,15 +27,17 @@ class GQLMutation a where
   default encodeMutation :: (Generic a, DeriveResolvers (Rep a)) =>
     a -> SelectionSet -> ResolveIO JSType
   encodeMutation rootResolver sel = resolveBySelection sel $ deriveResolvers "" $ from rootResolver
-  mutationSchema :: a -> TypeLib -> TypeLib
-  default mutationSchema :: (ObjectRep (Rep a) (Text, ObjectField)) =>
-    a -> TypeLib -> TypeLib
-  mutationSchema _ initialType = resolveTypes mutationType types
+  mutationSchema :: a -> ASTTypeLib -> ASTTypeLib
+  default mutationSchema :: (ObjectRep (Rep a) (Text, ASTOutputField)) =>
+    a -> ASTTypeLib -> ASTTypeLib
+  mutationSchema _ initialType = resolveTypes mutationType types'
     where
-      mutationType = initialType {mutation = Just ("Mutation", GObject fields $ Core "Mutation" "Description")}
-      fieldTypes = getFields (Proxy :: Proxy (Rep a))
-      types = map snd fieldTypes
-      fields = map fst fieldTypes
+      mutationType =
+        initialType
+          { mutation =
+              Just ("Mutation", ASTType {typeData = fields', typeName = "Mutation", typeDescription = "Description"})
+          }
+      (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
 
 instance GQLMutation () where
   encodeMutation _ _ = pure JSNull

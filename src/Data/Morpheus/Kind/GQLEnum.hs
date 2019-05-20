@@ -10,7 +10,6 @@
 module Data.Morpheus.Kind.GQLEnum
   ( EnumConstraint
   , decode
-  , inputField
   , introspect
   , encode
   ) where
@@ -19,8 +18,8 @@ import           Data.Morpheus.Generics.EnumRep         (EnumRep (..))
 import           Data.Morpheus.Kind.GQLType             (GQLType (..), enumTypeOf)
 import           Data.Morpheus.Kind.Internal            (ENUM, KIND)
 import           Data.Morpheus.Schema.DirectiveLocation (DirectiveLocation)
-import           Data.Morpheus.Schema.Internal.AST    (InputField (..), TypeLib)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
+import           Data.Morpheus.Types.Internal.AST       (ASTTypeLib)
 import           Data.Morpheus.Types.JSType             (JSType (..), ScalarValue (..))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text)
@@ -34,14 +33,11 @@ decode text = to $ gToEnum text
 encode :: (Generic a, EnumRep (Rep a)) => a -> JSType
 encode = Scalar . String . encodeRep . from
 
-inputField :: GQLType a => Proxy a -> Text -> InputField
-inputField proxy = InputField . field_ ENUM proxy
-
 introspect ::
      forall a. (GQLType a, EnumRep (Rep a))
   => Proxy a
-  -> TypeLib
-  -> TypeLib
+  -> ASTTypeLib
+  -> ASTTypeLib
 introspect = updateLib (enumTypeOf $ getTags (Proxy @(Rep a))) []
 
 type instance KIND TypeKind = ENUM

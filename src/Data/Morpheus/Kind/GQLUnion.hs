@@ -19,8 +19,8 @@ import           Data.Morpheus.Error.Internal          (internalErrorIO)
 import           Data.Morpheus.Generics.UnionRep       (UnionRep (..))
 import           Data.Morpheus.Generics.UnionResolvers (UnionResolvers (..))
 import           Data.Morpheus.Kind.GQLType            (GQLType (..))
-import           Data.Morpheus.Schema.Internal.AST     (LibType (..), TypeLib)
 import           Data.Morpheus.Types.Error             (ResolveIO)
+import           Data.Morpheus.Types.Internal.AST      (ASTFullType (..), ASTTypeLib)
 import           Data.Morpheus.Types.JSType            (JSType (..))
 import           Data.Morpheus.Types.Query.Selection   (Selection (..), SelectionSet)
 import           Data.Proxy
@@ -43,8 +43,8 @@ encode _ _ = internalErrorIO "union Resolver only should recieve UnionSelection"
 introspect ::
      forall a. (GQLType a, UnionRep (Rep a))
   => Proxy a
-  -> TypeLib
-  -> TypeLib
+  -> ASTTypeLib
+  -> ASTTypeLib
 introspect = updateLib (const $ Union fields) stack
   where
     (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))

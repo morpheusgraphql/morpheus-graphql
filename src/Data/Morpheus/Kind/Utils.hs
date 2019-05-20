@@ -1,38 +1,23 @@
 module Data.Morpheus.Kind.Utils
   ( maybeField
   , listField
-  , maybeInputField
-  , listInputField
   , encodeMaybe
   , encodeList
   ) where
 
-import           Data.Morpheus.Schema.Internal.AST   (InputField (..), ObjectField (..))
-import qualified Data.Morpheus.Schema.Internal.AST   as I (Field (..))
 import           Data.Morpheus.Types.Error           (ResolveIO)
+import           Data.Morpheus.Types.Internal.AST    (ASTField (..))
 import           Data.Morpheus.Types.JSType          (JSType (..))
 import           Data.Morpheus.Types.Query.Operator  (TypeWrapper (..))
 import           Data.Morpheus.Types.Query.Selection (Selection (..))
 import           Data.Text                           (Text)
 
-setNull :: I.Field -> I.Field
-setNull field@I.Field {I.fieldTypeWrappers = NonNullType:xs} = field {I.fieldTypeWrappers = xs}
-setNull field                                                = field
+maybeField :: ASTField a -> ASTField a
+maybeField field@ASTField {fieldTypeWrappers = NonNullType:xs} = field {fieldTypeWrappers = xs}
+maybeField field                                               = field
 
-setList :: I.Field -> I.Field
-setList x = x {I.fieldTypeWrappers = [NonNullType, ListType] ++ I.fieldTypeWrappers x}
-
-maybeInputField :: InputField -> InputField
-maybeInputField = InputField . setNull . unpackInputField
-
-listInputField :: InputField -> InputField
-listInputField = InputField . setList . unpackInputField
-
-maybeField :: ObjectField -> ObjectField
-maybeField x = x {fieldContent = setNull (fieldContent x)}
-
-listField :: ObjectField -> ObjectField
-listField x = x {fieldContent = setList (fieldContent x)}
+listField :: ASTField a -> ASTField a
+listField x = x {fieldTypeWrappers = [NonNullType, ListType] ++ fieldTypeWrappers x}
 
 type Encode a = (Text, Selection) -> a -> ResolveIO JSType
 

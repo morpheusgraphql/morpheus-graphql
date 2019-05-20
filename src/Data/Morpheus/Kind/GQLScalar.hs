@@ -5,16 +5,16 @@
 
 module Data.Morpheus.Kind.GQLScalar where
 
-import           Control.Monad                     ((>=>))
-import           Data.Morpheus.Error.Internal      (internalTypeMismatch)
-import           Data.Morpheus.Kind.GQLType        (GQLType (..), scalarTypeOf)
-import           Data.Morpheus.Schema.Internal.AST (Field (..), InputField (..), TypeLib)
-import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
-import           Data.Morpheus.Types.Core          (Key)
-import           Data.Morpheus.Types.Error         (Validation)
-import           Data.Morpheus.Types.JSType        (JSType (..), ScalarValue (..))
-import           Data.Proxy                        (Proxy (..))
-import           Data.Text                         (Text)
+import           Control.Monad                    ((>=>))
+import           Data.Morpheus.Error.Internal     (internalTypeMismatch)
+import           Data.Morpheus.Kind.GQLType       (GQLType (..), scalarTypeOf)
+import           Data.Morpheus.Schema.TypeKind    (TypeKind (..))
+import           Data.Morpheus.Types.Core         (Key)
+import           Data.Morpheus.Types.Error        (Validation)
+import           Data.Morpheus.Types.Internal.AST (ASTField, ASTTypeLib)
+import           Data.Morpheus.Types.JSType       (JSType (..), ScalarValue (..))
+import           Data.Proxy                       (Proxy (..))
+import           Data.Text                        (Text)
 
 toScalar :: JSType -> Validation ScalarValue
 toScalar (Scalar x) = pure x
@@ -27,11 +27,9 @@ class GQLScalar a where
   serialize :: a -> ScalarValue
   encode :: a -> JSType
   encode = Scalar . serialize
-  asInputField :: GQLType a => Proxy a -> Key -> InputField
-  asInputField _ = InputField . asField (Proxy @a)
-  asField :: GQLType a => Proxy a -> Key -> Field
+  asField :: GQLType a => Proxy a -> t -> Key -> ASTField t
   asField _ = field_ SCALAR (Proxy @a)
-  introspect :: GQLType a => Proxy a -> TypeLib -> TypeLib
+  introspect :: GQLType a => Proxy a -> ASTTypeLib -> ASTTypeLib
   introspect _ = updateLib scalarTypeOf [] (Proxy @a)
 
 instance GQLScalar Text where

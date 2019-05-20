@@ -26,10 +26,10 @@ import qualified Data.Morpheus.Kind.GQLUnion            as U (Constraint, encode
 import           Data.Morpheus.Kind.Internal            (ENUM, Encode_, Intro_, KIND, OBJECT, OField_, SCALAR, UNION,
                                                          WRAPPER)
 import           Data.Morpheus.Kind.Utils               (encodeList, encodeMaybe, listField, maybeField)
-import           Data.Morpheus.Schema.Internal.AST      (ObjectField (..))
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Types.Describer          ((::->) (..))
 import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
+import           Data.Morpheus.Types.Internal.AST       (ASTField (..), ASTOutputField)
 import           Data.Morpheus.Types.Query.Selection    (Selection (..))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text, pack)
@@ -58,28 +58,28 @@ _encode = __encode (Proxy @(KIND a))
 instance (S.GQLScalar a, GQLType a) => OutputTypeRouter a SCALAR where
   __introspect _ _ = S.introspect (Proxy @a)
   __encode _ _ = pure . S.encode
-  __objectField _ _ = ObjectField [] . field_ SCALAR (Proxy @a)
+  __objectField _ _ = field_ SCALAR (Proxy @a) []
 
 instance E.EnumConstraint a => OutputTypeRouter a ENUM where
   __introspect _ _ = E.introspect (Proxy @a)
   __encode _ _ = pure . E.encode
-  __objectField _ _ = ObjectField [] . field_ ENUM (Proxy @a)
+  __objectField _ _ = field_ ENUM (Proxy @a) []
 
 instance O.ObjectConstraint a => OutputTypeRouter a OBJECT where
   __encode _ = O.encode
   __introspect _ = O.introspect
-  __objectField _ _ = ObjectField [] . field_ OBJECT (Proxy @a)
+  __objectField _ _ = field_ OBJECT (Proxy @a) []
 
 instance OutputTypeRouter a (KIND a) => DeriveResolvers (K1 s a) where
   deriveResolvers key' (K1 src) = [(key', (`_encode` src))]
 
-instance (Selector s, OutputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Text, ObjectField) where
+instance (Selector s, OutputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Text, ASTOutputField) where
   getFields _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)
 
 instance (OutputTypeRouter a OBJECT, O.ObjectConstraint a) => UnionRep (RecSel s a) where
-  possibleTypes _ = [(field_ OBJECT (Proxy @a) "", O.introspect (Proxy @a))]
+  possibleTypes _ = [(field_ OBJECT (Proxy @a) () "", O.introspect (Proxy @a))]
 
 instance (GQLType a, OutputTypeRouter a (KIND a)) => UnionResolvers (K1 s a) where
   currentResolver (K1 src) = (typeID (Proxy @a), (`_encode` src))
@@ -87,7 +87,7 @@ instance (GQLType a, OutputTypeRouter a (KIND a)) => UnionResolvers (K1 s a) whe
 instance U.Constraint a => OutputTypeRouter a UNION where
   __encode _ = U.encode
   __introspect _ _ = U.introspect (Proxy @a)
-  __objectField _ _ = ObjectField [] . field_ UNION (Proxy @a)
+  __objectField _ _ = field_ UNION (Proxy @a) []
 
 instance OutputTypeRouter a (KIND a) => OutputTypeRouter (Maybe a) WRAPPER where
   __encode _ = encodeMaybe _encode
@@ -116,4 +116,4 @@ instance (OutputTypeRouter a (KIND a), Args.GQLArgs p) => OutputTypeRouter (p ::
   __introspect _ _ typeLib = resolveTypes typeLib $ inputTypes' ++ [_introspect (Proxy @a)]
     where
       inputTypes' = map snd $ Args.introspect (Proxy @p)
-  __objectField _ _ name = (_objectField (Proxy @a) name) {args = map fst $ Args.introspect (Proxy @p)}
+  __objectField _ _ name = (_objectField (Proxy @a) name) {fieldArgs = map fst $ Args.introspect (Proxy @p)}

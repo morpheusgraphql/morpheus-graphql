@@ -16,9 +16,9 @@ module Data.Morpheus.Kind.Internal
   , Decode_
   ) where
 
-import Data.Morpheus.Schema.Internal.AST (InputField, ObjectField, TypeLib)
 import Data.Morpheus.Types.Describer ((::->))
 import Data.Morpheus.Types.Error (ResolveIO, Validation)
+import Data.Morpheus.Types.Internal.AST (ASTInputField, ASTOutputField, ASTTypeLib)
 import Data.Morpheus.Types.JSType (JSType(..))
 import Data.Morpheus.Types.Query.Selection (Selection)
 import Data.Proxy (Proxy(..))
@@ -60,12 +60,12 @@ data UNION
 type family GQLConstraint a b :: Constraint
 
 -- class Types class
-type Intro_ a = Proxy a -> TypeLib -> TypeLib
+type Intro_ a = Proxy a -> ASTTypeLib -> ASTTypeLib
 
 type Decode_ a = JSType -> Validation a
 
 type Encode_ a = (Text, Selection) -> a -> ResolveIO JSType
 
-type IField_ a = Proxy a -> Text -> InputField
+type IField_ a = Proxy a -> Text -> ASTInputField
 
-type OField_ a = Proxy a -> Text -> ObjectField
+type OField_ a = Proxy a -> Text -> ASTOutputField
