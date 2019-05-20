@@ -40,5 +40,5 @@ class GQLMutation a where
       (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
 
 instance GQLMutation () where
-  encodeMutation _ _ = pure JSNull
+  encodeMutation _ _ = pure Null
   mutationSchema _ = id

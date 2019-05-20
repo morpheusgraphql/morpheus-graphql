@@ -28,10 +28,10 @@ unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
 selectResolver :: [(Text, (Text, Selection) -> ResolveIO Value)] -> (Text, Selection) -> ResolveIO (Text, Value)
-selectResolver x (key, gql) = unwrapMonadTuple (key, (fromMaybe (\_ -> pure JSNull) $ lookup key x) (key, gql))
+selectResolver x (key, gql) = unwrapMonadTuple (key, (fromMaybe (\_ -> pure Null) $ lookup key x) (key, gql))
 
 resolveBySelection :: [(Text, Selection)] -> [(Text, (Text, Selection) -> ResolveIO Value)] -> ResolveIO Value
-resolveBySelection selection resolvers = JSObject <$> mapM (selectResolver resolvers) selection
+resolveBySelection selection resolvers = Object <$> mapM (selectResolver resolvers) selection
 
 resolversBy :: (Generic a, DeriveResolvers (Rep a)) => a -> [(Text, (Text, Selection) -> ResolveIO Value)]
 resolversBy = deriveResolvers "" . from

@@ -40,5 +40,5 @@ class GQLSubscription a where
       (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
 
 instance GQLSubscription () where
-  encodeSubscription _ _ = pure JSNull
+  encodeSubscription _ _ = pure Null
   subscriptionSchema _ = id

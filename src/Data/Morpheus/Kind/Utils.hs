@@ -22,9 +22,9 @@ listField x = x {fieldTypeWrappers = [NonNullType, ListType] ++ fieldTypeWrapper
 type Encode a = (Text, Selection) -> a -> ResolveIO Value
 
 encodeList :: Encode a -> Encode [a]
-encodeList _ (_, SelectionField {}) _ = pure $ JSList []
-encodeList f query list               = JSList <$> mapM (f query) list
+encodeList _ (_, SelectionField {}) _ = pure $ List []
+encodeList f query list               = List <$> mapM (f query) list
 
 encodeMaybe :: Encode a -> Encode (Maybe a)
-encodeMaybe _ _ Nothing          = pure JSNull
+encodeMaybe _ _ Nothing          = pure Null
 encodeMaybe f query (Just value) = f query value

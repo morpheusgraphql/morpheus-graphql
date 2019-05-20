@@ -35,19 +35,19 @@ validateInputValue lib' prop' = validate
     {-- 1. VALIDATE WRAPPERS -}
     validate :: [TypeWrapper] -> ASTInputType -> (Text, Value) -> InputValidation Value
     -- throw error on not nullable type if value = null
-    validate (NonNullType:wrappers') type' (_, JSNull) = throwError wrappers' type' JSNull
+    validate (NonNullType:wrappers') type' (_, Null) = throwError wrappers' type' Null
     -- resolves nullable value as null
-    validate _ _ (_, JSNull) = return JSNull
+    validate _ _ (_, Null) = return Null
     -- ignores NonNUllTypes if value /= null
     validate (NonNullType:wrappers') type' value' = validateInputValue lib' prop' wrappers' type' value'
     {-- VALIDATE LIST -}
-    validate (ListType:wrappers') type' (key', JSList list') = JSList <$> mapM validateElement list'
+    validate (ListType:wrappers') type' (key', List list') = List <$> mapM validateElement list'
       where
         validateElement element' = validateInputValue lib' prop' wrappers' type' (key', element')
     {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
     {-- VALIDATE OBJECT--}
-    validate [] (ObjectKind ASTType {typeData = parentFields'}) (_, JSObject fields) =
-      JSObject <$> mapM validateField fields
+    validate [] (ObjectKind ASTType {typeData = parentFields'}) (_, Object fields) =
+      Object <$> mapM validateField fields
       where
         validateField (_name, value') = do
           (type', currentProp') <- validationData value'

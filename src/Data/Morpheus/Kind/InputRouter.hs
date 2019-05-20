@@ -44,7 +44,7 @@ _introspect ::
 _introspect = __introspect (Proxy @(KIND a))
 
 instance (InputTypeRouter a (KIND a)) => GDecode Value (K1 i a) where
-  gDecode key' (JSObject object) =
+  gDecode key' (Object object) =
     case lookup key' object of
       Nothing    -> internalArgumentError "Missing Argument"
       Just value -> K1 <$> _decode value
@@ -56,8 +56,8 @@ instance (S.GQLScalar a, GQLType a) => InputTypeRouter a SCALAR where
   __field _ _ = field_ SCALAR (Proxy @a) ()
 
 instance E.EnumConstraint a => InputTypeRouter a ENUM where
-  __decode _ (JSEnum value) = pure (E.decode value)
-  __decode _ isType         = internalTypeMismatch "Enum" isType
+  __decode _ (Enum value) = pure (E.decode value)
+  __decode _ isType       = internalTypeMismatch "Enum" isType
   __introspect _ _ = E.introspect (Proxy @a)
   __field _ _ = field_ ENUM (Proxy @a) ()
 
@@ -67,13 +67,13 @@ instance I.IObjectConstraint a => InputTypeRouter a INPUT_OBJECT where
   __introspect _ = I.introspect
 
 instance InputTypeRouter a (KIND a) => InputTypeRouter (Maybe a) WRAPPER where
-  __decode _ JSNull = pure Nothing
-  __decode _ x      = Just <$> _decode x
+  __decode _ Null = pure Nothing
+  __decode _ x    = Just <$> _decode x
   __field _ _ name = maybeField $ _field (Proxy @a) name
   __introspect _ _ = _introspect (Proxy @a)
 
 instance InputTypeRouter a (KIND a) => InputTypeRouter [a] WRAPPER where
-  __decode _ (JSList li) = mapM _decode li
-  __decode _ isType      = internalTypeMismatch "List" isType
+  __decode _ (List li) = mapM _decode li
+  __decode _ isType    = internalTypeMismatch "List" isType
   __field _ _ name = listField $ _field (Proxy @a) name
   __introspect _ _ = _introspect (Proxy @a)

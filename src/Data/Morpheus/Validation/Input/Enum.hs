@@ -9,8 +9,8 @@ import           Data.Morpheus.Types.Internal.Value (Value (..))
 import           Data.Text                          (Text)
 
 validateEnum :: error -> [Text] -> Value -> Either error Value
-validateEnum error' tags' (JSEnum enumValue) =
+validateEnum error' tags' (Enum enumValue) =
   if enumValue `elem` tags'
-    then pure (JSEnum enumValue)
+    then pure (Enum enumValue)
     else Left error'
 validateEnum error' _ _ = Left error'

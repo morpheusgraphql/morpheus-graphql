@@ -30,4 +30,4 @@ entries parser = do
 inputObject :: Parser Value -> Parser Value
 inputObject parser = do
   skipSpace
-  JSObject <$> entries parser
+  Object <$> entries parser

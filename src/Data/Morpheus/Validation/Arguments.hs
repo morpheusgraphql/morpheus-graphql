@@ -11,7 +11,7 @@ import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
 import           Data.Morpheus.Types.Internal.AST       (ASTArgument, ASTField (..), ASTInputField, ASTOutputField,
                                                          ASTTypeLib, isFieldNullable)
-import           Data.Morpheus.Types.Internal.Value     (Value (JSNull))
+import           Data.Morpheus.Types.Internal.Value     (Value (Null))
 import           Data.Morpheus.Types.MetaInfo           (Position)
 import qualified Data.Morpheus.Types.Query.RawSelection as Raw (RawArguments)
 import           Data.Morpheus.Types.Query.Selection    (Argument (..), Arguments)
@@ -39,12 +39,12 @@ validateArgument :: ASTTypeLib -> Position -> Arguments -> (Text, ASTArgument) -
 validateArgument types position' requestArgs (key', arg) =
   case lookup key' requestArgs of
     Nothing                   -> handleNullable
-    Just (Argument JSNull _)  -> handleNullable
+    Just (Argument Null _)    -> handleNullable
     Just (Argument value pos) -> validateArgumentValue types arg (key', Argument value pos)
   where
     handleNullable =
       if isFieldNullable arg
-        then pure (key', Argument JSNull position')
+        then pure (key', Argument Null position')
         else Left $ undefinedArgument (EnhancedKey key' position')
 
 checkForUnknownArguments :: (Text, ASTOutputField) -> Arguments -> Validation [(Text, ASTInputField)]

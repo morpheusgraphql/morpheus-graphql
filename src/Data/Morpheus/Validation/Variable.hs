@@ -56,7 +56,7 @@ lookupAndValidateValueOnBody typeLib variables' (key', Variable { variableType =
     validator _type variableValue =
       handleInputError key' position' $ validateInputValue typeLib [] wrappers' _type (key', variableValue)
     checkType True _type  = lookupBodyValue position' variables' key' type' >>= validator _type
-    checkType False _type = maybe (pure (key', JSNull)) (validator _type) (M.lookup key' variables')
+    checkType False _type = maybe (pure (key', Null)) (validator _type) (M.lookup key' variables')
 
 varToKey :: (Text, Variable) -> EnhancedKey
 varToKey (key', Variable _ _ _ position') = EnhancedKey key' position'

@@ -18,4 +18,4 @@ inputList parser = do
     char ','
   skipSpace
   _ <- char ']'
-  return (JSList entries')
+  return (List entries')

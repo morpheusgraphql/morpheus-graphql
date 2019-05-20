@@ -33,8 +33,8 @@ type IOObjectRep a = ObjectRep (Rep a) (Text, ASTInputField)
 type IObjectConstraint a = (GQLType a, Generic a, GDecode Value (Rep a), IOObjectRep a)
 
 decode :: (Generic a, GDecode Value (Rep a)) => Value -> Validation a
-decode (JSObject x) = to <$> gDecode "" (JSObject x)
-decode isType       = internalTypeMismatch "InputObject" isType
+decode (Object x) = to <$> gDecode "" (Object x)
+decode isType     = internalTypeMismatch "InputObject" isType
 
 inputField :: GQLType a => Proxy a -> Text -> ASTInputField
 inputField proxy = field_ INPUT_OBJECT proxy ()
