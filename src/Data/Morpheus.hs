@@ -7,14 +7,14 @@ import           Data.Aeson                          (decode, encode)
 import           Data.ByteString                     (ByteString)
 import qualified Data.ByteString.Lazy.Char8          as LB (ByteString, fromStrict, toStrict)
 import           Data.Morpheus.Error.Utils           (errorMessage, renderErrors)
-import           Data.Morpheus.Kind.GQLSubscription  (GQLSubscription (..))
 import           Data.Morpheus.Kind.GQLMutation      (GQLMutation (..))
 import           Data.Morpheus.Kind.GQLQuery         (GQLQuery (..))
+import           Data.Morpheus.Kind.GQLSubscription  (GQLSubscription (..))
 import           Data.Morpheus.Parser.Parser         (parseGQL, parseLineBreaks)
 import           Data.Morpheus.Schema.Internal.AST   (TypeLib)
 import           Data.Morpheus.Types.Error           (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.JSType          (JSType)
-import           Data.Morpheus.Types.Query.Operator  (Operator (..))
+import           Data.Morpheus.Types.Query.Operator  (Operator (..), Operator' (..))
 import           Data.Morpheus.Types.Request         (GQLRequest)
 import           Data.Morpheus.Types.Response        (GQLResponse (..))
 import           Data.Morpheus.Types.Types           (GQLRoot (..))
@@ -24,15 +24,16 @@ import qualified Data.Text.Lazy                      as LT (Text, fromStrict, to
 import           Data.Text.Lazy.Encoding             (decodeUtf8, encodeUtf8)
 
 schema :: (GQLQuery a, GQLMutation b, GQLSubscription c) => a -> b -> c -> TypeLib
-schema queryRes mutationRes subscriptionRes = subscriptionSchema subscriptionRes $ mutationSchema mutationRes $ querySchema queryRes
+schema queryRes mutationRes subscriptionRes =
+  subscriptionSchema subscriptionRes $ mutationSchema mutationRes $ querySchema queryRes
 
 resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> GQLRequest -> ResolveIO JSType
 resolve rootResolver body = do
   rootGQL <- ExceptT $ pure (parseGQL body >>= validateRequest gqlSchema)
   case rootGQL of
-    Query _ _args selection _pos        -> encodeQuery queryRes gqlSchema selection
-    Mutation _ _args selection _pos     -> encodeMutation mutationRes selection
-    Subscription _ _args selection _pos -> encodeSubscription subscriptionRes selection
+    Query operator'        -> encodeQuery queryRes gqlSchema $ operatorSelection operator'
+    Mutation operator'     -> encodeMutation mutationRes $ operatorSelection operator'
+    Subscription operator' -> encodeSubscription subscriptionRes $ operatorSelection operator'
   where
     gqlSchema = schema queryRes mutationRes subscriptionRes
     queryRes = query rootResolver

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Data.Morpheus.Schema.Internal.AST
   ( OutputType
   , InternalType(..)
@@ -14,11 +16,17 @@ module Data.Morpheus.Schema.Internal.AST
   , isTypeDefined
   , initTypeLib
   , defineType
+  , showWrappedType
+  , astTypeName
+  , showFullAstType
   , LibType(..)
+  , isFieldNullable
   ) where
 
-import           Data.Morpheus.Schema.TypeKind (TypeKind)
-import           Data.Text                     (Text)
+import           Data.Morpheus.Schema.TypeKind      (TypeKind)
+import           Data.Morpheus.Types.Query.Operator (TypeWrapper (..))
+import           Data.Text                          (Text)
+import qualified Data.Text                          as T (concat)
 
 type EnumValue = Text
 
@@ -31,12 +39,15 @@ data Core = Core
   , typeDescription :: Text
   } deriving (Show)
 
+isFieldNullable :: Field -> Bool
+isFieldNullable Field {fieldTypeWrappers = NonNullType:_} = False
+isFieldNullable _                                         = True
+
 data Field = Field
-  { fieldName :: Text
-  , notNull   :: Bool
-  , kind      :: TypeKind
-  , fieldType :: Text
-  , asList    :: Bool
+  { fieldName         :: Text
+  , fieldKind         :: TypeKind
+  , fieldType         :: Text
+  , fieldTypeWrappers :: [TypeWrapper]
   } deriving (Show)
 
 data ObjectField = ObjectField
@@ -56,6 +67,19 @@ data InternalType a
   | Object (GObject a)
   deriving (Show)
 
+astTypeName :: InternalType a -> Text
+astTypeName (Scalar core)             = name core
+astTypeName (Enum _ core)             = name core
+astTypeName (Object (GObject _ core)) = name core
+
+showWrappedType :: [TypeWrapper] -> Text -> Text
+showWrappedType [] type'               = type'
+showWrappedType (ListType:xs) type'    = T.concat ["[", showWrappedType xs type', "]"]
+showWrappedType (NonNullType:xs) type' = T.concat [showWrappedType xs type', "!"]
+
+showFullAstType :: [TypeWrapper] -> InternalType a -> Text
+showFullAstType wrappers' = showWrappedType wrappers' . astTypeName
+
 type OutputType = InternalType ObjectField
 
 type InputType = InternalType InputField
@@ -71,7 +95,6 @@ data Leaf
   deriving (Show)
 
 data TypeLib = TypeLib
-
   { leaf         :: [(Text, Leaf)]
   , inputObject  :: [(Text, InputObject)]
   , object       :: [(Text, OutputObject)]
@@ -82,7 +105,9 @@ data TypeLib = TypeLib
   }
 
 initTypeLib :: (Text, OutputObject) -> TypeLib
-initTypeLib query' = TypeLib {leaf = [], inputObject = [], query = query', object = [], union = [], mutation = Nothing, subscription = Nothing}
+initTypeLib query' =
+  TypeLib
+    {leaf = [], inputObject = [], query = query', object = [], union = [], mutation = Nothing, subscription = Nothing}
 
 data LibType
   = Leaf Leaf
@@ -101,7 +126,9 @@ subscriptionName Nothing          = []
 
 getAllTypeKeys :: TypeLib -> [Text]
 getAllTypeKeys (TypeLib leaf' inputObject' object' union' (queryName, _) mutation' subscription') =
-  [queryName] ++ map fst leaf' ++ map fst inputObject' ++ map fst object' ++ mutationName mutation' ++ subscriptionName subscription' ++  map fst union'
+  [queryName] ++
+  map fst leaf' ++
+  map fst inputObject' ++ map fst object' ++ mutationName mutation' ++ subscriptionName subscription' ++ map fst union'
 
 isTypeDefined :: Text -> TypeLib -> Bool
 isTypeDefined name' lib' = name' `elem` getAllTypeKeys lib'

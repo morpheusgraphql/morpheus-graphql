@@ -12,15 +12,16 @@ module Data.Morpheus.Schema.Utils.Utils
   , typeFromUnion
   ) where
 
-import           Data.Morpheus.Schema.EnumValue      (EnumValue, createEnumValue)
-import qualified Data.Morpheus.Schema.Field          as F (Field (..), createFieldWith)
-import qualified Data.Morpheus.Schema.InputValue     as IN (InputValue (..), createInputValueWith)
-import qualified Data.Morpheus.Schema.Internal.AST as I (Core (..), Field (..), GObject (..), InputField (..),
-                                                           InputObject, Leaf (..), ObjectField (..), OutputObject)
-import           Data.Morpheus.Schema.Type           (Type (..))
-import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
-import           Data.Morpheus.Types.Describer       ((::->))
-import           Data.Text                           (Text)
+import           Data.Morpheus.Schema.EnumValue     (EnumValue, createEnumValue)
+import qualified Data.Morpheus.Schema.Field         as F (Field (..), createFieldWith)
+import qualified Data.Morpheus.Schema.InputValue    as IN (InputValue (..), createInputValueWith)
+import qualified Data.Morpheus.Schema.Internal.AST  as I (Core (..), Field (..), GObject (..), InputField (..),
+                                                          InputObject, Leaf (..), ObjectField (..), OutputObject)
+import           Data.Morpheus.Schema.Type          (Type (..))
+import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
+import           Data.Morpheus.Types.Describer      ((::->))
+import           Data.Morpheus.Types.Query.Operator (TypeWrapper (..))
+import           Data.Text                          (Text)
 
 type InputValue = IN.InputValue Type
 
@@ -30,22 +31,18 @@ inputValueFromArg :: (Text, I.InputField) -> InputValue
 inputValueFromArg (key', input') = IN.createInputValueWith key' (createInputObjectType input')
 
 createInputObjectType :: I.InputField -> Type
-createInputObjectType (I.InputField field') = wrap field' $ createType (I.kind field') (I.fieldType field') "" []
+createInputObjectType (I.InputField field') = wrap field' $ createType (I.fieldKind field') (I.fieldType field') "" []
 
 wrap :: I.Field -> Type -> Type
-wrap field' = wrapNotNull field' . wrapList field'
+wrap field' = wrapRec (I.fieldTypeWrappers field')
 
-wrapNotNull :: I.Field -> Type -> Type
-wrapNotNull field' type' =
-  if I.notNull field'
-    then wrapAs NON_NULL type'
-    else type'
+wrapRec :: [TypeWrapper] -> Type -> Type
+wrapRec [] type'     = type'
+wrapRec (x:xs) type' = wrapByTypeWrapper x (wrapRec xs type')
 
-wrapList :: I.Field -> Type -> Type
-wrapList field' type' =
-  if I.asList field'
-    then wrapAs LIST type'
-    else type'
+wrapByTypeWrapper :: TypeWrapper -> Type -> Type
+wrapByTypeWrapper ListType    = wrapAs LIST
+wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 
 fieldFromObjectField :: (Text, I.ObjectField) -> Field
 fieldFromObjectField (key', field') =
@@ -53,7 +50,7 @@ fieldFromObjectField (key', field') =
   where
     getType = I.fieldType $ I.fieldContent field'
     args' = map inputValueFromArg $ I.args field'
-    kind' = I.kind $ I.fieldContent field'
+    kind' = I.fieldKind $ I.fieldContent field'
 
 typeFromLeaf :: (Text, I.Leaf) -> Type
 typeFromLeaf (key', I.LScalar (I.Core _ desc'))     = createLeafType SCALAR key' desc' []

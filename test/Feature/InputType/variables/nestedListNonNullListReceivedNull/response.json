@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Variable \"$v1\" got invalid value;  Expected type \"[Int!]\" found null.",
+      "locations": [
+        {
+          "line": 1,
+          "column": 29
+        }
+      ]
+    }
+  ]
+}

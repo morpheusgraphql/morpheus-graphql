@@ -5,25 +5,17 @@ module Data.Morpheus.Parser.Query
   ) where
 
 import           Control.Applicative                ((<|>))
-import           Data.Attoparsec.Text               (Parser, skipSpace, string, try)
+import           Data.Attoparsec.Text               (Parser, skipSpace, try)
 import           Data.Morpheus.Parser.Body          (entries)
-import           Data.Morpheus.Parser.Primitive     (getPosition, token)
-import           Data.Morpheus.Parser.RootHead      (rootHeadArguments)
-import           Data.Morpheus.Types.Query.Operator (Operator (..), RawOperator, VariableDefinitions)
-import           Data.Text                          (Text)
-
-queryHead :: Parser (Text, VariableDefinitions)
-queryHead = do
-  _ <- string "query "
-  skipSpace
-  queryName <- token
-  variables <- try (skipSpace *> rootHeadArguments) <|> pure []
-  pure (queryName, variables)
+import           Data.Morpheus.Parser.Operator      (operatorHead)
+import           Data.Morpheus.Parser.Primitive     (getPosition)
+import           Data.Morpheus.Types.Query.Operator (Operator (..), Operator' (..), RawOperator)
 
 query :: Parser RawOperator
 query = do
+  skipSpace
   pos <- getPosition
-  (queryName, args) <- try (skipSpace *> queryHead) <|> pure ("", [])
+  (name, args) <- try (operatorHead "query") <|> pure ("", [])
   skipSpace
   selection <- entries
-  pure $ Query queryName args selection pos
+  pure $ Query (Operator' name args selection pos)

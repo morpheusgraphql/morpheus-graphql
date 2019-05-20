@@ -1,0 +1,22 @@
+{
+  "errors": [
+    {
+      "message": "Variable \"$v2\" is never used in operation \"TestUnusedVariables\".",
+      "locations": [
+        {
+          "line": 1,
+          "column": 39
+        }
+      ]
+    },
+    {
+      "message": "Variable \"$v3\" is never used in operation \"TestUnusedVariables\".",
+      "locations": [
+        {
+          "line": 1,
+          "column": 52
+        }
+      ]
+    }
+  ]
+}

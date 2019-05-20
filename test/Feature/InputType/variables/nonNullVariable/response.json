@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Variable \"$i1\" of required type \"String!\" was not provided.",
+      "locations": [
+        {
+          "line": 1,
+          "column": 25
+        }
+      ]
+    }
+  ]
+}

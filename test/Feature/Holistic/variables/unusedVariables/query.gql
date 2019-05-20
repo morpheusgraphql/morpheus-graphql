@@ -1,8 +1,0 @@
-query unusedVariables($city: CityID, $num: Int, $list: Int) {
-  user {
-    name
-    office(cityID: $city) {
-      street
-    }
-  }
-}
