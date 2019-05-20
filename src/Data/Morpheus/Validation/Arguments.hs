@@ -7,10 +7,10 @@ import           Data.Morpheus.Error.Arguments          (argumentGotInvalidValue
                                                          undefinedArgument, unknownArguments)
 import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Internal           (internalUnknownTypeMessage)
-import           Data.Morpheus.Schema.Internal.AST      (Field (..), InputField (..), ObjectField (..), TypeLib,
-                                                         isFieldNullable)
 import           Data.Morpheus.Types.Core               (EnhancedKey (..))
 import           Data.Morpheus.Types.Error              (Validation)
+import           Data.Morpheus.Types.Internal.AST       (ASTArgument, ASTField (..), ASTInputField, ASTOutputField,
+                                                         ASTTypeLib, isFieldNullable)
 import           Data.Morpheus.Types.JSType             (JSType (JSNull))
 import           Data.Morpheus.Types.MetaInfo           (Position)
 import qualified Data.Morpheus.Types.Query.RawSelection as Raw (RawArguments)
@@ -28,15 +28,15 @@ handleInputError :: Text -> Int -> InputValidation a -> Validation ()
 handleInputError key' position' (Left error') = Left $ argumentGotInvalidValue key' (inputErrorMessage error') position'
 handleInputError _ _ _ = pure ()
 
-validateArgumentValue :: TypeLib -> Field -> (Text, Argument) -> Validation (Text, Argument)
-validateArgumentValue lib' Field {fieldType = typeName', fieldTypeWrappers = wrappers'} (key', Argument value' position') =
+validateArgumentValue :: ASTTypeLib -> ASTField a -> (Text, Argument) -> Validation (Text, Argument)
+validateArgumentValue lib' ASTField {fieldType = typeName', fieldTypeWrappers = wrappers'} (key', Argument value' position') =
   getInputType typeName' lib' (internalUnknownTypeMessage typeName') >>= checkType >>
   pure (key', Argument value' position')
   where
     checkType type' = handleInputError key' position' (validateInputValue lib' [] wrappers' type' (key', value'))
 
-validateArgument :: TypeLib -> Position -> Arguments -> (Text, InputField) -> Validation (Text, Argument)
-validateArgument types position' requestArgs (key', InputField arg) =
+validateArgument :: ASTTypeLib -> Position -> Arguments -> (Text, ASTArgument) -> Validation (Text, Argument)
+validateArgument types position' requestArgs (key', arg) =
   case lookup key' requestArgs of
     Nothing                   -> handleNullable
     Just (Argument JSNull _)  -> handleNullable
@@ -47,16 +47,16 @@ validateArgument types position' requestArgs (key', InputField arg) =
         then pure (key', Argument JSNull position')
         else Left $ undefinedArgument (EnhancedKey key' position')
 
-checkForUnknownArguments :: (Text, ObjectField) -> Arguments -> Validation [(Text, InputField)]
-checkForUnknownArguments (fieldKey', ObjectField fieldArgs _) args' =
+checkForUnknownArguments :: (Text, ASTOutputField) -> Arguments -> Validation [(Text, ASTInputField)]
+checkForUnknownArguments (fieldKey', ASTField {fieldArgs = astArgs'}) args' =
   checkForUnknownKeys enhancedKeys' fieldKeys error' >> checkNameCollision enhancedKeys' fieldKeys argumentNameCollision >>
-  pure fieldArgs
+  pure astArgs'
   where
     error' = unknownArguments fieldKey'
     enhancedKeys' = map argToKey args'
     argToKey (key', Argument _ pos) = EnhancedKey key' pos
-    fieldKeys = map fst fieldArgs
+    fieldKeys = map fst astArgs'
 
-validateArguments :: TypeLib -> (Text, ObjectField) -> Position -> Arguments -> Validation Arguments
+validateArguments :: ASTTypeLib -> (Text, ASTOutputField) -> Position -> Arguments -> Validation Arguments
 validateArguments typeLib inputs pos args' =
   checkForUnknownArguments inputs args' >>= mapM (validateArgument typeLib pos args')
