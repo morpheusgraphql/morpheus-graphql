@@ -5,7 +5,7 @@ module Data.Morpheus.Types.Query.Selection
   , Selection(..)
   ) where
 
-import           Data.Morpheus.Types.Core           (Collection, Key)
+import           Data.Morpheus.Types.Core           (Collection)
 import           Data.Morpheus.Types.Internal.Value (Value)
 import           Data.Morpheus.Types.MetaInfo       (Position)
 
@@ -25,7 +25,6 @@ data Selection
   | UnionSelection Arguments
                    (Collection SelectionSet)
                    Position
-  | Field Arguments
-          Key
-          Position
+  | SelectionField Arguments
+                   Position
   deriving (Show)

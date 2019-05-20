@@ -43,7 +43,7 @@ encode ::
 encode (_, SelectionSet _ selection _pos) value = resolveBySelection selection (resolversBy value ++ [__typename])
   where
     __typename = ("__typename", \_ -> return $ Scalar $ String (typeID (Proxy @a)))
-encode (_, Field _ key pos) _ = failResolveIO $ subfieldsNotSelected key "" pos -- TODO: must be internal Error
+encode (key, SelectionField _ pos) _ = failResolveIO $ subfieldsNotSelected key "" pos -- TODO: must be internal Error
 
 introspect ::
      forall a. (ObjectRep (Rep a) (Text, ASTOutputField), GQLType a)

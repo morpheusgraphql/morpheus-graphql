@@ -11,7 +11,7 @@ import           Data.Morpheus.Error.Selection            (cannotQueryField, dup
 import           Data.Morpheus.Schema.TypeKind            (TypeKind (..))
 import           Data.Morpheus.Types.Core                 (EnhancedKey (..))
 import           Data.Morpheus.Types.Error                (Validation)
-import           Data.Morpheus.Types.Internal.AST         (ASTField (..), ASTOutputField, ASTOutputObject, ASTType (..),
+import           Data.Morpheus.Types.Internal.AST         (ASTField (..), ASTOutputObject, ASTType (..),
                                                            ASTTypeLib (..))
 import           Data.Morpheus.Types.Query.Fragment       (Fragment, FragmentLib)
 import qualified Data.Morpheus.Types.Query.Fragment       as F (Fragment (..))
@@ -26,7 +26,7 @@ import           Data.Morpheus.Validation.Utils.Utils     (checkNameCollision)
 import           Data.Text                                (Text)
 
 selToKey :: (Text, Selection) -> EnhancedKey
-selToKey (sName, Field _ _ pos)          = EnhancedKey sName pos
+selToKey (sName, SelectionField _ pos)   = EnhancedKey sName pos
 selToKey (sName, SelectionSet _ _ pos)   = EnhancedKey sName pos
 selToKey (sName, UnionSelection _ _ pos) = EnhancedKey sName pos
 
@@ -49,8 +49,7 @@ splitFragment :: FragmentLib -> Text -> [Text] -> (Text, RawSelection) -> Valida
 splitFragment fragments' _ posTypes' (_, Spread key' position') = do
   fragment' <- resolveSpread fragments' posTypes' position' key'
   return ([fragment'], [])
-splitFragment _ _ _ ("__typename", RawField [] field' position') =
-  return ([], [("__typename", Field [] field' position')])
+splitFragment _ _ _ ("__typename", RawField [] _ position') = return ([], [("__typename", SelectionField [] position')])
 splitFragment _ type' _ (key', RawSelectionSet _ _ position') = Left $ cannotQueryField key' type' position'
 splitFragment _ type' _ (key', RawField _ _ position') = Left $ cannotQueryField key' type' position'
 splitFragment _ _ posTypes' (key', InlineFragment target' selectors' position') = do
@@ -93,11 +92,11 @@ validateSelection lib' fragments' variables' parent' (key', RawSelectionSet rawA
       selections' <- validateSelectionSet lib' fragments' variables' fieldType' rawSelectors
       pure [(key', SelectionSet arguments' selections' position')]
     _ -> Left $ hasNoSubfields key' (fieldType field') position'
-validateSelection lib' _ variables' parent' (key', RawField rawArgs field position') = do
+validateSelection lib' _ variables' parent' (key', RawField rawArgs _ position') = do
   field' <- lookupSelectionField position' key' parent' >>= notObject (key', position')
   args' <- resolveArguments variables' rawArgs
   arguments' <- validateArguments lib' (key', field') position' args'
-  pure [(key', Field arguments' field position')]
+  pure [(key', SelectionField arguments' position')]
 validateSelection lib' fragments' variables' parent' (key', Spread _ position') =
   resolveSpread fragments' [typeName parent'] position' key' >>= castFragment lib' fragments' variables' parent'
 validateSelection lib' fragments' variables' parent' (key', InlineFragment target' selectors' position') =
