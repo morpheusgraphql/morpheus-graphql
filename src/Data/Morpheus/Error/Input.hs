@@ -19,6 +19,7 @@ data InputError
   = UnexpectedType [Prop]
                    Text
                    Value
+                   (Maybe Text)
   | UndefinedField [Prop]
                    Text
   | UnknownField [Prop]
@@ -30,17 +31,28 @@ data Prop = Prop
   }
 
 inputErrorMessage :: InputError -> Text
-inputErrorMessage (UnexpectedType path type' jsType) = expectedTypeAFoundB path type' jsType
-inputErrorMessage (UndefinedField path' field')      = undefinedField path' field'
-inputErrorMessage (UnknownField path' field')        = unknownField path' field'
+inputErrorMessage (UnexpectedType path type' value errorMessage) = expectedTypeAFoundB path type' value errorMessage
+inputErrorMessage (UndefinedField path' field')                  = undefinedField path' field'
+inputErrorMessage (UnknownField path' field')                    = unknownField path' field'
 
 pathToText :: [Prop] -> Text
 pathToText []    = ""
 pathToText path' = T.concat ["on ", T.intercalate "." $ fmap propKey path']
 
-expectedTypeAFoundB :: [Prop] -> Text -> Value -> Text
-expectedTypeAFoundB path' expected found =
+expectedTypeAFoundB :: [Prop] -> Text -> Value -> Maybe Text -> Text
+expectedTypeAFoundB path' expected found Nothing =
   T.concat [pathToText path', " Expected type \"", expected, "\" found ", T.pack (unpack $ encode found), "."]
+expectedTypeAFoundB path' expected found (Just errorMessage) =
+  T.concat
+    [ pathToText path'
+    , " Expected type \""
+    , expected
+    , "\" found "
+    , T.pack (unpack $ encode found)
+    , "; "
+    , errorMessage
+    , "."
+    ]
 
 undefinedField :: [Prop] -> Text -> Text
 undefinedField path' field' = T.concat [pathToText path', " Undefined Field \"", field', "\"."]

@@ -23,5 +23,5 @@ newtype ID = ID
 instance GQLScalar ID where
   parseValue (Int x)    = return (ID $ pack $ show x)
   parseValue (String x) = return (ID x)
-  parseValue _          = Left "ID"
+  parseValue _          = Left ""
   serialize (ID x) = String x

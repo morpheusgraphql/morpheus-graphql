@@ -14,7 +14,7 @@ import           Data.Morpheus.Validation.Utils.Utils (getInputType, lookupField
 import           Data.Text                            (Text)
 
 typeMismatch :: Value -> Text -> [Prop] -> InputError
-typeMismatch jsType expected' path' = UnexpectedType path' expected' jsType
+typeMismatch jsType expected' path' = UnexpectedType path' expected' jsType Nothing
 
 -- Validate Variable Argument or all Possible input Values
 validateInputValue ::
@@ -22,7 +22,7 @@ validateInputValue ::
 validateInputValue lib' prop' = validate
   where
     throwError :: [DataTypeWrapper] -> DataInputType -> Value -> InputValidation Value
-    throwError wrappers' type' value' = Left $ UnexpectedType prop' (showFullAstType wrappers' type') value'
+    throwError wrappers' type' value' = Left $ UnexpectedType prop' (showFullAstType wrappers' type') value' Nothing
     {-- VALIDATION --}
     {-- 1. VALIDATE WRAPPERS -}
     validate :: [DataTypeWrapper] -> DataInputType -> (Text, Value) -> InputValidation Value
@@ -55,11 +55,12 @@ validateInputValue lib' prop' = validate
             getField = lookupField _name parentFields' (UnknownField prop' _name)
     {-- VALIDATE SCALAR --}
     validate [] (EnumKind DataType {typeData = tags', typeName = name'}) (_, value') =
-      validateEnum (UnexpectedType prop' name' value') tags' value'
+      validateEnum (UnexpectedType prop' name' value' Nothing) tags' value'
     {-- VALIDATE ENUM --}
     validate [] (ScalarKind DataType {typeName = name', typeData = DataValidator {validateValue = validator'}}) (_, value') =
       case validator' value' of
-        Right _            -> return value'
-        Left _errorMessage -> Left $ UnexpectedType prop' name' value' -- TODO: for next release add custom error messages
+        Right _           -> return value'
+        Left ""           -> Left $ UnexpectedType prop' name' value' Nothing
+        Left errorMessage -> Left $ UnexpectedType prop' name' value' (Just errorMessage)
     {-- 3. THROW ERROR: on invalid values --}
     validate wrappers' type' (_, value') = throwError wrappers' type' value'
