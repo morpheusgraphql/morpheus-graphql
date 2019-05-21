@@ -107,12 +107,8 @@ liftResolver position' typeName' x = do
     Right value   -> pure value
 
 instance (OutputTypeRouter a (KIND a), Args.GQLArgs p) => OutputTypeRouter (p ::-> a) WRAPPER where
-  __encode _ selection'@(key', SelectionSet gqlArgs _ position') (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>= _encode selection'
-  __encode _ selection'@(key', SelectionField gqlArgs position') (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>= _encode selection'
-  __encode _ selection'@(key', UnionSelection gqlArgs _ position') (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode gqlArgs) >>= liftResolver position' key' . resolver >>= _encode selection'
+  __encode _ selection'@(key', Selection {selectionArguments = astArgs', selectionPosition = position'}) (Resolver resolver) =
+    (ExceptT $ pure $ Args.decode astArgs') >>= liftResolver position' key' . resolver >>= _encode selection'
   __introspect _ _ typeLib = resolveTypes typeLib $ inputTypes' ++ [_introspect (Proxy @a)]
     where
       inputTypes' = map snd $ Args.introspect (Proxy @p)

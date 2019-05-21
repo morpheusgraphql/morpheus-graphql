@@ -19,7 +19,7 @@ import           Data.Morpheus.Error.Internal               (internalErrorIO)
 import           Data.Morpheus.Generics.UnionRep            (UnionRep (..))
 import           Data.Morpheus.Generics.UnionResolvers      (UnionResolvers (..))
 import           Data.Morpheus.Kind.GQLType                 (GQLType (..))
-import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionSet)
+import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Data          (DataFullType (..), DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
@@ -34,8 +34,8 @@ lookupSelectionByType :: Text -> [(Text, SelectionSet)] -> SelectionSet
 lookupSelectionByType type' sel = fromMaybe [] $ lookup type' sel
 
 encode :: (Generic a, UnionResolvers (Rep a)) => (Text, Selection) -> a -> ResolveIO Value
-encode (key', UnionSelection args selection pos) value =
-  resolver (key', SelectionSet args (lookupSelectionByType type' selection) pos)
+encode (key', sel@Selection {selectionRec = UnionSelection selections'}) value =
+  resolver (key', sel {selectionRec = SelectionSet (lookupSelectionByType type' selections')})
   where
     (type', resolver) = currentResolver (from value)
 encode _ _ = internalErrorIO "union Resolver only should recieve UnionSelection"
