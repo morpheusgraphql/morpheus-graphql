@@ -6,8 +6,8 @@ module Data.Morpheus.Generics.GDecode
   ( GDecode(..)
   ) where
 
-import           Data.Morpheus.Types.Error (Validation)
-import           Data.Text                 (Text, pack)
+import           Data.Morpheus.Types.Internal.Validation (Validation)
+import           Data.Text                               (Text, pack)
 import           GHC.Generics
 
 fixProxy :: (a -> f a) -> f a

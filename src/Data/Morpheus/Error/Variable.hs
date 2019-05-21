@@ -8,12 +8,11 @@ module Data.Morpheus.Error.Variable
   , unusedVariables
   ) where
 
-import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Core     (EnhancedKey (..))
-import           Data.Morpheus.Types.Error    (GQLError (..), GQLErrors)
-import           Data.Morpheus.Types.MetaInfo (Position)
-import           Data.Text                    (Text)
-import qualified Data.Text                    as T (concat)
+import           Data.Morpheus.Error.Utils               (errorMessage)
+import           Data.Morpheus.Types.Internal.Base       (EnhancedKey (..), Position)
+import           Data.Morpheus.Types.Internal.Validation (GQLError (..), GQLErrors)
+import           Data.Text                               (Text)
+import qualified Data.Text                               as T (concat)
  -- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
 
 {-|

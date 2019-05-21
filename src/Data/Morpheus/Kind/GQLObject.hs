@@ -25,10 +25,10 @@ import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.EnumValue                    (EnumValue)
 import           Data.Morpheus.Schema.Internal.RenderIntrospection (Field, InputValue, Type)
 import           Data.Morpheus.Schema.Schema                       (Schema)
-import           Data.Morpheus.Types.Error                         (ResolveIO, failResolveIO)
+import           Data.Morpheus.Types.Internal.AST.Selection        (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Data                 (DataOutputField, DataTypeLib)
+import           Data.Morpheus.Types.Internal.Validation           (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.Internal.Value                (ScalarValue (..), Value (..))
-import           Data.Morpheus.Types.Query.Selection               (Selection (..))
 import           Data.Proxy
 import           Data.Text                                         (Text)
 import           GHC.Generics
@@ -40,10 +40,11 @@ encode ::
   => (Text, Selection)
   -> a
   -> ResolveIO Value
-encode (_, SelectionSet _ selection _pos) value = resolveBySelection selection (resolversBy value ++ [__typename])
+encode (_, Selection {selectionRec = SelectionSet selection'}) value =
+  resolveBySelection selection' (resolversBy value ++ [__typename])
   where
-    __typename = ("__typename", \_ -> return $ Scalar $ String (typeID (Proxy @a)))
-encode (key, SelectionField _ pos) _ = failResolveIO $ subfieldsNotSelected key "" pos -- TODO: must be internal Error
+    __typename = ("__typename", const $ return $ Scalar $ String (typeID (Proxy @a)))
+encode (key, Selection {selectionPosition = position'}) _ = failResolveIO $ subfieldsNotSelected key "" position' -- TODO: must be internal Error
 
 introspect ::
      forall a. (ObjectRep (Rep a) (Text, DataOutputField), GQLType a)

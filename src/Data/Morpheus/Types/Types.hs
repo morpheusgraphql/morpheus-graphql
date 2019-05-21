@@ -4,11 +4,11 @@ module Data.Morpheus.Types.Types
   , GQLRoot(..)
   ) where
 
-import           Data.Map                           (Map)
-import           Data.Morpheus.Types.Core           (Key)
-import           Data.Morpheus.Types.Internal.Value (Value)
-import           Data.Morpheus.Types.Query.Fragment (FragmentLib)
-import           Data.Morpheus.Types.Query.Operator (RawOperator)
+import           Data.Map                                      (Map)
+import           Data.Morpheus.Types.Internal.AST.Operator     (RawOperator)
+import           Data.Morpheus.Types.Internal.AST.RawSelection (FragmentLib)
+import           Data.Morpheus.Types.Internal.Base             (Key)
+import           Data.Morpheus.Types.Internal.Value            (Value)
 
 type Variables = Map Key Value
 

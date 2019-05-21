@@ -4,11 +4,11 @@ module Data.Morpheus.Parser.Mutation
   ( mutation
   ) where
 
-import           Data.Attoparsec.Text               (Parser, skipSpace)
-import           Data.Morpheus.Parser.Body          (entries)
-import           Data.Morpheus.Parser.Operator      (operatorHead)
-import           Data.Morpheus.Parser.Primitive     (getPosition)
-import           Data.Morpheus.Types.Query.Operator (Operator (..), Operator' (..), RawOperator)
+import           Data.Attoparsec.Text                      (Parser, skipSpace)
+import           Data.Morpheus.Parser.Body                 (entries)
+import           Data.Morpheus.Parser.Operator             (operatorHead)
+import           Data.Morpheus.Parser.Primitive            (getPosition)
+import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..), RawOperator)
 
 mutation :: Parser RawOperator
 mutation = do

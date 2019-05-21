@@ -5,7 +5,7 @@ module Data.Morpheus.Types.Request where
 
 import           Data.Aeson                         (FromJSON (..))
 import           Data.Map                           (Map)
-import           Data.Morpheus.Types.Core           (Key)
+import           Data.Morpheus.Types.Internal.Base  (Key)
 import           Data.Morpheus.Types.Internal.Value (Value)
 import           GHC.Generics                       (Generic)
 

@@ -11,18 +11,18 @@ module Data.Morpheus.Kind.GQLArgs
   ( GQLArgs(..)
   ) where
 
-import           Data.Morpheus.Error.Internal        (internalArgumentError)
-import           Data.Morpheus.Generics.GDecode      (GDecode (..))
-import           Data.Morpheus.Generics.ObjectRep    (ObjectRep (..))
-import           Data.Morpheus.Generics.Utils        (RecSel, SelOf)
-import           Data.Morpheus.Kind.InputRouter      (InputTypeRouter, _decode, _field, _introspect)
-import           Data.Morpheus.Kind.Internal         (KIND)
-import           Data.Morpheus.Schema.Type           (DeprecationArgs)
-import           Data.Morpheus.Types.Error           (Validation)
-import           Data.Morpheus.Types.Internal.Data   (DataInputField, DataTypeLib)
-import           Data.Morpheus.Types.Query.Selection (Argument (..), Arguments)
-import           Data.Proxy                          (Proxy (..))
-import           Data.Text                           (Text, pack)
+import           Data.Morpheus.Error.Internal               (internalArgumentError)
+import           Data.Morpheus.Generics.GDecode             (GDecode (..))
+import           Data.Morpheus.Generics.ObjectRep           (ObjectRep (..))
+import           Data.Morpheus.Generics.Utils               (RecSel, SelOf)
+import           Data.Morpheus.Kind.InputRouter             (InputTypeRouter, _decode, _field, _introspect)
+import           Data.Morpheus.Kind.Internal                (KIND)
+import           Data.Morpheus.Schema.Type                  (DeprecationArgs)
+import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..), Arguments)
+import           Data.Morpheus.Types.Internal.Data          (DataInputField, DataTypeLib)
+import           Data.Morpheus.Types.Internal.Validation    (Validation)
+import           Data.Proxy                                 (Proxy (..))
+import           Data.Text                                  (Text, pack)
 import           GHC.Generics
 
 instance (Selector s, InputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Text, DataInputField) where

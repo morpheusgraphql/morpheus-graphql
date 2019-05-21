@@ -5,11 +5,11 @@ module Data.Morpheus.Error.Spread
   , cannotBeSpreadOnType
   ) where
 
-import           Data.Morpheus.Error.Utils    (errorMessage)
-import           Data.Morpheus.Types.Error    (GQLErrors)
-import           Data.Morpheus.Types.MetaInfo (Position)
-import           Data.Text                    (Text)
-import qualified Data.Text                    as T
+import           Data.Morpheus.Error.Utils               (errorMessage)
+import           Data.Morpheus.Types.Internal.Base       (Position)
+import           Data.Morpheus.Types.Internal.Validation (GQLErrors)
+import           Data.Text                               (Text)
+import qualified Data.Text                               as T
 
 -- {...H} -> "Unknown fragment \"H\"."
 unknownFragment :: Text -> Position -> GQLErrors

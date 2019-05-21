@@ -1,4 +1,4 @@
-module Data.Morpheus.Types.Query.Operator
+module Data.Morpheus.Types.Internal.AST.Operator
   ( Operator(..)
   , ValidOperator
   , RawOperator
@@ -9,11 +9,10 @@ module Data.Morpheus.Types.Query.Operator
   , RawOperator'
   ) where
 
-import           Data.Morpheus.Types.Core               (Collection, Key)
-import           Data.Morpheus.Types.Internal.Data      (DataTypeWrapper)
-import           Data.Morpheus.Types.MetaInfo           (Position)
-import           Data.Morpheus.Types.Query.RawSelection (RawSelectionSet)
-import           Data.Morpheus.Types.Query.Selection    (Arguments, SelectionSet)
+import           Data.Morpheus.Types.Internal.AST.RawSelection (RawSelectionSet)
+import           Data.Morpheus.Types.Internal.AST.Selection    (Arguments, SelectionSet)
+import           Data.Morpheus.Types.Internal.Base             (Collection, Key, Position)
+import           Data.Morpheus.Types.Internal.Data             (DataTypeWrapper)
 
 type ValidOperator = Operator Arguments SelectionSet
 

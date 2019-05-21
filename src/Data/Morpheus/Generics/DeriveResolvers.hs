@@ -9,11 +9,11 @@ module Data.Morpheus.Generics.DeriveResolvers
   , resolveBySelection
   ) where
 
-import           Data.Maybe                          (fromMaybe)
-import           Data.Morpheus.Types.Error           (ResolveIO)
-import           Data.Morpheus.Types.Internal.Value  (Value (..))
-import           Data.Morpheus.Types.Query.Selection (Selection)
-import           Data.Text                           (Text, pack)
+import           Data.Maybe                                 (fromMaybe)
+import           Data.Morpheus.Types.Internal.AST.Selection (Selection)
+import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
+import           Data.Morpheus.Types.Internal.Value         (Value (..))
+import           Data.Text                                  (Text, pack)
 import           GHC.Generics
 
 -- type D1 = M1 D

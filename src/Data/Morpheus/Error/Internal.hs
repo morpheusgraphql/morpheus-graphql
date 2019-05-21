@@ -8,11 +8,11 @@ module Data.Morpheus.Error.Internal
   , internalErrorIO
   ) where
 
-import           Data.Morpheus.Error.Utils          (errorMessage)
-import           Data.Morpheus.Types.Error          (GQLErrors, ResolveIO, failResolveIO)
-import           Data.Morpheus.Types.Internal.Value (Value (..))
-import           Data.Text                          (Text)
-import qualified Data.Text                          as T (concat, pack)
+import           Data.Morpheus.Error.Utils               (errorMessage)
+import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveIO, failResolveIO)
+import           Data.Morpheus.Types.Internal.Value      (Value (..))
+import           Data.Text                               (Text)
+import qualified Data.Text                               as T (concat, pack)
 
 -- GQL:: if no mutation defined -> "Schema is not configured for mutations."
 -- all kind internal error in development

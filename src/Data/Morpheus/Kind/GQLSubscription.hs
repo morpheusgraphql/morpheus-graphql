@@ -12,14 +12,14 @@ module Data.Morpheus.Kind.GQLSubscription
   ( GQLSubscription(..)
   ) where
 
-import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection)
-import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
-import           Data.Morpheus.Types.Error              (ResolveIO)
-import           Data.Morpheus.Types.Internal.Data      (DataOutputField, DataType (..), DataTypeLib (..))
-import           Data.Morpheus.Types.Internal.Value     (Value (..))
-import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
+import           Data.Morpheus.Generics.DeriveResolvers     (DeriveResolvers (..), resolveBySelection)
+import           Data.Morpheus.Generics.ObjectRep           (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
+import           Data.Morpheus.Types.Internal.Data          (DataOutputField, DataType (..), DataTypeLib (..))
+import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
+import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Proxy
-import           Data.Text                              (Text)
+import           Data.Text                                  (Text)
 import           GHC.Generics
 
 class GQLSubscription a where

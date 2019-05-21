@@ -2,13 +2,13 @@ module Data.Morpheus.Parser.Operator
   ( operatorHead
   ) where
 
-import           Control.Applicative                ((<|>))
-import           Data.Attoparsec.Text               (Parser, char, sepBy, skipSpace, string, try)
-import           Data.Morpheus.Parser.Primitive     (token, variable)
-import           Data.Morpheus.Parser.Terms         (nonNUll)
-import           Data.Morpheus.Types.Internal.Data   (DataTypeWrapper (..))
-import           Data.Morpheus.Types.Query.Operator (Variable (..), VariableDefinitions)
-import           Data.Text                          (Text)
+import           Control.Applicative                       ((<|>))
+import           Data.Attoparsec.Text                      (Parser, char, sepBy, skipSpace, string, try)
+import           Data.Morpheus.Parser.Primitive            (token, variable)
+import           Data.Morpheus.Parser.Terms                (nonNUll)
+import           Data.Morpheus.Types.Internal.AST.Operator (Variable (..), VariableDefinitions)
+import           Data.Morpheus.Types.Internal.Data         (DataTypeWrapper (..))
+import           Data.Text                                 (Text)
 
 wrapMock :: Parser ([DataTypeWrapper], Text)
 wrapMock = skipSpace >> token >>= \x -> pure ([], x)

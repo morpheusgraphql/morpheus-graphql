@@ -3,9 +3,9 @@ module Data.Morpheus.Error.Utils
   , renderErrors
   ) where
 
-import           Data.Morpheus.Types.Error    (ErrorLocation (..), GQLError (..), GQLErrors, JSONError (..))
-import           Data.Morpheus.Types.MetaInfo (LineBreaks, Position)
-import           Data.Text                    (Text)
+import           Data.Morpheus.Types.Internal.Base       (LineBreaks, Position)
+import           Data.Morpheus.Types.Internal.Validation (ErrorLocation (..), GQLError (..), GQLErrors, JSONError (..))
+import           Data.Text                               (Text)
 
 errorMessage :: Position -> Text -> GQLErrors
 errorMessage pos text = [GQLError {desc = text, posIndex = [pos]}]

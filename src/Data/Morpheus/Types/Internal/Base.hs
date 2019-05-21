@@ -1,11 +1,17 @@
-module Data.Morpheus.Types.Core
+module Data.Morpheus.Types.Internal.Base
   ( Key
   , Collection
+  , Position
+  , LineBreaks
   , EnhancedKey(..)
   , enhanceKeyWithNull
   ) where
 
 import           Data.Text (Text)
+
+type Position = Int
+
+type LineBreaks = [Position]
 
 type Key = Text
 

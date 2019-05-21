@@ -3,10 +3,10 @@
 
 module Data.Morpheus.Types.Response where
 
-import           Data.Aeson                 (ToJSON (..), pairs, (.=))
-import           Data.Morpheus.Types.Error  (JSONError (..))
-import           Data.Morpheus.Types.Internal.Value (Value)
-import           GHC.Generics               (Generic)
+import           Data.Aeson                              (ToJSON (..), pairs, (.=))
+import           Data.Morpheus.Types.Internal.Validation (JSONError (..))
+import           Data.Morpheus.Types.Internal.Value      (Value)
+import           GHC.Generics                            (Generic)
 
 data GQLResponse
   = Data Value

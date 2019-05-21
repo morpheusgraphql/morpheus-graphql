@@ -4,13 +4,13 @@ module Data.Morpheus.Validation.Spread
   , castFragmentType
   ) where
 
-import qualified Data.Map                           as M (lookup)
-import           Data.Morpheus.Error.Spread         (cannotBeSpreadOnType, unknownFragment)
-import           Data.Morpheus.Types.Error          (Validation)
-import           Data.Morpheus.Types.MetaInfo       (Position)
-import           Data.Morpheus.Types.Query.Fragment (Fragment (..), FragmentLib)
-import           Data.Text                          (Text)
-import qualified Data.Text                          as T (concat)
+import qualified Data.Map                                      as M (lookup)
+import           Data.Morpheus.Error.Spread                    (cannotBeSpreadOnType, unknownFragment)
+import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, Reference (..))
+import           Data.Morpheus.Types.Internal.Base             (Position)
+import           Data.Morpheus.Types.Internal.Validation       (Validation)
+import           Data.Text                                     (Text)
+import qualified Data.Text                                     as T (concat)
 
 getFragment :: Position -> Text -> FragmentLib -> Validation Fragment
 getFragment position' id' lib =
@@ -19,11 +19,11 @@ getFragment position' id' lib =
     Just fragment -> pure fragment
 
 castFragmentType :: Maybe Text -> Position -> [Text] -> Fragment -> Validation Fragment
-castFragmentType key' position' targets' fragment =
-  if target fragment `elem` targets'
+castFragmentType key' position' targets' fragment@Fragment {fragmentType = type'} =
+  if type' `elem` targets'
     then pure fragment
-    else Left $ cannotBeSpreadOnType key' (target fragment) position' (T.concat targets')
+    else Left $ cannotBeSpreadOnType key' type' position' (T.concat targets')
 
-resolveSpread :: FragmentLib -> [Text] -> Position -> Text -> Validation Fragment
-resolveSpread fragments' allowedTargets' position' key' =
+resolveSpread :: FragmentLib -> [Text] -> Reference -> Validation Fragment
+resolveSpread fragments' allowedTargets' Reference {referenceName = key', referencePosition = position'} =
   getFragment position' key' fragments' >>= castFragmentType (Just key') position' allowedTargets'
