@@ -5,25 +5,16 @@ module Data.Morpheus.Validation.Input.Object
   ) where
 
 import           Data.Morpheus.Error.Input            (InputError (..), InputValidation, Prop (..))
-import           Data.Morpheus.Types.Internal.Data    (DataField (..), DataInputField, DataInputType, DataKind (..),
-                                                       DataType (..), DataTypeLib (..), DataTypeWrapper (..),
-                                                       showFullAstType)
-import           Data.Morpheus.Types.Internal.Value   (ScalarValue (..), Value (..))
+import           Data.Morpheus.Types.Internal.Data    (DataField (..), DataInputType, DataKind (..),
+                                                       DataScalarValidator (..), DataType (..), DataTypeLib (..),
+                                                       DataTypeWrapper (..), showFullAstType)
+import           Data.Morpheus.Types.Internal.Value   (Value (..))
 import           Data.Morpheus.Validation.Input.Enum  (validateEnum)
 import           Data.Morpheus.Validation.Utils.Utils (getInputType, lookupField)
 import           Data.Text                            (Text)
 
 typeMismatch :: Value -> Text -> [Prop] -> InputError
 typeMismatch jsType expected' path' = UnexpectedType path' expected' jsType
-
-validateScalarTypes :: Text -> ScalarValue -> [Prop] -> InputValidation ScalarValue
-validateScalarTypes "String" (String x)   = pure . const (String x)
-validateScalarTypes "String" scalar       = Left . typeMismatch (Scalar scalar) "String"
-validateScalarTypes "Int" (Int x)         = pure . const (Int x)
-validateScalarTypes "Int" scalar          = Left . typeMismatch (Scalar scalar) "Int"
-validateScalarTypes "Boolean" (Boolean x) = pure . const (Boolean x)
-validateScalarTypes "Boolean" scalar      = Left . typeMismatch (Scalar scalar) "Boolean"
-validateScalarTypes _ scalar              = pure . const scalar
 
 -- Validate Variable Argument or all Possible input Values
 validateInputValue ::
@@ -66,7 +57,9 @@ validateInputValue lib' prop' = validate
     validate [] (EnumKind DataType {typeData = tags', typeName = name'}) (_, value') =
       validateEnum (UnexpectedType prop' name' value') tags' value'
     {-- VALIDATE ENUM --}
-    validate [] (ScalarKind DataType {typeName = name'}) (_, Scalar value') =
-      Scalar <$> validateScalarTypes name' value' prop'
+    validate [] (ScalarKind DataType {typeName = name', typeData = DataScalarValidator {validateValue = validator'}}) (_, value') =
+      case validator' value' of
+        Right _            -> return value'
+        Left _errorMessage -> Left $ UnexpectedType prop' name' value' -- TODO: for next release add custom error messages
     {-- 3. THROW ERROR: on invalid values --}
     validate wrappers' type' (_, value') = throwError wrappers' type' value'
