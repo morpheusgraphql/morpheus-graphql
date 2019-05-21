@@ -11,7 +11,7 @@ import           Data.Morpheus.Parser.Arguments                (arguments)
 import           Data.Morpheus.Parser.Primitive                (getPosition, separator, token)
 import           Data.Morpheus.Parser.Terms                    (onType, spreadLiteral)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
-                                                                RawSelectionSet, Reference (..))
+                                                                RawSelection' (..), RawSelectionSet, Reference (..))
 import           Data.Text                                     (Text)
 
 spread :: Parser (Text, RawSelection)
@@ -37,7 +37,11 @@ entry = do
   index <- getPosition
   key <- token
   args <- try arguments <|> pure []
-  value <- try (body args) <|> pure (RawField args key index)
+  value <-
+    try (body args) <|>
+    pure
+      (RawSelectionField $
+       RawSelection' {rawSelectionArguments = args, rawSelectionRec = (), rawSelectionPosition = index})
   return (key, value)
 
 separated :: Parser a -> Parser [a]
@@ -57,4 +61,6 @@ body args = do
   skipSpace
   index <- getPosition
   entries' <- entries
-  return (RawSelectionSet args entries' index)
+  return
+    (RawSelectionSet $
+     RawSelection' {rawSelectionArguments = args, rawSelectionRec = entries', rawSelectionPosition = index})

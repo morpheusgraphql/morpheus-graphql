@@ -13,7 +13,7 @@ import           Data.Morpheus.Error.Variable                  (undefinedVariabl
                                                                 unusedVariables, variableGotInvalidValue)
 import           Data.Morpheus.Types.Internal.AST.Operator     (Operator' (..), RawOperator', Variable (..))
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArgument (..), RawSelection (..),
-                                                                RawSelectionSet, Reference (..))
+                                                                RawSelection' (..), RawSelectionSet, Reference (..))
 import           Data.Morpheus.Types.Internal.AST.Selection    (Argument (..))
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Data             (DataInputType, DataTypeLib)
@@ -75,11 +75,12 @@ referencesFromArgument (_, RawArgument {})        = []
 referencesFromArgument (_, VariableReference ref) = [EnhancedKey (referenceName ref) (referencePosition ref)]
 
 searchReferencesIn :: (Text, RawSelection) -> [EnhancedKey]
-searchReferencesIn (_, RawSelectionSet rawArgs rawSelectors _) =
-  concatMap referencesFromArgument rawArgs ++ concatMap searchReferencesIn rawSelectors
+searchReferencesIn (_, RawSelectionSet RawSelection' {rawSelectionArguments = args', rawSelectionRec = selectionSet'}) =
+  concatMap referencesFromArgument args' ++ concatMap searchReferencesIn selectionSet'
 searchReferencesIn (_, InlineFragment Fragment {fragmentSelection = rawSelection'}) =
   concatMap searchReferencesIn rawSelection'
-searchReferencesIn (_, RawField rawArgs _ _) = concatMap referencesFromArgument rawArgs
+searchReferencesIn (_, RawSelectionField RawSelection' {rawSelectionArguments = args'}) =
+  concatMap referencesFromArgument args'
 searchReferencesIn (_, Spread {}) = [] -- TODO: search in referenced Fragments
 
 resolveArgumentValue :: Variables -> (Text, RawArgument) -> Validation (Text, Argument)
