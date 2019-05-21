@@ -14,17 +14,17 @@ module Data.Morpheus.Kind.GQLUnion
   , Constraint
   ) where
 
-import           Data.Maybe                            (fromMaybe)
-import           Data.Morpheus.Error.Internal          (internalErrorIO)
-import           Data.Morpheus.Generics.UnionRep       (UnionRep (..))
-import           Data.Morpheus.Generics.UnionResolvers (UnionResolvers (..))
-import           Data.Morpheus.Kind.GQLType            (GQLType (..))
-import           Data.Morpheus.Types.Error             (ResolveIO)
-import           Data.Morpheus.Types.Internal.Data     (DataFullType (..), DataTypeLib)
-import           Data.Morpheus.Types.Internal.Value    (Value (..))
-import           Data.Morpheus.Types.Query.Selection   (Selection (..), SelectionSet)
+import           Data.Maybe                                 (fromMaybe)
+import           Data.Morpheus.Error.Internal               (internalErrorIO)
+import           Data.Morpheus.Generics.UnionRep            (UnionRep (..))
+import           Data.Morpheus.Generics.UnionResolvers      (UnionResolvers (..))
+import           Data.Morpheus.Kind.GQLType                 (GQLType (..))
+import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionSet)
+import           Data.Morpheus.Types.Internal.Data          (DataFullType (..), DataTypeLib)
+import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
+import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Proxy
-import           Data.Text                             (Text)
+import           Data.Text                                  (Text)
 import           GHC.Generics
 
 type Constraint a = (Generic a, GQLType a, UnionRep (Rep a), UnionResolvers (Rep a))

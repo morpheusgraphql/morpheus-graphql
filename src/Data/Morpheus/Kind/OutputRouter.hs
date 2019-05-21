@@ -9,30 +9,30 @@
 
 module Data.Morpheus.Kind.OutputRouter where
 
-import           Control.Monad.Trans                    (lift)
+import           Control.Monad.Trans                        (lift)
 import           Control.Monad.Trans.Except
-import           Data.Morpheus.Error.Selection          (fieldNotResolved)
-import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..))
-import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
-import           Data.Morpheus.Generics.UnionRep        (UnionRep (..))
-import           Data.Morpheus.Generics.UnionResolvers  (UnionResolvers (..))
-import           Data.Morpheus.Generics.Utils           (RecSel, SelOf)
-import qualified Data.Morpheus.Kind.GQLArgs             as Args (GQLArgs (..))
-import qualified Data.Morpheus.Kind.GQLEnum             as E (EnumConstraint, encode, introspect)
-import qualified Data.Morpheus.Kind.GQLObject           as O (ObjectConstraint, encode, introspect)
-import qualified Data.Morpheus.Kind.GQLScalar           as S (GQLScalar (..))
-import           Data.Morpheus.Kind.GQLType             (GQLType (..))
-import qualified Data.Morpheus.Kind.GQLUnion            as U (Constraint, encode, introspect)
-import           Data.Morpheus.Kind.Internal            (ENUM, Encode_, Intro_, KIND, OBJECT, OField_, SCALAR, UNION,
-                                                         WRAPPER)
-import           Data.Morpheus.Kind.Utils               (encodeList, encodeMaybe, listField, maybeField)
-import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import           Data.Morpheus.Types.Describer          ((::->) (..))
-import           Data.Morpheus.Types.Error              (ResolveIO, failResolveIO)
-import           Data.Morpheus.Types.Internal.Data      (DataField (..), DataOutputField)
-import           Data.Morpheus.Types.Query.Selection    (Selection (..))
-import           Data.Proxy                             (Proxy (..))
-import           Data.Text                              (Text, pack)
+import           Data.Morpheus.Error.Selection              (fieldNotResolved)
+import           Data.Morpheus.Generics.DeriveResolvers     (DeriveResolvers (..))
+import           Data.Morpheus.Generics.ObjectRep           (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Generics.UnionRep            (UnionRep (..))
+import           Data.Morpheus.Generics.UnionResolvers      (UnionResolvers (..))
+import           Data.Morpheus.Generics.Utils               (RecSel, SelOf)
+import qualified Data.Morpheus.Kind.GQLArgs                 as Args (GQLArgs (..))
+import qualified Data.Morpheus.Kind.GQLEnum                 as E (EnumConstraint, encode, introspect)
+import qualified Data.Morpheus.Kind.GQLObject               as O (ObjectConstraint, encode, introspect)
+import qualified Data.Morpheus.Kind.GQLScalar               as S (GQLScalar (..))
+import           Data.Morpheus.Kind.GQLType                 (GQLType (..))
+import qualified Data.Morpheus.Kind.GQLUnion                as U (Constraint, encode, introspect)
+import           Data.Morpheus.Kind.Internal                (ENUM, Encode_, Intro_, KIND, OBJECT, OField_, SCALAR,
+                                                             UNION, WRAPPER)
+import           Data.Morpheus.Kind.Utils                   (encodeList, encodeMaybe, listField, maybeField)
+import           Data.Morpheus.Schema.TypeKind              (TypeKind (..))
+import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..))
+import           Data.Morpheus.Types.Internal.Data          (DataField (..), DataOutputField)
+import           Data.Morpheus.Types.Internal.Validation    (ResolveIO, failResolveIO)
+import           Data.Morpheus.Types.Resolver               ((::->) (..))
+import           Data.Proxy                                 (Proxy (..))
+import           Data.Text                                  (Text, pack)
 import           GHC.Generics
 
 class OutputTypeRouter a b where

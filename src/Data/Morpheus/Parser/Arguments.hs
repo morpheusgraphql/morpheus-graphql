@@ -2,14 +2,15 @@ module Data.Morpheus.Parser.Arguments
   ( arguments
   ) where
 
-import           Control.Applicative                          ((<|>))
-import           Data.Attoparsec.Text                         (Parser, char, sepBy, skipSpace)
-import           Data.Morpheus.Parser.InputValues.InputList   (inputList)
-import           Data.Morpheus.Parser.InputValues.InputObject (inputObject)
-import           Data.Morpheus.Parser.Primitive               (getPosition, jsBool, jsNumber, jsString, token, variable)
-import           Data.Morpheus.Types.Internal.Value           (Value (Enum))
-import           Data.Morpheus.Types.Query.RawSelection       (RawArgument (..), RawArguments)
-import           Data.Text                                    (Text)
+import           Control.Applicative                           ((<|>))
+import           Data.Attoparsec.Text                          (Parser, char, sepBy, skipSpace)
+import           Data.Morpheus.Parser.InputValues.InputList    (inputList)
+import           Data.Morpheus.Parser.InputValues.InputObject  (inputObject)
+import           Data.Morpheus.Parser.Primitive                (getPosition, jsBool, jsNumber, jsString, token,
+                                                                variable)
+import           Data.Morpheus.Types.Internal.AST.RawSelection (RawArgument (..), RawArguments)
+import           Data.Morpheus.Types.Internal.Value            (Value (Enum))
+import           Data.Text                                     (Text)
 
 enum :: Parser Value
 enum = Enum <$> token

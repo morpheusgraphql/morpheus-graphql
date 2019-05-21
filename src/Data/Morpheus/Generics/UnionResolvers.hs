@@ -5,10 +5,10 @@ module Data.Morpheus.Generics.UnionResolvers
   ( UnionResolvers(..)
   ) where
 
-import           Data.Morpheus.Types.Error           (ResolveIO)
-import           Data.Morpheus.Types.Internal.Value  (Value (..))
-import           Data.Morpheus.Types.Query.Selection (Selection)
-import           Data.Text                           (Text)
+import           Data.Morpheus.Types.Internal.AST.Selection (Selection)
+import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
+import           Data.Morpheus.Types.Internal.Value         (Value (..))
+import           Data.Text                                  (Text)
 import           GHC.Generics
 
 class UnionResolvers f where

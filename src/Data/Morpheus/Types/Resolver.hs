@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Data.Morpheus.Types.Describer
+module Data.Morpheus.Types.Resolver
   ( (::->)(..)
   ) where
 

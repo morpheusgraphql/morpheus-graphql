@@ -5,11 +5,11 @@ module Data.Morpheus.Error.Fragment
   ) where
 
 -- import Data.Morpheus.Error.Utils (errorMessage)
-import           Data.Morpheus.Types.Core  (EnhancedKey (..))
-import           Data.Morpheus.Types.Error (GQLError (..), GQLErrors)
+import           Data.Morpheus.Types.Internal.Base       (EnhancedKey (..))
+import           Data.Morpheus.Types.Internal.Validation (GQLError (..), GQLErrors)
 
--- import Data.Morpheus.Types.MetaInfo (MetaInfo(..))
-import qualified Data.Text                 as T
+-- import Data.Morpheus.Types.Internal.Base (MetaInfo(..))
+import qualified Data.Text                               as T
 
 {-
   FRAGMENT:

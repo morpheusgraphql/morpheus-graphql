@@ -1,13 +1,12 @@
-module Data.Morpheus.Types.Query.Selection
+module Data.Morpheus.Types.Internal.AST.Selection
   ( Argument(..)
   , Arguments
   , SelectionSet
   , Selection(..)
   ) where
 
-import           Data.Morpheus.Types.Core           (Collection)
+import           Data.Morpheus.Types.Internal.Base  (Collection, Position)
 import           Data.Morpheus.Types.Internal.Value (Value)
-import           Data.Morpheus.Types.MetaInfo       (Position)
 
 data Argument =
   Argument Value

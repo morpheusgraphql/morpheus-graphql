@@ -7,23 +7,24 @@ module Data.Morpheus.Validation.Selection
   ( validateSelectionSet
   ) where
 
-import           Data.Morpheus.Error.Selection            (cannotQueryField, duplicateQuerySelections, hasNoSubfields)
-import           Data.Morpheus.Schema.TypeKind            (TypeKind (..))
-import           Data.Morpheus.Types.Core                 (EnhancedKey (..))
-import           Data.Morpheus.Types.Error                (Validation)
-import           Data.Morpheus.Types.Internal.Data        (DataField (..), DataOutputObject, DataType (..),
-                                                           DataTypeLib (..))
-import           Data.Morpheus.Types.Query.Fragment       (Fragment, FragmentLib)
-import qualified Data.Morpheus.Types.Query.Fragment       as F (Fragment (..))
-import           Data.Morpheus.Types.Query.RawSelection   (RawSelection (..), RawSelectionSet)
-import           Data.Morpheus.Types.Query.Selection      (Selection (..), SelectionSet)
-import           Data.Morpheus.Types.Types                (Variables)
-import           Data.Morpheus.Validation.Arguments       (resolveArguments, validateArguments)
-import           Data.Morpheus.Validation.Spread          (castFragmentType, resolveSpread)
-import           Data.Morpheus.Validation.Utils.Selection (lookupFieldAsSelectionSet, lookupPossibleTypeKeys,
-                                                           lookupPossibleTypes, lookupSelectionField, notObject)
-import           Data.Morpheus.Validation.Utils.Utils     (checkNameCollision)
-import           Data.Text                                (Text)
+import           Data.Morpheus.Error.Selection                 (cannotQueryField, duplicateQuerySelections,
+                                                                hasNoSubfields)
+import           Data.Morpheus.Schema.TypeKind                 (TypeKind (..))
+import           Data.Morpheus.Types.Internal.AST.Fragment     (Fragment, FragmentLib)
+import qualified Data.Morpheus.Types.Internal.AST.Fragment     as F (Fragment (..))
+import           Data.Morpheus.Types.Internal.AST.RawSelection (RawSelection (..), RawSelectionSet)
+import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionSet)
+import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..))
+import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataOutputObject, DataType (..),
+                                                                DataTypeLib (..))
+import           Data.Morpheus.Types.Internal.Validation       (Validation)
+import           Data.Morpheus.Types.Types                     (Variables)
+import           Data.Morpheus.Validation.Arguments            (resolveArguments, validateArguments)
+import           Data.Morpheus.Validation.Spread               (castFragmentType, resolveSpread)
+import           Data.Morpheus.Validation.Utils.Selection      (lookupFieldAsSelectionSet, lookupPossibleTypeKeys,
+                                                                lookupPossibleTypes, lookupSelectionField, notObject)
+import           Data.Morpheus.Validation.Utils.Utils          (checkNameCollision)
+import           Data.Text                                     (Text)
 
 selToKey :: (Text, Selection) -> EnhancedKey
 selToKey (sName, SelectionField _ pos)   = EnhancedKey sName pos

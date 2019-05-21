@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
 
-module Data.Morpheus.Types.Error
+module Data.Morpheus.Types.Internal.Validation
   ( GQLError(..)
   , ErrorLocation(..)
   , GQLErrors

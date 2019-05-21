@@ -7,20 +7,20 @@ module Data.Morpheus.Validation.Validation
   ( validateRequest
   ) where
 
-import           Data.Map                            (fromList)
-import           Data.Morpheus.Error.Mutation        (mutationIsNotDefined)
-import           Data.Morpheus.Error.Subscription    (subscriptionIsNotDefined)
-import           Data.Morpheus.Schema.TypeKind       (TypeKind (..))
-import           Data.Morpheus.Types.Error           (Validation)
-import           Data.Morpheus.Types.Internal.Data    (DataField (..), DataOutputObject, DataType (..), DataTypeLib (..),
-                                                      DataTypeWrapper (..))
-import           Data.Morpheus.Types.Query.Operator  (Operator (..), Operator' (..), RawOperator, RawOperator',
-                                                      ValidOperator)
-import           Data.Morpheus.Types.Query.Selection (SelectionSet)
-import           Data.Morpheus.Types.Types           (GQLQueryRoot (..))
-import           Data.Morpheus.Validation.Fragment   (validateFragments)
-import           Data.Morpheus.Validation.Selection  (validateSelectionSet)
-import           Data.Morpheus.Validation.Variable   (resolveOperatorVariables)
+import           Data.Map                                   (fromList)
+import           Data.Morpheus.Error.Mutation               (mutationIsNotDefined)
+import           Data.Morpheus.Error.Subscription           (subscriptionIsNotDefined)
+import           Data.Morpheus.Schema.TypeKind              (TypeKind (..))
+import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Operator' (..), RawOperator, RawOperator',
+                                                             ValidOperator)
+import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
+import           Data.Morpheus.Types.Internal.Data          (DataField (..), DataOutputObject, DataType (..),
+                                                             DataTypeLib (..), DataTypeWrapper (..))
+import           Data.Morpheus.Types.Internal.Validation    (Validation)
+import           Data.Morpheus.Types.Types                  (GQLQueryRoot (..))
+import           Data.Morpheus.Validation.Fragment          (validateFragments)
+import           Data.Morpheus.Validation.Selection         (validateSelectionSet)
+import           Data.Morpheus.Validation.Variable          (resolveOperatorVariables)
 
 updateQuery :: RawOperator -> SelectionSet -> ValidOperator
 updateQuery (Query (Operator' name' _ _ pos)) sel        = Query (Operator' name' [] sel pos)

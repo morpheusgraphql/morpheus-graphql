@@ -2,16 +2,16 @@ module Data.Morpheus.Validation.Fragment
   ( validateFragments
   ) where
 
-import qualified Data.Map                               as M (toList)
-import           Data.Morpheus.Error.Fragment           (cannotSpreadWithinItself)
-import           Data.Morpheus.Types.Core               (EnhancedKey (..))
-import           Data.Morpheus.Types.Error              (Validation)
-import           Data.Morpheus.Types.Internal.Data      (DataTypeLib)
-import           Data.Morpheus.Types.Query.Fragment     (Fragment (..))
-import           Data.Morpheus.Types.Query.RawSelection (RawSelection (..))
-import           Data.Morpheus.Types.Types              (GQLQueryRoot (..))
-import           Data.Morpheus.Validation.Utils.Utils   (existsObjectType)
-import           Data.Text                              (Text)
+import qualified Data.Map                                      as M (toList)
+import           Data.Morpheus.Error.Fragment                  (cannotSpreadWithinItself)
+import           Data.Morpheus.Types.Internal.AST.Fragment     (Fragment (..))
+import           Data.Morpheus.Types.Internal.AST.RawSelection (RawSelection (..))
+import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..))
+import           Data.Morpheus.Types.Internal.Data             (DataTypeLib)
+import           Data.Morpheus.Types.Internal.Validation       (Validation)
+import           Data.Morpheus.Types.Types                     (GQLQueryRoot (..))
+import           Data.Morpheus.Validation.Utils.Utils          (existsObjectType)
+import           Data.Text                                     (Text)
 
 type Node = EnhancedKey
 

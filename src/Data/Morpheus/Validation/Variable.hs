@@ -5,24 +5,23 @@ module Data.Morpheus.Validation.Variable
   , resolveArgumentValue
   ) where
 
-import           Data.List                              ((\\))
-import qualified Data.Map                               as M (fromList, lookup)
-import           Data.Maybe                             (maybe)
-import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
-import           Data.Morpheus.Error.Variable           (undefinedVariable, uninitializedVariable, unknownType,
-                                                         unusedVariables, variableGotInvalidValue)
-import           Data.Morpheus.Types.Core               (EnhancedKey (..))
-import           Data.Morpheus.Types.Error              (Validation)
-import           Data.Morpheus.Types.Internal.Data      (DataInputType, DataTypeLib)
-import           Data.Morpheus.Types.Internal.Value     (Value (..))
-import           Data.Morpheus.Types.MetaInfo           (Position)
-import           Data.Morpheus.Types.Query.Operator     (Operator' (..), RawOperator', Variable (..))
-import           Data.Morpheus.Types.Query.RawSelection (RawArgument (..), RawSelection (..), RawSelectionSet)
-import qualified Data.Morpheus.Types.Query.Selection    as Valid (Argument (..))
-import           Data.Morpheus.Types.Types              (Variables)
-import           Data.Morpheus.Validation.Input.Object  (validateInputValue)
-import           Data.Morpheus.Validation.Utils.Utils   (getInputType)
-import           Data.Text                              (Text)
+import           Data.List                                     ((\\))
+import qualified Data.Map                                      as M (fromList, lookup)
+import           Data.Maybe                                    (maybe)
+import           Data.Morpheus.Error.Input                     (InputValidation, inputErrorMessage)
+import           Data.Morpheus.Error.Variable                  (undefinedVariable, uninitializedVariable, unknownType,
+                                                                unusedVariables, variableGotInvalidValue)
+import           Data.Morpheus.Types.Internal.AST.Operator     (Operator' (..), RawOperator', Variable (..))
+import           Data.Morpheus.Types.Internal.AST.RawSelection (RawArgument (..), RawSelection (..), RawSelectionSet)
+import qualified Data.Morpheus.Types.Internal.AST.Selection    as Valid (Argument (..))
+import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
+import           Data.Morpheus.Types.Internal.Data             (DataInputType, DataTypeLib)
+import           Data.Morpheus.Types.Internal.Validation       (Validation)
+import           Data.Morpheus.Types.Internal.Value            (Value (..))
+import           Data.Morpheus.Types.Types                     (Variables)
+import           Data.Morpheus.Validation.Input.Object         (validateInputValue)
+import           Data.Morpheus.Validation.Utils.Utils          (getInputType)
+import           Data.Text                                     (Text)
 
 getVariableType :: Text -> Position -> DataTypeLib -> Validation DataInputType
 getVariableType type' position' lib' = getInputType type' lib' error'

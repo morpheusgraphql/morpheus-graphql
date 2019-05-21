@@ -25,10 +25,10 @@ import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.EnumValue                    (EnumValue)
 import           Data.Morpheus.Schema.Internal.RenderIntrospection (Field, InputValue, Type)
 import           Data.Morpheus.Schema.Schema                       (Schema)
-import           Data.Morpheus.Types.Error                         (ResolveIO, failResolveIO)
+import           Data.Morpheus.Types.Internal.AST.Selection        (Selection (..))
 import           Data.Morpheus.Types.Internal.Data                 (DataOutputField, DataTypeLib)
+import           Data.Morpheus.Types.Internal.Validation           (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.Internal.Value                (ScalarValue (..), Value (..))
-import           Data.Morpheus.Types.Query.Selection               (Selection (..))
 import           Data.Proxy
 import           Data.Text                                         (Text)
 import           GHC.Generics

@@ -4,13 +4,13 @@ module Data.Morpheus.Validation.Spread
   , castFragmentType
   ) where
 
-import qualified Data.Map                           as M (lookup)
-import           Data.Morpheus.Error.Spread         (cannotBeSpreadOnType, unknownFragment)
-import           Data.Morpheus.Types.Error          (Validation)
-import           Data.Morpheus.Types.MetaInfo       (Position)
-import           Data.Morpheus.Types.Query.Fragment (Fragment (..), FragmentLib)
-import           Data.Text                          (Text)
-import qualified Data.Text                          as T (concat)
+import qualified Data.Map                                  as M (lookup)
+import           Data.Morpheus.Error.Spread                (cannotBeSpreadOnType, unknownFragment)
+import           Data.Morpheus.Types.Internal.AST.Fragment (Fragment (..), FragmentLib)
+import           Data.Morpheus.Types.Internal.Base         (Position)
+import           Data.Morpheus.Types.Internal.Validation   (Validation)
+import           Data.Text                                 (Text)
+import qualified Data.Text                                 as T (concat)
 
 getFragment :: Position -> Text -> FragmentLib -> Validation Fragment
 getFragment position' id' lib =

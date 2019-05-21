@@ -7,11 +7,11 @@ module Data.Morpheus.Error.Arguments
   , argumentNameCollision
   ) where
 
-import           Data.Morpheus.Error.Utils (errorMessage)
-import           Data.Morpheus.Types.Core  (EnhancedKey (..))
-import           Data.Morpheus.Types.Error (GQLError (..), GQLErrors)
-import           Data.Text                 (Text)
-import qualified Data.Text                 as T (concat)
+import           Data.Morpheus.Error.Utils               (errorMessage)
+import           Data.Morpheus.Types.Internal.Base       (EnhancedKey (..))
+import           Data.Morpheus.Types.Internal.Validation (GQLError (..), GQLErrors)
+import           Data.Text                               (Text)
+import qualified Data.Text                               as T (concat)
 
 {-
   ARGUMENTS:
@@ -42,7 +42,7 @@ argumentNameCollision :: [EnhancedKey] -> GQLErrors
 argumentNameCollision = map keyToError
   where
     keyToError (EnhancedKey argName pos) = GQLError {desc = toMessage argName, posIndex = [pos]}
-    toMessage argName = T.concat ["There can Be only One Argument Named \"", argName,"\""]
+    toMessage argName = T.concat ["There can Be only One Argument Named \"", argName, "\""]
 
 undefinedArgument :: EnhancedKey -> GQLErrors
 undefinedArgument (EnhancedKey key' position') = errorMessage position' text

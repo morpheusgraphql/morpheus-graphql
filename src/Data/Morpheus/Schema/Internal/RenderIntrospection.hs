@@ -17,10 +17,10 @@ import qualified Data.Morpheus.Schema.Field        as F (Field (..), createField
 import qualified Data.Morpheus.Schema.InputValue   as IN (InputValue (..), createInputValueWith)
 import           Data.Morpheus.Schema.Type         (Type (..))
 import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
-import           Data.Morpheus.Types.Describer     ((::->))
 import           Data.Morpheus.Types.Internal.Data (DataField (..), DataInputField, DataInputObject, DataLeaf (..),
                                                     DataOutputField, DataOutputObject, DataType (..),
                                                     DataTypeWrapper (..), DataUnion)
+import           Data.Morpheus.Types.Resolver      ((::->))
 import           Data.Text                         (Text)
 
 type InputValue = IN.InputValue Type

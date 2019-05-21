@@ -17,10 +17,10 @@ import           Data.Morpheus.Generics.DeriveResolvers (DeriveResolvers (..), r
 import           Data.Morpheus.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Kind.OutputRouter        (_encode, _introspect)
 import           Data.Morpheus.Schema.Schema            (Schema, initSchema)
-import           Data.Morpheus.Types.Error              (ResolveIO)
+import           Data.Morpheus.Types.Internal.Validation              (ResolveIO)
 import           Data.Morpheus.Types.Internal.Data      (DataOutputField, DataType (..), DataTypeLib (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Value     (Value (..))
-import           Data.Morpheus.Types.Query.Selection    (SelectionSet)
+import           Data.Morpheus.Types.Internal.AST.Selection    (SelectionSet)
 import           Data.Proxy
 import           Data.Text                              (Text)
 import           GHC.Generics

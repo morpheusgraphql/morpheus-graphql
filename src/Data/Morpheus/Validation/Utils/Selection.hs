@@ -9,14 +9,14 @@ module Data.Morpheus.Validation.Utils.Selection
   , lookupPossibleTypeKeys
   ) where
 
-import           Data.Morpheus.Error.Selection        (cannotQueryField, hasNoSubfields, subfieldsNotSelected)
-import           Data.Morpheus.Schema.TypeKind        (TypeKind (..))
-import           Data.Morpheus.Types.Error            (Validation)
-import           Data.Morpheus.Types.Internal.Data    (DataField (..), DataOutputField, DataOutputObject, DataType (..),
-                                                       DataTypeLib (..))
-import           Data.Morpheus.Types.MetaInfo         (Position)
-import           Data.Morpheus.Validation.Utils.Utils (lookupField, lookupType)
-import           Data.Text                            (Text)
+import           Data.Morpheus.Error.Selection           (cannotQueryField, hasNoSubfields, subfieldsNotSelected)
+import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
+import           Data.Morpheus.Types.Internal.Base       (Position)
+import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataOutputField, DataOutputObject,
+                                                          DataType (..), DataTypeLib (..))
+import           Data.Morpheus.Types.Internal.Validation (Validation)
+import           Data.Morpheus.Validation.Utils.Utils    (lookupField, lookupType)
+import           Data.Text                               (Text)
 
 isObjectKind :: DataField a -> Bool
 isObjectKind field' = OBJECT == fieldKind field'

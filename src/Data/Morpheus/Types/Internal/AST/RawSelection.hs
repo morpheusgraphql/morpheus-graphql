@@ -1,13 +1,12 @@
-module Data.Morpheus.Types.Query.RawSelection
+module Data.Morpheus.Types.Internal.AST.RawSelection
   ( RawArgument(..)
   , RawArguments
   , RawSelectionSet
   , RawSelection(..)
   ) where
 
-import           Data.Morpheus.Types.Core           (Collection, Key)
+import           Data.Morpheus.Types.Internal.Base  (Collection, Key, Position)
 import           Data.Morpheus.Types.Internal.Value (Value)
-import           Data.Morpheus.Types.MetaInfo       (Position)
 
 data RawArgument
   = VariableReference Key

@@ -5,16 +5,16 @@
 
 module Data.Morpheus.Kind.GQLScalar where
 
-import           Control.Monad                      ((>=>))
-import           Data.Morpheus.Error.Internal       (internalTypeMismatch)
-import           Data.Morpheus.Kind.GQLType         (GQLType (..), scalarTypeOf)
-import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
-import           Data.Morpheus.Types.Core           (Key)
-import           Data.Morpheus.Types.Error          (Validation)
-import           Data.Morpheus.Types.Internal.Data  (DataField, DataTypeLib)
-import           Data.Morpheus.Types.Internal.Value (ScalarValue (..), Value (..))
-import           Data.Proxy                         (Proxy (..))
-import           Data.Text                          (Text)
+import           Control.Monad                           ((>=>))
+import           Data.Morpheus.Error.Internal            (internalTypeMismatch)
+import           Data.Morpheus.Kind.GQLType              (GQLType (..), scalarTypeOf)
+import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
+import           Data.Morpheus.Types.Internal.Base       (Key)
+import           Data.Morpheus.Types.Internal.Data       (DataField, DataTypeLib)
+import           Data.Morpheus.Types.Internal.Validation (Validation)
+import           Data.Morpheus.Types.Internal.Value      (ScalarValue (..), Value (..))
+import           Data.Proxy                              (Proxy (..))
+import           Data.Text                               (Text)
 
 toScalar :: Value -> Validation ScalarValue
 toScalar (Scalar x) = pure x

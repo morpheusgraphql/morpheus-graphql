@@ -3,23 +3,22 @@ module Data.Morpheus.Validation.Arguments
   , resolveArguments
   ) where
 
-import           Data.Morpheus.Error.Arguments          (argumentGotInvalidValue, argumentNameCollision,
-                                                         undefinedArgument, unknownArguments)
-import           Data.Morpheus.Error.Input              (InputValidation, inputErrorMessage)
-import           Data.Morpheus.Error.Internal           (internalUnknownTypeMessage)
-import           Data.Morpheus.Types.Core               (EnhancedKey (..))
-import           Data.Morpheus.Types.Error              (Validation)
-import           Data.Morpheus.Types.Internal.Data      (DataArgument, DataField (..), DataInputField, DataOutputField,
-                                                         DataTypeLib, isFieldNullable)
-import           Data.Morpheus.Types.Internal.Value     (Value (Null))
-import           Data.Morpheus.Types.MetaInfo           (Position)
-import qualified Data.Morpheus.Types.Query.RawSelection as Raw (RawArguments)
-import           Data.Morpheus.Types.Query.Selection    (Argument (..), Arguments)
-import           Data.Morpheus.Types.Types              (Variables)
-import           Data.Morpheus.Validation.Input.Object  (validateInputValue)
-import           Data.Morpheus.Validation.Utils.Utils   (checkForUnknownKeys, checkNameCollision, getInputType)
-import           Data.Morpheus.Validation.Variable      (resolveArgumentValue)
-import           Data.Text                              (Text)
+import           Data.Morpheus.Error.Arguments                 (argumentGotInvalidValue, argumentNameCollision,
+                                                                undefinedArgument, unknownArguments)
+import           Data.Morpheus.Error.Input                     (InputValidation, inputErrorMessage)
+import           Data.Morpheus.Error.Internal                  (internalUnknownTypeMessage)
+import qualified Data.Morpheus.Types.Internal.AST.RawSelection as Raw (RawArguments)
+import           Data.Morpheus.Types.Internal.AST.Selection    (Argument (..), Arguments)
+import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
+import           Data.Morpheus.Types.Internal.Data             (DataArgument, DataField (..), DataInputField,
+                                                                DataOutputField, DataTypeLib, isFieldNullable)
+import           Data.Morpheus.Types.Internal.Validation       (Validation)
+import           Data.Morpheus.Types.Internal.Value            (Value (Null))
+import           Data.Morpheus.Types.Types                     (Variables)
+import           Data.Morpheus.Validation.Input.Object         (validateInputValue)
+import           Data.Morpheus.Validation.Utils.Utils          (checkForUnknownKeys, checkNameCollision, getInputType)
+import           Data.Morpheus.Validation.Variable             (resolveArgumentValue)
+import           Data.Text                                     (Text)
 
 resolveArguments :: Variables -> Raw.RawArguments -> Validation Arguments
 resolveArguments variables' = mapM (resolveArgumentValue variables')

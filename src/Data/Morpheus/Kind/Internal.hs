@@ -16,11 +16,11 @@ module Data.Morpheus.Kind.Internal
   , Decode_
   ) where
 
-import Data.Morpheus.Types.Describer ((::->))
-import Data.Morpheus.Types.Error (ResolveIO, Validation)
+import Data.Morpheus.Types.Internal.AST.Selection (Selection)
 import Data.Morpheus.Types.Internal.Data (DataInputField, DataOutputField, DataTypeLib)
+import Data.Morpheus.Types.Internal.Validation (ResolveIO, Validation)
 import Data.Morpheus.Types.Internal.Value (Value(..))
-import Data.Morpheus.Types.Query.Selection (Selection)
+import Data.Morpheus.Types.Resolver ((::->))
 import Data.Proxy (Proxy(..))
 import Data.Text (Text)
 import GHC.Exts (Constraint)
