@@ -17,8 +17,8 @@ fragment = do
   index <- getPosition
   _ <- string "fragment"
   skipSpace
-  name <- token
-  targetName <- onType
+  name' <- token
+  type' <- onType
   skipSpace
   fragmentBody <- entries
-  pure (name, Fragment {key = name, target = targetName, content = fragmentBody, position = index})
+  pure (name', Fragment {fragmentType = type', fragmentSelection = fragmentBody, fragmentPosition = index})

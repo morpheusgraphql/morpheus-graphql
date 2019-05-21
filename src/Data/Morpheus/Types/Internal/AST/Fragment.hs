@@ -8,10 +8,9 @@ import           Data.Morpheus.Types.Internal.AST.RawSelection (RawSelectionSet)
 import           Data.Morpheus.Types.Internal.Base             (Key, Position)
 
 data Fragment = Fragment
-  { key      :: Key
-  , target   :: Key
-  , position :: Position
-  , content  :: RawSelectionSet
+  { fragmentType      :: Key
+  , fragmentPosition  :: Position
+  , fragmentSelection :: RawSelectionSet
   } deriving (Show)
 
 type FragmentLib = Map Key Fragment

@@ -19,10 +19,10 @@ getFragment position' id' lib =
     Just fragment -> pure fragment
 
 castFragmentType :: Maybe Text -> Position -> [Text] -> Fragment -> Validation Fragment
-castFragmentType key' position' targets' fragment =
-  if target fragment `elem` targets'
+castFragmentType key' position' targets' fragment@Fragment {fragmentType = type'} =
+  if type' `elem` targets'
     then pure fragment
-    else Left $ cannotBeSpreadOnType key' (target fragment) position' (T.concat targets')
+    else Left $ cannotBeSpreadOnType key' type' position' (T.concat targets')
 
 resolveSpread :: FragmentLib -> [Text] -> Position -> Text -> Validation Fragment
 resolveSpread fragments' allowedTargets' position' key' =

@@ -26,9 +26,12 @@ scanForSpread _ _ (_, RawField {})                          = []
 scanForSpread _ _ (_, Spread value pos)                     = [EnhancedKey value pos]
 
 validateFragment :: DataTypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation NodeEdges
-validateFragment lib' root (fName, Fragment {content = selection, target = target', position = position'}) =
+validateFragment lib' root (fName, Fragment { fragmentSelection = selection'
+                                            , fragmentType = target'
+                                            , fragmentPosition = position'
+                                            }) =
   existsObjectType position' target' lib' >>
-  pure (EnhancedKey fName position', concatMap (scanForSpread lib' root) selection)
+  pure (EnhancedKey fName position', concatMap (scanForSpread lib' root) selection')
 
 validateFragments :: DataTypeLib -> GQLQueryRoot -> Validation ()
 validateFragments lib root = mapM (validateFragment lib root) (M.toList $ fragments root) >>= detectLoopOnFragments
