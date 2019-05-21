@@ -1,18 +1,34 @@
 module Data.Morpheus.Types.Internal.AST.RawSelection
-  ( RawArgument(..)
+  ( Reference(..)
+  , Argument(..)
+  , RawArgument(..)
+  , RawSelection(..)
+  , Fragment(..)
+  , FragmentLib
   , RawArguments
   , RawSelectionSet
-  , RawSelection(..)
   ) where
 
-import           Data.Morpheus.Types.Internal.Base  (Collection, Key, Position)
-import           Data.Morpheus.Types.Internal.Value (Value)
+import           Data.Map                                   (Map)
+import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..))
+import           Data.Morpheus.Types.Internal.Base          (Collection, Key, Position)
+
+data Reference = Reference
+  { referenceName     :: Key
+  , referencePosition :: Position
+  } deriving (Show)
+
+data Fragment = Fragment
+  { fragmentType      :: Key
+  , fragmentPosition  :: Position
+  , fragmentSelection :: RawSelectionSet
+  } deriving (Show)
+
+type FragmentLib = Map Key Fragment
 
 data RawArgument
-  = VariableReference Key
-                      Position
-  | Argument Value
-             Position
+  = VariableReference Reference
+  | RawArgument Argument
   deriving (Show)
 
 type RawArguments = Collection RawArgument
@@ -26,9 +42,6 @@ data RawSelection
   | RawField RawArguments
              Key
              Position
-  | InlineFragment Key
-                   RawSelectionSet
-                   Position
-  | Spread Key
-           Position
+  | InlineFragment Fragment
+  | Spread Reference
   deriving (Show)

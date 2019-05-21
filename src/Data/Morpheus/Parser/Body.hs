@@ -10,7 +10,8 @@ import           Data.Attoparsec.Text                          (Parser, char, se
 import           Data.Morpheus.Parser.Arguments                (arguments)
 import           Data.Morpheus.Parser.Primitive                (getPosition, separator, token)
 import           Data.Morpheus.Parser.Terms                    (onType, spreadLiteral)
-import           Data.Morpheus.Types.Internal.AST.RawSelection (RawArguments, RawSelection (..), RawSelectionSet)
+import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
+                                                                RawSelectionSet, Reference (..))
 import           Data.Text                                     (Text)
 
 spread :: Parser (Text, RawSelection)
@@ -18,15 +19,17 @@ spread = do
   index <- spreadLiteral
   skipSpace
   key' <- token
-  return (key', Spread key' index)
+  return (key', Spread $ Reference {referenceName = key', referencePosition = index})
 
 inlineFragment :: Parser (Text, RawSelection)
 inlineFragment = do
   index <- spreadLiteral
-  onType' <- onType
+  type' <- onType
   skipSpace
   fragmentBody <- entries
-  pure ("INLINE_FRAGMENT", InlineFragment onType' fragmentBody index)
+  pure
+    ( "INLINE_FRAGMENT"
+    , InlineFragment $ Fragment {fragmentType = type', fragmentSelection = fragmentBody, fragmentPosition = index})
 
 entry :: Parser (Text, RawSelection)
 entry = do

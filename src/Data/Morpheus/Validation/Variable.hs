@@ -12,8 +12,9 @@ import           Data.Morpheus.Error.Input                     (InputValidation,
 import           Data.Morpheus.Error.Variable                  (undefinedVariable, uninitializedVariable, unknownType,
                                                                 unusedVariables, variableGotInvalidValue)
 import           Data.Morpheus.Types.Internal.AST.Operator     (Operator' (..), RawOperator', Variable (..))
-import           Data.Morpheus.Types.Internal.AST.RawSelection (RawArgument (..), RawSelection (..), RawSelectionSet)
-import qualified Data.Morpheus.Types.Internal.AST.Selection    as Valid (Argument (..))
+import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArgument (..), RawSelection (..),
+                                                                RawSelectionSet, Reference (..))
+import           Data.Morpheus.Types.Internal.AST.Selection    (Argument (..))
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Data             (DataInputType, DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
@@ -70,21 +71,22 @@ allVariableReferences :: [RawSelectionSet] -> [EnhancedKey]
 allVariableReferences = concatMap (concatMap searchReferencesIn)
 
 referencesFromArgument :: (Text, RawArgument) -> [EnhancedKey]
-referencesFromArgument (_, Argument _ _)                       = []
-referencesFromArgument (_, VariableReference value' position') = [EnhancedKey value' position']
+referencesFromArgument (_, RawArgument {})        = []
+referencesFromArgument (_, VariableReference ref) = [EnhancedKey (referenceName ref) (referencePosition ref)]
 
 searchReferencesIn :: (Text, RawSelection) -> [EnhancedKey]
 searchReferencesIn (_, RawSelectionSet rawArgs rawSelectors _) =
   concatMap referencesFromArgument rawArgs ++ concatMap searchReferencesIn rawSelectors
-searchReferencesIn (_, InlineFragment _ rawSelector' _) = concatMap searchReferencesIn rawSelector'
+searchReferencesIn (_, InlineFragment Fragment {fragmentSelection = rawSelection'}) =
+  concatMap searchReferencesIn rawSelection'
 searchReferencesIn (_, RawField rawArgs _ _) = concatMap referencesFromArgument rawArgs
-searchReferencesIn (_, Spread _ _) = []
+searchReferencesIn (_, Spread {}) = [] -- TODO: search in referenced Fragments
 
-resolveArgumentValue :: Variables -> (Text, RawArgument) -> Validation (Text, Valid.Argument)
-resolveArgumentValue root (key', VariableReference variableID pos) = do
-  value <- getVariable pos root variableID
-  pure (key', Valid.Argument value pos)
-resolveArgumentValue _ (key', Argument value pos) = pure (key', Valid.Argument value pos)
+resolveArgumentValue :: Variables -> (Text, RawArgument) -> Validation (Text, Argument)
+resolveArgumentValue root (key', VariableReference Reference {referenceName = name', referencePosition = position'}) = do
+  value <- getVariable position' root name'
+  pure (key', Argument value position')
+resolveArgumentValue _ (key', RawArgument argument') = pure (key', argument')
 
 resolveOperatorVariables :: DataTypeLib -> Variables -> RawOperator' -> Validation Variables
 resolveOperatorVariables typeLib root operator' = do

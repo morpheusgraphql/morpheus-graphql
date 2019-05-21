@@ -10,8 +10,8 @@ module Data.Morpheus.Validation.Selection
 import           Data.Morpheus.Error.Selection                 (cannotQueryField, duplicateQuerySelections,
                                                                 hasNoSubfields)
 import           Data.Morpheus.Schema.TypeKind                 (TypeKind (..))
-import           Data.Morpheus.Types.Internal.AST.Fragment     (Fragment (..), FragmentLib)
-import           Data.Morpheus.Types.Internal.AST.RawSelection (RawSelection (..), RawSelectionSet)
+import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawSelection (..),
+                                                                RawSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..))
 import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataOutputObject, DataType (..),
@@ -44,8 +44,8 @@ castFragment lib' fragments' variables' dataType' Fragment {fragmentSelection = 
   validateSelectionSet lib' fragments' variables' dataType' selection'
 
 splitFragment :: FragmentLib -> Text -> [Text] -> (Text, RawSelection) -> Validation ([Fragment], SelectionSet)
-splitFragment fragments' _ posTypes' (_, Spread key' position') = do
-  fragment' <- resolveSpread fragments' posTypes' position' key'
+splitFragment fragments' _ posTypes' (_, Spread reference') = do
+  fragment' <- resolveSpread fragments' posTypes' reference'
   return ([fragment'], [])
 splitFragment _ _ _ ("__typename", RawField [] _ position') =
   return
@@ -55,11 +55,9 @@ splitFragment _ _ _ ("__typename", RawField [] _ position') =
       ])
 splitFragment _ type' _ (key', RawSelectionSet _ _ position') = Left $ cannotQueryField key' type' position'
 splitFragment _ type' _ (key', RawField _ _ position') = Left $ cannotQueryField key' type' position'
-splitFragment _ _ posTypes' (_, InlineFragment target' selectors' position') = do
-  validatedFragment' <- castFragmentType Nothing position' posTypes' fragment'
+splitFragment _ _ posTypes' (_, InlineFragment fragment') = do
+  validatedFragment' <- castFragmentType Nothing (fragmentPosition fragment') posTypes' fragment'
   return ([validatedFragment'], [])
-  where
-    fragment' = Fragment {fragmentType = target', fragmentPosition = position', fragmentSelection = selectors'}
 
 categorizeType :: [Fragment] -> DataOutputObject -> (DataOutputObject, [Fragment])
 categorizeType fragments' type' = (type', filter matches fragments')
@@ -112,10 +110,9 @@ validateSelection lib' _ variables' parent' (key', RawField rawArgs _ position')
   arguments' <- validateArguments lib' (key', field') position' args'
   pure
     [(key', Selection {selectionArguments = arguments', selectionRec = SelectionField, selectionPosition = position'})]
-validateSelection lib' fragments' variables' parent' (key', Spread _ position') =
-  resolveSpread fragments' [typeName parent'] position' key' >>= castFragment lib' fragments' variables' parent'
-validateSelection lib' fragments' variables' parent' (_, InlineFragment target' selectors' position') =
+validateSelection lib' fragments' variables' parent' (_, Spread reference') =
+  resolveSpread fragments' [typeName parent'] reference' >>= castFragment lib' fragments' variables' parent'
+validateSelection lib' fragments' variables' parent' (_, InlineFragment fragment') =
   validateType >>= castFragment lib' fragments' variables' parent'
   where
-    validateType = castFragmentType Nothing position' [typeName parent'] fragment'
-    fragment' = Fragment {fragmentType = target', fragmentPosition = position', fragmentSelection = selectors'}
+    validateType = castFragmentType Nothing (fragmentPosition fragment') [typeName parent'] fragment'

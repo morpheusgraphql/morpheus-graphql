@@ -4,8 +4,7 @@ module Data.Morpheus.Validation.Fragment
 
 import qualified Data.Map                                      as M (toList)
 import           Data.Morpheus.Error.Fragment                  (cannotSpreadWithinItself)
-import           Data.Morpheus.Types.Internal.AST.Fragment     (Fragment (..))
-import           Data.Morpheus.Types.Internal.AST.RawSelection (RawSelection (..))
+import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawSelection (..), Reference (..))
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..))
 import           Data.Morpheus.Types.Internal.Data             (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
@@ -21,9 +20,11 @@ type Graph = [NodeEdges]
 
 scanForSpread :: DataTypeLib -> GQLQueryRoot -> (Text, RawSelection) -> [Node]
 scanForSpread lib' root' (_, RawSelectionSet _ selectors _) = concatMap (scanForSpread lib' root') selectors
-scanForSpread lib' root' (_, InlineFragment _ selectors _)  = concatMap (scanForSpread lib' root') selectors
-scanForSpread _ _ (_, RawField {})                          = []
-scanForSpread _ _ (_, Spread value pos)                     = [EnhancedKey value pos]
+scanForSpread lib' root' (_, InlineFragment Fragment {fragmentSelection = selection'}) =
+  concatMap (scanForSpread lib' root') selection'
+scanForSpread _ _ (_, RawField {}) = []
+scanForSpread _ _ (_, Spread Reference {referenceName = name', referencePosition = position'}) =
+  [EnhancedKey name' position']
 
 validateFragment :: DataTypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation NodeEdges
 validateFragment lib' root (fName, Fragment { fragmentSelection = selection'
