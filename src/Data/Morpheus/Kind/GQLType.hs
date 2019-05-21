@@ -24,16 +24,16 @@ import           Data.Morpheus.Schema.Internal.RenderIntrospection (Field, Input
 import           Data.Morpheus.Schema.Schema                       (Schema)
 import           Data.Morpheus.Schema.TypeKind                     (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data                 (DataField (..), DataFullType (..), DataInputField,
-                                                                    DataLeaf (..), DataOutputField, DataType (..),
-                                                                    DataTypeLib, DataTypeWrapper (..), defineType,
-                                                                    isTypeDefined)
+                                                                    DataLeaf (..), DataOutputField, DataScalarValidator,
+                                                                    DataType (..), DataTypeLib, DataTypeWrapper (..),
+                                                                    defineType, isTypeDefined)
 import           Data.Morpheus.Types.Resolver                      ((::->))
 import           Data.Proxy                                        (Proxy (..))
 import           Data.Text                                         (Text)
 import           GHC.Generics
 
-scalarTypeOf :: GQLType a => Proxy a -> DataFullType
-scalarTypeOf = Leaf . LeafScalar . buildType ()
+scalarTypeOf :: GQLType a => DataScalarValidator -> Proxy a -> DataFullType
+scalarTypeOf validator = Leaf . LeafScalar . buildType validator
 
 enumTypeOf :: GQLType a => [Text] -> Proxy a -> DataFullType
 enumTypeOf tags' = Leaf . LeafEnum . buildType tags'

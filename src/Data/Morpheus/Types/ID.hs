@@ -7,11 +7,10 @@ module Data.Morpheus.Types.ID
   ( ID(..)
   ) where
 
-import           Data.Morpheus.Error.Internal       (internalTypeMismatch)
 import           Data.Morpheus.Kind.GQLScalar       (GQLScalar (..))
 import           Data.Morpheus.Kind.GQLType         (GQLType)
 import           Data.Morpheus.Kind.Internal        (KIND, SCALAR)
-import           Data.Morpheus.Types.Internal.Value (ScalarValue (..), Value (..))
+import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
 import           Data.Text                          (Text, pack)
 import           GHC.Generics                       (Generic)
 
@@ -24,5 +23,5 @@ newtype ID = ID
 instance GQLScalar ID where
   parseValue (Int x)    = return (ID $ pack $ show x)
   parseValue (String x) = return (ID x)
-  parseValue value'     = internalTypeMismatch "ID" (Scalar value')
+  parseValue _          = Left "ID"
   serialize (ID x) = String x
