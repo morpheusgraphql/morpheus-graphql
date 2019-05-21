@@ -5,9 +5,9 @@ module Data.Morpheus.Validation.Input.Object
   ) where
 
 import           Data.Morpheus.Error.Input            (InputError (..), InputValidation, Prop (..))
-import           Data.Morpheus.Types.Internal.Data    (DataField (..), DataInputType, DataKind (..),
-                                                       DataScalarValidator (..), DataType (..), DataTypeLib (..),
-                                                       DataTypeWrapper (..), showFullAstType)
+import           Data.Morpheus.Types.Internal.Data    (DataField (..), DataInputType, DataKind (..), DataType (..),
+                                                       DataTypeLib (..), DataTypeWrapper (..), DataValidator (..),
+                                                       showFullAstType)
 import           Data.Morpheus.Types.Internal.Value   (Value (..))
 import           Data.Morpheus.Validation.Input.Enum  (validateEnum)
 import           Data.Morpheus.Validation.Utils.Utils (getInputType, lookupField)
@@ -57,7 +57,7 @@ validateInputValue lib' prop' = validate
     validate [] (EnumKind DataType {typeData = tags', typeName = name'}) (_, value') =
       validateEnum (UnexpectedType prop' name' value') tags' value'
     {-- VALIDATE ENUM --}
-    validate [] (ScalarKind DataType {typeName = name', typeData = DataScalarValidator {validateValue = validator'}}) (_, value') =
+    validate [] (ScalarKind DataType {typeName = name', typeData = DataValidator {validateValue = validator'}}) (_, value') =
       case validator' value' of
         Right _            -> return value'
         Left _errorMessage -> Left $ UnexpectedType prop' name' value' -- TODO: for next release add custom error messages

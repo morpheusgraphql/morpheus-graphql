@@ -20,7 +20,7 @@ module Data.Morpheus.Types.Internal.Data
   , DataFullType(..)
   , DataTypeLib(..)
   , DataTypeWrapper(..)
-  , DataScalarValidator(..)
+  , DataValidator(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -29,21 +29,21 @@ module Data.Morpheus.Types.Internal.Data
   , isFieldNullable
   ) where
 
-import Data.Morpheus.Schema.TypeKind (TypeKind)
-import Data.Morpheus.Types.Internal.Value (Value(..))
-import Data.Text (Text)
-import qualified Data.Text as T (concat)
+import           Data.Morpheus.Schema.TypeKind      (TypeKind)
+import           Data.Morpheus.Types.Internal.Value (Value (..))
+import           Data.Text                          (Text)
+import qualified Data.Text                          as T (concat)
 
 type Key = Text
 
-newtype DataScalarValidator = DataScalarValidator
+newtype DataValidator = DataValidator
   { validateValue :: Value -> Either Text Value
   }
 
-instance Show DataScalarValidator where
-  show _ = "ScalarValidator"
+instance Show DataValidator where
+  show _ = "DataValidator"
 
-type DataScalar = DataType DataScalarValidator
+type DataScalar = DataType DataValidator
 
 type DataEnum = DataType [Key]
 
@@ -71,21 +71,21 @@ data DataTypeWrapper
   deriving (Show)
 
 data DataField a = DataField
-  { fieldArgs :: a
-  , fieldName :: Text
-  , fieldKind :: TypeKind
-  , fieldType :: Text
+  { fieldArgs         :: a
+  , fieldName         :: Text
+  , fieldKind         :: TypeKind
+  , fieldType         :: Text
   , fieldTypeWrappers :: [DataTypeWrapper]
   } deriving (Show)
 
 isFieldNullable :: DataField a -> Bool
 isFieldNullable DataField {fieldTypeWrappers = NonNullType:_} = False
-isFieldNullable _ = True
+isFieldNullable _                                             = True
 
 data DataType a = DataType
-  { typeName :: Text
+  { typeName        :: Text
   , typeDescription :: Text
-  , typeData :: a
+  , typeData        :: a
   } deriving (Show)
 
 data DataLeaf
@@ -107,23 +107,23 @@ data DataFullType
   deriving (Show)
 
 data DataTypeLib = DataTypeLib
-  { leaf :: [(Text, DataLeaf)]
-  , inputObject :: [(Text, DataInputObject)]
-  , object :: [(Text, DataOutputObject)]
-  , union :: [(Text, DataUnion)]
-  , query :: (Text, DataOutputObject)
-  , mutation :: Maybe (Text, DataOutputObject)
+  { leaf         :: [(Text, DataLeaf)]
+  , inputObject  :: [(Text, DataInputObject)]
+  , object       :: [(Text, DataOutputObject)]
+  , union        :: [(Text, DataUnion)]
+  , query        :: (Text, DataOutputObject)
+  , mutation     :: Maybe (Text, DataOutputObject)
   , subscription :: Maybe (Text, DataOutputObject)
   }
 
 showWrappedType :: [DataTypeWrapper] -> Text -> Text
-showWrappedType [] type' = type'
-showWrappedType (ListType:xs) type' = T.concat ["[", showWrappedType xs type', "]"]
+showWrappedType [] type'               = type'
+showWrappedType (ListType:xs) type'    = T.concat ["[", showWrappedType xs type', "]"]
 showWrappedType (NonNullType:xs) type' = T.concat [showWrappedType xs type', "!"]
 
 showFullAstType :: [DataTypeWrapper] -> DataKind a -> Text
 showFullAstType wrappers' (ScalarKind x) = showWrappedType wrappers' (typeName x)
-showFullAstType wrappers' (EnumKind x) = showWrappedType wrappers' (typeName x)
+showFullAstType wrappers' (EnumKind x)   = showWrappedType wrappers' (typeName x)
 showFullAstType wrappers' (ObjectKind x) = showWrappedType wrappers' (typeName x)
 
 initTypeLib :: (Text, DataOutputObject) -> DataTypeLib
@@ -133,11 +133,11 @@ initTypeLib query' =
 
 mutationName :: Maybe (Text, DataOutputObject) -> [Text]
 mutationName (Just (key', _)) = [key']
-mutationName Nothing = []
+mutationName Nothing          = []
 
 subscriptionName :: Maybe (Text, DataOutputObject) -> [Text]
 subscriptionName (Just (key', _)) = [key']
-subscriptionName Nothing = []
+subscriptionName Nothing          = []
 
 getAllTypeKeys :: DataTypeLib -> [Text]
 getAllTypeKeys (DataTypeLib leaf' inputObject' object' union' (queryName, _) mutation' subscription') =
@@ -149,7 +149,7 @@ isTypeDefined :: Text -> DataTypeLib -> Bool
 isTypeDefined name' lib' = name' `elem` getAllTypeKeys lib'
 
 defineType :: (Text, DataFullType) -> DataTypeLib -> DataTypeLib
-defineType (key', Leaf type') lib = lib {leaf = (key', type') : leaf lib}
-defineType (key', InputObject type') lib = lib {inputObject = (key', type') : inputObject lib}
+defineType (key', Leaf type') lib         = lib {leaf = (key', type') : leaf lib}
+defineType (key', InputObject type') lib  = lib {inputObject = (key', type') : inputObject lib}
 defineType (key', OutputObject type') lib = lib {object = (key', type') : object lib}
-defineType (key', Union type') lib = lib {union = (key', type') : union lib}
+defineType (key', Union type') lib        = lib {union = (key', type') : union lib}

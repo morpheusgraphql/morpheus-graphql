@@ -9,7 +9,7 @@ import           Data.Morpheus.Error.Internal            (internalTypeMismatch)
 import           Data.Morpheus.Kind.GQLType              (GQLType (..), scalarTypeOf)
 import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Base       (Key)
-import           Data.Morpheus.Types.Internal.Data       (DataField, DataScalarValidator (..), DataTypeLib)
+import           Data.Morpheus.Types.Internal.Data       (DataField, DataTypeLib, DataValidator (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (ScalarValue (..), Value (..))
 import           Data.Proxy                              (Proxy (..))
@@ -21,8 +21,8 @@ toScalar _          = Left "Scalar"
 
 class GQLScalar a where
   parseValue :: ScalarValue -> Either Text a
-  scalarValidator :: Proxy a -> DataScalarValidator
-  scalarValidator _ = DataScalarValidator {validateValue = validator}
+  scalarValidator :: Proxy a -> DataValidator
+  scalarValidator _ = DataValidator {validateValue = validator}
     where
       validator value = do
         scalarValue' <- toScalar value
