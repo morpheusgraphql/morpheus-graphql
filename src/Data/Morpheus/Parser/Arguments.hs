@@ -4,10 +4,8 @@ module Data.Morpheus.Parser.Arguments
 
 import           Control.Applicative                           ((<|>))
 import           Data.Attoparsec.Text                          (Parser, char, sepBy, skipSpace)
-import           Data.Morpheus.Parser.InputValues.InputList    (inputList)
-import           Data.Morpheus.Parser.InputValues.InputObject  (inputObject)
-import           Data.Morpheus.Parser.Primitive                (getPosition, jsBool, jsNumber, jsString, token,
-                                                                variable)
+import           Data.Morpheus.Parser.InputValues.Value        (parseValue)
+import           Data.Morpheus.Parser.Primitive                (getPosition, token, variable)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Argument (..), RawArgument (..), RawArguments,
                                                                 Reference (..))
 import           Data.Morpheus.Types.Internal.Value            (Value (Enum))
@@ -16,13 +14,10 @@ import           Data.Text                                     (Text)
 enum :: Parser Value
 enum = Enum <$> token
 
-jsValue :: Parser Value
-jsValue = jsString <|> jsNumber <|> jsBool <|> inputObject jsValue <|> inputList jsValue
-
 argumentType :: Parser RawArgument
 argumentType = do
   position' <- getPosition
-  value' <- jsValue <|> enum
+  value' <- parseValue <|> enum
   pure $ RawArgument $ Argument {argumentValue = value', argumentPosition = position'}
 
 variableType :: Parser RawArgument
