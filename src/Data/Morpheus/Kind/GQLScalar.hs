@@ -3,7 +3,9 @@
 {-# LANGUAGE ScopedTypeVariables     #-}
 {-# LANGUAGE TypeApplications        #-}
 
-module Data.Morpheus.Kind.GQLScalar where
+module Data.Morpheus.Kind.GQLScalar
+  ( GQLScalar(..)
+  ) where
 
 import           Data.Morpheus.Error.Internal            (internalTypeMismatch)
 import           Data.Morpheus.Kind.GQLType              (GQLType (..), scalarTypeOf)

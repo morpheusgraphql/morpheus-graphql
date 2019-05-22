@@ -11,7 +11,8 @@
   - Lazy `Text`
 
 - support of Parsing input values: `Objects`,`Arrays`
-
+- support scalar type: `ID`
+- scalar Types are validated by `GQLScalar` instance function `parseValue
 - TypeFamily `KIND` with:
 
   - `SCALAR`
