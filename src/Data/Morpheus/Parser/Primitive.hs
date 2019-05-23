@@ -17,14 +17,17 @@ replaceType x      = x
 boolTrue :: Parser Value
 boolTrue = string "true" $> Scalar (Boolean True)
 
+valueNull :: Parser Value
+valueNull = string "null" $> Null
+
 boolFalse :: Parser Value
 boolFalse = string "false" $> Scalar (Boolean False)
 
-jsBool :: Parser Value
-jsBool = boolTrue <|> boolFalse
+valueBoolean :: Parser Value
+valueBoolean = boolTrue <|> boolFalse
 
-jsNumber :: Parser Value
-jsNumber = Scalar . decodeScientific <$> scientific
+valueNumber :: Parser Value
+valueNumber = Scalar . decodeScientific <$> scientific
 
 codes :: String
 codes = ['b', 'n', 'f', 'r', 't', '\\', '\"', '/']
@@ -41,8 +44,8 @@ escaped = do
   where
     escapeChar code replacement = char code >> return replacement
 
-jsString :: Parser Value
-jsString = do
+valueString :: Parser Value
+valueString = do
   _ <- char '"'
   value <- many escaped
   _ <- char '"'
