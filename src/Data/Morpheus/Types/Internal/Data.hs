@@ -20,6 +20,7 @@ module Data.Morpheus.Types.Internal.Data
   , DataFullType(..)
   , DataTypeLib(..)
   , DataTypeWrapper(..)
+  , DataValidator(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -28,13 +29,21 @@ module Data.Morpheus.Types.Internal.Data
   , isFieldNullable
   ) where
 
-import           Data.Morpheus.Schema.TypeKind (TypeKind)
-import           Data.Text                     (Text)
-import qualified Data.Text                     as T (concat)
+import           Data.Morpheus.Schema.TypeKind      (TypeKind)
+import           Data.Morpheus.Types.Internal.Value (Value (..))
+import           Data.Text                          (Text)
+import qualified Data.Text                          as T (concat)
 
 type Key = Text
 
-type DataScalar = DataType ()
+newtype DataValidator = DataValidator
+  { validateValue :: Value -> Either Text Value
+  }
+
+instance Show DataValidator where
+  show _ = "DataValidator"
+
+type DataScalar = DataType DataValidator
 
 type DataEnum = DataType [Key]
 
