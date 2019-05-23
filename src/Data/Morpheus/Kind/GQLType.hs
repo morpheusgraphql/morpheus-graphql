@@ -25,15 +25,15 @@ import           Data.Morpheus.Schema.Schema                       (Schema)
 import           Data.Morpheus.Schema.TypeKind                     (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data                 (DataField (..), DataFullType (..), DataInputField,
                                                                     DataLeaf (..), DataOutputField, DataType (..),
-                                                                    DataTypeLib, DataTypeWrapper (..), defineType,
-                                                                    isTypeDefined)
+                                                                    DataTypeLib, DataTypeWrapper (..), DataValidator,
+                                                                    defineType, isTypeDefined)
 import           Data.Morpheus.Types.Resolver                      ((::->))
 import           Data.Proxy                                        (Proxy (..))
 import           Data.Text                                         (Text)
 import           GHC.Generics
 
-scalarTypeOf :: GQLType a => Proxy a -> DataFullType
-scalarTypeOf = Leaf . LeafScalar . buildType ()
+scalarTypeOf :: GQLType a => DataValidator -> Proxy a -> DataFullType
+scalarTypeOf validator = Leaf . LeafScalar . buildType validator
 
 enumTypeOf :: GQLType a => [Text] -> Proxy a -> DataFullType
 enumTypeOf tags' = Leaf . LeafEnum . buildType tags'

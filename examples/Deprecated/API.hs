@@ -12,7 +12,7 @@ import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..),
                                              INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..), ScalarValue (..))
+import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..), ID, ScalarValue (..))
 import           Data.Text                  (Text, pack)
 import           Deprecated.Model           (JSONAddress, JSONUser, jsonAddress, jsonUser)
 import qualified Deprecated.Model           as M (JSONAddress (..), JSONUser (..))
@@ -58,7 +58,7 @@ newtype UID = UID
 
 data Coordinates = Coordinates
   { latitude  :: Euro
-  , longitude :: [Maybe[[UID]]]
+  , longitude :: [Maybe [[UID]]]
   } deriving (Generic)
 
 instance GQLType Coordinates where
@@ -77,7 +77,7 @@ data AddressArgs = AddressArgs
   } deriving (Generic, GQLArgs)
 
 data OfficeArgs = OfficeArgs
-  { zipCode :: Maybe [[Maybe[Int]]]
+  { zipCode :: Maybe [[Maybe [ID]]]
   , cityID  :: CityID
   } deriving (Generic, GQLArgs)
 
