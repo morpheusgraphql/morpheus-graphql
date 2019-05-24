@@ -97,7 +97,7 @@ instance GQLType Int where
   typeID _ = "Int"
 
 instance GQLType Float where
-  typeID _ = "Int"
+  typeID _ = "Float"
 
 instance GQLType Text where
   typeID _ = "String"
