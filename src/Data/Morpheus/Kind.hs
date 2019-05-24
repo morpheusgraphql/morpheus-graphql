@@ -1,5 +1,5 @@
 module Data.Morpheus.Kind
-  ( GQLType(description)
+  ( GQLType(description, typeID)
   , GQLQuery
   , GQLArgs
   , GQLSubscription
