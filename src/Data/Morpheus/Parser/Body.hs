@@ -9,7 +9,7 @@ import           Control.Applicative                           ((<|>))
 import           Data.Attoparsec.Text                          (Parser, char, sepBy, skipSpace, try)
 import           Data.Morpheus.Parser.Arguments                (maybeArguments)
 import           Data.Morpheus.Parser.Primitive                (getPosition, qualifier, separator, token)
-import           Data.Morpheus.Parser.Terms                    (onType, spreadLiteral)
+import           Data.Morpheus.Parser.Terms                    (onType, parseAssignment, spreadLiteral)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
                                                                 RawSelection' (..), RawSelectionSet, Reference (..))
 import           Data.Text                                     (Text)
@@ -59,10 +59,7 @@ buildField arguments' position' =
 --}
 alias :: Parser (Text, RawSelection)
 alias = do
-  (name', position') <- qualifier
-  skipSpace
-  _ <- char ':'
-  selection' <- selection
+  ((name', position'), selection') <- parseAssignment qualifier selection
   return (name', RawAlias {rawAliasPosition = position', rawAliasSelection = selection'})
 
 separated :: Parser a -> Parser [a]

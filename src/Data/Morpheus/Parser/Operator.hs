@@ -10,9 +10,9 @@ import           Data.Attoparsec.Text                      (Parser, char, skipSp
 import           Data.Functor                              (($>))
 import           Data.Morpheus.Parser.Body                 (entries)
 import           Data.Morpheus.Parser.Primitive            (getPosition, token, variable)
-import           Data.Morpheus.Parser.Terms                (charSpace, nonNUll, parseAssignment, parseMaybeTuple)
+import           Data.Morpheus.Parser.Terms                (nonNUll, parseAssignment, parseChar, parseMaybeTuple)
 import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..), RawOperator, RawOperator',
-                                                            Variable (..), VariableDefinitions)
+                                                            Variable (..))
 import           Data.Morpheus.Types.Internal.Data         (DataTypeWrapper (..))
 import           Data.Text                                 (Text)
 
@@ -47,23 +47,18 @@ operatorArgument = do
         , variablePosition = position'
         })
 
-operatorHead :: Parser (RawOperator' -> RawOperator, Text, VariableDefinitions)
-operatorHead = do
-  wrapper' <- operatorKind
-  charSpace
-  skipSpace
-  queryName <- token
-  variables <- parseMaybeTuple operatorArgument
-  pure (wrapper', queryName, variables)
-
 parseOperator :: Parser RawOperator
 parseOperator = do
   skipSpace
   pos <- getPosition
-  (wrapper', name, variables) <- operatorHead
+  kind' <- operatorKind
+  parseChar ' '
+  skipSpace
+  operatorName' <- token
+  variables <- parseMaybeTuple operatorArgument
   skipSpace
   sel <- entries
-  pure (wrapper' $ Operator' name variables sel pos)
+  pure (kind' $ Operator' operatorName' variables sel pos)
 
 parseAnonymousQuery :: Parser RawOperator
 parseAnonymousQuery = do

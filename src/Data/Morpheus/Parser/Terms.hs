@@ -4,7 +4,7 @@ module Data.Morpheus.Parser.Terms
   ( onType
   , spreadLiteral
   , nonNUll
-  , charSpace
+  , parseChar
   , parseMaybeTuple
   , parseTuple
   , parseAssignment
@@ -50,9 +50,6 @@ parseAssignment nameParser' valueParser' = do
   skipSpace
   value' <- valueParser'
   pure (name', value')
-
-charSpace :: Parser ()
-charSpace = parseChar ' '
 
 parseChar :: Char -> Parser ()
 parseChar char' = do
