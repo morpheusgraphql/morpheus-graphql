@@ -22,6 +22,7 @@ type Graph = [NodeEdges]
 scanForSpread :: DataTypeLib -> GQLQueryRoot -> (Text, RawSelection) -> [Node]
 scanForSpread lib' root' (_, RawSelectionSet RawSelection' {rawSelectionRec = selection'}) =
   concatMap (scanForSpread lib' root') selection'
+scanForSpread lib' root' (_, Alias {aliasSelection = selection'}) = concatMap (scanForSpread lib' root') [selection']
 scanForSpread lib' root' (_, InlineFragment Fragment {fragmentSelection = selection'}) =
   concatMap (scanForSpread lib' root') selection'
 scanForSpread _ _ (_, RawSelectionField {}) = []
