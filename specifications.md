@@ -2,7 +2,7 @@
 
 - ✅ : supports for all version
 - ✅ (>= x.y.z) : supports from version x.y.z
-- ⛔️ : does not supports
+- ⛔️ : does not supports for all version
 - 🚧 : work In Progress
 - 🧪 : Unit Test
 
@@ -19,7 +19,7 @@
 
 - Types in Schema:
 
-  - `ID`: ⛔️ (will be added in v0.1.0)
+  - `ID`: ✅ (v0.1.0)
   - `Float`: ✅
   - `Int`: ✅
   - `String`: ✅
@@ -43,16 +43,17 @@
       - Array: ✅ (>= 0.1.0 )
       - Input Object: ✅ (>= 0.1.0 )
       - Enum: ✅
+      - null : ✅ (>= 0.1.0 )
   - Fragments: ✅
   - Inline Fragments: (>= 0.1.0)
-  - Aliases: ⛔️
+  - Aliases: ✅ (>= 0.1.0)
   - Operator
     - Query: ✅
     - Mutation: ✅
     - Subscription : ✅ (>= 0.1.0 )
     - Operator Arguments:
       - argumentTypes : ✅
-      - wrappedTypes(`[T] or T!`): ⛔️ will be solved in v0.1.0
+      - wrappedTypes(`[T] or T!`): ✅ (>= v0.1.0)
 
 # Rules:
 
