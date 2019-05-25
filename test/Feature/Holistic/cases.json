@@ -36,6 +36,10 @@
     "description": "fail when: selected alias has same name"
   },
   {
+    "path": "selection/AliasResolve",
+    "description": "resolves same field with different name"
+  },
+  {
     "path": "selection/AliasUnknownField",
     "description": "fail when: selected field in alias does not exist on type"
   },
@@ -45,10 +49,10 @@
   },
   {
     "path": "fragment/inlineFragmentTypeMismatch",
-    "description": "feil when: inline fragment type is incompatible with object type"
+    "description": "fail when: inline fragment type is incompatible with object type"
   },
   {
     "path": "fragment/cannotBeSpreadOnType",
-    "description": "feil when: fragment type is incompatible with object type"
+    "description": "fail when: fragment type is incompatible with object type"
   }
 ]
