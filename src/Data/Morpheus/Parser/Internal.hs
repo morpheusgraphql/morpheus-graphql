@@ -2,6 +2,7 @@
 
 module Data.Morpheus.Parser.Internal
   ( GQLSyntax(..)
+  , ASTNode
   , endParsing
   , gqlSyntax
   ) where
@@ -16,6 +17,8 @@ data GQLSyntax a
   = Invalid Text
             Int
   | Valid a
+
+type ASTNode a = Parser (GQLSyntax a)
 
 gqlSyntax :: Parser a -> Text -> Parser (GQLSyntax a)
 gqlSyntax parser message' = do

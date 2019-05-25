@@ -10,10 +10,9 @@ import           Data.Maybe                              (maybe)
 import           Data.Morpheus.Error.Syntax              (syntaxError)
 import           Data.Morpheus.Parser.Fragment           (fragment)
 import           Data.Morpheus.Parser.Internal           (GQLSyntax (..), endParsing)
-import qualified Data.Morpheus.Parser.Mutation           as M
+import           Data.Morpheus.Parser.Operator           (parseAnonymousQuery, parseMutation, parseQuery,
+                                                          parseSubscription)
 import           Data.Morpheus.Parser.Primitive          (getLines)
-import qualified Data.Morpheus.Parser.Query              as Q
-import qualified Data.Morpheus.Parser.Subscription       as S
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value (..))
 import           Data.Morpheus.Types.Request             (GQLRequest (..))
@@ -22,9 +21,9 @@ import           Data.Text                               (Text, pack)
 
 request :: Parser GQLQueryRoot
 request = do
-  queryValue <- Q.query <|> M.mutation <|> S.subscription
+  operator' <- parseAnonymousQuery <|> parseQuery <|> parseMutation <|> parseSubscription
   fragmentLib <- fromList <$> many fragment
-  pure GQLQueryRoot {queryBody = queryValue, fragments = fragmentLib, inputVariables = []}
+  pure GQLQueryRoot {queryBody = operator', fragments = fragmentLib, inputVariables = []}
 
 getVariables :: GQLRequest -> [(Text, Value)]
 getVariables request' = maybe [] toList (variables request')

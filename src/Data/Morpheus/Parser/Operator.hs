@@ -1,12 +1,19 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Data.Morpheus.Parser.Operator
-  ( operatorHead
+  ( parseAnonymousQuery
+  , parseQuery
+  , parseSubscription
+  , parseMutation
   ) where
 
 import           Control.Applicative                       ((<|>))
 import           Data.Attoparsec.Text                      (Parser, char, sepBy, skipSpace, string, try)
-import           Data.Morpheus.Parser.Primitive            (token, variable)
+import           Data.Morpheus.Parser.Body                 (entries)
+import           Data.Morpheus.Parser.Primitive            (getPosition, token, variable)
 import           Data.Morpheus.Parser.Terms                (nonNUll)
-import           Data.Morpheus.Types.Internal.AST.Operator (Variable (..), VariableDefinitions)
+import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..), RawOperator, RawOperator',
+                                                            Variable (..), VariableDefinitions)
 import           Data.Morpheus.Types.Internal.Data         (DataTypeWrapper (..))
 import           Data.Text                                 (Text)
 
@@ -63,3 +70,28 @@ operatorHead kind' = do
   queryName <- token
   variables <- try (skipSpace *> operatorArguments) <|> pure []
   pure (queryName, variables)
+
+parseOperator :: Text -> Parser RawOperator'
+parseOperator name' = do
+  skipSpace
+  pos <- getPosition
+  (name, variables) <- operatorHead name'
+  skipSpace
+  sel <- entries
+  pure (Operator' name variables sel pos)
+
+parseAnonymousQuery :: Parser RawOperator
+parseAnonymousQuery = do
+  skipSpace
+  position' <- getPosition
+  selection' <- entries
+  pure $ Query (Operator' "" [] selection' position')
+
+parseQuery :: Parser RawOperator
+parseQuery = Query <$> parseOperator "query"
+
+parseMutation :: Parser RawOperator
+parseMutation = Mutation <$> parseOperator "mutation"
+
+parseSubscription :: Parser RawOperator
+parseSubscription = Subscription <$> parseOperator "subscription"
