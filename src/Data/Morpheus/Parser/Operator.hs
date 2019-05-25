@@ -2,13 +2,12 @@
 
 module Data.Morpheus.Parser.Operator
   ( parseAnonymousQuery
-  , parseQuery
-  , parseSubscription
-  , parseMutation
+  , parseOperator
   ) where
 
 import           Control.Applicative                       ((<|>))
-import           Data.Attoparsec.Text                      (Parser, char, sepBy, skipSpace, string, try)
+import           Data.Attoparsec.Text                      (Parser, char, sepBy, skipSpace, string, try, (<?>))
+import           Data.Functor                              (($>))
 import           Data.Morpheus.Parser.Body                 (entries)
 import           Data.Morpheus.Parser.Primitive            (getPosition, token, variable)
 import           Data.Morpheus.Parser.Terms                (nonNUll)
@@ -62,36 +61,30 @@ operatorArguments = do
   _ <- char ')'
   pure parameters
 
-operatorHead :: Text -> Parser (Text, VariableDefinitions)
-operatorHead kind' = do
-  _ <- string kind'
+operatorHead :: Parser (RawOperator' -> RawOperator, Text, VariableDefinitions)
+operatorHead = do
+  wrapper' <- operatorKind
   _ <- char ' '
   skipSpace
   queryName <- token
   variables <- try (skipSpace *> operatorArguments) <|> pure []
-  pure (queryName, variables)
+  pure (wrapper', queryName, variables)
 
-parseOperator :: Text -> Parser RawOperator'
-parseOperator name' = do
+parseOperator :: Parser RawOperator
+parseOperator = do
   skipSpace
   pos <- getPosition
-  (name, variables) <- operatorHead name'
+  (wrapper', name, variables) <- operatorHead
   skipSpace
   sel <- entries
-  pure (Operator' name variables sel pos)
+  pure (wrapper' $ Operator' name variables sel pos)
 
 parseAnonymousQuery :: Parser RawOperator
 parseAnonymousQuery = do
   skipSpace
   position' <- getPosition
   selection' <- entries
-  pure $ Query (Operator' "" [] selection' position')
+  pure (Query $ Operator' "" [] selection' position') <?> "can't parse AnonymousQuery"
 
-parseQuery :: Parser RawOperator
-parseQuery = Query <$> parseOperator "query"
-
-parseMutation :: Parser RawOperator
-parseMutation = Mutation <$> parseOperator "mutation"
-
-parseSubscription :: Parser RawOperator
-parseSubscription = Subscription <$> parseOperator "subscription"
+operatorKind :: Parser (RawOperator' -> RawOperator)
+operatorKind = (string "query" $> Query) <|> (string "mutation" $> Mutation) <|> (string "subscription" $> Subscription)

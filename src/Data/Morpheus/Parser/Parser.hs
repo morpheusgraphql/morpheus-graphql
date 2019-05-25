@@ -10,8 +10,7 @@ import           Data.Maybe                              (maybe)
 import           Data.Morpheus.Error.Syntax              (syntaxError)
 import           Data.Morpheus.Parser.Fragment           (fragment)
 import           Data.Morpheus.Parser.Internal           (GQLSyntax (..), endParsing)
-import           Data.Morpheus.Parser.Operator           (parseAnonymousQuery, parseMutation, parseQuery,
-                                                          parseSubscription)
+import           Data.Morpheus.Parser.Operator           (parseAnonymousQuery, parseOperator)
 import           Data.Morpheus.Parser.Primitive          (getLines)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value (..))
@@ -21,7 +20,7 @@ import           Data.Text                               (Text, pack)
 
 request :: Parser GQLQueryRoot
 request = do
-  operator' <- parseAnonymousQuery <|> parseQuery <|> parseMutation <|> parseSubscription
+  operator' <- parseAnonymousQuery <|> parseOperator
   fragmentLib <- fromList <$> many fragment
   pure GQLQueryRoot {queryBody = operator', fragments = fragmentLib, inputVariables = []}
 
