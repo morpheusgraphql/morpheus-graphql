@@ -36,6 +36,10 @@
     "description": "fail when: selected alias has same name"
   },
   {
+    "path": "selection/AliasUnknownField",
+    "description": "fail when: selected field in alias does not exist on type"
+  },
+  {
     "path": "fragment/inlineFragment",
     "description": "returns field selected by inline Fragment"
   },
