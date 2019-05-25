@@ -1,12 +1,12 @@
 module Data.Morpheus.Parser.Arguments
-  ( arguments
-  , maybeArguments
+  ( maybeArguments
   ) where
 
 import           Control.Applicative                           ((<|>))
 import           Data.Attoparsec.Text                          (Parser, char, sepBy, skipSpace, try)
 import           Data.Morpheus.Parser.InputValues.Value        (parseValue)
 import           Data.Morpheus.Parser.Primitive                (getPosition, token, variable)
+import           Data.Morpheus.Parser.Terms                    (parseMaybeTuple, parseTuple)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Argument (..), RawArgument (..), RawArguments,
                                                                 Reference (..))
 import           Data.Morpheus.Types.Internal.Value            (Value (Enum))
@@ -39,15 +39,5 @@ parameter = do
   value <- inputValue
   pure (key, value)
 
-arguments :: Parser RawArguments
-arguments = do
-  skipSpace
-  _ <- char '('
-  skipSpace
-  parameters <- parameter `sepBy` (skipSpace *> char ',')
-  skipSpace
-  _ <- char ')'
-  pure parameters
-
 maybeArguments :: Parser RawArguments
-maybeArguments = try arguments <|> pure []
+maybeArguments = try (parseTuple parameter) <|> pure []

@@ -6,6 +6,7 @@ module Data.Morpheus.Parser.Terms
   , nonNUll
   , charSpace
   , parseMaybeTuple
+  , parseTuple
   ) where
 
 import           Control.Applicative               ((<|>))
@@ -19,16 +20,15 @@ import           Data.Text                         (Text)
 nonNUll :: Parser [DataTypeWrapper]
 nonNUll = (char '!' $> [NonNullType]) <|> pure []
 
-parseIfChar :: Char -> Parser a -> Parser a -> Parser a
-parseIfChar char' parser1 parser2 = do
-  skipSpace
-  x <- lookAhead anyChar
+parseWhenChar :: Char -> Parser a -> Parser a -> Parser a
+parseWhenChar char' parser1 parser2 = do
+  x <- skipSpace >> lookAhead anyChar
   if x == char'
     then parser1
     else parser2
 
 parseMaybeTuple :: Parser a -> Parser [a]
-parseMaybeTuple parser = parseIfChar '(' (parseTuple parser) (pure [])
+parseMaybeTuple parser = parseWhenChar '(' (parseTuple parser) (pure [])
 
 parseTuple :: Parser a -> Parser [a]
 parseTuple parser = do
