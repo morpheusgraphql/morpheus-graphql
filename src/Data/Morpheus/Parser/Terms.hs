@@ -7,6 +7,7 @@ module Data.Morpheus.Parser.Terms
   , charSpace
   , parseMaybeTuple
   , parseTuple
+  , parseAssignment
   ) where
 
 import           Control.Applicative               ((<|>))
@@ -39,6 +40,16 @@ parseTuple parser = do
   skipSpace
   parseChar ')'
   return values
+
+parseAssignment :: Parser a -> Parser b -> Parser (a, b)
+parseAssignment nameParser' valueParser' = do
+  skipSpace
+  name' <- nameParser'
+  skipSpace
+  parseChar ':'
+  skipSpace
+  value' <- valueParser'
+  pure (name', value')
 
 charSpace :: Parser ()
 charSpace = parseChar ' '

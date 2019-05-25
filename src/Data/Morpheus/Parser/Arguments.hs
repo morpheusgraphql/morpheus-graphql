@@ -3,14 +3,13 @@ module Data.Morpheus.Parser.Arguments
   ) where
 
 import           Control.Applicative                           ((<|>))
-import           Data.Attoparsec.Text                          (Parser, char, skipSpace)
+import           Data.Attoparsec.Text                          (Parser, skipSpace)
 import           Data.Morpheus.Parser.InputValues.Value        (parseValue)
 import           Data.Morpheus.Parser.Primitive                (getPosition, token, variable)
-import           Data.Morpheus.Parser.Terms                    (parseMaybeTuple)
+import           Data.Morpheus.Parser.Terms                    (parseAssignment, parseMaybeTuple)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Argument (..), RawArgument (..), RawArguments,
                                                                 Reference (..))
 import           Data.Morpheus.Types.Internal.Value            (Value (Enum))
-import           Data.Text                                     (Text)
 
 enum :: Parser Value
 enum = Enum <$> token
@@ -29,15 +28,7 @@ variableType = do
 inputValue :: Parser RawArgument
 inputValue = skipSpace *> argumentType <|> variableType
 
-parameter :: Parser (Text, RawArgument)
-parameter = do
-  skipSpace
-  key <- token
-  skipSpace
-  _ <- char ':'
-  skipSpace
-  value <- inputValue
-  pure (key, value)
-
 maybeArguments :: Parser RawArguments
-maybeArguments = parseMaybeTuple parameter
+maybeArguments = parseMaybeTuple argument
+  where
+    argument = parseAssignment token inputValue
