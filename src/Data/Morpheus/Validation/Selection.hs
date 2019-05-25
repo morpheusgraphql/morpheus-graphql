@@ -80,6 +80,9 @@ validateSelection lib' fragments' variables' parent' = validate
          actual validation
     -}
     validate :: (Text, RawSelection) -> Validation SelectionSet
+    validate (key', Alias {aliasSelection = rawSelection'}) = do
+      [(selKey', selection')] <- validate rawSelection'
+      return [(key', selection' {selectionRec = SelectionAlias selKey' (selectionRec selection')})]
     validate (key', RawSelectionSet RawSelection' { rawSelectionArguments = rawArgs
                                                   , rawSelectionRec = rawSelectors
                                                   , rawSelectionPosition = position'
