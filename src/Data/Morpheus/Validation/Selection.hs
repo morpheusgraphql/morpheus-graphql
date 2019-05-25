@@ -33,13 +33,8 @@ checkDuplicatesOn DataType {typeName = name'} keys = checkNameCollision enhanced
     selToKey :: (Text, Selection) -> EnhancedKey
     selToKey (key', Selection {selectionPosition = position'}) = EnhancedKey key' position'
 
-validateSelectionSet ::
-     DataTypeLib -> FragmentLib -> Variables -> DataOutputObject -> RawSelectionSet -> Validation SelectionSet
-validateSelectionSet lib' fragments' variables' type' selection' =
-  concat <$> mapM (validateSelection lib' fragments' variables' type') selection' >>= checkDuplicatesOn type'
-
-clusterUnionType :: FragmentLib -> Text -> [Text] -> (Text, RawSelection) -> Validation ([Fragment], SelectionSet)
-clusterUnionType fragments' type' posTypes' = splitFrag
+clusterUnionSelection :: FragmentLib -> Text -> [Text] -> (Text, RawSelection) -> Validation ([Fragment], SelectionSet)
+clusterUnionSelection fragments' type' posTypes' = splitFrag
   where
     packFragment fragment' = return ([fragment'], [])
     splitFrag :: (Text, RawSelection) -> Validation ([Fragment], SelectionSet)
@@ -68,70 +63,79 @@ categorizeTypes types' fragments' = map categorizeType types'
 
 flatTuple :: [([a], [b])] -> ([a], [b])
 flatTuple list' = (concatMap fst list', concatMap snd list')
+ {-
+    - all Variable and Fragment references will be: resolved and validated
+    - unionTypes: will be clustered under type names
+      ...A on T1 {<SelectionA>}
+      ...B on T2 {<SelectionB>}
+      ...C on T2 {<SelectionC>}
+      will be become : [
+          ("T1",[<SelectionA>]),
+          ("T2",[<SelectionB>,<SelectionC>])
+      ]
+ -}
 
-validateSelection ::
-     DataTypeLib -> FragmentLib -> Variables -> DataOutputObject -> (Text, RawSelection) -> Validation SelectionSet
-validateSelection lib' fragments' variables' parent' = validate
+validateSelectionSet ::
+     DataTypeLib -> FragmentLib -> Variables -> DataOutputObject -> RawSelectionSet -> Validation SelectionSet
+validateSelectionSet lib' fragments' variables' = __validate
   where
-    castFragment :: DataOutputObject -> Fragment -> Validation SelectionSet
-    castFragment dataType' Fragment {fragmentSelection = selection'} =
-      validateSelectionSet lib' fragments' variables' dataType' selection'
-    {-
-         actual validation
-    -}
-    validate :: (Text, RawSelection) -> Validation SelectionSet
-    validate (key', Alias {aliasSelection = rawSelection'}) = do
-      [(selKey', selection')] <- validate rawSelection'
-      return [(key', selection' {selectionRec = SelectionAlias selKey' (selectionRec selection')})]
-    validate (key', RawSelectionSet RawSelection' { rawSelectionArguments = rawArgs
-                                                  , rawSelectionRec = rawSelectors
-                                                  , rawSelectionPosition = position'
-                                                  }) = do
-      field' <- lookupSelectionField position' key' parent'
-      resolvedArgs' <- resolveArguments variables' rawArgs
-      arguments' <- validateArguments lib' (key', field') position' resolvedArgs'
-      case fieldKind field' of
-        UNION -> do
-          keys' <- lookupPossibleTypeKeys position' key' lib' field'
-          (spreads', __typename') <-
-            flatTuple <$> mapM (clusterUnionType fragments' (typeName parent') keys') rawSelectors
-          possibleFieldTypes' <- lookupPossibleTypes position' key' lib' keys'
-          let zippedSpreads' = categorizeTypes possibleFieldTypes' spreads'
-          unionSelections' <- mapM (validateCategory __typename') zippedSpreads'
-          pure
-            [ ( key'
-              , Selection
-                  { selectionArguments = arguments'
-                  , selectionRec = UnionSelection unionSelections'
-                  , selectionPosition = position'
-                  })
-            ]
-          where validateCategory :: SelectionSet -> (DataOutputObject, [Fragment]) -> Validation (Text, SelectionSet)
-                validateCategory sysSelection' (type', frags') = do
-                  selection' <-
-                    validateSelectionSet lib' fragments' variables' type' (concatMap fragmentSelection frags')
-                  return (typeName type', sysSelection' ++ selection')
-        OBJECT -> do
-          fieldType' <- lookupFieldAsSelectionSet position' key' lib' field'
-          selections' <- validateSelectionSet lib' fragments' variables' fieldType' rawSelectors
-          pure
-            [ ( key'
-              , Selection
-                  { selectionArguments = arguments'
-                  , selectionRec = SelectionSet selections'
-                  , selectionPosition = position'
-                  })
-            ]
-        _ -> Left $ hasNoSubfields key' (fieldType field') position'
-    validate (key', RawSelectionField RawSelection' {rawSelectionArguments = rawArgs, rawSelectionPosition = position'}) = do
-      field' <- lookupSelectionField position' key' parent' >>= notObject (key', position')
-      args' <- resolveArguments variables' rawArgs
-      arguments' <- validateArguments lib' (key', field') position' args'
-      pure
-        [ ( key'
-          , Selection {selectionArguments = arguments', selectionRec = SelectionField, selectionPosition = position'})
-        ]
-    validate (_, Spread reference') = resolveSpread fragments' [typeName parent'] reference' >>= castFragment parent'
-    validate (_, InlineFragment fragment') = validateType >>= castFragment parent'
+    __validate dataType'@DataType {typeName = typeName'} selectionSet' =
+      concat <$> mapM validateSelection selectionSet' >>= checkDuplicatesOn dataType'
       where
-        validateType = castFragmentType Nothing (fragmentPosition fragment') [typeName parent'] fragment'
+        validateFragment Fragment {fragmentSelection = selection'} = __validate dataType' selection'
+        {-
+            get dataField and validated arguments for RawSelection
+        -}
+        getValidationData key' RawSelection' {rawSelectionArguments = rawArgs, rawSelectionPosition = position'} = do
+          field' <- lookupSelectionField position' key' dataType'
+          arguments' <- resolveArguments variables' rawArgs >>= validateArguments lib' (key', field') position'
+          return (field', arguments')
+        {-
+             validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
+        -}
+        validateSelection :: (Text, RawSelection) -> Validation SelectionSet
+        validateSelection (key', Alias {aliasSelection = rawSelection'}) = do
+          [(selKey', selection')] <- validateSelection rawSelection'
+          return [(key', selection' {selectionRec = SelectionAlias selKey' (selectionRec selection')})]
+        validateSelection (key', RawSelectionSet fullRawSelection'@RawSelection' { rawSelectionRec = rawSelectors
+                                                                                 , rawSelectionPosition = position'
+                                                                                 }) = do
+          (dataField', arguments') <- getValidationData key' fullRawSelection'
+          
+          case fieldKind dataField' of
+            UNION -> do
+              (categories', __typename') <- clusterCategories
+              mapM (validateCategory __typename') categories' >>= returnSelection arguments' . UnionSelection
+              where clusterCategories = do
+                      keys' <- lookupPossibleTypeKeys position' key' lib' dataField'
+                      (spreads', __typename') <-
+                        flatTuple <$> mapM (clusterUnionSelection fragments' typeName' keys') rawSelectors
+                      possibleFieldTypes' <- lookupPossibleTypes position' key' lib' keys'
+                      return (categorizeTypes possibleFieldTypes' spreads', __typename')
+                    validateCategory ::
+                         SelectionSet -> (DataOutputObject, [Fragment]) -> Validation (Text, SelectionSet)
+                    validateCategory sysSelection' (type', frags') = do
+                      selection' <- __validate type' (concatMap fragmentSelection frags')
+                      return (typeName type', sysSelection' ++ selection')
+            OBJECT -> do
+              fieldType' <- lookupFieldAsSelectionSet position' key' lib' dataField'
+              __validate fieldType' rawSelectors >>= returnSelection arguments' . SelectionSet
+            _ -> Left $ hasNoSubfields key' (fieldType dataField') position'
+          where
+            returnSelection arguments' selection' =
+              pure
+                [ ( key'
+                  , Selection
+                      {selectionArguments = arguments', selectionRec = selection', selectionPosition = position'})
+                ]
+        validateSelection (key', RawSelectionField fullRawSelection'@RawSelection' {rawSelectionPosition = position'}) = do
+          (dataField', arguments') <- getValidationData key' fullRawSelection'
+          _ <- notObject (key', position') dataField'
+          pure
+            [ ( key'
+              , Selection
+                  {selectionArguments = arguments', selectionRec = SelectionField, selectionPosition = position'})
+            ]
+        validateSelection (_, Spread reference') = resolveSpread fragments' [typeName'] reference' >>= validateFragment
+        validateSelection (_, InlineFragment fragment') =
+          castFragmentType Nothing (fragmentPosition fragment') [typeName'] fragment' >>= validateFragment
