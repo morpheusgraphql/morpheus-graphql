@@ -29,7 +29,7 @@ data Selection = Selection
 data SelectionRec
   = SelectionSet SelectionSet
   | UnionSelection UnionSelection
-  | SelectionAlias { aliasResolverFieldName :: Key
-                   , aliasRec               :: SelectionRec }
+  | SelectionAlias { aliasFieldName :: Key
+                   , aliasSelection               :: SelectionRec }
   | SelectionField
   deriving (Show)

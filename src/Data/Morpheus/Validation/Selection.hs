@@ -50,7 +50,7 @@ clusterUnionSelection fragments' type' possibleTypes' = splitFrag
       Left $ cannotQueryField key' type' position'
     splitFrag (key', RawSelectionField RawSelection' {rawSelectionPosition = position'}) =
       Left $ cannotQueryField key' type' position'
-    splitFrag (key', Alias {aliasPosition = position'}) = Left $ cannotQueryField key' type' position'
+    splitFrag (key', RawAlias {rawAliasPosition = position'}) = Left $ cannotQueryField key' type' position'
     splitFrag (_, InlineFragment fragment') =
       castFragmentType Nothing (fragmentPosition fragment') typeNames fragment' >>= packFragment
 
@@ -95,12 +95,14 @@ validateSelectionSet lib' fragments' variables' = __validate
              validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
         -}
         validateSelection :: (Text, RawSelection) -> Validation SelectionSet
-        validateSelection (key', Alias {aliasSelection = rawSelection', aliasPosition = position'}) = do
+        validateSelection (key', RawAlias {rawAliasSelection = rawSelection', rawAliasPosition = position'}) = do
           [(selKey', selection')] <- validateSelection rawSelection'
           return
             [ ( key'
               , selection'
-                  {selectionRec = SelectionAlias selKey' (selectionRec selection'), selectionPosition = position'})
+                  { selectionRec = SelectionAlias {aliasFieldName = selKey', aliasSelection = selectionRec selection'}
+                  , selectionPosition = position'
+                  })
             ]
         validateSelection (key', RawSelectionSet fullRawSelection'@RawSelection' { rawSelectionRec = rawSelectors
                                                                                  , rawSelectionPosition = position'
