@@ -10,7 +10,7 @@ import           Data.Attoparsec.Text                      (Parser, char, skipSp
 import           Data.Functor                              (($>))
 import           Data.Morpheus.Parser.Body                 (entries)
 import           Data.Morpheus.Parser.Primitive            (getPosition, token, variable)
-import           Data.Morpheus.Parser.Terms                (charSpace, nonNUll, parseMaybeTuple)
+import           Data.Morpheus.Parser.Terms                (charSpace, nonNUll, parseAssignment, parseMaybeTuple)
 import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..), RawOperator, RawOperator',
                                                             Variable (..), VariableDefinitions)
 import           Data.Morpheus.Types.Internal.Data         (DataTypeWrapper (..))
@@ -31,16 +31,12 @@ insideList = do
   _ <- char ']'
   return ((ListType : nonNull') ++ list, name)
 
-wrapped :: Parser ([DataTypeWrapper], Text)
-wrapped = try insideList <|> wrapMock
+wrappedSignature :: Parser ([DataTypeWrapper], Text)
+wrappedSignature = try insideList <|> wrapMock
 
 operatorArgument :: Parser (Text, Variable)
 operatorArgument = do
-  skipSpace
-  (name', position') <- variable
-  skipSpace
-  _ <- char ':'
-  (wrappers', type') <- wrapped
+  ((name', position'), (wrappers', type')) <- parseAssignment variable wrappedSignature
   nonNull' <- nonNUll
   pure
     ( name'
