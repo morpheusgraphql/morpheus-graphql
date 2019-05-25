@@ -6,11 +6,11 @@ module Data.Morpheus.Parser.Operator
   ) where
 
 import           Control.Applicative                       ((<|>))
-import           Data.Attoparsec.Text                      (Parser, char, sepBy, skipSpace, string, try, (<?>))
+import           Data.Attoparsec.Text                      (Parser, char, skipSpace, string, try, (<?>))
 import           Data.Functor                              (($>))
 import           Data.Morpheus.Parser.Body                 (entries)
 import           Data.Morpheus.Parser.Primitive            (getPosition, token, variable)
-import           Data.Morpheus.Parser.Terms                (charSpace, nonNUll)
+import           Data.Morpheus.Parser.Terms                (charSpace, nonNUll, parseTuple)
 import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..), RawOperator, RawOperator',
                                                             Variable (..), VariableDefinitions)
 import           Data.Morpheus.Types.Internal.Data         (DataTypeWrapper (..))
@@ -52,14 +52,7 @@ operatorArgument = do
         })
 
 operatorArguments :: Parser VariableDefinitions
-operatorArguments = do
-  skipSpace
-  _ <- char '('
-  skipSpace
-  parameters <- operatorArgument `sepBy` (skipSpace *> char ',')
-  skipSpace
-  _ <- char ')'
-  pure parameters
+operatorArguments = parseTuple operatorArgument
 
 operatorHead :: Parser (RawOperator' -> RawOperator, Text, VariableDefinitions)
 operatorHead = do

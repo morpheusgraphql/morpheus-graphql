@@ -5,10 +5,11 @@ module Data.Morpheus.Parser.Terms
   , spreadLiteral
   , nonNUll
   , charSpace
+  , parseTuple
   ) where
 
 import           Control.Applicative               ((<|>))
-import           Data.Attoparsec.Text              (Parser, anyChar, char, skipSpace, string)
+import           Data.Attoparsec.Text              (Parser, anyChar, char, sepBy, skipSpace, string)
 import           Data.Functor                      (($>))
 import           Data.Morpheus.Parser.Primitive    (getPosition, token)
 import           Data.Morpheus.Types.Internal.Data (DataTypeWrapper (..))
@@ -17,12 +18,25 @@ import           Data.Text                         (Text)
 nonNUll :: Parser [DataTypeWrapper]
 nonNUll = (char '!' $> [NonNullType]) <|> pure []
 
+parseTuple :: Parser a -> Parser [a]
+parseTuple parser = do
+  skipSpace
+  parseChar '('
+  skipSpace
+  parameters <- parser `sepBy` (skipSpace *> char ',')
+  skipSpace
+  parseChar ')'
+  pure parameters
+
 charSpace :: Parser ()
-charSpace = do
+charSpace = parseChar ' '
+
+parseChar :: Char -> Parser ()
+parseChar char' = do
   x <- anyChar
-  if x == ' '
+  if x == char'
     then return ()
-    else fail ("expected ' ' found '" ++ [x] ++ "'")
+    else fail ("expected '" ++ [char'] ++ "' found '" ++ [x] ++ "'")
 
 onType :: Parser Text
 onType = do
