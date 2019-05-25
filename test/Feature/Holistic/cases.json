@@ -32,6 +32,10 @@
     "description": "fail when: selected fields has same name"
   },
   {
+    "path": "selection/AliasNameConflict",
+    "description": "fail when: selected alias has same name"
+  },
+  {
     "path": "fragment/inlineFragment",
     "description": "returns field selected by inline Fragment"
   },

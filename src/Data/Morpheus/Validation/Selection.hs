@@ -20,8 +20,8 @@ import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Types.Types                     (Variables)
 import           Data.Morpheus.Validation.Arguments            (resolveArguments, validateArguments)
 import           Data.Morpheus.Validation.Spread               (castFragmentType, resolveSpread)
-import           Data.Morpheus.Validation.Utils.Selection      (lookupFieldAsSelectionSet, lookupUnionTypes,
-                                                                lookupSelectionField, notObject)
+import           Data.Morpheus.Validation.Utils.Selection      (lookupFieldAsSelectionSet, lookupSelectionField,
+                                                                lookupUnionTypes, notObject)
 import           Data.Morpheus.Validation.Utils.Utils          (checkNameCollision)
 import           Data.Text                                     (Text)
 
@@ -95,9 +95,13 @@ validateSelectionSet lib' fragments' variables' = __validate
              validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
         -}
         validateSelection :: (Text, RawSelection) -> Validation SelectionSet
-        validateSelection (key', Alias {aliasSelection = rawSelection'}) = do
+        validateSelection (key', Alias {aliasSelection = rawSelection', aliasPosition = position'}) = do
           [(selKey', selection')] <- validateSelection rawSelection'
-          return [(key', selection' {selectionRec = SelectionAlias selKey' (selectionRec selection')})]
+          return
+            [ ( key'
+              , selection'
+                  {selectionRec = SelectionAlias selKey' (selectionRec selection'), selectionPosition = position'})
+            ]
         validateSelection (key', RawSelectionSet fullRawSelection'@RawSelection' { rawSelectionRec = rawSelectors
                                                                                  , rawSelectionPosition = position'
                                                                                  }) = do
