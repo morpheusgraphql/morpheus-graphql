@@ -7,7 +7,7 @@ module Data.Morpheus.Parser.Body
 
 import           Control.Applicative                           ((<|>))
 import           Data.Attoparsec.Text                          (Parser, char, sepBy, skipSpace, try)
-import           Data.Morpheus.Parser.Arguments                (arguments)
+import           Data.Morpheus.Parser.Arguments                (maybeArguments)
 import           Data.Morpheus.Parser.Primitive                (getPosition, qualifier, separator, token)
 import           Data.Morpheus.Parser.Terms                    (onType, spreadLiteral)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
@@ -31,24 +31,31 @@ inlineFragment = do
     ( "INLINE_FRAGMENT"
     , InlineFragment $ Fragment {fragmentType = type', fragmentSelection = fragmentBody, fragmentPosition = index})
 
+{-
+  accept:
+  - field
+  - field {...}
+  - field (...)
+  - field () {...}
+-}
 entry :: Parser (Text, RawSelection)
 entry = do
-  skipSpace
-  index <- getPosition
-  key <- token
-  args <- try arguments <|> pure []
-  value <-
-    try (body args) <|>
-    pure
-      (RawSelectionField $
-       RawSelection' {rawSelectionArguments = args, rawSelectionRec = (), rawSelectionPosition = index})
-  return (key, value)
+  (name', position') <- qualifier
+  arguments' <- maybeArguments
+  value <- try (body arguments') <|> buildField arguments' position'
+  return (name', value)
+
+buildField :: RawArguments -> Int -> Parser RawSelection
+buildField arguments' position' =
+  pure
+    (RawSelectionField $
+     RawSelection' {rawSelectionArguments = arguments', rawSelectionRec = (), rawSelectionPosition = position'})
 
 {--
-  {
-    bigImage: image(320)
-    smallImage:  image(640)
-  }
+  accept:
+    field1: field(320)
+    field2: field(640)
+    field3: field
 --}
 alias :: Parser (Text, RawSelection)
 alias = do
