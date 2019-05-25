@@ -1,12 +1,9 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Data.Morpheus.Validation.Utils.Selection
   ( lookupFieldAsSelectionSet
   , mustBeObject
   , notObject
   , lookupSelectionField
-  , lookupPossibleTypes
-  , lookupPossibleTypeKeys
+  , lookupUnionTypes
   ) where
 
 import           Data.Morpheus.Error.Selection           (cannotQueryField, hasNoSubfields, subfieldsNotSelected)
@@ -33,16 +30,11 @@ notObject (key', position') field' =
     then Left $ subfieldsNotSelected key' (fieldType field') position'
     else pure field'
 
-lookupPossibleTypeKeys :: Position -> Text -> DataTypeLib -> DataOutputField -> Validation [Text]
-lookupPossibleTypeKeys position' key' lib' DataField {fieldType = type'} =
-  map fieldType <$> lookupType error' (union lib') type'
+lookupUnionTypes :: Position -> Text -> DataTypeLib -> DataOutputField -> Validation [DataOutputObject]
+lookupUnionTypes position' key' lib' DataField {fieldType = type'} =
+  lookupType error' (union lib') type' >>= mapM (lookupType error' (object lib') . fieldType)
   where
     error' = hasNoSubfields key' type' position'
-
-lookupPossibleTypes :: Position -> Text -> DataTypeLib -> [Text] -> Validation [DataOutputObject]
-lookupPossibleTypes position' key' lib' = mapM (lookupType error' (object lib'))
-  where
-    error' = hasNoSubfields key' "TODO" position'
 
 lookupFieldAsSelectionSet :: Position -> Text -> DataTypeLib -> DataOutputField -> Validation DataOutputObject
 lookupFieldAsSelectionSet position' key' lib' DataField {fieldType = type'} = lookupType error' (object lib') type'
