@@ -22,7 +22,7 @@ nonNUll = (char '!' $> [NonNullType]) <|> pure []
 
 parseWhenChar :: Char -> Parser a -> Parser a -> Parser a
 parseWhenChar char' parser1 parser2 = do
-  x <- skipSpace >> lookAhead anyChar
+  x <- lookAhead (skipSpace >> anyChar)
   if x == char'
     then parser1
     else parser2
