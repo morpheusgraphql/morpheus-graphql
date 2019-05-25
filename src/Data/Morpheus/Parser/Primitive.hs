@@ -6,11 +6,12 @@ import           Control.Applicative                (many, (<|>))
 import           Data.Attoparsec.Text
 import           Data.Functor                       (($>))
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..), Value (..), decodeScientific)
-import qualified Data.Text                          as T (Text, pack)
+import           Data.Text                          (Text)
+import qualified Data.Text                          as T (pack)
 
 import qualified Data.Attoparsec.Internal.Types     as AT
 
-replaceType :: T.Text -> T.Text
+replaceType :: Text -> Text
 replaceType "type" = "_type"
 replaceType x      = x
 
@@ -51,13 +52,20 @@ valueString = do
   _ <- char '"'
   pure $ Scalar $ String $ T.pack value
 
-token :: Parser T.Text
+token :: Parser Text
 token = do
   firstChar <- letter <|> char '_'
   restToken <- many $ letter <|> char '_' <|> digit
   return $ replaceType $ T.pack $ firstChar : restToken
 
-variable :: Parser (T.Text, Int)
+qualifier :: Parser (Text, Int)
+qualifier = do
+  skipSpace
+  position' <- getPosition
+  value <- token
+  return (value, position')
+
+variable :: Parser (Text, Int)
 variable = do
   skipSpace
   position' <- getPosition

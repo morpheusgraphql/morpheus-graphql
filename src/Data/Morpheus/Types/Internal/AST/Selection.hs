@@ -6,7 +6,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , SelectionRec(..)
   ) where
 
-import           Data.Morpheus.Types.Internal.Base  (Collection, Position)
+import           Data.Morpheus.Types.Internal.Base  (Collection, Key, Position)
 import           Data.Morpheus.Types.Internal.Value (Value)
 
 data Argument = Argument
@@ -29,5 +29,7 @@ data Selection = Selection
 data SelectionRec
   = SelectionSet SelectionSet
   | UnionSelection UnionSelection
+  | SelectionAlias { aliasFieldName :: Key
+                   , aliasSelection               :: SelectionRec }
   | SelectionField
   deriving (Show)

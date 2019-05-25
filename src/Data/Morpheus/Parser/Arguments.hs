@@ -1,9 +1,10 @@
 module Data.Morpheus.Parser.Arguments
   ( arguments
+  , maybeArguments
   ) where
 
 import           Control.Applicative                           ((<|>))
-import           Data.Attoparsec.Text                          (Parser, char, sepBy, skipSpace)
+import           Data.Attoparsec.Text                          (Parser, char, sepBy, skipSpace, try)
 import           Data.Morpheus.Parser.InputValues.Value        (parseValue)
 import           Data.Morpheus.Parser.Primitive                (getPosition, token, variable)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Argument (..), RawArgument (..), RawArguments,
@@ -47,3 +48,6 @@ arguments = do
   skipSpace
   _ <- char ')'
   pure parameters
+
+maybeArguments :: Parser RawArguments
+maybeArguments = try arguments <|> pure []

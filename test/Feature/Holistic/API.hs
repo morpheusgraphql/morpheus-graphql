@@ -99,7 +99,7 @@ resolveAddress = return Address {city = "", houseNumber = 1, street = "", owner 
 resolveUser :: a ::-> User
 resolveUser =
   return $
-  User {name = "", email = "", address = resolveAddress, office = resolveAddress, home = HH, friend = return Nothing}
+  User {name = "testName", email = "", address = resolveAddress, office = resolveAddress, home = HH, friend = return Nothing}
 
 createUserMutation :: AddressArgs ::-> User
 createUserMutation = resolveUser

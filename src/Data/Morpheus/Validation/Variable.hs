@@ -79,6 +79,7 @@ searchReferencesIn (_, RawSelectionSet RawSelection' {rawSelectionArguments = ar
   concatMap referencesFromArgument args' ++ concatMap searchReferencesIn selectionSet'
 searchReferencesIn (_, InlineFragment Fragment {fragmentSelection = rawSelection'}) =
   concatMap searchReferencesIn rawSelection'
+searchReferencesIn (_, RawAlias {rawAliasSelection = rawSelection'}) = concatMap searchReferencesIn [rawSelection']
 searchReferencesIn (_, RawSelectionField RawSelection' {rawSelectionArguments = args'}) =
   concatMap referencesFromArgument args'
 searchReferencesIn (_, Spread {}) = [] -- TODO: search in referenced Fragments

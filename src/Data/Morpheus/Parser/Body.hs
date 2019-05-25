@@ -7,8 +7,8 @@ module Data.Morpheus.Parser.Body
 
 import           Control.Applicative                           ((<|>))
 import           Data.Attoparsec.Text                          (Parser, char, sepBy, skipSpace, try)
-import           Data.Morpheus.Parser.Arguments                (arguments)
-import           Data.Morpheus.Parser.Primitive                (getPosition, separator, token)
+import           Data.Morpheus.Parser.Arguments                (maybeArguments)
+import           Data.Morpheus.Parser.Primitive                (getPosition, qualifier, separator, token)
 import           Data.Morpheus.Parser.Terms                    (onType, spreadLiteral)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
                                                                 RawSelection' (..), RawSelectionSet, Reference (..))
@@ -31,18 +31,39 @@ inlineFragment = do
     ( "INLINE_FRAGMENT"
     , InlineFragment $ Fragment {fragmentType = type', fragmentSelection = fragmentBody, fragmentPosition = index})
 
-entry :: Parser (Text, RawSelection)
-entry = do
+{-
+  accept:
+  - field
+  - field {...}
+  - field (...)
+  - field () {...}
+-}
+selection :: Parser (Text, RawSelection)
+selection = do
+  (name', position') <- qualifier
+  arguments' <- maybeArguments
+  value <- try (body arguments') <|> buildField arguments' position'
+  return (name', value)
+
+buildField :: RawArguments -> Int -> Parser RawSelection
+buildField arguments' position' =
+  pure
+    (RawSelectionField $
+     RawSelection' {rawSelectionArguments = arguments', rawSelectionRec = (), rawSelectionPosition = position'})
+
+{--
+  accept:
+    field1: field(a:320)
+    field2: field (a:640)
+    field3: field
+--}
+alias :: Parser (Text, RawSelection)
+alias = do
+  (name', position') <- qualifier
   skipSpace
-  index <- getPosition
-  key <- token
-  args <- try arguments <|> pure []
-  value <-
-    try (body args) <|>
-    pure
-      (RawSelectionField $
-       RawSelection' {rawSelectionArguments = args, rawSelectionRec = (), rawSelectionPosition = index})
-  return (key, value)
+  _ <- char ':'
+  selection' <- selection
+  return (name', RawAlias {rawAliasPosition = position', rawAliasSelection = selection'})
 
 separated :: Parser a -> Parser [a]
 separated x = x `sepBy` separator
@@ -51,7 +72,7 @@ entries :: Parser RawSelectionSet
 entries = do
   _ <- char '{'
   skipSpace
-  entries' <- separated (entry <|> inlineFragment <|> spread)
+  entries' <- separated (alias <|> inlineFragment <|> spread <|> selection)
   skipSpace
   _ <- char '}'
   return entries'
