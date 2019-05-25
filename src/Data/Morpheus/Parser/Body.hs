@@ -38,8 +38,8 @@ inlineFragment = do
   - field (...)
   - field () {...}
 -}
-entry :: Parser (Text, RawSelection)
-entry = do
+selection :: Parser (Text, RawSelection)
+selection = do
   (name', position') <- qualifier
   arguments' <- maybeArguments
   value <- try (body arguments') <|> buildField arguments' position'
@@ -59,10 +59,11 @@ buildField arguments' position' =
 --}
 alias :: Parser (Text, RawSelection)
 alias = do
-  (name_, position_) <- qualifier
+  (name', position') <- qualifier
+  skipSpace
   _ <- char ':'
-  value' <- entry
-  return value'
+  selection' <- selection
+  return (name', Alias {aliasPosition = position', aliasSelection = selection'})
 
 separated :: Parser a -> Parser [a]
 separated x = x `sepBy` separator
@@ -71,7 +72,7 @@ entries :: Parser RawSelectionSet
 entries = do
   _ <- char '{'
   skipSpace
-  entries' <- separated (alias <|> inlineFragment <|> spread <|> entry)
+  entries' <- separated (alias <|> inlineFragment <|> spread <|> selection)
   skipSpace
   _ <- char '}'
   return entries'
