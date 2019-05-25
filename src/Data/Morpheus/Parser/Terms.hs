@@ -5,7 +5,7 @@ module Data.Morpheus.Parser.Terms
   , spreadLiteral
   , nonNUll
   , charSpace
-  , parseTuple
+  , parseMaybeTuple
   ) where
 
 import           Control.Applicative               ((<|>))
@@ -18,15 +18,20 @@ import           Data.Text                         (Text)
 nonNUll :: Parser [DataTypeWrapper]
 nonNUll = (char '!' $> [NonNullType]) <|> pure []
 
-parseTuple :: Parser a -> Parser [a]
-parseTuple parser = do
+parseMaybeTuple :: Parser a -> Parser [a]
+parseMaybeTuple parser = do
   skipSpace
-  parseChar '('
-  skipSpace
-  parameters <- parser `sepBy` (skipSpace *> char ',')
-  skipSpace
-  parseChar ')'
-  pure parameters
+  x <- anyChar
+  if x == '('
+    then parseTuple
+    else pure []
+  where
+    parseTuple = do
+      skipSpace
+      values <- parser `sepBy` (skipSpace *> char ',')
+      skipSpace
+      parseChar ')'
+      return values
 
 charSpace :: Parser ()
 charSpace = parseChar ' '
