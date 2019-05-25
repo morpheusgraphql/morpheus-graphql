@@ -41,4 +41,4 @@ parseGQL requestBody =
   case parseReq requestBody of
     Right (Valid root)         -> Right $ root {inputVariables = getVariables requestBody}
     Right (Invalid text index) -> Left $ syntaxError text index
-    Left parseError            -> Left $ syntaxError (pack $ show parseError) 0
+    Left parseError            -> Left $ syntaxError (pack parseError) 0

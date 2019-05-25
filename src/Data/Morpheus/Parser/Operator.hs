@@ -10,7 +10,7 @@ import           Data.Attoparsec.Text                      (Parser, char, sepBy,
 import           Data.Functor                              (($>))
 import           Data.Morpheus.Parser.Body                 (entries)
 import           Data.Morpheus.Parser.Primitive            (getPosition, token, variable)
-import           Data.Morpheus.Parser.Terms                (nonNUll)
+import           Data.Morpheus.Parser.Terms                (charSpace, nonNUll)
 import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..), RawOperator, RawOperator',
                                                             Variable (..), VariableDefinitions)
 import           Data.Morpheus.Types.Internal.Data         (DataTypeWrapper (..))
@@ -64,7 +64,7 @@ operatorArguments = do
 operatorHead :: Parser (RawOperator' -> RawOperator, Text, VariableDefinitions)
 operatorHead = do
   wrapper' <- operatorKind
-  _ <- char ' '
+  charSpace
   skipSpace
   queryName <- token
   variables <- try (skipSpace *> operatorArguments) <|> pure []
