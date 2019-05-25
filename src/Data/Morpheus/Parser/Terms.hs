@@ -12,7 +12,7 @@ module Data.Morpheus.Parser.Terms
 
 import           Control.Applicative               ((<|>))
 import           Data.Attoparsec.Combinator        (lookAhead)
-import           Data.Attoparsec.Text              (Parser, anyChar, char, sepBy, skipSpace, string)
+import           Data.Attoparsec.Text              (Parser, anyChar, char, sepBy, skipSpace, string, (<?>))
 import           Data.Functor                      (($>))
 import           Data.Morpheus.Parser.Primitive    (getPosition, token)
 import           Data.Morpheus.Types.Internal.Data (DataTypeWrapper (..))
@@ -36,7 +36,7 @@ parseTuple parser = do
   skipSpace
   parseChar '('
   skipSpace
-  values <- parser `sepBy` (skipSpace *> char ',')
+  values <- parser `sepBy` (skipSpace *> char ',') <?> "empty Tuple value!"
   skipSpace
   parseChar ')'
   return values
