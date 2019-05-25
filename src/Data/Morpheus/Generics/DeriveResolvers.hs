@@ -10,7 +10,7 @@ module Data.Morpheus.Generics.DeriveResolvers
   ) where
 
 import           Data.Maybe                                 (fromMaybe)
-import           Data.Morpheus.Types.Internal.AST.Selection (Selection)
+import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Text                                  (Text, pack)
@@ -28,7 +28,13 @@ unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
 selectResolver :: [(Text, (Text, Selection) -> ResolveIO Value)] -> (Text, Selection) -> ResolveIO (Text, Value)
-selectResolver x (key, gql) = unwrapMonadTuple (key, (fromMaybe (\_ -> pure Null) $ lookup key x) (key, gql))
+selectResolver resolvers' (key', selection') =
+  case selectionRec selection' of
+    SelectionAlias name' aliasSelection' ->
+      unwrapMonadTuple (key', lookupResolver name' (selection' {selectionRec = aliasSelection'}))
+    _ -> unwrapMonadTuple (key', lookupResolver key' selection')
+  where
+    lookupResolver resolverKey' sel = (fromMaybe (\_ -> pure Null) $ lookup resolverKey' resolvers') (key', sel)
 
 resolveBySelection :: [(Text, Selection)] -> [(Text, (Text, Selection) -> ResolveIO Value)] -> ResolveIO Value
 resolveBySelection selection resolvers = Object <$> mapM (selectResolver resolvers) selection
