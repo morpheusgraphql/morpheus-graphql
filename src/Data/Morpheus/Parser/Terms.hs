@@ -9,6 +9,7 @@ module Data.Morpheus.Parser.Terms
   ) where
 
 import           Control.Applicative               ((<|>))
+import           Data.Attoparsec.Combinator        (lookAhead)
 import           Data.Attoparsec.Text              (Parser, anyChar, char, sepBy, skipSpace, string)
 import           Data.Functor                      (($>))
 import           Data.Morpheus.Parser.Primitive    (getPosition, token)
@@ -18,20 +19,26 @@ import           Data.Text                         (Text)
 nonNUll :: Parser [DataTypeWrapper]
 nonNUll = (char '!' $> [NonNullType]) <|> pure []
 
-parseMaybeTuple :: Parser a -> Parser [a]
-parseMaybeTuple parser = do
+parseIfChar :: Char -> Parser a -> Parser a -> Parser a
+parseIfChar char' parser1 parser2 = do
   skipSpace
-  x <- anyChar
-  if x == '('
-    then parseTuple
-    else pure []
-  where
-    parseTuple = do
-      skipSpace
-      values <- parser `sepBy` (skipSpace *> char ',')
-      skipSpace
-      parseChar ')'
-      return values
+  x <- lookAhead anyChar
+  if x == char'
+    then parser1
+    else parser2
+
+parseMaybeTuple :: Parser a -> Parser [a]
+parseMaybeTuple parser = parseIfChar '(' (parseTuple parser) (pure [])
+
+parseTuple :: Parser a -> Parser [a]
+parseTuple parser = do
+  skipSpace
+  parseChar '('
+  skipSpace
+  values <- parser `sepBy` (skipSpace *> char ',')
+  skipSpace
+  parseChar ')'
+  return values
 
 charSpace :: Parser ()
 charSpace = parseChar ' '
