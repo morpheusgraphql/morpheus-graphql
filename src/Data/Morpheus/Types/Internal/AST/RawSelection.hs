@@ -47,6 +47,6 @@ data RawSelection
   | RawSelectionField (RawSelection' ())
   | InlineFragment Fragment
   | Spread Reference
-  | Alias { aliasPosition  :: Position
-          , aliasSelection :: (Key, RawSelection) }
+  | RawAlias { rawAliasPosition  :: Position
+             , rawAliasSelection :: (Key, RawSelection) }
   deriving (Show)

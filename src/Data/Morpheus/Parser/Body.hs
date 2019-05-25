@@ -53,8 +53,8 @@ buildField arguments' position' =
 
 {--
   accept:
-    field1: field(320)
-    field2: field(640)
+    field1: field(a:320)
+    field2: field (a:640)
     field3: field
 --}
 alias :: Parser (Text, RawSelection)
@@ -63,7 +63,7 @@ alias = do
   skipSpace
   _ <- char ':'
   selection' <- selection
-  return (name', Alias {aliasPosition = position', aliasSelection = selection'})
+  return (name', RawAlias {rawAliasPosition = position', rawAliasSelection = selection'})
 
 separated :: Parser a -> Parser [a]
 separated x = x `sepBy` separator
