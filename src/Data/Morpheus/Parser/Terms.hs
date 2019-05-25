@@ -8,6 +8,7 @@ module Data.Morpheus.Parser.Terms
   , parseMaybeTuple
   , parseTuple
   , parseAssignment
+  , parseWhenChar
   ) where
 
 import           Control.Applicative               ((<|>))
