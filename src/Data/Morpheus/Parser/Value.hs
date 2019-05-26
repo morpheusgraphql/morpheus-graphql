@@ -1,19 +1,54 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Data.Morpheus.Parser.Value
   ( parseValue
   , enumValue
   ) where
 
-import           Control.Applicative                ((<|>))
-import           Data.Attoparsec.Text               (Parser, char, sepBy, skipSpace)
-import           Data.Morpheus.Parser.Primitive     (token, valueBoolean, valueNull, valueNumber, valueString)
+import           Control.Applicative                (many, (<|>))
+import           Data.Attoparsec.Text               (Parser, char, choice, notChar, scientific, sepBy, skipSpace,
+                                                     string)
+import           Data.Functor                       (($>))
+import           Data.Morpheus.Parser.Primitive     (token)
 import           Data.Morpheus.Parser.Terms         (parseAssignment)
-import           Data.Morpheus.Types.Internal.Value (Value (..))
+import           Data.Morpheus.Types.Internal.Value (ScalarValue (..), Value (..), decodeScientific)
+import           Data.Text                          (pack)
 
 parseValue :: Parser Value
-parseValue = valueNull <|> valueBoolean <|> valueNumber <|> valueString <|> objectValue <|> listValue
+parseValue = valueNull <|> booleanValue <|> valueNumber <|> stringValue <|> objectValue <|> listValue
+
+valueNull :: Parser Value
+valueNull = string "null" $> Null
+
+booleanValue :: Parser Value
+booleanValue = boolTrue <|> boolFalse
+  where
+    boolTrue = string "true" $> Scalar (Boolean True)
+    boolFalse = string "false" $> Scalar (Boolean False)
+
+valueNumber :: Parser Value
+valueNumber = Scalar . decodeScientific <$> scientific
 
 enumValue :: Parser Value
 enumValue = Enum <$> token
+
+escaped :: Parser Char
+escaped = do
+  x <- notChar '\"'
+  if x == '\\'
+    then choice (zipWith escapeChar codes replacements)
+    else pure x
+  where
+    replacements = ['\b', '\n', '\f', '\r', '\t', '\\', '\"', '/']
+    codes = ['b', 'n', 'f', 'r', 't', '\\', '\"', '/']
+    escapeChar code replacement = char code >> return replacement
+
+stringValue :: Parser Value
+stringValue = do
+  _ <- char '"'
+  value <- many escaped
+  _ <- char '"'
+  pure $ Scalar $ String $ pack value
 
 listValue :: Parser Value
 listValue = do
