@@ -9,9 +9,8 @@ import           Data.Map                                (fromList, toList)
 import           Data.Maybe                              (maybe)
 import           Data.Morpheus.Error.Syntax              (syntaxError)
 import           Data.Morpheus.Parser.Fragment           (fragment)
-import           Data.Morpheus.Parser.Internal           (GQLSyntax (..), catchError)
+import           Data.Morpheus.Parser.Internal           (GQLSyntax (..), catchError, parseLinebreakPositions)
 import           Data.Morpheus.Parser.Operator           (parseAnonymousQuery, parseOperator)
-import           Data.Morpheus.Parser.Primitive          (getLines)
 import           Data.Morpheus.Parser.Terms              (parseWhenChar)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value (..))
@@ -35,7 +34,7 @@ parseReq requestBody = parseOnly (catchError request) $ query requestBody
 
 parseLineBreaks :: GQLRequest -> [Int]
 parseLineBreaks requestBody =
-  case parseOnly getLines $ query requestBody of
+  case parseOnly parseLinebreakPositions $ query requestBody of
     Right x -> x
     Left _  -> []
 

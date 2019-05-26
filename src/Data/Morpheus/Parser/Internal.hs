@@ -5,10 +5,12 @@ module Data.Morpheus.Parser.Internal
   , syntaxFail
   , catchError
   , getPosition
+  , parseLinebreakPositions
   ) where
 
+import           Control.Applicative            (many)
 import qualified Data.Attoparsec.Internal.Types as AT
-import           Data.Attoparsec.Text           (Parser)
+import           Data.Attoparsec.Text           (Parser, char, notChar)
 import           Data.Text                      (Text, pack, unpack)
 
 data GQLSyntax a
@@ -26,6 +28,16 @@ getPosition :: Parser Int
 getPosition = AT.Parser internFunc
   where
     internFunc t pos more _ success = success t pos more (AT.fromPos pos)
+
+parseLinebreakPositions :: Parser [Int]
+parseLinebreakPositions = many nextLine
+  where
+    nextLine :: Parser Int
+    nextLine = do
+      _ <- many (notChar '\n')
+      index <- getPosition
+      _ <- char '\n'
+      pure index
 
 catchError :: Parser a -> Parser (GQLSyntax a)
 catchError parser = transform (Valid <$> parser)
