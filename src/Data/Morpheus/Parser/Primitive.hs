@@ -32,6 +32,3 @@ variable = do
   _ <- char '$'
   varName' <- token
   return (varName', position')
-
-separator :: Parser Char
-separator = char ',' <|> char ' ' <|> char '\n' <|> char '\t'
