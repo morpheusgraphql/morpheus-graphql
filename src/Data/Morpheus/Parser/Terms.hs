@@ -9,6 +9,7 @@ module Data.Morpheus.Parser.Terms
   , parseTuple
   , parseAssignment
   , parseWhenChar
+  , lookAheadChar
   ) where
 
 import           Control.Applicative               ((<|>))
@@ -23,9 +24,12 @@ import           Data.Text                         (Text)
 nonNUll :: Parser [DataTypeWrapper]
 nonNUll = (char '!' $> [NonNullType]) <|> pure []
 
+lookAheadChar :: Parser Char
+lookAheadChar = lookAhead (skipSpace >> anyChar)
+
 parseWhenChar :: Char -> Parser a -> Parser a -> Parser a
 parseWhenChar char' parser1 parser2 = do
-  x <- lookAhead (skipSpace >> anyChar)
+  x <- lookAheadChar
   if x == char'
     then parser1
     else parser2

@@ -7,13 +7,14 @@ module Data.Morpheus.Parser.Body
 
 import           Control.Applicative                           ((<|>))
 import           Data.Attoparsec.Text                          (Parser, char, sepBy, skipSpace, try)
+import           Data.Char                                     (isAlpha)
 import           Data.Morpheus.Parser.Arguments                (maybeArguments)
-import           Data.Morpheus.Parser.Internal                 (getPosition)
+import           Data.Morpheus.Parser.Internal                 (getPosition, syntaxFail)
 import           Data.Morpheus.Parser.Primitive                (qualifier, separator, token)
-import           Data.Morpheus.Parser.Terms                    (onType, parseAssignment, spreadLiteral)
+import           Data.Morpheus.Parser.Terms                    (lookAheadChar, onType, parseAssignment, spreadLiteral)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
                                                                 RawSelection' (..), RawSelectionSet, Reference (..))
-import           Data.Text                                     (Text)
+import           Data.Text                                     (Text, pack)
 
 spread :: Parser (Text, RawSelection)
 spread = do
@@ -70,10 +71,18 @@ entries :: Parser RawSelectionSet
 entries = do
   _ <- char '{'
   skipSpace
-  entries' <- separated (alias <|> inlineFragment <|> spread <|> selection)
+  entries' <- separated entry
   skipSpace
   _ <- char '}'
   return entries'
+  where
+    entry = do
+      char' <- lookAheadChar
+      case char' of
+        '.' -> inlineFragment <|> spread
+        ch'
+          | isAlpha ch' || ch' == '_' -> alias <|> selection
+        ch' -> syntaxFail (pack $ "unknown Character on selection: \"" ++ [ch'] ++ "\"")
 
 body :: RawArguments -> Parser RawSelection
 body args = do
