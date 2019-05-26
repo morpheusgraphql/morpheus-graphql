@@ -6,13 +6,16 @@ module Data.Morpheus.Parser.Body
   ) where
 
 import           Control.Applicative                           ((<|>))
-import           Data.Attoparsec.Text                          (Parser, char, sepBy, skipSpace, try)
+import           Data.Attoparsec.Text                          (Parser, char, sepBy, skipSpace)
+import           Data.Char                                     (isAlpha)
 import           Data.Morpheus.Parser.Arguments                (maybeArguments)
-import           Data.Morpheus.Parser.Primitive                (getPosition, qualifier, separator, token)
-import           Data.Morpheus.Parser.Terms                    (onType, spreadLiteral)
+import           Data.Morpheus.Parser.Internal                 (getPosition, syntaxFail)
+import           Data.Morpheus.Parser.Primitive                (qualifier, token)
+import           Data.Morpheus.Parser.Terms                    (lookAheadChar, onType, parseAssignment, parseChar,
+                                                                parseWhenChar, spreadLiteral)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
                                                                 RawSelection' (..), RawSelectionSet, Reference (..))
-import           Data.Text                                     (Text)
+import           Data.Text                                     (Text, pack)
 
 spread :: Parser (Text, RawSelection)
 spread = do
@@ -38,44 +41,44 @@ inlineFragment = do
   - field (...)
   - field () {...}
 -}
-selection :: Parser (Text, RawSelection)
-selection = do
+parseSelectionField :: Parser (Text, RawSelection)
+parseSelectionField = do
   (name', position') <- qualifier
   arguments' <- maybeArguments
-  value <- try (body arguments') <|> buildField arguments' position'
-  return (name', value)
+  value' <- parseWhenChar '{' (body arguments') (buildField arguments' position')
+  return (name', value')
+  where
+    buildField arguments' position' =
+      pure
+        (RawSelectionField $
+         RawSelection' {rawSelectionArguments = arguments', rawSelectionRec = (), rawSelectionPosition = position'})
 
-buildField :: RawArguments -> Int -> Parser RawSelection
-buildField arguments' position' =
-  pure
-    (RawSelectionField $
-     RawSelection' {rawSelectionArguments = arguments', rawSelectionRec = (), rawSelectionPosition = position'})
-
-{--
-  accept:
-    field1: field(a:320)
-    field2: field (a:640)
-    field3: field
---}
 alias :: Parser (Text, RawSelection)
 alias = do
-  (name', position') <- qualifier
-  skipSpace
-  _ <- char ':'
-  selection' <- selection
+  ((name', position'), selection') <- parseAssignment qualifier parseSelectionField
   return (name', RawAlias {rawAliasPosition = position', rawAliasSelection = selection'})
 
-separated :: Parser a -> Parser [a]
-separated x = x `sepBy` separator
+--isSep :: Char -> Bool
+--isSep = (`elem` [',', ' ', '\n', '\t'])
+bodySeparator :: Parser Char
+bodySeparator = char ',' <|> char ' ' <|> char '\n' <|> char '\t'
 
 entries :: Parser RawSelectionSet
 entries = do
-  _ <- char '{'
+  parseChar '{'
   skipSpace
-  entries' <- separated (alias <|> inlineFragment <|> spread <|> selection)
+  entries' <- entry `sepBy` bodySeparator
   skipSpace
-  _ <- char '}'
+  parseChar '}'
   return entries'
+  where
+    entry = do
+      char' <- lookAheadChar
+      case char' of
+        '.' -> inlineFragment <|> spread
+        ch'
+          | isAlpha ch' || ch' == '_' -> alias <|> parseSelectionField
+        ch' -> syntaxFail (pack $ "unknown Character on selection: \"" ++ [ch'] ++ "\"")
 
 body :: RawArguments -> Parser RawSelection
 body args = do

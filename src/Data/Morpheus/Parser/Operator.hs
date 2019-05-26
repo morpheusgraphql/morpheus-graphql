@@ -1,12 +1,19 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Data.Morpheus.Parser.Operator
-  ( operatorHead
+  ( parseAnonymousQuery
+  , parseOperator
   ) where
 
 import           Control.Applicative                       ((<|>))
-import           Data.Attoparsec.Text                      (Parser, char, sepBy, skipSpace, string, try)
+import           Data.Attoparsec.Text                      (Parser, char, skipSpace, string, try, (<?>))
+import           Data.Functor                              (($>))
+import           Data.Morpheus.Parser.Body                 (entries)
+import           Data.Morpheus.Parser.Internal             (getPosition)
 import           Data.Morpheus.Parser.Primitive            (token, variable)
-import           Data.Morpheus.Parser.Terms                (nonNUll)
-import           Data.Morpheus.Types.Internal.AST.Operator (Variable (..), VariableDefinitions)
+import           Data.Morpheus.Parser.Terms                (nonNUll, parseAssignment, parseChar, parseMaybeTuple)
+import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..), RawOperator, RawOperator',
+                                                            Variable (..))
 import           Data.Morpheus.Types.Internal.Data         (DataTypeWrapper (..))
 import           Data.Text                                 (Text)
 
@@ -25,16 +32,12 @@ insideList = do
   _ <- char ']'
   return ((ListType : nonNull') ++ list, name)
 
-wrapped :: Parser ([DataTypeWrapper], Text)
-wrapped = try insideList <|> wrapMock
+wrappedSignature :: Parser ([DataTypeWrapper], Text)
+wrappedSignature = try insideList <|> wrapMock
 
 operatorArgument :: Parser (Text, Variable)
 operatorArgument = do
-  skipSpace
-  (name', position') <- variable
-  skipSpace
-  _ <- char ':'
-  (wrappers', type') <- wrapped
+  ((name', position'), (wrappers', type')) <- parseAssignment variable wrappedSignature
   nonNull' <- nonNUll
   pure
     ( name'
@@ -45,21 +48,25 @@ operatorArgument = do
         , variablePosition = position'
         })
 
-operatorArguments :: Parser VariableDefinitions
-operatorArguments = do
+parseOperator :: Parser RawOperator
+parseOperator = do
   skipSpace
-  _ <- char '('
+  pos <- getPosition
+  kind' <- operatorKind
+  parseChar ' '
   skipSpace
-  parameters <- operatorArgument `sepBy` (skipSpace *> char ',')
+  operatorName' <- token
+  variables <- parseMaybeTuple operatorArgument
   skipSpace
-  _ <- char ')'
-  pure parameters
+  sel <- entries
+  pure (kind' $ Operator' operatorName' variables sel pos)
 
-operatorHead :: Text -> Parser (Text, VariableDefinitions)
-operatorHead kind' = do
-  _ <- string kind'
-  _ <- char ' '
+parseAnonymousQuery :: Parser RawOperator
+parseAnonymousQuery = do
   skipSpace
-  queryName <- token
-  variables <- try (skipSpace *> operatorArguments) <|> pure []
-  pure (queryName, variables)
+  position' <- getPosition
+  selection' <- entries
+  pure (Query $ Operator' "" [] selection' position') <?> "can't parse AnonymousQuery"
+
+operatorKind :: Parser (RawOperator' -> RawOperator)
+operatorKind = (string "query" $> Query) <|> (string "mutation" $> Mutation) <|> (string "subscription" $> Subscription)
