@@ -4,6 +4,7 @@ module Data.Morpheus.Parser.Internal
   ( GQLSyntax(..)
   , syntaxFail
   , catchError
+  , getPosition
   ) where
 
 import qualified Data.Attoparsec.Internal.Types as AT
@@ -20,6 +21,11 @@ syntaxFail err = AT.Parser parser
   where
     parser t pos more lose _success = lose t pos more [] msg
     msg = "Syntax Error: " ++ unpack err
+
+getPosition :: Parser Int
+getPosition = AT.Parser internFunc
+  where
+    internFunc t pos more _ success = success t pos more (AT.fromPos pos)
 
 catchError :: Parser a -> Parser (GQLSyntax a)
 catchError parser = transform (Valid <$> parser)

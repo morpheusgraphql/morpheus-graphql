@@ -4,7 +4,8 @@ module Data.Morpheus.Parser.Arguments
 
 import           Control.Applicative                           ((<|>))
 import           Data.Attoparsec.Text                          (Parser)
-import           Data.Morpheus.Parser.Primitive                (getPosition, token, variable)
+import           Data.Morpheus.Parser.Internal                 (getPosition)
+import           Data.Morpheus.Parser.Primitive                (token, variable)
 import           Data.Morpheus.Parser.Terms                    (parseAssignment, parseMaybeTuple)
 import           Data.Morpheus.Parser.Value                    (enumValue, parseValue)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Argument (..), RawArgument (..), RawArguments,

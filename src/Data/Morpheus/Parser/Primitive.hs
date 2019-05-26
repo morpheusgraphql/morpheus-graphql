@@ -5,11 +5,10 @@ module Data.Morpheus.Parser.Primitive where
 import           Control.Applicative                (many, (<|>))
 import           Data.Attoparsec.Text
 import           Data.Functor                       (($>))
+import           Data.Morpheus.Parser.Internal      (getPosition)
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..), Value (..), decodeScientific)
 import           Data.Text                          (Text)
 import qualified Data.Text                          as T (pack)
-
-import qualified Data.Attoparsec.Internal.Types     as AT
 
 replaceType :: Text -> Text
 replaceType "type" = "_type"
@@ -75,11 +74,6 @@ variable = do
 
 separator :: Parser Char
 separator = char ',' <|> char ' ' <|> char '\n' <|> char '\t'
-
-getPosition :: Parser Int
-getPosition = AT.Parser internFunc
-  where
-    internFunc t pos more _ success = success t pos more (AT.fromPos pos)
 
 getNextLine :: Parser Int
 getNextLine = do

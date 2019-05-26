@@ -8,7 +8,8 @@ module Data.Morpheus.Parser.Body
 import           Control.Applicative                           ((<|>))
 import           Data.Attoparsec.Text                          (Parser, char, sepBy, skipSpace, try)
 import           Data.Morpheus.Parser.Arguments                (maybeArguments)
-import           Data.Morpheus.Parser.Primitive                (getPosition, qualifier, separator, token)
+import           Data.Morpheus.Parser.Internal                 (getPosition)
+import           Data.Morpheus.Parser.Primitive                (qualifier, separator, token)
 import           Data.Morpheus.Parser.Terms                    (onType, parseAssignment, spreadLiteral)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
                                                                 RawSelection' (..), RawSelectionSet, Reference (..))
