@@ -2,31 +2,31 @@
 
 module Data.Morpheus.Parser.Internal
   ( GQLSyntax(..)
-  , ASTNode
-  , endParsing
-  , gqlSyntax
+  , syntaxFail
+  , catchError
   ) where
 
-import           Control.Applicative
-import           Data.Attoparsec.Text           (Parser, endOfInput, skipSpace)
-import           Data.Morpheus.Parser.Primitive (getPosition)
-import           Data.Text                      (Text)
-import qualified Data.Text                      as T (concat)
+import qualified Data.Attoparsec.Internal.Types as AT
+import           Data.Attoparsec.Text           (Parser)
+import           Data.Text                      (Text, pack, unpack)
 
 data GQLSyntax a
   = Invalid Text
             Int
   | Valid a
 
-type ASTNode a = Parser (GQLSyntax a)
+syntaxFail :: Text -> Parser a
+syntaxFail err = AT.Parser parser
+  where
+    parser t pos more lose _success = lose t pos more [] msg
+    msg = "Syntax Error: " ++ unpack err
 
-gqlSyntax :: Parser a -> Text -> Parser (GQLSyntax a)
-gqlSyntax parser message' = do
-  position' <- getPosition
-  Valid <$> parser <|> return (Invalid (T.concat ["GQL Syntax:", message']) position')
-
-endParsing :: a -> Parser (GQLSyntax a)
-endParsing x = do
-  skipSpace
-  position' <- getPosition
-  (endOfInput >> return (Valid x)) <|> return (Invalid "Could not read after the Position" position')
+catchError :: Parser a -> Parser (GQLSyntax a)
+catchError parser = transform (Valid <$> parser)
+  where
+    transform :: AT.Parser i (GQLSyntax a) -> AT.Parser i (GQLSyntax a)
+    transform f =
+      AT.Parser $ \t pos more lose success ->
+        let lose' t' position' more' _ msg' = AT.runParser (astError msg' position') t' pos more' lose success
+         in AT.runParser f t pos more lose' success
+    astError message position' = return (Invalid (pack message) (AT.fromPos position'))

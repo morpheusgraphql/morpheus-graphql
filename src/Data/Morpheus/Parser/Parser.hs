@@ -4,12 +4,12 @@ module Data.Morpheus.Parser.Parser
   ) where
 
 import           Control.Applicative                     (many)
-import           Data.Attoparsec.Text                    (Parser, parseOnly)
+import           Data.Attoparsec.Text                    (Parser, endOfInput, parseOnly, skipSpace)
 import           Data.Map                                (fromList, toList)
 import           Data.Maybe                              (maybe)
 import           Data.Morpheus.Error.Syntax              (syntaxError)
 import           Data.Morpheus.Parser.Fragment           (fragment)
-import           Data.Morpheus.Parser.Internal           (GQLSyntax (..), endParsing)
+import           Data.Morpheus.Parser.Internal           (GQLSyntax (..), catchError)
 import           Data.Morpheus.Parser.Operator           (parseAnonymousQuery, parseOperator)
 import           Data.Morpheus.Parser.Primitive          (getLines)
 import           Data.Morpheus.Parser.Terms              (parseWhenChar)
@@ -23,13 +23,15 @@ request :: Parser GQLQueryRoot
 request = do
   operator' <- parseWhenChar '{' parseAnonymousQuery parseOperator
   fragmentLib <- fromList <$> many fragment
+  skipSpace
+  endOfInput
   pure GQLQueryRoot {queryBody = operator', fragments = fragmentLib, inputVariables = []}
 
 getVariables :: GQLRequest -> [(Text, Value)]
 getVariables request' = maybe [] toList (variables request')
 
 parseReq :: GQLRequest -> Either String (GQLSyntax GQLQueryRoot)
-parseReq requestBody = parseOnly (request >>= endParsing) $ query requestBody
+parseReq requestBody = parseOnly (catchError request) $ query requestBody
 
 parseLineBreaks :: GQLRequest -> [Int]
 parseLineBreaks requestBody =
