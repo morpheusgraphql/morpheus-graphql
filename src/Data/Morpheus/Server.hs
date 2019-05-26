@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.MorpheusServer where
+module Data.Morpheus.Server where
 
 import           Control.Concurrent (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
 import           Control.Exception  (finally)
