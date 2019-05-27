@@ -17,4 +17,4 @@ startServer =
     post "/" $ raw =<< (liftIO . mythologyApi =<< body)
 
 main :: IO ()
-main = startWebSocket >> startServer
+main = startWebSocket
