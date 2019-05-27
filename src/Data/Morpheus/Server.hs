@@ -9,7 +9,6 @@ import           Control.Exception  (finally)
 import           Control.Monad      (forM_, forever)
 import           Data.Monoid        (mappend)
 import           Data.Text          (Text)
-import qualified Data.Text          as T
 import qualified Network.WebSockets as WS
 
 type Client = (Text, WS.Connection)
@@ -25,8 +24,12 @@ addClient client clients = client : clients
 removeClient :: Client -> ServerState -> ServerState
 removeClient client = filter ((/= fst client) . fst)
 
-broadcast :: Text -> ServerState -> IO ()
-broadcast message clients = forM_ clients $ \(_, connection') -> WS.sendTextData connection' message
+broadcast :: Text -> ServerState -> IO ServerState
+broadcast message clients = do
+  forM_ clients sendMessage
+  return clients
+  where
+    sendMessage (_, connection') = WS.sendTextData connection' message
 
 startWebSocket :: IO ()
 startWebSocket = do
@@ -42,14 +45,10 @@ application state pending = do
   where
     initConnection connection' msg =
       flip finally disconnect $ do
-        modifyMVar_ state $ \state' -> do
-          let s' = addClient client state'
-          WS.sendTextData connection' $ "Welcome! Users: " `mappend` T.intercalate ", " (map fst state')
-          broadcast (fst client `mappend` " joined") s'
-          return s'
+        modifyMVar_ state $ \state' -> broadcast (fst client `mappend` " joined") (addClient client state')
         talk client state
       where
-        client = (T.drop (T.length "Hi! I am ") msg, connection')
+        client = (msg, connection')
         disconnect = do
           s <-
             modifyMVar state $ \s ->
