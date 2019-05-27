@@ -44,9 +44,15 @@ schema queryRes mutationRes subscriptionRes =
   async = ....
 
   newtype Async a = Pending | Response { unpackAwait :: Stream Channels } |
+
+  data Context = Context {
+      allConnections :: [(UpdateAction,Connection)]
+  }
 -}
-resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> ResolveIO Value
-resolve rootResolver request = do
+
+-- hied should be add WebSocket Connection :: Maybe Context)
+resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> {- Maybe Context -> -} LB.ByteString -> ResolveIO Value
+resolve rootResolver {- context -} request = do
   rootGQL <- ExceptT $ pure (parseRequest request >>= validateRequest gqlSchema)
   case rootGQL of
     Query operator'        -> encodeQuery queryRes gqlSchema $ operatorSelection operator'
