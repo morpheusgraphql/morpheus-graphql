@@ -10,9 +10,9 @@ import           Control.Monad      (forM_, forever)
 
 --import           Data.Morpheus      (GQLRootResolver, interpreter)
 import           Data.Text          (Text, pack)
-import qualified Network.WebSockets as WS
+import           Network.WebSockets (Connection, ServerApp, acceptRequest, forkPingThread, receiveData, sendTextData)
 
-type Client = (Text, WS.Connection)
+type Client = (Text, Connection)
 
 type ServerState = [Client]
 
@@ -40,9 +40,9 @@ broadcast message clients = do
   forM_ clients sendMessage
   return clients
   where
-    sendMessage (_, connection') = WS.sendTextData connection' message
+    sendMessage (_, connection') = sendTextData connection' message
 
-socketApplication :: (Text -> IO Text) -> IO WS.ServerApp
+socketApplication :: (Text -> IO Text) -> IO ServerApp
 socketApplication interpreter = do
   state <- newMVar []
   return (application state interpreter)
@@ -51,13 +51,13 @@ talk :: (Text -> IO Text) -> Client -> MVar ServerState -> IO ()
 talk interpreter' (user, conn) state = forever handleRequest
   where
     handleRequest = do
-      msg <- WS.receiveData conn >>= interpreter'
+      msg <- receiveData conn >>= interpreter'
       readMVar state >>= broadcast (user <> ": " <> msg)
 
-application :: MVar ServerState -> (Text -> IO Text) -> WS.ServerApp
+application :: MVar ServerState -> (Text -> IO Text) -> ServerApp
 application state interpreter' pending = do
-  connection' <- WS.acceptRequest pending
-  WS.forkPingThread connection' 30
+  connection' <- acceptRequest pending
+  forkPingThread connection' 30
   -- initialMessage <- WS.receiveData connection'
   id' <- generateID <$> readMVar state
   modifyMVar_ state $ joinClient (id', connection')
