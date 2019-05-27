@@ -6,23 +6,22 @@ module Data.Morpheus
   ) where
 
 import           Control.Monad.Trans.Except                (ExceptT (..), runExceptT)
-import           Data.Aeson                                (decode, encode)
+import           Data.Aeson                                (encode)
 import           Data.ByteString                           (ByteString)
 import qualified Data.ByteString.Lazy.Char8                as LB (ByteString, fromStrict, toStrict)
-import           Data.Morpheus.Error.Utils                 (errorMessage, renderErrors)
+import           Data.Morpheus.Error.Utils                 (renderErrors)
 import           Data.Morpheus.Kind.GQLMutation            (GQLMutation (..))
 import           Data.Morpheus.Kind.GQLQuery               (GQLQuery (..))
 import           Data.Morpheus.Kind.GQLSubscription        (GQLSubscription (..))
-import           Data.Morpheus.Parser.Parser               (parseGQL, parseLineBreaks)
+import           Data.Morpheus.Parser.Parser               (parseLineBreaks, parseRequest)
 import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..))
 import           Data.Morpheus.Types.Internal.Data         (DataTypeLib)
-import           Data.Morpheus.Types.Internal.Validation   (ResolveIO, failResolveIO)
+import           Data.Morpheus.Types.Internal.Validation   (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value        (Value)
-import           Data.Morpheus.Types.Request               (GQLRequest)
 import           Data.Morpheus.Types.Response              (GQLResponse (..))
 import           Data.Morpheus.Types.Types                 (GQLRoot (..))
 import           Data.Morpheus.Validation.Validation       (validateRequest)
-import           Data.Text                                 (Text, pack)
+import           Data.Text                                 (Text)
 import qualified Data.Text.Lazy                            as LT (Text, fromStrict, toStrict)
 import           Data.Text.Lazy.Encoding                   (decodeUtf8, encodeUtf8)
 
@@ -30,9 +29,9 @@ schema :: (GQLQuery a, GQLMutation b, GQLSubscription c) => a -> b -> c -> DataT
 schema queryRes mutationRes subscriptionRes =
   subscriptionSchema subscriptionRes $ mutationSchema mutationRes $ querySchema queryRes
 
-resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> GQLRequest -> ResolveIO Value
-resolve rootResolver body = do
-  rootGQL <- ExceptT $ pure (parseGQL body >>= validateRequest gqlSchema)
+resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> ResolveIO Value
+resolve rootResolver request = do
+  rootGQL <- ExceptT $ pure (parseRequest request >>= validateRequest gqlSchema)
   case rootGQL of
     Query operator'        -> encodeQuery queryRes gqlSchema $ operatorSelection operator'
     Mutation operator'     -> encodeMutation mutationRes $ operatorSelection operator'
@@ -42,12 +41,6 @@ resolve rootResolver body = do
     queryRes = query rootResolver
     mutationRes = mutation rootResolver
     subscriptionRes = subscription rootResolver
-
-lineBreaks :: LB.ByteString -> [Int]
-lineBreaks req =
-  case decode req of
-    Just x  -> parseLineBreaks x
-    Nothing -> []
 
 type GQLRootResolver d
    = forall a b c. (GQLQuery a, GQLMutation b, GQLSubscription c) =>
@@ -59,16 +52,10 @@ type GQLHandler a
 
 interpreterRaw :: GQLRootResolver (LB.ByteString -> IO GQLResponse)
 interpreterRaw rootResolver request = do
-  value <- runExceptT $ parseRequest request >>= resolve rootResolver
+  value <- runExceptT (resolve rootResolver request)
   case value of
-    Left x  -> pure $ Errors $ renderErrors (lineBreaks request) x
+    Left x  -> pure $ Errors $ renderErrors (parseLineBreaks request) x
     Right x -> pure $ Data x
-
-parseRequest :: LB.ByteString -> ResolveIO GQLRequest
-parseRequest text =
-  case decode text of
-    Just x  -> pure x
-    Nothing -> failResolveIO $ errorMessage 0 (pack $ show text)
 
 class Interpreter a where
   interpreter :: GQLRootResolver (a -> IO a)

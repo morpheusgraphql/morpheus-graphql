@@ -1,10 +1,12 @@
 module Data.Morpheus.Parser.Parser
-  ( parseGQL
-  , parseLineBreaks
+  ( parseLineBreaks
+  , parseRequest
   ) where
 
 import           Control.Applicative                     (many)
+import           Data.Aeson                              (decode)
 import           Data.Attoparsec.Text                    (Parser, endOfInput, parseOnly, skipSpace)
+import qualified Data.ByteString.Lazy.Char8              as LB (ByteString)
 import           Data.Map                                (fromList, toList)
 import           Data.Maybe                              (maybe)
 import           Data.Morpheus.Error.Syntax              (syntaxError)
@@ -32,11 +34,17 @@ getVariables request' = maybe [] toList (variables request')
 parseReq :: GQLRequest -> Either String (GQLSyntax GQLQueryRoot)
 parseReq requestBody = parseOnly (catchError request) $ query requestBody
 
-parseLineBreaks :: GQLRequest -> [Int]
-parseLineBreaks requestBody =
-  case parseOnly parseLinebreakPositions $ query requestBody of
-    Right x -> x
-    Left _  -> []
+parseLineBreaks :: LB.ByteString -> [Int]
+parseLineBreaks req =
+  case decode req of
+    Just x  -> lineBreaks x
+    Nothing -> []
+  where
+    lineBreaks :: GQLRequest -> [Int]
+    lineBreaks requestBody =
+      case parseOnly parseLinebreakPositions $ query requestBody of
+        Right x -> x
+        Left _  -> []
 
 parseGQL :: GQLRequest -> Validation GQLQueryRoot
 parseGQL requestBody =
@@ -44,3 +52,9 @@ parseGQL requestBody =
     Right (Valid root)         -> Right $ root {inputVariables = getVariables requestBody}
     Right (Invalid text index) -> Left $ syntaxError text index
     Left parseError            -> Left $ syntaxError (pack parseError) 0
+
+parseRequest :: LB.ByteString -> Validation GQLQueryRoot
+parseRequest text =
+  case decode text of
+    Just body -> parseGQL body
+    Nothing   -> Left $ syntaxError (pack $ show text) 0
