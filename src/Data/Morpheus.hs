@@ -29,13 +29,44 @@ schema :: (GQLQuery a, GQLMutation b, GQLSubscription c) => a -> b -> c -> DataT
 schema queryRes mutationRes subscriptionRes =
   subscriptionSchema subscriptionRes $ mutationSchema mutationRes $ querySchema queryRes
 
+{-
+  data UpdateAction = UserAdded (Async User) | AddressAdded (Async Address)
+
+  data Subscription = Subscription {
+      newUser :: Async User,
+      newAddress :: Async Address
+  }
+
+  -- resolveNewUserSubscription :: Async User
+  -- resolveSubscription = async (UserAdded Pending)
+
+  async :: Channels -> Stream Channels
+  async = ....
+
+  newtype Async a = Pending | Response { unpackAwait :: Stream Channels } |
+-}
 resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> ResolveIO Value
 resolve rootResolver request = do
   rootGQL <- ExceptT $ pure (parseRequest request >>= validateRequest gqlSchema)
   case rootGQL of
     Query operator'        -> encodeQuery queryRes gqlSchema $ operatorSelection operator'
     Mutation operator'     -> encodeMutation mutationRes $ operatorSelection operator'
+    {-
+       TODO: setup stream
+       Mutation returns -> [UpdateAction]
+       that can be resolved by subscriptions
+    -}
     Subscription operator' -> encodeSubscription subscriptionRes $ operatorSelection operator'
+     {-
+           TODO: setup stream
+           Subscription returns -> [UpdateAction]
+
+          subscriptionResponse:: [(UpdateAction,Connection)] -> [UpdateAction] -> Stream GQLResponse
+          subscriptionResponse subscriptionActions mutationActions = do
+               matchedActions <- match mutationActions subscriptionActions  -- only Subscribed UpdateActions will be executed
+               mapM sendResponse matchedActions  -- all subscribed actions will be send
+           that can be resolved by subscriptions
+     -}
   where
     gqlSchema = schema queryRes mutationRes subscriptionRes
     queryRes = query rootResolver
