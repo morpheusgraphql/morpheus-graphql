@@ -146,11 +146,22 @@ transformUser user' =
 createUserMutation :: AddressArgs ::-> User
 createUserMutation = transformUser <$> Resolver (const jsonUser)
 
---data Context
---  = UserAdded (Maybe User)
---  | AddressAdded (Maybe Address)
--- createSubscription :: Subscribtions
--- createSubscription = await UserAdded User
+{-
+  data Channels = UserAdded (Async User) | AddressAdded (Async Address)
+
+  data Subscription = Subscription {
+      newUser :: Async User,
+      newAddress :: Async Address
+  }
+
+  -- resolveNewUserSubscription :: Async User
+  -- resolveSubscription = async (UserAdded Pending)
+
+  async :: Channels -> Stream Channels
+  async = ....
+
+  newtype Async a = Pending | Response { unpackAwait :: Stream Channels } |
+-}
 gqlApi :: GQLHandler a
 gqlApi =
   interpreter
