@@ -48,10 +48,11 @@ socketApplication interpreter = do
   return (application state interpreter)
 
 talk :: (Text -> IO Text) -> Client -> MVar ServerState -> IO ()
-talk interpreter' (user, conn) state =
-  forever $ do
-    msg <- WS.receiveData conn >>= interpreter'
-    readMVar state >>= broadcast (user <> ": " <> msg)
+talk interpreter' (user, conn) state = forever handleRequest
+  where
+    handleRequest = do
+      msg <- WS.receiveData conn >>= interpreter'
+      readMVar state >>= broadcast (user <> ": " <> msg)
 
 application :: MVar ServerState -> (Text -> IO Text) -> WS.ServerApp
 application state interpreter' pending = do
