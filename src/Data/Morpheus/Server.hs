@@ -7,7 +7,6 @@ module Data.Morpheus.Server
 import           Control.Concurrent (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
 import           Control.Exception  (finally)
 import           Control.Monad      (forM_, forever)
-import           Data.Monoid        (mappend)
 import           Data.Text          (Text)
 import qualified Network.WebSockets as WS
 
@@ -40,19 +39,15 @@ application state pending = do
   msg <- WS.receiveData connection'
   initConnection connection' msg
   where
-    initConnection connection' msg =
-      flip finally disconnect $ do
-        modifyMVar_ state joinUser
-        talk client state
+    initConnection connection' msg = finally handShake disconnect
       where
-        joinUser state' = broadcast (fst client `mappend` " joined") (addClient client state')
+        handShake = modifyMVar_ state joinUser >> talk client state
+        joinUser state' = broadcast (fst client <> " joined") (addClient client state')
         client = (msg, connection')
-        disconnect = do
-          s <-
-            modifyMVar state $ \s ->
-              let s' = removeClient client s
-               in return (s', s')
-          broadcast (fst client `mappend` " disconnected") s
+        removeUser s =
+          let s' = removeClient client s
+           in return (s', s')
+        disconnect = modifyMVar state removeUser >>= broadcast (fst client <> " disconnected")
 
 talk :: Client -> MVar ServerState -> IO ()
 talk (user, conn) state =
