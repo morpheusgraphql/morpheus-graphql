@@ -7,6 +7,7 @@ module Data.Morpheus.Server
 import           Control.Concurrent (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
 import           Control.Exception  (finally)
 import           Control.Monad      (forM_, forever)
+import           Data.Morpheus      (interpreter)
 import           Data.Text          (Text, pack)
 import qualified Network.WebSockets as WS
 
@@ -41,9 +42,12 @@ broadcast message clients = do
     sendMessage (_, connection') = WS.sendTextData connection' message
 
 startWebSocket :: IO ()
-startWebSocket = do
+startWebSocket = applicationIO >>= WS.runServer "127.0.0.1" 9160
+
+applicationIO :: IO WS.ServerApp
+applicationIO = do
   state <- newMVar []
-  WS.runServer "127.0.0.1" 9160 $ application state
+  return (application state)
 
 application :: MVar ServerState -> WS.ServerApp
 application state pending = do
