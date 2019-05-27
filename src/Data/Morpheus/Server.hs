@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Server
-  ( startWebSocket
+  ( socketApplication
   ) where
 
 import           Control.Concurrent (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
@@ -41,11 +41,8 @@ broadcast message clients = do
   where
     sendMessage (_, connection') = WS.sendTextData connection' message
 
-startWebSocket :: IO ()
-startWebSocket = applicationIO >>= WS.runServer "127.0.0.1" 9160
-
-applicationIO :: IO WS.ServerApp
-applicationIO = do
+socketApplication :: IO WS.ServerApp
+socketApplication = do
   state <- newMVar []
   return (application state)
 
