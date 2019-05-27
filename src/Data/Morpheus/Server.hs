@@ -16,12 +16,6 @@ type Client = (Text, Connection)
 
 type ServerState = [Client]
 
-addClient :: Client -> ServerState -> ServerState
-addClient client clients = client : clients
-
-joinClient :: Client -> ServerState -> IO ServerState
-joinClient (id', connection') state' = broadcast (id' <> " joined") (addClient (id', connection') state')
-
 removeClient :: Client -> ServerState -> ServerState
 removeClient client = filter ((/= fst client) . fst)
 
@@ -42,11 +36,6 @@ broadcast message clients = do
   where
     sendMessage (_, connection') = sendTextData connection' message
 
-socketApplication :: (Text -> IO Text) -> IO ServerApp
-socketApplication interpreter = do
-  state <- newMVar []
-  return (application state interpreter)
-
 talk :: (Text -> IO Text) -> Client -> MVar ServerState -> IO ()
 talk interpreter' (user, conn) state = forever handleRequest
   where
@@ -54,13 +43,23 @@ talk interpreter' (user, conn) state = forever handleRequest
       msg <- receiveData conn >>= interpreter'
       readMVar state >>= broadcast (user <> ": " <> msg)
 
-application :: MVar ServerState -> (Text -> IO Text) -> ServerApp
-application state interpreter' pending = do
+registerSubscription :: MVar ServerState -> Connection -> IO Client
+registerSubscription varState' connection' = do
+  client' <- newClient
+  modifyMVar_ varState' (addClient client')
+  return client'
+  where
+    newClient = do
+      id' <- generateID <$> readMVar varState'
+      return (id', connection')
+    addClient client' state' = return (client' : state')
+
+application :: (Text -> IO Text) -> MVar ServerState -> ServerApp
+application interpreter' state pending = do
   connection' <- acceptRequest pending
   forkPingThread connection' 30
-  -- initialMessage <- WS.receiveData connection'
-  id' <- generateID <$> readMVar state
-  modifyMVar_ state $ joinClient (id', connection')
-  initConnection (id', connection')
-  where
-    initConnection client' = finally (talk interpreter' client' state) (disconnectClient client' state)
+  client' <- registerSubscription state connection'
+  finally (talk interpreter' client' state) (disconnectClient client' state)
+
+socketApplication :: (Text -> IO Text) -> IO ServerApp
+socketApplication interpreter = application interpreter <$> newMVar []
