@@ -15,9 +15,6 @@ type Client = (Text, WS.Connection)
 
 type ServerState = [Client]
 
-newServerState :: ServerState
-newServerState = []
-
 addClient :: Client -> ServerState -> ServerState
 addClient client clients = client : clients
 
@@ -33,7 +30,7 @@ broadcast message clients = do
 
 startWebSocket :: IO ()
 startWebSocket = do
-  state <- newMVar newServerState
+  state <- newMVar []
   WS.runServer "127.0.0.1" 9160 $ application state
 
 application :: MVar ServerState -> WS.ServerApp
@@ -45,9 +42,10 @@ application state pending = do
   where
     initConnection connection' msg =
       flip finally disconnect $ do
-        modifyMVar_ state $ \state' -> broadcast (fst client `mappend` " joined") (addClient client state')
+        modifyMVar_ state joinUser
         talk client state
       where
+        joinUser state' = broadcast (fst client `mappend` " joined") (addClient client state')
         client = (msg, connection')
         disconnect = do
           s <-
