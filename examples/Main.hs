@@ -12,7 +12,9 @@ import           Network.WebSockets     (runServer)
 import           Web.Scotty
 
 startWebSocket :: IO ()
-startWebSocket = socketApplication >>= runServer "127.0.0.1" 9160
+startWebSocket = socketApplication gqlApi >>= runServer "127.0.0.1" 9160
+
+--ws.send(JSON.stringify({"query":"query User{user{name}}"}))
 
 startServer :: IO ()
 startServer =
@@ -21,4 +23,4 @@ startServer =
     post "/" $ raw =<< (liftIO . mythologyApi =<< body)
 
 main :: IO ()
-main = startWebSocket
+main = startWebSocket >> startServer

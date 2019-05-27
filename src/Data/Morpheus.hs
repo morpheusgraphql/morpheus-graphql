@@ -1,5 +1,8 @@
+{-# LANGUAGE RankNTypes #-}
+
 module Data.Morpheus
   ( interpreter
+  , GQLHandler
   ) where
 
 import           Control.Monad.Trans.Except                (ExceptT (..), runExceptT)
@@ -46,7 +49,15 @@ lineBreaks req =
     Just x  -> parseLineBreaks x
     Nothing -> []
 
-interpreterRaw :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> IO GQLResponse
+type GQLRootResolver d
+   = forall a b c. (GQLQuery a, GQLMutation b, GQLSubscription c) =>
+                     GQLRoot a b c -> d
+
+type GQLHandler a
+   = Interpreter a =>
+       a -> IO a
+
+interpreterRaw :: GQLRootResolver (LB.ByteString -> IO GQLResponse)
 interpreterRaw rootResolver request = do
   value <- runExceptT $ parseRequest request >>= resolve rootResolver
   case value of
@@ -60,7 +71,7 @@ parseRequest text =
     Nothing -> failResolveIO $ errorMessage 0 (pack $ show text)
 
 class Interpreter a where
-  interpreter :: (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> a -> IO a
+  interpreter :: GQLRootResolver (a -> IO a)
 
 instance Interpreter LB.ByteString where
   interpreter root request = encode <$> interpreterRaw root request

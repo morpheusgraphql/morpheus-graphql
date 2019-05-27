@@ -8,15 +8,14 @@ module Deprecated.API
   ( gqlApi
   ) where
 
-import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..),
-                                             INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..), ID, ScalarValue (..))
-import           Data.Text                  (Text, pack)
-import           Deprecated.Model           (JSONAddress, JSONUser, jsonAddress, jsonUser)
-import qualified Deprecated.Model           as M (JSONAddress (..), JSONUser (..))
-import           GHC.Generics               (Generic)
+import           Data.Morpheus       (GQLHandler, interpreter)
+import           Data.Morpheus.Kind  (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..), INPUT_OBJECT,
+                                      KIND, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Types ((::->) (..), GQLRoot (..), ID, ScalarValue (..))
+import           Data.Text           (Text, pack)
+import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
+import qualified Deprecated.Model    as M (JSONAddress (..), JSONUser (..))
+import           GHC.Generics        (Generic)
 
 type instance KIND CityID = ENUM
 
@@ -147,7 +146,7 @@ transformUser user' =
 createUserMutation :: AddressArgs ::-> User
 createUserMutation = transformUser <$> Resolver (const jsonUser)
 
-gqlApi :: ByteString -> IO ByteString
+gqlApi :: GQLHandler a
 gqlApi =
   interpreter
     GQLRoot

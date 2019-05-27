@@ -7,7 +7,8 @@ module Data.Morpheus.Server
 import           Control.Concurrent (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
 import           Control.Exception  (finally)
 import           Control.Monad      (forM_, forever)
-import           Data.Morpheus      (interpreter)
+
+--import           Data.Morpheus      (GQLRootResolver, interpreter)
 import           Data.Text          (Text, pack)
 import qualified Network.WebSockets as WS
 
@@ -32,7 +33,7 @@ disconnectClient client state = modifyMVar state removeUser >>= broadcast (fst c
        in return (s', s')
 
 generateID :: [a] -> Text
-generateID = ("user" <>) . pack . show . length
+generateID = ("connection_" <>) . pack . show . length
 
 broadcast :: Text -> ServerState -> IO ServerState
 broadcast message clients = do
@@ -41,13 +42,19 @@ broadcast message clients = do
   where
     sendMessage (_, connection') = WS.sendTextData connection' message
 
-socketApplication :: IO WS.ServerApp
-socketApplication = do
+socketApplication :: (Text -> IO Text) -> IO WS.ServerApp
+socketApplication interpreter = do
   state <- newMVar []
-  return (application state)
+  return (application state interpreter)
 
-application :: MVar ServerState -> WS.ServerApp
-application state pending = do
+talk :: (Text -> IO Text) -> Client -> MVar ServerState -> IO ()
+talk interpreter' (user, conn) state =
+  forever $ do
+    msg <- WS.receiveData conn >>= interpreter'
+    readMVar state >>= broadcast (user <> ": " <> msg)
+
+application :: MVar ServerState -> (Text -> IO Text) -> WS.ServerApp
+application state interpreter' pending = do
   connection' <- WS.acceptRequest pending
   WS.forkPingThread connection' 30
   -- initialMessage <- WS.receiveData connection'
@@ -55,10 +62,4 @@ application state pending = do
   modifyMVar_ state $ joinClient (id', connection')
   initConnection (id', connection')
   where
-    initConnection client' = finally (talk client' state) (disconnectClient client' state)
-
-talk :: Client -> MVar ServerState -> IO ()
-talk (user, conn) state =
-  forever $ do
-    msg <- WS.receiveData conn
-    readMVar state >>= broadcast (user <> ": " <> msg)
+    initConnection client' = finally (talk interpreter' client' state) (disconnectClient client' state)
