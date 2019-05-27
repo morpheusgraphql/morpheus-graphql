@@ -146,6 +146,11 @@ transformUser user' =
 createUserMutation :: AddressArgs ::-> User
 createUserMutation = transformUser <$> Resolver (const jsonUser)
 
+--data Context
+--  = UserAdded (Maybe User)
+--  | AddressAdded (Maybe Address)
+-- createSubscription :: Subscribtions
+-- createSubscription = await UserAdded User
 gqlApi :: GQLHandler a
 gqlApi =
   interpreter
