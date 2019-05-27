@@ -53,4 +53,4 @@ talk :: Client -> MVar ServerState -> IO ()
 talk (user, conn) state =
   forever $ do
     msg <- WS.receiveData conn
-    readMVar state >>= broadcast (user `mappend` ": " `mappend` msg)
+    readMVar state >>= broadcast (user <> ": " <> msg)
