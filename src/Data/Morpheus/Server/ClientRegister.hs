@@ -1,5 +1,6 @@
 module Data.Morpheus.Server.ClientRegister
   ( ClientRegister
+  , GQLState
   , connectClient
   , disconnectClient
   , updateClientByID
@@ -13,6 +14,8 @@ import           Data.Text                      (Text)
 import           Network.WebSockets             (Connection, sendTextData)
 
 type ClientRegister = [(ClientID, GQLClient)]
+
+type GQLState = MVar ClientRegister
 
 connectClient :: Connection -> MVar ClientRegister -> IO GQLClient
 connectClient connection' varState' = do

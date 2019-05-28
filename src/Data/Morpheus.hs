@@ -18,6 +18,7 @@ import           Data.Morpheus.Kind.GQLMutation            (GQLMutation (..))
 import           Data.Morpheus.Kind.GQLQuery               (GQLQuery (..))
 import           Data.Morpheus.Kind.GQLSubscription        (GQLSubscription (..))
 import           Data.Morpheus.Parser.Parser               (parseLineBreaks, parseRequest)
+import           Data.Morpheus.Server.ClientRegister       (GQLState, publishUpdates)
 import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..))
 import           Data.Morpheus.Types.Internal.Data         (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation   (ResolveIO)
@@ -127,16 +128,15 @@ streamInterpreter rootResolver request = do
     Right (Subscribe x') -> pure $ Subscribe x'
     Right (NoEffect x') -> pure $ NoEffect (encodeToText $ Data x')
 
-packStream :: (InputAction Int Text -> IO (OutputAction c Text)) -> LB.ByteString -> IO LB.ByteString
-packStream streamAPI request = do
+packStream :: GQLState -> (InputAction Int Text -> IO (OutputAction c Text)) -> LB.ByteString -> IO LB.ByteString
+packStream state streamAPI request = do
   value <- streamAPI (SocketConnection 0 $ bsToText request)
   case value of
-    Publish {mutationResponse = res'} ->  do
-     -- publishUpdates chanelId' message' state
+    Publish {mutationResponse = res', actionChannelID = id', actionPayload = message'} -> do
+      publishUpdates id' message' state
       pure (toLBS res') {-- Actual response-}
-    Subscribe {}                      -> pure "subscriptions are only allowed in websocket"
-    NoEffect res'                     -> pure (toLBS res')
-
+    Subscribe {} -> pure "subscriptions are only allowed in websocket"
+    NoEffect res' -> pure (toLBS res')
 
 interpreterRaw :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> IO GQLResponse
 interpreterRaw rootResolver request = do

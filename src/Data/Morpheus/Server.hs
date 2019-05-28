@@ -1,5 +1,6 @@
 module Data.Morpheus.Server
   ( socketGQL
+  , initGQLState
   ) where
 
 import           Control.Concurrent                  (MVar, newMVar)
@@ -10,8 +11,8 @@ import           Data.Text                           (Text)
 import           Network.WebSockets                  (Connection, ServerApp, acceptRequest, forkPingThread, receiveData,
                                                       sendTextData)
 
-import           Data.Morpheus.Server.ClientRegister (ClientRegister, connectClient, disconnectClient, publishUpdates,
-                                                      updateClientByID)
+import           Data.Morpheus.Server.ClientRegister (ClientRegister, GQLState, connectClient, disconnectClient,
+                                                      publishUpdates, updateClientByID)
 import           Data.Morpheus.Server.GQLClient      (ClientID, GQLClient (..))
 
 type GQLMessage = Text
@@ -39,12 +40,12 @@ queryHandler interpreter' GQLClient {clientConnection = connection', clientID = 
       print msg
       handleGQLResponse connection' state msg
 
-application :: GQLAPI -> MVar ClientRegister -> ServerApp
-application interpreter' state pending = do
+initGQLState :: IO GQLState
+initGQLState = newMVar []
+
+socketGQL :: GQLAPI -> GQLState -> ServerApp
+socketGQL interpreter' state pending = do
   connection' <- acceptRequest pending
   forkPingThread connection' 30
   client' <- connectClient connection' state
   finally (queryHandler interpreter' client' state) (disconnectClient client' state)
-
-socketGQL :: GQLAPI -> IO ServerApp
-socketGQL interpreter = application interpreter <$> newMVar []

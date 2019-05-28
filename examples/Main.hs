@@ -7,7 +7,7 @@ module Main
 import           Control.Concurrent     (forkIO)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Morpheus          (packStream, streamInterpreter)
-import           Data.Morpheus.Server   (socketGQL)
+import           Data.Morpheus.Server   (initGQLState, socketGQL)
 import           Deprecated.API         (gqlRoot)
 import           Mythology.API          (mythologyApi)
 import           Network.WebSockets     (runServer)
@@ -23,11 +23,12 @@ ws.send(JSON.stringify({"query":"subscription ShowNewUser{ newUser{name} }"}))
 -}
 main :: IO ()
 main = do
-  _ <- forkIO wsServer
-  httpServer
+  state <- initGQLState
+  _ <- forkIO $ wsServer state
+  httpServer state
   where
-    wsServer = socketGQL (streamInterpreter gqlRoot) >>= runServer "127.0.0.1" 4000
-    httpServer =
+    wsServer = runServer "127.0.0.1" 4000 . socketGQL (streamInterpreter gqlRoot)
+    httpServer state =
       scotty 3000 $ do
-        post "/api" $ raw =<< (liftIO . packStream (streamInterpreter gqlRoot) =<< body)
+        post "/api" $ raw =<< (liftIO . packStream state (streamInterpreter gqlRoot) =<< body)
         post "/" $ raw =<< (liftIO . mythologyApi =<< body)
