@@ -6,7 +6,7 @@ module Main
 
 import           Control.Concurrent     (forkIO)
 import           Control.Monad.IO.Class (liftIO)
-import           Data.Morpheus          (interpreter, streamInterpreter)
+import           Data.Morpheus          (packStream, streamInterpreter)
 import           Data.Morpheus.Server   (socketGQL)
 import           Deprecated.API         (gqlRoot)
 import           Mythology.API          (mythologyApi)
@@ -29,5 +29,5 @@ main = do
     wsServer = socketGQL (streamInterpreter gqlRoot) >>= runServer "127.0.0.1" 4000
     httpServer =
       scotty 3000 $ do
-        post "/api" $ raw =<< (liftIO . interpreter gqlRoot =<< body)
+        post "/api" $ raw =<< (liftIO . packStream (streamInterpreter gqlRoot) =<< body)
         post "/" $ raw =<< (liftIO . mythologyApi =<< body)

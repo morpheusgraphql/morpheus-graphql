@@ -4,9 +4,9 @@
 module Data.Morpheus
   ( interpreter
   , streamInterpreter
+  , packStream
   , InputAction(..)
   , OutputAction(..)
-  , GQLHandler
   ) where
 
 import           Control.Monad.Trans.Except                (ExceptT (..), runExceptT)
@@ -78,27 +78,21 @@ data InputAction c a = SocketConnection
   -- | NoEffectInput a
 
 data OutputAction c a
-  = Publish { actionChannelID        :: Text
-            , actionPayload          :: a
-            , actionMutationResponse :: a }
+  = Publish { actionChannelID  :: Text
+            , actionPayload    :: a
+            , mutationResponse :: a }
   | Subscribe { clientsState :: Client c }
   | NoEffect a
   deriving (Show)
 
-toLazyBS = encodeUtf8 . LT.fromStrict
+toLBS :: Text -> LB.ByteString
+toLBS = encodeUtf8 . LT.fromStrict
 
-encodeToText = LT.toStrict . decodeUtf8 . encode
+bsToText :: LB.ByteString -> Text
+bsToText = LT.toStrict . decodeUtf8
 
-streamInterpreter :: GQLRootResolver (InputAction c Text -> IO (OutputAction c Text))
-streamInterpreter rootResolver request
-  --let textRequest = (decodeUtf8 request)
- = do
-  value <- runExceptT (resolveStream rootResolver request)
-  case value of
-    Left x -> pure $ NoEffect $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLazyBS $ inputValue request) x
-    Right (Publish id' x' y') -> pure $ Publish id' (encodeToText $ Data x') (encodeToText $ Data y')
-    Right (Subscribe x') -> pure $ Subscribe x'
-    Right (NoEffect x') -> pure $ NoEffect (encodeToText $ Data x')
+encodeToText :: GQLResponse -> Text
+encodeToText = bsToText . encode
 
 resolveStream ::
      (GQLQuery a, GQLMutation b, GQLSubscription c)
@@ -106,14 +100,14 @@ resolveStream ::
   -> InputAction d Text
   -> ResolveIO (OutputAction d Value)
 resolveStream rootResolver (SocketConnection id' request) = do
-  rootGQL <- ExceptT $ pure (parseRequest (toLazyBS request) >>= validateRequest gqlSchema)
+  rootGQL <- ExceptT $ pure (parseRequest (toLBS request) >>= validateRequest gqlSchema)
   case rootGQL of
     Query operator' -> do
       value <- encodeQuery queryRes gqlSchema $ operatorSelection operator'
       return (NoEffect value)
     Mutation operator' -> do
       value <- encodeMutation mutationRes $ operatorSelection operator'
-      return Publish {actionChannelID = "UPDATE_ADDRESS", actionPayload = value, actionMutationResponse = value}
+      return Publish {actionChannelID = "UPDATE_ADDRESS", actionPayload = value, mutationResponse = value}
     Subscription operator' -> do
       _ <- encodeSubscription subscriptionRes $ operatorSelection operator'
       return Subscribe {clientsState = (id', ["UPDATE_ADDRESS"])}
@@ -123,15 +117,25 @@ resolveStream rootResolver (SocketConnection id' request) = do
     mutationRes = mutation rootResolver
     subscriptionRes = subscription rootResolver
 
-type GQLRootResolver d
-   = forall a b c. (GQLQuery a, GQLMutation b, GQLSubscription c) =>
-                     GQLRoot a b c -> d
+streamInterpreter ::
+     (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> InputAction c Text -> IO (OutputAction c Text)
+streamInterpreter rootResolver request = do
+  value <- runExceptT (resolveStream rootResolver request)
+  case value of
+    Left x -> pure $ NoEffect $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLBS $ inputValue request) x
+    Right (Publish id' x' y') -> pure $ Publish id' (encodeToText $ Data x') (encodeToText $ Data y')
+    Right (Subscribe x') -> pure $ Subscribe x'
+    Right (NoEffect x') -> pure $ NoEffect (encodeToText $ Data x')
 
-type GQLHandler a
-   = Interpreter a =>
-       a -> IO a
+packStream :: (InputAction Int Text -> IO (OutputAction c Text)) -> LB.ByteString -> IO LB.ByteString
+packStream streamAPI request = do
+  value <- streamAPI (SocketConnection 0 $ bsToText request)
+  case value of
+    Publish {mutationResponse = res'} -> pure (toLBS res')
+    Subscribe {}                      -> pure "subscriptions are only allowed in websocket"
+    NoEffect res'                     -> pure (toLBS res')
 
-interpreterRaw :: GQLRootResolver (LB.ByteString -> IO GQLResponse)
+interpreterRaw :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> IO GQLResponse
 interpreterRaw rootResolver request = do
   value <- runExceptT (resolve rootResolver request)
   case value of
@@ -139,7 +143,7 @@ interpreterRaw rootResolver request = do
     Right x -> pure $ Data x
 
 class Interpreter a where
-  interpreter :: GQLRootResolver (a -> IO a)
+  interpreter :: (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> a -> IO a
 
 instance Interpreter LB.ByteString where
   interpreter root request = encode <$> interpreterRaw root request
