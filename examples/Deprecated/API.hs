@@ -96,14 +96,6 @@ newtype Query = Query
   { user :: () ::-> User
   } deriving (Generic, GQLQuery)
 
-newtype Mutation = Mutation
-  { createUser :: () ::-> User
-  } deriving (Generic, GQLMutation)
-
-newtype Subscription = Subscription
-  { newUser :: () ::-> User
-  } deriving (Generic, GQLSubscription)
-
 fetchAddress :: Euro -> Text -> IO (Either String Address)
 fetchAddress _ streetName = do
   address' <- jsonAddress
@@ -155,6 +147,20 @@ createUserMutation = transformUser <$> Resolver (const $ wrapIn <$> jsonUser)
 
 newUserSubscription :: () ::-> User
 newUserSubscription = transformUser <$> Resolver (const $ wrapIn <$> jsonUser)
+
+data Context
+  = User' User
+  | Address' Address
+
+type a ::->> b = Resolver Context a b
+
+newtype Mutation = Mutation
+  { createUser :: () ::->> User
+  } deriving (Generic, GQLMutation)
+
+newtype Subscription = Subscription
+  { newUser :: () ::->> User
+  } deriving (Generic, GQLSubscription)
 
 {-
   data Channels = UserAdded (Async User) | AddressAdded (Async Address)

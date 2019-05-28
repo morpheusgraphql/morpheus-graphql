@@ -106,7 +106,7 @@ liftResolver position' typeName' x = do
     Left message' -> failResolveIO $ fieldNotResolved position' typeName' (pack message')
     Right value   -> pure value
 
-instance (OutputTypeRouter a (KIND a), Args.GQLArgs p) => OutputTypeRouter (p ::-> a) WRAPPER where
+instance (OutputTypeRouter a (KIND a), Args.GQLArgs p) => OutputTypeRouter (Resolver c p a) WRAPPER where
   __encode _ selection'@(key', Selection {selectionArguments = astArgs', selectionPosition = position'}) (Resolver resolver) =
     (ExceptT $ pure $ Args.decode astArgs') >>= liftResolver position' key' . resolver >>= _encode selection' . fst
   __introspect _ _ typeLib = resolveTypes typeLib $ inputTypes' ++ [_introspect (Proxy @a)]

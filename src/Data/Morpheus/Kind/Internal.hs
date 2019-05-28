@@ -20,7 +20,7 @@ import Data.Morpheus.Types.Internal.AST.Selection (Selection)
 import Data.Morpheus.Types.Internal.Data (DataInputField, DataOutputField, DataTypeLib)
 import Data.Morpheus.Types.Internal.Validation (ResolveIO, Validation)
 import Data.Morpheus.Types.Internal.Value (Value(..))
-import Data.Morpheus.Types.Resolver ((::->))
+import Data.Morpheus.Types.Resolver (Resolver)
 import Data.Proxy (Proxy(..))
 import Data.Text (Text)
 import GHC.Exts (Constraint)
@@ -41,7 +41,7 @@ type instance KIND (Maybe a) = WRAPPER
 
 type instance KIND [a] = WRAPPER
 
-type instance KIND (p ::-> a) = WRAPPER
+type instance KIND (Resolver c p a) = WRAPPER
 
 -- default Data Kinds
 data SCALAR
