@@ -1,5 +1,5 @@
 module Data.Morpheus.Server
-  ( socketApplication
+  ( socketGQL
   ) where
 
 import           Control.Concurrent                  (MVar, newMVar)
@@ -49,5 +49,5 @@ application interpreter' state pending = do
   client' <- connectClient connection' state
   finally (queryHandler interpreter' client' state) (disconnectClient client' state)
 
-socketApplication :: GQLAPI -> IO ServerApp
-socketApplication interpreter = application interpreter <$> newMVar []
+socketGQL :: GQLAPI -> IO ServerApp
+socketGQL interpreter = application interpreter <$> newMVar []
