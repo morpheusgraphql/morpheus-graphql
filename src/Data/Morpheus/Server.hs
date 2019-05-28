@@ -11,15 +11,21 @@ import           Data.Morpheus      (InputAction (..), OutputAction (..))
 import           Data.Text          (Text, pack)
 import           Network.WebSockets (Connection, ServerApp, acceptRequest, forkPingThread, receiveData, sendTextData)
 
-type Client = (Text, Connection)
+type ClientID = Text
 
-type ServerState = [Client]
+data SocketClient = SocketClient
+  { clientID         :: ClientID
+  , clientConnection :: Connection
+  , clientChannels   :: [Text]
+  } deriving (Show)
 
-removeClient :: Client -> ServerState -> ServerState
-removeClient client = filter ((/= fst client) . fst)
+type ServerState = [(Text, SocketClient)]
 
-disconnectClient :: Client -> MVar ServerState -> IO ServerState
-disconnectClient client state = modifyMVar state removeUser >>= broadcast (fst client <> " disconnected")
+removeClient :: SocketClient -> ServerState -> ServerState
+removeClient client = filter ((/= clientID client) . fst)
+
+disconnectClient :: SocketClient -> MVar ServerState -> IO ServerState
+disconnectClient client state = modifyMVar state removeUser
   where
     removeUser state' =
       let s' = removeClient client state'
@@ -33,34 +39,34 @@ broadcast message clients = do
   forM_ clients sendMessage
   return clients
   where
-    sendMessage (_, connection') = sendTextData connection' message
+    sendMessage (_, client') = sendTextData (clientConnection client') message
 
 instance Show Connection where
   show = const "Connection"
 
-talk :: (InputAction Connection Text -> IO (OutputAction Connection Text)) -> Client -> MVar ServerState -> IO ()
-talk interpreter' (_, connection') state = forever handleRequest
+type GQLApi = InputAction ClientID Text -> IO (OutputAction ClientID Text)
+
+talk :: GQLApi -> SocketClient -> MVar ServerState -> IO ()
+talk interpreter' SocketClient {clientConnection = connection', clientID = id'} state = forever handleRequest
   where
     handleRequest = do
-      msg <- receiveData connection' >>= \x -> interpreter' (SocketConnection connection' x)
+      msg <- receiveData connection' >>= \x -> interpreter' (SocketConnection id' x)
       print msg
       case msg of
-        EffectPublish _ value'  -> readMVar state >>= broadcast value'
-        NoEffectResult  value'   -> sendTextData connection' value' >> readMVar state
-        EffectSubscribe client -> readMVar state
+        EffectPublish _ value'          -> readMVar state >>= broadcast value'
+        NoEffectResult value'           -> sendTextData connection' value' >> readMVar state
+        EffectSubscribe (channel', id') -> readMVar state
 
-registerSubscription :: MVar ServerState -> Connection -> IO Client
+registerSubscription :: MVar ServerState -> Connection -> IO SocketClient
 registerSubscription varState' connection' = do
   client' <- newClient
   modifyMVar_ varState' (addClient client')
-  return client'
+  return (snd client')
   where
     newClient = do
       id' <- generateID <$> readMVar varState'
-      return (id', connection')
+      return (id', SocketClient {clientID = id', clientConnection = connection', clientChannels = []})
     addClient client' state' = return (client' : state')
-
-type GQLApi = InputAction Connection Text -> IO (OutputAction Connection Text)
 
 application :: GQLApi -> MVar ServerState -> ServerApp
 application interpreter' state pending = do
