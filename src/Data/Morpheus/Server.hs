@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Data.Morpheus.Server
   ( socketApplication
   ) where
@@ -8,18 +6,25 @@ import           Control.Concurrent (MVar, modifyMVar, modifyMVar_, newMVar, rea
 import           Control.Exception  (finally)
 import           Control.Monad      (forM_, forever)
 import           Data.Morpheus      (InputAction (..), OutputAction (..))
-import           Data.Text          (Text, pack)
+import           Data.Text          (Text)
 import           Network.WebSockets (Connection, ServerApp, acceptRequest, forkPingThread, receiveData, sendTextData)
 
-type ClientID = Text
+type ClientID = Int
+
+type ChannelID = Text
+
+type GQLMessage = Text
 
 data SocketClient = SocketClient
   { clientID         :: ClientID
   , clientConnection :: Connection
   , clientChannels   :: [Text]
-  } deriving (Show)
+  }
 
-type ServerState = [(Text, SocketClient)]
+type ServerState = [(ClientID, SocketClient)]
+
+generateID :: [a] -> Int
+generateID = length
 
 removeClient :: SocketClient -> ServerState -> ServerState
 removeClient client = filter ((/= clientID client) . fst)
@@ -31,18 +36,13 @@ disconnectClient client state = modifyMVar state removeUser
       let s' = removeClient client state'
        in return (s', s')
 
-generateID :: [a] -> Text
-generateID = ("connection_" <>) . pack . show . length
+filterByChannel :: ChannelID -> ServerState -> ServerState
+filterByChannel channelID' = filter (elem channelID' . clientChannels . snd)
 
-broadcast :: Text -> ServerState -> IO ServerState
-broadcast message clients = do
-  forM_ clients sendMessage
-  return clients
+publishUpdates :: ChannelID -> GQLMessage -> ServerState -> IO ()
+publishUpdates channelID' message clients = forM_ (filterByChannel channelID' clients) sendMessage
   where
-    sendMessage (_, client') = sendTextData (clientConnection client') message
-
-instance Show Connection where
-  show = const "Connection"
+    sendMessage (_, SocketClient {clientConnection = connection'}) = sendTextData connection' message
 
 type GQLApi = InputAction ClientID Text -> IO (OutputAction ClientID Text)
 
@@ -53,9 +53,9 @@ talk interpreter' SocketClient {clientConnection = connection', clientID = id'} 
       msg <- receiveData connection' >>= \x -> interpreter' (SocketConnection id' x)
       print msg
       case msg of
-        EffectPublish _ value'           -> readMVar state >>= broadcast value'
-        NoEffectResult value'            -> sendTextData connection' value' >> readMVar state
-        EffectSubscribe (cid', channel') -> updateChannels cid' channel' <$> readMVar state
+        EffectPublish chanelId' value'   -> readMVar state >>= publishUpdates chanelId' value' >> return ()
+        NoEffectResult value'            -> sendTextData connection' value'
+        EffectSubscribe (cid', channel') -> updateChannels cid' channel' <$> readMVar state >> return ()
 
 updateChannels :: ClientID -> [Text] -> ServerState -> ServerState
 updateChannels id' channel' = map setChannel
