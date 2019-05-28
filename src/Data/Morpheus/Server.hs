@@ -5,10 +5,10 @@ module Data.Morpheus.Server
 
 import           Control.Exception                   (finally)
 import           Control.Monad                       (forever)
-import           Data.Morpheus                       (InputAction (..), OutputAction (..))
 import           Data.Morpheus.Server.ClientRegister (GQLState, connectClient, disconnectClient, initGQLState,
                                                       publishUpdates, updateClientChannels)
 import           Data.Morpheus.Server.GQLClient      (GQLClient (..))
+import           Data.Morpheus.StreamInterpreter     (InputAction (..), OutputAction (..))
 import           Data.Text                           (Text)
 import           Network.WebSockets                  (Connection, ServerApp, acceptRequest, forkPingThread, receiveData,
                                                       sendTextData)
