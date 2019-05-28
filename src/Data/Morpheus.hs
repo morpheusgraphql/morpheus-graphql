@@ -61,22 +61,8 @@ resolve rootResolver request {- context -}
   case rootGQL of
     Query operator'        -> encodeQuery queryRes gqlSchema $ operatorSelection operator'
     Mutation operator'     -> encodeMutation mutationRes $ operatorSelection operator'
-    {-
-       TODO: setup stream
-       Mutation returns -> [UpdateAction]
-       that can be resolved by subscriptions
-    -}
-    Subscription operator' -> encodeSubscription subscriptionRes $ operatorSelection operator'
-     {-
-           TODO: setup stream
-           Subscription returns -> [UpdateAction]
 
-          subscriptionResponse:: [(UpdateAction,Connection)] -> [UpdateAction] -> Stream GQLResponse
-          subscriptionResponse subscriptionActions mutationActions = do
-               matchedActions <- match mutationActions subscriptionActions  -- only Subscribed UpdateActions will be executed
-               mapM sendResponse matchedActions  -- all subscribed actions will be send
-           that can be resolved by subscriptions
-     -}
+    Subscription operator' -> encodeSubscription subscriptionRes $ operatorSelection operator'
   where
     gqlSchema = schema queryRes mutationRes subscriptionRes
     queryRes = query rootResolver
@@ -93,7 +79,7 @@ data InputAction c a = SocketConnection
   -- | NoEffectInput a
 
 data OutputAction c a
-  = EffectPublish { actionID      :: Text
+  = EffectPublish { actionChannelID      :: Text
                   , actionPayload :: a }
   | EffectSubscribe { clientsState :: Client c }
   | NoEffectResult a
@@ -128,7 +114,7 @@ resolveStream rootResolver (SocketConnection id' request) = do
       return (NoEffectResult value)
     Mutation operator' -> do
       value <- encodeMutation mutationRes $ operatorSelection operator'
-      return EffectPublish {actionID = "UPDATE_ADDRESS", actionPayload = value}
+      return EffectPublish {actionChannelID = "UPDATE_ADDRESS", actionPayload = value}
     Subscription operator' -> do
       _ <- encodeSubscription subscriptionRes $ operatorSelection operator'
       return EffectSubscribe {clientsState = (id', ["UPDATE_ADDRESS"])}

@@ -14,6 +14,8 @@ import           Network.WebSockets     (runServer)
 startWebSocket :: IO ()
 startWebSocket = socketApplication gqlApi >>= runServer "127.0.0.1" 9160
 
+--const ws = new WebSocket('ws://localhost:9160/');
+
 --ws.send(JSON.stringify({"query":"query GetUser{user{name}}"}))
 -- ws.send(JSON.stringify({"query":"mutation CreateUser{ createUser{name} }"}))
 -- ws.send(JSON.stringify({"query":"subscription ShowNewUser{ newUser{name} }"}))

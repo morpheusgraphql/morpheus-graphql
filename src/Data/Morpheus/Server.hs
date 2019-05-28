@@ -15,11 +15,14 @@ type ChannelID = Text
 
 type GQLMessage = Text
 
+instance Show Connection where
+  show = const "Connection"
+
 data SocketClient = SocketClient
   { clientID         :: ClientID
   , clientConnection :: Connection
   , clientChannels   :: [Text]
-  }
+  } deriving (Show)
 
 type ServerState = [(ClientID, SocketClient)]
 
@@ -40,7 +43,10 @@ filterByChannel :: ChannelID -> ServerState -> ServerState
 filterByChannel channelID' = filter (elem channelID' . clientChannels . snd)
 
 publishUpdates :: ChannelID -> GQLMessage -> ServerState -> IO ()
-publishUpdates channelID' message clients = forM_ (filterByChannel channelID' clients) sendMessage
+publishUpdates channelID' message state' = do
+  print state'
+  print (filterByChannel channelID' state')
+  forM_ (filterByChannel channelID' state') sendMessage
   where
     sendMessage (_, SocketClient {clientConnection = connection'}) = sendTextData connection' message
 
@@ -53,9 +59,13 @@ talk interpreter' SocketClient {clientConnection = connection', clientID = id'} 
       msg <- receiveData connection' >>= \x -> interpreter' (SocketConnection id' x)
       print msg
       case msg of
-        EffectPublish chanelId' value'   -> readMVar state >>= publishUpdates chanelId' value' >> return ()
-        NoEffectResult value'            -> sendTextData connection' value'
-        EffectSubscribe (cid', channel') -> updateChannels cid' channel' <$> readMVar state >> return ()
+        EffectPublish {actionChannelID = chanelId', actionPayload = message'} ->
+          readMVar state >>= publishUpdates chanelId' message' >> return ()
+        NoEffectResult value' -> sendTextData connection' value'
+        EffectSubscribe (clientId', channels') -> updateChannelsM_ clientId' channels' state
+
+updateChannelsM_ :: ClientID -> [Text] -> MVar ServerState -> IO ()
+updateChannelsM_ cid' channel' state = modifyMVar_ state (return . updateChannels cid' channel')
 
 updateChannels :: ClientID -> [Text] -> ServerState -> ServerState
 updateChannels id' channel' = map setChannel
