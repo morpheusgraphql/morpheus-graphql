@@ -1,38 +1,47 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module Data.Morpheus.Types.Resolver
-  ( (::->)(..)
+  ( (::->)
+  , Resolver(..)
   ) where
 
 import           GHC.Generics (Generic)
 
-newtype a ::-> b =
-  Resolver (a -> IO (Either String b))
+type a ::-> b = Resolver () a b
+
+newtype Resolver c a b =
+  Resolver (a -> IO (Either String (b, [c])))
   deriving (Generic)
 
-instance Functor ((::->) p) where
+instance Functor (Resolver () p) where
   fmap func (Resolver resolver) =
     Resolver $ \args -> do
       value <- resolver args
-      return (func <$> value)
+      case value of
+        Left error'  -> return $ Left error'
+        Right (x, y) -> return $ Right (func x, y)
 
-instance Applicative ((::->) p) where
-  pure = Resolver . const . return . pure
+instance Applicative (Resolver () p) where
+  pure = Resolver . const . return . Right . (, [])
   Resolver func <*> Resolver resolver =
     Resolver $ \args -> do
       func1 <- func args
-      value1 <- resolver args
-      return (func1 <*> value1)
+      case func1 of
+        Left error' -> return $ Left error'
+        Right (func1', context') -> do
+          value1 <- resolver args
+          return ((, context') . func1' . fst <$> value1)
 
-instance Monad ((::->) p) where
+instance Monad (Resolver () p) where
   return = pure
   (Resolver func1) >>= func2 =
     Resolver $ \args -> do
       value1 <- func1 args
       case value1 of
-        Left x -> return $ Left x
-        Right y {--}
-         -> do
-          let (Resolver x) = func2 y
-          x args
+        Left error' -> return $ Left error'
+        Right (x, _) -> do
+          let (Resolver x') = func2 x
+          x' args

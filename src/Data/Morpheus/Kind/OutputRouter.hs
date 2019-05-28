@@ -30,7 +30,7 @@ import           Data.Morpheus.Schema.TypeKind              (TypeKind (..))
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..))
 import           Data.Morpheus.Types.Internal.Data          (DataField (..), DataOutputField)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO, failResolveIO)
-import           Data.Morpheus.Types.Resolver               ((::->) (..))
+import           Data.Morpheus.Types.Resolver               ((::->), Resolver (..))
 import           Data.Proxy                                 (Proxy (..))
 import           Data.Text                                  (Text, pack)
 import           GHC.Generics
@@ -108,7 +108,7 @@ liftResolver position' typeName' x = do
 
 instance (OutputTypeRouter a (KIND a), Args.GQLArgs p) => OutputTypeRouter (p ::-> a) WRAPPER where
   __encode _ selection'@(key', Selection {selectionArguments = astArgs', selectionPosition = position'}) (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode astArgs') >>= liftResolver position' key' . resolver >>= _encode selection'
+    (ExceptT $ pure $ Args.decode astArgs') >>= liftResolver position' key' . resolver >>= _encode selection' . fst
   __introspect _ _ typeLib = resolveTypes typeLib $ inputTypes' ++ [_introspect (Proxy @a)]
     where
       inputTypes' = map snd $ Args.introspect (Proxy @p)
