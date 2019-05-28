@@ -1,13 +1,15 @@
 module Data.Morpheus.Server.ClientRegister
   ( ClientRegister
   , GQLState
+  , initGQLState
   , connectClient
   , disconnectClient
   , updateClientByID
   , publishUpdates
+  , updateClientChannels
   ) where
 
-import           Control.Concurrent             (MVar, modifyMVar, modifyMVar_, readMVar)
+import           Control.Concurrent             (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
 import           Control.Monad                  (forM_)
 import           Data.Morpheus.Server.GQLClient (Channel, ClientID, GQLClient (..))
 import           Data.Text                      (Text)
@@ -15,9 +17,12 @@ import           Network.WebSockets             (Connection, sendTextData)
 
 type ClientRegister = [(ClientID, GQLClient)]
 
-type GQLState = MVar ClientRegister
+type GQLState = MVar ClientRegister -- SharedState
 
-connectClient :: Connection -> MVar ClientRegister -> IO GQLClient
+initGQLState :: IO GQLState
+initGQLState = newMVar []
+
+connectClient :: Connection -> GQLState -> IO GQLClient
 connectClient connection' varState' = do
   client' <- newClient
   modifyMVar_ varState' (addClient client')
@@ -28,7 +33,7 @@ connectClient connection' varState' = do
       return (id', GQLClient {clientID = id', clientConnection = connection', clientChannels = []})
     addClient client' state' = return (client' : state')
 
-disconnectClient :: GQLClient -> MVar ClientRegister -> IO ClientRegister
+disconnectClient :: GQLClient -> GQLState -> IO ClientRegister
 disconnectClient client state = modifyMVar state removeUser
   where
     removeUser state' =
@@ -44,7 +49,7 @@ updateClientByID id' updateFunc state = modifyMVar_ state (return . map updateCl
       | key' == id' = (key', updateFunc client')
     updateClient state' = state'
 
-publishUpdates :: Channel -> Text -> MVar ClientRegister -> IO ()
+publishUpdates :: Channel -> Text -> GQLState -> IO ()
 publishUpdates channelID' message state = do
   state' <- clientsByChannel
   forM_ state' sendMessage
@@ -55,3 +60,8 @@ publishUpdates channelID' message state = do
       where
         filterByChannel :: ClientRegister -> ClientRegister
         filterByChannel = filter (elem channelID' . clientChannels . snd)
+
+updateClientChannels :: ClientID -> [Text] -> GQLState -> IO ()
+updateClientChannels id' channel' = updateClientByID id' setChannel
+  where
+    setChannel client' = client' {clientChannels = channel'}
