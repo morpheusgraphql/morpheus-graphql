@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 
@@ -10,7 +11,7 @@ module Deprecated.API
 
 import           Data.Morpheus.Kind  (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLSubscription,
                                       GQLType (..), INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types ((::->) (..), GQLRoot (..), ID, ScalarValue (..))
+import           Data.Morpheus.Types ((::->), GQLRoot (..), ID, Resolver (..), ScalarValue (..))
 import           Data.Text           (Text, pack)
 import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
 import qualified Deprecated.Model    as M (JSONAddress (..), JSONUser (..))
@@ -113,18 +114,21 @@ transformAddress street' address' =
   Address {city = M.city address', houseNumber = M.houseNumber address', street = street', owner = Nothing}
 
 resolveAddress :: AddressArgs ::-> Address
-resolveAddress = Resolver $ \args -> fetchAddress (Euro 1 0) (pack $ show $ longitude $ coordinates args)
+resolveAddress = Resolver $ \args -> wrapIn <$> fetchAddress (Euro 1 0) (pack $ show $ longitude $ coordinates args)
 
 addressByCityID :: CityID -> Int -> IO (Either String Address)
 addressByCityID Paris code = fetchAddress (Euro 1 code) "Paris"
 addressByCityID BLN code   = fetchAddress (Euro 1 code) "Berlin"
 addressByCityID HH code    = fetchAddress (Euro 1 code) "Hamburg"
 
+wrapIn :: Either String a -> Either String (a, [()])
+wrapIn x = (, [()]) <$> x
+
 resolveOffice :: JSONUser -> OfficeArgs ::-> Address
-resolveOffice _ = Resolver $ \args -> addressByCityID (cityID args) 12
+resolveOffice _ = Resolver $ \args -> wrapIn <$> addressByCityID (cityID args) 12
 
 resolveUser :: () ::-> User
-resolveUser = transformUser <$> Resolver (const jsonUser)
+resolveUser = transformUser <$> Resolver (const $ wrapIn <$> jsonUser)
 
 transformUser :: JSONUser -> User
 transformUser user' =
@@ -147,10 +151,10 @@ transformUser user' =
     }
 
 createUserMutation :: () ::-> User
-createUserMutation = transformUser <$> Resolver (const jsonUser)
+createUserMutation = transformUser <$> Resolver (const $ wrapIn <$> jsonUser)
 
 newUserSubscription :: () ::-> User
-newUserSubscription = transformUser <$> Resolver (const jsonUser)
+newUserSubscription = transformUser <$> Resolver (const $ wrapIn <$> jsonUser)
 
 {-
   data Channels = UserAdded (Async User) | AddressAdded (Async Address)

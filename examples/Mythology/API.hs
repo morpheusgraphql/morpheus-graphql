@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
+{-# LANGUAGE TupleSections  #-}
 {-# LANGUAGE TypeOperators  #-}
 
 module Mythology.API
@@ -10,7 +11,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (GQLArgs, GQLQuery)
-import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..))
+import           Data.Morpheus.Types        ((::->), GQLRoot (..), Resolver (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 import           Mythology.Character.Deity  (Deity (..), dbDeity)
@@ -24,8 +25,11 @@ data DeityArgs = DeityArgs
   , mythology :: Maybe Text -- Optional Argument
   } deriving (Generic, GQLArgs)
 
+wrapIn :: Either String a -> Either String (a, [()])
+wrapIn x = (, [()]) <$> x
+
 resolveDeity :: DeityArgs ::-> Deity
-resolveDeity = Resolver $ \args -> dbDeity (name args) (mythology args)
+resolveDeity = Resolver $ \args -> wrapIn <$> dbDeity (name args) (mythology args)
 
 mythologyApi :: B.ByteString -> IO B.ByteString
 mythologyApi = interpreter GQLRoot {query = Query {deity = resolveDeity}, mutation = (), subscription = ()}
