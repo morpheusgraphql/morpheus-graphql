@@ -131,9 +131,12 @@ packStream :: (InputAction Int Text -> IO (OutputAction c Text)) -> LB.ByteStrin
 packStream streamAPI request = do
   value <- streamAPI (SocketConnection 0 $ bsToText request)
   case value of
-    Publish {mutationResponse = res'} -> pure (toLBS res')
+    Publish {mutationResponse = res'} ->  do
+     -- publishUpdates chanelId' message' state
+      pure (toLBS res') {-- Actual response-}
     Subscribe {}                      -> pure "subscriptions are only allowed in websocket"
     NoEffect res'                     -> pure (toLBS res')
+
 
 interpreterRaw :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> IO GQLResponse
 interpreterRaw rootResolver request = do

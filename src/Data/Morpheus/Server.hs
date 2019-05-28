@@ -4,31 +4,32 @@ module Data.Morpheus.Server
 
 import           Control.Concurrent                  (MVar, newMVar)
 import           Control.Exception                   (finally)
-import           Control.Monad                       (forM_, forever)
+import           Control.Monad                       (forever)
 import           Data.Morpheus                       (InputAction (..), OutputAction (..))
 import           Data.Text                           (Text)
-import           Network.WebSockets                  (ServerApp, acceptRequest, forkPingThread, receiveData,
+import           Network.WebSockets                  (Connection, ServerApp, acceptRequest, forkPingThread, receiveData,
                                                       sendTextData)
 
-import           Data.Morpheus.Server.ClientRegister (ClientRegister, clientsByChannel, connectClient, disconnectClient,
+import           Data.Morpheus.Server.ClientRegister (ClientRegister, connectClient, disconnectClient, publishUpdates,
                                                       updateClientByID)
-import           Data.Morpheus.Server.GQLClient      (Channel, ClientID, GQLClient (..))
+import           Data.Morpheus.Server.GQLClient      (ClientID, GQLClient (..))
 
 type GQLMessage = Text
 
 type GQLAPI = InputAction ClientID GQLMessage -> IO (OutputAction ClientID GQLMessage)
 
-publishUpdates :: Channel -> GQLMessage -> MVar ClientRegister -> IO ()
-publishUpdates channelID' message state = do
-  state' <- clientsByChannel channelID' state
-  forM_ state' sendMessage
-  where
-    sendMessage (_, GQLClient {clientConnection = connection'}) = sendTextData connection' message
-
 updateChannels :: ClientID -> [Text] -> MVar ClientRegister -> IO ()
 updateChannels id' channel' = updateClientByID id' setChannel
   where
     setChannel client' = client' {clientChannels = channel'}
+
+handleGQLResponse :: Connection -> MVar ClientRegister -> OutputAction Int Text -> IO ()
+handleGQLResponse connection' state msg =
+  case msg of
+    Publish {actionChannelID = chanelId', actionPayload = message', mutationResponse = response'} ->
+      sendTextData connection' response' >> publishUpdates chanelId' message' state
+    Subscribe (clientId', channels') -> updateChannels clientId' channels' state
+    NoEffect response' -> sendTextData connection' response'
 
 queryHandler :: GQLAPI -> GQLClient -> MVar ClientRegister -> IO ()
 queryHandler interpreter' GQLClient {clientConnection = connection', clientID = id'} state = forever handleRequest
@@ -36,11 +37,7 @@ queryHandler interpreter' GQLClient {clientConnection = connection', clientID = 
     handleRequest = do
       msg <- receiveData connection' >>= \x -> interpreter' (SocketConnection id' x)
       print msg
-      case msg of
-        Publish {actionChannelID = chanelId', actionPayload = message', mutationResponse = response'} ->
-          sendTextData connection' response' >> publishUpdates chanelId' message' state
-        Subscribe (clientId', channels') -> updateChannels clientId' channels' state
-        NoEffect response' -> sendTextData connection' response'
+      handleGQLResponse connection' state msg
 
 application :: GQLAPI -> MVar ClientRegister -> ServerApp
 application interpreter' state pending = do
