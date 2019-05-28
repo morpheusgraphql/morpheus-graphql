@@ -7,8 +7,7 @@ module Data.Morpheus.Server
 import           Control.Concurrent (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
 import           Control.Exception  (finally)
 import           Control.Monad      (forM_, forever)
-
---import           Data.Morpheus      (GQLRootResolver, interpreter)
+import           Data.Morpheus      (InputAction (..), OutputAction (..))
 import           Data.Text          (Text, pack)
 import           Network.WebSockets (Connection, ServerApp, acceptRequest, forkPingThread, receiveData, sendTextData)
 
@@ -36,12 +35,14 @@ broadcast message clients = do
   where
     sendMessage (_, connection') = sendTextData connection' message
 
-talk :: (Text -> IO Text) -> Client -> MVar ServerState -> IO ()
+talk :: (InputAction Text -> IO (OutputAction Text)) -> Client -> MVar ServerState -> IO ()
 talk interpreter' (user, conn) state = forever handleRequest
   where
     handleRequest = do
-      msg <- receiveData conn >>= interpreter'
-      readMVar state >>= broadcast (user <> ": " <> msg)
+      msg <- receiveData conn >>= \x -> interpreter' (SocketConnection 1 x)
+      case msg of
+        EffectPublish _ value -> readMVar state >>= broadcast (user <> ": " <> value)
+        _                     -> readMVar state
 
 registerSubscription :: MVar ServerState -> Connection -> IO Client
 registerSubscription varState' connection' = do
@@ -54,12 +55,12 @@ registerSubscription varState' connection' = do
       return (id', connection')
     addClient client' state' = return (client' : state')
 
-application :: (Text -> IO Text) -> MVar ServerState -> ServerApp
+application :: (InputAction Text -> IO (OutputAction Text)) -> MVar ServerState -> ServerApp
 application interpreter' state pending = do
   connection' <- acceptRequest pending
   forkPingThread connection' 30
   client' <- registerSubscription state connection'
   finally (talk interpreter' client' state) (disconnectClient client' state)
 
-socketApplication :: (Text -> IO Text) -> IO ServerApp
+socketApplication :: (InputAction Text -> IO (OutputAction Text)) -> IO ServerApp
 socketApplication interpreter = application interpreter <$> newMVar []
