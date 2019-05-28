@@ -8,7 +8,7 @@ module Deprecated.API
   ( gqlApi
   ) where
 
-import           Data.Morpheus       (GQLHandler, interpreter)
+import           Data.Morpheus       (InputAction, OutputAction, streamInterpreter)
 import           Data.Morpheus.Kind  (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..), INPUT_OBJECT,
                                       KIND, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types ((::->) (..), GQLRoot (..), ID, ScalarValue (..))
@@ -162,8 +162,8 @@ createUserMutation = transformUser <$> Resolver (const jsonUser)
 
   newtype Async a = Pending | Response { unpackAwait :: Stream Channels } |
 -}
-gqlApi :: GQLHandler a
+gqlApi :: InputAction Text -> IO (OutputAction Text)
 gqlApi =
-  interpreter
+  streamInterpreter
     GQLRoot
       {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}, subscription = ()}

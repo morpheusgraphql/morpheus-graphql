@@ -15,12 +15,12 @@ startWebSocket :: IO ()
 startWebSocket = socketApplication gqlApi >>= runServer "127.0.0.1" 9160
 
 --ws.send(JSON.stringify({"query":"query User{user{name}}"}))
-
+{-
 startServer :: IO ()
 startServer =
   scotty 3000 $ do
     post "/api" $ raw =<< (liftIO . gqlApi =<< body)
     post "/" $ raw =<< (liftIO . mythologyApi =<< body)
-
+-}
 main :: IO ()
-main = startWebSocket >> startServer
+main = startWebSocket

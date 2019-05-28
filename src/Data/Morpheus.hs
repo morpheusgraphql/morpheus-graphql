@@ -99,22 +99,29 @@ data OutputAction a
   | EffectSubscribe { clientsState :: [Client] }
   | NoEffectResult a
 
-streamInterpreter :: GQLRootResolver (InputAction LB.ByteString -> IO (OutputAction GQLResponse))
-streamInterpreter rootResolver request = do
+toLazyBS = encodeUtf8 . LT.fromStrict
+
+encodeToText = LT.toStrict . decodeUtf8 . encode
+
+streamInterpreter :: GQLRootResolver (InputAction Text -> IO (OutputAction Text))
+streamInterpreter rootResolver request
+  --let textRequest = (decodeUtf8 request)
+ = do
   value <- runExceptT (resolveStream rootResolver request)
   case value of
-    Left x -> pure $ NoEffectResult $ Errors $ renderErrors (parseLineBreaks $ inputValue request) x
-    Right (EffectPublish id' x') -> pure $ EffectPublish id' (Data x')
+    Left x ->
+      pure $ NoEffectResult $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLazyBS $ inputValue request) x
+    Right (EffectPublish id' x') -> pure $ EffectPublish id' (encodeToText $ Data x')
     Right (EffectSubscribe x') -> pure $ EffectSubscribe x'
-    Right (NoEffectResult x') -> pure $ NoEffectResult (Data x')
+    Right (NoEffectResult x') -> pure $ NoEffectResult (encodeToText $ Data x')
 
 resolveStream ::
      (GQLQuery a, GQLMutation b, GQLSubscription c)
   => GQLRoot a b c
-  -> InputAction LB.ByteString
+  -> InputAction Text
   -> ResolveIO (OutputAction Value)
 resolveStream rootResolver (SocketConnection id' request) = do
-  rootGQL <- ExceptT $ pure (parseRequest request >>= validateRequest gqlSchema)
+  rootGQL <- ExceptT $ pure (parseRequest (toLazyBS request) >>= validateRequest gqlSchema)
   case rootGQL of
     Query operator' -> do
       value <- encodeQuery queryRes gqlSchema $ operatorSelection operator'
