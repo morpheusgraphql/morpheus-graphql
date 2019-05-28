@@ -16,7 +16,7 @@ newtype Resolver c a b =
   Resolver (a -> IO (Either String (b, [c])))
   deriving (Generic)
 
-instance Functor (Resolver () p) where
+instance Functor (Resolver c p) where
   fmap func (Resolver resolver) =
     Resolver $ \args -> do
       value <- resolver args
@@ -24,7 +24,7 @@ instance Functor (Resolver () p) where
         Left error'  -> return $ Left error'
         Right (x, y) -> return $ Right (func x, y)
 
-instance Applicative (Resolver () p) where
+instance Applicative (Resolver c p) where
   pure = Resolver . const . return . Right . (, [])
   Resolver func <*> Resolver resolver =
     Resolver $ \args -> do
@@ -35,7 +35,7 @@ instance Applicative (Resolver () p) where
           value1 <- resolver args
           return ((, context') . func1' . fst <$> value1)
 
-instance Monad (Resolver () p) where
+instance Monad (Resolver c p) where
   return = pure
   (Resolver func1) >>= func2 =
     Resolver $ \args -> do

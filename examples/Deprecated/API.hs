@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE TupleSections     #-}
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
@@ -113,8 +114,8 @@ addressByCityID Paris code = fetchAddress (Euro 1 code) "Paris"
 addressByCityID BLN code   = fetchAddress (Euro 1 code) "Berlin"
 addressByCityID HH code    = fetchAddress (Euro 1 code) "Hamburg"
 
-wrapIn :: Either String a -> Either String (a, [()])
-wrapIn x = (, [()]) <$> x
+wrapIn :: Either String a -> Either String (a, [k])
+wrapIn x = (, []) <$> x
 
 resolveOffice :: JSONUser -> OfficeArgs ::-> Address
 resolveOffice _ = Resolver $ \args -> wrapIn <$> addressByCityID (cityID args) 12
@@ -142,17 +143,17 @@ transformUser user' =
              HH)
     }
 
-createUserMutation :: () ::-> User
-createUserMutation = transformUser <$> Resolver (const $ wrapIn <$> jsonUser)
-
-newUserSubscription :: () ::-> User
-newUserSubscription = transformUser <$> Resolver (const $ wrapIn <$> jsonUser)
-
 data Context
   = User' User
   | Address' Address
 
 type a ::->> b = Resolver Context a b
+
+createUserMutation :: () ::->> User
+createUserMutation = transformUser <$> Resolver (const $ wrapIn <$> jsonUser)
+
+newUserSubscription :: () ::->> User
+newUserSubscription = transformUser <$> Resolver (const $ wrapIn <$> jsonUser)
 
 newtype Mutation = Mutation
   { createUser :: () ::->> User
