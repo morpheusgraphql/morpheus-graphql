@@ -42,8 +42,9 @@ disconnectClient client state = modifyMVar state removeUser
 filterByChannel :: ChannelID -> ServerState -> ServerState
 filterByChannel channelID' = filter (elem channelID' . clientChannels . snd)
 
-publishUpdates :: ChannelID -> GQLMessage -> ServerState -> IO ()
-publishUpdates channelID' message state' = do
+publishUpdatesM_ :: ChannelID -> GQLMessage -> MVar ServerState -> IO ()
+publishUpdatesM_ channelID' message state = do
+  state' <- readMVar state
   print state'
   print (filterByChannel channelID' state')
   forM_ (filterByChannel channelID' state') sendMessage
@@ -52,27 +53,27 @@ publishUpdates channelID' message state' = do
 
 type GQLApi = InputAction ClientID Text -> IO (OutputAction ClientID Text)
 
-talk :: GQLApi -> SocketClient -> MVar ServerState -> IO ()
-talk interpreter' SocketClient {clientConnection = connection', clientID = id'} state = forever handleRequest
+queryHandler :: GQLApi -> SocketClient -> MVar ServerState -> IO ()
+queryHandler interpreter' SocketClient {clientConnection = connection', clientID = id'} state = forever handleRequest
   where
     handleRequest = do
       msg <- receiveData connection' >>= \x -> interpreter' (SocketConnection id' x)
       print msg
       case msg of
-        EffectPublish {actionChannelID = chanelId', actionPayload = message'} ->
-          readMVar state >>= publishUpdates chanelId' message' >> return ()
-        NoEffectResult value' -> sendTextData connection' value'
+        EffectPublish {actionChannelID = chanelId', actionPayload = message', actionMutationResponse = response'} ->
+          sendTextData connection' response' >> publishUpdatesM_ chanelId' message' state
+        NoEffectResult response' -> sendTextData connection' response'
         EffectSubscribe (clientId', channels') -> updateChannelsM_ clientId' channels' state
 
 updateChannelsM_ :: ClientID -> [Text] -> MVar ServerState -> IO ()
-updateChannelsM_ cid' channel' state = modifyMVar_ state (return . updateChannels cid' channel')
-
-updateChannels :: ClientID -> [Text] -> ServerState -> ServerState
-updateChannels id' channel' = map setChannel
+updateChannelsM_ id' channel' state = modifyMVar_ state (return . updateChannels)
   where
-    setChannel (key', client')
-      | key' == id' = (key', client' {clientChannels = channel'})
-    setChannel state' = state'
+    updateChannels :: ServerState -> ServerState
+    updateChannels = map setChannel
+      where
+        setChannel (key', client')
+          | key' == id' = (key', client' {clientChannels = channel'})
+        setChannel state' = state'
 
 registerSubscription :: MVar ServerState -> Connection -> IO SocketClient
 registerSubscription varState' connection' = do
@@ -90,7 +91,7 @@ application interpreter' state pending = do
   connection' <- acceptRequest pending
   forkPingThread connection' 30
   client' <- registerSubscription state connection'
-  finally (talk interpreter' client' state) (disconnectClient client' state)
+  finally (queryHandler interpreter' client' state) (disconnectClient client' state)
 
 socketApplication :: GQLApi -> IO ServerApp
 socketApplication interpreter = application interpreter <$> newMVar []

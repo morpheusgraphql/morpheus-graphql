@@ -61,7 +61,6 @@ resolve rootResolver request {- context -}
   case rootGQL of
     Query operator'        -> encodeQuery queryRes gqlSchema $ operatorSelection operator'
     Mutation operator'     -> encodeMutation mutationRes $ operatorSelection operator'
-
     Subscription operator' -> encodeSubscription subscriptionRes $ operatorSelection operator'
   where
     gqlSchema = schema queryRes mutationRes subscriptionRes
@@ -79,8 +78,9 @@ data InputAction c a = SocketConnection
   -- | NoEffectInput a
 
 data OutputAction c a
-  = EffectPublish { actionChannelID      :: Text
-                  , actionPayload :: a }
+  = EffectPublish { actionChannelID        :: Text
+                  , actionPayload          :: a
+                  , actionMutationResponse :: a }
   | EffectSubscribe { clientsState :: Client c }
   | NoEffectResult a
   deriving (Show)
@@ -97,7 +97,7 @@ streamInterpreter rootResolver request
   case value of
     Left x ->
       pure $ NoEffectResult $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLazyBS $ inputValue request) x
-    Right (EffectPublish id' x') -> pure $ EffectPublish id' (encodeToText $ Data x')
+    Right (EffectPublish id' x' y') -> pure $ EffectPublish id' (encodeToText $ Data x') (encodeToText $ Data y')
     Right (EffectSubscribe x') -> pure $ EffectSubscribe x'
     Right (NoEffectResult x') -> pure $ NoEffectResult (encodeToText $ Data x')
 
@@ -114,7 +114,7 @@ resolveStream rootResolver (SocketConnection id' request) = do
       return (NoEffectResult value)
     Mutation operator' -> do
       value <- encodeMutation mutationRes $ operatorSelection operator'
-      return EffectPublish {actionChannelID = "UPDATE_ADDRESS", actionPayload = value}
+      return EffectPublish {actionChannelID = "UPDATE_ADDRESS", actionPayload = value, actionMutationResponse = value}
     Subscription operator' -> do
       _ <- encodeSubscription subscriptionRes $ operatorSelection operator'
       return EffectSubscribe {clientsState = (id', ["UPDATE_ADDRESS"])}
