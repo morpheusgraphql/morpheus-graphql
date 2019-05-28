@@ -8,26 +8,27 @@ import           Control.Monad                       (forever)
 import           Data.Morpheus                       (InputAction (..), OutputAction (..))
 import           Data.Morpheus.Server.ClientRegister (GQLState, connectClient, disconnectClient, initGQLState,
                                                       publishUpdates, updateClientChannels)
-import           Data.Morpheus.Server.GQLClient      (ClientID, GQLClient (..))
+import           Data.Morpheus.Server.GQLClient      (GQLClient (..))
 import           Data.Text                           (Text)
 import           Network.WebSockets                  (Connection, ServerApp, acceptRequest, forkPingThread, receiveData,
                                                       sendTextData)
 
-type GQLAPI = InputAction ClientID Text -> IO (OutputAction ClientID Text)
+type GQLAPI = InputAction Text -> IO (OutputAction Text)
 
-handleGQLResponse :: Connection -> GQLState -> OutputAction Int Text -> IO ()
+handleGQLResponse :: Connection -> GQLState -> OutputAction Text -> IO ()
 handleGQLResponse connection' state msg =
   case msg of
-    Publish {actionChannelID = chanelId', actionPayload = message', mutationResponse = response'} ->
+    PublishMutation {mutationChannelID = chanelId', mutationPayload = message', mutationResponse = response'} ->
       sendTextData connection' response' >> publishUpdates chanelId' message' state
-    Subscribe (clientId', channels') -> updateClientChannels clientId' channels' state
+    InitSubscription {subscriptionClientID = clientId', subscriptionChannels = channels'} ->
+      updateClientChannels clientId' channels' state
     NoEffect response' -> sendTextData connection' response'
 
 queryHandler :: GQLAPI -> GQLClient -> GQLState -> IO ()
 queryHandler interpreter' GQLClient {clientConnection = connection', clientID = id'} state = forever handleRequest
   where
     handleRequest = do
-      msg <- receiveData connection' >>= \x -> interpreter' (SocketConnection id' x)
+      msg <- receiveData connection' >>= \x -> interpreter' (SocketInput id' x)
       print msg
       handleGQLResponse connection' state msg
 
