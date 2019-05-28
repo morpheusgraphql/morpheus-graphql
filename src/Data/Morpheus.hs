@@ -1,7 +1,11 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
 
 module Data.Morpheus
   ( interpreter
+  , streamInterpreter
+  , InputAction(..)
+  , OutputAction(..)
   , GQLHandler
   ) where
 
@@ -49,10 +53,10 @@ schema queryRes mutationRes subscriptionRes =
       allConnections :: [(UpdateAction,Connection)]
   }
 -}
-
 -- hied should be add WebSocket Connection :: Maybe Context)
-resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> {- Maybe Context -> -} LB.ByteString -> ResolveIO Value
-resolve rootResolver {- context -} request = do
+resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> ResolveIO Value {- Maybe Context -> -}
+resolve rootResolver request {- context -}
+ = do
   rootGQL <- ExceptT $ pure (parseRequest request >>= validateRequest gqlSchema)
   case rootGQL of
     Query operator'        -> encodeQuery queryRes gqlSchema $ operatorSelection operator'
@@ -73,6 +77,54 @@ resolve rootResolver {- context -} request = do
                mapM sendResponse matchedActions  -- all subscribed actions will be send
            that can be resolved by subscriptions
      -}
+  where
+    gqlSchema = schema queryRes mutationRes subscriptionRes
+    queryRes = query rootResolver
+    mutationRes = mutation rootResolver
+    subscriptionRes = subscription rootResolver
+
+type ConnectionID = Int
+
+type Client = (Text, ConnectionID)
+
+data InputAction a = SocketConnection
+  { conectionID :: ConnectionID
+  , inputValue  :: a
+  }
+  -- | NoEffectInput a
+
+data OutputAction a
+  = EffectPublish { actionID      :: Text
+                  , actionPayload :: a }
+  | EffectSubscribe { clientsState :: [Client] }
+  | NoEffectResult a
+
+streamInterpreter :: GQLRootResolver (InputAction LB.ByteString -> IO (OutputAction GQLResponse))
+streamInterpreter rootResolver request = do
+  value <- runExceptT (resolveStream rootResolver request)
+  case value of
+    Left x -> pure $ NoEffectResult $ Errors $ renderErrors (parseLineBreaks $ inputValue request) x
+    Right (EffectPublish id' x') -> pure $ EffectPublish id' (Data x')
+    Right (EffectSubscribe x') -> pure $ EffectSubscribe x'
+    Right (NoEffectResult x') -> pure $ NoEffectResult (Data x')
+
+resolveStream ::
+     (GQLQuery a, GQLMutation b, GQLSubscription c)
+  => GQLRoot a b c
+  -> InputAction LB.ByteString
+  -> ResolveIO (OutputAction Value)
+resolveStream rootResolver (SocketConnection id' request) = do
+  rootGQL <- ExceptT $ pure (parseRequest request >>= validateRequest gqlSchema)
+  case rootGQL of
+    Query operator' -> do
+      value <- encodeQuery queryRes gqlSchema $ operatorSelection operator'
+      return (NoEffectResult value)
+    Mutation operator' -> do
+      value <- encodeMutation mutationRes $ operatorSelection operator'
+      return EffectPublish {actionID = "UPDATE_ADDRESS", actionPayload = value}
+    Subscription operator' -> do
+      _ <- encodeSubscription subscriptionRes $ operatorSelection operator'
+      return EffectSubscribe {clientsState = [("UPDATE_ADDRESS", id')]}
   where
     gqlSchema = schema queryRes mutationRes subscriptionRes
     queryRes = query rootResolver
