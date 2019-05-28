@@ -53,9 +53,16 @@ talk interpreter' SocketClient {clientConnection = connection', clientID = id'} 
       msg <- receiveData connection' >>= \x -> interpreter' (SocketConnection id' x)
       print msg
       case msg of
-        EffectPublish _ value'          -> readMVar state >>= broadcast value'
-        NoEffectResult value'           -> sendTextData connection' value' >> readMVar state
-        EffectSubscribe (channel', id') -> readMVar state
+        EffectPublish _ value'           -> readMVar state >>= broadcast value'
+        NoEffectResult value'            -> sendTextData connection' value' >> readMVar state
+        EffectSubscribe (cid', channel') -> updateChannels cid' channel' <$> readMVar state
+
+updateChannels :: ClientID -> [Text] -> ServerState -> ServerState
+updateChannels id' channel' = map setChannel
+  where
+    setChannel (key', client')
+      | key' == id' = (key', client' {clientChannels = channel'})
+    setChannel state' = state'
 
 registerSubscription :: MVar ServerState -> Connection -> IO SocketClient
 registerSubscription varState' connection' = do

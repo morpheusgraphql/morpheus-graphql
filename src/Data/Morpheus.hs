@@ -84,7 +84,7 @@ resolve rootResolver request {- context -}
     subscriptionRes = subscription rootResolver
 
 --type ConnectionID = Int
-type Client c = (Text, c)
+type Client c = (c, [Text])
 
 data InputAction c a = SocketConnection
   { connectionID :: c
@@ -131,7 +131,7 @@ resolveStream rootResolver (SocketConnection id' request) = do
       return EffectPublish {actionID = "UPDATE_ADDRESS", actionPayload = value}
     Subscription operator' -> do
       _ <- encodeSubscription subscriptionRes $ operatorSelection operator'
-      return EffectSubscribe {clientsState = ("UPDATE_ADDRESS", id')}
+      return EffectSubscribe {clientsState = (id', ["UPDATE_ADDRESS"])}
   where
     gqlSchema = schema queryRes mutationRes subscriptionRes
     queryRes = query rootResolver
