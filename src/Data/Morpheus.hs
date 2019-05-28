@@ -78,11 +78,11 @@ data InputAction c a = SocketConnection
   -- | NoEffectInput a
 
 data OutputAction c a
-  = EffectPublish { actionChannelID        :: Text
-                  , actionPayload          :: a
-                  , actionMutationResponse :: a }
-  | EffectSubscribe { clientsState :: Client c }
-  | NoEffectResult a
+  = Publish { actionChannelID        :: Text
+            , actionPayload          :: a
+            , actionMutationResponse :: a }
+  | Subscribe { clientsState :: Client c }
+  | NoEffect a
   deriving (Show)
 
 toLazyBS = encodeUtf8 . LT.fromStrict
@@ -95,11 +95,10 @@ streamInterpreter rootResolver request
  = do
   value <- runExceptT (resolveStream rootResolver request)
   case value of
-    Left x ->
-      pure $ NoEffectResult $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLazyBS $ inputValue request) x
-    Right (EffectPublish id' x' y') -> pure $ EffectPublish id' (encodeToText $ Data x') (encodeToText $ Data y')
-    Right (EffectSubscribe x') -> pure $ EffectSubscribe x'
-    Right (NoEffectResult x') -> pure $ NoEffectResult (encodeToText $ Data x')
+    Left x -> pure $ NoEffect $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLazyBS $ inputValue request) x
+    Right (Publish id' x' y') -> pure $ Publish id' (encodeToText $ Data x') (encodeToText $ Data y')
+    Right (Subscribe x') -> pure $ Subscribe x'
+    Right (NoEffect x') -> pure $ NoEffect (encodeToText $ Data x')
 
 resolveStream ::
      (GQLQuery a, GQLMutation b, GQLSubscription c)
@@ -111,13 +110,13 @@ resolveStream rootResolver (SocketConnection id' request) = do
   case rootGQL of
     Query operator' -> do
       value <- encodeQuery queryRes gqlSchema $ operatorSelection operator'
-      return (NoEffectResult value)
+      return (NoEffect value)
     Mutation operator' -> do
       value <- encodeMutation mutationRes $ operatorSelection operator'
-      return EffectPublish {actionChannelID = "UPDATE_ADDRESS", actionPayload = value, actionMutationResponse = value}
+      return Publish {actionChannelID = "UPDATE_ADDRESS", actionPayload = value, actionMutationResponse = value}
     Subscription operator' -> do
       _ <- encodeSubscription subscriptionRes $ operatorSelection operator'
-      return EffectSubscribe {clientsState = (id', ["UPDATE_ADDRESS"])}
+      return Subscribe {clientsState = (id', ["UPDATE_ADDRESS"])}
   where
     gqlSchema = schema queryRes mutationRes subscriptionRes
     queryRes = query rootResolver

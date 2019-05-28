@@ -37,10 +37,10 @@ queryHandler interpreter' GQLClient {clientConnection = connection', clientID = 
       msg <- receiveData connection' >>= \x -> interpreter' (SocketConnection id' x)
       print msg
       case msg of
-        EffectPublish {actionChannelID = chanelId', actionPayload = message', actionMutationResponse = response'} ->
+        Publish {actionChannelID = chanelId', actionPayload = message', actionMutationResponse = response'} ->
           sendTextData connection' response' >> publishUpdates chanelId' message' state
-        NoEffectResult response' -> sendTextData connection' response'
-        EffectSubscribe (clientId', channels') -> updateChannels clientId' channels' state
+        Subscribe (clientId', channels') -> updateChannels clientId' channels' state
+        NoEffect response' -> sendTextData connection' response'
 
 application :: GQLAPI -> MVar ClientRegister -> ServerApp
 application interpreter' state pending = do
