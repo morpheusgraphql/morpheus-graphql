@@ -55,12 +55,14 @@ registerSubscription varState' connection' = do
       return (id', connection')
     addClient client' state' = return (client' : state')
 
-application :: (InputAction Text -> IO (OutputAction Text)) -> MVar ServerState -> ServerApp
+type GQLApi = InputAction Text -> IO (OutputAction Text)
+
+application :: GQLApi -> MVar ServerState -> ServerApp
 application interpreter' state pending = do
   connection' <- acceptRequest pending
   forkPingThread connection' 30
   client' <- registerSubscription state connection'
   finally (talk interpreter' client' state) (disconnectClient client' state)
 
-socketApplication :: (InputAction Text -> IO (OutputAction Text)) -> IO ServerApp
+socketApplication :: GQLApi -> IO ServerApp
 socketApplication interpreter = application interpreter <$> newMVar []

@@ -4,12 +4,12 @@ module Main
   ( main
   ) where
 
-import           Control.Monad.IO.Class (liftIO)
+-- import           Control.Monad.IO.Class (liftIO)
 import           Data.Morpheus.Server   (socketApplication)
 import           Deprecated.API         (gqlApi)
-import           Mythology.API          (mythologyApi)
+-- import           Mythology.API          (mythologyApi)
 import           Network.WebSockets     (runServer)
-import           Web.Scotty
+-- import           Web.Scotty
 
 startWebSocket :: IO ()
 startWebSocket = socketApplication gqlApi >>= runServer "127.0.0.1" 9160
