@@ -83,27 +83,27 @@ resolve rootResolver request {- context -}
     mutationRes = mutation rootResolver
     subscriptionRes = subscription rootResolver
 
-type ConnectionID = Int
+--type ConnectionID = Int
+type Client c = (Text, c)
 
-type Client = (Text, ConnectionID)
-
-data InputAction a = SocketConnection
-  { conectionID :: ConnectionID
-  , inputValue  :: a
+data InputAction c a = SocketConnection
+  { connectionID :: c
+  , inputValue   :: a
   } deriving (Show)
   -- | NoEffectInput a
 
-data OutputAction a
+data OutputAction c a
   = EffectPublish { actionID      :: Text
                   , actionPayload :: a }
-  | EffectSubscribe { clientsState :: [Client] }
-  | NoEffectResult a deriving (Show)
+  | EffectSubscribe { clientsState :: Client c }
+  | NoEffectResult a
+  deriving (Show)
 
 toLazyBS = encodeUtf8 . LT.fromStrict
 
 encodeToText = LT.toStrict . decodeUtf8 . encode
 
-streamInterpreter :: GQLRootResolver (InputAction Text -> IO (OutputAction Text))
+streamInterpreter :: GQLRootResolver (InputAction c Text -> IO (OutputAction c Text))
 streamInterpreter rootResolver request
   --let textRequest = (decodeUtf8 request)
  = do
@@ -118,8 +118,8 @@ streamInterpreter rootResolver request
 resolveStream ::
      (GQLQuery a, GQLMutation b, GQLSubscription c)
   => GQLRoot a b c
-  -> InputAction Text
-  -> ResolveIO (OutputAction Value)
+  -> InputAction d Text
+  -> ResolveIO (OutputAction d Value)
 resolveStream rootResolver (SocketConnection id' request) = do
   rootGQL <- ExceptT $ pure (parseRequest (toLazyBS request) >>= validateRequest gqlSchema)
   case rootGQL of
@@ -131,7 +131,7 @@ resolveStream rootResolver (SocketConnection id' request) = do
       return EffectPublish {actionID = "UPDATE_ADDRESS", actionPayload = value}
     Subscription operator' -> do
       _ <- encodeSubscription subscriptionRes $ operatorSelection operator'
-      return EffectSubscribe {clientsState = [("UPDATE_ADDRESS", id')]}
+      return EffectSubscribe {clientsState = ("UPDATE_ADDRESS", id')}
   where
     gqlSchema = schema queryRes mutationRes subscriptionRes
     queryRes = query rootResolver

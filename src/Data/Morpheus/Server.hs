@@ -35,16 +35,19 @@ broadcast message clients = do
   where
     sendMessage (_, connection') = sendTextData connection' message
 
-talk :: (InputAction Text -> IO (OutputAction Text)) -> Client -> MVar ServerState -> IO ()
-talk interpreter' (_, conn) state = forever handleRequest
+instance Show Connection where
+  show = const "Connection"
+
+talk :: (InputAction Connection Text -> IO (OutputAction Connection Text)) -> Client -> MVar ServerState -> IO ()
+talk interpreter' (_, connection') state = forever handleRequest
   where
     handleRequest = do
-      msg <- receiveData conn >>= \x -> interpreter' (SocketConnection 1 x)
+      msg <- receiveData connection' >>= \x -> interpreter' (SocketConnection connection' x)
       print msg
       case msg of
-        EffectPublish _ value -> readMVar state >>= broadcast value
-        NoEffectResult value  -> sendTextData conn value >> readMVar state
-        _                     -> readMVar state
+        EffectPublish _ value'  -> readMVar state >>= broadcast value'
+        NoEffectResult  value'   -> sendTextData connection' value' >> readMVar state
+        EffectSubscribe client -> readMVar state
 
 registerSubscription :: MVar ServerState -> Connection -> IO Client
 registerSubscription varState' connection' = do
@@ -57,7 +60,7 @@ registerSubscription varState' connection' = do
       return (id', connection')
     addClient client' state' = return (client' : state')
 
-type GQLApi = InputAction Text -> IO (OutputAction Text)
+type GQLApi = InputAction Connection Text -> IO (OutputAction Connection Text)
 
 application :: GQLApi -> MVar ServerState -> ServerApp
 application interpreter' state pending = do

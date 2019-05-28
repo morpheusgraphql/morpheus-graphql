@@ -169,7 +169,7 @@ newUserSubscription = transformUser <$> Resolver (const jsonUser)
 
   newtype Async a = Pending | Response { unpackAwait :: Stream Channels } |
 -}
-gqlApi :: InputAction Text -> IO (OutputAction Text)
+gqlApi :: InputAction a Text -> IO (OutputAction a Text)
 gqlApi =
   streamInterpreter
     GQLRoot
