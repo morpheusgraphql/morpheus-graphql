@@ -90,14 +90,14 @@ type Client = (Text, ConnectionID)
 data InputAction a = SocketConnection
   { conectionID :: ConnectionID
   , inputValue  :: a
-  }
+  } deriving (Show)
   -- | NoEffectInput a
 
 data OutputAction a
   = EffectPublish { actionID      :: Text
                   , actionPayload :: a }
   | EffectSubscribe { clientsState :: [Client] }
-  | NoEffectResult a
+  | NoEffectResult a deriving (Show)
 
 toLazyBS = encodeUtf8 . LT.fromStrict
 

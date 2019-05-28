@@ -36,12 +36,14 @@ broadcast message clients = do
     sendMessage (_, connection') = sendTextData connection' message
 
 talk :: (InputAction Text -> IO (OutputAction Text)) -> Client -> MVar ServerState -> IO ()
-talk interpreter' (user, conn) state = forever handleRequest
+talk interpreter' (_, conn) state = forever handleRequest
   where
     handleRequest = do
       msg <- receiveData conn >>= \x -> interpreter' (SocketConnection 1 x)
+      print msg
       case msg of
-        EffectPublish _ value -> readMVar state >>= broadcast (user <> ": " <> value)
+        EffectPublish _ value -> readMVar state >>= broadcast value
+        NoEffectResult value  -> sendTextData conn value >> readMVar state
         _                     -> readMVar state
 
 registerSubscription :: MVar ServerState -> Connection -> IO Client

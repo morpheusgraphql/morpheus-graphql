@@ -9,8 +9,8 @@ module Deprecated.API
   ) where
 
 import           Data.Morpheus       (InputAction, OutputAction, streamInterpreter)
-import           Data.Morpheus.Kind  (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..), INPUT_OBJECT,
-                                      KIND, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Kind  (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLSubscription,
+                                      GQLType (..), INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types ((::->) (..), GQLRoot (..), ID, ScalarValue (..))
 import           Data.Text           (Text, pack)
 import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
@@ -97,8 +97,12 @@ newtype Query = Query
   } deriving (Generic, GQLQuery)
 
 newtype Mutation = Mutation
-  { createUser :: AddressArgs ::-> User
+  { createUser :: () ::-> User
   } deriving (Generic, GQLMutation)
+
+newtype Subscription = Subscription
+  { newUser :: () ::-> User
+  } deriving (Generic, GQLSubscription)
 
 fetchAddress :: Euro -> Text -> IO (Either String Address)
 fetchAddress _ streetName = do
@@ -143,8 +147,11 @@ transformUser user' =
              HH)
     }
 
-createUserMutation :: AddressArgs ::-> User
+createUserMutation :: () ::-> User
 createUserMutation = transformUser <$> Resolver (const jsonUser)
+
+newUserSubscription :: () ::-> User
+newUserSubscription = transformUser <$> Resolver (const jsonUser)
 
 {-
   data Channels = UserAdded (Async User) | AddressAdded (Async Address)
@@ -166,4 +173,7 @@ gqlApi :: InputAction Text -> IO (OutputAction Text)
 gqlApi =
   streamInterpreter
     GQLRoot
-      {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}, subscription = ()}
+      { query = Query {user = resolveUser}
+      , mutation = Mutation {createUser = createUserMutation}
+      , subscription = Subscription {newUser = newUserSubscription}
+      }
