@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds          #-}
 {-# LANGUAGE DefaultSignatures        #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE FlexibleContexts         #-}
@@ -28,16 +29,22 @@ import           Data.Proxy
 import           Data.Text                                  (Text)
 import           GHC.Generics
 
+type Encode a = a -> SelectionSet -> ResolveIO Value
+
+type EncodeCon a = (Generic a, DeriveResolvers (Rep a))
+
+type IntroCon a = (ObjectRep (Rep a) (Text, DataOutputField))
+
 class GQLQuery a where
-  encodeQuery :: DataTypeLib -> a -> SelectionSet -> ResolveIO Value
-  default encodeQuery :: (Generic a, DeriveResolvers (Rep a)) =>
-    DataTypeLib -> a -> SelectionSet -> ResolveIO Value
+  encodeQuery :: DataTypeLib -> Encode a
+  default encodeQuery :: EncodeCon a =>
+    DataTypeLib -> Encode a
   encodeQuery types rootResolver sel = resolveBySelection sel (schemaResolver ++ resolvers)
     where
       schemaResolver = [("__schema", (`_encode` initSchema types))]
       resolvers = deriveResolvers "" $ from rootResolver
   querySchema :: a -> DataTypeLib
-  default querySchema :: (ObjectRep (Rep a) (Text, DataOutputField)) =>
+  default querySchema :: IntroCon a =>
     a -> DataTypeLib
   querySchema _ = resolveTypes typeLib stack'
     where
@@ -46,29 +53,27 @@ class GQLQuery a where
       (fields', stack') = unzip $ getFields (Proxy @(Rep a))
 
 class GQLMutation a where
-  encodeMutation :: a -> SelectionSet -> ResolveIO Value
-  default encodeMutation :: (Generic a, DeriveResolvers (Rep a)) =>
-    a -> SelectionSet -> ResolveIO Value
+  encodeMutation :: Encode a
+  default encodeMutation :: EncodeCon a =>
+    Encode a
   encodeMutation rootResolver sel = resolveBySelection sel $ deriveResolvers "" $ from rootResolver
   mutationSchema :: a -> DataTypeLib -> DataTypeLib
-  default mutationSchema :: (ObjectRep (Rep a) (Text, DataOutputField)) =>
+  default mutationSchema :: IntroCon a =>
     a -> DataTypeLib -> DataTypeLib
   mutationSchema _ initialType = resolveTypes mutationType types'
     where
       mutationType =
         initialType
-          { mutation =
-              Just ("Mutation", DataType {typeData = fields', typeName = "Mutation", typeDescription = "Description"})
-          }
+          {mutation = Just ("Mutation", DataType {typeData = fields', typeName = "Mutation", typeDescription = ""})}
       (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
 
 class GQLSubscription a where
-  encodeSubscription :: a -> SelectionSet -> ResolveIO Value
-  default encodeSubscription :: (Generic a, DeriveResolvers (Rep a)) =>
-    a -> SelectionSet -> ResolveIO Value
+  encodeSubscription :: Encode a
+  default encodeSubscription :: EncodeCon a =>
+    Encode a
   encodeSubscription rootResolver sel = resolveBySelection sel $ deriveResolvers "" $ from rootResolver
   subscriptionSchema :: a -> DataTypeLib -> DataTypeLib
-  default subscriptionSchema :: (ObjectRep (Rep a) (Text, DataOutputField)) =>
+  default subscriptionSchema :: IntroCon a =>
     a -> DataTypeLib -> DataTypeLib
   subscriptionSchema _ initialType = resolveTypes subscriptionType types'
     where
