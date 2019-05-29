@@ -107,21 +107,22 @@ transformAddress street' address' =
   Address {city = M.city address', houseNumber = M.houseNumber address', street = street', owner = Nothing}
 
 resolveAddress :: AddressArgs ::-> Address
-resolveAddress = Resolver $ \args -> wrapIn <$> fetchAddress (Euro 1 0) (pack $ show $ longitude $ coordinates args)
+resolveAddress =
+  Resolver $ \args -> withEffects [] <$> fetchAddress (Euro 1 0) (pack $ show $ longitude $ coordinates args)
 
 addressByCityID :: CityID -> Int -> IO (Either String Address)
 addressByCityID Paris code = fetchAddress (Euro 1 code) "Paris"
 addressByCityID BLN code   = fetchAddress (Euro 1 code) "Berlin"
 addressByCityID HH code    = fetchAddress (Euro 1 code) "Hamburg"
 
-wrapIn :: Either String a -> Either String (a, [k])
-wrapIn x = (, []) <$> x
+withEffects :: [k] -> Either String a -> Either String (a, [k])
+withEffects channels x = (, channels) <$> x
 
 resolveOffice :: JSONUser -> OfficeArgs ::-> Address
-resolveOffice _ = Resolver $ \args -> wrapIn <$> addressByCityID (cityID args) 12
+resolveOffice _ = Resolver $ \args -> withEffects [] <$> addressByCityID (cityID args) 12
 
 resolveUser :: () ::-> User
-resolveUser = transformUser <$> Resolver (const $ wrapIn <$> jsonUser)
+resolveUser = transformUser <$> Resolver (const $ withEffects [] <$> jsonUser)
 
 transformUser :: JSONUser -> User
 transformUser user' =
@@ -144,23 +145,33 @@ transformUser user' =
     }
 
 data Context
-  = User' User
-  | Address' Address
+  = UPDATE_USER
+  | UPDATE_ADDRESS
 
 type a ::->> b = Resolver Context a b
 
 createUserMutation :: () ::->> User
-createUserMutation = transformUser <$> Resolver (const $ wrapIn <$> jsonUser)
+createUserMutation = transformUser <$> Resolver (const $ withEffects [UPDATE_USER] <$> jsonUser)
 
 newUserSubscription :: () ::->> User
-newUserSubscription = transformUser <$> Resolver (const $ wrapIn <$> jsonUser)
+newUserSubscription = transformUser <$> Resolver (const $ withEffects [UPDATE_USER] <$> jsonUser)
 
-newtype Mutation = Mutation
-  { createUser :: () ::->> User
+createAddressMutation :: () ::->> Address
+createAddressMutation =
+  transformAddress "from Mutation" <$> Resolver (const $ withEffects [UPDATE_ADDRESS] <$> jsonAddress)
+
+newAddressSubscription :: () ::->> Address
+newAddressSubscription =
+  transformAddress "from Subscription" <$> Resolver (const $ withEffects [UPDATE_ADDRESS] <$> jsonAddress)
+
+data Mutation = Mutation
+  { createUser    :: () ::->> User
+  , createAddress :: () ::->> Address
   } deriving (Generic, GQLMutation)
 
-newtype Subscription = Subscription
-  { newUser :: () ::->> User
+data Subscription = Subscription
+  { newUser    :: () ::->> User
+  , newAddress :: () ::->> Address
   } deriving (Generic, GQLSubscription)
 
 {-
@@ -183,6 +194,6 @@ gqlRoot :: GQLRoot Query Mutation Subscription
 gqlRoot =
   GQLRoot
     { query = Query {user = resolveUser}
-    , mutation = Mutation {createUser = createUserMutation}
-    , subscription = Subscription {newUser = newUserSubscription}
+    , mutation = Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
+    , subscription = Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}
     }

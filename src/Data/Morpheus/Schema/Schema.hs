@@ -1,14 +1,18 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 module Data.Morpheus.Schema.Schema where
 
+import           Data.Morpheus.Kind.Internal                       (KIND, OBJECT)
 import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.Internal.RenderIntrospection (Type, createObjectType, typeFromInputObject,
                                                                     typeFromLeaf, typeFromObject, typeFromUnion)
 import           Data.Morpheus.Types.Internal.Data                 (DataOutputObject, DataTypeLib (..))
 import           Data.Text                                         (Text)
 import           GHC.Generics                                      (Generic)
+
+type instance KIND Schema = OBJECT
 
 data Schema = Schema
   { types            :: [Type]

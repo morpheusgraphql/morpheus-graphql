@@ -1,10 +1,14 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TypeFamilies  #-}
 
 module Data.Morpheus.Schema.TypeKind
   ( TypeKind(..)
   ) where
 
+import           Data.Morpheus.Kind.Internal (ENUM, KIND)
 import           GHC.Generics
+
+type instance KIND TypeKind = ENUM
 
 data TypeKind
   = SCALAR

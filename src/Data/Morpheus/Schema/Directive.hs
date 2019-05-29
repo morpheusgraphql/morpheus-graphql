@@ -1,14 +1,17 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies #-}{-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Schema.Directive
   ( Directive(..)
   ) where
 
+import           Data.Morpheus.Kind.Internal                       (KIND, OBJECT)
 import           Data.Morpheus.Schema.DirectiveLocation            (DirectiveLocation)
 import           Data.Morpheus.Schema.Internal.RenderIntrospection (InputValue)
 import           Data.Text                                         (Text)
 import           GHC.Generics                                      (Generic)
+
+type instance KIND Directive = OBJECT
 
 data Directive = Directive
   { name        :: Text
@@ -16,4 +19,3 @@ data Directive = Directive
   , locations   :: [DirectiveLocation]
   , args        :: [InputValue]
   } deriving (Generic)
-
