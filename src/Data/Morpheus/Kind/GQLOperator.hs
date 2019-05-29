@@ -35,6 +35,9 @@ type EncodeCon a = (Generic a, DeriveResolvers (Rep a))
 
 type IntroCon a = (ObjectRep (Rep a) (Text, DataOutputField))
 
+operatorType :: Text -> a -> (Text, DataType a)
+operatorType name' fields' = (name', DataType {typeData = fields', typeName = name', typeDescription = ""})
+
 class GQLQuery a where
   encodeQuery :: DataTypeLib -> Encode a
   default encodeQuery :: EncodeCon a =>
@@ -49,7 +52,7 @@ class GQLQuery a where
   querySchema _ = resolveTypes typeLib stack'
     where
       typeLib = _introspect (Proxy @Schema) queryType
-      queryType = initTypeLib ("Query", DataType {typeData = fields', typeName = "Query", typeDescription = ""})
+      queryType = initTypeLib (operatorType "Query" fields')
       (fields', stack') = unzip $ getFields (Proxy @(Rep a))
 
 class GQLMutation a where
@@ -62,9 +65,7 @@ class GQLMutation a where
     a -> DataTypeLib -> DataTypeLib
   mutationSchema _ initialType = resolveTypes mutationType types'
     where
-      mutationType =
-        initialType
-          {mutation = Just ("Mutation", DataType {typeData = fields', typeName = "Mutation", typeDescription = ""})}
+      mutationType = initialType {mutation = Just $ operatorType "Mutation" fields'}
       (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
 
 class GQLSubscription a where
@@ -77,11 +78,7 @@ class GQLSubscription a where
     a -> DataTypeLib -> DataTypeLib
   subscriptionSchema _ initialType = resolveTypes subscriptionType types'
     where
-      subscriptionType =
-        initialType
-          { subscription =
-              Just ("Subscription", DataType {typeData = fields', typeName = "Subscription", typeDescription = ""})
-          }
+      subscriptionType = initialType {subscription = Just $ operatorType "Subscription" fields'}
       (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
 
 instance GQLMutation () where
