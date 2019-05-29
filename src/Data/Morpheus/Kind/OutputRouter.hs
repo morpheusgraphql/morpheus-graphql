@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
@@ -38,7 +39,7 @@ import           GHC.Generics
 
 class OutputTypeRouter a b where
   __introspect :: Proxy b -> Intro_ a
-  __encode :: Proxy b -> Encode_ a
+  __encode :: Proxy b -> Encode_ a c
   __objectField :: Proxy b -> OField_ a
 
 _objectField ::
@@ -52,18 +53,18 @@ _introspect ::
 _introspect = __introspect (Proxy @(KIND a))
 
 _encode ::
-     forall a. OutputTypeRouter a (KIND a)
-  => Encode_ a
+     forall a c. OutputTypeRouter a (KIND a)
+  => Encode_ a c
 _encode = __encode (Proxy @(KIND a))
 
 instance (S.GQLScalar a, GQLType a) => OutputTypeRouter a SCALAR where
   __introspect _ _ = S.introspect (Proxy @a)
-  __encode _ _ = pure . S.encode
+  __encode _ _ = pure . (, []) . S.encode
   __objectField _ _ = field_ SCALAR (Proxy @a) []
 
 instance EnumConstraint a => OutputTypeRouter a ENUM where
   __introspect _ _ = introspectEnum (Proxy @a)
-  __encode _ _ = pure . Scalar . String . encodeRep . from
+  __encode _ _ = pure . (, []) . Scalar . String . encodeRep . from
   __objectField _ _ = field_ ENUM (Proxy @a) []
 
 instance ObjectConstraint a => OutputTypeRouter a OBJECT where

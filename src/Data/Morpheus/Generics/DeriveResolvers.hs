@@ -27,23 +27,31 @@ import           GHC.Generics
 unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
-selectResolver :: [(Text, (Text, Selection) -> ResolveIO Value)] -> (Text, Selection) -> ResolveIO (Text, Value)
+type Response a = (Value, [a])
+
+selectResolver ::
+     [(Text, (Text, Selection) -> ResolveIO (Response a))] -> (Text, Selection) -> ResolveIO (Text, Response a)
 selectResolver resolvers' (key', selection') =
   case selectionRec selection' of
     SelectionAlias name' aliasSelection' ->
       unwrapMonadTuple (key', lookupResolver name' (selection' {selectionRec = aliasSelection'}))
     _ -> unwrapMonadTuple (key', lookupResolver key' selection')
   where
-    lookupResolver resolverKey' sel = (fromMaybe (\_ -> pure Null) $ lookup resolverKey' resolvers') (key', sel)
+    lookupResolver resolverKey' sel = (fromMaybe (\_ -> pure (Null, [])) $ lookup resolverKey' resolvers') (key', sel)
 
-resolveBySelection :: [(Text, Selection)] -> [(Text, (Text, Selection) -> ResolveIO Value)] -> ResolveIO Value
-resolveBySelection selection resolvers = Object <$> mapM (selectResolver resolvers) selection
+resolveBySelection ::
+     [(Text, Selection)] -> [(Text, (Text, Selection) -> ResolveIO (Response a))] -> ResolveIO (Response a)
+resolveBySelection selection resolvers = do
+  value <- mapM (selectResolver resolvers) selection
+  let val' = fmap (\(x, (y, _)) -> (x, y)) value
+  let context = concatMap (snd . snd) value
+  return (Object val', context)
 
-resolversBy :: (Generic a, DeriveResolvers (Rep a)) => a -> [(Text, (Text, Selection) -> ResolveIO Value)]
+resolversBy :: (Generic a, DeriveResolvers (Rep a)) => a -> [(Text, (Text, Selection) -> ResolveIO (Response a))]
 resolversBy = deriveResolvers "" . from
 
 class DeriveResolvers f where
-  deriveResolvers :: Text -> f a -> [(Text, (Text, Selection) -> ResolveIO Value)]
+  deriveResolvers :: Text -> f a -> [(Text, (Text, Selection) -> ResolveIO (Response a))]
 
 instance DeriveResolvers U1 where
   deriveResolvers _ _ = []

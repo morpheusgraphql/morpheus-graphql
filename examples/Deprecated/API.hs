@@ -144,34 +144,28 @@ transformUser user' =
              HH)
     }
 
-data Context
-  = UPDATE_USER
-  | UPDATE_ADDRESS
+createUserMutation :: () ::-> User
+createUserMutation = transformUser <$> Resolver (const $ withEffects ["UPDATE_USER"] <$> jsonUser)
 
-type a ::->> b = Resolver Context a b
+newUserSubscription :: () ::-> User
+newUserSubscription = transformUser <$> Resolver (const $ withEffects ["UPDATE_USER"] <$> jsonUser)
 
-createUserMutation :: () ::->> User
-createUserMutation = transformUser <$> Resolver (const $ withEffects [UPDATE_USER] <$> jsonUser)
-
-newUserSubscription :: () ::->> User
-newUserSubscription = transformUser <$> Resolver (const $ withEffects [UPDATE_USER] <$> jsonUser)
-
-createAddressMutation :: () ::->> Address
+createAddressMutation :: () ::-> Address
 createAddressMutation =
-  transformAddress "from Mutation" <$> Resolver (const $ withEffects [UPDATE_ADDRESS] <$> jsonAddress)
+  transformAddress "from Mutation" <$> Resolver (const $ withEffects ["UPDATE_ADDRESS"] <$> jsonAddress)
 
-newAddressSubscription :: () ::->> Address
+newAddressSubscription :: () ::-> Address
 newAddressSubscription =
-  transformAddress "from Subscription" <$> Resolver (const $ withEffects [UPDATE_ADDRESS] <$> jsonAddress)
+  transformAddress "from Subscription" <$> Resolver (const $ withEffects ["UPDATE_ADDRESS"] <$> jsonAddress)
 
 data Mutation = Mutation
-  { createUser    :: () ::->> User
-  , createAddress :: () ::->> Address
+  { createUser    :: () ::-> User
+  , createAddress :: () ::-> Address
   } deriving (Generic, GQLMutation)
 
 data Subscription = Subscription
-  { newUser    :: () ::->> User
-  , newAddress :: () ::->> Address
+  { newUser    :: () ::-> User
+  , newAddress :: () ::-> Address
   } deriving (Generic, GQLSubscription)
 
 {-

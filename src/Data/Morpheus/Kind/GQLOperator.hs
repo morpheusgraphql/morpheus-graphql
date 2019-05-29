@@ -29,7 +29,7 @@ import           Data.Proxy
 import           Data.Text                                  (Text)
 import           GHC.Generics
 
-type Encode a = a -> SelectionSet -> ResolveIO Value
+type Encode a s = a -> SelectionSet -> ResolveIO (Value, [s])
 
 type EncodeCon a = (Generic a, DeriveResolvers (Rep a))
 
@@ -39,9 +39,9 @@ operatorType :: Text -> a -> (Text, DataType a)
 operatorType name' fields' = (name', DataType {typeData = fields', typeName = name', typeDescription = ""})
 
 class GQLQuery a where
-  encodeQuery :: DataTypeLib -> Encode a
+  encodeQuery :: DataTypeLib -> Encode a Text
   default encodeQuery :: EncodeCon a =>
-    DataTypeLib -> Encode a
+    DataTypeLib -> Encode a Text
   encodeQuery types rootResolver sel = resolveBySelection sel (schemaResolver ++ resolvers)
     where
       schemaResolver = [("__schema", (`_encode` initSchema types))]
@@ -56,9 +56,9 @@ class GQLQuery a where
       (fields', stack') = unzip $ getFields (Proxy @(Rep a))
 
 class GQLMutation a where
-  encodeMutation :: Encode a
+  encodeMutation :: Encode a Text
   default encodeMutation :: EncodeCon a =>
-    Encode a
+    Encode a Text
   encodeMutation rootResolver sel = resolveBySelection sel $ deriveResolvers "" $ from rootResolver
   mutationSchema :: a -> DataTypeLib -> DataTypeLib
   default mutationSchema :: IntroCon a =>
@@ -69,9 +69,9 @@ class GQLMutation a where
       (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
 
 class GQLSubscription a where
-  encodeSubscription :: Encode a
+  encodeSubscription :: Encode a Text
   default encodeSubscription :: EncodeCon a =>
-    Encode a
+    Encode a Text
   encodeSubscription rootResolver sel = resolveBySelection sel $ deriveResolvers "" $ from rootResolver
   subscriptionSchema :: a -> DataTypeLib -> DataTypeLib
   default subscriptionSchema :: IntroCon a =>
@@ -82,9 +82,9 @@ class GQLSubscription a where
       (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
 
 instance GQLMutation () where
-  encodeMutation _ _ = pure Null
+  encodeMutation _ _ = pure (Null, [])
   mutationSchema _ = id
 
 instance GQLSubscription () where
-  encodeSubscription _ _ = pure Null
+  encodeSubscription _ _ = pure (Null, [])
   subscriptionSchema _ = id

@@ -17,10 +17,12 @@ maybeField field                                                = field
 listField :: DataField a -> DataField a
 listField x = x {fieldTypeWrappers = [NonNullType, ListType] ++ fieldTypeWrappers x}
 
-encodeList :: Encode_ a -> Encode_ [a]
-encodeList _ (_, Selection {selectionRec = SelectionField {}}) _ = pure $ List []
-encodeList f query list                                          = List <$> mapM (f query) list
+encodeList :: Encode_ a c -> Encode_ [a] c
+encodeList _ (_, Selection {selectionRec = SelectionField {}}) _ = pure (List [], [])
+encodeList f query list = do
+  value' <- mapM (f query) list
+  return (List (map fst value'), concatMap snd value')
 
-encodeMaybe :: Encode_ a -> Encode_ (Maybe a)
-encodeMaybe _ _ Nothing          = pure Null
+encodeMaybe :: Encode_ a c -> Encode_ (Maybe a) c
+encodeMaybe _ _ Nothing          = pure (Null, [])
 encodeMaybe f query (Just value) = f query value

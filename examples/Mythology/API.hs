@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
+{-# LANGUAGE RankNTypes     #-}
 {-# LANGUAGE TupleSections  #-}
 {-# LANGUAGE TypeOperators  #-}
 
@@ -25,8 +26,8 @@ data DeityArgs = DeityArgs
   , mythology :: Maybe Text -- Optional Argument
   } deriving (Generic, GQLArgs)
 
-wrapIn :: Either String a -> Either String (a, [()])
-wrapIn x = (, [()]) <$> x
+wrapIn :: forall a c. Either String a -> Either String (a, [c])
+wrapIn x = (, []) <$> x
 
 resolveDeity :: DeityArgs ::-> Deity
 resolveDeity = Resolver $ \args -> wrapIn <$> dbDeity (name args) (mythology args)

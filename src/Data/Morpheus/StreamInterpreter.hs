@@ -48,9 +48,9 @@ data InputAction a = SocketInput
   } deriving (Show)
 
 data OutputAction a
-  = PublishMutation { mutationChannelID :: Text
-                    , mutationPayload   :: a
-                    , mutationResponse  :: a }
+  = PublishMutation { mutationChannels :: [Text]
+                    , mutationPayload  :: a
+                    , mutationResponse :: a }
   | InitSubscription { subscriptionClientID :: Int
                      , subscriptionChannels :: [Text] }
   | NoEffect a
@@ -74,14 +74,14 @@ resolveStream rootResolver (SocketInput id' request) = do
   rootGQL <- ExceptT $ pure (parseRequest (toLBS request) >>= validateRequest gqlSchema)
   case rootGQL of
     Query operator' -> do
-      value <- encodeQuery gqlSchema queryRes $ operatorSelection operator'
+      (value, _) <- encodeQuery gqlSchema queryRes $ operatorSelection operator'
       return (NoEffect value)
     Mutation operator' -> do
-      value <- encodeMutation mutationRes $ operatorSelection operator'
-      return PublishMutation {mutationChannelID = "UPDATE_ADDRESS", mutationPayload = value, mutationResponse = value}
+      (value, channels) <- encodeMutation mutationRes $ operatorSelection operator'
+      return PublishMutation {mutationChannels = channels, mutationPayload = value, mutationResponse = value}
     Subscription operator' -> do
-      _ <- encodeSubscription subscriptionRes $ operatorSelection operator'
-      return InitSubscription {subscriptionClientID = id', subscriptionChannels = ["UPDATE_ADDRESS"]}
+      (_, channels) <- encodeSubscription subscriptionRes $ operatorSelection operator'
+      return InitSubscription {subscriptionClientID = id', subscriptionChannels = channels}
   where
     gqlSchema = schema queryRes mutationRes subscriptionRes
     queryRes = query rootResolver
@@ -92,6 +92,7 @@ streamInterpreter ::
      (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> InputAction Text -> IO (OutputAction Text)
 streamInterpreter rootResolver request = do
   value <- runExceptT (resolveStream rootResolver request)
+  print value
   case value of
     Left x -> pure $ NoEffect $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLBS $ inputValue request) x
     Right (PublishMutation id' x' y') -> pure $ PublishMutation id' (encodeToText $ Data x') (encodeToText $ Data y')
@@ -102,8 +103,8 @@ packStream :: GQLState -> (InputAction Text -> IO (OutputAction Text)) -> LB.Byt
 packStream state streamAPI request = do
   value <- streamAPI (SocketInput 0 $ bsToText request)
   case value of
-    PublishMutation {mutationChannelID = id', mutationResponse = res', mutationPayload = message'} -> do
-      publishUpdates id' message' state
+    PublishMutation {mutationChannels = channels, mutationResponse = res', mutationPayload = message'} -> do
+      publishUpdates channels message' state
       pure (toLBS res') {-- Actual response-}
     InitSubscription {} -> pure "subscriptions are only allowed in websocket"
     NoEffect res' -> pure (toLBS res')

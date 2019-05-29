@@ -8,9 +8,10 @@ module Data.Morpheus.Types.Resolver
   , Resolver(..)
   ) where
 
+import           Data.Text    (Text)
 import           GHC.Generics (Generic)
 
-type a ::-> b = Resolver () a b
+type a ::-> b = Resolver Text a b
 
 newtype Resolver c a b =
   Resolver (a -> IO (Either String (b, [c])))

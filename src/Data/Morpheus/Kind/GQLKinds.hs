@@ -11,7 +11,8 @@ module Data.Morpheus.Kind.GQLKinds where
 import           Data.Maybe                                 (fromMaybe)
 import           Data.Morpheus.Error.Internal               (internalErrorIO)
 import           Data.Morpheus.Error.Selection              (subfieldsNotSelected)
-import           Data.Morpheus.Generics.DeriveResolvers     (DeriveResolvers, resolveBySelection, resolversBy)
+import           Data.Morpheus.Generics.DeriveResolvers     (DeriveResolvers, deriveResolvers, resolveBySelection,
+                                                             resolversBy)
 import           Data.Morpheus.Generics.EnumRep             (EnumRep (..))
 import           Data.Morpheus.Generics.GDecode             (GDecode (..))
 import           Data.Morpheus.Generics.ObjectRep           (ObjectRep (..))
@@ -32,7 +33,7 @@ type Intro_ a = Proxy a -> DataTypeLib -> DataTypeLib
 
 type Decode_ a = Value -> Validation a
 
-type Encode_ a = (Text, Selection) -> a -> ResolveIO Value
+type Encode_ a c = (Text, Selection) -> a -> ResolveIO (Value, [c])
 
 type IField_ a = Proxy a -> Text -> DataInputField
 
@@ -66,13 +67,16 @@ OBJECT
 -}
 type ObjectConstraint a = (Generic a, DeriveResolvers (Rep a), ObjectRep (Rep a) (Text, DataOutputField), GQLType a)
 
+type ResolverT c = (Text, (Text, Selection) -> ResolveIO (Value, [c]))
+
 encodeObject ::
-     forall a. (GQLType a, Generic a, DeriveResolvers (Rep a))
-  => Encode_ a
+     forall a c. (GQLType a, Generic a, DeriveResolvers (Rep a))
+  => Encode_ a c
 encodeObject (_, Selection {selectionRec = SelectionSet selection'}) value =
-  resolveBySelection selection' (resolversBy value ++ [__typename])
+  resolveBySelection selection' ((__typename : deriveResolvers "" (from value)) :: [ResolverT c])
   where
-    __typename = ("__typename", const $ return $ Scalar $ String (typeID (Proxy @a)))
+    __typename :: (Text, (Text, Selection) -> ResolveIO (Value, [c]))
+    __typename = ("__typename", const $ return (Scalar $ String $typeID (Proxy @a), []))
 encodeObject (key, Selection {selectionPosition = position'}) _ = failResolveIO $ subfieldsNotSelected key "" position'
 
 introspectObject ::
@@ -93,9 +97,12 @@ type UnionConstraint a = (Generic a, GQLType a, UnionRep (Rep a), UnionResolvers
 lookupSelectionByType :: Text -> [(Text, SelectionSet)] -> SelectionSet
 lookupSelectionByType type' sel = fromMaybe [] $ lookup type' sel
 
-encodeUnion :: (Generic a, UnionResolvers (Rep a)) => Encode_ a
-encodeUnion (key', sel@Selection {selectionRec = UnionSelection selections'}) value =
-  resolver (key', sel {selectionRec = SelectionSet (lookupSelectionByType type' selections')})
+encodeUnion ::
+     forall a c. (Generic a, UnionResolvers (Rep a))
+  => Encode_ a c
+encodeUnion (key', sel@Selection {selectionRec = UnionSelection selections'}) value = do
+  value' <- resolver (key', sel {selectionRec = SelectionSet (lookupSelectionByType type' selections')})
+  return (fst value', [])
   where
     (type', resolver) = currentResolver (from value)
 encodeUnion _ _ = internalErrorIO "union Resolver only should recieve UnionSelection"
