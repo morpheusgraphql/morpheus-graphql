@@ -8,9 +8,7 @@ import           Data.Aeson                                (encode)
 import qualified Data.ByteString.Lazy.Char8                as LB (ByteString)
 import           Data.Morpheus.Error.Utils                 (renderErrors)
 import           Data.Morpheus.Interpreter                 (schema)
-import           Data.Morpheus.Kind.GQLMutation            (GQLMutation (..))
-import           Data.Morpheus.Kind.GQLQuery               (GQLQuery (..))
-import           Data.Morpheus.Kind.GQLSubscription        (GQLSubscription (..))
+import           Data.Morpheus.Kind.GQLOperator            (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
 import           Data.Morpheus.Parser.Parser               (parseLineBreaks, parseRequest)
 import           Data.Morpheus.Server.ClientRegister       (GQLState, publishUpdates)
 import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..))
@@ -76,7 +74,7 @@ resolveStream rootResolver (SocketInput id' request) = do
   rootGQL <- ExceptT $ pure (parseRequest (toLBS request) >>= validateRequest gqlSchema)
   case rootGQL of
     Query operator' -> do
-      value <- encodeQuery queryRes gqlSchema $ operatorSelection operator'
+      value <- encodeQuery gqlSchema queryRes $ operatorSelection operator'
       return (NoEffect value)
     Mutation operator' -> do
       value <- encodeMutation mutationRes $ operatorSelection operator'

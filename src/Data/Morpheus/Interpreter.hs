@@ -8,9 +8,7 @@ import           Data.Aeson                                (encode)
 import           Data.ByteString                           (ByteString)
 import qualified Data.ByteString.Lazy.Char8                as LB (ByteString, fromStrict, toStrict)
 import           Data.Morpheus.Error.Utils                 (renderErrors)
-import           Data.Morpheus.Kind.GQLMutation            (GQLMutation (..))
-import           Data.Morpheus.Kind.GQLQuery               (GQLQuery (..))
-import           Data.Morpheus.Kind.GQLSubscription        (GQLSubscription (..))
+import           Data.Morpheus.Kind.GQLOperator            (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
 import           Data.Morpheus.Parser.Parser               (parseLineBreaks, parseRequest)
 import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..))
 import           Data.Morpheus.Types.Internal.Data         (DataTypeLib)
@@ -31,7 +29,7 @@ resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB
 resolve rootResolver request = do
   rootGQL <- ExceptT $ pure (parseRequest request >>= validateRequest gqlSchema)
   case rootGQL of
-    Query operator'        -> encodeQuery queryRes gqlSchema $ operatorSelection operator'
+    Query operator'        -> encodeQuery gqlSchema queryRes $ operatorSelection operator'
     Mutation operator'     -> encodeMutation mutationRes $ operatorSelection operator'
     Subscription operator' -> encodeSubscription subscriptionRes $ operatorSelection operator'
   where
