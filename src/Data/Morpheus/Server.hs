@@ -18,8 +18,8 @@ type GQLAPI = InputAction Text -> IO (OutputAction Text)
 handleGQLResponse :: Connection -> GQLState -> OutputAction Text -> IO ()
 handleGQLResponse connection' state msg =
   case msg of
-    PublishMutation {mutationChannelID = chanelId', mutationPayload = message', mutationResponse = response'} ->
-      sendTextData connection' response' >> publishUpdates chanelId' message' state
+    PublishMutation {mutationChannels = channels', mutationPayload = message', mutationResponse = response'} ->
+      sendTextData connection' response' >> publishUpdates channels' message' state
     InitSubscription {subscriptionClientID = clientId', subscriptionChannels = channels'} ->
       updateClientChannels clientId' channels' state
     NoEffect response' -> sendTextData connection' response'
