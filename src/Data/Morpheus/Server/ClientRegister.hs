@@ -11,6 +11,7 @@ module Data.Morpheus.Server.ClientRegister
 
 import           Control.Concurrent             (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
 import           Control.Monad                  (forM_)
+import           Data.List                      (intersect)
 import           Data.Morpheus.Server.GQLClient (Channel, ClientID, GQLClient (..))
 import           Data.Text                      (Text)
 import           Network.WebSockets             (Connection, sendTextData)
@@ -49,17 +50,17 @@ updateClientByID id' updateFunc state = modifyMVar_ state (return . map updateCl
       | key' == id' = (key', updateFunc client')
     updateClient state' = state'
 
-publishUpdates :: Channel -> Text -> GQLState -> IO ()
-publishUpdates channelID' message state = do
+publishUpdates :: [Channel] -> Text -> GQLState -> IO ()
+publishUpdates channels message state = do
   state' <- clientsByChannel
   forM_ state' sendMessage
   where
     sendMessage (_, GQLClient {clientConnection = connection'}) = sendTextData connection' message
     clientsByChannel :: IO ClientRegister
-    clientsByChannel = filterByChannel <$> readMVar state
+    clientsByChannel = filterByChannels <$> readMVar state
       where
-        filterByChannel :: ClientRegister -> ClientRegister
-        filterByChannel = filter (elem channelID' . clientChannels . snd)
+        filterByChannels :: ClientRegister -> ClientRegister
+        filterByChannels = filter (([] /=) . intersect channels . clientChannels . snd)
 
 updateClientChannels :: ClientID -> [Text] -> GQLState -> IO ()
 updateClientChannels id' channel' = updateClientByID id' setChannel
