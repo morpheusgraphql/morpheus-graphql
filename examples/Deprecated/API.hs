@@ -11,7 +11,7 @@ module Deprecated.API
 
 import           Data.Morpheus.Kind  (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLSubscription,
                                       GQLType (..), INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types ((::->), (::->>), GQLRoot (..), ID, Resolver (..), Result (..), ScalarValue (..))
+import           Data.Morpheus.Types ((::->), (::->>), GQLRoot (..), ID, Resolver (..), ScalarValue (..), withEffect)
 import           Data.Text           (Text, pack)
 import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
 import qualified Deprecated.Model    as M (JSONAddress (..), JSONUser (..))
@@ -113,9 +113,6 @@ addressByCityID Paris code = fetchAddress (Euro 1 code) "Paris"
 addressByCityID BLN code   = fetchAddress (Euro 1 code) "Berlin"
 addressByCityID HH code    = fetchAddress (Euro 1 code) "Hamburg"
 
-withEffects :: [Text] -> Either String a -> Either String (Result a)
-withEffects e v = (`Result` e) <$> v
-
 resolveOffice :: JSONUser -> OfficeArgs ::-> Address
 resolveOffice _ = Resolver $ \args -> addressByCityID (cityID args) 12
 
@@ -143,18 +140,18 @@ transformUser user' =
     }
 
 createUserMutation :: () ::->> User
-createUserMutation = transformUser <$> Resolver (const $ withEffects ["UPDATE_USER"] <$> jsonUser)
+createUserMutation = transformUser <$> Resolver (const $ withEffect ["UPDATE_USER"] <$> jsonUser)
 
 newUserSubscription :: () ::->> User
-newUserSubscription = transformUser <$> Resolver (const $ withEffects ["UPDATE_USER"] <$> jsonUser)
+newUserSubscription = transformUser <$> Resolver (const $ withEffect ["UPDATE_USER"] <$> jsonUser)
 
 createAddressMutation :: () ::->> Address
 createAddressMutation =
-  transformAddress "from Mutation" <$> Resolver (const $ withEffects ["UPDATE_ADDRESS"] <$> jsonAddress)
+  transformAddress "from Mutation" <$> Resolver (const $ withEffect ["UPDATE_ADDRESS"] <$> jsonAddress)
 
 newAddressSubscription :: () ::->> Address
 newAddressSubscription =
-  transformAddress "from Subscription" <$> Resolver (const $ withEffects ["UPDATE_ADDRESS"] <$> jsonAddress)
+  transformAddress "from Subscription" <$> Resolver (const $ withEffect ["UPDATE_ADDRESS"] <$> jsonAddress)
 
 data Mutation = Mutation
   { createUser    :: () ::->> User

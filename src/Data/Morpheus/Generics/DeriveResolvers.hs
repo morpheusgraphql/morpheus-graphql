@@ -15,7 +15,7 @@ import           Data.Maybe                                 (fromMaybe)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Morpheus.Types.Resolver               (Result (..))
+import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Text                                  (Text, pack)
 import           GHC.Generics
 
@@ -30,7 +30,7 @@ import           GHC.Generics
 unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
-type ContextRes = Result Value
+type ContextRes = WithEffect Value
 
 type QueryRes = Value
 
@@ -54,9 +54,9 @@ resolveBySelection selection resolvers = Object <$> mapM (selectResolver Null re
 resolveBySelectionM :: ResolveSel ContextRes
 resolveBySelectionM selection resolvers = do
   value <- mapM (selectResolver (return Null) resolvers) selection
-  let val' = fmap (\(x, v) -> (x, resultValue v)) value
-  let context = concatMap (resultEffects . snd) value
-  return $ Result (Object val') context
+  let value' = fmap (\(x, v) -> (x, resultValue v)) value
+  let effects = concatMap (resultEffects . snd) value
+  return $ WithEffect effects (Object value')
 
 resolversBy :: (Generic a, DeriveResolvers (Rep a) res) => a -> [(Text, (Text, Selection) -> ResolveIO res)]
 resolversBy = deriveResolvers "" . from

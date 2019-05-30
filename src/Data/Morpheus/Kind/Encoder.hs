@@ -27,12 +27,12 @@ import           Data.Morpheus.Kind.Internal                (ENUM, KIND, OBJECT,
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
-import           Data.Morpheus.Types.Resolver               ((::->), (::->>), Resolver (..), Result (..))
+import           Data.Morpheus.Types.Resolver               ((::->), (::->>), Resolver (..), WithEffect (..))
 import           Data.Proxy                                 (Proxy (..))
 import           Data.Text                                  (Text, pack)
 import           GHC.Generics
 
-type MResult = Result Value
+type MResult = WithEffect Value
 
 type QueryResult = Value
 
@@ -119,9 +119,9 @@ instance EncodeUnionConstraint a MResult => Encoder a UNION MResult where
 instance (Encoder a (KIND a) MResult, Args.GQLArgs p) => Encoder (p ::->> a) WRAPPER MResult where
   __encode _ selection'@(key', Selection {selectionArguments = astArgs', selectionPosition = position'}) (Resolver resolver) = do
     args <- ExceptT $ pure $ Args.decode astArgs'
-    Result value1 effects1 <- liftResolver position' key' (resolver args)
-    Result value2 effects2 <- _encode selection' value1
-    return $ Result value2 (effects1 ++ effects2)
+    WithEffect effects1 value1 <- liftResolver position' key' (resolver args)
+    WithEffect effects2 value2 <- _encode selection' value1
+    return $ WithEffect (effects1 ++ effects2) value2
 
 instance (Encoder a (KIND a) MResult, Args.GQLArgs p) => Encoder (p ::-> a) WRAPPER MResult where
   __encode _ selection'@(key', Selection {selectionArguments = astArgs', selectionPosition = position'}) (Resolver resolver) = do
@@ -134,11 +134,11 @@ instance Encoder a (KIND a) MResult => Encoder (Maybe a) WRAPPER MResult where
 instance Encoder a (KIND a) MResult => Encoder [a] WRAPPER MResult where
   __encode _ = encodeListM _encode
     where
-      encodeListM :: Encode_ a (Result Value) -> Encode_ [a] (Result Value)
+      encodeListM :: Encode_ a (WithEffect Value) -> Encode_ [a] (WithEffect Value)
       encodeListM _ (_, Selection {selectionRec = SelectionField {}}) _ = pure $ pure (List [])
       encodeListM f query list = do
         value' <- mapM (f query) list
-        return $ Result (List (map resultValue value')) (concatMap resultEffects value')
+        return $ WithEffect (concatMap resultEffects value') (List (map resultValue value'))
 
 -- GENERIC Instances
 instance Encoder a (KIND a) res => DeriveResolvers (K1 s a) res where

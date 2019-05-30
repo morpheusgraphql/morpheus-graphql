@@ -14,7 +14,7 @@ import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Opera
 import           Data.Morpheus.Types.Internal.Data         (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation   (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value        (Value)
-import           Data.Morpheus.Types.Resolver              (Result (..))
+import           Data.Morpheus.Types.Resolver              (WithEffect (..))
 import           Data.Morpheus.Types.Response              (GQLResponse (..))
 import           Data.Morpheus.Types.Types                 (GQLRoot (..))
 import           Data.Morpheus.Validation.Validation       (validateRequest)

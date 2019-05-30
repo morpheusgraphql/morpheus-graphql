@@ -15,7 +15,7 @@ import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Oper
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value         (Value)
-import           Data.Morpheus.Types.Resolver               (Result (..))
+import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Morpheus.Types.Response               (GQLResponse (..))
 import           Data.Morpheus.Types.Types                  (GQLRoot (..))
 import           Data.Morpheus.Validation.Validation        (validateRequest)
@@ -58,17 +58,17 @@ resolveStream rootResolver (SocketInput id' request) =
       value <- encodeQuery gqlSchema queryRes $ operatorSelection operator'
       return (NoEffect value)
     resolve (Mutation operator') = do
-      Result value channels <- encodeMutation mutationRes $ operatorSelection operator'
+      WithEffect channels value <- encodeMutation mutationRes $ operatorSelection operator'
       return PublishMutation {mutationChannels = channels, mutationResponse = value, subscriptionResolver = sRes}
       where
         sRes :: SelectionSet -> IO Text
         sRes selection' = do
           value <- runExceptT (encodeSubscription subscriptionRes selection')
           case value of
-            Left x              -> pure $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLBS request) x
-            Right (Result x' _) -> pure (encodeToText $ Data x')
+            Left x -> pure $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLBS request) x
+            Right (WithEffect _ x') -> pure (encodeToText $ Data x')
     resolve (Subscription operator') = do
-      Result _ channels <- encodeSubscription subscriptionRes $ operatorSelection operator'
+      WithEffect channels _ <- encodeSubscription subscriptionRes $ operatorSelection operator'
       return
         InitSubscription
           {subscriptionClientID = id', subscriptionChannels = channels, subscriptionQuery = operatorSelection operator'}
@@ -94,6 +94,7 @@ packStream state streamAPI request = do
   case value of
     PublishMutation {mutationChannels = channels, mutationResponse = res', subscriptionResolver = resolver'} -> do
       publishUpdates channels resolver' state
-      pure (toLBS res') {-- Actual response-}
+      pure (toLBS res')
+{-- Actual response-}
     InitSubscription {} -> pure "subscriptions are only allowed in websocket"
     NoEffect res' -> pure (toLBS res')

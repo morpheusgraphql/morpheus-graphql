@@ -7,7 +7,7 @@ module Data.Morpheus.Types.Resolver
   ( (::->)
   , (::->>)
   , Resolver(..)
-  , Result(..)
+  , WithEffect(..)
   ) where
 
 import           Data.Text    (Text)
@@ -19,12 +19,17 @@ data MUTATION
 
 type family RESOLVER a b
 
-{-
-  Monad of Query Resolver
--}
-type a ::-> b = Resolver QUERY a b
+newtype Resolver t a b = Resolver
+  { unpackResolver :: a -> IO (RESOLVER t b)
+  } deriving (Generic)
 
+{-
+  Monad of Query Resolver:
+  a ::-> b  : returns pure values without any effect
+-}
 type instance RESOLVER QUERY b = Either String b
+
+type a ::-> b = Resolver QUERY a b
 
 instance Functor (Resolver QUERY a) where
   fmap func (Resolver resolver) =
@@ -46,40 +51,34 @@ instance Monad (Resolver QUERY a) where
     Resolver $ \args -> do
       value1 <- func1 args
       case value1 of
-        Left x -> return $ Left x
-        Right y {--}
-         -> do
-          let (Resolver x) = func2 y
-          x args
+        Left error'  -> return $ Left error'
+        Right value' -> (unpackResolver $ func2 value') args
 
 {-
+  a ::->> b : Resolver with effects: [ChanelID]
   Monad of Mutation and Subscription Resolver
 -}
 type a ::->> b = Resolver MUTATION a b
 
-type instance RESOLVER MUTATION b = Either String (Result b)
+type instance RESOLVER MUTATION b = Either String (WithEffect b)
 
-newtype Resolver t a b =
-  Resolver (a -> IO (RESOLVER t b))
-  deriving (Generic)
-
-data Result a = Result
-  { resultValue   :: a
-  , resultEffects :: [Text]
+data WithEffect a = WithEffect
+  { resultEffects :: [Text]
+  , resultValue   :: a
   } deriving (Show)
 
-instance Functor Result where
-  fmap func (Result value effect) = Result (func value) effect
+instance Functor WithEffect where
+  fmap func (WithEffect effect value) = WithEffect effect (func value)
 
-instance Applicative Result where
-  pure value = Result value []
-  Result func e1 <*> Result value e2 = Result (func value) (e1 ++ e2)
+instance Applicative WithEffect where
+  pure = WithEffect []
+  WithEffect effect1 func <*> WithEffect effect2 value = WithEffect (effect1 ++ effect2) (func value)
 
-instance Monad Result where
+instance Monad WithEffect where
   return = pure
-  (Result v1 e1) >>= func2 = do
-    let Result v2 e2 = func2 v1
-    Result v2 (e2 ++ e1)
+  (WithEffect e1 v1) >>= func2 = do
+    let WithEffect e2 v2 = func2 v1
+    WithEffect (e2 ++ e1) v2
 
 instance Functor (Resolver MUTATION p) where
   fmap func (Resolver resolver) =
@@ -109,9 +108,9 @@ instance Monad (Resolver MUTATION p) where
       value1 <- func1 args
       case value1 of
         Left error' -> return $ Left error'
-        Right (Result v1' e1') -> do
+        Right (WithEffect e1' v1') -> do
           let (Resolver x') = func2 v1'
           v2 <- x' args
           case v2 of
-            Left error'            -> return $ Left error'
-            Right (Result v2' e2') -> return $ Right $ Result v2' (e1' ++ e2')
+            Left error'                -> return $ Left error'
+            Right (WithEffect e2' v2') -> return $ Right $ WithEffect (e1' ++ e2') v2'

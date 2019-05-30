@@ -27,14 +27,14 @@ import           Data.Morpheus.Types.Internal.Data          (DataOutputField, Da
                                                              initTypeLib)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Morpheus.Types.Resolver               (Result (..))
+import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Proxy
 import           Data.Text                                  (Text)
 import           GHC.Generics
 
 type QResult = Value
 
-type MResult = (Result Value)
+type MResult = WithEffect Value
 
 type Encode a r = a -> SelectionSet -> ResolveIO r
 
