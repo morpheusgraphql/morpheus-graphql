@@ -15,6 +15,7 @@ import           Data.List                                  (intersect)
 import           Data.Morpheus.Server.GQLClient             (Channel, ClientID, GQLClient (..))
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Text                                  (Text)
+import           Data.UUID.V4                               (nextRandom)
 import           Network.WebSockets                         (Connection, sendTextData)
 
 type ClientRegister = [(ClientID, GQLClient)]
@@ -31,7 +32,7 @@ connectClient connection' varState' = do
   return (snd client')
   where
     newClient = do
-      id' <- length <$> readMVar varState' -- TODO: better uid
+      id' <- nextRandom
       return
         ( id'
         , GQLClient {clientID = id', clientConnection = connection', clientChannels = [], clientQuerySelection = []})

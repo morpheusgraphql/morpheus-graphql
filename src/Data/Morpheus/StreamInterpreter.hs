@@ -11,6 +11,7 @@ import           Data.Morpheus.Interpreter                  (schema)
 import           Data.Morpheus.Kind.GQLOperator             (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
 import           Data.Morpheus.Parser.Parser                (parseLineBreaks, parseRequest)
 import           Data.Morpheus.Server.ClientRegister        (GQLState, publishUpdates)
+import           Data.Morpheus.Server.GQLClient             (ClientID)
 import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Operator' (..))
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
@@ -22,9 +23,10 @@ import           Data.Morpheus.Validation.Validation        (validateRequest)
 import           Data.Text                                  (Text)
 import qualified Data.Text.Lazy                             as LT (fromStrict, toStrict)
 import           Data.Text.Lazy.Encoding                    (decodeUtf8, encodeUtf8)
+import           Data.UUID.V4                               (nextRandom)
 
 data InputAction a = SocketInput
-  { connectionID :: Int
+  { connectionID :: ClientID
   , inputValue   :: a
   } deriving (Show)
 
@@ -32,7 +34,7 @@ data OutputAction a
   = PublishMutation { mutationChannels     :: [Text]
                     , mutationResponse     :: a
                     , subscriptionResolver :: SelectionSet -> IO Text }
-  | InitSubscription { subscriptionClientID :: Int
+  | InitSubscription { subscriptionClientID :: ClientID
                      , subscriptionChannels :: [Text]
                      , subscriptionQuery    :: SelectionSet }
   | NoEffect a
@@ -90,7 +92,8 @@ streamInterpreter rootResolver request = do
 
 packStream :: GQLState -> (InputAction Text -> IO (OutputAction Text)) -> LB.ByteString -> IO LB.ByteString
 packStream state streamAPI request = do
-  value <- streamAPI (SocketInput 0 $ bsToText request)
+  id' <- nextRandom
+  value <- streamAPI (SocketInput id' $ bsToText request)
   case value of
     PublishMutation {mutationChannels = channels, mutationResponse = res', subscriptionResolver = resolver'} -> do
       publishUpdates channels resolver' state

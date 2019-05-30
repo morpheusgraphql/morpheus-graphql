@@ -6,12 +6,13 @@ module Data.Morpheus.Server.GQLClient
 
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Text                                  (Text)
+import           Data.UUID                                  (UUID)
 import           Network.WebSockets                         (Connection)
 
 instance Show Connection where
   show = const "Connection"
 
-type ClientID = Int
+type ClientID = UUID
 
 type Channel = Text
 
