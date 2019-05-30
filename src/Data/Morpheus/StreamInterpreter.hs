@@ -16,33 +16,13 @@ import           Data.Morpheus.Types.Internal.Validation   (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value        (Value)
 import           Data.Morpheus.Types.Resolver              (Result (..))
 import           Data.Morpheus.Types.Response              (GQLResponse (..))
+import           Data.Morpheus.Types.Types                 (SubscriptionResolver (..))
 import           Data.Morpheus.Types.Types                 (GQLRoot (..))
 import           Data.Morpheus.Validation.Validation       (validateRequest)
 import           Data.Text                                 (Text)
 import qualified Data.Text.Lazy                            as LT (fromStrict, toStrict)
 import           Data.Text.Lazy.Encoding                   (decodeUtf8, encodeUtf8)
 
-{-
-  data UpdateAction = UserAdded (Async User) | AddressAdded (Async Address)
-
-  data Subscription = Subscription {
-      newUser :: Async User,
-      newAddress :: Async Address
-  }
-
-  -- resolveNewUserSubscription :: Async User
-  -- resolveSubscription = async (UserAdded Pending)
-
-  async :: Channels -> Stream Channels
-  async = ....
-
-  newtype Async a = Pending | Response { unpackAwait :: Stream Channels } |
-
-  data Context = Context {
-      allConnections :: [(UpdateAction,Connection)]
-  }
--}
--- hied should be add WebSocket Connection :: Maybe Context)
 data InputAction a = SocketInput
   { connectionID :: Int
   , inputValue   :: a
@@ -53,7 +33,8 @@ data OutputAction a
                     , mutationPayload  :: a
                     , mutationResponse :: a }
   | InitSubscription { subscriptionClientID :: Int
-                     , subscriptionChannels :: [Text] }
+                     , subscriptionChannels :: [Text]
+                     , subscriptionResolver :: SubscriptionResolver }
   | NoEffect a
   deriving (Show)
 
@@ -82,7 +63,13 @@ resolveStream rootResolver (SocketInput id' request) = do
       return PublishMutation {mutationChannels = channels, mutationPayload = value, mutationResponse = value}
     Subscription operator' -> do
       Result _ channels <- encodeSubscription subscriptionRes $ operatorSelection operator'
-      return InitSubscription {subscriptionClientID = id', subscriptionChannels = channels}
+      return
+        InitSubscription
+          { subscriptionClientID = id'
+          , subscriptionChannels = channels
+          , subscriptionResolver = SubscriptionResolver resolver
+          }
+      where resolver _ = resultValue <$> encodeSubscription subscriptionRes (operatorSelection operator')
   where
     gqlSchema = schema queryRes mutationRes subscriptionRes
     queryRes = query rootResolver
@@ -93,11 +80,11 @@ streamInterpreter ::
      (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> InputAction Text -> IO (OutputAction Text)
 streamInterpreter rootResolver request = do
   value <- runExceptT (resolveStream rootResolver request)
-  print value
+  -- print value
   case value of
     Left x -> pure $ NoEffect $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLBS $ inputValue request) x
     Right (PublishMutation id' x' y') -> pure $ PublishMutation id' (encodeToText $ Data x') (encodeToText $ Data y')
-    Right (InitSubscription x' y') -> pure $ InitSubscription x' y'
+    Right (InitSubscription x' y' z') -> pure $ InitSubscription x' y' z'
     Right (NoEffect x') -> pure $ NoEffect (encodeToText $ Data x')
 
 packStream :: GQLState -> (InputAction Text -> IO (OutputAction Text)) -> LB.ByteString -> IO LB.ByteString

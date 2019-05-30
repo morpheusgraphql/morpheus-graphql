@@ -4,8 +4,9 @@ module Data.Morpheus.Server.GQLClient
   , Channel
   ) where
 
-import           Data.Text          (Text)
-import           Network.WebSockets (Connection)
+import           Data.Morpheus.Types.Types (SubscriptionResolver (..))
+import           Data.Text                 (Text)
+import           Network.WebSockets        (Connection)
 
 instance Show Connection where
   show = const "Connection"
@@ -18,4 +19,5 @@ data GQLClient = GQLClient
   { clientID         :: ClientID
   , clientConnection :: Connection
   , clientChannels   :: [Channel]
+  , clientResolver   :: SubscriptionResolver
   } deriving (Show)

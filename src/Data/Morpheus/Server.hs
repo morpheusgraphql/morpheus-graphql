@@ -29,7 +29,7 @@ queryHandler interpreter' GQLClient {clientConnection = connection', clientID = 
   where
     handleRequest = do
       msg <- receiveData connection' >>= \x -> interpreter' (SocketInput id' x)
-      print msg
+      -- print msg
       handleGQLResponse connection' state msg
 
 socketGQL :: GQLAPI -> GQLState -> ServerApp
