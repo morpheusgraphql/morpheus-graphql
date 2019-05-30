@@ -3,16 +3,15 @@ module Data.Morpheus.Server
   , initGQLState
   ) where
 
-import           Control.Exception                          (finally)
-import           Control.Monad                              (forever)
-import           Data.Morpheus.Server.ClientRegister        (GQLState, connectClient, disconnectClient, initGQLState,
-                                                             publishUpdates, updateClientSubscription)
-import           Data.Morpheus.Server.GQLClient             (GQLClient (..))
-import           Data.Morpheus.StreamInterpreter            (InputAction (..), OutputAction (..))
-import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
-import           Data.Text                                  (Text)
-import           Network.WebSockets                         (Connection, ServerApp, acceptRequest, forkPingThread,
-                                                             receiveData, sendTextData)
+import           Control.Exception                   (finally)
+import           Control.Monad                       (forever)
+import           Data.Morpheus.Server.ClientRegister (GQLState, connectClient, disconnectClient, initGQLState,
+                                                      publishUpdates, updateClientSubscription)
+import           Data.Morpheus.Server.GQLClient      (GQLClient (..))
+import           Data.Morpheus.StreamInterpreter     (InputAction (..), OutputAction (..))
+import           Data.Text                           (Text)
+import           Network.WebSockets                  (Connection, ServerApp, acceptRequest, forkPingThread, receiveData,
+                                                      sendTextData)
 
 type GQLAPI = InputAction Text -> IO (OutputAction Text)
 
@@ -32,7 +31,6 @@ queryHandler interpreter' GQLClient {clientConnection = connection', clientID = 
   where
     handleRequest = do
       msg <- receiveData connection' >>= \x -> interpreter' (SocketInput id' x)
-      -- print msg
       handleGQLResponse connection' state msg
 
 socketGQL :: GQLAPI -> GQLState -> ServerApp
