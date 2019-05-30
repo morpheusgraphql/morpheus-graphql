@@ -31,7 +31,7 @@
   <script src="https://cdn.jsdelivr.net/react/15.4.2/react-dom.min.js"></script>
   <link href="//cdn.jsdelivr.net/npm/graphiql@0.13.0/graphiql.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/graphiql@0.13.0/graphiql.js" charset="utf-8"></script>
-  <script src="https://unpkg.com/subscriptions-transport-ws@0.5.4/browser/client.js"></script>
+  <script src="https://unpkg.com/subscriptions-transport-ws@0.9.16/browser/client.js"></script>
   <script src="//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js"></script>
 </head>
 
@@ -103,8 +103,8 @@
 
     let subscriptionsClient = new window.SubscriptionsTransportWs.SubscriptionClient(wsURI, {
       reconnect: true,
-      timeout: 60000
-    });
+      timeout: 60000,
+    }, undefined, []);
 
     let myCustomFetcher = window.GraphiQLSubscriptionsFetcher.graphQLFetcher(subscriptionsClient, graphQLFetcher);
 
