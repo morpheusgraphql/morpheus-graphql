@@ -31,7 +31,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..))
 import           Data.Morpheus.Types.Internal.Data          (DataField (..), DataOutputField)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
-import           Data.Morpheus.Types.Resolver               (Resolver (..))
+import           Data.Morpheus.Types.Resolver               (Resolver (..), Result (..))
 import           Data.Proxy                                 (Proxy (..))
 import           Data.Text                                  (Text, pack)
 import           GHC.Generics
@@ -108,8 +108,11 @@ liftResolver position' typeName' x = do
     Right value   -> pure value
 
 instance (OutputTypeRouter a (KIND a), Args.GQLArgs p) => OutputTypeRouter (Resolver c p a) WRAPPER where
-  __encode _ selection'@(key', Selection {selectionArguments = astArgs', selectionPosition = position'}) (Resolver resolver) =
-    (ExceptT $ pure $ Args.decode astArgs') >>= liftResolver position' key' . resolver >>= _encode selection' . fst
+  __encode _ selection'@(key', Selection {selectionArguments = astArgs', selectionPosition = position'}) (Resolver resolver) = do
+    args <- ExceptT $ pure $ Args.decode astArgs'
+    Result value1 effects1 <- liftResolver position' key' (resolver args)
+    Result value2 effects2 <- _encode selection' value1
+    return $ Result value2 (effects1 ++ effects2)
   __introspect _ _ typeLib = resolveTypes typeLib $ inputTypes' ++ [_introspect (Proxy @a)]
     where
       inputTypes' = map snd $ Args.introspect (Proxy @p)
