@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TypeFamilies  #-}
 
 module Data.Morpheus.Schema.EnumValue
   ( EnumValue(..)
@@ -6,8 +7,11 @@ module Data.Morpheus.Schema.EnumValue
   , isEnumOf
   ) where
 
-import           Data.Text    (Text)
+import           Data.Morpheus.Kind.Internal (KIND, OBJECT)
+import           Data.Text                   (Text)
 import           GHC.Generics
+
+type instance KIND EnumValue = OBJECT
 
 data EnumValue = EnumValue
   { name              :: Text

@@ -1,12 +1,16 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TypeFamilies  #-}
 
 module Data.Morpheus.Schema.InputValue
   ( InputValue(..)
   , createInputValueWith
   ) where
 
-import           Data.Text    (Text)
+import           Data.Morpheus.Kind.Internal (KIND, OBJECT)
+import           Data.Text                   (Text)
 import           GHC.Generics
+
+type instance KIND (InputValue a) = OBJECT
 
 data InputValue t = InputValue
   { name         :: Text

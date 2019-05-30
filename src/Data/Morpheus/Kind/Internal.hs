@@ -9,19 +9,9 @@ module Data.Morpheus.Kind.Internal
   , INPUT_OBJECT
   , KIND
   , GQLConstraint
-  , IField_
-  , OField_
-  , Encode_
-  , Intro_
-  , Decode_
   ) where
 
-import Data.Morpheus.Types.Internal.AST.Selection (Selection)
-import Data.Morpheus.Types.Internal.Data (DataInputField, DataOutputField, DataTypeLib)
-import Data.Morpheus.Types.Internal.Validation (ResolveIO, Validation)
-import Data.Morpheus.Types.Internal.Value (Value(..))
-import Data.Morpheus.Types.Resolver ((::->))
-import Data.Proxy (Proxy(..))
+import Data.Morpheus.Types.Resolver
 import Data.Text (Text)
 import GHC.Exts (Constraint)
 
@@ -41,7 +31,7 @@ type instance KIND (Maybe a) = WRAPPER
 
 type instance KIND [a] = WRAPPER
 
-type instance KIND (p ::-> a) = WRAPPER
+type instance KIND (Resolver c p a) = WRAPPER
 
 -- default Data Kinds
 data SCALAR
@@ -58,14 +48,3 @@ data UNION
 
 --data LIST
 type family GQLConstraint a b :: Constraint
-
--- class Types class
-type Intro_ a = Proxy a -> DataTypeLib -> DataTypeLib
-
-type Decode_ a = Value -> Validation a
-
-type Encode_ a = (Text, Selection) -> a -> ResolveIO Value
-
-type IField_ a = Proxy a -> Text -> DataInputField
-
-type OField_ a = Proxy a -> Text -> DataOutputField

@@ -1,22 +1,21 @@
 {-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 
 module Deprecated.API
-  ( gqlApi
+  ( gqlRoot
   ) where
 
-import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..),
-                                             INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..), ID, ScalarValue (..))
-import           Data.Text                  (Text, pack)
-import           Deprecated.Model           (JSONAddress, JSONUser, jsonAddress, jsonUser)
-import qualified Deprecated.Model           as M (JSONAddress (..), JSONUser (..))
-import           GHC.Generics               (Generic)
+import           Data.Morpheus.Kind  (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLSubscription,
+                                      GQLType (..), INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Types ((::->), (::->>), GQLRoot (..), ID, Resolver (..), ScalarValue (..), withEffect)
+import           Data.Text           (Text, pack)
+import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
+import qualified Deprecated.Model    as M (JSONAddress (..), JSONUser (..))
+import           GHC.Generics        (Generic)
 
 type instance KIND CityID = ENUM
 
@@ -97,10 +96,6 @@ newtype Query = Query
   { user :: () ::-> User
   } deriving (Generic, GQLQuery)
 
-newtype Mutation = Mutation
-  { createUser :: AddressArgs ::-> User
-  } deriving (Generic, GQLMutation)
-
 fetchAddress :: Euro -> Text -> IO (Either String Address)
 fetchAddress _ streetName = do
   address' <- jsonAddress
@@ -144,11 +139,34 @@ transformUser user' =
              HH)
     }
 
-createUserMutation :: AddressArgs ::-> User
-createUserMutation = transformUser <$> Resolver (const jsonUser)
+createUserMutation :: () ::->> User
+createUserMutation = transformUser <$> Resolver (const $ withEffect ["UPDATE_USER"] <$> jsonUser)
 
-gqlApi :: ByteString -> IO ByteString
-gqlApi =
-  interpreter
-    GQLRoot
-      {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}, subscription = ()}
+newUserSubscription :: () ::->> User
+newUserSubscription = transformUser <$> Resolver (const $ withEffect ["UPDATE_USER"] <$> jsonUser)
+
+createAddressMutation :: () ::->> Address
+createAddressMutation =
+  transformAddress "from Mutation" <$> Resolver (const $ withEffect ["UPDATE_ADDRESS"] <$> jsonAddress)
+
+newAddressSubscription :: () ::->> Address
+newAddressSubscription =
+  transformAddress "from Subscription" <$> Resolver (const $ withEffect ["UPDATE_ADDRESS"] <$> jsonAddress)
+
+data Mutation = Mutation
+  { createUser    :: () ::->> User
+  , createAddress :: () ::->> Address
+  } deriving (Generic, GQLMutation)
+
+data Subscription = Subscription
+  { newUser    :: () ::->> User
+  , newAddress :: () ::->> Address
+  } deriving (Generic, GQLSubscription)
+
+gqlRoot :: GQLRoot Query Mutation Subscription
+gqlRoot =
+  GQLRoot
+    { query = Query {user = resolveUser}
+    , mutation = Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
+    , subscription = Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}
+    }

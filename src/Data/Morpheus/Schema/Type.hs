@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TypeFamilies  #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Schema.Type
@@ -6,13 +7,16 @@ module Data.Morpheus.Schema.Type
   , DeprecationArgs(..)
   ) where
 
+import           Data.Morpheus.Kind.Internal     (KIND, OBJECT)
 import           Data.Morpheus.Schema.EnumValue  (EnumValue)
 import qualified Data.Morpheus.Schema.Field      as F (Field (..))
 import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..))
 import           Data.Morpheus.Schema.TypeKind   (TypeKind)
-import           Data.Morpheus.Types.Resolver    ((::->) (..))
+import           Data.Morpheus.Types.Resolver    ((::->))
 import           Data.Text                       (Text)
 import           GHC.Generics                    (Generic)
+
+type instance KIND Type = OBJECT
 
 data Type = Type
   { kind          :: TypeKind
