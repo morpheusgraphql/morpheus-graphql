@@ -18,7 +18,8 @@ module Data.Morpheus.Kind.GQLOperator
 
 import           Data.Morpheus.Generics.DeriveResolvers     (DeriveResolvers (..), resolveBySelection)
 import           Data.Morpheus.Generics.ObjectRep           (ObjectRep (..), resolveTypes)
-import           Data.Morpheus.Kind.OutputRouter            (_encode, _introspect)
+import           Data.Morpheus.Kind.Introspect              (_introspect)
+import           Data.Morpheus.Kind.OutputRouter            (_encode)
 import           Data.Morpheus.Schema.Schema                (Schema, initSchema)
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Internal.Data          (DataOutputField, DataType (..), DataTypeLib (..),

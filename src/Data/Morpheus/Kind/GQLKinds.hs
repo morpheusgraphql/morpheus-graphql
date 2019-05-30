@@ -33,7 +33,7 @@ type Intro_ a = Proxy a -> DataTypeLib -> DataTypeLib
 
 type Decode_ a = Value -> Validation a
 
-type Encode_ a = (Text, Selection) -> a -> ResolveIO (Result Value)
+type Encode_ a b = (Text, Selection) -> a -> ResolveIO b
 
 type IField_ a = Proxy a -> Text -> DataInputField
 
@@ -71,7 +71,7 @@ type ResolverT c = (Text, (Text, Selection) -> ResolveIO (Value, [c]))
 
 encodeObject ::
      forall a. (GQLType a, Generic a, DeriveResolvers (Rep a))
-  => Encode_ a
+  => Encode_ a (Result Value)
 encodeObject (_, Selection {selectionRec = SelectionSet selection'}) value =
   resolveBySelection selection' (__typename : resolversBy value)
   where
@@ -98,7 +98,7 @@ lookupSelectionByType type' sel = fromMaybe [] $ lookup type' sel
 
 encodeUnion ::
      forall a. (Generic a, UnionResolvers (Rep a))
-  => Encode_ a
+  => Encode_ a (Result Value)
 encodeUnion (key', sel@Selection {selectionRec = UnionSelection selections'}) value =
   resolver (key', sel {selectionRec = SelectionSet (lookupSelectionByType type' selections')})
   where
