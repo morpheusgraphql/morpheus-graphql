@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -11,18 +12,19 @@ module Data.Morpheus.Kind.Encoder where
 
 import           Control.Monad.Trans                        (lift)
 import           Control.Monad.Trans.Except
-import           Data.Morpheus.Error.Selection              (fieldNotResolved)
-import           Data.Morpheus.Generics.DeriveResolvers     (DeriveResolvers (..))
+import           Data.Maybe                                 (fromMaybe)
+import           Data.Morpheus.Error.Internal               (internalErrorIO)
+import           Data.Morpheus.Error.Selection              (fieldNotResolved, subfieldsNotSelected)
+import           Data.Morpheus.Generics.DeriveResolvers     (DeriveResolvers (..), resolveBySelection, resolversBy)
 import           Data.Morpheus.Generics.EnumRep             (EnumRep (..))
 import           Data.Morpheus.Generics.UnionResolvers      (UnionResolvers (..))
 import qualified Data.Morpheus.Kind.GQLArgs                 as Args (GQLArgs (..))
-import           Data.Morpheus.Kind.GQLKinds                (Encode_, EnumConstraint, ObjectConstraint, UnionConstraint,
-                                                             encodeObject, encodeUnion)
+import           Data.Morpheus.Kind.GQLKinds                (Encode_, EnumConstraint, ObjectConstraint, UnionConstraint)
 import qualified Data.Morpheus.Kind.GQLScalar               as S (GQLScalar (..))
 import           Data.Morpheus.Kind.GQLType                 (GQLType (..))
 import           Data.Morpheus.Kind.Internal                (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
 import           Data.Morpheus.Kind.Utils                   (encodeList, encodeMaybe)
-import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..))
+import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver               (Resolver (..), Result (..))
@@ -51,9 +53,29 @@ instance EnumConstraint a => Encoder a ENUM MResult where
 
 instance ObjectConstraint a => Encoder a OBJECT MResult where
   __encode _ = encodeObject
+    where
+      encodeObject ::
+           forall a. (GQLType a, Generic a, DeriveResolvers (Rep a))
+        => Encode_ a (Result Value)
+      encodeObject (_, Selection {selectionRec = SelectionSet selection'}) value =
+        resolveBySelection selection' (__typename : resolversBy value)
+        where
+          __typename = ("__typename", const $ return $ return $ Scalar $ String $typeID (Proxy @a))
+      encodeObject (key, Selection {selectionPosition = position'}) _ =
+        failResolveIO $ subfieldsNotSelected key "" position'
 
 instance UnionConstraint a => Encoder a UNION MResult where
   __encode _ = encodeUnion
+    where
+      lookupSelectionByType :: Text -> [(Text, SelectionSet)] -> SelectionSet
+      lookupSelectionByType type' sel = fromMaybe [] $ lookup type' sel
+      -- SPEC: if there is no any fragment that supports current object Type GQL returns {}
+      encodeUnion :: Encode_ a MResult
+      encodeUnion (key', sel@Selection {selectionRec = UnionSelection selections'}) value =
+        resolver (key', sel {selectionRec = SelectionSet (lookupSelectionByType type' selections')})
+        where
+          (type', resolver) = currentResolver (from value)
+      encodeUnion _ _ = internalErrorIO "union Resolver only should recieve UnionSelection"
 
 instance Encoder a (KIND a) MResult => Encoder (Maybe a) WRAPPER MResult where
   __encode _ = encodeMaybe _encode
