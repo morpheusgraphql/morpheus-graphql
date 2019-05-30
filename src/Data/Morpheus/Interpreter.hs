@@ -14,6 +14,7 @@ import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Opera
 import           Data.Morpheus.Types.Internal.Data         (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation   (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value        (Value)
+import           Data.Morpheus.Types.Resolver              (Result (..))
 import           Data.Morpheus.Types.Response              (GQLResponse (..))
 import           Data.Morpheus.Types.Types                 (GQLRoot (..))
 import           Data.Morpheus.Validation.Validation       (validateRequest)
@@ -33,7 +34,7 @@ resolve rootResolver request = do
       Query operator'        -> encodeQuery gqlSchema queryRes $ operatorSelection operator'
       Mutation operator'     -> encodeMutation mutationRes $ operatorSelection operator'
       Subscription operator' -> encodeSubscription subscriptionRes $ operatorSelection operator'
-  return (fst resolver')
+  return (resultValue resolver')
   where
     gqlSchema = schema queryRes mutationRes subscriptionRes
     queryRes = query rootResolver

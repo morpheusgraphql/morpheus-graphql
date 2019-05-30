@@ -25,11 +25,12 @@ import           Data.Morpheus.Types.Internal.Data          (DataOutputField, Da
                                                              initTypeLib)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
+import           Data.Morpheus.Types.Resolver               (Result (..))
 import           Data.Proxy
 import           Data.Text                                  (Text)
 import           GHC.Generics
 
-type Encode a s = a -> SelectionSet -> ResolveIO (Value, [s])
+type Encode a s = a -> SelectionSet -> ResolveIO (Result Value)
 
 type EncodeCon a = (Generic a, DeriveResolvers (Rep a))
 
@@ -82,9 +83,9 @@ class GQLSubscription a where
       (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
 
 instance GQLMutation () where
-  encodeMutation _ _ = pure (Null, [])
+  encodeMutation _ _ = pure $ pure Null
   mutationSchema _ = id
 
 instance GQLSubscription () where
-  encodeSubscription _ _ = pure (Null, [])
+  encodeSubscription _ _ = pure $ pure Null
   subscriptionSchema _ = id

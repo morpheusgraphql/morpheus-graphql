@@ -14,6 +14,7 @@ import           Data.Morpheus.Server.ClientRegister       (GQLState, publishUpd
 import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..))
 import           Data.Morpheus.Types.Internal.Validation   (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value        (Value)
+import           Data.Morpheus.Types.Resolver              (Result (..))
 import           Data.Morpheus.Types.Response              (GQLResponse (..))
 import           Data.Morpheus.Types.Types                 (GQLRoot (..))
 import           Data.Morpheus.Validation.Validation       (validateRequest)
@@ -74,13 +75,13 @@ resolveStream rootResolver (SocketInput id' request) = do
   rootGQL <- ExceptT $ pure (parseRequest (toLBS request) >>= validateRequest gqlSchema)
   case rootGQL of
     Query operator' -> do
-      (value, _) <- encodeQuery gqlSchema queryRes $ operatorSelection operator'
+      Result value _ <- encodeQuery gqlSchema queryRes $ operatorSelection operator'
       return (NoEffect value)
     Mutation operator' -> do
-      (value, channels) <- encodeMutation mutationRes $ operatorSelection operator'
+      Result value channels <- encodeMutation mutationRes $ operatorSelection operator'
       return PublishMutation {mutationChannels = channels, mutationPayload = value, mutationResponse = value}
     Subscription operator' -> do
-      (_, channels) <- encodeSubscription subscriptionRes $ operatorSelection operator'
+      Result _ channels <- encodeSubscription subscriptionRes $ operatorSelection operator'
       return InitSubscription {subscriptionClientID = id', subscriptionChannels = channels}
   where
     gqlSchema = schema queryRes mutationRes subscriptionRes
