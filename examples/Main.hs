@@ -33,5 +33,5 @@ main = do
     httpServer state =
       scottyApp $ do
         post "/" $ raw =<< (liftIO . packStream state (streamInterpreter gqlRoot) =<< body)
-        get "/" $ file "index.html"
+        get "/" $ file "examples/index.html"
         post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)

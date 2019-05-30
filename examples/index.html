@@ -9,7 +9,7 @@
 <html>
 
 <head>
-    <title>Mythology API </title>
+    <title>Example API </title>
     <meta name="description" content="Morpheus GraphQL">
     <style>
     body {
@@ -22,6 +22,8 @@
     #graphiql {
       height: 100vh;
     }
+
+
 
 
     </style>
@@ -110,17 +112,9 @@
     );
 
 
+
+
 </script>
 </body>
-
-
-<script>
-  let users = [];
-  const ws = new WebSocket('ws://localhost:9160/');
-  ws.onopen = function () {
-    ws.send('Hi! I am ' + "David");
-  };
-
-</script>
 
 </html>
