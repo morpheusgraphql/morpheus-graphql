@@ -6,7 +6,7 @@ module Main
 
 import           Control.Monad.IO.Class         (liftIO)
 import           Data.Morpheus                  (packStream, streamInterpreter)
-import           Data.Morpheus.Server           (GQLState, initGQLState, socketGQL)
+import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Deprecated.API                 (gqlRoot)
 import           Mythology.API                  (mythologyApi)
 import qualified Network.Wai                    as Wai
@@ -28,7 +28,7 @@ main = do
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
   where
     settings = Warp.setPort 3000 Warp.defaultSettings
-    wsApp = socketGQL (streamInterpreter gqlRoot)
+    wsApp = gqlSocketApp (streamInterpreter gqlRoot)
     httpServer :: GQLState -> IO Wai.Application
     httpServer state =
       scottyApp $ do

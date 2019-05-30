@@ -1,5 +1,5 @@
 module Data.Morpheus.Server
-  ( socketGQL
+  ( gqlSocketApp
   , initGQLState
   , GQLState
   ) where
@@ -34,8 +34,8 @@ queryHandler interpreter' GQLClient {clientConnection = connection', clientID = 
       msg <- receiveData connection' >>= \x -> interpreter' (SocketInput id' x)
       handleGQLResponse connection' state msg
 
-socketGQL :: GQLAPI -> GQLState -> ServerApp
-socketGQL interpreter' state pending = do
+gqlSocketApp :: GQLAPI -> GQLState -> ServerApp
+gqlSocketApp interpreter' state pending = do
   connection' <- acceptRequest pending
   forkPingThread connection' 30
   client' <- connectClient connection' state
