@@ -61,9 +61,9 @@ introspectInputObject = updateLib (inputObjectOf fields') stack'
 OBJECT
 
 -}
-type ObjectConstraint a = (Generic a, DeriveResolvers (Rep a), ObjectRep (Rep a) (Text, DataOutputField), GQLType a)
+type EncodeObjectConstraint a b = (DeriveResolvers (Rep a) b, ObjectConstraint a)
 
-type ResolverT c = (Text, (Text, Selection) -> ResolveIO (Value, [c]))
+type ObjectConstraint a = (Generic a, ObjectRep (Rep a) (Text, DataOutputField), GQLType a)
 
 introspectObject ::
      forall a. (ObjectRep (Rep a) (Text, DataOutputField), GQLType a)
@@ -77,7 +77,9 @@ introspectObject = updateLib (asObjectType fields') stack'
 UNION
 
 -}
-type UnionConstraint a = (Generic a, GQLType a, UnionRep (Rep a), UnionResolvers (Rep a))
+type EncodeUnionConstraint a res = (UnionResolvers (Rep a) res, UnionConstraint a)
+
+type UnionConstraint a = (Generic a, GQLType a, UnionRep (Rep a))
 
 introspectUnion ::
      forall a. (GQLType a, UnionRep (Rep a))

@@ -16,10 +16,11 @@ module Data.Morpheus.Kind.GQLOperator
   , GQLSubscription(..)
   ) where
 
-import           Data.Morpheus.Generics.DeriveResolvers     (DeriveResolvers (..), resolveBySelection)
+import           Data.Morpheus.Generics.DeriveResolvers     (DeriveResolvers (..), resolveBySelection,
+                                                             resolveBySelectionM)
 import           Data.Morpheus.Generics.ObjectRep           (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Kind.Encoder                 (_encode)
 import           Data.Morpheus.Kind.Introspect              (_introspect)
-import           Data.Morpheus.Kind.Encoder            (_encode)
 import           Data.Morpheus.Schema.Schema                (Schema, initSchema)
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Internal.Data          (DataOutputField, DataType (..), DataTypeLib (..),
@@ -31,9 +32,13 @@ import           Data.Proxy
 import           Data.Text                                  (Text)
 import           GHC.Generics
 
-type Encode a s = a -> SelectionSet -> ResolveIO (Result Value)
+type QResult = (Result Value)
 
-type EncodeCon a = (Generic a, DeriveResolvers (Rep a))
+type MResult = (Result Value)
+
+type Encode a r = a -> SelectionSet -> ResolveIO r
+
+type EncodeCon a r = (Generic a, DeriveResolvers (Rep a) r)
 
 type IntroCon a = (ObjectRep (Rep a) (Text, DataOutputField))
 
@@ -41,10 +46,10 @@ operatorType :: Text -> a -> (Text, DataType a)
 operatorType name' fields' = (name', DataType {typeData = fields', typeName = name', typeDescription = ""})
 
 class GQLQuery a where
-  encodeQuery :: DataTypeLib -> Encode a Text
-  default encodeQuery :: EncodeCon a =>
-    DataTypeLib -> Encode a Text
-  encodeQuery types rootResolver sel = resolveBySelection sel (schemaResolver ++ resolvers)
+  encodeQuery :: DataTypeLib -> Encode a QResult
+  default encodeQuery :: EncodeCon a QResult =>
+    DataTypeLib -> Encode a QResult
+  encodeQuery types rootResolver sel = resolveBySelectionM sel (schemaResolver ++ resolvers)
     where
       schemaResolver = [("__schema", (`_encode` initSchema types))]
       resolvers = deriveResolvers "" $ from rootResolver
@@ -58,10 +63,10 @@ class GQLQuery a where
       (fields', stack') = unzip $ getFields (Proxy @(Rep a))
 
 class GQLMutation a where
-  encodeMutation :: Encode a Text
-  default encodeMutation :: EncodeCon a =>
-    Encode a Text
-  encodeMutation rootResolver sel = resolveBySelection sel $ deriveResolvers "" $ from rootResolver
+  encodeMutation :: Encode a MResult
+  default encodeMutation :: EncodeCon a MResult =>
+    Encode a MResult
+  encodeMutation rootResolver sel = resolveBySelectionM sel $ deriveResolvers "" $ from rootResolver
   mutationSchema :: a -> DataTypeLib -> DataTypeLib
   default mutationSchema :: IntroCon a =>
     a -> DataTypeLib -> DataTypeLib
@@ -71,10 +76,10 @@ class GQLMutation a where
       (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
 
 class GQLSubscription a where
-  encodeSubscription :: Encode a Text
-  default encodeSubscription :: EncodeCon a =>
-    Encode a Text
-  encodeSubscription rootResolver sel = resolveBySelection sel $ deriveResolvers "" $ from rootResolver
+  encodeSubscription :: Encode a MResult
+  default encodeSubscription :: EncodeCon a MResult =>
+    Encode a MResult
+  encodeSubscription rootResolver sel = resolveBySelectionM sel $ deriveResolvers "" $ from rootResolver
   subscriptionSchema :: a -> DataTypeLib -> DataTypeLib
   default subscriptionSchema :: IntroCon a =>
     a -> DataTypeLib -> DataTypeLib

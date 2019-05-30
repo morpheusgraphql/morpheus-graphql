@@ -1,29 +1,34 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeOperators         #-}
 
 module Data.Morpheus.Generics.UnionResolvers
   ( UnionResolvers(..)
+  , lookupSelectionByType
   ) where
 
-import           Data.Morpheus.Types.Internal.AST.Selection (Selection)
+import           Data.Maybe                                 (fromMaybe)
+import           Data.Morpheus.Types.Internal.AST.Selection (Selection, SelectionSet)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
-import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Morpheus.Types.Resolver               (Result)
 import           Data.Text                                  (Text)
 import           GHC.Generics
 
-class UnionResolvers f where
-  currentResolver :: f a -> (Text, (Text, Selection) -> ResolveIO (Result Value))
+-- SPEC: if there is no any fragment that supports current object Type GQL returns {}
+lookupSelectionByType :: Text -> [(Text, SelectionSet)] -> SelectionSet
+lookupSelectionByType type' sel = fromMaybe [] $ lookup type' sel
 
-instance UnionResolvers f => UnionResolvers (M1 S s f) where
+class UnionResolvers f res where
+  currentResolver :: f a -> (Text, (Text, Selection) -> ResolveIO res)
+
+instance UnionResolvers f res => UnionResolvers (M1 S s f) res where
   currentResolver (M1 x) = currentResolver x
 
-instance UnionResolvers f => UnionResolvers (M1 D c f) where
+instance UnionResolvers f res => UnionResolvers (M1 D c f) res where
   currentResolver (M1 x) = currentResolver x
 
-instance UnionResolvers f => UnionResolvers (M1 C c f) where
+instance UnionResolvers f res => UnionResolvers (M1 C c f) res where
   currentResolver (M1 x) = currentResolver x
 
-instance (UnionResolvers a, UnionResolvers b) => UnionResolvers (a :+: b) where
+instance (UnionResolvers a res, UnionResolvers b res) => UnionResolvers (a :+: b) res where
   currentResolver (L1 x) = currentResolver x
   currentResolver (R1 x) = currentResolver x
