@@ -9,9 +9,10 @@
 <html>
 
 <head>
-    <title>Example API </title>
-    <meta name="description" content="Morpheus GraphQL">
-    <style>
+  <title>Example API </title>
+  <meta name="description" content="Morpheus GraphQL">
+
+  <style>
     body {
       height: 100%;
       margin: 0;
@@ -22,22 +23,21 @@
     #graphiql {
       height: 100vh;
     }
+  </style>
 
-
-
-
-    </style>
-    <script src="//cdn.jsdelivr.net/es6-promise/4.0.5/es6-promise.auto.min.js"></script>
-    <script src="//cdn.jsdelivr.net/fetch/0.9.0/fetch.min.js"></script>
-    <script src="//cdn.jsdelivr.net/react/15.4.2/react.min.js"></script>
-    <script src="//cdn.jsdelivr.net/react/15.4.2/react-dom.min.js"></script>
-    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/graphiql@0.13.0/graphiql.css"/>
-    <script src="//cdn.jsdelivr.net/npm/graphiql@0.13.0/graphiql.js" charset="utf-8"></script>
+  <script src="https://cdn.jsdelivr.net/es6-promise/4.0.5/es6-promise.auto.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/fetch/0.9.0/fetch.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/react/15.4.2/react.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/react/15.4.2/react-dom.min.js"></script>
+  <link href="//cdn.jsdelivr.net/npm/graphiql@0.13.0/graphiql.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/graphiql@0.13.0/graphiql.js" charset="utf-8"></script>
+  <script src="https://unpkg.com/subscriptions-transport-ws@0.5.4/browser/client.js"></script>
+  <script src="//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js"></script>
 </head>
 
 <body>
-<div id="graphiql">Loading...</div>
-<script>
+  <div id="graphiql">Loading...</div>
+  <script>
     var search = window.location.search;
     var parameters = {};
     search.substr(1).split('&').forEach(function (entry) {
@@ -98,9 +98,19 @@
         }
       });
     }
+
+    const wsURI = "ws://localhost:3000/"
+
+    let subscriptionsClient = new window.SubscriptionsTransportWs.SubscriptionClient(wsURI, {
+      reconnect: true,
+      timeout: 60000
+    });
+
+    let myCustomFetcher = window.GraphiQLSubscriptionsFetcher.graphQLFetcher(subscriptionsClient, graphQLFetcher);
+
     ReactDOM.render(
       React.createElement(GraphiQL, {
-        fetcher: graphQLFetcher,
+        fetcher: myCustomFetcher,
         query: parameters.query,
         variables: parameters.variables,
         operationName: parameters.operationName,
@@ -110,11 +120,7 @@
       }),
       document.getElementById('graphiql')
     );
-
-
-
-
-</script>
+  </script>
 </body>
 
 </html>
