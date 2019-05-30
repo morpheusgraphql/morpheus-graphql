@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -10,6 +11,7 @@
 module Data.Morpheus.Kind.Introspect where
 
 import           Data.Morpheus.Generics.ObjectRep  (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Generics.UnionRep   (UnionRep (..))
 import           Data.Morpheus.Generics.Utils      (RecSel, SelOf)
 import qualified Data.Morpheus.Kind.GQLArgs        as Args (GQLArgs (..))
 import           Data.Morpheus.Kind.GQLKinds       (EnumConstraint, Intro_, OField_, ObjectConstraint, UnionConstraint,
@@ -55,6 +57,9 @@ instance (Selector s, Introspect a (KIND a)) => ObjectRep (RecSel s a) (Text, Da
 instance ObjectConstraint a => Introspect a OBJECT where
   __introspect _ = introspectObject
   __objectField _ _ = field_ OBJECT (Proxy @a) []
+
+instance (Introspect a OBJECT, ObjectConstraint a) => UnionRep (RecSel s a) where
+  possibleTypes _ = [(field_ OBJECT (Proxy @a) () "", introspectObject (Proxy @a))]
 
 instance UnionConstraint a => Introspect a UNION where
   __introspect _ _ = introspectUnion (Proxy @a)
