@@ -12,7 +12,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (GQLArgs, GQLQuery)
-import           Data.Morpheus.Types        ((::->), GQLRoot (..), Resolver (..))
+import           Data.Morpheus.Types        ((::->), GQLRoot (..), Resolver (..), Result (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 import           Mythology.Character.Deity  (Deity (..), dbDeity)
@@ -26,8 +26,8 @@ data DeityArgs = DeityArgs
   , mythology :: Maybe Text -- Optional Argument
   } deriving (Generic, GQLArgs)
 
-wrapIn :: forall a c. Either String a -> Either String (a, [c])
-wrapIn x = (, []) <$> x
+wrapIn :: Either String a -> Either String (Result a)
+wrapIn v = (\x -> Result x []) <$> v
 
 resolveDeity :: DeityArgs ::-> Deity
 resolveDeity = Resolver $ \args -> wrapIn <$> dbDeity (name args) (mythology args)

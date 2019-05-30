@@ -2,7 +2,6 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE TupleSections     #-}
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 
@@ -12,7 +11,7 @@ module Deprecated.API
 
 import           Data.Morpheus.Kind  (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLSubscription,
                                       GQLType (..), INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types ((::->), GQLRoot (..), ID, Resolver (..), ScalarValue (..))
+import           Data.Morpheus.Types ((::->), GQLRoot (..), ID, Resolver (..), Result (..), ScalarValue (..))
 import           Data.Text           (Text, pack)
 import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
 import qualified Deprecated.Model    as M (JSONAddress (..), JSONUser (..))
@@ -115,8 +114,8 @@ addressByCityID Paris code = fetchAddress (Euro 1 code) "Paris"
 addressByCityID BLN code   = fetchAddress (Euro 1 code) "Berlin"
 addressByCityID HH code    = fetchAddress (Euro 1 code) "Hamburg"
 
-withEffects :: [k] -> Either String a -> Either String (a, [k])
-withEffects channels x = (, channels) <$> x
+withEffects :: [Text] -> Either String a -> Either String (Result a)
+withEffects e v = (\x -> Result x e) <$> v
 
 resolveOffice :: JSONUser -> OfficeArgs ::-> Address
 resolveOffice _ = Resolver $ \args -> withEffects [] <$> addressByCityID (cityID args) 12
