@@ -23,19 +23,18 @@
 
 - `::->` Resolver is Monad
 
-- Basic skeleton for subscriptions. An actual way to use subscriptions is still work in progress.
 - inline Fragments
 - GraphQL [Aliases](https://graphql.org/learn/queries/#aliases)
-- Subscriptions:
+- Subscriptions:  GQLSubscriptions
     - `::->>` operator:  is like  `::->` operator, but with it can wrap result inside `WithEffect` type.
         is used for Mutation  and Subscribe communication
    - `withEffect ["CHANNEL_ID"] value`: packs result it in WithEffect constructor.
    if mutation and subscription resolver have same channel then
        every call of mutation will trigger subscription resolver
-   - streamInterpreter: processes and generates `websocket` actions
-   - packStream: converts streamInterpreter to normal interpreter
+   - `streamInterpreter`: processes and generates `websocket` actions
+   - `packStream`: converts streamInterpreter to normal interpreter
    - `GQLState`: shared  state between `http` and `websocket` server
-   - gqlSocketApp :converts  `streamInterpreter` as `websocket` application wrapper
+   - `gqlSocketApp` :converts  `streamInterpreter` as `websocket` application wrapper
 
 ### Changed
 
