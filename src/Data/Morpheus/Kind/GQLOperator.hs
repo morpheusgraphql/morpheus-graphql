@@ -32,7 +32,7 @@ import           Data.Proxy
 import           Data.Text                                  (Text)
 import           GHC.Generics
 
-type QResult = (Result Value)
+type QResult = Value
 
 type MResult = (Result Value)
 
@@ -49,7 +49,7 @@ class GQLQuery a where
   encodeQuery :: DataTypeLib -> Encode a QResult
   default encodeQuery :: EncodeCon a QResult =>
     DataTypeLib -> Encode a QResult
-  encodeQuery types rootResolver sel = resolveBySelectionM sel (schemaResolver ++ resolvers)
+  encodeQuery types rootResolver sel = resolveBySelection sel (schemaResolver ++ resolvers)
     where
       schemaResolver = [("__schema", (`_encode` initSchema types))]
       resolvers = deriveResolvers "" $ from rootResolver

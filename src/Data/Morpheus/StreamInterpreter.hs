@@ -75,7 +75,7 @@ resolveStream rootResolver (SocketInput id' request) = do
   rootGQL <- ExceptT $ pure (parseRequest (toLBS request) >>= validateRequest gqlSchema)
   case rootGQL of
     Query operator' -> do
-      Result value _ <- encodeQuery gqlSchema queryRes $ operatorSelection operator'
+      value <- encodeQuery gqlSchema queryRes $ operatorSelection operator'
       return (NoEffect value)
     Mutation operator' -> do
       Result value channels <- encodeMutation mutationRes $ operatorSelection operator'

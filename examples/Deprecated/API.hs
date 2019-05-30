@@ -11,7 +11,7 @@ module Deprecated.API
 
 import           Data.Morpheus.Kind  (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLSubscription,
                                       GQLType (..), INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types ((::->), GQLRoot (..), ID, Resolver (..), Result (..), ScalarValue (..))
+import           Data.Morpheus.Types ((::->), (::->>), GQLRoot (..), ID, Resolver (..), Result (..), ScalarValue (..))
 import           Data.Text           (Text, pack)
 import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
 import qualified Deprecated.Model    as M (JSONAddress (..), JSONUser (..))
@@ -106,8 +106,7 @@ transformAddress street' address' =
   Address {city = M.city address', houseNumber = M.houseNumber address', street = street', owner = Nothing}
 
 resolveAddress :: AddressArgs ::-> Address
-resolveAddress =
-  Resolver $ \args -> withEffects [] <$> fetchAddress (Euro 1 0) (pack $ show $ longitude $ coordinates args)
+resolveAddress = Resolver $ \args -> fetchAddress (Euro 1 0) (pack $ show $ longitude $ coordinates args)
 
 addressByCityID :: CityID -> Int -> IO (Either String Address)
 addressByCityID Paris code = fetchAddress (Euro 1 code) "Paris"
@@ -115,13 +114,13 @@ addressByCityID BLN code   = fetchAddress (Euro 1 code) "Berlin"
 addressByCityID HH code    = fetchAddress (Euro 1 code) "Hamburg"
 
 withEffects :: [Text] -> Either String a -> Either String (Result a)
-withEffects e v = (\x -> Result x e) <$> v
+withEffects e v = (`Result` e) <$> v
 
 resolveOffice :: JSONUser -> OfficeArgs ::-> Address
-resolveOffice _ = Resolver $ \args -> withEffects [] <$> addressByCityID (cityID args) 12
+resolveOffice _ = Resolver $ \args -> addressByCityID (cityID args) 12
 
 resolveUser :: () ::-> User
-resolveUser = transformUser <$> Resolver (const $ withEffects [] <$> jsonUser)
+resolveUser = transformUser <$> Resolver (const jsonUser)
 
 transformUser :: JSONUser -> User
 transformUser user' =
@@ -143,46 +142,30 @@ transformUser user' =
              HH)
     }
 
-createUserMutation :: () ::-> User
+createUserMutation :: () ::->> User
 createUserMutation = transformUser <$> Resolver (const $ withEffects ["UPDATE_USER"] <$> jsonUser)
 
-newUserSubscription :: () ::-> User
+newUserSubscription :: () ::->> User
 newUserSubscription = transformUser <$> Resolver (const $ withEffects ["UPDATE_USER"] <$> jsonUser)
 
-createAddressMutation :: () ::-> Address
+createAddressMutation :: () ::->> Address
 createAddressMutation =
   transformAddress "from Mutation" <$> Resolver (const $ withEffects ["UPDATE_ADDRESS"] <$> jsonAddress)
 
-newAddressSubscription :: () ::-> Address
+newAddressSubscription :: () ::->> Address
 newAddressSubscription =
   transformAddress "from Subscription" <$> Resolver (const $ withEffects ["UPDATE_ADDRESS"] <$> jsonAddress)
 
 data Mutation = Mutation
-  { createUser    :: () ::-> User
-  , createAddress :: () ::-> Address
+  { createUser    :: () ::->> User
+  , createAddress :: () ::->> Address
   } deriving (Generic, GQLMutation)
 
 data Subscription = Subscription
-  { newUser    :: () ::-> User
-  , newAddress :: () ::-> Address
+  { newUser    :: () ::->> User
+  , newAddress :: () ::->> Address
   } deriving (Generic, GQLSubscription)
 
-{-
-  data Channels = UserAdded (Async User) | AddressAdded (Async Address)
-
-  data Subscription = Subscription {
-      newUser :: Async User,
-      newAddress :: Async Address
-  }
-
-  -- resolveNewUserSubscription :: Async User
-  -- resolveSubscription = async (UserAdded Pending)
-
-  async :: Channels -> Stream Channels
-  async = ....
-
-  newtype Async a = Pending | Response { unpackAwait :: Stream Channels } |
--}
 gqlRoot :: GQLRoot Query Mutation Subscription
 gqlRoot =
   GQLRoot

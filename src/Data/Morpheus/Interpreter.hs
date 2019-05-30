@@ -29,12 +29,10 @@ schema queryRes mutationRes subscriptionRes =
 resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> ResolveIO Value
 resolve rootResolver request = do
   rootGQL <- ExceptT $ pure (parseRequest request >>= validateRequest gqlSchema)
-  resolver' <-
-    case rootGQL of
-      Query operator'        -> encodeQuery gqlSchema queryRes $ operatorSelection operator'
-      Mutation operator'     -> encodeMutation mutationRes $ operatorSelection operator'
-      Subscription operator' -> encodeSubscription subscriptionRes $ operatorSelection operator'
-  return (resultValue resolver')
+  case rootGQL of
+    Query operator'        -> encodeQuery gqlSchema queryRes $ operatorSelection operator'
+    Mutation operator'     -> resultValue <$> encodeMutation mutationRes (operatorSelection operator')
+    Subscription operator' -> resultValue <$> encodeSubscription subscriptionRes (operatorSelection operator')
   where
     gqlSchema = schema queryRes mutationRes subscriptionRes
     queryRes = query rootResolver
