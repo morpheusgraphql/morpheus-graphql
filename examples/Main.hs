@@ -4,31 +4,34 @@ module Main
   ( main
   ) where
 
-import           Control.Concurrent     (forkIO)
-import           Control.Monad.IO.Class (liftIO)
-import           Data.Morpheus          (packStream, streamInterpreter)
-import           Data.Morpheus.Server   (initGQLState, socketGQL)
-import           Deprecated.API         (gqlRoot)
-import           Mythology.API          (mythologyApi)
-import           Network.WebSockets     (runServer)
-import           Web.Scotty
+import           Control.Monad.IO.Class         (liftIO)
+import           Data.Morpheus                  (packStream, streamInterpreter)
+import           Data.Morpheus.Server           (GQLState, initGQLState, socketGQL)
+import           Deprecated.API                 (gqlRoot)
+import           Mythology.API                  (mythologyApi)
+import qualified Network.Wai                    as Wai
+import qualified Network.Wai.Handler.Warp       as Warp
+import qualified Network.Wai.Handler.WebSockets as WaiWs
+import           Network.WebSockets             (defaultConnectionOptions)
+import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
 {-
-
 const ws = new WebSocket('ws://localhost:9160/');
 ws.send(JSON.stringify({"query":"query GetUser{user{name}}"}))
 ws.send(JSON.stringify({"query":"mutation CreateUser{ createUser{name} }"}))
 ws.send(JSON.stringify({"query":"subscription ShowNewUser{ newUser{name} }"}))
-
 -}
 main :: IO ()
 main = do
   state <- initGQLState
-  _ <- forkIO $ wsServer state
-  httpServer state
+  httpApp <- httpServer state
+  Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
   where
-    wsServer = runServer "127.0.0.1" 4000 . socketGQL (streamInterpreter gqlRoot)
+    settings = Warp.setPort 3000 Warp.defaultSettings
+    wsApp = socketGQL (streamInterpreter gqlRoot)
+    httpServer :: GQLState -> IO Wai.Application
     httpServer state =
-      scotty 3000 $ do
-        post "/api" $ raw =<< (liftIO . packStream state (streamInterpreter gqlRoot) =<< body)
-        post "/" $ raw =<< (liftIO . mythologyApi =<< body)
+      scottyApp $ do
+        post "/" $ raw =<< (liftIO . packStream state (streamInterpreter gqlRoot) =<< body)
+        get "/" $ file "index.html"
+        post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)

@@ -1,6 +1,7 @@
 module Data.Morpheus.Server
   ( socketGQL
   , initGQLState
+  , GQLState
   ) where
 
 import           Control.Exception                   (finally)
