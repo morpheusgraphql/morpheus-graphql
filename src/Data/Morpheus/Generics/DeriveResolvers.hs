@@ -12,7 +12,8 @@ module Data.Morpheus.Generics.DeriveResolvers
   ) where
 
 import           Data.Maybe                                 (fromMaybe)
-import Data.Morpheus.Types.Internal.AST.Selection (Selection(..), SelectionRec(..))import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
+import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
+import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Morpheus.Types.Resolver               (Result (..))
 import           Data.Text                                  (Text, pack)
