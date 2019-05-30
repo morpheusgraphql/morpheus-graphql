@@ -13,6 +13,7 @@ import           Data.Maybe                                 (fromMaybe)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
+import           Data.Morpheus.Types.Resolver               (Result (..))
 import           Data.Text                                  (Text, pack)
 import           GHC.Generics
 
@@ -27,31 +28,30 @@ import           GHC.Generics
 unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
-type Response a = (Value, [a])
+type Response = Result Value
 
-selectResolver ::
-     [(Text, (Text, Selection) -> ResolveIO (Response a))] -> (Text, Selection) -> ResolveIO (Text, Response a)
+selectResolver :: [(Text, (Text, Selection) -> ResolveIO Response)] -> (Text, Selection) -> ResolveIO (Text, Response)
 selectResolver resolvers' (key', selection') =
   case selectionRec selection' of
     SelectionAlias name' aliasSelection' ->
       unwrapMonadTuple (key', lookupResolver name' (selection' {selectionRec = aliasSelection'}))
     _ -> unwrapMonadTuple (key', lookupResolver key' selection')
   where
-    lookupResolver resolverKey' sel = (fromMaybe (\_ -> pure (Null, [])) $ lookup resolverKey' resolvers') (key', sel)
+    lookupResolver resolverKey' sel =
+      (fromMaybe (const $ pure $ pure Null) $ lookup resolverKey' resolvers') (key', sel)
 
-resolveBySelection ::
-     [(Text, Selection)] -> [(Text, (Text, Selection) -> ResolveIO (Response a))] -> ResolveIO (Response a)
+resolveBySelection :: [(Text, Selection)] -> [(Text, (Text, Selection) -> ResolveIO Response)] -> ResolveIO Response
 resolveBySelection selection resolvers = do
   value <- mapM (selectResolver resolvers) selection
-  let val' = fmap (\(x, (y, _)) -> (x, y)) value
-  let context = concatMap (snd . snd) value
-  return (Object val', context)
+  let val' = fmap (\(x, v) -> (x, resultValue v)) value
+  let context = concatMap (resultEffects . snd) value
+  return $ Result (Object val') context
 
-resolversBy :: (Generic a, DeriveResolvers (Rep a)) => a -> [(Text, (Text, Selection) -> ResolveIO (Response a))]
+resolversBy :: (Generic a, DeriveResolvers (Rep a)) => a -> [(Text, (Text, Selection) -> ResolveIO Response)]
 resolversBy = deriveResolvers "" . from
 
 class DeriveResolvers f where
-  deriveResolvers :: Text -> f a -> [(Text, (Text, Selection) -> ResolveIO (Response a))]
+  deriveResolvers :: Text -> f a -> [(Text, (Text, Selection) -> ResolveIO Response)]
 
 instance DeriveResolvers U1 where
   deriveResolvers _ _ = []

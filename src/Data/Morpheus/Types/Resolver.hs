@@ -6,36 +6,33 @@ module Data.Morpheus.Types.Resolver
   ( (::->)
   , Resolver(..)
   , Result(..)
-  , GQLResult
   ) where
 
 import           Data.Text    (Text)
 import           GHC.Generics (Generic)
 
-data Result e a = Result
-  { result  :: a
-  , effects :: [e]
+data Result a = Result
+  { resultValue   :: a
+  , resultEffects :: [Text]
   } deriving (Show)
 
-instance Functor (Result e) where
+instance Functor Result where
   fmap func (Result value effect) = Result (func value) effect
 
-instance Applicative (Result e) where
+instance Applicative Result where
   pure value = Result value []
   Result func e1 <*> Result value e2 = Result (func value) (e1 ++ e2)
 
-instance Monad (Result e) where
+instance Monad Result where
   return = pure
   (Result v1 e1) >>= func2 = do
     let Result v2 e2 = func2 v1
     Result v2 (e2 ++ e1)
 
-type GQLResult a = Result Text a
-
 type a ::-> b = Resolver Text a b
 
 newtype Resolver m a b =
-  Resolver (a -> IO (Either String (Result m b)))
+  Resolver (a -> IO (Either String (Result b)))
   deriving (Generic)
 
 instance Functor (Resolver m p) where
