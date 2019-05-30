@@ -6,15 +6,16 @@ module Data.Morpheus.Server.ClientRegister
   , disconnectClient
   , updateClientByID
   , publishUpdates
-  , updateClientChannels
+  , updateClientSubscription
   ) where
 
-import           Control.Concurrent             (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
-import           Control.Monad                  (forM_)
-import           Data.List                      (intersect)
-import           Data.Morpheus.Server.GQLClient (Channel, ClientID, GQLClient (..))
-import           Data.Text                      (Text)
-import           Network.WebSockets             (Connection, sendTextData)
+import           Control.Concurrent                         (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
+import           Control.Monad                              (forM_)
+import           Data.List                                  (intersect)
+import           Data.Morpheus.Server.GQLClient             (Channel, ClientID, GQLClient (..))
+import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
+import           Data.Text                                  (Text)
+import           Network.WebSockets                         (Connection, sendTextData)
 
 type ClientRegister = [(ClientID, GQLClient)]
 
@@ -31,7 +32,9 @@ connectClient connection' varState' = do
   where
     newClient = do
       id' <- length <$> readMVar varState' -- TODO: better uid
-      return (id', GQLClient {clientID = id', clientConnection = connection', clientChannels = []})
+      return
+        ( id'
+        , GQLClient {clientID = id', clientConnection = connection', clientChannels = [], clientQuerySelection = []})
     addClient client' state' = return (client' : state')
 
 disconnectClient :: GQLClient -> GQLState -> IO ClientRegister
@@ -50,19 +53,20 @@ updateClientByID id' updateFunc state = modifyMVar_ state (return . map updateCl
       | key' == id' = (key', updateFunc client')
     updateClient state' = state'
 
-publishUpdates :: [Channel] -> Text -> GQLState -> IO ()
-publishUpdates channels message state = do
+publishUpdates :: [Channel] -> (SelectionSet -> IO Text) -> GQLState -> IO ()
+publishUpdates channels resolver' state = do
   state' <- clientsByChannel
   forM_ state' sendMessage
   where
-    sendMessage (_, GQLClient {clientConnection = connection'}) = sendTextData connection' message
+    sendMessage (_, GQLClient {clientConnection = connection', clientQuerySelection = selection'}) =
+      resolver' selection' >>= sendTextData connection'
     clientsByChannel :: IO ClientRegister
     clientsByChannel = filterByChannels <$> readMVar state
       where
         filterByChannels :: ClientRegister -> ClientRegister
         filterByChannels = filter (([] /=) . intersect channels . clientChannels . snd)
 
-updateClientChannels :: ClientID -> [Text] -> GQLState -> IO ()
-updateClientChannels id' channel' = updateClientByID id' setChannel
+updateClientSubscription :: ClientID -> SelectionSet -> [Text] -> GQLState -> IO ()
+updateClientSubscription id' selection' channel' = updateClientByID id' setChannel
   where
-    setChannel client' = client' {clientChannels = channel'}
+    setChannel client' = client' {clientChannels = channel', clientQuerySelection = selection'}
