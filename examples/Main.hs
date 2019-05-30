@@ -16,7 +16,7 @@ import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
 {-
-const ws = new WebSocket('ws://localhost:9160/');
+const ws = new WebSocket('ws://localhost:3000/');
 ws.send(JSON.stringify({"query":"query GetUser{user{name}}"}))
 ws.send(JSON.stringify({"query":"mutation CreateUser{ createUser{name} }"}))
 ws.send(JSON.stringify({"query":"subscription ShowNewUser{ newUser{name} }"}))
