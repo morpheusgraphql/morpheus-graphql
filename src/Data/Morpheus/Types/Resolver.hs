@@ -1,15 +1,67 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 
 module Data.Morpheus.Types.Resolver
   ( (::->)
+  , (::->>)
   , Resolver(..)
   , Result(..)
   ) where
 
 import           Data.Text    (Text)
 import           GHC.Generics (Generic)
+
+data QUERY
+
+data MUTATION
+
+type family RESOLVER a b
+
+{-
+  Monad of Query Resolver
+-}
+type a ::-> b = Resolver QUERY a b
+
+type instance RESOLVER QUERY b = Either String b
+
+instance Functor (Resolver QUERY a) where
+  fmap func (Resolver resolver) =
+    Resolver $ \args -> do
+      value <- resolver args
+      return (func <$> value)
+
+instance Applicative (Resolver QUERY a) where
+  pure = Resolver . const . return . pure
+  Resolver func <*> Resolver resolver =
+    Resolver $ \args -> do
+      func1 <- func args
+      value1 <- resolver args
+      return (func1 <*> value1)
+
+instance Monad (Resolver QUERY a) where
+  return = pure
+  (Resolver func1) >>= func2 =
+    Resolver $ \args -> do
+      value1 <- func1 args
+      case value1 of
+        Left x -> return $ Left x
+        Right y {--}
+         -> do
+          let (Resolver x) = func2 y
+          x args
+
+{-
+  Monad of Mutation and Subscription Resolver
+-}
+type a ::->> b = Resolver MUTATION a b
+
+type instance RESOLVER MUTATION b = Either String (Result b)
+
+newtype Resolver t a b =
+  Resolver (a -> IO (RESOLVER t b))
+  deriving (Generic)
 
 data Result a = Result
   { resultValue   :: a
@@ -29,13 +81,7 @@ instance Monad Result where
     let Result v2 e2 = func2 v1
     Result v2 (e2 ++ e1)
 
-type a ::-> b = Resolver Text a b
-
-newtype Resolver m a b =
-  Resolver (a -> IO (Either String (Result b)))
-  deriving (Generic)
-
-instance Functor (Resolver m p) where
+instance Functor (Resolver MUTATION p) where
   fmap func (Resolver resolver) =
     Resolver $ \args -> do
       value <- resolver args
@@ -43,7 +89,7 @@ instance Functor (Resolver m p) where
         Left error' -> return $ Left error'
         Right res'  -> return $ Right (func <$> res')
 
-instance Applicative (Resolver m p) where
+instance Applicative (Resolver MUTATION p) where
   pure = Resolver . const . return . Right . pure
   Resolver func <*> Resolver resolver =
     Resolver $ \args -> do
@@ -56,7 +102,7 @@ instance Applicative (Resolver m p) where
             Left error' -> return $ Left error'
             Right v2'   -> return $ Right $ v1 <*> v2'
 
-instance Monad (Resolver m p) where
+instance Monad (Resolver MUTATION p) where
   return = pure
   (Resolver func1) >>= func2 =
     Resolver $ \args -> do
