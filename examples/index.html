@@ -7,99 +7,94 @@
 -->
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Example API</title>
-    <meta name="description" content="Morpheus GraphQL" />
 
-    <style>
-      body {
-        height: 100%;
-        margin: 0;
-        width: 100%;
-        overflow: hidden;
-      }
+<head>
+  <title>Example API</title>
+  <meta name="description" content="Morpheus GraphQL" />
 
-      #graphiql {
-        height: 100vh;
-      }
-    </style>
-    <script src="https://cdn.jsdelivr.net/es6-promise/4.0.5/es6-promise.auto.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/fetch/0.9.0/fetch.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/react/15.4.2/react.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/react/15.4.2/react-dom.min.js"></script>
-    <link
-      href="//cdn.jsdelivr.net/npm/graphiql@0.13.0/graphiql.css"
-      rel="stylesheet"
-    />
-    <script
-      src="https://cdn.jsdelivr.net/npm/graphiql@0.13.0/graphiql.js"
-      charset="utf-8"
-    ></script>
-    <script src="https://unpkg.com/subscriptions-transport-ws@0.5.4/browser/client.js"></script>
-    <script src="//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js"></script>
-  </head>
+  <style>
+    body {
+      height: 100%;
+      margin: 0;
+      width: 100%;
+      overflow: hidden;
+    }
 
-  <body>
-    <div id="graphiql">Loading...</div>
-    <script>
-      var search = window.location.search;
-      var parameters = {};
-      search
-        .substr(1)
-        .split("&")
-        .forEach(function(entry) {
-          var eq = entry.indexOf("=");
-          if (eq >= 0) {
-            parameters[
-              decodeURIComponent(entry.slice(0, eq))
-            ] = decodeURIComponent(entry.slice(eq + 1));
-          }
-        });
-      if (parameters.variables) {
-        try {
-          parameters.variables = JSON.stringify(
-            JSON.parse(parameters.variables),
-            null,
-            2
+    #graphiql {
+      height: 100vh;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/es6-promise/4.0.5/es6-promise.auto.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/fetch/0.9.0/fetch.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/react/15.4.2/react.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/react/15.4.2/react-dom.min.js"></script>
+  <link href="//cdn.jsdelivr.net/npm/graphiql@0.13.0/graphiql.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/graphiql@0.13.0/graphiql.js" charset="utf-8"></script>
+  <script src="https://unpkg.com/subscriptions-transport-ws@0.5.4/browser/client.js"></script>
+  <script src="//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js"></script>
+</head>
+
+<body>
+  <div id="graphiql">Loading...</div>
+  <script>
+    var search = window.location.search;
+    var parameters = {};
+    search
+      .substr(1)
+      .split("&")
+      .forEach(function (entry) {
+        var eq = entry.indexOf("=");
+        if (eq >= 0) {
+          parameters[
+            decodeURIComponent(entry.slice(0, eq))
+          ] = decodeURIComponent(entry.slice(eq + 1));
+        }
+      });
+    if (parameters.variables) {
+      try {
+        parameters.variables = JSON.stringify(
+          JSON.parse(parameters.variables),
+          null,
+          2
+        );
+      } catch (e) {}
+    }
+
+    function onEditQuery(newQuery) {
+      parameters.query = newQuery;
+      updateURL();
+    }
+
+    function onEditVariables(newVariables) {
+      parameters.variables = newVariables;
+      updateURL();
+    }
+
+    function onEditOperationName(newOperationName) {
+      parameters.operationName = newOperationName;
+      updateURL();
+    }
+
+    function updateURL() {
+      var newSearch =
+        "?" +
+        Object.keys(parameters)
+        .filter(function (key) {
+          return Boolean(parameters[key]);
+        })
+        .map(function (key) {
+          return (
+            encodeURIComponent(key) +
+            "=" +
+            encodeURIComponent(parameters[key])
           );
-        } catch (e) {}
-      }
+        })
+        .join("&");
+      history.replaceState(null, null, newSearch);
+    }
 
-      function onEditQuery(newQuery) {
-        parameters.query = newQuery;
-        updateURL();
-      }
-
-      function onEditVariables(newVariables) {
-        parameters.variables = newVariables;
-        updateURL();
-      }
-
-      function onEditOperationName(newOperationName) {
-        parameters.operationName = newOperationName;
-        updateURL();
-      }
-
-      function updateURL() {
-        var newSearch =
-          "?" +
-          Object.keys(parameters)
-            .filter(function(key) {
-              return Boolean(parameters[key]);
-            })
-            .map(function(key) {
-              return (
-                encodeURIComponent(key) +
-                "=" +
-                encodeURIComponent(parameters[key])
-              );
-            })
-            .join("&");
-        history.replaceState(null, null, newSearch);
-      }
-
-      function graphQLFetcher(graphQLParams) {
-        return fetch("/", {
+    function graphQLFetcher(graphQLParams) {
+      return fetch("/", {
           method: "post",
           headers: {
             Accept: "application/json",
@@ -108,47 +103,45 @@
           body: JSON.stringify(graphQLParams),
           credentials: "include"
         })
-          .then(function(response) {
-            return response.text();
-          })
-          .then(function(responseBody) {
-            try {
-              return JSON.parse(responseBody);
-            } catch (error) {
-              return responseBody;
-            }
-          });
+        .then(function (response) {
+          return response.text();
+        })
+        .then(function (responseBody) {
+          try {
+            return JSON.parse(responseBody);
+          } catch (error) {
+            return responseBody;
+          }
+        });
+    }
+
+    const wsURI = "ws://localhost:3000/";
+
+    let subscriptionsClient = new window.SubscriptionsTransportWs.SubscriptionClient(
+      wsURI, {
+        reconnect: true,
+        timeout: 600000
       }
+    );
 
-      const wsURI = "ws://localhost:3000/";
+    let myCustomFetcher = window.GraphiQLSubscriptionsFetcher.graphQLFetcher(
+      subscriptionsClient,
+      graphQLFetcher
+    );
 
-      let subscriptionsClient = new window.SubscriptionsTransportWs.SubscriptionClient(
-        wsURI,
-        {
-          reconnect: true,
-          timeout: 600000
-        },
-        undefined,
-        []
-      );
+    ReactDOM.render(
+      React.createElement(GraphiQL, {
+        fetcher: myCustomFetcher,
+        query: parameters.query,
+        variables: parameters.variables,
+        operationName: parameters.operationName,
+        onEditQuery: onEditQuery,
+        onEditVariables: onEditVariables,
+        onEditOperationName: onEditOperationName
+      }),
+      document.getElementById("graphiql")
+    );
+  </script>
+</body>
 
-      let myCustomFetcher = window.GraphiQLSubscriptionsFetcher.graphQLFetcher(
-        subscriptionsClient,
-        graphQLFetcher
-      );
-
-      ReactDOM.render(
-        React.createElement(GraphiQL, {
-          fetcher: myCustomFetcher,
-          query: parameters.query,
-          variables: parameters.variables,
-          operationName: parameters.operationName,
-          onEditQuery: onEditQuery,
-          onEditVariables: onEditVariables,
-          onEditOperationName: onEditOperationName
-        }),
-        document.getElementById("graphiql")
-      );
-    </script>
-  </body>
 </html>
