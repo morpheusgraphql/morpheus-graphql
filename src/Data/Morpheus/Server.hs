@@ -6,13 +6,14 @@ module Data.Morpheus.Server
 
 import           Control.Exception                   (finally)
 import           Control.Monad                       (forever)
+import           Data.Morpheus.Server.Apollo         (ApolloSubscription (..), apolloProtocol, parseApolloRequest)
 import           Data.Morpheus.Server.ClientRegister (GQLState, connectClient, disconnectClient, initGQLState,
                                                       publishUpdates, updateClientSubscription)
 import           Data.Morpheus.Server.GQLClient      (GQLClient (..))
 import           Data.Morpheus.StreamInterpreter     (InputAction (..), OutputAction (..))
 import           Data.Text                           (Text)
-import           Network.WebSockets                  (Connection, ServerApp, acceptRequest, forkPingThread, receiveData,
-                                                      sendTextData)
+import           Network.WebSockets                  (Connection, ServerApp, acceptRequestWith, forkPingThread,
+                                                      receiveData, sendTextData)
 
 type GQLAPI = InputAction Text -> IO (OutputAction Text)
 
@@ -31,12 +32,15 @@ queryHandler :: GQLAPI -> GQLClient -> GQLState -> IO ()
 queryHandler interpreter' GQLClient {clientConnection = connection', clientID = id'} state = forever handleRequest
   where
     handleRequest = do
-      msg <- receiveData connection' >>= \x -> interpreter' (SocketInput id' x)
-      handleGQLResponse connection' state msg
+      msg <- receiveData connection'
+      case parseApolloRequest msg of
+        Left x -> print x
+        Right ApolloSubscription {apolloQuery = Nothing} -> print msg
+        Right _ -> interpreter' (SocketInput id' msg) >>= handleGQLResponse connection' state
 
 gqlSocketApp :: GQLAPI -> GQLState -> ServerApp
 gqlSocketApp interpreter' state pending = do
-  connection' <- acceptRequest pending
+  connection' <- acceptRequestWith pending apolloProtocol
   forkPingThread connection' 30
   client' <- connectClient connection' state
   finally (queryHandler interpreter' client' state) (disconnectClient client' state)
