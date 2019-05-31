@@ -6,7 +6,7 @@ module Data.Morpheus.Server
 
 import           Control.Exception                   (finally)
 import           Control.Monad                       (forever)
-import           Data.Morpheus.Server.Apollo         (apolloProtocol, parseApolloRequest)
+import           Data.Morpheus.Server.Apollo         (ApolloSubscription (..), apolloProtocol, parseApolloRequest)
 import           Data.Morpheus.Server.ClientRegister (GQLState, connectClient, disconnectClient, initGQLState,
                                                       publishUpdates, updateClientSubscription)
 import           Data.Morpheus.Server.GQLClient      (GQLClient (..))
@@ -34,16 +34,13 @@ queryHandler interpreter' GQLClient {clientConnection = connection', clientID = 
     handleRequest = do
       msg <- receiveData connection'
       case parseApolloRequest msg of
-        Left x  -> print x
+        Left x -> print x
+        Right ApolloSubscription {apolloQuery = Nothing} -> print msg
         Right _ -> interpreter' (SocketInput id' msg) >>= handleGQLResponse connection' state
-
-parseConnection :: Text -> IO ()
-parseConnection _ = return ()
 
 gqlSocketApp :: GQLAPI -> GQLState -> ServerApp
 gqlSocketApp interpreter' state pending = do
   connection' <- acceptRequestWith pending apolloProtocol
   forkPingThread connection' 30
   client' <- connectClient connection' state
-  receiveData connection' >>= parseConnection
   finally (queryHandler interpreter' client' state) (disconnectClient client' state)
