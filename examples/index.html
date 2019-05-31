@@ -24,7 +24,6 @@
       height: 100vh;
     }
   </style>
-
   <script src="https://cdn.jsdelivr.net/es6-promise/4.0.5/es6-promise.auto.min.js"></script>
   <script src="https://cdn.jsdelivr.net/fetch/0.9.0/fetch.min.js"></script>
   <script src="https://cdn.jsdelivr.net/react/15.4.2/react.min.js"></script>
@@ -106,7 +105,54 @@
       timeout: 60000,
     }, undefined, []);
 
-    let myCustomFetcher = window.GraphiQLSubscriptionsFetcher.graphQLFetcher(subscriptionsClient, graphQLFetcher);
+
+    const hasSubscriptionOperation = (graphQlParams) => {
+      // const queryDoc = parse(graphQlParams.query);
+
+      // for (const definition of queryDoc.definitions) {
+      //   if (definition.kind === 'OperationDefinition') {
+      //     const operation = definition.operation;
+      //     if (operation === 'subscription') {
+      //       return true;
+      //     }
+      //   }
+      // }
+      return false;
+    };
+
+    const wsGraphQLFetcher = (
+      subscriptionsClient,
+      fallbackFetcher,
+    ) => {
+      let activeSubscription = null;
+
+      return (graphQLParams) => {
+        if (activeSubscription !== null) {
+          activeSubscription.unsubscribe();
+        }
+
+        if (subscriptionsClient && hasSubscriptionOperation(graphQLParams)) {
+          return {
+            subscribe: (observer) => {
+              observer.next(
+                'Your subscription data will appear here after server publication!',
+              );
+
+              activeSubscription = subscriptionsClient
+                .request({
+                  query: graphQLParams.query,
+                  variables: graphQLParams.varaibles,
+                })
+                .subscribe(observer);
+            },
+          };
+        }
+
+        return fallbackFetcher(graphQLParams);
+      };
+    };
+
+    let myCustomFetcher = wsGraphQLFetcher(subscriptionsClient, graphQLFetcher);
 
     ReactDOM.render(
       React.createElement(GraphiQL, {

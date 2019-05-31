@@ -34,9 +34,27 @@ queryHandler interpreter' GQLClient {clientConnection = connection', clientID = 
       msg <- receiveData connection' >>= \x -> interpreter' (SocketInput id' x)
       handleGQLResponse connection' state msg
 
+{-
+
+  TODO: parse Connection
+
+  {"type":"connection_init","payload":{}}
+
+  {
+    "id":"1",
+    "type":"start",
+    "payload": {
+       "query":"subscription SimpleMutation {\n createAddress {\n city\n }\n createUser {\n name\n office(cityID: Paris) {\n city\n }\n }\n}\n"
+    }
+  }
+-}
+parseConnection :: Text -> IO ()
+parseConnection _ = return ()
+
 gqlSocketApp :: GQLAPI -> GQLState -> ServerApp
 gqlSocketApp interpreter' state pending = do
   connection' <- acceptRequest pending
   forkPingThread connection' 30
   client' <- connectClient connection' state
+  receiveData connection' >>= parseInitConnection
   finally (queryHandler interpreter' client' state) (disconnectClient client' state)
