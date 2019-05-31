@@ -7,167 +7,152 @@
 -->
 <!DOCTYPE html>
 <html>
-
 <head>
-  <title>Example API </title>
-  <meta name="description" content="Morpheus GraphQL">
+    <title>Example API</title>
+    <meta name="description" content="Morpheus GraphQL"/>
 
-  <style>
-    body {
-      height: 100%;
-      margin: 0;
-      width: 100%;
-      overflow: hidden;
-    }
+    <style>
+      body {
+        height: 100%;
+        margin: 0;
+        width: 100%;
+        overflow: hidden;
+      }
 
-    #graphiql {
-      height: 100vh;
-    }
-  </style>
-  <script src="https://cdn.jsdelivr.net/es6-promise/4.0.5/es6-promise.auto.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/fetch/0.9.0/fetch.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/react/15.4.2/react.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/react/15.4.2/react-dom.min.js"></script>
-  <link href="//cdn.jsdelivr.net/npm/graphiql@0.13.0/graphiql.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/graphiql@0.13.0/graphiql.js" charset="utf-8"></script>
-  <script src="https://unpkg.com/subscriptions-transport-ws@0.9.16/browser/client.js"></script>
-  <script src="//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js"></script>
+      #graphiql {
+        height: 100vh;
+      }
+
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/es6-promise/4.0.5/es6-promise.auto.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/fetch/0.9.0/fetch.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/react/15.4.2/react.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/react/15.4.2/react-dom.min.js"></script>
+    <link
+            href="//cdn.jsdelivr.net/npm/graphiql@0.13.0/graphiql.css"
+            rel="stylesheet"
+    />
+    <script
+            src="https://cdn.jsdelivr.net/npm/graphiql@0.13.0/graphiql.js"
+            charset="utf-8"
+    ></script>
+    <script src="https://unpkg.com/subscriptions-transport-ws@0.5.4/browser/client.js"></script>
+    <script src="//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js"></script>
 </head>
 
 <body>
-  <div id="graphiql">Loading...</div>
-  <script>
-    var search = window.location.search;
-    var parameters = {};
-    search.substr(1).split('&').forEach(function (entry) {
-      var eq = entry.indexOf('=');
-      if (eq >= 0) {
-        parameters[decodeURIComponent(entry.slice(0, eq))] =
-          decodeURIComponent(entry.slice(eq + 1));
-      }
-    });
-    if (parameters.variables) {
-      try {
-        parameters.variables =
-          JSON.stringify(JSON.parse(parameters.variables), null, 2);
-      } catch (e) {}
-    }
-
-    function onEditQuery(newQuery) {
-      parameters.query = newQuery;
-      updateURL();
-    }
-
-    function onEditVariables(newVariables) {
-      parameters.variables = newVariables;
-      updateURL();
-    }
-
-    function onEditOperationName(newOperationName) {
-      parameters.operationName = newOperationName;
-      updateURL();
-    }
-
-    function updateURL() {
-      var newSearch = '?' + Object.keys(parameters).filter(function (key) {
-        return Boolean(parameters[key]);
-      }).map(function (key) {
-        return encodeURIComponent(key) + '=' +
-          encodeURIComponent(parameters[key]);
-      }).join('&');
-      history.replaceState(null, null, newSearch);
-    }
-
-    function graphQLFetcher(graphQLParams) {
-      return fetch('/', {
-        method: 'post',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(graphQLParams),
-        credentials: 'include',
-      }).then(function (response) {
-        return response.text();
-      }).then(function (responseBody) {
+<div id="graphiql">Loading...</div>
+<script>
+      var search = window.location.search;
+      var parameters = {};
+      search
+        .substr(1)
+        .split("&")
+        .forEach(function(entry) {
+          var eq = entry.indexOf("=");
+          if (eq >= 0) {
+            parameters[
+              decodeURIComponent(entry.slice(0, eq))
+            ] = decodeURIComponent(entry.slice(eq + 1));
+          }
+        });
+      if (parameters.variables) {
         try {
-          return JSON.parse(responseBody);
-        } catch (error) {
-          return responseBody;
-        }
-      });
-    }
+          parameters.variables = JSON.stringify(
+            JSON.parse(parameters.variables),
+            null,
+            2
+          );
+        } catch (e) {}
+      }
 
-    const wsURI = "ws://localhost:3000/"
+      function onEditQuery(newQuery) {
+        parameters.query = newQuery;
+        updateURL();
+      }
 
-    let subscriptionsClient = new window.SubscriptionsTransportWs.SubscriptionClient(wsURI, {
-      reconnect: true,
-      timeout: 60000,
-    }, undefined, []);
+      function onEditVariables(newVariables) {
+        parameters.variables = newVariables;
+        updateURL();
+      }
 
+      function onEditOperationName(newOperationName) {
+        parameters.operationName = newOperationName;
+        updateURL();
+      }
 
-    // TODO: support subscriptions
-    const hasSubscriptionOperation = (graphQlParams) => {
-      // const queryDoc = parse(graphQlParams.query);
-
-      // for (const definition of queryDoc.definitions) {
-      //   if (definition.kind === 'OperationDefinition') {
-      //     const operation = definition.operation;
-      //     if (operation === 'subscription') {
-      //       return true;
-      //     }
-      //   }
-      // }
-      return false;
-    };
-
-    const wsGraphQLFetcher = (
-      subscriptionsClient,
-      fallbackFetcher,
-    ) => {
-      let activeSubscription = null;
-
-      return (graphQLParams) => {
-        if (activeSubscription !== null) {
-          activeSubscription.unsubscribe();
-        }
-
-        if (subscriptionsClient && hasSubscriptionOperation(graphQLParams)) {
-          return {
-            subscribe: (observer) => {
-              observer.next(
-                'Your subscription data will appear here after server publication!',
+      function updateURL() {
+        var newSearch =
+          "?" +
+          Object.keys(parameters)
+            .filter(function(key) {
+              return Boolean(parameters[key]);
+            })
+            .map(function(key) {
+              return (
+                encodeURIComponent(key) +
+                "=" +
+                encodeURIComponent(parameters[key])
               );
+            })
+            .join("&");
+        history.replaceState(null, null, newSearch);
+      }
 
-              activeSubscription = subscriptionsClient
-                .request({
-                  query: graphQLParams.query,
-                  variables: graphQLParams.varaibles,
-                })
-                .subscribe(observer);
-            },
-          };
-        }
+      function graphQLFetcher(graphQLParams) {
+        return fetch("/", {
+          method: "post",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(graphQLParams),
+          credentials: "include"
+        })
+          .then(function(response) {
+            return response.text();
+          })
+          .then(function(responseBody) {
+            try {
+              return JSON.parse(responseBody);
+            } catch (error) {
+              return responseBody;
+            }
+          });
+      }
 
-        return fallbackFetcher(graphQLParams);
-      };
-    };
+      const wsURI = "ws://localhost:3000/";
 
-    let myCustomFetcher = wsGraphQLFetcher(subscriptionsClient, graphQLFetcher);
+      let subscriptionsClient = new window.SubscriptionsTransportWs.SubscriptionClient(
+        wsURI,
+        {
+          reconnect: true,
+          timeout: 600000
+        },
+        undefined,
+        []
+      );
 
-    ReactDOM.render(
-      React.createElement(GraphiQL, {
-        fetcher: myCustomFetcher,
-        query: parameters.query,
-        variables: parameters.variables,
-        operationName: parameters.operationName,
-        onEditQuery: onEditQuery,
-        onEditVariables: onEditVariables,
-        onEditOperationName: onEditOperationName
-      }),
-      document.getElementById('graphiql')
-    );
-  </script>
+      let myCustomFetcher = window.GraphiQLSubscriptionsFetcher.graphQLFetcher(
+        subscriptionsClient,
+        graphQLFetcher
+      );
+
+      ReactDOM.render(
+        React.createElement(GraphiQL, {
+          fetcher: myCustomFetcher,
+          query: parameters.query,
+          variables: parameters.variables,
+          operationName: parameters.operationName,
+          onEditQuery: onEditQuery,
+          onEditVariables: onEditVariables,
+          onEditOperationName: onEditOperationName
+        }),
+        document.getElementById("graphiql")
+      );
+
+
+</script>
 </body>
-
 </html>

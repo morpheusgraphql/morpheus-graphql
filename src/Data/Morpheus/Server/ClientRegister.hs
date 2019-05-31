@@ -12,6 +12,7 @@ module Data.Morpheus.Server.ClientRegister
 import           Control.Concurrent                         (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
 import           Control.Monad                              (forM_)
 import           Data.List                                  (intersect)
+import           Data.Morpheus.Server.Apollo                (toApolloResponse)
 import           Data.Morpheus.Server.GQLClient             (Channel, ClientID, GQLClient (..))
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Text                                  (Text)
@@ -60,7 +61,7 @@ publishUpdates channels resolver' state = do
   forM_ state' sendMessage
   where
     sendMessage (_, GQLClient {clientConnection = connection', clientQuerySelection = selection'}) =
-      resolver' selection' >>= sendTextData connection'
+      resolver' selection' >>= sendTextData connection' . toApolloResponse
     clientsByChannel :: IO ClientRegister
     clientsByChannel = filterByChannels <$> readMVar state
       where
