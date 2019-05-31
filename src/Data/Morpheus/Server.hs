@@ -4,15 +4,17 @@ module Data.Morpheus.Server
   , GQLState
   ) where
 
-import           Control.Exception                   (finally)
-import           Control.Monad                       (forever)
-import           Data.Morpheus.Server.ClientRegister (GQLState, connectClient, disconnectClient, initGQLState,
-                                                      publishUpdates, updateClientSubscription)
-import           Data.Morpheus.Server.GQLClient      (GQLClient (..))
-import           Data.Morpheus.StreamInterpreter     (InputAction (..), OutputAction (..))
-import           Data.Text                           (Text)
-import           Network.WebSockets                  (Connection, ServerApp, acceptRequest, forkPingThread, receiveData,
-                                                      sendTextData)
+import           Control.Exception                                      (finally)
+import           Control.Monad                                          (forever)
+import           Data.Morpheus.Server.ClientRegister                    (GQLState, connectClient, disconnectClient,
+                                                                         initGQLState, publishUpdates,
+                                                                         updateClientSubscription)
+import           Data.Morpheus.Server.GQLClient                         (GQLClient (..))
+import           Data.Morpheus.StreamInterpreter                        (InputAction (..), OutputAction (..))
+import           Data.Morpheus.Types.Internal.ApolloGraphQLSubscription (parseApolloGraphQLSubscription)
+import           Data.Text                                              (Text)
+import           Network.WebSockets                                     (Connection, ServerApp, acceptRequest,
+                                                                         forkPingThread, receiveData, sendTextData)
 
 type GQLAPI = InputAction Text -> IO (OutputAction Text)
 
@@ -31,8 +33,10 @@ queryHandler :: GQLAPI -> GQLClient -> GQLState -> IO ()
 queryHandler interpreter' GQLClient {clientConnection = connection', clientID = id'} state = forever handleRequest
   where
     handleRequest = do
-      msg <- receiveData connection' >>= \x -> interpreter' (SocketInput id' x)
-      handleGQLResponse connection' state msg
+      msg <- parseApolloGraphQLSubscription <$> receiveData connection'
+      case msg of
+        Nothing -> return ()
+        Just x  -> interpreter' (SocketInput id' x) >>= handleGQLResponse connection' state
 
 {-
 
@@ -56,5 +60,5 @@ gqlSocketApp interpreter' state pending = do
   connection' <- acceptRequest pending
   forkPingThread connection' 30
   client' <- connectClient connection' state
-  receiveData connection' >>= parseInitConnection
+  receiveData connection' >>= parseConnection
   finally (queryHandler interpreter' client' state) (disconnectClient client' state)
