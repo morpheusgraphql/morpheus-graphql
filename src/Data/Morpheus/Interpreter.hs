@@ -22,24 +22,24 @@ class Interpreter k where
   interpreter :: (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> k
 
 {-
-  simple HTTP Interpreter without subscriptions and side effects
+  simple HTTP stateless Interpreter without side effects
 -}
-type PureGQL a = a -> IO a
+type StateLess a = a -> IO a
 
-instance Interpreter (PureGQL LB.ByteString) where
+instance Interpreter (StateLess LB.ByteString) where
   interpreter root request = encode <$> resolve root request
 
-instance Interpreter (PureGQL LT.Text) where
+instance Interpreter (StateLess LT.Text) where
   interpreter root request = decodeUtf8 <$> interpreter root (encodeUtf8 request)
 
-instance Interpreter (PureGQL ByteString) where
+instance Interpreter (StateLess ByteString) where
   interpreter root request = LB.toStrict <$> interpreter root (LB.fromStrict request)
 
-instance Interpreter (PureGQL Text) where
+instance Interpreter (StateLess Text) where
   interpreter root request = LT.toStrict <$> interpreter root (LT.fromStrict request)
 
 {-
-   HTTP Interpreter with side effects, every mutation will
+   HTTP Interpreter with state and side effects, every mutation will
    trigger subscriptions in  shared `GQLState`
 -}
 type WSPub a = GQLState -> a -> IO a
@@ -57,7 +57,7 @@ instance Interpreter (WSPub Text) where
   interpreter root state request = LT.toStrict <$> interpreter root state (LT.fromStrict request)
 
 {-
-   Websocket Interpreter with side effects, mutations and subscription will return Actions
+   Websocket Interpreter without state and side effects, mutations and subscription will return Actions
    that will be executed in Websocket server
 -}
 type WSSub a = InputAction a -> IO (OutputAction a)
