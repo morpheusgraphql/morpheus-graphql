@@ -19,7 +19,7 @@ import           Data.Morpheus.Resolve.Generics.DeriveResolvers (DeriveResolvers
                                                                  resolveBySelectionM, resolversBy)
 import           Data.Morpheus.Resolve.Generics.EnumRep         (EnumRep (..))
 import           Data.Morpheus.Resolve.Generics.UnionResolvers  (UnionResolvers (..), lookupSelectionByType)
-import           Data.Morpheus.Resolve.GQLKinds                 (EncodeObjectConstraint, EncodeUnionConstraint, Encode_,
+import           Data.Morpheus.Resolve.Internal                 (EncodeObjectConstraint, EncodeUnionConstraint, Encode_,
                                                                  EnumConstraint)
 import qualified Data.Morpheus.Types.GQLArgs                    as Args (GQLArgs (..))
 import qualified Data.Morpheus.Types.GQLScalar                  as S (GQLScalar (..))

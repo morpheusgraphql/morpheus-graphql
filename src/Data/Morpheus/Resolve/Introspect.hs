@@ -14,14 +14,13 @@ import           Data.Morpheus.Kind                       (ENUM, KIND, OBJECT, S
 import           Data.Morpheus.Resolve.Generics.ObjectRep (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Resolve.Generics.UnionRep  (UnionRep (..))
 import           Data.Morpheus.Resolve.Generics.Utils     (RecSel, SelOf)
-import           Data.Morpheus.Resolve.GQLKinds           (EnumConstraint, Intro_, OField_, ObjectConstraint,
-                                                           UnionConstraint, introspectEnum, introspectUnion)
-import           Data.Morpheus.Resolve.Utils              (listField, maybeField)
+import           Data.Morpheus.Resolve.Internal           (EnumConstraint, Intro_, OField_, ObjectConstraint,
+                                                           UnionConstraint, introspectEnum, listField, maybeField)
 import           Data.Morpheus.Schema.TypeKind            (TypeKind (..))
 import qualified Data.Morpheus.Types.GQLArgs              as Args (GQLArgs (..))
 import qualified Data.Morpheus.Types.GQLScalar            as S (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType              (GQLType (..), asObjectType)
-import           Data.Morpheus.Types.Internal.Data        (DataField (..), DataOutputField)
+import           Data.Morpheus.Types.Internal.Data        (DataField (..), DataFullType (..), DataOutputField)
 import           Data.Morpheus.Types.Resolver             (Resolver (..))
 import           Data.Proxy                               (Proxy (..))
 import           Data.Text                                (Text, pack)
@@ -75,7 +74,9 @@ instance (Introspect a OBJECT, ObjectConstraint a) => UnionRep (RecSel s a) wher
 
 instance UnionConstraint a => Introspect a UNION where
   __objectField _ _ = field_ UNION (Proxy @a) []
-  __introspect _ _ = introspectUnion (Proxy @a)
+  __introspect _ = updateLib (const $ Union fields) stack
+    where
+      (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
 
 {--
 
