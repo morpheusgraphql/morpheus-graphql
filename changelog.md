@@ -25,20 +25,20 @@
 
 - inline Fragments
 - GraphQL [Aliases](https://graphql.org/learn/queries/#aliases)
-- Subscriptions:  GQLSubscriptions
-    - `::->>` operator:  is like  `::->` operator, but with it can wrap result inside `WithEffect` type.
+- Subscriptions:  `GQLSubscription`
+    - `::->>` operator:  is like  `::->`, wraps result inside `WithEffect`.
         is used for Mutation  and Subscribe communication
-   - `withEffect ["CHANNEL_ID"] value`: packs result it in WithEffect constructor.
+   - `withEffect ["CHANNEL_ID"] value`: packs result in `WithEffect`.
    if mutation and subscription resolver have same channel then
        every call of mutation will trigger subscription resolver
-   - `streamInterpreter`: processes and generates `websocket` actions
-   - `packStream`: converts streamInterpreter to normal interpreter
    - `GQLState`: shared  state between `http` and `websocket` server
-   - `gqlSocketApp` :converts  `streamInterpreter` as `websocket` application wrapper
+   - `gqlSocketApp` :converts  `interpreter` to `websocket` application
 
 ### Changed
-
+-  `GQLRoot`, `GQLType(..)` , `GQLScalar(..)` , `GQLMutation` , `GQLQuery`  , `GQLArgs`
+    are moved in `Data.Morpheus.Types`
 - `::->` is now type synonym fo Resolver QUERY a b  type Resolver
+- `interpreter`: can be used in `http` and `websocket` server
 - `GQLKind` renamed as `GQLType`
 - types can be derived just with `(Generic,GQLType)`
 - public API (all other modules are hidden):
