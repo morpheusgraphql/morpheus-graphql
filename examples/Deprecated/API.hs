@@ -9,9 +9,9 @@ module Deprecated.API
   ( gqlRoot
   ) where
 
-import           Data.Morpheus.Kind  (ENUM, GQLArgs, GQLMutation, GQLQuery, GQLScalar (..), GQLSubscription,
-                                      GQLType (..), INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types ((::->), (::->>), GQLRoot (..), ID, Resolver (..), ScalarValue (..), withEffect)
+import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Types ((::->), (::->>), GQLArgs, GQLMutation, GQLQuery, GQLRoot (..), GQLScalar (..),
+                                      GQLSubscription, GQLType (..), ID, Resolver (..), ScalarValue (..), {-withEffect-})
 import           Data.Text           (Text, pack)
 import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
 import qualified Deprecated.Model    as M (JSONAddress (..), JSONUser (..))
