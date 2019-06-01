@@ -1,23 +1,27 @@
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.StreamInterpreter where
+module Data.Morpheus.Resolve.Resolve
+  ( interpreterRaw
+  , streamInterpreter
+  , schema
+  , packStream
+  , InputAction(..)
+  , OutputAction(..)
+  ) where
 
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT)
 import           Data.Aeson                                 (encode)
 import qualified Data.ByteString.Lazy.Char8                 as LB (ByteString)
 import           Data.Morpheus.Error.Utils                  (renderErrors)
-import           Data.Morpheus.Interpreter                  (schema)
 import           Data.Morpheus.Parser.Parser                (parseLineBreaks, parseRequest)
 import           Data.Morpheus.Server.ClientRegister        (GQLState, publishUpdates)
-import           Data.Morpheus.Server.GQLClient             (ClientID)
 import           Data.Morpheus.Types.GQLOperator            (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
 import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Operator' (..))
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
+import           Data.Morpheus.Types.Internal.Data          (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value         (Value)
+import           Data.Morpheus.Types.Internal.WebSocket     (InputAction (..), OutputAction (..))
 import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Morpheus.Types.Response               (GQLResponse (..))
 import           Data.Morpheus.Types.Types                  (GQLRoot (..))
@@ -27,20 +31,6 @@ import qualified Data.Text.Lazy                             as LT (fromStrict, t
 import           Data.Text.Lazy.Encoding                    (decodeUtf8, encodeUtf8)
 import           Data.UUID.V4                               (nextRandom)
 
-data InputAction a = SocketInput
-  { connectionID :: ClientID
-  , inputValue   :: a
-  } deriving (Show)
-
-data OutputAction a
-  = PublishMutation { mutationChannels     :: [Text]
-                    , mutationResponse     :: a
-                    , subscriptionResolver :: SelectionSet -> IO Text }
-  | InitSubscription { subscriptionClientID :: ClientID
-                     , subscriptionChannels :: [Text]
-                     , subscriptionQuery    :: SelectionSet }
-  | NoEffect a
-
 toLBS :: Text -> LB.ByteString
 toLBS = encodeUtf8 . LT.fromStrict
 
@@ -49,15 +39,6 @@ bsToText = LT.toStrict . decodeUtf8
 
 encodeToText :: GQLResponse -> Text
 encodeToText = bsToText . encode
-
-class WSInterpreter a b where
-  wsInterpreter :: (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLState -> GQLRoot q m s -> a -> IO b
-
-instance WSInterpreter (InputAction Text) (OutputAction Text) where
-  wsInterpreter _ = streamInterpreter
-
-instance WSInterpreter LB.ByteString LB.ByteString where
-  wsInterpreter state root = packStream state (streamInterpreter root)
 
 resolveStream ::
      (GQLQuery a, GQLMutation b, GQLSubscription c)
@@ -109,6 +90,29 @@ packStream state streamAPI request = do
     PublishMutation {mutationChannels = channels, mutationResponse = res', subscriptionResolver = resolver'} -> do
       publishUpdates channels resolver' state
       pure (toLBS res')
-{-- Actual response-}
     InitSubscription {} -> pure "subscriptions are only allowed in websocket"
     NoEffect res' -> pure (toLBS res')
+
+{-- Actual response-}
+schema :: (GQLQuery a, GQLMutation b, GQLSubscription c) => a -> b -> c -> DataTypeLib
+schema queryRes mutationRes subscriptionRes =
+  subscriptionSchema subscriptionRes $ mutationSchema mutationRes $ querySchema queryRes
+
+interpreterRaw :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> IO GQLResponse
+interpreterRaw rootResolver request = do
+  value <- runExceptT resolve
+  case value of
+    Left x  -> pure $ Errors $ renderErrors (parseLineBreaks request) x
+    Right x -> pure $ Data x
+  where
+    resolve = do
+      rootGQL <- ExceptT $ pure (parseRequest request >>= validateRequest gqlSchema)
+      case rootGQL of
+        Query operator'        -> encodeQuery gqlSchema queryRes $ operatorSelection operator'
+        Mutation operator'     -> resultValue <$> encodeMutation mutationRes (operatorSelection operator')
+        Subscription operator' -> resultValue <$> encodeSubscription subscriptionRes (operatorSelection operator')
+      where
+        gqlSchema = schema queryRes mutationRes subscriptionRes
+        queryRes = query rootResolver
+        mutationRes = mutation rootResolver
+        subscriptionRes = subscription rootResolver

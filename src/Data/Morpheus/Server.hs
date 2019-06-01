@@ -4,16 +4,15 @@ module Data.Morpheus.Server
   , GQLState
   ) where
 
-import           Control.Exception                   (finally)
-import           Control.Monad                       (forever)
-import           Data.Morpheus.Server.Apollo         (ApolloSubscription (..), apolloProtocol, parseApolloRequest)
-import           Data.Morpheus.Server.ClientRegister (GQLState, connectClient, disconnectClient, initGQLState,
-                                                      publishUpdates, updateClientSubscription)
-import           Data.Morpheus.Server.GQLClient      (GQLClient (..))
-import           Data.Morpheus.StreamInterpreter     (InputAction (..), OutputAction (..))
-import           Data.Text                           (Text)
-import           Network.WebSockets                  (Connection, ServerApp, acceptRequestWith, forkPingThread,
-                                                      receiveData, sendTextData)
+import           Control.Exception                      (finally)
+import           Control.Monad                          (forever)
+import           Data.Morpheus.Server.Apollo            (ApolloSubscription (..), apolloProtocol, parseApolloRequest)
+import           Data.Morpheus.Server.ClientRegister    (GQLState, connectClient, disconnectClient, initGQLState,
+                                                         publishUpdates, updateClientSubscription)
+import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..), InputAction (..), OutputAction (..))
+import           Data.Text                              (Text)
+import           Network.WebSockets                     (Connection, ServerApp, acceptRequestWith, forkPingThread,
+                                                         receiveData, sendTextData)
 
 type GQLAPI = InputAction Text -> IO (OutputAction Text)
 
