@@ -13,7 +13,7 @@ import           Data.Morpheus.Generics.GDecode             (GDecode (..))
 import           Data.Morpheus.Generics.ObjectRep           (ObjectRep (..))
 import           Data.Morpheus.Generics.UnionRep            (UnionRep (..))
 import           Data.Morpheus.Generics.UnionResolvers      (UnionResolvers (..))
-import           Data.Morpheus.Kind.GQLType                 (GQLType (..), asObjectType, enumTypeOf, inputObjectOf)
+import           Data.Morpheus.Types.GQLType                (GQLType (..), asObjectType, enumTypeOf, inputObjectOf)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..))
 import           Data.Morpheus.Types.Internal.Data          (DataFullType (..), DataInputField, DataOutputField,
                                                              DataTypeLib)

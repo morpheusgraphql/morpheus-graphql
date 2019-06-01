@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Data.Morpheus.Kind.GQLType
+module Data.Morpheus.Types.GQLType
   ( GQLType(..)
   , scalarTypeOf
   , asObjectType

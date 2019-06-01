@@ -8,7 +8,7 @@ import           Data.Aeson                                (encode)
 import           Data.ByteString                           (ByteString)
 import qualified Data.ByteString.Lazy.Char8                as LB (ByteString, fromStrict, toStrict)
 import           Data.Morpheus.Error.Utils                 (renderErrors)
-import           Data.Morpheus.Kind.GQLOperator            (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
+import           Data.Morpheus.Types.GQLOperator            (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
 import           Data.Morpheus.Parser.Parser               (parseLineBreaks, parseRequest)
 import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..))
 import           Data.Morpheus.Types.Internal.Data         (DataTypeLib)
@@ -48,7 +48,6 @@ interpreterRaw rootResolver request = do
 
 class Interpreter a where
   interpreter :: (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> a -> IO a
-
 instance Interpreter LB.ByteString where
   interpreter root request = encode <$> interpreterRaw root request
 

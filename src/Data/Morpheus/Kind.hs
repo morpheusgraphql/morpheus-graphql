@@ -13,8 +13,8 @@ module Data.Morpheus.Kind
   , UNION
   ) where
 
-import           Data.Morpheus.Kind.GQLArgs     (GQLArgs)
-import           Data.Morpheus.Kind.GQLOperator (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
-import           Data.Morpheus.Kind.GQLScalar   (GQLScalar (parseValue, serialize))
-import           Data.Morpheus.Kind.GQLType     (GQLType (description, typeID))
-import           Data.Morpheus.Kind.Internal    (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Kind.Internal     (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Types.GQLArgs     (GQLArgs)
+import           Data.Morpheus.Types.GQLOperator (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
+import           Data.Morpheus.Types.GQLScalar   (GQLScalar (parseValue, serialize))
+import           Data.Morpheus.Types.GQLType     (GQLType (description, typeID))

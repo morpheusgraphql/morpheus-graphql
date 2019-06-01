@@ -3,13 +3,13 @@
 {-# LANGUAGE ScopedTypeVariables     #-}
 {-# LANGUAGE TypeApplications        #-}
 
-module Data.Morpheus.Kind.GQLScalar
+module Data.Morpheus.Types.GQLScalar
   ( GQLScalar(..)
   ) where
 
 import           Data.Morpheus.Error.Internal            (internalTypeMismatch)
-import           Data.Morpheus.Kind.GQLType              (GQLType (..), scalarTypeOf)
 import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
+import           Data.Morpheus.Types.GQLType             (GQLType (..), scalarTypeOf)
 import           Data.Morpheus.Types.Internal.Base       (Key)
 import           Data.Morpheus.Types.Internal.Data       (DataField, DataTypeLib, DataValidator (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)

@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Morpheus.Kind.GQLArgs
+module Data.Morpheus.Types.GQLArgs
   ( GQLArgs(..)
   ) where
 

@@ -10,7 +10,7 @@
 {-# LANGUAGE TypeApplications         #-}
 {-# LANGUAGE TypeOperators            #-}
 
-module Data.Morpheus.Kind.GQLOperator
+module Data.Morpheus.Types.GQLOperator
   ( GQLQuery(..)
   , GQLMutation(..)
   , GQLSubscription(..)
