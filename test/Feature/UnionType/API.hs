@@ -10,8 +10,8 @@ module Feature.UnionType.API
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (GQLQuery, GQLType (..), KIND, OBJECT, UNION)
-import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..))
+import           Data.Morpheus.Kind         (KIND, OBJECT, UNION)
+import           Data.Morpheus.Types        ((::->), GQLQuery, GQLRoot (..), GQLType (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
