@@ -15,8 +15,8 @@ module Data.Morpheus.Types.GQLType
   , inputObjectOf
   ) where
 
-import           Data.Morpheus.Generics.ObjectRep                  (resolveTypes)
-import           Data.Morpheus.Generics.TypeID                     (TypeID, typeId)
+import           Data.Morpheus.Resolve.Generics.ObjectRep          (resolveTypes)
+import           Data.Morpheus.Resolve.Generics.TypeID             (TypeID, typeId)
 import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation            (DirectiveLocation)
 import           Data.Morpheus.Schema.EnumValue                    (EnumValue)

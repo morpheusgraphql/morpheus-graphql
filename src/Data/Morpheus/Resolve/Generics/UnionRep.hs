@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeApplications          #-}
 {-# LANGUAGE TypeOperators             #-}
 
-module Data.Morpheus.Generics.UnionRep
+module Data.Morpheus.Resolve.Generics.UnionRep
   ( UnionRep(..)
   ) where
 

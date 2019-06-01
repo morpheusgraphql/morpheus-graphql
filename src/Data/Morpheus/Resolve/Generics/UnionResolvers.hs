@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeOperators         #-}
 
-module Data.Morpheus.Generics.UnionResolvers
+module Data.Morpheus.Resolve.Generics.UnionResolvers
   ( UnionResolvers(..)
   , lookupSelectionByType
   ) where

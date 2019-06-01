@@ -1,4 +1,4 @@
-module Data.Morpheus.Kind.Utils
+module Data.Morpheus.Resolve.Utils
   ( maybeField
   , listField
   ) where

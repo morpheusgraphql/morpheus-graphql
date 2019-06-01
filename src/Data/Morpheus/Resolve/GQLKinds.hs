@@ -5,22 +5,22 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeFamilies        #-}
 
-module Data.Morpheus.Kind.GQLKinds where
+module Data.Morpheus.Resolve.GQLKinds where
 
-import           Data.Morpheus.Generics.DeriveResolvers     (DeriveResolvers)
-import           Data.Morpheus.Generics.EnumRep             (EnumRep (..))
-import           Data.Morpheus.Generics.GDecode             (GDecode (..))
-import           Data.Morpheus.Generics.ObjectRep           (ObjectRep (..))
-import           Data.Morpheus.Generics.UnionRep            (UnionRep (..))
-import           Data.Morpheus.Generics.UnionResolvers      (UnionResolvers (..))
-import           Data.Morpheus.Types.GQLType                (GQLType (..), asObjectType, enumTypeOf, inputObjectOf)
-import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..))
-import           Data.Morpheus.Types.Internal.Data          (DataFullType (..), DataInputField, DataOutputField,
-                                                             DataTypeLib)
-import           Data.Morpheus.Types.Internal.Validation    (ResolveIO, Validation)
-import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Proxy                                 (Proxy (..))
-import           Data.Text                                  (Text)
+import           Data.Morpheus.Resolve.Generics.DeriveResolvers (DeriveResolvers)
+import           Data.Morpheus.Resolve.Generics.EnumRep         (EnumRep (..))
+import           Data.Morpheus.Resolve.Generics.GDecode         (GDecode (..))
+import           Data.Morpheus.Resolve.Generics.ObjectRep       (ObjectRep (..))
+import           Data.Morpheus.Resolve.Generics.UnionRep        (UnionRep (..))
+import           Data.Morpheus.Resolve.Generics.UnionResolvers  (UnionResolvers (..))
+import           Data.Morpheus.Types.GQLType                    (GQLType (..), asObjectType, enumTypeOf, inputObjectOf)
+import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..))
+import           Data.Morpheus.Types.Internal.Data              (DataFullType (..), DataInputField, DataOutputField,
+                                                                 DataTypeLib)
+import           Data.Morpheus.Types.Internal.Validation        (ResolveIO, Validation)
+import           Data.Morpheus.Types.Internal.Value             (Value (..))
+import           Data.Proxy                                     (Proxy (..))
+import           Data.Text                                      (Text)
 import           GHC.Generics
 
 -- class Types class

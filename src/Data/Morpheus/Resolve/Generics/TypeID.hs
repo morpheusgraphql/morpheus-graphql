@@ -3,8 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 
---{-# LANGUAGE OverloadedStrings   #-}
-module Data.Morpheus.Generics.TypeID
+module Data.Morpheus.Resolve.Generics.TypeID
   ( typeId
   , TypeID
   ) where

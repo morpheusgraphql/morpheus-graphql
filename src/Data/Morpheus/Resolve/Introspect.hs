@@ -8,23 +8,24 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Morpheus.Kind.Introspect where
+module Data.Morpheus.Resolve.Introspect where
 
-import           Data.Morpheus.Generics.ObjectRep  (ObjectRep (..), resolveTypes)
-import           Data.Morpheus.Generics.UnionRep   (UnionRep (..))
-import           Data.Morpheus.Generics.Utils      (RecSel, SelOf)
-import           Data.Morpheus.Kind.GQLKinds       (EnumConstraint, Intro_, OField_, ObjectConstraint, UnionConstraint,
-                                                    introspectEnum, introspectObject, introspectUnion)
-import           Data.Morpheus.Kind.Internal       (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
-import           Data.Morpheus.Kind.Utils          (listField, maybeField)
-import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
-import qualified Data.Morpheus.Types.GQLArgs       as Args (GQLArgs (..))
-import qualified Data.Morpheus.Types.GQLScalar     as S (GQLScalar (..))
-import           Data.Morpheus.Types.GQLType       (GQLType (..))
-import           Data.Morpheus.Types.Internal.Data (DataField (..), DataOutputField)
-import           Data.Morpheus.Types.Resolver      (Resolver (..))
-import           Data.Proxy                        (Proxy (..))
-import           Data.Text                         (Text, pack)
+import           Data.Morpheus.Kind.Internal              (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
+import           Data.Morpheus.Resolve.Generics.ObjectRep (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Resolve.Generics.UnionRep  (UnionRep (..))
+import           Data.Morpheus.Resolve.Generics.Utils     (RecSel, SelOf)
+import           Data.Morpheus.Resolve.GQLKinds           (EnumConstraint, Intro_, OField_, ObjectConstraint,
+                                                           UnionConstraint, introspectEnum, introspectObject,
+                                                           introspectUnion)
+import           Data.Morpheus.Resolve.Utils              (listField, maybeField)
+import           Data.Morpheus.Schema.TypeKind            (TypeKind (..))
+import qualified Data.Morpheus.Types.GQLArgs              as Args (GQLArgs (..))
+import qualified Data.Morpheus.Types.GQLScalar            as S (GQLScalar (..))
+import           Data.Morpheus.Types.GQLType              (GQLType (..))
+import           Data.Morpheus.Types.Internal.Data        (DataField (..), DataOutputField)
+import           Data.Morpheus.Types.Resolver             (Resolver (..))
+import           Data.Proxy                               (Proxy (..))
+import           Data.Text                                (Text, pack)
 import           GHC.Generics
 
 _objectField ::

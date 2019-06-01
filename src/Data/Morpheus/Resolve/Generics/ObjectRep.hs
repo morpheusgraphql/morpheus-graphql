@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeApplications          #-}
 {-# LANGUAGE TypeOperators             #-}
 
-module Data.Morpheus.Generics.ObjectRep
+module Data.Morpheus.Resolve.Generics.ObjectRep
   ( ObjectRep(..)
   , resolveTypes
   ) where
