@@ -10,9 +10,9 @@ module Feature.Holistic.API
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (ENUM, GQLArgs, GQLSubscription, GQLMutation, GQLQuery, GQLScalar (..), GQLType (..),
-                                             INPUT_OBJECT, KIND, OBJECT, SCALAR)
-import           Data.Morpheus.Types        ((::->) (..), GQLRoot (..), ScalarValue (..))
+import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR)
+import           Data.Morpheus.Types        ((::->), GQLArgs, GQLMutation, GQLQuery, GQLRoot (..), GQLScalar (..),
+                                             GQLSubscription, GQLType (..), ScalarValue (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -99,7 +99,14 @@ resolveAddress = return Address {city = "", houseNumber = 1, street = "", owner 
 resolveUser :: a ::-> User
 resolveUser =
   return $
-  User {name = "testName", email = "", address = resolveAddress, office = resolveAddress, home = HH, friend = return Nothing}
+  User
+    { name = "testName"
+    , email = ""
+    , address = resolveAddress
+    , office = resolveAddress
+    , home = HH
+    , friend = return Nothing
+    }
 
 createUserMutation :: AddressArgs ::-> User
 createUserMutation = resolveUser
@@ -108,4 +115,10 @@ newUserSubscription :: AddressArgs ::-> User
 newUserSubscription = resolveUser
 
 api :: ByteString -> IO ByteString
-api = interpreter GQLRoot {query = Query {user = resolveUser}, mutation = Mutation {createUser = createUserMutation}, subscription = Subscription {newUser = newUserSubscription}}
+api =
+  interpreter
+    GQLRoot
+      { query = Query {user = resolveUser}
+      , mutation = Mutation {createUser = createUserMutation}
+      , subscription = Subscription {newUser = newUserSubscription}
+      }

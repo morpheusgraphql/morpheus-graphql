@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeOperators         #-}
 
-module Data.Morpheus.Generics.DeriveResolvers
+module Data.Morpheus.Resolve.Generics.DeriveResolvers
   ( DeriveResolvers(..)
   , resolversBy
   , resolveBySelection

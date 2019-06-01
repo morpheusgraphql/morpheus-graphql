@@ -10,26 +10,26 @@
 {-# LANGUAGE TypeApplications         #-}
 {-# LANGUAGE TypeOperators            #-}
 
-module Data.Morpheus.Kind.GQLOperator
+module Data.Morpheus.Types.GQLOperator
   ( GQLQuery(..)
   , GQLMutation(..)
   , GQLSubscription(..)
   ) where
 
-import           Data.Morpheus.Generics.DeriveResolvers     (DeriveResolvers (..), resolveBySelection,
-                                                             resolveBySelectionM)
-import           Data.Morpheus.Generics.ObjectRep           (ObjectRep (..), resolveTypes)
-import           Data.Morpheus.Kind.Encoder                 (_encode)
-import           Data.Morpheus.Kind.Introspect              (_introspect)
-import           Data.Morpheus.Schema.Schema                (Schema, initSchema)
-import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
-import           Data.Morpheus.Types.Internal.Data          (DataOutputField, DataType (..), DataTypeLib (..),
-                                                             initTypeLib)
-import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
-import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Morpheus.Types.Resolver               (WithEffect (..))
+import           Data.Morpheus.Resolve.Encode                   (_encode)
+import           Data.Morpheus.Resolve.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection,
+                                                                 resolveBySelectionM)
+import           Data.Morpheus.Resolve.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Resolve.Introspect               (_introspect)
+import           Data.Morpheus.Schema.Schema                    (Schema, initSchema)
+import           Data.Morpheus.Types.Internal.AST.Selection     (SelectionSet)
+import           Data.Morpheus.Types.Internal.Data              (DataOutputField, DataType (..), DataTypeLib (..),
+                                                                 initTypeLib)
+import           Data.Morpheus.Types.Internal.Validation        (ResolveIO)
+import           Data.Morpheus.Types.Internal.Value             (Value (..))
+import           Data.Morpheus.Types.Resolver                   (WithEffect (..))
 import           Data.Proxy
-import           Data.Text                                  (Text)
+import           Data.Text                                      (Text)
 import           GHC.Generics
 
 type QResult = Value

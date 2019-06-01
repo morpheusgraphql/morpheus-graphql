@@ -1,20 +1,45 @@
+{-# LANGUAGE TypeFamilies  #-}
+{-# LANGUAGE TypeOperators #-}
+
 module Data.Morpheus.Kind
-  ( GQLType(description, typeID)
-  , GQLQuery
-  , GQLArgs
-  , GQLSubscription
-  , GQLMutation
-  , GQLScalar(..)
-  , ENUM
-  , KIND
-  , INPUT_OBJECT
+  ( SCALAR
   , OBJECT
-  , SCALAR
+  , ENUM
+  , WRAPPER
   , UNION
+  , INPUT_OBJECT
+  , KIND
   ) where
 
-import           Data.Morpheus.Kind.GQLArgs     (GQLArgs)
-import           Data.Morpheus.Kind.GQLOperator (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
-import           Data.Morpheus.Kind.GQLScalar   (GQLScalar (parseValue, serialize))
-import           Data.Morpheus.Kind.GQLType     (GQLType (description, typeID))
-import           Data.Morpheus.Kind.Internal    (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Types.Resolver (Resolver)
+import           Data.Text                    (Text)
+
+type family KIND a :: *
+
+-- default Data Kinds
+data SCALAR
+
+data OBJECT
+
+data ENUM
+
+data INPUT_OBJECT
+
+data WRAPPER
+
+data UNION
+
+-- default Type Instances
+type instance KIND Text = SCALAR
+
+type instance KIND Int = SCALAR
+
+type instance KIND Float = SCALAR
+
+type instance KIND Bool = SCALAR
+
+type instance KIND (Maybe a) = WRAPPER
+
+type instance KIND [a] = WRAPPER
+
+type instance KIND (Resolver c p a) = WRAPPER

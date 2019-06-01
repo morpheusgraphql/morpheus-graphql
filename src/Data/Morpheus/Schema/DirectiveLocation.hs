@@ -1,10 +1,11 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies  #-}
+
 module Data.Morpheus.Schema.DirectiveLocation
   ( DirectiveLocation(..)
   ) where
 
-import           Data.Morpheus.Kind.Internal (ENUM, KIND)
+import           Data.Morpheus.Kind (ENUM, KIND)
 import           GHC.Generics
 
 type instance KIND DirectiveLocation = ENUM

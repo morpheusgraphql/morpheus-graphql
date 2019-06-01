@@ -7,8 +7,9 @@ module Mythology.Place.Places
   , City(..)
   ) where
 
-import           Data.Morpheus.Kind (ENUM, GQLType, KIND)
-import           GHC.Generics       (Generic)
+import           Data.Morpheus.Kind  (ENUM, KIND)
+import           Data.Morpheus.Types (GQLType)
+import           GHC.Generics        (Generic)
 
 type instance KIND Realm = ENUM
 

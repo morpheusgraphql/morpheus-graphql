@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Data.Morpheus.Generics.EnumRep
+module Data.Morpheus.Resolve.Generics.EnumRep
   ( EnumRep(..)
   ) where
 

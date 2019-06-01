@@ -7,16 +7,16 @@
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Morpheus.Kind.GQLArgs
+module Data.Morpheus.Types.GQLArgs
   ( GQLArgs(..)
   ) where
 
 import           Data.Morpheus.Error.Internal               (internalArgumentError)
-import           Data.Morpheus.Generics.GDecode             (GDecode (..))
-import           Data.Morpheus.Generics.ObjectRep           (ObjectRep (..))
-import           Data.Morpheus.Generics.Utils               (RecSel, SelOf)
-import           Data.Morpheus.Kind.InputRouter             (InputTypeRouter, _decode, _field, _introspect)
-import           Data.Morpheus.Kind.Internal                (KIND)
+import           Data.Morpheus.Kind                         (KIND)
+import           Data.Morpheus.Resolve.Decode               (InputTypeRouter, _decode, _field, _introspect)
+import           Data.Morpheus.Resolve.Generics.GDecode     (GDecode (..))
+import           Data.Morpheus.Resolve.Generics.ObjectRep   (ObjectRep (..))
+import           Data.Morpheus.Resolve.Generics.Utils       (RecSel, SelOf)
 import           Data.Morpheus.Schema.Type                  (DeprecationArgs)
 import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..), Arguments)
 import           Data.Morpheus.Types.Internal.Data          (DataInputField, DataTypeLib)

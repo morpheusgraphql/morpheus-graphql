@@ -7,20 +7,20 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Morpheus.Kind.InputRouter where
+module Data.Morpheus.Resolve.Decode where
 
-import           Data.Morpheus.Error.Internal       (internalArgumentError, internalTypeMismatch)
-import           Data.Morpheus.Generics.EnumRep     (EnumRep (..))
-import           Data.Morpheus.Generics.GDecode     (GDecode (..))
-import           Data.Morpheus.Kind.GQLKinds        (Decode_, EnumConstraint, IField_, IObjectConstraint, Intro_,
-                                                     introspectEnum, introspectInputObject)
-import qualified Data.Morpheus.Kind.GQLScalar       as S (GQLScalar (..))
-import           Data.Morpheus.Kind.GQLType         (GQLType, field_)
-import           Data.Morpheus.Kind.Internal        (ENUM, INPUT_OBJECT, KIND, SCALAR, WRAPPER)
-import           Data.Morpheus.Kind.Utils           (listField, maybeField)
-import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
-import           Data.Morpheus.Types.Internal.Value (Value (..))
-import           Data.Proxy                         (Proxy (..))
+import           Data.Morpheus.Error.Internal           (internalArgumentError, internalTypeMismatch)
+import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIND, SCALAR, WRAPPER)
+import           Data.Morpheus.Resolve.Generics.EnumRep (EnumRep (..))
+import           Data.Morpheus.Resolve.Generics.GDecode (GDecode (..))
+import           Data.Morpheus.Resolve.Internal         (Decode_, EnumConstraint, IField_, InputObjectConstraint,
+                                                         Intro_, introspectEnum, introspectInputObject, listField,
+                                                         maybeField)
+import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
+import qualified Data.Morpheus.Types.GQLScalar          as S (GQLScalar (..))
+import           Data.Morpheus.Types.GQLType            (GQLType, field_)
+import           Data.Morpheus.Types.Internal.Value     (Value (..))
+import           Data.Proxy                             (Proxy (..))
 import           GHC.Generics
 
 _field ::
@@ -61,7 +61,7 @@ instance EnumConstraint a => InputTypeRouter a ENUM where
   __field _ _ = field_ ENUM (Proxy @a) ()
   __introspect _ _ = introspectEnum (Proxy @a)
 
-instance IObjectConstraint a => InputTypeRouter a INPUT_OBJECT where
+instance InputObjectConstraint a => InputTypeRouter a INPUT_OBJECT where
   __decode _ (Object x) = to <$> gDecode "" (Object x)
   __decode _ isType     = internalTypeMismatch "InputObject" isType
   __field _ _ = field_ INPUT_OBJECT (Proxy @a) ()

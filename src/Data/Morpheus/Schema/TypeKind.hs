@@ -5,7 +5,7 @@ module Data.Morpheus.Schema.TypeKind
   ( TypeKind(..)
   ) where
 
-import           Data.Morpheus.Kind.Internal (ENUM, KIND)
+import           Data.Morpheus.Kind (ENUM, KIND)
 import           GHC.Generics
 
 type instance KIND TypeKind = ENUM

@@ -8,28 +8,28 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Morpheus.Kind.Encoder where
+module Data.Morpheus.Resolve.Encode where
 
-import           Control.Monad.Trans                        (lift)
+import           Control.Monad.Trans                            (lift)
 import           Control.Monad.Trans.Except
-import           Data.Morpheus.Error.Internal               (internalErrorIO)
-import           Data.Morpheus.Error.Selection              (fieldNotResolved, subfieldsNotSelected)
-import           Data.Morpheus.Generics.DeriveResolvers     (DeriveResolvers (..), resolveBySelection,
-                                                             resolveBySelectionM, resolversBy)
-import           Data.Morpheus.Generics.EnumRep             (EnumRep (..))
-import           Data.Morpheus.Generics.UnionResolvers      (UnionResolvers (..), lookupSelectionByType)
-import qualified Data.Morpheus.Kind.GQLArgs                 as Args (GQLArgs (..))
-import           Data.Morpheus.Kind.GQLKinds                (EncodeObjectConstraint, EncodeUnionConstraint, Encode_,
-                                                             EnumConstraint)
-import qualified Data.Morpheus.Kind.GQLScalar               as S (GQLScalar (..))
-import           Data.Morpheus.Kind.GQLType                 (GQLType (..))
-import           Data.Morpheus.Kind.Internal                (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
-import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
-import           Data.Morpheus.Types.Internal.Validation    (ResolveIO, failResolveIO)
-import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
-import           Data.Morpheus.Types.Resolver               ((::->), (::->>), Resolver (..), WithEffect (..))
-import           Data.Proxy                                 (Proxy (..))
-import           Data.Text                                  (Text, pack)
+import           Data.Morpheus.Error.Internal                   (internalErrorIO)
+import           Data.Morpheus.Error.Selection                  (fieldNotResolved, subfieldsNotSelected)
+import           Data.Morpheus.Kind                             (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
+import           Data.Morpheus.Resolve.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection,
+                                                                 resolveBySelectionM, resolversBy)
+import           Data.Morpheus.Resolve.Generics.EnumRep         (EnumRep (..))
+import           Data.Morpheus.Resolve.Generics.UnionResolvers  (UnionResolvers (..), lookupSelectionByType)
+import           Data.Morpheus.Resolve.Internal                 (EncodeObjectConstraint, EncodeUnionConstraint, Encode_,
+                                                                 EnumConstraint)
+import qualified Data.Morpheus.Types.GQLArgs                    as Args (GQLArgs (..))
+import qualified Data.Morpheus.Types.GQLScalar                  as S (GQLScalar (..))
+import           Data.Morpheus.Types.GQLType                    (GQLType (..))
+import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..))
+import           Data.Morpheus.Types.Internal.Validation        (ResolveIO, failResolveIO)
+import           Data.Morpheus.Types.Internal.Value             (ScalarValue (..), Value (..))
+import           Data.Morpheus.Types.Resolver                   ((::->), (::->>), Resolver (..), WithEffect (..))
+import           Data.Proxy                                     (Proxy (..))
+import           Data.Text                                      (Text, pack)
 import           GHC.Generics
 
 type MResult = WithEffect Value

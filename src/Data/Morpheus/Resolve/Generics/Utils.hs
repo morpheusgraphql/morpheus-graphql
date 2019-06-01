@@ -1,4 +1,4 @@
-module Data.Morpheus.Generics.Utils
+module Data.Morpheus.Resolve.Generics.Utils
   ( SelOf
   , RecSel
   ) where

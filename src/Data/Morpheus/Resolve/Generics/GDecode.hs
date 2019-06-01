@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeOperators         #-}
 
-module Data.Morpheus.Generics.GDecode
+module Data.Morpheus.Resolve.Generics.GDecode
   ( GDecode(..)
   ) where
 
