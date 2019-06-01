@@ -1,26 +1,24 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE TypeFamilies          #-}
 
 module Data.Morpheus.Interpreter
   ( Interpreter(..)
   ) where
 
-import           Data.Aeson                          (encode)
-import           Data.ByteString                     (ByteString)
-import qualified Data.ByteString.Lazy.Char8          as LB (ByteString, fromStrict, toStrict)
-import           Data.Morpheus.Resolve.Resolve       (InputAction, OutputAction, interpreterRaw, packStream,
-                                                      streamInterpreter)
-import           Data.Morpheus.Server.ClientRegister (GQLState)
-import           Data.Morpheus.Types.GQLOperator     (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
+import           Data.Aeson                             (encode)
+import           Data.ByteString                        (ByteString)
+import qualified Data.ByteString.Lazy.Char8             as LB (ByteString, fromStrict, toStrict)
+import           Data.Morpheus.Resolve.Resolve          (packStream, resolve, resolveStream)
+import           Data.Morpheus.Server.ClientRegister    (GQLState)
+import           Data.Morpheus.Types.GQLOperator        (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
+import           Data.Morpheus.Types.Internal.WebSocket (InputAction, OutputAction)
 
 --import           Data.Morpheus.Types.Internal.Value  (Value)
-import           Data.Morpheus.Types.Types           (GQLRoot (..))
-import           Data.Text                           (Text)
-import qualified Data.Text.Lazy                      as LT (Text, fromStrict, toStrict)
-import           Data.Text.Lazy.Encoding             (decodeUtf8, encodeUtf8)
+import           Data.Morpheus.Types.Types              (GQLRoot (..))
+import           Data.Text                              (Text)
+import qualified Data.Text.Lazy                         as LT (Text, fromStrict, toStrict)
+import           Data.Text.Lazy.Encoding                (decodeUtf8, encodeUtf8)
 
 type WSSub a = InputAction a -> IO (OutputAction a)
 
@@ -32,15 +30,15 @@ class Interpreter k where
   interpreter :: (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> k
 
 instance Interpreter (WSSub Text) where
-  interpreter = streamInterpreter
+  interpreter = resolveStream
 
 --instance Interpreter (WSSub Value) where
 --  interpreter root state = packStream state (streamInterpreter root)
 instance Interpreter (WSPub LB.ByteString) where
-  interpreter root state = packStream state (streamInterpreter root)
+  interpreter root state = packStream state (resolveStream root)
 
 instance Interpreter (PureGQL LB.ByteString) where
-  interpreter root request = encode <$> interpreterRaw root request
+  interpreter root request = encode <$> resolve root request
 
 instance Interpreter (PureGQL LT.Text) where
   interpreter root request = decodeUtf8 <$> interpreter root (encodeUtf8 request)
