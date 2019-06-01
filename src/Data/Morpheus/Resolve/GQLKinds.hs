@@ -13,7 +13,7 @@ import           Data.Morpheus.Resolve.Generics.GDecode         (GDecode (..))
 import           Data.Morpheus.Resolve.Generics.ObjectRep       (ObjectRep (..))
 import           Data.Morpheus.Resolve.Generics.UnionRep        (UnionRep (..))
 import           Data.Morpheus.Resolve.Generics.UnionResolvers  (UnionResolvers (..))
-import           Data.Morpheus.Types.GQLType                    (GQLType (..), asObjectType, enumTypeOf, inputObjectOf)
+import           Data.Morpheus.Types.GQLType                    (GQLType (..), enumTypeOf, inputObjectOf)
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..))
 import           Data.Morpheus.Types.Internal.Data              (DataFullType (..), DataInputField, DataOutputField,
                                                                  DataTypeLib)
@@ -42,7 +42,9 @@ introspectEnum ::
 introspectEnum = updateLib (enumTypeOf $ getTags (Proxy @(Rep a))) []
 
 {-
- INPUT Object
+
+    INPUT Object
+
 -}
 type IOObjectRep a = ObjectRep (Rep a) (Text, DataInputField)
 
@@ -57,23 +59,16 @@ introspectInputObject = updateLib (inputObjectOf fields') stack'
 
 {-
 
-OBJECT
+    OBJECT
 
 -}
 type EncodeObjectConstraint a b = (DeriveResolvers (Rep a) b, ObjectConstraint a)
 
 type ObjectConstraint a = (Generic a, ObjectRep (Rep a) (Text, DataOutputField), GQLType a)
 
-introspectObject ::
-     forall a. (ObjectRep (Rep a) (Text, DataOutputField), GQLType a)
-  => Intro_ a
-introspectObject = updateLib (asObjectType fields') stack'
-  where
-    (fields', stack') = unzip $ getFields (Proxy @(Rep a))
-
 {-
 
-UNION
+    UNION
 
 -}
 type EncodeUnionConstraint a res = (UnionResolvers (Rep a) res, UnionConstraint a)
