@@ -1,8 +1,7 @@
 module Data.Morpheus
-  ( interpreter
-  , streamInterpreter
-  , packStream
+  ( Interpreter(..)
+  , WSInterpreter(..)
   ) where
 
 import           Data.Morpheus.Interpreter       (Interpreter (..))
-import           Data.Morpheus.StreamInterpreter (packStream, streamInterpreter)
+import           Data.Morpheus.StreamInterpreter (WSInterpreter (..))

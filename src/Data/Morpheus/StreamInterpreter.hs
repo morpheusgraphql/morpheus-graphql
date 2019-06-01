@@ -1,5 +1,7 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
 
 module Data.Morpheus.StreamInterpreter where
 
@@ -47,6 +49,15 @@ bsToText = LT.toStrict . decodeUtf8
 
 encodeToText :: GQLResponse -> Text
 encodeToText = bsToText . encode
+
+class WSInterpreter a b where
+  wsInterpreter :: (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLState -> GQLRoot q m s -> a -> IO b
+
+instance WSInterpreter (InputAction Text) (OutputAction Text) where
+  wsInterpreter _ = streamInterpreter
+
+instance WSInterpreter LB.ByteString LB.ByteString where
+  wsInterpreter state root = packStream state (streamInterpreter root)
 
 resolveStream ::
      (GQLQuery a, GQLMutation b, GQLSubscription c)
