@@ -12,7 +12,7 @@ module Data.Morpheus.Types.GQLArgs
   ) where
 
 import           Data.Morpheus.Error.Internal               (internalArgumentError)
-import           Data.Morpheus.Kind.Internal                (KIND)
+import           Data.Morpheus.Kind                         (KIND)
 import           Data.Morpheus.Resolve.Decode               (InputTypeRouter, _decode, _field, _introspect)
 import           Data.Morpheus.Resolve.Generics.GDecode     (GDecode (..))
 import           Data.Morpheus.Resolve.Generics.ObjectRep   (ObjectRep (..))

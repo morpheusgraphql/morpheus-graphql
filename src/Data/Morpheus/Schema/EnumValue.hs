@@ -7,8 +7,8 @@ module Data.Morpheus.Schema.EnumValue
   , isEnumOf
   ) where
 
-import           Data.Morpheus.Kind.Internal (KIND, OBJECT)
-import           Data.Text                   (Text)
+import           Data.Morpheus.Kind (KIND, OBJECT)
+import           Data.Text          (Text)
 import           GHC.Generics
 
 type instance KIND EnumValue = OBJECT

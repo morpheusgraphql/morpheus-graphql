@@ -7,7 +7,7 @@ module Data.Morpheus.Schema.Type
   , DeprecationArgs(..)
   ) where
 
-import           Data.Morpheus.Kind.Internal     (KIND, OBJECT)
+import           Data.Morpheus.Kind              (KIND, OBJECT)
 import           Data.Morpheus.Schema.EnumValue  (EnumValue)
 import qualified Data.Morpheus.Schema.Field      as F (Field (..))
 import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..))

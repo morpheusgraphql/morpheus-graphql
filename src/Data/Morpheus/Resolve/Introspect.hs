@@ -10,7 +10,7 @@
 
 module Data.Morpheus.Resolve.Introspect where
 
-import           Data.Morpheus.Kind.Internal              (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
+import           Data.Morpheus.Kind                       (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
 import           Data.Morpheus.Resolve.Generics.ObjectRep (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Resolve.Generics.UnionRep  (UnionRep (..))
 import           Data.Morpheus.Resolve.Generics.Utils     (RecSel, SelOf)

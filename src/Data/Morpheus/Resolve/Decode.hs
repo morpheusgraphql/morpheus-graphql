@@ -9,18 +9,18 @@
 
 module Data.Morpheus.Resolve.Decode where
 
-import           Data.Morpheus.Error.Internal       (internalArgumentError, internalTypeMismatch)
-import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
-import           Data.Morpheus.Resolve.Generics.GDecode     (GDecode (..))
-import           Data.Morpheus.Kind.Internal        (ENUM, INPUT_OBJECT, KIND, SCALAR, WRAPPER)
-import           Data.Morpheus.Resolve.GQLKinds     (Decode_, EnumConstraint, IField_, IObjectConstraint, Intro_,
-                                                     introspectEnum, introspectInputObject)
-import           Data.Morpheus.Resolve.Utils        (listField, maybeField)
-import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
-import qualified Data.Morpheus.Types.GQLScalar      as S (GQLScalar (..))
-import           Data.Morpheus.Types.GQLType        (GQLType, field_)
-import           Data.Morpheus.Types.Internal.Value (Value (..))
-import           Data.Proxy                         (Proxy (..))
+import           Data.Morpheus.Error.Internal           (internalArgumentError, internalTypeMismatch)
+import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIND, SCALAR, WRAPPER)
+import           Data.Morpheus.Resolve.Generics.EnumRep (EnumRep (..))
+import           Data.Morpheus.Resolve.Generics.GDecode (GDecode (..))
+import           Data.Morpheus.Resolve.GQLKinds         (Decode_, EnumConstraint, IField_, IObjectConstraint, Intro_,
+                                                         introspectEnum, introspectInputObject)
+import           Data.Morpheus.Resolve.Utils            (listField, maybeField)
+import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
+import qualified Data.Morpheus.Types.GQLScalar          as S (GQLScalar (..))
+import           Data.Morpheus.Types.GQLType            (GQLType, field_)
+import           Data.Morpheus.Types.Internal.Value     (Value (..))
+import           Data.Proxy                             (Proxy (..))
 import           GHC.Generics
 
 _field ::

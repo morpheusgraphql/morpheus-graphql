@@ -3,7 +3,7 @@
 
 module Data.Morpheus.Schema.Field where
 
-import           Data.Morpheus.Kind.Internal     (KIND, OBJECT)
+import           Data.Morpheus.Kind              (KIND, OBJECT)
 import           Data.Morpheus.Schema.InputValue (InputValue)
 import           Data.Text                       (Text)
 import           GHC.Generics

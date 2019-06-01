@@ -14,7 +14,7 @@ import           Control.Monad.Trans                            (lift)
 import           Control.Monad.Trans.Except
 import           Data.Morpheus.Error.Internal                   (internalErrorIO)
 import           Data.Morpheus.Error.Selection                  (fieldNotResolved, subfieldsNotSelected)
-import           Data.Morpheus.Kind.Internal                    (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
+import           Data.Morpheus.Kind                             (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
 import           Data.Morpheus.Resolve.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection,
                                                                  resolveBySelectionM, resolversBy)
 import           Data.Morpheus.Resolve.Generics.EnumRep         (EnumRep (..))

@@ -4,7 +4,7 @@
 
 module Data.Morpheus.Schema.Schema where
 
-import           Data.Morpheus.Kind.Internal                       (KIND, OBJECT)
+import           Data.Morpheus.Kind                                (KIND, OBJECT)
 import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.Internal.RenderIntrospection (Type, createObjectType, typeFromInputObject,
                                                                     typeFromLeaf, typeFromObject, typeFromUnion)

@@ -7,7 +7,7 @@ module Data.Morpheus.Types.ID
   ( ID(..)
   ) where
 
-import           Data.Morpheus.Kind.Internal        (KIND, SCALAR)
+import           Data.Morpheus.Kind                 (KIND, SCALAR)
 import           Data.Morpheus.Types.GQLScalar      (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType        (GQLType)
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
