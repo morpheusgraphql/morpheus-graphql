@@ -15,7 +15,7 @@ import           Data.Morpheus.Error.Internal               (internalArgumentErr
 import           Data.Morpheus.Generics.GDecode             (GDecode (..))
 import           Data.Morpheus.Generics.ObjectRep           (ObjectRep (..))
 import           Data.Morpheus.Generics.Utils               (RecSel, SelOf)
-import           Data.Morpheus.Kind.InputRouter             (InputTypeRouter, _decode, _field, _introspect)
+import           Data.Morpheus.Kind.Decode                  (InputTypeRouter, _decode, _field, _introspect)
 import           Data.Morpheus.Kind.Internal                (KIND)
 import           Data.Morpheus.Schema.Type                  (DeprecationArgs)
 import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..), Arguments)

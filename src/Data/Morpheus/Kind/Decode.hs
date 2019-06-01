@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Morpheus.Kind.InputRouter where
+module Data.Morpheus.Kind.Decode where
 
 import           Data.Morpheus.Error.Internal       (internalArgumentError, internalTypeMismatch)
 import           Data.Morpheus.Generics.EnumRep     (EnumRep (..))
