@@ -13,7 +13,7 @@ description: Build GraphQL APIs with your favourite functional language!
 dependencies:
   - base                  >= 4.7       && <  5
   - attoparsec            >= 0.13.2.2  && <  0.14
-  - aeson                 >= 1.0       && <= 1.4.2.0
+  - aeson                 >= 1.0       && <= 1.5
   - bytestring            >= 0.10.4    && <  0.11
   - text                  >= 1.2.3.0   && <  1.3
   - containers            >= 0.4.2.1   && <  0.7
