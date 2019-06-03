@@ -34,7 +34,7 @@ queryHandler interpreter' GQLClient {clientConnection = connection', clientID = 
       msg <- receiveData connection'
       case parseApolloRequest msg of
         Left x -> print x
-        Right ApolloSubscription {apolloQuery = Nothing} -> print msg
+        Right ApolloSubscription {apolloQuery = Nothing} -> return ()
         Right _ -> interpreter' (SocketInput id' msg) >>= handleGQLResponse connection' state
 
 gqlSocketApp :: GQLAPI -> GQLState -> ServerApp
