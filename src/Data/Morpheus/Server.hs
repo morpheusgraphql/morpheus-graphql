@@ -37,6 +37,7 @@ queryHandler interpreter' GQLClient {clientConnection = connection', clientID = 
       case parseApolloRequest msg of
         Left x -> print x
         Right ApolloSubscription {apolloQuery = Nothing} -> return ()
+        Right ApolloSubscription {apolloType = "subscription_end", apolloId = Just sid'} -> return () -- TODO: clear session ID
         Right ApolloSubscription {apolloType = "subscription_start", apolloId = Just sid'} ->
           interpreter' (SocketInput id' msg) >>= handleGQLResponse connection' state sid'
         Right _ -> return ()

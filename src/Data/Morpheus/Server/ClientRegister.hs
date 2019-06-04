@@ -39,7 +39,7 @@ connectClient connection' varState' = do
         , GQLClient
             { clientID = id'
             , clientConnection = connection'
-            , clientSessionId = 0
+            , clientSessionId = Nothing
             , clientChannels = []
             , clientQuerySelection = []
             })
@@ -66,9 +66,10 @@ publishUpdates channels resolver' state = do
   state' <- clientsByChannel
   forM_ state' sendMessage
   where
+    sendMessage (_, GQLClient {clientSessionId = Nothing}) = return ()
     sendMessage (_, GQLClient { clientConnection = connection'
                               , clientQuerySelection = selection'
-                              , clientSessionId = sid'
+                              , clientSessionId = Just sid'
                               }) = resolver' selection' >>= sendTextData connection' . toApolloResponse sid'
     clientsByChannel :: IO ClientRegister
     clientsByChannel = filterByChannels <$> readMVar state
@@ -80,4 +81,4 @@ updateClientSubscription :: ClientID -> SelectionSet -> [Text] -> Int -> GQLStat
 updateClientSubscription id' selection' channel' sessionId' = updateClientByID id' setChannel
   where
     setChannel client' =
-      client' {clientChannels = channel', clientQuerySelection = selection', clientSessionId = sessionId'}
+      client' {clientChannels = channel', clientQuerySelection = selection', clientSessionId = Just sessionId'}
