@@ -33,6 +33,7 @@
        every call of mutation will trigger subscription resolver
    - `GQLState`: shared  state between `http` and `websocket` server
    - `gqlSocketApp` :converts  `interpreter` to `websocket` application
+   - `graphql-subscriptions`: `Apollo GraphQL` subProtocol
 
 ### Changed
 -  `GQLRoot`, `GQLType(..)` , `GQLScalar(..)` , `GQLMutation` , `GQLQuery`  , `GQLArgs`
