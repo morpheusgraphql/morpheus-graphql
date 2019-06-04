@@ -36,7 +36,13 @@ connectClient connection' varState' = do
       id' <- nextRandom
       return
         ( id'
-        , GQLClient {clientID = id', clientConnection = connection', clientChannels = [], clientQuerySelection = []})
+        , GQLClient
+            { clientID = id'
+            , clientConnection = connection'
+            , clientSessionId = 0
+            , clientChannels = []
+            , clientQuerySelection = []
+            })
     addClient client' state' = return (client' : state')
 
 disconnectClient :: GQLClient -> GQLState -> IO ClientRegister
@@ -60,15 +66,18 @@ publishUpdates channels resolver' state = do
   state' <- clientsByChannel
   forM_ state' sendMessage
   where
-    sendMessage (_, GQLClient {clientConnection = connection', clientQuerySelection = selection'}) =
-      resolver' selection' >>= sendTextData connection' . toApolloResponse
+    sendMessage (_, GQLClient { clientConnection = connection'
+                              , clientQuerySelection = selection'
+                              , clientSessionId = sid'
+                              }) = resolver' selection' >>= sendTextData connection' . toApolloResponse sid'
     clientsByChannel :: IO ClientRegister
     clientsByChannel = filterByChannels <$> readMVar state
       where
         filterByChannels :: ClientRegister -> ClientRegister
         filterByChannels = filter (([] /=) . intersect channels . clientChannels . snd)
 
-updateClientSubscription :: ClientID -> SelectionSet -> [Text] -> GQLState -> IO ()
-updateClientSubscription id' selection' channel' = updateClientByID id' setChannel
+updateClientSubscription :: ClientID -> SelectionSet -> [Text] -> Int -> GQLState -> IO ()
+updateClientSubscription id' selection' channel' sessionId' = updateClientByID id' setChannel
   where
-    setChannel client' = client' {clientChannels = channel', clientQuerySelection = selection'}
+    setChannel client' =
+      client' {clientChannels = channel', clientQuerySelection = selection', clientSessionId = sessionId'}

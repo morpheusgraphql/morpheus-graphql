@@ -36,5 +36,6 @@ data GQLClient = GQLClient
   { clientID             :: ClientID
   , clientConnection     :: Connection
   , clientChannels       :: [Channel]
+  , clientSessionId      :: Int
   , clientQuerySelection :: SelectionSet
   } deriving (Show)

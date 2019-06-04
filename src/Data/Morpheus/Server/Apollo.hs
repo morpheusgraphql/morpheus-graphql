@@ -38,8 +38,8 @@ apolloProtocol :: AcceptRequest
 apolloProtocol = AcceptRequest (Just "graphql-subscriptions") []
 
 -- TODO:  Value -> Text
-toApolloResponse :: Text -> Text
-toApolloResponse val' = bsToText $ encode $ ApolloSubscription (Just 0) "subscription_data" toValue Nothing
+toApolloResponse :: Int -> Text -> Text
+toApolloResponse sid' val' = bsToText $ encode $ ApolloSubscription (Just sid') "subscription_data" toValue Nothing
   where
     toValue = (decode $ toLBS val') :: Maybe Value
 
