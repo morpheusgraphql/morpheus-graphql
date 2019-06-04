@@ -4,6 +4,7 @@ module Data.Morpheus.Types.Internal.WebSocket
   , Channel
   , InputAction(..)
   , OutputAction(..)
+  , ClientSession(..)
   ) where
 
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
@@ -32,9 +33,14 @@ type ClientID = UUID
 
 type Channel = Text
 
+data ClientSession = ClientSession
+  { sessionId             :: Int
+  , sessionChannels       :: [Channel]
+  , sessionQuerySelection :: SelectionSet
+  } deriving (Show)
+
 data GQLClient = GQLClient
-  { clientID             :: ClientID
-  , clientConnection     :: Connection
-  , clientChannels       :: [Channel]
-  , clientQuerySelection :: SelectionSet
+  { clientID         :: ClientID
+  , clientConnection :: Connection
+  , clientSessions   :: [ClientSession]
   } deriving (Show)

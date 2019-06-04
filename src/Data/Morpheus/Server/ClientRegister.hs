@@ -6,7 +6,8 @@ module Data.Morpheus.Server.ClientRegister
   , disconnectClient
   , updateClientByID
   , publishUpdates
-  , updateClientSubscription
+  , addClientSubscription
+  , removeClientSubscription
   ) where
 
 import           Control.Concurrent                         (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
@@ -14,7 +15,7 @@ import           Control.Monad                              (forM_)
 import           Data.List                                  (intersect)
 import           Data.Morpheus.Server.Apollo                (toApolloResponse)
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
-import           Data.Morpheus.Types.Internal.WebSocket     (Channel, ClientID, GQLClient (..))
+import           Data.Morpheus.Types.Internal.WebSocket     (Channel, ClientID, ClientSession (..), GQLClient (..))
 import           Data.Text                                  (Text)
 import           Data.UUID.V4                               (nextRandom)
 import           Network.WebSockets                         (Connection, sendTextData)
@@ -34,9 +35,7 @@ connectClient connection' varState' = do
   where
     newClient = do
       id' <- nextRandom
-      return
-        ( id'
-        , GQLClient {clientID = id', clientConnection = connection', clientChannels = [], clientQuerySelection = []})
+      return (id', GQLClient {clientID = id', clientConnection = connection', clientSessions = []})
     addClient client' state' = return (client' : state')
 
 disconnectClient :: GQLClient -> GQLState -> IO ClientRegister
@@ -57,18 +56,29 @@ updateClientByID id' updateFunc state = modifyMVar_ state (return . map updateCl
 
 publishUpdates :: [Channel] -> (SelectionSet -> IO Text) -> GQLState -> IO ()
 publishUpdates channels resolver' state = do
-  state' <- clientsByChannel
+  state' <- readMVar state
   forM_ state' sendMessage
   where
-    sendMessage (_, GQLClient {clientConnection = connection', clientQuerySelection = selection'}) =
-      resolver' selection' >>= sendTextData connection' . toApolloResponse
-    clientsByChannel :: IO ClientRegister
-    clientsByChannel = filterByChannels <$> readMVar state
+    sendMessage (_, GQLClient {clientSessions = []}) = return ()
+    sendMessage (_, GQLClient {clientSessions = sessions', clientConnection = connection'}) =
+      mapM_ __send (filterByChannels sessions')
       where
-        filterByChannels :: ClientRegister -> ClientRegister
-        filterByChannels = filter (([] /=) . intersect channels . clientChannels . snd)
+        __send ClientSession {sessionQuerySelection = selection', sessionId = sid'} =
+          resolver' selection' >>= sendTextData connection' . toApolloResponse sid'
+        filterByChannels :: [ClientSession] -> [ClientSession]
+        filterByChannels = filter (([] /=) . intersect channels . sessionChannels)
 
-updateClientSubscription :: ClientID -> SelectionSet -> [Text] -> GQLState -> IO ()
-updateClientSubscription id' selection' channel' = updateClientByID id' setChannel
+removeClientSubscription :: ClientID -> Int -> GQLState -> IO ()
+removeClientSubscription id' sid' = updateClientByID id' stopSubscription
   where
-    setChannel client' = client' {clientChannels = channel', clientQuerySelection = selection'}
+    stopSubscription client' = client' {clientSessions = filter ((sid' /=) . sessionId) (clientSessions client')}
+
+addClientSubscription :: ClientID -> SelectionSet -> [Text] -> Int -> GQLState -> IO ()
+addClientSubscription id' selection' channel' sid' = updateClientByID id' startSubscription
+  where
+    startSubscription client' =
+      client'
+        { clientSessions =
+            ClientSession {sessionId = sid', sessionChannels = channel', sessionQuerySelection = selection'} :
+            clientSessions client'
+        }
