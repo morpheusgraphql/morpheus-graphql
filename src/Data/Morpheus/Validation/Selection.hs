@@ -96,14 +96,14 @@ validateSelectionSet lib' fragments' variables' = __validate
         -}
         validateSelection :: (Text, RawSelection) -> Validation SelectionSet
         validateSelection (key', RawAlias {rawAliasSelection = rawSelection', rawAliasPosition = position'}) = do
-          [(selKey', selection')] <- validateSelection rawSelection'
-          return
-            [ ( key'
-              , selection'
-                  { selectionRec = SelectionAlias {aliasFieldName = selKey', aliasSelection = selectionRec selection'}
-                  , selectionPosition = position'
-                  })
-            ]
+          fmap processSingleSelection <$> validateSelection rawSelection'
+          where
+            processSingleSelection (selKey', selection') =
+               ( key'
+                 , selection'
+                     { selectionRec = SelectionAlias {aliasFieldName = selKey', aliasSelection = selectionRec selection'}
+                     , selectionPosition = position'
+                     })
         validateSelection (key', RawSelectionSet fullRawSelection'@RawSelection' { rawSelectionRec = rawSelectors
                                                                                  , rawSelectionPosition = position'
                                                                                  }) = do
