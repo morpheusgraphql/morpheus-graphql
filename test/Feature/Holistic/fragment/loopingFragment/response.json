@@ -5,15 +5,15 @@
       "locations": [
         {
           "line": 7,
-          "column": 0
+          "column": 1
         },
         {
           "line": 9,
-          "column": 2
+          "column": 3
         },
         {
           "line": 17,
-          "column": 2
+          "column": 3
         }
       ]
     }

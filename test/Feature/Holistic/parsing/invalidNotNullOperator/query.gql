@@ -1,0 +1,5 @@
+query q1($v1: [[[Int@]@]]@) {
+  q1 {
+    a2(argNestedList: $v1)
+  }
+}

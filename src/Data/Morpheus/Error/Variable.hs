@@ -39,7 +39,7 @@ TODO: variable does not match to argument type
 unusedVariables :: Text -> [EnhancedKey] -> GQLErrors
 unusedVariables operator' = map keyToError
   where
-    keyToError (EnhancedKey key' position') = GQLError {desc = text key', posIndex = [position']}
+    keyToError (EnhancedKey key' position') = GQLError {desc = text key', positions = [position']}
     text key' = T.concat ["Variable \"$", key', "\" is never used in operation \"", operator', "\"."]
 
 variableGotInvalidValue :: Text -> Text -> Position -> GQLErrors

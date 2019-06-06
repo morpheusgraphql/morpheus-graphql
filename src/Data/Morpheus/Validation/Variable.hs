@@ -38,7 +38,7 @@ lookupVariable variables' key' error' =
 getVariable :: Position -> Variables -> Text -> Validation Value
 getVariable position' variables' key' = lookupVariable variables' key' (undefinedVariable "Query" position')
 
-handleInputError :: Text -> Int -> InputValidation Value -> Validation (Text, Value)
+handleInputError :: Text -> Position -> InputValidation Value -> Validation (Text, Value)
 handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
 handleInputError key' _ (Right value') = pure (key', value')
 

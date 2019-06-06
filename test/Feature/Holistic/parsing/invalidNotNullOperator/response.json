@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "offset=20:\nunexpected '@'\nexpecting '!', ']', '_', digit, letter, or white space\n",
+      "locations": [
+        {
+          "line": 1,
+          "column": 21
+        }
+      ]
+    }
+  ]
+}

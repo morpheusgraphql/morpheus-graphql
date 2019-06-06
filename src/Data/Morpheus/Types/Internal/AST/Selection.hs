@@ -30,6 +30,6 @@ data SelectionRec
   = SelectionSet SelectionSet
   | UnionSelection UnionSelection
   | SelectionAlias { aliasFieldName :: Key
-                   , aliasSelection               :: SelectionRec }
+                   , aliasSelection :: SelectionRec }
   | SelectionField
   deriving (Show)

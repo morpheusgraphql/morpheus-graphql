@@ -10,7 +10,7 @@ import           Control.Monad.Trans.Except                 (ExceptT (..), runEx
 import           Data.Aeson                                 (encode)
 import qualified Data.ByteString.Lazy.Char8                 as LB (ByteString)
 import           Data.Morpheus.Error.Utils                  (renderErrors)
-import           Data.Morpheus.Parser.Parser                (parseLineBreaks, parseRequest)
+import           Data.Morpheus.Parser.Parser                (parseRequest)
 import           Data.Morpheus.Server.ClientRegister        (GQLState, publishUpdates)
 import           Data.Morpheus.Types.GQLOperator            (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
 import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Operator' (..))
@@ -43,7 +43,7 @@ resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB
 resolve rootResolver request = do
   value <- runExceptT _resolve
   case value of
-    Left x  -> pure $ Errors $ renderErrors (parseLineBreaks request) x
+    Left x  -> pure $ Errors $ renderErrors x
     Right x -> pure $ Data x
   where
     _resolve = do
@@ -63,10 +63,10 @@ resolveStream ::
 resolveStream rootResolver (SocketInput id' request) = do
   value <- runExceptT _resolve
   case value of
-    Left x -> pure $ NoEffect $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLBS request) x
+    Left x                             -> pure $ NoEffect $ encodeToText $ Errors $ renderErrors x
     Right (PublishMutation pid' x' y') -> pure $ PublishMutation pid' (encodeToText $ Data x') y'
-    Right (InitSubscription x' y' z') -> pure $ InitSubscription x' y' z'
-    Right (NoEffect x') -> pure $ NoEffect (encodeToText $ Data x')
+    Right (InitSubscription x' y' z')  -> pure $ InitSubscription x' y' z'
+    Right (NoEffect x')                -> pure $ NoEffect (encodeToText $ Data x')
   where
     _resolve = (ExceptT $ pure (parseRequest (toLBS request) >>= validateRequest gqlSchema)) >>= resolveOperator
       where
@@ -81,7 +81,7 @@ resolveStream rootResolver (SocketInput id' request) = do
             sRes selection' = do
               value <- runExceptT (encodeSubscription subscriptionRes selection')
               case value of
-                Left x -> pure $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLBS request) x
+                Left x                  -> pure $ encodeToText $ Errors $ renderErrors x
                 Right (WithEffect _ x') -> pure (encodeToText $ Data x')
         resolveOperator (Subscription operator') = do
           WithEffect channels _ <- encodeSubscription subscriptionRes $ operatorSelection operator'
