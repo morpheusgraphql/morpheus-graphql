@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 
@@ -37,7 +38,7 @@ class TypeID f where
 
 instance Datatype c => TypeID (M1 D c f) where
   key = keyName
-  typeUniqueId = typeLocation <> keyName
+  typeUniqueId val = typeLocation val <> "." <> keyName val
 {--
 
 instance (Constructor c) => TypeID (M1 C c f) where

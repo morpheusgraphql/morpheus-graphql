@@ -17,15 +17,14 @@ import           Data.Morpheus.Types.GQLType                    (GQLType (..), e
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..))
 import           Data.Morpheus.Types.Internal.Data              (DataField (..), DataInputField, DataOutputField,
                                                                  DataTypeLib, DataTypeWrapper (..))
-import           Data.Morpheus.Types.Internal.Validation        (ResolveIO, Validation)
+import           Data.Morpheus.Types.Internal.Validation        (ResolveIO, SchemaValidation, Validation)
 import           Data.Morpheus.Types.Internal.Value             (Value (..))
 import           Data.Proxy                                     (Proxy (..))
 import           Data.Text                                      (Text)
 import           GHC.Generics
 
 -- class Types class
-type Intro_ a = Proxy a -> DataTypeLib -> DataTypeLib
-
+type Intro_ a = Proxy a -> DataTypeLib -> SchemaValidation DataTypeLib
 type Decode_ a = Value -> Validation a
 
 type Encode_ a b = (Text, Selection) -> a -> ResolveIO b

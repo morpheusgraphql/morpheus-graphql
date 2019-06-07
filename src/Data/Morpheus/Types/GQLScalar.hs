@@ -12,7 +12,7 @@ import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
 import           Data.Morpheus.Types.GQLType             (GQLType (..), scalarTypeOf)
 import           Data.Morpheus.Types.Internal.Base       (Key)
 import           Data.Morpheus.Types.Internal.Data       (DataField, DataTypeLib, DataValidator (..))
-import           Data.Morpheus.Types.Internal.Validation (Validation)
+import           Data.Morpheus.Types.Internal.Validation (SchemaValidation, Validation)
 import           Data.Morpheus.Types.Internal.Value      (ScalarValue (..), Value (..))
 import           Data.Proxy                              (Proxy (..))
 import           Data.Text                               (Text)
@@ -40,7 +40,7 @@ class GQLScalar a where
   encode = Scalar . serialize
   asField :: GQLType a => Proxy a -> t -> Key -> DataField t
   asField _ = field_ SCALAR (Proxy @a)
-  introspect :: GQLType a => Proxy a -> DataTypeLib -> DataTypeLib
+  introspect :: GQLType a => Proxy a -> DataTypeLib -> SchemaValidation DataTypeLib
   introspect _ = updateLib (scalarTypeOf (scalarValidator $ Proxy @a)) [] (Proxy @a)
 
 instance GQLScalar Text where

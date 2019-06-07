@@ -27,6 +27,7 @@ import           Data.Morpheus.Types.Internal.Data                 (DataField (.
                                                                     DataLeaf (..), DataOutputField, DataType (..),
                                                                     DataTypeLib, DataTypeWrapper (..), DataValidator,
                                                                     defineType, isTypeDefined)
+import           Data.Morpheus.Types.Internal.Validation           (SchemaValidation)
 import           Data.Morpheus.Types.Resolver                      ((::->))
 import           Data.Proxy                                        (Proxy (..))
 import           Data.Text                                         (Text)
@@ -69,11 +70,18 @@ class GQLType a where
   buildType typeData' proxy =
     DataType
       {typeName = _typeName proxy, typeHash = _typeId proxy, typeDescription = description proxy, typeData = typeData'}
-  updateLib :: (Proxy a -> DataFullType) -> [DataTypeLib -> DataTypeLib] -> Proxy a -> DataTypeLib -> DataTypeLib
+  updateLib ::
+       (Proxy a -> DataFullType)
+    -> [DataTypeLib -> SchemaValidation DataTypeLib]
+    -> Proxy a
+    -> DataTypeLib
+    -> SchemaValidation DataTypeLib
   updateLib typeBuilder stack proxy lib' =
     case isTypeDefined (_typeName proxy) lib' of
-      Nothing    -> resolveTypes lib' (defineType (_typeName proxy, typeBuilder proxy) : stack)
-      Just hash' -> trace (show hash') lib'
+      Nothing -> resolveTypes (defineType (_typeName proxy, typeBuilder proxy) lib') stack
+      Just hash'
+        | hash' == _typeId proxy -> return $ trace (show $ hash' <> " = " <> _typeId proxy) lib'
+      Just hash' -> Left $ "Name Conflict" <> hash' <> " != " <> _typeId proxy
 
 instance GQLType EnumValue where
   _typeName _ = "__EnumValue"
@@ -101,19 +109,19 @@ instance GQLType DirectiveLocation where
 
 instance GQLType Int where
   _typeName _ = "Int"
-  _typeId = const "GQL.INT"
+  _typeId = const "__.INT"
 
 instance GQLType Float where
   _typeName _ = "Float"
-  _typeId _ = "GQL.FLOAT"
+  _typeId _ = "__.FLOAT"
 
 instance GQLType Text where
   _typeName _ = "String"
-  _typeId _ = "GQL.STRING"
+  _typeId _ = "__.STRING"
 
 instance GQLType Bool where
   _typeName _ = "Boolean"
-  _typeId _ = "GQL.BOOLEAN"
+  _typeId _ = "__.BOOLEAN"
 
 instance GQLType a => GQLType (Maybe a) where
   _typeName _ = _typeName (Proxy @a)

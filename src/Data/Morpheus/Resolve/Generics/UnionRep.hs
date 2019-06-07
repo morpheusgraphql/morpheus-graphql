@@ -12,12 +12,13 @@ module Data.Morpheus.Resolve.Generics.UnionRep
   ( UnionRep(..)
   ) where
 
-import           Data.Morpheus.Types.Internal.Data (DataField, DataTypeLib)
-import           Data.Proxy                        (Proxy (..))
+import           Data.Morpheus.Types.Internal.Data       (DataField, DataTypeLib)
+import           Data.Morpheus.Types.Internal.Validation (SchemaValidation)
+import           Data.Proxy                              (Proxy (..))
 import           GHC.Generics
 
 class UnionRep f where
-  possibleTypes :: Proxy f -> [(DataField (), DataTypeLib -> DataTypeLib)]
+  possibleTypes :: Proxy f -> [(DataField (), DataTypeLib -> SchemaValidation DataTypeLib)]
 
 instance UnionRep f => UnionRep (M1 D x f) where
   possibleTypes _ = possibleTypes (Proxy @f)

@@ -9,6 +9,7 @@ module Data.Morpheus.Types.Internal.Validation
   , Validation
   , ResolveIO
   , failResolveIO
+  , SchemaValidation
   ) where
 
 import           Control.Monad.Trans.Except        (ExceptT (..))
@@ -33,6 +34,8 @@ data JSONError = JSONError
   { message   :: Text
   , locations :: [ErrorLocation]
   } deriving (Show, Generic, ToJSON)
+
+type SchemaValidation a = Either Text a
 
 type Validation a = Either GQLErrors a
 

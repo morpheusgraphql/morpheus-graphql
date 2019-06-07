@@ -20,7 +20,7 @@ import           Data.Morpheus.Resolve.Generics.Utils       (RecSel, SelOf)
 import           Data.Morpheus.Schema.Type                  (DeprecationArgs)
 import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..), Arguments)
 import           Data.Morpheus.Types.Internal.Data          (DataInputField, DataTypeLib)
-import           Data.Morpheus.Types.Internal.Validation    (Validation)
+import           Data.Morpheus.Types.Internal.Validation    (SchemaValidation, Validation)
 import           Data.Proxy                                 (Proxy (..))
 import           Data.Text                                  (Text, pack)
 import           GHC.Generics
@@ -41,9 +41,9 @@ class GQLArgs p where
   default decode :: (Generic p, GDecode Arguments (Rep p)) =>
     Arguments -> Validation p
   decode args = to <$> gDecode "" args
-  introspect :: Proxy p -> [((Text, DataInputField), DataTypeLib -> DataTypeLib)]
+  introspect :: Proxy p -> [((Text, DataInputField), DataTypeLib -> SchemaValidation DataTypeLib)]
   default introspect :: ObjectRep (Rep p) (Text, DataInputField) =>
-    Proxy p -> [((Text, DataInputField), DataTypeLib -> DataTypeLib)]
+    Proxy p -> [((Text, DataInputField), DataTypeLib -> SchemaValidation DataTypeLib)]
   introspect _ = getFields (Proxy @(Rep p))
 
 instance GQLArgs () where
