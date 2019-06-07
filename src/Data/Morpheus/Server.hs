@@ -12,26 +12,25 @@ import           Data.Morpheus.Server.Apollo            (ApolloSubscription (..)
 import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubscription, connectClient,
                                                          disconnectClient, initGQLState, publishUpdates,
                                                          removeClientSubscription)
-import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..), InputAction (..), OutputAction (..))
+import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..), OutputAction (..))
 import           Data.Text                              (Text)
-import           Network.WebSockets                     (Connection, ServerApp, acceptRequestWith, forkPingThread,
-                                                         receiveData, sendTextData)
+import           Network.WebSockets                     (ServerApp, acceptRequestWith, forkPingThread, receiveData,
+                                                         sendTextData)
 
-type GQLAPI = InputAction Text -> IO (OutputAction Text)
+type GQLAPI = Text -> IO (OutputAction Text)
 
-handleGQLResponse :: Connection -> GQLState -> Int -> OutputAction Text -> IO ()
-handleGQLResponse connection' state sessionId' msg =
+handleGQLResponse :: GQLClient -> GQLState -> Int -> OutputAction Text -> IO ()
+handleGQLResponse GQLClient {clientConnection = connection', clientID = clientId'} state sessionId' msg =
   case msg of
     PublishMutation {mutationChannels = channels', subscriptionResolver = resolver', mutationResponse = response'} ->
       sendTextData connection' response' >> publishUpdates channels' resolver' state
-    InitSubscription { subscriptionClientID = clientId'
-                     , subscriptionQuery = selection'
-                     , subscriptionChannels = channels'
-                     } -> addClientSubscription clientId' selection' channels' sessionId' state
+    InitSubscription {subscriptionQuery = selection', subscriptionChannels = channels'} ->
+      addClientSubscription clientId' selection' channels' sessionId' state
     NoEffect response' -> sendTextData connection' response'
 
 queryHandler :: GQLAPI -> GQLClient -> GQLState -> IO ()
-queryHandler interpreter' GQLClient {clientConnection = connection', clientID = id'} state = forever handleRequest
+queryHandler interpreter' client'@GQLClient {clientConnection = connection', clientID = id'} state =
+  forever handleRequest
   where
     handleRequest = do
       msg <- receiveData connection'
@@ -40,7 +39,7 @@ queryHandler interpreter' GQLClient {clientConnection = connection', clientID = 
         Right ApolloSubscription {apolloType = "subscription_end", apolloId = Just sid'} ->
           removeClientSubscription id' sid' state
         Right ApolloSubscription {apolloType = "subscription_start", apolloId = Just sid'} ->
-          interpreter' (SocketInput id' msg) >>= handleGQLResponse connection' state sid'
+          interpreter' msg >>= handleGQLResponse client' state sid'
         Right _ -> return ()
 
 gqlSocketApp :: GQLAPI -> GQLState -> ServerApp

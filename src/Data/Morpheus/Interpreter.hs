@@ -11,7 +11,7 @@ import qualified Data.ByteString.Lazy.Char8             as LB (ByteString, fromS
 import           Data.Morpheus.Resolve.Resolve          (packStream, resolve, resolveByteString, resolveStreamText)
 import           Data.Morpheus.Server.ClientRegister    (GQLState)
 import           Data.Morpheus.Types.GQLOperator        (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
-import           Data.Morpheus.Types.Internal.WebSocket (InputAction, OutputAction)
+import           Data.Morpheus.Types.Internal.WebSocket (OutputAction)
 import           Data.Morpheus.Types.Request            (GQLRequest)
 import           Data.Morpheus.Types.Response           (GQLResponse)
 import           Data.Morpheus.Types.Types              (GQLRoot (..))
@@ -64,7 +64,7 @@ instance Interpreter (WSPub Text) where
    Websocket Interpreter without state and side effects, mutations and subscription will return Actions
    that will be executed in Websocket server
 -}
-type WSSub a = InputAction a -> IO (OutputAction a)
+type WSSub a = a -> IO (OutputAction a)
 
 instance Interpreter (WSSub Text) where
   interpreter = resolveStreamText

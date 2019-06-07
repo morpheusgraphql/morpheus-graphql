@@ -18,7 +18,7 @@ import           Data.Morpheus.Types.GQLOperator            (GQLMutation (..), G
 import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Operator' (..))
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Internal.Data          (DataTypeLib)
-import           Data.Morpheus.Types.Internal.WebSocket     (InputAction (..), OutputAction (..))
+import           Data.Morpheus.Types.Internal.WebSocket     (OutputAction (..))
 import qualified Data.Morpheus.Types.Request                as Req (GQLRequest (..))
 import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Morpheus.Types.Response               (GQLResponse (..))
@@ -27,7 +27,6 @@ import           Data.Morpheus.Validation.Validation        (validateRequest)
 import           Data.Text                                  (Text)
 import qualified Data.Text.Lazy                             as LT (fromStrict, toStrict)
 import           Data.Text.Lazy.Encoding                    (decodeUtf8, encodeUtf8)
-import           Data.UUID.V4                               (nextRandom)
 
 schema :: (GQLQuery a, GQLMutation b, GQLSubscription c) => a -> b -> c -> DataTypeLib
 schema queryRes mutationRes subscriptionRes =
@@ -49,12 +48,11 @@ resolveByteString rootResolver request =
     Left aesonError' -> return $ badRequestError aesonError'
     Right req        -> encode <$> resolve rootResolver req
 
-resolveStreamText ::
-     (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> InputAction Text -> IO (OutputAction Text)
-resolveStreamText rootResolver (SocketInput id' request) =
+resolveStreamText :: (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> Text -> IO (OutputAction Text)
+resolveStreamText rootResolver request =
   case eitherDecode $ toLBS request of
     Left aesonError' -> return $ NoEffect $ bsToText $ badRequestError aesonError'
-    Right req        -> fmap encodeToText <$> resolveStream rootResolver (SocketInput id' req)
+    Right req        -> fmap encodeToText <$> resolveStream rootResolver req
 
 resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> Req.GQLRequest -> IO GQLResponse
 resolve rootResolver request = do
@@ -76,11 +74,8 @@ resolve rootResolver request = do
         subscriptionRes = subscription rootResolver
 
 resolveStream ::
-     (GQLQuery q, GQLMutation m, GQLSubscription s)
-  => GQLRoot q m s
-  -> InputAction Req.GQLRequest
-  -> IO (OutputAction GQLResponse)
-resolveStream rootResolver (SocketInput id' request) = do
+     (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> Req.GQLRequest -> IO (OutputAction GQLResponse)
+resolveStream rootResolver request = do
   value <- runExceptT _resolve
   case value of
     Left x       -> pure $ NoEffect $ Errors $ renderErrors x
@@ -103,21 +98,15 @@ resolveStream rootResolver (SocketInput id' request) = do
                 Right (WithEffect _ x') -> pure (encodeToText $ Data x')
         resolveOperator (Subscription operator') = do
           WithEffect channels _ <- encodeSubscription subscriptionRes $ operatorSelection operator'
-          return
-            InitSubscription
-              { subscriptionClientID = id'
-              , subscriptionChannels = channels
-              , subscriptionQuery = operatorSelection operator'
-              }
+          return InitSubscription {subscriptionChannels = channels, subscriptionQuery = operatorSelection operator'}
         gqlSchema = schema queryRes mutationRes subscriptionRes
         queryRes = query rootResolver
         mutationRes = mutation rootResolver
         subscriptionRes = subscription rootResolver
 
-packStream :: GQLState -> (InputAction Text -> IO (OutputAction Text)) -> LB.ByteString -> IO LB.ByteString
+packStream :: GQLState -> (Text -> IO (OutputAction Text)) -> LB.ByteString -> IO LB.ByteString
 packStream state streamAPI request = do
-  id' <- nextRandom
-  value <- streamAPI (SocketInput id' $ bsToText request)
+  value <- streamAPI (bsToText request)
   case value of
     PublishMutation {mutationChannels = channels, mutationResponse = res', subscriptionResolver = resolver'} -> do
       publishUpdates channels resolver' state
