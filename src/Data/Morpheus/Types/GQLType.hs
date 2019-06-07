@@ -31,7 +31,6 @@ import           Data.Morpheus.Types.Internal.Validation           (SchemaValida
 import           Data.Morpheus.Types.Resolver                      ((::->))
 import           Data.Proxy                                        (Proxy (..))
 import           Data.Text                                         (Text)
-import           Debug.Trace                                       (trace)
 import           GHC.Generics
 
 scalarTypeOf :: GQLType a => DataValidator -> Proxy a -> DataFullType
@@ -80,7 +79,7 @@ class GQLType a where
     case isTypeDefined (_typeName proxy) lib' of
       Nothing -> resolveTypes (defineType (_typeName proxy, typeBuilder proxy) lib') stack
       Just hash'
-        | hash' == _typeId proxy -> return $ trace (show $ hash' <> " = " <> _typeId proxy) lib'
+        | hash' == _typeId proxy -> return lib'
       Just hash' -> Left $ "Name Conflict: " <> hash' <> " != " <> _typeId proxy
 
 instance GQLType EnumValue where
