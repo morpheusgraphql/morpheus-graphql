@@ -15,12 +15,11 @@ import           Data.Morpheus.Error.Internal               (internalArgumentErr
 import           Data.Morpheus.Kind                         (KIND)
 import           Data.Morpheus.Resolve.Decode               (InputTypeRouter, _decode, _field, _introspect)
 import           Data.Morpheus.Resolve.Generics.GDecode     (GDecode (..))
-import           Data.Morpheus.Resolve.Generics.ObjectRep   (ObjectRep (..))
-import           Data.Morpheus.Resolve.Generics.Utils       (RecSel, SelOf)
+import           Data.Morpheus.Resolve.Generics.TypeRep     (ObjectRep (..), RecSel, SelOf, TypeUpdater)
 import           Data.Morpheus.Schema.Type                  (DeprecationArgs)
 import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..), Arguments)
-import           Data.Morpheus.Types.Internal.Data          (DataInputField, DataTypeLib)
-import           Data.Morpheus.Types.Internal.Validation    (SchemaValidation, Validation)
+import           Data.Morpheus.Types.Internal.Data          (DataInputField)
+import           Data.Morpheus.Types.Internal.Validation    (Validation)
 import           Data.Proxy                                 (Proxy (..))
 import           Data.Text                                  (Text, pack)
 import           GHC.Generics
@@ -41,9 +40,9 @@ class GQLArgs p where
   default decode :: (Generic p, GDecode Arguments (Rep p)) =>
     Arguments -> Validation p
   decode args = to <$> gDecode "" args
-  introspect :: Proxy p -> [((Text, DataInputField), DataTypeLib -> SchemaValidation DataTypeLib)]
+  introspect :: Proxy p -> [((Text, DataInputField), TypeUpdater)]
   default introspect :: ObjectRep (Rep p) (Text, DataInputField) =>
-    Proxy p -> [((Text, DataInputField), DataTypeLib -> SchemaValidation DataTypeLib)]
+    Proxy p -> [((Text, DataInputField), TypeUpdater)]
   introspect _ = getFields (Proxy @(Rep p))
 
 instance GQLArgs () where

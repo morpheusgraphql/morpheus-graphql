@@ -19,7 +19,7 @@ module Data.Morpheus.Types.GQLOperator
 import           Data.Morpheus.Resolve.Encode                   (_encode)
 import           Data.Morpheus.Resolve.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection,
                                                                  resolveBySelectionM)
-import           Data.Morpheus.Resolve.Generics.ObjectRep       (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Resolve.Generics.TypeRep         (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Resolve.Introspect               (_introspect)
 import           Data.Morpheus.Schema.Schema                    (Schema, initSchema)
 import           Data.Morpheus.Types.Internal.AST.Selection     (SelectionSet)

@@ -39,15 +39,3 @@ class TypeID f where
 instance Datatype c => TypeID (M1 D c f) where
   key = keyName
   typeUniqueId val = typeLocation val <> "." <> keyName val
-{--
-
-instance (Constructor c) => TypeID (M1 C c f) where
-  key _ = ""
-instance (Selector c) => TypeID (M1 S c f) where
-  key _ = ""
-instance TypeID (f :*: g) where
-  key _ = ""
-instance TypeID (f :+: g) where
-  key _ = ""
-
---}

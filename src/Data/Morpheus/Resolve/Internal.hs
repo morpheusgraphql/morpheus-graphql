@@ -10,21 +10,21 @@ module Data.Morpheus.Resolve.Internal where
 import           Data.Morpheus.Resolve.Generics.DeriveResolvers (DeriveResolvers)
 import           Data.Morpheus.Resolve.Generics.EnumRep         (EnumRep (..))
 import           Data.Morpheus.Resolve.Generics.GDecode         (GDecode (..))
-import           Data.Morpheus.Resolve.Generics.ObjectRep       (ObjectRep (..))
-import           Data.Morpheus.Resolve.Generics.UnionRep        (UnionRep (..))
+import           Data.Morpheus.Resolve.Generics.TypeRep         (ObjectRep (..), TypeUpdater, UnionRep (..))
 import           Data.Morpheus.Resolve.Generics.UnionResolvers  (UnionResolvers (..))
 import           Data.Morpheus.Types.GQLType                    (GQLType (..), enumTypeOf, inputObjectOf)
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..))
 import           Data.Morpheus.Types.Internal.Data              (DataField (..), DataInputField, DataOutputField,
-                                                                 DataTypeLib, DataTypeWrapper (..))
-import           Data.Morpheus.Types.Internal.Validation        (ResolveIO, SchemaValidation, Validation)
+                                                                 DataTypeWrapper (..))
+import           Data.Morpheus.Types.Internal.Validation        (ResolveIO, Validation)
 import           Data.Morpheus.Types.Internal.Value             (Value (..))
 import           Data.Proxy                                     (Proxy (..))
 import           Data.Text                                      (Text)
 import           GHC.Generics
 
 -- class Types class
-type Intro_ a = Proxy a -> DataTypeLib -> SchemaValidation DataTypeLib
+type Intro_ a = Proxy a -> TypeUpdater
+
 type Decode_ a = Value -> Validation a
 
 type Encode_ a b = (Text, Selection) -> a -> ResolveIO b
