@@ -57,11 +57,7 @@ resolveStreamText ::
 resolveStreamText rootResolver (SocketInput id' request) =
   case eitherDecode $ toLBS request of
     Left aesonError' -> return $ NoEffect $ bsToText $ requestBodyDecodeError aesonError'
-    Right req -> transform <$> resolveStream rootResolver (SocketInput id' req)
-      where transform :: OutputAction GQLResponse -> OutputAction Text -- TODO: OutputAction as Functor
-            transform (NoEffect x)                      = NoEffect (encodeToText x)
-            transform (PublishMutation clientId' x' y') = PublishMutation clientId' (encodeToText x') y'
-            transform (InitSubscription x' y' z')       = InitSubscription x' y' z'
+    Right req        -> fmap encodeToText <$> resolveStream rootResolver (SocketInput id' req)
 
 resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> Req.GQLRequest -> IO GQLResponse
 resolve rootResolver request = do
@@ -90,10 +86,8 @@ resolveStream ::
 resolveStream rootResolver (SocketInput id' request) = do
   value <- runExceptT _resolve
   case value of
-    Left x                             -> pure $ NoEffect $ Errors $ renderErrors [] x -- TODO: update after #149
-    Right (PublishMutation pid' x' y') -> pure $ PublishMutation pid' (Data x') y'
-    Right (InitSubscription x' y' z')  -> pure $ InitSubscription x' y' z'
-    Right (NoEffect x')                -> pure $ NoEffect (Data x')
+    Left error'  -> pure $ NoEffect $ Errors $ renderErrors [] error' -- TODO: update after #149
+    Right value' -> return $ fmap Data value'
   where
     _resolve = (ExceptT $ pure (parseGQL request >>= validateRequest gqlSchema)) >>= resolveOperator
       where
