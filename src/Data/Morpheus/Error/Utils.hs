@@ -20,9 +20,9 @@ renderErrors :: [GQLError] -> [JSONError]
 renderErrors = map renderError
 
 renderError :: GQLError -> JSONError
-renderError (GQLError {desc, positions}) =
+renderError GQLError {desc, positions} =
   JSONError {message = desc, locations = map toErrorLocation positions }
 
 toErrorLocation :: Position -> ErrorLocation
-toErrorLocation (SourcePos {sourceLine, sourceColumn}) =
+toErrorLocation SourcePos {sourceLine, sourceColumn} =
     ErrorLocation {line = unPos sourceLine, column = unPos sourceColumn}

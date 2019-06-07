@@ -95,7 +95,7 @@ validateSelectionSet lib' fragments' variables' = __validate
              validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
         -}
         validateSelection :: (Text, RawSelection) -> Validation SelectionSet
-        validateSelection (key', RawAlias {rawAliasSelection = rawSelection', rawAliasPosition = position'}) = do
+        validateSelection (key', RawAlias {rawAliasSelection = rawSelection', rawAliasPosition = position'}) =
           fmap processSingleSelection <$> validateSelection rawSelection'
           where
             processSingleSelection (selKey', selection') =

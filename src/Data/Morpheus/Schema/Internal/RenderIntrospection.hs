@@ -37,8 +37,7 @@ wrap :: DataField a -> Type -> Type
 wrap field' = wrapRec (fieldTypeWrappers field')
 
 wrapRec :: [DataTypeWrapper] -> Type -> Type
-wrapRec [] type'     = type'
-wrapRec (x:xs) type' = wrapByTypeWrapper x (wrapRec xs type')
+wrapRec xs type' = foldr wrapByTypeWrapper type' xs
 
 wrapByTypeWrapper :: DataTypeWrapper -> Type -> Type
 wrapByTypeWrapper ListType    = wrapAs LIST
