@@ -72,6 +72,10 @@
     "description": "returns on a complex query that exercises all features"
   },
   {
+    "path": "parsing/extraCommas",
+    "description": "fails on a query with too many commas"
+  },
+  {
     "path": "parsing/notNullSpacing",
     "description": "returns on a query that pads all '!' chars with whitespace"
   }

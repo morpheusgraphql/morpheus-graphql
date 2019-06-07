@@ -1,0 +1,22 @@
+{
+    user {name,,,address}
+
+    user {name, ,address}
+
+    user {
+        name,
+        address
+    }
+
+    user {
+        name,address
+    }
+
+    user {
+        name, address
+    }
+
+    user {
+        name ,address
+    }
+}
