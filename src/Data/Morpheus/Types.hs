@@ -7,9 +7,9 @@ module Data.Morpheus.Types
   , GQLRoot(..)
   , GQLType(..)
   , GQLScalar(..)
+  , GQLRequest(..)
+  , GQLResponse(..)
   , GQLArgs
-  , GQLResponse
-  , GQLRequest
   , GQLMutation
   , GQLQuery
   , GQLSubscription
@@ -22,9 +22,9 @@ import           Data.Morpheus.Types.GQLScalar      (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType        (GQLType (..))
 import           Data.Morpheus.Types.ID             (ID (..))
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
-import           Data.Morpheus.Types.Request        (GQLRequest)
+import           Data.Morpheus.Types.Request        (GQLRequest (..))
 import           Data.Morpheus.Types.Resolver       ((::->), (::->>), Resolver (..), WithEffect (..))
-import           Data.Morpheus.Types.Response       (GQLResponse)
+import           Data.Morpheus.Types.Response       (GQLResponse (..))
 import           Data.Morpheus.Types.Types          (GQLRoot (..))
 import           Data.Text                          (Text)
 

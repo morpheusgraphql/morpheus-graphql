@@ -46,8 +46,6 @@
   - Data.Morpheus.Kind
   - Data.Morpheus.Types
   - Data.Morpheus.Server
-  - Data.Morpheus.Types.Request
-  - Data.Morpheus.Types.Response
 
 ### Fixed:
 
