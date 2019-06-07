@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Unknown type \"ID\".",
+      "locations": [
+        {
+          "line": 1,
+          "column": 16
+        }
+      ]
+    }
+  ]
+}

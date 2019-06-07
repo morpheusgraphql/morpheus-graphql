@@ -23,7 +23,7 @@ import           Data.Text                                     (Text)
 resolveArguments :: Variables -> Raw.RawArguments -> Validation Arguments
 resolveArguments variables' = mapM (resolveArgumentValue variables')
 
-handleInputError :: Text -> Int -> InputValidation a -> Validation ()
+handleInputError :: Text -> Position -> InputValidation a -> Validation ()
 handleInputError key' position' (Left error') = Left $ argumentGotInvalidValue key' (inputErrorMessage error') position'
 handleInputError _ _ _ = pure ()
 

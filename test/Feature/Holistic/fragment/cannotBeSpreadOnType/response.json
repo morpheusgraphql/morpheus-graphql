@@ -3,7 +3,7 @@
     "message": "Fragment \"UserFragment\" cannot be spread here as objects of type \"User\" can never be of type \"Address\".",
     "locations": [{
       "line": 3,
-      "column": 4
+      "column": 5
     }]
   }]
 }

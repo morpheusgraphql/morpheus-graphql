@@ -1,21 +1,25 @@
 {-# LANGUAGE OverloadedStrings #-}
-
+{-# LANGUAGE TypeFamilies      #-}
 module Data.Morpheus.Parser.Value
   ( parseValue
   , enumValue
   ) where
 
-import           Control.Applicative                (many, (<|>))
-import           Data.Attoparsec.Text               (Parser, char, choice, notChar, scientific, sepBy, skipSpace,
-                                                     string)
 import           Data.Functor                       (($>))
+import           Data.Morpheus.Parser.Internal      (Parser)
 import           Data.Morpheus.Parser.Primitive     (token)
 import           Data.Morpheus.Parser.Terms         (parseAssignment)
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..), Value (..), decodeScientific)
 import           Data.Text                          (pack)
+import           Text.Megaparsec                    (between, anySingleBut, choice, label, many, sepBy, (<|>))
+import           Text.Megaparsec.Char               (char, space, string)
+import           Text.Megaparsec.Char.Lexer         (scientific)
 
 parseValue :: Parser Value
-parseValue = valueNull <|> booleanValue <|> valueNumber <|> stringValue <|> objectValue <|> listValue
+parseValue = label "value" $ do
+  value <- valueNull <|> booleanValue <|> valueNumber <|> stringValue <|> objectValue <|> listValue
+  space
+  return value
 
 valueNull :: Parser Value
 valueNull = string "null" $> Null
@@ -30,11 +34,14 @@ valueNumber :: Parser Value
 valueNumber = Scalar . decodeScientific <$> scientific
 
 enumValue :: Parser Value
-enumValue = Enum <$> token
+enumValue = do
+  enum <- Enum <$> token
+  space
+  return enum
 
 escaped :: Parser Char
-escaped = do
-  x <- notChar '\"'
+escaped = label "escaped" $ do
+  x <- anySingleBut '\"'
   if x == '\\'
     then choice (zipWith escapeChar codes replacements)
     else pure x
@@ -44,33 +51,23 @@ escaped = do
     escapeChar code replacement = char code >> return replacement
 
 stringValue :: Parser Value
-stringValue = do
-  _ <- char '"'
-  value <- many escaped
-  _ <- char '"'
-  pure $ Scalar $ String $ pack value
+stringValue = label "stringValue" $
+  Scalar . String . pack <$>
+    between
+      (char '"')
+      (char '"')
+      (many escaped)
 
 listValue :: Parser Value
-listValue = do
-  skipSpace
-  _ <- char '['
-  skipSpace
-  entries' <-
-    (do skipSpace
-        val <- parseValue
-        skipSpace
-        return val) `sepBy`
-    char ','
-  skipSpace
-  _ <- char ']'
-  return (List entries')
+listValue = label "listValue" $
+  List <$> between
+             (char '[' *> space)
+             (char ']' *> space)
+             (parseValue `sepBy` (char ',' *> space))
 
 objectValue :: Parser Value
-objectValue = do
-  skipSpace
-  _ <- char '{'
-  skipSpace
-  entries' <- parseAssignment token parseValue `sepBy` char ','
-  skipSpace
-  _ <- char '}'
-  return (Object entries')
+objectValue = label "objectValue" $
+  Object <$> between
+               (char '{' *> space)
+               (char '}' *> space)
+               (parseAssignment token parseValue `sepBy` (char ',' *> space))

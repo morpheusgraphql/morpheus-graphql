@@ -25,6 +25,7 @@ import qualified Data.Morpheus.Types.GQLArgs                    as Args (GQLArgs
 import qualified Data.Morpheus.Types.GQLScalar                  as S (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                    (GQLType (..))
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..))
+import           Data.Morpheus.Types.Internal.Base              (Position)
 import           Data.Morpheus.Types.Internal.Validation        (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.Internal.Value             (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver                   ((::->), (::->>), Resolver (..), WithEffect (..))
@@ -147,7 +148,7 @@ instance Encoder a (KIND a) res => DeriveResolvers (K1 s a) res where
 instance (GQLType a, Encoder a (KIND a) res) => UnionResolvers (K1 s a) res where
   currentResolver (K1 src) = (typeID (Proxy @a), (`_encode` src))
 
-liftResolver :: Int -> Text -> IO (Either String a) -> ResolveIO a
+liftResolver :: Position -> Text -> IO (Either String a) -> ResolveIO a
 liftResolver position' typeName' x = do
   result <- lift x
   case result of

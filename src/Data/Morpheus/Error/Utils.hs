@@ -1,30 +1,28 @@
+{-# LANGUAGE NamedFieldPuns #-}
 module Data.Morpheus.Error.Utils
   ( errorMessage
+  , globalErrorMessage
   , renderErrors
   ) where
 
-import           Data.Morpheus.Types.Internal.Base       (LineBreaks, Position)
+import           Data.Morpheus.Types.Internal.Base       (Position)
 import           Data.Morpheus.Types.Internal.Validation (ErrorLocation (..), GQLError (..), GQLErrors, JSONError (..))
 import           Data.Text                               (Text)
+import           Text.Megaparsec                         (SourcePos (SourcePos), sourceColumn, sourceLine, unPos)
 
 errorMessage :: Position -> Text -> GQLErrors
-errorMessage pos text = [GQLError {desc = text, posIndex = [pos]}]
+errorMessage position text = [GQLError {desc = text, positions = [position]}]
 
-renderErrors :: LineBreaks -> [GQLError] -> [JSONError]
-renderErrors x = map (renderError x)
+globalErrorMessage :: Text -> GQLErrors
+globalErrorMessage text = [GQLError {desc = text, positions = []}]
 
-renderError :: LineBreaks -> GQLError -> JSONError
-renderError lineBreaks internError =
-  JSONError {message = desc internError, locations = map (errorLocation lineBreaks) $ posIndex internError}
+renderErrors :: [GQLError] -> [JSONError]
+renderErrors = map renderError
 
-lineIndexAndNumber :: Position -> LineBreaks -> (Int, Int)
-lineIndexAndNumber position lineBreaks = (length linesBefore + 1, linePos linesBefore)
-  where
-    linesBefore = filter (position >=) lineBreaks
-    linePos [] = 1
-    linePos _  = maximum linesBefore + 1
+renderError :: GQLError -> JSONError
+renderError (GQLError {desc, positions}) =
+  JSONError {message = desc, locations = map toErrorLocation positions }
 
-errorLocation :: LineBreaks -> Position -> ErrorLocation
-errorLocation lineBreaks pos = do
-  let (lineBreaks', position) = lineIndexAndNumber pos lineBreaks
-  ErrorLocation lineBreaks' (pos - position)
+toErrorLocation :: Position -> ErrorLocation
+toErrorLocation (SourcePos {sourceLine, sourceColumn}) =
+    ErrorLocation {line = unPos sourceLine, column = unPos sourceColumn}

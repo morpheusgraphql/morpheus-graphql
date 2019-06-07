@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "offset=66:\nunexpected end of input\nexpecting '}', entry, or white space\n",
+      "locations": [
+        {
+          "line": 5,
+          "column": 1
+        }
+      ]
+    }
+  ]
+}

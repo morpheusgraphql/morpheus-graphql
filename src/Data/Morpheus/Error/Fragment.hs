@@ -23,7 +23,7 @@ import qualified Data.Text                               as T
     {...H} -> "Unknown fragment \"H\"."
 -}
 cannotSpreadWithinItself :: [EnhancedKey] -> GQLErrors
-cannotSpreadWithinItself fragments = [GQLError {desc = text, posIndex = map location fragments}]
+cannotSpreadWithinItself fragments = [GQLError {desc = text, positions = map location fragments}]
   where
     text =
       T.concat
