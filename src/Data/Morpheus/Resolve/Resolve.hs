@@ -2,21 +2,24 @@
 
 module Data.Morpheus.Resolve.Resolve
   ( resolve
+  , resolveByteString
+  , resolveStreamText
   , resolveStream
   , packStream
   ) where
 
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT)
-import           Data.Aeson                                 (encode)
-import qualified Data.ByteString.Lazy.Char8                 as LB (ByteString)
+import           Data.Aeson                                 (eitherDecode, encode)
+import qualified Data.ByteString.Lazy.Char8                 as LB (ByteString, pack)
 import           Data.Morpheus.Error.Utils                  (renderErrors)
-import           Data.Morpheus.Parser.Parser                (parseLineBreaks, parseRequest)
+import           Data.Morpheus.Parser.Parser                (parseGQL)
 import           Data.Morpheus.Server.ClientRegister        (GQLState, publishUpdates)
 import           Data.Morpheus.Types.GQLOperator            (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
 import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Operator' (..))
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Internal.Data          (DataTypeLib)
 import           Data.Morpheus.Types.Internal.WebSocket     (InputAction (..), OutputAction (..))
+import qualified Data.Morpheus.Types.Request                as Req (GQLRequest (..))
 import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Morpheus.Types.Response               (GQLResponse (..))
 import           Data.Morpheus.Types.Types                  (GQLRoot (..))
@@ -39,15 +42,36 @@ bsToText = LT.toStrict . decodeUtf8
 encodeToText :: GQLResponse -> Text
 encodeToText = bsToText . encode
 
-resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> IO GQLResponse
+requestBodyDecodeError :: String -> LB.ByteString
+requestBodyDecodeError aesonError' = "Bad Request. Could not decode Request body: " <> LB.pack aesonError'
+
+resolveByteString ::
+     (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> IO LB.ByteString
+resolveByteString rootResolver request =
+  case eitherDecode request of
+    Left aesonError' -> return $ requestBodyDecodeError aesonError'
+    Right req        -> encode <$> resolve rootResolver req
+
+resolveStreamText ::
+     (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> InputAction Text -> IO (OutputAction Text)
+resolveStreamText rootResolver (SocketInput id' request) =
+  case eitherDecode $ toLBS request of
+    Left aesonError' -> return $ NoEffect $ bsToText $ requestBodyDecodeError aesonError'
+    Right req -> transform <$> resolveStream rootResolver (SocketInput id' req)
+      where transform :: OutputAction GQLResponse -> OutputAction Text -- TODO: OutputAction as Functor
+            transform (NoEffect x)                      = NoEffect (encodeToText x)
+            transform (PublishMutation clientId' x' y') = PublishMutation clientId' (encodeToText x') y'
+            transform (InitSubscription x' y' z')       = InitSubscription x' y' z'
+
+resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> Req.GQLRequest -> IO GQLResponse
 resolve rootResolver request = do
   value <- runExceptT _resolve
   case value of
-    Left x  -> pure $ Errors $ renderErrors (parseLineBreaks request) x
+    Left x  -> pure $ Errors $ renderErrors [] x -- TODO: update after #149
     Right x -> pure $ Data x
   where
     _resolve = do
-      rootGQL <- ExceptT $ pure (parseRequest request >>= validateRequest gqlSchema)
+      rootGQL <- ExceptT $ pure (parseGQL request >>= validateRequest gqlSchema)
       case rootGQL of
         Query operator'        -> encodeQuery gqlSchema queryRes $ operatorSelection operator'
         Mutation operator'     -> resultValue <$> encodeMutation mutationRes (operatorSelection operator')
@@ -59,16 +83,19 @@ resolve rootResolver request = do
         subscriptionRes = subscription rootResolver
 
 resolveStream ::
-     (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> InputAction Text -> IO (OutputAction Text)
+     (GQLQuery q, GQLMutation m, GQLSubscription s)
+  => GQLRoot q m s
+  -> InputAction Req.GQLRequest
+  -> IO (OutputAction GQLResponse)
 resolveStream rootResolver (SocketInput id' request) = do
   value <- runExceptT _resolve
   case value of
-    Left x -> pure $ NoEffect $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLBS request) x
-    Right (PublishMutation pid' x' y') -> pure $ PublishMutation pid' (encodeToText $ Data x') y'
-    Right (InitSubscription x' y' z') -> pure $ InitSubscription x' y' z'
-    Right (NoEffect x') -> pure $ NoEffect (encodeToText $ Data x')
+    Left x                             -> pure $ NoEffect $ Errors $ renderErrors [] x -- TODO: update after #149
+    Right (PublishMutation pid' x' y') -> pure $ PublishMutation pid' (Data x') y'
+    Right (InitSubscription x' y' z')  -> pure $ InitSubscription x' y' z'
+    Right (NoEffect x')                -> pure $ NoEffect (Data x')
   where
-    _resolve = (ExceptT $ pure (parseRequest (toLBS request) >>= validateRequest gqlSchema)) >>= resolveOperator
+    _resolve = (ExceptT $ pure (parseGQL request >>= validateRequest gqlSchema)) >>= resolveOperator
       where
         resolveOperator (Query operator') = do
           value <- encodeQuery gqlSchema queryRes $ operatorSelection operator'
@@ -81,7 +108,7 @@ resolveStream rootResolver (SocketInput id' request) = do
             sRes selection' = do
               value <- runExceptT (encodeSubscription subscriptionRes selection')
               case value of
-                Left x -> pure $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLBS request) x
+                Left x                  -> pure $ encodeToText $ Errors $ renderErrors [] x -- TODO: update after #149
                 Right (WithEffect _ x') -> pure (encodeToText $ Data x')
         resolveOperator (Subscription operator') = do
           WithEffect channels _ <- encodeSubscription subscriptionRes $ operatorSelection operator'

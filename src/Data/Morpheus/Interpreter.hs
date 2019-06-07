@@ -6,13 +6,14 @@ module Data.Morpheus.Interpreter
   ( Interpreter(..)
   ) where
 
-import           Data.Aeson                             (encode)
 import           Data.ByteString                        (ByteString)
 import qualified Data.ByteString.Lazy.Char8             as LB (ByteString, fromStrict, toStrict)
-import           Data.Morpheus.Resolve.Resolve          (packStream, resolve, resolveStream)
+import           Data.Morpheus.Resolve.Resolve          (packStream, resolve, resolveByteString, resolveStreamText)
 import           Data.Morpheus.Server.ClientRegister    (GQLState)
 import           Data.Morpheus.Types.GQLOperator        (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
 import           Data.Morpheus.Types.Internal.WebSocket (InputAction, OutputAction)
+import           Data.Morpheus.Types.Request            (GQLRequest)
+import           Data.Morpheus.Types.Response           (GQLResponse)
 import           Data.Morpheus.Types.Types              (GQLRoot (..))
 import           Data.Text                              (Text)
 import qualified Data.Text.Lazy                         as LT (Text, fromStrict, toStrict)
@@ -26,8 +27,11 @@ class Interpreter k where
 -}
 type StateLess a = a -> IO a
 
+instance Interpreter (GQLRequest -> IO GQLResponse) where
+  interpreter = resolve
+
 instance Interpreter (StateLess LB.ByteString) where
-  interpreter root request = encode <$> resolve root request
+  interpreter = resolveByteString
 
 instance Interpreter (StateLess LT.Text) where
   interpreter root request = decodeUtf8 <$> interpreter root (encodeUtf8 request)
@@ -45,7 +49,7 @@ instance Interpreter (StateLess Text) where
 type WSPub a = GQLState -> a -> IO a
 
 instance Interpreter (WSPub LB.ByteString) where
-  interpreter root state = packStream state (resolveStream root)
+  interpreter root state = packStream state (resolveStreamText root)
 
 instance Interpreter (WSPub LT.Text) where
   interpreter root state request = decodeUtf8 <$> interpreter root state (encodeUtf8 request)
@@ -63,5 +67,5 @@ instance Interpreter (WSPub Text) where
 type WSSub a = InputAction a -> IO (OutputAction a)
 
 instance Interpreter (WSSub Text) where
-  interpreter = resolveStream
+  interpreter = resolveStreamText
 -- TODO: instance Interpreter (WSSub Value) where

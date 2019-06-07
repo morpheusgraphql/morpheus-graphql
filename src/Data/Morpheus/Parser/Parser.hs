@@ -1,6 +1,7 @@
 module Data.Morpheus.Parser.Parser
   ( parseLineBreaks
   , parseRequest
+  , parseGQL
   ) where
 
 import           Control.Applicative                     (many)
