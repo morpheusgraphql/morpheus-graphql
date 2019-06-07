@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -65,10 +66,7 @@ type instance RESOLVER MUTATION b = Either String (WithEffect b)
 data WithEffect a = WithEffect
   { resultEffects :: [Text]
   , resultValue   :: a
-  } deriving (Show)
-
-instance Functor WithEffect where
-  fmap func (WithEffect effect value) = WithEffect effect (func value)
+  } deriving (Show, Functor)
 
 instance Applicative WithEffect where
   pure = WithEffect []
