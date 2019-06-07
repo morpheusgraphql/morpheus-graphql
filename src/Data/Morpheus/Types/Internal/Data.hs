@@ -36,6 +36,8 @@ import qualified Data.Text                          as T (concat)
 
 type Key = Text
 
+type TypeID = Text
+
 newtype DataValidator = DataValidator
   { validateValue :: Value -> Either Text Value
   }
@@ -84,7 +86,7 @@ isFieldNullable _                                             = True
 
 data DataType a = DataType
   { typeName        :: Text
-  , typeHash        :: Int
+  , typeHash        :: TypeID
   , typeDescription :: Text
   , typeData        :: a
   } deriving (Show)
@@ -132,25 +134,25 @@ initTypeLib query' =
   DataTypeLib
     {leaf = [], inputObject = [], query = query', object = [], union = [], mutation = Nothing, subscription = Nothing}
 
-maybeDataType :: Maybe (Text, DataOutputObject) -> [(Text, Int)]
+maybeDataType :: Maybe (Text, DataOutputObject) -> [(Text, TypeID)]
 maybeDataType (Just (key', dataType')) = [(key', typeHash dataType')]
 maybeDataType Nothing                  = []
 
-typeIdentity :: (Text, DataType a) -> (Text, Int)
+typeIdentity :: (Text, DataType a) -> (Text, TypeID)
 typeIdentity (name', dataType') = (name', typeHash dataType')
 
-typeIdentityLeaf :: (Text, DataLeaf) -> (Text, Int)
+typeIdentityLeaf :: (Text, DataLeaf) -> (Text, TypeID)
 typeIdentityLeaf (name', LeafScalar dataType') = (name', typeHash dataType')
 typeIdentityLeaf (name', LeafEnum dataType')   = (name', typeHash dataType')
 
-getAllTypeKeys :: DataTypeLib -> [(Text, Int)]
+getAllTypeKeys :: DataTypeLib -> [(Text, TypeID)]
 getAllTypeKeys (DataTypeLib leaf' inputObject' object' union' query' mutation' subscription') =
   typeIdentity query' :
   map typeIdentity inputObject' ++
   map typeIdentity object' ++
   maybeDataType mutation' ++ maybeDataType subscription' ++ map typeIdentity union' ++ map typeIdentityLeaf leaf'
 
-isTypeDefined :: Text -> DataTypeLib -> Maybe Int
+isTypeDefined :: Text -> DataTypeLib -> Maybe TypeID
 isTypeDefined name' lib' = name' `lookup` getAllTypeKeys lib'
 
 defineType :: (Text, DataFullType) -> DataTypeLib -> DataTypeLib

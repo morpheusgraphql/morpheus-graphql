@@ -16,7 +16,7 @@ module Data.Morpheus.Types.GQLType
   ) where
 
 import           Data.Morpheus.Resolve.Generics.ObjectRep          (resolveTypes)
-import           Data.Morpheus.Resolve.Generics.TypeID             (TypeID, typeId)
+import           Data.Morpheus.Resolve.Generics.TypeID             (TypeID, __typeId, __typeName)
 import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation            (DirectiveLocation)
 import           Data.Morpheus.Schema.EnumValue                    (EnumValue)
@@ -30,6 +30,7 @@ import           Data.Morpheus.Types.Internal.Data                 (DataField (.
 import           Data.Morpheus.Types.Resolver                      ((::->))
 import           Data.Proxy                                        (Proxy (..))
 import           Data.Text                                         (Text)
+import           Debug.Trace                                       (trace)
 import           GHC.Generics
 
 scalarTypeOf :: GQLType a => DataValidator -> Proxy a -> DataFullType
@@ -47,69 +48,81 @@ inputObjectOf fields' = InputObject . buildType fields'
 class GQLType a where
   description :: Proxy a -> Text
   description _ = ""
-  typeID :: Proxy a -> Text
-  default typeID :: (TypeID (Rep a), Generic a) =>
+  _typeName :: Proxy a -> Text
+  default _typeName :: (TypeID (Rep a), Generic a) =>
     Proxy a -> Text
-  typeID = typeId
+  _typeName = __typeName
+  _typeId :: Proxy a -> Text
+  default _typeId :: (TypeID (Rep a), Generic a) =>
+    Proxy a -> Text
+  _typeId = __typeId
   field_ :: TypeKind -> Proxy a -> t -> Text -> DataField t
   field_ kind' proxy' args' name' =
     DataField
       { fieldName = name'
       , fieldTypeWrappers = [NonNullType]
       , fieldKind = kind'
-      , fieldType = typeID proxy'
+      , fieldType = _typeName proxy'
       , fieldArgs = args'
       }
   buildType :: t -> Proxy a -> DataType t
   buildType typeData' proxy =
-    DataType {typeName = typeID proxy, typeDescription = description proxy, typeData = typeData'}
+    DataType
+      {typeName = _typeName proxy, typeHash = _typeId proxy, typeDescription = description proxy, typeData = typeData'}
   updateLib :: (Proxy a -> DataFullType) -> [DataTypeLib -> DataTypeLib] -> Proxy a -> DataTypeLib -> DataTypeLib
   updateLib typeBuilder stack proxy lib' =
-    case isTypeDefined (typeID proxy) lib' of
-      Nothing    -> resolveTypes lib' (defineType (typeID proxy, typeBuilder proxy) : stack)
-      Just hash' -> lib'
+    case isTypeDefined (_typeName proxy) lib' of
+      Nothing    -> resolveTypes lib' (defineType (_typeName proxy, typeBuilder proxy) : stack)
+      Just hash' -> trace (show hash') lib'
 
 instance GQLType EnumValue where
-  typeID _ = "__EnumValue"
+  _typeName _ = "__EnumValue"
 
 instance GQLType Type where
-  typeID _ = "__Type"
+  _typeName _ = "__Type"
 
 instance GQLType Field where
-  typeID _ = "__Field"
+  _typeName _ = "__Field"
 
 instance GQLType InputValue where
-  typeID _ = "__InputValue"
+  _typeName _ = "__InputValue"
 
 instance GQLType Schema where
-  typeID _ = "__Schema"
+  _typeName _ = "__Schema"
 
 instance GQLType Directive where
-  typeID _ = "__Directive"
+  _typeName _ = "__Directive"
 
 instance GQLType TypeKind where
-  typeID _ = "__TypeKind"
+  _typeName _ = "__TypeKind"
 
 instance GQLType DirectiveLocation where
-  typeID _ = "__DirectiveLocation"
+  _typeName _ = "__DirectiveLocation"
 
 instance GQLType Int where
-  typeID _ = "Int"
+  _typeName _ = "Int"
+  _typeId = const "GQL.INT"
 
 instance GQLType Float where
-  typeID _ = "Float"
+  _typeName _ = "Float"
+  _typeId _ = "GQL.FLOAT"
 
 instance GQLType Text where
-  typeID _ = "String"
+  _typeName _ = "String"
+  _typeId _ = "GQL.STRING"
 
 instance GQLType Bool where
-  typeID _ = "Boolean"
+  _typeName _ = "Boolean"
+  _typeId _ = "GQL.BOOLEAN"
 
 instance GQLType a => GQLType (Maybe a) where
-  typeID _ = typeID (Proxy @a)
+  _typeName _ = _typeName (Proxy @a)
+  _typeId _ = _typeId (Proxy @a)
 
 instance GQLType a => GQLType [a] where
-  typeID _ = typeID (Proxy @a)
+  _typeName _ = _typeName (Proxy @a)
+  _typeId _ = _typeId (Proxy @a)
 
 instance GQLType a => GQLType (p ::-> a) where
-  typeID _ = typeID (Proxy @a)
+  _typeName _ = _typeName (Proxy @a)
+  _typeId _ = _typeId (Proxy @a)

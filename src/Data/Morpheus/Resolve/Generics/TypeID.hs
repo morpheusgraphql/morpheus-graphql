@@ -4,7 +4,8 @@
 {-# LANGUAGE TypeOperators       #-}
 
 module Data.Morpheus.Resolve.Generics.TypeID
-  ( typeId
+  ( __typeName
+  , __typeId
   , TypeID
   ) where
 
@@ -12,20 +13,31 @@ import           Data.Proxy   (Proxy)
 import           Data.Text    (Text, pack)
 import           GHC.Generics
 
-typeId ::
+__typeName ::
      forall a. (TypeID (Rep a), Generic a)
   => Proxy a
   -> Text
-typeId _ = key $ from (undefined :: a)
+__typeName _ = key $ from (undefined :: a)
+
+__typeId ::
+     forall a. (TypeID (Rep a), Generic a)
+  => Proxy a
+  -> Text
+__typeId _ = typeUniqueId $ from (undefined :: a)
 
 keyName :: Datatype c => M1 D c f a -> Text
-keyName m@(M1 _) = pack $ datatypeName m
+keyName m@(M1 _) = pack (datatypeName m)
+
+typeLocation :: Datatype c => M1 D c f a -> Text
+typeLocation m@(M1 _) = pack (moduleName m ++ "." ++ packageName m)
 
 class TypeID f where
   key :: f a -> Text
+  typeUniqueId :: f a -> Text
 
 instance Datatype c => TypeID (M1 D c f) where
   key = keyName
+  typeUniqueId = typeLocation <> keyName
 {--
 
 instance (Constructor c) => TypeID (M1 C c f) where
