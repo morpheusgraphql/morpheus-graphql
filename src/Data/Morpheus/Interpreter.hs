@@ -68,4 +68,3 @@ type WSSub a = InputAction a -> IO (OutputAction a)
 
 instance Interpreter (WSSub Text) where
   interpreter = resolveStreamText
--- TODO: instance Interpreter (WSSub Value) where

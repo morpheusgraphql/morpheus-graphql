@@ -5,10 +5,9 @@
 - support for Union Types: `type instance KIND <type> = UNION`
 - add `Interpreter` class with instances:
 
-  - `ByteString`
-  - `Text`
-  - Lazy `ByteString`,
-  - Lazy `Text`
+  - `ByteString -> IO ByteString` and Lazy `ByteString`,
+  - `Text -> IO Text` and Lazy `Text`
+  -  `GQLRequest -> GQLResponse`
 
 - support of Parsing input values: `Objects`,`Arrays`
 - support scalar type: `ID`
@@ -47,6 +46,8 @@
   - Data.Morpheus.Kind
   - Data.Morpheus.Types
   - Data.Morpheus.Server
+  - Data.Morpheus.Types.Request
+  - Data.Morpheus.Types.Response
 
 ### Fixed:
 
