@@ -1,7 +1,9 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Types.Response where
+module Data.Morpheus.Types.Response
+  ( GQLResponse(..)
+  ) where
 
 import           Data.Aeson                              (ToJSON (..), pairs, (.=))
 import           Data.Morpheus.Types.Internal.Validation (JSONError (..))

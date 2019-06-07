@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
 
-module Data.Morpheus.Types.Request where
+module Data.Morpheus.Types.Request (GQLRequest(..)) where
 
 import           Data.Aeson                         (FromJSON (..))
 import           Data.Map                           (Map)
