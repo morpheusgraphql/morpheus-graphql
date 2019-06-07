@@ -10,6 +10,10 @@ copyright: "(c) 2019 Daviti Nalchevanidze"
 
 description: Build GraphQL APIs with your favourite functional language!
 
+data-files:
+  - test/**/*.gql
+  - test/**/*.json
+
 dependencies:
   - base                  >= 4.7       && <  5
   - megaparsec            >= 7.0.0     && <  8.0
