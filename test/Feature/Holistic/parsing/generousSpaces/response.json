@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Cannot query field \"q1\" on type \"Query\".",
+      "locations": [
+        {
+          "line": 4,
+          "column": 5
+        }
+      ]
+    }
+  ]
+}

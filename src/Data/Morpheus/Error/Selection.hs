@@ -33,7 +33,7 @@ cannotQueryField key typeName position = errorMessage position text
 duplicateQuerySelections :: Text -> [EnhancedKey] -> GQLErrors
 duplicateQuerySelections parentType = map keyToError
   where
-    keyToError (EnhancedKey key' pos) = GQLError {desc = toMessage key', posIndex = [pos]}
+    keyToError (EnhancedKey key' pos) = GQLError {desc = toMessage key', positions = [pos]}
     toMessage key' = T.concat ["duplicate selection of key \"", key', "\" on type \"", parentType, "\"."]
 
 -- GQL:: Field \"hobby\" of type \"Hobby!\" must have a selection of subfields. Did you mean \"hobby { ... }\"?

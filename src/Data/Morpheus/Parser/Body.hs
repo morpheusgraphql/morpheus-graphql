@@ -1,34 +1,29 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Parser.Body
-  ( body
-  , entries
+  ( entries
   ) where
 
-import           Control.Applicative                           ((<|>))
-import           Data.Attoparsec.Text                          (Parser, char, sepBy, skipSpace)
-import           Data.Char                                     (isAlpha)
 import           Data.Morpheus.Parser.Arguments                (maybeArguments)
-import           Data.Morpheus.Parser.Internal                 (getPosition, syntaxFail)
+import           Data.Morpheus.Parser.Internal                 (Parser)
 import           Data.Morpheus.Parser.Primitive                (qualifier, token)
-import           Data.Morpheus.Parser.Terms                    (lookAheadChar, onType, parseAssignment, parseChar,
-                                                                parseWhenChar, spreadLiteral)
+import           Data.Morpheus.Parser.Terms                    (onType, parseAssignment, spreadLiteral)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
                                                                 RawSelection' (..), RawSelectionSet, Reference (..))
-import           Data.Text                                     (Text, pack)
+import           Data.Text                                     (Text)
+import           Text.Megaparsec                               (sepEndBy, between, getSourcePos, label, many, try, (<|>))
+import           Text.Megaparsec.Char                          (char, space)
 
 spread :: Parser (Text, RawSelection)
-spread = do
+spread = label "spread" $ do
   index <- spreadLiteral
-  skipSpace
   key' <- token
   return (key', Spread $ Reference {referenceName = key', referencePosition = index})
 
 inlineFragment :: Parser (Text, RawSelection)
-inlineFragment = do
+inlineFragment = label "InlineFragment" $ do
   index <- spreadLiteral
   type' <- onType
-  skipSpace
   fragmentBody <- entries
   pure
     ( "INLINE_FRAGMENT"
@@ -42,10 +37,10 @@ inlineFragment = do
   - field () {...}
 -}
 parseSelectionField :: Parser (Text, RawSelection)
-parseSelectionField = do
+parseSelectionField = label "SelectionField" $ do
   (name', position') <- qualifier
   arguments' <- maybeArguments
-  value' <- parseWhenChar '{' (body arguments') (buildField arguments' position')
+  value' <- body arguments' <|> buildField arguments' position'
   return (name', value')
   where
     buildField arguments' position' =
@@ -54,36 +49,24 @@ parseSelectionField = do
          RawSelection' {rawSelectionArguments = arguments', rawSelectionRec = (), rawSelectionPosition = position'})
 
 alias :: Parser (Text, RawSelection)
-alias = do
+alias = label "alias" $ do
   ((name', position'), selection') <- parseAssignment qualifier parseSelectionField
   return (name', RawAlias {rawAliasPosition = position', rawAliasSelection = selection'})
 
---isSep :: Char -> Bool
---isSep = (`elem` [',', ' ', '\n', '\t'])
-bodySeparator :: Parser Char
-bodySeparator = char ',' <|> char ' ' <|> char '\n' <|> char '\t'
-
 entries :: Parser RawSelectionSet
-entries = do
-  parseChar '{'
-  skipSpace
-  entries' <- entry `sepBy` bodySeparator
-  skipSpace
-  parseChar '}'
-  return entries'
+entries = label "entries" $
+  between
+    (char '{' *> space)
+    (char '}' *> space)
+    (entry `sepEndBy` many (char ',' *> space))
   where
-    entry = do
-      char' <- lookAheadChar
-      case char' of
-        '.' -> inlineFragment <|> spread
-        ch'
-          | isAlpha ch' || ch' == '_' -> alias <|> parseSelectionField
-        ch' -> syntaxFail (pack $ "unknown Character on selection: \"" ++ [ch'] ++ "\"")
+    entry = label "entry" $
+      try inlineFragment <|> try spread <|> try alias <|> parseSelectionField
+
 
 body :: RawArguments -> Parser RawSelection
-body args = do
-  skipSpace
-  index <- getPosition
+body args = label "body" $ do
+  index <- getSourcePos
   entries' <- entries
   return
     (RawSelectionSet $

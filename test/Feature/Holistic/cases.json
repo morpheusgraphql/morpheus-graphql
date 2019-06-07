@@ -54,5 +54,29 @@
   {
     "path": "fragment/cannotBeSpreadOnType",
     "description": "fail when: fragment type is incompatible with object type"
+  },
+  {
+    "path": "parsing/invalidNotNullOperator",
+    "description": "fail when: user supplies '@' instead of '!'"
+  },
+  {
+    "path": "parsing/missingCloseBrace",
+    "description": "fail when: user misses out a closing '}'"
+  },
+  {
+    "path": "parsing/generousSpaces",
+    "description": "returns query even when spacing is extremely liberal"
+  },
+  {
+    "path": "parsing/complex",
+    "description": "returns on a complex query that exercises all features"
+  },
+  {
+    "path": "parsing/extraCommas",
+    "description": "fails on a query with too many commas"
+  },
+  {
+    "path": "parsing/notNullSpacing",
+    "description": "returns on a query that pads all '!' chars with whitespace"
   }
 ]

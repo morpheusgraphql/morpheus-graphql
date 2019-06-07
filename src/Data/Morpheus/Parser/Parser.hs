@@ -1,61 +1,100 @@
+{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Data.Morpheus.Parser.Parser
-  ( parseLineBreaks
-  , parseRequest
-  , parseGQL
-  ) where
+  ( parseGQL
+  )
+where
 
-import           Control.Applicative                     (many)
-import           Data.Aeson                              (decode)
-import           Data.Attoparsec.Text                    (Parser, endOfInput, parseOnly, skipSpace)
-import qualified Data.ByteString.Lazy.Char8              as LB (ByteString)
-import           Data.Map                                (fromList, toList)
-import           Data.Maybe                              (maybe)
-import           Data.Morpheus.Error.Syntax              (syntaxError)
-import           Data.Morpheus.Parser.Fragment           (fragment)
-import           Data.Morpheus.Parser.Internal           (GQLSyntax (..), catchError, parseLinebreakPositions)
-import           Data.Morpheus.Parser.Operator           (parseAnonymousQuery, parseOperator)
-import           Data.Morpheus.Parser.Terms              (parseWhenChar)
-import           Data.Morpheus.Types.Internal.Validation (Validation)
-import           Data.Morpheus.Types.Internal.Value      (Value (..))
-import           Data.Morpheus.Types.Request             (GQLRequest (..))
-import           Data.Morpheus.Types.Types               (GQLQueryRoot (..))
-import           Data.Text                               (Text, pack)
+import           Data.Aeson                     ( decode )
+import qualified Data.ByteString.Lazy.Char8    as LB
+                                                ( ByteString
+                                                , toStrict
+                                                )
+import qualified Data.List.NonEmpty            as NonEmpty
+import           Data.Map                       ( fromList
+                                                , toList
+                                                )
+import           Data.Maybe                     ( maybe )
+import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
+import           Data.Morpheus.Parser.Fragment  ( fragment )
+import           Data.Morpheus.Parser.Internal  ( Parser )
+import           Data.Morpheus.Parser.Operator  ( parseAnonymousQuery
+                                                , parseOperator
+                                                )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( GQLError(GQLError)
+                                                , GQLErrors
+                                                , Validation
+                                                , desc
+                                                , positions
+                                                )
+import           Data.Morpheus.Types.Internal.Value
+                                                ( Value(..) )
+import           Data.Morpheus.Types.Request    ( GQLRequest(..) )
+import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
+import           Data.Text                      ( Text
+                                                , pack
+                                                )
+import           Data.Text.Encoding             ( decodeUtf8 )
+import           Data.Void                      ( Void )
+import           Text.Megaparsec                ( ParseError
+                                                , ParseErrorBundle
+                                                  ( ParseErrorBundle
+                                                  )
+                                                , SourcePos
+                                                , attachSourcePos
+                                                , bundleErrors
+                                                , bundlePosState
+                                                , eof
+                                                , errorOffset
+                                                , label
+                                                , manyTill
+                                                , parseErrorPretty
+                                                , runParser
+                                                , (<|>)
+                                                )
+import           Text.Megaparsec.Char           ( space )
 
 request :: Parser GQLQueryRoot
-request = do
-  operator' <- parseWhenChar '{' parseAnonymousQuery parseOperator
-  fragmentLib <- fromList <$> many fragment
-  skipSpace
-  endOfInput
-  pure GQLQueryRoot {queryBody = operator', fragments = fragmentLib, inputVariables = []}
+request = label "GQLQueryRoot" $ do
+  space
+  operator'   <- parseAnonymousQuery <|> parseOperator
+  fragmentLib <- fromList <$> manyTill fragment eof
+  pure GQLQueryRoot
+    { queryBody      = operator'
+    , fragments      = fragmentLib
+    , inputVariables = []
+    }
+
+processErrorBundle :: ParseErrorBundle Text Void -> GQLErrors
+processErrorBundle = fmap parseErrorToGQLError . bundleToErrors
+ where
+  parseErrorToGQLError :: (ParseError Text Void, SourcePos) -> GQLError
+  parseErrorToGQLError (err, position) =
+    GQLError { desc = pack (parseErrorPretty err), positions = [position] }
+
+  bundleToErrors
+    :: ParseErrorBundle Text Void -> [(ParseError Text Void, SourcePos)]
+  bundleToErrors ParseErrorBundle { bundleErrors, bundlePosState } =
+    NonEmpty.toList $ fst $ attachSourcePos errorOffset
+                                            bundleErrors
+                                            bundlePosState
 
 getVariables :: GQLRequest -> [(Text, Value)]
 getVariables request' = maybe [] toList (variables request')
 
-parseReq :: GQLRequest -> Either String (GQLSyntax GQLQueryRoot)
-parseReq requestBody = parseOnly (catchError request) $ query requestBody
-
-parseLineBreaks :: LB.ByteString -> [Int]
-parseLineBreaks req =
-  case decode req of
-    Just x  -> lineBreaks x
-    Nothing -> []
-  where
-    lineBreaks :: GQLRequest -> [Int]
-    lineBreaks requestBody =
-      case parseOnly parseLinebreakPositions $ query requestBody of
-        Right x -> x
-        Left _  -> []
+parseReq :: GQLRequest -> Either (ParseErrorBundle Text Void) GQLQueryRoot
+parseReq requestBody = runParser request "<input>" $ query requestBody
 
 parseGQL :: GQLRequest -> Validation GQLQueryRoot
-parseGQL requestBody =
-  case parseReq requestBody of
-    Right (Valid root)         -> Right $ root {inputVariables = getVariables requestBody}
-    Right (Invalid text index) -> Left $ syntaxError text index
-    Left parseError            -> Left $ syntaxError (pack parseError) 0
+parseGQL requestBody = case parseReq requestBody of
+  Right root       -> Right $ root { inputVariables = getVariables requestBody }
+  Left  parseError -> Left $ processErrorBundle parseError
 
 parseRequest :: LB.ByteString -> Validation GQLQueryRoot
-parseRequest text =
-  case decode text of
-    Just body -> parseGQL body
-    Nothing   -> Left $ syntaxError (pack $ show text) 0
+parseRequest text = case decode text of
+  Just body -> parseGQL body
+  Nothing   -> Left $ globalSyntaxError (decodeUtf8 (LB.toStrict text))
+
+globalSyntaxError :: Text -> GQLErrors
+globalSyntaxError text = globalErrorMessage $ "Syntax error: " <> text

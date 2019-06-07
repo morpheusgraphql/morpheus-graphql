@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Required Argument: \"coordinates\" was not Defined",
+      "locations": [
+        {
+          "line": 2,
+          "column": 18
+        }
+      ]
+    }
+  ]
+}

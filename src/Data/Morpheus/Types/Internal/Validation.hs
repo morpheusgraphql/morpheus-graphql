@@ -11,14 +11,15 @@ module Data.Morpheus.Types.Internal.Validation
   , failResolveIO
   ) where
 
-import           Control.Monad.Trans.Except (ExceptT (..))
-import           Data.Aeson                 (ToJSON)
-import           Data.Text                  (Text)
-import           GHC.Generics               (Generic)
+import           Control.Monad.Trans.Except        (ExceptT (..))
+import           Data.Aeson                        (ToJSON)
+import           Data.Morpheus.Types.Internal.Base (Position)
+import           Data.Text                         (Text)
+import           GHC.Generics                      (Generic)
 
 data GQLError = GQLError
-  { desc     :: Text
-  , posIndex :: [Int]
+  { desc      :: Text
+  , positions :: [Position]
   } deriving (Show)
 
 type GQLErrors = [GQLError]
