@@ -1,0 +1,6 @@
+[
+  {
+    "path": "nameConflict",
+    "description": "fail: if types are defined with same name"
+  }
+]

@@ -43,7 +43,7 @@ encodeToText = bsToText . encode
 resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> IO GQLResponse
 resolve GQLRoot {query = queryRes, mutation = mutationRes, subscription = subscriptionRes} request =
   case schema queryRes mutationRes subscriptionRes of
-    Left error' -> return $ Errors $ renderErrors $ globalErrorMessage $ "Schema Validation Error: " <> error'
+    Left error' -> return $ Errors $ renderErrors $ globalErrorMessage $ "Schema Validation Error, " <> error'
     Right validSchema -> do
       value <- runExceptT $ _resolve validSchema
       case value of
@@ -61,7 +61,7 @@ resolveStream ::
      (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> InputAction Text -> IO (OutputAction Text)
 resolveStream GQLRoot {query = queryRes, mutation = mutationRes, subscription = subscriptionRes} (SocketInput id' request) =
   case schema queryRes mutationRes subscriptionRes of
-    Left error' -> return (NoEffect $ "Schema Validation Error: " <> error')
+    Left error' -> return (NoEffect $ "Schema Validation Error, " <> error')
     Right validSchema -> do
       value <- runExceptT $ _resolve validSchema
       case value of

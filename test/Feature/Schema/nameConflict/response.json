@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "message": "Schema Validation Error, Name Conflict: Feature.Schema.API.main.A != Feature.Schema.A2.main.A",
+      "locations": [
+      ]
+    }
+  ]
+}

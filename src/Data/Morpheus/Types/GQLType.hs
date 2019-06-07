@@ -81,7 +81,7 @@ class GQLType a where
       Nothing -> resolveTypes (defineType (_typeName proxy, typeBuilder proxy) lib') stack
       Just hash'
         | hash' == _typeId proxy -> return $ trace (show $ hash' <> " = " <> _typeId proxy) lib'
-      Just hash' -> Left $ "Name Conflict" <> hash' <> " != " <> _typeId proxy
+      Just hash' -> Left $ "Name Conflict: " <> hash' <> " != " <> _typeId proxy
 
 instance GQLType EnumValue where
   _typeName _ = "__EnumValue"
