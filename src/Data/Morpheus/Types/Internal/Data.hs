@@ -59,7 +59,7 @@ type DataInputObject = DataObject DataInputField
 
 type DataOutputObject = DataObject DataOutputField
 
-type DataUnion = [DataField ()]
+type DataUnion = DataType [DataField ()]
 
 type DataOutputType = DataKind DataOutputField
 
@@ -84,6 +84,7 @@ isFieldNullable _                                             = True
 
 data DataType a = DataType
   { typeName        :: Text
+  , typeHash        :: Int
   , typeDescription :: Text
   , typeData        :: a
   } deriving (Show)
@@ -131,22 +132,26 @@ initTypeLib query' =
   DataTypeLib
     {leaf = [], inputObject = [], query = query', object = [], union = [], mutation = Nothing, subscription = Nothing}
 
-mutationName :: Maybe (Text, DataOutputObject) -> [Text]
-mutationName (Just (key', _)) = [key']
-mutationName Nothing          = []
+maybeDataType :: Maybe (Text, DataOutputObject) -> [(Text, Int)]
+maybeDataType (Just (key', dataType')) = [(key', typeHash dataType')]
+maybeDataType Nothing                  = []
 
-subscriptionName :: Maybe (Text, DataOutputObject) -> [Text]
-subscriptionName (Just (key', _)) = [key']
-subscriptionName Nothing          = []
+typeIdentity :: (Text, DataType a) -> (Text, Int)
+typeIdentity (name', dataType') = (name', typeHash dataType')
 
-getAllTypeKeys :: DataTypeLib -> [Text]
-getAllTypeKeys (DataTypeLib leaf' inputObject' object' union' (queryName, _) mutation' subscription') =
-  [queryName] ++
-  map fst leaf' ++
-  map fst inputObject' ++ map fst object' ++ mutationName mutation' ++ subscriptionName subscription' ++ map fst union'
+typeIdentityLeaf :: (Text, DataLeaf) -> (Text, Int)
+typeIdentityLeaf (name', LeafScalar dataType') = (name', typeHash dataType')
+typeIdentityLeaf (name', LeafEnum dataType')   = (name', typeHash dataType')
 
-isTypeDefined :: Text -> DataTypeLib -> Bool
-isTypeDefined name' lib' = name' `elem` getAllTypeKeys lib'
+getAllTypeKeys :: DataTypeLib -> [(Text, Int)]
+getAllTypeKeys (DataTypeLib leaf' inputObject' object' union' query' mutation' subscription') =
+  typeIdentity query' :
+  map typeIdentity inputObject' ++
+  map typeIdentity object' ++
+  maybeDataType mutation' ++ maybeDataType subscription' ++ map typeIdentity union' ++ map typeIdentityLeaf leaf'
+
+isTypeDefined :: Text -> DataTypeLib -> Maybe Int
+isTypeDefined name' lib' = name' `lookup` getAllTypeKeys lib'
 
 defineType :: (Text, DataFullType) -> DataTypeLib -> DataTypeLib
 defineType (key', Leaf type') lib         = lib {leaf = (key', type') : leaf lib}

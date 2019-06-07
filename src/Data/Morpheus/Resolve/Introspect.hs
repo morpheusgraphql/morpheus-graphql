@@ -74,7 +74,7 @@ instance (Introspect a OBJECT, ObjectConstraint a) => UnionRep (RecSel s a) wher
 
 instance UnionConstraint a => Introspect a UNION where
   __objectField _ _ = field_ UNION (Proxy @a) []
-  __introspect _ = updateLib (const $ Union fields) stack
+  __introspect _ = updateLib (Union . buildType fields) stack
     where
       (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
 

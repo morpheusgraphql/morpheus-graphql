@@ -73,11 +73,11 @@ createLeafType kind' name' desc' enums' =
     }
 
 typeFromUnion :: (Text, DataUnion) -> Type
-typeFromUnion (name', fields') =
+typeFromUnion (name', DataType {typeData = fields', typeDescription = description'}) =
   Type
     { kind = UNION
     , name = Just name'
-    , description = Just "TODO"
+    , description = Just description'
     , fields = resolveNothing
     , ofType = Nothing
     , interfaces = Nothing

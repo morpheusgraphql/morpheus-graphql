@@ -65,9 +65,9 @@ class GQLType a where
     DataType {typeName = typeID proxy, typeDescription = description proxy, typeData = typeData'}
   updateLib :: (Proxy a -> DataFullType) -> [DataTypeLib -> DataTypeLib] -> Proxy a -> DataTypeLib -> DataTypeLib
   updateLib typeBuilder stack proxy lib' =
-    if isTypeDefined (typeID proxy) lib'
-      then lib'
-      else resolveTypes lib' (defineType (typeID proxy, typeBuilder proxy) : stack)
+    case isTypeDefined (typeID proxy) lib' of
+      Nothing    -> resolveTypes lib' (defineType (typeID proxy, typeBuilder proxy) : stack)
+      Just hash' -> lib'
 
 instance GQLType EnumValue where
   typeID _ = "__EnumValue"
