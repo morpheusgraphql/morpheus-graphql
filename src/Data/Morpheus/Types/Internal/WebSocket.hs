@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFunctor #-}
+
 module Data.Morpheus.Types.Internal.WebSocket
   ( GQLClient(..)
   , ClientID
@@ -28,11 +30,7 @@ data OutputAction a
                      , subscriptionChannels :: [Text]
                      , subscriptionQuery    :: SelectionSet }
   | NoEffect a
-
-instance Functor OutputAction where
-  fmap f (NoEffect result)                             = NoEffect (f result)
-  fmap f (PublishMutation channels' result' resolver') = PublishMutation channels' (f result') resolver'
-  fmap _ (InitSubscription clientId' channels' query') = InitSubscription clientId' channels' query'
+  deriving (Functor)
 
 type ClientID = UUID
 

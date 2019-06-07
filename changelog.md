@@ -7,7 +7,7 @@
 
   - `ByteString -> IO ByteString` and Lazy `ByteString`,
   - `Text -> IO Text` and Lazy `Text`
-  -  `GQLRequest -> GQLResponse`
+  - `GQLRequest -> GQLResponse`
 
 - support of Parsing input values: `Objects`,`Arrays`
 - support scalar type: `ID`

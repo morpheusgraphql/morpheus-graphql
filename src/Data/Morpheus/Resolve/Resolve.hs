@@ -10,8 +10,8 @@ module Data.Morpheus.Resolve.Resolve
 
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT)
 import           Data.Aeson                                 (eitherDecode, encode)
-import qualified Data.ByteString.Lazy.Char8                 as LB (ByteString, pack)
-import           Data.Morpheus.Error.Utils                  (renderErrors)
+import qualified Data.ByteString.Lazy.Char8                 as LB (ByteString)
+import           Data.Morpheus.Error.Utils                  (badRequestError, renderErrors)
 import           Data.Morpheus.Parser.Parser                (parseGQL)
 import           Data.Morpheus.Server.ClientRegister        (GQLState, publishUpdates)
 import           Data.Morpheus.Types.GQLOperator            (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
@@ -41,9 +41,6 @@ bsToText = LT.toStrict . decodeUtf8
 
 encodeToText :: GQLResponse -> Text
 encodeToText = bsToText . encode
-
-badRequestError :: String -> LB.ByteString
-badRequestError aesonError' = "Bad Request. Could not decode Request body: " <> LB.pack aesonError'
 
 resolveByteString ::
      (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> IO LB.ByteString
