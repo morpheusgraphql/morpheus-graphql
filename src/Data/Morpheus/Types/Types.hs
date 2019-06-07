@@ -28,7 +28,7 @@ data GQLQueryRoot = GQLQueryRoot
   }
 
 data GQLRoot a b c = GQLRoot
-  { query        :: a
-  , mutation     :: b
-  , subscription :: c
+  { queryResolver        :: a
+  , mutationResolver     :: b
+  , subscriptionResolver :: c
   }

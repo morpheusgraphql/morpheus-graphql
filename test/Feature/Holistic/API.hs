@@ -118,7 +118,7 @@ api :: ByteString -> IO ByteString
 api =
   interpreter
     GQLRoot
-      { query = Query {user = resolveUser}
-      , mutation = Mutation {createUser = createUserMutation}
-      , subscription = Subscription {newUser = newUserSubscription}
+      { queryResolver = Query {user = resolveUser}
+      , mutationResolver = Mutation {createUser = createUserMutation}
+      , subscriptionResolver = Subscription {newUser = newUserSubscription}
       }

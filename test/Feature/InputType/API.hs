@@ -38,4 +38,9 @@ newtype Query = Query
 
 api :: ByteString -> IO ByteString
 api =
-  interpreter GQLRoot {query = Query {q1 = A {a1 = return "a1Test", a2 = return 1}}, mutation = (), subscription = ()}
+  interpreter
+    GQLRoot
+      { queryResolver = Query {q1 = A {a1 = return "a1Test", a2 = return 1}}
+      , mutationResolver = ()
+      , subscriptionResolver = ()
+      }

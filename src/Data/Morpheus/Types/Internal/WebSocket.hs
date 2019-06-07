@@ -17,9 +17,9 @@ instance Show Connection where
   show = const "Connection"
 
 data OutputAction a
-  = PublishMutation { mutationChannels     :: [Text]
-                    , mutationResponse     :: a
-                    , subscriptionResolver :: SelectionSet -> IO Text }
+  = PublishMutation { mutationChannels                :: [Text]
+                    , mutationResponse                :: a
+                    , currentSubscriptionStateResolver :: SelectionSet -> IO Text }
   | InitSubscription { subscriptionChannels :: [Text]
                      , subscriptionQuery    :: SelectionSet }
   | NoEffect a

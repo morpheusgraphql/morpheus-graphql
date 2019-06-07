@@ -28,4 +28,5 @@ resolveDeity :: DeityArgs ::-> Deity
 resolveDeity = Resolver $ \args -> dbDeity (name args) (mythology args)
 
 mythologyApi :: B.ByteString -> IO B.ByteString
-mythologyApi = interpreter GQLRoot {query = Query {deity = resolveDeity}, mutation = (), subscription = ()}
+mythologyApi =
+  interpreter GQLRoot {queryResolver = Query {deity = resolveDeity}, mutationResolver = (), subscriptionResolver = ()}

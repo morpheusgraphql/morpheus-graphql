@@ -22,8 +22,10 @@ type GQLAPI = Text -> IO (OutputAction Text)
 handleGQLResponse :: GQLClient -> GQLState -> Int -> OutputAction Text -> IO ()
 handleGQLResponse GQLClient {clientConnection = connection', clientID = clientId'} state sessionId' msg =
   case msg of
-    PublishMutation {mutationChannels = channels', subscriptionResolver = resolver', mutationResponse = response'} ->
-      sendTextData connection' response' >> publishUpdates channels' resolver' state
+    PublishMutation { mutationChannels = channels'
+                    , currentSubscriptionStateResolver = resolver'
+                    , mutationResponse = response'
+                    } -> sendTextData connection' response' >> publishUpdates channels' resolver' state
     InitSubscription {subscriptionQuery = selection', subscriptionChannels = channels'} ->
       addClientSubscription clientId' selection' channels' sessionId' state
     NoEffect response' -> sendTextData connection' response'

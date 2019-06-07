@@ -55,7 +55,7 @@ resolveStreamText rootResolver request =
     Right req        -> fmap encodeToText <$> resolveStream rootResolver req
 
 resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> Req.GQLRequest -> IO GQLResponse
-resolve rootResolver request = do
+resolve GQLRoot {queryResolver = queryRes, mutationResolver = mutationRes, subscriptionResolver = subscriptionRes} request = do
   value <- runExceptT _resolve
   case value of
     Left x  -> pure $ Errors $ renderErrors x
@@ -69,13 +69,10 @@ resolve rootResolver request = do
         Subscription operator' -> resultValue <$> encodeSubscription subscriptionRes (operatorSelection operator')
       where
         gqlSchema = schema queryRes mutationRes subscriptionRes
-        queryRes = query rootResolver
-        mutationRes = mutation rootResolver
-        subscriptionRes = subscription rootResolver
 
 resolveStream ::
      (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> Req.GQLRequest -> IO (OutputAction GQLResponse)
-resolveStream rootResolver request = do
+resolveStream GQLRoot {queryResolver = queryRes, mutationResolver = mutationRes, subscriptionResolver = subscriptionRes} request = do
   value <- runExceptT _resolve
   case value of
     Left x       -> pure $ NoEffect $ Errors $ renderErrors x
@@ -88,7 +85,9 @@ resolveStream rootResolver request = do
           return (NoEffect value)
         resolveOperator (Mutation operator') = do
           WithEffect channels value <- encodeMutation mutationRes $ operatorSelection operator'
-          return PublishMutation {mutationChannels = channels, mutationResponse = value, subscriptionResolver = sRes}
+          return
+            PublishMutation
+              {mutationChannels = channels, mutationResponse = value, currentSubscriptionStateResolver = sRes}
           where
             sRes :: SelectionSet -> IO Text
             sRes selection' = do
@@ -100,15 +99,12 @@ resolveStream rootResolver request = do
           WithEffect channels _ <- encodeSubscription subscriptionRes $ operatorSelection operator'
           return InitSubscription {subscriptionChannels = channels, subscriptionQuery = operatorSelection operator'}
         gqlSchema = schema queryRes mutationRes subscriptionRes
-        queryRes = query rootResolver
-        mutationRes = mutation rootResolver
-        subscriptionRes = subscription rootResolver
 
 packStream :: GQLState -> (Text -> IO (OutputAction Text)) -> LB.ByteString -> IO LB.ByteString
 packStream state streamAPI request = do
   value <- streamAPI (bsToText request)
   case value of
-    PublishMutation {mutationChannels = channels, mutationResponse = res', subscriptionResolver = resolver'} -> do
+    PublishMutation {mutationChannels = channels, mutationResponse = res', currentSubscriptionStateResolver = resolver'} -> do
       publishUpdates channels resolver' state
       pure (toLBS res')
     InitSubscription {} -> pure "subscriptions are only allowed in websocket"

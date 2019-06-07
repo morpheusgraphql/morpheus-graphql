@@ -54,4 +54,8 @@ resolveUnion = return [A' A {aText = "at", aInt = 1}, B' B {bText = "bt", bInt =
 api :: ByteString -> IO ByteString
 api =
   interpreter
-    GQLRoot {query = Query {union = resolveUnion, fc = C {cText = "", cInt = 3}}, mutation = (), subscription = ()}
+    GQLRoot
+      { queryResolver = Query {union = resolveUnion, fc = C {cText = "", cInt = 3}}
+      , mutationResolver = ()
+      , subscriptionResolver = ()
+      }
