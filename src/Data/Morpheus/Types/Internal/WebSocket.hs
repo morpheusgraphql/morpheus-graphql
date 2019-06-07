@@ -30,9 +30,9 @@ data OutputAction a
   | NoEffect a
 
 instance Functor OutputAction where
-  fmap f (NoEffect result)                      = NoEffect (f result)
-  fmap f (PublishMutation clientId' result' y') = PublishMutation clientId' (f result') y'
-  fmap _ (InitSubscription x' y' z')            = InitSubscription x' y' z'
+  fmap f (NoEffect result)                             = NoEffect (f result)
+  fmap f (PublishMutation channels' result' resolver') = PublishMutation channels' (f result') resolver'
+  fmap _ (InitSubscription clientId' channels' query') = InitSubscription clientId' channels' query'
 
 type ClientID = UUID
 
