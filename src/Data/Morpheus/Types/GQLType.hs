@@ -47,83 +47,83 @@ inputObjectOf fields' = InputObject . buildType fields'
 class GQLType a where
   description :: Proxy a -> Text
   description _ = ""
-  _typeName :: Proxy a -> Text
-  default _typeName :: (TypeID (Rep a), Generic a) =>
+  __typeName :: Proxy a -> Text
+  default __typeName :: (TypeID (Rep a), Generic a) =>
     Proxy a -> Text
-  _typeName _ = typeNameOf $ from (undefined :: a)
-  _typeId :: Proxy a -> Text
-  default _typeId :: (TypeID (Rep a), Generic a) =>
+  __typeName _ = typeNameOf $ from (undefined :: a)
+  __typeId :: Proxy a -> Text
+  default __typeId :: (TypeID (Rep a), Generic a) =>
     Proxy a -> Text
-  _typeId _ = typeIDOf $ from (undefined :: a)
+  __typeId _ = typeIDOf $ from (undefined :: a)
   field_ :: TypeKind -> Proxy a -> t -> Text -> DataField t
   field_ kind' proxy' args' name' =
     DataField
       { fieldName = name'
       , fieldTypeWrappers = [NonNullType]
       , fieldKind = kind'
-      , fieldType = _typeName proxy'
+      , fieldType = __typeName proxy'
       , fieldArgs = args'
       }
   buildType :: t -> Proxy a -> DataType t
   buildType typeData' proxy =
     DataType
-      {typeName = _typeName proxy, typeID = _typeId proxy, typeDescription = description proxy, typeData = typeData'}
+      {typeName = __typeName proxy, typeID = __typeId proxy, typeDescription = description proxy, typeData = typeData'}
   updateLib :: (Proxy a -> DataFullType) -> [TypeUpdater] -> Proxy a -> TypeUpdater
   updateLib typeBuilder stack proxy lib' =
-    case isTypeDefined (_typeName proxy) lib' of
-      Nothing -> resolveTypes (defineType (_typeName proxy, typeBuilder proxy) lib') stack
+    case isTypeDefined (__typeName proxy) lib' of
+      Nothing -> resolveTypes (defineType (__typeName proxy, typeBuilder proxy) lib') stack
       Just hash'
-        | hash' == _typeId proxy -> return lib'
-      Just hash' -> Left $ "Name Conflict: " <> hash' <> " != " <> _typeId proxy
+        | hash' == __typeId proxy -> return lib'
+      Just hash' -> Left $ "Name Conflict: " <> hash' <> " != " <> __typeId proxy
 
 instance GQLType EnumValue where
-  _typeName _ = "__EnumValue"
+  __typeName _ = "__EnumValue"
 
 instance GQLType Type where
-  _typeName _ = "__Type"
+  __typeName _ = "__Type"
 
 instance GQLType Field where
-  _typeName _ = "__Field"
+  __typeName _ = "__Field"
 
 instance GQLType InputValue where
-  _typeName _ = "__InputValue"
+  __typeName _ = "__InputValue"
 
 instance GQLType Schema where
-  _typeName _ = "__Schema"
+  __typeName _ = "__Schema"
 
 instance GQLType Directive where
-  _typeName _ = "__Directive"
+  __typeName _ = "__Directive"
 
 instance GQLType TypeKind where
-  _typeName _ = "__TypeKind"
+  __typeName _ = "__TypeKind"
 
 instance GQLType DirectiveLocation where
-  _typeName _ = "__DirectiveLocation"
+  __typeName _ = "__DirectiveLocation"
 
 instance GQLType Int where
-  _typeName _ = "Int"
-  _typeId = const "__.INT"
+  __typeName _ = "Int"
+  __typeId = const "__.INT"
 
 instance GQLType Float where
-  _typeName _ = "Float"
-  _typeId _ = "__.FLOAT"
+  __typeName _ = "Float"
+  __typeId _ = "__.FLOAT"
 
 instance GQLType Text where
-  _typeName _ = "String"
-  _typeId _ = "__.STRING"
+  __typeName _ = "String"
+  __typeId _ = "__.STRING"
 
 instance GQLType Bool where
-  _typeName _ = "Boolean"
-  _typeId _ = "__.BOOLEAN"
+  __typeName _ = "Boolean"
+  __typeId _ = "__.BOOLEAN"
 
 instance GQLType a => GQLType (Maybe a) where
-  _typeName _ = _typeName (Proxy @a)
-  _typeId _ = _typeId (Proxy @a)
+  __typeName _ = __typeName (Proxy @a)
+  __typeId _ = __typeId (Proxy @a)
 
 instance GQLType a => GQLType [a] where
-  _typeName _ = _typeName (Proxy @a)
-  _typeId _ = _typeId (Proxy @a)
+  __typeName _ = __typeName (Proxy @a)
+  __typeId _ = __typeId (Proxy @a)
 
 instance GQLType a => GQLType (p ::-> a) where
-  _typeName _ = _typeName (Proxy @a)
-  _typeId _ = _typeId (Proxy @a)
+  __typeName _ = __typeName (Proxy @a)
+  __typeId _ = __typeId (Proxy @a)

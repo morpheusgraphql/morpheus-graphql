@@ -58,9 +58,9 @@ instance EncodeObjectConstraint a QueryResult => Encoder a OBJECT QueryResult wh
     where
       encodeObject :: Encode_ a QueryResult
       encodeObject (_, Selection {selectionRec = SelectionSet selection'}) value =
-        resolveBySelection selection' (__typename : resolversBy value)
+        resolveBySelection selection' (__typenameResolver : resolversBy value)
         where
-          __typename = ("__typename", const $ return $ Scalar $ String $ _typeName (Proxy @a))
+          __typenameResolver = ("__typename", const $ return $ Scalar $ String $ __typeName (Proxy @a))
       encodeObject (key, Selection {selectionPosition = position'}) _ =
         failResolveIO $ subfieldsNotSelected key "" position'
 
@@ -101,9 +101,9 @@ instance EncodeObjectConstraint a MResult => Encoder a OBJECT MResult where
     where
       encodeObject :: Encode_ a MResult
       encodeObject (_, Selection {selectionRec = SelectionSet selection'}) value =
-        resolveBySelectionM selection' (__typename : resolversBy value)
+        resolveBySelectionM selection' (__typenameResolver : resolversBy value)
         where
-          __typename = ("__typename", const $ return $ return $ Scalar $ String $ _typeName (Proxy @a))
+          __typenameResolver = ("__typename", const $ return $ return $ Scalar $ String $ __typeName (Proxy @a))
       encodeObject (key, Selection {selectionPosition = position'}) _ =
         failResolveIO $ subfieldsNotSelected key "" position'
 
@@ -146,7 +146,7 @@ instance Encoder a (KIND a) res => DeriveResolvers (K1 s a) res where
   deriveResolvers key' (K1 src) = [(key', (`_encode` src))]
 
 instance (GQLType a, Encoder a (KIND a) res) => UnionResolvers (K1 s a) res where
-  currentResolver (K1 src) = (_typeName (Proxy @a), (`_encode` src))
+  currentResolver (K1 src) = (__typeName (Proxy @a), (`_encode` src))
 
 liftResolver :: Position -> Text -> IO (Either String a) -> ResolveIO a
 liftResolver position' typeName' x = do
