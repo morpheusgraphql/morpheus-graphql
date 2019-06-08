@@ -10,6 +10,9 @@
   - Lazy `ByteString`,
   - Lazy `Text`
 
+- Schema Validation:
+  - Name Collision
+
 - support of Parsing input values: `Objects`,`Arrays`
 - support scalar type: `ID`
 - scalar Types are validated by `GQLScalar` instance function `parseValue
