@@ -15,7 +15,6 @@ module Data.Morpheus.Types.GQLType
   , inputObjectOf
   ) where
 
-import           Data.Morpheus.Resolve.Generics.TypeID             (TypeID (..))
 import           Data.Morpheus.Resolve.Generics.TypeRep            (TypeUpdater, resolveTypes)
 import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation            (DirectiveLocation)
@@ -29,8 +28,9 @@ import           Data.Morpheus.Types.Internal.Data                 (DataField (.
                                                                     isTypeDefined)
 import           Data.Morpheus.Types.Resolver                      ((::->))
 import           Data.Proxy                                        (Proxy (..))
-import           Data.Text                                         (Text)
-import           GHC.Generics
+import           Data.Text                                         (Text, pack)
+import           Data.Typeable                                     (Typeable, tyConName, typeRep, typeRepFingerprint,
+                                                                    typeRepTyCon)
 
 scalarTypeOf :: GQLType a => DataValidator -> Proxy a -> DataFullType
 scalarTypeOf validator = Leaf . LeafScalar . buildType validator
@@ -48,13 +48,13 @@ class GQLType a where
   description :: Proxy a -> Text
   description _ = ""
   __typeName :: Proxy a -> Text
-  default __typeName :: (TypeID (Rep a), Generic a) =>
+  default __typeName :: (Typeable a) =>
     Proxy a -> Text
-  __typeName _ = typeNameOf $ from (undefined :: a)
+  __typeName _ = pack $ tyConName $ typeRepTyCon $ typeRep $ Proxy @a
   __typeID :: Proxy a -> Text
-  default __typeID :: (TypeID (Rep a), Generic a) =>
+  default __typeID :: (Typeable a) =>
     Proxy a -> Text
-  __typeID _ = typeIDOf $ from (undefined :: a)
+  __typeID _ = pack $ show $ typeRepFingerprint $ typeRep $ Proxy @a
   field_ :: TypeKind -> Proxy a -> t -> Text -> DataField t
   field_ kind' proxy' args' name' =
     DataField
