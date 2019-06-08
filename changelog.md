@@ -54,6 +54,8 @@
 ### Fixed:
 
 - parser can read fields with digits like: a1 , \_1
+- you can use Wrapped type and Wrapped Primitive Types issue #136:
+    - wrapped TypesNames will be separated with "__" : typeName(Either A B) -> "Either__A__B"
 - introspection:
   - argument supports `Non-Null` and `List`
   - every field has correct kind
