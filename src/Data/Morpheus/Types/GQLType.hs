@@ -87,10 +87,10 @@ class GQLType a where
       Just _ -> Left $ nameCollisionError (__typeName proxy)
 
 instance GQLType EnumValue where
-  __typeName _ = "__EnumValue"
+  __typeName = const "__EnumValue"
 
 instance GQLType Type where
-  __typeName _ = "__Type"
+  __typeName = const "__Type"
 
 instance GQLType Field where
   __typeName = const "__Field"
@@ -99,28 +99,28 @@ instance GQLType InputValue where
   __typeName = const "__InputValue"
 
 instance GQLType Schema where
-  __typeName _ = "__Schema"
+  __typeName = const "__Schema"
 
 instance GQLType Directive where
-  __typeName _ = "__Directive"
+  __typeName = const "__Directive"
 
 instance GQLType TypeKind where
-  __typeName _ = "__TypeKind"
+  __typeName = const "__TypeKind"
 
 instance GQLType DirectiveLocation where
-  __typeName _ = "__DirectiveLocation"
+  __typeName = const "__DirectiveLocation"
 
 instance GQLType Int where
-  __typeName _ = "Int"
+  __typeName = const "Int"
 
 instance GQLType Float where
-  __typeName _ = "Float"
+  __typeName = const "Float"
 
 instance GQLType Text where
-  __typeName _ = "String"
+  __typeName = const "String"
 
 instance GQLType Bool where
-  __typeName _ = "Boolean"
+  __typeName = const "Boolean"
 
 instance GQLType a => GQLType (Maybe a) where
   __typeName _ = __typeName (Proxy @a)
