@@ -1,4 +1,4 @@
-## [0.1.0] - TODO: release Date
+## [0.1.0] - (12-15).06.2019
 
 ### Added
 
@@ -7,7 +7,8 @@
 
   - `ByteString -> IO ByteString` and Lazy `ByteString`,
   - `Text -> IO Text` and Lazy `Text`
-  - `GQLRequest -> GQLResponse`
+  - `GQLRequest -> GQLResponse` , When you using it inside another Component that have Manual `ToJSON` deriving,
+     you have to ensure that `GQLResponse` will be encoded with `toEncoding`, and not with `toJSON`.
 
 - support of Parsing input values: `Objects`,`Arrays`
 - support scalar type: `ID`
