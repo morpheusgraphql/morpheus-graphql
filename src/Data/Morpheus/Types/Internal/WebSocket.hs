@@ -9,6 +9,7 @@ module Data.Morpheus.Types.Internal.WebSocket
   ) where
 
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
+import           Data.Morpheus.Types.Response               (GQLResponse (..))
 import           Data.Text                                  (Text)
 import           Data.UUID                                  (UUID)
 import           Network.WebSockets                         (Connection)
@@ -17,9 +18,9 @@ instance Show Connection where
   show = const "Connection"
 
 data OutputAction a
-  = PublishMutation { mutationChannels                :: [Text]
-                    , mutationResponse                :: a
-                    , currentSubscriptionStateResolver :: SelectionSet -> IO Text }
+  = PublishMutation { mutationChannels                 :: [Text]
+                    , mutationResponse                 :: a
+                    , currentSubscriptionStateResolver :: SelectionSet -> IO GQLResponse }
   | InitSubscription { subscriptionChannels :: [Text]
                      , subscriptionQuery    :: SelectionSet }
   | NoEffect a

@@ -8,18 +8,19 @@ module Data.Morpheus.Server
 
 import           Control.Exception                      (finally)
 import           Control.Monad                          (forever)
+import           Data.ByteString.Lazy.Char8             (ByteString)
 import           Data.Morpheus.Server.Apollo            (ApolloSubscription (..), apolloProtocol, parseApolloRequest)
 import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubscription, connectClient,
                                                          disconnectClient, initGQLState, publishUpdates,
                                                          removeClientSubscription)
+import           Data.Morpheus.Types                    (GQLRequest (..))
 import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..), OutputAction (..))
-import           Data.Text                              (Text)
 import           Network.WebSockets                     (ServerApp, acceptRequestWith, forkPingThread, receiveData,
                                                          sendTextData)
 
-type GQLAPI = Text -> IO (OutputAction Text)
+type GQLAPI = GQLRequest -> IO (OutputAction ByteString)
 
-handleGQLResponse :: GQLClient -> GQLState -> Int -> OutputAction Text -> IO ()
+handleGQLResponse :: GQLClient -> GQLState -> Int -> OutputAction ByteString -> IO ()
 handleGQLResponse GQLClient {clientConnection = connection', clientID = clientId'} state sessionId' msg =
   case msg of
     PublishMutation { mutationChannels = channels'
@@ -40,8 +41,13 @@ queryHandler interpreter' client'@GQLClient {clientConnection = connection', cli
         Left x -> print x
         Right ApolloSubscription {apolloType = "subscription_end", apolloId = Just sid'} ->
           removeClientSubscription id' sid' state
-        Right ApolloSubscription {apolloType = "subscription_start", apolloId = Just sid'} ->
-          interpreter' msg >>= handleGQLResponse client' state sid'
+        Right ApolloSubscription { apolloType = "subscription_start"
+                                 , apolloId = Just sid'
+                                 , apolloQuery = Just query'
+                                 , apolloOperationName = name'
+                                 , apolloVariables = variables'
+                                 } -> interpreter' request >>= handleGQLResponse client' state sid'
+          where request = GQLRequest {query = query', operationName = name', variables = variables'}
         Right _ -> return ()
 
 gqlSocketApp :: GQLAPI -> GQLState -> ServerApp

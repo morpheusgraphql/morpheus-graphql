@@ -6,9 +6,11 @@ module Data.Morpheus.Interpreter
   ( Interpreter(..)
   ) where
 
+import           Data.Aeson                             (encode)
 import           Data.ByteString                        (ByteString)
 import qualified Data.ByteString.Lazy.Char8             as LB (ByteString, fromStrict, toStrict)
-import           Data.Morpheus.Resolve.Resolve          (packStream, resolve, resolveByteString, resolveStreamText)
+import           Data.Morpheus.Resolve.Resolve          (packStream, resolve, resolveByteString, resolveStream,
+                                                         resolveStreamByteString)
 import           Data.Morpheus.Server.ClientRegister    (GQLState)
 import           Data.Morpheus.Types.GQLOperator        (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
 import           Data.Morpheus.Types.Internal.WebSocket (OutputAction)
@@ -49,7 +51,7 @@ instance Interpreter (StateLess Text) where
 type WSPub a = GQLState -> a -> IO a
 
 instance Interpreter (WSPub LB.ByteString) where
-  interpreter root state = packStream state (resolveStreamText root)
+  interpreter root state = packStream state (resolveStreamByteString root)
 
 instance Interpreter (WSPub LT.Text) where
   interpreter root state request = decodeUtf8 <$> interpreter root state (encodeUtf8 request)
@@ -66,5 +68,17 @@ instance Interpreter (WSPub Text) where
 -}
 type WSSub a = a -> IO (OutputAction a)
 
+instance Interpreter (GQLRequest -> IO (OutputAction LB.ByteString)) where
+  interpreter root request = fmap encode <$> resolveStream root request
+
+instance Interpreter (WSSub LB.ByteString) where
+  interpreter = resolveStreamByteString
+
+instance Interpreter (WSSub LT.Text) where
+  interpreter root request = fmap decodeUtf8 <$> interpreter root (encodeUtf8 request)
+
+instance Interpreter (WSSub ByteString) where
+  interpreter root request = fmap LB.toStrict <$> interpreter root (LB.fromStrict request)
+
 instance Interpreter (WSSub Text) where
-  interpreter = resolveStreamText
+  interpreter root request = fmap LT.toStrict <$> interpreter root (LT.fromStrict request)
