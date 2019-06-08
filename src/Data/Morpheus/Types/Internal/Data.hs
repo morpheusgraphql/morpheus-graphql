@@ -33,10 +33,9 @@ import           Data.Morpheus.Schema.TypeKind      (TypeKind)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
 import           Data.Text                          (Text)
 import qualified Data.Text                          as T (concat)
+import           GHC.Fingerprint.Type               (Fingerprint)
 
 type Key = Text
-
-type TypeID = Text
 
 newtype DataValidator = DataValidator
   { validateValue :: Value -> Either Text Value
@@ -86,7 +85,7 @@ isFieldNullable _                                             = True
 
 data DataType a = DataType
   { typeName        :: Text
-  , typeID          :: TypeID
+  , typeID          :: Fingerprint
   , typeDescription :: Text
   , typeData        :: a
   } deriving (Show)
@@ -134,25 +133,25 @@ initTypeLib query' =
   DataTypeLib
     {leaf = [], inputObject = [], query = query', object = [], union = [], mutation = Nothing, subscription = Nothing}
 
-maybeDataType :: Maybe (Text, DataOutputObject) -> [(Text, TypeID)]
+maybeDataType :: Maybe (Text, DataOutputObject) -> [(Text, Fingerprint)]
 maybeDataType (Just (key', dataType')) = [(key', typeID dataType')]
 maybeDataType Nothing                  = []
 
-typeIdentity :: (Text, DataType a) -> (Text, TypeID)
+typeIdentity :: (Text, DataType a) -> (Text, Fingerprint)
 typeIdentity (name', dataType') = (name', typeID dataType')
 
-typeIdentityLeaf :: (Text, DataLeaf) -> (Text, TypeID)
+typeIdentityLeaf :: (Text, DataLeaf) -> (Text, Fingerprint)
 typeIdentityLeaf (name', LeafScalar dataType') = (name', typeID dataType')
 typeIdentityLeaf (name', LeafEnum dataType')   = (name', typeID dataType')
 
-getAllTypeKeys :: DataTypeLib -> [(Text, TypeID)]
+getAllTypeKeys :: DataTypeLib -> [(Text, Fingerprint)]
 getAllTypeKeys (DataTypeLib leaf' inputObject' object' union' query' mutation' subscription') =
   typeIdentity query' :
   map typeIdentity inputObject' ++
   map typeIdentity object' ++
   maybeDataType mutation' ++ maybeDataType subscription' ++ map typeIdentity union' ++ map typeIdentityLeaf leaf'
 
-isTypeDefined :: Text -> DataTypeLib -> Maybe TypeID
+isTypeDefined :: Text -> DataTypeLib -> Maybe Fingerprint
 isTypeDefined name' lib' = name' `lookup` getAllTypeKeys lib'
 
 defineType :: (Text, DataFullType) -> DataTypeLib -> DataTypeLib

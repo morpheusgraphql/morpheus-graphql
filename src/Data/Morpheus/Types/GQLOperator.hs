@@ -30,6 +30,7 @@ import           Data.Morpheus.Types.Internal.Value             (Value (..))
 import           Data.Morpheus.Types.Resolver                   (WithEffect (..))
 import           Data.Proxy
 import           Data.Text                                      (Text)
+import           Data.Typeable                                  (Typeable, typeRep, typeRepFingerprint)
 import           GHC.Generics
 
 type QResult = Value
@@ -40,11 +41,12 @@ type Encode a r = a -> SelectionSet -> ResolveIO r
 
 type EncodeCon a r = (Generic a, DeriveResolvers (Rep a) r)
 
-type IntroCon a = (ObjectRep (Rep a) (Text, DataOutputField))
+type IntroCon a = (ObjectRep (Rep a) (Text, DataOutputField), Typeable a)
 
-operatorType :: Text -> a -> (Text, DataType a)
-operatorType name' fields' =
-  (name', DataType {typeData = fields', typeName = name', typeID = "__.OPERATOR." <> name', typeDescription = ""})
+operatorType :: Typeable t => Proxy t -> Text -> a -> (Text, DataType a)
+operatorType proxy name' fields' =
+  ( name'
+  , DataType {typeData = fields', typeName = name', typeID = typeRepFingerprint $ typeRep proxy, typeDescription = ""})
 
 class GQLQuery a where
   encodeQuery :: DataTypeLib -> Encode a QResult
@@ -59,7 +61,7 @@ class GQLQuery a where
     a -> SchemaValidation DataTypeLib
   querySchema _ = resolveTypes queryType (_introspect (Proxy @Schema) : stack')
     where
-      queryType = initTypeLib (operatorType "Query" fields')
+      queryType = initTypeLib (operatorType (Proxy @a) "Query" fields')
       (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 class GQLMutation a where
@@ -72,7 +74,7 @@ class GQLMutation a where
     a -> TypeUpdater
   mutationSchema _ initialType = resolveTypes mutationType types'
     where
-      mutationType = initialType {mutation = Just $ operatorType "Mutation" fields'}
+      mutationType = initialType {mutation = Just $ operatorType (Proxy @a) "Mutation" fields'}
       (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
 
 class GQLSubscription a where
@@ -85,7 +87,7 @@ class GQLSubscription a where
     a -> TypeUpdater
   subscriptionSchema _ initialType = resolveTypes subscriptionType types'
     where
-      subscriptionType = initialType {subscription = Just $ operatorType "Subscription" fields'}
+      subscriptionType = initialType {subscription = Just $ operatorType (Proxy @a) "Subscription" fields'}
       (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
 
 instance GQLMutation () where

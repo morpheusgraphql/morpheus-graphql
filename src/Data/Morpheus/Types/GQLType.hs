@@ -31,6 +31,7 @@ import           Data.Proxy                                        (Proxy (..))
 import           Data.Text                                         (Text, pack)
 import           Data.Typeable                                     (Typeable, tyConName, typeRep, typeRepFingerprint,
                                                                     typeRepTyCon)
+import           GHC.Fingerprint.Type                              (Fingerprint)
 
 scalarTypeOf :: GQLType a => DataValidator -> Proxy a -> DataFullType
 scalarTypeOf validator = Leaf . LeafScalar . buildType validator
@@ -51,10 +52,10 @@ class GQLType a where
   default __typeName :: (Typeable a) =>
     Proxy a -> Text
   __typeName _ = pack $ tyConName $ typeRepTyCon $ typeRep $ Proxy @a
-  __typeID :: Proxy a -> Text
+  __typeID :: Proxy a -> Fingerprint
   default __typeID :: (Typeable a) =>
-    Proxy a -> Text
-  __typeID _ = pack $ show $ typeRepFingerprint $ typeRep $ Proxy @a
+    Proxy a -> Fingerprint
+  __typeID = typeRepFingerprint . typeRep
   field_ :: TypeKind -> Proxy a -> t -> Text -> DataField t
   field_ kind' proxy' args' name' =
     DataField
@@ -74,7 +75,7 @@ class GQLType a where
       Nothing -> resolveTypes (defineType (__typeName proxy, typeBuilder proxy) lib') stack
       Just typeID'
         | typeID' == __typeID proxy -> return lib'
-      Just typeID' -> Left $ "Name Conflict: " <> typeID' <> " != " <> __typeID proxy
+      Just typeID' -> Left $ pack $ "Name Conflict: " ++ (show $ typeID') ++ " != " ++ (show $ __typeID proxy)
 
 instance GQLType EnumValue where
   __typeName _ = "__EnumValue"
@@ -83,10 +84,10 @@ instance GQLType Type where
   __typeName _ = "__Type"
 
 instance GQLType Field where
-  __typeName _ = "__Field"
+  __typeName = const "__Field"
 
 instance GQLType InputValue where
-  __typeName _ = "__InputValue"
+  __typeName = const "__InputValue"
 
 instance GQLType Schema where
   __typeName _ = "__Schema"
@@ -102,19 +103,15 @@ instance GQLType DirectiveLocation where
 
 instance GQLType Int where
   __typeName _ = "Int"
-  __typeID = const "__.INT"
 
 instance GQLType Float where
   __typeName _ = "Float"
-  __typeID _ = "__.FLOAT"
 
 instance GQLType Text where
   __typeName _ = "String"
-  __typeID _ = "__.STRING"
 
 instance GQLType Bool where
   __typeName _ = "Boolean"
-  __typeID _ = "__.BOOLEAN"
 
 instance GQLType a => GQLType (Maybe a) where
   __typeName _ = __typeName (Proxy @a)
