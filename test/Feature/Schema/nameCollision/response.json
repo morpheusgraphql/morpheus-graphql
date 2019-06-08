@@ -1,0 +1,9 @@
+{
+  "errors": [
+    {
+      "message": "Schema Validation Error, Name collision: \"A\" is used for different dataTypes in two separate modules",
+      "locations": [
+      ]
+    }
+  ]
+}

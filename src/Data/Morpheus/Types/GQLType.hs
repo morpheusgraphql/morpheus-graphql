@@ -15,6 +15,7 @@ module Data.Morpheus.Types.GQLType
   , inputObjectOf
   ) where
 
+import           Data.Morpheus.Error.Schema                        (nameCollisionError)
 import           Data.Morpheus.Resolve.Generics.TypeRep            (TypeUpdater, resolveTypes)
 import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation            (DirectiveLocation)
@@ -75,7 +76,7 @@ class GQLType a where
       Nothing -> resolveTypes (defineType (__typeName proxy, typeBuilder proxy) lib') stack
       Just typeID'
         | typeID' == __typeID proxy -> return lib'
-      Just typeID' -> Left $ pack $ "Name Conflict: " ++ (show $ typeID') ++ " != " ++ (show $ __typeID proxy)
+      Just _ -> Left $ nameCollisionError (__typeName proxy)
 
 instance GQLType EnumValue where
   __typeName _ = "__EnumValue"
