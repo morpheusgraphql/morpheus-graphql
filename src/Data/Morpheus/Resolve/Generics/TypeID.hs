@@ -5,31 +5,16 @@
 {-# LANGUAGE TypeOperators       #-}
 
 module Data.Morpheus.Resolve.Generics.TypeID
-  ( __typeName
-  , __typeId
-  , TypeID
+  ( TypeID(..)
   ) where
 
-import           Data.Proxy   (Proxy)
 import           Data.Text    (Text, pack)
 import           GHC.Generics
 
-__typeName ::
-     forall a. (TypeID (Rep a), Generic a)
-  => Proxy a
-  -> Text
-__typeName _ = typeName $ from (undefined :: a)
-
-__typeId ::
-     forall a. (TypeID (Rep a), Generic a)
-  => Proxy a
-  -> Text
-__typeId _ = typeId $ from (undefined :: a)
-
 class TypeID f where
-  typeName :: f a -> Text
-  typeId :: f a -> Text
+  typeNameOf :: f a -> Text
+  typeIDOf :: f a -> Text
 
 instance Datatype c => TypeID (M1 D c f) where
-  typeName m@(M1 _) = pack (datatypeName m)
-  typeId m@(M1 _) = pack (moduleName m ++ "." ++ packageName m ++ "." ++ datatypeName m)
+  typeNameOf m@(M1 _) = pack (datatypeName m)
+  typeIDOf m@(M1 _) = pack (moduleName m ++ "." ++ packageName m ++ "." ++ datatypeName m)

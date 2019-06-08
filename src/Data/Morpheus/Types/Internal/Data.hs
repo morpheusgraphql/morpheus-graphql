@@ -86,7 +86,7 @@ isFieldNullable _                                             = True
 
 data DataType a = DataType
   { typeName        :: Text
-  , typeHash        :: TypeID
+  , typeID          :: TypeID
   , typeDescription :: Text
   , typeData        :: a
   } deriving (Show)
@@ -135,15 +135,15 @@ initTypeLib query' =
     {leaf = [], inputObject = [], query = query', object = [], union = [], mutation = Nothing, subscription = Nothing}
 
 maybeDataType :: Maybe (Text, DataOutputObject) -> [(Text, TypeID)]
-maybeDataType (Just (key', dataType')) = [(key', typeHash dataType')]
+maybeDataType (Just (key', dataType')) = [(key', typeID dataType')]
 maybeDataType Nothing                  = []
 
 typeIdentity :: (Text, DataType a) -> (Text, TypeID)
-typeIdentity (name', dataType') = (name', typeHash dataType')
+typeIdentity (name', dataType') = (name', typeID dataType')
 
 typeIdentityLeaf :: (Text, DataLeaf) -> (Text, TypeID)
-typeIdentityLeaf (name', LeafScalar dataType') = (name', typeHash dataType')
-typeIdentityLeaf (name', LeafEnum dataType')   = (name', typeHash dataType')
+typeIdentityLeaf (name', LeafScalar dataType') = (name', typeID dataType')
+typeIdentityLeaf (name', LeafEnum dataType')   = (name', typeID dataType')
 
 getAllTypeKeys :: DataTypeLib -> [(Text, TypeID)]
 getAllTypeKeys (DataTypeLib leaf' inputObject' object' union' query' mutation' subscription') =

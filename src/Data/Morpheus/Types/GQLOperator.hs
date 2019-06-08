@@ -44,7 +44,7 @@ type IntroCon a = (ObjectRep (Rep a) (Text, DataOutputField))
 
 operatorType :: Text -> a -> (Text, DataType a)
 operatorType name' fields' =
-  (name', DataType {typeData = fields', typeName = name', typeHash = "__.OPERATOR." <> name', typeDescription = ""})
+  (name', DataType {typeData = fields', typeName = name', typeID = "__.OPERATOR." <> name', typeDescription = ""})
 
 class GQLQuery a where
   encodeQuery :: DataTypeLib -> Encode a QResult

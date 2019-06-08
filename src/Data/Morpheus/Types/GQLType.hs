@@ -15,7 +15,7 @@ module Data.Morpheus.Types.GQLType
   , inputObjectOf
   ) where
 
-import           Data.Morpheus.Resolve.Generics.TypeID             (TypeID, __typeId, __typeName)
+import           Data.Morpheus.Resolve.Generics.TypeID             (TypeID (..))
 import           Data.Morpheus.Resolve.Generics.TypeRep            (TypeUpdater, resolveTypes)
 import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation            (DirectiveLocation)
@@ -50,11 +50,11 @@ class GQLType a where
   _typeName :: Proxy a -> Text
   default _typeName :: (TypeID (Rep a), Generic a) =>
     Proxy a -> Text
-  _typeName = __typeName
+  _typeName _ = typeNameOf $ from (undefined :: a)
   _typeId :: Proxy a -> Text
   default _typeId :: (TypeID (Rep a), Generic a) =>
     Proxy a -> Text
-  _typeId = __typeId
+  _typeId _ = typeIDOf $ from (undefined :: a)
   field_ :: TypeKind -> Proxy a -> t -> Text -> DataField t
   field_ kind' proxy' args' name' =
     DataField
@@ -67,7 +67,7 @@ class GQLType a where
   buildType :: t -> Proxy a -> DataType t
   buildType typeData' proxy =
     DataType
-      {typeName = _typeName proxy, typeHash = _typeId proxy, typeDescription = description proxy, typeData = typeData'}
+      {typeName = _typeName proxy, typeID = _typeId proxy, typeDescription = description proxy, typeData = typeData'}
   updateLib :: (Proxy a -> DataFullType) -> [TypeUpdater] -> Proxy a -> TypeUpdater
   updateLib typeBuilder stack proxy lib' =
     case isTypeDefined (_typeName proxy) lib' of
