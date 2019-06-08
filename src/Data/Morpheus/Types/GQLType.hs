@@ -51,10 +51,10 @@ class GQLType a where
   default __typeName :: (TypeID (Rep a), Generic a) =>
     Proxy a -> Text
   __typeName _ = typeNameOf $ from (undefined :: a)
-  __typeId :: Proxy a -> Text
-  default __typeId :: (TypeID (Rep a), Generic a) =>
+  __typeID :: Proxy a -> Text
+  default __typeID :: (TypeID (Rep a), Generic a) =>
     Proxy a -> Text
-  __typeId _ = typeIDOf $ from (undefined :: a)
+  __typeID _ = typeIDOf $ from (undefined :: a)
   field_ :: TypeKind -> Proxy a -> t -> Text -> DataField t
   field_ kind' proxy' args' name' =
     DataField
@@ -67,14 +67,14 @@ class GQLType a where
   buildType :: t -> Proxy a -> DataType t
   buildType typeData' proxy =
     DataType
-      {typeName = __typeName proxy, typeID = __typeId proxy, typeDescription = description proxy, typeData = typeData'}
+      {typeName = __typeName proxy, typeID = __typeID proxy, typeDescription = description proxy, typeData = typeData'}
   updateLib :: (Proxy a -> DataFullType) -> [TypeUpdater] -> Proxy a -> TypeUpdater
   updateLib typeBuilder stack proxy lib' =
     case isTypeDefined (__typeName proxy) lib' of
       Nothing -> resolveTypes (defineType (__typeName proxy, typeBuilder proxy) lib') stack
-      Just hash'
-        | hash' == __typeId proxy -> return lib'
-      Just hash' -> Left $ "Name Conflict: " <> hash' <> " != " <> __typeId proxy
+      Just typeID'
+        | typeID' == __typeID proxy -> return lib'
+      Just typeID' -> Left $ "Name Conflict: " <> typeID' <> " != " <> __typeID proxy
 
 instance GQLType EnumValue where
   __typeName _ = "__EnumValue"
@@ -102,28 +102,28 @@ instance GQLType DirectiveLocation where
 
 instance GQLType Int where
   __typeName _ = "Int"
-  __typeId = const "__.INT"
+  __typeID = const "__.INT"
 
 instance GQLType Float where
   __typeName _ = "Float"
-  __typeId _ = "__.FLOAT"
+  __typeID _ = "__.FLOAT"
 
 instance GQLType Text where
   __typeName _ = "String"
-  __typeId _ = "__.STRING"
+  __typeID _ = "__.STRING"
 
 instance GQLType Bool where
   __typeName _ = "Boolean"
-  __typeId _ = "__.BOOLEAN"
+  __typeID _ = "__.BOOLEAN"
 
 instance GQLType a => GQLType (Maybe a) where
   __typeName _ = __typeName (Proxy @a)
-  __typeId _ = __typeId (Proxy @a)
+  __typeID _ = __typeID (Proxy @a)
 
 instance GQLType a => GQLType [a] where
   __typeName _ = __typeName (Proxy @a)
-  __typeId _ = __typeId (Proxy @a)
+  __typeID _ = __typeID (Proxy @a)
 
 instance GQLType a => GQLType (p ::-> a) where
   __typeName _ = __typeName (Proxy @a)
-  __typeId _ = __typeId (Proxy @a)
+  __typeID _ = __typeID (Proxy @a)
