@@ -137,19 +137,20 @@ maybeDataType :: Maybe (Text, DataOutputObject) -> [(Text, Fingerprint)]
 maybeDataType (Just (key', dataType')) = [(key', typeFingerprint dataType')]
 maybeDataType Nothing                  = []
 
-typeIdentity :: (Text, DataType a) -> (Text, Fingerprint)
-typeIdentity (name', dataType') = (name', typeFingerprint dataType')
+getTypeFingerprint :: (Text, DataType a) -> (Text, Fingerprint)
+getTypeFingerprint (name', dataType') = (name', typeFingerprint dataType')
 
-typeIdentityLeaf :: (Text, DataLeaf) -> (Text, Fingerprint)
-typeIdentityLeaf (name', LeafScalar dataType') = (name', typeFingerprint dataType')
-typeIdentityLeaf (name', LeafEnum dataType')   = (name', typeFingerprint dataType')
+getLeafFingerprint :: (Text, DataLeaf) -> (Text, Fingerprint)
+getLeafFingerprint (name', LeafScalar dataType') = (name', typeFingerprint dataType')
+getLeafFingerprint (name', LeafEnum dataType')   = (name', typeFingerprint dataType')
 
 getAllTypeKeys :: DataTypeLib -> [(Text, Fingerprint)]
 getAllTypeKeys (DataTypeLib leaf' inputObject' object' union' query' mutation' subscription') =
-  typeIdentity query' :
-  map typeIdentity inputObject' ++
-  map typeIdentity object' ++
-  maybeDataType mutation' ++ maybeDataType subscription' ++ map typeIdentity union' ++ map typeIdentityLeaf leaf'
+  getTypeFingerprint query' :
+  map getTypeFingerprint inputObject' ++
+  map getTypeFingerprint object' ++
+  maybeDataType mutation' ++
+  maybeDataType subscription' ++ map getTypeFingerprint union' ++ map getLeafFingerprint leaf'
 
 isTypeDefined :: Text -> DataTypeLib -> Maybe Fingerprint
 isTypeDefined name' lib' = name' `lookup` getAllTypeKeys lib'
