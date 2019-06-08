@@ -38,7 +38,7 @@ class GQLArgs p where
   introspect :: Proxy p -> [((Text, DataInputField), TypeUpdater)]
   default introspect :: ObjectRep (Rep p) (Text, DataInputField) =>
     Proxy p -> [((Text, DataInputField), TypeUpdater)]
-  introspect _ = getFields (Proxy @(Rep p))
+  introspect _ = objectFieldTypes (Proxy @(Rep p))
 
 instance GQLArgs () where
   decode _ = pure ()

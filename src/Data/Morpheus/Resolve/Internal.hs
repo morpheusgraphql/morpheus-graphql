@@ -59,7 +59,7 @@ introspectInputObject ::
   => Intro_ a
 introspectInputObject = updateLib (inputObjectOf fields') stack'
   where
-    (fields', stack') = unzip $ getFields (Proxy @(Rep a))
+    (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 maybeField :: DataField a -> DataField a
 maybeField field@DataField {fieldTypeWrappers = NonNullType:xs} = field {fieldTypeWrappers = xs}

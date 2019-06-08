@@ -83,6 +83,6 @@ instance InputTypeRouter a (KIND a) => InputTypeRouter [a] WRAPPER where
   __introspect _ _ = _introspect (Proxy @a)
 
 instance (Selector s, InputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Text, DataInputField) where
-  getFields _ = [((name, _field (Proxy @a) name), _introspect (Proxy @a))]
+  objectFieldTypes _ = [((name, _field (Proxy @a) name), _introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)

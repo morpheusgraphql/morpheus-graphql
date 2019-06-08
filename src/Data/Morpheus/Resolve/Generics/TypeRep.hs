@@ -50,16 +50,16 @@ resolveTypes :: DataTypeLib -> [TypeUpdater] -> SchemaValidation DataTypeLib
 resolveTypes = foldM (&)
 
 class ObjectRep rep t where
-  getFields :: Proxy rep -> [(t, TypeUpdater)]
+  objectFieldTypes :: Proxy rep -> [(t, TypeUpdater)]
 
 instance ObjectRep f t => ObjectRep (M1 D x f) t where
-  getFields _ = getFields (Proxy @f)
+  objectFieldTypes _ = objectFieldTypes (Proxy @f)
 
 instance ObjectRep f t => ObjectRep (M1 C x f) t where
-  getFields _ = getFields (Proxy @f)
+  objectFieldTypes _ = objectFieldTypes (Proxy @f)
 
 instance (ObjectRep a t, ObjectRep b t) => ObjectRep (a :*: b) t where
-  getFields _ = getFields (Proxy @a) ++ getFields (Proxy @b)
+  objectFieldTypes _ = objectFieldTypes (Proxy @a) ++ objectFieldTypes (Proxy @b)
 
 instance ObjectRep U1 t where
-  getFields _ = []
+  objectFieldTypes _ = []

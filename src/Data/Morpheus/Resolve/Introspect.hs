@@ -57,7 +57,7 @@ instance EnumConstraint a => Introspect a ENUM where
 
 -}
 instance (Selector s, Introspect a (KIND a)) => ObjectRep (RecSel s a) (Text, DataOutputField) where
-  getFields _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
+  objectFieldTypes _ = [((name, _objectField (Proxy @a) name), _introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: SelOf s)
 
@@ -65,7 +65,7 @@ instance ObjectConstraint a => Introspect a OBJECT where
   __objectField _ _ = field_ OBJECT (Proxy @a) []
   __introspect _ = updateLib (asObjectType fields') stack'
     where
-      (fields', stack') = unzip $ getFields (Proxy @(Rep a))
+      (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 instance (Introspect a OBJECT, ObjectConstraint a) => UnionRep (RecSel s a) where
   possibleTypes _ = [(field_ OBJECT (Proxy @a) () "", __introspect (Proxy @OBJECT) (Proxy @a))]

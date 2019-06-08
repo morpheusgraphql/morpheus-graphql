@@ -60,7 +60,7 @@ class GQLQuery a where
   querySchema _ = resolveTypes queryType (_introspect (Proxy @Schema) : stack')
     where
       queryType = initTypeLib (operatorType "Query" fields')
-      (fields', stack') = unzip $ getFields (Proxy @(Rep a))
+      (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 class GQLMutation a where
   encodeMutation :: Encode a MResult
@@ -73,7 +73,7 @@ class GQLMutation a where
   mutationSchema _ initialType = resolveTypes mutationType types'
     where
       mutationType = initialType {mutation = Just $ operatorType "Mutation" fields'}
-      (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
+      (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
 
 class GQLSubscription a where
   encodeSubscription :: Encode a MResult
@@ -86,7 +86,7 @@ class GQLSubscription a where
   subscriptionSchema _ initialType = resolveTypes subscriptionType types'
     where
       subscriptionType = initialType {subscription = Just $ operatorType "Subscription" fields'}
-      (fields', types') = unzip $ getFields (Proxy :: Proxy (Rep a))
+      (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
 
 instance GQLMutation () where
   encodeMutation _ _ = pure $ pure Null
