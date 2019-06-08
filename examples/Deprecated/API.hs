@@ -176,7 +176,7 @@ data Subscription = Subscription
 gqlRoot :: GQLRoot Query Mutation Subscription
 gqlRoot =
   GQLRoot
-    { query = Query {user = resolveUser}
+    { query = Query {user = resolveUser, wrappedA1 = A 0, wrappedA2 = A ""}
     , mutation = Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
     , subscription = Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}
     }
