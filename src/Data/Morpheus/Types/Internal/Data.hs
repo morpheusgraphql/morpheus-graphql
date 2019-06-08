@@ -85,7 +85,7 @@ isFieldNullable _                                             = True
 
 data DataType a = DataType
   { typeName        :: Text
-  , typeID          :: Fingerprint
+  , typeFingerprint :: Fingerprint
   , typeDescription :: Text
   , typeData        :: a
   } deriving (Show)
@@ -134,15 +134,15 @@ initTypeLib query' =
     {leaf = [], inputObject = [], query = query', object = [], union = [], mutation = Nothing, subscription = Nothing}
 
 maybeDataType :: Maybe (Text, DataOutputObject) -> [(Text, Fingerprint)]
-maybeDataType (Just (key', dataType')) = [(key', typeID dataType')]
+maybeDataType (Just (key', dataType')) = [(key', typeFingerprint dataType')]
 maybeDataType Nothing                  = []
 
 typeIdentity :: (Text, DataType a) -> (Text, Fingerprint)
-typeIdentity (name', dataType') = (name', typeID dataType')
+typeIdentity (name', dataType') = (name', typeFingerprint dataType')
 
 typeIdentityLeaf :: (Text, DataLeaf) -> (Text, Fingerprint)
-typeIdentityLeaf (name', LeafScalar dataType') = (name', typeID dataType')
-typeIdentityLeaf (name', LeafEnum dataType')   = (name', typeID dataType')
+typeIdentityLeaf (name', LeafScalar dataType') = (name', typeFingerprint dataType')
+typeIdentityLeaf (name', LeafEnum dataType')   = (name', typeFingerprint dataType')
 
 getAllTypeKeys :: DataTypeLib -> [(Text, Fingerprint)]
 getAllTypeKeys (DataTypeLib leaf' inputObject' object' union' query' mutation' subscription') =

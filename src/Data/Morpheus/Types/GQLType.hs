@@ -53,10 +53,10 @@ class GQLType a where
   default __typeName :: (Typeable a) =>
     Proxy a -> Text
   __typeName _ = pack $ tyConName $ typeRepTyCon $ typeRep $ Proxy @a
-  __typeID :: Proxy a -> Fingerprint
-  default __typeID :: (Typeable a) =>
+  __typeFingerprint :: Proxy a -> Fingerprint
+  default __typeFingerprint :: (Typeable a) =>
     Proxy a -> Fingerprint
-  __typeID = typeRepFingerprint . typeRep
+  __typeFingerprint = typeRepFingerprint . typeRep
   field_ :: TypeKind -> Proxy a -> t -> Text -> DataField t
   field_ kind' proxy' args' name' =
     DataField
@@ -69,13 +69,17 @@ class GQLType a where
   buildType :: t -> Proxy a -> DataType t
   buildType typeData' proxy =
     DataType
-      {typeName = __typeName proxy, typeID = __typeID proxy, typeDescription = description proxy, typeData = typeData'}
+      { typeName = __typeName proxy
+      , typeFingerprint = __typeFingerprint proxy
+      , typeDescription = description proxy
+      , typeData = typeData'
+      }
   updateLib :: (Proxy a -> DataFullType) -> [TypeUpdater] -> Proxy a -> TypeUpdater
   updateLib typeBuilder stack proxy lib' =
     case isTypeDefined (__typeName proxy) lib' of
       Nothing -> resolveTypes (defineType (__typeName proxy, typeBuilder proxy) lib') stack
-      Just typeID'
-        | typeID' == __typeID proxy -> return lib'
+      Just fingerprint'
+        | fingerprint' == __typeFingerprint proxy -> return lib'
       Just _ -> Left $ nameCollisionError (__typeName proxy)
 
 instance GQLType EnumValue where
@@ -116,12 +120,12 @@ instance GQLType Bool where
 
 instance GQLType a => GQLType (Maybe a) where
   __typeName _ = __typeName (Proxy @a)
-  __typeID _ = __typeID (Proxy @a)
+  __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance GQLType a => GQLType [a] where
   __typeName _ = __typeName (Proxy @a)
-  __typeID _ = __typeID (Proxy @a)
+  __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance GQLType a => GQLType (p ::-> a) where
   __typeName _ = __typeName (Proxy @a)
-  __typeID _ = __typeID (Proxy @a)
+  __typeFingerprint _ = __typeFingerprint (Proxy @a)

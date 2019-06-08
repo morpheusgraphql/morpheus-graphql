@@ -46,7 +46,7 @@ type IntroCon a = (ObjectRep (Rep a) (Text, DataOutputField), Typeable a)
 operatorType :: Typeable t => Proxy t -> Text -> a -> (Text, DataType a)
 operatorType proxy name' fields' =
   ( name'
-  , DataType {typeData = fields', typeName = name', typeID = typeRepFingerprint $ typeRep proxy, typeDescription = ""})
+  , DataType {typeData = fields', typeName = name', typeFingerprint = typeRepFingerprint $ typeRep proxy, typeDescription = ""})
 
 class GQLQuery a where
   encodeQuery :: DataTypeLib -> Encode a QResult

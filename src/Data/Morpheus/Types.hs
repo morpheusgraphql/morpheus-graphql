@@ -5,7 +5,7 @@ module Data.Morpheus.Types
   , Resolver(..)
   , ID(..)
   , GQLRoot(..)
-  , GQLType(..)
+  , GQLType(description, __typeName)
   , GQLScalar(..)
   , GQLMutation
   , GQLQuery
