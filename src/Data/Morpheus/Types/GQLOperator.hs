@@ -19,7 +19,7 @@ module Data.Morpheus.Types.GQLOperator
 import           Data.Morpheus.Resolve.Encode                   (_encode)
 import           Data.Morpheus.Resolve.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection,
                                                                  resolveBySelectionM)
-import           Data.Morpheus.Resolve.Generics.TypeRep         (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Resolve.Generics.TypeRep         (ObjectRep (..), TypeUpdater, resolveTypes)
 import           Data.Morpheus.Resolve.Introspect               (_introspect)
 import           Data.Morpheus.Schema.Schema                    (Schema, initSchema)
 import           Data.Morpheus.Types.Internal.AST.Selection     (SelectionSet)
@@ -41,8 +41,6 @@ type Encode a r = a -> SelectionSet -> ResolveIO r
 type EncodeCon a r = (Generic a, DeriveResolvers (Rep a) r)
 
 type IntroCon a = (ObjectRep (Rep a) (Text, DataOutputField))
-
-type Intro a = a -> DataTypeLib -> SchemaValidation DataTypeLib
 
 operatorType :: Text -> a -> (Text, DataType a)
 operatorType name' fields' =
@@ -69,9 +67,9 @@ class GQLMutation a where
   default encodeMutation :: EncodeCon a MResult =>
     Encode a MResult
   encodeMutation rootResolver sel = resolveBySelectionM sel $ deriveResolvers "" $ from rootResolver
-  mutationSchema :: Intro a
+  mutationSchema :: a -> TypeUpdater
   default mutationSchema :: IntroCon a =>
-    Intro a
+    a -> TypeUpdater
   mutationSchema _ initialType = resolveTypes mutationType types'
     where
       mutationType = initialType {mutation = Just $ operatorType "Mutation" fields'}
@@ -82,9 +80,9 @@ class GQLSubscription a where
   default encodeSubscription :: EncodeCon a MResult =>
     Encode a MResult
   encodeSubscription rootResolver sel = resolveBySelectionM sel $ deriveResolvers "" $ from rootResolver
-  subscriptionSchema :: Intro a
+  subscriptionSchema :: a -> TypeUpdater
   default subscriptionSchema :: IntroCon a =>
-    Intro a
+    a -> TypeUpdater
   subscriptionSchema _ initialType = resolveTypes subscriptionType types'
     where
       subscriptionType = initialType {subscription = Just $ operatorType "Subscription" fields'}

@@ -16,7 +16,7 @@ module Data.Morpheus.Types.GQLType
   ) where
 
 import           Data.Morpheus.Resolve.Generics.TypeID             (TypeID, __typeId, __typeName)
-import           Data.Morpheus.Resolve.Generics.TypeRep            (resolveTypes)
+import           Data.Morpheus.Resolve.Generics.TypeRep            (TypeUpdater, resolveTypes)
 import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation            (DirectiveLocation)
 import           Data.Morpheus.Schema.EnumValue                    (EnumValue)
@@ -25,9 +25,8 @@ import           Data.Morpheus.Schema.Schema                       (Schema)
 import           Data.Morpheus.Schema.TypeKind                     (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data                 (DataField (..), DataFullType (..), DataInputField,
                                                                     DataLeaf (..), DataOutputField, DataType (..),
-                                                                    DataTypeLib, DataTypeWrapper (..), DataValidator,
-                                                                    defineType, isTypeDefined)
-import           Data.Morpheus.Types.Internal.Validation           (SchemaValidation)
+                                                                    DataTypeWrapper (..), DataValidator, defineType,
+                                                                    isTypeDefined)
 import           Data.Morpheus.Types.Resolver                      ((::->))
 import           Data.Proxy                                        (Proxy (..))
 import           Data.Text                                         (Text)
@@ -69,12 +68,7 @@ class GQLType a where
   buildType typeData' proxy =
     DataType
       {typeName = _typeName proxy, typeHash = _typeId proxy, typeDescription = description proxy, typeData = typeData'}
-  updateLib ::
-       (Proxy a -> DataFullType)
-    -> [DataTypeLib -> SchemaValidation DataTypeLib]
-    -> Proxy a
-    -> DataTypeLib
-    -> SchemaValidation DataTypeLib
+  updateLib :: (Proxy a -> DataFullType) -> [TypeUpdater] -> Proxy a -> TypeUpdater
   updateLib typeBuilder stack proxy lib' =
     case isTypeDefined (_typeName proxy) lib' of
       Nothing -> resolveTypes (defineType (_typeName proxy, typeBuilder proxy) lib') stack
