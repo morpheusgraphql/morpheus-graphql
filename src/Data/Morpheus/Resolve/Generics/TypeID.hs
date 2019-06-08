@@ -18,24 +18,18 @@ __typeName ::
      forall a. (TypeID (Rep a), Generic a)
   => Proxy a
   -> Text
-__typeName _ = key $ from (undefined :: a)
+__typeName _ = typeName $ from (undefined :: a)
 
 __typeId ::
      forall a. (TypeID (Rep a), Generic a)
   => Proxy a
   -> Text
-__typeId _ = typeUniqueId $ from (undefined :: a)
-
-keyName :: Datatype c => M1 D c f a -> Text
-keyName m@(M1 _) = pack (datatypeName m)
-
-typeLocation :: Datatype c => M1 D c f a -> Text
-typeLocation m@(M1 _) = pack (moduleName m ++ "." ++ packageName m)
+__typeId _ = typeId $ from (undefined :: a)
 
 class TypeID f where
-  key :: f a -> Text
-  typeUniqueId :: f a -> Text
+  typeName :: f a -> Text
+  typeId :: f a -> Text
 
 instance Datatype c => TypeID (M1 D c f) where
-  key = keyName
-  typeUniqueId val = typeLocation val <> "." <> keyName val
+  typeName m@(M1 _) = pack (datatypeName m)
+  typeId m@(M1 _) = pack (moduleName m ++ "." ++ packageName m ++ "." ++ datatypeName m)

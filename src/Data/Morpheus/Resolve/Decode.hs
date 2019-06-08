@@ -13,14 +13,17 @@ import           Data.Morpheus.Error.Internal           (internalArgumentError, 
 import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIND, SCALAR, WRAPPER)
 import           Data.Morpheus.Resolve.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Resolve.Generics.GDecode (GDecode (..))
+import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), RecSel, SelOf)
 import           Data.Morpheus.Resolve.Internal         (Decode_, EnumConstraint, IField_, InputObjectConstraint,
                                                          Intro_, introspectEnum, introspectInputObject, listField,
                                                          maybeField)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import qualified Data.Morpheus.Types.GQLScalar          as S (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType            (GQLType, field_)
+import           Data.Morpheus.Types.Internal.Data      (DataInputField)
 import           Data.Morpheus.Types.Internal.Value     (Value (..))
 import           Data.Proxy                             (Proxy (..))
+import           Data.Text                              (Text, pack)
 import           GHC.Generics
 
 _field ::
@@ -78,3 +81,8 @@ instance InputTypeRouter a (KIND a) => InputTypeRouter [a] WRAPPER where
   __decode _ isType    = internalTypeMismatch "List" isType
   __field _ _ name = listField $ _field (Proxy @a) name
   __introspect _ _ = _introspect (Proxy @a)
+
+instance (Selector s, InputTypeRouter a (KIND a)) => ObjectRep (RecSel s a) (Text, DataInputField) where
+  getFields _ = [((name, _field (Proxy @a) name), _introspect (Proxy @a))]
+    where
+      name = pack $ selName (undefined :: SelOf s)
