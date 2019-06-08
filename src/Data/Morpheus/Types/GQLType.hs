@@ -29,9 +29,9 @@ import           Data.Morpheus.Types.Internal.Data                 (DataField (.
                                                                     isTypeDefined)
 import           Data.Morpheus.Types.Resolver                      ((::->))
 import           Data.Proxy                                        (Proxy (..))
-import           Data.Text                                         (Text, pack)
-import           Data.Typeable                                     (Typeable, tyConName, typeRep, typeRepFingerprint,
-                                                                    typeRepTyCon)
+import           Data.Text                                         (Text, intercalate, pack)
+import           Data.Typeable                                     (Typeable, splitTyConApp, tyConName, typeRep,
+                                                                    typeRepFingerprint)
 import           GHC.Fingerprint.Type                              (Fingerprint)
 
 scalarTypeOf :: GQLType a => DataValidator -> Proxy a -> DataFullType
@@ -52,7 +52,11 @@ class GQLType a where
   __typeName :: Proxy a -> Text
   default __typeName :: (Typeable a) =>
     Proxy a -> Text
-  __typeName _ = pack $ tyConName $ typeRepTyCon $ typeRep $ Proxy @a
+  __typeName _ = generateName $ typeRep $ Proxy @a
+    where
+      generateName = joinWithSubTypes . splitTyConApp
+        where
+          joinWithSubTypes (con', args') = intercalate "__" $ pack (tyConName con') : map generateName args'
   __typeFingerprint :: Proxy a -> Fingerprint
   default __typeFingerprint :: (Typeable a) =>
     Proxy a -> Fingerprint
