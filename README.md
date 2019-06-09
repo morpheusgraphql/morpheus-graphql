@@ -1,6 +1,6 @@
 # Morpheus GraphQL
 
-Build GraphQL APIs with your favourite functional language! 
+Build GraphQL APIs with your favourite functional language!
 
 Morpheus GraphQL helps you to build GraphQL APIs in Haskell with native haskell types.
 Morpheus will convert your haskell types to a GraphQL schema and all your resolvers are just native Haskell functions.
@@ -11,7 +11,7 @@ Just open an issue here on GitHub, or join [our Slack channel](https://morpheus-
 ## Getting Started
 ### Setup
 
-To get started with Morpheus, you first need to add it to your project's dependencies, as follows (assuming you're using hpack): 
+To get started with Morpheus, you first need to add it to your project's dependencies, as follows (assuming you're using hpack):
 
 package.yml
 ```yaml
@@ -35,21 +35,24 @@ As Morpheus is quite new, make sure stack can find morpheus-graphql by running `
 To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
  which derives the `Generic`and `GQLQuery` typeclasses. Lazily resolvable fields on this `Query` type are defined via the infix type `::->`,
  representing resolving a set of arguments `()` to a concrete value.
- 
+
 ```haskell
 data Query = Query
   { deity :: DeityArgs ::-> Deity
-  } deriving (Generic , GQLQuery)
-  
+  } deriving (Generic, GQLQuery)
+
 data Deity = Deity
-  { fullname  :: Text          -- Non-Nullable Field
-  , power     :: Maybe Text    -- Nullable Field
-  } deriving (Generic, GQLKind, GQLObject, Typeable)
-  
+  { fullName :: Text         -- Non-Nullable Field
+  , power    :: Maybe Text   -- Nullable Field
+  } deriving (Generic, GQLType, FromJSON)
+
+type instance KIND Deity = OBJECT
+
+
 data DeityArgs = DeityArgs
   { name      :: Text        -- Required Argument
   , mythology :: Maybe Text  -- Optional Argument
-  } deriving (Generic , GQLArgs)
+  } deriving (Generic, GQLArgs)
 ```
 
 For each field in the `Query` type defined via `::->` (like `deity`) we will define a resolver implementation that provides the values during runtime by referring to
@@ -118,7 +121,6 @@ Mythology API is deployed on : [_api.morpheusgraphql.com_](https://api.morpheusg
 ## Advanced topics
 ### Enums
 You can use Union Types as Enums, but they're not allowed to have any parameters.
-Wrap them with `EnumOf` inside your `GQLType` definition.
 ```haskell
 data City
   = Athens
@@ -126,46 +128,37 @@ data City
   | Corinth
   | Delphi
   | Argos
-  deriving (Show, Generic, Typeable, GQLKind, GQLEnum)
+  deriving (Generic, GQLType)
 
-data SomeGQLType = SomeGQLType
-  { ...
-  , city  :: EnumOf City
-  } deriving ...
-
+type instance KIND City = ENUM
 ```
 
 ### Scalar types
 To use custom scalar types, you need to provide implementations for `parseValue` and `serialize` respectively.
-Wrap them with `ScalarOf` inside your `GQLType` definition.
 ```haskell
-data Odd = Int deriving (Show, Data, Generic, GQLKind)
+data Odd = Int deriving (Generic, GQLType)
 
 instance GQLScalar Odd where
   parseValue (Int x) = pure $ Odd (...  )
   parseValue (String x) = pure $ Odd (...  )
   serialize  (Odd value) = Int value
 
-data SomeGQLType = SomeGQLType { ...
- count :: ScalarOf Odd
-} deriving ...
-
+type instance KIND Odd = SCALAR
 ```
 
 ### Introspection
 Morpheus converts your schema to a GraphQL introspection automatically. You can use tools like `Insomnia` to take a
 look at the introspection and validate your schema.
-If you need a description for your GQLType inside of the introspection you can define the GQLKind instance manually
+If you need a description for your GQLType inside of the introspection you can define the GQLType instance manually
 and provide an implementation for the `description` function:
 
 ```haskell
 data Deity = Deity
 { ...
-} deriving (Show, Generic, Data, GQLObject)
+} deriving (Generic, GQLType)
 
-instance GQLKind Deity where
+instance GQLType Deity where
   description = const "A supernatural being considered divine and sacred"
-
 ```
 
 screenshots from `Insomnia`
@@ -180,7 +173,7 @@ Just exchange deriving `GQLQuery` for `GQLMutation` and declare them separately 
 ```haskell
 newtype Mutation = Mutation
   { createDeity :: Form ::-> Deity
-  } deriving (Show, Generic, Data, GQLMutation)
+  } deriving (Show, Generic, GQLMutation)
 
 createDeityMutation :: Form ::-> Deity
 createDeityMutation = ...
