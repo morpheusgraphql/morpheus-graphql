@@ -10,8 +10,9 @@ module Deprecated.API
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types ((::->), (::->>), GQLArgs, GQLMutation, GQLQuery, GQLRoot (..), GQLScalar (..),
-                                      GQLSubscription, GQLType (..), ID, Resolver (..), ScalarValue (..), withEffect)
+import           Data.Morpheus.Types ((::->), (::->>), GQLArgs, GQLMutation, GQLQuery, GQLRootResolver (..),
+                                      GQLScalar (..), GQLSubscription, GQLType (..), ID, Resolver (..),
+                                      ScalarValue (..), withEffect)
 import           Data.Text           (Text, pack)
 import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
 import qualified Deprecated.Model    as M (JSONAddress (..), JSONUser (..))
@@ -163,9 +164,9 @@ data Subscription = Subscription
   , newAddress :: () ::->> Address
   } deriving (Generic, GQLSubscription)
 
-gqlRoot :: GQLRoot Query Mutation Subscription
+gqlRoot :: GQLRootResolver Query Mutation Subscription
 gqlRoot =
-  GQLRoot
+  GQLRootResolver
     { queryResolver = Query {user = resolveUser}
     , mutationResolver = Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
     , subscriptionResolver = Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}

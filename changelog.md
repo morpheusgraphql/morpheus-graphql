@@ -1,4 +1,4 @@
-## [0.1.0] - (12-15).06.2019
+## [0.1.0] - 14.06.2019
 
 ### Added
 
@@ -38,6 +38,7 @@
 ### Changed
 -  `GQLRoot`, `GQLType(..)` , `GQLScalar(..)` , `GQLMutation` , `GQLQuery`  , `GQLArgs`
     are moved in `Data.Morpheus.Types`
+- GQLRoot { query, mutation, subscription } to GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
 - `::->` is now type synonym fo Resolver QUERY a b  type Resolver
 - `interpreter`: can be used in `http` and `websocket` server
 - `GQLKind` renamed as `GQLType`

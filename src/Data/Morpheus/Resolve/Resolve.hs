@@ -19,31 +19,38 @@ import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Oper
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Internal.Data          (DataTypeLib)
 import           Data.Morpheus.Types.Internal.WebSocket     (OutputAction (..))
-import qualified Data.Morpheus.Types.Request                as Req (GQLRequest (..))
+import           Data.Morpheus.Types.Request                (GQLRequest (..))
 import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Morpheus.Types.Response               (GQLResponse (..))
-import           Data.Morpheus.Types.Types                  (GQLRoot (..))
+import           Data.Morpheus.Types.Types                  (GQLRootResolver (..))
 import           Data.Morpheus.Validation.Validation        (validateRequest)
 
 schema :: (GQLQuery a, GQLMutation b, GQLSubscription c) => a -> b -> c -> DataTypeLib
 schema queryRes mutationRes subscriptionRes =
   subscriptionSchema subscriptionRes $ mutationSchema mutationRes $ querySchema queryRes
 
-resolveByteString :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> ByteString -> IO ByteString
+resolveByteString ::
+     (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRootResolver a b c -> ByteString -> IO ByteString
 resolveByteString rootResolver request =
   case eitherDecode request of
     Left aesonError' -> return $ badRequestError aesonError'
     Right req        -> encode <$> resolve rootResolver req
 
 resolveStreamByteString ::
-     (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> ByteString -> IO (OutputAction ByteString)
+     (GQLQuery q, GQLMutation m, GQLSubscription s)
+  => GQLRootResolver q m s
+  -> ByteString
+  -> IO (OutputAction ByteString)
 resolveStreamByteString rootResolver request =
   case eitherDecode request of
     Left aesonError' -> return $ NoEffect $ badRequestError aesonError'
     Right req        -> fmap encode <$> resolveStream rootResolver req
 
-resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> Req.GQLRequest -> IO GQLResponse
-resolve GQLRoot {queryResolver = queryRes, mutationResolver = mutationRes, subscriptionResolver = subscriptionRes} request = do
+resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRootResolver a b c -> GQLRequest -> IO GQLResponse
+resolve GQLRootResolver { queryResolver = queryRes
+                        , mutationResolver = mutationRes
+                        , subscriptionResolver = subscriptionRes
+                        } request = do
   value <- runExceptT _resolve
   case value of
     Left x  -> pure $ Errors $ renderErrors x
@@ -59,8 +66,14 @@ resolve GQLRoot {queryResolver = queryRes, mutationResolver = mutationRes, subsc
         gqlSchema = schema queryRes mutationRes subscriptionRes
 
 resolveStream ::
-     (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> Req.GQLRequest -> IO (OutputAction GQLResponse)
-resolveStream GQLRoot {queryResolver = queryRes, mutationResolver = mutationRes, subscriptionResolver = subscriptionRes} request = do
+     (GQLQuery q, GQLMutation m, GQLSubscription s)
+  => GQLRootResolver q m s
+  -> GQLRequest
+  -> IO (OutputAction GQLResponse)
+resolveStream GQLRootResolver { queryResolver = queryRes
+                              , mutationResolver = mutationRes
+                              , subscriptionResolver = subscriptionRes
+                              } request = do
   value <- runExceptT _resolve
   case value of
     Left x       -> pure $ NoEffect $ Errors $ renderErrors x

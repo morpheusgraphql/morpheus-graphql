@@ -11,8 +11,8 @@ module Feature.Holistic.API
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR)
-import           Data.Morpheus.Types        ((::->), GQLArgs, GQLMutation, GQLQuery, GQLRoot (..), GQLScalar (..),
-                                             GQLSubscription, GQLType (..), ScalarValue (..))
+import           Data.Morpheus.Types        ((::->), GQLArgs, GQLMutation, GQLQuery, GQLRootResolver (..),
+                                             GQLScalar (..), GQLSubscription, GQLType (..), ScalarValue (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -117,7 +117,7 @@ newUserSubscription = resolveUser
 api :: ByteString -> IO ByteString
 api =
   interpreter
-    GQLRoot
+    GQLRootResolver
       { queryResolver = Query {user = resolveUser}
       , mutationResolver = Mutation {createUser = createUserMutation}
       , subscriptionResolver = Subscription {newUser = newUserSubscription}

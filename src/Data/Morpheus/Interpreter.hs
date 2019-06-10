@@ -16,13 +16,13 @@ import           Data.Morpheus.Types.GQLOperator        (GQLMutation (..), GQLQu
 import           Data.Morpheus.Types.Internal.WebSocket (OutputAction)
 import           Data.Morpheus.Types.Request            (GQLRequest)
 import           Data.Morpheus.Types.Response           (GQLResponse)
-import           Data.Morpheus.Types.Types              (GQLRoot (..))
+import           Data.Morpheus.Types.Types              (GQLRootResolver (..))
 import           Data.Text                              (Text)
 import qualified Data.Text.Lazy                         as LT (Text, fromStrict, toStrict)
 import           Data.Text.Lazy.Encoding                (decodeUtf8, encodeUtf8)
 
 class Interpreter k where
-  interpreter :: (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRoot q m s -> k
+  interpreter :: (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRootResolver q m s -> k
 
 {-
   simple HTTP stateless Interpreter without side effects
