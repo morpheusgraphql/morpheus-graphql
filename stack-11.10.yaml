@@ -1,0 +1,4 @@
+resolver: lts-11.10
+
+extra-deps:
+- megaparsec-7.0.5
