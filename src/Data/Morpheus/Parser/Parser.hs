@@ -17,6 +17,7 @@ import           Data.Morpheus.Types.Internal.Validation (GQLError (GQLError), G
 import           Data.Morpheus.Types.Internal.Value      (Value (..))
 import           Data.Morpheus.Types.Request             (GQLRequest (..))
 import           Data.Morpheus.Types.Types               (GQLQueryRoot (..))
+import           Data.Semigroup                          ((<>))
 import           Data.Text                               (Text, pack)
 import           Data.Text.Encoding                      (decodeUtf8)
 import           Data.Void                               (Void)
