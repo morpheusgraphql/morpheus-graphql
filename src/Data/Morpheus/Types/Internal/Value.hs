@@ -10,6 +10,7 @@ module Data.Morpheus.Types.Internal.Value
 import qualified Data.Aeson          as A (FromJSON (..), ToJSON (..), Value (..), object, pairs, (.=))
 import qualified Data.HashMap.Strict as M (toList)
 import           Data.Scientific     (Scientific, floatingOrInteger)
+import           Data.Semigroup      ((<>))
 import           Data.Text           (Text)
 import qualified Data.Vector         as V (toList)
 import           GHC.Generics        (Generic)
