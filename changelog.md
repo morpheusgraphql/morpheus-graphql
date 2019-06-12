@@ -1,14 +1,14 @@
-## [0.1.0] - TODO: release Date
+## [0.1.0] - 14.06.2019
 
 ### Added
 
 - support for Union Types: `type instance KIND <type> = UNION`
 - add `Interpreter` class with instances:
 
-  - `ByteString`
-  - `Text`
-  - Lazy `ByteString`,
-  - Lazy `Text`
+  - `ByteString -> IO ByteString` and Lazy `ByteString`,
+  - `Text -> IO Text` and Lazy `Text`
+  - `GQLRequest -> GQLResponse` , When you using it inside another Component that have Manual `ToJSON` deriving,
+     you have to ensure that `GQLResponse` will be encoded with `toEncoding`, and not with `toJSON`.
 
 - support of Parsing input values: `Objects`,`Arrays`
 - support scalar type: `ID`
@@ -38,6 +38,7 @@
 ### Changed
 -  `GQLRoot`, `GQLType(..)` , `GQLScalar(..)` , `GQLMutation` , `GQLQuery`  , `GQLArgs`
     are moved in `Data.Morpheus.Types`
+- GQLRoot { query, mutation, subscription } to GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
 - `::->` is now type synonym fo Resolver QUERY a b  type Resolver
 - `interpreter`: can be used in `http` and `websocket` server
 - `GQLKind` renamed as `GQLType`

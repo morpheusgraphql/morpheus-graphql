@@ -4,13 +4,15 @@ module Data.Morpheus.Types
   , (::->>)
   , Resolver(..)
   , ID(..)
-  , GQLRoot(..)
+  , GQLRootResolver(..)
   , GQLType(..)
   , GQLScalar(..)
+  , GQLRequest(..)
+  , GQLResponse(..)
+  , GQLArgs
   , GQLMutation
   , GQLQuery
   , GQLSubscription
-  , GQLArgs
   , withEffect
   ) where
 
@@ -20,8 +22,10 @@ import           Data.Morpheus.Types.GQLScalar      (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType        (GQLType (..))
 import           Data.Morpheus.Types.ID             (ID (..))
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
+import           Data.Morpheus.Types.Request        (GQLRequest (..))
 import           Data.Morpheus.Types.Resolver       ((::->), (::->>), Resolver (..), WithEffect (..))
-import           Data.Morpheus.Types.Types          (GQLRoot (..))
+import           Data.Morpheus.Types.Response       (GQLResponse (..))
+import           Data.Morpheus.Types.Types          (GQLRootResolver (..))
 import           Data.Text                          (Text)
 
 withEffect :: [Text] -> Either String a -> Either String (WithEffect a)

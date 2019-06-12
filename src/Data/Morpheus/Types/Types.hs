@@ -1,7 +1,7 @@
 module Data.Morpheus.Types.Types
   ( GQLQueryRoot(..)
   , Variables
-  , GQLRoot(..)
+  , GQLRootResolver(..)
   , SubscriptionResolver(..)
   ) where
 
@@ -27,8 +27,8 @@ data GQLQueryRoot = GQLQueryRoot
   , inputVariables :: [(Key, Value)]
   }
 
-data GQLRoot a b c = GQLRoot
-  { query        :: a
-  , mutation     :: b
-  , subscription :: c
+data GQLRootResolver a b c = GQLRootResolver
+  { queryResolver        :: a
+  , mutationResolver     :: b
+  , subscriptionResolver :: c
   }

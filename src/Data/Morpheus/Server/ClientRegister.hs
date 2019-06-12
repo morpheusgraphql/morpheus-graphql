@@ -16,6 +16,7 @@ import           Data.List                                  (intersect)
 import           Data.Morpheus.Server.Apollo                (toApolloResponse)
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Internal.WebSocket     (Channel, ClientID, ClientSession (..), GQLClient (..))
+import           Data.Morpheus.Types.Response               (GQLResponse (..))
 import           Data.Text                                  (Text)
 import           Data.UUID.V4                               (nextRandom)
 import           Network.WebSockets                         (Connection, sendTextData)
@@ -54,7 +55,7 @@ updateClientByID id' updateFunc state = modifyMVar_ state (return . map updateCl
       | key' == id' = (key', updateFunc client')
     updateClient state' = state'
 
-publishUpdates :: [Channel] -> (SelectionSet -> IO Text) -> GQLState -> IO ()
+publishUpdates :: [Channel] -> (SelectionSet -> IO GQLResponse) -> GQLState -> IO ()
 publishUpdates channels resolver' state = do
   state' <- readMVar state
   forM_ state' sendMessage
