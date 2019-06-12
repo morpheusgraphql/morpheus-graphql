@@ -13,6 +13,13 @@ before_install:
 
 matrix:
   include:
+    - env: GHCVER=8.2.2 STACK_YAML=stack-11.10.yaml
+      addons:
+        apt:
+          sources:
+          - hvr-ghc
+          packages:
+          - ghc-8.2.2
     - env: GHCVER=8.4.3 STACK_YAML=stack.yaml
       addons:
         apt:
