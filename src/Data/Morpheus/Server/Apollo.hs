@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Server.Apollo
@@ -6,48 +7,48 @@ module Data.Morpheus.Server.Apollo
   , apolloProtocol
   , toApolloResponse
   , parseApolloRequest
-  , bsToText
   ) where
 
-import           Data.Aeson                 (FromJSON (..), ToJSON (..), Value (..), decode, eitherDecode, encode,
-                                             object, withObject, (.:), (.:?), (.=))
-import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Text                  (Text)
-import           Data.Text.Lazy             (fromStrict, toStrict)
-import           Data.Text.Lazy.Encoding    (decodeUtf8, encodeUtf8)
-import           GHC.Generics               (Generic)
-import           Network.WebSockets         (AcceptRequest (..))
+import           Data.Aeson                         (FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode,
+                                                     pairs, withObject, (.:), (.:?), (.=))
+import           Data.ByteString.Lazy.Char8         (ByteString)
+import           Data.Map                           (Map)
+import qualified Data.Morpheus.Types.Internal.Value as V (Value)
+import           Data.Morpheus.Types.Response       (GQLResponse)
+import           Data.Text                          (Text)
+import           GHC.Generics                       (Generic)
+import           Network.WebSockets                 (AcceptRequest (..))
 
-data ApolloSubscription = ApolloSubscription
-  { apolloId      :: Maybe Int
-  , apolloType    :: Text
-  , apolloPayload :: Maybe Value
-  , apolloQuery   :: Maybe Text
+data ApolloSubscription a = ApolloSubscription
+  { apolloId            :: Maybe Int
+  , apolloType          :: Text
+  , apolloPayload       :: Maybe a
+  , apolloQuery         :: Maybe Text
+  , apolloOperationName :: Maybe Text
+  , apolloVariables     :: Maybe (Map Text V.Value)
   } deriving (Generic)
 
-instance FromJSON ApolloSubscription where
+instance FromJSON (ApolloSubscription Value) where
   parseJSON = withObject "ApolloSubscription" objectParser
     where
-      objectParser o = ApolloSubscription <$> o .:? "id" <*> o .: "type" <*> o .:? "payload" <*> o .:? "query"
+      objectParser o =
+        ApolloSubscription <$> o .:? "id" <*> o .: "type" <*> o .:? "payload" <*> o .:? "query" <*>
+        o .:? "operationName" <*>
+        o .:? "variables"
 
-instance ToJSON ApolloSubscription where
-  toJSON (ApolloSubscription id' type' payload' query') =
-    object ["id" .= id', "type" .= type', "payload" .= payload', "query" .= query']
+instance ToJSON (ApolloSubscription GQLResponse) where
+  toEncoding (ApolloSubscription id' type' payload' query' operationName' variables') =
+    pairs $
+    "id" .= id' <> "type" .= type' <> "payload" .= payload' <> "query" .= query' <> "operationName" .= operationName' <>
+    "variables" .=
+    variables'
 
 apolloProtocol :: AcceptRequest
 apolloProtocol = AcceptRequest (Just "graphql-subscriptions") []
 
--- TODO:  Value -> Text
-toApolloResponse :: Int -> Text -> Text
-toApolloResponse sid' val' = bsToText $ encode $ ApolloSubscription (Just sid') "subscription_data" toValue Nothing
-  where
-    toValue = (decode $ toLBS val') :: Maybe Value
+toApolloResponse :: Int -> GQLResponse -> ByteString
+toApolloResponse sid' val' =
+  encode $ ApolloSubscription (Just sid') "subscription_data" (Just val') Nothing Nothing Nothing
 
-parseApolloRequest :: Text -> Either String ApolloSubscription
-parseApolloRequest = eitherDecode . toLBS
-
-toLBS :: Text -> ByteString
-toLBS = encodeUtf8 . fromStrict
-
-bsToText :: ByteString -> Text
-bsToText = toStrict . decodeUtf8
+parseApolloRequest :: ByteString -> Either String (ApolloSubscription Value)
+parseApolloRequest = eitherDecode

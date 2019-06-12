@@ -11,7 +11,7 @@ module Feature.Schema.API
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (KIND, OBJECT)
-import           Data.Morpheus.Types        (GQLQuery, GQLRoot (..), GQLType (..))
+import           Data.Morpheus.Types        (GQLQuery, GQLRootResolver (..), GQLType (..))
 import           Data.Text                  (Text)
 import qualified Feature.Schema.A2          as A2 (A (..))
 import           GHC.Generics               (Generic)
@@ -29,4 +29,6 @@ data Query = Query
   } deriving (Generic, GQLQuery)
 
 api :: ByteString -> IO ByteString
-api = interpreter GQLRoot {query = Query {a1 = A "" 0, a2 = A2.A 0}, mutation = (), subscription = ()}
+api =
+  interpreter
+    GQLRootResolver {queryResolver = Query {a1 = A "" 0, a2 = A2.A 0}, mutationResolver = (), subscriptionResolver = ()}
