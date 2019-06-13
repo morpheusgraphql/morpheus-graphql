@@ -15,4 +15,4 @@ schemaValidationError error' = globalErrorMessage $ "Schema Validation Error, " 
 
 nameCollisionError :: Text -> GQLErrors
 nameCollisionError name =
-  globalErrorMessage $ "Name collision: \"" <> name <> "\" is used for different dataTypes in two separate modules"
+  schemaValidationError $ "Name collision: \"" <> name <> "\" is used for different dataTypes in two separate modules"
