@@ -21,6 +21,7 @@ module Data.Morpheus.Types.Internal.Data
   , DataTypeLib(..)
   , DataTypeWrapper(..)
   , DataValidator(..)
+  , DataArguments
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -65,6 +66,8 @@ type DataUnion = DataType [DataField ()]
 type DataOutputType = DataKind DataOutputField
 
 type DataInputType = DataKind DataInputField
+
+type DataArguments = [(Key, DataArgument)]
 
 data DataTypeWrapper
   = ListType
