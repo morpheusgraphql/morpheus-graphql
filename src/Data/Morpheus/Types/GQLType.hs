@@ -56,7 +56,7 @@ class GQLType a where
     where
       generateName = joinWithSubTypes . splitTyConApp
         where
-          joinWithSubTypes (con', args') = intercalate "__" $ pack (tyConName con') : map generateName args'
+          joinWithSubTypes (con', args') = intercalate "_" $ pack (tyConName con') : map generateName args'
   __typeFingerprint :: Proxy a -> Fingerprint
   default __typeFingerprint :: (Typeable a) =>
     Proxy a -> Fingerprint
