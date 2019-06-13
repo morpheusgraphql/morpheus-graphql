@@ -11,7 +11,7 @@ module Data.Morpheus.Resolve.Resolve
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT)
 import           Data.Aeson                                 (eitherDecode, encode)
 import           Data.ByteString.Lazy.Char8                 (ByteString)
-import           Data.Morpheus.Error.Utils                  (badRequestError, globalErrorMessage, renderErrors)
+import           Data.Morpheus.Error.Utils                  (badRequestError, renderErrors)
 import           Data.Morpheus.Parser.Parser                (parseGQL)
 import           Data.Morpheus.Server.ClientRegister        (GQLState, publishUpdates)
 import           Data.Morpheus.Types.GQLOperator            (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
@@ -25,7 +25,6 @@ import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Morpheus.Types.Response               (GQLResponse (..))
 import           Data.Morpheus.Types.Types                  (GQLRootResolver (..))
 import           Data.Morpheus.Validation.Validation        (validateRequest)
-import           Data.Semigroup                             ((<>))
 
 schema :: (GQLQuery a, GQLMutation b, GQLSubscription c) => a -> b -> c -> SchemaValidation DataTypeLib
 schema queryRes mutationRes subscriptionRes =
@@ -54,12 +53,12 @@ resolve GQLRootResolver { queryResolver = queryRes
                         , subscriptionResolver = subscriptionRes
                         } request =
   case schema queryRes mutationRes subscriptionRes of
-    Left error' -> return $ Errors $ renderErrors $ globalErrorMessage $ "Schema Validation Error, " <> error'
+    Left error' -> return $ Errors $ renderErrors error'
     Right validSchema -> do
       value <- runExceptT $ _resolve validSchema
       case value of
-        Left x  -> pure $ Errors $ renderErrors x
-        Right x -> pure $ Data x
+        Left x  -> return $ Errors $ renderErrors x
+        Right x -> return $ Data x
       where _resolve gqlSchema = do
               rootGQL <- ExceptT $ pure (parseGQL request >>= validateRequest gqlSchema)
               case rootGQL of
@@ -78,12 +77,11 @@ resolveStream GQLRootResolver { queryResolver = queryRes
                               , subscriptionResolver = subscriptionRes
                               } request =
   case schema queryRes mutationRes subscriptionRes of
-    Left error' ->
-      return (NoEffect $ Errors $ renderErrors $ globalErrorMessage $ "Schema Validation Error, " <> error')
+    Left error' -> return $ NoEffect $ Errors $ renderErrors error'
     Right validSchema -> do
       value <- runExceptT $ _resolve validSchema
       case value of
-        Left x       -> pure $ NoEffect $ Errors $ renderErrors x
+        Left x       -> return $ NoEffect $ Errors $ renderErrors x
         Right value' -> return $ fmap Data value'
   where
     _resolve gqlSchema = (ExceptT $ pure (parseGQL request >>= validateRequest gqlSchema)) >>= resolveOperator

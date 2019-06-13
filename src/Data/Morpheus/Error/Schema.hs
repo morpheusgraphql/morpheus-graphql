@@ -2,10 +2,17 @@
 
 module Data.Morpheus.Error.Schema
   ( nameCollisionError
+  , schemaValidationError
   ) where
 
-import           Data.Semigroup ((<>))
-import           Data.Text      (Text)
+import           Data.Morpheus.Error.Utils               (globalErrorMessage)
+import           Data.Morpheus.Types.Internal.Validation (GQLErrors)
+import           Data.Semigroup                          ((<>))
+import           Data.Text                               (Text)
 
-nameCollisionError :: Text -> Text
-nameCollisionError name = "Name collision: \"" <> name <> "\" is used for different dataTypes in two separate modules"
+schemaValidationError :: Text -> GQLErrors
+schemaValidationError error' = globalErrorMessage $ "Schema Validation Error, " <> error'
+
+nameCollisionError :: Text -> GQLErrors
+nameCollisionError name =
+  globalErrorMessage $ "Name collision: \"" <> name <> "\" is used for different dataTypes in two separate modules"
