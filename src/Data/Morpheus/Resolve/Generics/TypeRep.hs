@@ -20,6 +20,7 @@ import           Data.Function                           ((&))
 import           Data.Morpheus.Types.Internal.Data       (DataField, DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation (SchemaValidation)
 import           Data.Proxy                              (Proxy (..))
+import           Data.Text                               (Text)
 import           GHC.Generics
 
 type SelOf s = M1 S s (Rec0 ()) ()
@@ -50,7 +51,7 @@ resolveTypes :: DataTypeLib -> [TypeUpdater] -> SchemaValidation DataTypeLib
 resolveTypes = foldM (&)
 
 class ObjectRep rep t where
-  objectFieldTypes :: Proxy rep -> [(t, TypeUpdater)]
+  objectFieldTypes :: Proxy rep -> [((Text, DataField t), TypeUpdater)]
 
 instance ObjectRep f t => ObjectRep (M1 D x f) t where
   objectFieldTypes _ = objectFieldTypes (Proxy @f)

@@ -20,10 +20,11 @@ import           Data.Morpheus.Resolve.Encode                   (_encode)
 import           Data.Morpheus.Resolve.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection,
                                                                  resolveBySelectionM)
 import           Data.Morpheus.Resolve.Generics.TypeRep         (ObjectRep (..), TypeUpdater, resolveTypes)
+import           Data.Morpheus.Resolve.Internal                 (CX (..), OutputOf)
 import           Data.Morpheus.Resolve.Introspect               (_introspect)
 import           Data.Morpheus.Schema.Schema                    (Schema, initSchema)
 import           Data.Morpheus.Types.Internal.AST.Selection     (SelectionSet)
-import           Data.Morpheus.Types.Internal.Data              (DataOutputField, DataType (..), DataTypeLib (..),
+import           Data.Morpheus.Types.Internal.Data              (DataArguments, DataType (..), DataTypeLib (..),
                                                                  initTypeLib)
 import           Data.Morpheus.Types.Internal.Validation        (ResolveIO, SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value             (Value (..))
@@ -41,12 +42,13 @@ type Encode a r = a -> SelectionSet -> ResolveIO r
 
 type EncodeCon a r = (Generic a, DeriveResolvers (Rep a) r)
 
-type IntroCon a = (ObjectRep (Rep a) (Text, DataOutputField), Typeable a)
+type IntroCon a = (ObjectRep (Rep a) DataArguments, Typeable a)
 
 operatorType :: Typeable t => Proxy t -> Text -> a -> (Text, DataType a)
 operatorType proxy name' fields' =
   ( name'
-  , DataType {typeData = fields', typeName = name', typeFingerprint = typeRepFingerprint $ typeRep proxy, typeDescription = ""})
+  , DataType
+      {typeData = fields', typeName = name', typeFingerprint = typeRepFingerprint $ typeRep proxy, typeDescription = ""})
 
 class GQLQuery a where
   encodeQuery :: DataTypeLib -> Encode a QResult
@@ -59,7 +61,7 @@ class GQLQuery a where
   querySchema :: a -> SchemaValidation DataTypeLib
   default querySchema :: IntroCon a =>
     a -> SchemaValidation DataTypeLib
-  querySchema _ = resolveTypes queryType (_introspect (Proxy @Schema) : stack')
+  querySchema _ = resolveTypes queryType (_introspect (CX :: OutputOf Schema) : stack')
     where
       queryType = initTypeLib (operatorType (Proxy @a) "Query" fields')
       (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
