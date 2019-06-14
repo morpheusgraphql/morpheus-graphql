@@ -9,10 +9,6 @@
 
 module Data.Morpheus.Types.GQLType
   ( GQLType(..)
-  , scalarTypeOf
-  , asObjectType
-  , enumTypeOf
-  , inputObjectOf
   ) where
 
 import           Data.Morpheus.Error.Schema                        (nameCollisionError)
@@ -23,28 +19,14 @@ import           Data.Morpheus.Schema.EnumValue                    (EnumValue)
 import           Data.Morpheus.Schema.Internal.RenderIntrospection (Field, InputValue, Type)
 import           Data.Morpheus.Schema.Schema                       (Schema)
 import           Data.Morpheus.Schema.TypeKind                     (TypeKind (..))
-import           Data.Morpheus.Types.Internal.Data                 (DataField (..), DataFullType (..), DataInputField,
-                                                                    DataLeaf (..), DataOutputField, DataType (..),
-                                                                    DataTypeWrapper (..), DataValidator, defineType,
-                                                                    isTypeDefined)
+import           Data.Morpheus.Types.Internal.Data                 (DataField (..), DataFullType (..), DataType (..),
+                                                                    DataTypeWrapper (..), defineType, isTypeDefined)
 import           Data.Morpheus.Types.Resolver                      ((::->))
 import           Data.Proxy                                        (Proxy (..))
 import           Data.Text                                         (Text, intercalate, pack)
 import           Data.Typeable                                     (Typeable, splitTyConApp, tyConName, typeRep,
                                                                     typeRepFingerprint)
 import           GHC.Fingerprint.Type                              (Fingerprint)
-
-scalarTypeOf :: GQLType a => DataValidator -> Proxy a -> DataFullType
-scalarTypeOf validator = Leaf . LeafScalar . buildType validator
-
-enumTypeOf :: GQLType a => [Text] -> Proxy a -> DataFullType
-enumTypeOf tags' = Leaf . LeafEnum . buildType tags'
-
-asObjectType :: GQLType a => [(Text, DataOutputField)] -> Proxy a -> DataFullType
-asObjectType fields' = OutputObject . buildType fields'
-
-inputObjectOf :: GQLType a => [(Text, DataInputField)] -> Proxy a -> DataFullType
-inputObjectOf fields' = InputObject . buildType fields'
 
 class GQLType a where
   description :: Proxy a -> Text

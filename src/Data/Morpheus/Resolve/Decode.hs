@@ -14,7 +14,7 @@ import           Data.Morpheus.Error.Internal               (internalArgumentErr
 import           Data.Morpheus.Kind                         (ENUM, INPUT_OBJECT, KIND, SCALAR, WRAPPER)
 import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
 import           Data.Morpheus.Resolve.Internal             (Decode_, EnumConstraint, InputObjectConstraint)
-import qualified Data.Morpheus.Types.GQLScalar              as S (GQLScalar (..))
+import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..), toScalar)
 import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..), Arguments)
 import           Data.Morpheus.Types.Internal.Validation    (Validation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
@@ -68,8 +68,11 @@ instance Decode a (KIND a) => GDecode Arguments (K1 i a) where
       Nothing                -> internalArgumentError "Required Argument Not Found"
       Just (Argument x _pos) -> K1 <$> _decode x
 
-instance (S.GQLScalar a) => Decode a SCALAR where
-  __decode _ = S.decode
+instance (GQLScalar a) => Decode a SCALAR where
+  __decode _ value =
+    case toScalar value >>= parseValue of
+      Right scalar      -> return scalar
+      Left errorMessage -> internalTypeMismatch errorMessage value
 
 instance EnumConstraint a => Decode a ENUM where
   __decode _ (Enum value) = pure (to $ gToEnum value)

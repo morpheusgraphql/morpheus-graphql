@@ -22,7 +22,7 @@ import           Data.Morpheus.Resolve.Generics.UnionResolvers  (UnionResolvers 
 import           Data.Morpheus.Resolve.Internal                 (EncodeObjectConstraint, EncodeUnionConstraint, Encode_,
                                                                  EnumConstraint)
 import qualified Data.Morpheus.Types.GQLArgs                    as Args (GQLArgs (..))
-import qualified Data.Morpheus.Types.GQLScalar                  as S (GQLScalar (..))
+import           Data.Morpheus.Types.GQLScalar                  (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                    (GQLType (..))
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Base              (Position)
@@ -47,8 +47,8 @@ _encode ::
 _encode = __encode (Proxy @(KIND a))
 
 -- Encode Queries
-instance (S.GQLScalar a, GQLType a) => Encoder a SCALAR QueryResult where
-  __encode _ _ = pure . S.encode
+instance (GQLScalar a, GQLType a) => Encoder a SCALAR QueryResult where
+  __encode _ _ = pure . Scalar . serialize
 
 instance EnumConstraint a => Encoder a ENUM QueryResult where
   __encode _ _ = pure . Scalar . String . encodeRep . from
@@ -90,8 +90,8 @@ instance (Encoder a (KIND a) QueryResult, Args.GQLArgs p) => Encoder (p ::-> a) 
     liftResolver position' key' (resolver args) >>= _encode selection'
 
 -- Encode Mutations and Subscriptions
-instance (S.GQLScalar a, GQLType a) => Encoder a SCALAR MResult where
-  __encode _ _ = pure . pure . S.encode
+instance (GQLScalar a, GQLType a) => Encoder a SCALAR MResult where
+  __encode _ _ = pure . pure . Scalar . serialize
 
 instance EnumConstraint a => Encoder a ENUM MResult where
   __encode _ _ = pure . pure . Scalar . String . encodeRep . from
