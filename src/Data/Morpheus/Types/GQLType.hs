@@ -1,6 +1,7 @@
 {-# LANGUAGE DefaultSignatures    #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeApplications     #-}
@@ -44,21 +45,15 @@ class GQLType a where
     Proxy a -> Fingerprint
   __typeFingerprint = typeRepFingerprint . typeRep
   field_ :: TypeKind -> Proxy a -> t -> Text -> DataField t
-  field_ kind' proxy' args' name' =
-    DataField
-      { fieldName = name'
-      , fieldTypeWrappers = [NonNullType]
-      , fieldKind = kind'
-      , fieldType = __typeName proxy'
-      , fieldArgs = args'
-      }
+  field_ fieldKind proxy' fieldArgs fieldName =
+    DataField {fieldName, fieldKind, fieldArgs, fieldTypeWrappers = [NonNullType], fieldType = __typeName proxy'}
   buildType :: t -> Proxy a -> DataType t
-  buildType typeData' proxy =
+  buildType typeData proxy =
     DataType
       { typeName = __typeName proxy
       , typeFingerprint = __typeFingerprint proxy
       , typeDescription = description proxy
-      , typeData = typeData'
+      , typeData
       }
   updateLib :: (Proxy a -> DataFullType) -> [TypeUpdater] -> Proxy a -> TypeUpdater
   updateLib typeBuilder stack proxy lib' =
