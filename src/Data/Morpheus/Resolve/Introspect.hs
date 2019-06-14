@@ -36,7 +36,7 @@ scalarTypeOf validator = Leaf . LeafScalar . buildType validator
 enumTypeOf :: GQLType a => [Text] -> Proxy a -> DataFullType
 enumTypeOf tags' = Leaf . LeafEnum . buildType tags'
 
--- |   Generates internal GraphQL Schema for query validation and introspection render
+-- |   Generates internal GraphQL Schema for query validation and introspection rendering
 -- * 'kind': object, scalar, enum ...
 -- * 'args': type of field arguments
 --    * '()' for 'input values' , they are just JSON properties and does not have any argument
