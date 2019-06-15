@@ -30,6 +30,7 @@ newtype Resolver t a b = Resolver
 -}
 type instance RESOLVER QUERY b = Either String b
 
+-- | resolver without effect,
 type a ::-> b = Resolver QUERY a b
 
 instance Functor (Resolver QUERY a) where
@@ -59,6 +60,9 @@ instance Monad (Resolver QUERY a) where
   a ::->> b : Resolver with effects: [ChanelID]
   Monad of Mutation and Subscription Resolver
 -}
+
+-- | resolver without effects : [ChanelID],
+-- used for communication between mutation and subscription
 type a ::->> b = Resolver MUTATION a b
 
 type instance RESOLVER MUTATION b = Either String (WithEffect b)

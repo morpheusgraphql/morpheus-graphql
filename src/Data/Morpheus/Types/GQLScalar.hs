@@ -16,9 +16,26 @@ toScalar :: Value -> Either Text ScalarValue
 toScalar (Scalar x) = pure x
 toScalar _          = Left ""
 
+-- | GraphQL Scalar value parsing validating and serializing
+--
+-- 'parseValue' and 'serialize' should be provided for every instances manually
 class GQLScalar a where
+  -- | value parsing and validating
+  --
+  -- for exhaustive pattern matching  should be handled all scalar types : 'Int', 'Float', 'String', 'Boolean'
+  --
+  -- invalid values can be reported with 'Left' constructor :
+  --
+  -- @
+  --   parseValue String _ = Left "" -- without error message
+  --   -- or
+  --   parseValue String _ = Left "Error Message"
+  -- @
+  --
   parseValue :: ScalarValue -> Either Text a
+  -- | serialization of haskell type into scalar value
   serialize :: a -> ScalarValue
+
   scalarValidator :: Proxy a -> DataValidator
   scalarValidator _ = DataValidator {validateValue = validator}
     where
