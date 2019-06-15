@@ -30,7 +30,7 @@ newtype Resolver t a b = Resolver
 -}
 type instance RESOLVER QUERY b = Either String b
 
--- | resolver without effect,
+-- | resolver without effect
 type a ::-> b = Resolver QUERY a b
 
 instance Functor (Resolver QUERY a) where
