@@ -61,7 +61,7 @@ instance Monad (Resolver QUERY a) where
   Monad of Mutation and Subscription Resolver
 -}
 
--- | resolver without effects : [ChanelID],
+-- | resolver with effects : [ChanelID],
 -- used for communication between mutation and subscription
 type a ::->> b = Resolver MUTATION a b
 
