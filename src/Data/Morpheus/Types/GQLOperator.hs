@@ -17,8 +17,8 @@ module Data.Morpheus.Types.GQLOperator
   ) where
 
 import           Data.Morpheus.Resolve.Encode                   (encode)
-import           Data.Morpheus.Resolve.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection,
-                                                                 resolveBySelectionM)
+import           Data.Morpheus.Resolve.Generics.DeriveResolvers (ObjectFieldResolvers (..), resolveBySelection,
+                                                                 resolveBySelectionM, resolversBy)
 import           Data.Morpheus.Resolve.Generics.TypeRep         (ObjectRep (..), TypeUpdater, resolveTypes)
 import           Data.Morpheus.Resolve.Introspect               (introspectOutputType)
 import           Data.Morpheus.Schema.Schema                    (Schema, initSchema)
@@ -39,7 +39,7 @@ type MResult = WithEffect Value
 
 type Encode a r = a -> SelectionSet -> ResolveIO r
 
-type EncodeCon a r = (Generic a, DeriveResolvers (Rep a) r)
+type EncodeCon a r = (Generic a, ObjectFieldResolvers (Rep a) r)
 
 type IntroCon a = (ObjectRep (Rep a) DataArguments, Typeable a)
 
@@ -53,10 +53,9 @@ class GQLQuery a where
   encodeQuery :: DataTypeLib -> Encode a QResult
   default encodeQuery :: EncodeCon a QResult =>
     DataTypeLib -> Encode a QResult
-  encodeQuery types rootResolver sel = resolveBySelection sel (schemaResolver ++ resolvers)
+  encodeQuery types rootResolver sel = resolveBySelection sel resolvers
     where
-      schemaResolver = [("__schema", encode (initSchema types))]
-      resolvers = deriveResolvers "" $ from rootResolver
+      resolvers = ("__schema", encode (initSchema types)) : resolversBy rootResolver
   querySchema :: a -> SchemaValidation DataTypeLib
   default querySchema :: IntroCon a =>
     a -> SchemaValidation DataTypeLib
@@ -69,7 +68,7 @@ class GQLMutation a where
   encodeMutation :: Encode a MResult
   default encodeMutation :: EncodeCon a MResult =>
     Encode a MResult
-  encodeMutation rootResolver sel = resolveBySelectionM sel $ deriveResolvers "" $ from rootResolver
+  encodeMutation rootResolver sel = resolveBySelectionM sel $ resolversBy rootResolver
   mutationSchema :: a -> TypeUpdater
   default mutationSchema :: IntroCon a =>
     a -> TypeUpdater
@@ -82,7 +81,7 @@ class GQLSubscription a where
   encodeSubscription :: Encode a MResult
   default encodeSubscription :: EncodeCon a MResult =>
     Encode a MResult
-  encodeSubscription rootResolver sel = resolveBySelectionM sel $ deriveResolvers "" $ from rootResolver
+  encodeSubscription rootResolver sel = resolveBySelectionM sel $ resolversBy rootResolver
   subscriptionSchema :: a -> TypeUpdater
   default subscriptionSchema :: IntroCon a =>
     a -> TypeUpdater

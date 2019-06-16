@@ -5,30 +5,21 @@
 {-# LANGUAGE TypeOperators         #-}
 
 module Data.Morpheus.Resolve.Generics.DeriveResolvers
-  ( DeriveResolvers(..)
+  ( ObjectFieldResolvers(..)
+  , UnionResolvers(..)
   , resolversBy
   , resolveBySelection
   , resolveBySelectionM
+  , lookupSelectionByType
   ) where
 
 import           Data.Maybe                                 (fromMaybe)
-import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
+import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Text                                  (Text, pack)
 import           GHC.Generics
-
--- type D1 = M1 D
--- type C1 = M1 C
--- type S1 = M1 S
--- M1 : Meta-information (constructor names, etc.)
--- D  :Datatype : Class for dataTypes that represent dataTypes
--- C :Constructor :
--- S - Selector: Class for dataTypes that represent records
--- Rep = D1 (...)  (C1 ...) (S1 (...) :+: D1 (...)  (C1 ...) (S1 (...)
-unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
-unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
 type ContextRes = WithEffect Value
 
@@ -37,6 +28,30 @@ type QueryRes = Value
 type SelectRes a = [(Text, (Text, Selection) -> ResolveIO a)] -> (Text, Selection) -> ResolveIO (Text, a)
 
 type ResolveSel a = [(Text, Selection)] -> [(Text, (Text, Selection) -> ResolveIO a)] -> ResolveIO a
+
+--
+-- OBJECT
+--
+class ObjectFieldResolvers f res where
+  objectFieldResolvers :: Text -> f a -> [(Text, (Text, Selection) -> ResolveIO res)]
+
+instance ObjectFieldResolvers U1 res where
+  objectFieldResolvers _ _ = []
+
+instance (Selector s, ObjectFieldResolvers f res) => ObjectFieldResolvers (M1 S s f) res where
+  objectFieldResolvers _ m@(M1 src) = objectFieldResolvers (pack $ selName m) src
+
+instance ObjectFieldResolvers f res => ObjectFieldResolvers (M1 D c f) res where
+  objectFieldResolvers key' (M1 src) = objectFieldResolvers key' src
+
+instance ObjectFieldResolvers f res => ObjectFieldResolvers (M1 C c f) res where
+  objectFieldResolvers key' (M1 src) = objectFieldResolvers key' src
+
+instance (ObjectFieldResolvers f res, ObjectFieldResolvers g res) => ObjectFieldResolvers (f :*: g) res where
+  objectFieldResolvers meta (a :*: b) = objectFieldResolvers meta a ++ objectFieldResolvers meta b
+
+unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
+unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
 selectResolver :: a -> SelectRes a
 selectResolver defaultValue resolvers' (key', selection') =
@@ -58,23 +73,28 @@ resolveBySelectionM selection resolvers = do
   let effects = concatMap (resultEffects . snd) value
   return $ WithEffect effects (Object value')
 
-resolversBy :: (Generic a, DeriveResolvers (Rep a) res) => a -> [(Text, (Text, Selection) -> ResolveIO res)]
-resolversBy = deriveResolvers "" . from
+resolversBy :: (Generic a, ObjectFieldResolvers (Rep a) res) => a -> [(Text, (Text, Selection) -> ResolveIO res)]
+resolversBy = objectFieldResolvers "" . from
 
-class DeriveResolvers f res where
-  deriveResolvers :: Text -> f a -> [(Text, (Text, Selection) -> ResolveIO res)]
+--
+-- UNION
+--
+-- SPEC: if there is no any fragment that supports current object Type GQL returns {}
+lookupSelectionByType :: Text -> [(Text, SelectionSet)] -> SelectionSet
+lookupSelectionByType type' sel = fromMaybe [] $ lookup type' sel
 
-instance DeriveResolvers U1 res where
-  deriveResolvers _ _ = []
+class UnionResolvers f res where
+  unionResolvers :: f a -> (Text, (Text, Selection) -> ResolveIO res)
 
-instance (Selector s, DeriveResolvers f res) => DeriveResolvers (M1 S s f) res where
-  deriveResolvers _ m@(M1 src) = deriveResolvers (pack $ selName m) src
+instance UnionResolvers f res => UnionResolvers (M1 S s f) res where
+  unionResolvers (M1 x) = unionResolvers x
 
-instance DeriveResolvers f res => DeriveResolvers (M1 D c f) res where
-  deriveResolvers key' (M1 src) = deriveResolvers key' src
+instance UnionResolvers f res => UnionResolvers (M1 D c f) res where
+  unionResolvers (M1 x) = unionResolvers x
 
-instance DeriveResolvers f res => DeriveResolvers (M1 C c f) res where
-  deriveResolvers key' (M1 src) = deriveResolvers key' src
+instance UnionResolvers f res => UnionResolvers (M1 C c f) res where
+  unionResolvers (M1 x) = unionResolvers x
 
-instance (DeriveResolvers f res, DeriveResolvers g res) => DeriveResolvers (f :*: g) res where
-  deriveResolvers meta (a :*: b) = deriveResolvers meta a ++ deriveResolvers meta b
+instance (UnionResolvers a res, UnionResolvers b res) => UnionResolvers (a :+: b) res where
+  unionResolvers (L1 x) = unionResolvers x
+  unionResolvers (R1 x) = unionResolvers x
