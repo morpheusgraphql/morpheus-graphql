@@ -11,11 +11,9 @@ import           Data.Morpheus.Resolve.Generics.EnumRep         (EnumRep (..))
 import           Data.Morpheus.Resolve.Generics.TypeRep         (ObjectRep (..), TypeUpdater, UnionRep (..))
 import           Data.Morpheus.Resolve.Generics.UnionResolvers  (UnionResolvers (..))
 import           Data.Morpheus.Types.GQLType                    (GQLType (..))
-import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..))
 import           Data.Morpheus.Types.Internal.Data              (DataArguments)
-import           Data.Morpheus.Types.Internal.Validation        (ResolveIO, Validation)
+import           Data.Morpheus.Types.Internal.Validation        (Validation)
 import           Data.Morpheus.Types.Internal.Value             (Value (..))
-import           Data.Text                                      (Text)
 import           GHC.Generics
 
 type InputType = ()
@@ -38,8 +36,6 @@ data Context a kind args =
 type Intro_ a b c = Context a b c -> TypeUpdater
 
 type Decode_ a = Value -> Validation a
-
-type Encode_ a b = (Text, Selection) -> a -> ResolveIO b
 
 type GQL_TYPE a = (Generic a, GQLType a)
 

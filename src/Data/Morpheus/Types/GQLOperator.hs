@@ -16,7 +16,7 @@ module Data.Morpheus.Types.GQLOperator
   , GQLSubscription(..)
   ) where
 
-import           Data.Morpheus.Resolve.Encode                   (_encode)
+import           Data.Morpheus.Resolve.Encode                   (encode)
 import           Data.Morpheus.Resolve.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection,
                                                                  resolveBySelectionM)
 import           Data.Morpheus.Resolve.Generics.TypeRep         (ObjectRep (..), TypeUpdater, resolveTypes)
@@ -56,7 +56,7 @@ class GQLQuery a where
     DataTypeLib -> Encode a QResult
   encodeQuery types rootResolver sel = resolveBySelection sel (schemaResolver ++ resolvers)
     where
-      schemaResolver = [("__schema", (`_encode` initSchema types))]
+      schemaResolver = [("__schema", encode (initSchema types))]
       resolvers = deriveResolvers "" $ from rootResolver
   querySchema :: a -> SchemaValidation DataTypeLib
   default querySchema :: IntroCon a =>

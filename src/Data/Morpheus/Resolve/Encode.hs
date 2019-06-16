@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
@@ -8,7 +9,9 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Morpheus.Resolve.Encode where
+module Data.Morpheus.Resolve.Encode
+  ( encode
+  ) where
 
 import           Control.Monad.Trans                            (lift)
 import           Control.Monad.Trans.Except
@@ -19,7 +22,7 @@ import           Data.Morpheus.Resolve.Generics.DeriveResolvers (DeriveResolvers
                                                                  resolveBySelectionM, resolversBy)
 import           Data.Morpheus.Resolve.Generics.EnumRep         (EnumRep (..))
 import           Data.Morpheus.Resolve.Generics.UnionResolvers  (UnionResolvers (..), lookupSelectionByType)
-import           Data.Morpheus.Resolve.Internal                 (EncodeObjectConstraint, EncodeUnionConstraint, Encode_,
+import           Data.Morpheus.Resolve.Internal                 (EncodeObjectConstraint, EncodeUnionConstraint,
                                                                  EnumConstraint)
 import qualified Data.Morpheus.Types.GQLArgs                    as Args (GQLArgs (..))
 import           Data.Morpheus.Types.GQLScalar                  (GQLScalar (..))
@@ -37,116 +40,117 @@ type MResult = WithEffect Value
 
 type QueryResult = Value
 
+newtype WithGQLKind a b = WithGQLKind
+  { resolverValue :: a
+  }
+
+type GQLKindOf a = WithGQLKind a (KIND a)
+
+type Encode_ a b = WithGQLKind a (KIND a) -> (Text, Selection) -> ResolveIO b
+
+encode ::
+     forall a b. Encoder a (KIND a) b
+  => a
+  -> (Text, Selection)
+  -> ResolveIO b
+encode resolver = __encode (WithGQLKind resolver :: GQLKindOf a)
+
 -- { ENCODE }
 class Encoder a kind toValue where
-  __encode :: Proxy kind -> Encode_ a toValue
+  __encode :: WithGQLKind a kind -> (Text, Selection) -> ResolveIO toValue
 
-_encode ::
-     forall a v. Encoder a (KIND a) v
-  => Encode_ a v
-_encode = __encode (Proxy @(KIND a))
-
--- Encode Queries
 instance (GQLScalar a, GQLType a) => Encoder a SCALAR QueryResult where
-  __encode _ _ = pure . Scalar . serialize
+  __encode = pure . pure . Scalar . serialize . resolverValue
+
+instance (GQLScalar a, GQLType a) => Encoder a SCALAR MResult where
+  __encode = pure . pure . pure . Scalar . serialize . resolverValue
 
 instance EnumConstraint a => Encoder a ENUM QueryResult where
-  __encode _ _ = pure . Scalar . String . encodeRep . from
-
-instance EncodeObjectConstraint a QueryResult => Encoder a OBJECT QueryResult where
-  __encode _ = encodeObject
-    where
-      encodeObject :: Encode_ a QueryResult
-      encodeObject (_, Selection {selectionRec = SelectionSet selection'}) value =
-        resolveBySelection selection' (__typenameResolver : resolversBy value)
-        where
-          __typenameResolver = ("__typename", const $ return $ Scalar $ String $ __typeName (Proxy @a))
-      encodeObject (key, Selection {selectionPosition = position'}) _ =
-        failResolveIO $ subfieldsNotSelected key "" position'
-
-instance EncodeUnionConstraint a QueryResult => Encoder a UNION QueryResult where
-  __encode _ = encodeUnion
-    where
-      encodeUnion :: Encode_ a QueryResult
-      encodeUnion (key', sel@Selection {selectionRec = UnionSelection selections'}) value =
-        resolver (key', sel {selectionRec = SelectionSet (lookupSelectionByType type' selections')})
-        where
-          (type', resolver) = currentResolver (from value)
-      encodeUnion _ _ = internalErrorIO "union Resolver only should recieve UnionSelection"
-
-instance Encoder a (KIND a) QueryResult => Encoder (Maybe a) WRAPPER QueryResult where
-  __encode _ = encodeMaybe Null _encode
-
-instance Encoder a (KIND a) QueryResult => Encoder [a] WRAPPER QueryResult where
-  __encode _ = encodeList _encode
-    where
-      encodeList :: Encode_ a Value -> Encode_ [a] Value
-      encodeList _ (_, Selection {selectionRec = SelectionField {}}) _ = pure $ List []
-      encodeList f query list                                          = List <$> mapM (f query) list
-
-instance (Encoder a (KIND a) QueryResult, Args.GQLArgs p) => Encoder (p ::-> a) WRAPPER QueryResult where
-  __encode _ selection'@(key', Selection {selectionArguments = astArgs', selectionPosition = position'}) (Resolver resolver) = do
-    args <- ExceptT $ pure $ Args.decode astArgs'
-    liftResolver position' key' (resolver args) >>= _encode selection'
-
--- Encode Mutations and Subscriptions
-instance (GQLScalar a, GQLType a) => Encoder a SCALAR MResult where
-  __encode _ _ = pure . pure . Scalar . serialize
+  __encode = pure . pure . Scalar . String . encodeRep . from . resolverValue
 
 instance EnumConstraint a => Encoder a ENUM MResult where
-  __encode _ _ = pure . pure . Scalar . String . encodeRep . from
+  __encode = pure . pure . pure . Scalar . String . encodeRep . from . resolverValue
+
+{-
+  ENCODE OBJECTS
+-}
+instance EncodeObjectConstraint a QueryResult => Encoder a OBJECT QueryResult where
+  __encode (WithGQLKind value) (_, Selection {selectionRec = SelectionSet selection'}) =
+    resolveBySelection selection' (__typenameResolver : resolversBy value)
+    where
+      __typenameResolver = ("__typename", const $ return $ Scalar $ String $ __typeName (Proxy @a))
+  __encode _ (key, Selection {selectionPosition = position'}) = failResolveIO $ subfieldsNotSelected key "" position'
 
 instance EncodeObjectConstraint a MResult => Encoder a OBJECT MResult where
-  __encode _ = encodeObject
+  __encode (WithGQLKind value) (_, Selection {selectionRec = SelectionSet selection'}) =
+    resolveBySelectionM selection' (__typenameResolver : resolversBy value)
     where
-      encodeObject :: Encode_ a MResult
-      encodeObject (_, Selection {selectionRec = SelectionSet selection'}) value =
-        resolveBySelectionM selection' (__typenameResolver : resolversBy value)
-        where
-          __typenameResolver = ("__typename", const $ return $ return $ Scalar $ String $ __typeName (Proxy @a))
-      encodeObject (key, Selection {selectionPosition = position'}) _ =
-        failResolveIO $ subfieldsNotSelected key "" position'
+      __typenameResolver = ("__typename", const $ return $ return $ Scalar $ String $ __typeName (Proxy @a))
+  __encode _ (key, Selection {selectionPosition}) = failResolveIO $ subfieldsNotSelected key "" selectionPosition
+
+{-
+  ENCODE UNION
+-}
+instance EncodeUnionConstraint a QueryResult => Encoder a UNION QueryResult where
+  __encode (WithGQLKind value) (key', sel@Selection {selectionRec = UnionSelection selections'}) =
+    resolver (key', sel {selectionRec = SelectionSet (lookupSelectionByType type' selections')})
+    where
+      (type', resolver) = currentResolver (from value)
+  __encode _ _ = internalErrorIO "union Resolver only should recieve UnionSelection"
 
 instance EncodeUnionConstraint a MResult => Encoder a UNION MResult where
-  __encode _ = encodeUnion
+  __encode (WithGQLKind value) (key', sel@Selection {selectionRec = UnionSelection selections'}) =
+    resolver (key', sel {selectionRec = SelectionSet (lookupSelectionByType type' selections')})
     where
-      encodeUnion :: Encode_ a MResult
-      encodeUnion (key', sel@Selection {selectionRec = UnionSelection selections'}) value =
-        resolver (key', sel {selectionRec = SelectionSet (lookupSelectionByType type' selections')})
-        where
-          (type', resolver) = currentResolver (from value)
-      encodeUnion _ _ = internalErrorIO "union Resolver only should recieve UnionSelection"
+      (type', resolver) = currentResolver (from value)
+  __encode _ _ = internalErrorIO "union Resolver only should recieve UnionSelection"
 
-instance (Encoder a (KIND a) MResult, Args.GQLArgs p) => Encoder (p ::->> a) WRAPPER MResult where
-  __encode _ selection'@(key', Selection {selectionArguments = astArgs', selectionPosition = position'}) (Resolver resolver) = do
-    args <- ExceptT $ pure $ Args.decode astArgs'
-    WithEffect effects1 value1 <- liftResolver position' key' (resolver args)
-    WithEffect effects2 value2 <- _encode selection' value1
-    return $ WithEffect (effects1 ++ effects2) value2
+{-
+  Encode RESOLVERS
+-}
+instance (Encoder a (KIND a) QueryResult, Args.GQLArgs p) => Encoder (p ::-> a) WRAPPER QueryResult where
+  __encode (WithGQLKind (Resolver resolver)) selection'@(key', Selection {selectionArguments, selectionPosition}) = do
+    args <- ExceptT $ pure $ Args.decode selectionArguments
+    liftResolver selectionPosition key' (resolver args) >>= (`encode` selection')
 
 instance (Encoder a (KIND a) MResult, Args.GQLArgs p) => Encoder (p ::-> a) WRAPPER MResult where
-  __encode _ selection'@(key', Selection {selectionArguments = astArgs', selectionPosition = position'}) (Resolver resolver) = do
-    args <- ExceptT $ pure $ Args.decode astArgs'
-    liftResolver position' key' (resolver args) >>= _encode selection'
+  __encode (WithGQLKind (Resolver resolver)) selection'@(key', Selection {selectionArguments, selectionPosition}) = do
+    args <- ExceptT $ pure $ Args.decode selectionArguments
+    liftResolver selectionPosition key' (resolver args) >>= (`encode` selection')
+
+instance (Encoder a (KIND a) MResult, Args.GQLArgs p) => Encoder (p ::->> a) WRAPPER MResult where
+  __encode (WithGQLKind (Resolver resolver)) selection'@(key', Selection {selectionArguments, selectionPosition}) = do
+    args <- ExceptT $ pure $ Args.decode selectionArguments
+    WithEffect effects1 value1 <- liftResolver selectionPosition key' (resolver args)
+    WithEffect effects2 value2 <- __encode (WithGQLKind value1 :: GQLKindOf a) selection'
+    return $ WithEffect (effects1 ++ effects2) value2
+
+{-
+
+  ENCODE Wrappers
+-}
+instance Encoder a (KIND a) QueryResult => Encoder (Maybe a) WRAPPER QueryResult where
+  __encode (WithGQLKind Nothing)      = const $ pure Null
+  __encode (WithGQLKind (Just value)) = encode value
 
 instance Encoder a (KIND a) MResult => Encoder (Maybe a) WRAPPER MResult where
-  __encode _ = encodeMaybe (return Null) _encode
+  __encode (WithGQLKind Nothing)      = const $ pure $ pure Null
+  __encode (WithGQLKind (Just value)) = encode value
+
+instance Encoder a (KIND a) QueryResult => Encoder [a] WRAPPER QueryResult where
+  __encode (WithGQLKind list) query = List <$> mapM (`__encode` query) (map WithGQLKind list :: [GQLKindOf a])
 
 instance Encoder a (KIND a) MResult => Encoder [a] WRAPPER MResult where
-  __encode _ = encodeListM _encode
-    where
-      encodeListM :: Encode_ a (WithEffect Value) -> Encode_ [a] (WithEffect Value)
-      encodeListM _ (_, Selection {selectionRec = SelectionField {}}) _ = pure $ pure (List [])
-      encodeListM f query list = do
-        value' <- mapM (f query) list
-        return $ WithEffect (concatMap resultEffects value') (List (map resultValue value'))
+  __encode (WithGQLKind list) query = do
+    value' <- mapM (`__encode` query) (map WithGQLKind list :: [GQLKindOf a])
+    return $ WithEffect (concatMap resultEffects value') (List (map resultValue value'))
 
 -- GENERIC Instances
 instance Encoder a (KIND a) res => DeriveResolvers (K1 s a) res where
-  deriveResolvers key' (K1 src) = [(key', (`_encode` src))]
+  deriveResolvers key' (K1 src) = [(key', encode src)]
 
 instance (GQLType a, Encoder a (KIND a) res) => UnionResolvers (K1 s a) res where
-  currentResolver (K1 src) = (__typeName (Proxy @a), (`_encode` src))
+  currentResolver (K1 src) = (__typeName (Proxy @a), encode src)
 
 liftResolver :: Position -> Text -> IO (Either String a) -> ResolveIO a
 liftResolver position' typeName' x = do
@@ -154,7 +158,3 @@ liftResolver position' typeName' x = do
   case result of
     Left message' -> failResolveIO $ fieldNotResolved position' typeName' (pack message')
     Right value   -> pure value
-
-encodeMaybe :: res -> Encode_ a res -> Encode_ (Maybe a) res
-encodeMaybe defaultValue _ _ Nothing = pure defaultValue
-encodeMaybe _ f query (Just value)   = f query value
