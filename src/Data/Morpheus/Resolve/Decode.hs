@@ -9,7 +9,8 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Morpheus.Resolve.Decode
-  ( GDecode(gDecode)
+  ( GDecode
+  , decodeArguments
   ) where
 
 import           Data.Morpheus.Error.Internal               (internalArgumentError, internalTypeMismatch)
@@ -24,6 +25,9 @@ import           Data.Text                                  (Text, pack)
 import           GHC.Generics
 
 type Decode_ a = Value -> Validation a
+
+decodeArguments :: (Generic p, GDecode Arguments (Rep p)) => Arguments -> Validation p
+decodeArguments args = to <$> gDecode "" args
 
 --
 --  GENERIC
