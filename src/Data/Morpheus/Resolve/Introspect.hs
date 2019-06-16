@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -10,14 +11,15 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Morpheus.Resolve.Introspect
-  ( introspect
+  ( introspectOutputType
   ) where
 
 import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION, WRAPPER)
 import           Data.Morpheus.Resolve.Generics.EnumRep (EnumRep (..))
-import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), RecSel, SelOf, UnionRep (..), resolveTypes)
-import           Data.Morpheus.Resolve.Internal         (Context (..), EnumConstraint, InputObjectConstraint, InputOf,
-                                                         Intro_, ObjectConstraint, OutputOf, UnionConstraint)
+import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), RecSel, SelOf, TypeUpdater, UnionRep (..),
+                                                         resolveTypes)
+import           Data.Morpheus.Resolve.Internal         (EnumConstraint, InputObjectConstraint, ObjectConstraint,
+                                                         UnionConstraint)
 import           Data.Morpheus.Schema.Type              (DeprecationArgs)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import qualified Data.Morpheus.Types.GQLArgs            as Args (GQLArgs (..))
@@ -36,6 +38,28 @@ scalarTypeOf validator = Leaf . LeafScalar . buildType validator
 enumTypeOf :: GQLType a => [Text] -> Proxy a -> DataFullType
 enumTypeOf tags' = Leaf . LeafEnum . buildType tags'
 
+type InputType = ()
+
+type OutputType = DataArguments
+
+type InputOf t = Context t (KIND t) InputType
+
+type OutputOf t = Context t (KIND t) OutputType
+
+introspectOutputType ::
+     forall a. Introspect a (KIND a) OutputType
+  => Proxy a
+  -> TypeUpdater
+introspectOutputType _ = introspect (Context :: OutputOf a)
+
+-- | context , like Proxy with multiple parameters
+-- contains types of :
+-- * 'a': actual gql type
+-- * 'kind': object, scalar, enum ...
+-- * 'args': InputType | OutputType
+data Context a kind args =
+  Context
+
 -- |   Generates internal GraphQL Schema for query validation and introspection rendering
 -- * 'kind': object, scalar, enum ...
 -- * 'args': type of field arguments
@@ -47,7 +71,7 @@ class Introspect a kind args where
     --   according to parameter 'args' it could be
     --   * input object field: if args is '()'
     --   * object: if args is 'DataArguments'
-  introspect :: Intro_ a kind args -- Generates internal GraphQL Schema
+  introspect :: Context a kind args -> TypeUpdater -- Generates internal GraphQL Schema
 
 type OutputConstraint a = Introspect a (KIND a) DataArguments
 
@@ -58,7 +82,8 @@ type OutputConstraint a = Introspect a (KIND a) DataArguments
 -}
 introspectEnum ::
      forall a f. (GQLType a, EnumRep (Rep a))
-  => Intro_ a (KIND a) f
+  => Context a (KIND a) f
+  -> TypeUpdater
 introspectEnum _ = updateLib (enumTypeOf $ getTags (Proxy @(Rep a))) [] (Proxy @a)
 
 instance (GQLScalar a, GQLType a) => Introspect a SCALAR DataArguments where

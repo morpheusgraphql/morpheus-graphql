@@ -20,8 +20,7 @@ import           Data.Morpheus.Resolve.Encode                   (encode)
 import           Data.Morpheus.Resolve.Generics.DeriveResolvers (DeriveResolvers (..), resolveBySelection,
                                                                  resolveBySelectionM)
 import           Data.Morpheus.Resolve.Generics.TypeRep         (ObjectRep (..), TypeUpdater, resolveTypes)
-import           Data.Morpheus.Resolve.Internal                 (Context (..), OutputOf)
-import           Data.Morpheus.Resolve.Introspect               (introspect)
+import           Data.Morpheus.Resolve.Introspect               (introspectOutputType)
 import           Data.Morpheus.Schema.Schema                    (Schema, initSchema)
 import           Data.Morpheus.Types.Internal.AST.Selection     (SelectionSet)
 import           Data.Morpheus.Types.Internal.Data              (DataArguments, DataType (..), DataTypeLib (..),
@@ -61,7 +60,7 @@ class GQLQuery a where
   querySchema :: a -> SchemaValidation DataTypeLib
   default querySchema :: IntroCon a =>
     a -> SchemaValidation DataTypeLib
-  querySchema _ = resolveTypes queryType (introspect (Context :: OutputOf Schema) : stack')
+  querySchema _ = resolveTypes queryType (introspectOutputType (Proxy @Schema) : stack')
     where
       queryType = initTypeLib (operatorType (Proxy @a) "Query" fields')
       (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))

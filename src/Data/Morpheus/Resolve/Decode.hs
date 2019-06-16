@@ -13,7 +13,7 @@ module Data.Morpheus.Resolve.Decode where
 import           Data.Morpheus.Error.Internal               (internalArgumentError, internalTypeMismatch)
 import           Data.Morpheus.Kind                         (ENUM, INPUT_OBJECT, KIND, SCALAR, WRAPPER)
 import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
-import           Data.Morpheus.Resolve.Internal             (Decode_, EnumConstraint, InputObjectConstraint)
+import           Data.Morpheus.Resolve.Internal             (EnumConstraint, InputObjectConstraint)
 import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..), toScalar)
 import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..), Arguments)
 import           Data.Morpheus.Types.Internal.Validation    (Validation)
@@ -21,6 +21,8 @@ import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Proxy                                 (Proxy (..))
 import           Data.Text                                  (Text, pack)
 import           GHC.Generics
+
+type Decode_ a = Value -> Validation a
 
 {-
   GENERIC
