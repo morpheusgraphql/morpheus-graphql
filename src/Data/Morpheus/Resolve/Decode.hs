@@ -9,8 +9,7 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Morpheus.Resolve.Decode
-  ( GDecode(..)
-  , _decode
+  ( GDecode(gDecode)
   ) where
 
 import           Data.Morpheus.Error.Internal               (internalArgumentError, internalTypeMismatch)
@@ -26,9 +25,9 @@ import           GHC.Generics
 
 type Decode_ a = Value -> Validation a
 
-{-
-  GENERIC
--}
+--
+--  GENERIC
+--
 fixProxy :: (a -> f a) -> f a
 fixProxy f = f undefined
 
@@ -50,46 +49,59 @@ instance GDecode i f => GDecode i (M1 C c f) where
 instance (GDecode i f, GDecode i g) => GDecode i (f :*: g) where
   gDecode meta gql = (:*:) <$> gDecode meta gql <*> gDecode meta gql
 
-{-  DECODE Types -}
-_decode ::
-     forall a. Decode a (KIND a)
-  => Decode_ a
-_decode = __decode (Proxy @(KIND a))
-
-class Decode a b where
-  __decode :: Proxy b -> Decode_ a
-
 instance (Decode a (KIND a)) => GDecode Value (K1 i a) where
   gDecode key' (Object object) =
     case lookup key' object of
       Nothing    -> internalArgumentError "Missing Argument"
-      Just value -> K1 <$> _decode value
+      Just value -> K1 <$> decode value
   gDecode _ isType = internalTypeMismatch "InputObject" isType
 
 instance Decode a (KIND a) => GDecode Arguments (K1 i a) where
   gDecode key' args =
     case lookup key' args of
       Nothing                -> internalArgumentError "Required Argument Not Found"
-      Just (Argument x _pos) -> K1 <$> _decode x
+      Just (Argument x _pos) -> K1 <$> decode x
 
+-- | Decode GraphQL query arguments and input values
+decode ::
+     forall a. Decode a (KIND a)
+  => Decode_ a
+decode = __decode (Proxy @(KIND a))
+
+-- | Decode GraphQL query arguments and input values
+class Decode a b where
+  __decode :: Proxy b -> Decode_ a
+
+--
+-- SCALAR
+--
 instance (GQLScalar a) => Decode a SCALAR where
   __decode _ value =
     case toScalar value >>= parseValue of
       Right scalar      -> return scalar
       Left errorMessage -> internalTypeMismatch errorMessage value
 
+--
+-- ENUM
+--
 instance (Generic a, EnumRep (Rep a)) => Decode a ENUM where
   __decode _ (Enum value) = pure (to $ gToEnum value)
   __decode _ isType       = internalTypeMismatch "Enum" isType
 
+--
+-- INPUT_OBJECT
+--
 instance (Generic a, GDecode Value (Rep a)) => Decode a INPUT_OBJECT where
   __decode _ (Object x) = to <$> gDecode "" (Object x)
   __decode _ isType     = internalTypeMismatch "InputObject" isType
 
+--
+-- WRAPPERS: Maybe, List
+--
 instance Decode a (KIND a) => Decode (Maybe a) WRAPPER where
   __decode _ Null = pure Nothing
-  __decode _ x    = Just <$> _decode x
+  __decode _ x    = Just <$> decode x
 
 instance Decode a (KIND a) => Decode [a] WRAPPER where
-  __decode _ (List li) = mapM _decode li
+  __decode _ (List li) = mapM decode li
   __decode _ isType    = internalTypeMismatch "List" isType
