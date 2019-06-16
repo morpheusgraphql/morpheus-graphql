@@ -8,12 +8,14 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Morpheus.Resolve.Decode where
+module Data.Morpheus.Resolve.Decode
+  ( GDecode(..)
+  , _decode
+  ) where
 
 import           Data.Morpheus.Error.Internal               (internalArgumentError, internalTypeMismatch)
 import           Data.Morpheus.Kind                         (ENUM, INPUT_OBJECT, KIND, SCALAR, WRAPPER)
 import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
-import           Data.Morpheus.Resolve.Internal             (EnumConstraint, InputObjectConstraint)
 import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..), toScalar)
 import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..), Arguments)
 import           Data.Morpheus.Types.Internal.Validation    (Validation)
@@ -76,11 +78,11 @@ instance (GQLScalar a) => Decode a SCALAR where
       Right scalar      -> return scalar
       Left errorMessage -> internalTypeMismatch errorMessage value
 
-instance EnumConstraint a => Decode a ENUM where
+instance (Generic a, EnumRep (Rep a)) => Decode a ENUM where
   __decode _ (Enum value) = pure (to $ gToEnum value)
   __decode _ isType       = internalTypeMismatch "Enum" isType
 
-instance (InputObjectConstraint a, GDecode Value (Rep a)) => Decode a INPUT_OBJECT where
+instance (Generic a, GDecode Value (Rep a)) => Decode a INPUT_OBJECT where
   __decode _ (Object x) = to <$> gDecode "" (Object x)
   __decode _ isType     = internalTypeMismatch "InputObject" isType
 

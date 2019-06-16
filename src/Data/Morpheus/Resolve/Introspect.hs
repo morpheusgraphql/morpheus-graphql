@@ -18,8 +18,6 @@ import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIN
 import           Data.Morpheus.Resolve.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), RecSel, SelOf, TypeUpdater, UnionRep (..),
                                                          resolveTypes)
-import           Data.Morpheus.Resolve.Internal         (EnumConstraint, InputObjectConstraint, ObjectConstraint,
-                                                         UnionConstraint)
 import           Data.Morpheus.Schema.Type              (DeprecationArgs)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import qualified Data.Morpheus.Types.GQLArgs            as Args (GQLArgs (..))
@@ -31,6 +29,17 @@ import           Data.Morpheus.Types.Resolver           (Resolver (..))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text, pack)
 import           GHC.Generics
+
+-- class Types class
+type GQL_TYPE a = (Generic a, GQLType a)
+
+type EnumConstraint a = (GQL_TYPE a, EnumRep (Rep a))
+
+type InputObjectConstraint a = (GQL_TYPE a, ObjectRep (Rep a) ())
+
+type ObjectConstraint a = (GQL_TYPE a, ObjectRep (Rep a) DataArguments)
+
+type UnionConstraint a = (GQL_TYPE a, UnionRep (Rep a))
 
 scalarTypeOf :: GQLType a => DataValidator -> Proxy a -> DataFullType
 scalarTypeOf validator = Leaf . LeafScalar . buildType validator
