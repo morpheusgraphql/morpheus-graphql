@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -22,11 +23,9 @@ import           Data.Morpheus.Resolve.Generics.DeriveResolvers (ObjectFieldReso
                                                                  lookupSelectionByType, resolveBySelection,
                                                                  resolveBySelectionM, resolversBy)
 import           Data.Morpheus.Resolve.Generics.EnumRep         (EnumRep (..))
-import           Data.Morpheus.Resolve.Internal                 (EncodeObjectConstraint, EncodeUnionConstraint,
-                                                                 EnumConstraint)
 import qualified Data.Morpheus.Types.GQLArgs                    as Args (GQLArgs (..))
 import           Data.Morpheus.Types.GQLScalar                  (GQLScalar (..))
-import           Data.Morpheus.Types.GQLType                    (GQLType (..))
+import           Data.Morpheus.Types.GQLType                    (GQLType (__typeName))
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Base              (Position)
 import           Data.Morpheus.Types.Internal.Validation        (ResolveIO, failResolveIO)
@@ -35,6 +34,12 @@ import           Data.Morpheus.Types.Resolver                   ((::->), (::->>)
 import           Data.Proxy                                     (Proxy (..))
 import           Data.Text                                      (Text, pack)
 import           GHC.Generics
+
+type ObjectConstraint a b = (Generic a, GQLType a, ObjectFieldResolvers (Rep a) b)
+
+type UnionConstraint a res = (Generic a, GQLType a, UnionResolvers (Rep a) res)
+
+type EnumConstraint a = (Generic a, EnumRep (Rep a))
 
 type MResult = WithEffect Value
 
@@ -59,10 +64,10 @@ class Encoder a kind toValue where
 --
 -- SCALAR
 --
-instance (GQLScalar a, GQLType a) => Encoder a SCALAR QueryResult where
+instance GQLScalar a => Encoder a SCALAR QueryResult where
   __encode = pure . pure . Scalar . serialize . resolverValue
 
-instance (GQLScalar a, GQLType a) => Encoder a SCALAR MResult where
+instance GQLScalar a => Encoder a SCALAR MResult where
   __encode value selection = pure <$> __encode value selection
 
 --
@@ -77,14 +82,14 @@ instance EnumConstraint a => Encoder a ENUM MResult where
 --
 --  OBJECTS
 --
-instance EncodeObjectConstraint a QueryResult => Encoder a OBJECT QueryResult where
+instance ObjectConstraint a QueryResult => Encoder a OBJECT QueryResult where
   __encode (WithGQLKind value) (_, Selection {selectionRec = SelectionSet selection'}) =
     resolveBySelection selection' (__typenameResolver : resolversBy value)
     where
       __typenameResolver = ("__typename", const $ return $ Scalar $ String $ __typeName (Proxy @a))
   __encode _ (key, Selection {selectionPosition}) = failResolveIO $ subfieldsNotSelected key "" selectionPosition
 
-instance EncodeObjectConstraint a MResult => Encoder a OBJECT MResult where
+instance ObjectConstraint a MResult => Encoder a OBJECT MResult where
   __encode (WithGQLKind value) (_, Selection {selectionRec = SelectionSet selection'}) =
     resolveBySelectionM selection' (__typenameResolver : resolversBy value)
     where
@@ -96,7 +101,7 @@ instance Encoder a (KIND a) res => ObjectFieldResolvers (K1 s a) res where
 
 -- | Resolves and encodes UNION,
 -- Handles all operators: Query, Mutation and Subscription,
-instance EncodeUnionConstraint a res => Encoder a UNION res where
+instance UnionConstraint a res => Encoder a UNION res where
   __encode (WithGQLKind value) (key', sel@Selection {selectionRec = UnionSelection selections'}) =
     resolver (key', sel {selectionRec = SelectionSet (lookupSelectionByType type' selections')})
     where
