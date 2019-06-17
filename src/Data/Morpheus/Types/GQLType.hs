@@ -1,6 +1,7 @@
 {-# LANGUAGE DefaultSignatures    #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeApplications     #-}
@@ -9,107 +10,103 @@
 
 module Data.Morpheus.Types.GQLType
   ( GQLType(..)
-  , scalarTypeOf
-  , asObjectType
-  , enumTypeOf
-  , inputObjectOf
   ) where
 
-import           Data.Morpheus.Resolve.Generics.ObjectRep          (resolveTypes)
-import           Data.Morpheus.Resolve.Generics.TypeID             (TypeID, typeId)
+import           Data.Morpheus.Error.Schema                        (nameCollisionError)
+import           Data.Morpheus.Resolve.Generics.TypeRep            (TypeUpdater, resolveTypes)
 import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.DirectiveLocation            (DirectiveLocation)
 import           Data.Morpheus.Schema.EnumValue                    (EnumValue)
 import           Data.Morpheus.Schema.Internal.RenderIntrospection (Field, InputValue, Type)
 import           Data.Morpheus.Schema.Schema                       (Schema)
 import           Data.Morpheus.Schema.TypeKind                     (TypeKind (..))
-import           Data.Morpheus.Types.Internal.Data                 (DataField (..), DataFullType (..), DataInputField,
-                                                                    DataLeaf (..), DataOutputField, DataType (..),
-                                                                    DataTypeLib, DataTypeWrapper (..), DataValidator,
-                                                                    defineType, isTypeDefined)
+import           Data.Morpheus.Types.Internal.Data                 (DataField (..), DataFullType (..), DataType (..),
+                                                                    DataTypeWrapper (..), defineType, isTypeDefined)
 import           Data.Morpheus.Types.Resolver                      ((::->))
 import           Data.Proxy                                        (Proxy (..))
-import           Data.Text                                         (Text)
-import           GHC.Generics
-
-scalarTypeOf :: GQLType a => DataValidator -> Proxy a -> DataFullType
-scalarTypeOf validator = Leaf . LeafScalar . buildType validator
-
-enumTypeOf :: GQLType a => [Text] -> Proxy a -> DataFullType
-enumTypeOf tags' = Leaf . LeafEnum . buildType tags'
-
-asObjectType :: GQLType a => [(Text, DataOutputField)] -> Proxy a -> DataFullType
-asObjectType fields' = OutputObject . buildType fields'
-
-inputObjectOf :: GQLType a => [(Text, DataInputField)] -> Proxy a -> DataFullType
-inputObjectOf fields' = InputObject . buildType fields'
+import           Data.Text                                         (Text, intercalate, pack)
+import           Data.Typeable                                     (Typeable, splitTyConApp, tyConName, typeRep,
+                                                                    typeRepFingerprint)
+import           GHC.Fingerprint.Type                              (Fingerprint)
 
 class GQLType a where
   description :: Proxy a -> Text
   description _ = ""
-  typeID :: Proxy a -> Text
-  default typeID :: (TypeID (Rep a), Generic a) =>
+  __typeName :: Proxy a -> Text
+  default __typeName :: (Typeable a) =>
     Proxy a -> Text
-  typeID = typeId
+  __typeName _ = generateName $ typeRep $ Proxy @a
+    where
+      generateName = joinWithSubTypes . splitTyConApp
+        where
+          joinWithSubTypes (con', args') = intercalate "_" $ pack (tyConName con') : map generateName args'
+  __typeFingerprint :: Proxy a -> Fingerprint
+  default __typeFingerprint :: (Typeable a) =>
+    Proxy a -> Fingerprint
+  __typeFingerprint = typeRepFingerprint . typeRep
   field_ :: TypeKind -> Proxy a -> t -> Text -> DataField t
-  field_ kind' proxy' args' name' =
-    DataField
-      { fieldName = name'
-      , fieldTypeWrappers = [NonNullType]
-      , fieldKind = kind'
-      , fieldType = typeID proxy'
-      , fieldArgs = args'
-      }
+  field_ fieldKind proxy' fieldArgs fieldName =
+    DataField {fieldName, fieldKind, fieldArgs, fieldTypeWrappers = [NonNullType], fieldType = __typeName proxy'}
   buildType :: t -> Proxy a -> DataType t
-  buildType typeData' proxy =
-    DataType {typeName = typeID proxy, typeDescription = description proxy, typeData = typeData'}
-  updateLib :: (Proxy a -> DataFullType) -> [DataTypeLib -> DataTypeLib] -> Proxy a -> DataTypeLib -> DataTypeLib
+  buildType typeData proxy =
+    DataType
+      { typeName = __typeName proxy
+      , typeFingerprint = __typeFingerprint proxy
+      , typeDescription = description proxy
+      , typeData
+      }
+  updateLib :: (Proxy a -> DataFullType) -> [TypeUpdater] -> Proxy a -> TypeUpdater
   updateLib typeBuilder stack proxy lib' =
-    if isTypeDefined (typeID proxy) lib'
-      then lib'
-      else resolveTypes lib' (defineType (typeID proxy, typeBuilder proxy) : stack)
+    case isTypeDefined (__typeName proxy) lib' of
+      Nothing -> resolveTypes (defineType (__typeName proxy, typeBuilder proxy) lib') stack
+      Just fingerprint'
+        | fingerprint' == __typeFingerprint proxy -> return lib'
+      Just _ -> Left $ nameCollisionError (__typeName proxy)
 
 instance GQLType EnumValue where
-  typeID _ = "__EnumValue"
+  __typeName = const "__EnumValue"
 
 instance GQLType Type where
-  typeID _ = "__Type"
+  __typeName = const "__Type"
 
 instance GQLType Field where
-  typeID _ = "__Field"
+  __typeName = const "__Field"
 
 instance GQLType InputValue where
-  typeID _ = "__InputValue"
+  __typeName = const "__InputValue"
 
 instance GQLType Schema where
-  typeID _ = "__Schema"
+  __typeName = const "__Schema"
 
 instance GQLType Directive where
-  typeID _ = "__Directive"
+  __typeName = const "__Directive"
 
 instance GQLType TypeKind where
-  typeID _ = "__TypeKind"
+  __typeName = const "__TypeKind"
 
 instance GQLType DirectiveLocation where
-  typeID _ = "__DirectiveLocation"
+  __typeName = const "__DirectiveLocation"
 
 instance GQLType Int where
-  typeID _ = "Int"
+  __typeName = const "Int"
 
 instance GQLType Float where
-  typeID _ = "Float"
+  __typeName = const "Float"
 
 instance GQLType Text where
-  typeID _ = "String"
+  __typeName = const "String"
 
 instance GQLType Bool where
-  typeID _ = "Boolean"
+  __typeName = const "Boolean"
 
 instance GQLType a => GQLType (Maybe a) where
-  typeID _ = typeID (Proxy @a)
+  __typeName _ = __typeName (Proxy @a)
+  __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance GQLType a => GQLType [a] where
-  typeID _ = typeID (Proxy @a)
+  __typeName _ = __typeName (Proxy @a)
+  __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance GQLType a => GQLType (p ::-> a) where
-  typeID _ = typeID (Proxy @a)
+  __typeName _ = __typeName (Proxy @a)
+  __typeFingerprint _ = __typeFingerprint (Proxy @a)

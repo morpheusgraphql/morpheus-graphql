@@ -1,0 +1,6 @@
+[
+  {
+    "path": "nameCollision",
+    "description": "fail: if types are defined with same name"
+  }
+]

@@ -1,9 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- |  Wai Server Applications
 module Data.Morpheus.Server
   ( gqlSocketApp
   , initGQLState
   , GQLState
+  , GQLAPI
   ) where
 
 import           Control.Exception                      (finally)
@@ -18,6 +20,7 @@ import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..), OutputA
 import           Network.WebSockets                     (ServerApp, acceptRequestWith, forkPingThread, receiveData,
                                                          sendTextData)
 
+-- | synonym for stateFull Morpheus GraphQL interpreter instance
 type GQLAPI = GQLRequest -> IO (OutputAction ByteString)
 
 handleGQLResponse :: GQLClient -> GQLState -> Int -> OutputAction ByteString -> IO ()
@@ -50,6 +53,7 @@ queryHandler interpreter' client'@GQLClient {clientConnection = connection', cli
           where request = GQLRequest {query = query', operationName = name', variables = variables'}
         Right _ -> return ()
 
+-- | Wai Websocket Server App that handles GraphQL subscriptions
 gqlSocketApp :: GQLAPI -> GQLState -> ServerApp
 gqlSocketApp interpreter' state pending = do
   connection' <- acceptRequestWith pending apolloProtocol

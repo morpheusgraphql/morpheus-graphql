@@ -10,6 +10,9 @@
   - `GQLRequest -> GQLResponse` , When you using it inside another Component that have Manual `ToJSON` deriving,
      you have to ensure that `GQLResponse` will be encoded with `toEncoding`, and not with `toJSON`.
 
+- Schema Validation:
+  - Name Collision
+
 - support of Parsing input values: `Objects`,`Arrays`
 - support scalar type: `ID`
 - scalar Types are validated by `GQLScalar` instance function `parseValue
@@ -35,6 +38,10 @@
    - `gqlSocketApp` :converts  `interpreter` to `websocket` application
    - `graphql-subscriptions`: `Apollo GraphQL` subProtocol
 
+-- language:
+    - Query supports : `__type(name:"type")`
+    - On every Object can be selected : `__typename`
+
 ### Changed
 -  `GQLRoot`, `GQLType(..)` , `GQLScalar(..)` , `GQLMutation` , `GQLQuery`  , `GQLArgs`
     are moved in `Data.Morpheus.Types`
@@ -52,6 +59,8 @@
 ### Fixed:
 
 - parser can read fields with digits like: a1 , \_1
+- you can use Wrapped type and Wrapped Primitive Types issue #136:
+    - wrapped TypesNames will be separated with "_" : typeName(Either A B) -> "Either_A_B"
 - introspection:
   - argument supports `Non-Null` and `List`
   - every field has correct kind

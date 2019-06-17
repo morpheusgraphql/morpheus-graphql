@@ -93,8 +93,18 @@ data User = User
 instance GQLType User where
   description _ = "Custom Description for Client Defined User Type"
 
-newtype Query = Query
-  { user :: () ::-> User
+type instance KIND (A Int) = OBJECT
+
+type instance KIND (A Text) = OBJECT
+
+newtype A a = A
+  { wrappedA :: a
+  } deriving (Generic, GQLType)
+
+data Query = Query
+  { user      :: () ::-> User
+  , wrappedA1 :: A Int
+  , wrappedA2 :: A Text
   } deriving (Generic, GQLQuery)
 
 fetchAddress :: Euro -> Text -> IO (Either String Address)
@@ -167,7 +177,7 @@ data Subscription = Subscription
 gqlRoot :: GQLRootResolver Query Mutation Subscription
 gqlRoot =
   GQLRootResolver
-    { queryResolver = Query {user = resolveUser}
+    { queryResolver = Query {user = resolveUser, wrappedA1 = A 0, wrappedA2 = A ""}
     , mutationResolver = Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
     , subscriptionResolver = Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}
     }

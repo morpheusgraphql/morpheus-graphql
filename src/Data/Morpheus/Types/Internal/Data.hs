@@ -21,18 +21,21 @@ module Data.Morpheus.Types.Internal.Data
   , DataTypeLib(..)
   , DataTypeWrapper(..)
   , DataValidator(..)
+  , DataArguments
   , isTypeDefined
   , initTypeLib
   , defineType
   , showWrappedType
   , showFullAstType
   , isFieldNullable
+  , allDataTypes
   ) where
 
 import           Data.Morpheus.Schema.TypeKind      (TypeKind)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
 import           Data.Text                          (Text)
 import qualified Data.Text                          as T (concat)
+import           GHC.Fingerprint.Type               (Fingerprint)
 
 type Key = Text
 
@@ -59,11 +62,13 @@ type DataInputObject = DataObject DataInputField
 
 type DataOutputObject = DataObject DataOutputField
 
-type DataUnion = [DataField ()]
+type DataUnion = DataType [DataField ()]
 
 type DataOutputType = DataKind DataOutputField
 
 type DataInputType = DataKind DataInputField
+
+type DataArguments = [(Key, DataArgument)]
 
 data DataTypeWrapper
   = ListType
@@ -84,6 +89,7 @@ isFieldNullable _                                             = True
 
 data DataType a = DataType
   { typeName        :: Text
+  , typeFingerprint :: Fingerprint
   , typeDescription :: Text
   , typeData        :: a
   } deriving (Show)
@@ -131,22 +137,27 @@ initTypeLib query' =
   DataTypeLib
     {leaf = [], inputObject = [], query = query', object = [], union = [], mutation = Nothing, subscription = Nothing}
 
-mutationName :: Maybe (Text, DataOutputObject) -> [Text]
-mutationName (Just (key', _)) = [key']
-mutationName Nothing          = []
+allDataTypes :: DataTypeLib -> [(Text, DataFullType)]
+allDataTypes (DataTypeLib leaf' inputObject' object' union' query' mutation' subscription') =
+  packType OutputObject query' :
+  map (packType InputObject) inputObject' ++
+  map (packType OutputObject) object' ++
+  map (packType Leaf) leaf' ++ map (packType Union) union' ++ fromMaybeType mutation' ++ fromMaybeType subscription'
+  where
+    packType f (x, y) = (x, f y)
+    fromMaybeType :: Maybe (Text, DataOutputObject) -> [(Text, DataFullType)]
+    fromMaybeType (Just (key', dataType')) = [(key', OutputObject dataType')]
+    fromMaybeType Nothing                  = []
 
-subscriptionName :: Maybe (Text, DataOutputObject) -> [Text]
-subscriptionName (Just (key', _)) = [key']
-subscriptionName Nothing          = []
-
-getAllTypeKeys :: DataTypeLib -> [Text]
-getAllTypeKeys (DataTypeLib leaf' inputObject' object' union' (queryName, _) mutation' subscription') =
-  [queryName] ++
-  map fst leaf' ++
-  map fst inputObject' ++ map fst object' ++ mutationName mutation' ++ subscriptionName subscription' ++ map fst union'
-
-isTypeDefined :: Text -> DataTypeLib -> Bool
-isTypeDefined name' lib' = name' `elem` getAllTypeKeys lib'
+isTypeDefined :: Text -> DataTypeLib -> Maybe Fingerprint
+isTypeDefined name_ lib' = getTypeFingerprint <$> name_ `lookup` allDataTypes lib'
+  where
+    getTypeFingerprint :: DataFullType -> Fingerprint
+    getTypeFingerprint (Leaf (LeafScalar dataType')) = typeFingerprint dataType'
+    getTypeFingerprint (Leaf (LeafEnum dataType'))   = typeFingerprint dataType'
+    getTypeFingerprint (InputObject dataType')       = typeFingerprint dataType'
+    getTypeFingerprint (OutputObject dataType')      = typeFingerprint dataType'
+    getTypeFingerprint (Union dataType')             = typeFingerprint dataType'
 
 defineType :: (Text, DataFullType) -> DataTypeLib -> DataTypeLib
 defineType (key', Leaf type') lib         = lib {leaf = (key', type') : leaf lib}

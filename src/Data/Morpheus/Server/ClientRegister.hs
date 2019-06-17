@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Data.Morpheus.Server.ClientRegister
   ( ClientRegister
   , GQLState
@@ -29,14 +31,14 @@ initGQLState :: IO GQLState
 initGQLState = newMVar []
 
 connectClient :: Connection -> GQLState -> IO GQLClient
-connectClient connection' varState' = do
+connectClient clientConnection varState' = do
   client' <- newClient
   modifyMVar_ varState' (addClient client')
   return (snd client')
   where
     newClient = do
-      id' <- nextRandom
-      return (id', GQLClient {clientID = id', clientConnection = connection', clientSessions = []})
+      clientID <- nextRandom
+      return (clientID, GQLClient {clientID, clientConnection, clientSessions = []})
     addClient client' state' = return (client' : state')
 
 disconnectClient :: GQLClient -> GQLState -> IO ClientRegister
@@ -61,11 +63,10 @@ publishUpdates channels resolver' state = do
   forM_ state' sendMessage
   where
     sendMessage (_, GQLClient {clientSessions = []}) = return ()
-    sendMessage (_, GQLClient {clientSessions = sessions', clientConnection = connection'}) =
-      mapM_ __send (filterByChannels sessions')
+    sendMessage (_, GQLClient {clientSessions, clientConnection}) = mapM_ __send (filterByChannels clientSessions)
       where
-        __send ClientSession {sessionQuerySelection = selection', sessionId = sid'} =
-          resolver' selection' >>= sendTextData connection' . toApolloResponse sid'
+        __send ClientSession {sessionQuerySelection, sessionId} =
+          resolver' sessionQuerySelection >>= sendTextData clientConnection . toApolloResponse sessionId
         filterByChannels :: [ClientSession] -> [ClientSession]
         filterByChannels = filter (([] /=) . intersect channels . sessionChannels)
 
@@ -75,11 +76,8 @@ removeClientSubscription id' sid' = updateClientByID id' stopSubscription
     stopSubscription client' = client' {clientSessions = filter ((sid' /=) . sessionId) (clientSessions client')}
 
 addClientSubscription :: ClientID -> SelectionSet -> [Text] -> Int -> GQLState -> IO ()
-addClientSubscription id' selection' channel' sid' = updateClientByID id' startSubscription
+addClientSubscription id' sessionQuerySelection sessionChannels sessionId = updateClientByID id' startSubscription
   where
     startSubscription client' =
       client'
-        { clientSessions =
-            ClientSession {sessionId = sid', sessionChannels = channel', sessionQuerySelection = selection'} :
-            clientSessions client'
-        }
+        {clientSessions = ClientSession {sessionId, sessionChannels, sessionQuerySelection} : clientSessions client'}

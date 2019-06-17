@@ -32,7 +32,7 @@ notObject (key', position') field' =
 
 lookupUnionTypes :: Position -> Text -> DataTypeLib -> DataOutputField -> Validation [DataOutputObject]
 lookupUnionTypes position' key' lib' DataField {fieldType = type'} =
-  lookupType error' (union lib') type' >>= mapM (lookupType error' (object lib') . fieldType)
+  lookupType error' (union lib') type' >>= mapM (lookupType error' (object lib') . fieldType) . typeData
   where
     error' = hasNoSubfields key' type' position'
 

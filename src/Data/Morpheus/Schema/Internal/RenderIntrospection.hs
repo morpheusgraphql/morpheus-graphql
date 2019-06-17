@@ -5,11 +5,8 @@ module Data.Morpheus.Schema.Internal.RenderIntrospection
   ( Type
   , Field
   , InputValue
+  , renderType
   , createObjectType
-  , typeFromObject
-  , typeFromInputObject
-  , typeFromLeaf
-  , typeFromUnion
   ) where
 
 import           Data.Morpheus.Schema.EnumValue    (EnumValue, createEnumValue)
@@ -17,11 +14,17 @@ import qualified Data.Morpheus.Schema.Field        as F (Field (..), createField
 import qualified Data.Morpheus.Schema.InputValue   as IN (InputValue (..), createInputValueWith)
 import           Data.Morpheus.Schema.Type         (Type (..))
 import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
-import           Data.Morpheus.Types.Internal.Data (DataField (..), DataInputField, DataInputObject, DataLeaf (..),
-                                                    DataOutputField, DataOutputObject, DataType (..),
+import           Data.Morpheus.Types.Internal.Data (DataField (..), DataFullType (..), DataInputField, DataInputObject,
+                                                    DataLeaf (..), DataOutputField, DataOutputObject, DataType (..),
                                                     DataTypeWrapper (..), DataUnion)
 import           Data.Morpheus.Types.Resolver      ((::->))
 import           Data.Text                         (Text)
+
+renderType :: (Text, DataFullType) -> Type
+renderType (name', Leaf leaf')           = typeFromLeaf (name', leaf')
+renderType (name', InputObject iObject') = typeFromInputObject (name', iObject')
+renderType (name', OutputObject object') = typeFromObject (name', object')
+renderType (name', Union union')         = typeFromUnion (name', union')
 
 type InputValue = IN.InputValue Type
 
@@ -73,11 +76,11 @@ createLeafType kind' name' desc' enums' =
     }
 
 typeFromUnion :: (Text, DataUnion) -> Type
-typeFromUnion (name', fields') =
+typeFromUnion (name', DataType {typeData = fields', typeDescription = description'}) =
   Type
     { kind = UNION
     , name = Just name'
-    , description = Just "TODO"
+    , description = Just description'
     , fields = resolveNothing
     , ofType = Nothing
     , interfaces = Nothing
