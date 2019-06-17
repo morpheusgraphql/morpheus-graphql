@@ -38,6 +38,10 @@
    - `gqlSocketApp` :converts  `interpreter` to `websocket` application
    - `graphql-subscriptions`: `Apollo GraphQL` subProtocol
 
+-- language:
+    - Query supports : `__type(name:"type")`
+    - On every Object can be selected : `__typename`
+
 ### Changed
 -  `GQLRoot`, `GQLType(..)` , `GQLScalar(..)` , `GQLMutation` , `GQLQuery`  , `GQLArgs`
     are moved in `Data.Morpheus.Types`
