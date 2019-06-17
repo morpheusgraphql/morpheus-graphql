@@ -123,8 +123,12 @@ instance InputObjectConstraint a => Introspect a INPUT_OBJECT InputType where
 
 instance ObjectConstraint a => Introspect a OBJECT OutputType where
   __field _ = field_ OBJECT (Proxy @a) []
-  introspect _ = updateLib (OutputObject . buildType fields') stack' (Proxy @a)
+  introspect _ = updateLib (OutputObject . buildType (__typename : fields')) stack' (Proxy @a)
     where
+      __typename =
+        ( "__typename"
+        , DataField
+            {fieldName = "__typename", fieldKind = SCALAR, fieldArgs = [], fieldTypeWrappers = [], fieldType = "String"})
       (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'

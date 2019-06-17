@@ -1,14 +1,20 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 {-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE TypeOperators     #-}
 
-module Data.Morpheus.Schema.Schema where
+module Data.Morpheus.Schema.Schema
+  ( initSchema
+  , findType
+  , Schema
+  , Type
+  ) where
 
 import           Data.Morpheus.Kind                                (KIND, OBJECT)
 import           Data.Morpheus.Schema.Directive                    (Directive)
-import           Data.Morpheus.Schema.Internal.RenderIntrospection (Type, createObjectType, typeFromInputObject,
-                                                                    typeFromLeaf, typeFromObject, typeFromUnion)
-import           Data.Morpheus.Types.Internal.Data                 (DataOutputObject, DataTypeLib (..))
+import           Data.Morpheus.Schema.Internal.RenderIntrospection (Type, createObjectType, renderType)
+import           Data.Morpheus.Types.Internal.Data                 (DataOutputObject, DataTypeLib (..), allDataTypes)
 import           Data.Text                                         (Text)
 import           GHC.Generics                                      (Generic)
 
@@ -23,19 +29,13 @@ data Schema = Schema
   } deriving (Generic)
 
 convertTypes :: DataTypeLib -> [Type]
-convertTypes lib' =
-  [typeFromObject $ query lib'] ++
-  typeFromMaybe (mutation lib') ++
-  typeFromMaybe (subscription lib') ++
-  map typeFromObject (object lib') ++
-  map typeFromInputObject (inputObject lib') ++ map typeFromLeaf (leaf lib') ++ map typeFromUnion (union lib')
-
-typeFromMaybe :: Maybe (Text, DataOutputObject) -> [Type]
-typeFromMaybe (Just x) = [typeFromObject x]
-typeFromMaybe Nothing  = []
+convertTypes lib' = map renderType (allDataTypes lib')
 
 buildSchemaLinkType :: (Text, DataOutputObject) -> Type
-buildSchemaLinkType (key', _) = createObjectType key' "Query Description" []
+buildSchemaLinkType (key', _) = createObjectType key' "" []
+
+findType :: Text -> DataTypeLib -> Maybe Type
+findType name lib = renderType . (name, ) <$> lookup name (allDataTypes lib)
 
 initSchema :: DataTypeLib -> Schema
 initSchema types' =

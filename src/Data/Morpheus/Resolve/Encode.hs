@@ -11,7 +11,10 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Morpheus.Resolve.Encode
-  ( encode
+  ( ObjectFieldResolvers(..)
+  , resolveBySelection
+  , resolveBySelectionM
+  , resolversBy
   ) where
 
 import           Control.Monad.Trans                            (lift)

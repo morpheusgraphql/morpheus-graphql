@@ -28,6 +28,7 @@ module Data.Morpheus.Types.Internal.Data
   , showWrappedType
   , showFullAstType
   , isFieldNullable
+  , allDataTypes
   ) where
 
 import           Data.Morpheus.Schema.TypeKind      (TypeKind)
@@ -136,27 +137,27 @@ initTypeLib query' =
   DataTypeLib
     {leaf = [], inputObject = [], query = query', object = [], union = [], mutation = Nothing, subscription = Nothing}
 
-maybeDataType :: Maybe (Text, DataOutputObject) -> [(Text, Fingerprint)]
-maybeDataType (Just (key', dataType')) = [(key', typeFingerprint dataType')]
-maybeDataType Nothing                  = []
-
-getTypeFingerprint :: (Text, DataType a) -> (Text, Fingerprint)
-getTypeFingerprint (name', dataType') = (name', typeFingerprint dataType')
-
-getLeafFingerprint :: (Text, DataLeaf) -> (Text, Fingerprint)
-getLeafFingerprint (name', LeafScalar dataType') = (name', typeFingerprint dataType')
-getLeafFingerprint (name', LeafEnum dataType')   = (name', typeFingerprint dataType')
-
-getAllTypeKeys :: DataTypeLib -> [(Text, Fingerprint)]
-getAllTypeKeys (DataTypeLib leaf' inputObject' object' union' query' mutation' subscription') =
-  getTypeFingerprint query' :
-  map getTypeFingerprint inputObject' ++
-  map getTypeFingerprint object' ++
-  maybeDataType mutation' ++
-  maybeDataType subscription' ++ map getTypeFingerprint union' ++ map getLeafFingerprint leaf'
+allDataTypes :: DataTypeLib -> [(Text, DataFullType)]
+allDataTypes (DataTypeLib leaf' inputObject' object' union' query' mutation' subscription') =
+  packType OutputObject query' :
+  map (packType InputObject) inputObject' ++
+  map (packType OutputObject) object' ++
+  map (packType Leaf) leaf' ++ map (packType Union) union' ++ fromMaybeType mutation' ++ fromMaybeType subscription'
+  where
+    packType f (x, y) = (x, f y)
+    fromMaybeType :: Maybe (Text, DataOutputObject) -> [(Text, DataFullType)]
+    fromMaybeType (Just (key', dataType')) = [(key', OutputObject dataType')]
+    fromMaybeType Nothing                  = []
 
 isTypeDefined :: Text -> DataTypeLib -> Maybe Fingerprint
-isTypeDefined name' lib' = name' `lookup` getAllTypeKeys lib'
+isTypeDefined name_ lib' = getTypeFingerprint <$> name_ `lookup` allDataTypes lib'
+  where
+    getTypeFingerprint :: DataFullType -> Fingerprint
+    getTypeFingerprint (Leaf (LeafScalar dataType')) = typeFingerprint dataType'
+    getTypeFingerprint (Leaf (LeafEnum dataType'))   = typeFingerprint dataType'
+    getTypeFingerprint (InputObject dataType')       = typeFingerprint dataType'
+    getTypeFingerprint (OutputObject dataType')      = typeFingerprint dataType'
+    getTypeFingerprint (Union dataType')             = typeFingerprint dataType'
 
 defineType :: (Text, DataFullType) -> DataTypeLib -> DataTypeLib
 defineType (key', Leaf type') lib         = lib {leaf = (key', type') : leaf lib}
