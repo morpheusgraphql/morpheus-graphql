@@ -91,14 +91,25 @@ typeFromUnion (name', DataType {typeData = fields', typeDescription = descriptio
 
 typeFromObject :: (Text, DataOutputObject) -> Type
 typeFromObject (key', DataType {typeData = fields', typeDescription = description'}) =
-  createObjectType key' description' (map fieldFromObjectField fields')
+  createObjectType key' description' (map fieldFromObjectField $ filter (not . fieldHidden . snd) fields')
 
 typeFromInputObject :: (Text, DataInputObject) -> Type
 typeFromInputObject (key', DataType {typeData = fields', typeDescription = description'}) =
   createInputObject key' description' (map inputValueFromArg fields')
 
 createObjectType :: Text -> Text -> [Field] -> Type
-createObjectType = createType OBJECT
+createObjectType name' desc' fields' =
+  Type
+    { kind = OBJECT
+    , name = Just name'
+    , description = Just desc'
+    , fields = resolveMaybeList fields'
+    , ofType = Nothing
+    , interfaces = Just []
+    , possibleTypes = Nothing
+    , enumValues = resolveNothing
+    , inputFields = Nothing
+    }
 
 createInputObject :: Text -> Text -> [InputValue] -> Type
 createInputObject name' desc' fields' =
@@ -122,10 +133,10 @@ createType kind' name' desc' fields' =
     , description = Just desc'
     , fields = resolveMaybeList fields'
     , ofType = Nothing
-    , interfaces = Just []
-    , possibleTypes = Just []
+    , interfaces = Nothing
+    , possibleTypes = Nothing
     , enumValues = resolveMaybeList []
-    , inputFields = Just []
+    , inputFields = Nothing
     }
 
 wrapAs :: TypeKind -> Type -> Type

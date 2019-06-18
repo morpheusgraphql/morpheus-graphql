@@ -27,8 +27,8 @@ import           Data.Morpheus.Resolve.Introspect           (introspectOutputTyp
 import           Data.Morpheus.Schema.Schema                (Schema, Type, findType, initSchema)
 import           Data.Morpheus.Types.GQLArgs                (GQLArgs)
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
-import           Data.Morpheus.Types.Internal.Data          (DataArguments, DataType (..), DataTypeLib (..),
-                                                             initTypeLib)
+import           Data.Morpheus.Types.Internal.Data          (DataArguments, DataField (..), DataType (..),
+                                                             DataTypeLib (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO, SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Morpheus.Types.Resolver               ((::->), Resolver (..), WithEffect (..))
@@ -62,6 +62,9 @@ data SystemQuery = SystemQuery
   , __schema :: Schema
   } deriving (Generic)
 
+hideFields :: (Text, DataField a) -> (Text, DataField a)
+hideFields (key', field) = (key', field {fieldHidden = True})
+
 systemQuery :: DataTypeLib -> SystemQuery
 systemQuery lib =
   SystemQuery {__type = Resolver $ \TypeArgs {name} -> return $ Right $ findType name lib, __schema = initSchema lib}
@@ -79,7 +82,7 @@ class GQLQuery a where
   querySchema _ = resolveTypes queryType (introspectOutputType (Proxy @Schema) : stack')
     where
       queryType = initTypeLib (operatorType (Proxy @a) "Query" (__fields ++ fields'))
-      __fields = map fst $ objectFieldTypes $ Proxy @(Rep SystemQuery)
+      __fields = map (hideFields . fst) $ objectFieldTypes $ Proxy @(Rep SystemQuery)
       (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 -- | derives GQL Subscription Mutation

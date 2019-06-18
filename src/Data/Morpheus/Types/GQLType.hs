@@ -60,7 +60,14 @@ class GQLType a where
   __typeFingerprint = typeRepFingerprint . typeRep
   field_ :: TypeKind -> Proxy a -> t -> Text -> DataField t
   field_ fieldKind proxy' fieldArgs fieldName =
-    DataField {fieldName, fieldKind, fieldArgs, fieldTypeWrappers = [NonNullType], fieldType = __typeName proxy'}
+    DataField
+      { fieldName
+      , fieldKind
+      , fieldArgs
+      , fieldTypeWrappers = [NonNullType]
+      , fieldType = __typeName proxy'
+      , fieldHidden = False
+      }
   buildType :: t -> Proxy a -> DataType t
   buildType typeData proxy =
     DataType

@@ -1,5 +1,6 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TypeFamilies  #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 module Data.Morpheus.Schema.InputValue
   ( InputValue(..)
@@ -21,4 +22,4 @@ data InputValue t = InputValue
 
 createInputValueWith :: Text -> a -> InputValue a
 createInputValueWith _name ofType =
-  InputValue {name = _name, description = Nothing, _type = ofType, defaultValue = Nothing}
+  InputValue {name = _name, description = Nothing, _type = ofType, defaultValue = Just "false"}
