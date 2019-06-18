@@ -21,11 +21,11 @@ import           Data.Text                              (Text)
 import qualified Data.Text.Lazy                         as LT (Text, fromStrict, toStrict)
 import           Data.Text.Lazy.Encoding                (decodeUtf8, encodeUtf8)
 
--- | query processor
-class Interpreter k where
+-- | main query processor and resolver
+class Interpreter k
   -- | possible versions of interpreter
   --
-  -- 1. with effect and state: when you use subscriptions, where 'GQLState' is State Monad of subscriptions
+  -- 1. with effect and state: where 'GQLState' is State Monad of subscriptions
   --
   --     @
   --      k :: GQLState -> a -> IO a
@@ -39,6 +39,7 @@ class Interpreter k where
   --       -- or
   --       k :: GQLRequest -> IO GQLResponse
   --     @
+  where
   interpreter :: (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRootResolver q m s -> k
 
 {-

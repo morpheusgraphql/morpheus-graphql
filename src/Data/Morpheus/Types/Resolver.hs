@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFunctor     #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -20,7 +20,7 @@ data MUTATION
 
 type family RESOLVER a b
 
--- | wrapper for resolver function, where
+-- | resolver function wrapper, where
 --
 --  __a__ is a record of GQL Arguments
 --
@@ -62,11 +62,9 @@ instance Monad (Resolver QUERY a) where
         Right value' -> (unpackResolver $ func2 value') args
 
 {-
-  a ::->> b : Resolver with effects: [ChanelID]
-  Monad of Mutation and Subscription Resolver
+  a ::->> b
 -}
-
--- | resolver with effects : [ChanelID],
+-- | resolver with effects,
 -- used for communication between mutation and subscription
 type a ::->> b = Resolver MUTATION a b
 

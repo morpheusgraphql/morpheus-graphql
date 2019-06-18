@@ -16,7 +16,7 @@ import           GHC.Generics                       (Generic)
 
 type instance KIND ID = SCALAR
 
--- | default GraphQL type: ID ,
+-- | default GraphQL type,
 -- parses only 'String' and 'Int' values,
 -- serialized always as 'String'
 newtype ID = ID

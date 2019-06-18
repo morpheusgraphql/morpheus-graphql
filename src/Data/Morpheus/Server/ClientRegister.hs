@@ -25,8 +25,11 @@ import           Network.WebSockets                         (Connection, sendTex
 
 type ClientRegister = [(ClientID, GQLClient)]
 
+-- | shared GraphQL state between __websocket__ and __http__ server,
+-- stores information about subscriptions
 type GQLState = MVar ClientRegister -- SharedState
 
+-- | initializes empty GraphQL state
 initGQLState :: IO GQLState
 initGQLState = newMVar []
 
