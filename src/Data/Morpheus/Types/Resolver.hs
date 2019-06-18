@@ -20,6 +20,11 @@ data MUTATION
 
 type family RESOLVER a b
 
+-- | wrapper for resolver function, where
+--
+--  __a__ is a record of GQL Arguments
+--
+-- __b__ is result
 newtype Resolver t a b = Resolver
   { unpackResolver :: a -> IO (RESOLVER t b)
   } deriving (Generic)
