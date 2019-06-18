@@ -78,5 +78,9 @@
   {
     "path": "parsing/notNullSpacing",
     "description": "returns on a query that pads all '!' chars with whitespace"
+  },
+  {
+    "path": "introspection/__Type",
+    "description": "returns introspection of __Type"
   }
 ]
