@@ -16,6 +16,9 @@ import           GHC.Generics                       (Generic)
 
 type instance KIND ID = SCALAR
 
+-- | default GraphQL type: ID ,
+-- parses only 'String' and 'Int' values,
+-- serialized always as 'String'
 newtype ID = ID
   { unpackID :: Text
   } deriving (Generic, GQLType)

@@ -66,6 +66,7 @@ systemQuery :: DataTypeLib -> SystemQuery
 systemQuery lib =
   SystemQuery {__type = Resolver $ \TypeArgs {name} -> return $ Right $ findType name lib, __schema = initSchema lib}
 
+-- | derives GQL Query Operator
 class GQLQuery a where
   encodeQuery :: DataTypeLib -> Encode a QResult
   default encodeQuery :: EncodeCon a QResult =>
@@ -81,6 +82,7 @@ class GQLQuery a where
       __fields = map fst $ objectFieldTypes $ Proxy @(Rep SystemQuery)
       (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
 
+-- | derives GQL Subscription Mutation
 class GQLMutation a where
   encodeMutation :: Encode a MResult
   default encodeMutation :: EncodeCon a MResult =>
@@ -94,6 +96,7 @@ class GQLMutation a where
       mutationType = initialType {mutation = Just $ operatorType (Proxy @a) "Mutation" fields'}
       (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
 
+-- | derives GQL Subscription Operator
 class GQLSubscription a where
   encodeSubscription :: Encode a MResult
   default encodeSubscription :: EncodeCon a MResult =>

@@ -1,12 +1,13 @@
+-- | GQL Types
 module Data.Morpheus.Types
   ( ScalarValue(..)
   , (::->)
   , (::->>)
   , Resolver(..)
   , ID(..)
-  , GQLType(description, __typeName)
+  , GQLType(description)
   , GQLRootResolver(..)
-  , GQLScalar(..)
+  , GQLScalar(parseValue,serialize)
   , GQLRequest(..)
   , GQLResponse(..)
   , GQLArgs
