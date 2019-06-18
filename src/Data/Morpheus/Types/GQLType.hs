@@ -30,13 +30,12 @@ import           Data.Typeable                                     (Typeable, sp
 import           GHC.Fingerprint.Type                              (Fingerprint)
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
--- either you can derive them with
 --
 --  @
 --    ... deriving (Generic, GQLType)
 --  @
 --
--- or if you want to add description
+-- if you want to add description
 --
 --  @
 --       ... deriving (Generic)

@@ -16,7 +16,7 @@ toScalar :: Value -> Either Text ScalarValue
 toScalar (Scalar x) = pure x
 toScalar _          = Left ""
 
--- | GraphQL Scalar value parsing validating and serializing
+-- | GraphQL Scalar
 --
 -- 'parseValue' and 'serialize' should be provided for every instances manually
 class GQLScalar a where
