@@ -23,11 +23,11 @@ data Type = Type
   , name          :: Maybe Text
   , description   :: Maybe Text
   , fields        :: DeprecationArgs ::-> Maybe [F.Field Type]
-  , ofType        :: Maybe Type
   , interfaces    :: Maybe [Type]
   , possibleTypes :: Maybe [Type]
   , enumValues    :: DeprecationArgs ::-> Maybe [EnumValue]
   , inputFields   :: Maybe [I.InputValue Type]
+  , ofType        :: Maybe Type
   } deriving (Generic)
 
 newtype DeprecationArgs = DeprecationArgs
