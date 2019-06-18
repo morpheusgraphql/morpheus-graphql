@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFunctor  #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Morpheus.Types.Internal.WebSocket
   ( GQLClient(..)
@@ -10,12 +11,10 @@ module Data.Morpheus.Types.Internal.WebSocket
 
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Response               (GQLResponse (..))
+import           Data.Semigroup                             ((<>))
 import           Data.Text                                  (Text)
 import           Data.UUID                                  (UUID)
 import           Network.WebSockets                         (Connection)
-
-instance Show Connection where
-  show = const "Connection"
 
 data OutputAction a
   = PublishMutation { mutationChannels                 :: [Text]
@@ -40,4 +39,8 @@ data GQLClient = GQLClient
   { clientID         :: ClientID
   , clientConnection :: Connection
   , clientSessions   :: [ClientSession]
-  } deriving (Show)
+  }
+
+instance Show GQLClient where
+  show GQLClient {clientID, clientSessions} =
+    "GQLClient {id:" <> show clientID <> ", sessions:" <> show clientSessions <> "}"

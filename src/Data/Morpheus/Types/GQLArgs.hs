@@ -19,6 +19,8 @@ import           Data.Proxy                                 (Proxy (..))
 import           Data.Text                                  (Text)
 import           GHC.Generics
 
+-- | derives haskell  __record__ as Set of GQL Arguments,
+-- you can use same __record__ (Argument set) in multiple fields
 class GQLArgs p where
   decode :: Arguments -> Validation p
   default decode :: (Generic p, GDecode Arguments (Rep p)) =>

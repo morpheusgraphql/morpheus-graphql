@@ -1,12 +1,13 @@
+-- | GQL Types
 module Data.Morpheus.Types
   ( ScalarValue(..)
   , (::->)
   , (::->>)
   , Resolver(..)
   , ID(..)
-  , GQLType(description, __typeName)
+  , GQLType(description)
   , GQLRootResolver(..)
-  , GQLScalar(..)
+  , GQLScalar(parseValue, serialize)
   , GQLRequest(..)
   , GQLResponse(..)
   , GQLArgs
@@ -18,8 +19,8 @@ module Data.Morpheus.Types
 
 import           Data.Morpheus.Types.GQLArgs        (GQLArgs)
 import           Data.Morpheus.Types.GQLOperator    (GQLMutation, GQLQuery, GQLSubscription)
-import           Data.Morpheus.Types.GQLScalar      (GQLScalar (..))
-import           Data.Morpheus.Types.GQLType        (GQLType (..))
+import           Data.Morpheus.Types.GQLScalar      (GQLScalar (parseValue, serialize))
+import           Data.Morpheus.Types.GQLType        (GQLType (description))
 import           Data.Morpheus.Types.ID             (ID (..))
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
 import           Data.Morpheus.Types.Request        (GQLRequest (..))

@@ -21,24 +21,24 @@ import           Data.Text                              (Text)
 import qualified Data.Text.Lazy                         as LT (Text, fromStrict, toStrict)
 import           Data.Text.Lazy.Encoding                (decodeUtf8, encodeUtf8)
 
--- | query processor
+-- | main query processor and resolver
+--  possible versions of interpreter
+--
+-- 1. with effect and state: where 'GQLState' is State Monad of subscriptions
+--
+--     @
+--      k :: GQLState -> a -> IO a
+--     @
+--
+-- 2. without effect and state: stateless query processor without any effect,
+--    if you don't need any subscription use this one , is simple and fast
+--
+--     @
+--       k :: a -> IO a
+--       -- or
+--       k :: GQLRequest -> IO GQLResponse
+--     @
 class Interpreter k where
-  -- | possible versions of interpreter
-  --
-  -- 1. with effect and state: when you use subscriptions, where 'GQLState' is State Monad of subscriptions
-  --
-  --     @
-  --      k :: GQLState -> a -> IO a
-  --     @
-  --
-  -- 2. without effect and state: stateless query processor without any effect,
-  --    if you don't need any subscription use this one , is simple and fast
-  --
-  --     @
-  --       k :: a -> IO a
-  --       -- or
-  --       k :: GQLRequest -> IO GQLResponse
-  --     @
   interpreter :: (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRootResolver q m s -> k
 
 {-

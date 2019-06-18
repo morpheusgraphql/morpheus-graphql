@@ -27,6 +27,10 @@ data GQLQueryRoot = GQLQueryRoot
   , inputVariables :: [(Key, Value)]
   }
 
+-- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
+--
+--  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
+--  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
 data GQLRootResolver a b c = GQLRootResolver
   { queryResolver        :: a
   , mutationResolver     :: b

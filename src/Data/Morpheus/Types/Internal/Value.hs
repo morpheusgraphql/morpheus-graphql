@@ -19,6 +19,8 @@ replaceType :: Text -> Text
 replaceType "_type" = "type"
 replaceType x       = x
 
+-- | Primitive Values for GQLScalar: 'Int', 'Float', 'String', 'Boolean'.
+-- for performance reason type 'Text' represents GraphQl 'String' value
 data ScalarValue
   = Int Int
   | Float Float

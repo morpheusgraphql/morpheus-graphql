@@ -9,6 +9,7 @@ import           Data.Morpheus.Types.Internal.Base  (Key)
 import           Data.Morpheus.Types.Internal.Value (Value)
 import           GHC.Generics                       (Generic)
 
+-- | GraphQL HTTP Request Body
 data GQLRequest = GQLRequest
   { query         :: Key
   , operationName :: Maybe Key

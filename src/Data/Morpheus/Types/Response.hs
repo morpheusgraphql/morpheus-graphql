@@ -10,6 +10,7 @@ import           Data.Morpheus.Types.Internal.Validation (JSONError (..))
 import           Data.Morpheus.Types.Internal.Value      (Value)
 import           GHC.Generics                            (Generic)
 
+-- | GraphQL Response
 data GQLResponse
   = Data Value
   | Errors [JSONError]

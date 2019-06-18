@@ -29,6 +29,20 @@ import           Data.Typeable                                     (Typeable, sp
                                                                     typeRepFingerprint)
 import           GHC.Fingerprint.Type                              (Fingerprint)
 
+-- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
+--
+--  @
+--    ... deriving (Generic, GQLType)
+--  @
+--
+-- if you want to add description
+--
+--  @
+--       ... deriving (Generic)
+--
+--     instance GQLType ... where
+--       description = const "your description ..."
+--  @
 class GQLType a where
   description :: Proxy a -> Text
   description _ = ""
