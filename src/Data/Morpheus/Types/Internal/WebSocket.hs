@@ -11,6 +11,7 @@ module Data.Morpheus.Types.Internal.WebSocket
 
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Response               (GQLResponse (..))
+import           Data.Semigroup                             ((<>))
 import           Data.Text                                  (Text)
 import           Data.UUID                                  (UUID)
 import           Network.WebSockets                         (Connection)
