@@ -80,27 +80,31 @@
     "description": "returns on a query that pads all '!' chars with whitespace"
   },
   {
-    "path": "introspection/__Type",
+    "path": "introspection/schemaTypes/__Type",
     "description": "benchmark  __Type"
   },
   {
-    "path": "introspection/__InputValue",
+    "path": "introspection/schemaTypes/__InputValue",
     "description": "benchmark  __InputValue"
   },
   {
-    "path": "introspection/__Field",
+    "path": "introspection/schemaTypes/__Field",
     "description": "benchmark  __Field"
   },
   {
-    "path": "introspection/__EnumValue",
+    "path": "introspection/schemaTypes/__EnumValue",
     "description": "benchmark  __EnumValue"
   },
   {
-    "path": "introspection/__TypeKind",
+    "path": "introspection/schemaTypes/__TypeKind",
     "description": "benchmark  __TypeKind"
   },
   {
-    "path": "introspection/__Directive",
+    "path": "introspection/schemaTypes/__Directive",
     "description": "benchmark  __Directive"
+  },
+  {
+    "path": "introspection/schemaTypes/__DirectiveLocation",
+    "description": "benchmark  __DirectiveLocation"
   }
 ]
