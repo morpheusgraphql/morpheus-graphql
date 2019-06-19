@@ -32,12 +32,12 @@ testFeature api' dir' = do
   return $ testGroup (unpack dir') test'
 
 testByFiles :: (ByteString -> IO ByteString) -> Case -> IO TestTree
-testByFiles api' (Case path' description') = do
-  query' <- getGQLBody path'
+testByFiles testApi (Case path' description') = do
+  testCaseQuery <- getGQLBody path'
+  testCaseVariables <- maybeVariables path'
   expectedValue <- getResponseBody path'
-  variables' <- maybeVariables path'
-  result' <- api' $ packGQLRequest query' variables'
-  case decode result' of
+  gqlResponse <- testApi $ packGQLRequest testCaseQuery testCaseVariables
+  case decode gqlResponse of
     Nothing -> assertFailure "Bad Response"
     Just response -> return $ testCase (unpack path' ++ " | " ++ description') $ customTest expectedValue response
       where customTest expected value =
@@ -45,4 +45,4 @@ testByFiles api' (Case path' description') = do
                 then return ()
                 else assertFailure generateError
               where
-                generateError = LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> encode value
+                generateError = LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> gqlResponse
