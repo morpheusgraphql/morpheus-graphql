@@ -146,5 +146,9 @@
   {
     "path": "introspection/kinds/ENUM",
     "description": "test introspection of ENUM kind"
+  },
+  {
+    "path": "introspection/kinds/UNION",
+    "description": "test introspection of UNION kind"
   }
 ]

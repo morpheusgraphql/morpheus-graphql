@@ -10,7 +10,7 @@ module Feature.Holistic.API
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR)
+import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types        ((::->), GQLArgs, GQLMutation, GQLQuery, GQLRootResolver (..),
                                              GQLScalar (..), GQLSubscription, GQLType (..), ID (..), ScalarValue (..))
 import           Data.Text                  (Text)
@@ -29,6 +29,8 @@ type instance KIND TestInputObject = INPUT_OBJECT
 type instance KIND Address = OBJECT
 
 type instance KIND User = OBJECT
+
+type instance KIND TestUnion = UNION
 
 data TestEnum
   = EnumA
@@ -65,6 +67,11 @@ data Address = Address
   , houseNumber :: Int
   } deriving (Generic, GQLType)
 
+data TestUnion
+  = UnionA Address
+  | UnionB User
+  deriving (Generic, GQLType)
+
 data Coordinates = Coordinates
   { latitude  :: TestScalar
   , longitude :: Int
@@ -92,8 +99,8 @@ instance GQLType User where
   description _ = "Custom Description for Client Defined User Type"
 
 data Query = Query
-  { user    :: () ::-> User
-  , fieldId :: ID
+  { user      :: () ::-> User
+  , testUnion :: Maybe TestUnion
   } deriving (Generic, GQLQuery)
 
 newtype Mutation = Mutation
@@ -122,7 +129,7 @@ api :: ByteString -> IO ByteString
 api =
   interpreter
     GQLRootResolver
-      { queryResolver = Query {user = resolveUser, fieldId = ID ""}
+      { queryResolver = Query {user = resolveUser, testUnion = Nothing}
       , mutationResolver = Mutation {createUser = createUserMutation}
       , subscriptionResolver = Subscription {newUser = newUserSubscription}
       }
