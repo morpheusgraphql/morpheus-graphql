@@ -1,0 +1,44 @@
+scalar TestScalar
+
+enum TestEnum {
+  EnumA
+  EnumB
+  EnumC
+}
+
+input NestedInputObject {
+  fieldTestID: ID!
+}
+
+input TestInputObject {
+  fieldTestScalar: TestScalar!
+  fieldNestedInputObject: [NestedInputObject]!
+}
+
+type Address {
+  city: String!
+  street(
+    argInputObject: TestInputObject!
+    argMaybeString: String
+  ): [[[[String!]!]!]]
+  houseNumber: Int!
+}
+
+type User {
+  name(id: ID!): String!
+  email: String!
+  address: Address
+  testEnum: TestEnum
+}
+
+union TestUnion = User | Address
+
+type Query {
+  user: User!
+  myUnion: TestUnion!
+  fieldID: ID!
+}
+
+type Mutation {
+  createUser: User!
+}
