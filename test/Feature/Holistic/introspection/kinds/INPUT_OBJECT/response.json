@@ -1,103 +1,42 @@
 {
   "data": {
     "__type": {
-      "kind": "OBJECT",
-      "name": "Address",
-      "fields": [
+      "kind": "INPUT_OBJECT",
+      "name": "TestInputObject",
+      "fields": null,
+      "inputFields": [
         {
-          "name": "city",
-          "args": [],
+          "name": "fieldTestScalar",
           "type": {
             "kind": "NON_NULL",
             "name": null,
             "ofType": {
               "kind": "SCALAR",
-              "name": "String",
+              "name": "TestScalar",
               "ofType": null
             }
           },
-          "isDeprecated": false,
-          "deprecationReason": null
+          "defaultValue": null
         },
         {
-          "name": "street",
-          "args": [
-            {
-              "name": "argInputObject",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "INPUT_OBJECT",
-                  "name": "TestInputObject",
-                  "ofType": null
-                }
-              },
-              "defaultValue": null
-            },
-            {
-              "name": "argMaybeString",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              },
-              "defaultValue": null
-            }
-          ],
+          "name": "fieldNestedInputObject",
           "type": {
-            "kind": "LIST",
+            "kind": "NON_NULL",
             "name": null,
             "ofType": {
               "kind": "LIST",
               "name": null,
               "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "LIST",
-                  "name": null,
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "name": null,
-                    "ofType": {
-                      "kind": "LIST",
-                      "name": null,
-                      "ofType": {
-                        "kind": "NON_NULL",
-                        "name": null,
-                        "ofType": {
-                          "kind": "SCALAR",
-                          "name": "String"
-                        }
-                      }
-                    }
-                  }
-                }
+                "kind": "INPUT_OBJECT",
+                "name": "NestedInputObject",
+                "ofType": null
               }
             }
           },
-          "isDeprecated": false,
-          "deprecationReason": null
-        },
-        {
-          "name": "houseNumber",
-          "args": [],
-          "type": {
-            "kind": "NON_NULL",
-            "name": null,
-            "ofType": {
-              "kind": "SCALAR",
-              "name": "Int",
-              "ofType": null
-            }
-          },
-          "isDeprecated": false,
-          "deprecationReason": null
+          "defaultValue": null
         }
       ],
-      "inputFields": null,
-      "interfaces": [],
+      "interfaces": null,
       "enumValues": null,
       "possibleTypes": null
     }

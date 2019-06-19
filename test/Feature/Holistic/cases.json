@@ -134,5 +134,9 @@
   {
     "path": "introspection/kinds/OBJECT",
     "description": "test introspection of OBJECT kind with args, NonNull and List wrappers"
+  },
+  {
+    "path": "introspection/kinds/INPUT_OBJECT",
+    "description": "test introspection of INPUT_OBJECT kind with args, NonNull and List wrappers"
   }
 ]

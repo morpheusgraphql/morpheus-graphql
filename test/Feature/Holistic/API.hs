@@ -50,7 +50,7 @@ newtype NestedInputObject = NestedInputObject
   } deriving (Generic, GQLType)
 
 data TestInputObject = TestInputObject
-  { fieldScalarEuro        :: TestScalar
+  { fieldTestScalar        :: TestScalar
   , fieldNestedInputObject :: [Maybe NestedInputObject]
   } deriving (Generic, GQLType)
 
