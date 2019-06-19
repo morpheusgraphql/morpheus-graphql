@@ -106,5 +106,9 @@
   {
     "path": "introspection/schemaTypes/__DirectiveLocation",
     "description": "benchmark  __DirectiveLocation"
+  },
+  {
+    "path": "introspection/schemaTypes/__Schema",
+    "description": "benchmark  __Schema"
   }
 ]
