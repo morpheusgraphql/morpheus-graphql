@@ -1,5 +1,5 @@
 query Get__Type {
-  __type(name: "Int") {
+  __type(name: "Boolean") {
     ...FullType
   }
 }

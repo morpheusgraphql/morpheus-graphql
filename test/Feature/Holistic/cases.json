@@ -110,5 +110,17 @@
   {
     "path": "introspection/schemaTypes/__Schema",
     "description": "benchmark  __Schema"
+  },
+  {
+    "path": "introspection/defaultTypes/String",
+    "description": "benchmark  String"
+  },
+  {
+    "path": "introspection/defaultTypes/Boolean",
+    "description": "benchmark  Boolean"
+  },
+  {
+    "path": "introspection/defaultTypes/Int",
+    "description": "benchmark  Int"
   }
 ]
