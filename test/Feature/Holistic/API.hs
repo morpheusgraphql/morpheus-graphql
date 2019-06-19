@@ -68,8 +68,8 @@ data Address = Address
   } deriving (Generic, GQLType)
 
 data TestUnion
-  = UnionA Address
-  | UnionB User
+  = UnionA User
+  | UnionB Address
   deriving (Generic, GQLType)
 
 data Coordinates = Coordinates
