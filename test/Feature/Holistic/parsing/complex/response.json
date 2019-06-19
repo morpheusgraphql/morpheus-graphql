@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Argument coordinates got invalid value ;on longitude Expected type \"UID\" found null.",
+      "message": "Argument coordinates got invalid value ;on longitude Expected type \"Int\" found [null,[[],[{\"uid\":\"1\"}]]].",
       "locations": [
         {
           "line": 8,

@@ -133,6 +133,6 @@
   },
   {
     "path": "introspection/kinds/OBJECT",
-    "description": "test introspection of OBJECT kind"
+    "description": "test introspection of OBJECT kind with args, NonNull and List wrappers"
   }
 ]

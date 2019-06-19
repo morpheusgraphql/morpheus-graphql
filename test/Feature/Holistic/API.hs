@@ -18,11 +18,13 @@ import           GHC.Generics               (Generic)
 
 type instance KIND CityID = ENUM
 
-type instance KIND Euro = SCALAR
+type instance KIND TestScalar = SCALAR
 
-type instance KIND UID = INPUT_OBJECT
+type instance KIND NestedInputObject = INPUT_OBJECT
 
 type instance KIND Coordinates = INPUT_OBJECT
+
+type instance KIND TestInputObject = INPUT_OBJECT
 
 type instance KIND Address = OBJECT
 
@@ -34,28 +36,38 @@ data CityID
   | HH
   deriving (Generic, GQLType)
 
-data Euro =
-  Euro Int
-       Int
+data TestScalar =
+  TestScalar Int
+             Int
   deriving (Generic, GQLType)
 
-instance GQLScalar Euro where
-  parseValue _ = pure (Euro 1 0)
-  serialize (Euro x y) = Int (x * 100 + y)
+instance GQLScalar TestScalar where
+  parseValue _ = pure (TestScalar 1 0)
+  serialize (TestScalar x y) = Int (x * 100 + y)
 
-newtype UID = UID
-  { uid :: Text
+newtype NestedInputObject = NestedInputObject
+  { fieldTestID :: ID
   } deriving (Generic, GQLType)
 
-data Coordinates = Coordinates
-  { latitude  :: Euro
-  , longitude :: [UID]
+data TestInputObject = TestInputObject
+  { fieldScalarEuro        :: TestScalar
+  , fieldNestedInputObject :: [Maybe NestedInputObject]
   } deriving (Generic, GQLType)
+
+data StreetArgs = StreetArgs
+  { argInputObject :: TestInputObject
+  , argMaybeString :: Maybe Text
+  } deriving (Generic, GQLArgs)
 
 data Address = Address
   { city        :: Text
-  , street      :: Maybe [Maybe[[[Text]]]]
+  , street      :: StreetArgs ::-> Maybe [Maybe [[[Text]]]]
   , houseNumber :: Int
+  } deriving (Generic, GQLType)
+
+data Coordinates = Coordinates
+  { latitude  :: TestScalar
+  , longitude :: Int
   } deriving (Generic, GQLType)
 
 data AddressArgs = AddressArgs
@@ -94,7 +106,7 @@ newtype Subscription = Subscription
   } deriving (Generic, GQLSubscription)
 
 resolveAddress :: a ::-> Address
-resolveAddress = return Address {city = "", houseNumber = 1, street = Nothing}
+resolveAddress = return Address {city = "", houseNumber = 1, street = return Nothing}
 
 resolveUser :: a ::-> User
 resolveUser =
