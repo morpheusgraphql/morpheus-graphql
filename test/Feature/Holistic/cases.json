@@ -90,5 +90,9 @@
   {
     "path": "introspection/__Field",
     "description": "benchmark  __Field"
+  },
+  {
+    "path": "introspection/__EnumValue",
+    "description": "benchmark  __EnumValue"
   }
 ]
