@@ -1,0 +1,13 @@
+{
+  "data": {
+    "__type": {
+      "kind": "SCALAR",
+      "name": "Boolean",
+      "fields": null,
+      "inputFields": null,
+      "interfaces": null,
+      "enumValues": null,
+      "possibleTypes": null
+    }
+  }
+}
