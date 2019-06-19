@@ -137,6 +137,10 @@
   },
   {
     "path": "introspection/kinds/INPUT_OBJECT",
-    "description": "test introspection of INPUT_OBJECT kind with args, NonNull and List wrappers"
+    "description": "test introspection of INPUT_OBJECT kind"
+  },
+  {
+    "path": "introspection/kinds/SCALAR",
+    "description": "test introspection of SCALAR kind"
   }
 ]
