@@ -94,5 +94,9 @@
   {
     "path": "introspection/__EnumValue",
     "description": "benchmark  __EnumValue"
+  },
+  {
+    "path": "introspection/__TypeKind",
+    "description": "benchmark  __TypeKind"
   }
 ]
