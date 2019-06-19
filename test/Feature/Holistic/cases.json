@@ -81,6 +81,10 @@
   },
   {
     "path": "introspection/__Type",
-    "description": "returns introspection of __Type"
+    "description": "benchmark  __Type"
+  },
+  {
+    "path": "introspection/__InputValue",
+    "description": "benchmark  __InputValue"
   }
 ]
