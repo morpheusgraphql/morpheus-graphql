@@ -34,7 +34,7 @@ inputValueFromArg :: (Text, DataInputField) -> InputValue
 inputValueFromArg (key', input') = IN.createInputValueWith key' (createInputObjectType input')
 
 createInputObjectType :: DataInputField -> Type
-createInputObjectType field' = wrap field' $ createType (fieldKind field') (fieldType field') "" []
+createInputObjectType field' = wrap field' $ createType (fieldKind field') (fieldType field') "" $ Just []
 
 wrap :: DataField a -> Type -> Type
 wrap field' = wrapRec (fieldTypeWrappers field')
@@ -48,20 +48,17 @@ wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 
 fieldFromObjectField :: (Text, DataOutputField) -> Field
 fieldFromObjectField (key', field'@DataField {fieldType = type', fieldKind = kind', fieldArgs = args'}) =
-  F.createFieldWith key' (wrap field' $ createType kind' type' "" []) (map inputValueFromArg args')
+  F.createFieldWith key' (wrap field' $ createType kind' type' "" $ Just []) (map inputValueFromArg args')
 
 typeFromLeaf :: (Text, DataLeaf) -> Type
-typeFromLeaf (key', LeafScalar DataType {typeDescription = desc'}) = createLeafType SCALAR key' desc' []
+typeFromLeaf (key', LeafScalar DataType {typeDescription = desc'}) = createLeafType SCALAR key' desc' Nothing
 typeFromLeaf (key', LeafEnum DataType {typeDescription = desc', typeData = tags'}) =
-  createLeafType ENUM key' desc' (map createEnumValue tags')
+  createLeafType ENUM key' desc' (Just $ map createEnumValue tags')
 
 resolveNothing :: a ::-> Maybe b
 resolveNothing = return Nothing
 
-resolveMaybeList :: [b] -> a ::-> Maybe [b]
-resolveMaybeList list' = return (Just list')
-
-createLeafType :: TypeKind -> Text -> Text -> [EnumValue] -> Type
+createLeafType :: TypeKind -> Text -> Text -> Maybe [EnumValue] -> Type
 createLeafType kind' name' desc' enums' =
   Type
     { kind = kind'
@@ -71,7 +68,7 @@ createLeafType kind' name' desc' enums' =
     , ofType = Nothing
     , interfaces = Nothing
     , possibleTypes = Nothing
-    , enumValues = resolveMaybeList enums'
+    , enumValues = return enums'
     , inputFields = Nothing
     }
 
@@ -84,26 +81,26 @@ typeFromUnion (name', DataType {typeData = fields', typeDescription = descriptio
     , fields = resolveNothing
     , ofType = Nothing
     , interfaces = Nothing
-    , possibleTypes = Just (map (\x -> createObjectType (fieldType x) "" []) fields')
+    , possibleTypes = Just (map (\x -> createObjectType (fieldType x) "" $ Just []) fields')
     , enumValues = return Nothing
     , inputFields = Nothing
     }
 
 typeFromObject :: (Text, DataOutputObject) -> Type
 typeFromObject (key', DataType {typeData = fields', typeDescription = description'}) =
-  createObjectType key' description' (map fieldFromObjectField $ filter (not . fieldHidden . snd) fields')
+  createObjectType key' description' (Just $ map fieldFromObjectField $ filter (not . fieldHidden . snd) fields')
 
 typeFromInputObject :: (Text, DataInputObject) -> Type
 typeFromInputObject (key', DataType {typeData = fields', typeDescription = description'}) =
   createInputObject key' description' (map inputValueFromArg fields')
 
-createObjectType :: Text -> Text -> [Field] -> Type
+createObjectType :: Text -> Text -> Maybe [Field] -> Type
 createObjectType name' desc' fields' =
   Type
     { kind = OBJECT
     , name = Just name'
     , description = Just desc'
-    , fields = resolveMaybeList fields'
+    , fields = return fields'
     , ofType = Nothing
     , interfaces = Just []
     , possibleTypes = Nothing
@@ -117,7 +114,7 @@ createInputObject name' desc' fields' =
     { kind = INPUT_OBJECT
     , name = Just name'
     , description = Just desc'
-    , fields = resolveMaybeList []
+    , fields = return $ Just []
     , ofType = Nothing
     , interfaces = Nothing
     , possibleTypes = Nothing
@@ -125,17 +122,17 @@ createInputObject name' desc' fields' =
     , inputFields = Just fields'
     }
 
-createType :: TypeKind -> Text -> Text -> [Field] -> Type
+createType :: TypeKind -> Text -> Text -> Maybe [Field] -> Type
 createType kind' name' desc' fields' =
   Type
     { kind = kind'
     , name = Just name'
     , description = Just desc'
-    , fields = resolveMaybeList fields'
+    , fields = return fields'
     , ofType = Nothing
     , interfaces = Nothing
     , possibleTypes = Nothing
-    , enumValues = resolveMaybeList []
+    , enumValues = return $ Just []
     , inputFields = Nothing
     }
 

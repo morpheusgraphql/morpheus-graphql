@@ -32,7 +32,7 @@ convertTypes :: DataTypeLib -> [Type]
 convertTypes lib' = map renderType (allDataTypes lib')
 
 buildSchemaLinkType :: (Text, DataOutputObject) -> Type
-buildSchemaLinkType (key', _) = createObjectType key' "" []
+buildSchemaLinkType (key', _) = createObjectType key' "" $ Just []
 
 findType :: Text -> DataTypeLib -> Maybe Type
 findType name lib = renderType . (name, ) <$> lookup name (allDataTypes lib)
