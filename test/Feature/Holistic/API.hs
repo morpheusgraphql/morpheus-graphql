@@ -54,9 +54,8 @@ data Coordinates = Coordinates
 
 data Address = Address
   { city        :: Text
-  , street      :: Text
+  , street      :: Maybe [Maybe[[[Text]]]]
   , houseNumber :: Int
-  , owner       :: Maybe User
   } deriving (Generic, GQLType)
 
 data AddressArgs = AddressArgs
@@ -95,7 +94,7 @@ newtype Subscription = Subscription
   } deriving (Generic, GQLSubscription)
 
 resolveAddress :: a ::-> Address
-resolveAddress = return Address {city = "", houseNumber = 1, street = "", owner = Nothing}
+resolveAddress = return Address {city = "", houseNumber = 1, street = Nothing}
 
 resolveUser :: a ::-> User
 resolveUser =

@@ -130,5 +130,9 @@
   {
     "path": "introspection/defaultTypes/ID",
     "description": "benchmark ID"
+  },
+  {
+    "path": "introspection/kinds/OBJECT",
+    "description": "test introspection of OBJECT kind"
   }
 ]
