@@ -16,7 +16,7 @@ import           Data.Morpheus.Types        ((::->), GQLArgs, GQLMutation, GQLQu
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
-type instance KIND CityID = ENUM
+type instance KIND TestEnum = ENUM
 
 type instance KIND TestScalar = SCALAR
 
@@ -30,10 +30,10 @@ type instance KIND Address = OBJECT
 
 type instance KIND User = OBJECT
 
-data CityID
-  = Paris
-  | BLN
-  | HH
+data TestEnum
+  = EnumA
+  | EnumB
+  | EnumC
   deriving (Generic, GQLType)
 
 data TestScalar =
@@ -77,7 +77,7 @@ data AddressArgs = AddressArgs
 
 data OfficeArgs = OfficeArgs
   { zipCode :: Maybe [Int]
-  , cityID  :: CityID
+  , cityID  :: TestEnum
   } deriving (Generic, GQLArgs)
 
 data User = User
@@ -86,7 +86,6 @@ data User = User
   , address :: AddressArgs ::-> Address
   , office  :: OfficeArgs ::-> Address
   , friend  :: () ::-> Maybe User
-  , home    :: CityID
   } deriving (Generic)
 
 instance GQLType User where
@@ -111,14 +110,7 @@ resolveAddress = return Address {city = "", houseNumber = 1, street = return Not
 resolveUser :: a ::-> User
 resolveUser =
   return $
-  User
-    { name = "testName"
-    , email = ""
-    , address = resolveAddress
-    , office = resolveAddress
-    , home = HH
-    , friend = return Nothing
-    }
+  User {name = "testName", email = "", address = resolveAddress, office = resolveAddress, friend = return Nothing}
 
 createUserMutation :: AddressArgs ::-> User
 createUserMutation = resolveUser

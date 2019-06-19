@@ -142,5 +142,9 @@
   {
     "path": "introspection/kinds/SCALAR",
     "description": "test introspection of SCALAR kind"
+  },
+  {
+    "path": "introspection/kinds/ENUM",
+    "description": "test introspection of ENUM kind"
   }
 ]
