@@ -1,11 +1,11 @@
 {
   "errors": [
     {
-      "message": "Unknown type \"ID\".",
+      "message": "Argument coordinates got invalid value ;on longitude Expected type \"UID\" found null.",
       "locations": [
         {
-          "line": 1,
-          "column": 16
+          "line": 8,
+          "column": 36
         }
       ]
     }

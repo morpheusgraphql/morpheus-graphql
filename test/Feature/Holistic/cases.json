@@ -126,5 +126,9 @@
   {
     "path": "introspection/defaultTypes/Float",
     "description": "Float returns null, if it is not defined by schema"
+  },
+  {
+    "path": "introspection/defaultTypes/ID",
+    "description": "benchmark ID"
   }
 ]

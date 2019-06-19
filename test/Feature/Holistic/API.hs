@@ -12,7 +12,7 @@ import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR)
 import           Data.Morpheus.Types        ((::->), GQLArgs, GQLMutation, GQLQuery, GQLRootResolver (..),
-                                             GQLScalar (..), GQLSubscription, GQLType (..), ScalarValue (..))
+                                             GQLScalar (..), GQLSubscription, GQLType (..), ID (..), ScalarValue (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -81,8 +81,9 @@ data User = User
 instance GQLType User where
   description _ = "Custom Description for Client Defined User Type"
 
-newtype Query = Query
-  { user :: () ::-> User
+data Query = Query
+  { user    :: () ::-> User
+  , fieldId :: ID
   } deriving (Generic, GQLQuery)
 
 newtype Mutation = Mutation
@@ -118,7 +119,7 @@ api :: ByteString -> IO ByteString
 api =
   interpreter
     GQLRootResolver
-      { queryResolver = Query {user = resolveUser}
+      { queryResolver = Query {user = resolveUser, fieldId = ID ""}
       , mutationResolver = Mutation {createUser = createUserMutation}
       , subscriptionResolver = Subscription {newUser = newUserSubscription}
       }
