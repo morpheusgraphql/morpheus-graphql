@@ -98,5 +98,9 @@
   {
     "path": "introspection/__TypeKind",
     "description": "benchmark  __TypeKind"
+  },
+  {
+    "path": "introspection/__Directive",
+    "description": "benchmark  __Directive"
   }
 ]
