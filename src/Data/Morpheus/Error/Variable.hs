@@ -6,6 +6,7 @@ module Data.Morpheus.Error.Variable
   , variableGotInvalidValue
   , uninitializedVariable
   , unusedVariables
+  , incompatibleVariableType
   ) where
 
 import           Data.Morpheus.Error.Utils               (errorMessage)
@@ -13,35 +14,25 @@ import           Data.Morpheus.Types.Internal.Base       (EnhancedKey (..), Posi
 import           Data.Morpheus.Types.Internal.Validation (GQLError (..), GQLErrors)
 import           Data.Text                               (Text)
 import qualified Data.Text                               as T (concat)
- -- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
 
-{-|
-VARIABLES:
+-- query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
+incompatibleVariableType :: Text -> Text -> EnhancedKey -> GQLErrors
+incompatibleVariableType variableName variableType (EnhancedKey argType argPosition) = errorMessage argPosition text
+  where
+    text =
+      "Variable \"$" <> variableName <> "\" of type \"" <> variableType <> "\" used in position expecting type \"" <>
+      argType <>
+      "\"."
 
-Variable -> Error (position Query Head)
-  data E = EN | DE
-  query M ( $v : E ){...}
-
-
-query Q ($a: D) ->  "Unknown type \"D\"."
-
-case String
-  - { "v" : "EN" }  ->  no error converts as enum
-
-case type mismatch
-  - { "v": { "a": "v1" ... } } -> "Variable \"$v\" got invalid value { "a": "v1" ... } ; Expected type LANGUAGE."
-  - { "v" : "v1" }  -> "Variable \"$v\" got invalid value \"v1\"; Expected type LANGUAGE."
-  - { "v": 1  }        "Variable \"$v\" got invalid value 1; Expected type LANGUAGE."
-
-TODO: variable does not match to argument type
-  - query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
-|-}
+-- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
 unusedVariables :: Text -> [EnhancedKey] -> GQLErrors
 unusedVariables operator' = map keyToError
   where
     keyToError (EnhancedKey key' position') = GQLError {desc = text key', positions = [position']}
     text key' = T.concat ["Variable \"$", key', "\" is never used in operation \"", operator', "\"."]
 
+-- type mismatch
+-- { "v": 1  }        "Variable \"$v\" got invalid value 1; Expected type LANGUAGE."
 variableGotInvalidValue :: Text -> Text -> Position -> GQLErrors
 variableGotInvalidValue name' inputMessage' position' = errorMessage position' text
   where
