@@ -34,5 +34,9 @@
   {
     "path": "variables/nestedListNullableListReceivedNull",
     "description": "resolve: if list of nullable elements receives null"
+  },
+  {
+    "path": "variables/unknownType",
+    "description": "fail when: variable type does not exists"
   }
 ]
