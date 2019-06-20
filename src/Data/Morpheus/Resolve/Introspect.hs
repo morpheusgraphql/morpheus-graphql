@@ -128,7 +128,13 @@ instance ObjectConstraint a => Introspect a OBJECT OutputType where
       __typename =
         ( "__typename"
         , DataField
-            {fieldName = "__typename", fieldKind = SCALAR, fieldArgs = [], fieldTypeWrappers = [], fieldType = "String"})
+            { fieldName = "__typename"
+            , fieldKind = SCALAR
+            , fieldArgs = []
+            , fieldTypeWrappers = []
+            , fieldType = "String"
+            , fieldHidden = True
+            })
       (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'

@@ -6,15 +6,16 @@ module TestFeature
   ( testFeature
   ) where
 
-import           Data.Aeson                 (FromJSON, decode)
+import           Data.Aeson                 (FromJSON, decode, encode)
 import           Data.ByteString.Lazy.Char8 (ByteString)
-import qualified Data.ByteString.Lazy.Char8 as LB (concat, pack)
+import qualified Data.ByteString.Lazy.Char8 as LB (concat, pack, unpack)
+import           Data.Semigroup             ((<>))
 import           Data.Text                  (Text, unpack)
 import qualified Data.Text                  as T (concat)
 import           GHC.Generics
 import           Lib                        (getCases, getGQLBody, getResponseBody, maybeVariables)
 import           Test.Tasty                 (TestTree, testGroup)
-import           Test.Tasty.HUnit           (assertFailure, testCase, (@=?))
+import           Test.Tasty.HUnit           (assertFailure, testCase)
 
 packGQLRequest :: ByteString -> ByteString -> ByteString
 packGQLRequest x variables' = LB.concat ["{\"query\":", LB.pack $ show x, ",\"variables\":", variables', "}"]
@@ -31,11 +32,17 @@ testFeature api' dir' = do
   return $ testGroup (unpack dir') test'
 
 testByFiles :: (ByteString -> IO ByteString) -> Case -> IO TestTree
-testByFiles api' (Case path' description') = do
-  query' <- getGQLBody path'
-  response' <- getResponseBody path'
-  variables' <- maybeVariables path'
-  result' <- api' $ packGQLRequest query' variables'
-  case decode result' of
-    Nothing  -> assertFailure "Bad Response"
-    Just res -> return $ testCase (unpack path' ++ " | " ++ description') $ response' @=? res
+testByFiles testApi (Case path' description') = do
+  testCaseQuery <- getGQLBody path'
+  testCaseVariables <- maybeVariables path'
+  expectedValue <- getResponseBody path'
+  gqlResponse <- testApi $ packGQLRequest testCaseQuery testCaseVariables
+  case decode gqlResponse of
+    Nothing -> assertFailure "Bad Response"
+    Just response -> return $ testCase (unpack path' ++ " | " ++ description') $ customTest expectedValue response
+      where customTest expected value =
+              if expected == value
+                then return ()
+                else assertFailure generateError
+              where
+                generateError = LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> gqlResponse

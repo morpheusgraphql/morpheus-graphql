@@ -3,9 +3,10 @@
 
 module Data.Morpheus.Schema.Field where
 
-import           Data.Morpheus.Kind              (KIND, OBJECT)
-import           Data.Morpheus.Schema.InputValue (InputValue)
-import           Data.Text                       (Text)
+import           Data.Morpheus.Kind                 (KIND, OBJECT)
+import           Data.Morpheus.Schema.InputValue    (InputValue)
+import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
+import           Data.Text                          (Text)
 import           GHC.Generics
 
 type instance KIND (Field a) = OBJECT
@@ -14,7 +15,7 @@ data Field t = Field
   { name              :: Text
   , description       :: Maybe Text
   , args              :: [InputValue t]
-  , _type             :: t
+  , type'             :: t
   , isDeprecated      :: Bool
   , deprecationReason :: Maybe Text
   } deriving (Generic)
@@ -22,10 +23,10 @@ data Field t = Field
 createFieldWith :: Text -> a -> [InputValue a] -> Field a
 createFieldWith _name fieldType fieldArgs =
   Field
-    { name = _name
+    { name = convertToJSONName _name
     , description = Nothing
     , args = fieldArgs
-    , _type = fieldType
+    , type' = fieldType
     , isDeprecated = False
     , deprecationReason = Nothing
     }

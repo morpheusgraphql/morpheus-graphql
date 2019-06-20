@@ -78,5 +78,77 @@
   {
     "path": "parsing/notNullSpacing",
     "description": "returns on a query that pads all '!' chars with whitespace"
+  },
+  {
+    "path": "introspection/schemaTypes/__Type",
+    "description": "benchmark  __Type"
+  },
+  {
+    "path": "introspection/schemaTypes/__InputValue",
+    "description": "benchmark  __InputValue"
+  },
+  {
+    "path": "introspection/schemaTypes/__Field",
+    "description": "benchmark  __Field"
+  },
+  {
+    "path": "introspection/schemaTypes/__EnumValue",
+    "description": "benchmark  __EnumValue"
+  },
+  {
+    "path": "introspection/schemaTypes/__TypeKind",
+    "description": "benchmark  __TypeKind"
+  },
+  {
+    "path": "introspection/schemaTypes/__Directive",
+    "description": "benchmark  __Directive"
+  },
+  {
+    "path": "introspection/schemaTypes/__DirectiveLocation",
+    "description": "benchmark  __DirectiveLocation"
+  },
+  {
+    "path": "introspection/schemaTypes/__Schema",
+    "description": "benchmark  __Schema"
+  },
+  {
+    "path": "introspection/defaultTypes/String",
+    "description": "benchmark  String"
+  },
+  {
+    "path": "introspection/defaultTypes/Boolean",
+    "description": "benchmark  Boolean"
+  },
+  {
+    "path": "introspection/defaultTypes/Int",
+    "description": "benchmark  Int"
+  },
+  {
+    "path": "introspection/defaultTypes/Float",
+    "description": "Float returns null, if it is not defined by schema"
+  },
+  {
+    "path": "introspection/defaultTypes/ID",
+    "description": "benchmark ID"
+  },
+  {
+    "path": "introspection/kinds/OBJECT",
+    "description": "test introspection of OBJECT kind with args, NonNull and List wrappers"
+  },
+  {
+    "path": "introspection/kinds/INPUT_OBJECT",
+    "description": "test introspection of INPUT_OBJECT kind"
+  },
+  {
+    "path": "introspection/kinds/SCALAR",
+    "description": "test introspection of SCALAR kind"
+  },
+  {
+    "path": "introspection/kinds/ENUM",
+    "description": "test introspection of ENUM kind"
+  },
+  {
+    "path": "introspection/kinds/UNION",
+    "description": "test introspection of UNION kind"
   }
 ]

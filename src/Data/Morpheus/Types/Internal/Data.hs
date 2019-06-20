@@ -81,6 +81,7 @@ data DataField a = DataField
   , fieldKind         :: TypeKind
   , fieldType         :: Text
   , fieldTypeWrappers :: [DataTypeWrapper]
+  , fieldHidden       :: Bool
   } deriving (Show)
 
 isFieldNullable :: DataField a -> Bool

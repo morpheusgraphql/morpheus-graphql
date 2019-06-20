@@ -10,53 +10,71 @@ module Feature.Holistic.API
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR)
+import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types        ((::->), GQLArgs, GQLMutation, GQLQuery, GQLRootResolver (..),
-                                             GQLScalar (..), GQLSubscription, GQLType (..), ScalarValue (..))
+                                             GQLScalar (..), GQLSubscription, GQLType (..), ID (..), ScalarValue (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
-type instance KIND CityID = ENUM
+type instance KIND TestEnum = ENUM
 
-type instance KIND Euro = SCALAR
+type instance KIND TestScalar = SCALAR
 
-type instance KIND UID = INPUT_OBJECT
+type instance KIND NestedInputObject = INPUT_OBJECT
 
 type instance KIND Coordinates = INPUT_OBJECT
+
+type instance KIND TestInputObject = INPUT_OBJECT
 
 type instance KIND Address = OBJECT
 
 type instance KIND User = OBJECT
 
-data CityID
-  = Paris
-  | BLN
-  | HH
+type instance KIND TestUnion = UNION
+
+data TestEnum
+  = EnumA
+  | EnumB
+  | EnumC
   deriving (Generic, GQLType)
 
-data Euro =
-  Euro Int
-       Int
+data TestScalar =
+  TestScalar Int
+             Int
   deriving (Generic, GQLType)
 
-instance GQLScalar Euro where
-  parseValue _ = pure (Euro 1 0)
-  serialize (Euro x y) = Int (x * 100 + y)
+instance GQLScalar TestScalar where
+  parseValue _ = pure (TestScalar 1 0)
+  serialize (TestScalar x y) = Int (x * 100 + y)
 
-newtype UID = UID
-  { uid :: Text
+newtype NestedInputObject = NestedInputObject
+  { fieldTestID :: ID
   } deriving (Generic, GQLType)
 
-data Coordinates = Coordinates
-  { latitude  :: Euro
-  , longitude :: [UID]
+data TestInputObject = TestInputObject
+  { fieldTestScalar        :: TestScalar
+  , fieldNestedInputObject :: [Maybe NestedInputObject]
   } deriving (Generic, GQLType)
+
+data StreetArgs = StreetArgs
+  { argInputObject :: TestInputObject
+  , argMaybeString :: Maybe Text
+  } deriving (Generic, GQLArgs)
 
 data Address = Address
   { city        :: Text
-  , street      :: Text
+  , street      :: StreetArgs ::-> Maybe [Maybe [[[Text]]]]
   , houseNumber :: Int
-  , owner       :: Maybe User
+  } deriving (Generic, GQLType)
+
+data TestUnion
+  = UnionA User
+  | UnionB Address
+  deriving (Generic, GQLType)
+
+data Coordinates = Coordinates
+  { latitude  :: TestScalar
+  , longitude :: Int
   } deriving (Generic, GQLType)
 
 data AddressArgs = AddressArgs
@@ -66,7 +84,7 @@ data AddressArgs = AddressArgs
 
 data OfficeArgs = OfficeArgs
   { zipCode :: Maybe [Int]
-  , cityID  :: CityID
+  , cityID  :: TestEnum
   } deriving (Generic, GQLArgs)
 
 data User = User
@@ -75,14 +93,14 @@ data User = User
   , address :: AddressArgs ::-> Address
   , office  :: OfficeArgs ::-> Address
   , friend  :: () ::-> Maybe User
-  , home    :: CityID
   } deriving (Generic)
 
 instance GQLType User where
   description _ = "Custom Description for Client Defined User Type"
 
-newtype Query = Query
-  { user :: () ::-> User
+data Query = Query
+  { user      :: () ::-> User
+  , testUnion :: Maybe TestUnion
   } deriving (Generic, GQLQuery)
 
 newtype Mutation = Mutation
@@ -94,19 +112,12 @@ newtype Subscription = Subscription
   } deriving (Generic, GQLSubscription)
 
 resolveAddress :: a ::-> Address
-resolveAddress = return Address {city = "", houseNumber = 1, street = "", owner = Nothing}
+resolveAddress = return Address {city = "", houseNumber = 1, street = return Nothing}
 
 resolveUser :: a ::-> User
 resolveUser =
   return $
-  User
-    { name = "testName"
-    , email = ""
-    , address = resolveAddress
-    , office = resolveAddress
-    , home = HH
-    , friend = return Nothing
-    }
+  User {name = "testName", email = "", address = resolveAddress, office = resolveAddress, friend = return Nothing}
 
 createUserMutation :: AddressArgs ::-> User
 createUserMutation = resolveUser
@@ -118,7 +129,7 @@ api :: ByteString -> IO ByteString
 api =
   interpreter
     GQLRootResolver
-      { queryResolver = Query {user = resolveUser}
+      { queryResolver = Query {user = resolveUser, testUnion = Nothing}
       , mutationResolver = Mutation {createUser = createUserMutation}
       , subscriptionResolver = Subscription {newUser = newUserSubscription}
       }

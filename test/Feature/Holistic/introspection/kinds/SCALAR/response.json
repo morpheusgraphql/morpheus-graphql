@@ -1,0 +1,13 @@
+{
+  "data": {
+    "__type": {
+      "kind": "SCALAR",
+      "name": "TestScalar",
+      "fields": null,
+      "inputFields": null,
+      "interfaces": null,
+      "enumValues": null,
+      "possibleTypes": null
+    }
+  }
+}

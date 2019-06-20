@@ -5,6 +5,8 @@ module Data.Morpheus.Types.Internal.Value
   ( Value(..)
   , ScalarValue(..)
   , decodeScientific
+  , convertToJSONName
+  , convertToHaskellName
   ) where
 
 import qualified Data.Aeson          as A (FromJSON (..), ToJSON (..), Value (..), object, pairs, (.=))
@@ -15,9 +17,13 @@ import           Data.Text           (Text)
 import qualified Data.Vector         as V (toList)
 import           GHC.Generics        (Generic)
 
-replaceType :: Text -> Text
-replaceType "_type" = "type"
-replaceType x       = x
+convertToJSONName :: Text -> Text
+convertToJSONName "type'" = "type"
+convertToJSONName x       = x
+
+convertToHaskellName :: Text -> Text
+convertToHaskellName "type" = "type'"
+convertToHaskellName x      = x
 
 -- | Primitive Values for GQLScalar: 'Int', 'Float', 'String', 'Boolean'.
 -- for performance reason type 'Text' represents GraphQl 'String' value
@@ -50,7 +56,7 @@ instance A.ToJSON Value where
   toEncoding (Object []) = A.toEncoding $ A.object []
   toEncoding (Object x) = A.pairs $ foldl1 (<>) $ map encodeField x
     where
-      encodeField (key, value) = replaceType key A..= value
+      encodeField (key, value) = convertToJSONName key A..= value
 
 replace :: (a, A.Value) -> (a, Value)
 replace (key, val) = (key, replaceValue val)

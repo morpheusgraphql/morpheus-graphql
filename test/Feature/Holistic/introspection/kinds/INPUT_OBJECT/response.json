@@ -1,0 +1,44 @@
+{
+  "data": {
+    "__type": {
+      "kind": "INPUT_OBJECT",
+      "name": "TestInputObject",
+      "fields": null,
+      "inputFields": [
+        {
+          "name": "fieldTestScalar",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "SCALAR",
+              "name": "TestScalar",
+              "ofType": null
+            }
+          },
+          "defaultValue": null
+        },
+        {
+          "name": "fieldNestedInputObject",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "NestedInputObject",
+                "ofType": null
+              }
+            }
+          },
+          "defaultValue": null
+        }
+      ],
+      "interfaces": null,
+      "enumValues": null,
+      "possibleTypes": null
+    }
+  }
+}
