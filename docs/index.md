@@ -161,6 +161,9 @@ instance GQLScalar Odd where
 type instance KIND Odd = SCALAR
 ```
 
+### Applicative and Monad instance
+The `Resolver` type has `Applicative` and `Monad` instances that can be used to compose resolvers.
+
 ### Introspection
 Morpheus converts your schema to a GraphQL introspection automatically. You can use tools like `Insomnia` to take a
 look at the introspection and validate your schema.
