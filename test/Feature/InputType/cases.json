@@ -38,5 +38,9 @@
   {
     "path": "variables/unknownType",
     "description": "fail when: variable type does not exists"
+  },
+  {
+    "path": "variables/undefinedVariable",
+    "description": "fail when: referenced variable is not defined"
   }
 ]
