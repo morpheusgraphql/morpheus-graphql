@@ -50,6 +50,7 @@
 - `interpreter`: can be used in `http` and `websocket` server
 - `GQLKind` renamed as `GQLType`
 - types can be derived just with `(Generic,GQLType)`
+- haskell record field `type'` will generate GQL Object field 'type'
 - public API (all other modules are hidden):
   - Data.Morpheus
   - Data.Morpheus.Kind
