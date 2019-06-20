@@ -137,6 +137,17 @@ data City
 type instance KIND City = ENUM
 ```
 
+### Union types
+To use union type, all you have to do is derive the `GQLType` class.
+```haskell
+data Either b a
+  = Right a
+  | Left b
+  deriving (Generic, GQLType)
+
+type instance KIND City = UNION
+```
+
 ### Scalar types
 To use custom scalar types, you need to provide implementations for `parseValue` and `serialize` respectively.
 ```haskell
