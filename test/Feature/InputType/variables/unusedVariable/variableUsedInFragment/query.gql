@@ -1,0 +1,9 @@
+query TestUsedVariable ($v1: String) {
+  q1 {
+    ...F1
+  }
+}
+
+fragment F1 on A {
+  a1(arg1: $v1)
+}

@@ -1,7 +1,19 @@
 [
   {
-    "path": "variables/unusedVariables",
+    "path": "variables/unusedVariable/unusedVariables",
     "description": "fail when: variable is defined by the operation but did not used in selection"
+  },
+  {
+    "path": "variables/unusedVariable/variableUsedInFragment",
+    "description": "don't fail when: variable is defined by the operation and used in Fragment"
+  },
+  {
+    "path": "variables/unusedVariable/variableUsedInInlineFragment",
+    "description": "don't fail when: variable is defined by the operation and used in inline Fragment"
+  },
+  {
+    "path": "variables/unusedVariable/variableUsedInAlias",
+    "description": "don't fail when: variable is defined by the operation and used in Alias"
   },
   {
     "path": "variables/nonNullVariable",
