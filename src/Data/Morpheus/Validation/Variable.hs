@@ -80,17 +80,16 @@ resolveOperatorVariables typeLib fragmentLib root operator' = do
         unused' -> Left $ unusedVariables (operatorName operator') unused'
 
 lookupAndValidateValueOnBody :: DataTypeLib -> Variables -> (Text, Variable ()) -> Validation (Text, Variable Value)
-lookupAndValidateValueOnBody typeLib variables' (key', var@Variable { variableType
-                                                                    , variablePosition
-                                                                    , isVariableRequired
-                                                                    , variableTypeWrappers
-                                                                    }) =
-  (\(k, x) -> (k, var {variableValue = x})) <$>
-  (getVariableType variableType variablePosition typeLib >>= checkType isVariableRequired)
+lookupAndValidateValueOnBody typeLib bodyVariables (key', var@Variable { variableType
+                                                                       , variablePosition
+                                                                       , isVariableRequired
+                                                                       , variableTypeWrappers
+                                                                       }) =
+  toVariable <$> (getVariableType variableType variablePosition typeLib >>= checkType isVariableRequired)
   where
+    toVariable (k, x) = (k, var {variableValue = x})
+    checkType True _type =
+      lookupVariable bodyVariables key' (uninitializedVariable variablePosition variableType) >>= validator _type
+    checkType False _type = maybe (pure (key', Null)) (validator _type) (M.lookup key' bodyVariables)
     validator _type varValue =
       handleInputError key' variablePosition $ validateInputValue typeLib [] variableTypeWrappers _type (key', varValue)
-    checkType True _type  = lookupBodyValue variablePosition variableType >>= validator _type
-    checkType False _type = maybe (pure (key', Null)) (validator _type) (M.lookup key' variables')
-    lookupBodyValue :: Position -> Text -> Validation Value
-    lookupBodyValue position' type' = lookupVariable variables' key' (uninitializedVariable position' type')
