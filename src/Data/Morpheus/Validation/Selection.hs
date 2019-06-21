@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
@@ -10,6 +11,7 @@ module Data.Morpheus.Validation.Selection
 import           Data.Morpheus.Error.Selection                 (cannotQueryField, duplicateQuerySelections,
                                                                 hasNoSubfields)
 import           Data.Morpheus.Schema.TypeKind                 (TypeKind (..))
+import           Data.Morpheus.Types.Internal.AST.Operator     (ValidVariables)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawSelection (..),
                                                                 RawSelection' (..), RawSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionRec (..), SelectionSet)
@@ -17,8 +19,7 @@ import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..)
 import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataOutputObject, DataType (..),
                                                                 DataTypeLib (..))
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
-import           Data.Morpheus.Types.Types                     (Variables)
-import           Data.Morpheus.Validation.Arguments            (resolveArguments, validateArguments)
+import           Data.Morpheus.Validation.Arguments            (validateArguments)
 import           Data.Morpheus.Validation.Spread               (castFragmentType, resolveSpread)
 import           Data.Morpheus.Validation.Utils.Selection      (lookupFieldAsSelectionSet, lookupSelectionField,
                                                                 lookupUnionTypes, notObject)
@@ -77,8 +78,14 @@ flatTuple list' = (concatMap fst list', concatMap snd list')
  -}
 
 validateSelectionSet ::
-     DataTypeLib -> FragmentLib -> Variables -> DataOutputObject -> RawSelectionSet -> Validation SelectionSet
-validateSelectionSet lib' fragments' variables' = __validate
+     DataTypeLib
+  -> FragmentLib
+  -> Text
+  -> ValidVariables
+  -> DataOutputObject
+  -> RawSelectionSet
+  -> Validation SelectionSet
+validateSelectionSet lib' fragments' operatorName variables = __validate
   where
     __validate dataType'@DataType {typeName = typeName'} selectionSet' =
       concat <$> mapM validateSelection selectionSet' >>= checkDuplicatesOn dataType'
@@ -87,10 +94,17 @@ validateSelectionSet lib' fragments' variables' = __validate
         {-
             get dataField and validated arguments for RawSelection
         -}
-        getValidationData key' RawSelection' {rawSelectionArguments = rawArgs, rawSelectionPosition = position'} = do
-          field' <- lookupSelectionField position' key' dataType'
-          arguments' <- resolveArguments variables' rawArgs >>= validateArguments lib' (key', field') position'
-          return (field', arguments')
+        getValidationData key' RawSelection' {rawSelectionArguments, rawSelectionPosition} = do
+          selectionField <- lookupSelectionField rawSelectionPosition key' dataType'
+          arguments' <-
+            validateArguments
+              lib'
+              operatorName
+              variables
+              (key', selectionField)
+              rawSelectionPosition
+              rawSelectionArguments
+          return (selectionField, arguments')
         {-
              validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
         -}
@@ -99,11 +113,11 @@ validateSelectionSet lib' fragments' variables' = __validate
           fmap processSingleSelection <$> validateSelection rawSelection'
           where
             processSingleSelection (selKey', selection') =
-               ( key'
-                 , selection'
-                     { selectionRec = SelectionAlias {aliasFieldName = selKey', aliasSelection = selectionRec selection'}
-                     , selectionPosition = position'
-                     })
+              ( key'
+              , selection'
+                  { selectionRec = SelectionAlias {aliasFieldName = selKey', aliasSelection = selectionRec selection'}
+                  , selectionPosition = position'
+                  })
         validateSelection (key', RawSelectionSet fullRawSelection'@RawSelection' { rawSelectionRec = rawSelectors
                                                                                  , rawSelectionPosition = position'
                                                                                  }) = do

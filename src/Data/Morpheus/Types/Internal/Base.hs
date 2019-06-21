@@ -7,7 +7,7 @@ module Data.Morpheus.Types.Internal.Base
   ) where
 
 import           Data.Text       (Text)
-import           Text.Megaparsec (initialPos, SourcePos)
+import           Text.Megaparsec (SourcePos, initialPos)
 
 type Position = SourcePos
 
@@ -19,7 +19,7 @@ type Collection a = [(Key, a)]
 data EnhancedKey = EnhancedKey
   { uid      :: Text
   , location :: Position
-  }
+  } deriving (Show)
 
 instance Eq EnhancedKey where
   (EnhancedKey id1 _) == (EnhancedKey id2 _) = id1 == id2

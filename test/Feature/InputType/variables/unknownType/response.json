@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Unknown type \"BA\".",
+      "locations": [
+        {
+          "line": 1,
+          "column": 24
+        }
+      ]
+    }
+  ]
+}

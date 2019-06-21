@@ -1,0 +1,5 @@
+query testUnknownType {
+  q1 {
+      a1(arg1:$bo)
+  }
+}

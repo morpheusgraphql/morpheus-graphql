@@ -10,7 +10,7 @@
 
 - 7.10 (ghc-8.0.1): ❓
 - 8.0 (ghc-8.0.2): ❓
-- 11.10 (ghc-8.2.2): ⛔️
+- 11.10 (ghc-8.2.2): ✅ (>= 0.1.0)
 - lts-12.0 (ghc-8.4.3): ✅
 - lts-13.15(ghc-8.6.4): ✅
 - lts-13.24(ghc-8.6.5): ✅
@@ -102,13 +102,13 @@
 
 - **Variable:** input Value Will be validated on query argument validation, because there will not be unused Variable all inputValues(variables) will be checked
 
-  - **nameConflict**: ⛔️
-  - **uninitializedVariable**: variable defined in query head ,but not found request body ✅
-  - **undefinedVariable**: referenced variable is not defined by operation QueryName | MutationName ✅
-  - **unknownType**: variable type does not exists ✅
-  - **incompatibleVariableType**: argument references variable with different type ⛔️
-  - **invalidInputValue**: validation of input fails ✅
-  - **unusedVariable**: ✅
+  - **nameConflict**: can't provide, variables are parsed by `Aeson`  bos/aeson/#531
+  - **valueNotProvided**: variable defined in query head ,but not found request body ✅ + 🧪
+  - **undefinedVariable**: referenced variable is not defined by operation QueryName | MutationName ✅ + 🧪
+  - **unknownType**: variable type does not exists ✅ + 🧪
+  - **incompatibleVariableType**: argument references variable with different type ✅ + 🧪 (>= 0.1.0)
+  - **invalidInputValue**: validation of input fails ✅ + 🧪
+  - **unusedVariable**: ✅ + 🧪
 
 ### InputValue Errors:
 

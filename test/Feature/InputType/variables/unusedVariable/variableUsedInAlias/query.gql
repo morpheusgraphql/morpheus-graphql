@@ -1,0 +1,5 @@
+query TestUsedVariable ($v1: String!) {
+  q1 {
+    x1:  a1(arg1: $v1)
+  }
+}

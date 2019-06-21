@@ -1,10 +1,22 @@
 [
   {
-    "path": "variables/unusedVariables",
+    "path": "variables/unusedVariable/unusedVariables",
     "description": "fail when: variable is defined by the operation but did not used in selection"
   },
   {
-    "path": "variables/nonNullVariable",
+    "path": "variables/unusedVariable/variableUsedInFragment",
+    "description": "don't fail when: variable is defined by the operation and used in Fragment"
+  },
+  {
+    "path": "variables/unusedVariable/variableUsedInInlineFragment",
+    "description": "don't fail when: variable is defined by the operation and used in inline Fragment"
+  },
+  {
+    "path": "variables/unusedVariable/variableUsedInAlias",
+    "description": "don't fail when: variable is defined by the operation and used in Alias"
+  },
+  {
+    "path": "variables/valueNotProvided/nonNullVariable",
     "description": "fail when: variable is defined by the operation but can't found on request body"
   },
   {
@@ -12,15 +24,43 @@
     "description": "don't fail when: variable is defined by the operation but can't found on request body"
   },
   {
-    "path": "variables/invalidListVariable",
+    "path": "variables/invalidValue/invalidListVariable",
     "description": "fail when: variable receives invalid List value"
   },
   {
-    "path": "variables/nestedListNonNullListReceivedNull",
+    "path": "variables/invalidValue/nestedListNonNullListReceivedNull",
     "description": "fail: if list of nonNull elements receives null"
   },
   {
     "path": "variables/nestedListNullableListReceivedNull",
     "description": "resolve: if list of nullable elements receives null"
+  },
+  {
+    "path": "variables/unknownType",
+    "description": "fail when: variable type does not exists"
+  },
+  {
+    "path": "variables/undefinedVariable",
+    "description": "fail when: referenced variable is not defined"
+  },
+  {
+    "path": "variables/incompatibleType/equalType",
+    "description": "equal types are valid"
+  },
+  {
+    "path": "variables/incompatibleType/stricterType",
+    "description": "stricter types are valid"
+  },
+  {
+    "path": "variables/incompatibleType/weakerType1",
+    "description": "weaker types are invalid"
+  },
+  {
+    "path": "variables/incompatibleType/weakerType2",
+    "description": "weaker types are invalid"
+  },
+  {
+    "path": "variables/incompatibleType/weakerType3",
+    "description": "weaker types are invalid"
   }
 ]

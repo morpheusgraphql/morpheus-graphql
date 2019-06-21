@@ -38,7 +38,14 @@ getOperator (Subscription operator') lib' =
 validateRequest :: DataTypeLib -> GQLQueryRoot -> Validation ValidOperator
 validateRequest lib' root' = do
   (operatorType', operator') <- getOperator (queryBody root') lib'
-  variables' <- resolveOperatorVariables lib' (fromList $ inputVariables root') operator'
+  variables' <- resolveOperatorVariables lib' (fragments root') (fromList $ inputVariables root') operator'
   validateFragments lib' root'
-  selectors <- validateSelectionSet lib' (fragments root') variables' operatorType' (operatorSelection operator')
+  selectors <-
+    validateSelectionSet
+      lib'
+      (fragments root')
+      (operatorName operator')
+      variables'
+      operatorType'
+      (operatorSelection operator')
   pure $ updateQuery (queryBody root') selectors
