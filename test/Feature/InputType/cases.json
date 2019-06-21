@@ -42,5 +42,25 @@
   {
     "path": "variables/undefinedVariable",
     "description": "fail when: referenced variable is not defined"
+  },
+  {
+    "path": "variables/incompatibleType/equalType",
+    "description": "equal types are valid"
+  },
+  {
+    "path": "variables/incompatibleType/stricterType",
+    "description": "stricter types are valid"
+  },
+  {
+    "path": "variables/incompatibleType/weakerType1",
+    "description": "weaker types are invalid"
+  },
+  {
+    "path": "variables/incompatibleType/weakerType2",
+    "description": "weaker types are invalid"
+  },
+  {
+    "path": "variables/incompatibleType/weakerType3",
+    "description": "weaker types are invalid"
   }
 ]

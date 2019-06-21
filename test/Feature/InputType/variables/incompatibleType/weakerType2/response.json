@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Variable \"$v1\" of type \"[[[Int!]!]!]\" used in position expecting type \"[[[Int!]!]]!\".",
+      "locations": [
+        {
+          "line": 3,
+          "column": 35
+        }
+      ]
+    }
+  ]
+}
