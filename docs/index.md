@@ -138,7 +138,7 @@ type instance KIND City = ENUM
 ```
 
 ### Union types
-To use union type, all you have to do is derive the `GQLType` class.
+To use union type, all you have to do is derive the `GQLType` class. Using GraphQL [_fragments_](https://graphql.org/learn/queries/#fragments), the arguments of each data constructor can be accessed from the GraphQL client.
 ```haskell
 data Either b a
   = Right a
