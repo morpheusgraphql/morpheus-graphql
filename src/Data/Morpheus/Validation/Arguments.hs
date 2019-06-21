@@ -34,7 +34,7 @@ resolveArgumentVariables variables DataField {fieldArgs} = mapM resolveArgumentV
       where
         lookupVar =
           case lookup referenceName variables of
-            Nothing -> Left $ undefinedVariable "Query" referencePosition key' -- TODO
+            Nothing -> Left $ undefinedVariable "Query" referencePosition referenceName -- TODO real Operator name
             Just Variable {variableValue, variableType, variableTypeWrappers} ->
               case lookup key' fieldArgs of
                 Nothing -> Left $ undefinedVariable "Query" referencePosition key' -- TODO
