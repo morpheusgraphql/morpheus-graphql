@@ -102,7 +102,7 @@
 
 - **Variable:** input Value Will be validated on query argument validation, because there will not be unused Variable all inputValues(variables) will be checked
 
-  - **nameConflict**: can't provide, variables are parsed by `Aeson`  bos/aeson/#531
+  - **nameConflict**: can't provide, variables are parsed by `Aeson`  [Duplicate Keys](bos/aeson/#531)
   - **valueNotProvided**: variable defined in query head ,but not found request body ✅ + 🧪
   - **undefinedVariable**: referenced variable is not defined by operation QueryName | MutationName ✅ + 🧪
   - **unknownType**: variable type does not exists ✅ + 🧪
