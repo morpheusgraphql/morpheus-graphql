@@ -48,8 +48,9 @@ allVariableReferences :: FragmentLib -> [RawSelectionSet] -> Validation [Enhance
 allVariableReferences fragmentLib = concatMapM (concatMapM searchReferences)
   where
     referencesFromArgument :: (Text, RawArgument) -> [EnhancedKey]
-    referencesFromArgument (_, RawArgument {})        = []
-    referencesFromArgument (_, VariableReference ref) = [EnhancedKey (referenceName ref) (referencePosition ref)]
+    referencesFromArgument (_, RawArgument {}) = []
+    referencesFromArgument (_, VariableReference Reference {referenceName, referencePosition}) =
+      [EnhancedKey referenceName referencePosition]
     -- | search used variables in every arguments
     searchReferences :: (Text, RawSelection) -> Validation [EnhancedKey]
     searchReferences (_, RawSelectionSet RawSelection' {rawSelectionArguments, rawSelectionRec}) =
@@ -58,7 +59,7 @@ allVariableReferences fragmentLib = concatMapM (concatMapM searchReferences)
         getArgs :: [EnhancedKey] -> [EnhancedKey]
         getArgs x = concatMap referencesFromArgument rawSelectionArguments <> x
     searchReferences (_, InlineFragment Fragment {fragmentSelection}) = concatMapM searchReferences fragmentSelection
-    searchReferences (_, RawAlias {rawAliasSelection}) = concatMapM searchReferences [rawAliasSelection]
+    searchReferences (_, RawAlias {rawAliasSelection}) = searchReferences rawAliasSelection
     searchReferences (_, RawSelectionField RawSelection' {rawSelectionArguments}) =
       return $ concatMap referencesFromArgument rawSelectionArguments
     searchReferences (_, Spread reference) =
