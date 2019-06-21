@@ -1,4 +1,4 @@
-query TestUsedVariable ($v1: String) {
+query TestUsedVariable ($v1: String!) {
   q1 {
     ...F1
   }
