@@ -7,25 +7,30 @@ module Data.Morpheus.Types.Internal.AST.Operator
   , Operator'(..)
   , ValidOperator'
   , RawOperator'
+  , ValidVariables
   ) where
 
 import           Data.Morpheus.Types.Internal.AST.RawSelection (RawSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Arguments, SelectionSet)
 import           Data.Morpheus.Types.Internal.Base             (Collection, Key, Position)
 import           Data.Morpheus.Types.Internal.Data             (DataTypeWrapper)
+import           Data.Morpheus.Types.Internal.Value            (Value)
 
 type ValidOperator = Operator Arguments SelectionSet
 
 type ValidOperator' = Operator' Arguments SelectionSet
 
-data Variable = Variable
+data Variable a = Variable
   { variableType         :: Key
   , isVariableRequired   :: Bool
   , variableTypeWrappers :: [DataTypeWrapper]
   , variablePosition     :: Position
+  , variableValue        :: a
   } deriving (Show)
 
-type VariableDefinitions = Collection Variable
+type VariableDefinitions = Collection (Variable ())
+
+type ValidVariables = Collection (Variable Value)
 
 type RawOperator = Operator VariableDefinitions RawSelectionSet
 
