@@ -183,7 +183,7 @@ screenshots from `Insomnia`
 
 ### Mutations
 In addition to queries, Morpheus also supports mutations. The behave just like regular queries and are defined similarly:
-Just exchange deriving `GQLQuery` for `GQLMutation` and declare them separately at the `GQLRoot` definition
+Just exchange deriving `GQLQuery` for `GQLMutation` and declare them separately at the `GQLRootResolver` definition
 ```haskell
 newtype Mutation = Mutation
   { createDeity :: Form ::-> Deity
@@ -195,11 +195,11 @@ createDeityMutation = ...
 gqlApi :: ByteString -> IO ByteString
 gqlApi = interpreter
   GQLRoot {
-    query = Query {...},
-    mutation = Mutation {
+    queryResolver = Query {...},
+    mutationResolver = Mutation {
        createDeity = createDeityMutation
     },
-    subscription = ()
+    subscriptionResolver = ()
   }
 ```
 
