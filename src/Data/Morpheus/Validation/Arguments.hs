@@ -38,7 +38,7 @@ resolveArgumentVariables operatorName variables DataField {fieldName, fieldArgs}
         stricter _ _                                 = False
         lookupVar =
           case lookup referenceName variables of
-            Nothing -> Left $ undefinedVariable operatorName referencePosition referenceName -- TODO real Operator name
+            Nothing -> Left $ undefinedVariable operatorName referencePosition referenceName
             Just Variable {variableValue, variableType, variableTypeWrappers} ->
               case lookup key' fieldArgs of
                 Nothing -> Left $ unknownArguments fieldName [EnhancedKey key' referencePosition]
