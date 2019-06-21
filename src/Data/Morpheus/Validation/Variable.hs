@@ -1,22 +1,20 @@
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Morpheus.Validation.Variable
   ( resolveOperatorVariables
-  , resolveArgumentValue
   ) where
 
 import           Data.List                                     ((\\))
-import qualified Data.Map                                      as M (fromList, lookup)
+import qualified Data.Map                                      as M (lookup)
 import           Data.Maybe                                    (maybe)
 import           Data.Morpheus.Error.Input                     (InputValidation, inputErrorMessage)
-import           Data.Morpheus.Error.Variable                  (undefinedVariable, uninitializedVariable, unknownType,
-                                                                unusedVariables, variableGotInvalidValue)
-import           Data.Morpheus.Types.Internal.AST.Operator     (Operator' (..), RawOperator', Variable (..))
+import           Data.Morpheus.Error.Variable                  (uninitializedVariable, unknownType, unusedVariables,
+                                                                variableGotInvalidValue)
+import           Data.Morpheus.Types.Internal.AST.Operator     (Operator' (..), RawOperator', ValidVariables,
+                                                                Variable (..))
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawArgument (..),
                                                                 RawSelection (..), RawSelection' (..), RawSelectionSet,
                                                                 Reference (..))
-import           Data.Morpheus.Types.Internal.AST.Selection    (Argument (..))
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Data             (DataInputType, DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
@@ -38,36 +36,9 @@ lookupVariable variables' key' error' =
     Nothing    -> Left $ error' key'
     Just value -> pure value
 
-getVariable :: Position -> Variables -> Text -> Validation Value
-getVariable position' variables' key' = lookupVariable variables' key' (undefinedVariable "Query" position')
-
 handleInputError :: Text -> Position -> InputValidation Value -> Validation (Text, Value)
 handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
 handleInputError key' _ (Right value') = pure (key', value')
-
-lookupBodyValue :: Position -> Variables -> Text -> Text -> Validation Value
-lookupBodyValue position' variables' key' type' = lookupVariable variables' key' (uninitializedVariable position' type')
-
-lookupAndValidateValueOnBody :: DataTypeLib -> Variables -> (Text, Variable) -> Validation (Text, Value)
-lookupAndValidateValueOnBody typeLib variables' (key', Variable { variableType
-                                                                , variablePosition
-                                                                , isVariableRequired
-                                                                , variableTypeWrappers
-                                                                }) =
-  getVariableType variableType variablePosition typeLib >>= checkType isVariableRequired
-  where
-    validator _type variableValue =
-      handleInputError key' variablePosition $
-      validateInputValue typeLib [] variableTypeWrappers _type (key', variableValue)
-    checkType True _type  = lookupBodyValue variablePosition variables' key' variableType >>= validator _type
-    checkType False _type = maybe (pure (key', Null)) (validator _type) (M.lookup key' variables')
-
-varToKey :: (Text, Variable) -> EnhancedKey
-varToKey (key', Variable _ _ _ position') = EnhancedKey key' position'
-
-referencesFromArgument :: (Text, RawArgument) -> [EnhancedKey]
-referencesFromArgument (_, RawArgument {})        = []
-referencesFromArgument (_, VariableReference ref) = [EnhancedKey (referenceName ref) (referencePosition ref)]
 
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = fmap concat . mapM f
@@ -75,6 +46,10 @@ concatMapM f = fmap concat . mapM f
 allVariableReferences :: FragmentLib -> [RawSelectionSet] -> Validation [EnhancedKey]
 allVariableReferences fragmentLib = concatMapM (concatMapM searchReferences)
   where
+    referencesFromArgument :: (Text, RawArgument) -> [EnhancedKey]
+    referencesFromArgument (_, RawArgument {})        = []
+    referencesFromArgument (_, VariableReference ref) = [EnhancedKey (referenceName ref) (referencePosition ref)]
+    -- | search used variables in every arguments
     searchReferences :: (Text, RawSelection) -> Validation [EnhancedKey]
     searchReferences (_, RawSelectionSet RawSelection' {rawSelectionArguments, rawSelectionRec}) =
       getArgs <$> concatMapM searchReferences rawSelectionRec
@@ -88,19 +63,32 @@ allVariableReferences fragmentLib = concatMapM (concatMapM searchReferences)
     searchReferences (_, Spread reference) =
       getFragment reference fragmentLib >>= concatMapM searchReferences . fragmentSelection
 
-resolveArgumentValue :: Variables -> (Text, RawArgument) -> Validation (Text, Argument)
-resolveArgumentValue root (key', VariableReference Reference {referenceName, referencePosition}) = do
-  value <- getVariable referencePosition root referenceName
-  pure (key', Argument value referencePosition)
-resolveArgumentValue _ (key', RawArgument argument') = pure (key', argument')
-
-resolveOperatorVariables :: DataTypeLib -> FragmentLib -> Variables -> RawOperator' -> Validation Variables
+resolveOperatorVariables :: DataTypeLib -> FragmentLib -> Variables -> RawOperator' -> Validation ValidVariables
 resolveOperatorVariables typeLib fragmentLib root operator' = do
   allVariableReferences fragmentLib [operatorSelection operator'] >>= checkUnusedVariables
-  M.fromList <$> mapM (lookupAndValidateValueOnBody typeLib root) (operatorArgs operator')
+  mapM (lookupAndValidateValueOnBody typeLib root) (operatorArgs operator')
   where
+    varToKey :: (Text, Variable ()) -> EnhancedKey
+    varToKey (key', Variable {variablePosition}) = EnhancedKey key' variablePosition
+    --
     checkUnusedVariables :: [EnhancedKey] -> Validation ()
     checkUnusedVariables references' =
       case map varToKey (operatorArgs operator') \\ references' of
         []      -> pure ()
         unused' -> Left $ unusedVariables (operatorName operator') unused'
+
+lookupAndValidateValueOnBody :: DataTypeLib -> Variables -> (Text, Variable ()) -> Validation (Text, Variable Value)
+lookupAndValidateValueOnBody typeLib variables' (key', var@Variable { variableType
+                                                                    , variablePosition
+                                                                    , isVariableRequired
+                                                                    , variableTypeWrappers
+                                                                    }) =
+  (\(k, x) -> (k, var {variableValue = x})) <$>
+  (getVariableType variableType variablePosition typeLib >>= checkType isVariableRequired)
+  where
+    validator _type varValue =
+      handleInputError key' variablePosition $ validateInputValue typeLib [] variableTypeWrappers _type (key', varValue)
+    checkType True _type  = lookupBodyValue variablePosition variableType >>= validator _type
+    checkType False _type = maybe (pure (key', Null)) (validator _type) (M.lookup key' variables')
+    lookupBodyValue :: Position -> Text -> Validation Value
+    lookupBodyValue position' type' = lookupVariable variables' key' (uninitializedVariable position' type')
