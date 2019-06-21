@@ -12,6 +12,7 @@ module Data.Morpheus.Error.Variable
 import           Data.Morpheus.Error.Utils               (errorMessage)
 import           Data.Morpheus.Types.Internal.Base       (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Validation (GQLError (..), GQLErrors)
+import           Data.Semigroup                          ((<>))
 import           Data.Text                               (Text)
 import qualified Data.Text                               as T (concat)
 

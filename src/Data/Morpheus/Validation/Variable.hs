@@ -23,6 +23,7 @@ import           Data.Morpheus.Types.Types                     (Variables)
 import           Data.Morpheus.Validation.Input.Object         (validateInputValue)
 import           Data.Morpheus.Validation.Spread               (getFragment)
 import           Data.Morpheus.Validation.Utils.Utils          (getInputType)
+import           Data.Semigroup                                ((<>))
 import           Data.Text                                     (Text)
 
 getVariableType :: Text -> Position -> DataTypeLib -> Validation DataInputType
