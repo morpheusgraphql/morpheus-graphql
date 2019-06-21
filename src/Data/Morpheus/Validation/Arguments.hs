@@ -1,5 +1,5 @@
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TupleSections  #-}
 
 module Data.Morpheus.Validation.Arguments
   ( validateArguments
@@ -9,43 +9,45 @@ import           Data.Morpheus.Error.Arguments                 (argumentGotInval
                                                                 undefinedArgument, unknownArguments)
 import           Data.Morpheus.Error.Input                     (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Internal                  (internalUnknownTypeMessage)
-import           Data.Morpheus.Error.Variable                  (undefinedVariable)
+import           Data.Morpheus.Error.Variable                  (incompatibleVariableType, undefinedVariable)
 import           Data.Morpheus.Types.Internal.AST.Operator     (ValidVariables, Variable (..))
 import           Data.Morpheus.Types.Internal.AST.RawSelection (RawArgument (..), RawArguments, Reference (..))
 import           Data.Morpheus.Types.Internal.AST.Selection    (Argument (..), Arguments)
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Data             (DataArgument, DataField (..), DataInputField,
                                                                 DataOutputField, DataTypeLib, DataTypeWrapper (..),
-                                                                isFieldNullable)
+                                                                isFieldNullable, showWrappedType)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Types.Internal.Value            (Value (Null))
 import           Data.Morpheus.Validation.Input.Object         (validateInputValue)
 import           Data.Morpheus.Validation.Utils.Utils          (checkForUnknownKeys, checkNameCollision, getInputType)
 import           Data.Text                                     (Text)
 
-resolveArgumentVariables :: ValidVariables -> DataOutputField -> RawArguments -> Validation Arguments
-resolveArgumentVariables variables DataField {fieldArgs} = mapM resolveArgumentValue
+resolveArgumentVariables :: Text -> ValidVariables -> DataOutputField -> RawArguments -> Validation Arguments
+resolveArgumentVariables operatorName variables DataField {fieldName, fieldArgs} = mapM resolveVariable
   where
-    resolveArgumentValue :: (Text, RawArgument) -> Validation (Text, Argument)
-    resolveArgumentValue (key', RawArgument argument') = pure (key', argument')
-    resolveArgumentValue (key', VariableReference Reference {referenceName, referencePosition}) = do
-      value <- lookupVar
-      pure (key', Argument value referencePosition)
+    resolveVariable :: (Text, RawArgument) -> Validation (Text, Argument)
+    resolveVariable (key', RawArgument argument') = pure (key', argument')
+    resolveVariable (key', VariableReference Reference {referenceName, referencePosition}) =
+      (key', ) . (`Argument` referencePosition) <$> lookupVar
       where
+        stricter [] []                               = True
+        stricter (NonNullType:xs1) (NonNullType:xs2) = stricter xs1 xs2
+        stricter (NonNullType:xs1) xs2               = stricter xs1 xs2
+        stricter (ListType:xs1) (ListType:xs2)       = stricter xs1 xs2
+        stricter _ _                                 = False
         lookupVar =
           case lookup referenceName variables of
-            Nothing -> Left $ undefinedVariable "Query" referencePosition referenceName -- TODO real Operator name
+            Nothing -> Left $ undefinedVariable operatorName referencePosition referenceName -- TODO real Operator name
             Just Variable {variableValue, variableType, variableTypeWrappers} ->
               case lookup key' fieldArgs of
-                Nothing -> Left $ undefinedVariable "Query" referencePosition key' -- TODO
-                Just DataField {fieldType, fieldTypeWrappers}
-                  | variableType == fieldType && stricter variableTypeWrappers fieldTypeWrappers -> return variableValue
-                  where stricter [] []                               = True
-                        stricter (NonNullType:xs1) (NonNullType:xs2) = stricter xs1 xs2
-                        stricter (NonNullType:xs1) xs2               = stricter xs1 xs2
-                        stricter (ListType:xs1) (ListType:xs2)       = stricter xs1 xs2
-                        stricter _ _                                 = False
-                _ -> Left $ undefinedVariable "NNN" referencePosition key' -- TODO
+                Nothing -> Left $ unknownArguments fieldName [EnhancedKey key' referencePosition]
+                Just DataField {fieldType, fieldTypeWrappers} ->
+                  if variableType == fieldType && stricter variableTypeWrappers fieldTypeWrappers
+                    then return variableValue
+                    else Left $ incompatibleVariableType referenceName varSignature fieldSignature referencePosition
+                  where varSignature = showWrappedType variableTypeWrappers variableType
+                        fieldSignature = showWrappedType fieldTypeWrappers fieldType
 
 handleInputError :: Text -> Position -> InputValidation a -> Validation ()
 handleInputError key' position' (Left error') = Left $ argumentGotInvalidValue key' (inputErrorMessage error') position'
@@ -81,8 +83,14 @@ checkForUnknownArguments (fieldKey', DataField {fieldArgs = astArgs'}) args' =
     fieldKeys = map fst astArgs'
 
 validateArguments ::
-     DataTypeLib -> ValidVariables -> (Text, DataOutputField) -> Position -> RawArguments -> Validation Arguments
-validateArguments typeLib variables inputs pos rawArgs = do
-  args <- resolveArgumentVariables variables (snd inputs) rawArgs
+     DataTypeLib
+  -> Text
+  -> ValidVariables
+  -> (Text, DataOutputField)
+  -> Position
+  -> RawArguments
+  -> Validation Arguments
+validateArguments typeLib operatorName variables inputs pos rawArgs = do
+  args <- resolveArgumentVariables operatorName variables (snd inputs) rawArgs
   dataArgs <- checkForUnknownArguments inputs args
   mapM (validateArgument typeLib pos args) dataArgs

@@ -16,8 +16,8 @@ import           Data.Text                               (Text)
 import qualified Data.Text                               as T (concat)
 
 -- query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
-incompatibleVariableType :: Text -> Text -> EnhancedKey -> GQLErrors
-incompatibleVariableType variableName variableType (EnhancedKey argType argPosition) = errorMessage argPosition text
+incompatibleVariableType :: Text -> Text -> Text -> Position -> GQLErrors
+incompatibleVariableType variableName variableType argType argPosition = errorMessage argPosition text
   where
     text =
       "Variable \"$" <> variableName <> "\" of type \"" <> variableType <> "\" used in position expecting type \"" <>

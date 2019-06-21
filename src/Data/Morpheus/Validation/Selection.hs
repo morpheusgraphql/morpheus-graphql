@@ -78,8 +78,14 @@ flatTuple list' = (concatMap fst list', concatMap snd list')
  -}
 
 validateSelectionSet ::
-     DataTypeLib -> FragmentLib -> ValidVariables -> DataOutputObject -> RawSelectionSet -> Validation SelectionSet
-validateSelectionSet lib' fragments' variables = __validate
+     DataTypeLib
+  -> FragmentLib
+  -> Text
+  -> ValidVariables
+  -> DataOutputObject
+  -> RawSelectionSet
+  -> Validation SelectionSet
+validateSelectionSet lib' fragments' operatorName variables = __validate
   where
     __validate dataType'@DataType {typeName = typeName'} selectionSet' =
       concat <$> mapM validateSelection selectionSet' >>= checkDuplicatesOn dataType'
@@ -91,7 +97,13 @@ validateSelectionSet lib' fragments' variables = __validate
         getValidationData key' RawSelection' {rawSelectionArguments, rawSelectionPosition} = do
           selectionField <- lookupSelectionField rawSelectionPosition key' dataType'
           arguments' <-
-            validateArguments lib' variables (key', selectionField) rawSelectionPosition rawSelectionArguments
+            validateArguments
+              lib'
+              operatorName
+              variables
+              (key', selectionField)
+              rawSelectionPosition
+              rawSelectionArguments
           return (selectionField, arguments')
         {-
              validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
