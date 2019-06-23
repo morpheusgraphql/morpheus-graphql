@@ -10,9 +10,8 @@ module Deprecated.API
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types ((:->) (..), (::->), (::->>), (:~>) (..), GQLMutation, GQLQuery,
-                                      GQLRootResolver (..), GQLScalar (..), GQLSubscription, GQLType (..), ID,
-                                      ScalarValue (..), withEffect)
+import           Data.Morpheus.Types ((:->) (..), (::->), (:~>) (..), GQLMutation, GQLQuery, GQLRootResolver (..),
+                                      GQLScalar (..), GQLSubscription, GQLType (..), ID, ScalarValue (..), withEffect)
 import           Data.Text           (Text, pack)
 import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
 import qualified Deprecated.Model    as M (JSONAddress (..), JSONUser (..))
@@ -84,9 +83,9 @@ data OfficeArgs = OfficeArgs
 data User = User
   { name    :: Text
   , email   :: Text
-  , address :: AddressArgs ::-> Address
-  , office  :: OfficeArgs ::-> Address
-  , myUnion :: () ::-> MyUnion
+  , address :: IO AddressArgs :-> Address
+  , office  :: IO OfficeArgs :-> Address
+  , myUnion :: IO () :-> MyUnion
   , home    :: CityID
   } deriving (Generic)
 
@@ -102,7 +101,7 @@ newtype A a = A
   } deriving (Generic, GQLType)
 
 data Query = Query
-  { user      :: () ::-> User
+  { user      :: IO () :-> User
   , wrappedA1 :: A Int
   , wrappedA2 :: A Text
   } deriving (Generic, GQLQuery)
@@ -116,7 +115,7 @@ transformAddress :: Text -> JSONAddress -> Address
 transformAddress street' address' =
   Address {city = M.city address', houseNumber = M.houseNumber address', street = street', owner = Nothing}
 
-resolveAddress :: AddressArgs ::-> Address
+resolveAddress :: IO AddressArgs :-> Address
 resolveAddress = Resolver $ \args -> fetchAddress (Euro 1 0) (pack $ show $ longitude $ coordinates args)
 
 addressByCityID :: CityID -> Int -> IO (Either String Address)
