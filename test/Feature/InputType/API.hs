@@ -11,7 +11,7 @@ module Feature.InputType.API
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (KIND, OBJECT)
-import           Data.Morpheus.Types        ((::->), GQLArgs, GQLQuery, GQLRootResolver (..), GQLType (..))
+import           Data.Morpheus.Types        ((::->), GQLQuery, GQLRootResolver (..), GQLType (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -20,12 +20,12 @@ type instance KIND A = OBJECT
 data F1Args = F1Args
   { arg1 :: Text
   , arg2 :: Maybe Int
-  } deriving (Generic, GQLArgs)
+  } deriving (Generic)
 
 data F2Args = F2Args
   { argList       :: [Text]
   , argNestedList :: [Maybe [[Int]]]
-  } deriving (Generic, GQLArgs)
+  } deriving (Generic)
 
 data A = A
   { a1 :: F1Args ::-> Text

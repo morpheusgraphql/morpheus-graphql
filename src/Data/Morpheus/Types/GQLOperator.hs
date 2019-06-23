@@ -1,7 +1,5 @@
 {-# LANGUAGE ConstraintKinds          #-}
 {-# LANGUAGE DefaultSignatures        #-}
-{-# LANGUAGE DeriveAnyClass           #-}
-{-# LANGUAGE DeriveGeneric            #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE FlexibleContexts         #-}
 {-# LANGUAGE FlexibleInstances        #-}
@@ -23,15 +21,13 @@ module Data.Morpheus.Types.GQLOperator
 import           Data.Morpheus.Resolve.Encode               (ObjectFieldResolvers (..), resolveBySelection,
                                                              resolveBySelectionM, resolversBy)
 import           Data.Morpheus.Resolve.Generics.TypeRep     (ObjectRep (..), TypeUpdater, resolveTypes)
-import           Data.Morpheus.Resolve.Introspect           (introspectOutputType)
-import           Data.Morpheus.Schema.Schema                (Schema, Type, findType, initSchema)
-import           Data.Morpheus.Types.GQLArgs                (GQLArgs)
+import           Data.Morpheus.Schema.SchemaAPI             (hiddenRootFields, schemaAPI, schemaTypes)
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
-import           Data.Morpheus.Types.Internal.Data          (DataArguments, DataField (..), DataType (..),
-                                                             DataTypeLib (..), initTypeLib)
+import           Data.Morpheus.Types.Internal.Data          (DataArguments, DataType (..), DataTypeLib (..),
+                                                             initTypeLib)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO, SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Morpheus.Types.Resolver               ((::->), Resolver (..), WithEffect (..))
+import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Proxy
 import           Data.Text                                  (Text)
 import           Data.Typeable                              (Typeable, typeRep, typeRepFingerprint)
@@ -53,37 +49,20 @@ operatorType proxy name' fields' =
   , DataType
       {typeData = fields', typeName = name', typeFingerprint = typeRepFingerprint $ typeRep proxy, typeDescription = ""})
 
-newtype TypeArgs = TypeArgs
-  { name :: Text
-  } deriving (Generic, GQLArgs)
-
-data SystemQuery = SystemQuery
-  { __type   :: TypeArgs ::-> Maybe Type
-  , __schema :: Schema
-  } deriving (Generic)
-
-hideFields :: (Text, DataField a) -> (Text, DataField a)
-hideFields (key', field) = (key', field {fieldHidden = True})
-
-systemQuery :: DataTypeLib -> SystemQuery
-systemQuery lib =
-  SystemQuery {__type = Resolver $ \TypeArgs {name} -> return $ Right $ findType name lib, __schema = initSchema lib}
-
 -- | derives GQL Query Operator
 class GQLQuery a where
   encodeQuery :: DataTypeLib -> Encode a QResult
   default encodeQuery :: EncodeCon a QResult =>
     DataTypeLib -> Encode a QResult
   encodeQuery types rootResolver sel =
-    resolveBySelection sel (resolversBy (systemQuery types) ++ resolversBy rootResolver)
+    resolveBySelection sel (resolversBy (schemaAPI types) ++ resolversBy rootResolver)
   querySchema :: a -> SchemaValidation DataTypeLib
   default querySchema :: IntroCon a =>
     a -> SchemaValidation DataTypeLib
-  querySchema _ = resolveTypes queryType (introspectOutputType (Proxy @Schema) : stack')
+  querySchema _ = resolveTypes queryType (schemaTypes : types)
     where
-      queryType = initTypeLib (operatorType (Proxy @a) "Query" (__fields ++ fields'))
-      __fields = map (hideFields . fst) $ objectFieldTypes $ Proxy @(Rep SystemQuery)
-      (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
+      queryType = initTypeLib (operatorType (Proxy @a) "Query" (hiddenRootFields ++ fields))
+      (fields, types) = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 -- | derives GQL Subscription Mutation
 class GQLMutation a where

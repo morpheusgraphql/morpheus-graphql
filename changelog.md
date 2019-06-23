@@ -67,7 +67,7 @@
   - every field has correct kind
 
 ### Removed
-
+- `GQLArgs`: you can derive arguments just with `Generic` without `GQLArgs`
 - `GQLObject`: replaced with instance `type instance KIND <Type> = OBJECT`
 - `GQLEnum`: replaced with instance `type instance KIND <Type> = ENUM`
 - `GQLInput`: replaced with instance `type instance KIND <Type> = INPUT_OBJECT`

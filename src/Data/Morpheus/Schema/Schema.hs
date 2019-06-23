@@ -14,11 +14,15 @@ module Data.Morpheus.Schema.Schema
 import           Data.Morpheus.Kind                                (KIND, OBJECT)
 import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.Internal.RenderIntrospection (Type, createObjectType, renderType)
+import           Data.Morpheus.Types.GQLType                       (GQLType (__typeName))
 import           Data.Morpheus.Types.Internal.Data                 (DataOutputObject, DataTypeLib (..), allDataTypes)
 import           Data.Text                                         (Text)
 import           GHC.Generics                                      (Generic)
 
 type instance KIND Schema = OBJECT
+
+instance GQLType Schema where
+  __typeName = const "__Schema"
 
 data Schema = Schema
   { types            :: [Type]

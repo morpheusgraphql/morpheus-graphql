@@ -1,5 +1,6 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TypeFamilies  #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 module Data.Morpheus.Schema.EnumValue
   ( EnumValue(..)
@@ -7,11 +8,15 @@ module Data.Morpheus.Schema.EnumValue
   , isEnumOf
   ) where
 
-import           Data.Morpheus.Kind (KIND, OBJECT)
-import           Data.Text          (Text)
+import           Data.Morpheus.Kind          (KIND, OBJECT)
+import           Data.Morpheus.Types.GQLType (GQLType (__typeName))
+import           Data.Text                   (Text)
 import           GHC.Generics
 
 type instance KIND EnumValue = OBJECT
+
+instance GQLType EnumValue where
+  __typeName = const "__EnumValue"
 
 data EnumValue = EnumValue
   { name              :: Text

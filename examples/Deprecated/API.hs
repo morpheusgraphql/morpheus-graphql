@@ -10,9 +10,8 @@ module Deprecated.API
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types ((::->), (::->>), GQLArgs, GQLMutation, GQLQuery, GQLRootResolver (..),
-                                      GQLScalar (..), GQLSubscription, GQLType (..), ID, Resolver (..),
-                                      ScalarValue (..), withEffect)
+import           Data.Morpheus.Types ((::->), (::->>), GQLMutation, GQLQuery, GQLRootResolver (..), GQLScalar (..),
+                                      GQLSubscription, GQLType (..), ID, Resolver (..), ScalarValue (..), withEffect)
 import           Data.Text           (Text, pack)
 import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
 import qualified Deprecated.Model    as M (JSONAddress (..), JSONUser (..))
@@ -74,12 +73,12 @@ data Address = Address
 data AddressArgs = AddressArgs
   { coordinates :: Coordinates
   , comment     :: Maybe Text
-  } deriving (Generic, GQLArgs)
+  } deriving (Generic)
 
 data OfficeArgs = OfficeArgs
   { zipCode :: Maybe [[Maybe [ID]]]
   , cityID  :: CityID
-  } deriving (Generic, GQLArgs)
+  } deriving (Generic)
 
 data User = User
   { name    :: Text

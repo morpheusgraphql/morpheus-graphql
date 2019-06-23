@@ -35,3 +35,4 @@ main = do
         post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
         get "/" $ file "examples/index.html"
         post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
+        get "/mythology" $ file "examples/index.html"
