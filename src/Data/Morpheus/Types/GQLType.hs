@@ -12,18 +12,11 @@ module Data.Morpheus.Types.GQLType
   ( GQLType(..)
   ) where
 
-import           Data.Morpheus.Schema.Directive                    (Directive)
-import           Data.Morpheus.Schema.DirectiveLocation            (DirectiveLocation)
-import           Data.Morpheus.Schema.EnumValue                    (EnumValue)
-import           Data.Morpheus.Schema.Internal.RenderIntrospection (Field, InputValue, Type)
-import           Data.Morpheus.Schema.Schema                       (Schema)
-import           Data.Morpheus.Schema.TypeKind                     (TypeKind (..))
-import           Data.Morpheus.Types.Resolver                      ((::->))
-import           Data.Proxy                                        (Proxy (..))
-import           Data.Text                                         (Text, intercalate, pack)
-import           Data.Typeable                                     (Typeable, splitTyConApp, tyConName, typeRep,
-                                                                    typeRepFingerprint)
-import           GHC.Fingerprint.Type                              (Fingerprint)
+import           Data.Morpheus.Types.Resolver ((::->))
+import           Data.Proxy                   (Proxy (..))
+import           Data.Text                    (Text, intercalate, pack)
+import           Data.Typeable                (Typeable, splitTyConApp, tyConName, typeRep, typeRepFingerprint)
+import           GHC.Fingerprint.Type         (Fingerprint)
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
@@ -54,30 +47,6 @@ class GQLType a where
   default __typeFingerprint :: (Typeable a) =>
     Proxy a -> Fingerprint
   __typeFingerprint = typeRepFingerprint . typeRep
-
-instance GQLType EnumValue where
-  __typeName = const "__EnumValue"
-
-instance GQLType Type where
-  __typeName = const "__Type"
-
-instance GQLType Field where
-  __typeName = const "__Field"
-
-instance GQLType InputValue where
-  __typeName = const "__InputValue"
-
-instance GQLType Schema where
-  __typeName = const "__Schema"
-
-instance GQLType Directive where
-  __typeName = const "__Directive"
-
-instance GQLType TypeKind where
-  __typeName = const "__TypeKind"
-
-instance GQLType DirectiveLocation where
-  __typeName = const "__DirectiveLocation"
 
 instance GQLType Int where
   __typeName = const "Int"
