@@ -1,6 +1,5 @@
 {-# LANGUAGE ConstraintKinds          #-}
 {-# LANGUAGE DefaultSignatures        #-}
-{-# LANGUAGE DeriveAnyClass           #-}
 {-# LANGUAGE DeriveGeneric            #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE FlexibleContexts         #-}
@@ -25,7 +24,6 @@ import           Data.Morpheus.Resolve.Encode               (ObjectFieldResolver
 import           Data.Morpheus.Resolve.Generics.TypeRep     (ObjectRep (..), TypeUpdater, resolveTypes)
 import           Data.Morpheus.Resolve.Introspect           (introspectOutputType)
 import           Data.Morpheus.Schema.Schema                (Schema, Type, findType, initSchema)
-import           Data.Morpheus.Types.GQLArgs                (GQLArgs)
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Internal.Data          (DataArguments, DataField (..), DataType (..),
                                                              DataTypeLib (..), initTypeLib)
@@ -55,7 +53,7 @@ operatorType proxy name' fields' =
 
 newtype TypeArgs = TypeArgs
   { name :: Text
-  } deriving (Generic, GQLArgs)
+  } deriving (Generic)
 
 data SystemQuery = SystemQuery
   { __type   :: TypeArgs ::-> Maybe Type

@@ -93,8 +93,12 @@
       history.replaceState(null, null, newSearch);
     }
 
+    const URI = `${location.host}${location.pathname}`
+
+    const wsURI = `ws://${URI}`;
+
     function graphQLFetcher(graphQLParams) {
-      return fetch("/", {
+      return fetch(`http://${URI}`, {
           method: "post",
           headers: {
             Accept: "application/json",
@@ -114,8 +118,6 @@
           }
         });
     }
-
-    const wsURI = "ws://localhost:3000/";
 
     let subscriptionsClient = new window.SubscriptionsTransportWs.SubscriptionClient(
       wsURI, {

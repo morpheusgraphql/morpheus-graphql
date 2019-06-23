@@ -10,14 +10,12 @@ module Data.Morpheus.Types
   , GQLScalar(parseValue, serialize)
   , GQLRequest(..)
   , GQLResponse(..)
-  , GQLArgs
   , GQLMutation
   , GQLQuery
   , GQLSubscription
   , withEffect
   ) where
 
-import           Data.Morpheus.Types.GQLArgs        (GQLArgs)
 import           Data.Morpheus.Types.GQLOperator    (GQLMutation, GQLQuery, GQLSubscription)
 import           Data.Morpheus.Types.GQLScalar      (GQLScalar (parseValue, serialize))
 import           Data.Morpheus.Types.GQLType        (GQLType (description))

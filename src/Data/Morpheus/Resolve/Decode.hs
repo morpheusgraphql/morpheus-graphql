@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -9,7 +10,7 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Morpheus.Resolve.Decode
-  ( GDecode
+  ( ArgumentsConstraint
   , decodeArguments
   ) where
 
@@ -25,6 +26,8 @@ import           Data.Text                                  (Text, pack)
 import           GHC.Generics
 
 type Decode_ a = Value -> Validation a
+
+type ArgumentsConstraint a = (Generic a, GDecode Arguments (Rep a))
 
 decodeArguments :: (Generic p, GDecode Arguments (Rep p)) => Arguments -> Validation p
 decodeArguments args = to <$> gDecode "" args

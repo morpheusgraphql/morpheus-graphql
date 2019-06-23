@@ -22,11 +22,11 @@ import           Control.Monad.Trans.Except
 import           Data.Morpheus.Error.Internal                   (internalErrorIO)
 import           Data.Morpheus.Error.Selection                  (fieldNotResolved, subfieldsNotSelected)
 import           Data.Morpheus.Kind                             (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
+import           Data.Morpheus.Resolve.Decode                   (ArgumentsConstraint, decodeArguments)
 import           Data.Morpheus.Resolve.Generics.DeriveResolvers (ObjectFieldResolvers (..), UnionResolvers (..),
                                                                  lookupSelectionByType, resolveBySelection,
                                                                  resolveBySelectionM, resolversBy)
 import           Data.Morpheus.Resolve.Generics.EnumRep         (EnumRep (..))
-import qualified Data.Morpheus.Types.GQLArgs                    as Args (GQLArgs (..))
 import           Data.Morpheus.Types.GQLScalar                  (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                    (GQLType (__typeName))
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..))
@@ -119,15 +119,15 @@ instance (GQLType a, Encoder a (KIND a) res) => UnionResolvers (K1 s a) res wher
 --
 -- | Handles all operators: Query, Mutation and Subscription,
 -- if you use it with Mutation or Subscription all effects inside will be lost
-instance (Encoder a (KIND a) res, Args.GQLArgs p) => Encoder (p ::-> a) WRAPPER res where
+instance (Encoder a (KIND a) res, ArgumentsConstraint p) => Encoder (p ::-> a) WRAPPER res where
   __encode (WithGQLKind (Resolver resolver)) selection'@(key', Selection {selectionArguments, selectionPosition}) = do
-    args <- ExceptT $ pure $ Args.decode selectionArguments
+    args <- ExceptT $ pure $ decodeArguments selectionArguments
     liftResolver selectionPosition key' (resolver args) >>= (`encode` selection')
 
 -- | resolver with effect, concatenates sideEffects of child resolvers
-instance (Encoder a (KIND a) MResult, Args.GQLArgs p) => Encoder (p ::->> a) WRAPPER MResult where
+instance (Encoder a (KIND a) MResult, ArgumentsConstraint p) => Encoder (p ::->> a) WRAPPER MResult where
   __encode (WithGQLKind (Resolver resolver)) selection'@(key', Selection {selectionArguments, selectionPosition}) = do
-    args <- ExceptT $ pure $ Args.decode selectionArguments
+    args <- ExceptT $ pure $ decodeArguments selectionArguments
     WithEffect effects1 value1 <- liftResolver selectionPosition key' (resolver args)
     WithEffect effects2 value2 <- __encode (WithGQLKind value1 :: GQLKindOf a) selection'
     return $ WithEffect (effects1 ++ effects2) value2

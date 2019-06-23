@@ -20,14 +20,12 @@ import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIN
 import           Data.Morpheus.Resolve.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), RecSel, SelOf, TypeUpdater, UnionRep (..),
                                                          resolveTypes)
-import           Data.Morpheus.Schema.Type              (DeprecationArgs)
 import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
-import qualified Data.Morpheus.Types.GQLArgs            as Args (GQLArgs (..))
 import           Data.Morpheus.Types.GQLScalar          (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType            (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data      (DataArguments, DataField (..), DataFullType (..),
-                                                         DataLeaf (..), DataType (..), DataTypeWrapper (..),
-                                                         DataValidator, defineType, isTypeDefined)
+                                                         DataInputField, DataLeaf (..), DataType (..),
+                                                         DataTypeWrapper (..), DataValidator, defineType, isTypeDefined)
 import           Data.Morpheus.Types.Resolver           (Resolver (..))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text, pack)
@@ -211,10 +209,9 @@ instance Introspect a (KIND a) f => Introspect [a] WRAPPER f where
 
 -- | Introspection Of Resolver ' a ::-> b'
 -- introspects 'a' as argument and 'b' as output type
-instance (OutputConstraint a, Args.GQLArgs p) => Introspect (Resolver c p a) WRAPPER OutputType where
-  __field _ name = (__field (Context :: OutputOf a) name) {fieldArgs = map fst $ Args.introspect (Proxy @p)}
-  introspect _ typeLib = resolveTypes typeLib $ inputTypes' ++ [introspect (Context :: OutputOf a)]
+instance (OutputConstraint a, ObjectRep (Rep p) ()) => Introspect (Resolver c p a) WRAPPER OutputType where
+  __field _ name = (__field (Context :: OutputOf a) name) {fieldArgs = map fst $ objectFieldTypes (Proxy @(Rep p))}
+  introspect _ typeLib = resolveTypes typeLib $ map snd args ++ [introspect (Context :: OutputOf a)]
     where
-      inputTypes' = map snd $ Args.introspect (Proxy @p)
-
-instance Args.GQLArgs DeprecationArgs
+      args :: [((Text, DataInputField), TypeUpdater)]
+      args = objectFieldTypes (Proxy @(Rep p))

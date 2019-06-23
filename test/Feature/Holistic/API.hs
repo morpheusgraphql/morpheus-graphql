@@ -11,8 +11,8 @@ module Feature.Holistic.API
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types        ((::->), GQLArgs, GQLMutation, GQLQuery, GQLRootResolver (..),
-                                             GQLScalar (..), GQLSubscription, GQLType (..), ID (..), ScalarValue (..))
+import           Data.Morpheus.Types        ((::->), GQLMutation, GQLQuery, GQLRootResolver (..), GQLScalar (..),
+                                             GQLSubscription, GQLType (..), ID (..), ScalarValue (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -59,7 +59,7 @@ data TestInputObject = TestInputObject
 data StreetArgs = StreetArgs
   { argInputObject :: TestInputObject
   , argMaybeString :: Maybe Text
-  } deriving (Generic, GQLArgs)
+  } deriving (Generic)
 
 data Address = Address
   { city        :: Text
@@ -80,12 +80,12 @@ data Coordinates = Coordinates
 data AddressArgs = AddressArgs
   { coordinates :: Coordinates
   , comment     :: Maybe Text
-  } deriving (Generic, GQLArgs)
+  } deriving (Generic)
 
 data OfficeArgs = OfficeArgs
   { zipCode :: Maybe [Int]
   , cityID  :: TestEnum
-  } deriving (Generic, GQLArgs)
+  } deriving (Generic)
 
 data User = User
   { name    :: Text
