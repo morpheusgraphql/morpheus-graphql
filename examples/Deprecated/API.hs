@@ -10,8 +10,9 @@ module Deprecated.API
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types ((::->), (::->>), GQLMutation, GQLQuery, GQLRootResolver (..), GQLScalar (..),
-                                      GQLSubscription, GQLType (..), ID, Resolver (..), ScalarValue (..), withEffect)
+import           Data.Morpheus.Types ((:->) (..), (::->), (::->>), (:~>) (..), GQLMutation, GQLQuery,
+                                      GQLRootResolver (..), GQLScalar (..), GQLSubscription, GQLType (..), ID,
+                                      ScalarValue (..), withEffect)
 import           Data.Text           (Text, pack)
 import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
 import qualified Deprecated.Model    as M (JSONAddress (..), JSONUser (..))
@@ -149,28 +150,28 @@ transformUser user' =
              HH)
     }
 
-createUserMutation :: () ::->> User
-createUserMutation = transformUser <$> Resolver (const $ withEffect ["UPDATE_USER"] <$> jsonUser)
+createUserMutation :: IO () :~> User
+createUserMutation = transformUser <$> ActionResolver (const $ withEffect ["UPDATE_USER"] <$> jsonUser)
 
-newUserSubscription :: () ::->> User
-newUserSubscription = transformUser <$> Resolver (const $ withEffect ["UPDATE_USER"] <$> jsonUser)
+newUserSubscription :: IO () :~> User
+newUserSubscription = transformUser <$> ActionResolver (const $ withEffect ["UPDATE_USER"] <$> jsonUser)
 
-createAddressMutation :: () ::->> Address
+createAddressMutation :: IO () :~> Address
 createAddressMutation =
-  transformAddress "from Mutation" <$> Resolver (const $ withEffect ["UPDATE_ADDRESS"] <$> jsonAddress)
+  transformAddress "from Mutation" <$> ActionResolver (const $ withEffect ["UPDATE_ADDRESS"] <$> jsonAddress)
 
-newAddressSubscription :: () ::->> Address
+newAddressSubscription :: IO () :~> Address
 newAddressSubscription =
-  transformAddress "from Subscription" <$> Resolver (const $ withEffect ["UPDATE_ADDRESS"] <$> jsonAddress)
+  transformAddress "from Subscription" <$> ActionResolver (const $ withEffect ["UPDATE_ADDRESS"] <$> jsonAddress)
 
 data Mutation = Mutation
-  { createUser    :: () ::->> User
-  , createAddress :: () ::->> Address
+  { createUser    :: IO () :~> User
+  , createAddress :: IO () :~> Address
   } deriving (Generic, GQLMutation)
 
 data Subscription = Subscription
-  { newUser    :: () ::->> User
-  , newAddress :: () ::->> Address
+  { newUser    :: IO () :~> User
+  , newAddress :: IO () :~> Address
   } deriving (Generic, GQLSubscription)
 
 gqlRoot :: GQLRootResolver Query Mutation Subscription

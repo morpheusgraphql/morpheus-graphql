@@ -1,50 +1,60 @@
-{-# LANGUAGE DeriveFunctor     #-}
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveFunctor         #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
 
 module Data.Morpheus.Types.Resolver
   ( (::->)
   , (::->>)
-  , Resolver(..)
+  , MonadResolver(..)
+  , (:->)(..)
+  , (:~>)(..)
   , WithEffect(..)
   ) where
 
 import           Data.Text    (Text)
 import           GHC.Generics (Generic)
 
-data QUERY
-
-data MUTATION
-
-type family RESOLVER a b
-
 -- | resolver function wrapper, where
 --
---  __a__ is a record of GQL Arguments
+--  __p__ is a record of GQL Arguments
 --
--- __b__ is result
-newtype Resolver t a b = Resolver
-  { unpackResolver :: a -> IO (RESOLVER t b)
-  } deriving (Generic)
+-- __a__ is result
+class MonadResolver args t where
+  data args :-> t :: *
+  data args :~> t :: *
 
+instance Monad m => MonadResolver (m args) t where
+  data m args :-> t = Resolver{unpackResolver ::
+                             args -> m (Either String t)}
+                      deriving (Generic)
+  data m args :~> t = ActionResolver{unpackActionResolver ::
+                                   args -> m (Either String (WithEffect t))}
+                      deriving (Generic)
+  --Resolver (args -> m (Either String t))
+
+--instance Monad m => MResolver MUTATION (m (WithEffect t)) where
+--  data args :-> m (WithEffect t) = ActionResolver { unpackActionResolver :: args -> m (WithEffect t) } deriving (Generic)
 {-
   Monad of Query Resolver:
   a ::-> b  : returns pure values without any effect
 -}
-type instance RESOLVER QUERY b = Either String b
-
 -- | resolver without effect
-type a ::-> b = Resolver QUERY a b
+type a ::-> b = IO a :-> b
 
-instance Functor (Resolver QUERY a) where
+--a -> IO Either String b
+instance Monad m => Functor ((:->) (m p)) where
   fmap func (Resolver resolver) =
     Resolver $ \args -> do
       value <- resolver args
       return (func <$> value)
 
-instance Applicative (Resolver QUERY a) where
+instance Monad m => Applicative ((:->) (m p)) where
   pure = Resolver . const . return . pure
   Resolver func <*> Resolver resolver =
     Resolver $ \args -> do
@@ -52,7 +62,7 @@ instance Applicative (Resolver QUERY a) where
       value1 <- resolver args
       return (func1 <*> value1)
 
-instance Monad (Resolver QUERY a) where
+instance Monad m => Monad ((:->) (m p)) where
   return = pure
   (Resolver func1) >>= func2 =
     Resolver $ \args -> do
@@ -66,9 +76,7 @@ instance Monad (Resolver QUERY a) where
 -}
 -- | resolver with effects,
 -- used for communication between mutation and subscription
-type a ::->> b = Resolver MUTATION a b
-
-type instance RESOLVER MUTATION b = Either String (WithEffect b)
+type a ::->> b = IO a :~> WithEffect b
 
 data WithEffect a = WithEffect
   { resultEffects :: [Text]
@@ -85,18 +93,18 @@ instance Monad WithEffect where
     let WithEffect e2 v2 = func2 v1
     WithEffect (e2 ++ e1) v2
 
-instance Functor (Resolver MUTATION p) where
-  fmap func (Resolver resolver) =
-    Resolver $ \args -> do
+instance Monad m => Functor ((:~>) (m p)) where
+  fmap func (ActionResolver resolver) =
+    ActionResolver $ \args -> do
       value <- resolver args
       case value of
         Left error' -> return $ Left error'
         Right res'  -> return $ Right (func <$> res')
 
-instance Applicative (Resolver MUTATION p) where
-  pure = Resolver . const . return . Right . pure
-  Resolver func <*> Resolver resolver =
-    Resolver $ \args -> do
+instance Monad m => Applicative ((:~>) (m p)) where
+  pure = ActionResolver . const . return . Right . pure
+  ActionResolver func <*> ActionResolver resolver =
+    ActionResolver $ \args -> do
       func1 <- func args
       case func1 of
         Left error' -> return $ Left error'
@@ -106,15 +114,15 @@ instance Applicative (Resolver MUTATION p) where
             Left error' -> return $ Left error'
             Right v2'   -> return $ Right $ v1 <*> v2'
 
-instance Monad (Resolver MUTATION p) where
+instance Monad m => Monad ((:~>) (m p)) where
   return = pure
-  (Resolver func1) >>= func2 =
-    Resolver $ \args -> do
+  (ActionResolver func1) >>= func2 =
+    ActionResolver $ \args -> do
       value1 <- func1 args
       case value1 of
         Left error' -> return $ Left error'
         Right (WithEffect e1' v1') -> do
-          let (Resolver x') = func2 v1'
+          let (ActionResolver x') = func2 v1'
           v2 <- x' args
           case v2 of
             Left error'                -> return $ Left error'

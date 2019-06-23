@@ -12,7 +12,7 @@ module Data.Morpheus.Kind
   , KIND
   ) where
 
-import           Data.Morpheus.Types.Resolver (Resolver)
+import           Data.Morpheus.Types.Resolver ((:->), (:~>))
 import           Data.Text                    (Text)
 
 -- | Type Family to associate type to GraphQL Kind
@@ -36,7 +36,6 @@ data UNION
 -- | GraphQL Arrays , Resolvers and NonNull fields
 data WRAPPER
 
-
 -- default Type Instances
 type instance KIND Text = SCALAR
 
@@ -50,4 +49,6 @@ type instance KIND (Maybe a) = WRAPPER
 
 type instance KIND [a] = WRAPPER
 
-type instance KIND (Resolver c p a) = WRAPPER
+type instance KIND (a :-> b) = WRAPPER
+
+type instance KIND (a :~> b) = WRAPPER

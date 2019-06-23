@@ -13,7 +13,7 @@ import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), TypeUpd
 import           Data.Morpheus.Resolve.Introspect       (introspectOutputType)
 import           Data.Morpheus.Schema.Schema            (Schema, Type, findType, initSchema)
 import           Data.Morpheus.Types.Internal.Data      (DataField (..), DataOutputField, DataTypeLib (..))
-import           Data.Morpheus.Types.Resolver           ((::->), Resolver (..))
+import           Data.Morpheus.Types.Resolver           ((:->) (..), (::->))
 import           Data.Proxy
 import           Data.Text                              (Text)
 import           GHC.Generics

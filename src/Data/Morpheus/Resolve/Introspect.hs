@@ -26,7 +26,7 @@ import           Data.Morpheus.Types.GQLType            (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data      (DataArguments, DataField (..), DataFullType (..),
                                                          DataInputField, DataLeaf (..), DataType (..),
                                                          DataTypeWrapper (..), DataValidator, defineType, isTypeDefined)
-import           Data.Morpheus.Types.Resolver           (Resolver (..))
+import           Data.Morpheus.Types.Resolver           ((:->) (..), (:~>) (..))
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text, pack)
 import           GHC.Generics
@@ -209,7 +209,14 @@ instance Introspect a (KIND a) f => Introspect [a] WRAPPER f where
 
 -- | Introspection Of Resolver ' a ::-> b'
 -- introspects 'a' as argument and 'b' as output type
-instance (OutputConstraint a, ObjectRep (Rep p) ()) => Introspect (Resolver c p a) WRAPPER OutputType where
+instance (OutputConstraint a, ObjectRep (Rep p) ()) => Introspect (m p :-> a) WRAPPER OutputType where
+  __field _ name = (__field (Context :: OutputOf a) name) {fieldArgs = map fst $ objectFieldTypes (Proxy @(Rep p))}
+  introspect _ typeLib = resolveTypes typeLib $ map snd args ++ [introspect (Context :: OutputOf a)]
+    where
+      args :: [((Text, DataInputField), TypeUpdater)]
+      args = objectFieldTypes (Proxy @(Rep p))
+
+instance (OutputConstraint a, ObjectRep (Rep p) ()) => Introspect (m p :~> a) WRAPPER OutputType where
   __field _ name = (__field (Context :: OutputOf a) name) {fieldArgs = map fst $ objectFieldTypes (Proxy @(Rep p))}
   introspect _ typeLib = resolveTypes typeLib $ map snd args ++ [introspect (Context :: OutputOf a)]
     where
