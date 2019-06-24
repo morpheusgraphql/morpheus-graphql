@@ -18,8 +18,8 @@ module Data.Morpheus.Types.GQLOperator
   , GQLSubscription(..)
   ) where
 
-import           Data.Morpheus.Resolve.Encode               (ObjectFieldResolvers (..), resolveBySelection,
-                                                             resolveBySelectionM, resolversBy)
+import           Data.Morpheus.Resolve.Encode               (MResult, ObjectFieldResolvers (..), QueryResult,
+                                                             resolveBySelection, resolveBySelectionM, resolversBy)
 import           Data.Morpheus.Resolve.Generics.TypeRep     (ObjectRep (..), TypeUpdater, resolveTypes)
 import           Data.Morpheus.Schema.SchemaAPI             (hiddenRootFields, schemaAPI, schemaTypes)
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
@@ -27,15 +27,10 @@ import           Data.Morpheus.Types.Internal.Data          (DataArguments, Data
                                                              initTypeLib)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO, SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Proxy
 import           Data.Text                                  (Text)
 import           Data.Typeable                              (Typeable, typeRep, typeRepFingerprint)
 import           GHC.Generics
-
-type QResult = Value
-
-type MResult = WithEffect Value
 
 type Encode a r = a -> SelectionSet -> ResolveIO r
 
@@ -51,9 +46,9 @@ operatorType proxy name' fields' =
 
 -- | derives GQL Query Operator
 class GQLQuery a where
-  encodeQuery :: DataTypeLib -> Encode a QResult
-  default encodeQuery :: EncodeCon a QResult =>
-    DataTypeLib -> Encode a QResult
+  encodeQuery :: DataTypeLib -> Encode a QueryResult
+  default encodeQuery :: EncodeCon a QueryResult =>
+    DataTypeLib -> Encode a QueryResult
   encodeQuery types rootResolver sel =
     resolveBySelection sel (resolversBy (schemaAPI types) ++ resolversBy rootResolver)
   querySchema :: a -> SchemaValidation DataTypeLib

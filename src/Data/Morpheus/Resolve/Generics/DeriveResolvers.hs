@@ -21,7 +21,7 @@ import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Text                                  (Text, pack)
 import           GHC.Generics
 
-type ContextRes = WithEffect Value
+type ContextRes = WithEffect Text Value
 
 type QueryRes = Value
 
