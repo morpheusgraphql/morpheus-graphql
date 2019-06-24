@@ -47,7 +47,7 @@ class GQLType a where
   __typeName _ = intercalate "_" (filterCon $ splitTyConApp $ typeRep $ Proxy @a)
     where
       filterCon (con, _)
-        | queryRep == con && mutationRep == con = []
+        | queryRep == con || mutationRep == con = []
       filterCon x = joinTypes x
         where
           joinTypes (con, args) = pack (tyConName con) : concatMap (filterCon . splitTyConApp) args
