@@ -12,7 +12,7 @@ module Data.Morpheus.Types.GQLType
   ( GQLType(..)
   ) where
 
-import           Data.Morpheus.Types.Resolver ((::->), QUERY)
+import           Data.Morpheus.Types.Resolver ((::->), MUTATION, QUERY)
 import           Data.Proxy                   (Proxy (..))
 import           Data.Text                    (Text, intercalate, pack)
 import           Data.Typeable                (TyCon, Typeable, splitTyConApp, tyConName, typeRep, typeRepFingerprint)
@@ -21,6 +21,8 @@ import           GHC.Fingerprint.Type         (Fingerprint)
 queryRep :: TyCon
 queryRep = fst $ splitTyConApp $ typeRep $ Proxy @(QUERY Maybe ())
 
+mutationRep :: TyCon
+mutationRep = fst $ splitTyConApp $ typeRep $ Proxy @(MUTATION Maybe ())
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
@@ -45,7 +47,7 @@ class GQLType a where
   __typeName _ = intercalate "_" (filterCon $ splitTyConApp $ typeRep $ Proxy @a)
     where
       filterCon (con, _)
-        | queryRep == con = []
+        | queryRep == con && mutationRep == con = []
       filterCon x = joinTypes x
         where
           joinTypes (con, args) = pack (tyConName con) : concatMap (filterCon . splitTyConApp) args
