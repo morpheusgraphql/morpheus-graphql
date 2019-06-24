@@ -21,6 +21,7 @@ import           GHC.Fingerprint.Type         (Fingerprint)
 queryRep :: TyCon
 queryRep = fst $ splitTyConApp $ typeRep $ Proxy @(QUERY Maybe ())
 
+
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
 --  @
@@ -41,13 +42,13 @@ class GQLType a where
   __typeName :: Proxy a -> Text
   default __typeName :: (Typeable a) =>
     Proxy a -> Text
-  __typeName _ = intercalate "_" (genName $ splitTyConApp $ typeRep $ Proxy @a)
+  __typeName _ = intercalate "_" (filterCon $ splitTyConApp $ typeRep $ Proxy @a)
     where
-      genName (con, _)
+      filterCon (con, _)
         | queryRep == con = []
-      genName x = joinTypes x
+      filterCon x = joinTypes x
         where
-          joinTypes (con, args) = pack (tyConName con) : concatMap (genName . splitTyConApp) args
+          joinTypes (con, args) = pack (tyConName con) : concatMap (filterCon . splitTyConApp) args
   __typeFingerprint :: Proxy a -> Fingerprint
   default __typeFingerprint :: (Typeable a) =>
     Proxy a -> Fingerprint
