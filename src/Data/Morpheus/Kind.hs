@@ -15,7 +15,7 @@ module Data.Morpheus.Kind
   , SUBSCRIPTION
   ) where
 
-import           Data.Morpheus.Types.Resolver ((:->), MUTATION, QUERY, SUBSCRIPTION)
+import           Data.Morpheus.Types.Resolver (MUTATION, QUERY, Resolver, SUBSCRIPTION)
 import           Data.Text                    (Text)
 
 -- | Type Family to associate type to GraphQL Kind
@@ -52,8 +52,8 @@ type instance KIND (Maybe a) = WRAPPER
 
 type instance KIND [a] = WRAPPER
 
-type instance KIND (QUERY m a :-> b) = WRAPPER
+type instance KIND (Resolver (QUERY m) a b) = WRAPPER
 
-type instance KIND (MUTATION m c a :-> b) = WRAPPER
+type instance KIND (Resolver (MUTATION m c) a b) = WRAPPER
 
-type instance KIND (SUBSCRIPTION m c a :-> b) = WRAPPER
+type instance KIND (Resolver (SUBSCRIPTION m c) a b) = WRAPPER

@@ -35,8 +35,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..),
 import           Data.Morpheus.Types.Internal.Base              (Position)
 import           Data.Morpheus.Types.Internal.Validation        (ResolveIO, failResolveIO)
 import           Data.Morpheus.Types.Internal.Value             (ScalarValue (..), Value (..))
-import           Data.Morpheus.Types.Resolver                   ((:->) (..), MUTATION, MonadResolver (..), QUERY,
-                                                                 WithEffect (..))
+import           Data.Morpheus.Types.Resolver                   (MUTATION, QUERY, Resolver (..), WithEffect (..))
 import           Data.Proxy                                     (Proxy (..))
 import           Data.Text                                      (Text, pack)
 import           GHC.Generics
@@ -122,13 +121,14 @@ instance (GQLType a, Encoder a (KIND a) res) => UnionResolvers (K1 s a) res wher
 --
 -- | Handles all operators: Query, Mutation and Subscription,
 -- if you use it with Mutation or Subscription all effects inside will be lost
-instance (Encoder a (KIND a) res, ArgumentsConstraint p) => Encoder (QUERY IO p :-> a) WRAPPER res where
+instance (Encoder a (KIND a) res, ArgumentsConstraint p) => Encoder (Resolver (QUERY IO) p a) WRAPPER res where
   __encode (WithGQLKind (Resolver resolver)) selection'@(key', Selection {selectionArguments, selectionPosition}) = do
     args <- ExceptT $ pure $ decodeArguments selectionArguments
     liftResolver selectionPosition key' (resolver args) >>= (`encode` selection')
 
 -- | resolver with effect, concatenates sideEffects of child resolvers
-instance (Encoder a (KIND a) MResult, ArgumentsConstraint p) => Encoder (MUTATION IO Text p :-> a) WRAPPER MResult where
+instance (Encoder a (KIND a) MResult, ArgumentsConstraint p) =>
+         Encoder (Resolver (MUTATION IO Text) p a) WRAPPER MResult where
   __encode (WithGQLKind (MutationResolver resolver)) selection'@(key', Selection {selectionArguments, selectionPosition}) = do
     args <- ExceptT $ pure $ decodeArguments selectionArguments
     WithEffect effects1 value1 <- liftResolver selectionPosition key' (resolver args)

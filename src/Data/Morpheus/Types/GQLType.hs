@@ -19,10 +19,10 @@ import           Data.Typeable                (TyCon, Typeable, splitTyConApp, t
 import           GHC.Fingerprint.Type         (Fingerprint)
 
 queryRep :: TyCon
-queryRep = fst $ splitTyConApp $ typeRep $ Proxy @(QUERY Maybe ())
+queryRep = fst $ splitTyConApp $ typeRep $ Proxy @(QUERY Maybe)
 
 mutationRep :: TyCon
-mutationRep = fst $ splitTyConApp $ typeRep $ Proxy @(MUTATION Maybe ())
+mutationRep = fst $ splitTyConApp $ typeRep $ Proxy @(MUTATION Maybe)
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --

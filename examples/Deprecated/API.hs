@@ -10,8 +10,8 @@ module Deprecated.API
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, MUTATION, OBJECT, QUERY, SCALAR, UNION)
-import           Data.Morpheus.Types ((:->) (..), (::->), (::->>), GQLMutation, GQLQuery, GQLRootResolver (..),
-                                      GQLScalar (..), GQLSubscription, GQLType (..), ID, ScalarValue (..), withEffect)
+import           Data.Morpheus.Types ((::->), (::->>), GQLMutation, GQLQuery, GQLRootResolver (..), GQLScalar (..),
+                                      GQLSubscription, GQLType (..), ID, Resolver (..), ScalarValue (..), withEffect)
 import           Data.Text           (Text, pack)
 import           Data.Typeable       (Typeable)
 import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
@@ -83,9 +83,9 @@ data OfficeArgs = OfficeArgs
 data User m = User
   { name    :: Text
   , email   :: Text
-  , address :: m AddressArgs :-> Address
-  , office  :: m OfficeArgs :-> Address
-  , myUnion :: m () :-> MyUnion
+  , address :: Resolver m AddressArgs Address
+  , office  :: Resolver m OfficeArgs Address
+  , myUnion :: Resolver m () MyUnion
   , home    :: CityID
   } deriving (Generic)
 
@@ -101,7 +101,7 @@ newtype A a = A
   } deriving (Generic, GQLType)
 
 data Query = Query
-  { user      :: QUERY IO () :-> User (QUERY IO)
+  { user      :: Resolver (QUERY IO) () (User (QUERY IO))
   , wrappedA1 :: A Int
   , wrappedA2 :: A Text
   } deriving (Generic, GQLQuery)
@@ -115,7 +115,7 @@ transformAddress :: Text -> JSONAddress -> Address
 transformAddress street' address' =
   Address {city = M.city address', houseNumber = M.houseNumber address', street = street'}
 
-resolveAddress :: QUERY IO AddressArgs :-> Address
+resolveAddress :: Resolver (QUERY IO) AddressArgs Address
 resolveAddress = Resolver $ \args -> fetchAddress (Euro 1 0) (pack $ show $ longitude $ coordinates args)
 
 addressByCityID :: CityID -> Int -> IO (Either String Address)
@@ -149,17 +149,17 @@ transformUser user' =
              HH)
     }
 
-createUserMutation :: MUTATION IO Text () :-> User (QUERY IO)
+createUserMutation :: Resolver (MUTATION IO Text) () (User (QUERY IO))
 createUserMutation = transformUser <$> MutationResolver (const $ withEffect ["UPDATE_USER"] <$> jsonUser)
 
-newUserSubscription :: MUTATION IO Text () :-> User (QUERY IO)
+newUserSubscription :: Resolver (MUTATION IO Text) () (User (QUERY IO))
 newUserSubscription = transformUser <$> MutationResolver (const $ withEffect ["UPDATE_USER"] <$> jsonUser)
 
-createAddressMutation :: MUTATION IO Text () :-> Address
+createAddressMutation :: Resolver (MUTATION IO Text) () Address
 createAddressMutation =
   transformAddress "from Mutation" <$> MutationResolver (const $ withEffect ["UPDATE_ADDRESS"] <$> jsonAddress)
 
-newAddressSubscription :: MUTATION IO Text () :-> Address
+newAddressSubscription :: Resolver (MUTATION IO Text) () Address
 newAddressSubscription =
   transformAddress "from Subscription" <$> MutationResolver (const $ withEffect ["UPDATE_ADDRESS"] <$> jsonAddress)
 

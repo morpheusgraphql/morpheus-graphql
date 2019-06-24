@@ -10,7 +10,7 @@ module Mythology.API
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Types        ((:->) (..), (::->), GQLQuery, GQLRootResolver (..))
+import           Data.Morpheus.Types        ((::->), GQLQuery, GQLRootResolver (..), Resolver (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 import           Mythology.Character.Deity  (Deity (..), dbDeity)
