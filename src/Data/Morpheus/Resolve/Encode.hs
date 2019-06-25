@@ -21,6 +21,8 @@ module Data.Morpheus.Resolve.Encode
 
 import           Control.Monad.Trans                            (lift)
 import           Control.Monad.Trans.Except
+import           Data.Map                                       (Map)
+import qualified Data.Map                                       as M (toList)
 import           Data.Morpheus.Error.Internal                   (internalErrorIO)
 import           Data.Morpheus.Error.Selection                  (fieldNotResolved, subfieldsNotSelected)
 import           Data.Morpheus.Kind                             (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
@@ -29,7 +31,7 @@ import           Data.Morpheus.Resolve.Generics.DeriveResolvers (ObjectFieldReso
                                                                  lookupSelectionByType, resolveBySelection,
                                                                  resolveBySelectionM, resolversBy)
 import           Data.Morpheus.Resolve.Generics.EnumRep         (EnumRep (..))
-import           Data.Morpheus.Types.Custom                     (Tuple (..))
+import           Data.Morpheus.Types.Custom                     (MapKind, Tuple (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar                  (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                    (GQLType (__typeName))
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..))
@@ -179,6 +181,12 @@ instance (Typeable a, Typeable b, Encoder a (KIND a) QueryResult, Encoder b (KIN
 --
 instance Encoder [a] WRAPPER QueryResult => Encoder (Set a) WRAPPER QueryResult where
   __encode (WithGQLKind dataSet) = encode (toList dataSet)
+
+--
+--  Map
+--
+instance (Eq k, Encoder (MapKind k v (QUERY IO)) OBJECT QueryResult) => Encoder (Map k v) WRAPPER QueryResult where
+  __encode (WithGQLKind value) = encode ((mapKindFromList $ M.toList value) :: MapKind k v (QUERY IO))
 
 mapGQLList ::
      forall a b. Encoder a (KIND a) b

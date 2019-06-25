@@ -15,6 +15,7 @@ module Data.Morpheus.Kind
   , SUBSCRIPTION
   ) where
 
+import           Data.Map                     (Map)
 import           Data.Morpheus.Types.Resolver (MUTATION, QUERY, Resolver, SUBSCRIPTION)
 import           Data.Set                     (Set)
 import           Data.Text                    (Text)
@@ -56,6 +57,8 @@ type instance KIND [a] = WRAPPER
 type instance KIND (a, b) = WRAPPER
 
 type instance KIND (Set a) = WRAPPER
+
+type instance KIND (Map k v) = WRAPPER
 
 type instance KIND (Resolver (QUERY m) a b) = WRAPPER
 

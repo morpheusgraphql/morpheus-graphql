@@ -9,6 +9,8 @@ module Deprecated.API
   ( gqlRoot
   ) where
 
+import           Data.Map            (Map)
+import qualified Data.Map            as M (fromList)
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, MUTATION, OBJECT, QUERY, SCALAR, UNION)
 import           Data.Morpheus.Types ((::->), (::->>), GQLMutation, GQLQuery, GQLRootResolver (..), GQLScalar (..),
                                       GQLSubscription, GQLType (..), ID, Resolver (..), ScalarValue (..), withEffect)
@@ -102,6 +104,7 @@ newtype A a = A
 data Query = Query
   { user       :: Resolver (QUERY IO) () (User (QUERY IO))
   , integerSet :: Set Int
+  , textIntMap :: Map Text Int
   , wrappedA1  :: A (Int, Text)
   , wrappedA2  :: A Text
   } deriving (Generic, GQLQuery)
@@ -176,7 +179,14 @@ data Subscription = Subscription
 gqlRoot :: GQLRootResolver Query Mutation Subscription
 gqlRoot =
   GQLRootResolver
-    { queryResolver = Query {user = resolveUser, wrappedA1 = A (0, ""), wrappedA2 = A "", integerSet = fromList [1, 2]}
+    { queryResolver =
+        Query
+          { user = resolveUser
+          , wrappedA1 = A (0, "")
+          , wrappedA2 = A ""
+          , integerSet = fromList [1, 2]
+          , textIntMap = M.fromList [("robin", 1), ("carl", 2)]
+          }
     , mutationResolver = Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
     , subscriptionResolver = Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}
     }

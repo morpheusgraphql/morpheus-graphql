@@ -15,12 +15,13 @@ module Data.Morpheus.Resolve.Introspect
   ( introspectOutputType
   ) where
 
+import           Data.Map                               (Map)
 import           Data.Morpheus.Error.Schema             (nameCollisionError)
 import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION, WRAPPER)
 import           Data.Morpheus.Resolve.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), RecSel, SelOf, TypeUpdater, UnionRep (..),
                                                          resolveTypes)
-import           Data.Morpheus.Types.Custom             (Tuple)
+import           Data.Morpheus.Types.Custom             (MapKind, Tuple)
 import           Data.Morpheus.Types.GQLScalar          (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType            (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data      (DataArguments, DataField (..), DataFullType (..),
@@ -219,6 +220,10 @@ instance Introspect (Tuple a b) OBJECT f => Introspect (a, b) WRAPPER f where
 instance Introspect [a] WRAPPER f => Introspect (Set a) WRAPPER f where
   __field _ = __field (Context :: Context [a] WRAPPER f)
   introspect _ = introspect (Context :: Context [a] WRAPPER f)
+
+instance Introspect (MapKind k v (QUERY IO)) OBJECT f => Introspect (Map k v) WRAPPER f where
+  __field _ = __field (Context :: Context (MapKind k v (QUERY IO)) OBJECT f)
+  introspect _ = introspect (Context :: Context (MapKind k v (QUERY IO)) OBJECT f)
 
 -- | Introspection Of Resolver ' a ::-> b'
 -- introspects 'a' as argument and 'b' as output type
