@@ -12,6 +12,7 @@ module Deprecated.API
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, MUTATION, OBJECT, QUERY, SCALAR, UNION)
 import           Data.Morpheus.Types ((::->), (::->>), GQLMutation, GQLQuery, GQLRootResolver (..), GQLScalar (..),
                                       GQLSubscription, GQLType (..), ID, Resolver (..), ScalarValue (..), withEffect)
+import           Data.Set            (Set, fromList)
 import           Data.Text           (Text, pack)
 import           Data.Typeable       (Typeable)
 import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
@@ -92,18 +93,17 @@ data User m = User
 instance Typeable a => GQLType (User a) where
   description _ = "Custom Description for Client Defined User Type"
 
-type instance KIND (A Int) = OBJECT
-
-type instance KIND (A Text) = OBJECT
+type instance KIND (A a) = OBJECT
 
 newtype A a = A
   { wrappedA :: a
   } deriving (Generic, GQLType)
 
 data Query = Query
-  { user      :: Resolver (QUERY IO) () (User (QUERY IO))
-  , wrappedA1 :: A Int
-  , wrappedA2 :: A Text
+  { user       :: Resolver (QUERY IO) () (User (QUERY IO))
+  , integerSet :: Set Int
+  , wrappedA1  :: A (Int, Text)
+  , wrappedA2  :: A Text
   } deriving (Generic, GQLQuery)
 
 fetchAddress :: Euro -> Text -> IO (Either String Address)
@@ -176,7 +176,7 @@ data Subscription = Subscription
 gqlRoot :: GQLRootResolver Query Mutation Subscription
 gqlRoot =
   GQLRootResolver
-    { queryResolver = Query {user = resolveUser, wrappedA1 = A 0, wrappedA2 = A ""}
+    { queryResolver = Query {user = resolveUser, wrappedA1 = A (0, ""), wrappedA2 = A "", integerSet = fromList [1, 2]}
     , mutationResolver = Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
     , subscriptionResolver = Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}
     }

@@ -29,6 +29,7 @@ import           Data.Morpheus.Resolve.Generics.DeriveResolvers (ObjectFieldReso
                                                                  lookupSelectionByType, resolveBySelection,
                                                                  resolveBySelectionM, resolversBy)
 import           Data.Morpheus.Resolve.Generics.EnumRep         (EnumRep (..))
+import           Data.Morpheus.Types.Custom                     (Tuple (..))
 import           Data.Morpheus.Types.GQLScalar                  (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                    (GQLType (__typeName))
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..))
@@ -37,7 +38,9 @@ import           Data.Morpheus.Types.Internal.Validation        (ResolveIO, fail
 import           Data.Morpheus.Types.Internal.Value             (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver                   (MUTATION, QUERY, Resolver (..), WithEffect (..))
 import           Data.Proxy                                     (Proxy (..))
+import           Data.Set                                       (Set, toList)
 import           Data.Text                                      (Text, pack)
+import           Data.Typeable                                  (Typeable)
 import           GHC.Generics
 
 type ObjectConstraint a b = (Generic a, GQLType a, ObjectFieldResolvers (Rep a) b)
@@ -163,6 +166,19 @@ instance Encoder a (KIND a) MResult => Encoder [a] WRAPPER MResult where
   __encode list query = do
     value' <- mapGQLList list query
     return $ WithEffect (concatMap resultEffects value') (List (map resultValue value'))
+
+--
+--  Tuple
+--
+instance (Typeable a, Typeable b, Encoder a (KIND a) QueryResult, Encoder b (KIND b) QueryResult) =>
+         Encoder (a, b) WRAPPER QueryResult where
+  __encode (WithGQLKind (key, value)) = encode (Tuple key value)
+
+--
+--  Set
+--
+instance Encoder [a] WRAPPER QueryResult => Encoder (Set a) WRAPPER QueryResult where
+  __encode (WithGQLKind dataSet) = encode (toList dataSet)
 
 mapGQLList ::
      forall a b. Encoder a (KIND a) b

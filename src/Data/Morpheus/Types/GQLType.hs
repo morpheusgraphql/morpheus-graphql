@@ -15,6 +15,7 @@ module Data.Morpheus.Types.GQLType
 import           Data.Morpheus.Types.Internal.Data (DataFingerprint (..))
 import           Data.Morpheus.Types.Resolver      ((::->), MUTATION, QUERY, SUBSCRIPTION)
 import           Data.Proxy                        (Proxy (..))
+import           Data.Set                          (Set)
 import           Data.Text                         (Text, intercalate, pack)
 import           Data.Typeable                     (TyCon, TypeRep, Typeable, splitTyConApp, tyConFingerprint,
                                                     tyConName, typeRep)
@@ -83,6 +84,13 @@ instance GQLType a => GQLType (Maybe a) where
 instance GQLType a => GQLType [a] where
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
+
+instance GQLType a => GQLType (Set a) where
+  __typeName _ = __typeName (Proxy @a)
+  __typeFingerprint _ = __typeFingerprint (Proxy @a)
+
+instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
+  __typeName _ = "Tuple" <> __typeName (Proxy @a) <> "_" <> __typeName (Proxy @b)
 
 instance GQLType a => GQLType (p ::-> a) where
   __typeName _ = __typeName (Proxy @a)
