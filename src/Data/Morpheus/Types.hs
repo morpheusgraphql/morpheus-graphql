@@ -25,8 +25,7 @@ import           Data.Morpheus.Types.Request        (GQLRequest (..))
 import           Data.Morpheus.Types.Resolver       ((::->), (::->>), Resolver (..), WithEffect (..))
 import           Data.Morpheus.Types.Response       (GQLResponse (..))
 import           Data.Morpheus.Types.Types          (GQLRootResolver (..))
-import           Data.Text                          (Text)
 
 -- | used in mutation or subscription resolver , adds effect to normal resolver
-withEffect :: [Text] -> Either String a -> Either String (WithEffect a)
+withEffect :: [c] -> Either String a -> Either String (WithEffect c a)
 withEffect channels v = WithEffect channels <$> v

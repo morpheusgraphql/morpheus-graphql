@@ -18,24 +18,19 @@ module Data.Morpheus.Types.GQLOperator
   , GQLSubscription(..)
   ) where
 
-import           Data.Morpheus.Resolve.Encode               (ObjectFieldResolvers (..), resolveBySelection,
-                                                             resolveBySelectionM, resolversBy)
+import           Data.Morpheus.Resolve.Encode               (MResult, ObjectFieldResolvers (..), QueryResult,
+                                                             resolveBySelection, resolveBySelectionM, resolversBy)
 import           Data.Morpheus.Resolve.Generics.TypeRep     (ObjectRep (..), TypeUpdater, resolveTypes)
 import           Data.Morpheus.Schema.SchemaAPI             (hiddenRootFields, schemaAPI, schemaTypes)
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
-import           Data.Morpheus.Types.Internal.Data          (DataArguments, DataType (..), DataTypeLib (..),
-                                                             initTypeLib)
+import           Data.Morpheus.Types.Internal.Data          (DataArguments, DataFingerprint (..), DataType (..),
+                                                             DataTypeLib (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveIO, SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Proxy
 import           Data.Text                                  (Text)
-import           Data.Typeable                              (Typeable, typeRep, typeRepFingerprint)
+import           Data.Typeable                              (Typeable)
 import           GHC.Generics
-
-type QResult = Value
-
-type MResult = WithEffect Value
 
 type Encode a r = a -> SelectionSet -> ResolveIO r
 
@@ -43,17 +38,16 @@ type EncodeCon a r = (Generic a, ObjectFieldResolvers (Rep a) r)
 
 type IntroCon a = (ObjectRep (Rep a) DataArguments, Typeable a)
 
-operatorType :: Typeable t => Proxy t -> Text -> a -> (Text, DataType a)
-operatorType proxy name' fields' =
+operatorType :: Text -> a -> (Text, DataType a)
+operatorType name' fields' =
   ( name'
-  , DataType
-      {typeData = fields', typeName = name', typeFingerprint = typeRepFingerprint $ typeRep proxy, typeDescription = ""})
+  , DataType {typeData = fields', typeName = name', typeFingerprint = SystemFingerprint name', typeDescription = ""})
 
 -- | derives GQL Query Operator
 class GQLQuery a where
-  encodeQuery :: DataTypeLib -> Encode a QResult
-  default encodeQuery :: EncodeCon a QResult =>
-    DataTypeLib -> Encode a QResult
+  encodeQuery :: DataTypeLib -> Encode a QueryResult
+  default encodeQuery :: EncodeCon a QueryResult =>
+    DataTypeLib -> Encode a QueryResult
   encodeQuery types rootResolver sel =
     resolveBySelection sel (resolversBy (schemaAPI types) ++ resolversBy rootResolver)
   querySchema :: a -> SchemaValidation DataTypeLib
@@ -61,7 +55,7 @@ class GQLQuery a where
     a -> SchemaValidation DataTypeLib
   querySchema _ = resolveTypes queryType (schemaTypes : types)
     where
-      queryType = initTypeLib (operatorType (Proxy @a) "Query" (hiddenRootFields ++ fields))
+      queryType = initTypeLib (operatorType "Query" (hiddenRootFields ++ fields))
       (fields, types) = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 -- | derives GQL Subscription Mutation
@@ -75,7 +69,7 @@ class GQLMutation a where
     a -> TypeUpdater
   mutationSchema _ initialType = resolveTypes mutationType types'
     where
-      mutationType = initialType {mutation = Just $ operatorType (Proxy @a) "Mutation" fields'}
+      mutationType = initialType {mutation = Just $ operatorType "Mutation" fields'}
       (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
 
 -- | derives GQL Subscription Operator
@@ -89,7 +83,7 @@ class GQLSubscription a where
     a -> TypeUpdater
   subscriptionSchema _ initialType = resolveTypes subscriptionType types'
     where
-      subscriptionType = initialType {subscription = Just $ operatorType (Proxy @a) "Subscription" fields'}
+      subscriptionType = initialType {subscription = Just $ operatorType "Subscription" fields'}
       (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
 
 instance GQLMutation () where

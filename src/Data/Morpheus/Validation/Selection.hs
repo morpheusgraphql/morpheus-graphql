@@ -10,14 +10,13 @@ module Data.Morpheus.Validation.Selection
 
 import           Data.Morpheus.Error.Selection                 (cannotQueryField, duplicateQuerySelections,
                                                                 hasNoSubfields)
-import           Data.Morpheus.Schema.TypeKind                 (TypeKind (..))
 import           Data.Morpheus.Types.Internal.AST.Operator     (ValidVariables)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawSelection (..),
                                                                 RawSelection' (..), RawSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..))
 import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataOutputObject, DataType (..),
-                                                                DataTypeLib (..))
+                                                                DataTypeKind (..), DataTypeLib (..))
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Validation.Arguments            (validateArguments)
 import           Data.Morpheus.Validation.Spread               (castFragmentType, resolveSpread)
@@ -123,7 +122,7 @@ validateSelectionSet lib' fragments' operatorName variables = __validate
                                                                                  }) = do
           (dataField', arguments') <- getValidationData key' fullRawSelection'
           case fieldKind dataField' of
-            UNION -> do
+            KindUnion -> do
               (categories', __typename') <- clusterTypes
               mapM (validateCluster __typename') categories' >>= returnSelection arguments' . UnionSelection
               where clusterTypes = do
@@ -138,7 +137,7 @@ validateSelectionSet lib' fragments' operatorName variables = __validate
                     validateCluster sysSelection' (type', frags') = do
                       selection' <- __validate type' (concatMap fragmentSelection frags')
                       return (typeName type', sysSelection' ++ selection')
-            OBJECT -> do
+            KindObject -> do
               fieldType' <- lookupFieldAsSelectionSet position' key' lib' dataField'
               __validate fieldType' rawSelectors >>= returnSelection arguments' . SelectionSet
             _ -> Left $ hasNoSubfields key' (fieldType dataField') position'

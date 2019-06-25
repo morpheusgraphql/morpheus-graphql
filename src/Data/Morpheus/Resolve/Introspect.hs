@@ -20,13 +20,13 @@ import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIN
 import           Data.Morpheus.Resolve.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), RecSel, SelOf, TypeUpdater, UnionRep (..),
                                                          resolveTypes)
-import           Data.Morpheus.Schema.TypeKind          (TypeKind (..))
 import           Data.Morpheus.Types.GQLScalar          (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType            (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data      (DataArguments, DataField (..), DataFullType (..),
                                                          DataInputField, DataLeaf (..), DataType (..),
-                                                         DataTypeWrapper (..), DataValidator, defineType, isTypeDefined)
-import           Data.Morpheus.Types.Resolver           (Resolver (..))
+                                                         DataTypeKind (..), DataTypeWrapper (..), DataValidator,
+                                                         defineType, isTypeDefined)
+import           Data.Morpheus.Types.Resolver           (MUTATION, QUERY, Resolver)
 import           Data.Proxy                             (Proxy (..))
 import           Data.Text                              (Text, pack)
 import           GHC.Generics
@@ -70,7 +70,7 @@ introspectOutputType _ = introspect (Context :: OutputOf a)
 data Context a kind args =
   Context
 
-buildField :: GQLType a => TypeKind -> Proxy a -> t -> Text -> DataField t
+buildField :: GQLType a => DataTypeKind -> Proxy a -> t -> Text -> DataField t
 buildField fieldKind proxy' fieldArgs fieldName =
   DataField
     { fieldName
@@ -118,22 +118,22 @@ type OutputConstraint a = Introspect a (KIND a) DataArguments
 -- SCALAR
 --
 instance (GQLScalar a, GQLType a) => Introspect a SCALAR InputType where
-  __field _ = buildField SCALAR (Proxy @a) ()
+  __field _ = buildField KindScalar (Proxy @a) ()
   introspect _ = updateLib (scalarTypeOf (scalarValidator $ Proxy @a)) [] (Proxy @a)
 
 instance (GQLScalar a, GQLType a) => Introspect a SCALAR OutputType where
-  __field _ = buildField SCALAR (Proxy @a) []
+  __field _ = buildField KindScalar (Proxy @a) []
   introspect _ = updateLib (scalarTypeOf (scalarValidator $ Proxy @a)) [] (Proxy @a)
 
 --
 -- ENUM
 --
 instance EnumConstraint a => Introspect a ENUM InputType where
-  __field _ = buildField ENUM (Proxy @a) ()
+  __field _ = buildField KindEnum (Proxy @a) ()
   introspect _ = introspectEnum (Context :: InputOf a)
 
 instance EnumConstraint a => Introspect a ENUM OutputType where
-  __field _ = buildField ENUM (Proxy @a) []
+  __field _ = buildField KindEnum (Proxy @a) []
   introspect _ = introspectEnum (Context :: OutputOf a)
 
 introspectEnum ::
@@ -146,20 +146,20 @@ introspectEnum _ = updateLib (enumTypeOf $ getTags (Proxy @(Rep a))) [] (Proxy @
 -- OBJECTS , INPUT_OBJECT
 --
 instance InputObjectConstraint a => Introspect a INPUT_OBJECT InputType where
-  __field _ = buildField INPUT_OBJECT (Proxy @a) ()
+  __field _ = buildField KindInputObject (Proxy @a) ()
   introspect _ = updateLib (InputObject . buildType fields') stack' (Proxy @a)
     where
       (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 instance ObjectConstraint a => Introspect a OBJECT OutputType where
-  __field _ = buildField OBJECT (Proxy @a) []
+  __field _ = buildField KindObject (Proxy @a) []
   introspect _ = updateLib (OutputObject . buildType (__typename : fields')) stack' (Proxy @a)
     where
       __typename =
         ( "__typename"
         , DataField
             { fieldName = "__typename"
-            , fieldKind = SCALAR
+            , fieldKind = KindScalar
             , fieldArgs = []
             , fieldTypeWrappers = []
             , fieldType = "String"
@@ -181,10 +181,10 @@ instance (Selector s, Introspect a (KIND a) f) => ObjectRep (RecSel s a) f where
 -- | recursion for union types
 -- iterates on possible types for UNION and introspects them recursively
 instance (OutputConstraint a, ObjectConstraint a) => UnionRep (RecSel s a) where
-  possibleTypes _ = [(buildField OBJECT (Proxy @a) () "", introspect (Context :: OutputOf a))]
+  possibleTypes _ = [(buildField KindObject (Proxy @a) () "", introspect (Context :: OutputOf a))]
 
 instance UnionConstraint a => Introspect a UNION OutputType where
-  __field _ = buildField UNION (Proxy @a) []
+  __field _ = buildField KindUnion (Proxy @a) []
   introspect _ = updateLib (Union . buildType fields) stack (Proxy @a)
     where
       (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
@@ -209,7 +209,14 @@ instance Introspect a (KIND a) f => Introspect [a] WRAPPER f where
 
 -- | Introspection Of Resolver ' a ::-> b'
 -- introspects 'a' as argument and 'b' as output type
-instance (OutputConstraint a, ObjectRep (Rep p) ()) => Introspect (Resolver c p a) WRAPPER OutputType where
+instance (OutputConstraint a, ObjectRep (Rep p) ()) => Introspect (Resolver (QUERY m) p a) WRAPPER OutputType where
+  __field _ name = (__field (Context :: OutputOf a) name) {fieldArgs = map fst $ objectFieldTypes (Proxy @(Rep p))}
+  introspect _ typeLib = resolveTypes typeLib $ map snd args ++ [introspect (Context :: OutputOf a)]
+    where
+      args :: [((Text, DataInputField), TypeUpdater)]
+      args = objectFieldTypes (Proxy @(Rep p))
+
+instance (OutputConstraint a, ObjectRep (Rep p) ()) => Introspect (Resolver (MUTATION m c) p a) WRAPPER OutputType where
   __field _ name = (__field (Context :: OutputOf a) name) {fieldArgs = map fst $ objectFieldTypes (Proxy @(Rep p))}
   introspect _ typeLib = resolveTypes typeLib $ map snd args ++ [introspect (Context :: OutputOf a)]
     where
