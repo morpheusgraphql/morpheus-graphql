@@ -13,6 +13,7 @@ module Data.Morpheus.Types.Internal.Data
   , DataUnion
   , DataOutputType
   , DataInputType
+  , DataArguments
   , DataField(..)
   , DataType(..)
   , DataLeaf(..)
@@ -21,7 +22,8 @@ module Data.Morpheus.Types.Internal.Data
   , DataTypeLib(..)
   , DataTypeWrapper(..)
   , DataValidator(..)
-  , DataArguments
+  , DataTypeKind(..)
+  , DataFingerprint(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -31,13 +33,27 @@ module Data.Morpheus.Types.Internal.Data
   , allDataTypes
   ) where
 
-import           Data.Morpheus.Schema.TypeKind      (TypeKind)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
 import           Data.Text                          (Text)
 import qualified Data.Text                          as T (concat)
 import           GHC.Fingerprint.Type               (Fingerprint)
 
 type Key = Text
+
+data DataTypeKind
+  = DATA_SCALAR
+  | DATA_OBJECT
+  | DATA_UNION
+  | DATA_ENUM
+  | DATA_INPUT_OBJECT
+  | DATA_LIST
+  | DATA_NON_NULL
+  deriving (Eq, Show)
+
+data DataFingerprint
+  = SystemFingerprint Text
+  | TypeableFingerprint [Fingerprint]
+  deriving (Show, Eq, Ord)
 
 newtype DataValidator = DataValidator
   { validateValue :: Value -> Either Text Value
@@ -78,7 +94,7 @@ data DataTypeWrapper
 data DataField a = DataField
   { fieldArgs         :: a
   , fieldName         :: Text
-  , fieldKind         :: TypeKind
+  , fieldKind         :: DataTypeKind
   , fieldType         :: Text
   , fieldTypeWrappers :: [DataTypeWrapper]
   , fieldHidden       :: Bool
@@ -90,7 +106,7 @@ isFieldNullable _                                             = True
 
 data DataType a = DataType
   { typeName        :: Text
-  , typeFingerprint :: Fingerprint
+  , typeFingerprint :: DataFingerprint
   , typeDescription :: Text
   , typeData        :: a
   } deriving (Show)
@@ -150,10 +166,10 @@ allDataTypes (DataTypeLib leaf' inputObject' object' union' query' mutation' sub
     fromMaybeType (Just (key', dataType')) = [(key', OutputObject dataType')]
     fromMaybeType Nothing                  = []
 
-isTypeDefined :: Text -> DataTypeLib -> Maybe Fingerprint
+isTypeDefined :: Text -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name_ lib' = getTypeFingerprint <$> name_ `lookup` allDataTypes lib'
   where
-    getTypeFingerprint :: DataFullType -> Fingerprint
+    getTypeFingerprint :: DataFullType -> DataFingerprint
     getTypeFingerprint (Leaf (LeafScalar dataType')) = typeFingerprint dataType'
     getTypeFingerprint (Leaf (LeafEnum dataType'))   = typeFingerprint dataType'
     getTypeFingerprint (InputObject dataType')       = typeFingerprint dataType'

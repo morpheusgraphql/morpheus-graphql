@@ -16,7 +16,7 @@ import           Data.Morpheus.Schema.Type         (Type (..))
 import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data (DataField (..), DataFullType (..), DataInputField, DataInputObject,
                                                     DataLeaf (..), DataOutputField, DataOutputObject, DataType (..),
-                                                    DataTypeWrapper (..), DataUnion)
+                                                    DataTypeKind (..), DataTypeWrapper (..), DataUnion)
 import           Data.Morpheus.Types.Resolver      ((::->))
 import           Data.Text                         (Text)
 
@@ -33,8 +33,18 @@ type Field = F.Field Type
 inputValueFromArg :: (Text, DataInputField) -> InputValue
 inputValueFromArg (key', input') = IN.createInputValueWith key' (createInputObjectType input')
 
+renderTypeKind :: DataTypeKind -> TypeKind
+renderTypeKind DATA_SCALAR       = SCALAR
+renderTypeKind DATA_OBJECT       = OBJECT
+renderTypeKind DATA_UNION        = UNION
+renderTypeKind DATA_ENUM         = ENUM
+renderTypeKind DATA_INPUT_OBJECT = INPUT_OBJECT
+renderTypeKind DATA_LIST         = LIST
+renderTypeKind DATA_NON_NULL     = NON_NULL
+
 createInputObjectType :: DataInputField -> Type
-createInputObjectType field' = wrap field' $ createType (fieldKind field') (fieldType field') "" $ Just []
+createInputObjectType field' =
+  wrap field' $ createType (renderTypeKind $ fieldKind field') (fieldType field') "" $ Just []
 
 wrap :: DataField a -> Type -> Type
 wrap field' = wrapRec (fieldTypeWrappers field')
@@ -48,7 +58,10 @@ wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 
 fieldFromObjectField :: (Text, DataOutputField) -> Field
 fieldFromObjectField (key', field'@DataField {fieldType = type', fieldKind = kind', fieldArgs = args'}) =
-  F.createFieldWith key' (wrap field' $ createType kind' type' "" $ Just []) (map inputValueFromArg args')
+  F.createFieldWith
+    key'
+    (wrap field' $ createType (renderTypeKind kind') type' "" $ Just [])
+    (map inputValueFromArg args')
 
 typeFromLeaf :: (Text, DataLeaf) -> Type
 typeFromLeaf (key', LeafScalar DataType {typeDescription = desc'}) = createLeafType SCALAR key' desc' Nothing

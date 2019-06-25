@@ -7,16 +7,15 @@ module Data.Morpheus.Validation.Utils.Selection
   ) where
 
 import           Data.Morpheus.Error.Selection           (cannotQueryField, hasNoSubfields, subfieldsNotSelected)
-import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Base       (Position)
-import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataOutputField, DataOutputObject,
+import           Data.Morpheus.Types.Internal.Data       (DataTypeKind(..), DataField (..), DataOutputField, DataOutputObject,
                                                           DataType (..), DataTypeLib (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Validation.Utils.Utils    (lookupField, lookupType)
 import           Data.Text                               (Text)
 
 isObjectKind :: DataField a -> Bool
-isObjectKind field' = OBJECT == fieldKind field'
+isObjectKind field' = DATA_OBJECT == fieldKind field'
 
 mustBeObject :: (Text, Position) -> DataOutputField -> Validation DataOutputField
 mustBeObject (key', position') field' =
