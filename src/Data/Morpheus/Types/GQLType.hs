@@ -15,6 +15,7 @@ module Data.Morpheus.Types.GQLType
 import           Data.Morpheus.Types.Internal.Data (DataFingerprint (..))
 import           Data.Morpheus.Types.Resolver      ((::->), MUTATION, QUERY, SUBSCRIPTION)
 import           Data.Proxy                        (Proxy (..))
+import           Data.Semigroup                    ((<>))
 import           Data.Set                          (Set)
 import           Data.Text                         (Text, intercalate, pack)
 import           Data.Typeable                     (TyCon, TypeRep, Typeable, splitTyConApp, tyConFingerprint,
