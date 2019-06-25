@@ -122,7 +122,7 @@ validateSelectionSet lib' fragments' operatorName variables = __validate
                                                                                  }) = do
           (dataField', arguments') <- getValidationData key' fullRawSelection'
           case fieldKind dataField' of
-            DATA_UNION -> do
+            KindUnion -> do
               (categories', __typename') <- clusterTypes
               mapM (validateCluster __typename') categories' >>= returnSelection arguments' . UnionSelection
               where clusterTypes = do
@@ -137,7 +137,7 @@ validateSelectionSet lib' fragments' operatorName variables = __validate
                     validateCluster sysSelection' (type', frags') = do
                       selection' <- __validate type' (concatMap fragmentSelection frags')
                       return (typeName type', sysSelection' ++ selection')
-            DATA_OBJECT -> do
+            KindObject -> do
               fieldType' <- lookupFieldAsSelectionSet position' key' lib' dataField'
               __validate fieldType' rawSelectors >>= returnSelection arguments' . SelectionSet
             _ -> Left $ hasNoSubfields key' (fieldType dataField') position'

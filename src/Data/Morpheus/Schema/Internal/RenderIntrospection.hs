@@ -34,13 +34,13 @@ inputValueFromArg :: (Text, DataInputField) -> InputValue
 inputValueFromArg (key', input') = IN.createInputValueWith key' (createInputObjectType input')
 
 renderTypeKind :: DataTypeKind -> TypeKind
-renderTypeKind DATA_SCALAR       = SCALAR
-renderTypeKind DATA_OBJECT       = OBJECT
-renderTypeKind DATA_UNION        = UNION
-renderTypeKind DATA_ENUM         = ENUM
-renderTypeKind DATA_INPUT_OBJECT = INPUT_OBJECT
-renderTypeKind DATA_LIST         = LIST
-renderTypeKind DATA_NON_NULL     = NON_NULL
+renderTypeKind KindScalar      = SCALAR
+renderTypeKind KindObject      = OBJECT
+renderTypeKind KindUnion       = UNION
+renderTypeKind KindEnum        = ENUM
+renderTypeKind KindInputObject = INPUT_OBJECT
+renderTypeKind KindList        = LIST
+renderTypeKind KindNonNull     = NON_NULL
 
 createInputObjectType :: DataInputField -> Type
 createInputObjectType field' =

@@ -41,13 +41,13 @@ import           GHC.Fingerprint.Type               (Fingerprint)
 type Key = Text
 
 data DataTypeKind
-  = DATA_SCALAR
-  | DATA_OBJECT
-  | DATA_UNION
-  | DATA_ENUM
-  | DATA_INPUT_OBJECT
-  | DATA_LIST
-  | DATA_NON_NULL
+  = KindScalar
+  | KindObject
+  | KindUnion
+  | KindEnum
+  | KindInputObject
+  | KindList
+  | KindNonNull
   deriving (Eq, Show)
 
 data DataFingerprint
