@@ -28,7 +28,7 @@ mutationRep = fst $ splitTyConApp $ typeRep $ Proxy @(MUTATION Maybe)
 filterTypes :: TypeRep -> (TyCon, [TypeRep]) -> [TypeRep]
 filterTypes _ (con, _)
   | con `elem` [queryRep, mutationRep] = []
-filterTypes tyRep (_, args) = tyRep : concatMap (filterTypes tyRep . splitTyConApp) args
+filterTypes tyRep (_, args) = tyRep : concatMap (\arg -> filterTypes arg $ splitTyConApp arg) args
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
