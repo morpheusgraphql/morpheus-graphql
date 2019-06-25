@@ -1,0 +1,47 @@
+{
+  "data": {
+    "__type": {
+      "kind": "OBJECT",
+      "name": "Mutation",
+      "fields": [
+        {
+          "name": "mut1",
+          "args": [],
+          "type": {
+            "kind": "OBJECT",
+            "name": "WA",
+            "ofType": null
+          },
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "mut2",
+          "args": [],
+          "type": {
+            "kind": "OBJECT",
+            "name": "Wrapped_Int_Int",
+            "ofType": null
+          },
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "mut3",
+          "args": [],
+          "type": {
+            "kind": "OBJECT",
+            "name": "Wrapped_Wrapped_Text_Int_Text",
+            "ofType": null
+          },
+          "isDeprecated": false,
+          "deprecationReason": null
+        }
+      ],
+      "inputFields": null,
+      "interfaces": [],
+      "enumValues": null,
+      "possibleTypes": null
+    }
+  }
+}

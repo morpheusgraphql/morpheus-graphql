@@ -1,6 +1,14 @@
 [
   {
-    "path": "nameCollision",
-    "description": "fail: if types are defined with same name"
+    "path": "validWrappedTypes",
+    "description": "don't fail: if Mutation, Query, or Subscription Resolver is packed inside GQLType"
+  },
+  {
+    "path": "ignoreQUERYMonad",
+    "description": "ignore (QUERY IO) or any (QUERY m) monad from typeName, but concatenates other wrapped types with _"
+  },
+  {
+    "path": "ignoreMUTATIONMonad",
+    "description": "ignore (MUTATION Text IO) or any (MUTATION c m) monad from typeName, but concatenates other wrapped types with _"
   }
 ]

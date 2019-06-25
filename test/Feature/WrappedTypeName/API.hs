@@ -10,8 +10,9 @@ module Feature.WrappedTypeName.API
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (KIND, MUTATION, OBJECT, QUERY)
-import           Data.Morpheus.Types        (GQLMutation, GQLQuery, GQLRootResolver (..), GQLType (..), Resolver)
+import           Data.Morpheus.Kind         (KIND, MUTATION, OBJECT, QUERY, MUTATION)
+import           Data.Morpheus.Types        (GQLMutation, GQLQuery, GQLRootResolver (..), GQLSubscription, GQLType (..),
+                                             Resolver)
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -35,15 +36,23 @@ data Query = Query
   , a3 :: Maybe (Wrapped (Wrapped Text Int) Text)
   } deriving (Generic, GQLQuery)
 
-newtype Mutation = Mutation
+data Mutation = Mutation
   { mut1 :: Maybe (WA (MUTATION IO Text))
+  , mut2 :: Maybe (Wrapped Int Int)
+  , mut3 :: Maybe (Wrapped (Wrapped Text Int) Text)
   } deriving (Generic, GQLMutation)
+
+data Subscription = Subscription
+  { sub1 :: Maybe (WA (MUTATION IO Text)) -- TODO: test Subscription when it implemented
+  , sub2 :: Maybe (Wrapped Int Int)
+  , sub3 :: Maybe (Wrapped (Wrapped Text Int) Text)
+  } deriving (Generic, GQLSubscription)
 
 api :: ByteString -> IO ByteString
 api =
   interpreter
     GQLRootResolver
-      { queryResolver = Query {a1 = WA (pure "test1") 0, a2 = Nothing, a3 = Nothing}
-      , mutationResolver = Mutation {mut1 = Nothing}
-      , subscriptionResolver = ()
+      { queryResolver = Query {a1 = WA {aText = pure "test1", aInt = 0}, a2 = Nothing, a3 = Nothing}
+      , mutationResolver = Mutation {mut1 = Nothing, mut2 = Nothing, mut3 = Nothing}
+      , subscriptionResolver = Subscription {sub1 = Nothing, sub2 = Nothing, sub3 = Nothing}
       }
