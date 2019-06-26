@@ -21,7 +21,7 @@ import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIN
 import           Data.Morpheus.Resolve.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), RecSel, SelOf, TypeUpdater, UnionRep (..),
                                                          resolveTypes)
-import           Data.Morpheus.Types.Custom             (MapKind, Tuple)
+import           Data.Morpheus.Types.Custom             (MapKind, Pair)
 import           Data.Morpheus.Types.GQLScalar          (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType            (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data      (DataArguments, DataField (..), DataFullType (..),
@@ -213,9 +213,9 @@ instance Introspect a (KIND a) f => Introspect [a] WRAPPER f where
 --
 -- CUSTOM Types: Tuple, Map, Set
 --
-instance Introspect (Tuple a b) OBJECT f => Introspect (a, b) WRAPPER f where
-  __field _ = __field (Context :: Context (Tuple a b) OBJECT f)
-  introspect _ = introspect (Context :: Context (Tuple a b) OBJECT f)
+instance Introspect (Pair k v) OBJECT f => Introspect (k, v) WRAPPER f where
+  __field _ = __field (Context :: Context (Pair k v) OBJECT f)
+  introspect _ = introspect (Context :: Context (Pair k v) OBJECT f)
 
 instance Introspect [a] WRAPPER f => Introspect (Set a) WRAPPER f where
   __field _ = __field (Context :: Context [a] WRAPPER f)

@@ -31,7 +31,7 @@ import           Data.Morpheus.Resolve.Generics.DeriveResolvers (ObjectFieldReso
                                                                  lookupSelectionByType, resolveBySelection,
                                                                  resolveBySelectionM, resolversBy)
 import           Data.Morpheus.Resolve.Generics.EnumRep         (EnumRep (..))
-import           Data.Morpheus.Types.Custom                     (MapKind, Tuple (..), mapKindFromList)
+import           Data.Morpheus.Types.Custom                     (MapKind, Pair (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar                  (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                    (GQLType (__typeName))
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..))
@@ -42,7 +42,6 @@ import           Data.Morpheus.Types.Resolver                   (MUTATION, QUERY
 import           Data.Proxy                                     (Proxy (..))
 import           Data.Set                                       (Set, toList)
 import           Data.Text                                      (Text, pack)
-import           Data.Typeable                                  (Typeable)
 import           GHC.Generics
 
 type ObjectConstraint a b = (Generic a, GQLType a, ObjectFieldResolvers (Rep a) b)
@@ -172,9 +171,8 @@ instance Encoder a (KIND a) MResult => Encoder [a] WRAPPER MResult where
 --
 --  Tuple
 --
-instance (Typeable a, Typeable b, Encoder a (KIND a) QueryResult, Encoder b (KIND b) QueryResult) =>
-         Encoder (a, b) WRAPPER QueryResult where
-  __encode (WithGQLKind (key, value)) = encode (Tuple key value)
+instance Encoder (Pair k v) OBJECT res => Encoder (k, v) WRAPPER res where
+  __encode (WithGQLKind (key, value)) = encode (Pair key value)
 
 --
 --  Set

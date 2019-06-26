@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeOperators       #-}
 
 module Data.Morpheus.Types.Custom
-  ( Tuple(..)
+  ( Pair(..)
   , MapKind(..)
   , MapArgs(..)
   , mapKindFromList
@@ -17,34 +17,38 @@ import           Data.Morpheus.Types.GQLType  (GQLType)
 import           Data.Morpheus.Types.Resolver (QUERY, Resolver (..))
 import           GHC.Generics                 (Generic)
 
-type instance KIND (Tuple a b) = OBJECT
+type instance KIND (Pair k v) = OBJECT
 
-data Tuple a b = Tuple
-  { key   :: a
-  , value :: b
+data Pair k v = Pair
+  { key   :: k
+  , value :: v
   } deriving (Generic, GQLType)
 
 newtype MapArgs k = MapArgs
   { oneOf :: Maybe [k]
   } deriving (Generic)
 
-type instance KIND (MapKind a b m) = OBJECT
+type instance KIND (MapKind k v m) = OBJECT
 
 data MapKind k v m = MapKind
   { size   :: Int
   , keys   :: Resolver m (MapArgs k) [k]
   , values :: Resolver m (MapArgs k) [v]
-  , tuples :: Resolver m (MapArgs k) [Tuple k v]
+  , pairs  :: Resolver m (MapArgs k) [Pair k v]
   } deriving (Generic, GQLType)
 
 mapKindFromList :: (Eq k, Monad m) => [(k, v)] -> MapKind k v (QUERY m)
-mapKindFromList pairs =
+mapKindFromList inputPairs =
   MapKind
-    {size = length pairs, keys = Resolver resolveKeys, values = Resolver resolveValues, tuples = Resolver resolvePairs}
+    { size = length inputPairs
+    , keys = Resolver resolveKeys
+    , values = Resolver resolveValues
+    , pairs = Resolver resolvePairs
+    }
   where
-    filterBy MapArgs {oneOf = Just list} = filter ((`elem` list) . fst) pairs
-    filterBy _                           = pairs
-    resolveKeys args = return $ Right $ map fst $ filterBy args
-    resolveValues args = return $ Right $ map snd $ filterBy args
-    resolvePairs args = return $ Right $ map toGQLTuple $ filterBy args
-    toGQLTuple (x, y) = Tuple x y
+    filterBy MapArgs {oneOf = Just list} = filter ((`elem` list) . fst) inputPairs
+    filterBy _                           = inputPairs
+    resolveKeys = return . Right . map fst . filterBy
+    resolveValues = return . Right . map snd . filterBy
+    resolvePairs = return . Right . map toGQLTuple . filterBy
+    toGQLTuple (x, y) = Pair x y
