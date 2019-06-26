@@ -13,12 +13,13 @@ module Data.Morpheus.Types.GQLType
   ) where
 
 import           Data.Morpheus.Types.Internal.Data (DataFingerprint (..))
-import           Data.Morpheus.Types.Resolver      ((::->), MUTATION, QUERY, SUBSCRIPTION)
+import           Data.Morpheus.Types.Resolver      ((::->))
 import           Data.Proxy                        (Proxy (..))
 import           Data.Text                         (Text, intercalate, pack)
 import           Data.Typeable                     (TyCon, TypeRep, Typeable, splitTyConApp, tyConFingerprint,
                                                     tyConName, typeRep)
 
+{-
 queryRep :: TyCon
 queryRep = fst $ splitTyConApp $ typeRep $ Proxy @(QUERY Maybe)
 
@@ -27,11 +28,11 @@ mutationRep = fst $ splitTyConApp $ typeRep $ Proxy @(MUTATION Maybe ())
 
 subscriptionRep :: TyCon
 subscriptionRep = fst $ splitTyConApp $ typeRep $ Proxy @(SUBSCRIPTION Maybe ())
-
+-}
 -- Ignores QUERY , MUTATION and SUBSCRIPTION resolvers from typeName
 ignoreResolverMonad :: (TyCon, [TypeRep]) -> [TyCon]
-ignoreResolverMonad (con, _)
-  | con `elem` [queryRep, mutationRep, subscriptionRep] = []
+--ignoreResolverMonad (con, _)
+--  | con `elem` [queryRep, mutationRep, subscriptionRep] = []
 ignoreResolverMonad (con, args) = con : concatMap (ignoreResolverMonad . splitTyConApp) args
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
