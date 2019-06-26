@@ -22,7 +22,7 @@ import           Data.Morpheus.Types.Internal.Data          (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation    (SchemaValidation)
 import           Data.Morpheus.Types.Internal.WebSocket     (OutputAction (..))
 import           Data.Morpheus.Types.Request                (GQLRequest (..))
-import           Data.Morpheus.Types.Resolver               (WithEffect (..))
+import           Data.Morpheus.Types.Resolver               (unpackEffect, unpackEffect2)
 import           Data.Morpheus.Types.Response               (GQLResponse (..))
 import           Data.Morpheus.Types.Types                  (GQLRootResolver (..))
 import           Data.Morpheus.Validation.Validation        (validateRequest)
@@ -61,9 +61,10 @@ resolve GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} 
               rootGQL <- ExceptT $ pure (parseGQL request >>= validateRequest gqlSchema)
               case rootGQL of
                 Query operator' -> encodeQuery gqlSchema queryResolver $ operatorSelection operator'
-                Mutation operator' -> resultValue <$> encodeMutation mutationResolver (operatorSelection operator')
+                Mutation operator' ->
+                  snd <$> unpackEffect2 (encodeMutation mutationResolver (operatorSelection operator'))
                 Subscription operator' ->
-                  resultValue <$> encodeSubscription subscriptionResolver (operatorSelection operator')
+                  snd <$> unpackEffect2 (encodeSubscription subscriptionResolver (operatorSelection operator'))
 
 resolveStream ::
      (GQLQuery q, GQLMutation m, GQLSubscription s)
@@ -85,17 +86,19 @@ resolveStream GQLRootResolver {queryResolver, mutationResolver, subscriptionReso
           value <- encodeQuery gqlSchema queryResolver $ operatorSelection operator'
           return (NoEffect value)
         resolveOperator (Mutation operator') = do
-          WithEffect mutationChannels mutationResponse <- encodeMutation mutationResolver $ operatorSelection operator'
-          return PublishMutation {mutationChannels, mutationResponse, currentSubscriptionStateResolver}
+          (channels, response) <- unpackEffect2 $ encodeMutation mutationResolver $ operatorSelection operator'
+          return
+            PublishMutation {mutationChannels = channels, mutationResponse = response, currentSubscriptionStateResolver}
           where
             currentSubscriptionStateResolver :: SelectionSet -> IO GQLResponse
             currentSubscriptionStateResolver selection' = do
-              value <- runExceptT (encodeSubscription subscriptionResolver selection')
+              value <- unpackEffect (encodeSubscription subscriptionResolver selection')
               case value of
-                Left x                  -> pure $ Errors $ renderErrors x
-                Right (WithEffect _ x') -> pure $ Data x'
+                Left x        -> pure $ Errors $ renderErrors x
+                Right (_, x') -> return $ Data x'
         resolveOperator (Subscription operator') = do
-          WithEffect subscriptionChannels _ <- encodeSubscription subscriptionResolver $ operatorSelection operator'
+          (subscriptionChannels, _) <-
+            unpackEffect2 $ encodeSubscription subscriptionResolver $ operatorSelection operator'
           return InitSubscription {subscriptionChannels, subscriptionQuery = operatorSelection operator'}
 
 packStream :: GQLState -> (ByteString -> IO (OutputAction ByteString)) -> ByteString -> IO ByteString
