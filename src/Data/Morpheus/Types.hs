@@ -14,6 +14,7 @@ module Data.Morpheus.Types
   , GQLQuery
   , GQLSubscription
   , withEffect
+  , WithEffect
   ) where
 
 import           Data.Morpheus.Types.GQLOperator    (GQLMutation, GQLQuery, GQLSubscription)
@@ -27,5 +28,5 @@ import           Data.Morpheus.Types.Response       (GQLResponse (..))
 import           Data.Morpheus.Types.Types          (GQLRootResolver (..))
 
 -- | used in mutation or subscription resolver , adds effect to normal resolver
-withEffect :: [c] -> Either String a -> Either String (WithEffect c a)
-withEffect channels v = WithEffect channels <$> v
+withEffect :: Monad m => [c] -> m a -> WithEffect m c a
+withEffect channels = WithEffect (return channels)
