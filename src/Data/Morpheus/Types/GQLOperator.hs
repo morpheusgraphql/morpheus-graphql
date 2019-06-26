@@ -18,23 +18,23 @@ module Data.Morpheus.Types.GQLOperator
   , GQLSubscription(..)
   ) where
 
-import           Data.Morpheus.Resolve.Encode               (MResult, ObjectFieldResolvers (..), QueryResult,
-                                                             resolveBySelection, resolveBySelectionM, resolversBy)
+import           Data.Morpheus.Resolve.Encode               (ObjectFieldResolvers (..), resolveBySelection, resolversBy)
 import           Data.Morpheus.Resolve.Generics.TypeRep     (ObjectRep (..), TypeUpdater, resolveTypes)
 import           Data.Morpheus.Schema.SchemaAPI             (hiddenRootFields, schemaAPI, schemaTypes)
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Internal.Data          (DataArguments, DataFingerprint (..), DataType (..),
                                                              DataTypeLib (..), initTypeLib)
-import           Data.Morpheus.Types.Internal.Validation    (ResolveIO, SchemaValidation)
+import           Data.Morpheus.Types.Internal.Validation    (ResolveT, SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
+import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Proxy
 import           Data.Text                                  (Text)
 import           Data.Typeable                              (Typeable)
 import           GHC.Generics
 
-type Encode a r = a -> SelectionSet -> ResolveIO r
+type Encode m a = a -> SelectionSet -> ResolveT m Value
 
-type EncodeCon a r = (Generic a, ObjectFieldResolvers (Rep a) r)
+type EncodeCon m a = (Generic a, ObjectFieldResolvers (Rep a) m)
 
 type IntroCon a = (ObjectRep (Rep a) DataArguments, Typeable a)
 
@@ -45,9 +45,9 @@ operatorType name' fields' =
 
 -- | derives GQL Query Operator
 class GQLQuery a where
-  encodeQuery :: DataTypeLib -> Encode a QueryResult
-  default encodeQuery :: EncodeCon a QueryResult =>
-    DataTypeLib -> Encode a QueryResult
+  encodeQuery :: DataTypeLib -> Encode IO a
+  default encodeQuery :: EncodeCon IO a =>
+    DataTypeLib -> Encode IO a
   encodeQuery types rootResolver sel =
     resolveBySelection sel (resolversBy (schemaAPI types) ++ resolversBy rootResolver)
   querySchema :: a -> SchemaValidation DataTypeLib
@@ -60,10 +60,10 @@ class GQLQuery a where
 
 -- | derives GQL Subscription Mutation
 class GQLMutation a where
-  encodeMutation :: Encode a MResult
-  default encodeMutation :: EncodeCon a MResult =>
-    Encode a MResult
-  encodeMutation rootResolver sel = resolveBySelectionM sel $ resolversBy rootResolver
+  encodeMutation :: Encode (WithEffect IO Text) a
+  default encodeMutation :: EncodeCon (WithEffect IO Text) a =>
+    Encode (WithEffect IO Text) a
+  encodeMutation rootResolver sel = resolveBySelection sel $ resolversBy rootResolver
   mutationSchema :: a -> TypeUpdater
   default mutationSchema :: IntroCon a =>
     a -> TypeUpdater
@@ -74,10 +74,10 @@ class GQLMutation a where
 
 -- | derives GQL Subscription Operator
 class GQLSubscription a where
-  encodeSubscription :: Encode a MResult
-  default encodeSubscription :: EncodeCon a MResult =>
-    Encode a MResult
-  encodeSubscription rootResolver sel = resolveBySelectionM sel $ resolversBy rootResolver
+  encodeSubscription :: Encode (WithEffect IO Text) a
+  default encodeSubscription :: EncodeCon (WithEffect IO Text) a =>
+    Encode (WithEffect IO Text) a
+  encodeSubscription rootResolver sel = resolveBySelection sel $ resolversBy rootResolver
   subscriptionSchema :: a -> TypeUpdater
   default subscriptionSchema :: IntroCon a =>
     a -> TypeUpdater
@@ -87,9 +87,9 @@ class GQLSubscription a where
       (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
 
 instance GQLMutation () where
-  encodeMutation _ _ = pure $ pure Null
+  encodeMutation _ _ = pure Null
   mutationSchema _ = return
 
 instance GQLSubscription () where
-  encodeSubscription _ _ = pure $ pure Null
+  encodeSubscription _ _ = pure Null
   subscriptionSchema _ = return
