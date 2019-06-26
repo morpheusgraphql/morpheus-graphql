@@ -5,11 +5,11 @@ module Data.Morpheus.Error.Internal
   , internalArgumentError
   , internalUnknownTypeMessage
   , internalError
-  , internalErrorIO
+  , internalErrorT
   ) where
 
 import           Data.Morpheus.Error.Utils               (globalErrorMessage)
-import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveIO, failResolveIO)
+import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveT, failResolveT)
 import           Data.Morpheus.Types.Internal.Value      (Value (..))
 import           Data.Text                               (Text)
 import qualified Data.Text                               as T (concat, pack)
@@ -19,8 +19,8 @@ import qualified Data.Text                               as T (concat, pack)
 internalError :: Text -> Either GQLErrors b
 internalError x = Left $ globalErrorMessage $ T.concat ["INTERNAL ERROR: ", x]
 
-internalErrorIO :: Text -> ResolveIO b
-internalErrorIO x = failResolveIO $ globalErrorMessage $ T.concat ["INTERNAL ERROR: ", x]
+internalErrorT :: Monad m => Text -> ResolveT m b
+internalErrorT x = failResolveT $ globalErrorMessage $ T.concat ["INTERNAL ERROR: ", x]
 
 -- if type did not not found, but was defined by Schema
 internalUnknownTypeMessage :: Text -> GQLErrors
