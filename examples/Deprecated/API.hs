@@ -10,9 +10,8 @@ module Deprecated.API
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types ((::->), (::->>), BaseR, EffectR, GQLMutation, GQLQuery, GQLRootResolver (..),
-                                      GQLScalar (..), GQLSubscription, GQLType (..), ID, Resolver (..),
-                                      ScalarValue (..), addEffect, withEffect)
+import           Data.Morpheus.Types ((::->), (::->>), BaseR, EffectR, GQLRootResolver (..), GQLScalar (..),
+                                      GQLType (..), ID, Resolver (..), ScalarValue (..), addEffect, withEffect)
 import           Data.Text           (Text)
 import           Data.Typeable       (Typeable)
 import           Deprecated.Model    (JSONAddress, jsonAddress)
@@ -105,7 +104,7 @@ data Query = Query
   { user      :: () ::-> User BaseR
   , wrappedA1 :: A Int
   , wrappedA2 :: A Text
-  } deriving (Generic, GQLQuery)
+  } deriving (Generic)
 
 fetchAddress :: Monad m => Euro -> m (Either String Address)
 fetchAddress _ = return $ Right $ Address " " "" 0
@@ -166,12 +165,12 @@ newAddressSubscription =
 data Mutation = Mutation
   { createUser    :: () ::->> User EffectR
   , createAddress :: () ::->> Address
-  } deriving (Generic, GQLMutation)
+  } deriving (Generic)
 
 data Subscription = Subscription
   { newUser    :: () ::->> User EffectR
   , newAddress :: () ::->> Address
-  } deriving (Generic, GQLSubscription)
+  } deriving (Generic)
 
 gqlRoot :: GQLRootResolver Query Mutation Subscription
 gqlRoot =

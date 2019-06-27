@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes            #-}
@@ -12,7 +13,7 @@ import qualified Data.ByteString.Lazy.Char8             as LB (ByteString, fromS
 import           Data.Morpheus.Resolve.Resolve          (packStream, resolve, resolveByteString, resolveStream,
                                                          resolveStreamByteString)
 import           Data.Morpheus.Server.ClientRegister    (GQLState)
-import           Data.Morpheus.Types.GQLOperator        (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
+import           Data.Morpheus.Types.GQLOperator        (RootResCon)
 import           Data.Morpheus.Types.Internal.WebSocket (OutputAction)
 import           Data.Morpheus.Types.Request            (GQLRequest)
 import           Data.Morpheus.Types.Response           (GQLResponse)
@@ -39,7 +40,7 @@ import           Data.Text.Lazy.Encoding                (decodeUtf8, encodeUtf8)
 --       k :: GQLRequest -> IO GQLResponse
 --     @
 class Interpreter k where
-  interpreter :: (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRootResolver q m s -> k
+  interpreter :: (RootResCon IO a b c) => GQLRootResolver a b c -> k
 
 {-
   simple HTTP stateless Interpreter without side effects

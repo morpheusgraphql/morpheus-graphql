@@ -1,5 +1,4 @@
 {-# LANGUAGE ConstraintKinds          #-}
-{-# LANGUAGE DefaultSignatures        #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE FlexibleContexts         #-}
 {-# LANGUAGE FlexibleInstances        #-}
@@ -13,9 +12,10 @@
 {-# LANGUAGE TypeOperators            #-}
 
 module Data.Morpheus.Types.GQLOperator
-  ( GQLQuery(..)
-  , GQLMutation(..)
-  , GQLSubscription(..)
+  ( RootResCon
+  , fullSchema
+  , encodeQuery
+  , effectEncode
   ) where
 
 import           Data.Morpheus.Resolve.Encode               (ObjectFieldResolvers (..), resolveBySelection, resolversBy)
@@ -32,64 +32,57 @@ import           Data.Text                                  (Text)
 import           Data.Typeable                              (Typeable)
 import           GHC.Generics
 
+type RootResCon m a b c = (OperatorCon m a, OperatorEffectCon m b, OperatorEffectCon m c)
+
+type OperatorCon m a = (IntroCon a, EncodeCon m a)
+
+type OperatorEffectCon m a = (IntroCon a, EncodeCon (EffectT m Text) a)
+
 type Encode m a = a -> SelectionSet -> ResolveT m Value
 
 type EncodeCon m a = (Generic a, ObjectFieldResolvers (Rep a) m)
 
-type IntroCon a = (ObjectRep (Rep a) DataArguments, Typeable a)
+type BaseEncode m a
+   = EncodeCon m a =>
+       DataTypeLib -> Encode m a
+
+type EffectEncode m a
+   = EncodeCon (EffectT m Text) a =>
+       Encode (EffectT m Text) a
+
+encodeQuery :: BaseEncode IO a
+encodeQuery types rootResolver sel = resolveBySelection sel (resolversBy (schemaAPI types) ++ resolversBy rootResolver)
+
+effectEncode :: EffectEncode IO a
+effectEncode rootResolver sel = resolveBySelection sel $ resolversBy rootResolver
+
+type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments, Typeable a)
+
+fullSchema ::
+     forall a b c. (IntroCon a, IntroCon b, IntroCon c)
+  => a
+  -> b
+  -> c
+  -> SchemaValidation DataTypeLib
+fullSchema queryRes mutationRes subscriptionRes =
+  querySchema queryRes >>= operatorSchema "Mutation" mutationRes >>= operatorSchema "Subscription" subscriptionRes
+  where
+    querySchema _ = resolveTypes queryType (schemaTypes : types)
+      where
+        queryType = initTypeLib (operatorType "Query" (hiddenRootFields ++ fields))
+        (fields, types) = unzip $ objectFieldTypes (Proxy @(Rep a))
+
+operatorSchema ::
+     forall a. IntroCon a
+  => Text
+  -> a
+  -> TypeUpdater
+operatorSchema operatorName _ initialType = resolveTypes mutationType types'
+  where
+    mutationType = initialType {mutation = Just $ operatorType operatorName fields'}
+    (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
 
 operatorType :: Text -> a -> (Text, DataType a)
 operatorType name' fields' =
   ( name'
   , DataType {typeData = fields', typeName = name', typeFingerprint = SystemFingerprint name', typeDescription = ""})
-
--- | derives GQL Query Operator
-class GQLQuery a where
-  encodeQuery :: DataTypeLib -> Encode IO a
-  default encodeQuery :: EncodeCon IO a =>
-    DataTypeLib -> Encode IO a
-  encodeQuery types rootResolver sel =
-    resolveBySelection sel (resolversBy (schemaAPI types) ++ resolversBy rootResolver)
-  querySchema :: a -> SchemaValidation DataTypeLib
-  default querySchema :: IntroCon a =>
-    a -> SchemaValidation DataTypeLib
-  querySchema _ = resolveTypes queryType (schemaTypes : types)
-    where
-      queryType = initTypeLib (operatorType "Query" (hiddenRootFields ++ fields))
-      (fields, types) = unzip $ objectFieldTypes (Proxy @(Rep a))
-
--- | derives GQL Subscription Mutation
-class GQLMutation a where
-  encodeMutation :: Encode (EffectT IO Text) a
-  default encodeMutation :: EncodeCon (EffectT IO Text) a =>
-    Encode (EffectT IO Text) a
-  encodeMutation rootResolver sel = resolveBySelection sel $ resolversBy rootResolver
-  mutationSchema :: a -> TypeUpdater
-  default mutationSchema :: IntroCon a =>
-    a -> TypeUpdater
-  mutationSchema _ initialType = resolveTypes mutationType types'
-    where
-      mutationType = initialType {mutation = Just $ operatorType "Mutation" fields'}
-      (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
-
--- | derives GQL Subscription Operator
-class GQLSubscription a where
-  encodeSubscription :: Encode (EffectT IO Text) a
-  default encodeSubscription :: EncodeCon (EffectT IO Text) a =>
-    Encode (EffectT IO Text) a
-  encodeSubscription rootResolver sel = resolveBySelection sel $ resolversBy rootResolver
-  subscriptionSchema :: a -> TypeUpdater
-  default subscriptionSchema :: IntroCon a =>
-    a -> TypeUpdater
-  subscriptionSchema _ initialType = resolveTypes subscriptionType types'
-    where
-      subscriptionType = initialType {subscription = Just $ operatorType "Subscription" fields'}
-      (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
-
-instance GQLMutation () where
-  encodeMutation _ _ = pure Null
-  mutationSchema _ = return
-
-instance GQLSubscription () where
-  encodeSubscription _ _ = pure Null
-  subscriptionSchema _ = return

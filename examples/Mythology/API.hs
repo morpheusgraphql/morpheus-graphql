@@ -10,14 +10,14 @@ module Mythology.API
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Types        ((::->), GQLQuery, GQLRootResolver (..), Resolver (..))
+import           Data.Morpheus.Types        ((::->), GQLRootResolver (..), Resolver (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 import           Mythology.Character.Deity  (Deity (..), dbDeity)
 
 newtype Query = Query
   { deity :: DeityArgs ::-> Deity
-  } deriving (Generic, GQLQuery)
+  } deriving (Generic)
 
 data DeityArgs = DeityArgs
   { name      :: Text -- Required Argument

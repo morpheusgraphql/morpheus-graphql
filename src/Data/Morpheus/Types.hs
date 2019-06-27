@@ -10,9 +10,6 @@ module Data.Morpheus.Types
   , GQLScalar(parseValue, serialize)
   , GQLRequest(..)
   , GQLResponse(..)
-  , GQLMutation
-  , GQLQuery
-  , GQLSubscription
   , withEffect
   , addEffect
   , EffectT
@@ -20,7 +17,6 @@ module Data.Morpheus.Types
   , EffectR
   ) where
 
-import           Data.Morpheus.Types.GQLOperator    (GQLMutation, GQLQuery, GQLSubscription)
 import           Data.Morpheus.Types.GQLScalar      (GQLScalar (parseValue, serialize))
 import           Data.Morpheus.Types.GQLType        (GQLType (description))
 import           Data.Morpheus.Types.ID             (ID (..))
