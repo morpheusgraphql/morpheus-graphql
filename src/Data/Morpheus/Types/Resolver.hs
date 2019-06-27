@@ -12,7 +12,8 @@
 module Data.Morpheus.Types.Resolver
   ( (::->)
   , (::->>)
-  , WithEffect(..)
+  , EffectT(..)
+  , Effect(..)
   , Resolver(..)
   , unpackEffect
   , unpackEffect2
@@ -64,44 +65,40 @@ instance Monad m => Monad (Resolver m a) where
 -}
 -- | resolver with effects,
 -- used for communication between mutation and subscription
-type a ::->> b = Resolver (WithEffect IO Text) a b
+type a ::->> b = Resolver (EffectT IO Text) a b
 
-unpackEffect2 :: Monad m => ResolveT (WithEffect m Text) v -> ResolveT m ([Text], v)
+unpackEffect2 :: Monad m => ResolveT (EffectT m Text) v -> ResolveT m ([Text], v)
 unpackEffect2 x = ExceptT $ unpackEffect x
 
-
-unpackEffect :: Monad m => ResolveT (WithEffect m Text) v -> m (Either GQLErrors ([Text], v))
+unpackEffect :: Monad m => ResolveT (EffectT m Text) v -> m (Either GQLErrors ([Text], v))
 unpackEffect resolver = do
-  let WithEffect e v = runExceptT resolver
-  effects <- e
-  value <- v
-  case value of
+  (Effect effects eitherValue) <- runEffectT $ runExceptT resolver
+  case eitherValue of
     Left errors -> return $ Left errors
-    Right val   -> return $ Right (effects, val)
+    Right value -> return $ Right (effects, value)
 
-data WithEffect m c v = WithEffect
-  { resultEffects :: m [c]
-  , resultValue   :: m v
+data Effect c v = Effect
+  { resultEffects :: [c]
+  , resultValue   :: v
   } deriving (Functor)
 
-instance Monad m => Applicative (WithEffect m c) where
-  pure = WithEffect (return []) . return
-  WithEffect effect1 func <*> WithEffect effect2 value =
-    WithEffect
-      (do e1 <- effect1
-          e2 <- effect2
-          return (e1 ++ e2))
-      (do x <- value
-          f <- func
-          return (f x))
+-- | Monad Transformer that sums all effect Together
+newtype EffectT m c v = EffectT
+  { runEffectT :: m (Effect c v)
+  } deriving (Functor)
 
-instance Monad m => Monad (WithEffect m c) where
+instance Monad m => Applicative (EffectT m c) where
+  pure = EffectT . return . Effect []
+  EffectT app1 <*> EffectT app2 =
+    EffectT $ do
+      (Effect effect1 func) <- app1
+      (Effect effect2 val) <- app2
+      return $ Effect (effect1 ++ effect2) (func val)
+
+instance Monad m => Monad (EffectT m c) where
   return = pure
-  (WithEffect e1 v1) >>= func2 =
-    WithEffect
-      (do v2 <- v1
-          e1' <- e1
-          e2 <- resultEffects $ func2 v2
-          return (e1' ++ e2))
-      (do v2 <- v1
-          resultValue $ func2 v2)
+  (EffectT m1) >>= mFunc =
+    EffectT $ do
+      (Effect e1 v1) <- m1
+      (Effect e2 v2) <- runEffectT $ mFunc v1
+      return $ Effect (e1 ++ e2) v2

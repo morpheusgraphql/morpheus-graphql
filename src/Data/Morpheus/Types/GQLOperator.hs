@@ -26,7 +26,7 @@ import           Data.Morpheus.Types.Internal.Data          (DataArguments, Data
                                                              DataTypeLib (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveT, SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Morpheus.Types.Resolver               (WithEffect (..))
+import           Data.Morpheus.Types.Resolver               (EffectT (..))
 import           Data.Proxy
 import           Data.Text                                  (Text)
 import           Data.Typeable                              (Typeable)
@@ -60,9 +60,9 @@ class GQLQuery a where
 
 -- | derives GQL Subscription Mutation
 class GQLMutation a where
-  encodeMutation :: Encode (WithEffect IO Text) a
-  default encodeMutation :: EncodeCon (WithEffect IO Text) a =>
-    Encode (WithEffect IO Text) a
+  encodeMutation :: Encode (EffectT IO Text) a
+  default encodeMutation :: EncodeCon (EffectT IO Text) a =>
+    Encode (EffectT IO Text) a
   encodeMutation rootResolver sel = resolveBySelection sel $ resolversBy rootResolver
   mutationSchema :: a -> TypeUpdater
   default mutationSchema :: IntroCon a =>
@@ -74,9 +74,9 @@ class GQLMutation a where
 
 -- | derives GQL Subscription Operator
 class GQLSubscription a where
-  encodeSubscription :: Encode (WithEffect IO Text) a
-  default encodeSubscription :: EncodeCon (WithEffect IO Text) a =>
-    Encode (WithEffect IO Text) a
+  encodeSubscription :: Encode (EffectT IO Text) a
+  default encodeSubscription :: EncodeCon (EffectT IO Text) a =>
+    Encode (EffectT IO Text) a
   encodeSubscription rootResolver sel = resolveBySelection sel $ resolversBy rootResolver
   subscriptionSchema :: a -> TypeUpdater
   default subscriptionSchema :: IntroCon a =>
