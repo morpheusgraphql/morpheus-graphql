@@ -17,6 +17,8 @@ module Data.Morpheus.Types.Resolver
   , Resolver(..)
   , unpackEffect
   , unpackEffect2
+  , addEffect
+  , withEffect
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
@@ -66,6 +68,16 @@ instance Monad m => Monad (Resolver m a) where
 -- | resolver with effects,
 -- used for communication between mutation and subscription
 type a ::->> b = Resolver (EffectT IO Text) a b
+
+-- | used in mutation or subscription resolver , adds effect to normal resolver
+withEffect :: Monad m => [c] -> m a -> EffectT m c a
+withEffect channels = EffectT . fmap (Effect channels)
+
+addEffect :: Monad m => [c] -> EffectT m c a -> EffectT m c a
+addEffect channels EffectT {runEffectT = monadEffect} = EffectT $ insertEffect <$> monadEffect
+  where
+    insertEffect x = x {resultEffects = channels ++ resultEffects x}
+
 
 unpackEffect2 :: Monad m => ResolveT (EffectT m Text) v -> ResolveT m ([Text], v)
 unpackEffect2 x = ExceptT $ unpackEffect x
