@@ -10,9 +10,9 @@ module Deprecated.API
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (EffectT, GQLMutation, GQLQuery, GQLRootResolver (..), GQLScalar (..),
-                                      GQLSubscription, GQLType (..), ID, Resolver (..), ScalarValue (..), addEffect,
-                                      withEffect)
+import           Data.Morpheus.Types ((::->), (::->>), BaseR, EffectR, GQLMutation, GQLQuery, GQLRootResolver (..),
+                                      GQLScalar (..), GQLSubscription, GQLType (..), ID, Resolver (..),
+                                      ScalarValue (..), addEffect, withEffect)
 import           Data.Text           (Text)
 import           Data.Typeable       (Typeable)
 import           Deprecated.Model    (JSONAddress, jsonAddress)
@@ -29,16 +29,12 @@ type instance KIND Coordinates = INPUT_OBJECT
 
 type instance KIND Address = OBJECT
 
-type instance KIND (User a) = OBJECT
+type instance KIND (User res) = OBJECT
 
-type instance KIND (MyUnion m) = UNION
+type instance KIND (MyUnion res) = UNION
 
-type WSResM = (EffectT IO Text)
-
-type QueryResM = IO
-
-data MyUnion m
-  = USER (User m)
+data MyUnion res
+  = USER (User res)
   | ADDRESS Address
   deriving (Generic, GQLType)
 
@@ -85,12 +81,12 @@ data OfficeArgs = OfficeArgs
   , cityID  :: CityID
   } deriving (Generic)
 
-data User m = User
+data User res = User
   { name    :: Text
   , email   :: Text
-  , address :: Resolver m AddressArgs Address
-  , office  :: Resolver m OfficeArgs Address
-  , myUnion :: Resolver m () (MyUnion m)
+  , address :: AddressArgs `res` Address
+  , office  :: OfficeArgs `res` Address
+  , myUnion :: () `res` MyUnion res
   , home    :: CityID
   } deriving (Generic)
 
@@ -106,7 +102,7 @@ newtype A a = A
   } deriving (Generic, GQLType)
 
 data Query = Query
-  { user      :: Resolver QueryResM () (User QueryResM)
+  { user      :: () ::-> User BaseR
   , wrappedA1 :: A Int
   , wrappedA2 :: A Text
   } deriving (Generic, GQLQuery)
@@ -131,7 +127,7 @@ resolveOffice = Resolver $ \args -> addressByCityID (cityID args) 12
 
 -- :: Resolver QueryResM () (User QueryResM)
 -- resolveUser = transformUser <$> Resolver (const jsonUser)
-fetchUser :: Monad m => m (Either String (User m))
+fetchUser :: Monad m => m (Either String (User (Resolver m)))
 fetchUser =
   return $
   Right $
@@ -153,28 +149,28 @@ fetchUser =
              HH)
     }
 
-createUserMutation :: Resolver WSResM () (User WSResM)
+createUserMutation :: () ::->> User EffectR
 createUserMutation = Resolver (const $ addEffect ["UPDATE_USER"] fetchUser)
 
-newUserSubscription :: Resolver WSResM () (User WSResM)
+newUserSubscription :: () ::->> User EffectR
 newUserSubscription = Resolver (const $ addEffect ["UPDATE_USER"] fetchUser)
 
-createAddressMutation :: Resolver WSResM () Address
+createAddressMutation :: () ::->> Address
 createAddressMutation =
   transformAddress "from Mutation" <$> Resolver (const $ withEffect ["UPDATE_ADDRESS"] jsonAddress)
 
-newAddressSubscription :: Resolver WSResM () Address
+newAddressSubscription :: () ::->> Address
 newAddressSubscription =
   transformAddress "from Subscription" <$> Resolver (const $ withEffect ["UPDATE_ADDRESS"] jsonAddress)
 
 data Mutation = Mutation
-  { createUser    :: Resolver WSResM () (User WSResM)
-  , createAddress :: Resolver WSResM () Address
+  { createUser    :: () ::->> User EffectR
+  , createAddress :: () ::->> Address
   } deriving (Generic, GQLMutation)
 
 data Subscription = Subscription
-  { newUser    :: Resolver WSResM () (User WSResM)
-  , newAddress :: Resolver WSResM () Address
+  { newUser    :: () ::->> User EffectR
+  , newAddress :: () ::->> Address
   } deriving (Generic, GQLSubscription)
 
 gqlRoot :: GQLRootResolver Query Mutation Subscription
