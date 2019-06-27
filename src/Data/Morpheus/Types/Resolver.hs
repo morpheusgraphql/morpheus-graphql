@@ -10,8 +10,8 @@
 {-# LANGUAGE TypeOperators         #-}
 
 module Data.Morpheus.Types.Resolver
-  ( BaseM
-  , EffectM
+  ( BaseR
+  , EffectR
   , (::->)
   , (::->>)
   , EffectT(..)
@@ -28,9 +28,17 @@ import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveT)
 import           Data.Text                               (Text)
 import           GHC.Generics                            (Generic)
 
-type BaseM = IO
+-- | IO resolver without effect
+type BaseR = Resolver IO
 
-type EffectM = (EffectT IO Text)
+-- | inline version of IO Resolver
+type a ::-> b = BaseR a b
+
+-- | resolver with effects, used for communication between mutation and subscription
+type EffectR = Resolver (EffectT IO Text)
+
+-- | inline version of Resolver with effects
+type a ::->> b = EffectR a b
 
 -- | resolver function wrapper, where
 --
@@ -40,9 +48,6 @@ type EffectM = (EffectT IO Text)
 newtype Resolver m a b = Resolver
   { unpackResolver :: a -> m (Either String b)
   } deriving (Generic)
-
--- | resolver without effect
-type a ::-> b = Resolver IO a b
 
 --a -> IO Either String b
 instance Monad m => Functor (Resolver m a) where
@@ -67,13 +72,6 @@ instance Monad m => Monad (Resolver m a) where
       case value1 of
         Left error'  -> return $ Left error'
         Right value' -> (unpackResolver $ func2 value') args
-
-{-
-  a ::->> b
--}
--- | resolver with effects,
--- used for communication between mutation and subscription
-type a ::->> b = Resolver (EffectT IO Text) a b
 
 -- | used in mutation or subscription resolver , adds effect to normal resolver
 withEffect :: Monad m => [c] -> m a -> EffectT m c a
