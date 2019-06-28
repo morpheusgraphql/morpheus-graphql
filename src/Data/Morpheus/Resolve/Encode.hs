@@ -171,10 +171,10 @@ instance (GQLType a, Encoder a (KIND a) res) => UnionResolvers (K1 s a) res wher
 --
 -- | Handles all operators: Query, Mutation and Subscription,
 -- if you use it with Mutation or Subscription all effects inside will be lost
-instance (Monad m, Encoder a (KIND a) m, ArgumentsConstraint p) => Encoder (Resolver m p a) WRAPPER m where
-  __encode (WithGQLKind (Resolver resolver)) selection'@(fieldName, Selection {selectionArguments, selectionPosition}) = do
+instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m) => Encoder (a -> Resolver m b) WRAPPER m where
+  __encode (WithGQLKind resolver) selection'@(fieldName, Selection {selectionArguments, selectionPosition}) = do
     args <- ExceptT $ pure $ decodeArguments selectionArguments
-    lift (resolver args) >>= liftEither selectionPosition fieldName >>= (`encode` selection')
+    lift (unResolver $ resolver args) >>= liftEither selectionPosition fieldName >>= (`encode` selection')
 
 liftEither :: Monad m => Position -> Text -> Either String a -> ResolveT m a
 liftEither position name (Left message) = failResolveT $ fieldNotResolved position name (pack message)
@@ -188,7 +188,8 @@ instance (Monad m, Encoder a (KIND a) m, ArgumentsConstraint p) => Encoder (p ->
       Right value  -> liftEither selectionPosition fieldName (resolver value) >>= (`encode` selection')
 
 -- packs Monad in EffectMonad
-instance (Monad m, Encoder a (KIND a) m, ArgumentsConstraint p) => Encoder (Resolver m p a) WRAPPER (EffectT m c) where
+instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m) =>
+         Encoder (a -> Resolver m b) WRAPPER (EffectT m c) where
   __encode resolver selection = ExceptT $ EffectT $ Effect [] <$> runExceptT (__encode resolver selection)
 
 --

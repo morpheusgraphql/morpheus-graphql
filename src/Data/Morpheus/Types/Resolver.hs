@@ -12,8 +12,6 @@
 module Data.Morpheus.Types.Resolver
   ( BaseR
   , EffectR
-  , (::->)
-  , (::->>)
   , EffectT(..)
   , Effect(..)
   , Resolver(..)
@@ -30,51 +28,36 @@ import           GHC.Generics                            (Generic)
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveT)
 
---type a -> b = Identity (a -> b)
--- | IO resolver without effect
+-- | Pure Resolver without effect
+type Pure = Either String
+
+-- | Monad IO resolver without GraphQL effect
 type BaseR = Resolver IO
 
--- | inline version of IO Resolver
-type a ::-> b = BaseR a b
-
--- | resolver with effects, used for communication between mutation and subscription
+-- | Monad Resolver with GraphQL effects, used for communication between mutation and subscription
 type EffectR = Resolver (EffectT IO Text)
 
--- | inline version of Resolver with effects
-type a ::->> b = EffectR a b
-
 -- | resolver function wrapper, where
---
---  __p__ is a record of GQL Arguments
---
--- __a__ is result
-newtype Resolver m a b = Resolver
-  { unpackResolver :: a -> m (Either String b)
-  } deriving (Generic)
+newtype Resolver m a = Resolver
+  { unResolver :: m (Pure a)
+  } deriving (Generic, Functor)
 
---a -> IO Either String b
-instance Monad m => Functor (Resolver m a) where
-  fmap func (Resolver resolver) =
-    Resolver $ \args -> do
-      value <- resolver args
-      return (func <$> value)
-
-instance Monad m => Applicative (Resolver m a) where
-  pure = Resolver . const . return . pure
-  Resolver func <*> Resolver resolver =
-    Resolver $ \args -> do
-      func1 <- func args
-      value1 <- resolver args
+instance Monad m => Applicative (Resolver m) where
+  pure = Resolver . return . pure
+  Resolver func <*> Resolver value =
+    Resolver $ do
+      func1 <- func
+      value1 <- value
       return (func1 <*> value1)
 
-instance Monad m => Monad (Resolver m a) where
+instance Monad m => Monad (Resolver m) where
   return = pure
   (Resolver func1) >>= func2 =
-    Resolver $ \args -> do
-      value1 <- func1 args
+    Resolver $ do
+      value1 <- func1
       case value1 of
         Left error'  -> return $ Left error'
-        Right value' -> (unpackResolver $ func2 value') args
+        Right value' -> unResolver $ func2 value'
 
 -- | used in mutation or subscription resolver , adds effect to normal resolver
 withEffect :: Monad m => [c] -> m a -> EffectT m c a

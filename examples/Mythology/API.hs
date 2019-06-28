@@ -1,7 +1,6 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric  #-}
-{-# LANGUAGE RankNTypes     #-}
-{-# LANGUAGE TypeOperators  #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE RankNTypes    #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Mythology.API
   ( mythologyApi
@@ -10,13 +9,13 @@ module Mythology.API
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Types        ((::->), GQLRootResolver (..), Resolver (..))
+import           Data.Morpheus.Types        (BaseR, GQLRootResolver (..), Resolver (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 import           Mythology.Character.Deity  (Deity (..), dbDeity)
 
 newtype Query = Query
-  { deity :: DeityArgs ::-> Deity
+  { deity :: DeityArgs -> BaseR Deity
   } deriving (Generic)
 
 data DeityArgs = DeityArgs
@@ -24,8 +23,8 @@ data DeityArgs = DeityArgs
   , mythology :: Maybe Text -- Optional Argument
   } deriving (Generic)
 
-resolveDeity :: DeityArgs ::-> Deity
-resolveDeity = Resolver $ \args -> dbDeity (name args) (mythology args)
+resolveDeity :: DeityArgs -> BaseR Deity
+resolveDeity args = Resolver $ dbDeity (name args) (mythology args)
 
 mythologyApi :: B.ByteString -> IO B.ByteString
 mythologyApi =

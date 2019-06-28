@@ -49,6 +49,6 @@ type instance KIND (Maybe a) = WRAPPER
 
 type instance KIND [a] = WRAPPER
 
-type instance KIND (Resolver m a b) = WRAPPER
+type instance KIND (Resolver m a) = WRAPPER
 
 type instance KIND (a -> b) = WRAPPER

@@ -13,7 +13,7 @@ module Data.Morpheus.Types.GQLType
   ) where
 
 import           Data.Morpheus.Types.Internal.Data (DataFingerprint (..))
-import           Data.Morpheus.Types.Resolver      ((::->), Resolver)
+import           Data.Morpheus.Types.Resolver      (Resolver)
 import           Data.Proxy                        (Proxy (..))
 import           Data.Text                         (Text, intercalate, pack)
 import           Data.Typeable                     (TyCon, TypeRep, Typeable, splitTyConApp, tyConFingerprint,
@@ -58,11 +58,9 @@ class GQLType a where
     where
       conFingerprints = fmap (map tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 
-instance GQLType Int where
-  __typeName = const "Int"
+instance GQLType Int
 
-instance GQLType Float where
-  __typeName = const "Float"
+instance GQLType Float
 
 instance GQLType Text where
   __typeName = const "String"
@@ -75,9 +73,5 @@ instance GQLType a => GQLType (Maybe a) where
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance GQLType a => GQLType [a] where
-  __typeName _ = __typeName (Proxy @a)
-  __typeFingerprint _ = __typeFingerprint (Proxy @a)
-
-instance GQLType a => GQLType (p ::-> a) where
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
