@@ -158,10 +158,10 @@ data Subscription = Subscription
   , newAddress :: () -> EffectM Address
   } deriving (Generic)
 
-gqlRoot :: GQLRootResolver Query Mutation Subscription
+gqlRoot :: GQLRootResolver IO Query Mutation Subscription
 gqlRoot =
   GQLRootResolver
-    { queryResolver = Query {user = const $ gqlResolver fetchUser, wrappedA1 = A 0, wrappedA2 = A ""}
-    , mutationResolver = Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
-    , subscriptionResolver = Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}
+    { queryResolver = return Query {user = const $ gqlResolver fetchUser, wrappedA1 = A 0, wrappedA2 = A ""}
+    , mutationResolver = return Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
+    , subscriptionResolver = return Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}
     }

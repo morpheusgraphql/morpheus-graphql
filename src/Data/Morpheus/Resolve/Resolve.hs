@@ -28,7 +28,7 @@ import Data.Morpheus.Validation.Validation (validateRequest)
 resolveByteString ::
      Monad m
   => RootResCon m a b c =>
-       GQLRootResolver a b c -> ByteString -> m ByteString
+       GQLRootResolver m a b c -> ByteString -> m ByteString
 resolveByteString rootResolver request =
   case eitherDecode request of
     Left aesonError' -> return $ badRequestError aesonError'
@@ -37,7 +37,7 @@ resolveByteString rootResolver request =
 resolveStreamByteString ::
      Monad m
   => RootResCon m a b c =>
-       GQLRootResolver a b c -> ByteString -> m (OutputAction m ByteString)
+       GQLRootResolver m a b c -> ByteString -> m (OutputAction m ByteString)
 resolveStreamByteString rootResolver request =
   case eitherDecode request of
     Left aesonError' -> return $ NoEffect $ badRequestError aesonError'
@@ -46,7 +46,7 @@ resolveStreamByteString rootResolver request =
 resolve ::
      Monad m
   => RootResCon m a b c =>
-       GQLRootResolver a b c -> GQLRequest -> m GQLResponse
+       GQLRootResolver m a b c -> GQLRequest -> m GQLResponse
 resolve GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
   case fullSchema queryResolver mutationResolver subscriptionResolver of
     Left error' -> return $ Errors $ renderErrors error'
@@ -67,7 +67,7 @@ resolve GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} 
 resolveStream ::
      Monad m
   => RootResCon m a b c =>
-       GQLRootResolver a b c -> GQLRequest -> m (OutputAction m GQLResponse)
+       GQLRootResolver m a b c -> GQLRequest -> m (OutputAction m GQLResponse)
 resolveStream GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
   case fullSchema queryResolver mutationResolver subscriptionResolver of
     Left error' -> return $ NoEffect $ Errors $ renderErrors error'

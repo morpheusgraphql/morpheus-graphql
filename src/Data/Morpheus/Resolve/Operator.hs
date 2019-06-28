@@ -38,7 +38,7 @@ type OperatorCon m a = (IntroCon a, EncodeCon m a)
 
 type OperatorEffectCon m a = (IntroCon a, EncodeCon (EffectT m Text) a)
 
-type Encode m a = a -> SelectionSet -> ResolveT m Value
+type Encode m a = ResolveT m a -> SelectionSet -> ResolveT m Value
 
 type EncodeCon m a = (Generic a, ObjectFieldResolvers (Rep a) m)
 
@@ -51,18 +51,19 @@ type EffectEncode m a
        Encode (EffectT m Text) a
 
 encodeQuery :: Monad m => BaseEncode m a
-encodeQuery types rootResolver sel = resolveBySelection sel (resolversBy (schemaAPI types) ++ resolversBy rootResolver)
+encodeQuery types rootResolver sel =
+  fmap resolversBy rootResolver >>= resolveBySelection sel . (++) (resolversBy $ schemaAPI types)
 
 effectEncode :: Monad m => EffectEncode m a
-effectEncode rootResolver sel = resolveBySelection sel $ resolversBy rootResolver
+effectEncode rootResolver sel = rootResolver >>= resolveBySelection sel . resolversBy
 
 type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments, Typeable a)
 
 fullSchema ::
-     forall a b c. (IntroCon a, IntroCon b, IntroCon c)
-  => a
-  -> b
-  -> c
+     forall m a b c. (IntroCon a, IntroCon b, IntroCon c)
+  => ResolveT m a
+  -> ResolveT (EffectT m Text) b
+  -> ResolveT (EffectT m Text) c
   -> SchemaValidation DataTypeLib
 fullSchema queryRes mutationRes subscriptionRes =
   querySchema queryRes >>= mutationSchema mutationRes >>= subscriptionSchema subscriptionRes
@@ -73,8 +74,8 @@ fullSchema queryRes mutationRes subscriptionRes =
         (fields, types) = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 mutationSchema ::
-     forall a. IntroCon a
-  => a
+     forall a m. IntroCon a
+  => m a
   -> TypeUpdater
 mutationSchema _ initialType = resolveTypes mutationType types'
   where
@@ -82,8 +83,8 @@ mutationSchema _ initialType = resolveTypes mutationType types'
     (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
 
 subscriptionSchema ::
-     forall a. IntroCon a
-  => a
+     forall a m. IntroCon a
+  => m a
   -> TypeUpdater
 subscriptionSchema _ initialType = resolveTypes mutationType types'
   where

@@ -8,7 +8,10 @@ import           Data.Map                                      (Map)
 import           Data.Morpheus.Types.Internal.AST.Operator     (RawOperator)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (FragmentLib)
 import           Data.Morpheus.Types.Internal.Base             (Key)
+import           Data.Morpheus.Types.Internal.Validation       (ResolveT)
 import           Data.Morpheus.Types.Internal.Value            (Value)
+import           Data.Morpheus.Types.Resolver                  (EffectT (..))
+import           Data.Text                                     (Text)
 
 type Variables = Map Key Value
 
@@ -22,8 +25,8 @@ data GQLQueryRoot = GQLQueryRoot
 --
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
-data GQLRootResolver a b c = GQLRootResolver
-  { queryResolver        :: a
-  , mutationResolver     :: b
-  , subscriptionResolver :: c
+data GQLRootResolver m a b c = GQLRootResolver
+  { queryResolver        :: ResolveT m a
+  , mutationResolver     :: ResolveT (EffectT m Text) b
+  , subscriptionResolver :: ResolveT (EffectT m Text) c
   }
