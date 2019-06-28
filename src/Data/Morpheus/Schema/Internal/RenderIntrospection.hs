@@ -17,7 +17,6 @@ import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data (DataField (..), DataFullType (..), DataInputField, DataInputObject,
                                                     DataLeaf (..), DataOutputField, DataOutputObject, DataType (..),
                                                     DataTypeKind (..), DataTypeWrapper (..), DataUnion)
-import           Data.Morpheus.Types.Resolver      ((::->))
 import           Data.Text                         (Text)
 
 renderType :: (Text, DataFullType) -> Type
@@ -68,16 +67,13 @@ typeFromLeaf (key', LeafScalar DataType {typeDescription = desc'}) = createLeafT
 typeFromLeaf (key', LeafEnum DataType {typeDescription = desc', typeData = tags'}) =
   createLeafType ENUM key' desc' (Just $ map createEnumValue tags')
 
-resolveNothing :: a ::-> Maybe b
-resolveNothing = return Nothing
-
 createLeafType :: TypeKind -> Text -> Text -> Maybe [EnumValue] -> Type
 createLeafType kind' name' desc' enums' =
   Type
     { kind = kind'
     , name = Just name'
     , description = Just desc'
-    , fields = resolveNothing
+    , fields = return Nothing
     , ofType = Nothing
     , interfaces = Nothing
     , possibleTypes = Nothing
@@ -91,7 +87,7 @@ typeFromUnion (name', DataType {typeData = fields', typeDescription = descriptio
     { kind = UNION
     , name = Just name'
     , description = Just description'
-    , fields = resolveNothing
+    , fields = return Nothing
     , ofType = Nothing
     , interfaces = Nothing
     , possibleTypes = Just (map (\x -> createObjectType (fieldType x) "" $ Just []) fields')
@@ -117,7 +113,7 @@ createObjectType name' desc' fields' =
     , ofType = Nothing
     , interfaces = Just []
     , possibleTypes = Nothing
-    , enumValues = resolveNothing
+    , enumValues = return Nothing
     , inputFields = Nothing
     }
 
@@ -131,7 +127,7 @@ createInputObject name' desc' fields' =
     , ofType = Nothing
     , interfaces = Nothing
     , possibleTypes = Nothing
-    , enumValues = resolveNothing
+    , enumValues = return Nothing
     , inputFields = Just fields'
     }
 
@@ -155,10 +151,10 @@ wrapAs kind' contentType =
     { kind = kind'
     , name = Nothing
     , description = Nothing
-    , fields = resolveNothing
+    , fields = return Nothing
     , ofType = Just contentType
     , interfaces = Nothing
     , possibleTypes = Nothing
-    , enumValues = resolveNothing
+    , enumValues = return Nothing
     , inputFields = Nothing
     }
