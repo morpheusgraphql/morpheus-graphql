@@ -10,7 +10,7 @@ module Deprecated.API
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (BaseR, EffectR, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, Resolver,
+import           Data.Morpheus.Types (EffectM, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM, Resolver,
                                       ScalarValue (..), gqlEffectResolver, gqlResolver)
 import           Data.Text           (Text)
 import           Data.Typeable       (Typeable)
@@ -99,7 +99,7 @@ newtype A a = A
   } deriving (Generic, GQLType)
 
 data Query = Query
-  { user      :: () -> BaseR (User BaseR)
+  { user      :: () -> ResM (User ResM)
   , wrappedA1 :: A Int
   , wrappedA2 :: A Text
   } deriving (Generic)
@@ -136,26 +136,26 @@ fetchUser =
         , myUnion = const $ return $ ADDRESS unionAddress
         }
 
-createUserMutation :: a -> EffectR (User EffectR)
+createUserMutation :: a -> EffectM (User EffectM)
 createUserMutation _ = gqlEffectResolver ["UPDATE_USER"] fetchUser
 
-newUserSubscription :: a -> EffectR (User EffectR)
+newUserSubscription :: a -> EffectM (User EffectM)
 newUserSubscription _ = gqlEffectResolver ["UPDATE_USER"] fetchUser
 
-createAddressMutation :: a -> EffectR Address
+createAddressMutation :: a -> EffectM Address
 createAddressMutation _ = gqlEffectResolver ["UPDATE_ADDRESS"] (fetchAddress (Euro 1 0))
 
-newAddressSubscription :: a -> EffectR Address
+newAddressSubscription :: a -> EffectM Address
 newAddressSubscription _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
 
 data Mutation = Mutation
-  { createUser    :: () -> EffectR (User EffectR)
-  , createAddress :: () -> EffectR Address
+  { createUser    :: () -> EffectM (User EffectM)
+  , createAddress :: () -> EffectM Address
   } deriving (Generic)
 
 data Subscription = Subscription
-  { newUser    :: () -> EffectR (User EffectR)
-  , newAddress :: () -> EffectR Address
+  { newUser    :: () -> EffectM (User EffectM)
+  , newAddress :: () -> EffectM Address
   } deriving (Generic)
 
 gqlRoot :: GQLRootResolver Query Mutation Subscription

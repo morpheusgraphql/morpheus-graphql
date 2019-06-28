@@ -9,13 +9,13 @@ module Mythology.API
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Types        (BaseR, GQLRootResolver (..), gqlResolver)
+import           Data.Morpheus.Types        (GQLRootResolver (..), ResM, gqlResolver)
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 import           Mythology.Character.Deity  (Deity (..), dbDeity)
 
 newtype Query = Query
-  { deity :: DeityArgs -> BaseR Deity
+  { deity :: DeityArgs -> ResM Deity
   } deriving (Generic)
 
 data DeityArgs = DeityArgs
@@ -23,7 +23,7 @@ data DeityArgs = DeityArgs
   , mythology :: Maybe Text -- Optional Argument
   } deriving (Generic)
 
-resolveDeity :: DeityArgs -> BaseR Deity
+resolveDeity :: DeityArgs -> ResM Deity
 resolveDeity args = gqlResolver $ dbDeity (name args) (mythology args)
 
 mythologyApi :: B.ByteString -> IO B.ByteString

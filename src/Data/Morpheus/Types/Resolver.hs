@@ -9,11 +9,11 @@
 {-# LANGUAGE TypeOperators         #-}
 
 module Data.Morpheus.Types.Resolver
-  ( BaseR
-  , EffectR
+  ( Pure
+  , ResM
+  , EffectM
   , EffectT(..)
   , Effect(..)
-  , Pure
   , Resolver
   , gqlResolver
   , gqlEffectResolver
@@ -32,10 +32,10 @@ import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveT)
 type Pure = Either String
 
 -- | Monad IO resolver without GraphQL effect
-type BaseR = Resolver IO
+type ResM = Resolver IO
 
 -- | Monad Resolver with GraphQL effects, used for communication between mutation and subscription
-type EffectR = Resolver (EffectT IO Text)
+type EffectM = Resolver (EffectT IO Text)
 
 -- | Resolver Monad Transformer
 type Resolver = ExceptT String

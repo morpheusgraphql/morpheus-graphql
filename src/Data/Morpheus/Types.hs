@@ -5,9 +5,8 @@ module Data.Morpheus.Types
   , liftEffectResolver
   -- Resolver Monad
   , Resolver
-  , EffectT
-  , BaseR
-  , EffectR
+  , ResM
+  , EffectM
   -- Type Classes
   , GQLType(description)
   , GQLScalar(parseValue, serialize)
@@ -24,7 +23,7 @@ import           Data.Morpheus.Types.GQLType        (GQLType (description))
 import           Data.Morpheus.Types.ID             (ID (..))
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
 import           Data.Morpheus.Types.Request        (GQLRequest (..))
-import           Data.Morpheus.Types.Resolver       (BaseR, EffectR, EffectT (..), Resolver, gqlEffectResolver,
-                                                     gqlResolver, liftEffectResolver)
+import           Data.Morpheus.Types.Resolver       (EffectM, ResM, Resolver, gqlEffectResolver, gqlResolver,
+                                                     liftEffectResolver)
 import           Data.Morpheus.Types.Response       (GQLResponse (..))
 import           Data.Morpheus.Types.Types          (GQLRootResolver (..))
