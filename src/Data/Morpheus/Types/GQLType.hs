@@ -13,26 +13,20 @@ module Data.Morpheus.Types.GQLType
   ) where
 
 import           Data.Morpheus.Types.Internal.Data (DataFingerprint (..))
-import           Data.Morpheus.Types.Resolver      ((::->), MUTATION, QUERY, SUBSCRIPTION)
+import           Data.Morpheus.Types.Resolver      (Resolver)
 import           Data.Proxy                        (Proxy (..))
 import           Data.Text                         (Text, intercalate, pack)
 import           Data.Typeable                     (TyCon, TypeRep, Typeable, splitTyConApp, tyConFingerprint,
                                                     tyConName, typeRep)
 
-queryRep :: TyCon
-queryRep = fst $ splitTyConApp $ typeRep $ Proxy @(QUERY Maybe)
+resolverCon :: TyCon
+resolverCon = fst $ splitTyConApp $ typeRep $ Proxy @(Resolver Maybe)
 
-mutationRep :: TyCon
-mutationRep = fst $ splitTyConApp $ typeRep $ Proxy @(MUTATION Maybe ())
-
-subscriptionRep :: TyCon
-subscriptionRep = fst $ splitTyConApp $ typeRep $ Proxy @(SUBSCRIPTION Maybe ())
-
--- Ignores QUERY , MUTATION and SUBSCRIPTION resolvers from typeName
-ignoreResolverMonad :: (TyCon, [TypeRep]) -> [TyCon]
-ignoreResolverMonad (con, _)
-  | con `elem` [queryRep, mutationRep, subscriptionRep] = []
-ignoreResolverMonad (con, args) = con : concatMap (ignoreResolverMonad . splitTyConApp) args
+-- Ignores Resolver name  from typeName
+ignoreResolver :: (TyCon, [TypeRep]) -> [TyCon]
+ignoreResolver (con, _)
+  | con == resolverCon = []
+ignoreResolver (con, args) = con : concatMap (ignoreResolver . splitTyConApp) args
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
@@ -56,19 +50,17 @@ class GQLType a where
     Proxy a -> Text
   __typeName _ = intercalate "_" (getName $ Proxy @a)
     where
-      getName = fmap (map (pack . tyConName)) (ignoreResolverMonad . splitTyConApp . typeRep)
+      getName = fmap (map (pack . tyConName)) (ignoreResolver . splitTyConApp . typeRep)
   __typeFingerprint :: Proxy a -> DataFingerprint
   default __typeFingerprint :: (Typeable a) =>
     Proxy a -> DataFingerprint
   __typeFingerprint _ = TypeableFingerprint $ conFingerprints (Proxy @a)
     where
-      conFingerprints = fmap (map tyConFingerprint) (ignoreResolverMonad . splitTyConApp . typeRep)
+      conFingerprints = fmap (map tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 
-instance GQLType Int where
-  __typeName = const "Int"
+instance GQLType Int
 
-instance GQLType Float where
-  __typeName = const "Float"
+instance GQLType Float
 
 instance GQLType Text where
   __typeName = const "String"
@@ -81,9 +73,5 @@ instance GQLType a => GQLType (Maybe a) where
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance GQLType a => GQLType [a] where
-  __typeName _ = __typeName (Proxy @a)
-  __typeFingerprint _ = __typeFingerprint (Proxy @a)
-
-instance GQLType a => GQLType (p ::-> a) where
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)

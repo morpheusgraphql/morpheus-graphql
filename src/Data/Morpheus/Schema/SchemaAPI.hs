@@ -9,21 +9,22 @@ module Data.Morpheus.Schema.SchemaAPI
   , schemaAPI
   ) where
 
+import           Data.Proxy
+import           Data.Text                              (Text)
+import           GHC.Generics
+
+-- MORPHEUS
 import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), TypeUpdater)
 import           Data.Morpheus.Resolve.Introspect       (introspectOutputType)
 import           Data.Morpheus.Schema.Schema            (Schema, Type, findType, initSchema)
 import           Data.Morpheus.Types.Internal.Data      (DataField (..), DataOutputField, DataTypeLib (..))
-import           Data.Morpheus.Types.Resolver           ((::->), Resolver (..))
-import           Data.Proxy
-import           Data.Text                              (Text)
-import           GHC.Generics
 
 newtype TypeArgs = TypeArgs
   { name :: Text
   } deriving (Generic)
 
 data SchemaAPI = SchemaAPI
-  { __type   :: TypeArgs ::-> Maybe Type
+  { __type   :: TypeArgs -> Either String (Maybe Type)
   , __schema :: Schema
   } deriving (Generic)
 
@@ -37,5 +38,4 @@ schemaTypes :: TypeUpdater
 schemaTypes = introspectOutputType (Proxy @Schema)
 
 schemaAPI :: DataTypeLib -> SchemaAPI
-schemaAPI lib =
-  SchemaAPI {__type = Resolver $ \TypeArgs {name} -> return $ Right $ findType name lib, __schema = initSchema lib}
+schemaAPI lib = SchemaAPI {__type = \TypeArgs {name} -> return $ findType name lib, __schema = initSchema lib}

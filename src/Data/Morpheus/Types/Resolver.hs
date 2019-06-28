@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveFunctor         #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -9,134 +9,86 @@
 {-# LANGUAGE TypeOperators         #-}
 
 module Data.Morpheus.Types.Resolver
-  ( (::->)
-  , (::->>)
-  , WithEffect(..)
-  , Resolver(..)
-  , QUERY
-  , MUTATION
-  , SUBSCRIPTION
+  ( Pure
+  , ResM
+  , EffectM
+  , EffectT(..)
+  , Effect(..)
+  , Resolver
+  , gqlResolver
+  , gqlEffectResolver
+  , liftEffectResolver
+  , unpackEffect
+  , unpackEffect2
   ) where
 
-import           Data.Text    (Text)
-import           GHC.Generics (Generic)
+import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
+import           Data.Text                               (Text)
 
-data QUERY (m :: * -> *)
+-- MORPHEUS
+import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveT)
 
-data MUTATION (m :: * -> *) c
+-- | Pure Resolver without effect
+type Pure = Either String
 
-data SUBSCRIPTION (m :: * -> *) c
+-- | Monad IO resolver without GraphQL effect
+type ResM = Resolver IO
 
--- | resolver function wrapper, where
---
---  __p__ is a record of GQL Arguments
---
--- __a__ is result
-class MonadResolver m a b where
-  data Resolver m a b :: *
+-- | Monad Resolver with GraphQL effects, used for communication between mutation and subscription
+type EffectM = Resolver (EffectT IO Text)
 
-type Result m a = m (Either String a)
+-- | Resolver Monad Transformer
+type Resolver = ExceptT String
 
-type ResultAction m c a = Result m (WithEffect c a)
+-- | GraphQL Resolver
+gqlResolver :: m (Either String a) -> Resolver m a
+gqlResolver = ExceptT
 
---  Monad Resolver:
-instance Monad m => MonadResolver (QUERY m) a b where
-  data Resolver (QUERY m) a b = Resolver{unpackResolver ::
-                                       a -> Result m b}
-                                deriving (Generic)
+-- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver
+gqlEffectResolver :: Monad m => [c] -> (EffectT m c) (Either String a) -> Resolver (EffectT m c) a
+gqlEffectResolver channels = ExceptT . insertEffect channels
 
-instance Monad m => MonadResolver (MUTATION m c) a b where
-  data Resolver (MUTATION m c) a
-       b = MutationResolver{unpackMutationResolver ::
-                            a -> ResultAction m c b}
-             deriving (Generic)
+insertEffect :: Monad m => [c] -> EffectT m c a -> EffectT m c a
+insertEffect channels EffectT {runEffectT = monadEffect} = EffectT $ effectPlus <$> monadEffect
+  where
+    effectPlus x = x {resultEffects = channels ++ resultEffects x}
 
-instance Monad m => MonadResolver (SUBSCRIPTION m c) a b where
-  data Resolver (SUBSCRIPTION m c) a
-       b = SubscriptionResolver{unpackSubscriptionResolver ::
-                                a -> c -> ResultAction m c a}
-             deriving (Generic)
+-- | lift Normal resolver inside Effect Resolver
+liftEffectResolver :: Monad m => [c] -> m (Either String a) -> Resolver (EffectT m c) a
+liftEffectResolver channels = ExceptT . EffectT . fmap (Effect channels)
 
--- | resolver without effect
-type a ::-> b = Resolver (QUERY IO) a b
+unpackEffect2 :: Monad m => ResolveT (EffectT m Text) v -> ResolveT m ([Text], v)
+unpackEffect2 x = ExceptT $ unpackEffect x
 
---a -> IO Either String b
-instance Monad m => Functor (Resolver (QUERY m) a) where
-  fmap func (Resolver resolver) =
-    Resolver $ \args -> do
-      value <- resolver args
-      return (func <$> value)
+unpackEffect :: Monad m => ResolveT (EffectT m Text) v -> m (Either GQLErrors ([Text], v))
+unpackEffect resolver = do
+  (Effect effects eitherValue) <- runEffectT $ runExceptT resolver
+  case eitherValue of
+    Left errors -> return $ Left errors
+    Right value -> return $ Right (effects, value)
 
-instance Monad m => Applicative (Resolver (QUERY m) a) where
-  pure = Resolver . const . return . pure
-  Resolver func <*> Resolver resolver =
-    Resolver $ \args -> do
-      func1 <- func args
-      value1 <- resolver args
-      return (func1 <*> value1)
-
-instance Monad m => Monad (Resolver (QUERY m) a) where
-  return = pure
-  (Resolver func1) >>= func2 =
-    Resolver $ \args -> do
-      value1 <- func1 args
-      case value1 of
-        Left error'  -> return $ Left error'
-        Right value' -> (unpackResolver $ func2 value') args
-
-{-
-  a ::->> b
--}
--- | resolver with effects,
--- used for communication between mutation and subscription
-type a ::->> b = Resolver (MUTATION IO Text) a b
-
-data WithEffect c a = WithEffect
+data Effect c v = Effect
   { resultEffects :: [c]
-  , resultValue   :: a
-  } deriving (Show, Functor)
+  , resultValue   :: v
+  } deriving (Functor)
 
-instance Applicative (WithEffect c) where
-  pure = WithEffect []
-  WithEffect effect1 func <*> WithEffect effect2 value = WithEffect (effect1 ++ effect2) (func value)
+-- | Monad Transformer that sums all effect Together
+newtype EffectT m c v = EffectT
+  { runEffectT :: m (Effect c v)
+  } deriving (Functor)
 
-instance Monad (WithEffect c) where
+instance Monad m => Applicative (EffectT m c) where
+  pure = EffectT . return . Effect []
+  EffectT app1 <*> EffectT app2 =
+    EffectT $ do
+      (Effect effect1 func) <- app1
+      (Effect effect2 val) <- app2
+      return $ Effect (effect1 ++ effect2) (func val)
+
+instance Monad m => Monad (EffectT m c) where
   return = pure
-  (WithEffect e1 v1) >>= func2 = do
-    let WithEffect e2 v2 = func2 v1
-    WithEffect (e2 ++ e1) v2
-
-instance Monad m => Functor (Resolver (MUTATION m c) a) where
-  fmap func (MutationResolver resolver) =
-    MutationResolver $ \args -> do
-      value <- resolver args
-      case value of
-        Left error' -> return $ Left error'
-        Right res'  -> return $ Right (func <$> res')
-
-instance Monad m => Applicative (Resolver (MUTATION m c) a) where
-  pure = MutationResolver . const . return . Right . pure
-  MutationResolver func <*> MutationResolver resolver =
-    MutationResolver $ \args -> do
-      func1 <- func args
-      case func1 of
-        Left error' -> return $ Left error'
-        Right v1 -> do
-          v2 <- resolver args
-          case v2 of
-            Left error' -> return $ Left error'
-            Right v2'   -> return $ Right $ v1 <*> v2'
-
-instance Monad m => Monad (Resolver (MUTATION m c) a) where
-  return = pure
-  (MutationResolver func1) >>= func2 =
-    MutationResolver $ \args -> do
-      value1 <- func1 args
-      case value1 of
-        Left error' -> return $ Left error'
-        Right (WithEffect e1' v1') -> do
-          let (MutationResolver x') = func2 v1'
-          v2 <- x' args
-          case v2 of
-            Left error'                -> return $ Left error'
-            Right (WithEffect e2' v2') -> return $ Right $ WithEffect (e1' ++ e2') v2'
+  (EffectT m1) >>= mFunc =
+    EffectT $ do
+      (Effect e1 v1) <- m1
+      (Effect e2 v2) <- runEffectT $ mFunc v1
+      return $ Effect (e1 ++ e2) v2

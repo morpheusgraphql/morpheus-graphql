@@ -9,13 +9,11 @@ module Deprecated.API
   ( gqlRoot
   ) where
 
-import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, MUTATION, OBJECT, QUERY, SCALAR, UNION)
-import           Data.Morpheus.Types ((::->), (::->>), GQLMutation, GQLQuery, GQLRootResolver (..), GQLScalar (..),
-                                      GQLSubscription, GQLType (..), ID, Resolver (..), ScalarValue (..), withEffect)
-import           Data.Text           (Text, pack)
+import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Types (EffectM, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM, Resolver,
+                                      ScalarValue (..), gqlEffectResolver, gqlResolver)
+import           Data.Text           (Text)
 import           Data.Typeable       (Typeable)
-import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
-import qualified Deprecated.Model    as M (JSONAddress (..), JSONUser (..))
 import           GHC.Generics        (Generic)
 
 type instance KIND CityID = ENUM
@@ -28,12 +26,12 @@ type instance KIND Coordinates = INPUT_OBJECT
 
 type instance KIND Address = OBJECT
 
-type instance KIND (User a) = OBJECT
+type instance KIND (User res) = OBJECT
 
-type instance KIND MyUnion = UNION
+type instance KIND (MyUnion res) = UNION
 
-data MyUnion
-  = USER (User (QUERY IO))
+data MyUnion res
+  = USER (User res)
   | ADDRESS Address
   deriving (Generic, GQLType)
 
@@ -83,9 +81,9 @@ data OfficeArgs = OfficeArgs
 data User m = User
   { name    :: Text
   , email   :: Text
-  , address :: Resolver m AddressArgs Address
-  , office  :: Resolver m OfficeArgs Address
-  , myUnion :: Resolver m () MyUnion
+  , address :: AddressArgs -> m Address
+  , office  :: OfficeArgs -> m Address
+  , myUnion :: () -> m (MyUnion m)
   , home    :: CityID
   } deriving (Generic)
 
@@ -101,82 +99,69 @@ newtype A a = A
   } deriving (Generic, GQLType)
 
 data Query = Query
-  { user      :: Resolver (QUERY IO) () (User (QUERY IO))
+  { user      :: () -> ResM (User ResM)
   , wrappedA1 :: A Int
   , wrappedA2 :: A Text
-  } deriving (Generic, GQLQuery)
+  } deriving (Generic)
 
-fetchAddress :: Euro -> Text -> IO (Either String Address)
-fetchAddress _ streetName = do
-  address' <- jsonAddress
-  pure (transformAddress streetName <$> address')
+fetchAddress :: Monad m => Euro -> m (Either String Address)
+fetchAddress _ = return $ Right $ Address " " "" 0
 
-transformAddress :: Text -> JSONAddress -> Address
-transformAddress street' address' =
-  Address {city = M.city address', houseNumber = M.houseNumber address', street = street'}
-
-resolveAddress :: Resolver (QUERY IO) AddressArgs Address
-resolveAddress = Resolver $ \args -> fetchAddress (Euro 1 0) (pack $ show $ longitude $ coordinates args)
-
-addressByCityID :: CityID -> Int -> IO (Either String Address)
-addressByCityID Paris code = fetchAddress (Euro 1 code) "Paris"
-addressByCityID BLN code   = fetchAddress (Euro 1 code) "Berlin"
-addressByCityID HH code    = fetchAddress (Euro 1 code) "Hamburg"
-
-resolveOffice :: JSONUser -> OfficeArgs ::-> Address
-resolveOffice _ = Resolver $ \args -> addressByCityID (cityID args) 12
-
-resolveUser :: () ::-> User (QUERY IO)
-resolveUser = transformUser <$> Resolver (const jsonUser)
-
-transformUser :: JSONUser -> User (QUERY IO)
-transformUser user' =
+fetchUser :: Monad m => m (Either String (User (Resolver m)))
+fetchUser =
+  return $
+  Right $
   User
-    { name = M.name user'
-    , email = M.email user'
-    , address = resolveAddress
-    , office = resolveOffice user'
+    { name = "George"
+    , email = "George@email.com"
+    , address = const resolveAddress
+    , office = resolveOffice
     , home = HH
-    , myUnion =
-        return $
-        USER
-          (User
-             "unionUserName"
-             "unionUserMail"
-             resolveAddress
-             (resolveOffice user')
-             (return $ ADDRESS (Address "unionAdressStreet" "unionAdresser" 1))
-             HH)
+    , myUnion = const $ return $ USER unionUser
     }
+  where
+    unionAddress = Address {city = "Hamburg", street = "Street", houseNumber = 20}
+    -- Office
+    resolveOffice OfficeArgs {cityID = Paris} = gqlResolver $ fetchAddress (Euro 1 1)
+    resolveOffice OfficeArgs {cityID = BLN}   = gqlResolver $ fetchAddress (Euro 1 2)
+    resolveOffice OfficeArgs {cityID = HH}    = gqlResolver $ fetchAddress (Euro 1 3)
+    resolveAddress = gqlResolver $ fetchAddress (Euro 1 0)
+    unionUser =
+      User
+        { name = "David"
+        , email = "David@email.com"
+        , address = const resolveAddress
+        , office = resolveOffice
+        , home = BLN
+        , myUnion = const $ return $ ADDRESS unionAddress
+        }
 
-createUserMutation :: Resolver (MUTATION IO Text) () (User (QUERY IO))
-createUserMutation = transformUser <$> MutationResolver (const $ withEffect ["UPDATE_USER"] <$> jsonUser)
+createUserMutation :: a -> EffectM (User EffectM)
+createUserMutation _ = gqlEffectResolver ["UPDATE_USER"] fetchUser
 
-newUserSubscription :: Resolver (MUTATION IO Text) () (User (QUERY IO))
-newUserSubscription = transformUser <$> MutationResolver (const $ withEffect ["UPDATE_USER"] <$> jsonUser)
+newUserSubscription :: a -> EffectM (User EffectM)
+newUserSubscription _ = gqlEffectResolver ["UPDATE_USER"] fetchUser
 
-createAddressMutation :: Resolver (MUTATION IO Text) () Address
-createAddressMutation =
-  transformAddress "from Mutation" <$> MutationResolver (const $ withEffect ["UPDATE_ADDRESS"] <$> jsonAddress)
+createAddressMutation :: a -> EffectM Address
+createAddressMutation _ = gqlEffectResolver ["UPDATE_ADDRESS"] (fetchAddress (Euro 1 0))
 
-newAddressSubscription :: Resolver (MUTATION IO Text) () Address
-newAddressSubscription =
-  transformAddress "from Subscription" <$> MutationResolver (const $ withEffect ["UPDATE_ADDRESS"] <$> jsonAddress)
+newAddressSubscription :: a -> EffectM Address
+newAddressSubscription _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
 
 data Mutation = Mutation
-  { createUser    :: () ::->> User (QUERY IO)
-  , createAddress :: () ::->> Address
-  } deriving (Generic, GQLMutation)
+  { createUser    :: () -> EffectM (User EffectM)
+  , createAddress :: () -> EffectM Address
+  } deriving (Generic)
 
 data Subscription = Subscription
-  { newUser    :: () ::->> User (QUERY IO)
-  , newAddress :: () ::->> Address
-  } deriving (Generic, GQLSubscription)
+  { newUser    :: () -> EffectM (User EffectM)
+  , newAddress :: () -> EffectM Address
+  } deriving (Generic)
 
 gqlRoot :: GQLRootResolver Query Mutation Subscription
 gqlRoot =
   GQLRootResolver
-    { queryResolver = Query {user = resolveUser, wrappedA1 = A 0, wrappedA2 = A ""}
+    { queryResolver = Query {user = const $ gqlResolver fetchUser, wrappedA1 = A 0, wrappedA2 = A ""}
     , mutationResolver = Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
     , subscriptionResolver = Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}
     }

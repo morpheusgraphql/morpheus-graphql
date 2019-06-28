@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes            #-}
@@ -9,10 +10,10 @@ module Data.Morpheus.Interpreter
 import           Data.Aeson                             (encode)
 import           Data.ByteString                        (ByteString)
 import qualified Data.ByteString.Lazy.Char8             as LB (ByteString, fromStrict, toStrict)
+import           Data.Morpheus.Resolve.Operator         (RootResCon)
 import           Data.Morpheus.Resolve.Resolve          (packStream, resolve, resolveByteString, resolveStream,
                                                          resolveStreamByteString)
 import           Data.Morpheus.Server.ClientRegister    (GQLState)
-import           Data.Morpheus.Types.GQLOperator        (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
 import           Data.Morpheus.Types.Internal.WebSocket (OutputAction)
 import           Data.Morpheus.Types.Request            (GQLRequest)
 import           Data.Morpheus.Types.Response           (GQLResponse)
@@ -39,7 +40,7 @@ import           Data.Text.Lazy.Encoding                (decodeUtf8, encodeUtf8)
 --       k :: GQLRequest -> IO GQLResponse
 --     @
 class Interpreter k where
-  interpreter :: (GQLQuery q, GQLMutation m, GQLSubscription s) => GQLRootResolver q m s -> k
+  interpreter :: (RootResCon IO a b c) => GQLRootResolver a b c -> k
 
 {-
   simple HTTP stateless Interpreter without side effects
@@ -83,9 +84,9 @@ instance Interpreter (WSPub Text) where
    Websocket Interpreter without state and side effects, mutations and subscription will return Actions
    that will be executed in Websocket server
 -}
-type WSSub a = a -> IO (OutputAction a)
+type WSSub a = a -> IO (OutputAction IO a)
 
-instance Interpreter (GQLRequest -> IO (OutputAction LB.ByteString)) where
+instance Interpreter (GQLRequest -> IO (OutputAction IO LB.ByteString)) where
   interpreter root request = fmap encode <$> resolveStream root request
 
 instance Interpreter (WSSub LB.ByteString) where
