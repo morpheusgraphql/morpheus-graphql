@@ -11,7 +11,7 @@ module Feature.InputType.API
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (KIND, OBJECT)
-import           Data.Morpheus.Types        ((::->), GQLQuery, GQLRootResolver (..), GQLType (..))
+import           Data.Morpheus.Types        ((::->), GQLRootResolver (..), GQLType (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -34,7 +34,7 @@ data A = A
 
 newtype Query = Query
   { q1 :: A
-  } deriving (Generic, GQLQuery)
+  } deriving (Generic)
 
 api :: ByteString -> IO ByteString
 api =

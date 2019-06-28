@@ -65,21 +65,29 @@ fullSchema ::
   -> c
   -> SchemaValidation DataTypeLib
 fullSchema queryRes mutationRes subscriptionRes =
-  querySchema queryRes >>= operatorSchema "Mutation" mutationRes >>= operatorSchema "Subscription" subscriptionRes
+  querySchema queryRes >>= mutationSchema mutationRes >>= subscriptionSchema subscriptionRes
   where
     querySchema _ = resolveTypes queryType (schemaTypes : types)
       where
         queryType = initTypeLib (operatorType "Query" (hiddenRootFields ++ fields))
         (fields, types) = unzip $ objectFieldTypes (Proxy @(Rep a))
 
-operatorSchema ::
+mutationSchema ::
      forall a. IntroCon a
-  => Text
-  -> a
+  => a
   -> TypeUpdater
-operatorSchema operatorName _ initialType = resolveTypes mutationType types'
+mutationSchema _ initialType = resolveTypes mutationType types'
   where
-    mutationType = initialType {mutation = Just $ operatorType operatorName fields'}
+    mutationType = initialType {mutation = Just $ operatorType "Mutation" fields'}
+    (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
+
+subscriptionSchema ::
+     forall a. IntroCon a
+  => a
+  -> TypeUpdater
+subscriptionSchema _ initialType = resolveTypes mutationType types'
+  where
+    mutationType = initialType {subscription = Just $ operatorType "Subscription" fields'}
     (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
 
 operatorType :: Text -> a -> (Text, DataType a)

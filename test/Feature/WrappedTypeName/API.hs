@@ -11,8 +11,7 @@ module Feature.WrappedTypeName.API
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (KIND, OBJECT)
-import           Data.Morpheus.Types        (BaseR, EffectR, GQLMutation, GQLQuery, GQLRootResolver (..),
-                                             GQLSubscription, GQLType (..))
+import           Data.Morpheus.Types        (BaseR, EffectR, GQLRootResolver (..), GQLType (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -34,19 +33,19 @@ data Query = Query
   { a1 :: WA BaseR
   , a2 :: Maybe (Wrapped Int Int)
   , a3 :: Maybe (Wrapped (Wrapped Text Int) Text)
-  } deriving (Generic, GQLQuery)
+  } deriving (Generic)
 
 data Mutation = Mutation
   { mut1 :: Maybe (WA EffectR)
   , mut2 :: Maybe (Wrapped Int Int)
   , mut3 :: Maybe (Wrapped (Wrapped Text Int) Text)
-  } deriving (Generic, GQLMutation)
+  } deriving (Generic)
 
 data Subscription = Subscription
   { sub1 :: Maybe (WA EffectR)
   , sub2 :: Maybe (Wrapped Int Int)
   , sub3 :: Maybe (Wrapped (Wrapped Text Int) Text)
-  } deriving (Generic, GQLSubscription)
+  } deriving (Generic)
 
 api :: ByteString -> IO ByteString
 api =

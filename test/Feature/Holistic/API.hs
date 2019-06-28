@@ -11,8 +11,8 @@ module Feature.Holistic.API
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types        ((::->), GQLMutation, GQLQuery, GQLRootResolver (..), GQLScalar (..),
-                                             GQLSubscription, GQLType (..), ID (..), ScalarValue (..))
+import           Data.Morpheus.Types        ((::->), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID (..),
+                                             ScalarValue (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -101,15 +101,15 @@ instance GQLType User where
 data Query = Query
   { user      :: () ::-> User
   , testUnion :: Maybe TestUnion
-  } deriving (Generic, GQLQuery)
+  } deriving (Generic)
 
 newtype Mutation = Mutation
   { createUser :: AddressArgs ::-> User
-  } deriving (Generic, GQLMutation)
+  } deriving (Generic)
 
 newtype Subscription = Subscription
   { newUser :: AddressArgs ::-> User
-  } deriving (Generic, GQLSubscription)
+  } deriving (Generic)
 
 resolveAddress :: a ::-> Address
 resolveAddress = return Address {city = "", houseNumber = 1, street = return Nothing}
