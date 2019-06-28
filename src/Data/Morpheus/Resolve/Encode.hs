@@ -36,7 +36,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), Sel
 import           Data.Morpheus.Types.Internal.Base          (Position)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveT, failResolveT)
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
-import           Data.Morpheus.Types.Resolver               (Effect (..), EffectT (..), Resolver (..))
+import           Data.Morpheus.Types.Resolver               (Effect (..), EffectT (..), Resolver)
 
 type SelectRes m a = [(Text, (Text, Selection) -> ResolveT m a)] -> (Text, Selection) -> ResolveT m (Text, a)
 
@@ -174,7 +174,7 @@ instance (GQLType a, Encoder a (KIND a) res) => UnionResolvers (K1 s a) res wher
 instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m) => Encoder (a -> Resolver m b) WRAPPER m where
   __encode (WithGQLKind resolver) selection'@(fieldName, Selection {selectionArguments, selectionPosition}) = do
     args <- ExceptT $ pure $ decodeArguments selectionArguments
-    lift (unResolver $ resolver args) >>= liftEither selectionPosition fieldName >>= (`encode` selection')
+    lift (runExceptT $ resolver args) >>= liftEither selectionPosition fieldName >>= (`encode` selection')
 
 liftEither :: Monad m => Position -> Text -> Either String a -> ResolveT m a
 liftEither position name (Left message) = failResolveT $ fieldNotResolved position name (pack message)

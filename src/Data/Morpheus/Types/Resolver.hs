@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveFunctor         #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -14,16 +13,17 @@ module Data.Morpheus.Types.Resolver
   , EffectR
   , EffectT(..)
   , Effect(..)
-  , Resolver(..)
+  , Pure
+  , Resolver
+  , gqlResolver
+  , gqlEffectResolver
+  , liftEffectResolver
   , unpackEffect
   , unpackEffect2
-  , addEffect
-  , withEffect
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
 import           Data.Text                               (Text)
-import           GHC.Generics                            (Generic)
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveT)
@@ -37,36 +37,25 @@ type BaseR = Resolver IO
 -- | Monad Resolver with GraphQL effects, used for communication between mutation and subscription
 type EffectR = Resolver (EffectT IO Text)
 
--- | resolver function wrapper, where
-newtype Resolver m a = Resolver
-  { unResolver :: m (Pure a)
-  } deriving (Generic, Functor)
+-- | Resolver Monad Transformer
+type Resolver = ExceptT String
 
-instance Monad m => Applicative (Resolver m) where
-  pure = Resolver . return . pure
-  Resolver func <*> Resolver value =
-    Resolver $ do
-      func1 <- func
-      value1 <- value
-      return (func1 <*> value1)
+-- | GraphQL Resolver
+gqlResolver :: m (Either String a) -> Resolver m a
+gqlResolver = ExceptT
 
-instance Monad m => Monad (Resolver m) where
-  return = pure
-  (Resolver func1) >>= func2 =
-    Resolver $ do
-      value1 <- func1
-      case value1 of
-        Left error'  -> return $ Left error'
-        Right value' -> unResolver $ func2 value'
+-- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver
+gqlEffectResolver :: Monad m => [c] -> (EffectT m c) (Either String a) -> Resolver (EffectT m c) a
+gqlEffectResolver channels = ExceptT . insertEffect channels
 
--- | used in mutation or subscription resolver , adds effect to normal resolver
-withEffect :: Monad m => [c] -> m a -> EffectT m c a
-withEffect channels = EffectT . fmap (Effect channels)
-
-addEffect :: Monad m => [c] -> EffectT m c a -> EffectT m c a
-addEffect channels EffectT {runEffectT = monadEffect} = EffectT $ insertEffect <$> monadEffect
+insertEffect :: Monad m => [c] -> EffectT m c a -> EffectT m c a
+insertEffect channels EffectT {runEffectT = monadEffect} = EffectT $ effectPlus <$> monadEffect
   where
-    insertEffect x = x {resultEffects = channels ++ resultEffects x}
+    effectPlus x = x {resultEffects = channels ++ resultEffects x}
+
+-- | lift Normal resolver inside Effect Resolver
+liftEffectResolver :: Monad m => [c] -> m (Either String a) -> Resolver (EffectT m c) a
+liftEffectResolver channels = ExceptT . EffectT . fmap (Effect channels)
 
 unpackEffect2 :: Monad m => ResolveT (EffectT m Text) v -> ResolveT m ([Text], v)
 unpackEffect2 x = ExceptT $ unpackEffect x

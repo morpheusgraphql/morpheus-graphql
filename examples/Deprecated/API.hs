@@ -10,8 +10,8 @@ module Deprecated.API
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (BaseR, EffectR, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID,
-                                      Resolver (..), ScalarValue (..), addEffect)
+import           Data.Morpheus.Types (BaseR, EffectR, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, Resolver,
+                                      ScalarValue (..), gqlEffectResolver, gqlResolver)
 import           Data.Text           (Text)
 import           Data.Typeable       (Typeable)
 import           GHC.Generics        (Generic)
@@ -104,19 +104,8 @@ data Query = Query
   , wrappedA2 :: A Text
   } deriving (Generic)
 
-addressByCityID :: Monad m => CityID -> Int -> m (Either String Address)
-addressByCityID Paris code = fetchAddress (Euro 1 code)
-addressByCityID BLN code   = fetchAddress (Euro 1 code)
-addressByCityID HH code    = fetchAddress (Euro 1 code)
-
-resolveOffice :: Monad m => a -> Resolver m Address
-resolveOffice _ = Resolver $ addressByCityID Paris 12
-
 fetchAddress :: Monad m => Euro -> m (Either String Address)
 fetchAddress _ = return $ Right $ Address " " "" 0
-
-resolveAddress :: Monad m => Resolver m Address
-resolveAddress = Resolver $ fetchAddress (Euro 1 0)
 
 fetchUser :: Monad m => m (Either String (User (Resolver m)))
 fetchUser =
@@ -132,6 +121,11 @@ fetchUser =
     }
   where
     unionAddress = Address {city = "Hamburg", street = "Street", houseNumber = 20}
+    -- Office
+    resolveOffice OfficeArgs {cityID = Paris} = gqlResolver $ fetchAddress (Euro 1 1)
+    resolveOffice OfficeArgs {cityID = BLN}   = gqlResolver $ fetchAddress (Euro 1 2)
+    resolveOffice OfficeArgs {cityID = HH}    = gqlResolver $ fetchAddress (Euro 1 3)
+    resolveAddress = gqlResolver $ fetchAddress (Euro 1 0)
     unionUser =
       User
         { name = "David"
@@ -142,17 +136,17 @@ fetchUser =
         , myUnion = const $ return $ ADDRESS unionAddress
         }
 
-createUserMutation :: () -> EffectR (User EffectR)
-createUserMutation _ = Resolver $ addEffect ["UPDATE_USER"] fetchUser
+createUserMutation :: a -> EffectR (User EffectR)
+createUserMutation _ = gqlEffectResolver ["UPDATE_USER"] fetchUser
 
-newUserSubscription :: () -> EffectR (User EffectR)
-newUserSubscription _ = Resolver $ addEffect ["UPDATE_USER"] fetchUser
+newUserSubscription :: a -> EffectR (User EffectR)
+newUserSubscription _ = gqlEffectResolver ["UPDATE_USER"] fetchUser
 
-createAddressMutation :: () -> EffectR Address
-createAddressMutation _ = Resolver $ addEffect ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
+createAddressMutation :: a -> EffectR Address
+createAddressMutation _ = gqlEffectResolver ["UPDATE_ADDRESS"] (fetchAddress (Euro 1 0))
 
-newAddressSubscription :: () -> EffectR Address
-newAddressSubscription _ = Resolver $ addEffect ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
+newAddressSubscription :: a -> EffectR Address
+newAddressSubscription _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
 
 data Mutation = Mutation
   { createUser    :: () -> EffectR (User EffectR)
@@ -167,7 +161,7 @@ data Subscription = Subscription
 gqlRoot :: GQLRootResolver Query Mutation Subscription
 gqlRoot =
   GQLRootResolver
-    { queryResolver = Query {user = const $ Resolver fetchUser, wrappedA1 = A 0, wrappedA2 = A ""}
+    { queryResolver = Query {user = const $ gqlResolver fetchUser, wrappedA1 = A 0, wrappedA2 = A ""}
     , mutationResolver = Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
     , subscriptionResolver = Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}
     }
