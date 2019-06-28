@@ -11,7 +11,7 @@ module Feature.UnionType.API
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (KIND, OBJECT, UNION)
-import           Data.Morpheus.Types        (BaseR, GQLRootResolver (..), GQLType (..))
+import           Data.Morpheus.Types        (GQLRootResolver (..), GQLType (..), ResM)
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -44,11 +44,11 @@ data AOrB
   deriving (Generic, GQLType)
 
 data Query = Query
-  { union :: () -> BaseR [AOrB]
+  { union :: () -> ResM [AOrB]
   , fc    :: C
   } deriving (Generic)
 
-resolveUnion :: () -> BaseR [AOrB]
+resolveUnion :: () -> ResM [AOrB]
 resolveUnion _ = return [A' A {aText = "at", aInt = 1}, B' B {bText = "bt", bInt = 2}]
 
 api :: ByteString -> IO ByteString

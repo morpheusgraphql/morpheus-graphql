@@ -11,7 +11,7 @@ module Feature.InputType.API
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (KIND, OBJECT)
-import           Data.Morpheus.Types        (BaseR, GQLRootResolver (..), GQLType (..))
+import           Data.Morpheus.Types        (GQLRootResolver (..), GQLType (..), ResM)
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -28,8 +28,8 @@ data F2Args = F2Args
   } deriving (Generic)
 
 data A = A
-  { a1 :: F1Args -> BaseR Text
-  , a2 :: F2Args -> BaseR Int
+  { a1 :: F1Args -> ResM Text
+  , a2 :: F2Args -> ResM Int
   } deriving (Generic, GQLType)
 
 newtype Query = Query
