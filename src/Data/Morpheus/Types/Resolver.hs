@@ -12,7 +12,6 @@
 module Data.Morpheus.Types.Resolver
   ( BaseR
   , EffectR
-  , (:->)
   , (::->)
   , (::->>)
   , EffectT(..)
@@ -25,13 +24,13 @@ module Data.Morpheus.Types.Resolver
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
-import           Data.Functor.Identity                   (Identity)
-import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveT)
 import           Data.Text                               (Text)
 import           GHC.Generics                            (Generic)
 
-type a :-> b = Resolver Identity a b
+-- MORPHEUS
+import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveT)
 
+--type a -> b = Identity (a -> b)
 -- | IO resolver without effect
 type BaseR = Resolver IO
 

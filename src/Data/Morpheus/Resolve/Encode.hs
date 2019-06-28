@@ -182,6 +182,13 @@ instance (Monad m, Encoder a (KIND a) m, ArgumentsConstraint p) => Encoder (Reso
           Right value   -> pure value
 
 -- packs Monad in EffectMonad
+instance (Monad m, Encoder a (KIND a) m, ArgumentsConstraint p) => Encoder (p -> a) WRAPPER m where
+  __encode (WithGQLKind resolver) selection'@(_, Selection {selectionArguments}) =
+    case decodeArguments selectionArguments of
+      Left message -> failResolveT message
+      Right value  -> encode (resolver value) selection'
+
+-- packs Monad in EffectMonad
 instance (Monad m, Encoder a (KIND a) m, ArgumentsConstraint p) => Encoder (Resolver m p a) WRAPPER (EffectT m c) where
   __encode resolver selection = ExceptT $ EffectT $ Effect [] <$> runExceptT (__encode resolver selection)
 
