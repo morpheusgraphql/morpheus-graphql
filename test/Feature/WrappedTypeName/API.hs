@@ -25,7 +25,7 @@ data Wrapped a b = Wrapped
   } deriving (Generic, GQLType)
 
 data WA m = WA
-  { aText :: m () Text
+  { aText :: () -> m Text
   , aInt  :: Int
   } deriving (Generic, GQLType)
 
@@ -51,7 +51,7 @@ api :: ByteString -> IO ByteString
 api =
   interpreter
     GQLRootResolver
-      { queryResolver = Query {a1 = WA {aText = pure "test1", aInt = 0}, a2 = Nothing, a3 = Nothing}
+      { queryResolver = Query {a1 = WA {aText = const $ pure "test1", aInt = 0}, a2 = Nothing, a3 = Nothing}
       , mutationResolver = Mutation {mut1 = Nothing, mut2 = Nothing, mut3 = Nothing}
       , subscriptionResolver = Subscription {sub1 = Nothing, sub2 = Nothing, sub3 = Nothing}
       }

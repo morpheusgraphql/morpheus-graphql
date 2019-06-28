@@ -11,7 +11,7 @@ module Feature.Holistic.API
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types        ((::->), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID (..),
+import           Data.Morpheus.Types        (BaseR, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID (..),
                                              ScalarValue (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
@@ -63,7 +63,7 @@ data StreetArgs = StreetArgs
 
 data Address = Address
   { city        :: Text
-  , street      :: StreetArgs ::-> Maybe [Maybe [[[Text]]]]
+  , street      :: StreetArgs -> BaseR (Maybe [Maybe [[[Text]]]])
   , houseNumber :: Int
   } deriving (Generic, GQLType)
 
@@ -90,39 +90,40 @@ data OfficeArgs = OfficeArgs
 data User = User
   { name    :: Text
   , email   :: Text
-  , address :: AddressArgs ::-> Address
-  , office  :: OfficeArgs ::-> Address
-  , friend  :: () ::-> Maybe User
+  , address :: AddressArgs -> BaseR Address
+  , office  :: OfficeArgs -> BaseR Address
+  , friend  :: () -> BaseR (Maybe User)
   } deriving (Generic)
 
 instance GQLType User where
   description _ = "Custom Description for Client Defined User Type"
 
 data Query = Query
-  { user      :: () ::-> User
+  { user      :: () -> BaseR User
   , testUnion :: Maybe TestUnion
   } deriving (Generic)
 
 newtype Mutation = Mutation
-  { createUser :: AddressArgs ::-> User
+  { createUser :: AddressArgs -> BaseR User
   } deriving (Generic)
 
 newtype Subscription = Subscription
-  { newUser :: AddressArgs ::-> User
+  { newUser :: AddressArgs -> BaseR User
   } deriving (Generic)
 
-resolveAddress :: a ::-> Address
-resolveAddress = return Address {city = "", houseNumber = 1, street = return Nothing}
+resolveAddress :: a -> BaseR Address
+resolveAddress _ = return Address {city = "", houseNumber = 1, street = const $ return Nothing}
 
-resolveUser :: a ::-> User
-resolveUser =
+resolveUser :: a -> BaseR User
+resolveUser _ =
   return $
-  User {name = "testName", email = "", address = resolveAddress, office = resolveAddress, friend = return Nothing}
+  User
+    {name = "testName", email = "", address = resolveAddress, office = resolveAddress, friend = const $ return Nothing}
 
-createUserMutation :: AddressArgs ::-> User
+createUserMutation :: AddressArgs -> BaseR User
 createUserMutation = resolveUser
 
-newUserSubscription :: AddressArgs ::-> User
+newUserSubscription :: AddressArgs -> BaseR User
 newUserSubscription = resolveUser
 
 api :: ByteString -> IO ByteString
