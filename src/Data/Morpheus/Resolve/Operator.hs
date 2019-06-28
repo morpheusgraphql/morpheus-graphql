@@ -11,7 +11,7 @@
 {-# LANGUAGE TypeFamilies             #-}
 {-# LANGUAGE TypeOperators            #-}
 
-module Data.Morpheus.Types.GQLOperator
+module Data.Morpheus.Resolve.Operator
   ( RootResCon
   , fullSchema
   , encodeQuery

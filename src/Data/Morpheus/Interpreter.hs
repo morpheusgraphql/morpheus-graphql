@@ -10,10 +10,10 @@ module Data.Morpheus.Interpreter
 import           Data.Aeson                             (encode)
 import           Data.ByteString                        (ByteString)
 import qualified Data.ByteString.Lazy.Char8             as LB (ByteString, fromStrict, toStrict)
+import           Data.Morpheus.Resolve.Operator         (RootResCon)
 import           Data.Morpheus.Resolve.Resolve          (packStream, resolve, resolveByteString, resolveStream,
                                                          resolveStreamByteString)
 import           Data.Morpheus.Server.ClientRegister    (GQLState)
-import           Data.Morpheus.Types.GQLOperator        (RootResCon)
 import           Data.Morpheus.Types.Internal.WebSocket (OutputAction)
 import           Data.Morpheus.Types.Request            (GQLRequest)
 import           Data.Morpheus.Types.Response           (GQLResponse)
