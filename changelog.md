@@ -28,27 +28,29 @@
 - inline Fragments
 - GraphQL [Aliases](https://graphql.org/learn/queries/#aliases)
 - Subscriptions: `GQLSubscription`
+
   - `a -> EffectM b` operation: is resolver that contains side effect in `EffectM`.
     is used for Mutation and Subscribe communication
-  - `withEffect ["CHANNEL_ID"] value`: packs result in `WithEffect`.
+  - `gqlEffectResolver ["CHANNEL_ID"]`: packs as effect Resolver.
     if mutation and subscription resolver have same channel then
     every call of mutation will trigger subscription resolver
   - `GQLState`: shared state between `http` and `websocket` server
   - `gqlSocketApp` :converts `interpreter` to `websocket` application
   - `graphql-subscriptions`: `Apollo GraphQL` subProtocol
 
--- language: - Query supports : `__type(name:"type")` - On every Object can be selected : `__typename`
+- language:
+  - Query supports : `__type(name:"type")`
+  - On every Object can be selected : `__typename`
 
 ### Changed
 
-- `GQLRoot`, `GQLType(..)` , `GQLScalar(..)` , `GQLMutation` , `GQLQuery` , `GQLArgs`
+- `GQLRootResolver`, `GQLType(..)` , `GQLScalar(..)`
   are moved in `Data.Morpheus.Types`
-- GQLRoot { query, mutation, subscription } to GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
-- `::->` is now type synonym fo Resolver QUERY a b type Resolver
+- `GQLRoot { query, mutation, subscription }` to `GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}`
 - `interpreter`: can be used in `http` and `websocket` server
 - `GQLKind` renamed as `GQLType`
 - types can be derived just with `(Generic,GQLType)`
-- haskell record field `type'` will generate GQL Object field 'type'
+- haskell record field `type'` will generate GQL Object field `type`
 - public API (all other modules are hidden):
   - Data.Morpheus
   - Data.Morpheus.Kind
