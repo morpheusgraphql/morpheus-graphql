@@ -50,10 +50,10 @@ type EffectEncode m a
    = EncodeCon (EffectT m Text) a =>
        Encode (EffectT m Text) a
 
-encodeQuery :: BaseEncode IO a
+encodeQuery :: Monad m => BaseEncode m a
 encodeQuery types rootResolver sel = resolveBySelection sel (resolversBy (schemaAPI types) ++ resolversBy rootResolver)
 
-effectEncode :: EffectEncode IO a
+effectEncode :: Monad m => EffectEncode m a
 effectEncode rootResolver sel = resolveBySelection sel $ resolversBy rootResolver
 
 type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments, Typeable a)
