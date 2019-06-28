@@ -33,6 +33,7 @@ import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
 import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                (GQLType (__typeName))
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
+import           Data.Morpheus.Types.Internal.Base          (Position)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveT, failResolveT)
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver               (Effect (..), EffectT (..), Resolver (..))
@@ -173,20 +174,18 @@ instance (GQLType a, Encoder a (KIND a) res) => UnionResolvers (K1 s a) res wher
 instance (Monad m, Encoder a (KIND a) m, ArgumentsConstraint p) => Encoder (Resolver m p a) WRAPPER m where
   __encode (WithGQLKind (Resolver resolver)) selection'@(fieldName, Selection {selectionArguments, selectionPosition}) = do
     args <- ExceptT $ pure $ decodeArguments selectionArguments
-    liftResolver args >>= (`encode` selection')
-    where
-      liftResolver args = do
-        result <- lift (resolver args)
-        case result of
-          Left message' -> failResolveT $ fieldNotResolved selectionPosition fieldName (pack message')
-          Right value   -> pure value
+    lift (resolver args) >>= liftEither selectionPosition fieldName >>= (`encode` selection')
+
+liftEither :: Monad m => Position -> Text -> Either String a -> ResolveT m a
+liftEither position name (Left message) = failResolveT $ fieldNotResolved position name (pack message)
+liftEither _ _ (Right value)            = pure value
 
 -- packs Monad in EffectMonad
-instance (Monad m, Encoder a (KIND a) m, ArgumentsConstraint p) => Encoder (p -> a) WRAPPER m where
-  __encode (WithGQLKind resolver) selection'@(_, Selection {selectionArguments}) =
+instance (Monad m, Encoder a (KIND a) m, ArgumentsConstraint p) => Encoder (p -> Either String a) WRAPPER m where
+  __encode (WithGQLKind resolver) selection'@(fieldName, Selection {selectionArguments, selectionPosition}) =
     case decodeArguments selectionArguments of
       Left message -> failResolveT message
-      Right value  -> encode (resolver value) selection'
+      Right value  -> liftEither selectionPosition fieldName (resolver value) >>= (`encode` selection')
 
 -- packs Monad in EffectMonad
 instance (Monad m, Encoder a (KIND a) m, ArgumentsConstraint p) => Encoder (Resolver m p a) WRAPPER (EffectT m c) where

@@ -73,11 +73,11 @@ createLeafType kind' name' desc' enums' =
     { kind = kind'
     , name = Just name'
     , description = Just desc'
-    , fields = return Nothing
+    , fields = const $ return Nothing
     , ofType = Nothing
     , interfaces = Nothing
     , possibleTypes = Nothing
-    , enumValues = return enums'
+    , enumValues = const $ return enums'
     , inputFields = Nothing
     }
 
@@ -87,11 +87,11 @@ typeFromUnion (name', DataType {typeData = fields', typeDescription = descriptio
     { kind = UNION
     , name = Just name'
     , description = Just description'
-    , fields = return Nothing
+    , fields = const $ return Nothing
     , ofType = Nothing
     , interfaces = Nothing
     , possibleTypes = Just (map (\x -> createObjectType (fieldType x) "" $ Just []) fields')
-    , enumValues = return Nothing
+    , enumValues = const $ return Nothing
     , inputFields = Nothing
     }
 
@@ -109,11 +109,11 @@ createObjectType name' desc' fields' =
     { kind = OBJECT
     , name = Just name'
     , description = Just desc'
-    , fields = return fields'
+    , fields = const $ return fields'
     , ofType = Nothing
     , interfaces = Just []
     , possibleTypes = Nothing
-    , enumValues = return Nothing
+    , enumValues = const $ return Nothing
     , inputFields = Nothing
     }
 
@@ -123,11 +123,11 @@ createInputObject name' desc' fields' =
     { kind = INPUT_OBJECT
     , name = Just name'
     , description = Just desc'
-    , fields = return Nothing
+    , fields = const $ return Nothing
     , ofType = Nothing
     , interfaces = Nothing
     , possibleTypes = Nothing
-    , enumValues = return Nothing
+    , enumValues = const $ return Nothing
     , inputFields = Just fields'
     }
 
@@ -137,11 +137,11 @@ createType kind' name' desc' fields' =
     { kind = kind'
     , name = Just name'
     , description = Just desc'
-    , fields = return fields'
+    , fields = const $ return fields'
     , ofType = Nothing
     , interfaces = Nothing
     , possibleTypes = Nothing
-    , enumValues = return $ Just []
+    , enumValues = const $ return $ Just []
     , inputFields = Nothing
     }
 
@@ -151,10 +151,10 @@ wrapAs kind' contentType =
     { kind = kind'
     , name = Nothing
     , description = Nothing
-    , fields = return Nothing
+    , fields = const $ return Nothing
     , ofType = Just contentType
     , interfaces = Nothing
     , possibleTypes = Nothing
-    , enumValues = return Nothing
+    , enumValues = const $ return Nothing
     , inputFields = Nothing
     }

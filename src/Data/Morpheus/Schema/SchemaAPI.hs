@@ -24,7 +24,7 @@ newtype TypeArgs = TypeArgs
   } deriving (Generic)
 
 data SchemaAPI = SchemaAPI
-  { __type   :: TypeArgs -> Maybe Type
+  { __type   :: TypeArgs -> Either String (Maybe Type)
   , __schema :: Schema
   } deriving (Generic)
 
@@ -38,4 +38,4 @@ schemaTypes :: TypeUpdater
 schemaTypes = introspectOutputType (Proxy @Schema)
 
 schemaAPI :: DataTypeLib -> SchemaAPI
-schemaAPI lib = SchemaAPI {__type = \TypeArgs {name} -> findType name lib, __schema = initSchema lib}
+schemaAPI lib = SchemaAPI {__type = \TypeArgs {name} -> return $ findType name lib, __schema = initSchema lib}

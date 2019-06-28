@@ -26,10 +26,10 @@ data Type = Type
   { kind          :: TypeKind
   , name          :: Maybe Text
   , description   :: Maybe Text
-  , fields        :: DeprecationArgs -> Maybe [F.Field Type]
+  , fields        :: DeprecationArgs -> Either String (Maybe [F.Field Type])
   , interfaces    :: Maybe [Type]
   , possibleTypes :: Maybe [Type]
-  , enumValues    :: DeprecationArgs -> Maybe [EnumValue]
+  , enumValues    :: DeprecationArgs -> Either String (Maybe [EnumValue])
   , inputFields   :: Maybe [I.InputValue Type]
   , ofType        :: Maybe Type
   } deriving (Generic)
