@@ -47,11 +47,13 @@ data Subscription = Subscription
   , sub3 :: Maybe (Wrapped (Wrapped Text Int) Text)
   } deriving (Generic)
 
+rootResolver :: GQLRootResolver IO Query Mutation Subscription
+rootResolver =
+  GQLRootResolver
+    { queryResolver = return Query {a1 = WA {aText = const $ pure "test1", aInt = 0}, a2 = Nothing, a3 = Nothing}
+    , mutationResolver = return Mutation {mut1 = Nothing, mut2 = Nothing, mut3 = Nothing}
+    , subscriptionResolver = return Subscription {sub1 = Nothing, sub2 = Nothing, sub3 = Nothing}
+    }
+
 api :: ByteString -> IO ByteString
-api =
-  interpreter
-    GQLRootResolver
-      { queryResolver = Query {a1 = WA {aText = const $ pure "test1", aInt = 0}, a2 = Nothing, a3 = Nothing}
-      , mutationResolver = Mutation {mut1 = Nothing, mut2 = Nothing, mut3 = Nothing}
-      , subscriptionResolver = Subscription {sub1 = Nothing, sub2 = Nothing, sub3 = Nothing}
-      }
+api = interpreter rootResolver

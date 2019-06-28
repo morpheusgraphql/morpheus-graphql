@@ -36,11 +36,13 @@ newtype Query = Query
   { q1 :: A
   } deriving (Generic)
 
+rootResolver :: GQLRootResolver IO Query () ()
+rootResolver =
+  GQLRootResolver
+    { queryResolver = return Query {q1 = A {a1 = const $ return "a1Test", a2 = const $ return 1}}
+    , mutationResolver = return ()
+    , subscriptionResolver = return ()
+    }
+
 api :: ByteString -> IO ByteString
-api =
-  interpreter
-    GQLRootResolver
-      { queryResolver = Query {q1 = A {a1 = const $ return "a1Test", a2 = const $ return 1}}
-      , mutationResolver = ()
-      , subscriptionResolver = ()
-      }
+api = interpreter rootResolver

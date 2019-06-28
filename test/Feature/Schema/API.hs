@@ -28,7 +28,13 @@ data Query = Query
   , a2 :: A2.A
   } deriving (Generic)
 
+rootResolver :: GQLRootResolver IO Query () ()
+rootResolver =
+  GQLRootResolver
+    { queryResolver = return Query {a1 = A "" 0, a2 = A2.A 0}
+    , mutationResolver = return ()
+    , subscriptionResolver = return ()
+    }
+
 api :: ByteString -> IO ByteString
-api =
-  interpreter
-    GQLRootResolver {queryResolver = Query {a1 = A "" 0, a2 = A2.A 0}, mutationResolver = (), subscriptionResolver = ()}
+api = interpreter rootResolver

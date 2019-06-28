@@ -51,11 +51,13 @@ data Query = Query
 resolveUnion :: () -> ResM [AOrB]
 resolveUnion _ = return [A' A {aText = "at", aInt = 1}, B' B {bText = "bt", bInt = 2}]
 
+rootResolver :: GQLRootResolver IO Query () ()
+rootResolver =
+  GQLRootResolver
+    { queryResolver = return Query {union = resolveUnion, fc = C {cText = "", cInt = 3}}
+    , mutationResolver = return ()
+    , subscriptionResolver = return ()
+    }
+
 api :: ByteString -> IO ByteString
-api =
-  interpreter
-    GQLRootResolver
-      { queryResolver = Query {union = resolveUnion, fc = C {cText = "", cInt = 3}}
-      , mutationResolver = ()
-      , subscriptionResolver = ()
-      }
+api = interpreter rootResolver
