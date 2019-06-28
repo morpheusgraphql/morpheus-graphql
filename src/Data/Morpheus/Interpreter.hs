@@ -84,9 +84,9 @@ instance Interpreter (WSPub Text) where
    Websocket Interpreter without state and side effects, mutations and subscription will return Actions
    that will be executed in Websocket server
 -}
-type WSSub a = a -> IO (OutputAction a)
+type WSSub a = a -> IO (OutputAction IO a)
 
-instance Interpreter (GQLRequest -> IO (OutputAction LB.ByteString)) where
+instance Interpreter (GQLRequest -> IO (OutputAction IO LB.ByteString)) where
   interpreter root request = fmap encode <$> resolveStream root request
 
 instance Interpreter (WSSub LB.ByteString) where

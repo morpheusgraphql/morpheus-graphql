@@ -1,5 +1,5 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Resolve.Resolve
@@ -10,42 +10,50 @@ module Data.Morpheus.Resolve.Resolve
   , packStream
   ) where
 
-import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT)
-import           Data.Aeson                                 (eitherDecode, encode)
-import           Data.ByteString.Lazy.Char8                 (ByteString)
-import           Data.Morpheus.Error.Utils                  (badRequestError, renderErrors)
-import           Data.Morpheus.Parser.Parser                (parseGQL)
-import           Data.Morpheus.Resolve.Operator             (RootResCon, effectEncode, encodeQuery, fullSchema)
-import           Data.Morpheus.Server.ClientRegister        (GQLState, publishUpdates)
-import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Operator' (..))
-import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
-import           Data.Morpheus.Types.Internal.WebSocket     (OutputAction (..))
-import           Data.Morpheus.Types.Request                (GQLRequest (..))
-import           Data.Morpheus.Types.Resolver               (unpackEffect, unpackEffect2)
-import           Data.Morpheus.Types.Response               (GQLResponse (..))
-import           Data.Morpheus.Types.Types                  (GQLRootResolver (..))
-import           Data.Morpheus.Validation.Validation        (validateRequest)
+import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
+import Data.Aeson (eitherDecode, encode)
+import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Morpheus.Error.Utils (badRequestError, renderErrors)
+import Data.Morpheus.Parser.Parser (parseGQL)
+import Data.Morpheus.Resolve.Operator (RootResCon, effectEncode, encodeQuery, fullSchema)
+import Data.Morpheus.Server.ClientRegister (GQLState, publishUpdates)
+import Data.Morpheus.Types.Internal.AST.Operator (Operator(..), Operator'(..))
+import Data.Morpheus.Types.Internal.WebSocket (OutputAction(..))
+import Data.Morpheus.Types.Request (GQLRequest(..))
+import Data.Morpheus.Types.Resolver (unpackEffect, unpackEffect2)
+import Data.Morpheus.Types.Response (GQLResponse(..))
+import Data.Morpheus.Types.Types (GQLRootResolver(..))
+import Data.Morpheus.Validation.Validation (validateRequest)
 
-resolveByteString :: RootResCon IO q m s => GQLRootResolver q m s -> ByteString -> IO ByteString
+resolveByteString ::
+     Monad m
+  => RootResCon m a b c =>
+       GQLRootResolver a b c -> ByteString -> m ByteString
 resolveByteString rootResolver request =
   case eitherDecode request of
     Left aesonError' -> return $ badRequestError aesonError'
-    Right req        -> encode <$> resolve rootResolver req
+    Right req -> encode <$> resolve rootResolver req
 
-resolveStreamByteString :: RootResCon IO q m s => GQLRootResolver q m s -> ByteString -> IO (OutputAction ByteString)
+resolveStreamByteString ::
+     Monad m
+  => RootResCon m a b c =>
+       GQLRootResolver a b c -> ByteString -> m (OutputAction m ByteString)
 resolveStreamByteString rootResolver request =
   case eitherDecode request of
     Left aesonError' -> return $ NoEffect $ badRequestError aesonError'
-    Right req        -> fmap encode <$> resolveStream rootResolver req
+    Right req -> fmap encode <$> resolveStream rootResolver req
 
-resolve :: RootResCon IO a b c => GQLRootResolver a b c -> GQLRequest -> IO GQLResponse
+resolve ::
+     Monad m
+  => RootResCon m a b c =>
+       GQLRootResolver a b c -> GQLRequest -> m GQLResponse
 resolve GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
   case fullSchema queryResolver mutationResolver subscriptionResolver of
     Left error' -> return $ Errors $ renderErrors error'
     Right validSchema -> do
       value <- runExceptT $ _resolve validSchema
       case value of
-        Left x  -> return $ Errors $ renderErrors x
+        Left x -> return $ Errors $ renderErrors x
         Right x -> return $ Data x
       where _resolve gqlSchema = do
               rootGQL <- ExceptT $ pure (parseGQL request >>= validateRequest gqlSchema)
@@ -56,14 +64,17 @@ resolve GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} 
                 Subscription operator' ->
                   snd <$> unpackEffect2 (effectEncode subscriptionResolver (operatorSelection operator'))
 
-resolveStream :: RootResCon IO q m s => GQLRootResolver q m s -> GQLRequest -> IO (OutputAction GQLResponse)
+resolveStream ::
+     Monad m
+  => RootResCon m a b c =>
+       GQLRootResolver a b c -> GQLRequest -> m (OutputAction m GQLResponse)
 resolveStream GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
   case fullSchema queryResolver mutationResolver subscriptionResolver of
     Left error' -> return $ NoEffect $ Errors $ renderErrors error'
     Right validSchema -> do
       value <- runExceptT $ _resolve validSchema
       case value of
-        Left x       -> return $ NoEffect $ Errors $ renderErrors x
+        Left x -> return $ NoEffect $ Errors $ renderErrors x
         Right value' -> return $ fmap Data value'
   where
     _resolve gqlSchema = (ExceptT $ pure (parseGQL request >>= validateRequest gqlSchema)) >>= resolveOperator
@@ -76,17 +87,16 @@ resolveStream GQLRootResolver {queryResolver, mutationResolver, subscriptionReso
           return
             PublishMutation {mutationChannels = channels, mutationResponse = response, currentSubscriptionStateResolver}
           where
-            currentSubscriptionStateResolver :: SelectionSet -> IO GQLResponse
             currentSubscriptionStateResolver selection' = do
               value <- unpackEffect (effectEncode subscriptionResolver selection')
               case value of
-                Left x        -> pure $ Errors $ renderErrors x
+                Left x -> pure $ Errors $ renderErrors x
                 Right (_, x') -> return $ Data x'
         resolveOperator (Subscription operator') = do
           (subscriptionChannels, _) <- unpackEffect2 $ effectEncode subscriptionResolver $ operatorSelection operator'
           return InitSubscription {subscriptionChannels, subscriptionQuery = operatorSelection operator'}
 
-packStream :: GQLState -> (ByteString -> IO (OutputAction ByteString)) -> ByteString -> IO ByteString
+packStream :: GQLState -> (ByteString -> IO (OutputAction IO ByteString)) -> ByteString -> IO ByteString
 packStream state streamAPI request = do
   value <- streamAPI request
   case value of
