@@ -15,6 +15,7 @@ module Data.Morpheus.Types.Resolver
   , EffectT(..)
   , Effect(..)
   , Resolver
+  , GQLRootResolver(..)
   , gqlResolver
   , gqlEffectResolver
   , liftEffectResolver
@@ -43,6 +44,16 @@ type Resolver = ExceptT String
 -- | GraphQL Resolver
 gqlResolver :: m (Either String a) -> Resolver m a
 gqlResolver = ExceptT
+
+-- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
+--
+--  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
+--  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
+data GQLRootResolver m a b c = GQLRootResolver
+  { queryResolver        :: ResolveT m a
+  , mutationResolver     :: ResolveT (EffectT m Text) b
+  , subscriptionResolver :: ResolveT (EffectT m Text) c
+  }
 
 -- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver
 gqlEffectResolver :: Monad m => [c] -> (EffectT m c) (Either String a) -> Resolver (EffectT m c) a
