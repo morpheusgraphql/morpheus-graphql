@@ -9,12 +9,18 @@ module Deprecated.API
   ( gqlRoot
   ) where
 
-import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (EffectM, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM, Resolver,
-                                      ScalarValue (..), gqlEffectResolver, gqlResolver)
+import           Data.Map            (Map)
+import qualified Data.Map            as M (fromList)
+import           Data.Set            (Set)
+import qualified Data.Set            as S (fromList)
 import           Data.Text           (Text)
 import           Data.Typeable       (Typeable)
 import           GHC.Generics        (Generic)
+
+-- MORPHEUS
+import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Types (EffectM, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM, Resolver,
+                                      ScalarValue (..), gqlEffectResolver, gqlResolver)
 
 type instance KIND CityID = ENUM
 
@@ -90,19 +96,11 @@ data User m = User
 instance Typeable a => GQLType (User a) where
   description _ = "Custom Description for Client Defined User Type"
 
-type instance KIND (A Int) = OBJECT
-
-type instance KIND (A Text) = OBJECT
+type instance KIND (A a) = OBJECT
 
 newtype A a = A
   { wrappedA :: a
   } deriving (Generic, GQLType)
-
-data Query = Query
-  { user      :: () -> ResM (User ResM)
-  , wrappedA1 :: A Int
-  , wrappedA2 :: A Text
-  } deriving (Generic)
 
 fetchAddress :: Monad m => Euro -> m (Either String Address)
 fetchAddress _ = return $ Right $ Address " " "" 0
@@ -148,6 +146,14 @@ createAddressMutation _ = gqlEffectResolver ["UPDATE_ADDRESS"] (fetchAddress (Eu
 newAddressSubscription :: a -> EffectM Address
 newAddressSubscription _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
 
+data Query = Query
+  { user       :: () -> ResM (User ResM)
+  , wrappedA1  :: A (Int, Text)
+  , wrappedA2  :: A Text
+  , integerSet :: Set Int
+  , textIntMap :: Map Text Int
+  } deriving (Generic)
+
 data Mutation = Mutation
   { createUser    :: () -> EffectM (User EffectM)
   , createAddress :: () -> EffectM Address
@@ -161,7 +167,15 @@ data Subscription = Subscription
 gqlRoot :: GQLRootResolver IO Query Mutation Subscription
 gqlRoot =
   GQLRootResolver
-    { queryResolver = return Query {user = const $ gqlResolver fetchUser, wrappedA1 = A 0, wrappedA2 = A ""}
+    { queryResolver =
+        return
+          Query
+            { user = const $ gqlResolver fetchUser
+            , wrappedA1 = A (0, "")
+            , wrappedA2 = A ""
+            , integerSet = S.fromList [1, 2]
+            , textIntMap = M.fromList [("robin", 1), ("carl", 2)]
+            }
     , mutationResolver = return Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
     , subscriptionResolver = return Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}
     }

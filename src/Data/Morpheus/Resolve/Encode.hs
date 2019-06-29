@@ -19,8 +19,12 @@ module Data.Morpheus.Resolve.Encode
 
 import           Control.Monad.Trans                        (lift)
 import           Control.Monad.Trans.Except
+import           Data.Map                                   (Map)
+import qualified Data.Map                                   as M (toList)
 import           Data.Maybe                                 (fromMaybe)
 import           Data.Proxy                                 (Proxy (..))
+import           Data.Set                                   (Set)
+import qualified Data.Set                                   as S (toList)
 import           Data.Text                                  (Text, pack)
 import           GHC.Generics
 
@@ -30,6 +34,7 @@ import           Data.Morpheus.Error.Selection              (fieldNotResolved, s
 import           Data.Morpheus.Kind                         (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
 import           Data.Morpheus.Resolve.Decode               (ArgumentsConstraint, decodeArguments)
 import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
+import           Data.Morpheus.Types.Custom                 (MapKind, Pair (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                (GQLType (__typeName))
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
@@ -204,3 +209,21 @@ instance (Monad m, Encoder a (KIND a) m) => Encoder (Maybe a) WRAPPER m where
 --
 instance (Monad m, Encoder a (KIND a) m) => Encoder [a] WRAPPER m where
   __encode (WithGQLKind list) query = List <$> mapM (`__encode` query) (map WithGQLKind list :: [GQLKindOf a])
+
+--
+--  Tuple
+--
+instance Encoder (Pair k v) OBJECT m => Encoder (k, v) WRAPPER m where
+  __encode (WithGQLKind (key, value)) = encode (Pair key value)
+
+--
+--  Set
+--
+instance Encoder [a] WRAPPER m => Encoder (Set a) WRAPPER m where
+  __encode (WithGQLKind dataSet) = encode (S.toList dataSet)
+
+--
+--  Map
+--
+instance (Eq k, Monad m, Encoder (MapKind k v (Resolver m)) OBJECT m) => Encoder (Map k v) WRAPPER m where
+  __encode (WithGQLKind value) = encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver m))

@@ -12,8 +12,12 @@ module Data.Morpheus.Kind
   , KIND
   ) where
 
-import           Data.Morpheus.Types.Resolver (Resolver)
+import           Data.Map                     (Map)
+import           Data.Set                     (Set)
 import           Data.Text                    (Text)
+
+-- MORPHEUS
+import           Data.Morpheus.Types.Resolver (Resolver)
 
 -- | Type Family to associate type to GraphQL Kind
 type family KIND a :: *
@@ -48,6 +52,12 @@ type instance KIND Bool = SCALAR
 type instance KIND (Maybe a) = WRAPPER
 
 type instance KIND [a] = WRAPPER
+
+type instance KIND (a, b) = WRAPPER
+
+type instance KIND (Set a) = WRAPPER
+
+type instance KIND (Map k v) = WRAPPER
 
 type instance KIND (Resolver m a) = WRAPPER
 

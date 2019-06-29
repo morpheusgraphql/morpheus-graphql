@@ -15,11 +15,13 @@ module Data.Morpheus.Resolve.Introspect
   ( introspectOutputType
   ) where
 
+import           Data.Map                               (Map)
 import           Data.Morpheus.Error.Schema             (nameCollisionError)
 import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION, WRAPPER)
 import           Data.Morpheus.Resolve.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), RecSel, SelOf, TypeUpdater, UnionRep (..),
                                                          resolveTypes)
+import           Data.Morpheus.Types.Custom             (MapKind, Pair)
 import           Data.Morpheus.Types.GQLScalar          (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType            (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data      (DataArguments, DataField (..), DataFullType (..),
@@ -28,6 +30,7 @@ import           Data.Morpheus.Types.Internal.Data      (DataArguments, DataFiel
                                                          defineType, isTypeDefined)
 import           Data.Morpheus.Types.Resolver           (Resolver)
 import           Data.Proxy                             (Proxy (..))
+import           Data.Set                               (Set)
 import           Data.Text                              (Text, pack)
 import           GHC.Generics
 
@@ -207,8 +210,25 @@ instance Introspect a (KIND a) f => Introspect [a] WRAPPER f where
       listField x = x {fieldTypeWrappers = [NonNullType, ListType] ++ fieldTypeWrappers x}
   introspect _ = introspect (Context :: Context a (KIND a) f)
 
--- | Introspection Of Resolver ' a ::-> b'
--- introspects 'a' as argument and 'b' as output type
+--
+-- CUSTOM Types: Tuple, Map, Set
+--
+instance Introspect (Pair k v) OBJECT f => Introspect (k, v) WRAPPER f where
+  __field _ = __field (Context :: Context (Pair k v) OBJECT f)
+  introspect _ = introspect (Context :: Context (Pair k v) OBJECT f)
+
+instance Introspect [a] WRAPPER f => Introspect (Set a) WRAPPER f where
+  __field _ = __field (Context :: Context [a] WRAPPER f)
+  introspect _ = introspect (Context :: Context [a] WRAPPER f)
+
+-- | introspection Does not care about resolving monad, some fake monad just for mocking
+type MockRes = (Resolver Maybe)
+
+instance Introspect (MapKind k v MockRes) OBJECT f => Introspect (Map k v) WRAPPER f where
+  __field _ = __field (Context :: Context (MapKind k v MockRes) OBJECT f)
+  introspect _ = introspect (Context :: Context (MapKind k v MockRes) OBJECT f)
+
+-- |introspects Of Resolver 'a' as argument and 'b' as output type
 instance (ObjectRep (Rep a) (), OutputConstraint b) => Introspect (a -> Resolver m b) WRAPPER OutputType where
   __field _ name = (__field (Context :: OutputOf b) name) {fieldArgs = map fst $ objectFieldTypes (Proxy @(Rep a))}
   introspect _ typeLib = resolveTypes typeLib $ map snd args ++ [introspect (Context :: OutputOf b)]
