@@ -10,36 +10,25 @@
 
 module Data.Morpheus.Types.GQLType
   ( GQLType(..)
-  )
-where
+  ) where
 
-import           Data.Morpheus.Types.Internal.Data
-                                                ( DataFingerprint(..) )
-import           Data.Morpheus.Types.Resolver   ( Resolver )
-import           Data.Proxy                     ( Proxy(..) )
-import           Data.Semigroup                 ( (<>) )
-import           Data.Set                       ( Set )
-import           Data.Text                      ( Text
-                                                , intercalate
-                                                , pack
-                                                )
-import           Data.Typeable                  ( TyCon
-                                                , TypeRep
-                                                , Typeable
-                                                , splitTyConApp
-                                                , tyConFingerprint
-                                                , tyConName
-                                                , typeRep
-                                                )
+import           Data.Morpheus.Types.Internal.Data (DataFingerprint (..))
+import           Data.Morpheus.Types.Resolver      (Resolver)
+import           Data.Proxy                        (Proxy (..))
+import           Data.Semigroup                    ((<>))
+import           Data.Set                          (Set)
+import           Data.Text                         (Text, intercalate, pack)
+import           Data.Typeable                     (TyCon, TypeRep, Typeable, splitTyConApp, tyConFingerprint,
+                                                    tyConName, typeRep)
 
 resolverCon :: TyCon
 resolverCon = fst $ splitTyConApp $ typeRep $ Proxy @(Resolver Maybe)
 
 -- Ignores Resolver name  from typeName
 ignoreResolver :: (TyCon, [TypeRep]) -> [TyCon]
-ignoreResolver (con, _) | con == resolverCon = []
-ignoreResolver (con, args) =
-  con : concatMap (ignoreResolver . splitTyConApp) args
+ignoreResolver (con, _)
+  | con == resolverCon = []
+ignoreResolver (con, args) = con : concatMap (ignoreResolver . splitTyConApp) args
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --

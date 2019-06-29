@@ -221,12 +221,14 @@ instance Introspect [a] WRAPPER f => Introspect (Set a) WRAPPER f where
   __field _ = __field (Context :: Context [a] WRAPPER f)
   introspect _ = introspect (Context :: Context [a] WRAPPER f)
 
-instance Introspect (MapKind k v (QUERY IO)) OBJECT f => Introspect (Map k v) WRAPPER f where
-  __field _ = __field (Context :: Context (MapKind k v (QUERY IO)) OBJECT f)
-  introspect _ = introspect (Context :: Context (MapKind k v (QUERY IO)) OBJECT f)
+-- | introspection Does not care about resolving monad, some fake monad just for mocking
+type MockRes = (Resolver Maybe)
 
--- | Introspection Of Resolver ' a ::-> b'
--- introspects 'a' as argument and 'b' as output type
+instance Introspect (MapKind k v MockRes) OBJECT f => Introspect (Map k v) WRAPPER f where
+  __field _ = __field (Context :: Context (MapKind k v MockRes) OBJECT f)
+  introspect _ = introspect (Context :: Context (MapKind k v MockRes) OBJECT f)
+
+-- |introspects Of Resolver 'a' as argument and 'b' as output type
 instance (ObjectRep (Rep a) (), OutputConstraint b) => Introspect (a -> Resolver m b) WRAPPER OutputType where
   __field _ name = (__field (Context :: OutputOf b) name) {fieldArgs = map fst $ objectFieldTypes (Proxy @(Rep a))}
   introspect _ typeLib = resolveTypes typeLib $ map snd args ++ [introspect (Context :: OutputOf b)]

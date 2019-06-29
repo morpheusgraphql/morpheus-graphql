@@ -10,15 +10,14 @@ module Data.Morpheus.Kind
   , UNION
   , INPUT_OBJECT
   , KIND
-  )
-where
+  ) where
 
-import           Data.Map                       ( Map )
-import           Data.Set                       ( Set )
-import           Data.Text                      ( Text )
+import           Data.Map                     (Map)
+import           Data.Set                     (Set)
+import           Data.Text                    (Text)
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Resolver   ( Resolver )
+import           Data.Morpheus.Types.Resolver (Resolver)
 
 -- | Type Family to associate type to GraphQL Kind
 type family KIND a :: *

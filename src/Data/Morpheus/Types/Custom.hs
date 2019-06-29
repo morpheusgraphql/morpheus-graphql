@@ -12,10 +12,11 @@ module Data.Morpheus.Types.Custom
   , mapKindFromList
   ) where
 
-import           Data.Morpheus.Kind           (KIND, OBJECT)
-import           Data.Morpheus.Types.GQLType  (GQLType)
-import           Data.Morpheus.Types.Resolver (QUERY, Resolver (..))
-import           GHC.Generics                 (Generic)
+import           GHC.Generics                (Generic)
+
+-- MORPHEUS
+import           Data.Morpheus.Kind          (KIND, OBJECT)
+import           Data.Morpheus.Types.GQLType (GQLType)
 
 type instance KIND (Pair k v) = OBJECT
 
@@ -32,23 +33,18 @@ type instance KIND (MapKind k v m) = OBJECT
 
 data MapKind k v m = MapKind
   { size   :: Int
-  , keys   :: Resolver m (MapArgs k) [k]
-  , values :: Resolver m (MapArgs k) [v]
-  , pairs  :: Resolver m (MapArgs k) [Pair k v]
+  , keys   :: () -> m [k]
+  , values :: MapArgs k -> m [v]
+  , pairs  :: MapArgs k -> m [Pair k v]
   } deriving (Generic, GQLType)
 
-mapKindFromList :: (Eq k, Monad m) => [(k, v)] -> MapKind k v (QUERY m)
+mapKindFromList :: (Eq k, Monad m) => [(k, v)] -> MapKind k v m
 mapKindFromList inputPairs =
-  MapKind
-    { size = length inputPairs
-    , keys = Resolver resolveKeys
-    , values = Resolver resolveValues
-    , pairs = Resolver resolvePairs
-    }
+  MapKind {size = length inputPairs, keys = resolveKeys, values = resolveValues, pairs = resolvePairs}
   where
     filterBy MapArgs {oneOf = Just list} = filter ((`elem` list) . fst) inputPairs
     filterBy _                           = inputPairs
-    resolveKeys = return . Right . map fst . filterBy
-    resolveValues = return . Right . map snd . filterBy
-    resolvePairs = return . Right . map toGQLTuple . filterBy
+    resolveKeys _ = return $ map fst inputPairs
+    resolveValues = return . map snd . filterBy
+    resolvePairs = return . (map toGQLTuple . filterBy)
     toGQLTuple (x, y) = Pair x y
