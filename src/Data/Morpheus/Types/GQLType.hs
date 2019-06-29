@@ -12,17 +12,28 @@ module Data.Morpheus.Types.GQLType
   ( GQLType(..)
   ) where
 
-import           Data.Morpheus.Types.Internal.Data (DataFingerprint (..))
-import           Data.Morpheus.Types.Resolver      (Resolver)
 import           Data.Proxy                        (Proxy (..))
-import           Data.Semigroup                    ((<>))
 import           Data.Set                          (Set)
 import           Data.Text                         (Text, intercalate, pack)
 import           Data.Typeable                     (TyCon, TypeRep, Typeable, splitTyConApp, tyConFingerprint,
                                                     tyConName, typeRep)
 
+-- MORPHEUS
+import           Data.Morpheus.Types.Custom        (MapKind, Pair)
+import           Data.Morpheus.Types.Internal.Data (DataFingerprint (..))
+import           Data.Morpheus.Types.Resolver      (Resolver)
+
 resolverCon :: TyCon
 resolverCon = fst $ splitTyConApp $ typeRep $ Proxy @(Resolver Maybe)
+
+-- | replaces typeName (A,B) with Pair_A_B
+replacePairCon :: TyCon -> TyCon
+replacePairCon x
+  | hsPair == x = gqlPair
+  where
+    hsPair = fst $ splitTyConApp $ typeRep $ Proxy @(Int, Int)
+    gqlPair = fst $ splitTyConApp $ typeRep $ Proxy @(Pair Int Int)
+replacePairCon x = x
 
 -- Ignores Resolver name  from typeName
 ignoreResolver :: (TyCon, [TypeRep]) -> [TyCon]
@@ -52,7 +63,7 @@ class GQLType a where
     Proxy a -> Text
   __typeName _ = intercalate "_" (getName $ Proxy @a)
     where
-      getName = fmap (map (pack . tyConName)) (ignoreResolver . splitTyConApp . typeRep)
+      getName = fmap (map (pack . tyConName)) (map replacePairCon . ignoreResolver . splitTyConApp . typeRep)
   __typeFingerprint :: Proxy a -> DataFingerprint
   default __typeFingerprint :: (Typeable a) =>
     Proxy a -> DataFingerprint
@@ -83,4 +94,8 @@ instance GQLType a => GQLType (Set a) where
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
-  __typeName _ = "Tuple" <> __typeName (Proxy @a) <> "_" <> __typeName (Proxy @b)
+  __typeName _ = __typeName $ Proxy @(Pair a b)
+
+instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)
+
+instance (Typeable a, Typeable b, Typeable m, GQLType a, GQLType b) => GQLType (MapKind a b m)

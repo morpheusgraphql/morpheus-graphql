@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -12,18 +11,17 @@ module Data.Morpheus.Types.Custom
   , mapKindFromList
   ) where
 
-import           GHC.Generics                (Generic)
+import           GHC.Generics       (Generic)
 
 -- MORPHEUS
-import           Data.Morpheus.Kind          (KIND, OBJECT)
-import           Data.Morpheus.Types.GQLType (GQLType)
+import           Data.Morpheus.Kind (KIND, OBJECT)
 
 type instance KIND (Pair k v) = OBJECT
 
 data Pair k v = Pair
   { key   :: k
   , value :: v
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
 
 newtype MapArgs k = MapArgs
   { oneOf :: Maybe [k]
@@ -36,7 +34,7 @@ data MapKind k v m = MapKind
   , keys   :: () -> m [k]
   , values :: MapArgs k -> m [v]
   , pairs  :: MapArgs k -> m [Pair k v]
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
 
 mapKindFromList :: (Eq k, Monad m) => [(k, v)] -> MapKind k v m
 mapKindFromList inputPairs =
