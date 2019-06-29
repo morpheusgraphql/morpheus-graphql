@@ -3,6 +3,7 @@
 ### Added
 
 - support for Union Types: `type instance KIND <type> = UNION`
+- support of haskell Types: `Map`, `Set`, and  Pair `(a,b)`
 - GraphQL Resolver supports custom Monad
 - add `Interpreter` class with instances:
   - `ByteString -> m ByteString` and Lazy `ByteString`, where `m` is resolver monad
