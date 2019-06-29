@@ -14,7 +14,7 @@ import           Data.Aeson                         (FromJSON (..), ToJSON (..),
 import           Data.ByteString.Lazy.Char8         (ByteString)
 import           Data.Map                           (Map)
 import qualified Data.Morpheus.Types.Internal.Value as V (Value)
-import           Data.Morpheus.Types.Response       (GQLResponse)
+import           Data.Morpheus.Types.IO             (GQLResponse)
 import           Data.Semigroup                     ((<>))
 import           Data.Text                          (Text)
 import           GHC.Generics                       (Generic)

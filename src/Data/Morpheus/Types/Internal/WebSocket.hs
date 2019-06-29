@@ -10,7 +10,7 @@ module Data.Morpheus.Types.Internal.WebSocket
   ) where
 
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
-import           Data.Morpheus.Types.Response               (GQLResponse (..))
+import           Data.Morpheus.Types.IO                     (GQLResponse (..))
 import           Data.Semigroup                             ((<>))
 import           Data.Text                                  (Text)
 import           Data.UUID                                  (UUID)
