@@ -7,16 +7,18 @@ module Data.Morpheus.Types.Internal.Validation
   , GQLErrors
   , JSONError(..)
   , Validation
-  , ResolveIO
-  , failResolveIO
+  , ResolveT
+  , failResolveT
   , SchemaValidation
+  , ResolveValue
   ) where
 
-import           Control.Monad.Trans.Except        (ExceptT (..))
-import           Data.Aeson                        (ToJSON)
-import           Data.Morpheus.Types.Internal.Base (Position)
-import           Data.Text                         (Text)
-import           GHC.Generics                      (Generic)
+import           Control.Monad.Trans.Except         (ExceptT (..))
+import           Data.Aeson                         (ToJSON)
+import           Data.Morpheus.Types.Internal.Base  (Position)
+import           Data.Morpheus.Types.Internal.Value (Value)
+import           Data.Text                          (Text)
+import           GHC.Generics                       (Generic)
 
 data GQLError = GQLError
   { desc      :: Text
@@ -39,7 +41,9 @@ type Validation a = Either GQLErrors a
 
 type SchemaValidation a = Validation a
 
-type ResolveIO = ExceptT GQLErrors IO
+type ResolveT = ExceptT GQLErrors
 
-failResolveIO :: GQLErrors -> ResolveIO a
-failResolveIO = ExceptT . pure . Left
+type ResolveValue m = ExceptT GQLErrors m Value
+
+failResolveT :: Monad m => GQLErrors -> ResolveT m a
+failResolveT = ExceptT . pure . Left

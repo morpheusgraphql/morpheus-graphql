@@ -10,9 +10,8 @@ module Feature.WrappedTypeName.API
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (KIND, MUTATION, OBJECT, QUERY, MUTATION)
-import           Data.Morpheus.Types        (GQLMutation, GQLQuery, GQLRootResolver (..), GQLSubscription, GQLType (..),
-                                             Resolver)
+import           Data.Morpheus.Kind         (KIND, OBJECT)
+import           Data.Morpheus.Types        (EffectM, GQLRootResolver (..), GQLType (..), ResM)
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -26,33 +25,35 @@ data Wrapped a b = Wrapped
   } deriving (Generic, GQLType)
 
 data WA m = WA
-  { aText :: Resolver m () Text
+  { aText :: () -> m Text
   , aInt  :: Int
   } deriving (Generic, GQLType)
 
 data Query = Query
-  { a1 :: WA (QUERY IO)
+  { a1 :: WA ResM
   , a2 :: Maybe (Wrapped Int Int)
   , a3 :: Maybe (Wrapped (Wrapped Text Int) Text)
-  } deriving (Generic, GQLQuery)
+  } deriving (Generic)
 
 data Mutation = Mutation
-  { mut1 :: Maybe (WA (MUTATION IO Text))
+  { mut1 :: Maybe (WA EffectM)
   , mut2 :: Maybe (Wrapped Int Int)
   , mut3 :: Maybe (Wrapped (Wrapped Text Int) Text)
-  } deriving (Generic, GQLMutation)
+  } deriving (Generic)
 
 data Subscription = Subscription
-  { sub1 :: Maybe (WA (MUTATION IO Text)) -- TODO: test Subscription when it implemented
+  { sub1 :: Maybe (WA EffectM)
   , sub2 :: Maybe (Wrapped Int Int)
   , sub3 :: Maybe (Wrapped (Wrapped Text Int) Text)
-  } deriving (Generic, GQLSubscription)
+  } deriving (Generic)
+
+rootResolver :: GQLRootResolver IO Query Mutation Subscription
+rootResolver =
+  GQLRootResolver
+    { queryResolver = return Query {a1 = WA {aText = const $ pure "test1", aInt = 0}, a2 = Nothing, a3 = Nothing}
+    , mutationResolver = return Mutation {mut1 = Nothing, mut2 = Nothing, mut3 = Nothing}
+    , subscriptionResolver = return Subscription {sub1 = Nothing, sub2 = Nothing, sub3 = Nothing}
+    }
 
 api :: ByteString -> IO ByteString
-api =
-  interpreter
-    GQLRootResolver
-      { queryResolver = Query {a1 = WA {aText = pure "test1", aInt = 0}, a2 = Nothing, a3 = Nothing}
-      , mutationResolver = Mutation {mut1 = Nothing, mut2 = Nothing, mut3 = Nothing}
-      , subscriptionResolver = Subscription {sub1 = Nothing, sub2 = Nothing, sub3 = Nothing}
-      }
+api = interpreter rootResolver

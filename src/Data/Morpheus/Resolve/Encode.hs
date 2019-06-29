@@ -13,44 +13,124 @@
 module Data.Morpheus.Resolve.Encode
   ( ObjectFieldResolvers(..)
   , resolveBySelection
-  , resolveBySelectionM
   , resolversBy
-  , MResult
   , QueryResult
-  ) where
+  )
+where
 
-import           Control.Monad.Trans                            (lift)
+import           Control.Monad.Trans            ( lift )
 import           Control.Monad.Trans.Except
-import           Data.Map                                       (Map)
-import qualified Data.Map                                       as M (toList)
-import           Data.Morpheus.Error.Internal                   (internalErrorIO)
-import           Data.Morpheus.Error.Selection                  (fieldNotResolved, subfieldsNotSelected)
-import           Data.Morpheus.Kind                             (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
-import           Data.Morpheus.Resolve.Decode                   (ArgumentsConstraint, decodeArguments)
-import           Data.Morpheus.Resolve.Generics.DeriveResolvers (ObjectFieldResolvers (..), UnionResolvers (..),
-                                                                 lookupSelectionByType, resolveBySelection,
-                                                                 resolveBySelectionM, resolversBy)
-import           Data.Morpheus.Resolve.Generics.EnumRep         (EnumRep (..))
-import           Data.Morpheus.Types.Custom                     (MapKind, Pair (..), mapKindFromList)
-import           Data.Morpheus.Types.GQLScalar                  (GQLScalar (..))
-import           Data.Morpheus.Types.GQLType                    (GQLType (__typeName))
-import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..))
-import           Data.Morpheus.Types.Internal.Base              (Position)
-import           Data.Morpheus.Types.Internal.Validation        (ResolveIO, failResolveIO)
-import           Data.Morpheus.Types.Internal.Value             (ScalarValue (..), Value (..))
-import           Data.Morpheus.Types.Resolver                   (MUTATION, QUERY, Resolver (..), WithEffect (..))
-import           Data.Proxy                                     (Proxy (..))
-import           Data.Set                                       (Set, toList)
-import           Data.Text                                      (Text, pack)
+import           Data.Maybe                     ( fromMaybe )
+import           Data.Proxy                     ( Proxy(..) )
+import           Data.Text                      ( Text
+                                                , pack
+                                                )
 import           GHC.Generics
 
-type ObjectConstraint a b = (Generic a, GQLType a, ObjectFieldResolvers (Rep a) b)
+-- MORPHEUS
+import           Data.Morpheus.Error.Internal   ( internalErrorT )
+import           Data.Morpheus.Error.Selection  ( fieldNotResolved
+                                                , subfieldsNotSelected
+                                                )
+import           Data.Morpheus.Kind             ( ENUM
+                                                , KIND
+                                                , OBJECT
+                                                , SCALAR
+                                                , UNION
+                                                , WRAPPER
+                                                )
+import           Data.Morpheus.Resolve.Decode   ( ArgumentsConstraint
+                                                , decodeArguments
+                                                )
+import           Data.Morpheus.Resolve.Generics.EnumRep
+                                                ( EnumRep(..) )
+import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
+import           Data.Morpheus.Types.GQLType    ( GQLType(__typeName) )
+import           Data.Morpheus.Types.Internal.AST.Selection
+                                                ( Selection(..)
+                                                , SelectionRec(..)
+                                                , SelectionSet
+                                                )
+import           Data.Morpheus.Types.Internal.Base
+                                                ( Position )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( ResolveT
+                                                , failResolveT
+                                                )
+import           Data.Morpheus.Types.Internal.Value
+                                                ( ScalarValue(..)
+                                                , Value(..)
+                                                )
+import           Data.Morpheus.Types.Resolver   ( Effect(..)
+                                                , EffectT(..)
+                                                , Resolver
+                                                )
 
-type UnionConstraint a res = (Generic a, GQLType a, UnionResolvers (Rep a) res)
+type SelectRes m a = [(Text, (Text, Selection) -> ResolveT m a)] -> (Text, Selection) -> ResolveT m (Text, a)
+
+type ResolveSel m a = [(Text, Selection)] -> [(Text, (Text, Selection) -> ResolveT m a)] -> ResolveT m a
+
+--
+--  OBJECT
+-- | Derives resolvers by object fields
+class ObjectFieldResolvers f m where
+  objectFieldResolvers :: Text -> f a -> [(Text, (Text, Selection) -> ResolveT m Value)]
+
+instance ObjectFieldResolvers U1 res where
+  objectFieldResolvers _ _ = []
+
+instance (Selector s, ObjectFieldResolvers f res) => ObjectFieldResolvers (M1 S s f) res where
+  objectFieldResolvers _ m@(M1 src) = objectFieldResolvers (pack $ selName m) src
+
+instance ObjectFieldResolvers f res => ObjectFieldResolvers (M1 D c f) res where
+  objectFieldResolvers key' (M1 src) = objectFieldResolvers key' src
+
+instance ObjectFieldResolvers f res => ObjectFieldResolvers (M1 C c f) res where
+  objectFieldResolvers key' (M1 src) = objectFieldResolvers key' src
+
+instance (ObjectFieldResolvers f res, ObjectFieldResolvers g res) => ObjectFieldResolvers (f :*: g) res where
+  objectFieldResolvers meta (a :*: b) = objectFieldResolvers meta a ++ objectFieldResolvers meta b
+
+unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
+unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
+
+selectResolver :: Monad m => a -> SelectRes m a
+selectResolver defaultValue resolvers' (key', selection') =
+  case selectionRec selection' of
+    SelectionAlias name' aliasSelection' -> unwrapMonadTuple
+      ( key'
+      , lookupResolver name' (selection' { selectionRec = aliasSelection' })
+      )
+    _ -> unwrapMonadTuple (key', lookupResolver key' selection')
+ where
+  lookupResolver resolverKey' sel =
+    (fromMaybe (const $ return $defaultValue) $ lookup resolverKey' resolvers')
+      (key', sel)
+
+--
+-- UNION
+--
+class UnionResolvers f m where
+  unionResolvers :: f a -> (Text, (Text, Selection) -> ResolveT m Value)
+
+instance UnionResolvers f res => UnionResolvers (M1 S s f) res where
+  unionResolvers (M1 x) = unionResolvers x
+
+instance UnionResolvers f res => UnionResolvers (M1 D c f) res where
+  unionResolvers (M1 x) = unionResolvers x
+
+instance UnionResolvers f res => UnionResolvers (M1 C c f) res where
+  unionResolvers (M1 x) = unionResolvers x
+
+instance (UnionResolvers a res, UnionResolvers b res) => UnionResolvers (a :+: b) res where
+  unionResolvers (L1 x) = unionResolvers x
+  unionResolvers (R1 x) = unionResolvers x
+
+type ObjectConstraint a m = (Monad m, Generic a, GQLType a, ObjectFieldResolvers (Rep a) m)
+
+type UnionConstraint a m = (Monad m, Generic a, GQLType a, UnionResolvers (Rep a) m)
 
 type EnumConstraint a = (Generic a, EnumRep (Rep a))
-
-type MResult = WithEffect Text Value
 
 type QueryResult = Value
 
@@ -60,62 +140,63 @@ newtype WithGQLKind a b = WithGQLKind
 
 type GQLKindOf a = WithGQLKind a (KIND a)
 
-encode ::
-     forall a b. Encoder a (KIND a) b
+encode
+  :: forall a m
+   . Encoder a (KIND a) m
   => a
   -> (Text, Selection)
-  -> ResolveIO b
+  -> ResolveT m Value
 encode resolver = __encode (WithGQLKind resolver :: GQLKindOf a)
 
-class Encoder a kind toValue where
-  __encode :: WithGQLKind a kind -> (Text, Selection) -> ResolveIO toValue
+class Encoder a kind m where
+  __encode :: WithGQLKind a kind -> (Text, Selection) -> ResolveT m Value
 
 --
 -- SCALAR
 --
-instance GQLScalar a => Encoder a SCALAR QueryResult where
+instance (GQLScalar a, Monad m) => Encoder a SCALAR m where
   __encode = pure . pure . Scalar . serialize . resolverValue
-
-instance GQLScalar a => Encoder a SCALAR MResult where
-  __encode value selection = pure <$> __encode value selection
 
 --
 -- ENUM
 --
-instance EnumConstraint a => Encoder a ENUM QueryResult where
+instance (EnumConstraint a, Monad m) => Encoder a ENUM m where
   __encode = pure . pure . Scalar . String . encodeRep . from . resolverValue
-
-instance EnumConstraint a => Encoder a ENUM MResult where
-  __encode value selection = pure <$> __encode value selection
 
 --
 --  OBJECTS
 --
-instance ObjectConstraint a QueryResult => Encoder a OBJECT QueryResult where
+instance ObjectConstraint a m => Encoder a OBJECT m where
   __encode (WithGQLKind value) (_, Selection {selectionRec = SelectionSet selection'}) =
     resolveBySelection selection' (__typenameResolver : resolversBy value)
     where
       __typenameResolver = ("__typename", const $ return $ Scalar $ String $ __typeName (Proxy @a))
-  __encode _ (key, Selection {selectionPosition}) = failResolveIO $ subfieldsNotSelected key "" selectionPosition
+  __encode _ (key, Selection {selectionPosition}) = failResolveT $ subfieldsNotSelected key "" selectionPosition
 
-instance ObjectConstraint a MResult => Encoder a OBJECT MResult where
-  __encode (WithGQLKind value) (_, Selection {selectionRec = SelectionSet selection'}) =
-    resolveBySelectionM selection' (__typenameResolver : resolversBy value)
-    where
-      __typenameResolver = ("__typename", const $ return $ return $ Scalar $ String $ __typeName (Proxy @a))
-  __encode _ (key, Selection {selectionPosition}) = failResolveIO $ subfieldsNotSelected key "" selectionPosition
+resolveBySelection :: Monad m => ResolveSel m Value
+resolveBySelection selection resolvers =
+  Object <$> mapM (selectResolver Null resolvers) selection
+
+resolversBy
+  :: (Generic a, Monad m, ObjectFieldResolvers (Rep a) m)
+  => a
+  -> [(Text, (Text, Selection) -> ResolveT m Value)]
+resolversBy = objectFieldResolvers "" . from
 
 instance Encoder a (KIND a) res => ObjectFieldResolvers (K1 s a) res where
   objectFieldResolvers key' (K1 src) = [(key', encode src)]
 
 -- | Resolves and encodes UNION,
 -- Handles all operators: Query, Mutation and Subscription,
-instance UnionConstraint a res => Encoder a UNION res where
+instance UnionConstraint a m => Encoder a UNION m where
   __encode (WithGQLKind value) (key', sel@Selection {selectionRec = UnionSelection selections'}) =
-    resolver (key', sel {selectionRec = SelectionSet (lookupSelectionByType type' selections')})
+    resolver (key', sel {selectionRec = SelectionSet lookupSelection})
     where
-      (type', resolver) = unionResolvers (from value)
-  __encode _ _ = internalErrorIO "union Resolver only should recieve UnionSelection"
+      lookupSelection :: SelectionSet
+      -- SPEC: if there is no any fragment that supports current object Type GQL returns {}
+      lookupSelection = fromMaybe [] $ lookup typeName selections'
+      (typeName, resolver) = unionResolvers (from value)
+  __encode _ _ = internalErrorT "union Resolver only should recieve UnionSelection"
 
 instance (GQLType a, Encoder a (KIND a) res) => UnionResolvers (K1 s a) res where
   unionResolvers (K1 src) = (__typeName (Proxy @a), encode src)
@@ -125,36 +206,33 @@ instance (GQLType a, Encoder a (KIND a) res) => UnionResolvers (K1 s a) res wher
 --
 -- | Handles all operators: Query, Mutation and Subscription,
 -- if you use it with Mutation or Subscription all effects inside will be lost
-instance (Encoder a (KIND a) res, ArgumentsConstraint p) => Encoder (Resolver (QUERY IO) p a) WRAPPER res where
-  __encode (WithGQLKind (Resolver resolver)) selection'@(key', Selection {selectionArguments, selectionPosition}) = do
+instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m) => Encoder (a -> Resolver m b) WRAPPER m where
+  __encode (WithGQLKind resolver) selection'@(fieldName, Selection {selectionArguments, selectionPosition}) = do
     args <- ExceptT $ pure $ decodeArguments selectionArguments
-    liftResolver selectionPosition key' (resolver args) >>= (`encode` selection')
+    lift (runExceptT $ resolver args) >>= liftEither selectionPosition fieldName >>= (`encode` selection')
 
--- | resolver with effect, concatenates sideEffects of child resolvers
-instance (Encoder a (KIND a) MResult, ArgumentsConstraint p) =>
-         Encoder (Resolver (MUTATION IO Text) p a) WRAPPER MResult where
-  __encode (WithGQLKind (MutationResolver resolver)) selection'@(key', Selection {selectionArguments, selectionPosition}) = do
-    args <- ExceptT $ pure $ decodeArguments selectionArguments
-    WithEffect effects1 value1 <- liftResolver selectionPosition key' (resolver args)
-    WithEffect effects2 value2 <- __encode (WithGQLKind value1 :: GQLKindOf a) selection'
-    return $ WithEffect (effects1 ++ effects2) value2
+liftEither :: Monad m => Position -> Text -> Either String a -> ResolveT m a
+liftEither position name (Left message) =
+  failResolveT $ fieldNotResolved position name (pack message)
+liftEither _ _ (Right value) = pure value
 
-liftResolver :: Position -> Text -> IO (Either String a) -> ResolveIO a
-liftResolver position' typeName' x = do
-  result <- lift x
-  case result of
-    Left message' -> failResolveIO $ fieldNotResolved position' typeName' (pack message')
-    Right value   -> pure value
+-- packs Monad in EffectMonad
+instance (Monad m, Encoder a (KIND a) m, ArgumentsConstraint p) => Encoder (p -> Either String a) WRAPPER m where
+  __encode (WithGQLKind resolver) selection'@(fieldName, Selection {selectionArguments, selectionPosition}) =
+    case decodeArguments selectionArguments of
+      Left message -> failResolveT message
+      Right value  -> liftEither selectionPosition fieldName (resolver value) >>= (`encode` selection')
+
+-- packs Monad in EffectMonad
+instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m) =>
+         Encoder (a -> Resolver m b) WRAPPER (EffectT m c) where
+  __encode resolver selection = ExceptT $ EffectT $ Effect [] <$> runExceptT (__encode resolver selection)
 
 --
 -- MAYBE
 --
-instance Encoder a (KIND a) QueryResult => Encoder (Maybe a) WRAPPER QueryResult where
+instance (Monad m, Encoder a (KIND a) m) => Encoder (Maybe a) WRAPPER m where
   __encode (WithGQLKind Nothing)      = const $ pure Null
-  __encode (WithGQLKind (Just value)) = encode value
-
-instance Encoder a (KIND a) MResult => Encoder (Maybe a) WRAPPER MResult where
-  __encode (WithGQLKind Nothing)      = const $ pure $ pure Null
   __encode (WithGQLKind (Just value)) = encode value
 
 --
@@ -186,9 +264,13 @@ instance Encoder [a] WRAPPER QueryResult => Encoder (Set a) WRAPPER QueryResult 
 instance (Eq k, Encoder (MapKind k v (QUERY IO)) OBJECT QueryResult) => Encoder (Map k v) WRAPPER QueryResult where
   __encode (WithGQLKind value) = encode ((mapKindFromList $ M.toList value) :: MapKind k v (QUERY IO))
 
-mapGQLList ::
-     forall a b. Encoder a (KIND a) b
+mapGQLList
+  :: forall a b
+   . Encoder a (KIND a) b
   => GQLKindOf [a]
   -> (Text, Selection)
   -> ResolveIO [b]
-mapGQLList (WithGQLKind list) query = mapM (`__encode` query) (map WithGQLKind list :: [GQLKindOf a])
+mapGQLList (WithGQLKind list) query =
+  mapM (`__encode` query) (map WithGQLKind list :: [GQLKindOf a])
+instance (Monad m, Encoder a (KIND a) m) => Encoder [a] WRAPPER m where
+  __encode (WithGQLKind list) query = List <$> mapM (`__encode` query) (map WithGQLKind list :: [GQLKindOf a])

@@ -4,11 +4,15 @@
     "description": "don't fail: if Mutation, Query, or Subscription Resolver is packed inside GQLType"
   },
   {
-    "path": "ignoreQUERYMonad",
-    "description": "ignore (QUERY IO) or any (QUERY m) monad from typeName, but concatenates other wrapped types with _"
+    "path": "ignoreQueryResolver",
+    "description": "ignore Query Resolver monad from typeName, but concatenates other wrapped types with _"
   },
   {
-    "path": "ignoreMUTATIONMonad",
-    "description": "ignore (MUTATION Text IO) or any (MUTATION c m) monad from typeName, but concatenates other wrapped types with _"
+    "path": "ignoreMutationResolver",
+    "description": "ignore Mutation Resolver monad from typeName, but concatenates other wrapped types with _"
+  },
+  {
+    "path": "ignoreSubscriptionResolver",
+    "description": "ignore Subscription Resolver monad from typeName, but concatenates other wrapped types with _"
   }
 ]

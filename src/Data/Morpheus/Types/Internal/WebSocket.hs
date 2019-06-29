@@ -10,16 +10,16 @@ module Data.Morpheus.Types.Internal.WebSocket
   ) where
 
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
-import           Data.Morpheus.Types.Response               (GQLResponse (..))
+import           Data.Morpheus.Types.IO                     (GQLResponse (..))
 import           Data.Semigroup                             ((<>))
 import           Data.Text                                  (Text)
 import           Data.UUID                                  (UUID)
 import           Network.WebSockets                         (Connection)
 
-data OutputAction a
+data OutputAction m a
   = PublishMutation { mutationChannels                 :: [Text]
                     , mutationResponse                 :: a
-                    , currentSubscriptionStateResolver :: SelectionSet -> IO GQLResponse }
+                    , currentSubscriptionStateResolver :: SelectionSet -> m GQLResponse }
   | InitSubscription { subscriptionChannels :: [Text]
                      , subscriptionQuery    :: SelectionSet }
   | NoEffect a

@@ -21,9 +21,9 @@ import           Network.WebSockets                     (ServerApp, acceptReques
                                                          sendTextData)
 
 -- | statefull GraphQL interpreter
-type GQLAPI = GQLRequest -> IO (OutputAction ByteString)
+type GQLAPI = GQLRequest -> IO (OutputAction IO ByteString)
 
-handleGQLResponse :: GQLClient -> GQLState -> Int -> OutputAction ByteString -> IO ()
+handleGQLResponse :: GQLClient -> GQLState -> Int -> OutputAction IO ByteString -> IO ()
 handleGQLResponse GQLClient {clientConnection = connection', clientID = clientId'} state sessionId' msg =
   case msg of
     PublishMutation { mutationChannels = channels'

@@ -11,8 +11,8 @@ module Feature.Holistic.API
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types        ((::->), GQLMutation, GQLQuery, GQLRootResolver (..), GQLScalar (..),
-                                             GQLSubscription, GQLType (..), ID (..), ScalarValue (..))
+import           Data.Morpheus.Types        (GQLRootResolver (..), GQLScalar (..), GQLType (..), ID (..), ResM,
+                                             ScalarValue (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -63,7 +63,7 @@ data StreetArgs = StreetArgs
 
 data Address = Address
   { city        :: Text
-  , street      :: StreetArgs ::-> Maybe [Maybe [[[Text]]]]
+  , street      :: StreetArgs -> ResM (Maybe [Maybe [[[Text]]]])
   , houseNumber :: Int
   } deriving (Generic, GQLType)
 
@@ -90,46 +90,49 @@ data OfficeArgs = OfficeArgs
 data User = User
   { name    :: Text
   , email   :: Text
-  , address :: AddressArgs ::-> Address
-  , office  :: OfficeArgs ::-> Address
-  , friend  :: () ::-> Maybe User
+  , address :: AddressArgs -> ResM Address
+  , office  :: OfficeArgs -> ResM Address
+  , friend  :: () -> ResM (Maybe User)
   } deriving (Generic)
 
 instance GQLType User where
   description _ = "Custom Description for Client Defined User Type"
 
 data Query = Query
-  { user      :: () ::-> User
+  { user      :: () -> ResM User
   , testUnion :: Maybe TestUnion
-  } deriving (Generic, GQLQuery)
+  } deriving (Generic)
 
 newtype Mutation = Mutation
-  { createUser :: AddressArgs ::-> User
-  } deriving (Generic, GQLMutation)
+  { createUser :: AddressArgs -> ResM User
+  } deriving (Generic)
 
 newtype Subscription = Subscription
-  { newUser :: AddressArgs ::-> User
-  } deriving (Generic, GQLSubscription)
+  { newUser :: AddressArgs -> ResM User
+  } deriving (Generic)
 
-resolveAddress :: a ::-> Address
-resolveAddress = return Address {city = "", houseNumber = 1, street = return Nothing}
+resolveAddress :: a -> ResM Address
+resolveAddress _ = return Address {city = "", houseNumber = 1, street = const $ return Nothing}
 
-resolveUser :: a ::-> User
-resolveUser =
+resolveUser :: a -> ResM User
+resolveUser _ =
   return $
-  User {name = "testName", email = "", address = resolveAddress, office = resolveAddress, friend = return Nothing}
+  User
+    {name = "testName", email = "", address = resolveAddress, office = resolveAddress, friend = const $ return Nothing}
 
-createUserMutation :: AddressArgs ::-> User
+createUserMutation :: AddressArgs -> ResM User
 createUserMutation = resolveUser
 
-newUserSubscription :: AddressArgs ::-> User
+newUserSubscription :: AddressArgs -> ResM User
 newUserSubscription = resolveUser
 
+rootResolver :: GQLRootResolver IO Query Mutation Subscription
+rootResolver =
+  GQLRootResolver
+    { queryResolver = return Query {user = resolveUser, testUnion = Nothing}
+    , mutationResolver = return Mutation {createUser = createUserMutation}
+    , subscriptionResolver = return Subscription {newUser = newUserSubscription}
+    }
+
 api :: ByteString -> IO ByteString
-api =
-  interpreter
-    GQLRootResolver
-      { queryResolver = Query {user = resolveUser, testUnion = Nothing}
-      , mutationResolver = Mutation {createUser = createUserMutation}
-      , subscriptionResolver = Subscription {newUser = newUserSubscription}
-      }
+api = interpreter rootResolver
