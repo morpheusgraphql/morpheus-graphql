@@ -3,11 +3,11 @@
 ### Added
 
 - support for Union Types: `type instance KIND <type> = UNION`
+- GraphQL Resolver supports custom Monad
 - add `Interpreter` class with instances:
-
-  - `ByteString -> IO ByteString` and Lazy `ByteString`,
-  - `Text -> IO Text` and Lazy `Text`
-  - `GQLRequest -> GQLResponse` , When you using it inside another Component that have Manual `ToJSON` deriving,
+  - `ByteString -> m ByteString` and Lazy `ByteString`, where `m` is resolver monad
+  - `Text -> m Text` and Lazy `Text`, where `m` is resolver monad
+  - `GQLRequest -> m GQLResponse` , When you using it inside another Component that have Manual `ToJSON` deriving,
     you have to ensure that `GQLResponse` will be encoded with `toEncoding`, and not with `toJSON`.
 
 - Schema Validation:
