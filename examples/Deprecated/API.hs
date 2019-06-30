@@ -37,21 +37,27 @@ type instance KIND (User res) = OBJECT
 
 type instance KIND (MyUnion res) = UNION
 
-type instance KIND Foo = INPUT_OBJECT
+type instance KIND Cat = INPUT_OBJECT
+
+type instance KIND Dog = INPUT_OBJECT
 
 type instance KIND InputUnion = INPUT_UNION
 
+newtype Cat = Cat
+  { catName :: Text
+  } deriving (Show, Generic, GQLType)
+
+newtype Dog = Dog
+  { dogName :: Text
+  } deriving (Show, Generic, GQLType)
+
 data InputUnion
-  = UID UniqueID
-  | FOO Foo
+  = CAT Cat
+  | DOG Dog
   deriving (Show, Generic, GQLType)
 
 newtype UniqueID = UniqueID
   { uid :: Text
-  } deriving (Show, Generic, GQLType)
-
-newtype Foo = Foo
-  { fooField :: Text
   } deriving (Show, Generic, GQLType)
 
 data MyUnion res
