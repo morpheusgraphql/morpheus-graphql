@@ -213,7 +213,7 @@ newtype Mutation = Mutation
 createDeityMutation :: Form ::-> Deity
 createDeityMutation = ...
 
-rootResolver :: GQLRootResolver IO Query () ()
+rootResolver :: GQLRootResolver IO Query Mutation ()
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {...}
@@ -249,7 +249,7 @@ createDeityResolver args = gqlEffectResolver ["UPDATE_ADDRESS"] createDeityOnDB 
 newDeityResolver :: a -> EffectM Address
 newDeityResolver _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchNewDeityFromDB
 
-rootResolver :: GQLRootResolver IO Query () ()
+rootResolver :: GQLRootResolver IO Query Mutation Subscription
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {...}
