@@ -203,7 +203,7 @@ instance (GQL_TYPE a) => Introspect a INPUT_UNION InputType where
     where
       __typename =
         DataField
-          { fieldName = "__typename"
+          { fieldName = "tag"
           , fieldKind = KindScalar
           , fieldArgs = ()
           , fieldTypeWrappers = []

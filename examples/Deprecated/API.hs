@@ -43,7 +43,7 @@ type instance KIND Dog = INPUT_OBJECT
 
 type instance KIND Bird = INPUT_OBJECT
 
-type instance KIND Animals = INPUT_UNION
+type instance KIND Animal = INPUT_UNION
 
 newtype Cat = Cat
   { catName :: Text
@@ -57,7 +57,7 @@ newtype Bird = Bird
   { birdName :: Text
   } deriving (Show, Generic, GQLType)
 
-data Animals
+data Animal
   = CAT Cat
   | DOG Dog
   | BIRD Bird
@@ -173,17 +173,17 @@ createAddressMutation _ = gqlEffectResolver ["UPDATE_ADDRESS"] (fetchAddress (Eu
 newAddressSubscription :: a -> EffectM Address
 newAddressSubscription _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
 
-newtype IUnArgs = IUnArgs
-  { animal :: Animals
+newtype AnimalArgs = AnimalArgs
+  { animal :: Animal
   } deriving (Show, Generic)
 
-iUnTestResolver :: IUnArgs -> ResM Text
-iUnTestResolver IUnArgs {animal} = return $ pack $ show animal
+setAnimalResolver :: AnimalArgs -> ResM Text
+setAnimalResolver AnimalArgs {animal} = return $ pack $ show animal
 
 data Query = Query
   { user       :: () -> ResM (User ResM)
   , wrappedA1  :: A (Int, Text)
-  , iUnTest    :: IUnArgs -> ResM Text
+  , setAnimal  :: AnimalArgs -> ResM Text
   , wrappedA2  :: A Text
   , integerSet :: Set Int
   , textIntMap :: Map Text Int
@@ -207,7 +207,7 @@ gqlRoot =
           Query
             { user = const $ gqlResolver fetchUser
             , wrappedA1 = A (0, "")
-            , iUnTest = iUnTestResolver
+            , setAnimal = setAnimalResolver
             , wrappedA2 = A ""
             , integerSet = S.fromList [1, 2]
             , textIntMap = M.fromList [("robin", 1), ("carl", 2)]

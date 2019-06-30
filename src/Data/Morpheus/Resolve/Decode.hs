@@ -59,8 +59,8 @@ instance (Selector c, DecodeInputUnion f) => DecodeInputUnion (M1 S c f) where
 
 instance (DecodeInputUnion a, DecodeInputUnion b) => DecodeInputUnion (a :+: b) where
   decodeUnion lastTag (Object pairs) =
-    case lookup "__typename" pairs of
-      Nothing -> internalArgumentError "__typename not found on Input Union"
+    case lookup "tag" pairs of
+      Nothing -> internalArgumentError "tag not found on Input Union"
       Just (Enum name) ->
         case lookup name pairs of
           Nothing -> internalArgumentError ("type \"" <> name <> "\" was not provided on object")
@@ -72,7 +72,7 @@ instance (DecodeInputUnion a, DecodeInputUnion b) => DecodeInputUnion (a :+: b) 
         where isTypeA = name == unionTagName (Proxy @a)
               isTypeB = name == unionTagName (Proxy @b)
               isNotLast = lastTag /= name
-      Just _ -> internalArgumentError "__typename must be Enum"
+      Just _ -> internalArgumentError "tag must be Enum"
   decodeUnion _ _ = internalArgumentError "Expected Input Object Union!"
   unionTagName _ = ""
   allTagNames _ = allTagNames (Proxy @a) ++ allTagNames (Proxy @a)
