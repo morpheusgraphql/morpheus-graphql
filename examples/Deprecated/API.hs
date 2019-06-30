@@ -41,7 +41,9 @@ type instance KIND Cat = INPUT_OBJECT
 
 type instance KIND Dog = INPUT_OBJECT
 
-type instance KIND InputUnion = INPUT_UNION
+type instance KIND Bird = INPUT_OBJECT
+
+type instance KIND Animals = INPUT_UNION
 
 newtype Cat = Cat
   { catName :: Text
@@ -51,9 +53,14 @@ newtype Dog = Dog
   { dogName :: Text
   } deriving (Show, Generic, GQLType)
 
-data InputUnion
+newtype Bird = Bird
+  { birdName :: Text
+  } deriving (Show, Generic, GQLType)
+
+data Animals
   = CAT Cat
   | DOG Dog
+  | BIRD Bird
   deriving (Show, Generic, GQLType)
 
 newtype UniqueID = UniqueID
@@ -167,11 +174,11 @@ newAddressSubscription :: a -> EffectM Address
 newAddressSubscription _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
 
 newtype IUnArgs = IUnArgs
-  { unionTest :: InputUnion
+  { animal :: Animals
   } deriving (Show, Generic)
 
 iUnTestResolver :: IUnArgs -> ResM Text
-iUnTestResolver IUnArgs {unionTest} = return $ pack $ show unionTest
+iUnTestResolver IUnArgs {animal} = return $ pack $ show animal
 
 data Query = Query
   { user       :: () -> ResM (User ResM)
