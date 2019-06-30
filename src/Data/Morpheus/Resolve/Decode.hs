@@ -14,16 +14,19 @@ module Data.Morpheus.Resolve.Decode
   , decodeArguments
   ) where
 
+import           Data.Proxy                                 (Proxy (..))
+import           Data.Semigroup                             ((<>))
+import           Data.Text                                  (Text, pack)
+import           GHC.Generics
+
+-- MORPHEUS
 import           Data.Morpheus.Error.Internal               (internalArgumentError, internalTypeMismatch)
-import           Data.Morpheus.Kind                         (ENUM, INPUT_OBJECT, KIND, SCALAR, WRAPPER)
+import           Data.Morpheus.Kind                         (ENUM, INPUT_OBJECT, INPUT_UNION, KIND, SCALAR, WRAPPER)
 import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
 import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..), toScalar)
 import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..), Arguments)
 import           Data.Morpheus.Types.Internal.Validation    (Validation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Proxy                                 (Proxy (..))
-import           Data.Text                                  (Text, pack)
-import           GHC.Generics
 
 type Decode_ a = Value -> Validation a
 
@@ -31,6 +34,42 @@ type ArgumentsConstraint a = (Generic a, GDecode Arguments (Rep a))
 
 decodeArguments :: (Generic p, GDecode Arguments (Rep p)) => Arguments -> Validation p
 decodeArguments args = to <$> gDecode "" args
+
+-- MORPHEUS
+class DecodeInputUnion f where
+  decodeUnion :: Value -> Validation (f a)
+  unionTagName :: Proxy f -> Text
+
+instance (Datatype c, DecodeInputUnion f) => DecodeInputUnion (M1 D c f) where
+  decodeUnion value = M1 <$> decodeUnion value
+  unionTagName _ = ""
+
+instance (Constructor c, DecodeInputUnion f) => DecodeInputUnion (M1 C c f) where
+  decodeUnion value = M1 <$> decodeUnion value
+  unionTagName _ = pack $ conName (undefined :: (M1 C c f a))
+
+instance (Selector c, DecodeInputUnion f) => DecodeInputUnion (M1 S c f) where
+  decodeUnion gql = M1 <$> decodeUnion gql
+  unionTagName _ = unionTagName (Proxy @f)
+
+instance (DecodeInputUnion a, DecodeInputUnion b) => DecodeInputUnion (a :+: b) where
+  decodeUnion (Object pairs) =
+    case lookup "__typename" pairs of
+      Nothing -> internalArgumentError "__typename not found on Input Union"
+      Just (Enum name) ->
+        case lookup name pairs of
+          Nothing -> internalArgumentError ("type \"" <> name <> "\" was not provided on object")
+          Just value ->
+            if unionTagName (Proxy @a) == name
+              then L1 <$> decodeUnion value
+              else R1 <$> decodeUnion value
+      Just _ -> internalArgumentError "__typename must be Enum"
+  decodeUnion _ = internalArgumentError "Expected Input Object Union!"
+  unionTagName _ = ""
+
+instance Decode a (KIND a) => DecodeInputUnion (K1 i a) where
+  decodeUnion value = K1 <$> decode value
+  unionTagName _ = ""
 
 --
 --  GENERIC
@@ -100,6 +139,13 @@ instance (Generic a, EnumRep (Rep a)) => Decode a ENUM where
 --
 instance (Generic a, GDecode Value (Rep a)) => Decode a INPUT_OBJECT where
   __decode _ (Object x) = to <$> gDecode "" (Object x)
+  __decode _ isType     = internalTypeMismatch "InputObject" isType
+
+--
+-- INPUT_UNION
+--
+instance (Generic a, DecodeInputUnion (Rep a)) => Decode a INPUT_UNION where
+  __decode _ (Object x) = to <$> decodeUnion (Object x)
   __decode _ isType     = internalTypeMismatch "InputObject" isType
 
 --
