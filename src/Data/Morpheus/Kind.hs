@@ -9,6 +9,7 @@ module Data.Morpheus.Kind
   , WRAPPER
   , UNION
   , INPUT_OBJECT
+  , INPUT_UNION
   , KIND
   ) where
 
@@ -36,6 +37,9 @@ data INPUT_OBJECT
 
 -- | GraphQL Union
 data UNION
+
+-- | extension for graphQL
+data INPUT_UNION
 
 -- | GraphQL Arrays , Resolvers and NonNull fields
 data WRAPPER
