@@ -229,7 +229,39 @@ gqlApi = interpreter rootResolver
 
 ### Subscriptions
 
-TODO.
+because Subscriptions are in early stage of development at the time we just use `Text` as communication,
+mutation with same chanel id will trigger subscription
+
+```haskell
+newtype Mutation = Mutation
+  { createDeity :: Form -> EffectM Deity
+  } deriving (Generic)
+
+newtype Subscription = Mutation
+  { newDeity :: Form -> EffectM Deity
+  } deriving (Generic)
+
+createDeityResolver :: a -> EffectM Address
+createDeityResolver _ = gqlEffectResolver ["UPDATE_ADDRESS"] (fetchAddress (Euro 1 0))
+
+newDeityResolver :: a -> EffectM Address
+newDeityResolver _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
+
+rootResolver :: GQLRootResolver IO Query () ()
+rootResolver =
+  GQLRootResolver
+    { queryResolver = return Query {...}
+    , mutationResolver = return Mutation {
+       createDeity = createDeityResolver
+    }
+    , subscriptionResolver = return Subscription {
+         newDeity = newDeityResolver
+      }
+    }
+
+gqlApi :: ByteString -> IO ByteString
+gqlApi = interpreter rootResolver
+```
 
 # About
 
