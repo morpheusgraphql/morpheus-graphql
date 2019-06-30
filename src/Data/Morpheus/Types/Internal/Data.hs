@@ -48,6 +48,7 @@ data DataTypeKind
   | KindInputObject
   | KindList
   | KindNonNull
+  | KindInputUnion
   deriving (Eq, Show)
 
 data DataFingerprint
@@ -127,6 +128,7 @@ data DataFullType
   | InputObject DataInputObject
   | OutputObject DataOutputObject
   | Union DataUnion
+  | InputUnion DataUnion
   deriving (Show)
 
 data DataTypeLib = DataTypeLib
@@ -134,6 +136,7 @@ data DataTypeLib = DataTypeLib
   , inputObject  :: [(Text, DataInputObject)]
   , object       :: [(Text, DataOutputObject)]
   , union        :: [(Text, DataUnion)]
+  , inputUnion   :: [(Text, DataUnion)]
   , query        :: (Text, DataOutputObject)
   , mutation     :: Maybe (Text, DataOutputObject)
   , subscription :: Maybe (Text, DataOutputObject)
@@ -152,14 +155,24 @@ showFullAstType wrappers' (ObjectKind x) = showWrappedType wrappers' (typeName x
 initTypeLib :: (Text, DataOutputObject) -> DataTypeLib
 initTypeLib query' =
   DataTypeLib
-    {leaf = [], inputObject = [], query = query', object = [], union = [], mutation = Nothing, subscription = Nothing}
+    { leaf = []
+    , inputObject = []
+    , query = query'
+    , object = []
+    , union = []
+    , inputUnion = []
+    , mutation = Nothing
+    , subscription = Nothing
+    }
 
 allDataTypes :: DataTypeLib -> [(Text, DataFullType)]
-allDataTypes (DataTypeLib leaf' inputObject' object' union' query' mutation' subscription') =
+allDataTypes (DataTypeLib leaf' inputObject' object' union' inputUnion' query' mutation' subscription') =
   packType OutputObject query' :
   map (packType InputObject) inputObject' ++
   map (packType OutputObject) object' ++
-  map (packType Leaf) leaf' ++ map (packType Union) union' ++ fromMaybeType mutation' ++ fromMaybeType subscription'
+  map (packType Leaf) leaf' ++
+  map (packType Union) union' ++
+  map (packType Union) inputUnion' ++ fromMaybeType mutation' ++ fromMaybeType subscription'
   where
     packType f (x, y) = (x, f y)
     fromMaybeType :: Maybe (Text, DataOutputObject) -> [(Text, DataFullType)]
@@ -175,9 +188,11 @@ isTypeDefined name_ lib' = getTypeFingerprint <$> name_ `lookup` allDataTypes li
     getTypeFingerprint (InputObject dataType')       = typeFingerprint dataType'
     getTypeFingerprint (OutputObject dataType')      = typeFingerprint dataType'
     getTypeFingerprint (Union dataType')             = typeFingerprint dataType'
+    getTypeFingerprint (InputUnion dataType')        = typeFingerprint dataType'
 
 defineType :: (Text, DataFullType) -> DataTypeLib -> DataTypeLib
 defineType (key', Leaf type') lib         = lib {leaf = (key', type') : leaf lib}
 defineType (key', InputObject type') lib  = lib {inputObject = (key', type') : inputObject lib}
 defineType (key', OutputObject type') lib = lib {object = (key', type') : object lib}
 defineType (key', Union type') lib        = lib {union = (key', type') : union lib}
+defineType (key', InputUnion type') lib   = lib {inputUnion = (key', type') : union lib}
