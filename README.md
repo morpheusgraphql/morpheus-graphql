@@ -228,24 +228,26 @@ gqlApi = interpreter rootResolver
 ```
 
 ### Subscriptions
+because subscriptions are at an early stage of development, we only use `Text` for communication.
+Mutation with same channel ID triggers subscription.
 
-because Subscriptions are in early stage of development at the time we just use `Text` as communication,
-mutation with same chanel id will trigger subscription
+we use `GraphiQL` with old apollo `subscriptions-transport-ws@0.5.4` for subscription handling,
+that why server will only recognize events with old apollo format.
 
 ```haskell
 newtype Mutation = Mutation
-  { createDeity :: Form -> EffectM Deity
+  { createDeity :: DeityArgs -> EffectM Deity
   } deriving (Generic)
 
 newtype Subscription = Mutation
-  { newDeity :: Form -> EffectM Deity
+  { newDeity :: () -> EffectM Deity
   } deriving (Generic)
 
-createDeityResolver :: a -> EffectM Address
-createDeityResolver _ = gqlEffectResolver ["UPDATE_ADDRESS"] (fetchAddress (Euro 1 0))
+createDeityResolver :: DeityArgs -> EffectM Address
+createDeityResolver args = gqlEffectResolver ["UPDATE_ADDRESS"] createDeityOnDB args
 
 newDeityResolver :: a -> EffectM Address
-newDeityResolver _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
+newDeityResolver _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchNewDeityFromDB
 
 rootResolver :: GQLRootResolver IO Query () ()
 rootResolver =
