@@ -16,8 +16,15 @@ module Data.Morpheus.Resolve.Introspect
   ) where
 
 import           Data.Map                               (Map)
+import           Data.Proxy                             (Proxy (..))
+import           Data.Set                               (Set)
+import           Data.Text                              (Text, pack)
+import           GHC.Generics
+
+-- MORPHEUS
 import           Data.Morpheus.Error.Schema             (nameCollisionError)
-import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION, WRAPPER)
+import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, INPUT_UNION, KIND, OBJECT, SCALAR, UNION,
+                                                         WRAPPER)
 import           Data.Morpheus.Resolve.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), RecSel, SelOf, TypeUpdater, UnionRep (..),
                                                          resolveTypes)
@@ -29,10 +36,6 @@ import           Data.Morpheus.Types.Internal.Data      (DataArguments, DataFiel
                                                          DataTypeKind (..), DataTypeWrapper (..), DataValidator,
                                                          defineType, isTypeDefined)
 import           Data.Morpheus.Types.Resolver           (Resolver)
-import           Data.Proxy                             (Proxy (..))
-import           Data.Set                               (Set)
-import           Data.Text                              (Text, pack)
-import           GHC.Generics
 
 -- class Types class
 type GQL_TYPE a = (Generic a, GQLType a)
@@ -42,8 +45,6 @@ type EnumConstraint a = (GQL_TYPE a, EnumRep (Rep a))
 type InputObjectConstraint a = (GQL_TYPE a, ObjectRep (Rep a) ())
 
 type ObjectConstraint a = (GQL_TYPE a, ObjectRep (Rep a) DataArguments)
-
-type UnionConstraint a = (GQL_TYPE a, UnionRep (Rep a))
 
 scalarTypeOf :: GQLType a => DataValidator -> Proxy a -> DataFullType
 scalarTypeOf validator = Leaf . LeafScalar . buildType validator
@@ -186,11 +187,19 @@ instance (Selector s, Introspect a (KIND a) f) => ObjectRep (RecSel s a) f where
 instance (OutputConstraint a, ObjectConstraint a) => UnionRep (RecSel s a) where
   possibleTypes _ = [(buildField KindObject (Proxy @a) () "", introspect (Context :: OutputOf a))]
 
-instance UnionConstraint a => Introspect a UNION OutputType where
+instance (GQL_TYPE a, UnionRep (Rep a)) => Introspect a UNION OutputType where
   __field _ = buildField KindUnion (Proxy @a) []
   introspect _ = updateLib (Union . buildType fields) stack (Proxy @a)
     where
       (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
+
+--
+-- INPUT_UNION
+--
+-- TODO : generate real Schema
+instance (GQL_TYPE a) => Introspect a INPUT_UNION InputType where
+  __field _ = buildField KindInputUnion (Proxy @a) ()
+  introspect _ = updateLib (InputUnion . buildType []) [] (Proxy @a)
 
 --
 -- WRAPPER : Maybe, LIST , Resolver
