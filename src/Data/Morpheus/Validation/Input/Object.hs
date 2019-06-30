@@ -53,6 +53,9 @@ validateInputValue lib' prop' = validate
               type' <- getInputType fieldTypeName' lib' (typeMismatch x fieldTypeName' currentProp)
               return (type', currentProp)
             getField = lookupField _name parentFields' (UnknownField prop' _name)
+    -- VALIDATE INPUT UNION
+    -- TODO: Validate Union
+    validate [] (UnionKind DataType {typeData = parentFields'}) (_, Object fields) = return (Object fields)
     {-- VALIDATE SCALAR --}
     validate [] (EnumKind DataType {typeData = tags', typeName = name'}) (_, value') =
       validateEnum (UnexpectedType prop' name' value' Nothing) tags' value'

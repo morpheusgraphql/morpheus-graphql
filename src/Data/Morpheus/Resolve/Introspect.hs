@@ -199,7 +199,17 @@ instance (GQL_TYPE a, UnionRep (Rep a)) => Introspect a UNION OutputType where
 -- TODO : generate real Schema
 instance (GQL_TYPE a) => Introspect a INPUT_UNION InputType where
   __field _ = buildField KindInputUnion (Proxy @a) ()
-  introspect _ = updateLib (InputUnion . buildType []) [] (Proxy @a)
+  introspect _ = updateLib (InputUnion . buildType [__typename]) [] (Proxy @a)
+    where
+      __typename =
+        DataField
+          { fieldName = "__typename"
+          , fieldKind = KindScalar
+          , fieldArgs = ()
+          , fieldTypeWrappers = []
+          , fieldType = "String"
+          , fieldHidden = True
+          }
 
 --
 -- WRAPPER : Maybe, LIST , Resolver

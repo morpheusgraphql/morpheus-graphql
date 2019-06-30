@@ -21,29 +21,24 @@ import           Data.Text                         (Text)
 
 renderType :: (Text, DataFullType) -> Type
 renderType (name', Leaf leaf')           = typeFromLeaf (name', leaf')
-renderType (name', InputObject iObject') = typeFromInputObject (name', iObject')
+renderType (name', InputObject iObject') = renderInputObject (name', iObject')
 renderType (name', OutputObject object') = typeFromObject (name', object')
 renderType (name', Union union')         = typeFromUnion (name', union')
+renderType (name', InputUnion inpUnion') = renderInputUnion (name', inpUnion')
 
 type InputValue = IN.InputValue Type
 
 type Field = F.Field Type
 
-inputValueFromArg :: (Text, DataInputField) -> InputValue
-inputValueFromArg (key', input') = IN.createInputValueWith key' (createInputObjectType input')
-
 renderTypeKind :: DataTypeKind -> TypeKind
 renderTypeKind KindScalar      = SCALAR
 renderTypeKind KindObject      = OBJECT
 renderTypeKind KindUnion       = UNION
+renderTypeKind KindInputUnion  = OBJECT
 renderTypeKind KindEnum        = ENUM
 renderTypeKind KindInputObject = INPUT_OBJECT
 renderTypeKind KindList        = LIST
 renderTypeKind KindNonNull     = NON_NULL
-
-createInputObjectType :: DataInputField -> Type
-createInputObjectType field' =
-  wrap field' $ createType (renderTypeKind $ fieldKind field') (fieldType field') "" $ Just []
 
 wrap :: DataField a -> Type -> Type
 wrap field' = wrapRec (fieldTypeWrappers field')
@@ -99,9 +94,22 @@ typeFromObject :: (Text, DataOutputObject) -> Type
 typeFromObject (key', DataType {typeData = fields', typeDescription = description'}) =
   createObjectType key' description' (Just $ map fieldFromObjectField $ filter (not . fieldHidden . snd) fields')
 
-typeFromInputObject :: (Text, DataInputObject) -> Type
-typeFromInputObject (key', DataType {typeData = fields', typeDescription = description'}) =
+inputValueFromArg :: (Text, DataInputField) -> InputValue
+inputValueFromArg (key', input') = IN.createInputValueWith key' (createInputObjectType input')
+
+createInputObjectType :: DataInputField -> Type
+createInputObjectType field' =
+  wrap field' $ createType (renderTypeKind $ fieldKind field') (fieldType field') "" $ Just []
+
+renderInputObject :: (Text, DataInputObject) -> Type
+renderInputObject (key', DataType {typeData = fields', typeDescription = description'}) =
   createInputObject key' description' (map inputValueFromArg fields')
+
+renderInputUnion :: (Text, DataUnion) -> Type
+renderInputUnion (key', DataType {typeData = fields', typeDescription = description'}) =
+  createInputObject key' description' (map createField fields')
+  where
+    createField field = IN.createInputValueWith (fieldName field) (createInputObjectType field)
 
 createObjectType :: Text -> Text -> Maybe [Field] -> Type
 createObjectType name' desc' fields' =
