@@ -27,10 +27,9 @@ stack.yml
 
 ```yaml
 resolver: lts-12.0 # or greater
-extra-deps: # version 0.1.0 is not yet released(but will be soon), that why you should use Github source
+extra-deps:
   - megaparsec-7.0.5
-  - github: morpheusgraphql/morpheus-graphql
-    commit: 2ec9420c0c4c3013f039ca255080af7682d8d05f
+  - morpheus-graphql-0.1.0
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack update`
@@ -38,8 +37,7 @@ As Morpheus is quite new, make sure stack can find morpheus-graphql by running `
 ### Building your first API
 
 To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
-which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via the infix type `-> ResM`,
-representing resolving a set of arguments `()` to a concrete value.
+which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> ResM b`, representing resolving a set of arguments `a` to a concrete value `b`.
 
 ```haskell
 data Query = Query
@@ -214,7 +212,7 @@ newtype Mutation = Mutation
 createDeityMutation :: Form ::-> Deity
 createDeityMutation = ...
 
-rootResolver :: GQLRootResolver IO Query () ()
+rootResolver :: GQLRootResolver IO Query Mutation ()
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {...}
@@ -229,8 +227,42 @@ gqlApi = interpreter rootResolver
 ```
 
 ### Subscriptions
+because subscriptions are at an early stage of development, we only use `Text` for communication.
+Mutation with same channel ID triggers subscription.
 
-TODO.
+we use `GraphiQL` with old apollo `subscriptions-transport-ws@0.5.4` for subscription handling,
+that why server will only recognize events with old apollo format.
+
+```haskell
+newtype Mutation = Mutation
+  { createDeity :: DeityArgs -> EffectM Deity
+  } deriving (Generic)
+
+newtype Subscription = Mutation
+  { newDeity :: () -> EffectM Deity
+  } deriving (Generic)
+
+createDeityResolver :: DeityArgs -> EffectM Address
+createDeityResolver args = gqlEffectResolver ["UPDATE_DEITY"] createDeityOnDB args
+
+newDeityResolver :: a -> EffectM Address
+newDeityResolver _ = gqlEffectResolver ["UPDATE_DEITY"] $ fetchNewDeityFromDB
+
+rootResolver :: GQLRootResolver IO Query Mutation Subscription
+rootResolver =
+  GQLRootResolver
+    { queryResolver = return Query {...}
+    , mutationResolver = return Mutation {
+       createDeity = createDeityResolver
+    }
+    , subscriptionResolver = return Subscription {
+         newDeity = newDeityResolver
+      }
+    }
+
+gqlApi :: ByteString -> IO ByteString
+gqlApi = interpreter rootResolver
+```
 
 # About
 
