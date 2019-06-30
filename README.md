@@ -38,7 +38,7 @@ As Morpheus is quite new, make sure stack can find morpheus-graphql by running `
 ### Building your first API
 
 To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
-which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via the infix type `a -> ResM b`, representing resolving a set of arguments `a` to a concrete value `b`.
+which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> ResM b`, representing resolving a set of arguments `a` to a concrete value `b`.
 
 ```haskell
 data Query = Query
