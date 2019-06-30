@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -160,11 +161,11 @@ newAddressSubscription :: a -> EffectM Address
 newAddressSubscription _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
 
 newtype IUnArgs = IUnArgs
-  { unionTest :: Maybe InputUnion
+  { unionTest :: InputUnion
   } deriving (Show, Generic)
 
 iUnTestResolver :: IUnArgs -> ResM Text
-iUnTestResolver args = return $ pack $ show args
+iUnTestResolver IUnArgs {unionTest} = return $ pack $ show unionTest
 
 data Query = Query
   { user       :: () -> ResM (User ResM)
