@@ -245,7 +245,7 @@ instance (GQL_TYPE a, UnionRep (Rep a) OutputType) => Introspect a UNION OutputT
 --
 instance (GQL_TYPE a, Introspect a INPUT_OBJECT InputType) => UnionRep (RecSel s a) InputType where
   possibleTypes _ _ =
-    [ ( buildField KindInputObject (Proxy @a) () (__typeName $ Proxy @a)
+    [ ( maybeField $ buildField KindInputObject (Proxy @a) () (__typeName $ Proxy @a)
       , introspect (Context :: Context a INPUT_OBJECT InputType))
     ]
 
@@ -259,7 +259,7 @@ instance (GQL_TYPE a, UnionRep (Rep a) InputType) => Introspect a INPUT_UNION In
           { fieldName = "tag"
           , fieldKind = KindScalar
           , fieldArgs = ()
-          , fieldTypeWrappers = []
+          , fieldTypeWrappers = [NonNullType]
           , fieldType = "String"
           , fieldHidden = True
           }
@@ -267,12 +267,12 @@ instance (GQL_TYPE a, UnionRep (Rep a) InputType) => Introspect a INPUT_UNION In
 --
 -- WRAPPER : Maybe, LIST , Resolver
 --
+maybeField :: DataField f -> DataField f
+maybeField field@DataField {fieldTypeWrappers = NonNullType:xs} = field {fieldTypeWrappers = xs}
+maybeField field                                                = field
+
 instance Introspect a (KIND a) f => Introspect (Maybe a) WRAPPER f where
   __field _ name = maybeField $ __field (Context :: Context a (KIND a) f) name
-    where
-      maybeField :: DataField f -> DataField f
-      maybeField field@DataField {fieldTypeWrappers = NonNullType:xs} = field {fieldTypeWrappers = xs}
-      maybeField field                                                = field
   introspect _ = introspect (Context :: Context a (KIND a) f)
 
 instance Introspect a (KIND a) f => Introspect [a] WRAPPER f where
