@@ -23,6 +23,7 @@ import           Control.Monad                           (foldM)
 import           Data.Function                           ((&))
 import           Data.Map                                (Map)
 import           Data.Proxy                              (Proxy (..))
+import           Data.Semigroup                          ((<>))
 import           Data.Set                                (Set)
 import           Data.Text                               (Text, pack)
 import           GHC.Generics
