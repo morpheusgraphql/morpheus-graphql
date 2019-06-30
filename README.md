@@ -244,10 +244,10 @@ newtype Subscription = Mutation
   } deriving (Generic)
 
 createDeityResolver :: DeityArgs -> EffectM Address
-createDeityResolver args = gqlEffectResolver ["UPDATE_ADDRESS"] createDeityOnDB args
+createDeityResolver args = gqlEffectResolver ["UPDATE_DEITY"] createDeityOnDB args
 
 newDeityResolver :: a -> EffectM Address
-newDeityResolver _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchNewDeityFromDB
+newDeityResolver _ = gqlEffectResolver ["UPDATE_DEITY"] $ fetchNewDeityFromDB
 
 rootResolver :: GQLRootResolver IO Query Mutation Subscription
 rootResolver =
