@@ -13,12 +13,12 @@ import           Data.Map            (Map)
 import qualified Data.Map            as M (fromList)
 import           Data.Set            (Set)
 import qualified Data.Set            as S (fromList)
-import           Data.Text           (Text)
+import           Data.Text           (Text, pack)
 import           Data.Typeable       (Typeable)
 import           GHC.Generics        (Generic)
 
 -- MORPHEUS
-import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, INPUT_UNION, KIND, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types (EffectM, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM, Resolver,
                                       ScalarValue (..), gqlEffectResolver, gqlResolver)
 
@@ -26,7 +26,7 @@ type instance KIND CityID = ENUM
 
 type instance KIND Euro = SCALAR
 
-type instance KIND UID = INPUT_OBJECT
+type instance KIND UniqueID = INPUT_OBJECT
 
 type instance KIND Coordinates = INPUT_OBJECT
 
@@ -35,6 +35,23 @@ type instance KIND Address = OBJECT
 type instance KIND (User res) = OBJECT
 
 type instance KIND (MyUnion res) = UNION
+
+type instance KIND Foo = INPUT_OBJECT
+
+type instance KIND InputUnion = INPUT_UNION
+
+data InputUnion
+  = UID UniqueID
+  | FOO Foo
+  deriving (Show, Generic, GQLType)
+
+newtype UniqueID = UniqueID
+  { uid :: Text
+  } deriving (Show, Generic, GQLType)
+
+newtype Foo = Foo
+  { fooField :: Text
+  } deriving (Show, Generic, GQLType)
 
 data MyUnion res
   = USER (User res)
@@ -56,13 +73,9 @@ instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
   serialize (Euro x y) = Int (x * 100 + y)
 
-newtype UID = UID
-  { uid :: Text
-  } deriving (Show, Generic, GQLType)
-
 data Coordinates = Coordinates
   { latitude  :: Euro
-  , longitude :: [Maybe [[UID]]]
+  , longitude :: [Maybe [[UniqueID]]]
   } deriving (Generic)
 
 instance GQLType Coordinates where
@@ -146,9 +159,17 @@ createAddressMutation _ = gqlEffectResolver ["UPDATE_ADDRESS"] (fetchAddress (Eu
 newAddressSubscription :: a -> EffectM Address
 newAddressSubscription _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
 
+newtype IUnArgs = IUnArgs
+  { unionTest :: Maybe InputUnion
+  } deriving (Show, Generic)
+
+iUnTestResolver :: IUnArgs -> ResM Text
+iUnTestResolver args = return $ pack $ show args
+
 data Query = Query
   { user       :: () -> ResM (User ResM)
   , wrappedA1  :: A (Int, Text)
+  , iUnTest    :: IUnArgs -> ResM Text
   , wrappedA2  :: A Text
   , integerSet :: Set Int
   , textIntMap :: Map Text Int
@@ -172,6 +193,7 @@ gqlRoot =
           Query
             { user = const $ gqlResolver fetchUser
             , wrappedA1 = A (0, "")
+            , iUnTest = iUnTestResolver
             , wrappedA2 = A ""
             , integerSet = S.fromList [1, 2]
             , textIntMap = M.fromList [("robin", 1), ("carl", 2)]
