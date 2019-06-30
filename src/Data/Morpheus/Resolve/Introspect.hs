@@ -51,17 +51,17 @@ type TypeUpdater = DataTypeLib -> SchemaValidation DataTypeLib
 --
 --  GENERIC UNION
 --
-class UnionRep f where
-  possibleTypes :: Proxy f -> [(DataField (), TypeUpdater)]
+class UnionRep f t where
+  possibleTypes :: Proxy f -> Proxy t -> [(DataField (), TypeUpdater)]
 
-instance UnionRep f => UnionRep (M1 D x f) where
+instance UnionRep f t => UnionRep (M1 D x f) t where
   possibleTypes _ = possibleTypes (Proxy @f)
 
-instance UnionRep f => UnionRep (M1 C x f) where
+instance UnionRep f t => UnionRep (M1 C x f) t where
   possibleTypes _ = possibleTypes (Proxy @f)
 
-instance (UnionRep a, UnionRep b) => UnionRep (a :+: b) where
-  possibleTypes _ = possibleTypes (Proxy @a) ++ possibleTypes (Proxy @b)
+instance (UnionRep a t, UnionRep b t) => UnionRep (a :+: b) t where
+  possibleTypes _ x = possibleTypes (Proxy @a) x ++ possibleTypes (Proxy @b) x
 
 --
 --  GENERIC OBJECT: INPUT and OUTPUT plus ARGUMENTS
@@ -231,23 +231,29 @@ instance (Selector s, Introspect a (KIND a) f) => ObjectRep (RecSel s a) f where
 --
 -- | recursion for union types
 -- iterates on possible types for UNION and introspects them recursively
-instance (OutputConstraint a, ObjectConstraint a) => UnionRep (RecSel s a) where
-  possibleTypes _ = [(buildField KindObject (Proxy @a) () "", introspect (Context :: OutputOf a))]
+instance (OutputConstraint a, ObjectConstraint a) => UnionRep (RecSel s a) OutputType where
+  possibleTypes _ _ = [(buildField KindObject (Proxy @a) () "", introspect (Context :: OutputOf a))]
 
-instance (GQL_TYPE a, UnionRep (Rep a)) => Introspect a UNION OutputType where
+instance (GQL_TYPE a, UnionRep (Rep a) OutputType) => Introspect a UNION OutputType where
   __field _ = buildField KindUnion (Proxy @a) []
   introspect _ = updateLib (Union . buildType fields) stack (Proxy @a)
     where
-      (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
+      (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a)) (Proxy @OutputType)
 
 --
 -- INPUT_UNION
 --
--- TODO : generate real Schema
-instance (GQL_TYPE a) => Introspect a INPUT_UNION InputType where
+instance (GQL_TYPE a, Introspect a INPUT_OBJECT InputType) => UnionRep (RecSel s a) InputType where
+  possibleTypes _ _ =
+    [ ( buildField KindInputObject (Proxy @a) () (__typeName $ Proxy @a)
+      , introspect (Context :: Context a INPUT_OBJECT InputType))
+    ]
+
+instance (GQL_TYPE a, UnionRep (Rep a) InputType) => Introspect a INPUT_UNION InputType where
   __field _ = buildField KindInputUnion (Proxy @a) ()
-  introspect _ = updateLib (InputUnion . buildType [__typename]) [] (Proxy @a)
+  introspect _ = updateLib (InputUnion . buildType (__typename : fields)) stack (Proxy @a)
     where
+      (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a)) (Proxy @InputType)
       __typename =
         DataField
           { fieldName = "tag"
