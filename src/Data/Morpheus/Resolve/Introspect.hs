@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
@@ -13,29 +14,75 @@
 
 module Data.Morpheus.Resolve.Introspect
   ( introspectOutputType
+  , TypeUpdater
+  , ObjectRep(..)
+  , resolveTypes
   ) where
 
-import           Data.Map                               (Map)
-import           Data.Proxy                             (Proxy (..))
-import           Data.Set                               (Set)
-import           Data.Text                              (Text, pack)
+import           Control.Monad                           (foldM)
+import           Data.Function                           ((&))
+import           Data.Map                                (Map)
+import           Data.Proxy                              (Proxy (..))
+import           Data.Set                                (Set)
+import           Data.Text                               (Text, pack)
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Schema             (nameCollisionError)
-import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, INPUT_UNION, KIND, OBJECT, SCALAR, UNION,
-                                                         WRAPPER)
-import           Data.Morpheus.Resolve.Generics.EnumRep (EnumRep (..))
-import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), RecSel, SelOf, TypeUpdater, UnionRep (..),
-                                                         resolveTypes)
-import           Data.Morpheus.Types.Custom             (MapKind, Pair)
-import           Data.Morpheus.Types.GQLScalar          (GQLScalar (..))
-import           Data.Morpheus.Types.GQLType            (GQLType (..))
-import           Data.Morpheus.Types.Internal.Data      (DataArguments, DataField (..), DataFullType (..),
-                                                         DataInputField, DataLeaf (..), DataType (..),
-                                                         DataTypeKind (..), DataTypeWrapper (..), DataValidator,
-                                                         defineType, isTypeDefined)
-import           Data.Morpheus.Types.Resolver           (Resolver)
+import           Data.Morpheus.Error.Schema              (nameCollisionError)
+import           Data.Morpheus.Kind                      (ENUM, INPUT_OBJECT, INPUT_UNION, KIND, OBJECT, SCALAR, UNION,
+                                                          WRAPPER)
+import           Data.Morpheus.Resolve.Generics.EnumRep  (EnumRep (..))
+import           Data.Morpheus.Types.Custom              (MapKind, Pair)
+import           Data.Morpheus.Types.GQLScalar           (GQLScalar (..))
+import           Data.Morpheus.Types.GQLType             (GQLType (..))
+import           Data.Morpheus.Types.Internal.Data       (DataArguments, DataField (..), DataFullType (..),
+                                                          DataInputField, DataLeaf (..), DataType (..),
+                                                          DataTypeKind (..), DataTypeLib, DataTypeWrapper (..),
+                                                          DataValidator, defineType, isTypeDefined)
+import           Data.Morpheus.Types.Internal.Validation (SchemaValidation)
+import           Data.Morpheus.Types.Resolver            (Resolver)
+
+type SelOf s = M1 S s (Rec0 ()) ()
+
+type RecSel s a = M1 S s (Rec0 a)
+
+type TypeUpdater = DataTypeLib -> SchemaValidation DataTypeLib
+
+--
+--  GENERIC UNION
+--
+class UnionRep f where
+  possibleTypes :: Proxy f -> [(DataField (), TypeUpdater)]
+
+instance UnionRep f => UnionRep (M1 D x f) where
+  possibleTypes _ = possibleTypes (Proxy @f)
+
+instance UnionRep f => UnionRep (M1 C x f) where
+  possibleTypes _ = possibleTypes (Proxy @f)
+
+instance (UnionRep a, UnionRep b) => UnionRep (a :+: b) where
+  possibleTypes _ = possibleTypes (Proxy @a) ++ possibleTypes (Proxy @b)
+
+--
+--  GENERIC OBJECT: INPUT and OUTPUT plus ARGUMENTS
+--
+resolveTypes :: DataTypeLib -> [TypeUpdater] -> SchemaValidation DataTypeLib
+resolveTypes = foldM (&)
+
+class ObjectRep rep t where
+  objectFieldTypes :: Proxy rep -> [((Text, DataField t), TypeUpdater)]
+
+instance ObjectRep f t => ObjectRep (M1 D x f) t where
+  objectFieldTypes _ = objectFieldTypes (Proxy @f)
+
+instance ObjectRep f t => ObjectRep (M1 C x f) t where
+  objectFieldTypes _ = objectFieldTypes (Proxy @f)
+
+instance (ObjectRep a t, ObjectRep b t) => ObjectRep (a :*: b) t where
+  objectFieldTypes _ = objectFieldTypes (Proxy @a) ++ objectFieldTypes (Proxy @b)
+
+instance ObjectRep U1 t where
+  objectFieldTypes _ = []
 
 -- class Types class
 type GQL_TYPE a = (Generic a, GQLType a)

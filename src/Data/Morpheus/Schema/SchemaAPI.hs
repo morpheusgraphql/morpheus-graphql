@@ -10,14 +10,13 @@ module Data.Morpheus.Schema.SchemaAPI
   ) where
 
 import           Data.Proxy
-import           Data.Text                              (Text)
+import           Data.Text                         (Text)
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), TypeUpdater)
-import           Data.Morpheus.Resolve.Introspect       (introspectOutputType)
-import           Data.Morpheus.Schema.Schema            (Schema, Type, findType, initSchema)
-import           Data.Morpheus.Types.Internal.Data      (DataField (..), DataOutputField, DataTypeLib (..))
+import           Data.Morpheus.Resolve.Introspect  (ObjectRep (..), TypeUpdater, introspectOutputType)
+import           Data.Morpheus.Schema.Schema       (Schema, Type, findType, initSchema)
+import           Data.Morpheus.Types.Internal.Data (DataField (..), DataOutputField, DataTypeLib (..))
 
 newtype TypeArgs = TypeArgs
   { name :: Text
