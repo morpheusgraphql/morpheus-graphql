@@ -1,4 +1,6 @@
-## [0.1.0] - 14.06.2019
+## [0.1.0] - 30.06.2019
+
+thanks for contributing to: @krisajenkins, @hovind , @vmchale ,@msvbg
 
 ### Added
 
