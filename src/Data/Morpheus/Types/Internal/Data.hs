@@ -121,6 +121,7 @@ data DataKind a
   = ScalarKind DataScalar
   | EnumKind DataEnum
   | ObjectKind (DataObject a)
+  | UnionKind DataUnion
   deriving (Show)
 
 data DataFullType
@@ -140,7 +141,7 @@ data DataTypeLib = DataTypeLib
   , query        :: (Text, DataOutputObject)
   , mutation     :: Maybe (Text, DataOutputObject)
   , subscription :: Maybe (Text, DataOutputObject)
-  }
+  } deriving (Show)
 
 showWrappedType :: [DataTypeWrapper] -> Text -> Text
 showWrappedType [] type'               = type'
@@ -151,6 +152,7 @@ showFullAstType :: [DataTypeWrapper] -> DataKind a -> Text
 showFullAstType wrappers' (ScalarKind x) = showWrappedType wrappers' (typeName x)
 showFullAstType wrappers' (EnumKind x)   = showWrappedType wrappers' (typeName x)
 showFullAstType wrappers' (ObjectKind x) = showWrappedType wrappers' (typeName x)
+showFullAstType wrappers' (UnionKind x)  = showWrappedType wrappers' (typeName x)
 
 initTypeLib :: (Text, DataOutputObject) -> DataTypeLib
 initTypeLib query' =
@@ -172,7 +174,7 @@ allDataTypes (DataTypeLib leaf' inputObject' object' union' inputUnion' query' m
   map (packType OutputObject) object' ++
   map (packType Leaf) leaf' ++
   map (packType Union) union' ++
-  map (packType Union) inputUnion' ++ fromMaybeType mutation' ++ fromMaybeType subscription'
+  map (packType InputUnion) inputUnion' ++ fromMaybeType mutation' ++ fromMaybeType subscription'
   where
     packType f (x, y) = (x, f y)
     fromMaybeType :: Maybe (Text, DataOutputObject) -> [(Text, DataFullType)]
@@ -195,4 +197,4 @@ defineType (key', Leaf type') lib         = lib {leaf = (key', type') : leaf lib
 defineType (key', InputObject type') lib  = lib {inputObject = (key', type') : inputObject lib}
 defineType (key', OutputObject type') lib = lib {object = (key', type') : object lib}
 defineType (key', Union type') lib        = lib {union = (key', type') : union lib}
-defineType (key', InputUnion type') lib   = lib {inputUnion = (key', type') : union lib}
+defineType (key', InputUnion type') lib   = lib {inputUnion = (key', type') : inputUnion lib}
