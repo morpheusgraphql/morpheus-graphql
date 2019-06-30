@@ -251,16 +251,29 @@ instance (GQL_TYPE a, Introspect a INPUT_OBJECT InputType) => UnionRep (RecSel s
 
 instance (GQL_TYPE a, UnionRep (Rep a) InputType) => Introspect a INPUT_UNION InputType where
   __field _ = buildField KindInputUnion (Proxy @a) ()
-  introspect _ = updateLib (InputUnion . buildType (__typename : fields)) stack (Proxy @a)
+  introspect _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
     where
       (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a)) (Proxy @InputType)
-      __typename =
+      -- for every input Union 'User' adds enum type of possible TypeNames 'UserTags'
+      tagsEnumType :: TypeUpdater
+      tagsEnumType x = pure $ defineType (enumTypeName, Leaf $ LeafEnum tagsEnum) x
+        where
+          tagsEnum =
+            DataType
+              { typeName = enumTypeName
+              -- has same fingerprint as object because it depends on it
+              , typeFingerprint = __typeFingerprint (Proxy @a)
+              , typeDescription = ""
+              , typeData = map fieldName fields
+              }
+      enumTypeName = __typeName (Proxy @a) <> "Tags"
+      fieldTag =
         DataField
           { fieldName = "tag"
-          , fieldKind = KindScalar
+          , fieldKind = KindEnum
           , fieldArgs = ()
           , fieldTypeWrappers = [NonNullType]
-          , fieldType = "String"
+          , fieldType = enumTypeName
           , fieldHidden = True
           }
 
