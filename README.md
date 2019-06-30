@@ -27,10 +27,9 @@ stack.yml
 
 ```yaml
 resolver: lts-12.0 # or greater
-extra-deps: # version 0.1.0 is not yet released(but will be soon), that why you should use Github source
+extra-deps:
   - megaparsec-7.0.5
-  - github: morpheusgraphql/morpheus-graphql
-    commit: 2ec9420c0c4c3013f039ca255080af7682d8d05f
+  - morpheus-graphql-0.1.0
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack update`
