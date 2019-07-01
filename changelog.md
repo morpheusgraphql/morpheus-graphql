@@ -1,3 +1,13 @@
+## [0.1.1] - *.06.2019
+
+### Added:
+
+### Changed:
+
+### Fixed:
+ - () as Subscription or Mutation does not defines empty Operator
+### Removed:
+
 ## [0.1.0] - 30.06.2019
 
 thanks for contributing to: @krisajenkins, @hovind, @vmchale, @msvbg
