@@ -29,7 +29,7 @@ stack.yml
 resolver: lts-12.0 # or greater
 extra-deps:
   - megaparsec-7.0.5
-  - morpheus-graphql-0.1.0
+  - morpheus-graphql-0.1.1
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack update`
