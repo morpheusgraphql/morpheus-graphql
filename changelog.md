@@ -1,12 +1,6 @@
-## [0.1.1] - *.06.2019
-
-### Added:
-
-### Changed:
-
+## [0.1.1] - 1.07.2019
 ### Fixed:
- - () as Subscription or Mutation does not defines empty Operator
-### Removed:
+ - () as Subscription or Mutation does not defines Operator without fields
 
 ## [0.1.0] - 30.06.2019
 
