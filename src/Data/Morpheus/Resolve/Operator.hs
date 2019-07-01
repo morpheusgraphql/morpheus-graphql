@@ -70,7 +70,7 @@ fullSchema queryRes mutationRes subscriptionRes =
   where
     querySchema _ = resolveTypes queryType (schemaTypes : types)
       where
-        queryType = initTypeLib (operatorType "Query" (hiddenRootFields ++ fields))
+        queryType = initTypeLib (operatorType (hiddenRootFields ++ fields) "Query")
         (fields, types) = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 mutationSchema ::
@@ -79,8 +79,8 @@ mutationSchema ::
   -> TypeUpdater
 mutationSchema _ initialType = resolveTypes mutationType types'
   where
-    mutationType = initialType {mutation = Just $ operatorType "Mutation" fields'}
-    (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
+    mutationType = initialType {mutation = maybeOperator fields "Mutation"}
+    (fields, types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
 
 subscriptionSchema ::
      forall a m. IntroCon a
@@ -88,10 +88,13 @@ subscriptionSchema ::
   -> TypeUpdater
 subscriptionSchema _ initialType = resolveTypes mutationType types'
   where
-    mutationType = initialType {subscription = Just $ operatorType "Subscription" fields'}
-    (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
+    mutationType = initialType {subscription = maybeOperator fields "Subscription"}
+    (fields, types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
 
-operatorType :: Text -> a -> (Text, DataType a)
-operatorType name' fields' =
-  ( name'
-  , DataType {typeData = fields', typeName = name', typeFingerprint = SystemFingerprint name', typeDescription = ""})
+maybeOperator :: [a] -> Text -> Maybe (Text, DataType [a])
+maybeOperator []     = const Nothing
+maybeOperator fields = Just . operatorType fields
+
+operatorType :: [a] -> Text -> (Text, DataType [a])
+operatorType typeData typeName =
+  (typeName, DataType {typeData, typeName, typeFingerprint = SystemFingerprint typeName, typeDescription = ""})
