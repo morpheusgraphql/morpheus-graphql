@@ -17,9 +17,9 @@ import           Control.Monad                              (forM_)
 import           Data.List                                  (intersect)
 import           Data.Morpheus.Server.Apollo                (toApolloResponse)
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
-import           Data.Morpheus.Types.Internal.WebSocket     (Channel, ClientID, ClientSession (..), GQLClient (..))
+import           Data.Morpheus.Types.Internal.WebSocket     (ClientID, ClientSession (..), GQLClient (..))
 import           Data.Morpheus.Types.IO                     (GQLResponse (..))
-import           Data.Text                                  (Text)
+import           Data.Text                                  (Text, pack)
 import           Data.UUID.V4                               (nextRandom)
 import           Network.WebSockets                         (Connection, sendTextData)
 
@@ -60,7 +60,7 @@ updateClientByID id' updateFunc state = modifyMVar_ state (return . map updateCl
       | key' == id' = (key', updateFunc client')
     updateClient state' = state'
 
-publishUpdates :: [Channel] -> (SelectionSet -> IO GQLResponse) -> GQLState -> IO ()
+publishUpdates :: Show s => [s] -> (SelectionSet -> IO GQLResponse) -> GQLState -> IO ()
 publishUpdates channels resolver' state = do
   state' <- readMVar state
   forM_ state' sendMessage
@@ -71,7 +71,7 @@ publishUpdates channels resolver' state = do
         __send ClientSession {sessionQuerySelection, sessionId} =
           resolver' sessionQuerySelection >>= sendTextData clientConnection . toApolloResponse sessionId
         filterByChannels :: [ClientSession] -> [ClientSession]
-        filterByChannels = filter (([] /=) . intersect channels . sessionChannels)
+        filterByChannels = filter (([] /=) . intersect (map (pack . show) channels) . sessionChannels)
 
 removeClientSubscription :: ClientID -> Int -> GQLState -> IO ()
 removeClientSubscription id' sid' = updateClientByID id' stopSubscription

@@ -25,8 +25,8 @@ import Data.Morpheus.Validation.Validation (validateRequest)
 
 resolveByteString ::
      Monad m
-  => RootResCon m a b c =>
-       GQLRootResolver m a b c -> ByteString -> m ByteString
+  => RootResCon m s a b c =>
+       GQLRootResolver m s a b c -> ByteString -> m ByteString
 resolveByteString rootResolver request =
   case eitherDecode request of
     Left aesonError' -> return $ badRequestError aesonError'
@@ -34,8 +34,8 @@ resolveByteString rootResolver request =
 
 resolveStreamByteString ::
      Monad m
-  => RootResCon m a b c =>
-       GQLRootResolver m a b c -> ByteString -> m (OutputAction m ByteString)
+  => RootResCon m s a b c =>
+       GQLRootResolver m s a b c -> ByteString -> m (OutputAction m s ByteString)
 resolveStreamByteString rootResolver request =
   case eitherDecode request of
     Left aesonError' -> return $ NoAction $ badRequestError aesonError'
@@ -43,8 +43,8 @@ resolveStreamByteString rootResolver request =
 
 resolve ::
      Monad m
-  => RootResCon m a b c =>
-       GQLRootResolver m a b c -> GQLRequest -> m GQLResponse
+  => RootResCon m s a b c =>
+       GQLRootResolver m s a b c -> GQLRequest -> m GQLResponse
 resolve GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
   case fullSchema queryResolver mutationResolver subscriptionResolver of
     Left error' -> return $ Errors $ renderErrors error'
@@ -64,8 +64,8 @@ resolve GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} 
 
 resolveStream ::
      Monad m
-  => RootResCon m a b c =>
-       GQLRootResolver m a b c -> GQLRequest -> m (OutputAction m GQLResponse)
+  => RootResCon m s a b c =>
+       GQLRootResolver m s a b c -> GQLRequest -> m (OutputAction m s GQLResponse)
 resolveStream GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
   case fullSchema queryResolver mutationResolver subscriptionResolver of
     Left error' -> return $ NoAction $ Errors $ renderErrors error'
@@ -81,9 +81,10 @@ resolveStream GQLRootResolver {queryResolver, mutationResolver, subscriptionReso
           value <- encodeQuery gqlSchema queryResolver $ operatorSelection operator'
           return (NoAction value)
         resolveOperator (Mutation operator') = do
-          (channels, response) <- unpackStream2 $ effectEncode mutationResolver $ operatorSelection operator'
+          (mutationChannels, response) <- unpackStream2 $ effectEncode mutationResolver $ operatorSelection operator'
           return
-            PublishMutation {mutationChannels = channels, mutationResponse = response, currentSubscriptionStateResolver}
+            PublishMutation
+              {mutationChannels = mutationChannels, mutationResponse = response, currentSubscriptionStateResolver}
           where
             currentSubscriptionStateResolver selection' = do
               value <- unpackStream (effectEncode subscriptionResolver selection')
@@ -94,7 +95,7 @@ resolveStream GQLRootResolver {queryResolver, mutationResolver, subscriptionReso
           (subscriptionChannels, _) <- unpackStream2 $ effectEncode subscriptionResolver $ operatorSelection operator'
           return InitSubscription {subscriptionChannels, subscriptionQuery = operatorSelection operator'}
 
-packStream :: GQLState -> (ByteString -> IO (OutputAction IO ByteString)) -> ByteString -> IO ByteString
+packStream :: Show s => GQLState -> (ByteString -> IO (OutputAction IO s ByteString)) -> ByteString -> IO ByteString
 packStream state streamAPI request = do
   value <- streamAPI request
   case value of

@@ -134,17 +134,24 @@ fetchUser =
         , myUnion = const $ return $ ADDRESS unionAddress
         }
 
-createUserMutation :: a -> StreamM (User StreamM)
-createUserMutation _ = gqlStreamResolver ["UPDATE_USER"] fetchUser
+data Actions
+  = UPDATE_USER
+  | UPDATE_ADDRESS
+  deriving (Show)
 
-newUserSubscription :: a -> StreamM (User StreamM)
-newUserSubscription _ = gqlStreamResolver ["UPDATE_USER"] fetchUser
+type GQLStream = StreamM Actions
 
-createAddressMutation :: a -> StreamM Address
-createAddressMutation _ = gqlStreamResolver ["UPDATE_ADDRESS"] (fetchAddress (Euro 1 0))
+createUserMutation :: a -> GQLStream (User GQLStream)
+createUserMutation _ = gqlStreamResolver [UPDATE_USER] fetchUser
 
-newAddressSubscription :: a -> StreamM Address
-newAddressSubscription _ = gqlStreamResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
+newUserSubscription :: a -> GQLStream (User GQLStream)
+newUserSubscription _ = gqlStreamResolver [UPDATE_USER] fetchUser
+
+createAddressMutation :: a -> GQLStream Address
+createAddressMutation _ = gqlStreamResolver [UPDATE_ADDRESS] (fetchAddress (Euro 1 0))
+
+newAddressSubscription :: a -> GQLStream Address
+newAddressSubscription _ = gqlStreamResolver [UPDATE_ADDRESS] $ fetchAddress (Euro 1 0)
 
 data Query = Query
   { user       :: () -> ResM (User ResM)
@@ -155,16 +162,16 @@ data Query = Query
   } deriving (Generic)
 
 data Mutation = Mutation
-  { createUser    :: () -> StreamM (User StreamM)
-  , createAddress :: () -> StreamM Address
+  { createUser    :: () -> GQLStream (User GQLStream)
+  , createAddress :: () -> GQLStream Address
   } deriving (Generic)
 
 data Subscription = Subscription
-  { newUser    :: () -> StreamM (User StreamM)
-  , newAddress :: () -> StreamM Address
+  { newUser    :: () -> GQLStream (User GQLStream)
+  , newAddress :: () -> GQLStream Address
   } deriving (Generic)
 
-gqlRoot :: GQLRootResolver IO Query Mutation Subscription
+gqlRoot :: GQLRootResolver IO Actions Query Mutation Subscription
 gqlRoot =
   GQLRootResolver
     { queryResolver =

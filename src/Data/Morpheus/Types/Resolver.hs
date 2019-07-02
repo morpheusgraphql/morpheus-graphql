@@ -24,7 +24,6 @@ module Data.Morpheus.Types.Resolver
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
-import           Data.Text                               (Text)
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveT)
@@ -36,7 +35,7 @@ type Pure = Either String
 type ResM = Resolver IO
 
 -- | Monad Resolver with GraphQL effects, used for communication between mutation and subscription
-type StreamM = Resolver (StreamT IO Text)
+type StreamM c = Resolver (StreamT IO c)
 
 -- | Resolver Monad Transformer
 type Resolver = ExceptT String
@@ -49,10 +48,10 @@ gqlResolver = ExceptT
 --
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
-data GQLRootResolver m a b c = GQLRootResolver
+data GQLRootResolver m s a b c = GQLRootResolver
   { queryResolver        :: ResolveT m a
-  , mutationResolver     :: ResolveT (StreamT m Text) b
-  , subscriptionResolver :: ResolveT (StreamT m Text) c
+  , mutationResolver     :: ResolveT (StreamT m s) b
+  , subscriptionResolver :: ResolveT (StreamT m s) c
   }
 
 -- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver
@@ -68,10 +67,10 @@ insertStream channels StreamT {runStreamT = monadStream} = StreamT $ effectPlus 
 liftStreamResolver :: Monad m => [c] -> m (Either String a) -> Resolver (StreamT m c) a
 liftStreamResolver channels = ExceptT . StreamT . fmap (Stream channels)
 
-unpackStream2 :: Monad m => ResolveT (StreamT m Text) v -> ResolveT m ([Text], v)
+unpackStream2 :: Monad m => ResolveT (StreamT m s) v -> ResolveT m ([s], v)
 unpackStream2 x = ExceptT $ unpackStream x
 
-unpackStream :: Monad m => ResolveT (StreamT m Text) v -> m (Either GQLErrors ([Text], v))
+unpackStream :: Monad m => ResolveT (StreamT m s) v -> m (Either GQLErrors ([s], v))
 unpackStream resolver = do
   (Stream effects eitherValue) <- runStreamT $ runExceptT resolver
   case eitherValue of

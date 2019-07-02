@@ -16,11 +16,11 @@ import           Data.Text                                  (Text)
 import           Data.UUID                                  (UUID)
 import           Network.WebSockets                         (Connection)
 
-data OutputAction m a
-  = PublishMutation { mutationChannels                 :: [Text]
+data OutputAction m s a
+  = PublishMutation { mutationChannels                 :: [s]
                     , mutationResponse                 :: a
                     , currentSubscriptionStateResolver :: SelectionSet -> m GQLResponse }
-  | InitSubscription { subscriptionChannels :: [Text]
+  | InitSubscription { subscriptionChannels :: [s]
                      , subscriptionQuery    :: SelectionSet }
   | NoAction a
   deriving (Functor)

@@ -32,11 +32,11 @@ import           Data.Text                                  (Text)
 import           Data.Typeable                              (Typeable)
 import           GHC.Generics
 
-type RootResCon m a b c = (OperatorCon m a, OperatorStreamCon m b, OperatorStreamCon m c)
+type RootResCon m s a b c = (Typeable s, OperatorCon m a, OperatorStreamCon m s b, OperatorStreamCon m s c)
 
 type OperatorCon m a = (IntroCon a, EncodeCon m a)
 
-type OperatorStreamCon m a = (IntroCon a, EncodeCon (StreamT m Text) a)
+type OperatorStreamCon m s a = (IntroCon a, EncodeCon (StreamT m s) a)
 
 type Encode m a = ResolveT m a -> SelectionSet -> ResolveT m Value
 
@@ -46,24 +46,24 @@ type BaseEncode m a
    = EncodeCon m a =>
        DataTypeLib -> Encode m a
 
-type StreamEncode m a
-   = EncodeCon (StreamT m Text) a =>
-       Encode (StreamT m Text) a
+type StreamEncode m s a
+   = EncodeCon (StreamT m s) a =>
+       Encode (StreamT m s) a
 
 encodeQuery :: Monad m => BaseEncode m a
 encodeQuery types rootResolver sel =
   fmap resolversBy rootResolver >>= resolveBySelection sel . (++) (resolversBy $ schemaAPI types)
 
-effectEncode :: Monad m => StreamEncode m a
+effectEncode :: Monad m => StreamEncode m s a
 effectEncode rootResolver sel = rootResolver >>= resolveBySelection sel . resolversBy
 
 type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments, Typeable a)
 
 fullSchema ::
-     forall m a b c. (IntroCon a, IntroCon b, IntroCon c)
+     forall m s a b c. (IntroCon a, IntroCon b, IntroCon c)
   => ResolveT m a
-  -> ResolveT (StreamT m Text) b
-  -> ResolveT (StreamT m Text) c
+  -> ResolveT (StreamT m s) b
+  -> ResolveT (StreamT m s) c
   -> SchemaValidation DataTypeLib
 fullSchema queryRes mutationRes subscriptionRes =
   querySchema queryRes >>= mutationSchema mutationRes >>= subscriptionSchema subscriptionRes

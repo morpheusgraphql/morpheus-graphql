@@ -28,7 +28,7 @@ main = do
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
   where
     settings = Warp.setPort 3000 Warp.defaultSettings
-    wsApp = gqlSocketApp (interpreter gqlRoot)
+    wsApp = gqlSocketApp gqlRoot
     httpServer :: GQLState -> IO Wai.Application
     httpServer state =
       scottyApp $ do
