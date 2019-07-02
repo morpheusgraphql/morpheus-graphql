@@ -27,14 +27,13 @@ import           Data.Morpheus.Types.Internal.Data          (DataArguments, Data
                                                              DataTypeLib (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveT, SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Morpheus.Types.Resolver               (StreamT (..))
+import           Data.Morpheus.Types.Resolver               (MutStream, StreamT (..), SubStream, SubT)
 import           Data.Proxy
 import           Data.Text                                  (Text)
 import           Data.Typeable                              (Typeable)
 import           GHC.Generics
 
-type RootResCon m s a b c
-   = (Typeable s, OperatorCon m a, OperatorStreamCon m s b, OperatorStreamCon m (s, s -> ResolveT m Value) c)
+type RootResCon m s a b c = (Typeable s, OperatorCon m a, OperatorStreamCon m s b, OperatorStreamCon m (SubT m s) c)
 
 type OperatorCon m a = (IntroCon a, EncodeCon m a)
 
@@ -67,8 +66,8 @@ type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments, Typeable a)
 fullSchema ::
      forall m s a b c. (IntroCon a, IntroCon b, IntroCon c)
   => ResolveT m a
-  -> ResolveT (StreamT m s) b
-  -> ResolveT (StreamT m (s, s -> ResolveT m Value)) c
+  -> ResolveT (MutStream m s) b
+  -> ResolveT (SubStream m s) c
   -> SchemaValidation DataTypeLib
 fullSchema queryRes mutationRes subscriptionRes =
   querySchema queryRes >>= mutationSchema mutationRes >>= subscriptionSchema subscriptionRes
