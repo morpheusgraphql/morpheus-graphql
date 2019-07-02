@@ -11,16 +11,16 @@
 module Data.Morpheus.Types.Resolver
   ( Pure
   , ResM
-  , EffectM
-  , EffectT(..)
-  , Effect(..)
+  , StreamM
+  , StreamT(..)
+  , Stream(..)
   , Resolver
   , GQLRootResolver(..)
   , gqlResolver
-  , gqlEffectResolver
-  , liftEffectResolver
-  , unpackEffect
-  , unpackEffect2
+  , gqlStreamResolver
+  , liftStreamResolver
+  , unpackStream
+  , unpackStream2
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
@@ -36,7 +36,7 @@ type Pure = Either String
 type ResM = Resolver IO
 
 -- | Monad Resolver with GraphQL effects, used for communication between mutation and subscription
-type EffectM = Resolver (EffectT IO Text)
+type StreamM = Resolver (StreamT IO Text)
 
 -- | Resolver Monad Transformer
 type Resolver = ExceptT String
@@ -51,55 +51,55 @@ gqlResolver = ExceptT
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
 data GQLRootResolver m a b c = GQLRootResolver
   { queryResolver        :: ResolveT m a
-  , mutationResolver     :: ResolveT (EffectT m Text) b
-  , subscriptionResolver :: ResolveT (EffectT m Text) c
+  , mutationResolver     :: ResolveT (StreamT m Text) b
+  , subscriptionResolver :: ResolveT (StreamT m Text) c
   }
 
 -- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver
-gqlEffectResolver :: Monad m => [c] -> (EffectT m c) (Either String a) -> Resolver (EffectT m c) a
-gqlEffectResolver channels = ExceptT . insertEffect channels
+gqlStreamResolver :: Monad m => [c] -> (StreamT m c) (Either String a) -> Resolver (StreamT m c) a
+gqlStreamResolver channels = ExceptT . insertStream channels
 
-insertEffect :: Monad m => [c] -> EffectT m c a -> EffectT m c a
-insertEffect channels EffectT {runEffectT = monadEffect} = EffectT $ effectPlus <$> monadEffect
+insertStream :: Monad m => [c] -> StreamT m c a -> StreamT m c a
+insertStream channels StreamT {runStreamT = monadStream} = StreamT $ effectPlus <$> monadStream
   where
-    effectPlus x = x {resultEffects = channels ++ resultEffects x}
+    effectPlus x = x {resultStreams = channels ++ resultStreams x}
 
--- | lift Normal resolver inside Effect Resolver
-liftEffectResolver :: Monad m => [c] -> m (Either String a) -> Resolver (EffectT m c) a
-liftEffectResolver channels = ExceptT . EffectT . fmap (Effect channels)
+-- | lift Normal resolver inside Stream Resolver
+liftStreamResolver :: Monad m => [c] -> m (Either String a) -> Resolver (StreamT m c) a
+liftStreamResolver channels = ExceptT . StreamT . fmap (Stream channels)
 
-unpackEffect2 :: Monad m => ResolveT (EffectT m Text) v -> ResolveT m ([Text], v)
-unpackEffect2 x = ExceptT $ unpackEffect x
+unpackStream2 :: Monad m => ResolveT (StreamT m Text) v -> ResolveT m ([Text], v)
+unpackStream2 x = ExceptT $ unpackStream x
 
-unpackEffect :: Monad m => ResolveT (EffectT m Text) v -> m (Either GQLErrors ([Text], v))
-unpackEffect resolver = do
-  (Effect effects eitherValue) <- runEffectT $ runExceptT resolver
+unpackStream :: Monad m => ResolveT (StreamT m Text) v -> m (Either GQLErrors ([Text], v))
+unpackStream resolver = do
+  (Stream effects eitherValue) <- runStreamT $ runExceptT resolver
   case eitherValue of
     Left errors -> return $ Left errors
     Right value -> return $ Right (effects, value)
 
-data Effect c v = Effect
-  { resultEffects :: [c]
+data Stream c v = Stream
+  { resultStreams :: [c]
   , resultValue   :: v
   } deriving (Functor)
 
 -- | Monad Transformer that sums all effect Together
-newtype EffectT m c v = EffectT
-  { runEffectT :: m (Effect c v)
+newtype StreamT m c v = StreamT
+  { runStreamT :: m (Stream c v)
   } deriving (Functor)
 
-instance Monad m => Applicative (EffectT m c) where
-  pure = EffectT . return . Effect []
-  EffectT app1 <*> EffectT app2 =
-    EffectT $ do
-      (Effect effect1 func) <- app1
-      (Effect effect2 val) <- app2
-      return $ Effect (effect1 ++ effect2) (func val)
+instance Monad m => Applicative (StreamT m c) where
+  pure = StreamT . return . Stream []
+  StreamT app1 <*> StreamT app2 =
+    StreamT $ do
+      (Stream effect1 func) <- app1
+      (Stream effect2 val) <- app2
+      return $ Stream (effect1 ++ effect2) (func val)
 
-instance Monad m => Monad (EffectT m c) where
+instance Monad m => Monad (StreamT m c) where
   return = pure
-  (EffectT m1) >>= mFunc =
-    EffectT $ do
-      (Effect e1 v1) <- m1
-      (Effect e2 v2) <- runEffectT $ mFunc v1
-      return $ Effect (e1 ++ e2) v2
+  (StreamT m1) >>= mFunc =
+    StreamT $ do
+      (Stream e1 v1) <- m1
+      (Stream e2 v2) <- runStreamT $ mFunc v1
+      return $ Stream (e1 ++ e2) v2
