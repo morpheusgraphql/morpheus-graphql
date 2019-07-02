@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds     #-}
 {-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -44,31 +45,27 @@ handleGQLResponse GQLClient {clientConnection = connection', clientID = clientId
   where
     toIds = map (pack . show)
 
-queryHandler ::
-     (Typeable s, Show s, RootResCon IO s a b c) => GQLRootResolver IO s a b c -> GQLClient -> GQLState -> IO ()
-queryHandler gqlRoot client'@GQLClient {clientConnection = connection', clientID = id'} state = forever handleRequest
-  where
-    handleRequest = do
-      msg <- receiveData connection'
-      case parseApolloRequest msg of
-        Left x -> print x
-        Right ApolloSubscription {apolloType = "subscription_end", apolloId = Just sid'} ->
-          removeClientSubscription id' sid' state
-        Right ApolloSubscription { apolloType = "subscription_start"
-                                 , apolloId = Just sid'
-                                 , apolloQuery = Just query'
-                                 , apolloOperationName = name'
-                                 , apolloVariables = variables'
-                                 } -> do
-          value <- resolveStream gqlRoot request
-          handleGQLResponse client' state sid' (encode <$> value)
-          where request = GQLRequest {query = query', operationName = name', variables = variables'}
-        Right _ -> return ()
-
--- | Wai Websocket Server App for GraphQL subscriptions
+-- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketApp :: (Typeable s, Show s, RootResCon IO s a b c) => GQLRootResolver IO s a b c -> GQLState -> ServerApp
 gqlSocketApp gqlRoot state pending = do
   connection' <- acceptRequestWith pending apolloProtocol
   forkPingThread connection' 30
   client' <- connectClient connection' state
-  finally (queryHandler gqlRoot client' state) (disconnectClient client' state)
+  finally (queryHandler client') (disconnectClient client' state)
+  where
+    queryHandler client@GQLClient {clientConnection, clientID} = forever handleRequest
+      where
+        handleRequest = receiveData clientConnection >>= resolveMessage . parseApolloRequest
+          where
+            resolveMessage (Left x) = print x
+            resolveMessage (Right ApolloSubscription {apolloType = "subscription_end", apolloId = Just sid'}) =
+              removeClientSubscription clientID sid' state
+            resolveMessage (Right ApolloSubscription { apolloType = "subscription_start"
+                                                     , apolloId = Just sessionId
+                                                     , apolloQuery = Just query
+                                                     , apolloOperationName = operationName
+                                                     , apolloVariables = variables
+                                                     }) = do
+              value <- resolveStream gqlRoot $ GQLRequest {query, operationName, variables}
+              handleGQLResponse client state sessionId (encode <$> value)
+            resolveMessage (Right _) = return ()
