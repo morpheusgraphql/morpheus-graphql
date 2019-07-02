@@ -70,18 +70,18 @@ instance Interpreter (StateLess m Text) m s where
    HTTP Interpreter with state and side effects, every mutation will
    trigger subscriptions in  shared `GQLState`
 -}
-type WSPub m a = GQLState -> a -> m a
+type WSPub m s a = GQLState m s -> a -> m a
 
-instance Show s => Interpreter (WSPub IO LB.ByteString) IO s where
+instance (Show s, Eq s) => Interpreter (WSPub IO s LB.ByteString) IO s where
   interpreter root state = packStream state (resolveStreamByteString root)
 
-instance Show s => Interpreter (WSPub IO LT.Text) IO s where
+instance (Show s, Eq s) => Interpreter (WSPub IO s LT.Text) IO s where
   interpreter root state request = decodeUtf8 <$> interpreter root state (encodeUtf8 request)
 
-instance Show s => Interpreter (WSPub IO ByteString) IO s where
+instance (Show s, Eq s) => Interpreter (WSPub IO s ByteString) IO s where
   interpreter root state request = LB.toStrict <$> interpreter root state (LB.fromStrict request)
 
-instance Show s => Interpreter (WSPub IO Text) IO s where
+instance (Show s, Eq s) => Interpreter (WSPub IO s Text) IO s where
   interpreter root state request = LT.toStrict <$> interpreter root state (LT.fromStrict request)
 
 {-

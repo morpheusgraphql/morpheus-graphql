@@ -242,3 +242,10 @@ instance (ObjectRep (Rep a) (), OutputConstraint b) => Introspect (a -> Either S
     where
       args :: [((Text, DataInputField), TypeUpdater)]
       args = objectFieldTypes (Proxy @(Rep a))
+
+instance (ObjectRep (Rep a) (), OutputConstraint b) => Introspect (a -> (c, c -> Resolver m b)) WRAPPER OutputType where
+  __field _ name = (__field (Context :: OutputOf b) name) {fieldArgs = map fst $ objectFieldTypes (Proxy @(Rep a))}
+  introspect _ typeLib = resolveTypes typeLib $ map snd args ++ [introspect (Context :: OutputOf b)]
+    where
+      args :: [((Text, DataInputField), TypeUpdater)]
+      args = objectFieldTypes (Proxy @(Rep a))

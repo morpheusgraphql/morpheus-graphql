@@ -27,6 +27,7 @@ import           Control.Monad.Trans.Except              (ExceptT (..), runExcep
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveT)
+import           Data.Morpheus.Types.Internal.Value      (Value)
 
 -- | Pure Resolver without effect
 type Pure = Either String
@@ -51,7 +52,7 @@ gqlResolver = ExceptT
 data GQLRootResolver m s a b c = GQLRootResolver
   { queryResolver        :: ResolveT m a
   , mutationResolver     :: ResolveT (StreamT m s) b
-  , subscriptionResolver :: ResolveT (StreamT m s) c
+  , subscriptionResolver :: ResolveT (StreamT m (s, s -> ResolveT m Value)) c
   }
 
 -- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver

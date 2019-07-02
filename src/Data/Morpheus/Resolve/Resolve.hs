@@ -15,12 +15,15 @@ import Data.Aeson (eitherDecode, encode)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Error.Utils (badRequestError, renderErrors)
 import Data.Morpheus.Parser.Parser (parseGQL)
-import Data.Morpheus.Resolve.Operator (RootResCon, effectEncode, encodeQuery, fullSchema)
+import Data.Morpheus.Resolve.Operator (RootResCon, effectEncode, encodeQuery, encodeSub, fullSchema)
 import Data.Morpheus.Server.ClientRegister (GQLState, publishUpdates)
 import Data.Morpheus.Types.IO (GQLRequest(..), GQLResponse(..))
 import Data.Morpheus.Types.Internal.AST.Operator (Operator(..), Operator'(..))
-import Data.Morpheus.Types.Internal.WebSocket (OutputAction(..))
-import Data.Morpheus.Types.Resolver (GQLRootResolver(..), unpackStream, unpackStream2)
+import Data.Morpheus.Types.Internal.Validation (ResolveT)
+import Data.Morpheus.Types.Internal.Value (Value)
+import Data.Morpheus.Types.Internal.WebSocket (OutputAction(..), WSSubscription(..))
+
+import Data.Morpheus.Types.Resolver (GQLRootResolver(..), unpackStream2)
 import Data.Morpheus.Validation.Validation (validateRequest)
 
 resolveByteString ::
@@ -60,7 +63,7 @@ resolve GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} 
                 Mutation operator' ->
                   snd <$> unpackStream2 (effectEncode mutationResolver (operatorSelection operator'))
                 Subscription operator' ->
-                  snd <$> unpackStream2 (effectEncode subscriptionResolver (operatorSelection operator'))
+                  snd <$> unpackStream2 (encodeSub subscriptionResolver (operatorSelection operator'))
 
 resolveStream ::
      Monad m
@@ -81,26 +84,28 @@ resolveStream GQLRootResolver {queryResolver, mutationResolver, subscriptionReso
           value <- encodeQuery gqlSchema queryResolver $ operatorSelection operator'
           return (NoAction value)
         resolveOperator (Mutation operator') = do
-          (mutationChannels, response) <- unpackStream2 $ effectEncode mutationResolver $ operatorSelection operator'
-          return
-            PublishMutation
-              {mutationChannels = mutationChannels, mutationResponse = response, currentSubscriptionStateResolver}
+          (mutationChannels, mutationResponse) <-
+            unpackStream2 $ effectEncode mutationResolver $ operatorSelection operator'
+          return PublishMutation {mutationChannels, mutationResponse}
+        resolveOperator (Subscription operator') = do
+          (channels, _) <- unpackStream2 $ effectEncode subscriptionResolver $ operatorSelection operator'
+          let (subscriptionChannels, resolvers) = unzip channels
+          return $ InitSubscription $ WSSubscription {subscriptionChannels, subscriptionRes = subRes $ head resolvers}
           where
-            currentSubscriptionStateResolver selection' = do
-              value <- unpackStream (effectEncode subscriptionResolver selection')
+            subRes :: Monad m => (s -> ResolveT m Value) -> s -> m GQLResponse
+            subRes resolver arg = do
+              value <- runExceptT $ resolver arg
               case value of
                 Left x -> pure $ Errors $ renderErrors x
-                Right (_, x') -> return $ Data x'
-        resolveOperator (Subscription operator') = do
-          (subscriptionChannels, _) <- unpackStream2 $ effectEncode subscriptionResolver $ operatorSelection operator'
-          return InitSubscription {subscriptionChannels, subscriptionQuery = operatorSelection operator'}
+                Right v -> return $ Data v
 
-packStream :: Show s => GQLState -> (ByteString -> IO (OutputAction IO s ByteString)) -> ByteString -> IO ByteString
+packStream ::
+     (Show s, Eq s) => GQLState IO s -> (ByteString -> IO (OutputAction IO s ByteString)) -> ByteString -> IO ByteString
 packStream state streamAPI request = do
   value <- streamAPI request
   case value of
-    PublishMutation {mutationChannels, mutationResponse, currentSubscriptionStateResolver} -> do
-      publishUpdates mutationChannels currentSubscriptionStateResolver state
+    PublishMutation {mutationChannels, mutationResponse} -> do
+      publishUpdates mutationChannels state
       return mutationResponse
     InitSubscription {} -> pure "subscriptions are only allowed in websocket"
     NoAction res' -> return res'

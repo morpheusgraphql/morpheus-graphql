@@ -197,6 +197,22 @@ instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m) =>
          Encoder (a -> Resolver m b) WRAPPER (StreamT m c) where
   __encode resolver selection = ExceptT $ StreamT $ Stream [] <$> runExceptT (__encode resolver selection)
 
+instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m) =>
+         Encoder (a -> (c, c -> Resolver m b)) WRAPPER (StreamT m (c, c -> ResolveT m Value)) where
+  __encode (WithGQLKind resolver) selection@(fieldName, Selection {selectionArguments, selectionPosition}) =
+    case decodeArguments selectionArguments of
+      Left message -> failResolveT message
+      Right args ->
+        case resolver args of
+          (events, res) -> ExceptT $ StreamT $ pure $ Stream [(events, liftEitherM . res)] $ Right Null
+        where liftEitherM :: Resolver m b -> ResolveT m Value
+              liftEitherM value =
+                ExceptT $ do
+                  x <- runExceptT value
+                  case x of
+                    Left message -> pure $ Left $ fieldNotResolved selectionPosition fieldName (pack message)
+                    Right v      -> runExceptT $ encode v selection
+
 --
 -- MAYBE
 --

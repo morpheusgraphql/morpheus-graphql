@@ -16,6 +16,7 @@ module Data.Morpheus.Resolve.Operator
   , fullSchema
   , encodeQuery
   , effectEncode
+  , encodeSub
   ) where
 
 import           Data.Morpheus.Resolve.Encode               (ObjectFieldResolvers (..), resolveBySelection, resolversBy)
@@ -32,7 +33,8 @@ import           Data.Text                                  (Text)
 import           Data.Typeable                              (Typeable)
 import           GHC.Generics
 
-type RootResCon m s a b c = (Typeable s, OperatorCon m a, OperatorStreamCon m s b, OperatorStreamCon m s c)
+type RootResCon m s a b c
+   = (Typeable s, OperatorCon m a, OperatorStreamCon m s b, OperatorStreamCon m (s, s -> ResolveT m Value) c)
 
 type OperatorCon m a = (IntroCon a, EncodeCon m a)
 
@@ -57,13 +59,16 @@ encodeQuery types rootResolver sel =
 effectEncode :: Monad m => StreamEncode m s a
 effectEncode rootResolver sel = rootResolver >>= resolveBySelection sel . resolversBy
 
+encodeSub :: Monad m => StreamEncode m (s, s -> ResolveT m Value) a
+encodeSub rootResolver sel = rootResolver >>= resolveBySelection sel . resolversBy
+
 type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments, Typeable a)
 
 fullSchema ::
      forall m s a b c. (IntroCon a, IntroCon b, IntroCon c)
   => ResolveT m a
   -> ResolveT (StreamT m s) b
-  -> ResolveT (StreamT m s) c
+  -> ResolveT (StreamT m (s, s -> ResolveT m Value)) c
   -> SchemaValidation DataTypeLib
 fullSchema queryRes mutationRes subscriptionRes =
   querySchema queryRes >>= mutationSchema mutationRes >>= subscriptionSchema subscriptionRes

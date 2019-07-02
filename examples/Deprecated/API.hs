@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -7,6 +8,7 @@
 
 module Deprecated.API
   ( gqlRoot
+  , Actions
   ) where
 
 import           Data.Map            (Map)
@@ -137,21 +139,15 @@ fetchUser =
 data Actions
   = UPDATE_USER
   | UPDATE_ADDRESS
-  deriving (Show)
+  deriving (Show, Eq, Ord)
 
 type GQLStream = StreamM Actions
 
 createUserMutation :: a -> GQLStream (User GQLStream)
 createUserMutation _ = gqlStreamResolver [UPDATE_USER] fetchUser
 
-newUserSubscription :: a -> GQLStream (User GQLStream)
-newUserSubscription _ = gqlStreamResolver [UPDATE_USER] fetchUser
-
 createAddressMutation :: a -> GQLStream Address
 createAddressMutation _ = gqlStreamResolver [UPDATE_ADDRESS] (fetchAddress (Euro 1 0))
-
-newAddressSubscription :: a -> GQLStream Address
-newAddressSubscription _ = gqlStreamResolver [UPDATE_ADDRESS] $ fetchAddress (Euro 1 0)
 
 data Query = Query
   { user       :: () -> ResM (User ResM)
@@ -167,8 +163,8 @@ data Mutation = Mutation
   } deriving (Generic)
 
 data Subscription = Subscription
-  { newUser    :: () -> GQLStream (User GQLStream)
-  , newAddress :: () -> GQLStream Address
+  { newAddress :: () -> (Actions, Actions -> ResM Address)
+  , newUser    :: () -> (Actions, Actions -> ResM (User ResM))
   } deriving (Generic)
 
 gqlRoot :: GQLRootResolver IO Actions Query Mutation Subscription
@@ -184,5 +180,10 @@ gqlRoot =
             , textIntMap = M.fromList [("robin", 1), ("carl", 2)]
             }
     , mutationResolver = return Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
-    , subscriptionResolver = return Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}
+    , subscriptionResolver = return Subscription {newUser, newAddress}
     }
+  where
+    newUser :: () -> (Actions, Actions -> ResM (User ResM))
+    newUser _ = (UPDATE_ADDRESS, \_ -> gqlResolver fetchUser)
+    newAddress :: a -> (Actions, Actions -> ResM Address)
+    newAddress _ = (UPDATE_ADDRESS, \_ -> gqlResolver $ fetchAddress (Euro 1 0))

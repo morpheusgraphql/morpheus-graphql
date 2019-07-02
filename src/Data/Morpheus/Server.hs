@@ -25,28 +25,23 @@ import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubs
 import           Data.Morpheus.Types                    (GQLRequest (..))
 import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..), OutputAction (..))
 import           Data.Morpheus.Types.Resolver           (GQLRootResolver (..))
-import           Data.Text                              (pack)
 import           Data.Typeable                          (Typeable)
 import           Network.WebSockets                     (ServerApp, acceptRequestWith, forkPingThread, receiveData,
                                                          sendTextData)
 
-type ChannelCon s = Show s
+type ChannelCon s = (Eq s, Show s)
 
-handleGQLResponse :: ChannelCon s => GQLClient -> GQLState -> Int -> OutputAction IO s ByteString -> IO ()
-handleGQLResponse GQLClient {clientConnection = connection', clientID = clientId'} state sessionId' msg =
+handleGQLResponse :: ChannelCon s => GQLClient IO s -> GQLState IO s -> Int -> OutputAction IO s ByteString -> IO ()
+handleGQLResponse GQLClient {clientConnection, clientID} state sessionId' msg =
   case msg of
-    PublishMutation { mutationChannels = channels'
-                    , currentSubscriptionStateResolver = resolver'
-                    , mutationResponse = response'
-                    } -> sendTextData connection' response' >> publishUpdates channels' resolver' state
-    InitSubscription {subscriptionQuery = selection', subscriptionChannels = channels'} ->
-      addClientSubscription clientId' selection' (toIds channels') sessionId' state
-    NoAction response' -> sendTextData connection' response'
-  where
-    toIds = map (pack . show)
+    PublishMutation {mutationChannels, mutationResponse} ->
+      sendTextData clientConnection mutationResponse >> publishUpdates mutationChannels state
+    InitSubscription wsSubscription -> addClientSubscription clientID wsSubscription sessionId' state
+    NoAction response' -> sendTextData clientConnection response'
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
-gqlSocketApp :: (Typeable s, Show s, RootResCon IO s a b c) => GQLRootResolver IO s a b c -> GQLState -> ServerApp
+gqlSocketApp ::
+     (Typeable s, Eq s, Show s, RootResCon IO s a b c) => GQLRootResolver IO s a b c -> GQLState IO s -> ServerApp
 gqlSocketApp gqlRoot state pending = do
   connection' <- acceptRequestWith pending apolloProtocol
   forkPingThread connection' 30
