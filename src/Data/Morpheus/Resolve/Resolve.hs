@@ -20,7 +20,7 @@ import Data.Morpheus.Server.ClientRegister (GQLState, publishUpdates)
 import Data.Morpheus.Types.IO (GQLRequest(..), GQLResponse(..))
 import Data.Morpheus.Types.Internal.AST.Operator (Operator(..), Operator'(..))
 import Data.Morpheus.Types.Internal.WebSocket (OutputAction(..))
-import Data.Morpheus.Types.Resolver (GQLRootResolver(..), unpackEffect, unpackEffect2)
+import Data.Morpheus.Types.Resolver (GQLRootResolver(..), unpackStream, unpackStream2)
 import Data.Morpheus.Validation.Validation (validateRequest)
 
 resolveByteString ::
@@ -38,7 +38,7 @@ resolveStreamByteString ::
        GQLRootResolver m a b c -> ByteString -> m (OutputAction m ByteString)
 resolveStreamByteString rootResolver request =
   case eitherDecode request of
-    Left aesonError' -> return $ NoEffect $ badRequestError aesonError'
+    Left aesonError' -> return $ NoAction $ badRequestError aesonError'
     Right req -> fmap encode <$> resolveStream rootResolver req
 
 resolve ::
@@ -58,9 +58,9 @@ resolve GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} 
               case rootGQL of
                 Query operator' -> encodeQuery gqlSchema queryResolver $ operatorSelection operator'
                 Mutation operator' ->
-                  snd <$> unpackEffect2 (effectEncode mutationResolver (operatorSelection operator'))
+                  snd <$> unpackStream2 (effectEncode mutationResolver (operatorSelection operator'))
                 Subscription operator' ->
-                  snd <$> unpackEffect2 (effectEncode subscriptionResolver (operatorSelection operator'))
+                  snd <$> unpackStream2 (effectEncode subscriptionResolver (operatorSelection operator'))
 
 resolveStream ::
      Monad m
@@ -68,30 +68,30 @@ resolveStream ::
        GQLRootResolver m a b c -> GQLRequest -> m (OutputAction m GQLResponse)
 resolveStream GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
   case fullSchema queryResolver mutationResolver subscriptionResolver of
-    Left error' -> return $ NoEffect $ Errors $ renderErrors error'
+    Left error' -> return $ NoAction $ Errors $ renderErrors error'
     Right validSchema -> do
       value <- runExceptT $ _resolve validSchema
       case value of
-        Left x -> return $ NoEffect $ Errors $ renderErrors x
+        Left x -> return $ NoAction $ Errors $ renderErrors x
         Right value' -> return $ fmap Data value'
   where
     _resolve gqlSchema = (ExceptT $ pure (parseGQL request >>= validateRequest gqlSchema)) >>= resolveOperator
       where
         resolveOperator (Query operator') = do
           value <- encodeQuery gqlSchema queryResolver $ operatorSelection operator'
-          return (NoEffect value)
+          return (NoAction value)
         resolveOperator (Mutation operator') = do
-          (channels, response) <- unpackEffect2 $ effectEncode mutationResolver $ operatorSelection operator'
+          (channels, response) <- unpackStream2 $ effectEncode mutationResolver $ operatorSelection operator'
           return
             PublishMutation {mutationChannels = channels, mutationResponse = response, currentSubscriptionStateResolver}
           where
             currentSubscriptionStateResolver selection' = do
-              value <- unpackEffect (effectEncode subscriptionResolver selection')
+              value <- unpackStream (effectEncode subscriptionResolver selection')
               case value of
                 Left x -> pure $ Errors $ renderErrors x
                 Right (_, x') -> return $ Data x'
         resolveOperator (Subscription operator') = do
-          (subscriptionChannels, _) <- unpackEffect2 $ effectEncode subscriptionResolver $ operatorSelection operator'
+          (subscriptionChannels, _) <- unpackStream2 $ effectEncode subscriptionResolver $ operatorSelection operator'
           return InitSubscription {subscriptionChannels, subscriptionQuery = operatorSelection operator'}
 
 packStream :: GQLState -> (ByteString -> IO (OutputAction IO ByteString)) -> ByteString -> IO ByteString
@@ -102,4 +102,4 @@ packStream state streamAPI request = do
       publishUpdates mutationChannels currentSubscriptionStateResolver state
       return mutationResponse
     InitSubscription {} -> pure "subscriptions are only allowed in websocket"
-    NoEffect res' -> return res'
+    NoAction res' -> return res'

@@ -22,7 +22,7 @@ data OutputAction m a
                     , currentSubscriptionStateResolver :: SelectionSet -> m GQLResponse }
   | InitSubscription { subscriptionChannels :: [Text]
                      , subscriptionQuery    :: SelectionSet }
-  | NoEffect a
+  | NoAction a
   deriving (Functor)
 
 type ClientID = UUID

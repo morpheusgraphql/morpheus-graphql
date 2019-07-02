@@ -19,8 +19,8 @@ import           GHC.Generics        (Generic)
 
 -- MORPHEUS
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (EffectM, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM, Resolver,
-                                      ScalarValue (..), gqlEffectResolver, gqlResolver)
+import           Data.Morpheus.Types (GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM, Resolver,
+                                      ScalarValue (..), StreamM, gqlResolver, gqlStreamResolver)
 
 type instance KIND CityID = ENUM
 
@@ -134,17 +134,17 @@ fetchUser =
         , myUnion = const $ return $ ADDRESS unionAddress
         }
 
-createUserMutation :: a -> EffectM (User EffectM)
-createUserMutation _ = gqlEffectResolver ["UPDATE_USER"] fetchUser
+createUserMutation :: a -> StreamM (User StreamM)
+createUserMutation _ = gqlStreamResolver ["UPDATE_USER"] fetchUser
 
-newUserSubscription :: a -> EffectM (User EffectM)
-newUserSubscription _ = gqlEffectResolver ["UPDATE_USER"] fetchUser
+newUserSubscription :: a -> StreamM (User StreamM)
+newUserSubscription _ = gqlStreamResolver ["UPDATE_USER"] fetchUser
 
-createAddressMutation :: a -> EffectM Address
-createAddressMutation _ = gqlEffectResolver ["UPDATE_ADDRESS"] (fetchAddress (Euro 1 0))
+createAddressMutation :: a -> StreamM Address
+createAddressMutation _ = gqlStreamResolver ["UPDATE_ADDRESS"] (fetchAddress (Euro 1 0))
 
-newAddressSubscription :: a -> EffectM Address
-newAddressSubscription _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
+newAddressSubscription :: a -> StreamM Address
+newAddressSubscription _ = gqlStreamResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
 
 data Query = Query
   { user       :: () -> ResM (User ResM)
@@ -155,13 +155,13 @@ data Query = Query
   } deriving (Generic)
 
 data Mutation = Mutation
-  { createUser    :: () -> EffectM (User EffectM)
-  , createAddress :: () -> EffectM Address
+  { createUser    :: () -> StreamM (User StreamM)
+  , createAddress :: () -> StreamM Address
   } deriving (Generic)
 
 data Subscription = Subscription
-  { newUser    :: () -> EffectM (User EffectM)
-  , newAddress :: () -> EffectM Address
+  { newUser    :: () -> StreamM (User StreamM)
+  , newAddress :: () -> StreamM Address
   } deriving (Generic)
 
 gqlRoot :: GQLRootResolver IO Query Mutation Subscription

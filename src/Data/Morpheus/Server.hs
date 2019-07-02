@@ -32,7 +32,7 @@ handleGQLResponse GQLClient {clientConnection = connection', clientID = clientId
                     } -> sendTextData connection' response' >> publishUpdates channels' resolver' state
     InitSubscription {subscriptionQuery = selection', subscriptionChannels = channels'} ->
       addClientSubscription clientId' selection' channels' sessionId' state
-    NoEffect response' -> sendTextData connection' response'
+    NoAction response' -> sendTextData connection' response'
 
 queryHandler :: GQLAPI -> GQLClient -> GQLState -> IO ()
 queryHandler interpreter' client'@GQLClient {clientConnection = connection', clientID = id'} state =
