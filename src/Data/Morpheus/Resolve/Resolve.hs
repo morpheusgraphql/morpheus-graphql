@@ -37,7 +37,9 @@ import           Data.Proxy
 import           Data.Typeable                              (Typeable)
 import           GHC.Generics
 
-type EncodeCon m a = (Generic a, ObjectFieldResolvers (Rep a) m)
+type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments)
+
+type EncodeCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) m)
 
 type RootResCon m s a b c
    = ( Typeable s
@@ -133,8 +135,6 @@ encodeQuery types rootResolver sel =
 
 encodeStreamRes :: (Monad m, EncodeCon m a) => Encode m a
 encodeStreamRes rootResolver sel = rootResolver >>= resolveBySelection sel . resolversBy
-
-type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments, Typeable a)
 
 fullSchema ::
      forall m s a b c. (IntroCon a, IntroCon b, IntroCon c)
