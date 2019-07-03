@@ -44,7 +44,8 @@ type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments)
 type EncodeCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) m)
 
 type RootResCon m s a b c
-   = ( Typeable s
+   = ( Eq s
+     , Typeable s
      , Monad m
      , IntroCon a
      , IntroCon b

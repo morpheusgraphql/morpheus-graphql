@@ -24,13 +24,10 @@ import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubs
 import           Data.Morpheus.Types                    (GQLRequest (..))
 import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..), OutputAction (..))
 import           Data.Morpheus.Types.Resolver           (GQLRootResolver (..))
-import           Data.Typeable                          (Typeable)
 import           Network.WebSockets                     (ServerApp, acceptRequestWith, forkPingThread, receiveData,
                                                          sendTextData)
 
-type ChannelCon s = (Eq s, Show s)
-
-handleGQLResponse :: ChannelCon s => GQLClient IO s -> GQLState IO s -> Int -> OutputAction IO s ByteString -> IO ()
+handleGQLResponse :: Eq s => GQLClient IO s -> GQLState IO s -> Int -> OutputAction IO s ByteString -> IO ()
 handleGQLResponse GQLClient {clientConnection, clientID} state sessionId' msg =
   case msg of
     PublishMutation {mutationChannels, mutationResponse} ->
@@ -39,8 +36,7 @@ handleGQLResponse GQLClient {clientConnection, clientID} state sessionId' msg =
     NoAction response' -> sendTextData clientConnection response'
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
-gqlSocketApp ::
-     (Typeable s, Eq s, Show s, RootResCon IO s a b c) => GQLRootResolver IO s a b c -> GQLState IO s -> ServerApp
+gqlSocketApp :: RootResCon IO s a b c => GQLRootResolver IO s a b c -> GQLState IO s -> ServerApp
 gqlSocketApp gqlRoot state pending = do
   connection' <- acceptRequestWith pending apolloProtocol
   forkPingThread connection' 30
