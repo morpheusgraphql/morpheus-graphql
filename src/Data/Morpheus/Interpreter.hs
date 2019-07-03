@@ -15,7 +15,7 @@ import qualified Data.Text.Lazy                         as LT (Text, fromStrict,
 import           Data.Text.Lazy.Encoding                (decodeUtf8, encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Resolve.Resolve          (RootResCon, packStream, resolve, resolveByteString,
+import           Data.Morpheus.Resolve.Resolve          (RootResCon, packStream, resolveByteString, resolveStateless,
                                                          resolveStream, resolveStreamByteString)
 import           Data.Morpheus.Server.ClientRegister    (GQLState)
 import           Data.Morpheus.Types.Internal.WebSocket (OutputAction)
@@ -51,7 +51,7 @@ class Interpreter k m s where
 type StateLess m a = a -> m a
 
 instance Interpreter (GQLRequest -> m GQLResponse) m s where
-  interpreter = resolve
+  interpreter = resolveStateless
 
 instance Interpreter (StateLess m LB.ByteString) m s where
   interpreter = resolveByteString
