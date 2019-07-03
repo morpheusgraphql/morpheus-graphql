@@ -31,38 +31,40 @@ import           Data.Morpheus.Types.Internal.Validation    (ResolveT, SchemaVal
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Morpheus.Types.Internal.WebSocket     (OutputAction (..), WSSubscription (..))
 import           Data.Morpheus.Types.IO                     (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver               (GQLRootResolver (..), MutStream, StreamT (..), SubStream,
-                                                             SubT, unpackStream2)
+import           Data.Morpheus.Types.Resolver               (GQLRootResolver (..), StreamT (..), SubT, unpackStream2)
 import           Data.Morpheus.Validation.Validation        (validateRequest)
 import           Data.Proxy
-import           Data.Text                                  (Text)
 import           Data.Typeable                              (Typeable)
 import           GHC.Generics
 
-resolveByteString ::
-     Monad m
-  => RootResCon m s a b c =>
-       GQLRootResolver m s a b c -> ByteString -> m ByteString
+type EncodeCon m a = (Generic a, ObjectFieldResolvers (Rep a) m)
+
+type RootResCon m s a b c
+   = ( Typeable s
+     , Monad m
+     , IntroCon a
+     , IntroCon b
+     , IntroCon c
+     , EncodeCon m a
+     , EncodeCon (StreamT m s) b
+     , EncodeCon (StreamT m (SubT m s)) c)
+
+resolveByteString :: RootResCon m s a b c => GQLRootResolver m s a b c -> ByteString -> m ByteString
 resolveByteString rootResolver request =
   case eitherDecode request of
     Left aesonError' -> return $ badRequestError aesonError'
     Right req        -> encode <$> resolve rootResolver req
 
 resolveStreamByteString ::
-     Monad m
-  => RootResCon m s a b c =>
-       GQLRootResolver m s a b c -> ByteString -> m (OutputAction m s ByteString)
+     RootResCon m s a b c => GQLRootResolver m s a b c -> ByteString -> m (OutputAction m s ByteString)
 resolveStreamByteString rootResolver request =
   case eitherDecode request of
     Left aesonError' -> return $ NoAction $ badRequestError aesonError'
     Right req        -> fmap encode <$> resolveStream rootResolver req
 
-resolve ::
-     Monad m
-  => RootResCon m s a b c =>
-       GQLRootResolver m s a b c -> GQLRequest -> m GQLResponse
-resolve GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
-  case fullSchema queryResolver mutationResolver subscriptionResolver of
+resolve :: RootResCon m s a b c => GQLRootResolver m s a b c -> GQLRequest -> m GQLResponse
+resolve root@GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
+  case fullSchema root of
     Left error' -> return $ Errors $ renderErrors error'
     Right validSchema -> do
       value <- runExceptT $ _resolve validSchema
@@ -74,16 +76,16 @@ resolve GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} 
               case rootGQL of
                 Query operator' -> encodeQuery gqlSchema queryResolver $ operatorSelection operator'
                 Mutation operator' ->
-                  snd <$> unpackStream2 (effectEncode mutationResolver (operatorSelection operator'))
+                  snd <$> unpackStream2 (encodeStreamRes mutationResolver (operatorSelection operator'))
                 Subscription operator' ->
-                  snd <$> unpackStream2 (encodeSub subscriptionResolver (operatorSelection operator'))
+                  snd <$> unpackStream2 (encodeStreamRes subscriptionResolver (operatorSelection operator'))
 
 resolveStream ::
      Monad m
   => RootResCon m s a b c =>
        GQLRootResolver m s a b c -> GQLRequest -> m (OutputAction m s GQLResponse)
-resolveStream GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
-  case fullSchema queryResolver mutationResolver subscriptionResolver of
+resolveStream root@GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
+  case fullSchema root of
     Left error' -> return $ NoAction $ Errors $ renderErrors error'
     Right validSchema -> do
       value <- runExceptT $ _resolve validSchema
@@ -98,10 +100,10 @@ resolveStream GQLRootResolver {queryResolver, mutationResolver, subscriptionReso
           return (NoAction value)
         resolveOperator (Mutation operator') = do
           (mutationChannels, mutationResponse) <-
-            unpackStream2 $ effectEncode mutationResolver $ operatorSelection operator'
+            unpackStream2 $ encodeStreamRes mutationResolver $ operatorSelection operator'
           return PublishMutation {mutationChannels, mutationResponse}
         resolveOperator (Subscription operator') = do
-          (channels, _) <- unpackStream2 $ effectEncode subscriptionResolver $ operatorSelection operator'
+          (channels, _) <- unpackStream2 $ encodeStreamRes subscriptionResolver $ operatorSelection operator'
           let (subscriptionChannels, resolvers) = unzip channels
           return $ InitSubscription $ WSSubscription {subscriptionChannels, subscriptionRes = subRes $ head resolvers}
           where
@@ -123,38 +125,22 @@ packStream state streamAPI request = do
     InitSubscription {} -> pure "subscriptions are only allowed in websocket"
     NoAction res' -> return res'
 
-type RootResCon m s a b c
-   = ( Typeable s
-     , IntroCon a
-     , IntroCon b
-     , IntroCon c
-     , EncodeCon m a
-     , EncodeCon (StreamT m s) b
-     , EncodeCon (StreamT m (SubT m s)) c)
-
-type EncodeCon m a = (Generic a, ObjectFieldResolvers (Rep a) m)
-
 type Encode m a = ResolveT m a -> SelectionSet -> ResolveT m Value
 
 encodeQuery :: (Monad m, EncodeCon m a) => DataTypeLib -> Encode m a
 encodeQuery types rootResolver sel =
   fmap resolversBy rootResolver >>= resolveBySelection sel . (++) (resolversBy $ schemaAPI types)
 
-effectEncode :: (Monad m, EncodeCon m a) => Encode m a
-effectEncode rootResolver sel = rootResolver >>= resolveBySelection sel . resolversBy
-
-encodeSub :: (Monad m, EncodeCon m a) => Encode m a
-encodeSub rootResolver sel = rootResolver >>= resolveBySelection sel . resolversBy
+encodeStreamRes :: (Monad m, EncodeCon m a) => Encode m a
+encodeStreamRes rootResolver sel = rootResolver >>= resolveBySelection sel . resolversBy
 
 type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments, Typeable a)
 
 fullSchema ::
      forall m s a b c. (IntroCon a, IntroCon b, IntroCon c)
-  => ResolveT m a
-  -> ResolveT (MutStream m s) b
-  -> ResolveT (SubStream m s) c
+  => GQLRootResolver m s a b c
   -> SchemaValidation DataTypeLib
-fullSchema _ _ _ = querySchema >>= mutationSchema >>= subscriptionSchema
+fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
     querySchema = resolveTypes (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query")) (schemaTypes : types)
       where
@@ -165,11 +151,9 @@ fullSchema _ _ _ = querySchema >>= mutationSchema >>= subscriptionSchema
     subscriptionSchema lib = resolveTypes (lib {subscription = maybeOperator fields "Subscription"}) types
       where
         (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep c))
-
-maybeOperator :: [a] -> Text -> Maybe (Text, DataType [a])
-maybeOperator []     = const Nothing
-maybeOperator fields = Just . operatorType fields
-
-operatorType :: [a] -> Text -> (Text, DataType [a])
-operatorType typeData typeName =
-  (typeName, DataType {typeData, typeName, typeFingerprint = SystemFingerprint typeName, typeDescription = ""})
+     -- maybeOperator :: [a] -> Text -> Maybe (Text, DataType [a])
+    maybeOperator []     = const Nothing
+    maybeOperator fields = Just . operatorType fields
+    -- operatorType :: [a] -> Text -> (Text, DataType [a])
+    operatorType typeData typeName =
+      (typeName, DataType {typeData, typeName, typeFingerprint = SystemFingerprint typeName, typeDescription = ""})
