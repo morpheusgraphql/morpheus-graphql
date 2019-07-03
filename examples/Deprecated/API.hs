@@ -141,6 +141,8 @@ data Actions
   | UPDATE_ADDRESS
   deriving (Show, Eq, Ord)
 
+data DataModel = Updated Int Text | Removed Int
+
 type GQLStream = StreamM Actions
 
 createUserMutation :: a -> GQLStream (User GQLStream)

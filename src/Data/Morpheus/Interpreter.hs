@@ -15,9 +15,8 @@ import qualified Data.Text.Lazy                         as LT (Text, fromStrict,
 import           Data.Text.Lazy.Encoding                (decodeUtf8, encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Resolve.Operator         (RootResCon)
-import           Data.Morpheus.Resolve.Resolve          (packStream, resolve, resolveByteString, resolveStream,
-                                                         resolveStreamByteString)
+import           Data.Morpheus.Resolve.Resolve          (RootResCon, packStream, resolve, resolveByteString,
+                                                         resolveStream, resolveStreamByteString)
 import           Data.Morpheus.Server.ClientRegister    (GQLState)
 import           Data.Morpheus.Types.Internal.WebSocket (OutputAction)
 import           Data.Morpheus.Types.IO                 (GQLRequest, GQLResponse)
