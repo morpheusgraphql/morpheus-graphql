@@ -120,18 +120,12 @@ resolveUser _ =
   User
     {name = "testName", email = "", address = resolveAddress, office = resolveAddress, friend = const $ return Nothing}
 
-createUserMutation :: AddressArgs -> ResM User
-createUserMutation = resolveUser
-
-newUserSubscription :: AddressArgs -> ResM User
-newUserSubscription = resolveUser
-
-rootResolver :: GQLRootResolver IO Query Mutation Subscription
+rootResolver :: GQLRootResolver IO () Query Mutation Subscription
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {user = resolveUser, testUnion = Nothing}
-    , mutationResolver = return Mutation {createUser = createUserMutation}
-    , subscriptionResolver = return Subscription {newUser = newUserSubscription}
+    , mutationResolver = return Mutation {createUser = resolveUser}
+    , subscriptionResolver = return Subscription {newUser = resolveUser}
     }
 
 api :: ByteString -> IO ByteString
