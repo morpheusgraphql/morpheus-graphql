@@ -38,6 +38,7 @@ import           Data.Morpheus.Types.Internal.Value      (Value)
 data GQLBase
 
 class Config conf where
+  type ResolverMonad conf :: * -> *
   data Channel conf :: *
   data EventValue conf :: *
 
