@@ -34,7 +34,7 @@ import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Morpheus.Types.Internal.WebSocket     (OutputAction (..), WSSubscription (..))
 import           Data.Morpheus.Types.IO                     (GQLRequest (..), GQLResponse (..))
 import           Data.Morpheus.Types.Resolver               (EventContent, GQLRootResolver (..), StreamT (..), SubT,
-                                                             unpackStream2)
+                                                             unpackStream)
 import           Data.Morpheus.Validation.Validation        (validateRequest)
 import           Data.Proxy
 import           Data.Typeable                              (Typeable)
@@ -93,11 +93,11 @@ resolveStream root@GQLRootResolver {queryResolver, mutationResolver, subscriptio
         resolveOperator (Query Operator' {operatorSelection}) =
           NoAction <$> encodeQuery gqlSchema queryResolver operatorSelection
         resolveOperator (Mutation Operator' {operatorSelection}) = do
-          (mutationChannels, mutationResponse) <- unpackStream2 (encodeStreamRes mutationResolver operatorSelection)
+          (mutationChannels, mutationResponse) <- unpackStream (encodeStreamRes mutationResolver operatorSelection)
           return PublishMutation {mutationChannels, mutationResponse}
         resolveOperator (Subscription Operator' {operatorSelection}) = do
-          (channels, _) <- unpackStream2 (encodeStreamRes subscriptionResolver operatorSelection)
-          let (subscriptionChannels, resolvers) = unzip channels
+          (subscriptionChannels, resolvers) <-
+            unzip . fst <$> unpackStream (encodeStreamRes subscriptionResolver operatorSelection)
           return $ InitSubscription $ WSSubscription {subscriptionChannels, subscriptionRes = subRes $ head resolvers}
           where
             subRes :: Monad m => (EventContent s -> ResolveT m Value) -> EventContent s -> m GQLResponse

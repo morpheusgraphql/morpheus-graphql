@@ -5,6 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
@@ -24,14 +25,13 @@ module Data.Morpheus.Types.Resolver
   , gqlStreamResolver
   , liftStreamResolver
   , unpackStream
-  , unpackStream2
   , EventContent
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveT)
+import           Data.Morpheus.Types.Internal.Validation (ResolveT)
 import           Data.Morpheus.Types.Internal.Value      (Value)
 
 data family EventContent conf :: *
@@ -83,15 +83,11 @@ insertStream channels StreamT {runStreamT = monadStream} = StreamT $ effectPlus 
 liftStreamResolver :: Monad m => [c] -> m (Either String a) -> Resolver (StreamT m c) a
 liftStreamResolver channels = ExceptT . StreamT . fmap (Stream channels)
 
-unpackStream2 :: Monad m => ResolveT (StreamT m s) v -> ResolveT m ([s], v)
-unpackStream2 x = ExceptT $ unpackStream x
-
-unpackStream :: Monad m => ResolveT (StreamT m s) v -> m (Either GQLErrors ([s], v))
-unpackStream resolver = do
-  (Stream effects eitherValue) <- runStreamT $ runExceptT resolver
-  case eitherValue of
-    Left errors -> return $ Left errors
-    Right value -> return $ Right (effects, value)
+unpackStream :: Monad m => ResolveT (StreamT m s) v -> ResolveT m ([s], v)
+unpackStream resolver =
+  ExceptT $ do
+    (Stream effects eitherValue) <- runStreamT $ runExceptT resolver
+    return $ fmap (effects, ) eitherValue
 
 data Stream c v = Stream
   { resultStreams :: [c]
