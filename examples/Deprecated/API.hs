@@ -21,7 +21,7 @@ import           GHC.Generics        (Generic)
 
 -- MORPHEUS
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (Config (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM,
+import           Data.Morpheus.Types (EventContent, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM,
                                       Resolver, ScalarValue (..), StreamM, gqlResolver, gqlStreamResolver)
 
 type instance KIND CityID = ENUM
@@ -141,9 +141,8 @@ data Actions
   | UPDATE_ADDRESS
   deriving (Show, Eq, Ord)
 
-instance Config Actions where
-  data Event Actions = Updated Int Text
-                   | Removed Int
+data instance  EventContent Actions = Update{contentID :: Int,
+                                             contentMessage :: Text}
 
 data Query = Query
   { user       :: () -> ResM (User ResM)
@@ -159,8 +158,8 @@ data Mutation = Mutation
   } deriving (Generic)
 
 data Subscription = Subscription
-  { newAddress :: () -> (Actions, Event Actions -> ResM Address)
-  , newUser    :: () -> (Actions, Event Actions -> ResM (User ResM))
+  { newAddress :: () -> (Actions, EventContent Actions -> ResM Address)
+  , newUser    :: () -> (Actions, EventContent Actions -> ResM (User ResM))
   } deriving (Generic)
 
 gqlRoot :: GQLRootResolver IO Actions Query Mutation Subscription
@@ -179,7 +178,11 @@ gqlRoot =
     , subscriptionResolver = return Subscription {newAddress, newUser}
     }
   where
-    newUser _ = (UPDATE_ADDRESS, \_ -> gqlResolver fetchUser)
-    newAddress _ = (UPDATE_ADDRESS, \_ -> gqlResolver $ fetchAddress (Euro 1 0))
-    createUser _ = gqlStreamResolver [([UPDATE_USER], Updated 12 "")] fetchUser
-    createAddress _ = gqlStreamResolver [([UPDATE_ADDRESS], Removed 12)] (fetchAddress (Euro 1 0))
+    newUser _ = (UPDATE_ADDRESS, \Update {} -> gqlResolver fetchUser)
+    newAddress _ = (UPDATE_ADDRESS, \Update {contentID} -> gqlResolver $ fetchAddress (Euro contentID 0))
+    createUser _ =
+      gqlStreamResolver [([UPDATE_USER], Update {contentID = 12, contentMessage = "some message for user"})] fetchUser
+    createAddress _ =
+      gqlStreamResolver
+        [([UPDATE_ADDRESS], Update {contentID = 10, contentMessage = "message for address"})]
+        (fetchAddress (Euro 1 0))
