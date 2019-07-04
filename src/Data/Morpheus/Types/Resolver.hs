@@ -73,11 +73,9 @@ data GQLRootResolver m s query mut sub = GQLRootResolver
 
 -- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver
 gqlStreamResolver :: Monad m => [c] -> (StreamT m c) (Either String a) -> Resolver (StreamT m c) a
-gqlStreamResolver channels = ExceptT . insertStream channels
-
-insertStream :: Monad m => [c] -> StreamT m c a -> StreamT m c a
-insertStream channels StreamT {runStreamT = monadStream} = StreamT $ effectPlus <$> monadStream
+gqlStreamResolver channels = ExceptT . insertStream
   where
+    insertStream (StreamT streamMonad) = StreamT $ effectPlus <$> streamMonad
     effectPlus x = x {resultStreams = channels ++ resultStreams x}
 
 -- | lift Normal resolver inside Stream Resolver
