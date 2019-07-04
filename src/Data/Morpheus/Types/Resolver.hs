@@ -26,7 +26,6 @@ module Data.Morpheus.Types.Resolver
   , unpackStream
   , unpackStream2
   , Config(..)
-  , GQLBase
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
@@ -35,16 +34,12 @@ import           Control.Monad.Trans.Except              (ExceptT (..), runExcep
 import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveT)
 import           Data.Morpheus.Types.Internal.Value      (Value)
 
-data GQLBase
-
 class Config conf where
-  type ResolverMonad conf :: * -> *
-  data Channel conf :: *
-  data EventValue conf :: *
+  data Event conf :: *
 
-type SubRes m s b = (s, EventValue GQLBase -> Resolver m b)
+type SubRes m s b = (s, Event s -> Resolver m b)
 
-type SubT m s = (s, EventValue GQLBase -> ResolveT m Value)
+type SubT m s = (s, Event s -> ResolveT m Value)
 
 -- | Pure Resolver without effect
 type Pure = Either String
@@ -72,7 +67,7 @@ gqlResolver = ExceptT
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
 data GQLRootResolver m s a b c = GQLRootResolver
   { queryResolver        :: ResolveT m a
-  , mutationResolver     :: ResolveT (StreamT m ([s], EventValue GQLBase)) b
+  , mutationResolver     :: ResolveT (StreamT m ([s], Event s)) b
   , subscriptionResolver :: ResolveT (StreamT m (SubT m s)) c
   }
 

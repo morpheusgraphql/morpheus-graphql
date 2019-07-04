@@ -21,8 +21,8 @@ import           GHC.Generics        (Generic)
 
 -- MORPHEUS
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (Config (..), GQLBase, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID,
-                                      ResM, Resolver, ScalarValue (..), StreamM, gqlResolver, gqlStreamResolver)
+import           Data.Morpheus.Types (Config (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM,
+                                      Resolver, ScalarValue (..), StreamM, gqlResolver, gqlStreamResolver)
 
 type instance KIND CityID = ENUM
 
@@ -141,14 +141,11 @@ data Actions
   | UPDATE_ADDRESS
   deriving (Show, Eq, Ord)
 
-instance Config GQLBase where
-  type ResolverMonad GQLBase = IO
-  data Channel GQLBase = REMOVE_USER
-                     | REMOVE_ADDRESS
-  data EventValue GQLBase = Updated Int Text
-                        | Removed Int
+instance Config Actions where
+  data Event Actions = Updated Int Text
+                   | Removed Int
 
-type GQLStream = StreamM ([Actions], EventValue GQLBase)
+type GQLStream = StreamM ([Actions], Event Actions)
 
 data Query = Query
   { user       :: () -> ResM (User ResM)
@@ -164,8 +161,8 @@ data Mutation = Mutation
   } deriving (Generic)
 
 data Subscription = Subscription
-  { newAddress :: () -> (Actions, EventValue GQLBase -> ResM Address)
-  , newUser    :: () -> (Actions, EventValue GQLBase -> ResM (User ResM))
+  { newAddress :: () -> (Actions, Event Actions -> ResM Address)
+  , newUser    :: () -> (Actions, Event Actions -> ResM (User ResM))
   } deriving (Generic)
 
 gqlRoot :: GQLRootResolver IO Actions Query Mutation Subscription

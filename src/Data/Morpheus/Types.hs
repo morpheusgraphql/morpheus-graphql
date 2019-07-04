@@ -18,7 +18,6 @@ module Data.Morpheus.Types
   , GQLRootResolver(..)
   -- Config
   , Config(..)
-  , GQLBase
   ) where
 
 import           Data.Morpheus.Types.GQLScalar      (GQLScalar (parseValue, serialize))
@@ -26,5 +25,5 @@ import           Data.Morpheus.Types.GQLType        (GQLType (description))
 import           Data.Morpheus.Types.ID             (ID (..))
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
 import           Data.Morpheus.Types.IO             (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver       (Config (..), GQLBase, GQLRootResolver (..), ResM, Resolver,
-                                                     StreamM, gqlResolver, gqlStreamResolver, liftStreamResolver)
+import           Data.Morpheus.Types.Resolver       (Config (..), GQLRootResolver (..), ResM, Resolver, StreamM,
+                                                     gqlResolver, gqlStreamResolver, liftStreamResolver)
