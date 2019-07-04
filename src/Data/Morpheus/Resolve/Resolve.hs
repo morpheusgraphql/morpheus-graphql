@@ -14,6 +14,7 @@ module Data.Morpheus.Resolve.Resolve
   , RootResCon
   ) where
 
+import           Control.Monad                              ((>=>))
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT)
 import           Data.Aeson                                 (eitherDecode, encode)
 import           Data.ByteString.Lazy.Char8                 (ByteString)
@@ -29,11 +30,11 @@ import           Data.Morpheus.Types.Internal.Data          (DataArguments, Data
                                                              DataTypeLib (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Stream        (PublishStream, ResponseEvent (..), ResponseStream,
                                                              StreamState (..), StreamT (..), SubscribeStream,
-                                                             closeStream, mapEvent)
+                                                             closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveT, SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Morpheus.Types.IO                     (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver               (EventContent, GQLRootResolver (..))
+import           Data.Morpheus.Types.Resolver               (GQLRootResolver (..))
 import           Data.Morpheus.Validation.Validation        (validateRequest)
 import           Data.Proxy
 import           Data.Typeable                              (Typeable)
@@ -79,29 +80,21 @@ resolveStream ::
        GQLRootResolver m s a b c -> GQLRequest -> ResponseStream m s GQLResponse
 resolveStream root@GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
   case fullSchema root of
-    Left error' -> pure $ Errors $ renderErrors error'
-    Right validSchema -> do
-      value <- runExceptT $ _resolve validSchema
-      case value of
-        Left x       -> pure $ Errors $ renderErrors x
-        Right value' -> pure $ Data value'
+    Left error'       -> pure $ Errors $ renderErrors error'
+    Right validSchema -> runExceptT (_resolve validSchema) >>= renderResponse
   where
+    renderResponse (Left errors) = pure $ Errors $ renderErrors errors
+    renderResponse (Right value) = pure $ Data value
     _resolve gqlSchema = (ExceptT $ pure (parseGQL request >>= validateRequest gqlSchema)) >>= ExceptT . execOperator
       where
         execOperator (Query Operator' {operatorSelection}) =
           StreamT $ StreamState [] <$> runExceptT (encodeQuery gqlSchema queryResolver operatorSelection)
         execOperator (Mutation Operator' {operatorSelection}) =
-          mapEvent Publish (runExceptT $encodeStreamRes mutationResolver operatorSelection)
+          mapS Publish (runExceptT $encodeStreamRes mutationResolver operatorSelection)
         execOperator (Subscription Operator' {operatorSelection}) =
-          mapEvent mapTuple (runExceptT $ encodeStreamRes subscriptionResolver operatorSelection)
+          mapS renderSubscription (runExceptT $ encodeStreamRes subscriptionResolver operatorSelection)
           where
-            mapTuple (x, y) = Subscribe (x, subRes y)
-            subRes :: Monad m => (EventContent s -> ResolveT m Value) -> EventContent s -> m GQLResponse
-            subRes resolver arg = do
-              value <- runExceptT $ resolver arg
-              case value of
-                Left x  -> pure $ Errors $ renderErrors x
-                Right v -> return $ Data v
+            renderSubscription (c, resolver) = Subscribe (c, runExceptT . resolver >=> renderResponse)
 
 type Encode m a = ResolveT m a -> SelectionSet -> ResolveT m Value
 
@@ -114,15 +107,13 @@ encodeStreamRes rootResolver sel = rootResolver >>= resolveBySelection sel . res
 
 packStream ::
      EventCon s => GQLState IO s -> (ByteString -> ResponseStream IO s ByteString) -> ByteString -> IO ByteString
-packStream state streamAPI request = do
-  (actions, value) <- closeStream (streamAPI request)
-  errors <- mapM execute actions
-  case errors of
-    [] -> pure value
-    _  -> pure value
+packStream state streamApi request = do
+  (actions, value) <- closeStream (streamApi request)
+  mapM_ execute actions
+  pure value
   where
-    execute (Publish updates) = publishUpdates state updates >> pure []
-    execute Subscribe {}      = pure [True] -- TODO Better solution
+    execute (Publish updates) = publishUpdates state updates
+    execute Subscribe {}      = pure ()
 
 fullSchema ::
      forall m s a b c. (IntroCon a, IntroCon b, IntroCon c)

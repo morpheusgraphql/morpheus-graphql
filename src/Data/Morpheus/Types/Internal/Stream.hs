@@ -15,7 +15,7 @@ module Data.Morpheus.Types.Internal.Stream
   , PublishStream
   , ResponseStream
   , closeStream
-  , mapEvent
+  , mapS
   ) where
 
 import           Data.Morpheus.Types.Internal.Validation (ResolveT)
@@ -79,8 +79,8 @@ toTuple StreamState {streamEvents, streamValue} = (streamEvents, streamValue)
 closeStream :: Monad m => (StreamT m s) v -> m ([s], v)
 closeStream resolver = toTuple <$> runStreamT resolver
 
-mapEvent :: Monad m => (a -> b) -> StreamT m a value -> StreamT m b value
-mapEvent func (StreamT ma) =
+mapS :: Monad m => (a -> b) -> StreamT m a value -> StreamT m b value
+mapS func (StreamT ma) =
   StreamT $ do
     state <- ma
     return $ state {streamEvents = map func (streamEvents state)}
