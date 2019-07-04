@@ -71,21 +71,21 @@ instance Interpreter (StateLess m Text) m s where
 -}
 type WSPub m s a = GQLState m s -> a -> m a
 
-instance (Show s, Eq s) => Interpreter (WSPub IO s LB.ByteString) IO s where
+instance Interpreter (WSPub IO s LB.ByteString) IO s where
   interpreter root state = packStream state (resolveStreamByteString root)
 
-instance (Show s, Eq s) => Interpreter (WSPub IO s LT.Text) IO s where
+instance Interpreter (WSPub IO s LT.Text) IO s where
   interpreter root state request = decodeUtf8 <$> interpreter root state (encodeUtf8 request)
 
-instance (Show s, Eq s) => Interpreter (WSPub IO s ByteString) IO s where
+instance Interpreter (WSPub IO s ByteString) IO s where
   interpreter root state request = LB.toStrict <$> interpreter root state (LB.fromStrict request)
 
-instance (Show s, Eq s) => Interpreter (WSPub IO s Text) IO s where
+instance Interpreter (WSPub IO s Text) IO s where
   interpreter root state request = LT.toStrict <$> interpreter root state (LT.fromStrict request)
 
 {-
-   Websocket Interpreter without state and side effects, mutations and subscription will return Actions
-   that will be executed in Websocket server
+   WebSocket Interpreter without state and side effects, mutations and subscription will return Actions
+   that will be executed in WebSocket server
 -}
 type WSSub m s a = a -> m (OutputAction m s a)
 

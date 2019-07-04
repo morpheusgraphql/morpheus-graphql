@@ -120,7 +120,7 @@ encodeStreamRes :: (Monad m, EncodeCon m a) => Encode m a
 encodeStreamRes rootResolver sel = rootResolver >>= resolveBySelection sel . resolversBy
 
 packStream ::
-     (Show s, Eq s) => GQLState IO s -> (ByteString -> IO (OutputAction IO s ByteString)) -> ByteString -> IO ByteString
+     EventCon s => GQLState IO s -> (ByteString -> IO (OutputAction IO s ByteString)) -> ByteString -> IO ByteString
 packStream state streamAPI request = streamAPI request >>= executeActions
   where
     executeActions PublishMutation {mutationChannels, mutationResponse} =
