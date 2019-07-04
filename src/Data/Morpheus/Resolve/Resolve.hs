@@ -33,7 +33,8 @@ import           Data.Morpheus.Types.Internal.Validation    (ResolveT, SchemaVal
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Morpheus.Types.Internal.WebSocket     (OutputAction (..), WSSubscription (..))
 import           Data.Morpheus.Types.IO                     (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver               (GQLRootResolver (..), StreamT (..), SubT, unpackStream2)
+import           Data.Morpheus.Types.Resolver               (Config (..), GQLBase, GQLRootResolver (..), StreamT (..),
+                                                             SubT, unpackStream2)
 import           Data.Morpheus.Validation.Validation        (validateRequest)
 import           Data.Proxy
 import           Data.Typeable                              (Typeable)
@@ -51,7 +52,7 @@ type RootResCon m s a b c
      , IntroCon b
      , IntroCon c
      , EncodeCon m a
-     , EncodeCon (StreamT m s) b
+     , EncodeCon (StreamT m ([s], EventValue GQLBase)) b
      , EncodeCon (StreamT m (SubT m s)) c)
 
 resolveByteString :: RootResCon m s a b c => GQLRootResolver m s a b c -> ByteString -> m ByteString
@@ -99,7 +100,7 @@ resolveStream root@GQLRootResolver {queryResolver, mutationResolver, subscriptio
           let (subscriptionChannels, resolvers) = unzip channels
           return $ InitSubscription $ WSSubscription {subscriptionChannels, subscriptionRes = subRes $ head resolvers}
           where
-            subRes :: Monad m => (s -> ResolveT m Value) -> s -> m GQLResponse
+            subRes :: Monad m => (EventValue GQLBase -> ResolveT m Value) -> EventValue GQLBase -> m GQLResponse
             subRes resolver arg = do
               value <- runExceptT $ resolver arg
               case value of
@@ -120,7 +121,7 @@ packStream ::
 packStream state streamAPI request = streamAPI request >>= executeActions
   where
     executeActions PublishMutation {mutationChannels, mutationResponse} =
-      publishUpdates mutationChannels state $> mutationResponse
+      mapM (publishUpdates state) mutationChannels $> mutationResponse
     executeActions InitSubscription {} = pure "subscriptions are only allowed in websocket"
     executeActions (NoAction response) = return response
 

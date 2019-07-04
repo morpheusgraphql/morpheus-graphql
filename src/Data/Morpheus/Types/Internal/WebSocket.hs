@@ -9,13 +9,14 @@ module Data.Morpheus.Types.Internal.WebSocket
   , WSSubscription(..)
   ) where
 
-import           Data.Morpheus.Types.IO (GQLResponse)
-import           Data.Semigroup         ((<>))
-import           Data.UUID              (UUID)
-import           Network.WebSockets     (Connection)
+import           Data.Morpheus.Types.IO       (GQLResponse)
+import           Data.Morpheus.Types.Resolver (Config (..), GQLBase)
+import           Data.Semigroup               ((<>))
+import           Data.UUID                    (UUID)
+import           Network.WebSockets           (Connection)
 
 data OutputAction m s a
-  = PublishMutation { mutationChannels :: [s]
+  = PublishMutation { mutationChannels :: [([s], EventValue GQLBase)]
                     , mutationResponse :: a }
   | InitSubscription (WSSubscription m s)
   | NoAction a
@@ -25,7 +26,7 @@ type ClientID = UUID
 
 data WSSubscription m s = WSSubscription
   { subscriptionChannels :: [s]
-  , subscriptionRes      :: s -> m GQLResponse
+  , subscriptionRes      :: EventValue GQLBase -> m GQLResponse
   }
 
 data ClientSession m s = ClientSession

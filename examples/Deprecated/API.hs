@@ -21,8 +21,8 @@ import           GHC.Generics        (Generic)
 
 -- MORPHEUS
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM, Resolver,
-                                      ScalarValue (..), StreamM, gqlResolver, gqlStreamResolver)
+import           Data.Morpheus.Types (Config (..), GQLBase, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID,
+                                      ResM, Resolver, ScalarValue (..), StreamM, gqlResolver, gqlStreamResolver)
 
 type instance KIND CityID = ENUM
 
@@ -141,15 +141,11 @@ data Actions
   | UPDATE_ADDRESS
   deriving (Show, Eq, Ord)
 
-data DataModel = Updated Int Text | Removed Int
+instance Config GQLBase where
+  data EventValue GQLBase = Updated Int Text
+                        | Removed Int
 
-type GQLStream = StreamM Actions
-
-createUserMutation :: a -> GQLStream (User GQLStream)
-createUserMutation _ = gqlStreamResolver [UPDATE_USER] fetchUser
-
-createAddressMutation :: a -> GQLStream Address
-createAddressMutation _ = gqlStreamResolver [UPDATE_ADDRESS] (fetchAddress (Euro 1 0))
+type GQLStream = StreamM ([Actions], EventValue GQLBase)
 
 data Query = Query
   { user       :: () -> ResM (User ResM)
@@ -165,8 +161,8 @@ data Mutation = Mutation
   } deriving (Generic)
 
 data Subscription = Subscription
-  { newAddress :: () -> (Actions, Actions -> ResM Address)
-  , newUser    :: () -> (Actions, Actions -> ResM (User ResM))
+  { newAddress :: () -> (Actions, EventValue GQLBase -> ResM Address)
+  , newUser    :: () -> (Actions, EventValue GQLBase -> ResM (User ResM))
   } deriving (Generic)
 
 gqlRoot :: GQLRootResolver IO Actions Query Mutation Subscription
@@ -181,11 +177,11 @@ gqlRoot =
             , integerSet = S.fromList [1, 2]
             , textIntMap = M.fromList [("robin", 1), ("carl", 2)]
             }
-    , mutationResolver = return Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
-    , subscriptionResolver = return Subscription {newUser, newAddress}
+    , mutationResolver = return Mutation {createAddress, createUser}
+    , subscriptionResolver = return Subscription {newAddress, newUser}
     }
   where
-    newUser :: () -> (Actions, Actions -> ResM (User ResM))
     newUser _ = (UPDATE_ADDRESS, \_ -> gqlResolver fetchUser)
-    newAddress :: a -> (Actions, Actions -> ResM Address)
     newAddress _ = (UPDATE_ADDRESS, \_ -> gqlResolver $ fetchAddress (Euro 1 0))
+    createUser _ = gqlStreamResolver [([UPDATE_USER], Updated 12 "")] fetchUser
+    createAddress _ = gqlStreamResolver [([UPDATE_ADDRESS], Removed 12)] (fetchAddress (Euro 1 0))

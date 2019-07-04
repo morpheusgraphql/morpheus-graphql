@@ -31,7 +31,7 @@ handleGQLResponse :: Eq s => GQLClient IO s -> GQLState IO s -> Int -> OutputAct
 handleGQLResponse GQLClient {clientConnection, clientID} state sessionId' msg =
   case msg of
     PublishMutation {mutationChannels, mutationResponse} ->
-      sendTextData clientConnection mutationResponse >> publishUpdates mutationChannels state
+      sendTextData clientConnection mutationResponse >> mapM_ (publishUpdates state) mutationChannels
     InitSubscription wsSubscription -> addClientSubscription clientID wsSubscription sessionId' state
     NoAction response' -> sendTextData clientConnection response'
 
