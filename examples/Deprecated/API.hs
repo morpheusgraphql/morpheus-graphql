@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -7,6 +8,7 @@
 
 module Deprecated.API
   ( gqlRoot
+  , Actions
   ) where
 
 import           Data.Map            (Map)
@@ -19,8 +21,8 @@ import           GHC.Generics        (Generic)
 
 -- MORPHEUS
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (EffectM, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM, Resolver,
-                                      ScalarValue (..), gqlEffectResolver, gqlResolver)
+import           Data.Morpheus.Types (EventContent, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM,
+                                      Resolver, ScalarValue (..), StreamM, gqlResolver, gqlStreamResolver)
 
 type instance KIND CityID = ENUM
 
@@ -134,17 +136,13 @@ fetchUser =
         , myUnion = const $ return $ ADDRESS unionAddress
         }
 
-createUserMutation :: a -> EffectM (User EffectM)
-createUserMutation _ = gqlEffectResolver ["UPDATE_USER"] fetchUser
+data Actions
+  = UPDATE_USER
+  | UPDATE_ADDRESS
+  deriving (Show, Eq, Ord)
 
-newUserSubscription :: a -> EffectM (User EffectM)
-newUserSubscription _ = gqlEffectResolver ["UPDATE_USER"] fetchUser
-
-createAddressMutation :: a -> EffectM Address
-createAddressMutation _ = gqlEffectResolver ["UPDATE_ADDRESS"] (fetchAddress (Euro 1 0))
-
-newAddressSubscription :: a -> EffectM Address
-newAddressSubscription _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
+data instance  EventContent Actions = Update{contentID :: Int,
+                                             contentMessage :: Text}
 
 data Query = Query
   { user       :: () -> ResM (User ResM)
@@ -155,16 +153,16 @@ data Query = Query
   } deriving (Generic)
 
 data Mutation = Mutation
-  { createUser    :: () -> EffectM (User EffectM)
-  , createAddress :: () -> EffectM Address
+  { createUser    :: () -> StreamM Actions (User (StreamM Actions))
+  , createAddress :: () -> StreamM Actions Address
   } deriving (Generic)
 
 data Subscription = Subscription
-  { newUser    :: () -> EffectM (User EffectM)
-  , newAddress :: () -> EffectM Address
+  { newAddress :: () -> ([Actions], EventContent Actions -> ResM Address)
+  , newUser    :: () -> ([Actions], EventContent Actions -> ResM (User ResM))
   } deriving (Generic)
 
-gqlRoot :: GQLRootResolver IO Query Mutation Subscription
+gqlRoot :: GQLRootResolver IO Actions Query Mutation Subscription
 gqlRoot =
   GQLRootResolver
     { queryResolver =
@@ -176,6 +174,15 @@ gqlRoot =
             , integerSet = S.fromList [1, 2]
             , textIntMap = M.fromList [("robin", 1), ("carl", 2)]
             }
-    , mutationResolver = return Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
-    , subscriptionResolver = return Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}
+    , mutationResolver = return Mutation {createAddress, createUser}
+    , subscriptionResolver = return Subscription {newAddress, newUser}
     }
+  where
+    newUser _ = ([UPDATE_ADDRESS], \Update {} -> gqlResolver fetchUser)
+    newAddress _ = ([UPDATE_ADDRESS], \Update {contentID} -> gqlResolver $ fetchAddress (Euro contentID 0))
+    createUser _ =
+      gqlStreamResolver [([UPDATE_USER], Update {contentID = 12, contentMessage = "some message for user"})] fetchUser
+    createAddress _ =
+      gqlStreamResolver
+        [([UPDATE_ADDRESS], Update {contentID = 10, contentMessage = "message for address"})]
+        (fetchAddress (Euro 1 0))

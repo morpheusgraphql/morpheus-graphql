@@ -26,7 +26,7 @@ data DeityArgs = DeityArgs
 resolveDeity :: DeityArgs -> ResM Deity
 resolveDeity args = gqlResolver $ dbDeity (name args) (mythology args)
 
-rootResolver :: GQLRootResolver IO Query () ()
+rootResolver :: GQLRootResolver IO () Query () ()
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {deity = resolveDeity}
