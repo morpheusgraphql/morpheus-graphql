@@ -18,6 +18,11 @@ import           Control.Monad                              ((>=>))
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT)
 import           Data.Aeson                                 (eitherDecode, encode)
 import           Data.ByteString.Lazy.Char8                 (ByteString)
+import           Data.Proxy
+import           Data.Typeable                              (Typeable)
+import           GHC.Generics
+
+-- MORPHEUS
 import           Data.Morpheus.Error.Utils                  (badRequestError, renderErrors)
 import           Data.Morpheus.Parser.Parser                (parseGQL)
 import           Data.Morpheus.Resolve.Encode               (ObjectFieldResolvers (..), resolveBySelection, resolversBy)
@@ -31,14 +36,11 @@ import           Data.Morpheus.Types.Internal.Data          (DataArguments, Data
 import           Data.Morpheus.Types.Internal.Stream        (PublishStream, ResponseEvent (..), ResponseStream,
                                                              StreamState (..), StreamT (..), SubscribeStream,
                                                              closeStream, mapS)
-import           Data.Morpheus.Types.Internal.Validation    (ResolveT, SchemaValidation)
+import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, ResolveT, SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Morpheus.Types.IO                     (GQLRequest (..), GQLResponse (..))
 import           Data.Morpheus.Types.Resolver               (GQLRootResolver (..))
 import           Data.Morpheus.Validation.Validation        (validateRequest)
-import           Data.Proxy
-import           Data.Typeable                              (Typeable)
-import           GHC.Generics
 
 type EventCon event = Eq event
 
@@ -88,22 +90,22 @@ resolveStream root@GQLRootResolver {queryResolver, mutationResolver, subscriptio
       query <- parseGQL request >>= validateRequest schema
       return (schema, query)
     execOperator (schema, Query Operator' {operatorSelection}) =
-      StreamT $ StreamState [] <$> runExceptT (encodeQuery schema queryResolver operatorSelection)
+      StreamT $ StreamState [] <$> encodeQuery schema queryResolver operatorSelection
     execOperator (_, Mutation Operator' {operatorSelection}) =
-      mapS Publish (runExceptT $encodeStreamRes mutationResolver operatorSelection)
+      mapS Publish (encodeStreamRes mutationResolver operatorSelection)
     execOperator (_, Subscription Operator' {operatorSelection}) =
-      mapS renderSubscription (runExceptT $ encodeStreamRes subscriptionResolver operatorSelection)
+      mapS renderSubscription (encodeStreamRes subscriptionResolver operatorSelection)
       where
         renderSubscription (c, resolver) = Subscribe (c, runExceptT . resolver >=> renderResponse)
 
-type Encode m a = ResolveT m a -> SelectionSet -> ResolveT m Value
+type Encode m a = ResolveT m a -> SelectionSet -> m (Either GQLErrors Value)
 
 encodeQuery :: (Monad m, EncodeCon m a) => DataTypeLib -> Encode m a
 encodeQuery types rootResolver sel =
-  fmap resolversBy rootResolver >>= resolveBySelection sel . (++) (resolversBy $ schemaAPI types)
+  runExceptT (fmap resolversBy rootResolver >>= resolveBySelection sel . (++) (resolversBy $ schemaAPI types))
 
 encodeStreamRes :: (Monad m, EncodeCon m a) => Encode m a
-encodeStreamRes rootResolver sel = rootResolver >>= resolveBySelection sel . resolversBy
+encodeStreamRes rootResolver sel = runExceptT $ rootResolver >>= resolveBySelection sel . resolversBy
 
 packStream ::
      EventCon s => GQLState IO s -> (ByteString -> ResponseStream IO s ByteString) -> ByteString -> IO ByteString
