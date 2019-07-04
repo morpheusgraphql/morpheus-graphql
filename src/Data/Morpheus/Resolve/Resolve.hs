@@ -79,22 +79,22 @@ resolveStream ::
   => RootResCon m s a b c =>
        GQLRootResolver m s a b c -> GQLRequest -> ResponseStream m s GQLResponse
 resolveStream root@GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
-  case fullSchema root of
-    Left error'       -> pure $ Errors $ renderErrors error'
-    Right validSchema -> runExceptT (_resolve validSchema) >>= renderResponse
+  runExceptT (ExceptT (pure validRequest) >>= ExceptT . execOperator) >>= renderResponse
   where
     renderResponse (Left errors) = pure $ Errors $ renderErrors errors
     renderResponse (Right value) = pure $ Data value
-    _resolve gqlSchema = (ExceptT $ pure (parseGQL request >>= validateRequest gqlSchema)) >>= ExceptT . execOperator
+    validRequest = do
+      schema <- fullSchema root
+      query <- parseGQL request >>= validateRequest schema
+      return (schema, query)
+    execOperator (schema, Query Operator' {operatorSelection}) =
+      StreamT $ StreamState [] <$> runExceptT (encodeQuery schema queryResolver operatorSelection)
+    execOperator (_, Mutation Operator' {operatorSelection}) =
+      mapS Publish (runExceptT $encodeStreamRes mutationResolver operatorSelection)
+    execOperator (_, Subscription Operator' {operatorSelection}) =
+      mapS renderSubscription (runExceptT $ encodeStreamRes subscriptionResolver operatorSelection)
       where
-        execOperator (Query Operator' {operatorSelection}) =
-          StreamT $ StreamState [] <$> runExceptT (encodeQuery gqlSchema queryResolver operatorSelection)
-        execOperator (Mutation Operator' {operatorSelection}) =
-          mapS Publish (runExceptT $encodeStreamRes mutationResolver operatorSelection)
-        execOperator (Subscription Operator' {operatorSelection}) =
-          mapS renderSubscription (runExceptT $ encodeStreamRes subscriptionResolver operatorSelection)
-          where
-            renderSubscription (c, resolver) = Subscribe (c, runExceptT . resolver >=> renderResponse)
+        renderSubscription (c, resolver) = Subscribe (c, runExceptT . resolver >=> renderResponse)
 
 type Encode m a = ResolveT m a -> SelectionSet -> ResolveT m Value
 
