@@ -33,27 +33,30 @@ import           Data.Morpheus.Types.Internal.Validation    (ResolveT, SchemaVal
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Morpheus.Types.Internal.WebSocket     (OutputAction (..), WSSubscription (..))
 import           Data.Morpheus.Types.IO                     (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver               (EventContent, GQLRootResolver (..), StreamT (..), SubT,
+import           Data.Morpheus.Types.Resolver               (EventContent, GQLRootResolver (..), PubStreamT, SubStreamT,
                                                              unpackStream)
 import           Data.Morpheus.Validation.Validation        (validateRequest)
 import           Data.Proxy
 import           Data.Typeable                              (Typeable)
 import           GHC.Generics
 
+type EventCon event = Eq event
+
 type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments)
 
 type EncodeCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) m)
 
-type RootResCon m s a b c
-   = ( Eq s
-     , Typeable s
-     , Monad m
-     , IntroCon a
-     , IntroCon b
-     , IntroCon c
-     , EncodeCon m a
-     , EncodeCon (StreamT m ([s], EventContent s)) b
-     , EncodeCon (StreamT m (SubT m s)) c)
+type RootResCon m event query mutation subscription
+   = ( Monad m
+     , EventCon event
+      -- Introspection
+     , IntroCon query
+     , IntroCon mutation
+     , IntroCon subscription
+     -- Resolving
+     , EncodeCon m query
+     , EncodeCon (PubStreamT m event) mutation
+     , EncodeCon (SubStreamT m event) subscription)
 
 resolveByteString :: RootResCon m s a b c => GQLRootResolver m s a b c -> ByteString -> m ByteString
 resolveByteString rootResolver request =
