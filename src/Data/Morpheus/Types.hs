@@ -2,7 +2,6 @@
 module Data.Morpheus.Types
   ( gqlResolver
   , gqlStreamResolver
-  , liftStreamResolver
   -- Resolver Monad
   , Resolver
   , ResM
@@ -26,4 +25,4 @@ import           Data.Morpheus.Types.ID             (ID (..))
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
 import           Data.Morpheus.Types.IO             (GQLRequest (..), GQLResponse (..))
 import           Data.Morpheus.Types.Resolver       (EventContent, GQLRootResolver (..), ResM, Resolver, StreamM,
-                                                     gqlResolver, gqlStreamResolver, liftStreamResolver)
+                                                     gqlResolver, gqlStreamResolver)

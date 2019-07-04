@@ -4,17 +4,23 @@
 
 module Data.Morpheus.Types.Internal.Stream
   ( StreamState(..)
-  , StreamT(..)
-  , ResponseEvent(..)
-  , ResponseStream
   , EventContent
+  -- EVENTS
+  , ResponseEvent(..)
   , SubPair
   , PubPair
+  -- STREAMS
+  , StreamT(..)
+  , SubscribeStream
+  , PublishStream
+  , ResponseStream
   , closeStream
   , mapEvent
   ) where
 
-import           Data.Morpheus.Types.IO (GQLResponse)
+import           Data.Morpheus.Types.Internal.Validation (ResolveT)
+import           Data.Morpheus.Types.Internal.Value      (Value)
+import           Data.Morpheus.Types.IO                  (GQLResponse)
 
 data family EventContent conf :: *
 
@@ -50,12 +56,23 @@ type SubPair m s = Pair s (EventContent s -> m GQLResponse)
 
 type PubPair s = Pair s (EventContent s)
 
-type ResponseStream m event a = StreamT m (ResponseEvent m event) a
+-- EVENTS
+type SubEvent m s = ([s], EventContent s -> ResolveT m Value)
+
+type PubEvent s = ([s], EventContent s)
 
 data ResponseEvent m s
   = Publish (PubPair s)
   | Subscribe (SubPair m s)
 
+-- STREAMS
+type SubscribeStream m s = StreamT m (SubEvent m s)
+
+type PublishStream m s = StreamT m (PubEvent s)
+
+type ResponseStream m event a = StreamT m (ResponseEvent m event) a
+
+-- Helper Functions
 toTuple :: StreamState s a -> ([s], a)
 toTuple StreamState {streamEvents, streamValue} = (streamEvents, streamValue)
 

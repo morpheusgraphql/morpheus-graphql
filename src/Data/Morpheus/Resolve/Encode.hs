@@ -39,10 +39,10 @@ import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                (GQLType (__typeName))
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base          (Position)
-import           Data.Morpheus.Types.Internal.Stream        (StreamState (..))
+import           Data.Morpheus.Types.Internal.Stream        (StreamState (..), StreamT (..), SubscribeStream)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveT, failResolveT)
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
-import           Data.Morpheus.Types.Resolver               (Resolver, StreamT (..), SubRes, SubStreamT)
+import           Data.Morpheus.Types.Resolver               (Resolver, SubRes)
 
 type SelectRes m a = [(Text, (Text, Selection) -> ResolveT m a)] -> (Text, Selection) -> ResolveT m (Text, a)
 
@@ -199,7 +199,7 @@ instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m) =>
   __encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (__encode resolver selection)
 
 instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m) =>
-         Encoder (a -> SubRes m s b) WRAPPER (SubStreamT m s) where
+         Encoder (a -> SubRes m s b) WRAPPER (SubscribeStream m s) where
   __encode (WithGQLKind resolver) selection@(fieldName, Selection {selectionArguments, selectionPosition}) =
     case decodeArguments selectionArguments of
       Left message -> failResolveT message

@@ -27,12 +27,13 @@ import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Oper
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Internal.Data          (DataArguments, DataFingerprint (..), DataType (..),
                                                              DataTypeLib (..), initTypeLib)
-import           Data.Morpheus.Types.Internal.Stream        (ResponseEvent (..), ResponseStream, StreamState (..),
-                                                             StreamT (..), closeStream, mapEvent)
+import           Data.Morpheus.Types.Internal.Stream        (PublishStream, ResponseEvent (..), ResponseStream,
+                                                             StreamState (..), StreamT (..), SubscribeStream,
+                                                             closeStream, mapEvent)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveT, SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Morpheus.Types.IO                     (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver               (EventContent, GQLRootResolver (..), PubStreamT, SubStreamT)
+import           Data.Morpheus.Types.Resolver               (EventContent, GQLRootResolver (..))
 import           Data.Morpheus.Validation.Validation        (validateRequest)
 import           Data.Proxy
 import           Data.Typeable                              (Typeable)
@@ -53,8 +54,8 @@ type RootResCon m event query mutation subscription
      , IntroCon subscription
      -- Resolving
      , EncodeCon m query
-     , EncodeCon (PubStreamT m event) mutation
-     , EncodeCon (SubStreamT m event) subscription)
+     , EncodeCon (PublishStream m event) mutation
+     , EncodeCon (SubscribeStream m event) subscription)
 
 resolveByteString :: RootResCon m s a b c => GQLRootResolver m s a b c -> ByteString -> m ByteString
 resolveByteString rootResolver request =
