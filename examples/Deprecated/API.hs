@@ -142,6 +142,7 @@ data Actions
   deriving (Show, Eq, Ord)
 
 instance Config GQLBase where
+  data Channel GQLBase = REMOVE_USER | REMOVE_ADDRESS
   data EventValue GQLBase = Updated Int Text
                         | Removed Int
 

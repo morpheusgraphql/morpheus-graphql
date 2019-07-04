@@ -37,9 +37,9 @@ import           Data.Morpheus.Types.Internal.Value      (Value)
 
 data GQLBase
 
-class Config a where
-  data EventCategory a :: *
-  data EventValue a :: *
+class Config conf where
+  data Channel conf :: *
+  data EventValue conf :: *
 
 type SubRes m s b = (s, EventValue GQLBase -> Resolver m b)
 
