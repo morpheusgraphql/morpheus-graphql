@@ -16,9 +16,8 @@ import           Control.Concurrent                     (MVar, modifyMVar, modif
 import           Control.Monad                          (forM_)
 import           Data.List                              (intersect)
 import           Data.Morpheus.Server.Apollo            (toApolloResponse)
-import           Data.Morpheus.Types.Internal.WebSocket (ClientID, ClientSession (..), GQLClient (..),
-                                                         WSSubscription (..))
-import           Data.Morpheus.Types.Resolver           (EventContent)
+import           Data.Morpheus.Types.Internal.Stream    (PubPair, SubPair)
+import           Data.Morpheus.Types.Internal.WebSocket (ClientID, ClientSession (..), GQLClient (..))
 import           Data.UUID.V4                           (nextRandom)
 import           Network.WebSockets                     (Connection, sendTextData)
 
@@ -59,7 +58,7 @@ updateClientByID id' updateFunc state = modifyMVar_ state (return . map updateCl
       | key' == id' = (key', updateFunc client')
     updateClient state' = state'
 
-publishUpdates :: (Eq s) => GQLState IO s -> ([s], EventContent s) -> IO ()
+publishUpdates :: (Eq s) => GQLState IO s -> PubPair s -> IO ()
 publishUpdates state (channels, value) = do
   state' <- readMVar state
   forM_ state' sendMessage
@@ -67,16 +66,16 @@ publishUpdates state (channels, value) = do
     sendMessage (_, GQLClient {clientSessions = []}) = return ()
     sendMessage (_, GQLClient {clientSessions, clientConnection}) = mapM_ __send (filterByChannels clientSessions)
       where
-        __send ClientSession {sessionId, sessionSubscription = WSSubscription {subscriptionRes}} =
+        __send ClientSession {sessionId, sessionSubscription = (_, subscriptionRes)} =
           subscriptionRes value >>= sendTextData clientConnection . toApolloResponse sessionId
-        filterByChannels = filter (([] /=) . intersect channels . subscriptionChannels . sessionSubscription)
+        filterByChannels = filter (([] /=) . intersect channels . fst . sessionSubscription)
 
 removeClientSubscription :: ClientID -> Int -> GQLState m s -> IO ()
 removeClientSubscription id' sid' = updateClientByID id' stopSubscription
   where
     stopSubscription client' = client' {clientSessions = filter ((sid' /=) . sessionId) (clientSessions client')}
 
-addClientSubscription :: ClientID -> WSSubscription m s -> Int -> GQLState m s -> IO ()
+addClientSubscription :: ClientID -> SubPair m s -> Int -> GQLState m s -> IO ()
 addClientSubscription id' sessionSubscription sessionId = updateClientByID id' startSubscription
   where
     startSubscription client' =

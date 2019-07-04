@@ -22,18 +22,20 @@ import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubs
                                                          disconnectClient, initGQLState, publishUpdates,
                                                          removeClientSubscription)
 import           Data.Morpheus.Types                    (GQLRequest (..))
-import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..), OutputAction (..))
+import           Data.Morpheus.Types.Internal.Stream    (ResponseEvent (..), ResponseStream, closeStream)
+import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..))
 import           Data.Morpheus.Types.Resolver           (GQLRootResolver (..))
 import           Network.WebSockets                     (ServerApp, acceptRequestWith, forkPingThread, receiveData,
                                                          sendTextData)
 
-handleGQLResponse :: Eq s => GQLClient IO s -> GQLState IO s -> Int -> OutputAction IO s ByteString -> IO ()
-handleGQLResponse GQLClient {clientConnection, clientID} state sessionId' msg =
-  case msg of
-    PublishMutation {mutationChannels, mutationResponse} ->
-      sendTextData clientConnection mutationResponse >> mapM_ (publishUpdates state) mutationChannels
-    InitSubscription wsSubscription -> addClientSubscription clientID wsSubscription sessionId' state
-    NoAction response' -> sendTextData clientConnection response'
+handleGQLResponse :: Eq s => GQLClient IO s -> GQLState IO s -> Int -> ResponseStream IO s ByteString -> IO ()
+handleGQLResponse GQLClient {clientConnection, clientID} state sessionId stream = do
+  (actions, response) <- closeStream stream
+  sendTextData clientConnection response
+  mapM_ execute actions
+  where
+    execute (Publish pub)   = publishUpdates state pub
+    execute (Subscribe sub) = addClientSubscription clientID sub sessionId state
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketApp :: RootResCon IO s a b c => GQLRootResolver IO s a b c -> GQLState IO s -> ServerApp
@@ -55,7 +57,10 @@ gqlSocketApp gqlRoot state pending = do
                                                      , apolloQuery = Just query
                                                      , apolloOperationName = operationName
                                                      , apolloVariables = variables
-                                                     }) = do
-              value <- resolveStream gqlRoot $ GQLRequest {query, operationName, variables}
-              handleGQLResponse client state sessionId (encode <$> value)
+                                                     }) =
+              handleGQLResponse
+                client
+                state
+                sessionId
+                (encode <$> resolveStream gqlRoot (GQLRequest {query, operationName, variables}))
             resolveMessage (Right _) = return ()

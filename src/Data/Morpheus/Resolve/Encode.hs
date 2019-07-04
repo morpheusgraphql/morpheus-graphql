@@ -39,9 +39,10 @@ import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                (GQLType (__typeName))
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base          (Position)
+import           Data.Morpheus.Types.Internal.Stream        (StreamState (..))
 import           Data.Morpheus.Types.Internal.Validation    (ResolveT, failResolveT)
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
-import           Data.Morpheus.Types.Resolver               (Resolver, Stream (..), StreamT (..), SubRes, SubStreamT)
+import           Data.Morpheus.Types.Resolver               (Resolver, StreamT (..), SubRes, SubStreamT)
 
 type SelectRes m a = [(Text, (Text, Selection) -> ResolveT m a)] -> (Text, Selection) -> ResolveT m (Text, a)
 
@@ -195,7 +196,7 @@ instance (Monad m, Encoder a (KIND a) m, ArgumentsConstraint p) => Encoder (p ->
 -- packs Monad in StreamMonad
 instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m) =>
          Encoder (a -> Resolver m b) WRAPPER (StreamT m c) where
-  __encode resolver selection = ExceptT $ StreamT $ Stream [] <$> runExceptT (__encode resolver selection)
+  __encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (__encode resolver selection)
 
 instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m) =>
          Encoder (a -> SubRes m s b) WRAPPER (SubStreamT m s) where
@@ -204,7 +205,7 @@ instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m) =>
       Left message -> failResolveT message
       Right args ->
         case resolver args of
-          (events, res) -> ExceptT $ StreamT $ pure $ Stream [(events, liftEitherM . res)] $ Right Null
+          (events, res) -> ExceptT $ StreamT $ pure $ StreamState [(events, liftEitherM . res)] $ Right Null
         where liftEitherM :: Resolver m b -> ResolveT m Value
               liftEitherM value =
                 ExceptT $ do

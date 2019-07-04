@@ -158,8 +158,8 @@ data Mutation = Mutation
   } deriving (Generic)
 
 data Subscription = Subscription
-  { newAddress :: () -> (Actions, EventContent Actions -> ResM Address)
-  , newUser    :: () -> (Actions, EventContent Actions -> ResM (User ResM))
+  { newAddress :: () -> ([Actions], EventContent Actions -> ResM Address)
+  , newUser    :: () -> ([Actions], EventContent Actions -> ResM (User ResM))
   } deriving (Generic)
 
 gqlRoot :: GQLRootResolver IO Actions Query Mutation Subscription
@@ -178,8 +178,8 @@ gqlRoot =
     , subscriptionResolver = return Subscription {newAddress, newUser}
     }
   where
-    newUser _ = (UPDATE_ADDRESS, \Update {} -> gqlResolver fetchUser)
-    newAddress _ = (UPDATE_ADDRESS, \Update {contentID} -> gqlResolver $ fetchAddress (Euro contentID 0))
+    newUser _ = ([UPDATE_ADDRESS], \Update {} -> gqlResolver fetchUser)
+    newAddress _ = ([UPDATE_ADDRESS], \Update {contentID} -> gqlResolver $ fetchAddress (Euro contentID 0))
     createUser _ =
       gqlStreamResolver [([UPDATE_USER], Update {contentID = 12, contentMessage = "some message for user"})] fetchUser
     createAddress _ =

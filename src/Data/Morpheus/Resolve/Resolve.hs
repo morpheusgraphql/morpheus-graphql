@@ -14,8 +14,6 @@ module Data.Morpheus.Resolve.Resolve
   , RootResCon
   ) where
 
-import           Data.Functor                               (($>))
-
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT)
 import           Data.Aeson                                 (eitherDecode, encode)
 import           Data.ByteString.Lazy.Char8                 (ByteString)
@@ -29,12 +27,12 @@ import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Oper
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Internal.Data          (DataArguments, DataFingerprint (..), DataType (..),
                                                              DataTypeLib (..), initTypeLib)
+import           Data.Morpheus.Types.Internal.Stream        (ResponseEvent (..), ResponseStream, StreamState (..),
+                                                             StreamT (..), closeStream, mapEvent)
 import           Data.Morpheus.Types.Internal.Validation    (ResolveT, SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Morpheus.Types.Internal.WebSocket     (OutputAction (..), WSSubscription (..))
 import           Data.Morpheus.Types.IO                     (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver               (EventContent, GQLRootResolver (..), PubStreamT, SubStreamT,
-                                                             unpackStream)
+import           Data.Morpheus.Types.Resolver               (EventContent, GQLRootResolver (..), PubStreamT, SubStreamT)
 import           Data.Morpheus.Validation.Validation        (validateRequest)
 import           Data.Proxy
 import           Data.Typeable                              (Typeable)
@@ -65,44 +63,38 @@ resolveByteString rootResolver request =
     Right req        -> encode <$> resolveStateless rootResolver req
 
 resolveStreamByteString ::
-     RootResCon m s a b c => GQLRootResolver m s a b c -> ByteString -> m (OutputAction m s ByteString)
+     RootResCon m s a b c => GQLRootResolver m s a b c -> ByteString -> ResponseStream m s ByteString
 resolveStreamByteString rootResolver request =
   case eitherDecode request of
-    Left aesonError' -> return $ NoAction $ badRequestError aesonError'
-    Right req        -> fmap encode <$> resolveStream rootResolver req
+    Left aesonError' -> return $ badRequestError aesonError'
+    Right req        -> encode <$> resolveStream rootResolver req
 
 resolveStateless :: RootResCon m s a b c => GQLRootResolver m s a b c -> GQLRequest -> m GQLResponse
-resolveStateless root request = resolveStream root request >>= executeActions
-  where
-    executeActions PublishMutation {mutationResponse} = return mutationResponse
-    executeActions InitSubscription {}                = pure $ Errors [] -- TODO
-    executeActions (NoAction response)                = return response
+resolveStateless root request = snd <$> closeStream (resolveStream root request)
 
 resolveStream ::
      Monad m
   => RootResCon m s a b c =>
-       GQLRootResolver m s a b c -> GQLRequest -> m (OutputAction m s GQLResponse)
+       GQLRootResolver m s a b c -> GQLRequest -> ResponseStream m s GQLResponse
 resolveStream root@GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
   case fullSchema root of
-    Left error' -> return $ NoAction $ Errors $ renderErrors error'
+    Left error' -> pure $ Errors $ renderErrors error'
     Right validSchema -> do
       value <- runExceptT $ _resolve validSchema
       case value of
-        Left x       -> return $ NoAction $ Errors $ renderErrors x
-        Right value' -> return $ fmap Data value'
+        Left x       -> pure $ Errors $ renderErrors x
+        Right value' -> pure $ Data value'
   where
-    _resolve gqlSchema = (ExceptT $ pure (parseGQL request >>= validateRequest gqlSchema)) >>= resolveOperator
+    _resolve gqlSchema = (ExceptT $ pure (parseGQL request >>= validateRequest gqlSchema)) >>= ExceptT . execOperator
       where
-        resolveOperator (Query Operator' {operatorSelection}) =
-          NoAction <$> encodeQuery gqlSchema queryResolver operatorSelection
-        resolveOperator (Mutation Operator' {operatorSelection}) = do
-          (mutationChannels, mutationResponse) <- unpackStream (encodeStreamRes mutationResolver operatorSelection)
-          return PublishMutation {mutationChannels, mutationResponse}
-        resolveOperator (Subscription Operator' {operatorSelection}) = do
-          (subscriptionChannels, resolvers) <-
-            unzip . fst <$> unpackStream (encodeStreamRes subscriptionResolver operatorSelection)
-          return $ InitSubscription $ WSSubscription {subscriptionChannels, subscriptionRes = subRes $ head resolvers}
+        execOperator (Query Operator' {operatorSelection}) =
+          StreamT $ StreamState [] <$> runExceptT (encodeQuery gqlSchema queryResolver operatorSelection)
+        execOperator (Mutation Operator' {operatorSelection}) =
+          mapEvent Publish (runExceptT $encodeStreamRes mutationResolver operatorSelection)
+        execOperator (Subscription Operator' {operatorSelection}) =
+          mapEvent mapTuple (runExceptT $ encodeStreamRes subscriptionResolver operatorSelection)
           where
+            mapTuple (x, y) = Subscribe (x, subRes y)
             subRes :: Monad m => (EventContent s -> ResolveT m Value) -> EventContent s -> m GQLResponse
             subRes resolver arg = do
               value <- runExceptT $ resolver arg
@@ -120,13 +112,16 @@ encodeStreamRes :: (Monad m, EncodeCon m a) => Encode m a
 encodeStreamRes rootResolver sel = rootResolver >>= resolveBySelection sel . resolversBy
 
 packStream ::
-     EventCon s => GQLState IO s -> (ByteString -> IO (OutputAction IO s ByteString)) -> ByteString -> IO ByteString
-packStream state streamAPI request = streamAPI request >>= executeActions
+     EventCon s => GQLState IO s -> (ByteString -> ResponseStream IO s ByteString) -> ByteString -> IO ByteString
+packStream state streamAPI request = do
+  (actions, value) <- closeStream (streamAPI request)
+  errors <- mapM execute actions
+  case errors of
+    [] -> pure value
+    _  -> pure value
   where
-    executeActions PublishMutation {mutationChannels, mutationResponse} =
-      mapM (publishUpdates state) mutationChannels $> mutationResponse
-    executeActions InitSubscription {} = pure "subscriptions are only allowed in websocket"
-    executeActions (NoAction response) = return response
+    execute (Publish updates) = publishUpdates state updates >> pure []
+    execute Subscribe {}      = pure [True] -- TODO Better solution
 
 fullSchema ::
      forall m s a b c. (IntroCon a, IntroCon b, IntroCon c)

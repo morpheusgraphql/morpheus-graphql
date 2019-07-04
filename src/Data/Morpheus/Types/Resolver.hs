@@ -1,11 +1,9 @@
 {-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
@@ -17,23 +15,21 @@ module Data.Morpheus.Types.Resolver
   , SubStreamT
   , PubStreamT
   , StreamT(..)
-  , Stream(..)
   , Resolver
   , GQLRootResolver(..)
   , gqlResolver
   , gqlStreamResolver
   , liftStreamResolver
-  , unpackStream
   , EventContent
   ) where
 
-import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
+import           Control.Monad.Trans.Except              (ExceptT (..))
 
 -- MORPHEUS
+--
+import           Data.Morpheus.Types.Internal.Stream     (EventContent, StreamState (..), StreamT (..))
 import           Data.Morpheus.Types.Internal.Validation (ResolveT)
 import           Data.Morpheus.Types.Internal.Value      (Value)
-
-data family EventContent conf :: *
 
 -- | Pure Resolver without effect
 type Pure = Either String
@@ -51,9 +47,9 @@ type Resolver = ExceptT String
 gqlResolver :: m (Either String a) -> Resolver m a
 gqlResolver = ExceptT
 
-type SubRes m s b = (s, EventContent s -> Resolver m b)
+type SubRes m s b = ([s], EventContent s -> Resolver m b)
 
-type SubEvent m s = (s, EventContent s -> ResolveT m Value)
+type SubEvent m s = ([s], EventContent s -> ResolveT m Value)
 
 type PubEvent s = ([s], EventContent s)
 
@@ -76,40 +72,8 @@ gqlStreamResolver :: Monad m => [c] -> (StreamT m c) (Either String a) -> Resolv
 gqlStreamResolver channels = ExceptT . insertStream
   where
     insertStream (StreamT streamMonad) = StreamT $ effectPlus <$> streamMonad
-    effectPlus x = x {resultStreams = channels ++ resultStreams x}
+    effectPlus x = x {streamEvents = channels ++ streamEvents x}
 
 -- | lift Normal resolver inside Stream Resolver
 liftStreamResolver :: Monad m => [c] -> m (Either String a) -> Resolver (StreamT m c) a
-liftStreamResolver channels = ExceptT . StreamT . fmap (Stream channels)
-
-unpackStream :: Monad m => ResolveT (StreamT m s) v -> ResolveT m ([s], v)
-unpackStream resolver =
-  ExceptT $ do
-    (Stream effects eitherValue) <- runStreamT $ runExceptT resolver
-    return $ fmap (effects, ) eitherValue
-
-data Stream c v = Stream
-  { resultStreams :: [c]
-  , resultValue   :: v
-  } deriving (Functor)
-
--- | Monad Transformer that sums all effect Together
-newtype StreamT m c v = StreamT
-  { runStreamT :: m (Stream c v)
-  } deriving (Functor)
-
-instance Monad m => Applicative (StreamT m c) where
-  pure = StreamT . return . Stream []
-  StreamT app1 <*> StreamT app2 =
-    StreamT $ do
-      (Stream effect1 func) <- app1
-      (Stream effect2 val) <- app2
-      return $ Stream (effect1 ++ effect2) (func val)
-
-instance Monad m => Monad (StreamT m c) where
-  return = pure
-  (StreamT m1) >>= mFunc =
-    StreamT $ do
-      (Stream e1 v1) <- m1
-      (Stream e2 v2) <- runStreamT $ mFunc v1
-      return $ Stream (e1 ++ e2) v2
+liftStreamResolver channels = ExceptT . StreamT . fmap (StreamState channels)

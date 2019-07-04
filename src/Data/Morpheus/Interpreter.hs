@@ -7,20 +7,20 @@ module Data.Morpheus.Interpreter
   ( Interpreter(..)
   ) where
 
-import           Data.Aeson                             (encode)
-import           Data.ByteString                        (ByteString)
-import qualified Data.ByteString.Lazy.Char8             as LB (ByteString, fromStrict, toStrict)
-import           Data.Text                              (Text)
-import qualified Data.Text.Lazy                         as LT (Text, fromStrict, toStrict)
-import           Data.Text.Lazy.Encoding                (decodeUtf8, encodeUtf8)
+import           Data.Aeson                          (encode)
+import           Data.ByteString                     (ByteString)
+import qualified Data.ByteString.Lazy.Char8          as LB (ByteString, fromStrict, toStrict)
+import           Data.Text                           (Text)
+import qualified Data.Text.Lazy                      as LT (Text, fromStrict, toStrict)
+import           Data.Text.Lazy.Encoding             (decodeUtf8, encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Resolve.Resolve          (RootResCon, packStream, resolveByteString, resolveStateless,
-                                                         resolveStream, resolveStreamByteString)
-import           Data.Morpheus.Server.ClientRegister    (GQLState)
-import           Data.Morpheus.Types.Internal.WebSocket (OutputAction)
-import           Data.Morpheus.Types.IO                 (GQLRequest, GQLResponse)
-import           Data.Morpheus.Types.Resolver           (GQLRootResolver (..))
+import           Data.Morpheus.Resolve.Resolve       (RootResCon, packStream, resolveByteString, resolveStateless,
+                                                      resolveStream, resolveStreamByteString)
+import           Data.Morpheus.Server.ClientRegister (GQLState)
+import           Data.Morpheus.Types.Internal.Stream (ResponseStream)
+import           Data.Morpheus.Types.IO              (GQLRequest, GQLResponse)
+import           Data.Morpheus.Types.Resolver        (GQLRootResolver (..))
 
 -- | main query processor and resolver
 --  possible versions of interpreter
@@ -87,19 +87,19 @@ instance Interpreter (WSPub IO s Text) IO s where
    WebSocket Interpreter without state and side effects, mutations and subscription will return Actions
    that will be executed in WebSocket server
 -}
-type WSSub m s a = a -> m (OutputAction m s a)
+type WSSub m s a = a -> ResponseStream m s a
 
-instance Interpreter (GQLRequest -> m (OutputAction m s LB.ByteString)) m s where
-  interpreter root request = fmap encode <$> resolveStream root request
+instance Interpreter (GQLRequest -> ResponseStream m s LB.ByteString) m s where
+  interpreter root request = encode <$> resolveStream root request
 
 instance Interpreter (WSSub m s LB.ByteString) m s where
   interpreter = resolveStreamByteString
 
 instance Interpreter (WSSub m s LT.Text) m s where
-  interpreter root request = fmap decodeUtf8 <$> interpreter root (encodeUtf8 request)
+  interpreter root request = decodeUtf8 <$> interpreter root (encodeUtf8 request)
 
 instance Interpreter (WSSub m s ByteString) m s where
-  interpreter root request = fmap LB.toStrict <$> interpreter root (LB.fromStrict request)
+  interpreter root request = LB.toStrict <$> interpreter root (LB.fromStrict request)
 
 instance Interpreter (WSSub m s Text) m s where
-  interpreter root request = fmap LT.toStrict <$> interpreter root (LT.fromStrict request)
+  interpreter root request = LT.toStrict <$> interpreter root (LT.fromStrict request)

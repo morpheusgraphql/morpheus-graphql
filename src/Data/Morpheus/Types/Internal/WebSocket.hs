@@ -1,37 +1,21 @@
-{-# LANGUAGE DeriveFunctor  #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Morpheus.Types.Internal.WebSocket
   ( GQLClient(..)
   , ClientID
-  , OutputAction(..)
   , ClientSession(..)
-  , WSSubscription(..)
   ) where
 
-import           Data.Morpheus.Types.IO       (GQLResponse)
-import           Data.Morpheus.Types.Resolver (EventContent)
-import           Data.Semigroup               ((<>))
-import           Data.UUID                    (UUID)
-import           Network.WebSockets           (Connection)
-
-data OutputAction m s a
-  = PublishMutation { mutationChannels :: [([s], EventContent s)]
-                    , mutationResponse :: a }
-  | InitSubscription (WSSubscription m s)
-  | NoAction a
-  deriving (Functor)
+import           Data.Morpheus.Types.Internal.Stream (SubPair)
+import           Data.Semigroup                      ((<>))
+import           Data.UUID                           (UUID)
+import           Network.WebSockets                  (Connection)
 
 type ClientID = UUID
 
-data WSSubscription m s = WSSubscription
-  { subscriptionChannels :: [s]
-  , subscriptionRes      :: EventContent s -> m GQLResponse
-  }
-
 data ClientSession m s = ClientSession
   { sessionId           :: Int
-  , sessionSubscription :: WSSubscription m s
+  , sessionSubscription :: SubPair m s
   }
 
 instance Show s => Show (ClientSession m s) where
