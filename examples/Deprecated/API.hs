@@ -145,8 +145,6 @@ instance Config Actions where
   data Event Actions = Updated Int Text
                    | Removed Int
 
-type GQLStream = StreamM ([Actions], Event Actions)
-
 data Query = Query
   { user       :: () -> ResM (User ResM)
   , wrappedA1  :: A (Int, Text)
@@ -156,8 +154,8 @@ data Query = Query
   } deriving (Generic)
 
 data Mutation = Mutation
-  { createUser    :: () -> GQLStream (User GQLStream)
-  , createAddress :: () -> GQLStream Address
+  { createUser    :: () -> StreamM Actions (User (StreamM Actions))
+  , createAddress :: () -> StreamM Actions Address
   } deriving (Generic)
 
 data Subscription = Subscription

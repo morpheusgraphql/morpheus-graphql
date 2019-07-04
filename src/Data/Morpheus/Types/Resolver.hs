@@ -48,7 +48,7 @@ type Pure = Either String
 type ResM = Resolver IO
 
 -- | Monad Resolver with GraphQL effects, used for communication between mutation and subscription
-type StreamM c = Resolver (StreamT IO c)
+type StreamM s = Resolver (StreamT IO ([s], Event s))
 
 -- | Resolver Monad Transformer
 type Resolver = ExceptT String
