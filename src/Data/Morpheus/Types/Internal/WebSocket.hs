@@ -1,46 +1,32 @@
-{-# LANGUAGE DeriveFunctor  #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Morpheus.Types.Internal.WebSocket
   ( GQLClient(..)
   , ClientID
-  , Channel
-  , OutputAction(..)
   , ClientSession(..)
   ) where
 
-import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
-import           Data.Morpheus.Types.IO                     (GQLResponse (..))
-import           Data.Semigroup                             ((<>))
-import           Data.Text                                  (Text)
-import           Data.UUID                                  (UUID)
-import           Network.WebSockets                         (Connection)
-
-data OutputAction m a
-  = PublishMutation { mutationChannels                 :: [Text]
-                    , mutationResponse                 :: a
-                    , currentSubscriptionStateResolver :: SelectionSet -> m GQLResponse }
-  | InitSubscription { subscriptionChannels :: [Text]
-                     , subscriptionQuery    :: SelectionSet }
-  | NoEffect a
-  deriving (Functor)
+import           Data.Morpheus.Types.Internal.Stream (SubPair)
+import           Data.Semigroup                      ((<>))
+import           Data.UUID                           (UUID)
+import           Network.WebSockets                  (Connection)
 
 type ClientID = UUID
 
-type Channel = Text
-
-data ClientSession = ClientSession
-  { sessionId             :: Int
-  , sessionChannels       :: [Channel]
-  , sessionQuerySelection :: SelectionSet
-  } deriving (Show)
-
-data GQLClient = GQLClient
-  { clientID         :: ClientID
-  , clientConnection :: Connection
-  , clientSessions   :: [ClientSession]
+data ClientSession m s = ClientSession
+  { sessionId           :: Int
+  , sessionSubscription :: SubPair m s
   }
 
-instance Show GQLClient where
+instance Show s => Show (ClientSession m s) where
+  show ClientSession {sessionId} = "GQLSession {id:" <> show sessionId <> ", sessions:" <> "" <> "}"
+
+data GQLClient m s = GQLClient
+  { clientID         :: ClientID
+  , clientConnection :: Connection
+  , clientSessions   :: [ClientSession m s]
+  }
+
+instance Show s => Show (GQLClient m s) where
   show GQLClient {clientID, clientSessions} =
     "GQLClient {id:" <> show clientID <> ", sessions:" <> show clientSessions <> "}"

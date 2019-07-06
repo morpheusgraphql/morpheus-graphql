@@ -1,62 +1,66 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ConstraintKinds     #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
   ( gqlSocketApp
   , initGQLState
   , GQLState
-  , GQLAPI
   ) where
 
 import           Control.Exception                      (finally)
 import           Control.Monad                          (forever)
+import           Data.Aeson                             (encode)
 import           Data.ByteString.Lazy.Char8             (ByteString)
+import           Data.Morpheus.Resolve.Resolve          (RootResCon, resolveStream)
 import           Data.Morpheus.Server.Apollo            (ApolloSubscription (..), apolloProtocol, parseApolloRequest)
 import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubscription, connectClient,
                                                          disconnectClient, initGQLState, publishUpdates,
                                                          removeClientSubscription)
 import           Data.Morpheus.Types                    (GQLRequest (..))
-import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..), OutputAction (..))
+import           Data.Morpheus.Types.Internal.Stream    (ResponseEvent (..), ResponseStream, closeStream)
+import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..))
+import           Data.Morpheus.Types.Resolver           (GQLRootResolver (..))
 import           Network.WebSockets                     (ServerApp, acceptRequestWith, forkPingThread, receiveData,
                                                          sendTextData)
 
--- | statefull GraphQL interpreter
-type GQLAPI = GQLRequest -> IO (OutputAction IO ByteString)
-
-handleGQLResponse :: GQLClient -> GQLState -> Int -> OutputAction IO ByteString -> IO ()
-handleGQLResponse GQLClient {clientConnection = connection', clientID = clientId'} state sessionId' msg =
-  case msg of
-    PublishMutation { mutationChannels = channels'
-                    , currentSubscriptionStateResolver = resolver'
-                    , mutationResponse = response'
-                    } -> sendTextData connection' response' >> publishUpdates channels' resolver' state
-    InitSubscription {subscriptionQuery = selection', subscriptionChannels = channels'} ->
-      addClientSubscription clientId' selection' channels' sessionId' state
-    NoEffect response' -> sendTextData connection' response'
-
-queryHandler :: GQLAPI -> GQLClient -> GQLState -> IO ()
-queryHandler interpreter' client'@GQLClient {clientConnection = connection', clientID = id'} state =
-  forever handleRequest
+handleGQLResponse :: Eq s => GQLClient IO s -> GQLState IO s -> Int -> ResponseStream IO s ByteString -> IO ()
+handleGQLResponse GQLClient {clientConnection, clientID} state sessionId stream = do
+  (actions, response) <- closeStream stream
+  sendTextData clientConnection response
+  mapM_ execute actions
   where
-    handleRequest = do
-      msg <- receiveData connection'
-      case parseApolloRequest msg of
-        Left x -> print x
-        Right ApolloSubscription {apolloType = "subscription_end", apolloId = Just sid'} ->
-          removeClientSubscription id' sid' state
-        Right ApolloSubscription { apolloType = "subscription_start"
-                                 , apolloId = Just sid'
-                                 , apolloQuery = Just query'
-                                 , apolloOperationName = name'
-                                 , apolloVariables = variables'
-                                 } -> interpreter' request >>= handleGQLResponse client' state sid'
-          where request = GQLRequest {query = query', operationName = name', variables = variables'}
-        Right _ -> return ()
+    execute (Publish pub)   = publishUpdates state pub
+    execute (Subscribe sub) = addClientSubscription clientID sub sessionId state
 
--- | Wai Websocket Server App for GraphQL subscriptions
-gqlSocketApp :: GQLAPI -> GQLState -> ServerApp
-gqlSocketApp interpreter' state pending = do
+-- | Wai WebSocket Server App for GraphQL subscriptions
+gqlSocketApp :: RootResCon IO s a b c => GQLRootResolver IO s a b c -> GQLState IO s -> ServerApp
+gqlSocketApp gqlRoot state pending = do
   connection' <- acceptRequestWith pending apolloProtocol
   forkPingThread connection' 30
   client' <- connectClient connection' state
-  finally (queryHandler interpreter' client' state) (disconnectClient client' state)
+  finally (queryHandler client') (disconnectClient client' state)
+  where
+    queryHandler client@GQLClient {clientConnection, clientID} = forever handleRequest
+      where
+        handleRequest = receiveData clientConnection >>= resolveMessage . parseApolloRequest
+          where
+            resolveMessage (Left x) = print x
+            resolveMessage (Right ApolloSubscription {apolloType = "subscription_end", apolloId = Just sid'}) =
+              removeClientSubscription clientID sid' state
+            resolveMessage (Right ApolloSubscription { apolloType = "subscription_start"
+                                                     , apolloId = Just sessionId
+                                                     , apolloQuery = Just query
+                                                     , apolloOperationName = operationName
+                                                     , apolloVariables = variables
+                                                     }) =
+              handleGQLResponse
+                client
+                state
+                sessionId
+                (encode <$> resolveStream gqlRoot (GQLRequest {query, operationName, variables}))
+            resolveMessage (Right _) = return ()

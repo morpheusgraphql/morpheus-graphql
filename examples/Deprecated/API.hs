@@ -8,20 +8,43 @@
 
 module Deprecated.API
   ( gqlRoot
-  ) where
+  , Actions
+  )
+where
 
-import           Data.Map            (Map)
-import qualified Data.Map            as M (fromList)
-import           Data.Set            (Set)
-import qualified Data.Set            as S (fromList)
-import           Data.Text           (Text, pack)
-import           Data.Typeable       (Typeable)
-import           GHC.Generics        (Generic)
+import           Data.Map                       ( Map )
+import qualified Data.Map                      as M
+                                                ( fromList )
+import           Data.Set                       ( Set )
+import qualified Data.Set                      as S
+                                                ( fromList )
+import           Data.Text                      ( Text
+                                                , pack
+                                                )
+import           Data.Typeable                  ( Typeable )
+import           GHC.Generics                   ( Generic )
 
 -- MORPHEUS
-import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, INPUT_UNION, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (EffectM, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM, Resolver,
-                                      ScalarValue (..), gqlEffectResolver, gqlResolver)
+import           Data.Morpheus.Kind             ( ENUM
+                                                , INPUT_OBJECT
+                                                , KIND
+                                                , OBJECT
+                                                , SCALAR
+                                                , UNION
+                                                , INPUT_UNION
+                                                )
+import           Data.Morpheus.Types            ( EventContent
+                                                , GQLRootResolver(..)
+                                                , GQLScalar(..)
+                                                , GQLType(..)
+                                                , ID
+                                                , ResM
+                                                , Resolver
+                                                , ScalarValue(..)
+                                                , StreamM
+                                                , gqlResolver
+                                                , gqlStreamResolver
+                                                )
 
 type instance KIND CityID = ENUM
 
@@ -133,52 +156,48 @@ fetchAddress :: Monad m => Euro -> m (Either String Address)
 fetchAddress _ = return $ Right $ Address " " "" 0
 
 fetchUser :: Monad m => m (Either String (User (Resolver m)))
-fetchUser =
-  return $
-  Right $
-  User
-    { name = "George"
-    , email = "George@email.com"
+fetchUser = return $ Right $ User
+  { name    = "George"
+  , email   = "George@email.com"
+  , address = const resolveAddress
+  , office  = resolveOffice
+  , home    = HH
+  , myUnion = const $ return $ USER unionUser
+  }
+ where
+  unionAddress =
+    Address { city = "Hamburg", street = "Street", houseNumber = 20 }
+  -- Office
+  resolveOffice OfficeArgs { cityID = Paris } =
+    gqlResolver $ fetchAddress (Euro 1 1)
+  resolveOffice OfficeArgs { cityID = BLN } =
+    gqlResolver $ fetchAddress (Euro 1 2)
+  resolveOffice OfficeArgs { cityID = HH } =
+    gqlResolver $ fetchAddress (Euro 1 3)
+  resolveAddress = gqlResolver $ fetchAddress (Euro 1 0)
+  unionUser      = User
+    { name    = "David"
+    , email   = "David@email.com"
     , address = const resolveAddress
-    , office = resolveOffice
-    , home = HH
-    , myUnion = const $ return $ USER unionUser
+    , office  = resolveOffice
+    , home    = BLN
+    , myUnion = const $ return $ ADDRESS unionAddress
     }
-  where
-    unionAddress = Address {city = "Hamburg", street = "Street", houseNumber = 20}
-    -- Office
-    resolveOffice OfficeArgs {cityID = Paris} = gqlResolver $ fetchAddress (Euro 1 1)
-    resolveOffice OfficeArgs {cityID = BLN}   = gqlResolver $ fetchAddress (Euro 1 2)
-    resolveOffice OfficeArgs {cityID = HH}    = gqlResolver $ fetchAddress (Euro 1 3)
-    resolveAddress = gqlResolver $ fetchAddress (Euro 1 0)
-    unionUser =
-      User
-        { name = "David"
-        , email = "David@email.com"
-        , address = const resolveAddress
-        , office = resolveOffice
-        , home = BLN
-        , myUnion = const $ return $ ADDRESS unionAddress
-        }
 
-createUserMutation :: a -> EffectM (User EffectM)
-createUserMutation _ = gqlEffectResolver ["UPDATE_USER"] fetchUser
+data Actions
+  = UPDATE_USER
+  | UPDATE_ADDRESS
+  deriving (Show, Eq, Ord)
 
-newUserSubscription :: a -> EffectM (User EffectM)
-newUserSubscription _ = gqlEffectResolver ["UPDATE_USER"] fetchUser
-
-createAddressMutation :: a -> EffectM Address
-createAddressMutation _ = gqlEffectResolver ["UPDATE_ADDRESS"] (fetchAddress (Euro 1 0))
-
-newAddressSubscription :: a -> EffectM Address
-newAddressSubscription _ = gqlEffectResolver ["UPDATE_ADDRESS"] $ fetchAddress (Euro 1 0)
+data instance  EventContent Actions = Update{contentID :: Int,
+                                             contentMessage :: Text}
 
 newtype AnimalArgs = AnimalArgs
   { animal :: Animal
   } deriving (Show, Generic)
 
 setAnimalResolver :: AnimalArgs -> ResM Text
-setAnimalResolver AnimalArgs {animal} = return $ pack $ show animal
+setAnimalResolver AnimalArgs { animal } = return $ pack $ show animal
 
 data Query = Query
   { user       :: () -> ResM (User ResM)
@@ -190,28 +209,43 @@ data Query = Query
   } deriving (Generic)
 
 data Mutation = Mutation
-  { createUser    :: () -> EffectM (User EffectM)
-  , createAddress :: () -> EffectM Address
+  { createUser    :: () -> StreamM Actions (User (StreamM Actions))
+  , createAddress :: () -> StreamM Actions Address
   } deriving (Generic)
 
 data Subscription = Subscription
-  { newUser    :: () -> EffectM (User EffectM)
-  , newAddress :: () -> EffectM Address
+  { newAddress :: () -> ([Actions], EventContent Actions -> ResM Address)
+  , newUser    :: () -> ([Actions], EventContent Actions -> ResM (User ResM))
   } deriving (Generic)
 
-gqlRoot :: GQLRootResolver IO Query Mutation Subscription
-gqlRoot =
-  GQLRootResolver
-    { queryResolver =
-        return
-          Query
-            { user = const $ gqlResolver fetchUser
-            , wrappedA1 = A (0, "")
-            , setAnimal = setAnimalResolver
-            , wrappedA2 = A ""
-            , integerSet = S.fromList [1, 2]
-            , textIntMap = M.fromList [("robin", 1), ("carl", 2)]
-            }
-    , mutationResolver = return Mutation {createUser = createUserMutation, createAddress = createAddressMutation}
-    , subscriptionResolver = return Subscription {newUser = newUserSubscription, newAddress = newAddressSubscription}
+gqlRoot :: GQLRootResolver IO Actions Query Mutation Subscription
+gqlRoot = GQLRootResolver
+  { queryResolver        = return Query
+    { user       = const $ gqlResolver fetchUser
+    , wrappedA1  = A (0, "")
+    , setAnimal  = setAnimalResolver
+    , wrappedA2  = A ""
+    , integerSet = S.fromList [1, 2]
+    , textIntMap = M.fromList [("robin", 1), ("carl", 2)]
     }
+  , mutationResolver     = return Mutation { createAddress , createUser }
+  , subscriptionResolver = return Subscription { newAddress , newUser }
+  }
+ where
+  newUser _ = ([UPDATE_ADDRESS], \Update{} -> gqlResolver fetchUser)
+  newAddress _ =
+    ( [UPDATE_ADDRESS]
+    , \Update { contentID } -> gqlResolver $ fetchAddress (Euro contentID 0)
+    )
+  createUser _ = gqlStreamResolver
+    [ ( [UPDATE_USER]
+      , Update { contentID = 12, contentMessage = "some message for user" }
+      )
+    ]
+    fetchUser
+  createAddress _ = gqlStreamResolver
+    [ ( [UPDATE_ADDRESS]
+      , Update { contentID = 10, contentMessage = "message for address" }
+      )
+    ]
+    (fetchAddress (Euro 1 0))
