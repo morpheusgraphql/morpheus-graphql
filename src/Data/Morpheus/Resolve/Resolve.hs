@@ -26,7 +26,7 @@ import           GHC.Generics
 import           Data.Morpheus.Error.Utils                  (badRequestError, renderErrors)
 import           Data.Morpheus.Parser.Parser                (parseGQL)
 import           Data.Morpheus.Resolve.Encode               (ObjectFieldResolvers (..), resolveBySelection, resolversBy)
-import           Data.Morpheus.Resolve.Generics.TypeRep     (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Resolve.Introspect           (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Schema.SchemaAPI             (hiddenRootFields, schemaAPI, schemaTypes)
 import           Data.Morpheus.Server.ClientRegister        (GQLState, publishUpdates)
 import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Operator' (..))
