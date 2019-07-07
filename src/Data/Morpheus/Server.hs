@@ -16,7 +16,7 @@ import           Control.Exception                      (finally)
 import           Control.Monad                          (forever)
 import           Data.Aeson                             (encode)
 import           Data.ByteString.Lazy.Char8             (ByteString)
-import           Data.Morpheus.Resolve.Resolve          (RootResCon, resolveStream)
+import           Data.Morpheus.Resolve.Resolve          (RootResCon, streamResolver)
 import           Data.Morpheus.Server.Apollo            (ApolloSubscription (..), apolloProtocol, parseApolloRequest)
 import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubscription, connectClient,
                                                          disconnectClient, initGQLState, publishUpdates,
@@ -62,5 +62,5 @@ gqlSocketApp gqlRoot state pending = do
                 client
                 state
                 sessionId
-                (encode <$> resolveStream gqlRoot (GQLRequest {query, operationName, variables}))
+                (encode <$> streamResolver gqlRoot (GQLRequest {query, operationName, variables}))
             resolveMessage (Right _) = return ()

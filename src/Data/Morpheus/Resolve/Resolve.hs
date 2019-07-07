@@ -6,11 +6,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Morpheus.Resolve.Resolve
-  ( resolveStateless
-  , resolveByteString
-  , resolveStreamByteString
-  , resolveStream
-  , packStream
+  ( statelessResolver
+  , byteStringIO
+  , streamResolver
+  , statefulResolver
   , RootResCon
   ) where
 
@@ -60,35 +59,30 @@ type RootResCon m event query mutation subscription
      , EncodeCon (PublishStream m event) mutation
      , EncodeCon (SubscribeStream m event) subscription)
 
-resolveByteString :: RootResCon m s a b c => GQLRootResolver m s a b c -> ByteString -> m ByteString
-resolveByteString rootResolver request =
+byteStringIO :: Monad m => (GQLRequest -> m GQLResponse) -> ByteString -> m ByteString
+byteStringIO resolver request =
   case eitherDecode request of
     Left aesonError' -> return $ badRequestError aesonError'
-    Right req        -> encode <$> resolveStateless rootResolver req
+    Right req        -> encode <$> resolver req
 
-resolveStreamByteString ::
-     RootResCon m s a b c => GQLRootResolver m s a b c -> ByteString -> ResponseStream m s ByteString
-resolveStreamByteString rootResolver request =
-  case eitherDecode request of
-    Left aesonError' -> return $ badRequestError aesonError'
-    Right req        -> encode <$> resolveStream rootResolver req
+statelessResolver :: RootResCon m s a b c => GQLRootResolver m s a b c -> GQLRequest -> m GQLResponse
+statelessResolver root request = snd <$> closeStream (streamResolver root request)
 
-resolveStateless :: RootResCon m s a b c => GQLRootResolver m s a b c -> GQLRequest -> m GQLResponse
-resolveStateless root request = snd <$> closeStream (resolveStream root request)
-
-resolveStream ::
+streamResolver ::
      Monad m
   => RootResCon m s a b c =>
        GQLRootResolver m s a b c -> GQLRequest -> ResponseStream m s GQLResponse
-resolveStream root@GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
+streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
   runExceptT (ExceptT (pure validRequest) >>= ExceptT . execOperator) >>= renderResponse
   where
     renderResponse (Left errors) = pure $ Errors $ renderErrors errors
     renderResponse (Right value) = pure $ Data value
+    ---------------------------------------------------------
     validRequest = do
       schema <- fullSchema root
       query <- parseGQL request >>= validateRequest schema
       return (schema, query)
+    ----------------------------------------------------------
     execOperator (schema, Query Operator' {operatorSelection}) =
       StreamT $ StreamState [] <$> encodeQuery schema queryResolver operatorSelection
     execOperator (_, Mutation Operator' {operatorSelection}) =
@@ -107,9 +101,9 @@ encodeQuery types rootResolver sel =
 encodeStreamRes :: (Monad m, EncodeCon m a) => Encode m a
 encodeStreamRes rootResolver sel = runExceptT $ rootResolver >>= resolveBySelection sel . resolversBy
 
-packStream ::
+statefulResolver ::
      EventCon s => GQLState IO s -> (ByteString -> ResponseStream IO s ByteString) -> ByteString -> IO ByteString
-packStream state streamApi request = do
+statefulResolver state streamApi request = do
   (actions, value) <- closeStream (streamApi request)
   mapM_ execute actions
   pure value
@@ -118,20 +112,22 @@ packStream state streamApi request = do
     execute Subscribe {}      = pure ()
 
 fullSchema ::
-     forall m s a b c. (IntroCon a, IntroCon b, IntroCon c)
-  => GQLRootResolver m s a b c
+     forall m s query mutation subscription. (IntroCon query, IntroCon mutation, IntroCon subscription)
+  => GQLRootResolver m s query mutation subscription
   -> SchemaValidation DataTypeLib
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
     querySchema = resolveTypes (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query")) (schemaTypes : types)
       where
-        (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
+        (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep query))
+    ------------------------------
     mutationSchema lib = resolveTypes (lib {mutation = maybeOperator fields "Mutation"}) types
       where
-        (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep b))
+        (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep mutation))
+    ------------------------------
     subscriptionSchema lib = resolveTypes (lib {subscription = maybeOperator fields "Subscription"}) types
       where
-        (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep c))
+        (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep subscription))
      -- maybeOperator :: [a] -> Text -> Maybe (Text, DataType [a])
     maybeOperator []     = const Nothing
     maybeOperator fields = Just . operatorType fields

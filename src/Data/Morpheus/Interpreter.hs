@@ -15,8 +15,8 @@ import qualified Data.Text.Lazy                      as LT (Text, fromStrict, to
 import           Data.Text.Lazy.Encoding             (decodeUtf8, encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Resolve.Resolve       (RootResCon, packStream, resolveByteString, resolveStateless,
-                                                      resolveStream, resolveStreamByteString)
+import           Data.Morpheus.Resolve.Resolve       (RootResCon, byteStringIO, statefulResolver, statelessResolver,
+                                                      streamResolver)
 import           Data.Morpheus.Server.ClientRegister (GQLState)
 import           Data.Morpheus.Types.Internal.Stream (ResponseStream)
 import           Data.Morpheus.Types.IO              (GQLRequest, GQLResponse)
@@ -51,10 +51,10 @@ class Interpreter k m s where
 type StateLess m a = a -> m a
 
 instance Interpreter (GQLRequest -> m GQLResponse) m s where
-  interpreter = resolveStateless
+  interpreter = statelessResolver
 
 instance Interpreter (StateLess m LB.ByteString) m s where
-  interpreter = resolveByteString
+  interpreter root = byteStringIO (statelessResolver root)
 
 instance Interpreter (StateLess m LT.Text) m s where
   interpreter root request = decodeUtf8 <$> interpreter root (encodeUtf8 request)
@@ -72,7 +72,7 @@ instance Interpreter (StateLess m Text) m s where
 type WSPub m s a = GQLState m s -> a -> m a
 
 instance Interpreter (WSPub IO s LB.ByteString) IO s where
-  interpreter root state = packStream state (resolveStreamByteString root)
+  interpreter root state = statefulResolver state (byteStringIO (streamResolver root))
 
 instance Interpreter (WSPub IO s LT.Text) IO s where
   interpreter root state request = decodeUtf8 <$> interpreter root state (encodeUtf8 request)
@@ -90,10 +90,10 @@ instance Interpreter (WSPub IO s Text) IO s where
 type WSSub m s a = a -> ResponseStream m s a
 
 instance Interpreter (GQLRequest -> ResponseStream m s LB.ByteString) m s where
-  interpreter root request = encode <$> resolveStream root request
+  interpreter root request = encode <$> streamResolver root request
 
 instance Interpreter (WSSub m s LB.ByteString) m s where
-  interpreter = resolveStreamByteString
+  interpreter root = byteStringIO (streamResolver root)
 
 instance Interpreter (WSSub m s LT.Text) m s where
   interpreter root request = decodeUtf8 <$> interpreter root (encodeUtf8 request)
