@@ -15,12 +15,12 @@ import           Data.Map            (Map)
 import qualified Data.Map            as M (fromList)
 import           Data.Set            (Set)
 import qualified Data.Set            as S (fromList)
-import           Data.Text           (Text)
+import           Data.Text           (Text, pack)
 import           Data.Typeable       (Typeable)
 import           GHC.Generics        (Generic)
 
 -- MORPHEUS
-import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, INPUT_UNION, KIND, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types (EventContent, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM,
                                       Resolver, ScalarValue (..), StreamM, gqlResolver, gqlStreamResolver)
 
@@ -28,7 +28,7 @@ type instance KIND CityID = ENUM
 
 type instance KIND Euro = SCALAR
 
-type instance KIND UID = INPUT_OBJECT
+type instance KIND UniqueID = INPUT_OBJECT
 
 type instance KIND Coordinates = INPUT_OBJECT
 
@@ -37,6 +37,36 @@ type instance KIND Address = OBJECT
 type instance KIND (User res) = OBJECT
 
 type instance KIND (MyUnion res) = UNION
+
+type instance KIND Cat = INPUT_OBJECT
+
+type instance KIND Dog = INPUT_OBJECT
+
+type instance KIND Bird = INPUT_OBJECT
+
+type instance KIND Animal = INPUT_UNION
+
+newtype Cat = Cat
+  { catName :: Text
+  } deriving (Show, Generic, GQLType)
+
+newtype Dog = Dog
+  { dogName :: Text
+  } deriving (Show, Generic, GQLType)
+
+newtype Bird = Bird
+  { birdName :: Text
+  } deriving (Show, Generic, GQLType)
+
+data Animal
+  = CAT Cat
+  | DOG Dog
+  | BIRD Bird
+  deriving (Show, Generic, GQLType)
+
+newtype UniqueID = UniqueID
+  { uid :: Text
+  } deriving (Show, Generic, GQLType)
 
 data MyUnion res
   = USER (User res)
@@ -58,13 +88,9 @@ instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
   serialize (Euro x y) = Int (x * 100 + y)
 
-newtype UID = UID
-  { uid :: Text
-  } deriving (Show, Generic, GQLType)
-
 data Coordinates = Coordinates
   { latitude  :: Euro
-  , longitude :: [Maybe [[UID]]]
+  , longitude :: [Maybe [[UniqueID]]]
   } deriving (Generic)
 
 instance GQLType Coordinates where
@@ -121,7 +147,7 @@ fetchUser =
     }
   where
     unionAddress = Address {city = "Hamburg", street = "Street", houseNumber = 20}
-    -- Office
+  -- Office
     resolveOffice OfficeArgs {cityID = Paris} = gqlResolver $ fetchAddress (Euro 1 1)
     resolveOffice OfficeArgs {cityID = BLN}   = gqlResolver $ fetchAddress (Euro 1 2)
     resolveOffice OfficeArgs {cityID = HH}    = gqlResolver $ fetchAddress (Euro 1 3)
@@ -144,9 +170,17 @@ data Actions
 data instance  EventContent Actions = Update{contentID :: Int,
                                              contentMessage :: Text}
 
+newtype AnimalArgs = AnimalArgs
+  { animal :: Animal
+  } deriving (Show, Generic)
+
+setAnimalResolver :: AnimalArgs -> ResM Text
+setAnimalResolver AnimalArgs {animal} = return $ pack $ show animal
+
 data Query = Query
   { user       :: () -> ResM (User ResM)
   , wrappedA1  :: A (Int, Text)
+  , setAnimal  :: AnimalArgs -> ResM Text
   , wrappedA2  :: A Text
   , integerSet :: Set Int
   , textIntMap :: Map Text Int
@@ -170,6 +204,7 @@ gqlRoot =
           Query
             { user = const $ gqlResolver fetchUser
             , wrappedA1 = A (0, "")
+            , setAnimal = setAnimalResolver
             , wrappedA2 = A ""
             , integerSet = S.fromList [1, 2]
             , textIntMap = M.fromList [("robin", 1), ("carl", 2)]

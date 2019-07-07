@@ -36,10 +36,13 @@ getInputType typeName' lib error' =
   case lookup typeName' (inputObject lib) of
     Just x -> pure (ObjectKind x)
     Nothing ->
-      case lookup typeName' (leaf lib) of
-        Nothing             -> Left error'
-        Just (LeafScalar x) -> pure (ScalarKind x)
-        Just (LeafEnum x)   -> pure (EnumKind x)
+      case lookup typeName' (inputUnion lib) of
+        Just x -> pure (UnionKind x)
+        Nothing ->
+          case lookup typeName' (leaf lib) of
+            Nothing             -> Left error'
+            Just (LeafScalar x) -> pure (ScalarKind x)
+            Just (LeafEnum x)   -> pure (EnumKind x)
 
 existsObjectType :: Position -> Text -> DataTypeLib -> Validation DataOutputObject
 existsObjectType position' typeName' lib = lookupType error' (object lib) typeName'

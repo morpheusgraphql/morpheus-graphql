@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
@@ -13,26 +14,76 @@
 
 module Data.Morpheus.Resolve.Introspect
   ( introspectOutputType
+  , TypeUpdater
+  , ObjectRep(..)
+  , resolveTypes
   ) where
 
-import           Data.Map                               (Map)
-import           Data.Morpheus.Error.Schema             (nameCollisionError)
-import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION, WRAPPER)
-import           Data.Morpheus.Resolve.Generics.EnumRep (EnumRep (..))
-import           Data.Morpheus.Resolve.Generics.TypeRep (ObjectRep (..), RecSel, SelOf, TypeUpdater, UnionRep (..),
-                                                         resolveTypes)
-import           Data.Morpheus.Types.Custom             (MapKind, Pair)
-import           Data.Morpheus.Types.GQLScalar          (GQLScalar (..))
-import           Data.Morpheus.Types.GQLType            (GQLType (..))
-import           Data.Morpheus.Types.Internal.Data      (DataArguments, DataField (..), DataFullType (..),
-                                                         DataInputField, DataLeaf (..), DataType (..),
-                                                         DataTypeKind (..), DataTypeWrapper (..), DataValidator,
-                                                         defineType, isTypeDefined)
-import           Data.Morpheus.Types.Resolver           (Resolver)
-import           Data.Proxy                             (Proxy (..))
-import           Data.Set                               (Set)
-import           Data.Text                              (Text, pack)
+import           Control.Monad                           (foldM)
+import           Data.Function                           ((&))
+import           Data.Map                                (Map)
+import           Data.Proxy                              (Proxy (..))
+import           Data.Semigroup                          ((<>))
+import           Data.Set                                (Set)
+import           Data.Text                               (Text, pack)
 import           GHC.Generics
+
+-- MORPHEUS
+import           Data.Morpheus.Error.Schema              (nameCollisionError)
+import           Data.Morpheus.Kind                      (ENUM, INPUT_OBJECT, INPUT_UNION, KIND, OBJECT, SCALAR, UNION,
+                                                          WRAPPER)
+import           Data.Morpheus.Resolve.Generics.EnumRep  (EnumRep (..))
+import           Data.Morpheus.Types.Custom              (MapKind, Pair)
+import           Data.Morpheus.Types.GQLScalar           (GQLScalar (..))
+import           Data.Morpheus.Types.GQLType             (GQLType (..))
+import           Data.Morpheus.Types.Internal.Data       (DataArguments, DataField (..), DataFullType (..),
+                                                          DataInputField, DataLeaf (..), DataType (..),
+                                                          DataTypeKind (..), DataTypeLib, DataTypeWrapper (..),
+                                                          DataValidator, defineType, isTypeDefined)
+import           Data.Morpheus.Types.Internal.Validation (SchemaValidation)
+import           Data.Morpheus.Types.Resolver            (Resolver)
+
+type SelOf s = M1 S s (Rec0 ()) ()
+
+type RecSel s a = M1 S s (Rec0 a)
+
+type TypeUpdater = DataTypeLib -> SchemaValidation DataTypeLib
+
+--
+--  GENERIC UNION
+--
+class UnionRep f t where
+  possibleTypes :: Proxy f -> Proxy t -> [(DataField (), TypeUpdater)]
+
+instance UnionRep f t => UnionRep (M1 D x f) t where
+  possibleTypes _ = possibleTypes (Proxy @f)
+
+instance UnionRep f t => UnionRep (M1 C x f) t where
+  possibleTypes _ = possibleTypes (Proxy @f)
+
+instance (UnionRep a t, UnionRep b t) => UnionRep (a :+: b) t where
+  possibleTypes _ x = possibleTypes (Proxy @a) x ++ possibleTypes (Proxy @b) x
+
+--
+--  GENERIC OBJECT: INPUT and OUTPUT plus ARGUMENTS
+--
+resolveTypes :: DataTypeLib -> [TypeUpdater] -> SchemaValidation DataTypeLib
+resolveTypes = foldM (&)
+
+class ObjectRep rep t where
+  objectFieldTypes :: Proxy rep -> [((Text, DataField t), TypeUpdater)]
+
+instance ObjectRep f t => ObjectRep (M1 D x f) t where
+  objectFieldTypes _ = objectFieldTypes (Proxy @f)
+
+instance ObjectRep f t => ObjectRep (M1 C x f) t where
+  objectFieldTypes _ = objectFieldTypes (Proxy @f)
+
+instance (ObjectRep a t, ObjectRep b t) => ObjectRep (a :*: b) t where
+  objectFieldTypes _ = objectFieldTypes (Proxy @a) ++ objectFieldTypes (Proxy @b)
+
+instance ObjectRep U1 t where
+  objectFieldTypes _ = []
 
 -- class Types class
 type GQL_TYPE a = (Generic a, GQLType a)
@@ -42,8 +93,6 @@ type EnumConstraint a = (GQL_TYPE a, EnumRep (Rep a))
 type InputObjectConstraint a = (GQL_TYPE a, ObjectRep (Rep a) ())
 
 type ObjectConstraint a = (GQL_TYPE a, ObjectRep (Rep a) DataArguments)
-
-type UnionConstraint a = (GQL_TYPE a, UnionRep (Rep a))
 
 scalarTypeOf :: GQLType a => DataValidator -> Proxy a -> DataFullType
 scalarTypeOf validator = Leaf . LeafScalar . buildType validator
@@ -183,24 +232,61 @@ instance (Selector s, Introspect a (KIND a) f) => ObjectRep (RecSel s a) f where
 --
 -- | recursion for union types
 -- iterates on possible types for UNION and introspects them recursively
-instance (OutputConstraint a, ObjectConstraint a) => UnionRep (RecSel s a) where
-  possibleTypes _ = [(buildField KindObject (Proxy @a) () "", introspect (Context :: OutputOf a))]
+instance (OutputConstraint a, ObjectConstraint a) => UnionRep (RecSel s a) OutputType where
+  possibleTypes _ _ = [(buildField KindObject (Proxy @a) () "", introspect (Context :: OutputOf a))]
 
-instance UnionConstraint a => Introspect a UNION OutputType where
+instance (GQL_TYPE a, UnionRep (Rep a) OutputType) => Introspect a UNION OutputType where
   __field _ = buildField KindUnion (Proxy @a) []
   introspect _ = updateLib (Union . buildType fields) stack (Proxy @a)
     where
-      (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
+      (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a)) (Proxy @OutputType)
+
+--
+-- INPUT_UNION
+--
+instance (GQL_TYPE a, Introspect a INPUT_OBJECT InputType) => UnionRep (RecSel s a) InputType where
+  possibleTypes _ _ =
+    [ ( maybeField $ buildField KindInputObject (Proxy @a) () (__typeName $ Proxy @a)
+      , introspect (Context :: Context a INPUT_OBJECT InputType))
+    ]
+
+instance (GQL_TYPE a, UnionRep (Rep a) InputType) => Introspect a INPUT_UNION InputType where
+  __field _ = buildField KindInputUnion (Proxy @a) ()
+  introspect _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
+    where
+      (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a)) (Proxy @InputType)
+      -- for every input Union 'User' adds enum type of possible TypeNames 'UserTags'
+      tagsEnumType :: TypeUpdater
+      tagsEnumType x = pure $ defineType (enumTypeName, Leaf $ LeafEnum tagsEnum) x
+        where
+          tagsEnum =
+            DataType
+              { typeName = enumTypeName
+              -- has same fingerprint as object because it depends on it
+              , typeFingerprint = __typeFingerprint (Proxy @a)
+              , typeDescription = ""
+              , typeData = map fieldName fields
+              }
+      enumTypeName = __typeName (Proxy @a) <> "Tags"
+      fieldTag =
+        DataField
+          { fieldName = "tag"
+          , fieldKind = KindEnum
+          , fieldArgs = ()
+          , fieldTypeWrappers = [NonNullType]
+          , fieldType = enumTypeName
+          , fieldHidden = True
+          }
 
 --
 -- WRAPPER : Maybe, LIST , Resolver
 --
+maybeField :: DataField f -> DataField f
+maybeField field@DataField {fieldTypeWrappers = NonNullType:xs} = field {fieldTypeWrappers = xs}
+maybeField field                                                = field
+
 instance Introspect a (KIND a) f => Introspect (Maybe a) WRAPPER f where
   __field _ name = maybeField $ __field (Context :: Context a (KIND a) f) name
-    where
-      maybeField :: DataField f -> DataField f
-      maybeField field@DataField {fieldTypeWrappers = NonNullType:xs} = field {fieldTypeWrappers = xs}
-      maybeField field                                                = field
   introspect _ = introspect (Context :: Context a (KIND a) f)
 
 instance Introspect a (KIND a) f => Introspect [a] WRAPPER f where
