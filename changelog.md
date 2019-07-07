@@ -1,3 +1,12 @@
+## [0.2.0] - *.08.2019
+
+### Added
+- Enhanced Subscription: mutation can trigger subscription with arguments
+- Experimental Support of Input Unions
+
+### Fixed:
+- Parser supports enums inside input Object
+
 ## [0.1.1] - 1.07.2019
 ### Fixed:
  - () as Subscription or Mutation does not defines Operator without fields
