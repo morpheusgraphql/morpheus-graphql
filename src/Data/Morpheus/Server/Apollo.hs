@@ -49,7 +49,7 @@ data ApolloPayload = ApolloPayload
 instance FromJSON ApolloPayload where
   parseJSON = withObject "ApolloPayload" objectParser
     where
-      objectParser o = ApolloPayload <$> o .:? "query" <*> o .:? "operationName" <*> o .:? "variables"
+      objectParser o = ApolloPayload <$> o .:? "operationName" <*> o .:? "query" <*> o .:? "variables"
 
 instance ToJSON (ApolloSubscription GQLResponse) where
   toEncoding (ApolloSubscription id' type' payload' query' operationName' variables') =
@@ -65,8 +65,12 @@ acceptApolloSubProtocol reqHead = apolloProtocol (getRequestSubprotocols reqHead
     apolloProtocol ["graphql-ws"]            = AcceptRequest (Just "graphql-ws") []
     apolloProtocol _                         = AcceptRequest Nothing []
 
+--toApolloResponse :: Text -> GQLResponse -> ByteString
+--toApolloResponse sid val = encode $ ApolloSubscription (Just sid) "subscription_data" (Just val) Nothing Nothing Nothing
+
 toApolloResponse :: Text -> GQLResponse -> ByteString
-toApolloResponse sid val = encode $ ApolloSubscription (Just sid) "subscription_data" (Just val) Nothing Nothing Nothing
+toApolloResponse sid val = encode $ ApolloSubscription (Just sid) "data" (Just val) Nothing Nothing Nothing
+
 
 data ApolloAction
   = ApolloRemove Text
