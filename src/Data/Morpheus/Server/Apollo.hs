@@ -6,6 +6,7 @@
 module Data.Morpheus.Server.Apollo
   ( ApolloAction(..)
   , oldApolloFormat
+  , newApolloFormat
   , acceptApolloSubProtocol
   , toApolloResponse
   ) where
@@ -31,7 +32,7 @@ data ApolloSubscription a = ApolloSubscription
   , apolloVariables     :: Maybe (Map Text V.Value)
   } deriving (Generic)
 
-instance FromJSON (ApolloSubscription Value) where
+instance FromJSON a => FromJSON (ApolloSubscription a) where
   parseJSON = withObject "ApolloSubscription" objectParser
     where
       objectParser o =
@@ -54,11 +55,7 @@ acceptApolloSubProtocol reqHead = apolloProtocol (getRequestSubprotocols reqHead
     apolloProtocol _                         = AcceptRequest Nothing []
 
 toApolloResponse :: Int -> GQLResponse -> ByteString
-toApolloResponse sid' val' =
-  encode $ ApolloSubscription (Just sid') "subscription_data" (Just val') Nothing Nothing Nothing
-
-parseApolloRequest :: ByteString -> Either String (ApolloSubscription Value)
-parseApolloRequest = eitherDecode
+toApolloResponse sid val = encode $ ApolloSubscription (Just sid) "subscription_data" (Just val) Nothing Nothing Nothing
 
 data ApolloAction
   = ApolloRemove Int
@@ -67,9 +64,20 @@ data ApolloAction
                   GQLRequest
   | ApolloNoAction
 
-oldApolloFormat :: ByteString -> ApolloAction
-oldApolloFormat = toWsAPI . parseApolloRequest
+newApolloFormat :: ByteString -> ApolloAction
+newApolloFormat = toWsAPI . eitherDecode
   where
+    toWsAPI :: Either String (ApolloSubscription GQLRequest) -> ApolloAction
+    toWsAPI (Left x) = ApolloError x
+    toWsAPI (Right ApolloSubscription {apolloType = "end", apolloId = Just sid}) = ApolloRemove sid
+    toWsAPI (Right ApolloSubscription {apolloType = "start", apolloId = Just sessionId, apolloPayload = Just request}) =
+      ApolloRequest sessionId request
+    toWsAPI (Right _) = ApolloNoAction
+
+oldApolloFormat :: ByteString -> ApolloAction
+oldApolloFormat = toWsAPI . eitherDecode
+  where
+    toWsAPI :: Either String (ApolloSubscription Value) -> ApolloAction
     toWsAPI (Left x) = ApolloError x
     toWsAPI (Right ApolloSubscription {apolloType = "subscription_end", apolloId = Just sid}) = ApolloRemove sid
     toWsAPI (Right ApolloSubscription { apolloType = "subscription_start"

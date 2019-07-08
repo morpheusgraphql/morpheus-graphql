@@ -16,7 +16,8 @@ import           Control.Monad                          (forever)
 import           Data.Aeson                             (encode)
 import           Data.ByteString.Lazy.Char8             (ByteString)
 import           Data.Morpheus.Resolve.Resolve          (RootResCon, streamResolver)
-import           Data.Morpheus.Server.Apollo            (ApolloAction (..), acceptApolloSubProtocol, oldApolloFormat)
+import           Data.Morpheus.Server.Apollo            (ApolloAction (..), acceptApolloSubProtocol, newApolloFormat,
+                                                         oldApolloFormat)
 import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubscription, connectClient,
                                                          disconnectClient, initGQLState, publishUpdates,
                                                          removeClientSubscription)
