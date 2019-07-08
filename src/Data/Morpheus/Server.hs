@@ -15,19 +15,21 @@ import           Control.Exception                      (finally)
 import           Control.Monad                          (forever)
 import           Data.Aeson                             (encode)
 import           Data.ByteString.Lazy.Char8             (ByteString)
+import           Data.Text                              (Text)
+import           Network.WebSockets                     (ServerApp, acceptRequestWith, forkPingThread, pendingRequest,
+                                                         receiveData, sendTextData)
+
+-- MORPHEUS
 import           Data.Morpheus.Resolve.Resolve          (RootResCon, streamResolver)
-import           Data.Morpheus.Server.Apollo            (ApolloAction (..), acceptApolloSubProtocol, newApolloFormat,
-                                                         oldApolloFormat)
+import           Data.Morpheus.Server.Apollo            (ApolloAction (..), acceptApolloSubProtocol, newApolloFormat)
 import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubscription, connectClient,
                                                          disconnectClient, initGQLState, publishUpdates,
                                                          removeClientSubscription)
 import           Data.Morpheus.Types.Internal.Stream    (ResponseEvent (..), ResponseStream, closeStream)
 import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..))
 import           Data.Morpheus.Types.Resolver           (GQLRootResolver (..))
-import           Network.WebSockets                     (ServerApp, acceptRequestWith, forkPingThread, pendingRequest,
-                                                         receiveData, sendTextData)
 
-handleGQLResponse :: Eq s => GQLClient IO s -> GQLState IO s -> Int -> ResponseStream IO s ByteString -> IO ()
+handleGQLResponse :: Eq s => GQLClient IO s -> GQLState IO s -> Text -> ResponseStream IO s ByteString -> IO ()
 handleGQLResponse GQLClient {clientConnection, clientID} state sessionId stream = do
   (actions, response) <- closeStream stream
   sendTextData clientConnection response
@@ -47,7 +49,7 @@ gqlSocketApp gqlRoot state pending = do
   where
     queryHandler client@GQLClient {clientConnection, clientID} = forever handleRequest
       where
-        handleRequest = receiveData clientConnection >>= resolveMessage . oldApolloFormat
+        handleRequest = receiveData clientConnection >>= resolveMessage . newApolloFormat
           where
             resolveMessage (ApolloError x) = print x
             resolveMessage (ApolloRemove sessionId) = removeClientSubscription clientID sessionId state

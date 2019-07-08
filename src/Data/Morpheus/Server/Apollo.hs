@@ -24,7 +24,7 @@ import           GHC.Generics                       (Generic)
 import           Network.WebSockets                 (AcceptRequest (..), RequestHead, getRequestSubprotocols)
 
 data ApolloSubscription a = ApolloSubscription
-  { apolloId            :: Maybe Int
+  { apolloId            :: Maybe Text
   , apolloType          :: Text
   , apolloPayload       :: Maybe a
   , apolloQuery         :: Maybe Text
@@ -40,6 +40,17 @@ instance FromJSON a => FromJSON (ApolloSubscription a) where
         o .:? "operationName" <*>
         o .:? "variables"
 
+data ApolloPayload = ApolloPayload
+  { payloadOperationName :: Maybe Text
+  , payloadQuery         :: Maybe Text
+  , payloadVariables     :: Maybe (Map Text V.Value)
+  } deriving (Generic)
+
+instance FromJSON ApolloPayload where
+  parseJSON = withObject "ApolloPayload" objectParser
+    where
+      objectParser o = ApolloPayload <$> o .:? "query" <*> o .:? "operationName" <*> o .:? "variables"
+
 instance ToJSON (ApolloSubscription GQLResponse) where
   toEncoding (ApolloSubscription id' type' payload' query' operationName' variables') =
     pairs $
@@ -54,24 +65,29 @@ acceptApolloSubProtocol reqHead = apolloProtocol (getRequestSubprotocols reqHead
     apolloProtocol ["graphql-ws"]            = AcceptRequest (Just "graphql-ws") []
     apolloProtocol _                         = AcceptRequest Nothing []
 
-toApolloResponse :: Int -> GQLResponse -> ByteString
+toApolloResponse :: Text -> GQLResponse -> ByteString
 toApolloResponse sid val = encode $ ApolloSubscription (Just sid) "subscription_data" (Just val) Nothing Nothing Nothing
 
 data ApolloAction
-  = ApolloRemove Int
+  = ApolloRemove Text
   | ApolloError String
-  | ApolloRequest Int
+  | ApolloRequest Text
                   GQLRequest
   | ApolloNoAction
 
 newApolloFormat :: ByteString -> ApolloAction
 newApolloFormat = toWsAPI . eitherDecode
   where
-    toWsAPI :: Either String (ApolloSubscription GQLRequest) -> ApolloAction
+    toWsAPI :: Either String (ApolloSubscription ApolloPayload) -> ApolloAction
     toWsAPI (Left x) = ApolloError x
     toWsAPI (Right ApolloSubscription {apolloType = "end", apolloId = Just sid}) = ApolloRemove sid
-    toWsAPI (Right ApolloSubscription {apolloType = "start", apolloId = Just sessionId, apolloPayload = Just request}) =
-      ApolloRequest sessionId request
+    toWsAPI (Right ApolloSubscription { apolloType = "start"
+                                      , apolloId = Just sessionId
+                                      , apolloPayload = Just ApolloPayload { payloadQuery = Just query
+                                                                           , payloadOperationName = operationName
+                                                                           , payloadVariables = variables
+                                                                           }
+                                      }) = ApolloRequest sessionId (GQLRequest {query, operationName, variables})
     toWsAPI (Right _) = ApolloNoAction
 
 oldApolloFormat :: ByteString -> ApolloAction
