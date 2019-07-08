@@ -1,18 +1,20 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Server.Apollo
-  ( ApolloSubscription(..)
+  ( ApolloAction(..)
+  , oldApolloFormat
   , apolloProtocol
   , toApolloResponse
-  , parseApolloRequest
   ) where
 
 import           Data.Aeson                         (FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode,
                                                      pairs, withObject, (.:), (.:?), (.=))
 import           Data.ByteString.Lazy.Char8         (ByteString)
 import           Data.Map                           (Map)
+import           Data.Morpheus.Types                (GQLRequest (..))
 import qualified Data.Morpheus.Types.Internal.Value as V (Value)
 import           Data.Morpheus.Types.IO             (GQLResponse)
 import           Data.Semigroup                     ((<>))
@@ -53,3 +55,23 @@ toApolloResponse sid' val' =
 
 parseApolloRequest :: ByteString -> Either String (ApolloSubscription Value)
 parseApolloRequest = eitherDecode
+
+data ApolloAction
+  = ApolloRemove Int
+  | ApolloError String
+  | ApolloRequest Int
+                  GQLRequest
+  | ApolloNoAction
+
+oldApolloFormat :: ByteString -> ApolloAction
+oldApolloFormat = toWsAPI . parseApolloRequest
+  where
+    toWsAPI (Left x) = ApolloError x
+    toWsAPI (Right ApolloSubscription {apolloType = "subscription_end", apolloId = Just sid}) = ApolloRemove sid
+    toWsAPI (Right ApolloSubscription { apolloType = "subscription_start"
+                                      , apolloId = Just sessionId
+                                      , apolloQuery = Just query
+                                      , apolloOperationName = operationName
+                                      , apolloVariables = variables
+                                      }) = ApolloRequest sessionId (GQLRequest {query, operationName, variables})
+    toWsAPI (Right _) = ApolloNoAction

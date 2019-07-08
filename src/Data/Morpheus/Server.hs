@@ -1,7 +1,6 @@
 {-# LANGUAGE ConstraintKinds     #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE NamedFieldPuns      #-}
-{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -17,11 +16,10 @@ import           Control.Monad                          (forever)
 import           Data.Aeson                             (encode)
 import           Data.ByteString.Lazy.Char8             (ByteString)
 import           Data.Morpheus.Resolve.Resolve          (RootResCon, streamResolver)
-import           Data.Morpheus.Server.Apollo            (ApolloSubscription (..), apolloProtocol, parseApolloRequest)
+import           Data.Morpheus.Server.Apollo            (ApolloAction (..), apolloProtocol, oldApolloFormat)
 import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubscription, connectClient,
                                                          disconnectClient, initGQLState, publishUpdates,
                                                          removeClientSubscription)
-import           Data.Morpheus.Types                    (GQLRequest (..))
 import           Data.Morpheus.Types.Internal.Stream    (ResponseEvent (..), ResponseStream, closeStream)
 import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..))
 import           Data.Morpheus.Types.Resolver           (GQLRootResolver (..))
@@ -47,20 +45,10 @@ gqlSocketApp gqlRoot state pending = do
   where
     queryHandler client@GQLClient {clientConnection, clientID} = forever handleRequest
       where
-        handleRequest = receiveData clientConnection >>= resolveMessage . parseApolloRequest
+        handleRequest = receiveData clientConnection >>= resolveMessage . oldApolloFormat
           where
-            resolveMessage (Left x) = print x
-            resolveMessage (Right ApolloSubscription {apolloType = "subscription_end", apolloId = Just sid'}) =
-              removeClientSubscription clientID sid' state
-            resolveMessage (Right ApolloSubscription { apolloType = "subscription_start"
-                                                     , apolloId = Just sessionId
-                                                     , apolloQuery = Just query
-                                                     , apolloOperationName = operationName
-                                                     , apolloVariables = variables
-                                                     }) =
-              handleGQLResponse
-                client
-                state
-                sessionId
-                (encode <$> streamResolver gqlRoot (GQLRequest {query, operationName, variables}))
-            resolveMessage (Right _) = return ()
+            resolveMessage (ApolloError x) = print x
+            resolveMessage (ApolloRemove sessionId) = removeClientSubscription clientID sessionId state
+            resolveMessage (ApolloRequest sessionId request) =
+              handleGQLResponse client state sessionId (encode <$> streamResolver gqlRoot request)
+            resolveMessage ApolloNoAction = return ()
