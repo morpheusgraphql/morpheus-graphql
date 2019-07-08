@@ -6,7 +6,7 @@
 module Data.Morpheus.Server.Apollo
   ( ApolloAction(..)
   , oldApolloFormat
-  , apolloProtocol
+  , acceptApolloSubProtocol
   , toApolloResponse
   ) where
 
@@ -20,7 +20,7 @@ import           Data.Morpheus.Types.IO             (GQLResponse)
 import           Data.Semigroup                     ((<>))
 import           Data.Text                          (Text)
 import           GHC.Generics                       (Generic)
-import           Network.WebSockets                 (AcceptRequest (..))
+import           Network.WebSockets                 (AcceptRequest (..), RequestHead, getRequestSubprotocols)
 
 data ApolloSubscription a = ApolloSubscription
   { apolloId            :: Maybe Int
@@ -46,8 +46,12 @@ instance ToJSON (ApolloSubscription GQLResponse) where
     "variables" .=
     variables'
 
-apolloProtocol :: AcceptRequest
-apolloProtocol = AcceptRequest (Just "graphql-subscriptions") []
+acceptApolloSubProtocol :: RequestHead -> AcceptRequest
+acceptApolloSubProtocol reqHead = apolloProtocol (getRequestSubprotocols reqHead)
+  where
+    apolloProtocol ["graphql-subscriptions"] = AcceptRequest (Just "graphql-subscriptions") []
+    apolloProtocol ["graphql-ws"]            = AcceptRequest (Just "graphql-ws") []
+    apolloProtocol _                         = AcceptRequest Nothing []
 
 toApolloResponse :: Int -> GQLResponse -> ByteString
 toApolloResponse sid' val' =
