@@ -51,8 +51,8 @@ type ResolveSel m a = [(Text, Selection)] -> [(Text, (Text, Selection) -> Resolv
 --
 --  OBJECT
 -- | Derives resolvers by object fields
-class ObjectFieldResolvers f m where
-  objectFieldResolvers :: Text -> f a -> [(Text, (Text, Selection) -> ResolveT m Value)]
+class ObjectFieldResolvers f o where
+  objectFieldResolvers :: Text -> f a -> [(Text, (Text, Selection) -> o)]
 
 instance ObjectFieldResolvers U1 res where
   objectFieldResolvers _ _ = []
@@ -101,7 +101,7 @@ instance (UnionResolvers a res, UnionResolvers b res) => UnionResolvers (a :+: b
   unionResolvers (L1 x) = unionResolvers x
   unionResolvers (R1 x) = unionResolvers x
 
-type ObjectConstraint a m = (Monad m, Generic a, GQLType a, ObjectFieldResolvers (Rep a) m)
+type ObjectConstraint a m = (Monad m, Generic a, GQLType a, ObjectFieldResolvers (Rep a) (ResolveT m Value))
 
 type UnionConstraint a m = (Monad m, Generic a, GQLType a, UnionResolvers (Rep a) m)
 
@@ -151,10 +151,12 @@ resolveBySelection :: Monad m => ResolveSel m Value
 resolveBySelection selection resolvers = Object <$> mapM (selectResolver Null resolvers) selection
 
 resolversBy ::
-     (Generic a, Monad m, ObjectFieldResolvers (Rep a) m) => a -> [(Text, (Text, Selection) -> ResolveT m Value)]
+     (Generic a, Monad m, ObjectFieldResolvers (Rep a) (ResolveT m Value))
+  => a
+  -> [(Text, (Text, Selection) -> ResolveT m Value)]
 resolversBy = objectFieldResolvers "" . from
 
-instance Encoder a (KIND a) res => ObjectFieldResolvers (K1 s a) res where
+instance Encoder a (KIND a) m => ObjectFieldResolvers (K1 s a) (ResolveT m Value) where
   objectFieldResolvers key' (K1 src) = [(key', encode src)]
 
 -- | Resolves and encodes UNION,
@@ -198,6 +200,7 @@ instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m) =>
          Encoder (a -> Resolver m b) WRAPPER (StreamT m c) where
   __encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (__encode resolver selection)
 
+--resolveSubscription :: WithGQLKind a kind -> (Text, Selection) -> [ResolveT m (Value -> Value)]
 instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m) =>
          Encoder (a -> SubRes m s b) WRAPPER (SubscribeStream m s) where
   __encode (WithGQLKind resolver) selection@(fieldName, Selection {selectionArguments, selectionPosition}) =

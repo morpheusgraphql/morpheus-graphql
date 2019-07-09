@@ -45,7 +45,7 @@ type EventCon event = Eq event
 
 type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments)
 
-type EncodeCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) m)
+type EncodeCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m Value))
 
 type RootResCon m event query mutation subscription
    = ( Monad m
