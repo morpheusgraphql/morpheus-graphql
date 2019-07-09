@@ -26,14 +26,15 @@ import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubs
                                                          removeClientSubscription)
 import           Data.Morpheus.Types.Internal.Stream    (ResponseEvent (..), ResponseStream, closeStream)
 import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..))
-import           Data.Morpheus.Types.IO                 (GQLResponse)
+import           Data.Morpheus.Types.IO                 (GQLResponse (..))
 import           Data.Morpheus.Types.Resolver           (GQLRootResolver (..))
 
-handleGQLResponse :: Eq s => GQLClient IO s -> GQLState IO s -> Text -> ResponseStream IO s GQLResponse -> IO ()
-handleGQLResponse GQLClient {clientConnection, clientID} state sessionId stream = do
+handleSubscription :: Eq s => GQLClient IO s -> GQLState IO s -> Text -> ResponseStream IO s GQLResponse -> IO ()
+handleSubscription GQLClient {clientConnection, clientID} state sessionId stream = do
   (actions, response) <- closeStream stream
-  sendTextData clientConnection (toApolloResponse sessionId response)
-  mapM_ execute actions
+  case response of
+    Data _   -> mapM_ execute actions
+    Errors _ -> sendTextData clientConnection (toApolloResponse sessionId response)
   where
     execute (Publish pub)   = publishUpdates state pub
     execute (Subscribe sub) = addClientSubscription clientID sub sessionId state
@@ -52,5 +53,5 @@ gqlSocketApp gqlRoot state pending = do
           where
             resolveMessage (SubError x) = print x
             resolveMessage (AddSub sessionId request) =
-              handleGQLResponse client state sessionId (streamResolver gqlRoot request)
+              handleSubscription client state sessionId (streamResolver gqlRoot request)
             resolveMessage (RemoveSub sessionId) = removeClientSubscription clientID sessionId state
