@@ -47,11 +47,11 @@ gqlSocketApp gqlRoot state pending = do
   client <- connectClient connection state
   finally (queryHandler client) (disconnectClient client state)
   where
-    queryHandler client@GQLClient {clientConnection, clientID} = forever handleRequest
+    queryHandler client = forever handleRequest
       where
-        handleRequest = receiveData clientConnection >>= resolveMessage . apolloFormat
+        handleRequest = receiveData (clientConnection client) >>= resolveMessage . apolloFormat
           where
             resolveMessage (SubError x) = print x
             resolveMessage (AddSub sessionId request) =
               handleSubscription client state sessionId (streamResolver gqlRoot request)
-            resolveMessage (RemoveSub sessionId) = removeClientSubscription clientID sessionId state
+            resolveMessage (RemoveSub sessionId) = removeClientSubscription (clientID client) sessionId state
