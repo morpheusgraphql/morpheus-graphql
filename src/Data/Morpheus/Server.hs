@@ -13,26 +13,26 @@ module Data.Morpheus.Server
 
 import           Control.Exception                      (finally)
 import           Control.Monad                          (forever)
-import           Data.Aeson                             (encode)
-import           Data.ByteString.Lazy.Char8             (ByteString)
 import           Data.Text                              (Text)
 import           Network.WebSockets                     (ServerApp, acceptRequestWith, forkPingThread, pendingRequest,
                                                          receiveData, sendTextData)
 
 -- MORPHEUS
 import           Data.Morpheus.Resolve.Resolve          (RootResCon, streamResolver)
-import           Data.Morpheus.Server.Apollo            (SubAction (..), acceptApolloSubProtocol, apolloFormat)
+import           Data.Morpheus.Server.Apollo            (SubAction (..), acceptApolloSubProtocol, apolloFormat,
+                                                         toApolloResponse)
 import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubscription, connectClient,
                                                          disconnectClient, initGQLState, publishUpdates,
                                                          removeClientSubscription)
 import           Data.Morpheus.Types.Internal.Stream    (ResponseEvent (..), ResponseStream, closeStream)
 import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..))
+import           Data.Morpheus.Types.IO                 (GQLResponse)
 import           Data.Morpheus.Types.Resolver           (GQLRootResolver (..))
 
-handleGQLResponse :: Eq s => GQLClient IO s -> GQLState IO s -> Text -> ResponseStream IO s ByteString -> IO ()
+handleGQLResponse :: Eq s => GQLClient IO s -> GQLState IO s -> Text -> ResponseStream IO s GQLResponse -> IO ()
 handleGQLResponse GQLClient {clientConnection, clientID} state sessionId stream = do
   (actions, response) <- closeStream stream
-  sendTextData clientConnection response
+  sendTextData clientConnection (toApolloResponse sessionId response)
   mapM_ execute actions
   where
     execute (Publish pub)   = publishUpdates state pub
@@ -52,5 +52,5 @@ gqlSocketApp gqlRoot state pending = do
           where
             resolveMessage (SubError x) = print x
             resolveMessage (AddSub sessionId request) =
-              handleGQLResponse client state sessionId (encode <$> streamResolver gqlRoot request)
+              handleGQLResponse client state sessionId (streamResolver gqlRoot request)
             resolveMessage (RemoveSub sessionId) = removeClientSubscription clientID sessionId state
