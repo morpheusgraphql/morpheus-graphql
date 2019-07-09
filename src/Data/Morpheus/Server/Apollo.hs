@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Server.Apollo
-  ( ApolloAction(..)
+  ( SubAction(..)
   , apolloFormat
   , acceptApolloSubProtocol
   , toApolloResponse
@@ -28,7 +28,7 @@ data ApolloSubscription payload = ApolloSubscription
   { apolloId      :: Maybe ApolloID
   , apolloType    :: Text
   , apolloPayload :: Maybe payload
-  } deriving (Generic)
+  } deriving (Show, Generic)
 
 instance FromJSON a => FromJSON (ApolloSubscription a) where
   parseJSON = withObject "ApolloSubscription" objectParser
@@ -39,7 +39,7 @@ data ApolloRequestPayload = ApolloRequestPayload
   { payloadOperationName :: Maybe Text
   , payloadQuery         :: Maybe Text
   , payloadVariables     :: Maybe (Map Text V.Value)
-  } deriving (Generic)
+  } deriving (Show, Generic)
 
 instance FromJSON ApolloRequestPayload where
   parseJSON = withObject "ApolloPayload" objectParser
@@ -59,24 +59,23 @@ acceptApolloSubProtocol reqHead = apolloProtocol (getRequestSubprotocols reqHead
 toApolloResponse :: ApolloID -> GQLResponse -> ByteString
 toApolloResponse sid val = encode $ ApolloSubscription (Just sid) "data" (Just val)
 
-data ApolloAction
-  = ApolloRemove ApolloID
-  | ApolloError String
-  | ApolloRequest ApolloID
-                  GQLRequest
-  | ApolloNoAction
+data SubAction
+  = RemoveSub ApolloID
+  | AddSub ApolloID
+           GQLRequest
+  | SubError String
 
-apolloFormat :: ByteString -> ApolloAction
+apolloFormat :: ByteString -> SubAction
 apolloFormat = toWsAPI . eitherDecode
   where
-    toWsAPI :: Either String (ApolloSubscription ApolloRequestPayload) -> ApolloAction
-    toWsAPI (Left x) = ApolloError x
-    toWsAPI (Right ApolloSubscription {apolloType = "stop", apolloId = Just sessionId}) = ApolloRemove sessionId
+    toWsAPI :: Either String (ApolloSubscription ApolloRequestPayload) -> SubAction
     toWsAPI (Right ApolloSubscription { apolloType = "start"
                                       , apolloId = Just sessionId
                                       , apolloPayload = Just ApolloRequestPayload { payloadQuery = Just query
                                                                                   , payloadOperationName = operationName
                                                                                   , payloadVariables = variables
                                                                                   }
-                                      }) = ApolloRequest sessionId (GQLRequest {query, operationName, variables})
-    toWsAPI (Right _) = ApolloNoAction
+                                      }) = AddSub sessionId (GQLRequest {query, operationName, variables})
+    toWsAPI (Right ApolloSubscription {apolloType = "stop", apolloId = Just sessionId}) = RemoveSub sessionId
+    toWsAPI (Right x) = SubError (show x)
+    toWsAPI (Left x) = SubError x

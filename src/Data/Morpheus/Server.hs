@@ -21,7 +21,7 @@ import           Network.WebSockets                     (ServerApp, acceptReques
 
 -- MORPHEUS
 import           Data.Morpheus.Resolve.Resolve          (RootResCon, streamResolver)
-import           Data.Morpheus.Server.Apollo            (ApolloAction (..), acceptApolloSubProtocol, apolloFormat)
+import           Data.Morpheus.Server.Apollo            (SubAction (..), acceptApolloSubProtocol, apolloFormat)
 import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubscription, connectClient,
                                                          disconnectClient, initGQLState, publishUpdates,
                                                          removeClientSubscription)
@@ -51,8 +51,7 @@ gqlSocketApp gqlRoot state pending = do
       where
         handleRequest = receiveData clientConnection >>= resolveMessage . apolloFormat
           where
-            resolveMessage (ApolloError x) = print x
-            resolveMessage (ApolloRemove sessionId) = removeClientSubscription clientID sessionId state
-            resolveMessage (ApolloRequest sessionId request) =
+            resolveMessage (SubError x) = print x
+            resolveMessage (AddSub sessionId request) =
               handleGQLResponse client state sessionId (encode <$> streamResolver gqlRoot request)
-            resolveMessage ApolloNoAction = return ()
+            resolveMessage (RemoveSub sessionId) = removeClientSubscription clientID sessionId state
