@@ -23,16 +23,16 @@ import           Data.Text                          (Text)
 import           GHC.Generics                       (Generic)
 import           Network.WebSockets                 (AcceptRequest (..), RequestHead, getRequestSubprotocols)
 
-data ApolloSubscription a = ApolloSubscription
-  { apolloId            :: Maybe Text
+data ApolloSubscription sID payload = ApolloSubscription
+  { apolloId            :: Maybe sID
   , apolloType          :: Text
-  , apolloPayload       :: Maybe a
+  , apolloPayload       :: Maybe payload
   , apolloQuery         :: Maybe Text
   , apolloOperationName :: Maybe Text
   , apolloVariables     :: Maybe (Map Text V.Value)
   } deriving (Generic)
 
-instance FromJSON a => FromJSON (ApolloSubscription a) where
+instance (FromJSON sID, FromJSON a) => FromJSON (ApolloSubscription sID a) where
   parseJSON = withObject "ApolloSubscription" objectParser
     where
       objectParser o =
@@ -51,7 +51,7 @@ instance FromJSON ApolloPayload where
     where
       objectParser o = ApolloPayload <$> o .:? "operationName" <*> o .:? "query" <*> o .:? "variables"
 
-instance ToJSON (ApolloSubscription GQLResponse) where
+instance (ToJSON sID, ToJSON a) => ToJSON (ApolloSubscription sID a) where
   toEncoding (ApolloSubscription id' type' payload' query' operationName' variables') =
     pairs $
     "id" .= id' <> "type" .= type' <> "payload" .= payload' <> "query" .= query' <> "operationName" .= operationName' <>
@@ -65,24 +65,20 @@ acceptApolloSubProtocol reqHead = apolloProtocol (getRequestSubprotocols reqHead
     apolloProtocol ["graphql-ws"]            = AcceptRequest (Just "graphql-ws") []
     apolloProtocol _                         = AcceptRequest Nothing []
 
---toApolloResponse :: Text -> GQLResponse -> ByteString
---toApolloResponse sid val = encode $ ApolloSubscription (Just sid) "subscription_data" (Just val) Nothing Nothing Nothing
-
-toApolloResponse :: Text -> GQLResponse -> ByteString
+toApolloResponse :: (Eq sID, ToJSON sID) => sID -> GQLResponse -> ByteString
 toApolloResponse sid val = encode $ ApolloSubscription (Just sid) "data" (Just val) Nothing Nothing Nothing
 
-
-data ApolloAction
-  = ApolloRemove Text
+data ApolloAction sID
+  = ApolloRemove sID
   | ApolloError String
-  | ApolloRequest Text
+  | ApolloRequest sID
                   GQLRequest
   | ApolloNoAction
 
-newApolloFormat :: ByteString -> ApolloAction
+newApolloFormat :: ByteString -> ApolloAction Text
 newApolloFormat = toWsAPI . eitherDecode
   where
-    toWsAPI :: Either String (ApolloSubscription ApolloPayload) -> ApolloAction
+    toWsAPI :: Either String (ApolloSubscription Text ApolloPayload) -> ApolloAction Text
     toWsAPI (Left x) = ApolloError x
     toWsAPI (Right ApolloSubscription {apolloType = "end", apolloId = Just sid}) = ApolloRemove sid
     toWsAPI (Right ApolloSubscription { apolloType = "start"
@@ -94,10 +90,10 @@ newApolloFormat = toWsAPI . eitherDecode
                                       }) = ApolloRequest sessionId (GQLRequest {query, operationName, variables})
     toWsAPI (Right _) = ApolloNoAction
 
-oldApolloFormat :: ByteString -> ApolloAction
+oldApolloFormat :: ByteString -> ApolloAction Int
 oldApolloFormat = toWsAPI . eitherDecode
   where
-    toWsAPI :: Either String (ApolloSubscription Value) -> ApolloAction
+    toWsAPI :: Either String (ApolloSubscription Int Value) -> ApolloAction Int
     toWsAPI (Left x) = ApolloError x
     toWsAPI (Right ApolloSubscription {apolloType = "subscription_end", apolloId = Just sid}) = ApolloRemove sid
     toWsAPI (Right ApolloSubscription { apolloType = "subscription_start"
