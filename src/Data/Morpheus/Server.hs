@@ -41,11 +41,10 @@ handleGQLResponse GQLClient {clientConnection, clientID} state sessionId stream 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketApp :: RootResCon IO s a b c => GQLRootResolver IO s a b c -> GQLState IO s -> ServerApp
 gqlSocketApp gqlRoot state pending = do
-  let acceptHead = acceptApolloSubProtocol (pendingRequest pending)
-  connection' <- acceptRequestWith pending acceptHead
-  forkPingThread connection' 30
-  client' <- connectClient connection' state
-  finally (queryHandler client') (disconnectClient client' state)
+  connection <- acceptRequestWith pending $ acceptApolloSubProtocol (pendingRequest pending)
+  forkPingThread connection 30
+  client <- connectClient connection state
+  finally (queryHandler client) (disconnectClient client state)
   where
     queryHandler client@GQLClient {clientConnection, clientID} = forever handleRequest
       where

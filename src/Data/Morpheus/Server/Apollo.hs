@@ -35,16 +35,16 @@ instance FromJSON a => FromJSON (ApolloSubscription a) where
     where
       objectParser o = ApolloSubscription <$> o .:? "id" <*> o .: "type" <*> o .:? "payload"
 
-data ApolloRequestPayload = ApolloRequestPayload
+data RequestPayload = RequestPayload
   { payloadOperationName :: Maybe Text
   , payloadQuery         :: Maybe Text
   , payloadVariables     :: Maybe (Map Text V.Value)
   } deriving (Show, Generic)
 
-instance FromJSON ApolloRequestPayload where
+instance FromJSON RequestPayload where
   parseJSON = withObject "ApolloPayload" objectParser
     where
-      objectParser o = ApolloRequestPayload <$> o .:? "operationName" <*> o .:? "query" <*> o .:? "variables"
+      objectParser o = RequestPayload <$> o .:? "operationName" <*> o .:? "query" <*> o .:? "variables"
 
 instance ToJSON a => ToJSON (ApolloSubscription a) where
   toEncoding (ApolloSubscription id' type' payload') = pairs $ "id" .= id' <> "type" .= type' <> "payload" .= payload'
@@ -68,10 +68,10 @@ data SubAction
 apolloFormat :: ByteString -> SubAction
 apolloFormat = toWsAPI . eitherDecode
   where
-    toWsAPI :: Either String (ApolloSubscription ApolloRequestPayload) -> SubAction
+    toWsAPI :: Either String (ApolloSubscription RequestPayload) -> SubAction
     toWsAPI (Right ApolloSubscription { apolloType = "start"
                                       , apolloId = Just sessionId
-                                      , apolloPayload = Just ApolloRequestPayload { payloadQuery = Just query
+                                      , apolloPayload = Just RequestPayload { payloadQuery = Just query
                                                                                   , payloadOperationName = operationName
                                                                                   , payloadVariables = variables
                                                                                   }
