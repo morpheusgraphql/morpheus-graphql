@@ -14,7 +14,6 @@ module Data.Morpheus.Resolve.Encode
   ( ObjectFieldResolvers(..)
   , resolveBySelection
   , resolversBy
-  , QueryResult
   ) where
 
 import           Control.Monad.Trans                        (lift)
@@ -44,10 +43,25 @@ import           Data.Morpheus.Types.Internal.Validation    (ResolveT, failResol
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver               (Resolver, SubRes)
 
-type SelectRes m a = [(Text, (Text, Selection) -> ResolveT m a)] -> (Text, Selection) -> ResolveT m (Text, a)
+-- EXPORT -------------------------------------------------------
+type ResolveSel result = [(Text, Selection)] -> [(Text, (Text, Selection) -> result)] -> result
 
-type ResolveSel m a = [(Text, Selection)] -> [(Text, (Text, Selection) -> ResolveT m a)] -> ResolveT m a
+resolveBySelection :: Monad m => ResolveSel (ResolveT m Value)
+resolveBySelection selection resolvers = Object <$> mapM (selectResolver Null resolvers) selection
 
+selectResolver :: Monad m => a -> [(Text, (Text, Selection) -> m a)] -> (Text, Selection) -> m (Text, a)
+selectResolver defaultValue resolvers (key, selection) =
+  case selectionRec selection of
+    SelectionAlias name selectionRec -> unwrapMonadTuple (key, lookupResolver name (selection {selectionRec}))
+    _                                -> unwrapMonadTuple (key, lookupResolver key selection)
+  where
+    lookupResolver resolverKey sel =
+      (fromMaybe (const $ return $defaultValue) $ lookup resolverKey resolvers) (key, sel)
+
+resolversBy :: (Generic a, ObjectFieldResolvers (Rep a) result) => a -> [(Text, (Text, Selection) -> result)]
+resolversBy = objectFieldResolvers "" . from
+
+-- EXPORT -------------------------------------------------------
 --
 --  OBJECT
 -- | Derives resolvers by object fields
@@ -71,15 +85,6 @@ instance (ObjectFieldResolvers f res, ObjectFieldResolvers g res) => ObjectField
 
 unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
-
-selectResolver :: Monad m => a -> SelectRes m a
-selectResolver defaultValue resolvers (key, selection) =
-  case selectionRec selection of
-    SelectionAlias name selectionRec -> unwrapMonadTuple (key, lookupResolver name (selection {selectionRec}))
-    _                                -> unwrapMonadTuple (key, lookupResolver key selection)
-  where
-    lookupResolver resolverKey sel =
-      (fromMaybe (const $ return $defaultValue) $ lookup resolverKey resolvers) (key, sel)
 
 --
 -- UNION
@@ -105,8 +110,6 @@ type ObjectConstraint a m = (Monad m, Generic a, GQLType a, ObjectFieldResolvers
 type UnionConstraint a m = (Monad m, Generic a, GQLType a, UnionResolvers (Rep a) (ResolveT m Value))
 
 type EnumConstraint a = (Generic a, EnumRep (Rep a))
-
-type QueryResult = Value
 
 newtype WithGQLKind a b = WithGQLKind
   { resolverValue :: a
@@ -147,15 +150,6 @@ instance ObjectConstraint a m => Encoder a OBJECT (ResValue m) where
     where
       __typenameResolver = ("__typename", const $ return $ Scalar $ String $ __typeName (Proxy @a))
   __encode _ (key, Selection {selectionPosition}) = failResolveT $ subfieldsNotSelected key "" selectionPosition
-
-resolveBySelection :: Monad m => ResolveSel m Value
-resolveBySelection selection resolvers = Object <$> mapM (selectResolver Null resolvers) selection
-
-resolversBy ::
-     (Generic a, Monad m, ObjectFieldResolvers (Rep a) (ResolveT m Value))
-  => a
-  -> [(Text, (Text, Selection) -> ResolveT m Value)]
-resolversBy = objectFieldResolvers "" . from
 
 instance Encoder a (KIND a) result => ObjectFieldResolvers (K1 s a) result where
   objectFieldResolvers key' (K1 src) = [(key', encode src)]
