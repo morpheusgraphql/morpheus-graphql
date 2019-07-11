@@ -55,13 +55,17 @@ selectResolver defaultValue resolvers (key, selection) =
     SelectionAlias name selectionRec -> unwrapMonadTuple (key, lookupResolver name (selection {selectionRec}))
     _                                -> unwrapMonadTuple (key, lookupResolver key selection)
   where
+    unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
+    unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
+    -------------------------------------------------------------
     lookupResolver resolverKey sel =
       (fromMaybe (const $ return $defaultValue) $ lookup resolverKey resolvers) (key, sel)
 
 resolversBy :: (Generic a, ObjectFieldResolvers (Rep a) result) => a -> [(Text, (Text, Selection) -> result)]
 resolversBy = objectFieldResolvers "" . from
 
--- EXPORT -------------------------------------------------------
+---------------------------------------------------------
+
 --
 --  OBJECT
 -- | Derives resolvers by object fields
@@ -82,9 +86,6 @@ instance ObjectFieldResolvers f res => ObjectFieldResolvers (M1 C c f) res where
 
 instance (ObjectFieldResolvers f res, ObjectFieldResolvers g res) => ObjectFieldResolvers (f :*: g) res where
   objectFieldResolvers meta (a :*: b) = objectFieldResolvers meta a ++ objectFieldResolvers meta b
-
-unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
-unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
 --
 -- UNION
