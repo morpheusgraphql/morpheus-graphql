@@ -73,14 +73,13 @@ unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
 unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
 
 selectResolver :: Monad m => a -> SelectRes m a
-selectResolver defaultValue resolvers' (key', selection') =
-  case selectionRec selection' of
-    SelectionAlias name' aliasSelection' ->
-      unwrapMonadTuple (key', lookupResolver name' (selection' {selectionRec = aliasSelection'}))
-    _ -> unwrapMonadTuple (key', lookupResolver key' selection')
+selectResolver defaultValue resolvers (key, selection) =
+  case selectionRec selection of
+    SelectionAlias name selectionRec -> unwrapMonadTuple (key, lookupResolver name (selection {selectionRec}))
+    _                                -> unwrapMonadTuple (key, lookupResolver key selection)
   where
-    lookupResolver resolverKey' sel =
-      (fromMaybe (const $ return $defaultValue) $ lookup resolverKey' resolvers') (key', sel)
+    lookupResolver resolverKey sel =
+      (fromMaybe (const $ return $defaultValue) $ lookup resolverKey resolvers) (key, sel)
 
 --
 -- UNION
@@ -116,31 +115,33 @@ newtype WithGQLKind a b = WithGQLKind
 type GQLKindOf a = WithGQLKind a (KIND a)
 
 encode ::
-     forall a m. Encoder a (KIND a) m Value
+     forall a result. Encoder a (KIND a) result
   => a
   -> (Text, Selection)
-  -> ResolveT m Value
+  -> result
 encode resolver = __encode (WithGQLKind resolver :: GQLKindOf a)
 
-class Encoder a kind m v where
-  __encode :: WithGQLKind a kind -> (Text, Selection) -> ResolveT m v
+class Encoder a kind result where
+  __encode :: WithGQLKind a kind -> (Text, Selection) -> result
+
+type ResValue m = (ResolveT m Value)
 
 --
 -- SCALAR
 --
-instance (GQLScalar a, Monad m) => Encoder a SCALAR m Value where
+instance (GQLScalar a, Monad m) => Encoder a SCALAR (ResValue m) where
   __encode = pure . pure . Scalar . serialize . resolverValue
 
 --
 -- ENUM
 --
-instance (EnumConstraint a, Monad m) => Encoder a ENUM m Value where
+instance (EnumConstraint a, Monad m) => Encoder a ENUM (ResValue m) where
   __encode = pure . pure . Scalar . String . encodeRep . from . resolverValue
 
 --
 --  OBJECTS
 --
-instance ObjectConstraint a m => Encoder a OBJECT m Value where
+instance ObjectConstraint a m => Encoder a OBJECT (ResValue m) where
   __encode (WithGQLKind value) (_, Selection {selectionRec = SelectionSet selection'}) =
     resolveBySelection selection' (__typenameResolver : resolversBy value)
     where
@@ -156,12 +157,12 @@ resolversBy ::
   -> [(Text, (Text, Selection) -> ResolveT m Value)]
 resolversBy = objectFieldResolvers "" . from
 
-instance Encoder a (KIND a) m Value => ObjectFieldResolvers (K1 s a) (ResolveT m Value) where
+instance Encoder a (KIND a) result => ObjectFieldResolvers (K1 s a) result where
   objectFieldResolvers key' (K1 src) = [(key', encode src)]
 
 -- | Resolves and encodes UNION,
 -- Handles all operators: Query, Mutation and Subscription,
-instance UnionConstraint a m => Encoder a UNION m Value where
+instance UnionConstraint a m => Encoder a UNION (ResValue m) where
   __encode (WithGQLKind value) (key', sel@Selection {selectionRec = UnionSelection selections'}) =
     resolver (key', sel {selectionRec = SelectionSet lookupSelection})
     where
@@ -171,7 +172,7 @@ instance UnionConstraint a m => Encoder a UNION m Value where
       (typeName, resolver) = unionResolvers (from value)
   __encode _ _ = internalErrorT "union Resolver only should recieve UnionSelection"
 
-instance (GQLType a, Encoder a (KIND a) m Value) => UnionResolvers (K1 s a) (ResolveT m Value) where
+instance (GQLType a, Encoder a (KIND a) result) => UnionResolvers (K1 s a) result where
   unionResolvers (K1 src) = (__typeName (Proxy @a), encode src)
 
 --
@@ -179,8 +180,8 @@ instance (GQLType a, Encoder a (KIND a) m Value) => UnionResolvers (K1 s a) (Res
 --
 -- | Handles all operators: Query, Mutation and Subscription,
 -- if you use it with Mutation or Subscription all effects inside will be lost
-instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m Value) =>
-         Encoder (a -> Resolver m b) WRAPPER m Value where
+instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
+         Encoder (a -> Resolver m b) WRAPPER (ResValue m) where
   __encode (WithGQLKind resolver) selection'@(fieldName, Selection {selectionArguments, selectionPosition}) = do
     args <- ExceptT $ pure $ decodeArguments selectionArguments
     lift (runExceptT $ resolver args) >>= liftEither selectionPosition fieldName >>= (`encode` selection')
@@ -190,21 +191,21 @@ liftEither position name (Left message) = failResolveT $ fieldNotResolved positi
 liftEither _ _ (Right value)            = pure value
 
 -- packs Monad in StreamMonad
-instance (Monad m, Encoder a (KIND a) m Value, ArgumentsConstraint p) =>
-         Encoder (p -> Either String a) WRAPPER m Value where
+instance (Monad m, Encoder a (KIND a) (ResValue m), ArgumentsConstraint p) =>
+         Encoder (p -> Either String a) WRAPPER (ResValue m) where
   __encode (WithGQLKind resolver) selection'@(fieldName, Selection {selectionArguments, selectionPosition}) =
     case decodeArguments selectionArguments of
       Left message -> failResolveT message
       Right value  -> liftEither selectionPosition fieldName (resolver value) >>= (`encode` selection')
 
 -- packs Monad in StreamMonad
-instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m Value) =>
-         Encoder (a -> Resolver m b) WRAPPER (StreamT m c) Value where
+instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
+         Encoder (a -> Resolver m b) WRAPPER (ResValue (StreamT m c)) where
   __encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (__encode resolver selection)
 
 --resolveSubscription :: WithGQLKind a kind -> (Text, Selection) -> [ResolveT m (Value -> Value)]
-instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m Value) =>
-         Encoder (a -> SubRes m s b) WRAPPER (SubscribeStream m s) Value where
+instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
+         Encoder (a -> SubRes m s b) WRAPPER (ResValue (SubscribeStream m s)) where
   __encode (WithGQLKind resolver) selection@(fieldName, Selection {selectionArguments, selectionPosition}) =
     case decodeArguments selectionArguments of
       Left message -> failResolveT message
@@ -222,30 +223,31 @@ instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m Value) =>
 --
 -- MAYBE
 --
-instance (Monad m, Encoder a (KIND a) m Value) => Encoder (Maybe a) WRAPPER m Value where
+instance (Monad m, Encoder a (KIND a) (ResValue m)) => Encoder (Maybe a) WRAPPER (ResValue m) where
   __encode (WithGQLKind Nothing)      = const $ pure Null
   __encode (WithGQLKind (Just value)) = encode value
 
 --
 -- LIST
 --
-instance (Monad m, Encoder a (KIND a) m Value) => Encoder [a] WRAPPER m Value where
+instance (Monad m, Encoder a (KIND a) (ResValue m)) => Encoder [a] WRAPPER (ResValue m) where
   __encode (WithGQLKind list) query = List <$> mapM (`__encode` query) (map WithGQLKind list :: [GQLKindOf a])
 
 --
 --  Tuple
 --
-instance Encoder (Pair k v) OBJECT m Value => Encoder (k, v) WRAPPER m Value where
+instance Encoder (Pair k v) OBJECT (ResValue m) => Encoder (k, v) WRAPPER (ResValue m) where
   __encode (WithGQLKind (key, value)) = encode (Pair key value)
 
 --
 --  Set
 --
-instance Encoder [a] WRAPPER m Value => Encoder (Set a) WRAPPER m Value where
+instance Encoder [a] WRAPPER result => Encoder (Set a) WRAPPER result where
   __encode (WithGQLKind dataSet) = encode (S.toList dataSet)
 
 --
 --  Map
 --
-instance (Eq k, Monad m, Encoder (MapKind k v (Resolver m)) OBJECT m Value) => Encoder (Map k v) WRAPPER m Value where
+instance (Eq k, Monad m, Encoder (MapKind k v (Resolver m)) OBJECT (ResValue m)) =>
+         Encoder (Map k v) WRAPPER (ResValue m) where
   __encode (WithGQLKind value) = encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver m))
