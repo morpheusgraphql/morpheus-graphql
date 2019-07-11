@@ -85,8 +85,8 @@ selectResolver defaultValue resolvers' (key', selection') =
 --
 -- UNION
 --
-class UnionResolvers f m where
-  unionResolvers :: f a -> (Text, (Text, Selection) -> ResolveT m Value)
+class UnionResolvers f result where
+  unionResolvers :: f a -> (Text, (Text, Selection) -> result)
 
 instance UnionResolvers f res => UnionResolvers (M1 S s f) res where
   unionResolvers (M1 x) = unionResolvers x
@@ -103,7 +103,7 @@ instance (UnionResolvers a res, UnionResolvers b res) => UnionResolvers (a :+: b
 
 type ObjectConstraint a m = (Monad m, Generic a, GQLType a, ObjectFieldResolvers (Rep a) (ResolveT m Value))
 
-type UnionConstraint a m = (Monad m, Generic a, GQLType a, UnionResolvers (Rep a) m)
+type UnionConstraint a m = (Monad m, Generic a, GQLType a, UnionResolvers (Rep a) (ResolveT m Value))
 
 type EnumConstraint a = (Generic a, EnumRep (Rep a))
 
@@ -171,7 +171,7 @@ instance UnionConstraint a m => Encoder a UNION m Value where
       (typeName, resolver) = unionResolvers (from value)
   __encode _ _ = internalErrorT "union Resolver only should recieve UnionSelection"
 
-instance (GQLType a, Encoder a (KIND a) m Value) => UnionResolvers (K1 s a) m where
+instance (GQLType a, Encoder a (KIND a) m Value) => UnionResolvers (K1 s a) (ResolveT m Value) where
   unionResolvers (K1 src) = (__typeName (Proxy @a), encode src)
 
 --
@@ -179,7 +179,8 @@ instance (GQLType a, Encoder a (KIND a) m Value) => UnionResolvers (K1 s a) m wh
 --
 -- | Handles all operators: Query, Mutation and Subscription,
 -- if you use it with Mutation or Subscription all effects inside will be lost
-instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m Value) => Encoder (a -> Resolver m b) WRAPPER m Value where
+instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m Value) =>
+         Encoder (a -> Resolver m b) WRAPPER m Value where
   __encode (WithGQLKind resolver) selection'@(fieldName, Selection {selectionArguments, selectionPosition}) = do
     args <- ExceptT $ pure $ decodeArguments selectionArguments
     lift (runExceptT $ resolver args) >>= liftEither selectionPosition fieldName >>= (`encode` selection')
@@ -189,14 +190,15 @@ liftEither position name (Left message) = failResolveT $ fieldNotResolved positi
 liftEither _ _ (Right value)            = pure value
 
 -- packs Monad in StreamMonad
-instance (Monad m, Encoder a (KIND a) m Value, ArgumentsConstraint p) => Encoder (p -> Either String a) WRAPPER m Value where
+instance (Monad m, Encoder a (KIND a) m Value, ArgumentsConstraint p) =>
+         Encoder (p -> Either String a) WRAPPER m Value where
   __encode (WithGQLKind resolver) selection'@(fieldName, Selection {selectionArguments, selectionPosition}) =
     case decodeArguments selectionArguments of
       Left message -> failResolveT message
       Right value  -> liftEither selectionPosition fieldName (resolver value) >>= (`encode` selection')
 
 -- packs Monad in StreamMonad
-instance (ArgumentsConstraint a, Monad m , Encoder b (KIND b) m Value) =>
+instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) m Value) =>
          Encoder (a -> Resolver m b) WRAPPER (StreamT m c) Value where
   __encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (__encode resolver selection)
 
