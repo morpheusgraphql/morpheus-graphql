@@ -13,39 +13,36 @@ module Data.Morpheus.Resolve.Resolve
   , RootResCon
   ) where
 
-import           Control.Monad                              ((>=>))
-import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT)
-import           Data.Aeson                                 (eitherDecode, encode)
-import           Data.ByteString.Lazy.Char8                 (ByteString)
+import           Control.Monad                             ((>=>))
+import           Control.Monad.Trans.Except                (ExceptT (..), runExceptT)
+import           Data.Aeson                                (eitherDecode, encode)
+import           Data.ByteString.Lazy.Char8                (ByteString)
 import           Data.Proxy
-import           Data.Typeable                              (Typeable)
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils                  (badRequestError, renderErrors)
-import           Data.Morpheus.Parser.Parser                (parseGQL)
-import           Data.Morpheus.Resolve.Encode               (ObjectFieldResolvers (..), resolveBySelection, resolversBy)
-import           Data.Morpheus.Resolve.Introspect           (ObjectRep (..), resolveTypes)
-import           Data.Morpheus.Schema.SchemaAPI             (hiddenRootFields, schemaAPI, schemaTypes)
-import           Data.Morpheus.Server.ClientRegister        (GQLState, publishUpdates)
-import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Operator' (..))
-import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
-import           Data.Morpheus.Types.Internal.Data          (DataArguments, DataFingerprint (..), DataType (..),
-                                                             DataTypeLib (..), initTypeLib)
-import           Data.Morpheus.Types.Internal.Stream        (PublishStream, ResponseEvent (..), ResponseStream,
-                                                             StreamState (..), StreamT (..), SubscribeStream,
-                                                             closeStream, mapS)
-import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, ResolveT, SchemaValidation)
-import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Morpheus.Types.IO                     (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver               (GQLRootResolver (..))
-import           Data.Morpheus.Validation.Validation        (validateRequest)
+import           Data.Morpheus.Error.Utils                 (badRequestError, renderErrors)
+import           Data.Morpheus.Parser.Parser               (parseGQL)
+import           Data.Morpheus.Resolve.Encode              (Encode, EncodeCon, EncodeSubCon, encodeStreamRes,
+                                                            encodeSubStreamRes, resolveBySelection, resolversBy)
+import           Data.Morpheus.Resolve.Introspect          (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Schema.SchemaAPI            (hiddenRootFields, schemaAPI, schemaTypes)
+import           Data.Morpheus.Server.ClientRegister       (GQLState, publishUpdates)
+import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..))
+import           Data.Morpheus.Types.Internal.Data         (DataArguments, DataFingerprint (..), DataType (..),
+                                                            DataTypeLib (..), initTypeLib)
+import           Data.Morpheus.Types.Internal.Stream       (PublishStream, ResponseEvent (..), ResponseStream,
+                                                            StreamState (..), StreamT (..), SubscribeStream,
+                                                            closeStream, mapS)
+import           Data.Morpheus.Types.Internal.Validation   (SchemaValidation)
+import           Data.Morpheus.Types.Internal.Value        (Value (..))
+import           Data.Morpheus.Types.IO                    (GQLRequest (..), GQLResponse (..))
+import           Data.Morpheus.Types.Resolver              (GQLRootResolver (..))
+import           Data.Morpheus.Validation.Validation       (validateRequest)
 
 type EventCon event = Eq event
 
 type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments)
-
-type EncodeCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m Value))
 
 type RootResCon m event query mutation subscription
    = ( Monad m
@@ -57,7 +54,7 @@ type RootResCon m event query mutation subscription
      -- Resolving
      , EncodeCon m query
      , EncodeCon (PublishStream m event) mutation
-     , EncodeCon (SubscribeStream m event) subscription)
+     , EncodeSubCon (SubscribeStream m event) subscription)
 
 byteStringIO :: Monad m => (GQLRequest -> m GQLResponse) -> ByteString -> m ByteString
 byteStringIO resolver request =
@@ -88,18 +85,13 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
     execOperator (_, Mutation Operator' {operatorSelection}) =
       mapS Publish (encodeStreamRes mutationResolver operatorSelection)
     execOperator (_, Subscription Operator' {operatorSelection}) =
-      mapS renderSubscription (encodeStreamRes subscriptionResolver operatorSelection)
+      mapS renderSubscription (encodeSubStreamRes subscriptionResolver operatorSelection) >> pure (pure Null)
       where
         renderSubscription (c, resolver) = Subscribe (c, runExceptT . resolver >=> renderResponse)
-
-type Encode m a = ResolveT m a -> SelectionSet -> m (Either GQLErrors Value)
 
 encodeQuery :: (Monad m, EncodeCon m a) => DataTypeLib -> Encode m a
 encodeQuery types rootResolver sel =
   runExceptT (fmap resolversBy rootResolver >>= resolveBySelection sel . (++) (resolversBy $ schemaAPI types))
-
-encodeStreamRes :: (Monad m, EncodeCon m a) => Encode m a
-encodeStreamRes rootResolver sel = runExceptT $ rootResolver >>= resolveBySelection sel . resolversBy
 
 statefulResolver ::
      EventCon s => GQLState IO s -> (ByteString -> ResponseStream IO s ByteString) -> ByteString -> IO ByteString

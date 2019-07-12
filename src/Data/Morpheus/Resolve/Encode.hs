@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -12,7 +13,13 @@
 
 module Data.Morpheus.Resolve.Encode
   ( ObjectFieldResolvers(..)
+  , EncodeCon
+  , EncodeSubCon
+  , Encode
+  , encodeStreamRes
   , resolveBySelection
+  , encodeSubStreamRes
+  , resolveSubscriptionSelection
   , resolversBy
   ) where
 
@@ -25,6 +32,7 @@ import           Data.Proxy                                 (Proxy (..))
 import           Data.Set                                   (Set)
 import qualified Data.Set                                   as S (toList)
 import           Data.Text                                  (Text, pack)
+import           Data.Typeable                              (Typeable)
 import           GHC.Generics
 
 -- MORPHEUS
@@ -39,15 +47,34 @@ import           Data.Morpheus.Types.GQLType                (GQLType (__typeName
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base          (Position)
 import           Data.Morpheus.Types.Internal.Stream        (StreamState (..), StreamT (..), SubscribeStream)
-import           Data.Morpheus.Types.Internal.Validation    (ResolveT, failResolveT)
+import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, ResolveT, failResolveT)
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver               (Resolver, SubRes)
+
+type EncodeCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m Value))
+
+type Encode m a = ResolveT m a -> SelectionSet -> m (Either GQLErrors Value)
+
+type EncodeSubCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m (Value -> ResolveT m Value)))
+
+encodeStreamRes :: (Monad m, EncodeCon m a) => Encode m a
+encodeStreamRes rootResolver sel = runExceptT $ rootResolver >>= resolveBySelection sel . resolversBy
+
+encodeSubStreamRes ::
+     (Monad m, EncodeSubCon m a) => ResolveT m a -> SelectionSet -> m (Either GQLErrors (Value -> ResolveT m Value))
+encodeSubStreamRes rootResolver sel = runExceptT $ rootResolver >>= resolveSubscriptionSelection sel . resolversBy
 
 -- EXPORT -------------------------------------------------------
 type ResolveSel result = [(Text, Selection)] -> [(Text, (Text, Selection) -> result)] -> result
 
 resolveBySelection :: Monad m => ResolveSel (ResolveT m Value)
 resolveBySelection selection resolvers = Object <$> mapM (selectResolver Null resolvers) selection
+
+resolveSubscriptionSelection :: Monad m => ResolveSel (ResolveT m (a -> ResolveT m Value))
+resolveSubscriptionSelection selection resolvers =
+  toObj <$> mapM (selectResolver (const $ pure Null) resolvers) selection
+  where
+    toObj pairs args = Object <$> mapM (\(key, valFunc) -> (key, ) <$> valFunc args) pairs
 
 selectResolver :: Monad m => a -> [(Text, (Text, Selection) -> m a)] -> (Text, Selection) -> m (Text, a)
 selectResolver defaultValue resolvers (key, selection) =
@@ -65,7 +92,6 @@ resolversBy :: (Generic a, ObjectFieldResolvers (Rep a) result) => a -> [(Text, 
 resolversBy = objectFieldResolvers "" . from
 
 ---------------------------------------------------------
-
 --
 --  OBJECT
 -- | Derives resolvers by object fields
@@ -200,13 +226,14 @@ instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
 
 --resolveSubscription :: WithGQLKind a kind -> (Text, Selection) -> [ResolveT m (Value -> Value)]
 instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
-         Encoder (a -> SubRes m s b) WRAPPER (ResValue (SubscribeStream m s)) where
+         Encoder (a -> SubRes m s b) WRAPPER (ResolveT (SubscribeStream m s) (Value -> ResValue (SubscribeStream m s))) where
   __encode (WithGQLKind resolver) selection@(fieldName, Selection {selectionArguments, selectionPosition}) =
     case decodeArguments selectionArguments of
       Left message -> failResolveT message
       Right args ->
         case resolver args of
-          (events, res) -> ExceptT $ StreamT $ pure $ StreamState [(events, liftEitherM . res)] $ Right Null
+          (events, res) ->
+            pure $ const $ ExceptT $ StreamT $ pure $ StreamState [(events, liftEitherM . res)] $ Right Null
         where liftEitherM :: Resolver m b -> ResolveT m Value
               liftEitherM value =
                 ExceptT $ do
