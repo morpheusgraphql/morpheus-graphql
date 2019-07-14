@@ -33,7 +33,7 @@ import           Data.Morpheus.Types.Internal.Data         (DataArguments, DataF
                                                             DataTypeLib (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Stream       (PublishStream, ResponseEvent (..), ResponseStream,
                                                             StreamState (..), StreamT (..), SubscribeStream,
-                                                            closeStream, mapS)
+                                                            closeStream, mapS, mapSPair)
 import           Data.Morpheus.Types.Internal.Validation   (SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value        (Value (..))
 import           Data.Morpheus.Types.IO                    (GQLRequest (..), GQLResponse (..))
@@ -54,7 +54,7 @@ type RootResCon m event query mutation subscription
      -- Resolving
      , EncodeCon m query
      , EncodeCon (PublishStream m event) mutation
-     , EncodeSubCon (SubscribeStream m event) subscription)
+     , EncodeSubCon m event subscription)
 
 byteStringIO :: Monad m => (GQLRequest -> m GQLResponse) -> ByteString -> m ByteString
 byteStringIO resolver request =
@@ -66,9 +66,10 @@ statelessResolver :: RootResCon m s a b c => GQLRootResolver m s a b c -> GQLReq
 statelessResolver root request = snd <$> closeStream (streamResolver root request)
 
 streamResolver ::
-     Monad m
-  => RootResCon m s a b c =>
-       GQLRootResolver m s a b c -> GQLRequest -> ResponseStream m s GQLResponse
+     RootResCon m s a b subscription'
+  => GQLRootResolver m s a b subscription'
+  -> GQLRequest
+  -> ResponseStream m s GQLResponse
 streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
   runExceptT (ExceptT (pure validRequest) >>= ExceptT . execOperator) >>= renderResponse
   where
@@ -85,9 +86,9 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
     execOperator (_, Mutation Operator' {operatorSelection}) =
       mapS Publish (encodeStreamRes mutationResolver operatorSelection)
     execOperator (_, Subscription Operator' {operatorSelection}) =
-      mapS renderSubscription (encodeSubStreamRes subscriptionResolver operatorSelection) >> pure (pure Null)
+      mapSPair renderSubscription (encodeSubStreamRes subscriptionResolver operatorSelection) >> pure (pure Null)
       where
-        renderSubscription (c, resolver) = Subscribe (c, runExceptT . resolver >=> renderResponse)
+        renderSubscription (c, _) = Subscribe (c, const (pure (Data Null)))
 
 encodeQuery :: (Monad m, EncodeCon m a) => DataTypeLib -> Encode m a
 encodeQuery types rootResolver sel =

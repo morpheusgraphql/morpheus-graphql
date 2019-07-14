@@ -46,7 +46,8 @@ import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                (GQLType (__typeName))
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base          (Position)
-import           Data.Morpheus.Types.Internal.Stream        (StreamState (..), StreamT (..), SubscribeStream)
+import           Data.Morpheus.Types.Internal.Stream        (EventContent, StreamState (..), StreamT (..),
+                                                             SubscribeStream)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, ResolveT, failResolveT)
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver               (Resolver, SubRes)
@@ -55,13 +56,19 @@ type EncodeCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (Resol
 
 type Encode m a = ResolveT m a -> SelectionSet -> m (Either GQLErrors Value)
 
-type EncodeSubCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m (Value -> ResolveT m Value)))
+type EncodeSubCon m event a
+   = ( Generic a
+     , Typeable a
+     , ObjectFieldResolvers (Rep a) (ResolveT (SubscribeStream m event) (EventContent event -> ResolveT (SubscribeStream m event) Value)))
 
 encodeStreamRes :: (Monad m, EncodeCon m a) => Encode m a
 encodeStreamRes rootResolver sel = runExceptT $ rootResolver >>= resolveBySelection sel . resolversBy
 
 encodeSubStreamRes ::
-     (Monad m, EncodeSubCon m a) => ResolveT m a -> SelectionSet -> m (Either GQLErrors (Value -> ResolveT m Value))
+     (Monad m, EncodeSubCon m event a)
+  => ResolveT (SubscribeStream m event) a
+  -> SelectionSet
+  -> (SubscribeStream m event) (Either GQLErrors (EventContent event -> ResolveT (SubscribeStream m event) Value))
 encodeSubStreamRes rootResolver sel = runExceptT $ rootResolver >>= resolveSubscriptionSelection sel . resolversBy
 
 -- EXPORT -------------------------------------------------------
@@ -232,8 +239,8 @@ instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
       Left message -> failResolveT message
       Right args ->
         case resolver args of
-          (events, res) ->
-            pure $ const $ ExceptT $ StreamT $ pure $ StreamState [(events, liftEitherM . res)] $ Right Null
+          (events, _) -> pure $ const $ ExceptT $ StreamT $ pure $ StreamState [events] $ Right Null
+       --     pure $ const $ ExceptT $ StreamT $ pure $ StreamState [(events, liftEitherM . res)] $ Right Null
         where liftEitherM :: Resolver m b -> ResolveT m Value
               liftEitherM value =
                 ExceptT $ do
