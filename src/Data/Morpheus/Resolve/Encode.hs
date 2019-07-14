@@ -51,15 +51,15 @@ import           Data.Morpheus.Types.Internal.Stream        (EventContent, Strea
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, ResolveT, failResolveT)
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver               (Resolver, SubRes)
+import           Debug.Trace
 
 type EncodeCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m Value))
 
 type Encode m a = ResolveT m a -> SelectionSet -> m (Either GQLErrors Value)
 
-type EncodeSubCon m event a
-   = ( Generic a
-     , Typeable a
-     , ObjectFieldResolvers (Rep a) (ResolveT (SubscribeStream m event) (EventContent event -> ResolveT (SubscribeStream m event) Value)))
+type SubT m event = ResolveT (SubscribeStream m event) (EventContent event -> ResolveT m Value)
+
+type EncodeSubCon m event a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (SubT m event))
 
 encodeStreamRes :: (Monad m, EncodeCon m a) => Encode m a
 encodeStreamRes rootResolver sel = runExceptT $ rootResolver >>= resolveBySelection sel . resolversBy
@@ -68,7 +68,7 @@ encodeSubStreamRes ::
      (Monad m, EncodeSubCon m event a)
   => ResolveT (SubscribeStream m event) a
   -> SelectionSet
-  -> (SubscribeStream m event) (Either GQLErrors (EventContent event -> ResolveT (SubscribeStream m event) Value))
+  -> (SubscribeStream m event) (Either GQLErrors (EventContent event -> ResolveT m Value))
 encodeSubStreamRes rootResolver sel = runExceptT $ rootResolver >>= resolveSubscriptionSelection sel . resolversBy
 
 -- EXPORT -------------------------------------------------------
@@ -77,7 +77,7 @@ type ResolveSel result = [(Text, Selection)] -> [(Text, (Text, Selection) -> res
 resolveBySelection :: Monad m => ResolveSel (ResolveT m Value)
 resolveBySelection selection resolvers = Object <$> mapM (selectResolver Null resolvers) selection
 
-resolveSubscriptionSelection :: Monad m => ResolveSel (ResolveT m (a -> ResolveT m Value))
+resolveSubscriptionSelection :: Monad m => ResolveSel (SubT m s)
 resolveSubscriptionSelection selection resolvers =
   toObj <$> mapM (selectResolver (const $ pure Null) resolvers) selection
   where
@@ -231,14 +231,15 @@ instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
          Encoder (a -> Resolver m b) WRAPPER (ResValue (StreamT m c)) where
   __encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (__encode resolver selection)
 
-instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
-         Encoder (a -> SubRes m s b) WRAPPER (ResolveT (SubscribeStream m s) (EventContent s -> ResValue (SubscribeStream m s))) where
+instance (ArgumentsConstraint a, Show s, Monad m, Encoder b (KIND b) (ResValue m)) =>
+         Encoder (a -> SubRes m s b) WRAPPER (ResolveT (SubscribeStream m s) (EventContent s -> ResValue m)) where
   __encode (WithGQLKind resolver) selection@(fieldName, Selection {selectionArguments, selectionPosition}) =
     case decodeArguments selectionArguments of
       Left message -> failResolveT message
       Right args ->
         case resolver args of
-          (events, _) -> pure $ const $ ExceptT $ StreamT $ pure $ StreamState [events] $ Right Null
+          (events, _) -> pure (const $ pure Null)
+          --ExceptT $ pure $ StreamT $ pure $ StreamState []  (const $ pure Null)
        --     pure $ const $ ExceptT $ StreamT $ pure $ StreamState [(events, liftEitherM . res)] $ Right Null
         where liftEitherM :: Resolver m b -> ResolveT m Value
               liftEitherM value =
