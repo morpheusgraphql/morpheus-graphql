@@ -236,17 +236,19 @@ instance (ArgumentsConstraint a, Show s, Monad m, Encoder b (KIND b) (ResValue m
     case decodeArguments selectionArguments of
       Left message -> failResolveT message
       Right args ->
-        case resolver args of
-          (events, _) ->
-            ExceptT $ StreamT $ pure $ StreamState [events] (pure (const $ pure $ Scalar $ String "Test Subscription"))
-       --     pure $ const $ ExceptT $ StreamT $ pure $ StreamState [(events, liftEitherM . res)] $ Right Null
-        where liftEitherM :: Resolver m b -> ResolveT m Value
-              liftEitherM value =
+        ExceptT $
+        StreamT $ do
+          let (events, res) = resolver args
+          let value = liftEitherM res
+          pure $ StreamState [events] (Right value)
+        where liftEitherM :: (EventContent s -> Resolver m b) -> EventContent s -> ResValue m
+              liftEitherM subResolver event =
                 ExceptT $ do
-                  x <- runExceptT value
-                  case x of
+                  result <- runExceptT (subResolver event)
+                  case result of
                     Left message -> pure $ Left $ fieldNotResolved selectionPosition fieldName (pack message)
                     Right v      -> runExceptT $ encode v selection
+
 
 --
 -- MAYBE
