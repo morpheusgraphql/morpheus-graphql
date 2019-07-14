@@ -51,7 +51,6 @@ import           Data.Morpheus.Types.Internal.Stream        (EventContent, Strea
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, ResolveT, failResolveT)
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver               (Resolver, SubRes)
-import           Debug.Trace
 
 type EncodeCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m Value))
 
@@ -238,8 +237,8 @@ instance (ArgumentsConstraint a, Show s, Monad m, Encoder b (KIND b) (ResValue m
       Left message -> failResolveT message
       Right args ->
         case resolver args of
-          (events, _) -> pure (const $ pure Null)
-          --ExceptT $ pure $ StreamT $ pure $ StreamState []  (const $ pure Null)
+          (events, _) ->
+            ExceptT $ StreamT $ pure $ StreamState [events] (pure (const $ pure $ Scalar $ String "Test Subscription"))
        --     pure $ const $ ExceptT $ StreamT $ pure $ StreamState [(events, liftEitherM . res)] $ Right Null
         where liftEitherM :: Resolver m b -> ResolveT m Value
               liftEitherM value =

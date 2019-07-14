@@ -13,7 +13,6 @@ module Data.Morpheus.Resolve.Resolve
   , RootResCon
   ) where
 
-import           Control.Monad                             ((>=>))
 import           Control.Monad.Trans.Except                (ExceptT (..), runExceptT)
 import           Data.Aeson                                (eitherDecode, encode)
 import           Data.ByteString.Lazy.Char8                (ByteString)
@@ -32,8 +31,7 @@ import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Opera
 import           Data.Morpheus.Types.Internal.Data         (DataArguments, DataFingerprint (..), DataType (..),
                                                             DataTypeLib (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Stream       (PublishStream, ResponseEvent (..), ResponseStream,
-                                                            StreamState (..), StreamT (..), SubscribeStream,
-                                                            closeStream, mapS, mapSPair)
+                                                            StreamState (..), StreamT (..), closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation   (SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value        (Value (..))
 import           Data.Morpheus.Types.IO                    (GQLRequest (..), GQLResponse (..))
@@ -73,10 +71,10 @@ streamResolver ::
   -> GQLRequest
   -> ResponseStream m s GQLResponse
 streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
-  runExceptT (ExceptT (pure validRequest) >>= ExceptT . execOperator) >>= renderResponse
+  renderResponse <$> runExceptT (ExceptT (pure validRequest) >>= ExceptT . execOperator)
   where
-    renderResponse (Left errors) = pure $ Errors $ renderErrors errors
-    renderResponse (Right value) = pure $ Data value
+    renderResponse (Left errors) = Errors $ renderErrors errors
+    renderResponse (Right value) = Data value
     ---------------------------------------------------------
     validRequest = do
       schema <- fullSchema root
@@ -89,11 +87,14 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
       mapS Publish (encodeStreamRes mutationResolver operatorSelection)
     execOperator (_, Subscription Operator' {operatorSelection}) =
       StreamT $ do
-        (channels, value) <- closeStream (encodeSubStreamRes subscriptionResolver operatorSelection)
-        pure $ traceShow channels (StreamState [renderSubscription (channels, value)] (Right Null))
-      where
-        renderSubscription (c, _) = Subscribe (concat c, const (pure (Data Null)))
+        (channels, result) <- closeStream (encodeSubStreamRes subscriptionResolver operatorSelection)
+        case result of
+          Left gqlError -> pure $ StreamState [] (Left gqlError)
+          Right subResolver ->
+            pure $ traceShow channels (StreamState [Subscribe (concat channels, handleRes)] (Right Null))
+            where handleRes event = renderResponse <$> runExceptT (subResolver event)
 
+--resolve:: Either GQLErrors (EventContent s -> ResolveT m Value) ->
 encodeQuery :: (Monad m, EncodeCon m a) => DataTypeLib -> Encode m a
 encodeQuery types rootResolver sel =
   runExceptT (fmap resolversBy rootResolver >>= resolveBySelection sel . (++) (resolversBy $ schemaAPI types))
