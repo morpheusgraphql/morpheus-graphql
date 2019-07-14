@@ -231,9 +231,8 @@ instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
          Encoder (a -> Resolver m b) WRAPPER (ResValue (StreamT m c)) where
   __encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (__encode resolver selection)
 
---resolveSubscription :: WithGQLKind a kind -> (Text, Selection) -> [ResolveT m (Value -> Value)]
 instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
-         Encoder (a -> SubRes m s b) WRAPPER (ResolveT (SubscribeStream m s) (Value -> ResValue (SubscribeStream m s))) where
+         Encoder (a -> SubRes m s b) WRAPPER (ResolveT (SubscribeStream m s) (EventContent s -> ResValue (SubscribeStream m s))) where
   __encode (WithGQLKind resolver) selection@(fieldName, Selection {selectionArguments, selectionPosition}) =
     case decodeArguments selectionArguments of
       Left message -> failResolveT message
