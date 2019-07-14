@@ -39,6 +39,7 @@ import           Data.Morpheus.Types.Internal.Value        (Value (..))
 import           Data.Morpheus.Types.IO                    (GQLRequest (..), GQLResponse (..))
 import           Data.Morpheus.Types.Resolver              (GQLRootResolver (..))
 import           Data.Morpheus.Validation.Validation       (validateRequest)
+import           Debug.Trace
 
 type EventCon event = Eq event
 
@@ -46,6 +47,7 @@ type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments)
 
 type RootResCon m event query mutation subscription
    = ( Monad m
+     , Show event
      , EventCon event
       -- Introspection
      , IntroCon query
@@ -86,9 +88,11 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
     execOperator (_, Mutation Operator' {operatorSelection}) =
       mapS Publish (encodeStreamRes mutationResolver operatorSelection)
     execOperator (_, Subscription Operator' {operatorSelection}) =
-      mapSPair renderSubscription (encodeSubStreamRes subscriptionResolver operatorSelection) >> pure (pure Null)
+      StreamT $ do
+        (channels, value) <- closeStream (encodeSubStreamRes subscriptionResolver operatorSelection)
+        pure $ traceShow channels (StreamState [renderSubscription (channels, value)] (Right Null))
       where
-        renderSubscription (c, _) = Subscribe (c, const (pure (Data Null)))
+        renderSubscription (c, _) = Subscribe (concat c, const (pure (Data Null)))
 
 encodeQuery :: (Monad m, EncodeCon m a) => DataTypeLib -> Encode m a
 encodeQuery types rootResolver sel =
