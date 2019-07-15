@@ -7,6 +7,9 @@
 ### Fixed:
 - Parser supports enums inside input Object
 
+### Changed
+- WebSocket subProtocol changed from `graphql-subscriptions` to `graphql-ws`
+
 ## [0.1.1] - 1.07.2019
 ### Fixed:
  - () as Subscription or Mutation does not defines Operator without fields
