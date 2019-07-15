@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveFunctor  #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE TupleSections  #-}
 {-# LANGUAGE TypeFamilies   #-}
 
 module Data.Morpheus.Types.Internal.Stream
@@ -17,7 +16,6 @@ module Data.Morpheus.Types.Internal.Stream
   , ResponseStream
   , closeStream
   , mapS
-  , mapSPair
   ) where
 
 import           Data.Morpheus.Types.IO (GQLResponse)
@@ -82,10 +80,3 @@ mapS func (StreamT ma) =
   StreamT $ do
     state <- ma
     return $ state {streamEvents = map func (streamEvents state)}
-
-mapSPair :: Monad m => ((a, value) -> b) -> StreamT m a value -> StreamT m b value
-mapSPair func (StreamT ma) =
-  StreamT $ do
-    state <- ma
-    let eventPairs = map (, streamValue state) (streamEvents state)
-    return $ state {streamEvents = map func eventPairs}
