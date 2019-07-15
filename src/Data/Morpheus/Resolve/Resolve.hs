@@ -92,7 +92,6 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
             Right subResolver -> StreamState [Subscribe (concat channels, handleRes)] (Right Null)
               where handleRes event = renderResponse <$> runExceptT (subResolver event)
 
---resolve:: Either GQLErrors (EventContent s -> ResolveT m Value) ->
 encodeQuery :: (Monad m, EncodeCon m a) => DataTypeLib -> Encode m a
 encodeQuery types rootResolver sel =
   runExceptT (fmap resolversBy rootResolver >>= resolveBySelection sel . (++) (resolversBy $ schemaAPI types))
