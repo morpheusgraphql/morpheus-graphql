@@ -230,20 +230,19 @@ instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
          Encoder (a -> Resolver m b) WRAPPER (ResValue (StreamT m c)) where
   __encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (__encode resolver selection)
 
-instance (ArgumentsConstraint a, Show s, Monad m, Encoder b (KIND b) (ResValue m)) =>
+instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
          Encoder (a -> SubRes m s b) WRAPPER (ResolveT (SubscribeStream m s) (EventContent s -> ResValue m)) where
   __encode (WithGQLKind resolver) selection@(fieldName, Selection {selectionArguments, selectionPosition}) =
     case decodeArguments selectionArguments of
       Left message -> failResolveT message
       Right args -> handleResolver (resolver args)
         where handleResolver (events, res) = ExceptT $ StreamT $ pure $ StreamState [events] (Right $ liftEitherM res)
+              ------------------------------------------------------------------------------------------------------
               liftEitherM :: (EventContent s -> Resolver m b) -> EventContent s -> ResValue m
-              liftEitherM subResolver event =
-                ExceptT $ do
-                  result <- runExceptT (subResolver event)
-                  case result of
-                    Left message -> pure $ Left $ fieldNotResolved selectionPosition fieldName (pack message)
-                    Right v      -> runExceptT $ encode v selection
+              liftEitherM subResolver event = ExceptT (runExceptT (subResolver event) >>= renderValue)
+              ------------------------------------------------------------------------------------------------------
+              renderValue (Left message) = pure $ Left $ fieldNotResolved selectionPosition fieldName (pack message)
+              renderValue (Right value)  = runExceptT $ encode value selection
 
 --
 -- MAYBE
