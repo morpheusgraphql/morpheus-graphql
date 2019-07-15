@@ -15,11 +15,14 @@ module Data.Morpheus.Server.ClientRegister
 import           Control.Concurrent                     (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
 import           Control.Monad                          (forM_)
 import           Data.List                              (intersect)
+import           Data.Text                              (Text)
+import           Data.UUID.V4                           (nextRandom)
+import           Network.WebSockets                     (Connection, sendTextData)
+
+-- MORPHEUS
 import           Data.Morpheus.Server.Apollo            (toApolloResponse)
 import           Data.Morpheus.Types.Internal.Stream    (PubPair, SubPair)
 import           Data.Morpheus.Types.Internal.WebSocket (ClientID, ClientSession (..), GQLClient (..))
-import           Data.UUID.V4                           (nextRandom)
-import           Network.WebSockets                     (Connection, sendTextData)
 
 type ClientRegister m s = [(ClientID, GQLClient m s)]
 
@@ -70,12 +73,12 @@ publishUpdates state (channels, value) = do
           subscriptionRes value >>= sendTextData clientConnection . toApolloResponse sessionId
         filterByChannels = filter (([] /=) . intersect channels . fst . sessionSubscription)
 
-removeClientSubscription :: ClientID -> Int -> GQLState m s -> IO ()
+removeClientSubscription :: ClientID -> Text -> GQLState m s -> IO ()
 removeClientSubscription id' sid' = updateClientByID id' stopSubscription
   where
     stopSubscription client' = client' {clientSessions = filter ((sid' /=) . sessionId) (clientSessions client')}
 
-addClientSubscription :: ClientID -> SubPair m s -> Int -> GQLState m s -> IO ()
+addClientSubscription :: ClientID -> SubPair m s -> Text -> GQLState m s -> IO ()
 addClientSubscription id' sessionSubscription sessionId = updateClientByID id' startSubscription
   where
     startSubscription client' =

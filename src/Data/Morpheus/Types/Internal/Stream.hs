@@ -18,9 +18,7 @@ module Data.Morpheus.Types.Internal.Stream
   , mapS
   ) where
 
-import           Data.Morpheus.Types.Internal.Validation (ResolveT)
-import           Data.Morpheus.Types.Internal.Value      (Value)
-import           Data.Morpheus.Types.IO                  (GQLResponse)
+import           Data.Morpheus.Types.IO (GQLResponse)
 
 data family EventContent conf :: *
 
@@ -57,8 +55,6 @@ type SubPair m s = Pair s (EventContent s -> m GQLResponse)
 type PubPair s = Pair s (EventContent s)
 
 -- EVENTS
-type SubEvent m s = ([s], EventContent s -> ResolveT m Value)
-
 type PubEvent s = ([s], EventContent s)
 
 data ResponseEvent m s
@@ -66,7 +62,7 @@ data ResponseEvent m s
   | Subscribe (SubPair m s)
 
 -- STREAMS
-type SubscribeStream m s = StreamT m (SubEvent m s)
+type SubscribeStream m s = StreamT m [s]
 
 type PublishStream m s = StreamT m (PubEvent s)
 
