@@ -11,8 +11,8 @@ module Feature.Holistic.API
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types        (GQLRootResolver (..), GQLScalar (..), GQLType (..), ID (..), ResM,
-                                             ScalarValue (..))
+import           Data.Morpheus.Types        (EventContent, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID (..),
+                                             ResM, ScalarValue (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -107,8 +107,14 @@ newtype Mutation = Mutation
   { createUser :: AddressArgs -> ResM User
   } deriving (Generic)
 
+data EVENT =
+  EVENT
+  deriving (Show, Eq)
+
+data instance  EventContent EVENT = Content
+
 newtype Subscription = Subscription
-  { newUser :: AddressArgs -> ResM User
+  { newUser :: AddressArgs -> ([EVENT], EventContent EVENT -> ResM User)
   } deriving (Generic)
 
 resolveAddress :: a -> ResM Address
@@ -120,12 +126,12 @@ resolveUser _ =
   User
     {name = "testName", email = "", address = resolveAddress, office = resolveAddress, friend = const $ return Nothing}
 
-rootResolver :: GQLRootResolver IO () Query Mutation Subscription
+rootResolver :: GQLRootResolver IO EVENT Query Mutation Subscription
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {user = resolveUser, testUnion = Nothing}
     , mutationResolver = return Mutation {createUser = resolveUser}
-    , subscriptionResolver = return Subscription {newUser = resolveUser}
+    , subscriptionResolver = return Subscription {newUser = const ([EVENT], resolveUser)}
     }
 
 api :: ByteString -> IO ByteString
