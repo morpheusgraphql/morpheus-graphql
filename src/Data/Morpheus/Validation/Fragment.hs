@@ -8,6 +8,7 @@ module Data.Morpheus.Validation.Fragment
   ) where
 
 import           Data.List                                     ((\\))
+import           Data.Semigroup                                ((<>))
 import           Data.Text                                     (Text)
 import qualified Data.Text                                     as T (concat)
 
