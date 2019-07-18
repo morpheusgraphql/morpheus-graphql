@@ -37,10 +37,10 @@ getOperator (Subscription operator') lib' =
     Nothing                 -> Left $ subscriptionIsNotDefined (operatorPosition operator')
 
 validateRequest :: DataTypeLib -> GQLQueryRoot -> Validation ValidOperator
-validateRequest lib GQLQueryRoot {fragments, inputVariables, queryBody} = do
-  (operatorType, operator) <- getOperator queryBody lib
-  variables <- resolveOperatorVariables lib fragments (fromList inputVariables) operator
-  validateFragments lib fragments (operatorSelection operator)
+validateRequest lib GQLQueryRoot {fragments, inputVariables, operator} = do
+  (operatorType, rawOperator) <- getOperator operator lib
+  variables <- resolveOperatorVariables lib fragments (fromList inputVariables) rawOperator
+  validateFragments lib fragments (operatorSelection rawOperator)
   selectors <-
-    validateSelectionSet lib fragments (operatorName operator) variables operatorType (operatorSelection operator)
-  pure $ updateQuery queryBody selectors
+    validateSelectionSet lib fragments (operatorName rawOperator) variables operatorType (operatorSelection rawOperator)
+  pure $ updateQuery operator selectors
