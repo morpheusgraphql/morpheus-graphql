@@ -10,7 +10,6 @@ module Data.Morpheus.Types.Internal.AST.RawSelection
   , RawSelectionSet
   ) where
 
-import           Data.Map                                   (Map)
 import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..))
 import           Data.Morpheus.Types.Internal.Base          (Collection, Key, Position)
 
@@ -31,7 +30,7 @@ data RawSelection' a = RawSelection'
   , rawSelectionRec       :: a
   } deriving (Show)
 
-type FragmentLib = Map Key Fragment
+type FragmentLib = [(Key, Fragment)]
 
 data RawArgument
   = VariableReference Reference

@@ -6,7 +6,7 @@ module Data.Morpheus.Parser.Parser
   ) where
 
 import qualified Data.List.NonEmpty                      as NonEmpty
-import           Data.Map                                (fromList, toList)
+import           Data.Map                                (toList)
 import           Data.Maybe                              (maybe)
 import           Data.Morpheus.Parser.Fragment           (fragment)
 import           Data.Morpheus.Parser.Internal           (Parser)
@@ -28,7 +28,7 @@ request =
   label "GQLQueryRoot" $ do
     space
     operator' <- parseAnonymousQuery <|> parseOperator
-    fragmentLib <- fromList <$> manyTill fragment eof
+    fragmentLib <- manyTill fragment eof
     pure GQLQueryRoot {queryBody = operator', fragments = fragmentLib, inputVariables = []}
 
 processErrorBundle :: ParseErrorBundle Text Void -> GQLErrors

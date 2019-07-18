@@ -8,7 +8,6 @@ module Data.Morpheus.Validation.Fragment
   ) where
 
 import           Data.List                                     ((\\))
-import qualified Data.Map                                      as M (lookup, toList)
 import           Data.Text                                     (Text)
 import qualified Data.Text                                     as T (concat)
 
@@ -31,11 +30,10 @@ validateFragments lib fragments operatorSel = validateNameCollision >> checkLoop
       case fragmentsKeys \\ usedFragments fragments operatorSel of
         []     -> return ()
         unused -> Left $ unusedFragment unused
-    checkLoop = mapM (validateFragment lib) requestFragments >>= detectLoopOnFragments
-    fragmentsKeys = map toEnhancedKey requestFragments
+    checkLoop = mapM (validateFragment lib) fragments >>= detectLoopOnFragments
+    fragmentsKeys = map toEnhancedKey fragments
       where
         toEnhancedKey (key, Fragment {fragmentPosition}) = EnhancedKey key fragmentPosition
-    requestFragments = M.toList fragments
 
 type Node = EnhancedKey
 
@@ -45,7 +43,7 @@ type Graph = [NodeEdges]
 
 getFragment :: Reference -> FragmentLib -> Validation Fragment
 getFragment Reference {referenceName, referencePosition} lib =
-  case M.lookup referenceName lib of
+  case lookup referenceName lib of
     Nothing       -> Left $ unknownFragment referenceName referencePosition
     Just fragment -> pure fragment
 
@@ -70,7 +68,7 @@ usedFragments fragments = concatMap findAllUses
     findAllUses (_, Spread Reference {referenceName, referencePosition}) =
       [EnhancedKey referenceName referencePosition] <> searchInFragment
       where
-        searchInFragment = maybe [] (concatMap findAllUses . fragmentSelection) (M.lookup referenceName fragments)
+        searchInFragment = maybe [] (concatMap findAllUses . fragmentSelection) (lookup referenceName fragments)
 
 scanForSpread :: (Text, RawSelection) -> [Node]
 scanForSpread (_, RawSelectionSet RawSelection' {rawSelectionRec = selection'}) = concatMap scanForSpread selection'
