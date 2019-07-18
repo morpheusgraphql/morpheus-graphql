@@ -4,10 +4,6 @@
       "message": "There can be only one fragment named \"F\".",
       "locations": [
         {
-          "line": 8,
-          "column": 10
-        },
-        {
           "line": 12,
           "column": 10
         }
