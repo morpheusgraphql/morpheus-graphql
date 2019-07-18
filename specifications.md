@@ -89,14 +89,16 @@
   - **cannotBeSpreadOnType**: ✅ + 🧪
   - **nameConflict**: ⛔️
 
-### Fragment Errors:
+### Fragment Errors: ✅ + 🧪 (>= 2.0)
 
-**Fragment**: whole spread will be done there (for performance reason), Selection and Argument will be Validated on Query, because there will be no unused fragment we will validate all subfields.
+**Fragment**: whole spread will be done there (for performance reason),
+Selection and Argument will be Validated on Query,
+because there will be no unused fragment we will validate all subfields.
 
-- **unusedFragment**: ⛔️
+- **unusedFragment**: ✅ + 🧪 (>= 2.0)
 - **unknownTargetType**: ✅ + 🧪
 - **cannotSpreadWithinItself**: ✅ + 🧪
-- **nameConflict**: duplicate fragment with same name ⛔️
+- **nameConflict**: duplicate fragment with same name ✅ + 🧪 (>= 2.0)
 
 ### Variable Errors:
 
