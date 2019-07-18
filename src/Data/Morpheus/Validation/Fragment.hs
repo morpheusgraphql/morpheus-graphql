@@ -23,8 +23,9 @@ import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Validation.Utils.Utils          (existsObjectType)
 
 validateFragments :: DataTypeLib -> FragmentLib -> [(Text, RawSelection)] -> Validation ()
-validateFragments lib  fragments operatorSel = checkLoop >> checkUnusedFragments
+validateFragments lib fragments operatorSel = checkLoop >> checkNameCollision >> checkUnusedFragments
   where
+    checkNameCollision = return ()
     checkUnusedFragments =
       case fragmentsKeys \\ usedFragments fragments operatorSel of
         []     -> return ()
