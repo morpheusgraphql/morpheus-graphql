@@ -14,18 +14,19 @@ import qualified Data.Text                                     as T (concat)
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Fragment                  (cannotBeSpreadOnType, cannotSpreadWithinItself,
-                                                                unknownFragment, unusedFragment)
+                                                                fragmentNameCollision, unknownFragment, unusedFragment)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawSelection (..),
                                                                 RawSelection' (..), Reference (..), Reference (..))
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Data             (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
-import           Data.Morpheus.Validation.Utils.Utils          (existsObjectType)
+import           Data.Morpheus.Validation.Utils.Utils          (checkNameCollision, existsObjectType)
+import           Debug.Trace
 
 validateFragments :: DataTypeLib -> FragmentLib -> [(Text, RawSelection)] -> Validation ()
-validateFragments lib fragments operatorSel = checkLoop >> checkNameCollision >> checkUnusedFragments
+validateFragments lib fragments operatorSel = validateNameCollision >> checkLoop >> checkUnusedFragments
   where
-    checkNameCollision = return ()
+    validateNameCollision = checkNameCollision (traceShowId fragmentsKeys) fragmentNameCollision
     checkUnusedFragments =
       case fragmentsKeys \\ usedFragments fragments operatorSel of
         []     -> return ()
@@ -49,14 +50,14 @@ getFragment Reference {referenceName, referencePosition} lib =
     Just fragment -> pure fragment
 
 castFragmentType :: Maybe Text -> Position -> [Text] -> Fragment -> Validation Fragment
-castFragmentType key' position' targets' fragment@Fragment {fragmentType = type'} =
-  if type' `elem` targets'
+castFragmentType key' position' targets' fragment@Fragment {fragmentType} =
+  if fragmentType `elem` targets'
     then pure fragment
-    else Left $ cannotBeSpreadOnType key' type' position' (T.concat targets')
+    else Left $ cannotBeSpreadOnType key' fragmentType position' (T.concat targets')
 
 resolveSpread :: FragmentLib -> [Text] -> Reference -> Validation Fragment
-resolveSpread fragments' allowedTargets' reference@Reference {referenceName = key', referencePosition = position'} =
-  getFragment reference fragments' >>= castFragmentType (Just key') position' allowedTargets'
+resolveSpread fragments allowedTargets reference@Reference {referenceName, referencePosition} =
+  getFragment reference fragments >>= castFragmentType (Just referenceName) referencePosition allowedTargets
 
 usedFragments :: FragmentLib -> [(Text, RawSelection)] -> [Node]
 usedFragments fragments = concatMap findAllUses

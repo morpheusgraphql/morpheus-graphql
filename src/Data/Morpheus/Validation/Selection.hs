@@ -26,9 +26,9 @@ import           Data.Morpheus.Validation.Utils.Utils          (checkNameCollisi
 import           Data.Text                                     (Text)
 
 checkDuplicatesOn :: DataOutputObject -> SelectionSet -> Validation SelectionSet
-checkDuplicatesOn DataType {typeName = name'} keys = checkNameCollision enhancedKeys (map fst keys) error' >> pure keys
+checkDuplicatesOn DataType {typeName = name'} keys = checkNameCollision enhancedKeys selError >> pure keys
   where
-    error' = duplicateQuerySelections name'
+    selError = duplicateQuerySelections name'
     enhancedKeys = map selToKey keys
     selToKey (key', Selection {selectionPosition = position'}) = EnhancedKey key' position'
 

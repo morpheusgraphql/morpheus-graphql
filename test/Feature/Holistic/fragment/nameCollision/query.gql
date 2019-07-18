@@ -6,9 +6,9 @@
 }
 
 fragment F on User {
-  email
+  name
 }
 
 fragment F on User {
-  email
+  name
 }

@@ -58,11 +58,11 @@ removeDuplicates = S.toList . S.fromList
 elementOfKeys :: [Text] -> EnhancedKey -> Bool
 elementOfKeys keys' EnhancedKey {uid = id'} = id' `elem` keys'
 
-checkNameCollision :: [EnhancedKey] -> [Text] -> ([EnhancedKey] -> error) -> Either error [EnhancedKey]
-checkNameCollision enhancedKeys' keys' errorGenerator' =
-  case differKeys enhancedKeys' (removeDuplicates keys') of
-    []          -> pure enhancedKeys'
-    duplicates' -> Left $ errorGenerator' duplicates'
+checkNameCollision :: [EnhancedKey] -> ([EnhancedKey] -> error) -> Either error [EnhancedKey]
+checkNameCollision enhancedKeys errorGenerator =
+  case enhancedKeys \\ removeDuplicates enhancedKeys of
+    []         -> pure enhancedKeys
+    duplicates -> Left $ errorGenerator duplicates
 
 checkForUnknownKeys :: [EnhancedKey] -> [Text] -> ([EnhancedKey] -> error) -> Either error [EnhancedKey]
 checkForUnknownKeys enhancedKeys' keys' errorGenerator' =

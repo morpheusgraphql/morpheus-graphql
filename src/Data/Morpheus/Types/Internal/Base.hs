@@ -24,5 +24,8 @@ data EnhancedKey = EnhancedKey
 instance Eq EnhancedKey where
   (EnhancedKey id1 _) == (EnhancedKey id2 _) = id1 == id2
 
+instance Ord EnhancedKey where
+  compare (EnhancedKey x _) (EnhancedKey y _) = compare x y
+
 enhanceKeyWithNull :: Key -> EnhancedKey
 enhanceKeyWithNull text = EnhancedKey {uid = text, location = initialPos ""}

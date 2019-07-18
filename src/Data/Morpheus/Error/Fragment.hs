@@ -6,6 +6,7 @@ module Data.Morpheus.Error.Fragment
   , unusedFragment
   , unknownFragment
   , cannotBeSpreadOnType
+  , fragmentNameCollision
   ) where
 
 import           Data.Semigroup                          ((<>))
@@ -28,6 +29,12 @@ import           Data.Morpheus.Types.Internal.Validation (GQLError (..), GQLErro
     fragment H on D {...}  ->  "Unknown type \"D\"."
     {...H} -> "Unknown fragment \"H\"."
 -}
+fragmentNameCollision :: [EnhancedKey] -> GQLErrors
+fragmentNameCollision = map toError
+  where
+    toError EnhancedKey {uid, location} =
+      GQLError {desc = "There can be only one fragment named \"" <> uid <> "\".", positions = [location]}
+
 unusedFragment :: [EnhancedKey] -> GQLErrors
 unusedFragment = map toError
   where
