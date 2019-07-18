@@ -19,7 +19,7 @@ import           Data.Morpheus.Types.Internal.Data             (DataField (..), 
                                                                 DataTypeKind (..), DataTypeLib (..))
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Validation.Arguments            (validateArguments)
-import           Data.Morpheus.Validation.Spread               (castFragmentType, resolveSpread)
+import           Data.Morpheus.Validation.Fragment             (castFragmentType, resolveSpread)
 import           Data.Morpheus.Validation.Utils.Selection      (lookupFieldAsSelectionSet, lookupSelectionField,
                                                                 lookupUnionTypes, notObject)
 import           Data.Morpheus.Validation.Utils.Utils          (checkNameCollision)
