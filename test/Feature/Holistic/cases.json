@@ -56,6 +56,10 @@
     "description": "fail when: fragment type is incompatible with object type"
   },
   {
+    "path": "fragment/unusedFragment",
+    "description": "fail when: defined fragment is not used query"
+  },
+  {
     "path": "parsing/invalidNotNullOperator",
     "description": "fail when: user supplies '@' instead of '!'"
   },

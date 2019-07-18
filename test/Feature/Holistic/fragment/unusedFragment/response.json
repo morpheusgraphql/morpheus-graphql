@@ -1,0 +1,22 @@
+{
+  "errors": [
+    {
+      "message": "Fragment \"C\" is never used.",
+      "locations": [
+        {
+          "line": 16,
+          "column": 3
+        }
+      ]
+    },
+    {
+      "message": "Fragment \"D\" is never used.",
+      "locations": [
+        {
+          "line": 20,
+          "column": 3
+        }
+      ]
+    }
+  ]
+}
