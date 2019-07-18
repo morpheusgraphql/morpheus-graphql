@@ -20,12 +20,11 @@ import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..)
 import           Data.Morpheus.Types.Internal.Data             (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Validation.Utils.Utils          (checkNameCollision, existsObjectType)
-import           Debug.Trace
 
 validateFragments :: DataTypeLib -> FragmentLib -> [(Text, RawSelection)] -> Validation ()
 validateFragments lib fragments operatorSel = validateNameCollision >> checkLoop >> checkUnusedFragments
   where
-    validateNameCollision = checkNameCollision (traceShowId fragmentsKeys) fragmentNameCollision
+    validateNameCollision = checkNameCollision fragmentsKeys fragmentNameCollision
     checkUnusedFragments =
       case fragmentsKeys \\ usedFragments fragments operatorSel of
         []     -> return ()
