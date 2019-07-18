@@ -1,17 +1,39 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Data.Morpheus.Validation.Fragment
   ( validateFragments
+  , castFragmentType
+  , resolveSpread
+  , getFragment
   ) where
 
-import qualified Data.Map                                      as M (toList)
-import           Data.Morpheus.Error.Fragment                  (cannotSpreadWithinItself)
-import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawSelection (..), RawSelection' (..),
-                                                                Reference (..))
-import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..))
+import           Data.List                                     ((\\))
+import           Data.Semigroup                                ((<>))
+import           Data.Text                                     (Text)
+import qualified Data.Text                                     as T (concat)
+
+-- MORPHEUS
+import           Data.Morpheus.Error.Fragment                  (cannotBeSpreadOnType, cannotSpreadWithinItself,
+                                                                fragmentNameCollision, unknownFragment, unusedFragment)
+import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawSelection (..),
+                                                                RawSelection' (..), Reference (..), Reference (..))
+import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Data             (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
-import           Data.Morpheus.Types.Types                     (GQLQueryRoot (..))
-import           Data.Morpheus.Validation.Utils.Utils          (existsObjectType)
-import           Data.Text                                     (Text)
+import           Data.Morpheus.Validation.Utils.Utils          (checkNameCollision, existsObjectType)
+
+validateFragments :: DataTypeLib -> FragmentLib -> [(Text, RawSelection)] -> Validation ()
+validateFragments lib fragments operatorSel = validateNameCollision >> checkLoop >> checkUnusedFragments
+  where
+    validateNameCollision = checkNameCollision fragmentsKeys fragmentNameCollision
+    checkUnusedFragments =
+      case fragmentsKeys \\ usedFragments fragments operatorSel of
+        []     -> return ()
+        unused -> Left $ unusedFragment unused
+    checkLoop = mapM (validateFragment lib) fragments >>= detectLoopOnFragments
+    fragmentsKeys = map toEnhancedKey fragments
+      where
+        toEnhancedKey (key, Fragment {fragmentPosition}) = EnhancedKey key fragmentPosition
 
 type Node = EnhancedKey
 
@@ -19,27 +41,47 @@ type NodeEdges = (Node, [Node])
 
 type Graph = [NodeEdges]
 
-scanForSpread :: DataTypeLib -> GQLQueryRoot -> (Text, RawSelection) -> [Node]
-scanForSpread lib' root' (_, RawSelectionSet RawSelection' {rawSelectionRec = selection'}) =
-  concatMap (scanForSpread lib' root') selection'
-scanForSpread lib' root' (_, RawAlias {rawAliasSelection = selection'}) =
-  concatMap (scanForSpread lib' root') [selection']
-scanForSpread lib' root' (_, InlineFragment Fragment {fragmentSelection = selection'}) =
-  concatMap (scanForSpread lib' root') selection'
-scanForSpread _ _ (_, RawSelectionField {}) = []
-scanForSpread _ _ (_, Spread Reference {referenceName = name', referencePosition = position'}) =
+getFragment :: Reference -> FragmentLib -> Validation Fragment
+getFragment Reference {referenceName, referencePosition} lib =
+  case lookup referenceName lib of
+    Nothing       -> Left $ unknownFragment referenceName referencePosition
+    Just fragment -> pure fragment
+
+castFragmentType :: Maybe Text -> Position -> [Text] -> Fragment -> Validation Fragment
+castFragmentType key' position' targets' fragment@Fragment {fragmentType} =
+  if fragmentType `elem` targets'
+    then pure fragment
+    else Left $ cannotBeSpreadOnType key' fragmentType position' (T.concat targets')
+
+resolveSpread :: FragmentLib -> [Text] -> Reference -> Validation Fragment
+resolveSpread fragments allowedTargets reference@Reference {referenceName, referencePosition} =
+  getFragment reference fragments >>= castFragmentType (Just referenceName) referencePosition allowedTargets
+
+usedFragments :: FragmentLib -> [(Text, RawSelection)] -> [Node]
+usedFragments fragments = concatMap findAllUses
+  where
+    findAllUses :: (Text, RawSelection) -> [Node]
+    findAllUses (_, RawSelectionSet RawSelection' {rawSelectionRec}) = concatMap findAllUses rawSelectionRec
+    findAllUses (_, RawAlias {rawAliasSelection}) = concatMap findAllUses [rawAliasSelection]
+    findAllUses (_, InlineFragment Fragment {fragmentSelection}) = concatMap findAllUses fragmentSelection
+    findAllUses (_, RawSelectionField {}) = []
+    findAllUses (_, Spread Reference {referenceName, referencePosition}) =
+      [EnhancedKey referenceName referencePosition] <> searchInFragment
+      where
+        searchInFragment = maybe [] (concatMap findAllUses . fragmentSelection) (lookup referenceName fragments)
+
+scanForSpread :: (Text, RawSelection) -> [Node]
+scanForSpread (_, RawSelectionSet RawSelection' {rawSelectionRec = selection'}) = concatMap scanForSpread selection'
+scanForSpread (_, RawAlias {rawAliasSelection = selection'}) = concatMap scanForSpread [selection']
+scanForSpread (_, InlineFragment Fragment {fragmentSelection = selection'}) = concatMap scanForSpread selection'
+scanForSpread (_, RawSelectionField {}) = []
+scanForSpread (_, Spread Reference {referenceName = name', referencePosition = position'}) =
   [EnhancedKey name' position']
 
-validateFragment :: DataTypeLib -> GQLQueryRoot -> (Text, Fragment) -> Validation NodeEdges
-validateFragment lib' root (fName, Fragment { fragmentSelection = selection'
-                                            , fragmentType = target'
-                                            , fragmentPosition = position'
-                                            }) =
-  existsObjectType position' target' lib' >>
-  pure (EnhancedKey fName position', concatMap (scanForSpread lib' root) selection')
-
-validateFragments :: DataTypeLib -> GQLQueryRoot -> Validation ()
-validateFragments lib root = mapM (validateFragment lib root) (M.toList $ fragments root) >>= detectLoopOnFragments
+validateFragment :: DataTypeLib -> (Text, Fragment) -> Validation NodeEdges
+validateFragment lib (fName, Fragment {fragmentSelection, fragmentType, fragmentPosition}) =
+  existsObjectType fragmentPosition fragmentType lib >>
+  pure (EnhancedKey fName fragmentPosition, concatMap scanForSpread fragmentSelection)
 
 detectLoopOnFragments :: Graph -> Validation ()
 detectLoopOnFragments lib = mapM_ checkFragment lib

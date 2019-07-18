@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "There can be only one fragment named \"F\".",
+      "locations": [
+        {
+          "line": 12,
+          "column": 10
+        }
+      ]
+    }
+  ]
+}

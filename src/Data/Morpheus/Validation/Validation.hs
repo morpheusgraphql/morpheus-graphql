@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 
@@ -36,16 +37,10 @@ getOperator (Subscription operator') lib' =
     Nothing                 -> Left $ subscriptionIsNotDefined (operatorPosition operator')
 
 validateRequest :: DataTypeLib -> GQLQueryRoot -> Validation ValidOperator
-validateRequest lib' root' = do
-  (operatorType', operator') <- getOperator (queryBody root') lib'
-  variables' <- resolveOperatorVariables lib' (fragments root') (fromList $ inputVariables root') operator'
-  validateFragments lib' root'
+validateRequest lib GQLQueryRoot {fragments, inputVariables, operator} = do
+  (operatorType, rawOperator) <- getOperator operator lib
+  variables <- resolveOperatorVariables lib fragments (fromList inputVariables) rawOperator
+  validateFragments lib fragments (operatorSelection rawOperator)
   selectors <-
-    validateSelectionSet
-      lib'
-      (fragments root')
-      (operatorName operator')
-      variables'
-      operatorType'
-      (operatorSelection operator')
-  pure $ updateQuery (queryBody root') selectors
+    validateSelectionSet lib fragments (operatorName rawOperator) variables operatorType (operatorSelection rawOperator)
+  pure $ updateQuery operator selectors

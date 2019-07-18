@@ -13,6 +13,6 @@ type Variables = Map Key Value
 
 data GQLQueryRoot = GQLQueryRoot
   { fragments      :: FragmentLib
-  , queryBody      :: RawOperator
+  , operator      :: RawOperator
   , inputVariables :: [(Key, Value)]
   }

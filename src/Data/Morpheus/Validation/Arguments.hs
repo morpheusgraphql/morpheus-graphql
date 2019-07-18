@@ -74,11 +74,11 @@ validateArgument types position' requestArgs (key', arg) =
 
 checkForUnknownArguments :: (Text, DataOutputField) -> Arguments -> Validation [(Text, DataInputField)]
 checkForUnknownArguments (fieldKey', DataField {fieldArgs = astArgs'}) args' =
-  checkForUnknownKeys enhancedKeys' fieldKeys error' >> checkNameCollision enhancedKeys' fieldKeys argumentNameCollision >>
+  checkForUnknownKeys enhancedKeys fieldKeys error' >> checkNameCollision enhancedKeys argumentNameCollision >>
   pure astArgs'
   where
     error' = unknownArguments fieldKey'
-    enhancedKeys' = map argToKey args'
+    enhancedKeys = map argToKey args'
     argToKey (key', Argument _ pos) = EnhancedKey key' pos
     fieldKeys = map fst astArgs'
 

@@ -6,6 +6,7 @@
 
 ### Fixed:
 - Parser supports enums inside input Object
+- fulfilled fragment Validation (added: unusedFragment,nameConflict)
 
 ### Changed
 - WebSocket subProtocol changed from `graphql-subscriptions` to `graphql-ws`

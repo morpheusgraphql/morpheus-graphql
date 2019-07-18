@@ -14,11 +14,12 @@ import           Text.Megaparsec                               (getSourcePos, la
 import           Text.Megaparsec.Char                          (space, string)
 
 fragment :: Parser (Text, Fragment)
-fragment = label "fragment" $ do
-  index <- getSourcePos
-  _ <- string "fragment"
-  space
-  name' <- token
-  type' <- onType
-  fragmentBody <- entries
-  pure (name', Fragment {fragmentType = type', fragmentSelection = fragmentBody, fragmentPosition = index})
+fragment =
+  label "fragment" $ do
+    _ <- string "fragment"
+    space
+    index <- getSourcePos
+    name' <- token
+    type' <- onType
+    fragmentBody <- entries
+    pure (name', Fragment {fragmentType = type', fragmentSelection = fragmentBody, fragmentPosition = index})
