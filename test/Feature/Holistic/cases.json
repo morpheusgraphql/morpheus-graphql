@@ -60,6 +60,10 @@
     "description": "fail when: defined fragment is not used query"
   },
   {
+    "path": "fragment/nameCollision",
+    "description": "fail when: fragments are defined with same name"
+  },
+  {
     "path": "parsing/invalidNotNullOperator",
     "description": "fail when: user supplies '@' instead of '!'"
   },

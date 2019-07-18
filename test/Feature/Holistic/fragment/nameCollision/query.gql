@@ -1,0 +1,14 @@
+{
+  user {
+    email
+    ...F
+  }
+}
+
+fragment F on User {
+  email
+}
+
+fragment F on User {
+  email
+}
