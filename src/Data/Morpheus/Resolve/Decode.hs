@@ -89,10 +89,18 @@ class DecodeInputObject f where
 instance DecodeInputObject U1 where
   decodeObject _ = pure U1
 
-instance (Selector c, DecodeInputObject f) => DecodeInputObject (M1 S c f) where
+type Sel s = M1 S s
+
+proxySelName ::
+     forall s. Selector s
+  => Proxy (M1 S s)
+  -> Text
+proxySelName _ = pack $ selName (undefined :: M1 S s f a)
+
+instance (Selector s, DecodeInputObject f) => DecodeInputObject (M1 S s f) where
   decodeObject (Object object) = M1 <$> selectFromObject
     where
-      selectorName = pack $ selName (undefined :: M1 S c f a)
+      selectorName = proxySelName (Proxy @(Sel s))
       selectFromObject =
         case lookup selectorName object of
           Nothing    -> internalArgumentError ("Missing Field: " <> selectorName)
