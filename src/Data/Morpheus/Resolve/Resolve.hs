@@ -11,6 +11,7 @@ module Data.Morpheus.Resolve.Resolve
   , streamResolver
   , statefulResolver
   , RootResCon
+  , fullSchema
   ) where
 
 import           Control.Monad.Trans.Except                (ExceptT (..), runExceptT)
