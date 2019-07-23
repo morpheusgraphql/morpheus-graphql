@@ -24,5 +24,8 @@ toGraphQLDocument x =
 
 renderType :: (Text, DataFullType) -> Text
 renderType (name, Leaf (LeafScalar _)) = "scalar " <> name
-renderType (name, Leaf (LeafEnum _))   = "enum " <> name
-renderType (name, _)                   = "type " <> name <> " { \n  \n}"
+renderType (name, Leaf (LeafEnum _))   = "enum " <> name <> " = | "
+renderType (name, Union _)             = "union " <> name <> " = | "
+renderType (name, InputObject _)       = "inputObject " <> name <> " { \n  \n}"
+renderType (name, InputUnion _)        = "inputObject " <> name <> " { \n  \n}"
+renderType (name, OutputObject _)      = "type " <> name <> " { \n  \n}"
