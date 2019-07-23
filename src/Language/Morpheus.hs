@@ -9,7 +9,8 @@ module Language.Morpheus
 import           Data.ByteString.Lazy.Char8        (ByteString, pack)
 import           Data.Morpheus.Resolve.Resolve     (RootResCon, fullSchema)
 import           Data.Morpheus.Types               (GQLRootResolver)
-import           Data.Morpheus.Types.Internal.Data (DataFullType, DataOutputObject, DataTypeLib (..), allDataTypes)
+import           Data.Morpheus.Types.Internal.Data (DataFullType (..), DataLeaf (..), DataOutputObject,
+                                                    DataTypeLib (..), allDataTypes)
 import           Data.Semigroup                    ((<>))
 import           Data.Text                         (Text, intercalate)
 import qualified Data.Text.Lazy                    as LT (fromStrict)
@@ -22,4 +23,6 @@ toGraphQLDocument x =
     Right lib            -> encodeUtf8 $ LT.fromStrict $ intercalate "\n\n" $ map renderType $allDataTypes lib
 
 renderType :: (Text, DataFullType) -> Text
-renderType (x, _) = "type " <> x <> " { \n  \n}"
+renderType (name, Leaf (LeafScalar _)) = "scalar " <> name
+renderType (name, Leaf (LeafEnum _))   = "enum " <> name
+renderType (name, _)                   = "type " <> name <> " { \n  \n}"
