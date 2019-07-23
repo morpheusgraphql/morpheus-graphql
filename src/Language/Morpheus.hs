@@ -9,8 +9,8 @@ module Language.Morpheus
 import           Data.ByteString.Lazy.Char8        (ByteString, pack)
 import           Data.Morpheus.Resolve.Resolve     (RootResCon, fullSchema)
 import           Data.Morpheus.Types               (GQLRootResolver)
-import           Data.Morpheus.Types.Internal.Data (DataField (..), DataFullType (..), DataLeaf (..), DataType (..),
-                                                    allDataTypes)
+import           Data.Morpheus.Types.Internal.Data (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
+                                                    DataType (..), allDataTypes, showWrappedType)
 import           Data.Semigroup                    ((<>))
 import           Data.Text                         (Text, intercalate)
 import qualified Data.Text.Lazy                    as LT (fromStrict)
@@ -24,8 +24,29 @@ toGraphQLDocument x =
 
 renderType :: (Text, DataFullType) -> Text
 renderType (name, Leaf (LeafScalar _)) = "scalar " <> name
-renderType (name, Leaf (LeafEnum DataType {typeData})) = "enum " <> name <> " = " <> intercalate " | " typeData
-renderType (name, Union DataType {typeData}) = "union " <> name <> " = " <> intercalate " | " (map fieldType typeData)
-renderType (name, InputObject _) = "inputObject " <> name <> " { \n  \n}"
-renderType (name, InputUnion _) = "inputObject " <> name <> " { \n  \n}"
-renderType (name, OutputObject _) = "type " <> name <> " { \n  \n}"
+renderType (name, Leaf (LeafEnum DataType {typeData})) = "enum " <> name <> " = " <> intercalate "\n | " typeData
+renderType (name, Union DataType {typeData}) = "union " <> name <> " = " <> intercalate "\n | " (map fieldType typeData)
+renderType (name, InputObject DataType {typeData}) = "input " <> name <> renderObject renderInputField typeData
+renderType (name, InputUnion DataType {typeData}) = "input " <> name <> renderObject renderInputField (mapKeys typeData)
+renderType (name, OutputObject DataType {typeData}) = "type " <> name <> renderObject renderField typeData
+
+mapKeys :: [DataField a] -> [(Text, DataField a)]
+mapKeys = map (\x -> (fieldName x, x))
+
+renderObject :: ((Text, DataField a) -> Text) -> [(Text, DataField a)] -> Text
+renderObject f list = " { \n  " <> intercalate "\n  " (map f (ignoreHidden list)) <> "  \n}"
+
+renderInputField :: (Text, DataField ()) -> Text
+renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
+  key <> ": " <> showWrappedType fieldTypeWrappers fieldType
+
+ignoreHidden :: [(Text, DataField a)] -> [(Text, DataField a)]
+ignoreHidden = filter (not . fieldHidden . snd)
+
+renderArguments :: [(Text, DataArgument)] -> Text
+renderArguments []   = ""
+renderArguments list = "( " <> intercalate ", " (map renderInputField list) <> " )"
+
+renderField :: (Text, DataField [(Text, DataArgument)]) -> Text
+renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
+  key <> renderArguments fieldArgs <> ": " <> showWrappedType fieldTypeWrappers fieldType
