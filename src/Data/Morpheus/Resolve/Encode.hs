@@ -95,29 +95,29 @@ selectResolver defaultValue resolvers (key, selection) =
       (fromMaybe (const $ return $defaultValue) $ lookup resolverKey resolvers) (key, sel)
 
 resolversBy :: (Generic a, ObjectFieldResolvers (Rep a) result) => a -> [(Text, (Text, Selection) -> result)]
-resolversBy = objectFieldResolvers "" . from
+resolversBy = objectFieldResolvers . from
 
 ---------------------------------------------------------
 --
 --  OBJECT
 -- | Derives resolvers by object fields
 class ObjectFieldResolvers f o where
-  objectFieldResolvers :: Text -> f a -> [(Text, (Text, Selection) -> o)]
+  objectFieldResolvers :: f a -> [(Text, (Text, Selection) -> o)]
 
 instance ObjectFieldResolvers U1 res where
-  objectFieldResolvers _ _ = []
+  objectFieldResolvers _ = []
 
-instance (Selector s, ObjectFieldResolvers f res) => ObjectFieldResolvers (M1 S s f) res where
-  objectFieldResolvers _ m@(M1 src) = objectFieldResolvers (pack $ selName m) src
+instance (Selector s, Encoder a (KIND a) res) => ObjectFieldResolvers (M1 S s (K1 s2 a)) res where
+  objectFieldResolvers m@(M1 (K1 src)) = [(pack $ selName m, encode src)]
 
 instance ObjectFieldResolvers f res => ObjectFieldResolvers (M1 D c f) res where
-  objectFieldResolvers key' (M1 src) = objectFieldResolvers key' src
+  objectFieldResolvers (M1 src) = objectFieldResolvers src
 
 instance ObjectFieldResolvers f res => ObjectFieldResolvers (M1 C c f) res where
-  objectFieldResolvers key' (M1 src) = objectFieldResolvers key' src
+  objectFieldResolvers (M1 src) = objectFieldResolvers src
 
 instance (ObjectFieldResolvers f res, ObjectFieldResolvers g res) => ObjectFieldResolvers (f :*: g) res where
-  objectFieldResolvers meta (a :*: b) = objectFieldResolvers meta a ++ objectFieldResolvers meta b
+  objectFieldResolvers (a :*: b) = objectFieldResolvers a ++ objectFieldResolvers b
 
 --
 -- UNION
@@ -183,9 +183,6 @@ instance ObjectConstraint a m => Encoder a OBJECT (ResValue m) where
     where
       __typenameResolver = ("__typename", const $ return $ Scalar $ String $ __typeName (Proxy @a))
   __encode _ (key, Selection {selectionPosition}) = failResolveT $ subfieldsNotSelected key "" selectionPosition
-
-instance Encoder a (KIND a) result => ObjectFieldResolvers (K1 s a) result where
-  objectFieldResolvers key' (K1 src) = [(key', encode src)]
 
 -- | Resolves and encodes UNION,
 -- Handles all operators: Query, Mutation and Subscription,

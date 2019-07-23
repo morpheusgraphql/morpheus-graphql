@@ -78,46 +78,47 @@ instance (GQLType a, Decode a (KIND a)) => DecodeInputUnion (K1 i a) where
 --
 --  GENERIC INPUT OBJECT AND ARGUMENTS
 --
-type ArgumentsConstraint a = (Generic a, GDecode Arguments (Rep a))
+type ArgumentsConstraint a = (Generic a, DecodeInputObject (Rep a))
 
-decodeArguments :: (Generic p, GDecode Arguments (Rep p)) => Arguments -> Validation p
-decodeArguments args = to <$> gDecode "" args
+decodeArguments :: (Generic p, DecodeInputObject (Rep p)) => Arguments -> Validation p
+decodeArguments args = to <$> decodeObject (Object $ fmap (\(x, y) -> (x, argumentValue y)) args)
 
-fixProxy :: (a -> f a) -> f a
-fixProxy f = f undefined
+class DecodeInputObject f where
+  decodeObject :: Value -> Validation (f a)
 
-class GDecode i f where
-  gDecode :: Text -> i -> Validation (f a)
+instance DecodeInputObject U1 where
+  decodeObject _ = pure U1
 
-instance GDecode i U1 where
-  gDecode _ _ = pure U1
+type Sel s = M1 S s
 
-instance (Selector c, GDecode i f) => GDecode i (M1 S c f) where
-  gDecode _ gql = fixProxy (\x -> M1 <$> gDecode (pack $ selName x) gql)
+proxySelName ::
+     forall s. Selector s
+  => Proxy (M1 S s)
+  -> Text
+proxySelName _ = pack $ selName (undefined :: M1 S s f a)
 
-instance (Datatype c, GDecode i f) => GDecode i (M1 D c f) where
-  gDecode key gql = fixProxy $ const (M1 <$> gDecode key gql)
+instance (Selector s, DecodeInputObject f) => DecodeInputObject (M1 S s f) where
+  decodeObject (Object object) = M1 <$> selectFromObject
+    where
+      selectorName = proxySelName (Proxy @(Sel s))
+      selectFromObject =
+        case lookup selectorName object of
+          Nothing    -> internalArgumentError ("Missing Field: " <> selectorName)
+          Just value -> decodeObject value
+  decodeObject isType = internalTypeMismatch "InputObject" isType
 
-instance GDecode i f => GDecode i (M1 C c f) where
-  gDecode meta gql = M1 <$> gDecode meta gql
+instance DecodeInputObject f => DecodeInputObject (M1 D c f) where
+  decodeObject = fmap M1 . decodeObject
 
-instance (GDecode i f, GDecode i g) => GDecode i (f :*: g) where
-  gDecode meta gql = (:*:) <$> gDecode meta gql <*> gDecode meta gql
+instance DecodeInputObject f => DecodeInputObject (M1 C c f) where
+  decodeObject = fmap M1 . decodeObject
 
-instance (Decode a (KIND a)) => GDecode Value (K1 i a) where
-  gDecode key' (Object object) =
-    case lookup key' object of
-      Nothing    -> internalArgumentError "Missing Argument"
-      Just value -> K1 <$> decode value
-  gDecode _ isType = internalTypeMismatch "InputObject" isType
+instance (DecodeInputObject f, DecodeInputObject g) => DecodeInputObject (f :*: g) where
+  decodeObject gql = (:*:) <$> decodeObject gql <*> decodeObject gql
 
-instance Decode a (KIND a) => GDecode Arguments (K1 i a) where
-  gDecode key' args =
-    case lookup key' args of
-      Nothing                -> internalArgumentError "Required Argument Not Found"
-      Just (Argument x _pos) -> K1 <$> decode x
+instance (Decode a (KIND a)) => DecodeInputObject (K1 i a) where
+  decodeObject = fmap K1 . decode
 
--- | Decode GraphQL query arguments and input values
 decode ::
      forall a. Decode a (KIND a)
   => Value
@@ -147,8 +148,8 @@ instance (Generic a, EnumRep (Rep a)) => Decode a ENUM where
 --
 -- INPUT_OBJECT
 --
-instance (Generic a, GDecode Value (Rep a)) => Decode a INPUT_OBJECT where
-  __decode _ (Object x) = to <$> gDecode "" (Object x)
+instance (Generic a, DecodeInputObject (Rep a)) => Decode a INPUT_OBJECT where
+  __decode _ (Object x) = to <$> decodeObject (Object x)
   __decode _ isType     = internalTypeMismatch "InputObject" isType
 
 --
