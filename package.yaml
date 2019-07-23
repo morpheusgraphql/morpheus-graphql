@@ -37,6 +37,7 @@ library:
     - Data.Morpheus.Kind
     - Data.Morpheus.Types
     - Data.Morpheus.Server
+    - Language.Morpheus
   ghc-options: -Wall
 
 tests:

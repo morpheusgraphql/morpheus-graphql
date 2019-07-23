@@ -7,7 +7,8 @@ module Main
 import           Control.Monad.IO.Class         (liftIO)
 import           Data.Morpheus                  (Interpreter (..))
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
-import           Deprecated.API                 (gqlRoot, Actions )
+import           Deprecated.API                 (Actions, gqlRoot)
+import           Language.Morpheus              (toGraphQLDocument)
 import           Mythology.API                  (mythologyApi)
 import qualified Network.Wai                    as Wai
 import qualified Network.Wai.Handler.Warp       as Warp
@@ -34,5 +35,6 @@ main = do
       scottyApp $ do
         post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
         get "/" $ file "examples/index.html"
+        get "/schema" $ raw =<< liftIO (toGraphQLDocument gqlRoot)
         post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
         get "/mythology" $ file "examples/index.html"
