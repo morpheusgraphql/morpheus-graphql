@@ -9,8 +9,8 @@ module Language.Morpheus
 import           Data.ByteString.Lazy.Char8        (ByteString, pack)
 import           Data.Morpheus.Resolve.Resolve     (RootResCon, fullSchema)
 import           Data.Morpheus.Types               (GQLRootResolver)
-import           Data.Morpheus.Types.Internal.Data (DataFullType (..), DataLeaf (..), DataOutputObject,
-                                                    DataTypeLib (..), allDataTypes)
+import           Data.Morpheus.Types.Internal.Data (DataField (..), DataFullType (..), DataLeaf (..), DataType (..),
+                                                    allDataTypes)
 import           Data.Semigroup                    ((<>))
 import           Data.Text                         (Text, intercalate)
 import qualified Data.Text.Lazy                    as LT (fromStrict)
@@ -24,8 +24,8 @@ toGraphQLDocument x =
 
 renderType :: (Text, DataFullType) -> Text
 renderType (name, Leaf (LeafScalar _)) = "scalar " <> name
-renderType (name, Leaf (LeafEnum _))   = "enum " <> name <> " = | "
-renderType (name, Union _)             = "union " <> name <> " = | "
-renderType (name, InputObject _)       = "inputObject " <> name <> " { \n  \n}"
-renderType (name, InputUnion _)        = "inputObject " <> name <> " { \n  \n}"
-renderType (name, OutputObject _)      = "type " <> name <> " { \n  \n}"
+renderType (name, Leaf (LeafEnum DataType {typeData})) = "enum " <> name <> " = " <> intercalate " | " typeData
+renderType (name, Union DataType {typeData}) = "union " <> name <> " = " <> intercalate " | " (map fieldType typeData)
+renderType (name, InputObject _) = "inputObject " <> name <> " { \n  \n}"
+renderType (name, InputUnion _) = "inputObject " <> name <> " { \n  \n}"
+renderType (name, OutputObject _) = "type " <> name <> " { \n  \n}"
