@@ -171,11 +171,11 @@ initTypeLib query' =
 allDataTypes :: DataTypeLib -> [(Text, DataFullType)]
 allDataTypes (DataTypeLib leaf' inputObject' object' union' inputUnion' query' mutation' subscription') =
   packType OutputObject query' :
-  map (packType InputObject) inputObject' ++
-  map (packType OutputObject) object' ++
+  fromMaybeType mutation' ++
+  fromMaybeType subscription' ++
   map (packType Leaf) leaf' ++
-  map (packType Union) union' ++
-  map (packType InputUnion) inputUnion' ++ fromMaybeType mutation' ++ fromMaybeType subscription'
+  map (packType InputObject) inputObject' ++
+  map (packType InputUnion) inputUnion' ++ map (packType OutputObject) object' ++ map (packType Union) union'
   where
     packType f (x, y) = (x, f y)
     fromMaybeType :: Maybe (Text, DataOutputObject) -> [(Text, DataFullType)]
