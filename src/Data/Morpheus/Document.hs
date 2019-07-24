@@ -35,7 +35,7 @@ renderType :: (Text, DataFullType) -> Text
 renderType (name, Leaf (LeafScalar _)) = "scalar " <> name
 renderType (name, Leaf (LeafEnum DataType {typeData})) = "enum " <> name <> renderObject id typeData
 renderType (name, Union DataType {typeData}) =
-  "union " <> name <> " =\n  " <> intercalate "\n  | " (map fieldType typeData)
+  "union " <> name <> " =\n    " <> intercalate "\n  | " (map fieldType typeData)
 renderType (name, InputObject DataType {typeData}) = "input " <> name <> renderDataObject renderInputField typeData
 renderType (name, InputUnion DataType {typeData}) =
   "input " <> name <> renderDataObject renderInputField (mapKeys typeData)
