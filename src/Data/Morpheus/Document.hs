@@ -44,18 +44,19 @@ mapKeys = map (\x -> (fieldName x, x))
 
 renderObject :: ((Text, DataField a) -> Text) -> [(Text, DataField a)] -> Text
 renderObject f list = " { \n  " <> intercalate "\n  " (map f (ignoreHidden list)) <> "  \n}"
+  where
+    ignoreHidden :: [(Text, DataField a)] -> [(Text, DataField a)]
+    ignoreHidden = filter (not . fieldHidden . snd)
 
 renderInputField :: (Text, DataField ()) -> Text
 renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
   key <> ": " <> showWrappedType fieldTypeWrappers fieldType
 
-ignoreHidden :: [(Text, DataField a)] -> [(Text, DataField a)]
-ignoreHidden = filter (not . fieldHidden . snd)
-
-renderArguments :: [(Text, DataArgument)] -> Text
-renderArguments []   = ""
-renderArguments list = "( " <> intercalate ", " (map renderInputField list) <> " )"
-
 renderField :: (Text, DataField [(Text, DataArgument)]) -> Text
 renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
   key <> renderArguments fieldArgs <> ": " <> showWrappedType fieldTypeWrappers fieldType
+  where
+    renderArguments :: [(Text, DataArgument)] -> Text
+    renderArguments []   = ""
+    renderArguments list = "( " <> intercalate ", " (map renderInputField list) <> " )"
+
