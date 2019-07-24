@@ -6,9 +6,9 @@ module Main
 
 import           Control.Monad.IO.Class         (liftIO)
 import           Data.Morpheus                  (Interpreter (..))
+import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Deprecated.API                 (Actions, gqlRoot)
-import           Language.Morpheus              (toGraphQLDocument)
 import           Mythology.API                  (mythologyApi)
 import qualified Network.Wai                    as Wai
 import qualified Network.Wai.Handler.Warp       as Warp

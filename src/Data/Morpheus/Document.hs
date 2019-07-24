@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Language.Morpheus
+module Data.Morpheus.Document
   ( toGraphQLDocument
   ) where
 
