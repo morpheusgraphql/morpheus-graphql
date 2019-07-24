@@ -7,7 +7,7 @@ module Data.Morpheus.Schema.DirectiveLocation
   ) where
 
 import           Data.Morpheus.Kind          (ENUM, KIND)
-import           Data.Morpheus.Types.GQLType (GQLType (__typeName))
+import           Data.Morpheus.Types.GQLType (GQLType (__typeName,__typeVisibility))
 import           GHC.Generics
 
 type instance KIND DirectiveLocation = ENUM
@@ -36,3 +36,4 @@ data DirectiveLocation
 
 instance GQLType DirectiveLocation where
   __typeName = const "__DirectiveLocation"
+  __typeVisibility = const False

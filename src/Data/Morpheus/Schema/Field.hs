@@ -6,7 +6,7 @@ module Data.Morpheus.Schema.Field where
 
 import           Data.Morpheus.Kind                 (KIND, OBJECT)
 import           Data.Morpheus.Schema.InputValue    (InputValue)
-import           Data.Morpheus.Types.GQLType        (GQLType (__typeName))
+import           Data.Morpheus.Types.GQLType        (GQLType (__typeName, __typeVisibility))
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
 import           Data.Text                          (Text)
 import           Data.Typeable                      (Typeable)
@@ -16,6 +16,7 @@ type instance KIND (Field a) = OBJECT
 
 instance Typeable a => GQLType (Field a) where
   __typeName = const "__Field"
+  __typeVisibility = const False
 
 data Field t = Field
   { name              :: Text

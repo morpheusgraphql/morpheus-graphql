@@ -59,7 +59,7 @@ class GQLType a where
   description :: Proxy a -> Text
   description _ = ""
   __typeVisibility :: Proxy a -> Bool
-  __typeVisibility = const False
+  __typeVisibility = const True
   __typeName :: Proxy a -> Text
   default __typeName :: (Typeable a) =>
     Proxy a -> Text

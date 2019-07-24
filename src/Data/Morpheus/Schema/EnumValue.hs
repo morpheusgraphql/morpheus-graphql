@@ -9,7 +9,7 @@ module Data.Morpheus.Schema.EnumValue
   ) where
 
 import           Data.Morpheus.Kind          (KIND, OBJECT)
-import           Data.Morpheus.Types.GQLType (GQLType (__typeName))
+import           Data.Morpheus.Types.GQLType (GQLType (__typeName, __typeVisibility))
 import           Data.Text                   (Text)
 import           GHC.Generics
 
@@ -17,6 +17,7 @@ type instance KIND EnumValue = OBJECT
 
 instance GQLType EnumValue where
   __typeName = const "__EnumValue"
+  __typeVisibility = const False
 
 data EnumValue = EnumValue
   { name              :: Text
