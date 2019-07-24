@@ -109,6 +109,7 @@ data DataType a = DataType
   { typeName        :: Text
   , typeFingerprint :: DataFingerprint
   , typeDescription :: Text
+  , typeVisibility  :: Bool
   , typeData        :: a
   } deriving (Show)
 

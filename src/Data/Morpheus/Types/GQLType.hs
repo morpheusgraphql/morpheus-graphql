@@ -58,6 +58,8 @@ ignoreResolver (con, args) = con : concatMap (ignoreResolver . splitTyConApp) ar
 class GQLType a where
   description :: Proxy a -> Text
   description _ = ""
+  __typeVisibility :: Proxy a -> Bool
+  __typeVisibility = const False
   __typeName :: Proxy a -> Text
   default __typeName :: (Typeable a) =>
     Proxy a -> Text

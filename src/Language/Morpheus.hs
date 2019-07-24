@@ -20,7 +20,16 @@ toGraphQLDocument :: RootResCon m a query mut sub => GQLRootResolver m a query m
 toGraphQLDocument x =
   case fullSchema x of
     Left validationError -> pack (show validationError)
-    Right lib            -> encodeUtf8 $ LT.fromStrict $ intercalate "\n\n" $ map renderType $allDataTypes lib
+    Right lib -> encodeUtf8 $ LT.fromStrict $ intercalate "\n\n" $ map renderType visibleTypes
+      where visibleTypes = filter (isVisible . snd) (allDataTypes lib)
+
+isVisible :: DataFullType -> Bool
+isVisible (Leaf (LeafScalar DataType {typeVisibility})) = typeVisibility
+isVisible (Leaf (LeafEnum DataType {typeVisibility}))   = typeVisibility
+isVisible (Union DataType {typeVisibility})             = typeVisibility
+isVisible (InputObject DataType {typeVisibility})       = typeVisibility
+isVisible (InputUnion DataType {typeVisibility})        = typeVisibility
+isVisible (OutputObject DataType {typeVisibility})      = typeVisibility
 
 renderType :: (Text, DataFullType) -> Text
 renderType (name, Leaf (LeafScalar _)) = "scalar " <> name

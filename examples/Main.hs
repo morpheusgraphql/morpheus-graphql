@@ -35,6 +35,6 @@ main = do
       scottyApp $ do
         post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
         get "/" $ file "examples/index.html"
-        get "/schema" $ raw (toGraphQLDocument gqlRoot)
+        get "/schema.gql" $ raw (toGraphQLDocument gqlRoot)
         post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
         get "/mythology" $ file "examples/index.html"

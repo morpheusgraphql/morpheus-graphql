@@ -129,4 +129,11 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
     maybeOperator fields = Just . operatorType fields
     -- operatorType :: [a] -> Text -> (Text, DataType [a])
     operatorType typeData typeName =
-      (typeName, DataType {typeData, typeName, typeFingerprint = SystemFingerprint typeName, typeDescription = ""})
+      ( typeName
+      , DataType
+          { typeData
+          , typeVisibility = True
+          , typeName
+          , typeFingerprint = SystemFingerprint typeName
+          , typeDescription = ""
+          })
