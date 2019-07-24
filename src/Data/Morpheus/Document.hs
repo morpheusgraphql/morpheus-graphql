@@ -63,4 +63,4 @@ renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
   where
     renderArguments :: [(Text, DataArgument)] -> Text
     renderArguments []   = ""
-    renderArguments list = "( " <> intercalate ", " (map renderInputField list) <> " )"
+    renderArguments list = "(" <> intercalate ", " (map renderInputField list) <> ")"
