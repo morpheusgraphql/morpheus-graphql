@@ -277,7 +277,7 @@ instance (GQL_TYPE a, UnionRep (Rep a) InputType) => Introspect a INPUT_UNION In
           , fieldArgs = ()
           , fieldTypeWrappers = [NonNullType]
           , fieldType = enumTypeName
-          , fieldHidden = True
+          , fieldHidden = False
           }
 
 --
