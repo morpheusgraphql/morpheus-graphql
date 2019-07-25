@@ -7,7 +7,7 @@ module Data.Morpheus.Types
   , ResM
   , StreamM
   -- Type Classes
-  , GQLType(description)
+  , GQLType(KIND, description)
   , GQLScalar(parseValue, serialize)
   -- Values
   , GQLRequest(..)
@@ -20,7 +20,7 @@ module Data.Morpheus.Types
   ) where
 
 import           Data.Morpheus.Types.GQLScalar      (GQLScalar (parseValue, serialize))
-import           Data.Morpheus.Types.GQLType        (GQLType (description))
+import           Data.Morpheus.Types.GQLType        (GQLType (KIND, description))
 import           Data.Morpheus.Types.ID             (ID (..))
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
 import           Data.Morpheus.Types.IO             (GQLRequest (..), GQLResponse (..))
