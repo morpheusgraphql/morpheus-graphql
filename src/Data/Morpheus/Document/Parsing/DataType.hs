@@ -5,11 +5,11 @@ module Data.Morpheus.Document.Parsing.DataType
   ( parseDataType
   ) where
 
-{--}
-import           Data.Morpheus.Document.Parsing.Terms (Parser, nonNull, parseAssignment, qualifier, token)
+import           Data.Morpheus.Document.Parsing.Terms (Parser, nonNull, parseAssignment, parseMaybeTuple, qualifier,
+                                                       token)
 import           Data.Morpheus.Types.Internal.Data    (DataArgument, DataField (..), DataFingerprint (..),
-                                                       DataFullType (..), DataOutputField, DataOutputObject,
-                                                       DataType (..), DataTypeKind (..), DataTypeWrapper (..), Key)
+                                                       DataFullType (..), DataOutputField, DataType (..),
+                                                       DataTypeKind (..), DataTypeWrapper (..), Key)
 import           Data.Text                            (Text)
 import           Text.Megaparsec                      (between, label, many, sepEndBy, (<|>))
 import           Text.Megaparsec.Char                 (char, space, space1, string)
@@ -54,15 +54,20 @@ dataArgument =
 entries :: Parser [(Key, DataOutputField)]
 entries = label "entries" $ between (char '{' *> space) (char '}' *> space) (entry `sepEndBy` many (char ',' *> space))
   where
+    fieldWithArgs =
+      label "fieldWithArgs" $ do
+        (name, _) <- qualifier
+        args <- parseMaybeTuple dataArgument
+        return (name, args)
     entry =
       label "entry" $ do
-        ((fieldName, _), (wrappers', fieldType)) <- parseAssignment qualifier wrappedSignature
+        ((fieldName, fieldArgs), (wrappers', fieldType)) <- parseAssignment fieldWithArgs wrappedSignature
         nonNull' <- nonNull
         -- variables <- parseMaybeTuple dataArgument
         return
           ( fieldName
           , DataField
-              { fieldArgs = []
+              { fieldArgs
               , fieldName
               , fieldKind = KindObject -- TODO : realKinds
               , fieldType

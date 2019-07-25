@@ -15,4 +15,5 @@ import           Data.Morpheus.Types.Internal.Data     (DataTypeLib)
 parseGraphQLDocument :: Either [Text] DataTypeLib
 parseGraphQLDocument = parseDocument document
   where
-    document = "type Query {\n  deity : Deity \n} \n type Deity {\n  fullName: String!\n  power: String\n}"
+    document =
+      "type Query {\n  deity (name: [[String!]]!, mythology: String): Deity \n} \n type Deity {\n  fullName: String!\n  power: String\n}"
