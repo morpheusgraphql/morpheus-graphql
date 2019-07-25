@@ -8,9 +8,8 @@ module Mythology.Place.Places
   ) where
 
 import           Data.Morpheus.Kind  (ENUM)
-import           Data.Morpheus.Types (GQLType(..))
+import           Data.Morpheus.Types (GQLType (..))
 import           GHC.Generics        (Generic)
-
 
 data Realm
   = MountOlympus
@@ -21,7 +20,7 @@ data Realm
   deriving (Generic)
 
 instance GQLType Realm where
-  type  KIND Realm = ENUM
+  type KIND Realm = ENUM
 
 data City
   = Athens
@@ -32,4 +31,4 @@ data City
   | Troy
 
 instance GQLType City where
-  type instance KIND City = ENUM
+  type KIND City = ENUM
