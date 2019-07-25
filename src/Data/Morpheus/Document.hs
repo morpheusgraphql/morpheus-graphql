@@ -16,6 +16,7 @@ import           Data.Text                         (Text, intercalate)
 import qualified Data.Text.Lazy                    as LT (fromStrict)
 import           Data.Text.Lazy.Encoding           (encodeUtf8)
 
+-- | Generates schema.gql file from 'GQLRootResolver'
 toGraphQLDocument :: RootResCon m a query mut sub => GQLRootResolver m a query mut sub -> ByteString
 toGraphQLDocument x =
   case fullSchema x of
