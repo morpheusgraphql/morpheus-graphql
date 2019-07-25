@@ -9,6 +9,7 @@ module Data.Morpheus.Document
 import           Data.ByteString.Lazy.Char8           (ByteString, pack)
 import           Data.Morpheus.Document.ParseDocument (parseGraphQLDocument)
 import           Data.Morpheus.Document.RenderGraphQL (renderGraphQLDocument)
+import           Data.Morpheus.Document.RenderHaskell (renderHaskellDocument)
 
 -- MORPHEUS
 import           Data.Morpheus.Resolve.Resolve        (RootResCon, fullSchema)
@@ -25,4 +26,4 @@ toMorpheusHaskellAPi :: ByteString -> ByteString
 toMorpheusHaskellAPi _ =
   case parseGraphQLDocument of
     Left errors -> pack (show errors)
-    Right lib   -> renderGraphQLDocument lib
+    Right lib   -> renderHaskellDocument lib
