@@ -12,7 +12,7 @@ import           Data.Morpheus.Types.Internal.Data    (DataArgument, DataField (
                                                        DataType (..), DataTypeKind (..), DataTypeWrapper (..), Key)
 import           Data.Text                            (Text)
 import           Text.Megaparsec                      (between, label, many, sepEndBy, (<|>))
-import           Text.Megaparsec.Char                 (char, space)
+import           Text.Megaparsec.Char                 (char, space, space1, string)
 
 wrapMock :: Parser ([DataTypeWrapper], Text)
 wrapMock = do
@@ -73,6 +73,8 @@ entries = label "entries" $ between (char '{' *> space) (char '}' *> space) (ent
 parseDataType :: Parser (Text, DataFullType)
 parseDataType =
   label "operator" $ do
+    _ <- string "type"
+    space1
     typeName <- token
     typeData <- entries
     pure

@@ -6,13 +6,13 @@ module Data.Morpheus.Document.ParseDocument
   ( parseGraphQLDocument
   ) where
 
-import           Data.ByteString.Lazy.Char8            (ByteString, pack)
+import           Data.Text                             (Text)
 
 -- MORPHEUS
 import           Data.Morpheus.Document.Parsing.Parser (parseDocument)
+import           Data.Morpheus.Types.Internal.Data     (DataTypeLib)
 
-parseGraphQLDocument :: ByteString
-parseGraphQLDocument = pack $ show (parseDocument document)
+parseGraphQLDocument :: Either [Text] DataTypeLib
+parseGraphQLDocument = parseDocument document
   where
-    document =
-      "type Query {\n  deity(name: String!, mythology: Text): Deity\n} deriving (Generic)\n\ntype Deity {\n  fullName: String!\n  power : String\n}"
+    document = "type Query {\n  deity: Deity\n} \n type Deity {\n  fullName: String!\n  power: String\n}"
