@@ -30,7 +30,7 @@
 
   ```haskell
   instance GQLType Deity where
-  KIND Deity = OBJECT
+  type KIND Deity = OBJECT
   description = const "Custom Description for Client Defined User Type"
 
   data Deity = Deity { fullName :: Text } deriving (Generic)
