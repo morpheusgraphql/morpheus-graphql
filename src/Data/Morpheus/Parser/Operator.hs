@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Parser.DataType
+module Data.Morpheus.Parser.Operator
   ( parseAnonymousQuery
   , parseOperator
   ) where
