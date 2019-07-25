@@ -3,6 +3,7 @@
 
 module Data.Morpheus.Document
   ( toGraphQLDocument
+  , toMorpheusHaskellAPi
   ) where
 
 import           Data.ByteString.Lazy.Char8           (ByteString, pack)
@@ -17,8 +18,11 @@ import           Data.Morpheus.Types                  (GQLRootResolver)
 toGraphQLDocument :: RootResCon m a query mut sub => GQLRootResolver m a query mut sub -> ByteString
 toGraphQLDocument x =
   case fullSchema x of
-    Left validationError -> pack (show validationError)
-    Right _ ->
-      case parseGraphQLDocument of
-        Left errors -> pack (show errors)
-        Right lib   -> renderGraphQLDocument lib
+    Left errors -> pack (show errors)
+    Right lib   -> renderGraphQLDocument lib
+
+toMorpheusHaskellAPi :: ByteString -> ByteString
+toMorpheusHaskellAPi _ =
+  case parseGraphQLDocument of
+    Left errors -> pack (show errors)
+    Right lib   -> renderGraphQLDocument lib
