@@ -38,12 +38,12 @@ import           GHC.Generics
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal               (internalErrorT)
 import           Data.Morpheus.Error.Selection              (fieldNotResolved, subfieldsNotSelected)
-import           Data.Morpheus.Kind                         (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
+import           Data.Morpheus.Kind                         (ENUM, OBJECT, SCALAR, UNION, WRAPPER)
 import           Data.Morpheus.Resolve.Decode               (ArgumentsConstraint, decodeArguments)
 import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
 import           Data.Morpheus.Types.Custom                 (MapKind, Pair (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..))
-import           Data.Morpheus.Types.GQLType                (GQLType (__typeName))
+import           Data.Morpheus.Types.GQLType                (GQLType (KIND, __typeName))
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base          (Position)
 import           Data.Morpheus.Types.Internal.Stream        (EventContent, StreamState (..), StreamT (..),

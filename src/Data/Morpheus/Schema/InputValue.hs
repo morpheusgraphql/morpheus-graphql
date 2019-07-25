@@ -8,15 +8,14 @@ module Data.Morpheus.Schema.InputValue
   , createInputValueWith
   ) where
 
-import           Data.Morpheus.Kind          (KIND, OBJECT)
-import           Data.Morpheus.Types.GQLType (GQLType (__typeName, __typeVisibility))
+import           Data.Morpheus.Kind          (OBJECT)
+import           Data.Morpheus.Types.GQLType (GQLType (KIND, __typeName, __typeVisibility))
 import           Data.Text                   (Text)
 import           Data.Typeable               (Typeable)
 import           GHC.Generics
 
-type instance KIND (InputValue a) = OBJECT
-
 instance Typeable a => GQLType (InputValue a) where
+  type KIND (InputValue a) = OBJECT
   __typeName = const "__InputValue"
   __typeVisibility = const False
 

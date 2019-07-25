@@ -8,18 +8,17 @@ module Data.Morpheus.Schema.Type
   , DeprecationArgs(..)
   ) where
 
-import           Data.Morpheus.Kind              (KIND, OBJECT)
+import           Data.Morpheus.Kind              (OBJECT)
 import           Data.Morpheus.Schema.EnumValue  (EnumValue)
 import qualified Data.Morpheus.Schema.Field      as F (Field (..))
 import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..))
 import           Data.Morpheus.Schema.TypeKind   (TypeKind)
-import           Data.Morpheus.Types.GQLType     (GQLType (__typeName, __typeVisibility))
+import           Data.Morpheus.Types.GQLType     (GQLType (KIND, __typeName, __typeVisibility))
 import           Data.Text                       (Text)
 import           GHC.Generics                    (Generic)
 
-type instance KIND Type = OBJECT
-
 instance GQLType Type where
+  type KIND Type = OBJECT
   __typeName = const "__Type"
   __typeVisibility = const False
 

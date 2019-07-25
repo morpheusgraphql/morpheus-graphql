@@ -7,16 +7,15 @@ module Data.Morpheus.Schema.Directive
   ( Directive(..)
   ) where
 
-import           Data.Morpheus.Kind                                (KIND, OBJECT)
+import           Data.Morpheus.Kind                                (OBJECT)
 import           Data.Morpheus.Schema.DirectiveLocation            (DirectiveLocation)
 import           Data.Morpheus.Schema.Internal.RenderIntrospection (InputValue)
-import           Data.Morpheus.Types.GQLType                       (GQLType (__typeName, __typeVisibility))
+import           Data.Morpheus.Types.GQLType                       (GQLType (KIND, __typeName, __typeVisibility))
 import           Data.Text                                         (Text)
 import           GHC.Generics                                      (Generic)
 
-type instance KIND Directive = OBJECT
-
 instance GQLType Directive where
+  type KIND Directive = OBJECT
   __typeName = const "__Directive"
   __typeVisibility = const False
 

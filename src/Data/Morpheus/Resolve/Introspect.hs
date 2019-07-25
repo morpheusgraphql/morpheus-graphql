@@ -30,7 +30,7 @@ import           GHC.Generics
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Schema              (nameCollisionError)
-import           Data.Morpheus.Kind                      (ENUM, INPUT_OBJECT, INPUT_UNION, KIND, OBJECT, SCALAR, UNION,
+import           Data.Morpheus.Kind                      (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR, UNION,
                                                           WRAPPER)
 import           Data.Morpheus.Resolve.Generics.EnumRep  (EnumRep (..))
 import           Data.Morpheus.Types.Custom              (MapKind, Pair)
