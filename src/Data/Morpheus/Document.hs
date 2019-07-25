@@ -7,14 +7,16 @@ module Data.Morpheus.Document
   ) where
 
 import           Data.ByteString.Lazy.Char8        (ByteString, pack)
-import           Data.Morpheus.Resolve.Resolve     (RootResCon, fullSchema)
-import           Data.Morpheus.Types               (GQLRootResolver)
-import           Data.Morpheus.Types.Internal.Data (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
-                                                    DataType (..), allDataTypes, showWrappedType)
 import           Data.Semigroup                    ((<>))
 import           Data.Text                         (Text, intercalate)
 import qualified Data.Text.Lazy                    as LT (fromStrict)
 import           Data.Text.Lazy.Encoding           (encodeUtf8)
+
+-- MORPHEUS
+import           Data.Morpheus.Resolve.Resolve     (RootResCon, fullSchema)
+import           Data.Morpheus.Types               (GQLRootResolver)
+import           Data.Morpheus.Types.Internal.Data (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
+                                                    DataType (..), allDataTypes, showWrappedType)
 
 -- | Generates schema.gql file from 'GQLRootResolver'
 toGraphQLDocument :: RootResCon m a query mut sub => GQLRootResolver m a query mut sub -> ByteString
