@@ -6,8 +6,9 @@ module Data.Morpheus.Document
   ) where
 
 import           Data.ByteString.Lazy.Char8           (ByteString, pack)
-import           Data.Morpheus.Document.RenderGraphQL (renderGraphQLDocument)
+import           Data.Morpheus.Document.ParseDocument (parseGraphQLDocument)
 
+--import           Data.Morpheus.Document.RenderGraphQL (renderGraphQLDocument)
 -- MORPHEUS
 import           Data.Morpheus.Resolve.Resolve        (RootResCon, fullSchema)
 import           Data.Morpheus.Types                  (GQLRootResolver)
@@ -17,4 +18,5 @@ toGraphQLDocument :: RootResCon m a query mut sub => GQLRootResolver m a query m
 toGraphQLDocument x =
   case fullSchema x of
     Left validationError -> pack (show validationError)
-    Right lib            -> renderGraphQLDocument lib
+    Right lib            -> parseGraphQLDocument
+    --renderGraphQLDocument lib
