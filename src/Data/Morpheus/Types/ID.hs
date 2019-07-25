@@ -6,14 +6,12 @@ module Data.Morpheus.Types.ID
   ( ID(..)
   ) where
 
-import           Data.Morpheus.Kind                 (KIND, SCALAR)
+import           Data.Morpheus.Kind                 (SCALAR)
 import           Data.Morpheus.Types.GQLScalar      (GQLScalar (..))
-import           Data.Morpheus.Types.GQLType        (GQLType (__typeVisibility))
+import           Data.Morpheus.Types.GQLType        (GQLType (KIND, __typeVisibility))
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
 import           Data.Text                          (Text, pack)
 import           GHC.Generics                       (Generic)
-
-type instance KIND ID = SCALAR
 
 -- | default GraphQL type,
 -- parses only 'String' and 'Int' values,
@@ -23,6 +21,7 @@ newtype ID = ID
   } deriving (Generic)
 
 instance GQLType ID where
+  type KIND ID = SCALAR
   __typeVisibility _ = False
 
 instance GQLScalar ID where

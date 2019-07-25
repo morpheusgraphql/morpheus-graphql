@@ -11,17 +11,16 @@ module Data.Morpheus.Schema.Schema
   , Type
   ) where
 
-import           Data.Morpheus.Kind                                (KIND, OBJECT)
+import           Data.Morpheus.Kind                                (OBJECT)
 import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.Internal.RenderIntrospection (Type, createObjectType, renderType)
-import           Data.Morpheus.Types.GQLType                       (GQLType (__typeName, __typeVisibility))
+import           Data.Morpheus.Types.GQLType                       (GQLType (KIND, __typeName, __typeVisibility))
 import           Data.Morpheus.Types.Internal.Data                 (DataOutputObject, DataTypeLib (..), allDataTypes)
 import           Data.Text                                         (Text)
 import           GHC.Generics                                      (Generic)
 
-type instance KIND Schema = OBJECT
-
 instance GQLType Schema where
+  type KIND Schema = OBJECT
   __typeName = const "__Schema"
   __typeVisibility = const False
 

@@ -1,20 +1,46 @@
-## [0.2.0] - *.08.2019
+## [0.2.0] - \*.08.2019
 
 ### Added
+
 - Enhanced Subscription: mutation can trigger subscription with arguments
 - Experimental Support of Input Unions
 - GraphQL schema generating with: `Data.Morpheus.Document.toGraphQLDocument`
 
 ### Fixed:
+
 - Parser supports enums inside input Object
 - fulfilled fragment Validation (added: unusedFragment,nameConflict)
 
 ### Changed
+
 - WebSocket subProtocol changed from `graphql-subscriptions` to `graphql-ws`
 
+- type familiy `KIND` is moved into typeClasses `GQLType`, so you should replace
+
+  ```haskell
+  type instance KIND Deity = OBJECT
+
+  instance GQLType Deity where
+    description  = const "Custom Description for Client Defined User Type"
+
+  data Deity = Deity { fullName :: Text } deriving (Generic)
+  ```
+
+  with
+
+  ```haskell
+  instance GQLType Deity where
+  type KIND Deity = OBJECT
+  description = const "Custom Description for Client Defined User Type"
+
+  data Deity = Deity { fullName :: Text } deriving (Generic)
+  ```
+
 ## [0.1.1] - 1.07.2019
+
 ### Fixed:
- - () as Subscription or Mutation does not defines Operator without fields
+
+- () as Subscription or Mutation does not defines Operator without fields
 
 ## [0.1.0] - 30.06.2019
 
@@ -23,9 +49,10 @@ thanks for contributing to: @krisajenkins, @hovind, @vmchale, @msvbg
 ### Added
 
 - support for Union Types: `type instance KIND <type> = UNION`
-- support of haskell Types: `Map`, `Set`, and  Pair `(a,b)`
+- support of haskell Types: `Map`, `Set`, and Pair `(a,b)`
 - GraphQL Resolver supports custom Monad
 - add `Interpreter` class with instances:
+
   - `ByteString -> m ByteString` and Lazy `ByteString`, where `m` is resolver monad
   - `Text -> m Text` and Lazy `Text`, where `m` is resolver monad
   - `GQLRequest -> m GQLResponse` , When you using it inside another Component that have Manual `ToJSON` deriving,

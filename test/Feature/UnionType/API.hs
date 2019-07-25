@@ -10,38 +10,42 @@ module Feature.UnionType.API
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (KIND, OBJECT, UNION)
+import           Data.Morpheus.Kind         (OBJECT, UNION)
 import           Data.Morpheus.Types        (GQLRootResolver (..), GQLType (..), ResM)
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
-type instance KIND A = OBJECT
+instance GQLType A where
+  type KIND A = OBJECT
 
-type instance KIND B = OBJECT
+instance GQLType B where
+  type KIND B = OBJECT
 
-type instance KIND C = OBJECT
+instance GQLType C where
+  type KIND C = OBJECT
 
-type instance KIND AOrB = UNION
+instance GQLType AOrB where
+  type KIND AOrB = UNION
 
 data A = A
   { aText :: Text
   , aInt  :: Int
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
 
 data B = B
   { bText :: Text
   , bInt  :: Int
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
 
 data C = C
   { cText :: Text
   , cInt  :: Int
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
 
 data AOrB
   = A' A
   | B' B
-  deriving (Generic, GQLType)
+  deriving (Generic)
 
 data Query = Query
   { union :: () -> ResM [AOrB]

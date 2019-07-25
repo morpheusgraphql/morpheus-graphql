@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -10,12 +9,10 @@ module Feature.InputType.API
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (KIND, OBJECT)
+import           Data.Morpheus.Kind         (OBJECT)
 import           Data.Morpheus.Types        (GQLRootResolver (..), GQLType (..), ResM)
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
-
-type instance KIND A = OBJECT
 
 data F1Args = F1Args
   { arg1 :: Text
@@ -30,7 +27,10 @@ data F2Args = F2Args
 data A = A
   { a1 :: F1Args -> ResM Text
   , a2 :: F2Args -> ResM Int
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
+
+instance GQLType A where
+  type KIND A = OBJECT
 
 newtype Query = Query
   { q1 :: A

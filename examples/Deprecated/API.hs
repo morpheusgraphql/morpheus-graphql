@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -20,69 +19,71 @@ import           Data.Typeable       (Typeable)
 import           GHC.Generics        (Generic)
 
 -- MORPHEUS
-import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, INPUT_UNION, KIND, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types (EventContent, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, ResM,
                                       Resolver, ScalarValue (..), StreamM, gqlResolver, gqlStreamResolver)
 
-type instance KIND CityID = ENUM
-
-type instance KIND Euro = SCALAR
-
-type instance KIND UniqueID = INPUT_OBJECT
-
-type instance KIND Coordinates = INPUT_OBJECT
-
-type instance KIND Address = OBJECT
-
-type instance KIND (User res) = OBJECT
-
-type instance KIND (MyUnion res) = UNION
-
-type instance KIND Cat = INPUT_OBJECT
-
-type instance KIND Dog = INPUT_OBJECT
-
-type instance KIND Bird = INPUT_OBJECT
-
-type instance KIND Animal = INPUT_UNION
-
 newtype Cat = Cat
   { catName :: Text
-  } deriving (Show, Generic, GQLType)
+  } deriving (Show, Generic)
+
+instance GQLType Cat where
+  type KIND Cat = INPUT_OBJECT
 
 newtype Dog = Dog
   { dogName :: Text
-  } deriving (Show, Generic, GQLType)
+  } deriving (Show, Generic)
+
+instance GQLType Dog where
+  type KIND Dog = INPUT_OBJECT
 
 newtype Bird = Bird
   { birdName :: Text
-  } deriving (Show, Generic, GQLType)
+  } deriving (Show, Generic)
+
+instance GQLType Bird where
+  type KIND Bird = INPUT_OBJECT
 
 data Animal
   = CAT Cat
   | DOG Dog
   | BIRD Bird
-  deriving (Show, Generic, GQLType)
+  deriving (Show, Generic)
+
+instance GQLType Animal where
+  type KIND Animal = INPUT_UNION
 
 newtype UniqueID = UniqueID
   { uid :: Text
-  } deriving (Show, Generic, GQLType)
+  } deriving (Show, Generic)
+
+instance GQLType UniqueID where
+  type KIND UniqueID = INPUT_OBJECT
 
 data MyUnion res
   = USER (User res)
   | ADDRESS Address
-  deriving (Generic, GQLType)
+  deriving (Generic)
+
+instance Typeable a => GQLType (MyUnion a) where
+  type KIND (MyUnion a) = UNION
 
 data CityID
   = Paris
   | BLN
   | HH
-  deriving (Generic, GQLType)
+  deriving (Generic)
+
+instance GQLType CityID where
+  type KIND CityID = ENUM
 
 data Euro =
   Euro Int
        Int
-  deriving (Generic, GQLType)
+  deriving (Generic)
+
+instance GQLType Euro where
+  type KIND Euro = SCALAR
 
 instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
@@ -94,13 +95,17 @@ data Coordinates = Coordinates
   } deriving (Generic)
 
 instance GQLType Coordinates where
+  type KIND Coordinates = INPUT_OBJECT
   description _ = "just random latitude and longitude"
 
 data Address = Address
   { city        :: Text
   , street      :: Text
   , houseNumber :: Int
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
+
+instance GQLType Address where
+  type KIND Address = OBJECT
 
 data AddressArgs = AddressArgs
   { coordinates :: Coordinates
@@ -122,13 +127,15 @@ data User m = User
   } deriving (Generic)
 
 instance Typeable a => GQLType (User a) where
+  type KIND (User a) = OBJECT
   description _ = "Custom Description for Client Defined User Type"
 
-type instance KIND (A a) = OBJECT
+instance Typeable a => GQLType (A a) where
+  type KIND (A a) = OBJECT
 
 newtype A a = A
   { wrappedA :: a
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
 
 fetchAddress :: Monad m => Euro -> m (Either String Address)
 fetchAddress _ = return $ Right $ Address " " "" 0

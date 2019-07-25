@@ -21,10 +21,10 @@ import           GHC.Generics
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal               (internalArgumentError, internalTypeMismatch)
-import           Data.Morpheus.Kind                         (ENUM, INPUT_OBJECT, INPUT_UNION, KIND, SCALAR, WRAPPER)
+import           Data.Morpheus.Kind                         (ENUM, INPUT_OBJECT, INPUT_UNION, SCALAR, WRAPPER)
 import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
 import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..), toScalar)
-import           Data.Morpheus.Types.GQLType                (GQLType (__typeName))
+import           Data.Morpheus.Types.GQLType                (GQLType (KIND, __typeName))
 import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..), Arguments)
 import           Data.Morpheus.Types.Internal.Validation    (Validation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
