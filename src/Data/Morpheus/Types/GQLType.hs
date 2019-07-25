@@ -58,6 +58,8 @@ ignoreResolver (con, args) = con : concatMap (ignoreResolver . splitTyConApp) ar
 class GQLType a where
   description :: Proxy a -> Text
   description _ = ""
+  __typeVisibility :: Proxy a -> Bool
+  __typeVisibility = const True
   __typeName :: Proxy a -> Text
   default __typeName :: (Typeable a) =>
     Proxy a -> Text
@@ -71,15 +73,19 @@ class GQLType a where
     where
       conFingerprints = fmap (map tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 
-instance GQLType Int
+instance GQLType Int where
+  __typeVisibility = const False
 
-instance GQLType Float
+instance GQLType Float where
+  __typeVisibility = const False
 
 instance GQLType Text where
   __typeName = const "String"
+  __typeVisibility = const False
 
 instance GQLType Bool where
   __typeName = const "Boolean"
+  __typeVisibility = const False
 
 instance GQLType a => GQLType (Maybe a) where
   __typeName _ = __typeName (Proxy @a)

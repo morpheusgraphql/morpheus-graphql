@@ -139,6 +139,7 @@ buildType typeData proxy =
     { typeName = __typeName proxy
     , typeFingerprint = __typeFingerprint proxy
     , typeDescription = description proxy
+    , typeVisibility = __typeVisibility proxy
     , typeData
     }
 
@@ -264,6 +265,7 @@ instance (GQL_TYPE a, UnionRep (Rep a) InputType) => Introspect a INPUT_UNION In
               { typeName = enumTypeName
               -- has same fingerprint as object because it depends on it
               , typeFingerprint = __typeFingerprint (Proxy @a)
+              , typeVisibility = __typeVisibility (Proxy @a)
               , typeDescription = ""
               , typeData = map fieldName fields
               }
@@ -275,7 +277,7 @@ instance (GQL_TYPE a, UnionRep (Rep a) InputType) => Introspect a INPUT_UNION In
           , fieldArgs = ()
           , fieldTypeWrappers = [NonNullType]
           , fieldType = enumTypeName
-          , fieldHidden = True
+          , fieldHidden = False
           }
 
 --

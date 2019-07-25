@@ -7,13 +7,14 @@ module Data.Morpheus.Schema.TypeKind
   ) where
 
 import           Data.Morpheus.Kind          (ENUM, KIND)
-import           Data.Morpheus.Types.GQLType (GQLType (__typeName))
+import           Data.Morpheus.Types.GQLType (GQLType (__typeName, __typeVisibility))
 import           GHC.Generics
 
 type instance KIND TypeKind = ENUM
 
 instance GQLType TypeKind where
   __typeName = const "__TypeKind"
+  __typeVisibility = const False
 
 data TypeKind
   = SCALAR

@@ -3,6 +3,7 @@
 ### Added
 - Enhanced Subscription: mutation can trigger subscription with arguments
 - Experimental Support of Input Unions
+- GraphQL schema generating with: `Data.Morpheus.Document.toGraphQLDocument`
 
 ### Fixed:
 - Parser supports enums inside input Object
