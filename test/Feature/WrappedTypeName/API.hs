@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -10,24 +9,27 @@ module Feature.WrappedTypeName.API
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (KIND, OBJECT)
+import           Data.Morpheus.Kind         (OBJECT)
 import           Data.Morpheus.Types        (EventContent, GQLRootResolver (..), GQLType (..), ResM, StreamM)
 import           Data.Text                  (Text)
+import           Data.Typeable              (Typeable)
 import           GHC.Generics               (Generic)
 
-type instance KIND (WA a) = OBJECT
+instance Typeable a => GQLType (WA a) where
+  type KIND (WA a) = OBJECT
 
-type instance KIND (Wrapped a b) = OBJECT
+instance (Typeable a, Typeable b) => GQLType (Wrapped a b) where
+  type KIND (Wrapped a b) = OBJECT
 
 data Wrapped a b = Wrapped
   { fieldA :: a
   , fieldB :: b
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
 
 data WA m = WA
   { aText :: () -> m Text
   , aInt  :: Int
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
 
 data Query = Query
   { a1 :: WA ResM

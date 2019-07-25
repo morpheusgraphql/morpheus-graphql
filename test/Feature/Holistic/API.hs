@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -10,38 +9,28 @@ module Feature.Holistic.API
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types        (EventContent, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID (..),
                                              ResM, ScalarValue (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
-type instance KIND TestEnum = ENUM
-
-type instance KIND TestScalar = SCALAR
-
-type instance KIND NestedInputObject = INPUT_OBJECT
-
-type instance KIND Coordinates = INPUT_OBJECT
-
-type instance KIND TestInputObject = INPUT_OBJECT
-
-type instance KIND Address = OBJECT
-
-type instance KIND User = OBJECT
-
-type instance KIND TestUnion = UNION
-
 data TestEnum
   = EnumA
   | EnumB
   | EnumC
-  deriving (Generic, GQLType)
+  deriving (Generic)
+
+instance GQLType TestEnum where
+  type KIND TestEnum = ENUM
 
 data TestScalar =
   TestScalar Int
              Int
-  deriving (Generic, GQLType)
+  deriving (Generic)
+
+instance GQLType TestScalar where
+  type KIND TestScalar = SCALAR
 
 instance GQLScalar TestScalar where
   parseValue _ = pure (TestScalar 1 0)
@@ -49,12 +38,18 @@ instance GQLScalar TestScalar where
 
 newtype NestedInputObject = NestedInputObject
   { fieldTestID :: ID
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
+
+instance GQLType NestedInputObject where
+  type KIND NestedInputObject = INPUT_OBJECT
 
 data TestInputObject = TestInputObject
   { fieldTestScalar        :: TestScalar
   , fieldNestedInputObject :: [Maybe NestedInputObject]
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
+
+instance GQLType TestInputObject where
+  type KIND TestInputObject = INPUT_OBJECT
 
 data StreetArgs = StreetArgs
   { argInputObject :: TestInputObject
@@ -65,17 +60,26 @@ data Address = Address
   { city        :: Text
   , street      :: StreetArgs -> ResM (Maybe [Maybe [[[Text]]]])
   , houseNumber :: Int
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
+
+instance GQLType Address where
+  type KIND Address = OBJECT
 
 data TestUnion
   = UnionA User
   | UnionB Address
-  deriving (Generic, GQLType)
+  deriving (Generic)
+
+instance GQLType TestUnion where
+  type KIND TestUnion = UNION
 
 data Coordinates = Coordinates
   { latitude  :: TestScalar
   , longitude :: Int
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
+
+instance GQLType Coordinates where
+  type KIND Coordinates = INPUT_OBJECT
 
 data AddressArgs = AddressArgs
   { coordinates :: Coordinates
@@ -96,7 +100,8 @@ data User = User
   } deriving (Generic)
 
 instance GQLType User where
-  description _ = "Custom Description for Client Defined User Type"
+  type KIND User = OBJECT
+  description = const "Custom Description for Client Defined User Type"
 
 data Query = Query
   { user      :: () -> ResM User
