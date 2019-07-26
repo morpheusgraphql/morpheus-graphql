@@ -7,8 +7,9 @@ module Data.Morpheus.Document.RenderHaskell
   ) where
 
 import           Data.ByteString.Lazy.Char8        (ByteString)
+import           Data.Maybe                        (catMaybes)
 import           Data.Semigroup                    ((<>))
-import           Data.Text                         (Text, intercalate)
+import           Data.Text                         (Text, intercalate, toTitle)
 import qualified Data.Text.Lazy                    as LT (fromStrict)
 import           Data.Text.Lazy.Encoding           (encodeUtf8)
 
@@ -24,13 +25,15 @@ renderHaskellDocument lib = encodeUtf8 $ LT.fromStrict $ intercalate "\n\n" $ ma
 renderIndent :: Text
 renderIndent = "  "
 
+defineData :: Text -> Text
+defineData name = "data " <> name <> " = " <> name <> " "
+
 renderHaskellType :: (Text, DataFullType) -> Text
-renderHaskellType (name, dataType) = defineData <> renderType dataType
-  where
-    defineData = "data " <> name <> " = " <> name
+renderHaskellType (name, dataType) = defineData name <> renderType dataType
     ---
+  where
     renderType (Leaf (LeafScalar _)) = ""
-    renderType (Leaf (LeafEnum DataType {typeData})) = renderObject id typeData
+    renderType (Leaf (LeafEnum DataType {typeData})) = ""
     renderType (Union DataType {typeData}) = intercalate ("\n" <> renderIndent <> "| ") (map fieldType typeData)
     renderType (InputObject DataType {typeData}) = renderDataObject renderInputField typeData
     renderType (InputUnion DataType {typeData}) = renderDataObject renderInputField (mapKeys typeData)
@@ -39,23 +42,30 @@ renderHaskellType (name, dataType) = defineData <> renderType dataType
 mapKeys :: [DataField a] -> [(Text, DataField a)]
 mapKeys = map (\x -> (fieldName x, x))
 
-renderObject :: (a -> Text) -> [a] -> Text
-renderObject f list = " { \n  " <> intercalate ("\n" <> renderIndent) (map f list) <> "\n} deriving (Generic)"
+renderObject :: (a -> (Text, Maybe Text)) -> [a] -> Text
+renderObject f list = intercalate "\n\n" $ renderMainType : catMaybes types
+  where
+    renderMainType = "{ \n  " <> intercalate ("\n" <> renderIndent) fields <> "\n} deriving (Generic)"
+    (fields, types) = unzip (map f list)
 
-renderDataObject :: ((Text, DataField a) -> Text) -> [(Text, DataField a)] -> Text
+renderDataObject :: ((Text, DataField a) -> (Text, Maybe Text)) -> [(Text, DataField a)] -> Text
 renderDataObject f list = renderObject f (ignoreHidden list)
   where
     ignoreHidden :: [(Text, DataField a)] -> [(Text, DataField a)]
     ignoreHidden = filter (not . fieldHidden . snd)
 
-renderInputField :: (Text, DataField ()) -> Text
+renderInputField :: (Text, DataField ()) -> (Text, Maybe Text)
 renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
-  key <> " := " <> showWrappedType fieldTypeWrappers fieldType
+  (key <> " := " <> showWrappedType fieldTypeWrappers fieldType, Nothing)
 
-renderField :: (Text, DataField [(Text, DataArgument)]) -> Text
+renderField :: (Text, DataField [(Text, DataArgument)]) -> (Text, Maybe Text)
 renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
-  key <> " :: " <> renderArguments fieldArgs <> " -> ResM " <> showWrappedType fieldTypeWrappers fieldType
+  (key <> " :: " <> argTypeName <> " -> ResM " <> showWrappedType fieldTypeWrappers fieldType, argTypes)
   where
-    renderArguments :: [(Text, DataArgument)] -> Text
-    renderArguments []   = "()"
-    renderArguments list = "(" <> intercalate ", " (map renderInputField list) <> ")"
+    (argTypeName, argTypes) = renderArguments fieldArgs
+    renderArguments :: [(Text, DataArgument)] -> (Text, Maybe Text)
+    renderArguments [] = ("()", Nothing)
+    renderArguments list =
+      (fieldArgTypeName, Just (defineData fieldArgTypeName <> renderDataObject renderInputField list))
+      where
+        fieldArgTypeName = "Arg" <> toTitle key
