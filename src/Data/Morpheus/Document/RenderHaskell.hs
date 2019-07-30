@@ -28,9 +28,11 @@ renderIndent = "  "
 defineData :: Text -> Text
 defineData name = "data " <> name <> " = " <> name <> " "
 
+typeAssignment :: Text -> Text -> Text
+typeAssignment key value = key <> " :: " <> value
+
 renderHaskellType :: (Text, DataFullType) -> Text
 renderHaskellType (name, dataType) = defineData name <> renderType dataType
-    ---
   where
     renderType (Leaf (LeafScalar _)) = ""
     renderType (Leaf (LeafEnum DataType {typeData})) = ""
@@ -56,11 +58,11 @@ renderDataObject f list = renderObject f (ignoreHidden list)
 
 renderInputField :: (Text, DataField ()) -> (Text, Maybe Text)
 renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
-  (key <> " := " <> showWrappedType fieldTypeWrappers fieldType, Nothing)
+  (key `typeAssignment` showWrappedType fieldTypeWrappers fieldType, Nothing)
 
 renderField :: (Text, DataField [(Text, DataArgument)]) -> (Text, Maybe Text)
 renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
-  (key <> " :: " <> argTypeName <> " -> ResM " <> showWrappedType fieldTypeWrappers fieldType, argTypes)
+  (key `typeAssignment` argTypeName <> " -> ResM " <> showWrappedType fieldTypeWrappers fieldType, argTypes)
   where
     (argTypeName, argTypes) = renderArguments fieldArgs
     renderArguments :: [(Text, DataArgument)] -> (Text, Maybe Text)
