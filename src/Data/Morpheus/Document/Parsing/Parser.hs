@@ -36,5 +36,6 @@ parseDocument doc =
         space
         dataTypes <- manyTill parseDataType eof
         case lookup "Query" dataTypes of
-          Just (OutputObject x) -> pure (foldr defineType (initTypeLib ("Query", x)) dataTypes)
-          _                     -> fail "Query Not Defined"
+          Just (OutputObject x) -> pure (foldr defineType (initTypeLib ("Query", x)) withoutQuery)
+            where withoutQuery = filter ((/= "Query") . fst) dataTypes
+          _ -> fail "Query Not Defined"

@@ -69,7 +69,7 @@ renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
 
 renderField :: (Text, DataField [(Text, DataArgument)]) -> (Text, Maybe Text)
 renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
-  (key `typeAssignment` argTypeName <> " -> ResM ( " <> renderWrappedType fieldTypeWrappers fieldType <> " )", argTypes)
+  (key `typeAssignment` argTypeName <> " -> ResM (" <> renderWrappedType fieldTypeWrappers fieldType <> ")", argTypes)
   where
     (argTypeName, argTypes) = renderArguments fieldArgs
     renderArguments :: [(Text, DataArgument)] -> (Text, Maybe Text)
