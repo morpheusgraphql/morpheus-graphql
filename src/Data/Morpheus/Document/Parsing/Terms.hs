@@ -9,6 +9,7 @@ module Data.Morpheus.Document.Parsing.Terms
   , qualifier
   , pipe
   , wrappedType
+  , setOf
   , Parser
   , Position
   ) where
@@ -20,12 +21,18 @@ import           Data.Text                          (Text)
 import qualified Data.Text                          as T (pack)
 import           Data.Void                          (Void)
 import           Text.Megaparsec                    (Parsec, SourcePos, between, getSourcePos, label, many, sepBy,
-                                                     (<?>), (<|>))
+                                                     sepEndBy, (<?>), (<|>))
 import           Text.Megaparsec.Char               (char, digitChar, letterChar, space)
 
 type Position = SourcePos
 
 type Parser = Parsec Void Text
+
+setOf :: Parser a -> Parser [a]
+setOf entry = setLiteral (entry `sepEndBy` many (char ',' *> space))
+
+setLiteral :: Parser [a] -> Parser [a]
+setLiteral = between (char '{' *> space) (char '}' *> space)
 
 pipe :: Parser ()
 pipe = char '|' *> space

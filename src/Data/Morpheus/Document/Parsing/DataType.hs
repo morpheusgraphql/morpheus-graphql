@@ -6,17 +6,17 @@ module Data.Morpheus.Document.Parsing.DataType
   ) where
 
 import           Data.Morpheus.Document.Parsing.Terms (Parser, nonNull, parseAssignment, parseMaybeTuple, pipe,
-                                                       qualifier, token, wrappedType)
+                                                       qualifier, setOf, token, wrappedType)
 import           Data.Morpheus.Types.Internal.Data    (DataArgument, DataField (..), DataFingerprint (..),
                                                        DataFullType (..), DataOutputField, DataType (..),
                                                        DataTypeKind (..), Key)
 import           Data.Text                            (Text)
-import           Text.Megaparsec                      (between, label, many, sepBy1, sepEndBy, (<|>))
+import           Text.Megaparsec                      (label, sepBy1, (<|>))
 import           Text.Megaparsec.Char                 (char, space, space1, string)
 
 dataArgument :: Parser (Text, DataArgument)
 dataArgument =
-  label "operatorArgument" $ do
+  label "Argument" $ do
     ((fieldName, _), (wrappers', fieldType)) <- parseAssignment qualifier wrappedType
     nonNull' <- nonNull
     pure
@@ -31,7 +31,7 @@ dataArgument =
           })
 
 entries :: Parser [(Key, DataOutputField)]
-entries = label "entries" $ between (char '{' *> space) (char '}' *> space) (entry `sepEndBy` many (char ',' *> space))
+entries = label "entries" $ setOf entry
   where
     fieldWithArgs =
       label "fieldWithArgs" $ do
@@ -97,4 +97,4 @@ dataUnion =
         }
 
 parseDataType :: Parser (Text, DataFullType)
-parseDataType = label "operator" $ dataObject <|> dataUnion
+parseDataType = label "dataType" $ dataObject <|> dataUnion
