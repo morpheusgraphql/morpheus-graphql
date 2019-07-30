@@ -47,7 +47,7 @@ mapKeys = map (\x -> (fieldName x, x))
 renderObject :: (a -> (Text, Maybe Text)) -> [a] -> Text
 renderObject f list = intercalate "\n\n" $ renderMainType : catMaybes types
   where
-    renderMainType = "{ \n  " <> intercalate (",\n" <> renderIndent) fields <> "\n} deriving (Generic)"
+    renderMainType = "\n  { " <> intercalate ("\n  ," <> renderIndent) fields <> "\n  } deriving (Generic)"
     (fields, types) = unzip (map f list)
 
 renderDataObject :: ((Text, DataField a) -> (Text, Maybe Text)) -> [(Text, DataField a)] -> Text
@@ -56,11 +56,17 @@ renderDataObject f list = renderObject f (ignoreHidden list)
     ignoreHidden :: [(Text, DataField a)] -> [(Text, DataField a)]
     ignoreHidden = filter (not . fieldHidden . snd)
 
+renderMaybe :: Text -> Text
+renderMaybe typeName = "Maybe " <> typeName
+
+renderList :: Text -> Text
+renderList typeName = "[" <> typeName <> "]"
+
 renderWrappedType :: [DataTypeWrapper] -> Text -> Text
-renderWrappedType [] typeName                          = "Maybe " <> typeName
+renderWrappedType [] typeName                          = renderMaybe typeName
 renderWrappedType [NonNullType] typeName               = typeName
-renderWrappedType (NonNullType:(ListType:xs)) typeName = "[" <> renderWrappedType xs typeName <> "]"
-renderWrappedType (ListType:xs) typeName               = "Maybe [" <> renderWrappedType xs typeName <> "]"
+renderWrappedType (NonNullType:(ListType:xs)) typeName = renderList $ renderWrappedType xs typeName
+renderWrappedType (ListType:xs) typeName               = renderMaybe $ renderList $ renderWrappedType xs typeName
 renderWrappedType (NonNullType:xs) typeName            = renderWrappedType xs typeName
 
 renderInputField :: (Text, DataField ()) -> (Text, Maybe Text)
