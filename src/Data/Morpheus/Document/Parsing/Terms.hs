@@ -6,6 +6,7 @@ module Data.Morpheus.Document.Parsing.Terms
   , parseAssignment
   , token
   , qualifier
+  , pipe
   , Parser
   , Position
   ) where
@@ -23,6 +24,10 @@ import           Text.Megaparsec.Char               (char, digitChar, letterChar
 type Position = SourcePos
 
 type Parser = Parsec Void Text
+
+pipe :: Parser ()
+pipe = char '|' *> space
+
 
 nonNull :: Parser [DataTypeWrapper]
 nonNull = do

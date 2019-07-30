@@ -5,13 +5,13 @@ module Data.Morpheus.Document.Parsing.DataType
   ( parseDataType
   ) where
 
-import           Data.Morpheus.Document.Parsing.Terms (Parser, nonNull, parseAssignment, parseMaybeTuple, qualifier,
-                                                       token)
+import           Data.Morpheus.Document.Parsing.Terms (Parser, nonNull, parseAssignment, parseMaybeTuple, pipe,
+                                                       qualifier, token)
 import           Data.Morpheus.Types.Internal.Data    (DataArgument, DataField (..), DataFingerprint (..),
                                                        DataFullType (..), DataOutputField, DataType (..),
                                                        DataTypeKind (..), DataTypeWrapper (..), Key)
 import           Data.Text                            (Text)
-import           Text.Megaparsec                      (between, label, many, sepEndBy, (<|>))
+import           Text.Megaparsec                      (between, label, many, sepBy1, sepEndBy, (<|>))
 import           Text.Megaparsec.Char                 (char, space, space1, string)
 
 wrapMock :: Parser ([DataTypeWrapper], Text)
@@ -75,15 +75,46 @@ entries = label "entries" $ between (char '{' *> space) (char '}' *> space) (ent
               , fieldHidden = False
               })
 
-parseDataType :: Parser (Text, DataFullType)
-parseDataType =
-  label "operator" $ do
-    _ <- string "type"
-    space1
-    typeName <- token
+typeDef :: Text -> Parser Text
+typeDef kind = do
+  _ <- string kind
+  space1
+  token
+
+dataObject :: Parser (Text, DataFullType)
+dataObject =
+  label "dataObject" $ do
+    typeName <- typeDef "type"
     typeData <- entries
     pure
       ( typeName
       , OutputObject $
         DataType
           {typeName, typeDescription = "", typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData})
+
+dataUnion :: Parser (Text, DataFullType)
+dataUnion =
+  label "dataUnion" $ do
+    typeName <- typeDef "union"
+    _ <- char '='
+    typeData <- map unionField <$> unionsParser
+    space
+    pure
+      ( typeName
+      , Union $
+        DataType
+          {typeName, typeDescription = "", typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData})
+  where
+    unionsParser = token `sepBy1` pipe
+    unionField name =
+      DataField
+        { fieldArgs = ()
+        , fieldName = ""
+        , fieldKind = KindObject
+        , fieldType = name
+        , fieldTypeWrappers = []
+        , fieldHidden = False
+        }
+
+parseDataType :: Parser (Text, DataFullType)
+parseDataType = label "operator" $ dataObject <|> dataUnion
