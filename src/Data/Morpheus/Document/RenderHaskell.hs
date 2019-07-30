@@ -15,7 +15,7 @@ import           Data.Text.Lazy.Encoding           (encodeUtf8)
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Data (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
-                                                    DataType (..), DataTypeLib, allDataTypes, showWrappedType)
+                                                    DataType (..), DataTypeLib, DataTypeWrapper (..), allDataTypes)
 
 renderHaskellDocument :: DataTypeLib -> ByteString
 renderHaskellDocument lib = encodeUtf8 $ LT.fromStrict $ intercalate "\n\n" $ map renderHaskellType visibleTypes
@@ -47,7 +47,7 @@ mapKeys = map (\x -> (fieldName x, x))
 renderObject :: (a -> (Text, Maybe Text)) -> [a] -> Text
 renderObject f list = intercalate "\n\n" $ renderMainType : catMaybes types
   where
-    renderMainType = "{ \n  " <> intercalate ("\n" <> renderIndent) fields <> "\n} deriving (Generic)"
+    renderMainType = "{ \n  " <> intercalate (",\n" <> renderIndent) fields <> "\n} deriving (Generic)"
     (fields, types) = unzip (map f list)
 
 renderDataObject :: ((Text, DataField a) -> (Text, Maybe Text)) -> [(Text, DataField a)] -> Text
@@ -56,13 +56,20 @@ renderDataObject f list = renderObject f (ignoreHidden list)
     ignoreHidden :: [(Text, DataField a)] -> [(Text, DataField a)]
     ignoreHidden = filter (not . fieldHidden . snd)
 
+renderWrappedType :: [DataTypeWrapper] -> Text -> Text
+renderWrappedType [] typeName                          = "Maybe " <> typeName
+renderWrappedType [NonNullType] typeName               = typeName
+renderWrappedType (NonNullType:(ListType:xs)) typeName = "[" <> renderWrappedType xs typeName <> "]"
+renderWrappedType (ListType:xs) typeName               = "Maybe [" <> renderWrappedType xs typeName <> "]"
+renderWrappedType (NonNullType:xs) typeName            = renderWrappedType xs typeName
+
 renderInputField :: (Text, DataField ()) -> (Text, Maybe Text)
 renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
-  (key `typeAssignment` showWrappedType fieldTypeWrappers fieldType, Nothing)
+  (key `typeAssignment` renderWrappedType fieldTypeWrappers fieldType, Nothing)
 
 renderField :: (Text, DataField [(Text, DataArgument)]) -> (Text, Maybe Text)
 renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
-  (key `typeAssignment` argTypeName <> " -> ResM " <> showWrappedType fieldTypeWrappers fieldType, argTypes)
+  (key `typeAssignment` argTypeName <> " -> ResM ( " <> renderWrappedType fieldTypeWrappers fieldType <> " )", argTypes)
   where
     (argTypeName, argTypes) = renderArguments fieldArgs
     renderArguments :: [(Text, DataArgument)] -> (Text, Maybe Text)
