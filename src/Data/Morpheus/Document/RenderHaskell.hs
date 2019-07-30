@@ -18,8 +18,10 @@ import           Data.Morpheus.Types.Internal.Data (DataArgument, DataField (..)
                                                     DataType (..), DataTypeLib, DataTypeWrapper (..), allDataTypes)
 
 renderHaskellDocument :: DataTypeLib -> ByteString
-renderHaskellDocument lib = encodeUtf8 $ LT.fromStrict $ intercalate "\n\n" $ map renderHaskellType visibleTypes
+renderHaskellDocument lib = encodeText $ renderLanguageExtensions <> renderImports <> types
   where
+    encodeText = encodeUtf8 . LT.fromStrict
+    types = intercalate "\n\n" $ map renderHaskellType visibleTypes
     visibleTypes = allDataTypes lib
 
 renderIndent :: Text
@@ -30,6 +32,12 @@ defineData name = "data " <> name <> " = " <> name <> " "
 
 typeAssignment :: Text -> Text -> Text
 typeAssignment key value = key <> " :: " <> value
+
+renderLanguageExtensions :: Text
+renderLanguageExtensions = "{-# LANGUAGE DeriveGeneric #-}\n" <> "\n"
+
+renderImports :: Text
+renderImports = "import    Data.Morpheus.Types  (ResM);\n" <> "import    GHC.Generics  (Generic);\n" <> "\n"
 
 renderHaskellType :: (Text, DataFullType) -> Text
 renderHaskellType (name, dataType) = defineData name <> renderType dataType

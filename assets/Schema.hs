@@ -1,3 +1,8 @@
+{-# LANGUAGE DeriveGeneric #-}
+
+import           Data.Morpheus.Types (ResM)
+import           GHC.Generics        (Generic)
+
 data Query = Query
   { deity :: ArgDeity -> ResM (Maybe Deity)
   } deriving (Generic)
