@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 
 module Data.Morpheus.Document.Parsing.Terms
   ( nonNull
@@ -7,6 +8,7 @@ module Data.Morpheus.Document.Parsing.Terms
   , token
   , qualifier
   , pipe
+  , wrappedType
   , Parser
   , Position
   ) where
@@ -27,7 +29,6 @@ type Parser = Parsec Void Text
 
 pipe :: Parser ()
 pipe = char '|' *> space
-
 
 nonNull :: Parser [DataTypeWrapper]
 nonNull = do
@@ -65,3 +66,18 @@ qualifier =
     position' <- getSourcePos
     value <- token
     return (value, position')
+
+wrappedType :: Parser ([DataTypeWrapper], Text)
+wrappedType = (unwrapped <|> wrapped) <* space
+  where
+    unwrapped :: Parser ([DataTypeWrapper], Text)
+    unwrapped = ([], ) <$> token <* space
+    ----------------------------------------------
+    wrapped :: Parser ([DataTypeWrapper], Text)
+    wrapped =
+      between
+        (char '[' *> space)
+        (char ']' *> space)
+        (do (wrappers, name) <- unwrapped <|> wrapped
+            nonNull' <- nonNull
+            return ((ListType : nonNull') ++ wrappers, name))

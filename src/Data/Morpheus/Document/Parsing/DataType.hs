@@ -6,39 +6,18 @@ module Data.Morpheus.Document.Parsing.DataType
   ) where
 
 import           Data.Morpheus.Document.Parsing.Terms (Parser, nonNull, parseAssignment, parseMaybeTuple, pipe,
-                                                       qualifier, token)
+                                                       qualifier, token, wrappedType)
 import           Data.Morpheus.Types.Internal.Data    (DataArgument, DataField (..), DataFingerprint (..),
                                                        DataFullType (..), DataOutputField, DataType (..),
-                                                       DataTypeKind (..), DataTypeWrapper (..), Key)
+                                                       DataTypeKind (..), Key)
 import           Data.Text                            (Text)
 import           Text.Megaparsec                      (between, label, many, sepBy1, sepEndBy, (<|>))
 import           Text.Megaparsec.Char                 (char, space, space1, string)
 
-wrapMock :: Parser ([DataTypeWrapper], Text)
-wrapMock = do
-  mock <- token
-  space
-  return ([], mock)
-
-insideList :: Parser ([DataTypeWrapper], Text)
-insideList =
-  between
-    (char '[' *> space)
-    (char ']' *> space)
-    (do (list, name) <- wrapMock <|> insideList
-        nonNull' <- nonNull
-        return ((ListType : nonNull') ++ list, name))
-
-wrappedSignature :: Parser ([DataTypeWrapper], Text)
-wrappedSignature = do
-  sig <- insideList <|> wrapMock
-  space
-  return sig
-
 dataArgument :: Parser (Text, DataArgument)
 dataArgument =
   label "operatorArgument" $ do
-    ((fieldName, _), (wrappers', fieldType)) <- parseAssignment qualifier wrappedSignature
+    ((fieldName, _), (wrappers', fieldType)) <- parseAssignment qualifier wrappedType
     nonNull' <- nonNull
     pure
       ( fieldName
@@ -61,7 +40,7 @@ entries = label "entries" $ between (char '{' *> space) (char '}' *> space) (ent
         return (name, args)
     entry =
       label "entry" $ do
-        ((fieldName, fieldArgs), (wrappers', fieldType)) <- parseAssignment fieldWithArgs wrappedSignature
+        ((fieldName, fieldArgs), (wrappers', fieldType)) <- parseAssignment fieldWithArgs wrappedType
         nonNull' <- nonNull
         -- variables <- parseMaybeTuple dataArgument
         return
@@ -97,6 +76,7 @@ dataUnion =
   label "dataUnion" $ do
     typeName <- typeDef "union"
     _ <- char '='
+    space
     typeData <- map unionField <$> unionsParser
     space
     pure
