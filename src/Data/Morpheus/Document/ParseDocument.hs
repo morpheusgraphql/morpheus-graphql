@@ -1,19 +1,18 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns   #-}
 
 module Data.Morpheus.Document.ParseDocument
   ( parseGraphQLDocument
   ) where
 
+import           Data.ByteString.Lazy.Char8            (ByteString)
 import           Data.Text                             (Text)
+import qualified Data.Text.Lazy                        as LT (toStrict)
+import           Data.Text.Lazy.Encoding               (decodeUtf8)
 
 -- MORPHEUS
 import           Data.Morpheus.Document.Parsing.Parser (parseDocument)
 import           Data.Morpheus.Types.Internal.Data     (DataTypeLib)
 
-parseGraphQLDocument :: Either [Text] DataTypeLib
-parseGraphQLDocument = parseDocument document
-  where
-    document =
-      "type Query {\n  deity (name: [[String!]]!, mythology: String): Deity \n} \n type Deity {\n  fullName: String!\n  power: String\n}"
+parseGraphQLDocument :: ByteString -> Either [Text] DataTypeLib
+parseGraphQLDocument x = parseDocument (LT.toStrict $ decodeUtf8 x)

@@ -2,7 +2,12 @@ module Main
   ( main
   ) where
 
-import qualified Options.Applicative as OA
+import qualified Data.ByteString.Lazy   as L (readFile, writeFile)
+import           Data.Semigroup         ((<>))
+import qualified Options.Applicative    as OA
+
+-- MORPHEUS
+import           Data.Morpheus.Document (toMorpheusHaskellAPi)
 
 data MorpheusArgs = MorpheusArgs
   { argVersion :: Bool
@@ -18,4 +23,7 @@ parseMorpheusArgs =
   OA.many (OA.strArgument $ OA.metavar "FILENAME" <> OA.help "Input file(s)")
 
 main :: IO ()
-main = OA.execParser parserInfo >>= print
+main = OA.execParser parserInfo >>= writeHaskell
+  where
+    writeHaskell MorpheusArgs {argFiles = [path]} = toMorpheusHaskellAPi <$> L.readFile path >>= L.writeFile "assets/Schema.hs"
+    writeHaskell _ = print "Error: missing argument"

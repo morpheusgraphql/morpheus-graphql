@@ -1,0 +1,9 @@
+type Query {
+  deity (name: [[String!]]!,
+  mythology: String): Deity
+}
+
+type Deity {
+  fullName: String!
+   power: String
+}
