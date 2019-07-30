@@ -13,6 +13,6 @@ data ArgDeity = ArgDeity
   } deriving (Generic)
 
 data Deity = Deity
-  { fullName :: () -> ResM (String)
+  { fullName :: () -> ResM String
   , power    :: () -> ResM (Maybe String)
   } deriving (Generic)

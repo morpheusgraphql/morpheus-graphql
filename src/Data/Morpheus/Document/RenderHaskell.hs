@@ -37,7 +37,7 @@ renderLanguageExtensions :: Text
 renderLanguageExtensions = "{-# LANGUAGE DeriveGeneric #-}\n" <> "\n"
 
 renderImports :: Text
-renderImports = "import    Data.Morpheus.Types  (ResM);\n" <> "import    GHC.Generics  (Generic);\n" <> "\n"
+renderImports = "import    Data.Morpheus.Types  (ResM)\n" <> "import    GHC.Generics  (Generic)\n" <> "\n"
 
 renderHaskellType :: (Text, DataFullType) -> Text
 renderHaskellType (name, dataType) = defineData name <> renderType dataType
