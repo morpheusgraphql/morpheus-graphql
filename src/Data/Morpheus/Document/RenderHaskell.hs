@@ -48,7 +48,7 @@ renderImports = "import    Data.Morpheus.Types  (ResM)\n" <> "import    GHC.Gene
 renderHaskellType :: (Text, DataFullType) -> Text
 renderHaskellType (name, dataType) = defineData name <> renderType dataType
   where
-    renderType (Leaf (LeafScalar _)) = ""
+    renderType (Leaf (LeafScalar _)) = defineCon name <> " Int"
     renderType (Leaf (LeafEnum DataType {typeData})) = unionType typeData
     renderType (Union DataType {typeData}) = renderUnion name typeData
     renderType (InputObject DataType {typeData}) = defineCon name <> renderDataObject renderInputField typeData

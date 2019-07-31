@@ -1,7 +1,9 @@
 type Query {
   deity (name: [[[[[String!]]!]]],
-  mythology: String): Deity
+  mythology: String): Character
 }
+
+union Character = Creature | Deity  | Human
 
 type Deity {
   fullName: String!
@@ -21,8 +23,7 @@ type Human {
 enum City {
     Athens
     Ithaca
-    Sparta
-    Troy
+    Sparta Troy
 }
 
-union Character = Creature | Deity  | Human
+scalar Power
