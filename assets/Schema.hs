@@ -86,9 +86,6 @@ data Realm = Realm
 instance GQLType Realm where
   type KIND Realm = INPUT_OBJECT
 
-resolveRealm :: ResM Realm
-resolveRealm = return Realm {}
-
 ---- GQL Deity -------------------------------
 data Deity = Deity
   { fullName :: () -> ResM String

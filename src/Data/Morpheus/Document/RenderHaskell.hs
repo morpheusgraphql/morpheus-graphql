@@ -68,16 +68,17 @@ renderHaskellType (name, dataType) = typeIntro <> renderData name <> renderType 
     ----------------------------------------------------------------------------------------------------------
 
 renderResolver :: (Text, DataFullType) -> Text
-renderResolver (name, dataType) = renderSignature <> renderFunc <> renderType dataType
+renderResolver (name, dataType) = renderType dataType
   where
-    renderType (Leaf LeafScalar {}) = renderReturn <> "$ " <> renderCon name <> "0 0"
-    renderType (Leaf (LeafEnum DataType {typeData})) = renderReturn <> renderCon (head typeData)
-    renderType (Union DataType {typeData}) = renderUnionCon name typeCon <> " <$> " <> "resolve" <> typeCon
+    renderType (Leaf LeafScalar {}) = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
+    renderType (Leaf (LeafEnum DataType {typeData})) = defFunc <> renderReturn <> renderCon (head typeData)
+    renderType (Union DataType {typeData}) = defFunc <> renderUnionCon name typeCon <> " <$> " <> "resolve" <> typeCon
       where
         typeCon = fieldType $ head typeData
-    renderType (InputObject DataType {typeData}) = renderReturn <> renderCon name <> "{" <> "}"
-    renderType InputUnion {} = "\n -- Error: Input Union Not Supported"
-    renderType (OutputObject DataType {typeData}) = renderReturn <> renderCon name <> "{" <> "}"
+    renderType (OutputObject DataType {typeData}) = defFunc <> renderReturn <> renderCon name <> "{" <> "}"
+    renderType _ = "" -- INPUT Types Does not Need Resolvers
+    --------------------------------
+    defFunc = renderSignature <> renderFunc
     ----------------------------------------------------------------------------------------------------------
     renderSignature = renderAssignment ("resolve" <> name) ("ResM " <> name) <> "\n"
     ----------------------------------------------------------------------------------------------------------
