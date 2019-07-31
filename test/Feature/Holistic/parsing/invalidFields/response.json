@@ -1,11 +1,11 @@
 {
-  "errors": [
+	"errors": [
     {
-      "message": "offset=66:\nunexpected end of input\nexpecting '}', entry, or white space\n",
+      "message": "offset=26:\nunexpected '<'\nexpecting ',', '_', '}', body, digit, entry, letter, maybeArguments, or white space\n",
       "locations": [
         {
-          "line": 5,
-          "column": 1
+          "line": 1,
+          "column": 27
         }
       ]
     }
