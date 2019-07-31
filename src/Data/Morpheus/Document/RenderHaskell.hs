@@ -15,8 +15,8 @@ import qualified Data.Text.Lazy                         as LT (fromStrict)
 import           Data.Text.Lazy.Encoding                (encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Document.Rendering.Terms (indent, renderAssignment, renderCon, renderData, renderList,
-                                                         renderMaybe, renderTuple)
+import           Data.Morpheus.Document.Rendering.Terms (indent, renderAssignment, renderCon, renderData,
+                                                         renderExtension, renderTuple, renderWrapped)
 import           Data.Morpheus.Types.Internal.Data      (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
                                                          DataType (..), DataTypeLib, DataTypeWrapper (..), allDataTypes)
 
@@ -83,23 +83,16 @@ renderDataObject f list = renderObject f (ignoreHidden list)
     ignoreHidden :: [(Text, DataField a)] -> [(Text, DataField a)]
     ignoreHidden = filter (not . fieldHidden . snd)
 
-renderWrappedType :: [DataTypeWrapper] -> Text -> Text
-renderWrappedType [] typeName                          = renderMaybe typeName
-renderWrappedType [NonNullType] typeName               = typeName
-renderWrappedType (NonNullType:(ListType:xs)) typeName = renderList $ renderWrappedType xs typeName
-renderWrappedType (ListType:xs) typeName               = renderMaybe $ renderList $ renderWrappedType xs typeName
-renderWrappedType (NonNullType:xs) typeName            = renderWrappedType xs typeName
-
 renderInputField :: (Text, DataField ()) -> (Text, Maybe Text)
 renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
-  (key `renderAssignment` renderWrappedType fieldTypeWrappers fieldType, Nothing)
+  (key `renderAssignment` renderWrapped fieldTypeWrappers fieldType, Nothing)
 
 renderField :: (Text, DataField [(Text, DataArgument)]) -> (Text, Maybe Text)
 renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
   (key `renderAssignment` argTypeName <> " -> ResM " <> result fieldTypeWrappers, argTypes)
   where
-    result wrappers@(NonNullType:_) = renderWrappedType wrappers fieldType
-    result wrappers                 = renderTuple (renderWrappedType wrappers fieldType)
+    result wrappers@(NonNullType:_) = renderWrapped wrappers fieldType
+    result wrappers                 = renderTuple (renderWrapped wrappers fieldType)
     (argTypeName, argTypes) = renderArguments fieldArgs
     renderArguments :: [(Text, DataArgument)] -> (Text, Maybe Text)
     renderArguments [] = ("()", Nothing)

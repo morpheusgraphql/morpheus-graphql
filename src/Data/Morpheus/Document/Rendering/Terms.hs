@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Document.Render.Terms
+module Data.Morpheus.Document.Rendering.Terms
   ( indent
   , renderData
   , renderCon
@@ -9,9 +9,11 @@ module Data.Morpheus.Document.Render.Terms
   , renderTuple
   , renderAssignment
   , renderExtension
+  , renderWrapped
   ) where
 
-import           Data.Text (Text)
+import           Data.Morpheus.Types.Internal.Data (DataTypeWrapper (..))
+import           Data.Text                         (Text)
 
 indent :: Text
 indent = "  "
@@ -36,3 +38,10 @@ renderAssignment key value = key <> " :: " <> value
 
 renderExtension :: Text -> Text
 renderExtension name = "{-# LANGUAGE " <> name <> " #-}\n"
+
+renderWrapped :: [DataTypeWrapper] -> Text -> Text
+renderWrapped [] typeName                          = renderMaybe typeName
+renderWrapped [NonNullType] typeName               = typeName
+renderWrapped (NonNullType:(ListType:xs)) typeName = renderList $ renderWrapped xs typeName
+renderWrapped (ListType:xs) typeName               = renderMaybe $ renderList $ renderWrapped xs typeName
+renderWrapped (NonNullType:xs) typeName            = renderWrapped xs typeName
