@@ -9,26 +9,32 @@ import           Data.Morpheus.Document.Parsing.Terms (Parser, nonNull, parseAss
                                                        qualifier, setOf, token, wrappedType)
 import           Data.Morpheus.Types.Internal.Data    (DataArgument, DataField (..), DataFingerprint (..),
                                                        DataFullType (..), DataLeaf (..), DataOutputField, DataType (..),
-                                                       DataTypeKind (..), DataValidator (..), Key)
+                                                       DataTypeKind (..), DataTypeWrapper, DataValidator (..), Key)
 import           Data.Text                            (Text)
 import           Text.Megaparsec                      (label, sepBy1, (<|>))
 import           Text.Megaparsec.Char                 (char, space, space1, string)
+
+createType :: Text -> a -> DataType a
+createType typeName typeData =
+  DataType {typeName, typeDescription = "", typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData}
+
+createField :: a -> Text -> ([DataTypeWrapper], Text) -> DataField a
+createField fieldArgs fieldName (fieldTypeWrappers, fieldType) =
+  DataField
+    { fieldArgs
+    , fieldName
+    , fieldKind = KindObject -- DON'T care
+    , fieldType
+    , fieldTypeWrappers
+    , fieldHidden = False
+    }
 
 dataArgument :: Parser (Text, DataArgument)
 dataArgument =
   label "Argument" $ do
     ((fieldName, _), (wrappers', fieldType)) <- parseAssignment qualifier wrappedType
     nonNull' <- nonNull
-    pure
-      ( fieldName
-      , DataField
-          { fieldArgs = ()
-          , fieldName
-          , fieldKind = KindObject -- TODO : realKinds
-          , fieldType
-          , fieldTypeWrappers = nonNull' ++ wrappers'
-          , fieldHidden = False
-          })
+    pure (fieldName, createField () fieldName (nonNull' ++ wrappers', fieldType))
 
 entries :: Parser [(Key, DataOutputField)]
 entries = label "entries" $ setOf entry
@@ -42,17 +48,16 @@ entries = label "entries" $ setOf entry
       label "entry" $ do
         ((fieldName, fieldArgs), (wrappers', fieldType)) <- parseAssignment fieldWithArgs wrappedType
         nonNull' <- nonNull
-        -- variables <- parseMaybeTuple dataArgument
-        return
-          ( fieldName
-          , DataField
-              { fieldArgs
-              , fieldName
-              , fieldKind = KindObject -- TODO : realKinds
-              , fieldType
-              , fieldTypeWrappers = nonNull' ++ wrappers'
-              , fieldHidden = False
-              })
+        return (fieldName, createField fieldArgs fieldName (nonNull' ++ wrappers', fieldType))
+
+inputEntries :: Parser [(Key, DataArgument)]
+inputEntries = label "inputEntries" $ setOf entry
+  where
+    entry =
+      label "entry" $ do
+        ((fieldName, _), (wrappers', fieldType)) <- parseAssignment qualifier wrappedType
+        nonNull' <- nonNull
+        return (fieldName, createField () fieldName (nonNull' ++ wrappers', fieldType))
 
 typeDef :: Text -> Parser Text
 typeDef kind = do
@@ -60,69 +65,45 @@ typeDef kind = do
   space1
   token
 
+dataInputObject :: Parser (Text, DataFullType)
+dataInputObject =
+  label "inputObject" $ do
+    typeName <- typeDef "input"
+    typeData <- inputEntries
+    pure (typeName, InputObject $ createType typeName typeData)
+
 dataObject :: Parser (Text, DataFullType)
 dataObject =
-  label "dataObject" $ do
+  label "object" $ do
     typeName <- typeDef "type"
     typeData <- entries
-    pure
-      ( typeName
-      , OutputObject $
-        DataType
-          {typeName, typeDescription = "", typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData})
+    pure (typeName, OutputObject $ createType typeName typeData)
 
 dataScalar :: Parser (Text, DataFullType)
 dataScalar =
-  label "dataObject" $ do
+  label "scalar" $ do
     typeName <- typeDef "scalar"
-    pure
-      ( typeName
-      , Leaf $
-        LeafScalar $
-        DataType
-          { typeName
-          , typeDescription = ""
-          , typeFingerprint = SystemFingerprint ""
-          , typeVisibility = True
-          , typeData = DataValidator pure
-          })
+    pure (typeName, Leaf $ LeafScalar $ createType typeName (DataValidator pure))
 
 dataEnum :: Parser (Text, DataFullType)
 dataEnum =
-  label "dataObject" $ do
+  label "enum" $ do
     typeName <- typeDef "enum"
     typeData <- setOf token
-    pure
-      ( typeName
-      , Leaf $
-        LeafEnum $
-        DataType
-          {typeName, typeDescription = "", typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData})
+    pure (typeName, Leaf $ LeafEnum $ createType typeName typeData)
 
 dataUnion :: Parser (Text, DataFullType)
 dataUnion =
-  label "dataUnion" $ do
+  label "union" $ do
     typeName <- typeDef "union"
     _ <- char '='
     space
     typeData <- map unionField <$> unionsParser
     space
-    pure
-      ( typeName
-      , Union $
-        DataType
-          {typeName, typeDescription = "", typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData})
+    pure (typeName, Union $ createType typeName typeData)
   where
     unionsParser = token `sepBy1` pipe
-    unionField name =
-      DataField
-        { fieldArgs = ()
-        , fieldName = ""
-        , fieldKind = KindObject
-        , fieldType = name
-        , fieldTypeWrappers = []
-        , fieldHidden = False
-        }
+    unionField fieldType = createField () "" ([], fieldType)
 
 parseDataType :: Parser (Text, DataFullType)
-parseDataType = label "dataType" $ dataObject <|> dataUnion <|> dataEnum <|> dataScalar
+parseDataType = label "dataType" $ dataObject <|> dataInputObject <|> dataUnion <|> dataEnum <|> dataScalar

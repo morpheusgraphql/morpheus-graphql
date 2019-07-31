@@ -4,12 +4,18 @@ import    Data.Morpheus.Types  (ResM)
 import    GHC.Generics  (Generic)
 
 data Query = Query 
-  { deity :: ArgDeity -> ResM (Maybe Character)
+  { deity :: ArgDeity -> ResM (Deity)
+  ,  character :: ArgCharacter -> ResM (Character)
   } deriving (Generic)
 
 data ArgDeity = ArgDeity 
   { name :: Maybe [Maybe [Maybe [[Maybe [String]]]]]
   ,  mythology :: Maybe String
+  } deriving (Generic)
+
+data ArgCharacter = ArgCharacter 
+  { characterID :: String
+  ,  age :: Maybe Int
   } deriving (Generic)
 
 data City = 
@@ -19,6 +25,11 @@ data City =
   | Troy deriving (Generic)
 
 data Power = Power  Int
+
+data Realm = Realm 
+  { owner :: String
+  ,  place :: Maybe Int
+  } deriving (Generic)
 
 data Deity = Deity 
   { fullName :: () -> ResM (String)

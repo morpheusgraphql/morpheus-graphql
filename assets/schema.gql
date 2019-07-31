@@ -1,6 +1,6 @@
 type Query {
-  deity (name: [[[[[String!]]!]]],
-  mythology: String): Character
+  deity (name: [[[[[String!]]!]]], mythology: String): Deity!
+  character (characterID: String! , age: Int ): Character!
 }
 
 union Character = Creature | Deity  | Human
@@ -18,6 +18,11 @@ type Creature {
 type Human {
   humanName: String!
   profession: String
+}
+
+input Realm {
+  owner: String!
+  place: Int
 }
 
 enum City {
