@@ -1,52 +1,55 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-import    Data.Morpheus.Types  (ResM)
-import    GHC.Generics  (Generic)
+import           Data.Morpheus.Types (ResM)
+import           GHC.Generics        (Generic)
 
-data Query = Query 
-  { deity :: ArgDeity -> ResM (Deity)
-  ,  character :: ArgCharacter -> ResM (Character)
+data Query = Query
+  { deity     :: ArgDeity -> ResM (Deity)
+  , character :: ArgCharacter -> ResM (Character)
   } deriving (Generic)
 
-data ArgDeity = ArgDeity 
-  { name :: Maybe [Maybe [Maybe [[Maybe [String]]]]]
-  ,  mythology :: Maybe String
+data ArgDeity = ArgDeity
+  { name      :: Maybe [Maybe [Maybe [[Maybe [String]]]]]
+  , mythology :: Maybe String
   } deriving (Generic)
 
-data ArgCharacter = ArgCharacter 
+data ArgCharacter = ArgCharacter
   { characterID :: String
-  ,  age :: Maybe Int
+  , age         :: Maybe Int
   } deriving (Generic)
 
-data City = 
-  Athens
+data City
+  = Athens
   | Ithaca
   | Sparta
-  | Troy deriving (Generic)
+  | Troy
+  deriving (Generic)
 
-data Power = Power  Int
+data Power =
+  Power Int
 
-data Realm = Realm 
+data Realm = Realm
   { owner :: String
-  ,  place :: Maybe Int
+  , place :: Maybe Int
   } deriving (Generic)
 
-data Deity = Deity 
+data Deity = Deity
   { fullName :: () -> ResM (String)
-  ,  power :: () -> ResM (Maybe String)
+  , power    :: () -> ResM (Maybe String)
   } deriving (Generic)
 
-data Creature = Creature 
+data Creature = Creature
   { creatureName :: () -> ResM (String)
-  ,  abilities :: () -> ResM (Maybe String)
+  , abilities    :: () -> ResM (Maybe String)
   } deriving (Generic)
 
-data Human = Human 
-  { humanName :: () -> ResM (String)
-  ,  profession :: () -> ResM (Maybe String)
+data Human = Human
+  { humanName  :: () -> ResM (String)
+  , profession :: () -> ResM (Maybe String)
   } deriving (Generic)
 
-data Character = 
-  Character_CREATURE Creature
+data Character
+  = Character_CREATURE Creature
   | Character_DEITY Deity
-  | Character_HUMAN Human deriving (Generic)
+  | Character_HUMAN Human
+  deriving (Generic)
