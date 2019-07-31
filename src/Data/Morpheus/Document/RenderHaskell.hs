@@ -79,8 +79,14 @@ renderResolver (name, dataType) = renderType dataType
     renderType (OutputObject DataType {typeData}) = defFunc <> renderReturn <> renderCon name <> renderObjFields
       where
         renderObjFields = "\n  " <> renderSet (map renderFieldRes typeData)
-        renderFieldRes (key, DataField {fieldType}) = key <> " = const " <> fieldValue fieldType
+        renderFieldRes (key, DataField {fieldType, fieldTypeWrappers}) =
+          key <> " = const " <> renderValue fieldTypeWrappers fieldType
           where
+            renderValue []                            = const $ "$ " <> renderReturn <> "Nothing"
+            renderValue [NonNullType]                 = fieldValue
+            renderValue (ListType:_)                  = const $ "$ " <> renderReturn <> "Just []"
+            renderValue (NonNullType:(ListType:_))    = const $ "$ " <> renderReturn <> "[]"
+            renderValue (NonNullType:(NonNullType:_)) = const "Error: should not Happen"
             fieldValue "String" = "$ return \"\""
             fieldValue "Int"    = "$ return 0"
             fieldValue fName    = "resolve" <> fName
