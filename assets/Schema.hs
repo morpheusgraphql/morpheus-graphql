@@ -7,6 +7,7 @@ module Schema where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types (GQLType (..), ResM)
+import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
 
 ---- GQL Query -------------------------------
@@ -16,12 +17,12 @@ data Query = Query
   } deriving (Generic)
 
 data ArgDeity = ArgDeity
-  { name      :: Maybe [Maybe [Maybe [[Maybe [String]]]]]
-  , mythology :: Maybe String
+  { name      :: Maybe [Maybe [Maybe [[Maybe [Text]]]]]
+  , mythology :: Maybe Text
   } deriving (Generic)
 
 data ArgCharacter = ArgCharacter
-  { characterID :: String
+  { characterID :: Text
   , age         :: Maybe Int
   } deriving (Generic)
 
@@ -38,13 +39,13 @@ data Mutation = Mutation
   } deriving (Generic)
 
 data ArgCreateDeity = ArgCreateDeity
-  { deityName      :: Maybe [Maybe [Maybe [[Maybe [String]]]]]
-  , deityMythology :: Maybe String
+  { deityName      :: Maybe [Maybe [Maybe [[Maybe [Text]]]]]
+  , deityMythology :: Maybe Text
   } deriving (Generic)
 
 data ArgCreateCharacter = ArgCreateCharacter
   { charRealm :: Realm
-  , charMutID :: String
+  , charMutID :: Text
   } deriving (Generic)
 
 instance GQLType Mutation where
@@ -80,7 +81,7 @@ resolvePower = return $ Power 0 0
 
 ---- GQL Realm -------------------------------
 data Realm = Realm
-  { owner :: String
+  { owner :: Text
   , place :: Maybe Int
   } deriving (Generic)
 
@@ -89,8 +90,8 @@ instance GQLType Realm where
 
 ---- GQL Deity -------------------------------
 data Deity = Deity
-  { fullName :: () -> ResM String
-  , power    :: () -> ResM (Maybe String)
+  { fullName :: () -> ResM Text
+  , power    :: () -> ResM (Maybe Text)
   } deriving (Generic)
 
 instance GQLType Deity where
@@ -101,8 +102,8 @@ resolveDeity = return Deity {fullName = const $ return "", power = const $ retur
 
 ---- GQL Creature -------------------------------
 data Creature = Creature
-  { creatureName :: () -> ResM String
-  , abilities    :: () -> ResM (Maybe String)
+  { creatureName :: () -> ResM Text
+  , abilities    :: () -> ResM (Maybe Text)
   } deriving (Generic)
 
 instance GQLType Creature where
@@ -113,8 +114,8 @@ resolveCreature = return Creature {creatureName = const $ return "", abilities =
 
 ---- GQL Human -------------------------------
 data Human = Human
-  { humanName  :: () -> ResM String
-  , profession :: () -> ResM (Maybe String)
+  { humanName  :: () -> ResM Text
+  , profession :: () -> ResM (Maybe Text)
   } deriving (Generic)
 
 instance GQLType Human where

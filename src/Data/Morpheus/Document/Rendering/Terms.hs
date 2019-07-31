@@ -51,8 +51,12 @@ renderExtension :: Text -> Text
 renderExtension name = "{-# LANGUAGE " <> name <> " #-}\n"
 
 renderWrapped :: [DataTypeWrapper] -> Text -> Text
-renderWrapped [] typeName                          = renderMaybe typeName
-renderWrapped [NonNullType] typeName               = typeName
-renderWrapped (NonNullType:(ListType:xs)) typeName = renderList $ renderWrapped xs typeName
-renderWrapped (ListType:xs) typeName               = renderMaybe $ renderList $ renderWrapped xs typeName
-renderWrapped (NonNullType:xs) typeName            = renderWrapped xs typeName
+renderWrapped []                          = renderMaybe . strToText
+renderWrapped [NonNullType]               = strToText
+renderWrapped (NonNullType:(ListType:xs)) = renderList . renderWrapped xs
+renderWrapped (ListType:xs)               = renderMaybe . renderList . renderWrapped xs
+renderWrapped (NonNullType:xs)            = renderWrapped xs
+
+strToText :: Text -> Text
+strToText "String" = "Text"
+strToText x        = x

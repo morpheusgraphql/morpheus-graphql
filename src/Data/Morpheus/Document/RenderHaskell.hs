@@ -48,6 +48,7 @@ renderImports = T.concat (map renderImport imports) <> "\n"
       [ ("GHC.Generics", ["Generic"])
       , ("Data.Morpheus.Kind", ["SCALAR", "ENUM", "INPUT_OBJECT", "OBJECT", "UNION"])
       , ("Data.Morpheus.Types", ["ResM", "GQLType(..)"])
+      , ("Data.Text", ["Text"])
       ]
 
 renderHaskellType :: (Text, DataFullType) -> Text
