@@ -13,7 +13,7 @@ module Data.Morpheus.Server.ClientRegister
   ) where
 
 import           Control.Concurrent                     (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
-import           Control.Monad                          (forM_)
+import           Data.Foldable                          (traverse_)
 import           Data.List                              (intersect)
 import           Data.Text                              (Text)
 import           Data.UUID.V4                           (nextRandom)
@@ -64,7 +64,7 @@ updateClientByID id' updateFunc state = modifyMVar_ state (return . map updateCl
 publishUpdates :: (Eq s) => GQLState IO s -> PubPair s -> IO ()
 publishUpdates state (channels, value) = do
   state' <- readMVar state
-  forM_ state' sendMessage
+  traverse_ sendMessage state'
   where
     sendMessage (_, GQLClient {clientSessions = []}) = return ()
     sendMessage (_, GQLClient {clientSessions, clientConnection}) = mapM_ __send (filterByChannels clientSessions)

@@ -14,9 +14,13 @@ module Data.Morpheus.Resolve.Resolve
   , fullSchema
   ) where
 
+import qualified Codec.Binary.UTF8.String                as UTF8
 import           Control.Monad.Trans.Except                (ExceptT (..), runExceptT)
-import           Data.Aeson                                (eitherDecode, encode)
-import           Data.ByteString.Lazy.Char8                (ByteString)
+import           Data.Aeson                                (encode, eitherDecode)
+import           Data.Aeson.Parser                         (jsonNoDup)
+import           Data.Attoparsec.ByteString                (parseOnly)
+import qualified Data.ByteString                         as S
+import qualified Data.ByteString.Lazy.Char8              as L
 import           Data.Proxy
 import           GHC.Generics
 
@@ -55,9 +59,13 @@ type RootResCon m event query mutation subscription
      , EncodeCon (PublishStream m event) mutation
      , EncodeSubCon m event subscription)
 
-byteStringIO :: Monad m => (GQLRequest -> m GQLResponse) -> ByteString -> m ByteString
+eitherDecodeNoDup :: L.ByteString -> Either String GQLRequest
+eitherDecodeNoDup bs =
+  encode <$> parseOnly jsonNoDup (S.pack . UTF8.encode $ L.unpack bs) >>= eitherDecode
+
+byteStringIO :: Monad m => (GQLRequest -> m GQLResponse) -> L.ByteString -> m L.ByteString
 byteStringIO resolver request =
-  case eitherDecode request of
+  case eitherDecodeNoDup request of
     Left aesonError' -> return $ badRequestError aesonError'
     Right req        -> encode <$> resolver req
 
@@ -98,7 +106,7 @@ encodeQuery types rootResolver sel =
   runExceptT (fmap resolversBy rootResolver >>= resolveBySelection sel . (++) (resolversBy $ schemaAPI types))
 
 statefulResolver ::
-     EventCon s => GQLState IO s -> (ByteString -> ResponseStream IO s ByteString) -> ByteString -> IO ByteString
+     EventCon s => GQLState IO s -> (L.ByteString -> ResponseStream IO s L.ByteString) -> L.ByteString -> IO L.ByteString
 statefulResolver state streamApi request = do
   (actions, value) <- closeStream (streamApi request)
   mapM_ execute actions
