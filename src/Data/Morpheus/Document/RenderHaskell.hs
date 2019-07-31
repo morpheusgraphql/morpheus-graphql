@@ -37,7 +37,7 @@ unionType ls = "\n" <> indent <> intercalate ("\n" <> indent <> "| ") ls <> " de
 renderLanguageExtensions :: Text
 renderLanguageExtensions = T.concat (map renderExtension extensions) <> "\n"
   where
-    extensions = ["DeriveGeneric", "TypeFamilies"]
+    extensions = ["OverloadedStrings", "DeriveGeneric", "TypeFamilies"]
 
 renderImports :: Text
 renderImports = T.concat (map renderImport imports) <> "\n"
@@ -79,7 +79,11 @@ renderResolver (name, dataType) = renderType dataType
     renderType (OutputObject DataType {typeData}) = defFunc <> renderReturn <> renderCon name <> renderObjFields
       where
         renderObjFields = "\n  " <> renderSet (map renderFieldRes typeData)
-        renderFieldRes (key, DataField {}) = key <> " = 0"
+        renderFieldRes (key, DataField {fieldType}) = key <> " = const " <> fieldValue fieldType
+          where
+            fieldValue "String" = "$ return \"\""
+            fieldValue "Int"    = "$ return 0"
+            fieldValue fName    = "resolve" <> fName
     renderType _ = "" -- INPUT Types Does not Need Resolvers
     --------------------------------
     defFunc = renderSignature <> renderFunc
