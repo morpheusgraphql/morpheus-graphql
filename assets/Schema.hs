@@ -16,3 +16,19 @@ data Deity = Deity
   { fullName :: () -> ResM (String)
   , power    :: () -> ResM (Maybe String)
   } deriving (Generic)
+
+data Creature = Creature
+  { creatureName :: () -> ResM (String)
+  , abilities    :: () -> ResM (Maybe String)
+  } deriving (Generic)
+
+data Human = Human
+  { humanName  :: () -> ResM (String)
+  , profession :: () -> ResM (Maybe String)
+  } deriving (Generic)
+
+data Character
+  = Character_CREATURE Creature
+  | Character_DEITY Deity
+  | Character_HUMAN Human
+  deriving (Generic)

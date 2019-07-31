@@ -5,5 +5,17 @@ type Query {
 
 type Deity {
   fullName: String!
-   power: String
+  power: String
 }
+
+type Creature {
+  creatureName: String!
+  abilities: String
+}
+
+type Human {
+  humanName: String!
+  profession: String
+}
+
+union Character = Creature | Deity  | Human

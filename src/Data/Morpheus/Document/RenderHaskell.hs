@@ -9,7 +9,7 @@ module Data.Morpheus.Document.RenderHaskell
 import           Data.ByteString.Lazy.Char8        (ByteString)
 import           Data.Maybe                        (catMaybes)
 import           Data.Semigroup                    ((<>))
-import           Data.Text                         (Text, intercalate, toTitle)
+import           Data.Text                         (Text, intercalate, toTitle, toUpper)
 import qualified Data.Text.Lazy                    as LT (fromStrict)
 import           Data.Text.Lazy.Encoding           (encodeUtf8)
 
@@ -28,7 +28,10 @@ renderIndent :: Text
 renderIndent = "  "
 
 defineData :: Text -> Text
-defineData name = "data " <> name <> " = " <> name <> " "
+defineData name = "data " <> name <> " = "
+
+defineCon :: Text -> Text
+defineCon name = name <> " "
 
 typeAssignment :: Text -> Text -> Text
 typeAssignment key value = key <> " :: " <> value
@@ -44,16 +47,22 @@ renderHaskellType (name, dataType) = defineData name <> renderType dataType
   where
     renderType (Leaf (LeafScalar _)) = ""
     renderType (Leaf (LeafEnum DataType {typeData})) = renderEnum typeData
-    renderType (Union DataType {typeData}) = intercalate ("\n" <> renderIndent <> "| ") (map fieldType typeData)
-    renderType (InputObject DataType {typeData}) = renderDataObject renderInputField typeData
-    renderType (InputUnion DataType {typeData}) = renderDataObject renderInputField (mapKeys typeData)
-    renderType (OutputObject DataType {typeData}) = renderDataObject renderField typeData
+    renderType (Union DataType {typeData}) = renderUnion name typeData
+    renderType (InputObject DataType {typeData}) = defineCon name <> renderDataObject renderInputField typeData
+    renderType (InputUnion DataType {typeData}) = defineCon name <> renderDataObject renderInputField (mapKeys typeData)
+    renderType (OutputObject DataType {typeData}) = defineCon name <> renderDataObject renderField typeData
 
 mapKeys :: [DataField a] -> [(Text, DataField a)]
 mapKeys = map (\x -> (fieldName x, x))
 
 renderEnum :: [Text] -> Text
 renderEnum elements = "\n  { " <> intercalate ("\n  ," <> renderIndent) elements <> "\n  } deriving (Generic)"
+
+renderUnion :: Text -> [DataField ()] -> Text
+renderUnion typeName unionNames =
+  "\n" <> intercalate ("\n" <> renderIndent <> "| ") (map renderElem unionNames) <> "  deriving (Generic)"
+  where
+    renderElem DataField {fieldType} = defineCon (typeName <> "_" <> toUpper fieldType) <> fieldType
 
 renderObject :: (a -> (Text, Maybe Text)) -> [a] -> Text
 renderObject f list = intercalate "\n\n" $ renderMainType : catMaybes types
@@ -92,6 +101,7 @@ renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
     renderArguments :: [(Text, DataArgument)] -> (Text, Maybe Text)
     renderArguments [] = ("()", Nothing)
     renderArguments list =
-      (fieldArgTypeName, Just (defineData fieldArgTypeName <> renderDataObject renderInputField list))
+      ( fieldArgTypeName
+      , Just (defineData fieldArgTypeName <> defineCon fieldArgTypeName <> renderDataObject renderInputField list))
       where
         fieldArgTypeName = "Arg" <> toTitle key
