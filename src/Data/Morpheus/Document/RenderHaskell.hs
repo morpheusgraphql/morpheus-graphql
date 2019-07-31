@@ -6,19 +6,19 @@ module Data.Morpheus.Document.RenderHaskell
   ( renderHaskellDocument
   ) where
 
-import           Data.ByteString.Lazy.Char8           (ByteString)
-import           Data.Maybe                           (catMaybes)
-import           Data.Semigroup                       ((<>))
-import           Data.Text                            (Text, intercalate, pack, toUpper)
-import qualified Data.Text                            as T (concat, head, tail)
-import qualified Data.Text.Lazy                       as LT (fromStrict)
-import           Data.Text.Lazy.Encoding              (encodeUtf8)
+import           Data.ByteString.Lazy.Char8             (ByteString)
+import           Data.Maybe                             (catMaybes)
+import           Data.Semigroup                         ((<>))
+import           Data.Text                              (Text, intercalate, pack, toUpper)
+import qualified Data.Text                              as T (concat, head, tail)
+import qualified Data.Text.Lazy                         as LT (fromStrict)
+import           Data.Text.Lazy.Encoding                (encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Document.Render.Therms (indent, renderAssignment, renderCon, renderData, renderList,
-                                                       renderMaybe, renderTuple)
-import           Data.Morpheus.Types.Internal.Data    (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
-                                                       DataType (..), DataTypeLib, DataTypeWrapper (..), allDataTypes)
+import           Data.Morpheus.Document.Rendering.Terms (indent, renderAssignment, renderCon, renderData, renderList,
+                                                         renderMaybe, renderTuple)
+import           Data.Morpheus.Types.Internal.Data      (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
+                                                         DataType (..), DataTypeLib, DataTypeWrapper (..), allDataTypes)
 
 renderHaskellDocument :: DataTypeLib -> ByteString
 renderHaskellDocument lib = encodeText $ renderLanguageExtensions <> renderExports <> renderImports <> types

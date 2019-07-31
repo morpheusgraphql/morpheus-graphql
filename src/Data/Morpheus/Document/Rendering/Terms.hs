@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Document.Render.Therms
+module Data.Morpheus.Document.Render.Terms
   ( indent
   , renderData
   , renderCon
