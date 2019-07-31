@@ -32,10 +32,21 @@ parseDocument doc =
   where
     parseDoc = runParser request "<input>" doc
     request =
-      label "GQLQueryRoot" $ do
+      label "Document" $ do
         space
         dataTypes <- manyTill parseDataType eof
-        case lookup "Query" dataTypes of
-          Just (OutputObject x) -> pure (foldr defineType (initTypeLib ("Query", x)) withoutQuery)
-            where withoutQuery = filter ((/= "Query") . fst) dataTypes
-          _ -> fail "Query Not Defined"
+        buildLib dataTypes
+      where
+        buildLib types =
+          case takeByKey "Query" types of
+            (Just query, lib1) ->
+              case takeByKey "Mutation" lib1 of
+                (mutation, lib2) ->
+                  case takeByKey "Subscription" lib2 of
+                    (subscription, lib3) -> pure ((foldr defineType (initTypeLib query) lib3) {mutation, subscription})
+            _ -> fail "Query Not Defined"
+        ----------------------------------------------------------------------------
+        takeByKey key lib =
+          case lookup key lib of
+            Just (OutputObject value) -> (Just (key, value), filter ((/= key) . fst) lib)
+            _                         -> (Nothing, lib)
