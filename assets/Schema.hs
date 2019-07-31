@@ -4,8 +4,8 @@ import           Data.Morpheus.Types (ResM)
 import           GHC.Generics        (Generic)
 
 data Query = Query
-  { deity     :: ArgDeity -> ResM (Deity)
-  , character :: ArgCharacter -> ResM (Character)
+  { deity     :: ArgDeity -> ResM Deity
+  , character :: ArgCharacter -> ResM Character
   } deriving (Generic)
 
 data ArgDeity = ArgDeity
@@ -34,17 +34,17 @@ data Realm = Realm
   } deriving (Generic)
 
 data Deity = Deity
-  { fullName :: () -> ResM (String)
+  { fullName :: () -> ResM String
   , power    :: () -> ResM (Maybe String)
   } deriving (Generic)
 
 data Creature = Creature
-  { creatureName :: () -> ResM (String)
+  { creatureName :: () -> ResM String
   , abilities    :: () -> ResM (Maybe String)
   } deriving (Generic)
 
 data Human = Human
-  { humanName  :: () -> ResM (String)
+  { humanName  :: () -> ResM String
   , profession :: () -> ResM (Maybe String)
   } deriving (Generic)
 

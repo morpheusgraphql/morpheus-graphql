@@ -78,6 +78,9 @@ renderMaybe typeName = "Maybe " <> typeName
 renderList :: Text -> Text
 renderList typeName = "[" <> typeName <> "]"
 
+renderTuple :: Text -> Text
+renderTuple typeName = "(" <> typeName <> ")"
+
 renderWrappedType :: [DataTypeWrapper] -> Text -> Text
 renderWrappedType [] typeName                          = renderMaybe typeName
 renderWrappedType [NonNullType] typeName               = typeName
@@ -91,8 +94,10 @@ renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
 
 renderField :: (Text, DataField [(Text, DataArgument)]) -> (Text, Maybe Text)
 renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
-  (key `typeAssignment` argTypeName <> " -> ResM (" <> renderWrappedType fieldTypeWrappers fieldType <> ")", argTypes)
+  (key `typeAssignment` argTypeName <> " -> ResM " <> result fieldTypeWrappers, argTypes)
   where
+    result wrappers@(NonNullType:_) = renderWrappedType wrappers fieldType
+    result wrappers                 = renderTuple (renderWrappedType wrappers fieldType)
     (argTypeName, argTypes) = renderArguments fieldArgs
     renderArguments :: [(Text, DataArgument)] -> (Text, Maybe Text)
     renderArguments [] = ("()", Nothing)
