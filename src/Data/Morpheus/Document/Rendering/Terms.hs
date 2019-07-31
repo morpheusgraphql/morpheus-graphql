@@ -8,6 +8,7 @@ module Data.Morpheus.Document.Render.Terms
   , renderList
   , renderTuple
   , renderAssignment
+  , renderExtension
   ) where
 
 import           Data.Text (Text)
@@ -32,3 +33,6 @@ renderTuple typeName = "(" <> typeName <> ")"
 
 renderAssignment :: Text -> Text -> Text
 renderAssignment key value = key <> " :: " <> value
+
+renderExtension :: Text -> Text
+renderExtension name = "{-# LANGUAGE " <> name <> " #-}\n"

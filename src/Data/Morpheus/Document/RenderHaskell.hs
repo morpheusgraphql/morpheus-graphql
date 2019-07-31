@@ -36,7 +36,6 @@ unionType ls = "\n" <> indent <> intercalate ("\n" <> indent <> "| ") ls <> " de
 renderLanguageExtensions :: Text
 renderLanguageExtensions = T.concat (map renderExtension extensions) <> "\n"
   where
-    renderExtension name = "{-# LANGUAGE " <> name <> " #-}\n"
     extensions = ["DeriveGeneric", "TypeFamilies"]
 
 renderImports :: Text
