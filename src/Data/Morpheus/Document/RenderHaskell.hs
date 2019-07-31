@@ -10,7 +10,7 @@ import           Data.ByteString.Lazy.Char8        (ByteString)
 import           Data.Maybe                        (catMaybes)
 import           Data.Semigroup                    ((<>))
 import           Data.Text                         (Text, intercalate, pack, toUpper)
-import qualified Data.Text                         as T (head, tail)
+import qualified Data.Text                         as T (concat, head, tail)
 import qualified Data.Text.Lazy                    as LT (fromStrict)
 import           Data.Text.Lazy.Encoding           (encodeUtf8)
 
@@ -47,17 +47,32 @@ renderLanguageExtensions :: Text
 renderLanguageExtensions = "{-# LANGUAGE DeriveGeneric #-}\n" <> "\n"
 
 renderImports :: Text
-renderImports = "import    Data.Morpheus.Types  (ResM)\n" <> "import    GHC.Generics  (Generic)\n" <> "\n"
+renderImports = T.concat (map renderImport imports) <> "\n"
+  where
+    renderImport (src, list) = "import  " <> src <> "  (" <> intercalate "," list <> ")\n"
+    --------------------------------------------------------------------------------------
+    imports =
+      [ ("GHC.Generics", ["Generic"])
+      , ("Data.Morpheus.KIND", ["SCALAR", "ENUM", "INPUT_OBJECT", "OBJECT", "OBJECT"])
+      , ("Data.Morpheus.Types", ["ResM", "GQLType(..)"])
+      ]
 
 renderHaskellType :: (Text, DataFullType) -> Text
-renderHaskellType (name, dataType) = defineData name <> renderType dataType
+renderHaskellType (name, dataType) = typeIntro <> defineData name <> renderType dataType
   where
-    renderType (Leaf (LeafScalar _))                 = defineCon name <> "Int String"
-    renderType (Leaf (LeafEnum DataType {typeData})) = unionType typeData
-    renderType (Union DataType {typeData})           = renderUnion name typeData
-    renderType (InputObject DataType {typeData})     = defineCon name <> renderDataObject renderInputField typeData
-    renderType (InputUnion _)                        = "\n -- Error: Input Union Not Supported"
-    renderType (OutputObject DataType {typeData})    = defineCon name <> renderDataObject renderField typeData
+    renderType (Leaf (LeafScalar _)) = defineCon name <> "Int String" <> defineTypeClass "SCALAR"
+    renderType (Leaf (LeafEnum DataType {typeData})) = unionType typeData <> defineTypeClass "ENUM"
+    renderType (Union DataType {typeData}) = renderUnion name typeData <> defineTypeClass "UNION"
+    renderType (InputObject DataType {typeData}) =
+      defineCon name <> renderDataObject renderInputField typeData <> defineTypeClass "INPUT_OBJECT"
+    renderType (InputUnion _) = "\n -- Error: Input Union Not Supported"
+    renderType (OutputObject DataType {typeData}) =
+      defineCon name <> renderDataObject renderField typeData <> defineTypeClass "OBJECT"
+    ----------------------------------------------------------------------------------------------------------
+    typeIntro = "\n\n ---- GQL " <> name <> " ------------------------------- \n"
+    ----------------------------------------------------------------------------------------------------------
+    defineTypeClass kind =
+      "\n\ninstance GQLType " <> name <> " where\n" <> renderIndent <> "KIND " <> name <> " = " <> kind
 
 renderUnion :: Text -> [DataField ()] -> Text
 renderUnion typeName = unionType . map renderElem
