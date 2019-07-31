@@ -18,4 +18,11 @@ type Human {
   profession: String
 }
 
+enum City {
+    Athens
+    Ithaca
+    Sparta
+    Troy
+}
+
 union Character = Creature | Deity  | Human
