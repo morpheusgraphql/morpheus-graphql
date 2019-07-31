@@ -9,7 +9,8 @@ module Data.Morpheus.Document.RenderHaskell
 import           Data.ByteString.Lazy.Char8        (ByteString)
 import           Data.Maybe                        (catMaybes)
 import           Data.Semigroup                    ((<>))
-import           Data.Text                         (Text, intercalate, toTitle, toUpper)
+import           Data.Text                         (Text, intercalate, pack, toUpper)
+import qualified Data.Text                         as T (head, tail)
 import qualified Data.Text.Lazy                    as LT (fromStrict)
 import           Data.Text.Lazy.Encoding           (encodeUtf8)
 
@@ -108,4 +109,7 @@ renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
       ( fieldArgTypeName
       , Just (defineData fieldArgTypeName <> defineCon fieldArgTypeName <> renderDataObject renderInputField list))
       where
-        fieldArgTypeName = "Arg" <> toTitle key
+        fieldArgTypeName = "Arg" <> camelCase key
+        camelCase :: Text -> Text
+        camelCase ""   = ""
+        camelCase text = toUpper (pack [T.head text]) <> T.tail text
