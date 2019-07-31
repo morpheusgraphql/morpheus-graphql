@@ -43,7 +43,7 @@ renderHaskellType :: (Text, DataFullType) -> Text
 renderHaskellType (name, dataType) = defineData name <> renderType dataType
   where
     renderType (Leaf (LeafScalar _)) = ""
-    renderType (Leaf (LeafEnum DataType {typeData})) = ""
+    renderType (Leaf (LeafEnum DataType {typeData})) = renderEnum typeData
     renderType (Union DataType {typeData}) = intercalate ("\n" <> renderIndent <> "| ") (map fieldType typeData)
     renderType (InputObject DataType {typeData}) = renderDataObject renderInputField typeData
     renderType (InputUnion DataType {typeData}) = renderDataObject renderInputField (mapKeys typeData)
@@ -51,6 +51,9 @@ renderHaskellType (name, dataType) = defineData name <> renderType dataType
 
 mapKeys :: [DataField a] -> [(Text, DataField a)]
 mapKeys = map (\x -> (fieldName x, x))
+
+renderEnum :: [Text] -> Text
+renderEnum elements = "\n  { " <> intercalate ("\n  ," <> renderIndent) elements <> "\n  } deriving (Generic)"
 
 renderObject :: (a -> (Text, Maybe Text)) -> [a] -> Text
 renderObject f list = intercalate "\n\n" $ renderMainType : catMaybes types
