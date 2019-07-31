@@ -33,6 +33,9 @@ defineData name = "data " <> name <> " = "
 defineCon :: Text -> Text
 defineCon name = name <> " "
 
+unionType :: [Text] -> Text
+unionType ls = "\n" <> renderIndent <> intercalate ("\n" <> renderIndent <> "| ") ls <> " deriving (Generic)"
+
 typeAssignment :: Text -> Text -> Text
 typeAssignment key value = key <> " :: " <> value
 
@@ -46,7 +49,7 @@ renderHaskellType :: (Text, DataFullType) -> Text
 renderHaskellType (name, dataType) = defineData name <> renderType dataType
   where
     renderType (Leaf (LeafScalar _)) = ""
-    renderType (Leaf (LeafEnum DataType {typeData})) = renderEnum typeData
+    renderType (Leaf (LeafEnum DataType {typeData})) = unionType typeData
     renderType (Union DataType {typeData}) = renderUnion name typeData
     renderType (InputObject DataType {typeData}) = defineCon name <> renderDataObject renderInputField typeData
     renderType (InputUnion DataType {typeData}) = defineCon name <> renderDataObject renderInputField (mapKeys typeData)
@@ -55,13 +58,8 @@ renderHaskellType (name, dataType) = defineData name <> renderType dataType
 mapKeys :: [DataField a] -> [(Text, DataField a)]
 mapKeys = map (\x -> (fieldName x, x))
 
-renderEnum :: [Text] -> Text
-renderEnum elements = "\n  { " <> intercalate ("\n  ," <> renderIndent) elements <> "\n  } deriving (Generic)"
-
 renderUnion :: Text -> [DataField ()] -> Text
-renderUnion typeName unionNames =
-  "\n" <> renderIndent <> intercalate ("\n" <> renderIndent <> "| ") (map renderElem unionNames) <>
-  "  deriving (Generic)"
+renderUnion typeName = unionType . map renderElem
   where
     renderElem DataField {fieldType} = defineCon (typeName <> "_" <> toUpper fieldType) <> fieldType
 

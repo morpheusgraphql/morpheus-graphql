@@ -12,6 +12,13 @@ data ArgDeity = ArgDeity
   , mythology :: Maybe String
   } deriving (Generic)
 
+data City
+  = Athens
+  | Ithaca
+  | Sparta
+  | Troy
+  deriving (Generic)
+
 data Deity = Deity
   { fullName :: () -> ResM (String)
   , power    :: () -> ResM (Maybe String)
