@@ -60,7 +60,8 @@ renderEnum elements = "\n  { " <> intercalate ("\n  ," <> renderIndent) elements
 
 renderUnion :: Text -> [DataField ()] -> Text
 renderUnion typeName unionNames =
-  "\n" <> intercalate ("\n" <> renderIndent <> "| ") (map renderElem unionNames) <> "  deriving (Generic)"
+  "\n" <> renderIndent <> intercalate ("\n" <> renderIndent <> "| ") (map renderElem unionNames) <>
+  "  deriving (Generic)"
   where
     renderElem DataField {fieldType} = defineCon (typeName <> "_" <> toUpper fieldType) <> fieldType
 
