@@ -6,7 +6,8 @@ module Data.Morpheus.Document
   , toMorpheusHaskellAPi
   ) where
 
-import Data.ByteString.Lazy.Char8 (ByteString, pack)
+import           Data.ByteString.Lazy.Char8           (ByteString, pack)
+
 -- MORPHEUS
 import           Data.Morpheus.Document.ParseDocument (parseGraphQLDocument)
 import           Data.Morpheus.Document.RenderGraphQL (renderGraphQLDocument)
@@ -21,8 +22,8 @@ toGraphQLDocument x =
     Left errors -> pack (show errors)
     Right lib   -> renderGraphQLDocument lib
 
-toMorpheusHaskellAPi :: ByteString -> ByteString
+toMorpheusHaskellAPi :: ByteString -> Either ByteString ByteString
 toMorpheusHaskellAPi doc =
   case parseGraphQLDocument doc of
-    Left errors -> pack (show errors)
-    Right lib   -> renderHaskellDocument lib
+    Left errors -> Left $ pack (show errors)
+    Right lib   -> Right $ renderHaskellDocument lib

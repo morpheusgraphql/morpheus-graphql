@@ -15,7 +15,7 @@ data MorpheusArgs = MorpheusArgs
   } deriving (Show)
 
 parserInfo :: OA.ParserInfo MorpheusArgs
-parserInfo = OA.info (OA.helper <*> parseMorpheusArgs) $ OA.fullDesc <> OA.header "2.0.0"
+parserInfo = OA.info (OA.helper <*> parseMorpheusArgs) $ OA.header "2.0.0"
 
 parseMorpheusArgs :: OA.Parser MorpheusArgs
 parseMorpheusArgs =
@@ -25,5 +25,9 @@ parseMorpheusArgs =
 main :: IO ()
 main = OA.execParser parserInfo >>= writeHaskell
   where
-    writeHaskell MorpheusArgs {argFiles = [path]} = toMorpheusHaskellAPi <$> L.readFile path >>= L.writeFile "assets/Schema.hs"
-    writeHaskell _ = print "Error: missing argument"
+    writeHaskell MorpheusArgs {argFiles = [readPath, savePath]} =
+      toMorpheusHaskellAPi <$> L.readFile readPath >>= saveDocument
+      where
+        saveDocument (Left errors) = print errors
+        saveDocument (Right doc)   = L.writeFile savePath doc
+    writeHaskell _ = print "Error: missing arguments"
