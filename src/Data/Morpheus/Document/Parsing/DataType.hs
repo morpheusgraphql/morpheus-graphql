@@ -8,7 +8,7 @@ module Data.Morpheus.Document.Parsing.DataType
 import           Data.Morpheus.Document.Parsing.Terms (Parser, nonNull, parseAssignment, parseMaybeTuple, pipe,
                                                        qualifier, setOf, token, wrappedType)
 import           Data.Morpheus.Types.Internal.Data    (DataArgument, DataField (..), DataFingerprint (..),
-                                                       DataFullType (..), DataOutputField, DataType (..),
+                                                       DataFullType (..), DataLeaf (..), DataOutputField, DataType (..),
                                                        DataTypeKind (..), Key)
 import           Data.Text                            (Text)
 import           Text.Megaparsec                      (label, sepBy1, (<|>))
@@ -71,6 +71,18 @@ dataObject =
         DataType
           {typeName, typeDescription = "", typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData})
 
+dataEnum :: Parser (Text, DataFullType)
+dataEnum =
+  label "dataObject" $ do
+    typeName <- typeDef "enum"
+    typeData <- setOf token
+    pure
+      ( typeName
+      , Leaf $
+        LeafEnum $
+        DataType
+          {typeName, typeDescription = "", typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData})
+
 dataUnion :: Parser (Text, DataFullType)
 dataUnion =
   label "dataUnion" $ do
@@ -97,4 +109,4 @@ dataUnion =
         }
 
 parseDataType :: Parser (Text, DataFullType)
-parseDataType = label "dataType" $ dataObject <|> dataUnion
+parseDataType = label "dataType" $ dataObject <|> dataUnion <|> dataEnum
