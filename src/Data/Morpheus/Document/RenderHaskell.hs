@@ -48,15 +48,12 @@ renderImports = "import    Data.Morpheus.Types  (ResM)\n" <> "import    GHC.Gene
 renderHaskellType :: (Text, DataFullType) -> Text
 renderHaskellType (name, dataType) = defineData name <> renderType dataType
   where
-    renderType (Leaf (LeafScalar _)) = defineCon name <> " Int"
+    renderType (Leaf (LeafScalar _))                 = defineCon name <> " Int"
     renderType (Leaf (LeafEnum DataType {typeData})) = unionType typeData
-    renderType (Union DataType {typeData}) = renderUnion name typeData
-    renderType (InputObject DataType {typeData}) = defineCon name <> renderDataObject renderInputField typeData
-    renderType (InputUnion DataType {typeData}) = defineCon name <> renderDataObject renderInputField (mapKeys typeData)
-    renderType (OutputObject DataType {typeData}) = defineCon name <> renderDataObject renderField typeData
-
-mapKeys :: [DataField a] -> [(Text, DataField a)]
-mapKeys = map (\x -> (fieldName x, x))
+    renderType (Union DataType {typeData})           = renderUnion name typeData
+    renderType (InputObject DataType {typeData})     = defineCon name <> renderDataObject renderInputField typeData
+    renderType (InputUnion _)                        = "\n -- Error: Input Union Not Supported"
+    renderType (OutputObject DataType {typeData})    = defineCon name <> renderDataObject renderField typeData
 
 renderUnion :: Text -> [DataField ()] -> Text
 renderUnion typeName = unionType . map renderElem
