@@ -69,6 +69,18 @@ renderHaskellType (name, dataType) = typeIntro <> renderData name <> renderType 
       "\n\n" <> "instance GQLType " <> name <> " where\n" <> indent <> "type KIND " <> name <> " = " <> kind
     ----------------------------------------------------------------------------------------------------------
 
+--rootResolver :: GQLRootResolver IO () Query () ()
+--rootResolver =
+--  GQLRootResolver
+--    { queryResolver = return Query {deity = resolveDeity}
+--    , mutationResolver = return ()
+--    , subscriptionResolver = return ()
+--    }
+renderResObject :: [(Text, Text)] -> Text
+renderResObject = renderSet . map renderEntry
+  where
+    renderEntry (key, value) = key <> " = " <> value
+
 renderResolver :: (Text, DataFullType) -> Text
 renderResolver (name, dataType) = renderType dataType
   where
@@ -79,9 +91,9 @@ renderResolver (name, dataType) = renderType dataType
         typeCon = fieldType $ head typeData
     renderType (OutputObject DataType {typeData}) = defFunc <> renderReturn <> renderCon name <> renderObjFields
       where
-        renderObjFields = "\n  " <> renderSet (map renderFieldRes typeData)
+        renderObjFields = "\n  " <> renderResObject (map renderFieldRes typeData)
         renderFieldRes (key, DataField {fieldType, fieldTypeWrappers}) =
-          key <> " = const " <> renderValue fieldTypeWrappers fieldType
+          (key, "const " <> renderValue fieldTypeWrappers fieldType)
           where
             renderValue []                            = const $ "$ " <> renderReturn <> "Nothing"
             renderValue [NonNullType]                 = fieldValue
