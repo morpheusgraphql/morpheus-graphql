@@ -6,7 +6,7 @@ module Main
 
 import           Control.Monad.IO.Class         (liftIO)
 import           Data.Morpheus                  (Interpreter (..))
-import           Data.Morpheus.Document         (toGraphQLDocument, toMorpheusHaskellAPi)
+import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Deprecated.API                 (Actions, gqlRoot)
 import           Mythology.API                  (mythologyApi)
@@ -36,6 +36,5 @@ main = do
         post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
         get "/" $ file "examples/index.html"
         get "/schema.gql" $ raw (toGraphQLDocument gqlRoot)
-        get "/schema.hs" $ raw (toMorpheusHaskellAPi "")
         post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
         get "/mythology" $ file "examples/index.html"
