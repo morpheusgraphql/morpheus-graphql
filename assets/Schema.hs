@@ -27,6 +27,9 @@ data ArgCharacter = ArgCharacter
 instance GQLType Query where
   type KIND Query = OBJECT
 
+resolveQuery :: ResM Query
+resolveQuery = return Query {}
+
 ---- GQL Mutation -------------------------------
 data Mutation = Mutation
   { createDeity     :: ArgCreateDeity -> ResM Deity
@@ -46,6 +49,9 @@ data ArgCreateCharacter = ArgCreateCharacter
 instance GQLType Mutation where
   type KIND Mutation = OBJECT
 
+resolveMutation :: ResM Mutation
+resolveMutation = return Mutation {}
+
 ---- GQL City -------------------------------
 data City
   = Athens
@@ -57,13 +63,19 @@ data City
 instance GQLType City where
   type KIND City = ENUM
 
+resolveCity :: ResM City
+resolveCity = return Athens
+
 ---- GQL Power -------------------------------
 data Power =
   Power Int
-        String
+        Int
 
 instance GQLType Power where
   type KIND Power = SCALAR
+
+resolvePower :: ResM Power
+resolvePower = return $ Power 0 0
 
 ---- GQL Realm -------------------------------
 data Realm = Realm
@@ -74,6 +86,9 @@ data Realm = Realm
 instance GQLType Realm where
   type KIND Realm = INPUT_OBJECT
 
+resolveRealm :: ResM Realm
+resolveRealm = return Realm {}
+
 ---- GQL Deity -------------------------------
 data Deity = Deity
   { fullName :: () -> ResM String
@@ -82,6 +97,9 @@ data Deity = Deity
 
 instance GQLType Deity where
   type KIND Deity = OBJECT
+
+resolveDeity :: ResM Deity
+resolveDeity = return Deity {}
 
 ---- GQL Creature -------------------------------
 data Creature = Creature
@@ -92,6 +110,9 @@ data Creature = Creature
 instance GQLType Creature where
   type KIND Creature = OBJECT
 
+resolveCreature :: ResM Creature
+resolveCreature = return Creature {}
+
 ---- GQL Human -------------------------------
 data Human = Human
   { humanName  :: () -> ResM String
@@ -100,6 +121,9 @@ data Human = Human
 
 instance GQLType Human where
   type KIND Human = OBJECT
+
+resolveHuman :: ResM Human
+resolveHuman = return Human {}
 
 ---- GQL Character -------------------------------
 data Character
@@ -110,3 +134,6 @@ data Character
 
 instance GQLType Character where
   type KIND Character = UNION
+
+resolveCharacter :: ResM Character
+resolveCharacter = Character_CREATURE <$> resolveCreature

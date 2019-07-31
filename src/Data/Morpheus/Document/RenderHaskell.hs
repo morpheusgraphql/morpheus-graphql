@@ -16,7 +16,7 @@ import           Data.Text.Lazy.Encoding                (encodeUtf8)
 
 -- MORPHEUS
 import           Data.Morpheus.Document.Rendering.Terms (indent, renderAssignment, renderCon, renderData,
-                                                         renderExtension, renderTuple, renderWrapped)
+                                                         renderExtension, renderReturn, renderTuple, renderWrapped)
 import           Data.Morpheus.Types.Internal.Data      (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
                                                          DataType (..), DataTypeLib, DataTypeWrapper (..), allDataTypes)
 
@@ -24,7 +24,7 @@ renderHaskellDocument :: DataTypeLib -> ByteString
 renderHaskellDocument lib = encodeText $ renderLanguageExtensions <> renderExports <> renderImports <> types
   where
     encodeText = encodeUtf8 . LT.fromStrict
-    types = intercalate "\n\n" $ map renderHaskellType visibleTypes
+    types = intercalate "\n\n" $ map (\x -> renderHaskellType x <> "\n\n" <> renderResolver x) visibleTypes
     visibleTypes = allDataTypes lib
 
 renderExports :: Text
@@ -52,7 +52,7 @@ renderImports = T.concat (map renderImport imports) <> "\n"
 renderHaskellType :: (Text, DataFullType) -> Text
 renderHaskellType (name, dataType) = typeIntro <> renderData name <> renderType dataType
   where
-    renderType (Leaf (LeafScalar _)) = renderCon name <> "Int String" <> defineTypeClass "SCALAR"
+    renderType (Leaf (LeafScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR"
     renderType (Leaf (LeafEnum DataType {typeData})) = unionType typeData <> defineTypeClass "ENUM"
     renderType (Union DataType {typeData}) = renderUnion name typeData <> defineTypeClass "UNION"
     renderType (InputObject DataType {typeData}) =
@@ -65,11 +65,32 @@ renderHaskellType (name, dataType) = typeIntro <> renderData name <> renderType 
     ----------------------------------------------------------------------------------------------------------
     defineTypeClass kind =
       "\n\n" <> "instance GQLType " <> name <> " where\n" <> indent <> "type KIND " <> name <> " = " <> kind
+    ----------------------------------------------------------------------------------------------------------
+
+renderResolver :: (Text, DataFullType) -> Text
+renderResolver (name, dataType) = renderSignature <> renderFunc <> renderType dataType
+  where
+    renderType (Leaf LeafScalar {}) = renderReturn <> "$ " <> renderCon name <> "0 0"
+    renderType (Leaf (LeafEnum DataType {typeData})) = renderReturn <> renderCon (head typeData)
+    renderType (Union DataType {typeData}) = renderUnionCon name typeCon <> " <$> " <> "resolve" <> typeCon
+      where
+        typeCon = fieldType $ head typeData
+    renderType (InputObject DataType {typeData}) = renderReturn <> renderCon name <> "{" <> "}"
+    renderType InputUnion {} = "\n -- Error: Input Union Not Supported"
+    renderType (OutputObject DataType {typeData}) = renderReturn <> renderCon name <> "{" <> "}"
+    ----------------------------------------------------------------------------------------------------------
+    renderSignature = renderAssignment ("resolve" <> name) ("ResM " <> name) <> "\n"
+    ----------------------------------------------------------------------------------------------------------
+    renderFunc = "resolve" <> name <> " = "
+    ---------------------------------------
 
 renderUnion :: Text -> [DataField ()] -> Text
 renderUnion typeName = unionType . map renderElem
   where
-    renderElem DataField {fieldType} = renderCon (typeName <> "_" <> toUpper fieldType) <> fieldType
+    renderElem DataField {fieldType} = renderUnionCon typeName fieldType <> fieldType
+
+renderUnionCon :: Text -> Text -> Text
+renderUnionCon typeName conName = renderCon (typeName <> "_" <> toUpper conName)
 
 renderObject :: (a -> (Text, Maybe Text)) -> [a] -> Text
 renderObject f list = intercalate "\n\n" $ renderMainType : catMaybes types

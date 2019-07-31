@@ -2,6 +2,7 @@
 
 module Data.Morpheus.Document.Rendering.Terms
   ( indent
+  , renderReturn
   , renderData
   , renderCon
   , renderMaybe
@@ -17,6 +18,9 @@ import           Data.Text                         (Text)
 
 indent :: Text
 indent = "  "
+
+renderReturn :: Text
+renderReturn = "return "
 
 renderData :: Text -> Text
 renderData name = "data " <> name <> " = "
