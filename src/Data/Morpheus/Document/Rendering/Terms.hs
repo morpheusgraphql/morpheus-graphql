@@ -14,8 +14,11 @@ module Data.Morpheus.Document.Rendering.Terms
   , renderSet
   ) where
 
-import           Data.Morpheus.Types.Internal.Data (DataTypeWrapper (..))
+import           Data.Semigroup                    ((<>))
 import           Data.Text                         (Text, intercalate)
+
+-- MORPHEUS
+import           Data.Morpheus.Types.Internal.Data (DataTypeWrapper (..))
 
 indent :: Text
 indent = "  "
