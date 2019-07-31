@@ -3,3 +3,5 @@ resolver: lts-11.10
 extra-deps:
 - megaparsec-7.0.5
 - parser-combinators-1.1.0
+- aeson-1.4.4.0
+- time-compat-1.9.2.2
