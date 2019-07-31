@@ -18,11 +18,14 @@ import           Data.Morpheus.Types.Internal.Data (DataArgument, DataField (..)
                                                     DataType (..), DataTypeLib, DataTypeWrapper (..), allDataTypes)
 
 renderHaskellDocument :: DataTypeLib -> ByteString
-renderHaskellDocument lib = encodeText $ renderLanguageExtensions <> renderImports <> types
+renderHaskellDocument lib = encodeText $ renderLanguageExtensions <> renderExports <> renderImports <> types
   where
     encodeText = encodeUtf8 . LT.fromStrict
     types = intercalate "\n\n" $ map renderHaskellType visibleTypes
     visibleTypes = allDataTypes lib
+
+renderExports :: Text
+renderExports = "module Schema where\n\n"
 
 renderIndent :: Text
 renderIndent = "  "
@@ -48,7 +51,7 @@ renderImports = "import    Data.Morpheus.Types  (ResM)\n" <> "import    GHC.Gene
 renderHaskellType :: (Text, DataFullType) -> Text
 renderHaskellType (name, dataType) = defineData name <> renderType dataType
   where
-    renderType (Leaf (LeafScalar _))                 = defineCon name <> " Int"
+    renderType (Leaf (LeafScalar _))                 = defineCon name <> "Int String"
     renderType (Leaf (LeafEnum DataType {typeData})) = unionType typeData
     renderType (Union DataType {typeData})           = renderUnion name typeData
     renderType (InputObject DataType {typeData})     = defineCon name <> renderDataObject renderInputField typeData
