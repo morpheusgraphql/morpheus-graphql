@@ -11,10 +11,11 @@ module Data.Morpheus.Document.Rendering.Terms
   , renderAssignment
   , renderExtension
   , renderWrapped
+  , renderSet
   ) where
 
 import           Data.Morpheus.Types.Internal.Data (DataTypeWrapper (..))
-import           Data.Text                         (Text)
+import           Data.Text                         (Text, intercalate)
 
 indent :: Text
 indent = "  "
@@ -36,6 +37,9 @@ renderList typeName = "[" <> typeName <> "]"
 
 renderTuple :: Text -> Text
 renderTuple typeName = "(" <> typeName <> ")"
+
+renderSet :: [Text] -> Text
+renderSet fields = "{ " <> intercalate ("\n  ," <> indent) fields <> "}\n"
 
 renderAssignment :: Text -> Text -> Text
 renderAssignment key value = key <> " :: " <> value

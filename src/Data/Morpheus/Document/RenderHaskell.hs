@@ -16,7 +16,8 @@ import           Data.Text.Lazy.Encoding                (encodeUtf8)
 
 -- MORPHEUS
 import           Data.Morpheus.Document.Rendering.Terms (indent, renderAssignment, renderCon, renderData,
-                                                         renderExtension, renderReturn, renderTuple, renderWrapped)
+                                                         renderExtension, renderReturn, renderSet, renderTuple,
+                                                         renderWrapped)
 import           Data.Morpheus.Types.Internal.Data      (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
                                                          DataType (..), DataTypeLib, DataTypeWrapper (..), allDataTypes)
 
@@ -56,10 +57,10 @@ renderHaskellType (name, dataType) = typeIntro <> renderData name <> renderType 
     renderType (Leaf (LeafEnum DataType {typeData})) = unionType typeData <> defineTypeClass "ENUM"
     renderType (Union DataType {typeData}) = renderUnion name typeData <> defineTypeClass "UNION"
     renderType (InputObject DataType {typeData}) =
-      renderCon name <> renderDataObject renderInputField typeData <> defineTypeClass "INPUT_OBJECT"
+      renderCon name <> renderObject renderInputField typeData <> defineTypeClass "INPUT_OBJECT"
     renderType (InputUnion _) = "\n -- Error: Input Union Not Supported"
     renderType (OutputObject DataType {typeData}) =
-      renderCon name <> renderDataObject renderField typeData <> defineTypeClass "OBJECT"
+      renderCon name <> renderObject renderField typeData <> defineTypeClass "OBJECT"
     ----------------------------------------------------------------------------------------------------------
     typeIntro = "\n\n---- GQL " <> name <> " ------------------------------- \n"
     ----------------------------------------------------------------------------------------------------------
@@ -75,7 +76,10 @@ renderResolver (name, dataType) = renderType dataType
     renderType (Union DataType {typeData}) = defFunc <> renderUnionCon name typeCon <> " <$> " <> "resolve" <> typeCon
       where
         typeCon = fieldType $ head typeData
-    renderType (OutputObject DataType {typeData}) = defFunc <> renderReturn <> renderCon name <> "{" <> "}"
+    renderType (OutputObject DataType {typeData}) = defFunc <> renderReturn <> renderCon name <> renderObjFields
+      where
+        renderObjFields = "\n  " <> renderSet (map renderFieldRes typeData)
+        renderFieldRes (key, DataField {}) = key <> " = 0"
     renderType _ = "" -- INPUT Types Does not Need Resolvers
     --------------------------------
     defFunc = renderSignature <> renderFunc
@@ -96,14 +100,8 @@ renderUnionCon typeName conName = renderCon (typeName <> "_" <> toUpper conName)
 renderObject :: (a -> (Text, Maybe Text)) -> [a] -> Text
 renderObject f list = intercalate "\n\n" $ renderMainType : catMaybes types
   where
-    renderMainType = "\n  { " <> intercalate ("\n  ," <> indent) fields <> "\n  } deriving (Generic)"
+    renderMainType = "\n  " <> renderSet fields <> " deriving (Generic)"
     (fields, types) = unzip (map f list)
-
-renderDataObject :: ((Text, DataField a) -> (Text, Maybe Text)) -> [(Text, DataField a)] -> Text
-renderDataObject f list = renderObject f (ignoreHidden list)
-  where
-    ignoreHidden :: [(Text, DataField a)] -> [(Text, DataField a)]
-    ignoreHidden = filter (not . fieldHidden . snd)
 
 renderInputField :: (Text, DataField ()) -> (Text, Maybe Text)
 renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
@@ -120,7 +118,7 @@ renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
     renderArguments [] = ("()", Nothing)
     renderArguments list =
       ( fieldArgTypeName
-      , Just (renderData fieldArgTypeName <> renderCon fieldArgTypeName <> renderDataObject renderInputField list))
+      , Just (renderData fieldArgTypeName <> renderCon fieldArgTypeName <> renderObject renderInputField list))
       where
         fieldArgTypeName = "Arg" <> camelCase key
         camelCase :: Text -> Text
