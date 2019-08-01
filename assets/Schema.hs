@@ -20,6 +20,7 @@ rootResolver =
 data Query = Query
   { deity     :: ArgDeity -> ResM Deity
   , character :: ArgCharacter -> ResM Character
+  , hero      :: () -> ResM Human
   } deriving (Generic)
 
 data ArgDeity = ArgDeity
@@ -36,7 +37,7 @@ instance GQLType Query where
   type KIND Query = OBJECT
 
 resolveQuery :: ResM Query
-resolveQuery = return Query {deity = const resolveDeity, character = const resolveCharacter}
+resolveQuery = return Query {deity = const resolveDeity, character = const resolveCharacter, hero = const resolveHuman}
 
 ---- GQL Mutation -------------------------------
 data Mutation = Mutation
@@ -97,26 +98,26 @@ instance GQLType Realm where
 ---- GQL Deity -------------------------------
 data Deity = Deity
   { fullName :: () -> ResM Text
-  , power    :: () -> ResM (Maybe Text)
+  , power    :: () -> ResM Power
   } deriving (Generic)
 
 instance GQLType Deity where
   type KIND Deity = OBJECT
 
 resolveDeity :: ResM Deity
-resolveDeity = return Deity {fullName = const $ return "", power = const $ return Nothing}
+resolveDeity = return Deity {fullName = const $ return "", power = const resolvePower}
 
 ---- GQL Creature -------------------------------
 data Creature = Creature
   { creatureName :: () -> ResM Text
-  , abilities    :: () -> ResM (Maybe Text)
+  , realm        :: () -> ResM City
   } deriving (Generic)
 
 instance GQLType Creature where
   type KIND Creature = OBJECT
 
 resolveCreature :: ResM Creature
-resolveCreature = return Creature {creatureName = const $ return "", abilities = const $ return Nothing}
+resolveCreature = return Creature {creatureName = const $ return "", realm = const resolveCity}
 
 ---- GQL Human -------------------------------
 data Human = Human

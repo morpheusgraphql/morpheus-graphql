@@ -1,6 +1,7 @@
 type Query {
   deity (name: [[[[[String!]]!]]], mythology: String): Deity!
   character (characterID: String! , age: Int ): Character!
+  hero: Human!
 }
 
 type Mutation {
@@ -12,12 +13,12 @@ union Character = Creature | Deity  | Human
 
 type Deity {
   fullName: String!
-  power: String
+  power: Power!
 }
 
 type Creature {
   creatureName: String!
-  abilities: String
+  realm: City!
 }
 
 type Human {
