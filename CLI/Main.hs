@@ -7,7 +7,7 @@ module Main
 import qualified Data.ByteString.Lazy   as L (readFile, writeFile)
 import           Data.Semigroup         ((<>))
 import           Options.Applicative    (command, customExecParser, fullDesc, help, helper, info, long, metavar, prefs,
-                                         progDesc, short, showHelpOnError, subparser, switch)
+                                         progDesc, short, showHelpOnError, strArgument, subparser, switch)
 import qualified Options.Applicative    as OA
 
 -- MORPHEUS
@@ -22,14 +22,14 @@ main = defaultParser >>= writeHaskell
     writeHaskell Options {optionCommand} = executeCommand optionCommand
       where
         executeCommand Version = putStrLn $ "Morpheus GraphQL CLI, version " <> version
-        executeCommand Build {source, target} = toMorpheusHaskellAPi <$> L.readFile source >>= saveDocument
+        executeCommand APIFrom {source, target} = toMorpheusHaskellAPi <$> L.readFile source >>= saveDocument
           where
             saveDocument (Left errors) = print errors
             saveDocument (Right doc)   = L.writeFile target doc
 
 data Command
-  = Build { source :: FilePath
-          , target :: FilePath }
+  = APIFrom { source :: FilePath
+            , target :: FilePath }
   | Version
   deriving (Show)
 
@@ -50,11 +50,12 @@ defaultParser = customExecParser (prefs showHelpOnError) (info (helper <*> optio
         ----------------------------------------------------------------------------------------------
         commandParser = subparser $ foldr ((<>) . produceCommand) mempty commands
           where
-            pathParser label = OA.strArgument $ metavar label <> help (label <> " file")
+            pathParser label = strArgument $ metavar label <> help (label <> " file")
             produceCommand (c, a, b) = command c (info (helper <*> a) b)
             commands =
-              [ ( "build"
-                , pure Build <*> pathParser "source" <*> pathParser "target"
+              [ ( "apiFrom"
+                , pure APIFrom <*> pathParser "source" <*> pathParser "target"
                 , fullDesc <> progDesc "generate hs files with schema.gql")
+                ----------------------------------------------------------
               , ("version", pure Version, fullDesc <> progDesc "Clean up")
               ]
