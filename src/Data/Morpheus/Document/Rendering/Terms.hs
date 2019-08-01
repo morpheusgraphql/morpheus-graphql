@@ -42,7 +42,9 @@ renderTuple :: Text -> Text
 renderTuple typeName = "(" <> typeName <> ")"
 
 renderSet :: [Text] -> Text
-renderSet fields = "{ " <> intercalate ("\n  ," <> indent) fields <> "}\n"
+renderSet fields = bracket "{ " <> intercalate ("\n  ," <> indent) fields <> bracket "}\n"
+    where
+        bracket x = "\n    "<> x
 
 renderAssignment :: Text -> Text -> Text
 renderAssignment key value = key <> " :: " <> value
