@@ -1,7 +1,10 @@
 resolver: lts-11.10
 
 extra-deps:
+- base-orphans-0.8.1
 - megaparsec-7.0.5
 - parser-combinators-1.1.0
 - aeson-1.4.4.0
 - time-compat-1.9.2.2
+- th-abstraction-0.3.1.0
+- scotty-0.11.2
