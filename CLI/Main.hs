@@ -62,7 +62,7 @@ defaultParser = customExecParser (prefs showHelpOnError) (info (helper <*> optio
             commands =
               [ Behavior
                   { bName = "build"
-                  , bValue = pure Build <*> pathParser "Source" <*> pathParser "Target"
+                  , bValue = pure Build <*> pathParser "Source.gql" <*> pathParser "Target.hs"
                   , bDesc = "builds haskell API from  from GhraphQL schema \"*.gql\"  "
                   }
               , Behavior {bName = "about", bValue = pure About, bDesc = "api information"}
