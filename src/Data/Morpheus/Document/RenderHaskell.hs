@@ -46,7 +46,7 @@ renderImports = T.concat (map renderImport imports) <> "\n"
     imports =
       [ ("GHC.Generics", ["Generic"])
       , ("Data.Morpheus.Kind", ["SCALAR", "ENUM", "INPUT_OBJECT", "OBJECT", "UNION"])
-      , ("Data.Morpheus.Types", ["GQLRootResolver(..)", "ResM", "GQLType(..)"])
+      , ("Data.Morpheus.Types", ["GQLRootResolver(..)", "StreamM", "ResM", "GQLType(..)"])
       , ("Data.Text", ["Text"])
       ]
 
@@ -122,7 +122,10 @@ renderResolver (name, dataType) = renderType dataType
     --------------------------------
     defFunc = renderSignature <> renderFunc
     ----------------------------------------------------------------------------------------------------------
-    renderSignature = renderAssignment ("resolve" <> name) ("ResM " <> name) <> "\n"
+    renderSignature = renderAssignment ("resolve" <> name) (renderMonad name) <> "\n"
+    ---------------------------------------------------------------------------------
+    renderMonad "Mutation" = "StreamM () Mutation"
+    renderMonad tName      = "ResM " <> tName
     ----------------------------------------------------------------------------------------------------------
     renderFunc = "resolve" <> name <> " = "
     ---------------------------------------
@@ -138,7 +141,7 @@ renderUnionCon typeName conName = renderCon (typeName <> "_" <> toUpper conName)
 renderObject :: (a -> (Text, Maybe Text)) -> [a] -> Text
 renderObject f list = intercalate "\n\n" $ renderMainType : catMaybes types
   where
-    renderMainType = "\n  " <> renderSet fields <> " deriving (Generic)"
+    renderMainType = renderSet fields <> " deriving (Generic)"
     (fields, types) = unzip (map f list)
 
 renderInputField :: (Text, DataField ()) -> (Text, Maybe Text)
