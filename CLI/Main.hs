@@ -1,33 +1,60 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Main
   ( main
   ) where
 
 import qualified Data.ByteString.Lazy   as L (readFile, writeFile)
 import           Data.Semigroup         ((<>))
+import           Options.Applicative    (command, customExecParser, fullDesc, help, helper, info, long, metavar, prefs,
+                                         progDesc, short, showHelpOnError, subparser, switch)
 import qualified Options.Applicative    as OA
 
 -- MORPHEUS
 import           Data.Morpheus.Document (toMorpheusHaskellAPi)
 
-data MorpheusArgs = MorpheusArgs
-  { argVersion :: Bool
-  , argFiles   :: [FilePath]
-  } deriving (Show)
-
-parserInfo :: OA.ParserInfo MorpheusArgs
-parserInfo = OA.info (OA.helper <*> parseMorpheusArgs) $ OA.header "2.0.0"
-
-parseMorpheusArgs :: OA.Parser MorpheusArgs
-parseMorpheusArgs =
-  MorpheusArgs <$> OA.switch (OA.help "Show version information" <> OA.long "version" <> OA.hidden) <*>
-  OA.many (OA.strArgument $ OA.metavar "FILENAME" <> OA.help "Input file(s)")
+version :: String
+version = "0.1.1"
 
 main :: IO ()
-main = OA.execParser parserInfo >>= writeHaskell
+main = defaultParser >>= writeHaskell
   where
-    writeHaskell MorpheusArgs {argFiles = [readPath, savePath]} =
-      toMorpheusHaskellAPi <$> L.readFile readPath >>= saveDocument
+    writeHaskell Options {optionCommand} = executeCommand optionCommand
       where
-        saveDocument (Left errors) = print errors
-        saveDocument (Right doc)   = L.writeFile savePath doc
-    writeHaskell _ = print "Error: missing arguments"
+        executeCommand Version = putStrLn $ "Morpheus GraphQL CLI, version " <> version
+        executeCommand Build {source, target} = toMorpheusHaskellAPi <$> L.readFile source >>= saveDocument
+          where
+            saveDocument (Left errors) = print errors
+            saveDocument (Right doc)   = L.writeFile target doc
+
+data Command
+  = Build { source :: FilePath
+          , target :: FilePath }
+  | Version
+  deriving (Show)
+
+data Options = Options
+  { optionVerbose :: Bool
+  , optionCommand :: Command
+  } deriving (Show)
+
+defaultParser :: IO Options
+defaultParser = customExecParser (prefs showHelpOnError) (info (helper <*> optionParser) morpheusDescription)
+  where
+    morpheusDescription = fullDesc <> progDesc "Morpheus GraphQL CLI - haskell Api Generator"
+    -----------------------------------------------------
+    optionParser :: OA.Parser Options
+    optionParser = Options <$> verboseParser <*> commandParser
+      where
+        verboseParser = switch (long "version" <> short 'v' <> help "show Version number")
+        ----------------------------------------------------------------------------------------------
+        commandParser = subparser $ foldr ((<>) . produceCommand) mempty commands
+          where
+            pathParser label = OA.strArgument $ metavar label <> help (label <> " file")
+            produceCommand (c, a, b) = command c (info (helper <*> a) b)
+            commands =
+              [ ( "build"
+                , pure Build <*> pathParser "source" <*> pathParser "target"
+                , fullDesc <> progDesc "generate hs files with schema.gql")
+              , ("version", pure Version, fullDesc <> progDesc "Clean up")
+              ]
