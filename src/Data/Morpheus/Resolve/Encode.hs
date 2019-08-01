@@ -15,14 +15,16 @@ module Data.Morpheus.Resolve.Encode
   ( ObjectFieldResolvers(..)
   , EncodeCon
   , EncodeSubCon
-  , Encode
+  , EncodeOperator
   , encodeStreamRes
   , resolveBySelection
   , encodeSubStreamRes
   , resolveSubscriptionSelection
   , resolversBy
+  , resolverToResolveT
   ) where
 
+import           Control.Monad                              ((>=>))
 import           Control.Monad.Trans                        (lift)
 import           Control.Monad.Trans.Except
 import           Data.Map                                   (Map)
@@ -44,7 +46,9 @@ import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
 import           Data.Morpheus.Types.Custom                 (MapKind, Pair (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                (GQLType (KIND, __typeName))
+import           Data.Morpheus.Types.Internal.AST.Operator  (Operator' (..), ValidOperator')
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
+
 import           Data.Morpheus.Types.Internal.Base          (Position)
 import           Data.Morpheus.Types.Internal.Stream        (EventContent, StreamState (..), StreamT (..),
                                                              SubscribeStream)
@@ -54,21 +58,33 @@ import           Data.Morpheus.Types.Resolver               (Resolver, SubRes)
 
 type EncodeCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m Value))
 
-type Encode m a = ResolveT m a -> SelectionSet -> m (Either GQLErrors Value)
+type EncodeOperator m a = Resolver m a -> ValidOperator' -> m (Either GQLErrors Value)
 
 type SubT m event = ResolveT (SubscribeStream m event) (EventContent event -> ResolveT m Value)
 
 type EncodeSubCon m event a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (SubT m event))
 
-encodeStreamRes :: (Monad m, EncodeCon m a) => Encode m a
-encodeStreamRes rootResolver sel = runExceptT $ rootResolver >>= resolveBySelection sel . resolversBy
+encodeStreamRes :: (Monad m, EncodeCon m a) => EncodeOperator m a
+encodeStreamRes rootResolver Operator' {operatorSelection, operatorPosition, operatorName} =
+  runExceptT
+    (resolverToResolveT operatorPosition operatorName rootResolver >>=
+     resolveBySelection operatorSelection . resolversBy)
+
+resolverToResolveT :: Monad m => Position -> Text -> Resolver m a -> ResolveT m a
+resolverToResolveT pos name = ExceptT . resolverToResolveM pos name
+
+resolverToResolveM :: Monad m => Position -> Text -> Resolver m a -> m (Either GQLErrors a)
+resolverToResolveM pos fieldName resolver = runExceptT resolver >>= runExceptT . liftEither pos fieldName
 
 encodeSubStreamRes ::
      (Monad m, EncodeSubCon m event a)
-  => ResolveT (SubscribeStream m event) a
-  -> SelectionSet
+  => Resolver (SubscribeStream m event) a
+  -> ValidOperator'
   -> (SubscribeStream m event) (Either GQLErrors (EventContent event -> ResolveT m Value))
-encodeSubStreamRes rootResolver sel = runExceptT $ rootResolver >>= resolveSubscriptionSelection sel . resolversBy
+encodeSubStreamRes rootResolver Operator' {operatorSelection, operatorPosition, operatorName} =
+  runExceptT
+    (resolverToResolveT operatorPosition operatorName rootResolver >>=
+     resolveSubscriptionSelection operatorSelection . resolversBy)
 
 -- EXPORT -------------------------------------------------------
 type ResolveSel result = [(Text, Selection)] -> [(Text, (Text, Selection) -> result)] -> result
@@ -236,10 +252,8 @@ instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
         where handleResolver (events, res) = ExceptT $ StreamT $ pure $ StreamState [events] (Right $ liftEitherM res)
               ------------------------------------------------------------------------------------------------------
               liftEitherM :: (EventContent s -> Resolver m b) -> EventContent s -> ResValue m
-              liftEitherM subResolver event = ExceptT (runExceptT (subResolver event) >>= renderValue)
-              ------------------------------------------------------------------------------------------------------
-              renderValue (Left message) = pure $ Left $ fieldNotResolved selectionPosition fieldName (pack message)
-              renderValue (Right value)  = runExceptT $ encode value selection
+              liftEitherM subResolver =
+                resolverToResolveT selectionPosition fieldName . subResolver >=> (`encode` selection)
 
 --
 -- MAYBE

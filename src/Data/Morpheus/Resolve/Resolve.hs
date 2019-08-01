@@ -23,8 +23,9 @@ import           GHC.Generics
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                 (badRequestError, renderErrors)
 import           Data.Morpheus.Parser.Parser               (parseGQL)
-import           Data.Morpheus.Resolve.Encode              (Encode, EncodeCon, EncodeSubCon, encodeStreamRes,
-                                                            encodeSubStreamRes, resolveBySelection, resolversBy)
+import           Data.Morpheus.Resolve.Encode              (EncodeCon, EncodeOperator, EncodeSubCon, encodeStreamRes,
+                                                            encodeSubStreamRes, resolveBySelection, resolverToResolveT,
+                                                            resolversBy)
 import           Data.Morpheus.Resolve.Introspect          (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Schema.SchemaAPI            (hiddenRootFields, schemaAPI, schemaTypes)
 import           Data.Morpheus.Server.ClientRegister       (GQLState, publishUpdates)
@@ -80,22 +81,22 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
       query <- parseGQL request >>= validateRequest schema
       return (schema, query)
     ----------------------------------------------------------
-    execOperator (schema, Query Operator' {operatorSelection}) =
-      StreamT $ StreamState [] <$> encodeQuery schema queryResolver operatorSelection
-    execOperator (_, Mutation Operator' {operatorSelection}) =
-      mapS Publish (encodeStreamRes mutationResolver operatorSelection)
-    execOperator (_, Subscription Operator' {operatorSelection}) =
+    execOperator (schema, Query operator) = StreamT $ StreamState [] <$> encodeQuery schema queryResolver operator
+    execOperator (_, Mutation operator) = mapS Publish (encodeStreamRes mutationResolver operator)
+    execOperator (_, Subscription operator) =
       StreamT $ do
-        (channels, result) <- closeStream (encodeSubStreamRes subscriptionResolver operatorSelection)
+        (channels, result) <- closeStream (encodeSubStreamRes subscriptionResolver operator)
         pure $
           case result of
             Left gqlError -> StreamState [] (Left gqlError)
             Right subResolver -> StreamState [Subscribe (concat channels, handleRes)] (Right Null)
               where handleRes event = renderResponse <$> runExceptT (subResolver event)
 
-encodeQuery :: (Monad m, EncodeCon m a) => DataTypeLib -> Encode m a
-encodeQuery types rootResolver sel =
-  runExceptT (fmap resolversBy rootResolver >>= resolveBySelection sel . (++) (resolversBy $ schemaAPI types))
+encodeQuery :: (Monad m, EncodeCon m a) => DataTypeLib -> EncodeOperator m a
+encodeQuery types rootResolver Operator' {operatorSelection, operatorPosition, operatorName} =
+  runExceptT
+    (fmap resolversBy (resolverToResolveT operatorPosition operatorName rootResolver) >>=
+     resolveBySelection operatorSelection . (++) (resolversBy $ schemaAPI types))
 
 statefulResolver ::
      EventCon s => GQLState IO s -> (ByteString -> ResponseStream IO s ByteString) -> ByteString -> IO ByteString

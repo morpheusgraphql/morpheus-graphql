@@ -19,13 +19,12 @@ module Data.Morpheus.Types.Resolver
   , EventContent
   ) where
 
-import           Control.Monad.Trans.Except              (ExceptT (..))
+import           Control.Monad.Trans.Except          (ExceptT (..))
 
 -- MORPHEUS
 --
-import           Data.Morpheus.Types.Internal.Stream     (EventContent, PublishStream, StreamState (..), StreamT (..),
-                                                          SubscribeStream)
-import           Data.Morpheus.Types.Internal.Validation (ResolveT)
+import           Data.Morpheus.Types.Internal.Stream (EventContent, PublishStream, StreamState (..), StreamT (..),
+                                                      SubscribeStream)
 
 -- | Pure Resolver without effect
 type Pure = Either String
@@ -49,9 +48,9 @@ gqlResolver = ExceptT
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
 data GQLRootResolver m s query mut sub = GQLRootResolver
-  { queryResolver        :: ResolveT m query
-  , mutationResolver     :: ResolveT (PublishStream m s) mut
-  , subscriptionResolver :: ResolveT (SubscribeStream m s) sub
+  { queryResolver        :: Resolver m query
+  , mutationResolver     :: Resolver (PublishStream m s) mut
+  , subscriptionResolver :: Resolver (SubscribeStream m s) sub
   }
 
 -- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver

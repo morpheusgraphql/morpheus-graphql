@@ -8,7 +8,7 @@ module Schema
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (GQLRootResolver (..), GQLType (..), ResM)
+import           Data.Morpheus.Types (GQLRootResolver (..), GQLType (..), ResM, StreamM)
 import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
 
@@ -57,7 +57,7 @@ data ArgCreateCharacter = ArgCreateCharacter
 instance GQLType Mutation where
   type KIND Mutation = OBJECT
 
-resolveMutation :: ResM Mutation
+resolveMutation :: StreamM () Mutation
 resolveMutation = return Mutation {createDeity = const resolveDeity, createCharacter = const resolveCharacter}
 
 ---- GQL City -------------------------------
