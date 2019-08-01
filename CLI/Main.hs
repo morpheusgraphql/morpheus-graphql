@@ -6,8 +6,8 @@ module Main
 
 import qualified Data.ByteString.Lazy   as L (readFile, writeFile)
 import           Data.Semigroup         ((<>))
-import           Options.Applicative    (command, customExecParser, fullDesc, help, helper, info, long, metavar, prefs,
-                                         progDesc, short, showHelpOnError, strArgument, subparser, switch)
+import           Options.Applicative    (Parser, command, customExecParser, fullDesc, help, helper, info, long, metavar,
+                                         prefs, progDesc, short, showHelpOnError, strArgument, subparser, switch)
 import qualified Options.Applicative    as OA
 
 -- MORPHEUS
@@ -17,20 +17,20 @@ version :: String
 version = "0.1.1"
 
 main :: IO ()
-main = defaultParser >>= writeHaskell
+main = defaultParser >>= buildHaskellApi
   where
-    writeHaskell Options {optionCommand} = executeCommand optionCommand
+    buildHaskellApi Options {optionCommand} = executeCommand optionCommand
       where
-        executeCommand Version = putStrLn $ "Morpheus GraphQL CLI, version " <> version
-        executeCommand APIFrom {source, target} = toMorpheusHaskellAPi <$> L.readFile source >>= saveDocument
+        executeCommand About = putStrLn $ "Morpheus GraphQL CLI, version " <> version
+        executeCommand Build {source, target} = toMorpheusHaskellAPi <$> L.readFile source >>= saveDocument
           where
             saveDocument (Left errors) = print errors
             saveDocument (Right doc)   = L.writeFile target doc
 
 data Command
-  = APIFrom { source :: FilePath
-            , target :: FilePath }
-  | Version
+  = Build { source :: FilePath
+          , target :: FilePath }
+  | About
   deriving (Show)
 
 data Options = Options
@@ -38,24 +38,32 @@ data Options = Options
   , optionCommand :: Command
   } deriving (Show)
 
+data Behavior = Behavior
+  { bName  :: String
+  , bValue :: Parser Command
+  , bDesc  :: String
+  }
+
 defaultParser :: IO Options
 defaultParser = customExecParser (prefs showHelpOnError) (info (helper <*> optionParser) morpheusDescription)
   where
     morpheusDescription = fullDesc <> progDesc "Morpheus GraphQL CLI - haskell Api Generator"
     -----------------------------------------------------
     optionParser :: OA.Parser Options
-    optionParser = Options <$> verboseParser <*> commandParser
+    optionParser = Options <$> versionParser <*> commandParser
       where
-        verboseParser = switch (long "version" <> short 'v' <> help "show Version number")
+        versionParser = switch (long "version" <> short 'v' <> help "show Version number")
         ----------------------------------------------------------------------------------------------
         commandParser = subparser $ foldr ((<>) . produceCommand) mempty commands
           where
             pathParser label = strArgument $ metavar label <> help (label <> " file")
-            produceCommand (c, a, b) = command c (info (helper <*> a) b)
+            produceCommand Behavior {bName, bValue, bDesc} =
+              command bName (info (helper <*> bValue) (fullDesc <> progDesc bDesc))
             commands =
-              [ ( "apiFrom"
-                , pure APIFrom <*> pathParser "source" <*> pathParser "target"
-                , fullDesc <> progDesc "generate hs files with schema.gql")
-                ----------------------------------------------------------
-              , ("version", pure Version, fullDesc <> progDesc "Clean up")
+              [ Behavior
+                  { bName = "build"
+                  , bValue = pure Build <*> pathParser "Source" <*> pathParser "Target"
+                  , bDesc = "builds haskell API from  from GhraphQL schema \"*.gql\"  "
+                  }
+              , Behavior {bName = "about", bValue = pure About, bDesc = "api information"}
               ]
