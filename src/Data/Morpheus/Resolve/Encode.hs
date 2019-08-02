@@ -46,8 +46,7 @@ import           Data.Morpheus.Types.Custom                 (MapKind, Pair (..),
 import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                (GQLType (KIND, __typeName))
 import           Data.Morpheus.Types.Internal.AST.Operator  (Operator' (..), ValidOperator')
-import           Data.Morpheus.Types.Internal.AST.Selection (Arguments, Selection (..), SelectionRec (..), SelectionSet)
-
+import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base          (Position)
 import           Data.Morpheus.Types.Internal.Stream        (EventContent, StreamState (..), StreamT (..),
                                                              SubscribeStream)
@@ -215,14 +214,13 @@ instance (GQLType a, Encoder a (KIND a) result) => UnionResolvers (K1 s a) resul
 -- if you use it with Mutation or Subscription all effects inside will be lost
 instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
          Encoder (a -> Resolver m b) WRAPPER (ResValue m) where
-  __encode (WithGQLKind resolver) selection@(_, Selection {selectionArguments}) =
-    decodeArgs selectionArguments >>= encodeResolver selection . resolver
+  __encode (WithGQLKind resolver) selection = decodeArgs selection >>= encodeResolver selection . resolver
 
 -- packs Monad in StreamMonad
 instance (Monad m, Encoder a (KIND a) (ResValue m), ArgumentsConstraint p) =>
          Encoder (p -> Either String a) WRAPPER (ResValue m) where
-  __encode (WithGQLKind resolver) selection@(_, Selection {selectionArguments}) =
-    decodeArgs selectionArguments >>= encodeResolver selection . (ExceptT . pure . resolver)
+  __encode (WithGQLKind resolver) selection =
+    decodeArgs selection >>= encodeResolver selection . (ExceptT . pure . resolver)
 
 -- packs Monad in StreamMonad
 instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
@@ -231,8 +229,7 @@ instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
 
 instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
          Encoder (a -> SubRes m s b) WRAPPER (ResolveT (SubscribeStream m s) (EventContent s -> ResValue m)) where
-  __encode (WithGQLKind resolver) selection@(_, Selection {selectionArguments}) =
-    decodeArgs selectionArguments >>= handleResolver . resolver
+  __encode (WithGQLKind resolver) selection = decodeArgs selection >>= handleResolver . resolver
     where
       handleResolver (events, res) =
         ExceptT $ StreamT $ pure $ StreamState [events] (Right $ encodeResolver selection . res)
@@ -274,16 +271,16 @@ resolverToResolveT :: Monad m => Position -> Text -> Resolver m a -> ResolveT m 
 resolverToResolveT pos name = ExceptT . toResolveM
   where
     toResolveM :: Monad m => Resolver m a -> m (Either GQLErrors a)
-    toResolveM resolver = runExceptT resolver >>= runExceptT . liftEither pos name
+    toResolveM resolver = runExceptT resolver >>= runExceptT . liftEither
+      where
+        liftEither :: Monad m => Either String a -> ResolveT m a
+        liftEither (Left message) = failResolveT $ fieldNotResolved pos name (pack message)
+        liftEither (Right value)  = pure value
 
 encodeResolver :: (Monad m, Encoder a (KIND a) (ResValue m)) => (Text, Selection) -> Resolver m a -> ResValue m
 encodeResolver selection@(fieldName, Selection {selectionPosition}) =
   resolverToResolveT selectionPosition fieldName >=> (`encode` selection)
 
-liftEither :: Monad m => Position -> Text -> Either String a -> ResolveT m a
-liftEither position name (Left message) = failResolveT $ fieldNotResolved position name (pack message)
-liftEither _ _ (Right value)            = pure value
-
-decodeArgs :: (Monad m, ArgumentsConstraint a) => Arguments -> ResolveT m a
-decodeArgs arguments = ExceptT $ pure $ decodeArguments arguments
+decodeArgs :: (Monad m, ArgumentsConstraint a) => (Text, Selection) -> ResolveT m a
+decodeArgs (_, Selection {selectionArguments}) = ExceptT $ pure $ decodeArguments selectionArguments
 --------------------------------------------
