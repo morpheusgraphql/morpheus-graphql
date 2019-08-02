@@ -24,8 +24,7 @@ renderHaskellDocument lib =
   encodeText $ renderLanguageExtensions <> renderExports <> renderImports <> renderRootResolver lib <> types
   where
     encodeText = encodeUtf8 . LT.fromStrict
-    types = intercalate "\n\n" $ map (renderType <> const "\n\n" <> renderResolver) visibleTypes
-    visibleTypes = allDataTypes lib
+    types = intercalate "\n\n" $ map (renderType <> const "\n\n" <> renderResolver) (allDataTypes lib)
 
 renderLanguageExtensions :: Text
 renderLanguageExtensions = T.concat (map renderExtension extensions) <> "\n"
