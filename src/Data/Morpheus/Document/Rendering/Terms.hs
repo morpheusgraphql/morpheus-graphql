@@ -12,10 +12,11 @@ module Data.Morpheus.Document.Rendering.Terms
   , renderExtension
   , renderWrapped
   , renderSet
+  , renderUnionCon
   ) where
 
 import           Data.Semigroup                    ((<>))
-import           Data.Text                         (Text, intercalate)
+import           Data.Text                         (Text, intercalate, toUpper)
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Data (DataTypeWrapper (..))
@@ -43,8 +44,8 @@ renderTuple typeName = "(" <> typeName <> ")"
 
 renderSet :: [Text] -> Text
 renderSet fields = bracket "{ " <> intercalate ("\n  ," <> indent) fields <> bracket "}\n"
-    where
-        bracket x = "\n    "<> x
+  where
+    bracket x = "\n    " <> x
 
 renderAssignment :: Text -> Text -> Text
 renderAssignment key value = key <> " :: " <> value
@@ -62,3 +63,6 @@ renderWrapped (NonNullType:xs)            = renderWrapped xs
 strToText :: Text -> Text
 strToText "String" = "Text"
 strToText x        = x
+
+renderUnionCon :: Text -> Text -> Text
+renderUnionCon typeName conName = renderCon (typeName <> "_" <> toUpper conName)

@@ -7,18 +7,17 @@ module Data.Morpheus.Document.RenderHaskell
   ) where
 
 import           Data.ByteString.Lazy.Char8             (ByteString)
-import           Data.Maybe                             (catMaybes)
 import           Data.Semigroup                         ((<>))
-import           Data.Text                              (Text, intercalate, pack, toUpper)
-import qualified Data.Text                              as T (concat, head, tail)
+import           Data.Text                              (Text, intercalate)
+import qualified Data.Text                              as T (concat)
 import qualified Data.Text.Lazy                         as LT (fromStrict)
 import           Data.Text.Lazy.Encoding                (encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Document.Rendering.Terms (indent, renderAssignment, renderCon, renderData,
-                                                         renderExtension, renderReturn, renderSet, renderTuple,
-                                                         renderWrapped)
-import           Data.Morpheus.Types.Internal.Data      (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
+import           Data.Morpheus.Document.Rendering.Terms (renderAssignment, renderCon, renderExtension, renderReturn,
+                                                         renderSet, renderUnionCon)
+import           Data.Morpheus.Document.Rendering.Types (renderType)
+import           Data.Morpheus.Types.Internal.Data      (DataField (..), DataFullType (..), DataLeaf (..),
                                                          DataType (..), DataTypeLib (..), DataTypeWrapper (..),
                                                          allDataTypes)
 
@@ -27,7 +26,7 @@ renderHaskellDocument lib =
   encodeText $ renderLanguageExtensions <> renderExports <> renderImports <> renderAPI lib <> types
   where
     encodeText = encodeUtf8 . LT.fromStrict
-    types = intercalate "\n\n" $ map (\x -> renderHaskellType x <> "\n\n" <> renderResolver x) visibleTypes
+    types = intercalate "\n\n" $ map (renderType <> const "\n\n" <> renderResolver) visibleTypes
     visibleTypes = allDataTypes lib
 
 renderLanguageExtensions :: Text
@@ -70,41 +69,20 @@ renderAPI DataTypeLib {mutation, subscription} = renderSignature <> renderBody <
         maybeRes (Just (name, _)) = "resolve" <> name
         maybeRes Nothing          = "return ()"
 
-renderHaskellType :: (Text, DataFullType) -> Text
-renderHaskellType (name, dataType) = typeIntro <> renderData name <> renderType dataType
-  where
-    renderType (Leaf (LeafScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR"
-    renderType (Leaf (LeafEnum DataType {typeData})) = unionType typeData <> defineTypeClass "ENUM"
-    renderType (Union DataType {typeData}) = renderUnion name typeData <> defineTypeClass "UNION"
-    renderType (InputObject DataType {typeData}) =
-      renderCon name <> renderObject renderInputField typeData <> defineTypeClass "INPUT_OBJECT"
-    renderType (InputUnion _) = "\n -- Error: Input Union Not Supported"
-    renderType (OutputObject DataType {typeData}) =
-      renderCon name <> renderObject renderField typeData <> defineTypeClass "OBJECT"
-    ----------------------------------------------------------------------------------------------------------
-    typeIntro = "\n\n---- GQL " <> name <> " ------------------------------- \n"
-    ----------------------------------------------------------------------------------------------------------
-    defineTypeClass kind =
-      "\n\n" <> "instance GQLType " <> name <> " where\n" <> indent <> "type KIND " <> name <> " = " <> kind
-    ----------------------------------------------------------------------------------------------------------
-
 renderResObject :: [(Text, Text)] -> Text
 renderResObject = renderSet . map renderEntry
   where
     renderEntry (key, value) = key <> " = " <> value
 
-unionType :: [Text] -> Text
-unionType ls = "\n" <> indent <> intercalate ("\n" <> indent <> "| ") ls <> " deriving (Generic)"
-
 renderResolver :: (Text, DataFullType) -> Text
-renderResolver (name, dataType) = renderType dataType
+renderResolver (name, dataType) = renderSig dataType
   where
-    renderType (Leaf LeafScalar {}) = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
-    renderType (Leaf (LeafEnum DataType {typeData})) = defFunc <> renderReturn <> renderCon (head typeData)
-    renderType (Union DataType {typeData}) = defFunc <> renderUnionCon name typeCon <> " <$> " <> "resolve" <> typeCon
+    renderSig (Leaf LeafScalar {}) = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
+    renderSig (Leaf (LeafEnum DataType {typeData})) = defFunc <> renderReturn <> renderCon (head typeData)
+    renderSig (Union DataType {typeData}) = defFunc <> renderUnionCon name typeCon <> " <$> " <> "resolve" <> typeCon
       where
         typeCon = fieldType $ head typeData
-    renderType (OutputObject DataType {typeData}) = defFunc <> renderReturn <> renderCon name <> renderObjFields
+    renderSig (OutputObject DataType {typeData}) = defFunc <> renderReturn <> renderCon name <> renderObjFields
       where
         renderObjFields = renderResObject (map renderFieldRes typeData)
         renderFieldRes (key, DataField {fieldType, fieldTypeWrappers}) =
@@ -118,7 +96,7 @@ renderResolver (name, dataType) = renderType dataType
             fieldValue "String" = "$ return \"\""
             fieldValue "Int"    = "$ return 0"
             fieldValue fName    = "resolve" <> fName
-    renderType _ = "" -- INPUT Types Does not Need Resolvers
+    renderSig _ = "" -- INPUT Types Does not Need Resolvers
     --------------------------------
     defFunc = renderSignature <> renderFunc
     ----------------------------------------------------------------------------------------------------------
@@ -129,39 +107,3 @@ renderResolver (name, dataType) = renderType dataType
     ----------------------------------------------------------------------------------------------------------
     renderFunc = "resolve" <> name <> " = "
     ---------------------------------------
-
-renderUnion :: Text -> [DataField ()] -> Text
-renderUnion typeName = unionType . map renderElem
-  where
-    renderElem DataField {fieldType} = renderUnionCon typeName fieldType <> fieldType
-
-renderUnionCon :: Text -> Text -> Text
-renderUnionCon typeName conName = renderCon (typeName <> "_" <> toUpper conName)
-
-renderObject :: (a -> (Text, Maybe Text)) -> [a] -> Text
-renderObject f list = intercalate "\n\n" $ renderMainType : catMaybes types
-  where
-    renderMainType = renderSet fields <> " deriving (Generic)"
-    (fields, types) = unzip (map f list)
-
-renderInputField :: (Text, DataField ()) -> (Text, Maybe Text)
-renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
-  (key `renderAssignment` renderWrapped fieldTypeWrappers fieldType, Nothing)
-
-renderField :: (Text, DataField [(Text, DataArgument)]) -> (Text, Maybe Text)
-renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
-  (key `renderAssignment` argTypeName <> " -> ResM " <> result fieldTypeWrappers, argTypes)
-  where
-    result wrappers@(NonNullType:_) = renderWrapped wrappers fieldType
-    result wrappers                 = renderTuple (renderWrapped wrappers fieldType)
-    (argTypeName, argTypes) = renderArguments fieldArgs
-    renderArguments :: [(Text, DataArgument)] -> (Text, Maybe Text)
-    renderArguments [] = ("()", Nothing)
-    renderArguments list =
-      ( fieldArgTypeName
-      , Just (renderData fieldArgTypeName <> renderCon fieldArgTypeName <> renderObject renderInputField list))
-      where
-        fieldArgTypeName = "Arg" <> camelCase key
-        camelCase :: Text -> Text
-        camelCase ""   = ""
-        camelCase text = toUpper (pack [T.head text]) <> T.tail text
