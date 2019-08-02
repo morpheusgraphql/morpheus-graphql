@@ -24,7 +24,7 @@ import           GHC.Generics
 import           Data.Morpheus.Error.Utils                 (badRequestError, renderErrors)
 import           Data.Morpheus.Parser.Parser               (parseGQL)
 import           Data.Morpheus.Resolve.Encode              (EncodeCon, EncodeOperator, EncodeSubCon, encodeStreamRes,
-                                                            encodeSubStreamRes, resolveBySelection, resolverToResolveT,
+                                                            encodeSubStreamRes, operatorToResolveT, resolveBySelection,
                                                             resolversBy)
 import           Data.Morpheus.Resolve.Introspect          (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Schema.SchemaAPI            (hiddenRootFields, schemaAPI, schemaTypes)
@@ -92,10 +92,10 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
             Right subResolver -> StreamState [Subscribe (concat channels, handleRes)] (Right Null)
               where handleRes event = renderResponse <$> runExceptT (subResolver event)
 
-encodeQuery :: (Monad m, EncodeCon m a) => DataTypeLib -> EncodeOperator m a
-encodeQuery types rootResolver Operator' {operatorSelection, operatorPosition, operatorName} =
+encodeQuery :: (Monad m, EncodeCon m a) => DataTypeLib -> EncodeOperator m a Value
+encodeQuery types rootResolver operator@Operator' {operatorSelection} =
   runExceptT
-    (fmap resolversBy (resolverToResolveT operatorPosition operatorName rootResolver) >>=
+    (fmap resolversBy (operatorToResolveT operator rootResolver) >>=
      resolveBySelection operatorSelection . (++) (resolversBy $ schemaAPI types))
 
 statefulResolver ::

@@ -21,7 +21,7 @@ module Data.Morpheus.Resolve.Encode
   , encodeSubStreamRes
   , resolveSubscriptionSelection
   , resolversBy
-  , resolverToResolveT
+  , operatorToResolveT
   ) where
 
 import           Control.Monad                              ((>=>))
@@ -56,27 +56,21 @@ import           Data.Morpheus.Types.Resolver               (Resolver, SubRes)
 
 type EncodeCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m Value))
 
-type EncodeOperator m a = Resolver m a -> ValidOperator' -> m (Either GQLErrors Value)
+type EncodeOperator m a value = Resolver m a -> ValidOperator' -> m (Either GQLErrors value)
 
 type SubT m event = ResolveT (SubscribeStream m event) (EventContent event -> ResolveT m Value)
 
 type EncodeSubCon m event a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (SubT m event))
 
-encodeStreamRes :: (Monad m, EncodeCon m a) => EncodeOperator m a
-encodeStreamRes rootResolver Operator' {operatorSelection, operatorPosition, operatorName} =
-  runExceptT
-    (resolverToResolveT operatorPosition operatorName rootResolver >>=
-     resolveBySelection operatorSelection . resolversBy)
+encodeStreamRes :: (Monad m, EncodeCon m a) => EncodeOperator m a Value
+encodeStreamRes rootResolver operator@Operator' {operatorSelection} =
+  runExceptT (operatorToResolveT operator rootResolver >>= resolveBySelection operatorSelection . resolversBy)
 
 encodeSubStreamRes ::
      (Monad m, EncodeSubCon m event a)
-  => Resolver (SubscribeStream m event) a
-  -> ValidOperator'
-  -> (SubscribeStream m event) (Either GQLErrors (EventContent event -> ResolveT m Value))
-encodeSubStreamRes rootResolver Operator' {operatorSelection, operatorPosition, operatorName} =
-  runExceptT
-    (resolverToResolveT operatorPosition operatorName rootResolver >>=
-     resolveSubscriptionSelection operatorSelection . resolversBy)
+  => EncodeOperator (SubscribeStream m event) a (EventContent event -> ResolveT m Value)
+encodeSubStreamRes rootResolver operator@Operator' {operatorSelection} =
+  runExceptT (operatorToResolveT operator rootResolver >>= resolveSubscriptionSelection operatorSelection . resolversBy)
 
 -- EXPORT -------------------------------------------------------
 type ResolveSel result = [(Text, Selection)] -> [(Text, (Text, Selection) -> result)] -> result
@@ -283,4 +277,7 @@ encodeResolver selection@(fieldName, Selection {selectionPosition}) =
 
 decodeArgs :: (Monad m, ArgumentsConstraint a) => (Text, Selection) -> ResolveT m a
 decodeArgs (_, Selection {selectionArguments}) = ExceptT $ pure $ decodeArguments selectionArguments
+
+operatorToResolveT :: Monad m => ValidOperator' -> Resolver m a -> ResolveT m a
+operatorToResolveT Operator' {operatorPosition, operatorName} = resolverToResolveT operatorPosition operatorName
 --------------------------------------------
