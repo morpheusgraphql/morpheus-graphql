@@ -13,8 +13,8 @@
 
 module Data.Morpheus.Resolve.Encode
   ( EncodeCon
+  , EncodeMutCon
   , EncodeSubCon
-  , EncodeOperator
   , encodeMutStreamRes
   , encodeSubStreamRes
   , encodeOperatorPlus
@@ -44,8 +44,8 @@ import           Data.Morpheus.Types.GQLType                (GQLType (KIND, __ty
 import           Data.Morpheus.Types.Internal.AST.Operator  (Operator' (..), ValidOperator')
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base          (Position)
-import           Data.Morpheus.Types.Internal.Stream        (EventContent, StreamState (..), StreamT (..),
-                                                             SubscribeStream)
+import           Data.Morpheus.Types.Internal.Stream        (EventContent, PublishStream, StreamState (..),
+                                                             StreamT (..), SubscribeStream)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, ResolveT, failResolveT)
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver               (Resolver, SubRes)
@@ -54,7 +54,9 @@ type EncodeCon m a v = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (Res
 
 type EncodeOperator m a value = Resolver m a -> ValidOperator' -> m (Either GQLErrors value)
 
-type EncodeSubCon m event a = EncodeCon (SubscribeStream m event) a (EventContent event -> ResolveT m Value)
+type EncodeMutCon m event mut = EncodeCon (PublishStream m event) mut Value
+
+type EncodeSubCon m event sub = EncodeCon (SubscribeStream m event) sub (EventContent event -> ResolveT m Value)
 
 type ResolveSel result = SelectionSet -> [(Text, (Text, Selection) -> result)] -> result
 
