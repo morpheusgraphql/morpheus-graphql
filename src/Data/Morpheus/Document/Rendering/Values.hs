@@ -11,18 +11,19 @@ import           Data.Semigroup                         ((<>))
 import           Data.Text                              (Text)
 
 -- MORPHEUS
-import           Data.Morpheus.Document.Rendering.Terms (Scope (..), renderAssignment, renderCon, renderReturn,
-                                                         renderSet, renderUnionCon)
+import           Data.Morpheus.Document.Rendering.Terms (Context (..), Scope (..), renderAssignment, renderCon,
+                                                         renderReturn, renderSet, renderUnionCon)
 import           Data.Morpheus.Types.Internal.Data      (DataField (..), DataFullType (..), DataLeaf (..),
                                                          DataType (..), DataTypeLib (..), DataTypeWrapper (..))
 
-renderRootResolver :: DataTypeLib -> Text
-renderRootResolver DataTypeLib {mutation, subscription} = renderSignature <> renderBody <> "\n\n"
+renderRootResolver :: Context -> DataTypeLib -> Text
+renderRootResolver _ DataTypeLib {mutation, subscription} = renderSignature <> renderBody <> "\n\n"
   where
-    renderSignature =
-      "rootResolver :: GQLRootResolver IO () () Query " <> maybeOperator mutation <> " " <> maybeOperator subscription <>
-      "\n"
+    renderSignature = "rootResolver :: " <> renderRootSig (fst <$> subscription) <> "\n"
       where
+        renderRootSig (Just sub) = "GQLRootResolver IO Channel Content Query " <> maybeOperator mutation <> " " <> sub
+        renderRootSig Nothing    = "GQLRootResolver IO () () Query " <> maybeOperator mutation <> " ()"
+        ----------------------
         maybeOperator (Just (name, _)) = name
         maybeOperator Nothing          = "()"
     renderBody = "rootResolver =\n  GQLRootResolver" <> renderResObject fields
@@ -69,7 +70,7 @@ renderResolver conScope (name, dataType) = renderSig dataType
     renderSignature = renderAssignment ("resolve" <> name) (renderMonad name) <> "\n"
     ---------------------------------------------------------------------------------
     renderMonad "Mutation"     = "IOMutRes () () Mutation"
-    renderMonad "Subscription" = "SubRootRes IO () Subscription"
+    renderMonad "Subscription" = "SubRootRes IO Channel Subscription"
     renderMonad tName          = "IORes " <> tName
     ----------------------------------------------------------------------------------------------------------
     renderFunc = "resolve" <> name <> " = "

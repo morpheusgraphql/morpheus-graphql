@@ -14,23 +14,16 @@ import qualified Data.Text.Lazy                          as LT (fromStrict)
 import           Data.Text.Lazy.Encoding                 (encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Document.Rendering.Terms  (renderExtension)
+import           Data.Morpheus.Document.Rendering.Terms  (Context (..), renderExtension)
 import           Data.Morpheus.Document.Rendering.Types  (renderType)
 import           Data.Morpheus.Document.Rendering.Values (Scope (..), renderResolver, renderRootResolver)
 import           Data.Morpheus.Types.Internal.Data       (DataTypeLib (..), allDataTypes)
-
-data Context = Context
-  { moduleName :: Text
-  , imports    :: [(Text, [Text])]
-  , extensions :: [Text]
-  , scope      :: Scope
-  }
 
 renderHaskellDocument :: String -> DataTypeLib -> ByteString
 renderHaskellDocument modName lib =
   encodeText $
   renderLanguageExtensions context <> renderExports context <> renderImports context <> renderApiEvents <>
-  renderRootResolver lib <>
+  renderRootResolver context lib <>
   types
   where
     encodeText = encodeUtf8 . LT.fromStrict
@@ -57,6 +50,7 @@ renderHaskellDocument modName lib =
             ]
         , extensions = ["OverloadedStrings", "DeriveGeneric", "TypeFamilies"]
         , scope = Query
+        , featSubPub = True
         }
 
 renderLanguageExtensions :: Context -> Text

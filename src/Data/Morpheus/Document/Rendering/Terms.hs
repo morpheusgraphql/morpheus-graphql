@@ -14,6 +14,7 @@ module Data.Morpheus.Document.Rendering.Terms
   , renderSet
   , renderUnionCon
   , Scope(..)
+  , Context(..)
   ) where
 
 import           Data.Semigroup                    ((<>))
@@ -72,3 +73,11 @@ data Scope
   = Mutation
   | Subscription
   | Query
+
+data Context = Context
+  { moduleName   :: Text
+  , imports      :: [(Text, [Text])]
+  , extensions   :: [Text]
+  , scope        :: Scope
+  , featSubPub :: Bool
+  }

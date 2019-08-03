@@ -19,7 +19,7 @@ data Channel =
 data Content =
   Content Int -- ContentA | ContentB
 
-rootResolver :: GQLRootResolver IO () () Query Mutation Subscription
+rootResolver :: GQLRootResolver IO Channel Content Query Mutation Subscription
 rootResolver =
   GQLRootResolver
     {queryResolver = resolveQuery, mutationResolver = resolveMutation, subscriptionResolver = resolveSubscription}
@@ -78,7 +78,7 @@ data Subscription = Subscription
 instance GQLType Subscription where
   type KIND Subscription = OBJECT
 
-resolveSubscription :: SubRootRes IO () Subscription
+resolveSubscription :: SubRootRes IO Channel Subscription
 resolveSubscription =
   return
     Subscription
