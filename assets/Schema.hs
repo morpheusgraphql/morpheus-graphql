@@ -8,7 +8,8 @@ module Schema
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (GQLRootResolver (..), GQLType (..), IOMutRes, IORes, IOSubRes, SubRootRes)
+import           Data.Morpheus.Types (Event (..), GQLRootResolver (..), GQLType (..), IOMutRes, IORes, IOSubRes,
+                                      SubRootRes)
 import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
 
@@ -64,15 +65,20 @@ resolveMutation = return Mutation {createDeity = const resolveDeity, createChara
 
 ---- GQL Subscription -------------------------------
 data Subscription = Subscription
-  { newDeity     :: () -> IORes Deity
-  , newCharacter :: () -> IORes Character
+  { newDeity     :: () -> IOSubRes () () Deity
+  , newCharacter :: () -> IOSubRes () () Character
   } deriving (Generic)
 
 instance GQLType Subscription where
   type KIND Subscription = OBJECT
 
 resolveSubscription :: SubRootRes IO () Subscription
-resolveSubscription = return Subscription {newDeity = const resolveDeity, newCharacter = const resolveCharacter}
+resolveSubscription =
+  return
+    Subscription
+      { newDeity = const $ Event {channels = [], content = const resolveDeity}
+      , newCharacter = const $ Event {channels = [], content = const resolveCharacter}
+      }
 
 ---- GQL City -------------------------------
 data City

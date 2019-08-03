@@ -4,14 +4,15 @@
 module Data.Morpheus.Document.Rendering.Values
   ( renderRootResolver
   , renderResolver
+  , Scope(..)
   ) where
 
 import           Data.Semigroup                         ((<>))
 import           Data.Text                              (Text)
 
 -- MORPHEUS
-import           Data.Morpheus.Document.Rendering.Terms (renderAssignment, renderCon, renderReturn, renderSet,
-                                                         renderUnionCon)
+import           Data.Morpheus.Document.Rendering.Terms (Scope (..), renderAssignment, renderCon, renderReturn,
+                                                         renderSet, renderUnionCon)
 import           Data.Morpheus.Types.Internal.Data      (DataField (..), DataFullType (..), DataLeaf (..),
                                                          DataType (..), DataTypeLib (..), DataTypeWrapper (..))
 
@@ -35,8 +36,8 @@ renderRootResolver DataTypeLib {mutation, subscription} = renderSignature <> ren
         maybeRes (Just (name, _)) = "resolve" <> name
         maybeRes Nothing          = "return ()"
 
-renderResolver :: (Text, DataFullType) -> Text
-renderResolver (name, dataType) = renderSig dataType
+renderResolver :: Scope -> (Text, DataFullType) -> Text
+renderResolver conScope (name, dataType) = renderSig dataType
   where
     renderSig (Leaf LeafScalar {}) = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
     renderSig (Leaf (LeafEnum DataType {typeData})) = defFunc <> renderReturn <> renderCon (head typeData)
@@ -47,7 +48,7 @@ renderResolver (name, dataType) = renderSig dataType
       where
         renderObjFields = renderResObject (map renderFieldRes typeData)
         renderFieldRes (key, DataField {fieldType, fieldTypeWrappers}) =
-          (key, "const " <> renderValue fieldTypeWrappers fieldType)
+          (key, "const " <> withScope conScope (renderValue fieldTypeWrappers fieldType))
           where
             renderValue []                             = const $ "$ " <> renderReturn <> "Nothing"
             renderValue [NonNullType]                  = fieldValue
@@ -58,6 +59,10 @@ renderResolver (name, dataType) = renderSig dataType
             fieldValue "String" = "$ return \"\""
             fieldValue "Int"    = "$ return 0"
             fieldValue fName    = "resolve" <> fName
+            -------------------------------------------
+            --renderSubResField :: Scope -> Text -> Text
+            withScope Subscription x = "$ Event {channels = [], content = const " <> x <> "}"
+            withScope _ x            = x
     renderSig _ = "" -- INPUT Types Does not Need Resolvers
     --------------------------------
     defFunc = renderSignature <> renderFunc
@@ -70,9 +75,6 @@ renderResolver (name, dataType) = renderSig dataType
     ----------------------------------------------------------------------------------------------------------
     renderFunc = "resolve" <> name <> " = "
     ---------------------------------------
-
-renderSubResField :: Text -> Text
-renderSubResField name = "const $ Event {channels = [], content = const resolve" <> name <> "}"
 
 renderResObject :: [(Text, Text)] -> Text
 renderResObject = renderSet . map renderEntry

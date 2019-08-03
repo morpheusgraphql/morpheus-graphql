@@ -13,6 +13,7 @@ module Data.Morpheus.Document.Rendering.Terms
   , renderWrapped
   , renderSet
   , renderUnionCon
+  , Scope(..)
   ) where
 
 import           Data.Semigroup                    ((<>))
@@ -66,3 +67,8 @@ strToText x        = x
 
 renderUnionCon :: Text -> Text -> Text
 renderUnionCon typeName conName = renderCon (typeName <> "_" <> toUpper conName)
+
+data Scope
+  = Mutation
+  | Subscription
+  | Query

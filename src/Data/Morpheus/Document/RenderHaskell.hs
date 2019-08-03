@@ -16,14 +16,14 @@ import           Data.Text.Lazy.Encoding                 (encodeUtf8)
 -- MORPHEUS
 import           Data.Morpheus.Document.Rendering.Terms  (renderExtension)
 import           Data.Morpheus.Document.Rendering.Types  (renderType)
-import           Data.Morpheus.Document.Rendering.Values (renderResolver, renderRootResolver)
+import           Data.Morpheus.Document.Rendering.Values (Scope (..), renderResolver, renderRootResolver)
 import           Data.Morpheus.Types.Internal.Data       (DataTypeLib (..), allDataTypes)
 
 data Context = Context
   { moduleName :: Text
   , imports    :: [(Text, [Text])]
   , extensions :: [Text]
-  , scope      :: Text
+  , scope      :: Scope
   }
 
 renderHaskellDocument :: String -> DataTypeLib -> ByteString
@@ -32,7 +32,14 @@ renderHaskellDocument modName lib =
   renderLanguageExtensions context <> renderExports context <> renderImports context <> renderRootResolver lib <> types
   where
     encodeText = encodeUtf8 . LT.fromStrict
-    types = intercalate "\n\n" $ map (renderType <> const "\n\n" <> renderResolver) (allDataTypes lib)
+    types = intercalate "\n\n" $ map renderFullType (allDataTypes lib)
+      where
+        renderFullType x = renderType cScope x <> "\n\n" <> renderResolver cScope x
+          where
+            cScope = getScope $ fst x
+            getScope "Mutation"     = Mutation
+            getScope "Subscription" = Subscription
+            getScope _              = Query
     context =
       Context
         { moduleName = pack modName
@@ -40,11 +47,11 @@ renderHaskellDocument modName lib =
             [ ("GHC.Generics", ["Generic"])
             , ("Data.Morpheus.Kind", ["SCALAR", "ENUM", "INPUT_OBJECT", "OBJECT", "UNION"])
             , ( "Data.Morpheus.Types"
-              , ["GQLRootResolver(..)", "IORes", "IOMutRes", "IOSubRes", "SubRootRes", "GQLType(..)"])
+              , ["GQLRootResolver(..)", "IORes", "IOMutRes", "IOSubRes", "Event(..)", "SubRootRes", "GQLType(..)"])
             , ("Data.Text", ["Text"])
             ]
         , extensions = ["OverloadedStrings", "DeriveGeneric", "TypeFamilies"]
-        , scope = "Main"
+        , scope = Query
         }
 
 renderLanguageExtensions :: Context -> Text
