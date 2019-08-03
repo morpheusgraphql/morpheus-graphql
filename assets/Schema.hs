@@ -8,7 +8,7 @@ module Schema
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (GQLRootResolver (..), GQLType (..), ResM, StreamM)
+import           Data.Morpheus.Types (GQLRootResolver (..), GQLType (..), IORes, StreamM)
 import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
 
@@ -18,9 +18,9 @@ rootResolver =
 
 ---- GQL Query -------------------------------
 data Query = Query
-  { deity     :: ArgDeity -> ResM Deity
-  , character :: ArgCharacter -> ResM Character
-  , hero      :: () -> ResM Human
+  { deity     :: ArgDeity -> IORes Deity
+  , character :: ArgCharacter -> IORes Character
+  , hero      :: () -> IORes Human
   } deriving (Generic)
 
 data ArgDeity = ArgDeity
@@ -36,13 +36,13 @@ data ArgCharacter = ArgCharacter
 instance GQLType Query where
   type KIND Query = OBJECT
 
-resolveQuery :: ResM Query
+resolveQuery :: IORes Query
 resolveQuery = return Query {deity = const resolveDeity, character = const resolveCharacter, hero = const resolveHuman}
 
 ---- GQL Mutation -------------------------------
 data Mutation = Mutation
-  { createDeity     :: ArgCreateDeity -> ResM Deity
-  , createCharacter :: ArgCreateCharacter -> ResM Character
+  { createDeity     :: ArgCreateDeity -> IORes Deity
+  , createCharacter :: ArgCreateCharacter -> IORes Character
   } deriving (Generic)
 
 data ArgCreateDeity = ArgCreateDeity
@@ -72,7 +72,7 @@ data City
 instance GQLType City where
   type KIND City = ENUM
 
-resolveCity :: ResM City
+resolveCity :: IORes City
 resolveCity = return Athens
 
 ---- GQL Power -------------------------------
@@ -83,7 +83,7 @@ data Power =
 instance GQLType Power where
   type KIND Power = SCALAR
 
-resolvePower :: ResM Power
+resolvePower :: IORes Power
 resolvePower = return $ Power 0 0
 
 ---- GQL Realm -------------------------------
@@ -97,38 +97,38 @@ instance GQLType Realm where
 
 ---- GQL Deity -------------------------------
 data Deity = Deity
-  { fullName :: () -> ResM Text
-  , power    :: () -> ResM Power
+  { fullName :: () -> IORes Text
+  , power    :: () -> IORes Power
   } deriving (Generic)
 
 instance GQLType Deity where
   type KIND Deity = OBJECT
 
-resolveDeity :: ResM Deity
+resolveDeity :: IORes Deity
 resolveDeity = return Deity {fullName = const $ return "", power = const resolvePower}
 
 ---- GQL Creature -------------------------------
 data Creature = Creature
-  { creatureName :: () -> ResM Text
-  , realm        :: () -> ResM City
+  { creatureName :: () -> IORes Text
+  , realm        :: () -> IORes City
   } deriving (Generic)
 
 instance GQLType Creature where
   type KIND Creature = OBJECT
 
-resolveCreature :: ResM Creature
+resolveCreature :: IORes Creature
 resolveCreature = return Creature {creatureName = const $ return "", realm = const resolveCity}
 
 ---- GQL Human -------------------------------
 data Human = Human
-  { humanName  :: () -> ResM Text
-  , profession :: () -> ResM (Maybe Text)
+  { humanName  :: () -> IORes Text
+  , profession :: () -> IORes (Maybe Text)
   } deriving (Generic)
 
 instance GQLType Human where
   type KIND Human = OBJECT
 
-resolveHuman :: ResM Human
+resolveHuman :: IORes Human
 resolveHuman = return Human {humanName = const $ return "", profession = const $ return Nothing}
 
 ---- GQL Character -------------------------------
@@ -141,5 +141,5 @@ data Character
 instance GQLType Character where
   type KIND Character = UNION
 
-resolveCharacter :: ResM Character
+resolveCharacter :: IORes Character
 resolveCharacter = Character_CREATURE <$> resolveCreature

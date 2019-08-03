@@ -3,41 +3,49 @@
 {-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
 module Data.Morpheus.Types.Resolver
   ( Pure
-  , ResM
-  , StreamM
-  , SubRes
   , Resolver
+  , MutResolver
+  , SubResolver
+  , ResolveT
+  , SubResolveT
+  , MutResolveT
+  , Event(..)
   , GQLRootResolver(..)
   , gqlResolver
   , gqlStreamResolver
-  , EventContent
   ) where
 
-import           Control.Monad.Trans.Except          (ExceptT (..))
+import           Control.Monad.Trans.Except              (ExceptT (..))
 
 -- MORPHEUS
 --
-import           Data.Morpheus.Types.Internal.Stream (EventContent, PublishStream, StreamState (..), StreamT (..),
-                                                      SubscribeStream)
+import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStream, StreamState (..), StreamT (..),
+                                                          SubscribeStream)
+import           Data.Morpheus.Types.Internal.Validation (ResolveT)
 
--- | Pure Resolver without effect
-type Pure = Either String
+-- SubResolver m (Event [c1, c2] d) a
+----------------------------------------------------------------------------------------
+type MutResolveT m e c a = ResolveT (PublishStream m e c) a
 
--- | Monad IO resolver without GraphQL effect
-type ResM = Resolver IO
-
+-------------------------------------------------------------------
 type Resolver = ExceptT String
 
-type SubRes m s b = ([s], EventContent s -> Resolver m b)
+type MutResolver m e c = Resolver (PublishStream m e c)
 
--- | Monad Resolver with GraphQL effects, used for communication between mutation and subscription
-type StreamM s = Resolver (StreamT IO ([s], EventContent s))
+type SubResolver m e c a = Event e (c -> Resolver m a)
+
+type SubResolveT m e c a = ResolveT (SubscribeStream m e) (c -> ResolveT m a)
+
+-------------------------------------------------------------------
+-- | Pure Resolver without effect
+type Pure = Either String
 
 -- | GraphQL Resolver
 gqlResolver :: m (Either String a) -> Resolver m a
@@ -47,10 +55,10 @@ gqlResolver = ExceptT
 --
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
-data GQLRootResolver m s query mut sub = GQLRootResolver
+data GQLRootResolver m e c query mut sub = GQLRootResolver
   { queryResolver        :: Resolver m query
-  , mutationResolver     :: Resolver (PublishStream m s) mut
-  , subscriptionResolver :: Resolver (SubscribeStream m s) sub
+  , mutationResolver     :: Resolver (PublishStream m e c) mut
+  , subscriptionResolver :: Resolver (SubscribeStream m e) sub
   }
 
 -- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver

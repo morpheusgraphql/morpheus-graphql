@@ -31,8 +31,8 @@ import           Data.Morpheus.Server.ClientRegister       (GQLState, publishUpd
 import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..))
 import           Data.Morpheus.Types.Internal.Data         (DataArguments, DataFingerprint (..), DataType (..),
                                                             DataTypeLib (..), initTypeLib)
-import           Data.Morpheus.Types.Internal.Stream       (ResponseEvent (..), ResponseStream, StreamState (..),
-                                                            StreamT (..), closeStream, mapS)
+import           Data.Morpheus.Types.Internal.Stream       (Event (..), ResponseEvent (..), ResponseStream,
+                                                            StreamState (..), StreamT (..), closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation   (SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value        (Value (..))
 import           Data.Morpheus.Types.IO                    (GQLRequest (..), GQLResponse (..))
@@ -43,7 +43,7 @@ type EventCon event = Eq event
 
 type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments)
 
-type RootResCon m event query mutation subscription
+type RootResCon m event cont query mutation subscription
    = ( EventCon event
       -- Introspection
      , IntroCon query
@@ -51,8 +51,8 @@ type RootResCon m event query mutation subscription
      , IntroCon subscription
      -- Resolving
      , EncodeCon m query Value
-     , EncodeMutCon m event mutation
-     , EncodeSubCon m event subscription)
+     , EncodeMutCon m event cont mutation
+     , EncodeSubCon m event cont subscription)
 
 byteStringIO :: Monad m => (GQLRequest -> m GQLResponse) -> ByteString -> m ByteString
 byteStringIO resolver request =
@@ -61,14 +61,17 @@ byteStringIO resolver request =
     Right req        -> encode <$> resolver req
 
 statelessResolver ::
-     (Monad m, RootResCon m s query mut sub) => GQLRootResolver m s query mut sub -> GQLRequest -> m GQLResponse
+     (Monad m, RootResCon m s cont query mut sub)
+  => GQLRootResolver m s cont query mut sub
+  -> GQLRequest
+  -> m GQLResponse
 statelessResolver root = fmap snd . closeStream . streamResolver root
 
 streamResolver ::
-     (Monad m, RootResCon m s query mut sub)
-  => GQLRootResolver m s query mut sub
+     (Monad m, RootResCon m s cont query mut sub)
+  => GQLRootResolver m s cont query mut sub
   -> GQLRequest
-  -> ResponseStream m s GQLResponse
+  -> ResponseStream m s cont GQLResponse
 streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
   renderResponse <$> runExceptT (ExceptT (pure validRequest) >>= ExceptT . execOperator)
   where
@@ -87,12 +90,17 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
       StreamT $ handleActions <$> closeStream (encodeSub subscriptionResolver operator)
       where
         handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
-        handleActions (channels, Right subResolver) = StreamState [Subscribe (concat channels, handleRes)] (Right Null)
+        handleActions (channels, Right subResolver) =
+          StreamState [Subscribe $ Event (concat channels) handleRes] (Right Null)
           where
             handleRes event = renderResponse <$> runExceptT (subResolver event)
 
 statefulResolver ::
-     EventCon s => GQLState IO s -> (ByteString -> ResponseStream IO s ByteString) -> ByteString -> IO ByteString
+     EventCon s
+  => GQLState IO s cont
+  -> (ByteString -> ResponseStream IO s cont ByteString)
+  -> ByteString
+  -> IO ByteString
 statefulResolver state streamApi request = do
   (actions, value) <- closeStream (streamApi request)
   mapM_ execute actions
@@ -102,8 +110,8 @@ statefulResolver state streamApi request = do
     execute Subscribe {}      = pure ()
 
 fullSchema ::
-     forall m s query mutation subscription. (IntroCon query, IntroCon mutation, IntroCon subscription)
-  => GQLRootResolver m s query mutation subscription
+     forall m s cont query mutation subscription. (IntroCon query, IntroCon mutation, IntroCon subscription)
+  => GQLRootResolver m s cont query mutation subscription
   -> SchemaValidation DataTypeLib
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where

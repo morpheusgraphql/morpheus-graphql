@@ -44,20 +44,20 @@ import           Data.Morpheus.Types.GQLType                (GQLType (KIND, __ty
 import           Data.Morpheus.Types.Internal.AST.Operator  (Operator' (..), ValidOperator')
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base          (Position)
-import           Data.Morpheus.Types.Internal.Stream        (EventContent, PublishStream, StreamState (..),
-                                                             StreamT (..), SubscribeStream)
+import           Data.Morpheus.Types.Internal.Stream        (PublishStream, StreamState (..), StreamT (..),
+                                                             SubscribeStream)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, ResolveT, failResolveT)
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
-import           Data.Morpheus.Types.Resolver               (Resolver, SubRes)
+import           Data.Morpheus.Types.Resolver               (Event (..), Resolver, SubResolveT, SubResolver)
 
 type EncodeOperator m a value = Resolver m a -> ValidOperator' -> m (Either GQLErrors value)
 
 -- EXPORT -------------------------------------------------------
 type EncodeCon m a v = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m v))
 
-type EncodeMutCon m event mut = EncodeCon (PublishStream m event) mut Value
+type EncodeMutCon m event con mut = EncodeCon (PublishStream m event con) mut Value
 
-type EncodeSubCon m event sub = EncodeCon (SubscribeStream m event) sub (EventContent event -> ResolveT m Value)
+type EncodeSubCon m event con sub = EncodeCon (SubscribeStream m event) sub (con -> ResolveT m Value)
 
 encodeQuery :: (Monad m, EncodeCon m schema Value, EncodeCon m a Value) => schema -> EncodeOperator m a Value
 encodeQuery types rootResolver operator@Operator' {operatorSelection} =
@@ -69,8 +69,7 @@ encodeMut :: (Monad m, EncodeCon m a Value) => EncodeOperator m a Value
 encodeMut = encodeOperator resolveBySelection
 
 encodeSub ::
-     (Monad m, EncodeSubCon m event a)
-  => EncodeOperator (SubscribeStream m event) a (EventContent event -> ResolveT m Value)
+     (Monad m, EncodeSubCon m event con a) => EncodeOperator (SubscribeStream m event) a (con -> ResolveT m Value)
 encodeSub = encodeOperator (flip resolveSelection)
   where
     resolveSelection resolvers = fmap toObj . mapM (selectResolver (const $ pure Null) resolvers)
@@ -200,11 +199,11 @@ instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
   __encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (__encode resolver selection)
 
 instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
-         Encoder (a -> SubRes m s b) WRAPPER (ResolveT (SubscribeStream m s) (EventContent s -> ResValue m)) where
+         Encoder (a -> SubResolver m e c b) WRAPPER (SubResolveT m e c Value) where
   __encode (WithGQLKind resolver) selection = decodeArgs selection >>= handleResolver . resolver
     where
-      handleResolver (events, res) =
-        ExceptT $ StreamT $ pure $ StreamState [events] (Right $ encodeResolver selection . res)
+      handleResolver Event {channels, content} =
+        ExceptT $ StreamT $ pure $ StreamState [channels] (Right $ encodeResolver selection . content)
 
 --
 -- MAYBE

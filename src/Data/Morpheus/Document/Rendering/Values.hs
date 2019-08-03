@@ -64,7 +64,7 @@ renderResolver (name, dataType) = renderSig dataType
     renderSignature = renderAssignment ("resolve" <> name) (renderMonad name) <> "\n"
     ---------------------------------------------------------------------------------
     renderMonad "Mutation" = "StreamM () Mutation"
-    renderMonad tName      = "ResM " <> tName
+    renderMonad tName      = "IORes " <> tName
     ----------------------------------------------------------------------------------------------------------
     renderFunc = "resolve" <> name <> " = "
     ---------------------------------------

@@ -16,7 +16,7 @@ import           Data.Morpheus.Resolve.Resolve        (RootResCon, fullSchema)
 import           Data.Morpheus.Types                  (GQLRootResolver)
 
 -- | Generates schema.gql file from 'GQLRootResolver'
-toGraphQLDocument :: RootResCon m a query mut sub => GQLRootResolver m a query mut sub -> ByteString
+toGraphQLDocument :: RootResCon m e c query mut sub => GQLRootResolver m e c query mut sub -> ByteString
 toGraphQLDocument x =
   case fullSchema x of
     Left errors -> pack (show errors)

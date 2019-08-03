@@ -54,7 +54,7 @@ renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
 
 renderField :: (Text, DataField [(Text, DataArgument)]) -> (Text, Maybe Text)
 renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
-  (key `renderAssignment` argTypeName <> " -> ResM " <> result fieldTypeWrappers, argTypes)
+  (key `renderAssignment` argTypeName <> " -> IORes " <> result fieldTypeWrappers, argTypes)
   where
     result wrappers@(NonNullType:_) = renderWrapped wrappers fieldType
     result wrappers                 = renderTuple (renderWrapped wrappers fieldType)
