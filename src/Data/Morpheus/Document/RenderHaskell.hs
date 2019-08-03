@@ -22,11 +22,15 @@ import           Data.Morpheus.Types.Internal.Data       (DataTypeLib (..), allD
 renderHaskellDocument :: String -> DataTypeLib -> ByteString
 renderHaskellDocument modName lib =
   encodeText $
-  renderLanguageExtensions context <> renderExports context <> renderImports context <> renderApiEvents <>
+  renderLanguageExtensions context <> renderExports context <> renderImports context <> onSub renderApiEvents "" <>
   renderRootResolver context lib <>
   types
   where
     encodeText = encodeUtf8 . LT.fromStrict
+    onSub onS els =
+      case subscription lib of
+        Nothing -> els
+        _       -> onS
     renderApiEvents =
       "data Channel = Channel -- ChannelA | ChannelB" <> "\n\n" <> "data Content = Content Int -- ContentA | ContentB" <>
       "\n\n"
@@ -50,7 +54,7 @@ renderHaskellDocument modName lib =
             ]
         , extensions = ["OverloadedStrings", "DeriveGeneric", "TypeFamilies"]
         , scope = Query
-        , pubSub = ("Channel", "Content")
+        , pubSub = onSub ("Channel", "Content") ("()", "()")
         }
 
 renderLanguageExtensions :: Context -> Text
