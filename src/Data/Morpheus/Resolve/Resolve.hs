@@ -23,8 +23,8 @@ import           GHC.Generics
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                 (badRequestError, renderErrors)
 import           Data.Morpheus.Parser.Parser               (parseGQL)
-import           Data.Morpheus.Resolve.Encode              (EncodeCon, EncodeMutCon, EncodeSubCon, encodeMutStreamRes,
-                                                            encodeOperatorPlus, encodeSubStreamRes)
+import           Data.Morpheus.Resolve.Encode              (EncodeCon, EncodeMutCon, EncodeSubCon, encodeMut,
+                                                            encodeQuery, encodeSub)
 import           Data.Morpheus.Resolve.Introspect          (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Schema.SchemaAPI            (hiddenRootFields, schemaAPI, schemaTypes)
 import           Data.Morpheus.Server.ClientRegister       (GQLState, publishUpdates)
@@ -81,16 +81,15 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
       return (schema, query)
     ----------------------------------------------------------
     execOperator (schema, Query operator) =
-      StreamT $ StreamState [] <$> encodeOperatorPlus (schemaAPI schema) queryResolver operator
-    execOperator (_, Mutation operator) = mapS Publish (encodeMutStreamRes mutationResolver operator)
+      StreamT $ StreamState [] <$> encodeQuery (schemaAPI schema) queryResolver operator
+    execOperator (_, Mutation operator) = mapS Publish (encodeMut mutationResolver operator)
     execOperator (_, Subscription operator) =
-      StreamT $ do
-        (channels, result) <- closeStream (encodeSubStreamRes subscriptionResolver operator)
-        pure $
-          case result of
-            Left gqlError -> StreamState [] (Left gqlError)
-            Right subResolver -> StreamState [Subscribe (concat channels, handleRes)] (Right Null)
-              where handleRes event = renderResponse <$> runExceptT (subResolver event)
+      StreamT $ handleActions <$> closeStream (encodeSub subscriptionResolver operator)
+      where
+        handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
+        handleActions (channels, Right subResolver) = StreamState [Subscribe (concat channels, handleRes)] (Right Null)
+          where
+            handleRes event = renderResponse <$> runExceptT (subResolver event)
 
 statefulResolver ::
      EventCon s => GQLState IO s -> (ByteString -> ResponseStream IO s ByteString) -> ByteString -> IO ByteString

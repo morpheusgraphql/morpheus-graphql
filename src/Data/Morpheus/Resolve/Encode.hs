@@ -15,9 +15,9 @@ module Data.Morpheus.Resolve.Encode
   ( EncodeCon
   , EncodeMutCon
   , EncodeSubCon
-  , encodeMutStreamRes
-  , encodeSubStreamRes
-  , encodeOperatorPlus
+  , encodeQuery
+  , encodeMut
+  , encodeSub
   ) where
 
 import           Control.Monad                              ((>=>))
@@ -50,56 +50,32 @@ import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, ResolveT
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver               (Resolver, SubRes)
 
-type EncodeCon m a v = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m v))
-
 type EncodeOperator m a value = Resolver m a -> ValidOperator' -> m (Either GQLErrors value)
+
+-- EXPORT -------------------------------------------------------
+type EncodeCon m a v = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m v))
 
 type EncodeMutCon m event mut = EncodeCon (PublishStream m event) mut Value
 
 type EncodeSubCon m event sub = EncodeCon (SubscribeStream m event) sub (EventContent event -> ResolveT m Value)
 
-type ResolveSel result = SelectionSet -> [(Text, (Text, Selection) -> result)] -> result
-
-encodeOperatorPlus :: (Monad m, EncodeCon m e Value, EncodeCon m a Value) => e -> EncodeOperator m a Value
-encodeOperatorPlus types rootResolver operator@Operator' {operatorSelection} =
+encodeQuery :: (Monad m, EncodeCon m schema Value, EncodeCon m a Value) => schema -> EncodeOperator m a Value
+encodeQuery types rootResolver operator@Operator' {operatorSelection} =
   runExceptT
     (fmap resolversBy (operatorToResolveT operator rootResolver) >>=
      resolveBySelection operatorSelection . (++) (resolversBy types))
 
-encodeMutStreamRes :: (Monad m, EncodeCon m a Value) => EncodeOperator m a Value
-encodeMutStreamRes = encodeOperator resolveBySelection
+encodeMut :: (Monad m, EncodeCon m a Value) => EncodeOperator m a Value
+encodeMut = encodeOperator resolveBySelection
 
-encodeOperator :: (Monad m, EncodeCon m a v) => ResolveSel (ResolveT m v) -> EncodeOperator m a v
-encodeOperator resSel rootResolver operator@Operator' {operatorSelection} =
-  runExceptT (operatorToResolveT operator rootResolver >>= resSel operatorSelection . resolversBy)
-
-resolveBySelection :: Monad m => ResolveSel (ResolveT m Value)
-resolveBySelection selection resolvers = Object <$> mapM (selectResolver Null resolvers) selection
-
-encodeSubStreamRes ::
+encodeSub ::
      (Monad m, EncodeSubCon m event a)
   => EncodeOperator (SubscribeStream m event) a (EventContent event -> ResolveT m Value)
-encodeSubStreamRes = encodeOperator resolveSelection
+encodeSub = encodeOperator resolveSelection
   where
     resolveSelection selection resolvers = toObj <$> mapM (selectResolver (const $ pure Null) resolvers) selection
       where
         toObj pairs args = Object <$> mapM (\(key, valFunc) -> (key, ) <$> valFunc args) pairs
-
--- EXPORT -------------------------------------------------------
-selectResolver :: Monad m => a -> [(Text, (Text, Selection) -> m a)] -> (Text, Selection) -> m (Text, a)
-selectResolver defaultValue resolvers (key, selection) =
-  case selectionRec selection of
-    SelectionAlias name selectionRec -> unwrapMonadTuple (key, lookupResolver name (selection {selectionRec}))
-    _                                -> unwrapMonadTuple (key, lookupResolver key selection)
-  where
-    unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
-    unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
-    -------------------------------------------------------------
-    lookupResolver resolverKey sel =
-      (fromMaybe (const $ return $defaultValue) $ lookup resolverKey resolvers) (key, sel)
-
-resolversBy :: (Generic a, ObjectFieldResolvers (Rep a) result) => a -> [(Text, (Text, Selection) -> result)]
-resolversBy = objectFieldResolvers . from
 
 ---------------------------------------------------------
 --
@@ -263,6 +239,8 @@ instance (Eq k, Monad m, Encoder (MapKind k v (Resolver m)) OBJECT (ResValue m))
   __encode (WithGQLKind value) = encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver m))
 
 ----- HELPERS ----------------------------
+type ResolveSel result = SelectionSet -> [(Text, (Text, Selection) -> result)] -> result
+
 resolverToResolveT :: Monad m => Position -> Text -> Resolver m a -> ResolveT m a
 resolverToResolveT pos name = ExceptT . toResolveM
   where
@@ -282,4 +260,26 @@ decodeArgs (_, Selection {selectionArguments}) = ExceptT $ pure $ decodeArgument
 
 operatorToResolveT :: Monad m => ValidOperator' -> Resolver m a -> ResolveT m a
 operatorToResolveT Operator' {operatorPosition, operatorName} = resolverToResolveT operatorPosition operatorName
+
+encodeOperator :: (Monad m, EncodeCon m a v) => ResolveSel (ResolveT m v) -> EncodeOperator m a v
+encodeOperator resSel rootResolver operator@Operator' {operatorSelection} =
+  runExceptT (operatorToResolveT operator rootResolver >>= resSel operatorSelection . resolversBy)
+
+resolveBySelection :: Monad m => ResolveSel (ResolveT m Value)
+resolveBySelection selection resolvers = Object <$> mapM (selectResolver Null resolvers) selection
+
+selectResolver :: Monad m => a -> [(Text, (Text, Selection) -> m a)] -> (Text, Selection) -> m (Text, a)
+selectResolver defaultValue resolvers (key, selection) =
+  case selectionRec selection of
+    SelectionAlias name selectionRec -> unwrapMonadTuple (key, lookupResolver name (selection {selectionRec}))
+    _                                -> unwrapMonadTuple (key, lookupResolver key selection)
+  where
+    unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
+    unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
+    -------------------------------------------------------------
+    lookupResolver resolverKey sel =
+      (fromMaybe (const $ return $defaultValue) $ lookup resolverKey resolvers) (key, sel)
+
+resolversBy :: (Generic a, ObjectFieldResolvers (Rep a) result) => a -> [(Text, (Text, Selection) -> result)]
+resolversBy = objectFieldResolvers . from
 --------------------------------------------
