@@ -71,9 +71,9 @@ encodeMut = encodeOperator resolveBySelection
 encodeSub ::
      (Monad m, EncodeSubCon m event a)
   => EncodeOperator (SubscribeStream m event) a (EventContent event -> ResolveT m Value)
-encodeSub = encodeOperator resolveSelection
+encodeSub = encodeOperator (flip resolveSelection)
   where
-    resolveSelection selection resolvers = toObj <$> mapM (selectResolver (const $ pure Null) resolvers) selection
+    resolveSelection resolvers = fmap toObj . mapM (selectResolver (const $ pure Null) resolvers)
       where
         toObj pairs args = Object <$> mapM (\(key, valFunc) -> (key, ) <$> valFunc args) pairs
 
