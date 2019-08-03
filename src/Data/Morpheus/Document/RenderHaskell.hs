@@ -29,9 +29,14 @@ data Context = Context
 renderHaskellDocument :: String -> DataTypeLib -> ByteString
 renderHaskellDocument modName lib =
   encodeText $
-  renderLanguageExtensions context <> renderExports context <> renderImports context <> renderRootResolver lib <> types
+  renderLanguageExtensions context <> renderExports context <> renderImports context <> renderApiEvents <>
+  renderRootResolver lib <>
+  types
   where
     encodeText = encodeUtf8 . LT.fromStrict
+    renderApiEvents =
+      "data Channel = Channel -- ChannelA | ChannelB" <> "\n\n" <> "data Content = Content Int -- ContentA | ContentB" <>
+      "\n\n"
     types = intercalate "\n\n" $ map renderFullType (allDataTypes lib)
       where
         renderFullType x = renderType cScope x <> "\n\n" <> renderResolver cScope x

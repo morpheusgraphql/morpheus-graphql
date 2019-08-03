@@ -60,8 +60,7 @@ renderResolver conScope (name, dataType) = renderSig dataType
             fieldValue "Int"    = "$ return 0"
             fieldValue fName    = "resolve" <> fName
             -------------------------------------------
-            --renderSubResField :: Scope -> Text -> Text
-            withScope Subscription x = "$ Event {channels = [], content = const " <> x <> "}"
+            withScope Subscription x = "$ Event { channels = [{- TODO: Channel -}], content = const " <> x <> " }"
             withScope _ x            = x
     renderSig _ = "" -- INPUT Types Does not Need Resolvers
     --------------------------------

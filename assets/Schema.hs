@@ -13,6 +13,12 @@ import           Data.Morpheus.Types (Event (..), GQLRootResolver (..), GQLType 
 import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
 
+data Channel =
+  Channel -- ChannelA | ChannelB
+
+data Content =
+  Content Int -- ContentA | ContentB
+
 rootResolver :: GQLRootResolver IO () () Query Mutation Subscription
 rootResolver =
   GQLRootResolver
@@ -76,8 +82,8 @@ resolveSubscription :: SubRootRes IO () Subscription
 resolveSubscription =
   return
     Subscription
-      { newDeity = const $ Event {channels = [], content = const resolveDeity}
-      , newCharacter = const $ Event {channels = [], content = const resolveCharacter}
+      { newDeity = const $ Event {channels = [], content = const resolveDeity} {- TODO: Channel -}
+      , newCharacter = const $ Event {channels = [], content = const resolveCharacter} {- TODO: Channel -}
       }
 
 ---- GQL City -------------------------------
