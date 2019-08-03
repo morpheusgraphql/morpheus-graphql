@@ -71,6 +71,9 @@ renderResolver (name, dataType) = renderSig dataType
     renderFunc = "resolve" <> name <> " = "
     ---------------------------------------
 
+renderSubResField :: Text -> Text
+renderSubResField name = "const $ Event {channels = [], content = const resolve" <> name <> "}"
+
 renderResObject :: [(Text, Text)] -> Text
 renderResObject = renderSet . map renderEntry
   where

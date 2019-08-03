@@ -22,8 +22,8 @@ toGraphQLDocument x =
     Left errors -> pack (show errors)
     Right lib   -> renderGraphQLDocument lib
 
-toMorpheusHaskellAPi :: ByteString -> Either ByteString ByteString
-toMorpheusHaskellAPi doc =
+toMorpheusHaskellAPi :: String -> ByteString -> Either ByteString ByteString
+toMorpheusHaskellAPi moduleName doc =
   case parseGraphQLDocument doc of
     Left errors -> Left $ pack (show errors)
-    Right lib   -> Right $ renderHaskellDocument lib
+    Right lib   -> Right $ renderHaskellDocument moduleName lib

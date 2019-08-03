@@ -22,7 +22,7 @@ main = defaultParser >>= buildHaskellApi
     buildHaskellApi Options {optionCommand} = executeCommand optionCommand
       where
         executeCommand About = putStrLn $ "Morpheus GraphQL CLI, version " <> version
-        executeCommand Build {source, target} = toMorpheusHaskellAPi <$> L.readFile source >>= saveDocument
+        executeCommand Build {source, target} = toMorpheusHaskellAPi "Schema" <$> L.readFile source >>= saveDocument
           where
             saveDocument (Left errors) = print errors
             saveDocument (Right doc)   = L.writeFile target doc
