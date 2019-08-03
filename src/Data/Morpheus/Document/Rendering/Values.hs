@@ -19,7 +19,7 @@ renderRootResolver :: DataTypeLib -> Text
 renderRootResolver DataTypeLib {mutation, subscription} = renderSignature <> renderBody <> "\n\n"
   where
     renderSignature =
-      "rootResolver :: GQLRootResolver IO () Query " <> maybeOperator mutation <> " " <> maybeOperator subscription <>
+      "rootResolver :: GQLRootResolver IO () () Query " <> maybeOperator mutation <> " " <> maybeOperator subscription <>
       "\n"
       where
         maybeOperator (Just (name, _)) = name
@@ -63,7 +63,7 @@ renderResolver (name, dataType) = renderSig dataType
     ----------------------------------------------------------------------------------------------------------
     renderSignature = renderAssignment ("resolve" <> name) (renderMonad name) <> "\n"
     ---------------------------------------------------------------------------------
-    renderMonad "Mutation" = "StreamM () Mutation"
+    renderMonad "Mutation" = "IOMutRes () () Mutation"
     renderMonad tName      = "IORes " <> tName
     ----------------------------------------------------------------------------------------------------------
     renderFunc = "resolve" <> name <> " = "

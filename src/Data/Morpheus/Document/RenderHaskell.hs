@@ -42,6 +42,6 @@ renderImports = T.concat (map renderImport imports) <> "\n"
     imports =
       [ ("GHC.Generics", ["Generic"])
       , ("Data.Morpheus.Kind", ["SCALAR", "ENUM", "INPUT_OBJECT", "OBJECT", "UNION"])
-      , ("Data.Morpheus.Types", ["GQLRootResolver(..)", "StreamM", "ResM", "GQLType(..)"])
+      , ("Data.Morpheus.Types", ["GQLRootResolver(..)", "IORes", "IOMutRes", "IOSubRes", "GQLType(..)"])
       , ("Data.Text", ["Text"])
       ]

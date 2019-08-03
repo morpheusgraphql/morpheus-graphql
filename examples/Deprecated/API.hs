@@ -230,7 +230,7 @@ gqlRoot =
     , subscriptionResolver = return Subscription {newAddress, newUser}
     }
   where
-    newUser _ = Event [UPDATE_ADDRESS] $ \Update {} -> gqlResolver fetchUser
+    newUser _ = Event [UPDATE_USER] $ \Update {} -> gqlResolver fetchUser
     newAddress _ = Event [UPDATE_ADDRESS] $ \Update {contentID} -> gqlResolver $ fetchAddress (Euro contentID 0)
     createUser _ =
       gqlStreamResolver

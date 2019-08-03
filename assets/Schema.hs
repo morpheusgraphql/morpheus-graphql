@@ -8,11 +8,11 @@ module Schema
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (GQLRootResolver (..), GQLType (..), IORes, StreamM)
+import           Data.Morpheus.Types (GQLRootResolver (..), GQLType (..), IOMutRes, IORes, IOSubRes)
 import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
 
-rootResolver :: GQLRootResolver IO () Query Mutation ()
+rootResolver :: GQLRootResolver IO () () Query Mutation ()
 rootResolver =
   GQLRootResolver {queryResolver = resolveQuery, mutationResolver = resolveMutation, subscriptionResolver = return ()}
 
@@ -58,7 +58,7 @@ data ArgCreateCharacter = ArgCreateCharacter
 instance GQLType Mutation where
   type KIND Mutation = OBJECT
 
-resolveMutation :: StreamM () Mutation
+resolveMutation :: IOMutRes () () Mutation
 resolveMutation = return Mutation {createDeity = const resolveDeity, createCharacter = const resolveCharacter}
 
 ---- GQL City -------------------------------
