@@ -16,6 +16,7 @@ module Data.Morpheus.Types.Resolver
   , ResolveT
   , SubResolveT
   , MutResolveT
+  , SubRootRes
   , Event(..)
   , GQLRootResolver(..)
   , gqlResolver
@@ -43,6 +44,8 @@ type SubResolver m e c a = Event e (c -> Resolver m a)
 
 type SubResolveT m e c a = ResolveT (SubscribeStream m e) (c -> ResolveT m a)
 
+type SubRootRes m e sub = Resolver (SubscribeStream m e) sub
+
 -------------------------------------------------------------------
 -- | Pure Resolver without effect
 type Pure = Either String
@@ -58,7 +61,7 @@ gqlResolver = ExceptT
 data GQLRootResolver m e c query mut sub = GQLRootResolver
   { queryResolver        :: Resolver m query
   , mutationResolver     :: Resolver (PublishStream m e c) mut
-  , subscriptionResolver :: Resolver (SubscribeStream m e) sub
+  , subscriptionResolver :: SubRootRes m e sub
   }
 
 -- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver

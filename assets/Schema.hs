@@ -8,13 +8,14 @@ module Schema
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (GQLRootResolver (..), GQLType (..), IOMutRes, IORes, IOSubRes)
+import           Data.Morpheus.Types (GQLRootResolver (..), GQLType (..), IOMutRes, IORes, IOSubRes, SubRootRes)
 import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
 
-rootResolver :: GQLRootResolver IO () () Query Mutation ()
+rootResolver :: GQLRootResolver IO () () Query Mutation Subscription
 rootResolver =
-  GQLRootResolver {queryResolver = resolveQuery, mutationResolver = resolveMutation, subscriptionResolver = return ()}
+  GQLRootResolver
+    {queryResolver = resolveQuery, mutationResolver = resolveMutation, subscriptionResolver = resolveSubscription}
 
 ---- GQL Query -------------------------------
 data Query = Query
@@ -60,6 +61,18 @@ instance GQLType Mutation where
 
 resolveMutation :: IOMutRes () () Mutation
 resolveMutation = return Mutation {createDeity = const resolveDeity, createCharacter = const resolveCharacter}
+
+---- GQL Subscription -------------------------------
+data Subscription = Subscription
+  { newDeity     :: () -> IORes Deity
+  , newCharacter :: () -> IORes Character
+  } deriving (Generic)
+
+instance GQLType Subscription where
+  type KIND Subscription = OBJECT
+
+resolveSubscription :: SubRootRes IO () Subscription
+resolveSubscription = return Subscription {newDeity = const resolveDeity, newCharacter = const resolveCharacter}
 
 ---- GQL City -------------------------------
 data City

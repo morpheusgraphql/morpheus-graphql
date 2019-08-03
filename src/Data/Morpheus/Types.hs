@@ -7,6 +7,7 @@ module Data.Morpheus.Types
   , IOMutRes
   , IOSubRes
   , Resolver
+  , SubRootRes
   , Event(..)
   -- Type Classes
   , GQLType(KIND, description)
@@ -25,7 +26,7 @@ import           Data.Morpheus.Types.ID             (ID (..))
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
 import           Data.Morpheus.Types.IO             (GQLRequest (..), GQLResponse (..))
 import           Data.Morpheus.Types.Resolver       (Event (..), GQLRootResolver (..), MutResolver, Resolver, Resolver,
-                                                     SubResolver, gqlResolver, gqlStreamResolver)
+                                                     SubResolver, SubRootRes, gqlResolver, gqlStreamResolver)
 
 type IORes = Resolver IO
 

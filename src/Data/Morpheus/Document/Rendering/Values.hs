@@ -49,11 +49,12 @@ renderResolver (name, dataType) = renderSig dataType
         renderFieldRes (key, DataField {fieldType, fieldTypeWrappers}) =
           (key, "const " <> renderValue fieldTypeWrappers fieldType)
           where
-            renderValue []                            = const $ "$ " <> renderReturn <> "Nothing"
-            renderValue [NonNullType]                 = fieldValue
-            renderValue (ListType:_)                  = const $ "$ " <> renderReturn <> "Just []"
-            renderValue (NonNullType:(ListType:_))    = const $ "$ " <> renderReturn <> "[]"
-            renderValue (NonNullType:(NonNullType:_)) = const "Error: should not Happen"
+            renderValue []                             = const $ "$ " <> renderReturn <> "Nothing"
+            renderValue [NonNullType]                  = fieldValue
+            renderValue (ListType:_)                   = const $ "$ " <> renderReturn <> "Just []"
+            renderValue (NonNullType:(ListType:_))     = const $ "$ " <> renderReturn <> "[]"
+            renderValue (NonNullType:(NonNullType:xs)) = renderValue (NonNullType : xs)
+            ----------------------------------------------------------------------------
             fieldValue "String" = "$ return \"\""
             fieldValue "Int"    = "$ return 0"
             fieldValue fName    = "resolve" <> fName
@@ -63,8 +64,9 @@ renderResolver (name, dataType) = renderSig dataType
     ----------------------------------------------------------------------------------------------------------
     renderSignature = renderAssignment ("resolve" <> name) (renderMonad name) <> "\n"
     ---------------------------------------------------------------------------------
-    renderMonad "Mutation" = "IOMutRes () () Mutation"
-    renderMonad tName      = "IORes " <> tName
+    renderMonad "Mutation"     = "IOMutRes () () Mutation"
+    renderMonad "Subscription" = "SubRootRes () Subscription"
+    renderMonad tName          = "IORes " <> tName
     ----------------------------------------------------------------------------------------------------------
     renderFunc = "resolve" <> name <> " = "
     ---------------------------------------
