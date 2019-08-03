@@ -11,13 +11,14 @@ import           Data.Text                              (Text, intercalate, pack
 import qualified Data.Text                              as T (head, tail)
 
 -- MORPHEUS
-import           Data.Morpheus.Document.Rendering.Terms (Scope (..), indent, renderAssignment, renderCon, renderData,
-                                                         renderSet, renderTuple, renderUnionCon, renderWrapped)
+import           Data.Morpheus.Document.Rendering.Terms (Context (..), Scope (..), indent, renderAssignment, renderCon,
+                                                         renderData, renderSet, renderTuple, renderUnionCon,
+                                                         renderWrapped)
 import           Data.Morpheus.Types.Internal.Data      (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
                                                          DataType (..), DataTypeWrapper (..))
 
-renderType :: Scope -> (Text, DataFullType) -> Text
-renderType cScope (name, dataType) = typeIntro <> renderData name <> renderT dataType
+renderType :: Context -> (Text, DataFullType) -> Text
+renderType context (name, dataType) = typeIntro <> renderData name <> renderT dataType
   where
     renderT (Leaf (LeafScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR"
     renderT (Leaf (LeafEnum DataType {typeData})) = unionType typeData <> defineTypeClass "ENUM"
@@ -26,7 +27,7 @@ renderType cScope (name, dataType) = typeIntro <> renderData name <> renderT dat
       renderCon name <> renderObject renderInputField typeData <> defineTypeClass "INPUT_OBJECT"
     renderT (InputUnion _) = "\n -- Error: Input Union Not Supported"
     renderT (OutputObject DataType {typeData}) =
-      renderCon name <> renderObject (renderField cScope) typeData <> defineTypeClass "OBJECT"
+      renderCon name <> renderObject (renderField context) typeData <> defineTypeClass "OBJECT"
     ----------------------------------------------------------------------------------------------------------
     typeIntro = "\n\n---- GQL " <> name <> " ------------------------------- \n"
     ----------------------------------------------------------------------------------------------------------
@@ -52,11 +53,11 @@ renderInputField :: (Text, DataField ()) -> (Text, Maybe Text)
 renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
   (key `renderAssignment` renderWrapped fieldTypeWrappers fieldType, Nothing)
 
-renderField :: Scope -> (Text, DataField [(Text, DataArgument)]) -> (Text, Maybe Text)
-renderField cScope (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
-  (key `renderAssignment` argTypeName <> renderMonad cScope <> result fieldTypeWrappers, argTypes)
+renderField :: Context -> (Text, DataField [(Text, DataArgument)]) -> (Text, Maybe Text)
+renderField Context {scope, pubSubChannel, pubSubContent} (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
+  (key `renderAssignment` argTypeName <> renderMonad scope <> result fieldTypeWrappers, argTypes)
   where
-    renderMonad Subscription = " -> IOSubRes () () "
+    renderMonad Subscription = " -> IOSubRes " <> pubSubChannel <> " " <> pubSubContent <> " "
     renderMonad _            = " -> IORes "
     result wrappers@(NonNullType:_) = renderWrapped wrappers fieldType
     result wrappers                 = renderTuple (renderWrapped wrappers fieldType)

@@ -66,13 +66,13 @@ data ArgCreateCharacter = ArgCreateCharacter
 instance GQLType Mutation where
   type KIND Mutation = OBJECT
 
-resolveMutation :: IOMutRes () () Mutation
+resolveMutation :: IOMutRes Channel Content Mutation
 resolveMutation = return Mutation {createDeity = const resolveDeity, createCharacter = const resolveCharacter}
 
 ---- GQL Subscription -------------------------------
 data Subscription = Subscription
-  { newDeity     :: () -> IOSubRes () () Deity
-  , newCharacter :: () -> IOSubRes () () Character
+  { newDeity     :: () -> IOSubRes Channel Content Deity
+  , newCharacter :: () -> IOSubRes Channel Content Character
   } deriving (Generic)
 
 instance GQLType Subscription where
@@ -82,8 +82,8 @@ resolveSubscription :: SubRootRes IO Channel Subscription
 resolveSubscription =
   return
     Subscription
-      { newDeity = const $ Event {channels = [], content = const resolveDeity} {- TODO: Channel -}
-      , newCharacter = const $ Event {channels = [], content = const resolveCharacter} {- TODO: Channel -}
+      { newDeity = const $ Event {channels = [Channel], content = const resolveDeity}
+      , newCharacter = const $ Event {channels = [Channel], content = const resolveCharacter}
       }
 
 ---- GQL City -------------------------------

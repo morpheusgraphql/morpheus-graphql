@@ -37,8 +37,8 @@ renderRootResolver _ DataTypeLib {mutation, subscription} = renderSignature <> r
         maybeRes (Just (name, _)) = "resolve" <> name
         maybeRes Nothing          = "return ()"
 
-renderResolver :: Scope -> (Text, DataFullType) -> Text
-renderResolver conScope (name, dataType) = renderSig dataType
+renderResolver :: Context -> (Text, DataFullType) -> Text
+renderResolver Context {scope, pubSubChannel, pubSubContent} (name, dataType) = renderSig dataType
   where
     renderSig (Leaf LeafScalar {}) = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
     renderSig (Leaf (LeafEnum DataType {typeData})) = defFunc <> renderReturn <> renderCon (head typeData)
@@ -49,7 +49,7 @@ renderResolver conScope (name, dataType) = renderSig dataType
       where
         renderObjFields = renderResObject (map renderFieldRes typeData)
         renderFieldRes (key, DataField {fieldType, fieldTypeWrappers}) =
-          (key, "const " <> withScope conScope (renderValue fieldTypeWrappers fieldType))
+          (key, "const " <> withScope scope (renderValue fieldTypeWrappers fieldType))
           where
             renderValue []                             = const $ "$ " <> renderReturn <> "Nothing"
             renderValue [NonNullType]                  = fieldValue
@@ -61,7 +61,7 @@ renderResolver conScope (name, dataType) = renderSig dataType
             fieldValue "Int"    = "$ return 0"
             fieldValue fName    = "resolve" <> fName
             -------------------------------------------
-            withScope Subscription x = "$ Event { channels = [{- TODO: Channel -}], content = const " <> x <> " }"
+            withScope Subscription x = "$ Event { channels = [Channel], content = const " <> x <> " }"
             withScope _ x            = x
     renderSig _ = "" -- INPUT Types Does not Need Resolvers
     --------------------------------
@@ -69,8 +69,8 @@ renderResolver conScope (name, dataType) = renderSig dataType
     ----------------------------------------------------------------------------------------------------------
     renderSignature = renderAssignment ("resolve" <> name) (renderMonad name) <> "\n"
     ---------------------------------------------------------------------------------
-    renderMonad "Mutation"     = "IOMutRes () () Mutation"
-    renderMonad "Subscription" = "SubRootRes IO Channel Subscription"
+    renderMonad "Mutation"     = "IOMutRes " <> pubSubChannel <> " " <> pubSubContent <> " Mutation"
+    renderMonad "Subscription" = "SubRootRes IO " <> pubSubChannel <> " Subscription"
     renderMonad tName          = "IORes " <> tName
     ----------------------------------------------------------------------------------------------------------
     renderFunc = "resolve" <> name <> " = "

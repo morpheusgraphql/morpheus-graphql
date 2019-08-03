@@ -32,9 +32,9 @@ renderHaskellDocument modName lib =
       "\n\n"
     types = intercalate "\n\n" $ map renderFullType (allDataTypes lib)
       where
-        renderFullType x = renderType cScope x <> "\n\n" <> renderResolver cScope x
+        renderFullType x = renderType cont x <> "\n\n" <> renderResolver cont x
           where
-            cScope = getScope $ fst x
+            cont = context {scope = getScope $ fst x}
             getScope "Mutation"     = Mutation
             getScope "Subscription" = Subscription
             getScope _              = Query
@@ -50,7 +50,8 @@ renderHaskellDocument modName lib =
             ]
         , extensions = ["OverloadedStrings", "DeriveGeneric", "TypeFamilies"]
         , scope = Query
-        , featSubPub = True
+        , pubSubChannel = "Channel"
+        , pubSubContent = "Content"
         }
 
 renderLanguageExtensions :: Context -> Text

@@ -75,9 +75,10 @@ data Scope
   | Query
 
 data Context = Context
-  { moduleName   :: Text
-  , imports      :: [(Text, [Text])]
-  , extensions   :: [Text]
-  , scope        :: Scope
-  , featSubPub :: Bool
+  { moduleName    :: Text
+  , imports       :: [(Text, [Text])]
+  , extensions    :: [Text]
+  , scope         :: Scope
+  , pubSubChannel :: Text
+  , pubSubContent :: Text
   }
