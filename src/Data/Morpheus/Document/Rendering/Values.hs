@@ -65,7 +65,7 @@ renderResolver (name, dataType) = renderSig dataType
     renderSignature = renderAssignment ("resolve" <> name) (renderMonad name) <> "\n"
     ---------------------------------------------------------------------------------
     renderMonad "Mutation"     = "IOMutRes () () Mutation"
-    renderMonad "Subscription" = "SubRootRes () Subscription"
+    renderMonad "Subscription" = "SubRootRes IO () Subscription"
     renderMonad tName          = "IORes " <> tName
     ----------------------------------------------------------------------------------------------------------
     renderFunc = "resolve" <> name <> " = "
