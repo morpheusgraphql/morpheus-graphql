@@ -12,16 +12,12 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Morpheus.Resolve.Encode
-  ( ObjectFieldResolvers(..)
-  , EncodeCon
+  ( EncodeCon
   , EncodeSubCon
   , EncodeOperator
-  , encodeStreamRes
-  , resolveBySelection
+  , encodeMutStreamRes
   , encodeSubStreamRes
-  , resolveSubscriptionSelection
-  , resolversBy
-  , operatorToResolveT
+  , encodeOperatorPlus
   ) where
 
 import           Control.Monad                              ((>=>))
@@ -54,36 +50,40 @@ import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, ResolveT
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver               (Resolver, SubRes)
 
-type EncodeCon m a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m Value))
+type EncodeCon m a v = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m v))
 
 type EncodeOperator m a value = Resolver m a -> ValidOperator' -> m (Either GQLErrors value)
 
-type SubT m event = ResolveT (SubscribeStream m event) (EventContent event -> ResolveT m Value)
+type EncodeSubCon m event a = EncodeCon (SubscribeStream m event) a (EventContent event -> ResolveT m Value)
 
-type EncodeSubCon m event a = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (SubT m event))
+type ResolveSel result = SelectionSet -> [(Text, (Text, Selection) -> result)] -> result
 
-encodeStreamRes :: (Monad m, EncodeCon m a) => EncodeOperator m a Value
-encodeStreamRes rootResolver operator@Operator' {operatorSelection} =
-  runExceptT (operatorToResolveT operator rootResolver >>= resolveBySelection operatorSelection . resolversBy)
+encodeOperatorPlus :: (Monad m, EncodeCon m e Value, EncodeCon m a Value) => e -> EncodeOperator m a Value
+encodeOperatorPlus types rootResolver operator@Operator' {operatorSelection} =
+  runExceptT
+    (fmap resolversBy (operatorToResolveT operator rootResolver) >>=
+     resolveBySelection operatorSelection . (++) (resolversBy types))
 
-encodeSubStreamRes ::
-     (Monad m, EncodeSubCon m event a)
-  => EncodeOperator (SubscribeStream m event) a (EventContent event -> ResolveT m Value)
-encodeSubStreamRes rootResolver operator@Operator' {operatorSelection} =
-  runExceptT (operatorToResolveT operator rootResolver >>= resolveSubscriptionSelection operatorSelection . resolversBy)
+encodeMutStreamRes :: (Monad m, EncodeCon m a Value) => EncodeOperator m a Value
+encodeMutStreamRes = encodeOperator resolveBySelection
 
--- EXPORT -------------------------------------------------------
-type ResolveSel result = [(Text, Selection)] -> [(Text, (Text, Selection) -> result)] -> result
+encodeOperator :: (Monad m, EncodeCon m a v) => ResolveSel (ResolveT m v) -> EncodeOperator m a v
+encodeOperator resSel rootResolver operator@Operator' {operatorSelection} =
+  runExceptT (operatorToResolveT operator rootResolver >>= resSel operatorSelection . resolversBy)
 
 resolveBySelection :: Monad m => ResolveSel (ResolveT m Value)
 resolveBySelection selection resolvers = Object <$> mapM (selectResolver Null resolvers) selection
 
-resolveSubscriptionSelection :: Monad m => ResolveSel (SubT m s)
-resolveSubscriptionSelection selection resolvers =
-  toObj <$> mapM (selectResolver (const $ pure Null) resolvers) selection
+encodeSubStreamRes ::
+     (Monad m, EncodeSubCon m event a)
+  => EncodeOperator (SubscribeStream m event) a (EventContent event -> ResolveT m Value)
+encodeSubStreamRes = encodeOperator resolveSelection
   where
-    toObj pairs args = Object <$> mapM (\(key, valFunc) -> (key, ) <$> valFunc args) pairs
+    resolveSelection selection resolvers = toObj <$> mapM (selectResolver (const $ pure Null) resolvers) selection
+      where
+        toObj pairs args = Object <$> mapM (\(key, valFunc) -> (key, ) <$> valFunc args) pairs
 
+-- EXPORT -------------------------------------------------------
 selectResolver :: Monad m => a -> [(Text, (Text, Selection) -> m a)] -> (Text, Selection) -> m (Text, a)
 selectResolver defaultValue resolvers (key, selection) =
   case selectionRec selection of
