@@ -38,7 +38,7 @@ renderRootResolver _ DataTypeLib {mutation, subscription} = renderSignature <> r
         maybeRes Nothing          = "return ()"
 
 renderResolver :: Context -> (Text, DataFullType) -> Text
-renderResolver Context {scope, pubSubChannel, pubSubContent} (name, dataType) = renderSig dataType
+renderResolver Context {scope, pubSub = (channel, content)} (name, dataType) = renderSig dataType
   where
     renderSig (Leaf LeafScalar {}) = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
     renderSig (Leaf (LeafEnum DataType {typeData})) = defFunc <> renderReturn <> renderCon (head typeData)
@@ -62,15 +62,19 @@ renderResolver Context {scope, pubSubChannel, pubSubContent} (name, dataType) = 
             fieldValue fName    = "resolve" <> fName
             -------------------------------------------
             withScope Subscription x = "$ Event { channels = [Channel], content = const " <> x <> " }"
-            withScope _ x            = x
+            withScope Mutation x =
+              case (channel, content) of
+                ("()", "()") -> x
+                _            -> "$ Event { channels = [Channel], content = const " <> x <> " }"
+            withScope _ x = x
     renderSig _ = "" -- INPUT Types Does not Need Resolvers
     --------------------------------
     defFunc = renderSignature <> renderFunc
     ----------------------------------------------------------------------------------------------------------
     renderSignature = renderAssignment ("resolve" <> name) (renderMonad name) <> "\n"
     ---------------------------------------------------------------------------------
-    renderMonad "Mutation"     = "IOMutRes " <> pubSubChannel <> " " <> pubSubContent <> " Mutation"
-    renderMonad "Subscription" = "SubRootRes IO " <> pubSubChannel <> " Subscription"
+    renderMonad "Mutation"     = "IOMutRes " <> channel <> " " <> content <> " Mutation"
+    renderMonad "Subscription" = "SubRootRes IO " <> channel <> " Subscription"
     renderMonad tName          = "IORes " <> tName
     ----------------------------------------------------------------------------------------------------------
     renderFunc = "resolve" <> name <> " = "

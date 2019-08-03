@@ -54,11 +54,16 @@ renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
   (key `renderAssignment` renderWrapped fieldTypeWrappers fieldType, Nothing)
 
 renderField :: Context -> (Text, DataField [(Text, DataArgument)]) -> (Text, Maybe Text)
-renderField Context {scope, pubSubChannel, pubSubContent} (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
-  (key `renderAssignment` argTypeName <> renderMonad scope <> result fieldTypeWrappers, argTypes)
+renderField Context {scope, pubSub = (channel, content)} (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
+  (key `renderAssignment` argTypeName <> " -> " <> renderMonad scope <> result fieldTypeWrappers, argTypes)
   where
-    renderMonad Subscription = " -> IOSubRes " <> pubSubChannel <> " " <> pubSubContent <> " "
-    renderMonad _            = " -> IORes "
+    renderMonad Subscription = "IOSubRes " <> channel <> " " <> content <> " "
+    renderMonad Mutation =
+      case channel of
+        "()" -> "IORes "
+        _    -> "IOMutRes " <> channel <> " " <> content <> " "
+    renderMonad _ = "IORes "
+    -----------------------------------------------------------------
     result wrappers@(NonNullType:_) = renderWrapped wrappers fieldType
     result wrappers                 = renderTuple (renderWrapped wrappers fieldType)
     (argTypeName, argTypes) = renderArguments fieldArgs

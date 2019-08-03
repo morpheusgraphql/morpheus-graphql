@@ -50,8 +50,7 @@ renderHaskellDocument modName lib =
             ]
         , extensions = ["OverloadedStrings", "DeriveGeneric", "TypeFamilies"]
         , scope = Query
-        , pubSubChannel = "Channel"
-        , pubSubContent = "Content"
+        , pubSub = ("Channel", "Content")
         }
 
 renderLanguageExtensions :: Context -> Text
