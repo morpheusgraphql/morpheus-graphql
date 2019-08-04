@@ -98,7 +98,7 @@ If we now send a POST request to `http://localhost:3000/api` with a GraphQL Quer
 ```GraphQL
 query GetDeity {
   deity (name: "Morpheus") {
-    fullname
+    fullName
     power
   }
 }
@@ -110,7 +110,7 @@ our query will be resolved!
 {
   "data": {
     "deity": {
-      "fullname": "Morpheus",
+      "fullName": "Morpheus",
       "power": "Shapeshifting"
     }
   }
