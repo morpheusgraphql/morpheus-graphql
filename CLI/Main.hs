@@ -6,22 +6,24 @@ module Main
 
 import qualified Data.ByteString.Lazy   as L (readFile, writeFile)
 import           Data.Semigroup         ((<>))
+import           Data.Version           (showVersion)
 import           Options.Applicative    (Parser, command, customExecParser, fullDesc, help, helper, info, long, metavar,
                                          prefs, progDesc, short, showHelpOnError, strArgument, subparser, switch)
 import qualified Options.Applicative    as OA
+import           Paths_morpheus_graphql (version)
 
 -- MORPHEUS
 import           Data.Morpheus.Document (toMorpheusHaskellAPi)
 
-version :: String
-version = "0.1.1"
+morpheusVersion :: String
+morpheusVersion = showVersion version
 
 main :: IO ()
 main = defaultParser >>= buildHaskellApi
   where
     buildHaskellApi Options {optionCommand} = executeCommand optionCommand
       where
-        executeCommand About = putStrLn $ "Morpheus GraphQL CLI, version " <> version
+        executeCommand About = putStrLn $ "Morpheus GraphQL CLI, version " <> morpheusVersion
         executeCommand Build {source, target} = toMorpheusHaskellAPi "Schema" <$> L.readFile source >>= saveDocument
           where
             saveDocument (Left errors) = print errors
