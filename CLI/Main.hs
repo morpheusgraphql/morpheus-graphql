@@ -11,6 +11,7 @@ import           Options.Applicative    (Parser, command, customExecParser, full
                                          prefs, progDesc, short, showHelpOnError, strArgument, subparser, switch)
 import qualified Options.Applicative    as OA
 import           Paths_morpheus_graphql (version)
+import           System.FilePath.Posix  (takeBaseName)
 
 -- MORPHEUS
 import           Data.Morpheus.Document (toMorpheusHaskellAPi)
@@ -24,7 +25,8 @@ main = defaultParser >>= buildHaskellApi
     buildHaskellApi Options {optionCommand} = executeCommand optionCommand
       where
         executeCommand About = putStrLn $ "Morpheus GraphQL CLI, version " <> morpheusVersion
-        executeCommand Build {source, target} = toMorpheusHaskellAPi "Schema" <$> L.readFile source >>= saveDocument
+        executeCommand Build {source, target} =
+          toMorpheusHaskellAPi (takeBaseName target) <$> L.readFile source >>= saveDocument
           where
             saveDocument (Left errors) = print errors
             saveDocument (Right doc)   = L.writeFile target doc
