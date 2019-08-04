@@ -55,11 +55,11 @@ type Pure = Either String
 resolver :: m (Either String a) -> Resolver m a
 resolver = ExceptT
 
-toMutResolver :: Monad m => [c] -> Resolver m a -> Resolver (StreamT m c) a
+toMutResolver :: Monad m => [Event e c] -> Resolver m a -> MutResolver m e c a
 toMutResolver channels = ExceptT . StreamT . fmap (StreamState channels) . runExceptT
 
 -- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver
-mutResolver :: Monad m => [c] -> (StreamT m c) (Either String a) -> Resolver (StreamT m c) a
+mutResolver :: Monad m => [Event e c] -> (StreamT m (Event e c)) (Either String a) -> MutResolver m e c a
 mutResolver channels = ExceptT . StreamT . fmap effectPlus . runStreamT
   where
     effectPlus state = state {streamEvents = channels ++ streamEvents state}

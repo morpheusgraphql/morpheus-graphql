@@ -65,7 +65,7 @@ renderResolver Context {scope, pubSub = (channel, content)} (name, dataType) = r
             withScope Mutation x =
               case (channel, content) of
                 ("()", "()") -> x
-                _            -> "$ Event { channels = [Channel], content = const " <> x <> " }"
+                _            -> "$ toMutResolver [Event {channels = [Channel], content = Content}] " <> x
             withScope _ x = x
     renderSig _ = "" -- INPUT Types Does not Need Resolvers
     --------------------------------

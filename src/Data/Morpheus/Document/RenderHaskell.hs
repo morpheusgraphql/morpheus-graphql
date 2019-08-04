@@ -32,7 +32,8 @@ renderHaskellDocument modName lib =
         Nothing -> els
         _       -> onS
     renderApiEvents =
-      "data Channel = Channel -- ChannelA | ChannelB" <> "\n\n" <> "data Content = Content Int -- ContentA | ContentB" <>
+      "data Channel = Channel -- ChannelA | ChannelB" <> "\n\n" <>
+      "data Content = Content -- ContentA Int | ContentB String" <>
       "\n\n"
     types = intercalate "\n\n" $ map renderFullType (allDataTypes lib)
       where
@@ -49,7 +50,15 @@ renderHaskellDocument modName lib =
             [ ("GHC.Generics", ["Generic"])
             , ("Data.Morpheus.Kind", ["SCALAR", "ENUM", "INPUT_OBJECT", "OBJECT", "UNION"])
             , ( "Data.Morpheus.Types"
-              , ["GQLRootResolver(..)", "IORes", "IOMutRes", "IOSubRes", "Event(..)", "SubRootRes", "GQLType(..)"])
+              , [ "GQLRootResolver(..)"
+                , "toMutResolver"
+                , "IORes"
+                , "IOMutRes"
+                , "IOSubRes"
+                , "Event(..)"
+                , "SubRootRes"
+                , "GQLType(..)"
+                ])
             , ("Data.Text", ["Text"])
             ]
         , extensions = ["OverloadedStrings", "DeriveGeneric", "TypeFamilies"]

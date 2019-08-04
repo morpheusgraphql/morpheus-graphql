@@ -9,7 +9,7 @@ module Schema
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types (Event (..), GQLRootResolver (..), GQLType (..), IOMutRes, IORes, IOSubRes,
-                                      SubRootRes)
+                                      SubRootRes, toMutResolver)
 import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
 
@@ -17,7 +17,7 @@ data Channel =
   Channel -- ChannelA | ChannelB
 
 data Content =
-  Content Int -- ContentA | ContentB
+  Content -- ContentA Int | ContentB String
 
 rootResolver :: GQLRootResolver IO Channel Content Query Mutation Subscription
 rootResolver =
@@ -70,8 +70,8 @@ resolveMutation :: IOMutRes Channel Content Mutation
 resolveMutation =
   return
     Mutation
-      { createDeity = const $ Event {channels = [Channel], content = const resolveDeity}
-      , createCharacter = const $ Event {channels = [Channel], content = const resolveCharacter}
+      { createDeity = const $ toMutResolver [Event {channels = [Channel], content = Content}] resolveDeity
+      , createCharacter = const $ toMutResolver [Event {channels = [Channel], content = Content}] resolveCharacter
       }
 
 ---- GQL Subscription -------------------------------
