@@ -1,7 +1,8 @@
 -- | GQL Types
 module Data.Morpheus.Types
-  ( gqlResolver
-  , gqlStreamResolver
+  ( resolver
+  , mutResolver
+  , toMutResolver
   -- Resolver Monad
   , IORes
   , IOMutRes
@@ -26,7 +27,7 @@ import           Data.Morpheus.Types.ID             (ID (..))
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
 import           Data.Morpheus.Types.IO             (GQLRequest (..), GQLResponse (..))
 import           Data.Morpheus.Types.Resolver       (Event (..), GQLRootResolver (..), MutResolver, Resolver, Resolver,
-                                                     SubResolver, SubRootRes, gqlResolver, gqlStreamResolver)
+                                                     SubResolver, SubRootRes, mutResolver, resolver, toMutResolver)
 
 type IORes = Resolver IO
 

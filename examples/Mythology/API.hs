@@ -9,7 +9,7 @@ module Mythology.API
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, gqlResolver)
+import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, resolver)
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 import           Mythology.Character.Deity  (Deity (..), dbDeity)
@@ -24,7 +24,7 @@ data DeityArgs = DeityArgs
   } deriving (Generic)
 
 resolveDeity :: DeityArgs -> IORes Deity
-resolveDeity args = gqlResolver $ dbDeity (name args) (mythology args)
+resolveDeity args = resolver $ dbDeity (name args) (mythology args)
 
 rootResolver :: GQLRootResolver IO () () Query () ()
 rootResolver =

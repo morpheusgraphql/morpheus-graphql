@@ -25,7 +25,7 @@ import           GHC.Generics        (Generic)
 -- MORPHEUS
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, IOMutRes,
-                                      IORes, IOSubRes, Resolver, ScalarValue (..), gqlResolver, gqlStreamResolver)
+                                      IORes, IOSubRes, Resolver, ScalarValue (..), mutResolver, resolver)
 
 newtype Cat = Cat
   { catName :: Text
@@ -159,10 +159,10 @@ fetchUser =
   where
     unionAddress = Address {city = "Hamburg", street = "Street", houseNumber = 20}
   -- Office
-    resolveOffice OfficeArgs {cityID = Paris} = gqlResolver $ fetchAddress (Euro 1 1)
-    resolveOffice OfficeArgs {cityID = BLN}   = gqlResolver $ fetchAddress (Euro 1 2)
-    resolveOffice OfficeArgs {cityID = HH}    = gqlResolver $ fetchAddress (Euro 1 3)
-    resolveAddress = gqlResolver $ fetchAddress (Euro 1 0)
+    resolveOffice OfficeArgs {cityID = Paris} = resolver $ fetchAddress (Euro 1 1)
+    resolveOffice OfficeArgs {cityID = BLN}   = resolver $ fetchAddress (Euro 1 2)
+    resolveOffice OfficeArgs {cityID = HH}    = resolver $ fetchAddress (Euro 1 3)
+    resolveAddress = resolver $ fetchAddress (Euro 1 0)
     unionUser =
       User
         { name = "David"
@@ -219,7 +219,7 @@ gqlRoot =
     { queryResolver =
         return
           Query
-            { user = const $ gqlResolver fetchUser
+            { user = const $ resolver fetchUser
             , wrappedA1 = A (0, "")
             , setAnimal = setAnimalResolver
             , wrappedA2 = A ""
@@ -230,14 +230,12 @@ gqlRoot =
     , subscriptionResolver = return Subscription {newAddress, newUser}
     }
   where
-    newUser _ = Event [UPDATE_USER] $ \Update {} -> gqlResolver fetchUser
-    newAddress _ = Event [UPDATE_ADDRESS] $ \Update {contentID} -> gqlResolver $ fetchAddress (Euro contentID 0)
+    newUser _ = Event [UPDATE_USER] $ \Update {} -> resolver fetchUser
+    newAddress _ = Event [UPDATE_ADDRESS] $ \Update {contentID} -> resolver $ fetchAddress (Euro contentID 0)
     createUser _ =
-      gqlStreamResolver
-        [Event [UPDATE_USER] (Update {contentID = 12, contentMessage = "some message for user"})]
-        fetchUser
+      mutResolver [Event [UPDATE_USER] (Update {contentID = 12, contentMessage = "some message for user"})] fetchUser
     createAddress :: () -> MutRes Address
     createAddress _ =
-      gqlStreamResolver
+      mutResolver
         [Event [UPDATE_ADDRESS] (Update {contentID = 10, contentMessage = "message for address"})]
         (fetchAddress (Euro 1 0))
