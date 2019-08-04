@@ -5,6 +5,13 @@
 - Enhanced Subscription: mutation can trigger subscription with arguments
 - Experimental Support of Input Unions
 - GraphQL schema generating with: `Data.Morpheus.Document.toGraphQLDocument`
+- Generating dummy Morpheus Api from `schema.gql`:
+
+  ```
+  morpheus build schema/mythology.gql src/MythologyApi.hs
+  ```
+
+  [details](https://github.com/morpheusgraphql/morpheus-graphql/issues/184)
 
 ### Fixed:
 
