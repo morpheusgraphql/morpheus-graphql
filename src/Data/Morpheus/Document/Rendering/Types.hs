@@ -20,7 +20,7 @@ import           Data.Morpheus.Types.Internal.Data      (DataArgument, DataField
 renderType :: Context -> (Text, DataFullType) -> Text
 renderType context (name, dataType) = typeIntro <> renderData name <> renderT dataType
   where
-    renderT (Leaf (LeafScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR"
+    renderT (Leaf (LeafScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name
     renderT (Leaf (LeafEnum DataType {typeData})) = unionType typeData <> defineTypeClass "ENUM"
     renderT (Union DataType {typeData}) = renderUnion name typeData <> defineTypeClass "UNION"
     renderT (InputObject DataType {typeData}) =
@@ -32,8 +32,17 @@ renderType context (name, dataType) = typeIntro <> renderData name <> renderT da
     typeIntro = "\n\n---- GQL " <> name <> " ------------------------------- \n"
     ----------------------------------------------------------------------------------------------------------
     defineTypeClass kind =
-      "\n\n" <> "instance GQLType " <> name <> " where\n" <> indent <> "type KIND " <> name <> " = " <> kind
+      "\n\n" <> renderTypeInstanceHead "GQLType" name <> indent <> "type KIND " <> name <> " = " <> kind <> "\n\n"
     ----------------------------------------------------------------------------------------------------------
+
+renderTypeInstanceHead :: Text -> Text -> Text
+renderTypeInstanceHead className name = "instance " <> className <> " " <> name <> " where\n"
+
+renderGQLScalar :: Text -> Text
+renderGQLScalar name = renderTypeInstanceHead "GQLScalar " name <> renderParse <> renderSerialize <> "\n\n"
+  where
+    renderParse = indent <> "parseValue _ = pure (" <> name <> " 0 0 )" <> "\n"
+    renderSerialize = indent <> "serialize (" <> name <> " x y ) = Int (x + y)"
 
 renderUnion :: Text -> [DataField ()] -> Text
 renderUnion typeName = unionType . map renderElem

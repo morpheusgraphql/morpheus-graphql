@@ -58,6 +58,8 @@ renderHaskellDocument modName lib =
                 , "Event(..)"
                 , "SubRootRes"
                 , "GQLType(..)"
+                , "GQLScalar(..)"
+                , "ScalarValue(..)"
                 ])
             , ("Data.Text", ["Text"])
             ]
