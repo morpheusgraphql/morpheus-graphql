@@ -12,7 +12,7 @@ import           Data.Text                              (Text)
 
 -- MORPHEUS
 import           Data.Morpheus.Document.Rendering.Terms (Context (..), Scope (..), renderAssignment, renderCon,
-                                                         renderReturn, renderSet, renderUnionCon)
+                                                         renderEqual, renderReturn, renderSet, renderUnionCon)
 import           Data.Morpheus.Types.Internal.Data      (DataField (..), DataFullType (..), DataLeaf (..),
                                                          DataType (..), DataTypeLib (..), DataTypeWrapper (..))
 
@@ -83,4 +83,4 @@ renderResolver Context {scope, pubSub = (channel, content)} (name, dataType) = r
 renderResObject :: [(Text, Text)] -> Text
 renderResObject = renderSet . map renderEntry
   where
-    renderEntry (key, value) = key <> " = " <> value
+    renderEntry (key, value) = renderEqual key value

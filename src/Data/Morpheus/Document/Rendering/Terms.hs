@@ -13,6 +13,7 @@ module Data.Morpheus.Document.Rendering.Terms
   , renderWrapped
   , renderSet
   , renderUnionCon
+  , renderEqual
   , Scope(..)
   , Context(..)
   ) where
@@ -25,6 +26,9 @@ import           Data.Morpheus.Types.Internal.Data (DataTypeWrapper (..))
 
 indent :: Text
 indent = "  "
+
+renderEqual :: Text -> Text -> Text
+renderEqual key value = key <> " = " <> value
 
 renderReturn :: Text
 renderReturn = "return "
