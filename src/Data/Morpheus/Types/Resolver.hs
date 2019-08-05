@@ -41,9 +41,9 @@ type Resolver = ExceptT String
 
 type MutResolver m e c = Resolver (PublishStream m e c)
 
-type SubResolver m e c a = Event e (c -> Resolver m a)
+type SubResolver m e c a = Event e (Event e c -> Resolver m a)
 
-type SubResolveT m e c a = ResolveT (SubscribeStream m e) (c -> ResolveT m a)
+type SubResolveT m e c a = ResolveT (SubscribeStream m e) (Event e c -> ResolveT m a)
 
 type SubRootRes m e sub = Resolver (SubscribeStream m e) sub
 

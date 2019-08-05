@@ -5,8 +5,8 @@
 module Data.Morpheus.Types.Internal.Stream
   ( StreamState(..)
   , ResponseEvent(..)
-  , SubPair
-  , PubPair
+  , SubEvent
+  , PubEvent
   , Event(..)
   -- STREAMS
   , StreamT(..)
@@ -50,19 +50,19 @@ instance Monad m => Monad (StreamT m c) where
       (StreamState e2 v2) <- runStreamT $ mFunc v1
       return $ StreamState (e1 ++ e2) v2
 
-type SubPair m e c = Event e (c -> m GQLResponse)
+type SubEvent m e c = Event e (Event e c -> m GQLResponse)
 
-type PubPair e c = Event e c
+type PubEvent e c = Event e c
 
 -- EVENTS
 data ResponseEvent m e c
-  = Publish (PubPair e c)
-  | Subscribe (SubPair m e c)
+  = Publish (PubEvent e c)
+  | Subscribe (SubEvent m e c)
 
 -- STREAMS
 type SubscribeStream m e = StreamT m [e]
 
-type PublishStream m e c = StreamT m (PubPair e c)
+type PublishStream m e c = StreamT m (PubEvent e c)
 
 type ResponseStream m event con a = StreamT m (ResponseEvent m event con) a
 
