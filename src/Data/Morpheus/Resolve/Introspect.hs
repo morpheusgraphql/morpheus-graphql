@@ -41,7 +41,7 @@ import           Data.Morpheus.Types.Internal.Data       (DataArguments, DataFie
                                                           DataTypeKind (..), DataTypeLib, DataTypeWrapper (..),
                                                           DataValidator, defineType, isTypeDefined)
 import           Data.Morpheus.Types.Internal.Validation (SchemaValidation)
-import           Data.Morpheus.Types.Resolver            (Resolver)
+import           Data.Morpheus.Types.Resolver            (Resolver, SubResolver)
 
 type SelOf s = M1 S s (Rec0 ()) ()
 
@@ -331,7 +331,7 @@ instance (ObjectRep (Rep a) (), OutputConstraint b) => Introspect (a -> Either S
       args :: [((Text, DataInputField), TypeUpdater)]
       args = objectFieldTypes (Proxy @(Rep a))
 
-instance (ObjectRep (Rep a) (), OutputConstraint b) => Introspect (a -> (c, v -> Resolver m b)) WRAPPER OutputType where
+instance (ObjectRep (Rep a) (), OutputConstraint b) => Introspect (a -> SubResolver m c v b) WRAPPER OutputType where
   __field _ name = (__field (Context :: OutputOf b) name) {fieldArgs = map fst $ objectFieldTypes (Proxy @(Rep a))}
   introspect _ typeLib = resolveTypes typeLib $ map snd args ++ [introspect (Context :: OutputOf b)]
     where

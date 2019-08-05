@@ -3,60 +3,73 @@
 {-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
 module Data.Morpheus.Types.Resolver
   ( Pure
-  , ResM
-  , StreamM
-  , SubRes
   , Resolver
+  , MutResolver
+  , SubResolver
+  , ResolveT
+  , SubResolveT
+  , MutResolveT
+  , SubRootRes
+  , Event(..)
   , GQLRootResolver(..)
-  , gqlResolver
-  , gqlStreamResolver
-  , EventContent
+  , resolver
+  , mutResolver
+  , toMutResolver
   ) where
 
-import           Control.Monad.Trans.Except              (ExceptT (..))
+import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
 
 -- MORPHEUS
 --
-import           Data.Morpheus.Types.Internal.Stream     (EventContent, PublishStream, StreamState (..), StreamT (..),
+import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStream, StreamState (..), StreamT (..),
                                                           SubscribeStream)
 import           Data.Morpheus.Types.Internal.Validation (ResolveT)
 
+-- SubResolver m (Event [c1, c2] d) a
+----------------------------------------------------------------------------------------
+type MutResolveT m e c a = ResolveT (PublishStream m e c) a
+
+-------------------------------------------------------------------
+type Resolver = ExceptT String
+
+type MutResolver m e c = Resolver (PublishStream m e c)
+
+type SubResolver m e c a = Event e (c -> Resolver m a)
+
+type SubResolveT m e c a = ResolveT (SubscribeStream m e) (c -> ResolveT m a)
+
+type SubRootRes m e sub = Resolver (SubscribeStream m e) sub
+
+-------------------------------------------------------------------
 -- | Pure Resolver without effect
 type Pure = Either String
 
--- | Monad IO resolver without GraphQL effect
-type ResM = Resolver IO
-
-type Resolver = ExceptT String
-
-type SubRes m s b = ([s], EventContent s -> Resolver m b)
-
--- | Monad Resolver with GraphQL effects, used for communication between mutation and subscription
-type StreamM s = Resolver (StreamT IO ([s], EventContent s))
-
 -- | GraphQL Resolver
-gqlResolver :: m (Either String a) -> Resolver m a
-gqlResolver = ExceptT
+resolver :: m (Either String a) -> Resolver m a
+resolver = ExceptT
+
+toMutResolver :: Monad m => [Event e c] -> Resolver m a -> MutResolver m e c a
+toMutResolver channels = ExceptT . StreamT . fmap (StreamState channels) . runExceptT
+
+-- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver
+mutResolver :: Monad m => [Event e c] -> (StreamT m (Event e c)) (Either String a) -> MutResolver m e c a
+mutResolver channels = ExceptT . StreamT . fmap effectPlus . runStreamT
+  where
+    effectPlus state = state {streamEvents = channels ++ streamEvents state}
 
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
 --
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
-data GQLRootResolver m s query mut sub = GQLRootResolver
-  { queryResolver        :: ResolveT m query
-  , mutationResolver     :: ResolveT (PublishStream m s) mut
-  , subscriptionResolver :: ResolveT (SubscribeStream m s) sub
+data GQLRootResolver m e c query mut sub = GQLRootResolver
+  { queryResolver        :: Resolver m query
+  , mutationResolver     :: Resolver (PublishStream m e c) mut
+  , subscriptionResolver :: SubRootRes m e sub
   }
-
--- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver
-gqlStreamResolver :: Monad m => [c] -> (StreamT m c) (Either String a) -> Resolver (StreamT m c) a
-gqlStreamResolver channels = ExceptT . insertStream
-  where
-    insertStream (StreamT streamMonad) = StreamT $ effectPlus <$> streamMonad
-    effectPlus x = x {streamEvents = channels ++ streamEvents x}

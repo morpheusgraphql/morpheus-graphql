@@ -4,11 +4,10 @@
 
 module Data.Morpheus.Types.Internal.Stream
   ( StreamState(..)
-  , EventContent
-  -- EVENTS
   , ResponseEvent(..)
   , SubPair
   , PubPair
+  , Event(..)
   -- STREAMS
   , StreamT(..)
   , SubscribeStream
@@ -20,7 +19,10 @@ module Data.Morpheus.Types.Internal.Stream
 
 import           Data.Morpheus.Types.IO (GQLResponse)
 
-data family EventContent conf :: *
+data Event e c = Event
+  { channels :: [e]
+  , content  :: c
+  }
 
 data StreamState c v = StreamState
   { streamEvents :: [c]
@@ -48,25 +50,21 @@ instance Monad m => Monad (StreamT m c) where
       (StreamState e2 v2) <- runStreamT $ mFunc v1
       return $ StreamState (e1 ++ e2) v2
 
-type Pair channel content = ([channel], content)
+type SubPair m e c = Event e (c -> m GQLResponse)
 
-type SubPair m s = Pair s (EventContent s -> m GQLResponse)
-
-type PubPair s = Pair s (EventContent s)
+type PubPair e c = Event e c
 
 -- EVENTS
-type PubEvent s = ([s], EventContent s)
-
-data ResponseEvent m s
-  = Publish (PubPair s)
-  | Subscribe (SubPair m s)
+data ResponseEvent m e c
+  = Publish (PubPair e c)
+  | Subscribe (SubPair m e c)
 
 -- STREAMS
-type SubscribeStream m s = StreamT m [s]
+type SubscribeStream m e = StreamT m [e]
 
-type PublishStream m s = StreamT m (PubEvent s)
+type PublishStream m e c = StreamT m (PubPair e c)
 
-type ResponseStream m event a = StreamT m (ResponseEvent m event) a
+type ResponseStream m event con a = StreamT m (ResponseEvent m event con) a
 
 -- Helper Functions
 toTuple :: StreamState s a -> ([s], a)

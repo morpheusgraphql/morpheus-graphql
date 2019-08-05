@@ -39,67 +39,67 @@ import           Data.Morpheus.Types.Resolver        (GQLRootResolver (..))
 --       -- or
 --       k :: GQLRequest -> IO GQLResponse
 --     @
-class Interpreter k m s where
+class Interpreter k m e c where
   interpreter ::
        Monad m
-    => (RootResCon m s a b c) =>
-         GQLRootResolver m s a b c -> k
+    => (RootResCon m e c que mut sub) =>
+         GQLRootResolver m e c que mut sub -> k
 
 {-
   simple HTTP stateless Interpreter without side effects
 -}
 type StateLess m a = a -> m a
 
-instance Interpreter (GQLRequest -> m GQLResponse) m s where
+instance Interpreter (GQLRequest -> m GQLResponse) m e c where
   interpreter = statelessResolver
 
-instance Interpreter (StateLess m LB.ByteString) m s where
+instance Interpreter (StateLess m LB.ByteString) m e c where
   interpreter root = byteStringIO (statelessResolver root)
 
-instance Interpreter (StateLess m LT.Text) m s where
+instance Interpreter (StateLess m LT.Text) m e c where
   interpreter root request = decodeUtf8 <$> interpreter root (encodeUtf8 request)
 
-instance Interpreter (StateLess m ByteString) m s where
+instance Interpreter (StateLess m ByteString) m e c where
   interpreter root request = LB.toStrict <$> interpreter root (LB.fromStrict request)
 
-instance Interpreter (StateLess m Text) m s where
+instance Interpreter (StateLess m Text) m e c where
   interpreter root request = LT.toStrict <$> interpreter root (LT.fromStrict request)
 
 {-
    HTTP Interpreter with state and side effects, every mutation will
    trigger subscriptions in  shared `GQLState`
 -}
-type WSPub m s a = GQLState m s -> a -> m a
+type WSPub m e c a = GQLState m e c -> a -> m a
 
-instance Interpreter (WSPub IO s LB.ByteString) IO s where
+instance Interpreter (WSPub IO e c LB.ByteString) IO e c where
   interpreter root state = statefulResolver state (byteStringIO (streamResolver root))
 
-instance Interpreter (WSPub IO s LT.Text) IO s where
+instance Interpreter (WSPub IO e c LT.Text) IO e c where
   interpreter root state request = decodeUtf8 <$> interpreter root state (encodeUtf8 request)
 
-instance Interpreter (WSPub IO s ByteString) IO s where
+instance Interpreter (WSPub IO e c ByteString) IO e c where
   interpreter root state request = LB.toStrict <$> interpreter root state (LB.fromStrict request)
 
-instance Interpreter (WSPub IO s Text) IO s where
+instance Interpreter (WSPub IO e c Text) IO e c where
   interpreter root state request = LT.toStrict <$> interpreter root state (LT.fromStrict request)
 
 {-
    WebSocket Interpreter without state and side effects, mutations and subscription will return Actions
    that will be executed in WebSocket server
 -}
-type WSSub m s a = a -> ResponseStream m s a
+type WSSub m e c a = a -> ResponseStream m e c a
 
-instance Interpreter (GQLRequest -> ResponseStream m s LB.ByteString) m s where
+instance Interpreter (GQLRequest -> ResponseStream m e c LB.ByteString) m e c where
   interpreter root request = encode <$> streamResolver root request
 
-instance Interpreter (WSSub m s LB.ByteString) m s where
+instance Interpreter (WSSub m e c LB.ByteString) m e c where
   interpreter root = byteStringIO (streamResolver root)
 
-instance Interpreter (WSSub m s LT.Text) m s where
+instance Interpreter (WSSub m e c LT.Text) m e c where
   interpreter root request = decodeUtf8 <$> interpreter root (encodeUtf8 request)
 
-instance Interpreter (WSSub m s ByteString) m s where
+instance Interpreter (WSSub m e c ByteString) m e c where
   interpreter root request = LB.toStrict <$> interpreter root (LB.fromStrict request)
 
-instance Interpreter (WSSub m s Text) m s where
+instance Interpreter (WSSub m e c Text) m e c where
   interpreter root request = LT.toStrict <$> interpreter root (LT.fromStrict request)

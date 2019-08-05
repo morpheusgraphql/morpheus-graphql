@@ -29,7 +29,7 @@ import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..))
 import           Data.Morpheus.Types.IO                 (GQLResponse (..))
 import           Data.Morpheus.Types.Resolver           (GQLRootResolver (..))
 
-handleSubscription :: Eq s => GQLClient IO s -> GQLState IO s -> Text -> ResponseStream IO s GQLResponse -> IO ()
+handleSubscription :: Eq e => GQLClient IO e c -> GQLState IO e c -> Text -> ResponseStream IO e c GQLResponse -> IO ()
 handleSubscription GQLClient {clientConnection, clientID} state sessionId stream = do
   (actions, response) <- closeStream stream
   case response of
@@ -40,7 +40,7 @@ handleSubscription GQLClient {clientConnection, clientID} state sessionId stream
     execute (Subscribe sub) = addClientSubscription clientID sub sessionId state
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
-gqlSocketApp :: RootResCon IO s a b c => GQLRootResolver IO s a b c -> GQLState IO s -> ServerApp
+gqlSocketApp :: RootResCon IO e c que mut sub => GQLRootResolver IO e c que mut sub -> GQLState IO e c -> ServerApp
 gqlSocketApp gqlRoot state pending = do
   connection <- acceptRequestWith pending $ acceptApolloSubProtocol (pendingRequest pending)
   forkPingThread connection 30
