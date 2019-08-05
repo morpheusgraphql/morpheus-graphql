@@ -57,7 +57,7 @@ type EncodeCon m a v = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (Res
 
 type EncodeMutCon m event con mut = EncodeCon (PublishStream m event con) mut Value
 
-type EncodeSubCon m event con sub = EncodeCon (SubscribeStream m event) sub (con -> ResolveT m Value)
+type EncodeSubCon m event con sub = EncodeCon (SubscribeStream m event) sub (Event event con -> ResolveT m Value)
 
 encodeQuery :: (Monad m, EncodeCon m schema Value, EncodeCon m a Value) => schema -> EncodeOperator m a Value
 encodeQuery types rootResolver operator@Operator' {operatorSelection} =
@@ -69,7 +69,8 @@ encodeMut :: (Monad m, EncodeCon m a Value) => EncodeOperator m a Value
 encodeMut = encodeOperator resolveBySelection
 
 encodeSub ::
-     (Monad m, EncodeSubCon m event con a) => EncodeOperator (SubscribeStream m event) a (con -> ResolveT m Value)
+     (Monad m, EncodeSubCon m event con a)
+  => EncodeOperator (SubscribeStream m event) a (Event event con -> ResolveT m Value)
 encodeSub = encodeOperator (flip resolveSelection)
   where
     resolveSelection resolvers = fmap toObj . mapM (selectResolver (const $ pure Null) resolvers)

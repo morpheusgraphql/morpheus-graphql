@@ -230,8 +230,8 @@ gqlRoot =
     , subscriptionResolver = return Subscription {newAddress, newUser}
     }
   where
-    newUser _ = Event [UPDATE_USER] $ \Update {} -> resolver fetchUser
-    newAddress _ = Event [UPDATE_ADDRESS] $ \Update {contentID} -> resolver $ fetchAddress (Euro contentID 0)
+    newUser _ = Event [UPDATE_USER] $ \(Event _ Update {}) -> resolver fetchUser
+    newAddress _ = Event [UPDATE_ADDRESS] $ \(Event _ Update {contentID}) -> resolver $ fetchAddress (Euro contentID 0)
     createUser _ =
       mutResolver [Event [UPDATE_USER] (Update {contentID = 12, contentMessage = "some message for user"})] fetchUser
     createAddress :: () -> MutRes Address
