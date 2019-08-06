@@ -7,7 +7,7 @@ module Main
 
 import           Control.Monad.IO.Class         (liftIO)
 import           Data.Morpheus                  (Interpreter (..))
-import           Data.Morpheus.Client           (GQLData, graphql)
+import           Data.Morpheus.Client           (gql)
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Deprecated.API                 (Channel, Content, gqlRoot)
@@ -18,8 +18,18 @@ import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
-gqlData :: GQLData
-gqlData = [graphql|(a,c,e,f)|]
+gqlData :: String
+gqlData =
+  [gql|
+  {
+    name(id:12)
+    uid
+  }
+
+  fragment A on B {
+      name
+  }
+|]
 
 main :: IO ()
 main = do
