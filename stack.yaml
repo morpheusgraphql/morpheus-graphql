@@ -2,3 +2,4 @@ resolver: lts-13.24
 
 extra-deps:
 - megaparsec-7.0.5
+- template-haskell-2.14.0.0

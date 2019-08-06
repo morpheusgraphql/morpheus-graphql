@@ -29,6 +29,7 @@ dependencies:
   - websockets            >= 0.11.0    && <= 0.12.5.3
   - wai-websockets        >= 1.0       && <= 3.5
   - uuid                  >= 1.0       && <= 1.4
+  - template-haskell
 
 library:
   source-dirs: src
