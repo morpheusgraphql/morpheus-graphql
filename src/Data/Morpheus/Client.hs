@@ -11,21 +11,24 @@ module Data.Morpheus.Client
   ) where
 
 --import           Data.Data
-import           Data.Aeson                  (encode)
-import           Data.ByteString.Lazy.Char8  (unpack)
-import           Data.Text                   (pack)
+import           Data.Aeson                           (encode)
+import           Data.ByteString.Lazy.Char8           (ByteString,unpack)
+import     qualified      Data.ByteString.Lazy  as L (readFile)
+import           Data.Text                            (pack)
+import qualified Data.Text.IO                         as T (readFile)
 
 --- Template Haskell
 -- import           Language.Haskell.TH.Lib
 import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax
 
+import           Data.Morpheus.Document.ParseDocument (parseGraphQLDocument)
 -- import           Text.Megaparsec                           (SourcePos (..))
 --
 ---  Morpheus
-import           Data.Morpheus.Error.Utils   (renderErrors)
-import           Data.Morpheus.Parser.Parser (parseGQL)
-import           Data.Morpheus.Types.IO      (GQLRequest (..))
+import           Data.Morpheus.Error.Utils            (renderErrors)
+import           Data.Morpheus.Parser.Parser          (parseGQL)
+import           Data.Morpheus.Types.IO               (GQLRequest (..))
 
 --import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..))
 --import           Data.Morpheus.Types.Types                 (GQLQueryRoot (..))
@@ -53,10 +56,14 @@ gql =
   where
     notHandled things = error $ things ++ " are not handled by the regex quasiquoter."
 
+readSchema :: IO ByteString
+readSchema = L.readFile "./assets/simple.gql"
+
 compile :: String -> Q Exp
-compile inputText =
+compile inputText = do
+  schema <- parseGraphQLDocument <$> (runIO readSchema)
   case parseGQL request of
-    Left errors -> fail gqlCompileErrors
+    Left errors -> (fail gqlCompileErrors)
       where gqlCompileErrors = unpack $ encode $ renderErrors errors
     Right root -> [|op|]
       where op = show root
