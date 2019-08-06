@@ -22,11 +22,9 @@ gqlData :: String
 gqlData =
   [gql|
   {
-    name(id:12)
-    ui
-  }
-  fragment A on B {
-      name
+    deity {
+
+    }
   }
 |]
 
