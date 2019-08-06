@@ -1,5 +1,7 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 
 module Main
   ( main
@@ -7,7 +9,7 @@ module Main
 
 import           Control.Monad.IO.Class         (liftIO)
 import           Data.Morpheus                  (Interpreter (..))
-import           Data.Morpheus.Client           (gql)
+import           Data.Morpheus.Client           (buildRecord, gql)
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Deprecated.API                 (Channel, Content, gqlRoot)
@@ -17,6 +19,9 @@ import qualified Network.Wai.Handler.Warp       as Warp
 import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
+
+-- $(buildRecord "XYZ" ''Bool)
+$(buildRecord "Boo" [("foo", ''String), ("bar", ''Bool)])
 
 gqlData :: String
 gqlData =
@@ -28,6 +33,7 @@ gqlData =
   }
 |]
 
+--bla = MyRecordXYZ {foo = "", bar = True}
 main :: IO ()
 main = do
   print gqlData

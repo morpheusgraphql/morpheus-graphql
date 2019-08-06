@@ -8,6 +8,7 @@
 
 module Data.Morpheus.Client
   ( gql
+  , buildRecord
   ) where
 
 --import           Data.Data
@@ -18,14 +19,14 @@ import           Data.Text                            (pack)
 
 --- Template Haskell
 -- import           Language.Haskell.TH.Lib
+import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote
-import           Language.Haskell.TH.Syntax
 
+-- import           Language.Haskell.TH.Syntax
 import           Data.Morpheus.Document.ParseDocument (parseGraphQLDocument)
 
--- import           Text.Megaparsec                           (SourcePos (..))
---
 ---  Morpheus
+import           Data.Morpheus.Client.Build           (buildRecord)
 import           Data.Morpheus.Error.Utils            (renderErrors)
 import           Data.Morpheus.Parser.Parser          (parseGQL)
 import           Data.Morpheus.Types.IO               (GQLRequest (..))
