@@ -12,13 +12,13 @@ import           Data.UUID                           (UUID)
 import           Network.WebSockets                  (Connection)
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Stream (SubPair)
+import           Data.Morpheus.Types.Internal.Stream (SubEvent)
 
 type ClientID = UUID
 
 data ClientSession m e c = ClientSession
   { sessionId           :: Text
-  , sessionSubscription :: SubPair m e c
+  , sessionSubscription :: SubEvent m e c
   }
 
 instance (Show e, Show c) => Show (ClientSession m e c) where

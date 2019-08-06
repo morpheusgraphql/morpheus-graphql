@@ -21,7 +21,7 @@ import           Network.WebSockets                     (Connection, sendTextDat
 
 -- MORPHEUS
 import           Data.Morpheus.Server.Apollo            (toApolloResponse)
-import           Data.Morpheus.Types.Internal.Stream    (Event (..), PubPair, SubPair)
+import           Data.Morpheus.Types.Internal.Stream    (Event (..), PubEvent, SubEvent)
 import           Data.Morpheus.Types.Internal.WebSocket (ClientID, ClientSession (..), GQLClient (..))
 
 type ClientRegister m e c = [(ClientID, GQLClient m e c)]
@@ -61,7 +61,7 @@ updateClientByID id' updateFunc state = modifyMVar_ state (return . map updateCl
       | key' == id' = (key', updateFunc client')
     updateClient state' = state'
 
-publishUpdates :: (Eq e) => GQLState IO e c -> PubPair e c -> IO ()
+publishUpdates :: (Eq e) => GQLState IO e c -> PubEvent e c -> IO ()
 publishUpdates state event = do
   state' <- readMVar state
   forM_ state' sendMessage
@@ -70,7 +70,7 @@ publishUpdates state event = do
     sendMessage (_, GQLClient {clientSessions, clientConnection}) = mapM_ __send (filterByChannels clientSessions)
       where
         __send ClientSession {sessionId, sessionSubscription = Event {content = subscriptionRes}} =
-          subscriptionRes (content event) >>= sendTextData clientConnection . toApolloResponse sessionId
+          subscriptionRes event >>= sendTextData clientConnection . toApolloResponse sessionId
         filterByChannels = filter (([] /=) . intersect (channels event) . channels . sessionSubscription)
 
 removeClientSubscription :: ClientID -> Text -> GQLState m e c -> IO ()
@@ -78,7 +78,7 @@ removeClientSubscription id' sid' = updateClientByID id' stopSubscription
   where
     stopSubscription client' = client' {clientSessions = filter ((sid' /=) . sessionId) (clientSessions client')}
 
-addClientSubscription :: ClientID -> SubPair m e c -> Text -> GQLState m e c -> IO ()
+addClientSubscription :: ClientID -> SubEvent m e c -> Text -> GQLState m e c -> IO ()
 addClientSubscription id' sessionSubscription sessionId = updateClientByID id' startSubscription
   where
     startSubscription client' =

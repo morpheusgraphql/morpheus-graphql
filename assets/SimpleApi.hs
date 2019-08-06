@@ -8,8 +8,8 @@ module SimpleApi
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (Event (..), GQLRootResolver (..), GQLType (..), IOMutRes, IORes, IOSubRes,
-                                      SubRootRes, toMutResolver)
+import           Data.Morpheus.Types (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), IOMutRes, IORes,
+                                      IOSubRes, ScalarValue (..), SubRootRes, toMutResolver)
 import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
 
@@ -83,6 +83,10 @@ data Power =
 
 instance GQLType Power where
   type KIND Power = SCALAR
+
+instance GQLScalar Power where
+  parseValue _ = pure (Power 0 0)
+  serialize (Power x y) = Int (x + y)
 
 resolvePower :: IORes Power
 resolvePower = return $ Power 0 0
