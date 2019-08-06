@@ -23,9 +23,8 @@ gqlData =
   [gql|
   {
     name(id:12)
-    uid
+    ui
   }
-
   fragment A on B {
       name
   }

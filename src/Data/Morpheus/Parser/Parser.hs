@@ -3,7 +3,6 @@
 
 module Data.Morpheus.Parser.Parser
   ( parseGQL
-  , parseGQLSyntax
   ) where
 
 import qualified Data.List.NonEmpty                      as NonEmpty

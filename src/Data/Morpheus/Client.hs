@@ -11,17 +11,22 @@ module Data.Morpheus.Client
   ) where
 
 --import           Data.Data
-import           Data.Morpheus.Parser.Parser (parseGQLSyntax)
-
+import           Data.Aeson                  (encode)
+import           Data.ByteString.Lazy.Char8  (unpack)
 import           Data.Text                   (pack)
 
 --- Template Haskell
-import           Language.Haskell.TH.Lib
+-- import           Language.Haskell.TH.Lib
 import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax
 
 -- import           Text.Megaparsec                           (SourcePos (..))
+--
 ---  Morpheus
+import           Data.Morpheus.Error.Utils   (renderErrors)
+import           Data.Morpheus.Parser.Parser (parseGQL)
+import           Data.Morpheus.Types.IO      (GQLRequest (..))
+
 --import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..))
 --import           Data.Morpheus.Types.Types                 (GQLQueryRoot (..))
 {-
@@ -50,11 +55,13 @@ gql =
 
 compile :: String -> Q Exp
 compile inputText =
-  case parseGQLSyntax (pack inputText) of
-    Left err -> fail (show err)
+  case parseGQL request of
+    Left errors -> fail gqlCompileErrors
+      where gqlCompileErrors = unpack $ encode $ renderErrors errors
     Right root -> [|op|]
       where op = show root
-
+  where
+    request = GQLRequest {query = pack inputText, operationName = Nothing, variables = Nothing}
 ------ LIFT --------------------------------------------
 {-
 instance (Lift (Operator' a b)) => Lift (Operator a b) where
@@ -68,6 +75,8 @@ instance (Lift a, Lift b) => Lift (Operator' a b) where
 instance Lift SourcePos where
   lift (SourcePos a b c ) = apply 'SourcePos []
 
--}
+
 apply :: Name -> [Q Exp] -> Q Exp
 apply n = foldl appE (conE n)
+
+-}
