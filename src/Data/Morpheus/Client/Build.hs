@@ -1,18 +1,21 @@
 module Data.Morpheus.Client.Build
-  ( buildRecord
+  ( define
   ) where
 
-import           Data.Char           (toLower)
+import           Data.Char           (toLower, toUpper)
 import           Language.Haskell.TH
 
-buildRecord :: String -> [(String, Name)] -> Q [Dec]
-buildRecord strName fields = (pure . pure) $ DataD [] typeName [] Nothing [recordCon] []
+define :: (String, [(String, String)]) -> Q [Dec]
+define (strName, fields) = (pure . pure) $ DataD [] typeName [] Nothing [recordCon] []
   where
     typeName = mkName strName
     defBang = Bang NoSourceUnpackedness NoSourceStrictness
     recordCon = RecC typeName (map genField fields)
       where
-        genField (fieldName, fType) = (mkName $ recBaseName strName <> nameBase (mkName fieldName), defBang, ConT fType)
+        genField (fieldName, fType) =
+          (mkName $ unCapitalize strName <> capitalize fieldName, defBang, ConT $ mkName fType)
           where
-            recBaseName []     = []
-            recBaseName (x:xs) = toLower x : xs
+            unCapitalize []     = []
+            unCapitalize (x:xs) = toLower x : xs
+            capitalize []     = []
+            capitalize (x:xs) = toUpper x : xs

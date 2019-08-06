@@ -1,21 +1,19 @@
-{-# LANGUAGE DeriveDataTypeable   #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE NamedFieldPuns       #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE QuasiQuotes          #-}
-{-# LANGUAGE TemplateHaskell      #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 module Data.Morpheus.Client
   ( gql
-  , buildRecord
+  , define
   ) where
 
 --import           Data.Data
-import           Data.Aeson                           (encode)
-import qualified Data.ByteString.Lazy                 as L (readFile)
-import           Data.ByteString.Lazy.Char8           (ByteString, unpack)
-import           Data.Text                            (pack)
+import           Data.Aeson                                (encode)
+import qualified Data.ByteString.Lazy                      as L (readFile)
+import           Data.ByteString.Lazy.Char8                (ByteString, unpack)
+import qualified Data.Text                                 as T (pack, unpack)
 
 --- Template Haskell
 -- import           Language.Haskell.TH.Lib
@@ -23,30 +21,17 @@ import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote
 
 -- import           Language.Haskell.TH.Syntax
-import           Data.Morpheus.Document.ParseDocument (parseGraphQLDocument)
+import           Data.Morpheus.Document.ParseDocument      (parseGraphQLDocument)
 
 ---  Morpheus
-import           Data.Morpheus.Client.Build           (buildRecord)
-import           Data.Morpheus.Error.Utils            (renderErrors)
-import           Data.Morpheus.Parser.Parser          (parseGQL)
-import           Data.Morpheus.Types.IO               (GQLRequest (..))
-import           Data.Morpheus.Validation.Validation  (validateRequest)
+import           Data.Morpheus.Client.Build                (define)
+import           Data.Morpheus.Error.Utils                 (renderErrors)
+import           Data.Morpheus.Parser.Parser               (parseGQL)
+import           Data.Morpheus.Types.IO                    (GQLRequest (..))
+import           Data.Morpheus.Validation.Validation       (validateRequest)
 
---import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..))
---import           Data.Morpheus.Types.Types                 (GQLQueryRoot (..))
-{-
-data GQLData
-  = MyList [Text]
-  | Empty
-  deriving (Data, Typeable, Show)
+import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..))
 
-instance Lift Text where
-  lift set = appE (varE 'pack) (lift (unpack set))
-
-instance Lift GQLData where
-  lift (MyList cs) = apply 'MyList [lift cs]
-  lift Empty       = apply 'Empty []
--}
 gql :: QuasiQuoter
 gql =
   QuasiQuoter
@@ -70,9 +55,14 @@ compile inputText = do
       case parseGQL request >>= validateRequest schema of
         Left errors -> fail gqlCompileErrors
           where gqlCompileErrors = unpack $ encode $ renderErrors errors
-        Right root -> [|op|]
-          where op = show root
-      where request = GQLRequest {query = pack inputText, operationName = Nothing, variables = Nothing}
+        Right operator -> [|op|]
+          where op :: (String, [(String, String)])
+                op = (T.unpack $ operatorName $ getOp operator, [("foo", "String"), ("bar", "Bool")])
+      where getOp (Query op)        = op
+            getOp (Mutation op)     = op
+            getOp (Subscription op) = op
+  where
+    request = GQLRequest {query = T.pack inputText, operationName = Nothing, variables = Nothing}
 ------ LIFT --------------------------------------------
 {-
 instance (Lift (Operator' a b)) => Lift (Operator a b) where

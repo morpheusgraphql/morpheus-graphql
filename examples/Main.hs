@@ -1,7 +1,6 @@
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TemplateHaskellQuotes #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 module Main
   ( main
@@ -9,7 +8,7 @@ module Main
 
 import           Control.Monad.IO.Class         (liftIO)
 import           Data.Morpheus                  (Interpreter (..))
-import           Data.Morpheus.Client           (buildRecord, gql)
+import           Data.Morpheus.Client           (define, gql)
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Deprecated.API                 (Channel, Content, gqlRoot)
@@ -20,23 +19,24 @@ import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
--- $(buildRecord "XYZ" ''Bool)
-$(buildRecord "Boo" [("foo", ''String), ("bar", ''Bool)])
-
-gqlData :: String
-gqlData =
+define
   [gql|
-  {
-    deity {
+    query TestQuery {
+      deity {
 
+      }
     }
-  }
-|]
+  |]
 
---bla = MyRecordXYZ {foo = "", bar = True}
+instance Show TestQuery where
+  show _ = "Test show"
+
+bla :: TestQuery
+bla = TestQuery {testQueryFoo = "", testQueryBar = True}
+
 main :: IO ()
 main = do
-  print gqlData
+  print bla
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
