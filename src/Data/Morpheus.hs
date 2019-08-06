@@ -1,9 +1,11 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE  QuasiQuotes #-}
 
 -- | Build GraphQL APIs with your favourite functional language!
 module Data.Morpheus
   ( Interpreter(..)
-  , myTestTH
+  , regex
   ) where
 
 import           Data.Morpheus.Interpreter              (Interpreter (..))
@@ -15,13 +17,14 @@ import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
+import           Data.Data
 
 data MyList
   = MyList [Text]
-  | Empty
+  | Empty deriving (Data,Typeable,Show)
 
-myTestTH :: QuasiQuoter
-myTestTH =
+regex :: QuasiQuoter
+regex =
   QuasiQuoter
     { quoteExp = compile
     , quotePat = notHandled "patterns"
@@ -30,6 +33,8 @@ myTestTH =
     }
   where
     notHandled things = error $ things ++ " are not handled by the regex quasiquoter."
+
+
 
 compile :: String -> Q Exp
 compile inputText =

@@ -1,11 +1,14 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE QuasiQuotes        #-}
+{-# LANGUAGE TemplateHaskell    #-}
 
 module Main
   ( main
   ) where
 
 import           Control.Monad.IO.Class         (liftIO)
-import           Data.Morpheus                  (Interpreter (..))
+import           Data.Morpheus                  (Interpreter (..), regex)
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Deprecated.API                 (Channel, Content, gqlRoot)
@@ -15,6 +18,8 @@ import qualified Network.Wai.Handler.Warp       as Warp
 import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
+
+bla = [regex|(ab,cd,e,f)|]
 
 main :: IO ()
 main = do
