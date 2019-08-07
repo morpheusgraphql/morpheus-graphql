@@ -30,12 +30,12 @@ define
 instance Show GetHero where
   show _ = "Test show"
 
-getHero :: GetHero
-getHero = GetHero {getHeroDeity = "", getHeroHero = ""}
+getHero :: String -> IO GetHero
+getHero _ = return GetHero {getHeroDeity = "dsa", getHeroHero = "ass"}
 
 main :: IO ()
 main = do
-  print getHero
+  getHero "" >>= print
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
