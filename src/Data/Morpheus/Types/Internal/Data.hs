@@ -95,7 +95,6 @@ data DataTypeWrapper
 data DataField a = DataField
   { fieldArgs         :: a
   , fieldName         :: Text
-  , fieldKind         :: DataTypeKind
   , fieldType         :: Text
   , fieldTypeWrappers :: [DataTypeWrapper]
   , fieldHidden       :: Bool

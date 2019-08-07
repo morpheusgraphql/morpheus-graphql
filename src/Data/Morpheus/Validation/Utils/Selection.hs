@@ -1,7 +1,7 @@
 module Data.Morpheus.Validation.Utils.Selection
   ( lookupFieldAsSelectionSet
-  , mustBeObject
-  , notObject
+  --, mustBeObject
+  --, notObject
   , lookupSelectionField
   , lookupUnionTypes
   ) where
@@ -14,6 +14,7 @@ import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Validation.Utils.Utils    (lookupField, lookupType)
 import           Data.Text                               (Text)
 
+{-
 isObjectKind :: DataField a -> Bool
 isObjectKind field' = KindObject == fieldKind field'
 
@@ -28,7 +29,7 @@ notObject (key', position') field' =
   if isObjectKind field'
     then Left $ subfieldsNotSelected key' (fieldType field') position'
     else pure field'
-
+-}
 lookupUnionTypes :: Position -> Text -> DataTypeLib -> DataOutputField -> Validation [DataOutputObject]
 lookupUnionTypes position' key' lib' DataField {fieldType = type'} =
   lookupType error' (union lib') type' >>= mapM (lookupType error' (object lib') . fieldType) . typeData

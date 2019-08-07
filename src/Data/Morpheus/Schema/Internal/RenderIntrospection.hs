@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators     #-}
 
@@ -15,20 +16,26 @@ import qualified Data.Morpheus.Schema.InputValue   as IN (InputValue (..), creat
 import           Data.Morpheus.Schema.Type         (Type (..))
 import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data (DataField (..), DataFullType (..), DataInputField, DataInputObject,
-                                                    DataLeaf (..), DataOutputField, DataOutputObject, DataType (..),
-                                                    DataTypeKind (..), DataTypeWrapper (..), DataUnion)
+                                                    DataLeaf (..), DataOutputField, DataType (..), DataTypeKind (..),
+                                                    DataTypeLib, DataTypeWrapper (..), DataUnion)
 import           Data.Text                         (Text)
-
-renderType :: (Text, DataFullType) -> Type
-renderType (name', Leaf leaf')           = typeFromLeaf (name', leaf')
-renderType (name', InputObject iObject') = renderInputObject (name', iObject')
-renderType (name', OutputObject object') = typeFromObject (name', object')
-renderType (name', Union union')         = typeFromUnion (name', union')
-renderType (name', InputUnion inpUnion') = renderInputUnion (name', inpUnion')
 
 type InputValue = IN.InputValue Type
 
+type Result a = DataTypeLib -> Either String a
+
 type Field = F.Field Type
+
+renderType :: (Text, DataFullType) -> Result Type
+renderType (name', Leaf leaf') = const $ pure $ typeFromLeaf (name', leaf')
+renderType (name', InputObject iObject') = renderInputObject (name', iObject')
+renderType (name', OutputObject object') = typeFromObject (name', object')
+  where
+    typeFromObject (key, DataType {typeData, typeDescription}) lib =
+      createObjectType key typeDescription <$>
+      (Just <$> traverse (`fieldFromObjectField` lib) (filter (not . fieldHidden . snd) typeData))
+renderType (name', Union union') = const $ pure $ typeFromUnion (name', union')
+renderType (name', InputUnion inpUnion') = renderInputUnion (name', inpUnion')
 
 renderTypeKind :: DataTypeKind -> TypeKind
 renderTypeKind KindScalar      = SCALAR
@@ -50,12 +57,14 @@ wrapByTypeWrapper :: DataTypeWrapper -> Type -> Type
 wrapByTypeWrapper ListType    = wrapAs LIST
 wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 
-fieldFromObjectField :: (Text, DataOutputField) -> Field
-fieldFromObjectField (key', field'@DataField {fieldType = type', fieldKind = kind', fieldArgs = args'}) =
-  F.createFieldWith
-    key'
-    (wrap field' $ createType (renderTypeKind kind') type' "" $ Just [])
-    (map inputValueFromArg args')
+kindOf :: Text -> Result DataTypeKind
+kindOf _ _ = Right KindObject
+
+fieldFromObjectField :: (Text, DataOutputField) -> Result Field
+fieldFromObjectField (key, field'@DataField {fieldType, fieldArgs}) lib = do
+  kind <- renderTypeKind <$> kindOf fieldType lib
+  F.createFieldWith key (wrap field' $ createType kind fieldType "" $ Just []) <$>
+    traverse (`inputValueFromArg` lib) fieldArgs
 
 typeFromLeaf :: (Text, DataLeaf) -> Type
 typeFromLeaf (key', LeafScalar DataType {typeDescription = desc'}) = createLeafType SCALAR key' desc' Nothing
@@ -90,26 +99,24 @@ typeFromUnion (name', DataType {typeData = fields', typeDescription = descriptio
     , inputFields = Nothing
     }
 
-typeFromObject :: (Text, DataOutputObject) -> Type
-typeFromObject (key', DataType {typeData = fields', typeDescription = description'}) =
-  createObjectType key' description' (Just $ map fieldFromObjectField $ filter (not . fieldHidden . snd) fields')
+inputValueFromArg :: (Text, DataInputField) -> Result InputValue
+inputValueFromArg (key, input) = fmap (IN.createInputValueWith key) . createInputObjectType input
 
-inputValueFromArg :: (Text, DataInputField) -> InputValue
-inputValueFromArg (key', input') = IN.createInputValueWith key' (createInputObjectType input')
+createInputObjectType :: DataInputField -> Result Type
+createInputObjectType field@DataField {fieldType} lib = do
+  kind <- renderTypeKind <$> kindOf fieldType lib
+  pure $ wrap field $ createType kind fieldType "" $ Just []
 
-createInputObjectType :: DataInputField -> Type
-createInputObjectType field' =
-  wrap field' $ createType (renderTypeKind $ fieldKind field') (fieldType field') "" $ Just []
+renderInputObject :: (Text, DataInputObject) -> Result Type
+renderInputObject (key, DataType {typeData, typeDescription}) lib = do
+  fields <- traverse (`inputValueFromArg` lib) typeData
+  pure $ createInputObject key typeDescription fields
 
-renderInputObject :: (Text, DataInputObject) -> Type
-renderInputObject (key', DataType {typeData = fields', typeDescription = description'}) =
-  createInputObject key' description' (map inputValueFromArg fields')
-
-renderInputUnion :: (Text, DataUnion) -> Type
-renderInputUnion (key', DataType {typeData = fields', typeDescription = description'}) =
-  createInputObject key' description' (map createField fields')
+renderInputUnion :: (Text, DataUnion) -> Result Type
+renderInputUnion (key', DataType {typeData, typeDescription}) lib =
+  createInputObject key' typeDescription <$> traverse createField typeData
   where
-    createField field = IN.createInputValueWith (fieldName field) (createInputObjectType field)
+    createField field = IN.createInputValueWith (fieldName field) <$> createInputObjectType field lib
 
 createObjectType :: Text -> Text -> Maybe [Field] -> Type
 createObjectType name' desc' fields' =

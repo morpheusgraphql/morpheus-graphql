@@ -21,7 +21,7 @@ import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Validation.Arguments            (validateArguments)
 import           Data.Morpheus.Validation.Fragment             (castFragmentType, resolveSpread)
 import           Data.Morpheus.Validation.Utils.Selection      (lookupFieldAsSelectionSet, lookupSelectionField,
-                                                                lookupUnionTypes, notObject)
+                                                                lookupUnionTypes)
 import           Data.Morpheus.Validation.Utils.Utils          (checkNameCollision)
 import           Data.Text                                     (Text)
 
@@ -130,9 +130,8 @@ validateSelectionSet lib' fragments' operatorName variables = __validate
                       (spreads', __typename') <-
                         flatTuple <$> mapM (clusterUnionSelection fragments' typeName' unionTypes') rawSelectors
                       return (categorizeTypes unionTypes' spreads', __typename')
-                    {--
-                        second arguments will be added to every selection cluster
-                    -}
+                    --
+                    --    second arguments will be added to every selection cluster
                     validateCluster :: SelectionSet -> (DataOutputObject, [Fragment]) -> Validation (Text, SelectionSet)
                     validateCluster sysSelection' (type', frags') = do
                       selection' <- __validate type' (concatMap fragmentSelection frags')

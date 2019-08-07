@@ -20,14 +20,7 @@ createType typeName typeData =
 
 createField :: a -> Text -> ([DataTypeWrapper], Text) -> DataField a
 createField fieldArgs fieldName (fieldTypeWrappers, fieldType) =
-  DataField
-    { fieldArgs
-    , fieldName
-    , fieldKind = KindObject -- DON'T care
-    , fieldType
-    , fieldTypeWrappers
-    , fieldHidden = False
-    }
+  DataField {fieldArgs, fieldName, fieldType, fieldTypeWrappers, fieldHidden = False}
 
 dataArgument :: Parser (Text, DataArgument)
 dataArgument =

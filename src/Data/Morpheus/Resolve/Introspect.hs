@@ -37,9 +37,9 @@ import           Data.Morpheus.Types.Custom              (MapKind, Pair)
 import           Data.Morpheus.Types.GQLScalar           (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType             (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data       (DataArguments, DataField (..), DataFullType (..),
-                                                          DataInputField, DataLeaf (..), DataType (..),
-                                                          DataTypeKind (..), DataTypeLib, DataTypeWrapper (..),
-                                                          DataValidator, defineType, isTypeDefined)
+                                                          DataInputField, DataLeaf (..), DataType (..), DataTypeLib,
+                                                          DataTypeWrapper (..), DataValidator, defineType,
+                                                          isTypeDefined)
 import           Data.Morpheus.Types.Internal.Validation (SchemaValidation)
 import           Data.Morpheus.Types.Resolver            (Resolver, SubResolver)
 
@@ -122,16 +122,9 @@ introspectOutputType _ = introspect (Context :: OutputOf a)
 data Context a kind args =
   Context
 
-buildField :: GQLType a => DataTypeKind -> Proxy a -> t -> Text -> DataField t
-buildField fieldKind proxy' fieldArgs fieldName =
-  DataField
-    { fieldName
-    , fieldKind
-    , fieldArgs
-    , fieldTypeWrappers = [NonNullType]
-    , fieldType = __typeName proxy'
-    , fieldHidden = False
-    }
+buildField :: GQLType a => Proxy a -> t -> Text -> DataField t
+buildField proxy fieldArgs fieldName =
+  DataField {fieldName, fieldArgs, fieldTypeWrappers = [NonNullType], fieldType = __typeName proxy, fieldHidden = False}
 
 buildType :: GQLType a => t -> Proxy a -> DataType t
 buildType typeData proxy =
@@ -171,22 +164,22 @@ type OutputConstraint a = Introspect a (KIND a) DataArguments
 -- SCALAR
 --
 instance (GQLScalar a, GQLType a) => Introspect a SCALAR InputType where
-  __field _ = buildField KindScalar (Proxy @a) ()
+  __field _ = buildField (Proxy @a) ()
   introspect _ = updateLib (scalarTypeOf (scalarValidator $ Proxy @a)) [] (Proxy @a)
 
 instance (GQLScalar a, GQLType a) => Introspect a SCALAR OutputType where
-  __field _ = buildField KindScalar (Proxy @a) []
+  __field _ = buildField (Proxy @a) []
   introspect _ = updateLib (scalarTypeOf (scalarValidator $ Proxy @a)) [] (Proxy @a)
 
 --
 -- ENUM
 --
 instance EnumConstraint a => Introspect a ENUM InputType where
-  __field _ = buildField KindEnum (Proxy @a) ()
+  __field _ = buildField (Proxy @a) ()
   introspect _ = introspectEnum (Context :: InputOf a)
 
 instance EnumConstraint a => Introspect a ENUM OutputType where
-  __field _ = buildField KindEnum (Proxy @a) []
+  __field _ = buildField (Proxy @a) []
   introspect _ = introspectEnum (Context :: OutputOf a)
 
 introspectEnum ::
@@ -199,25 +192,19 @@ introspectEnum _ = updateLib (enumTypeOf $ getTags (Proxy @(Rep a))) [] (Proxy @
 -- OBJECTS , INPUT_OBJECT
 --
 instance InputObjectConstraint a => Introspect a INPUT_OBJECT InputType where
-  __field _ = buildField KindInputObject (Proxy @a) ()
+  __field _ = buildField (Proxy @a) ()
   introspect _ = updateLib (InputObject . buildType fields') stack' (Proxy @a)
     where
       (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 instance ObjectConstraint a => Introspect a OBJECT OutputType where
-  __field _ = buildField KindObject (Proxy @a) []
+  __field _ = buildField (Proxy @a) []
   introspect _ = updateLib (OutputObject . buildType (__typename : fields')) stack' (Proxy @a)
     where
       __typename =
         ( "__typename"
         , DataField
-            { fieldName = "__typename"
-            , fieldKind = KindScalar
-            , fieldArgs = []
-            , fieldTypeWrappers = []
-            , fieldType = "String"
-            , fieldHidden = True
-            })
+            {fieldName = "__typename", fieldArgs = [], fieldTypeWrappers = [], fieldType = "String", fieldHidden = True})
       (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
@@ -234,10 +221,10 @@ instance (Selector s, Introspect a (KIND a) f) => ObjectRep (RecSel s a) f where
 -- | recursion for union types
 -- iterates on possible types for UNION and introspects them recursively
 instance (OutputConstraint a, ObjectConstraint a) => UnionRep (RecSel s a) OutputType where
-  possibleTypes _ _ = [(buildField KindObject (Proxy @a) () "", introspect (Context :: OutputOf a))]
+  possibleTypes _ _ = [(buildField (Proxy @a) () "", introspect (Context :: OutputOf a))]
 
 instance (GQL_TYPE a, UnionRep (Rep a) OutputType) => Introspect a UNION OutputType where
-  __field _ = buildField KindUnion (Proxy @a) []
+  __field _ = buildField (Proxy @a) []
   introspect _ = updateLib (Union . buildType fields) stack (Proxy @a)
     where
       (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a)) (Proxy @OutputType)
@@ -247,12 +234,12 @@ instance (GQL_TYPE a, UnionRep (Rep a) OutputType) => Introspect a UNION OutputT
 --
 instance (GQL_TYPE a, Introspect a INPUT_OBJECT InputType) => UnionRep (RecSel s a) InputType where
   possibleTypes _ _ =
-    [ ( maybeField $ buildField KindInputObject (Proxy @a) () (__typeName $ Proxy @a)
+    [ ( maybeField $ buildField (Proxy @a) () (__typeName $ Proxy @a)
       , introspect (Context :: Context a INPUT_OBJECT InputType))
     ]
 
 instance (GQL_TYPE a, UnionRep (Rep a) InputType) => Introspect a INPUT_UNION InputType where
-  __field _ = buildField KindInputUnion (Proxy @a) ()
+  __field _ = buildField (Proxy @a) ()
   introspect _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
     where
       (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a)) (Proxy @InputType)
@@ -273,7 +260,6 @@ instance (GQL_TYPE a, UnionRep (Rep a) InputType) => Introspect a INPUT_UNION In
       fieldTag =
         DataField
           { fieldName = "tag"
-          , fieldKind = KindEnum
           , fieldArgs = ()
           , fieldTypeWrappers = [NonNullType]
           , fieldType = enumTypeName
