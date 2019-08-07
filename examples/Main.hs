@@ -22,8 +22,12 @@ import           Web.Scotty                     (body, file, get, post, raw, sco
 defineQuery
   [gql|
     query GetHero {
-      deity { }
-      hero {}
+      deity {
+         power
+        }
+      hero {
+         lifetime
+      }
     }
   |]
 

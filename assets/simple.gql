@@ -23,6 +23,7 @@ type Creature {
 
 type Human {
   humanName: String!
+  lifetime: Lifetime!
   profession: String
 }
 
@@ -37,4 +38,5 @@ enum City {
     Sparta Troy
 }
 
+scalar Lifetime
 scalar Power
