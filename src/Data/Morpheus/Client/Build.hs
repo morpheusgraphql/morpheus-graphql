@@ -1,9 +1,13 @@
 module Data.Morpheus.Client.Build
   ( define
+  , defineQuery
   ) where
 
 import           Data.Char           (toLower, toUpper)
 import           Language.Haskell.TH
+
+defineQuery :: ((String, [(String, String)]), String) -> Q [Dec]
+defineQuery (x, _) = define x
 
 define :: (String, [(String, String)]) -> Q [Dec]
 define (strName, fields) = (pure . pure) $ DataD [] typeName [] Nothing [recordCon] []
