@@ -55,12 +55,17 @@ compile inputText = do
       case parseGQL request >>= validateRequest schema of
         Left errors -> fail gqlCompileErrors
           where gqlCompileErrors = unpack $ encode $ renderErrors errors
-        Right operator -> [|op|]
-          where op :: (String, [(String, String)])
-                op = (T.unpack $ operatorName $ getOp operator, [("foo", "String"), ("bar", "Bool")])
-      where getOp (Query op)        = op
-            getOp (Mutation op)     = op
-            getOp (Subscription op) = op
+        Right op -> [|buildCon|]
+          where buildCon :: (String, [(String, String)])
+                buildCon = (T.unpack operatorName, map toDataBuilder operatorSelection)
+                -------------------------
+                toDataBuilder x = (T.unpack $ fst x, "String")
+                ------------------------------------------------------
+                Operator' {operatorName, operatorSelection} = getOp op
+                ---------------------------
+                getOp (Query x)        = x
+                getOp (Mutation x)     = x
+                getOp (Subscription x) = x
   where
     request = GQLRequest {query = T.pack inputText, operationName = Nothing, variables = Nothing}
 ------ LIFT --------------------------------------------

@@ -21,22 +21,21 @@ import           Web.Scotty                     (body, file, get, post, raw, sco
 
 define
   [gql|
-    query TestQuery {
-      deity {
-
-      }
+    query GetHero {
+      deity { }
+      hero {}
     }
   |]
 
-instance Show TestQuery where
+instance Show GetHero where
   show _ = "Test show"
 
-bla :: TestQuery
-bla = TestQuery {testQueryFoo = "", testQueryBar = True}
+getHero :: GetHero
+getHero = GetHero {getHeroDeity = "", getHeroHero = ""}
 
 main :: IO ()
 main = do
-  print bla
+  print getHero
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
