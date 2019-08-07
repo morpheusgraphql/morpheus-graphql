@@ -16,7 +16,7 @@ module Data.Morpheus.Resolve.Resolve
 
 import qualified Codec.Binary.UTF8.String                as UTF8
 import           Control.Monad.Trans.Except                (ExceptT (..), runExceptT)
-import           Data.Aeson                                (encode, eitherDecode)
+import           Data.Aeson                                (Result (..), encode, fromJSON)
 import           Data.Aeson.Parser                         (jsonNoDup)
 import           Data.Attoparsec.ByteString                (parseOnly)
 import qualified Data.ByteString                         as S
@@ -59,15 +59,17 @@ type RootResCon m event query mutation subscription
      , EncodeCon (PublishStream m event) mutation
      , EncodeSubCon m event subscription)
 
-eitherDecodeNoDup :: L.ByteString -> Either String GQLRequest
-eitherDecodeNoDup bs =
-  encode <$> parseOnly jsonNoDup (S.pack . UTF8.encode $ L.unpack bs) >>= eitherDecode
+decodeNoDup :: L.ByteString -> Result GQLRequest
+decodeNoDup bs =
+  case parseOnly jsonNoDup (S.pack . UTF8.encode $ L.unpack bs) of
+    Left e  -> Error e
+    Right v -> fromJSON v
 
 byteStringIO :: Monad m => (GQLRequest -> m GQLResponse) -> L.ByteString -> m L.ByteString
 byteStringIO resolver request =
-  case eitherDecodeNoDup request of
-    Left aesonError' -> return $ badRequestError aesonError'
-    Right req        -> encode <$> resolver req
+  case decodeNoDup request of
+    Error aesonError' -> return $ badRequestError aesonError'
+    Success req       -> encode <$> resolver req
 
 statelessResolver :: RootResCon m s a b c => GQLRootResolver m s a b c -> GQLRequest -> m GQLResponse
 statelessResolver root request = snd <$> closeStream (streamResolver root request)
