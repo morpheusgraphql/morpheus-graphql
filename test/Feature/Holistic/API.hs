@@ -10,8 +10,8 @@ module Feature.Holistic.API
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types        (EventContent, GQLRootResolver (..), GQLScalar (..), GQLType (..), ID (..),
-                                             ResM, ScalarValue (..))
+import           Data.Morpheus.Types        (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID (..),
+                                             IORes, IOSubRes, ScalarValue (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -58,7 +58,7 @@ data StreetArgs = StreetArgs
 
 data Address = Address
   { city        :: Text
-  , street      :: StreetArgs -> ResM (Maybe [Maybe [[[Text]]]])
+  , street      :: StreetArgs -> IORes (Maybe [Maybe [[[Text]]]])
   , houseNumber :: Int
   } deriving (Generic)
 
@@ -94,9 +94,9 @@ data OfficeArgs = OfficeArgs
 data User = User
   { name    :: Text
   , email   :: Text
-  , address :: AddressArgs -> ResM Address
-  , office  :: OfficeArgs -> ResM Address
-  , friend  :: () -> ResM (Maybe User)
+  , address :: AddressArgs -> IORes Address
+  , office  :: OfficeArgs -> IORes Address
+  , friend  :: () -> IORes (Maybe User)
   } deriving (Generic)
 
 instance GQLType User where
@@ -104,39 +104,37 @@ instance GQLType User where
   description = const "Custom Description for Client Defined User Type"
 
 data Query = Query
-  { user      :: () -> ResM User
+  { user      :: () -> IORes User
   , testUnion :: Maybe TestUnion
   } deriving (Generic)
 
 newtype Mutation = Mutation
-  { createUser :: AddressArgs -> ResM User
+  { createUser :: AddressArgs -> IORes User
   } deriving (Generic)
 
 data EVENT =
   EVENT
   deriving (Show, Eq)
 
-data instance  EventContent EVENT = Content
-
 newtype Subscription = Subscription
-  { newUser :: AddressArgs -> ([EVENT], EventContent EVENT -> ResM User)
+  { newUser :: AddressArgs -> IOSubRes EVENT () User
   } deriving (Generic)
 
-resolveAddress :: a -> ResM Address
+resolveAddress :: a -> IORes Address
 resolveAddress _ = return Address {city = "", houseNumber = 1, street = const $ return Nothing}
 
-resolveUser :: a -> ResM User
+resolveUser :: a -> IORes User
 resolveUser _ =
   return $
   User
     {name = "testName", email = "", address = resolveAddress, office = resolveAddress, friend = const $ return Nothing}
 
-rootResolver :: GQLRootResolver IO EVENT Query Mutation Subscription
+rootResolver :: GQLRootResolver IO EVENT () Query Mutation Subscription
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {user = resolveUser, testUnion = Nothing}
     , mutationResolver = return Mutation {createUser = resolveUser}
-    , subscriptionResolver = return Subscription {newUser = const ([EVENT], resolveUser)}
+    , subscriptionResolver = return Subscription {newUser = const $ Event [EVENT] resolveUser}
     }
 
 api :: ByteString -> IO ByteString

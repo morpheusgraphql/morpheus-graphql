@@ -1,0 +1,46 @@
+type Query {
+  deity (name: [[[[[String!]]!]]], mythology: String): Deity!
+  character (characterID: String! , age: Int ): Character!
+  hero: Human!
+}
+
+type Mutation {
+  createDeity (deityName: [[[[[String!]]!]]], deityMythology: String): Deity!
+  createCharacter (charRealm: Realm! , charMutID: String! ): Character!
+}
+
+type Subscription {
+  newDeity : Deity!
+  newCharacter : Character!
+}
+
+
+union Character = Creature | Deity  | Human
+
+type Deity {
+  fullName: String!
+  power: Power!
+}
+
+type Creature {
+  creatureName: String!
+  realm: City!
+}
+
+type Human {
+  humanName: String!
+  profession: String
+}
+
+input Realm {
+  owner: String!
+  place: Int
+}
+
+enum City {
+    Athens
+    Ithaca
+    Sparta Troy
+}
+
+scalar Power
