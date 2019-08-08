@@ -42,6 +42,12 @@
 
   data Deity = Deity { fullName :: Text } deriving (Generic)
   ```
+- Duplicated fields are validated using `Aeson`'s `jsonNoDup` function. So the following schema will
+  result in a parsing error
+
+  ```
+  { user { email, email } }
+  ```
 
 ## [0.1.1] - 1.07.2019
 
