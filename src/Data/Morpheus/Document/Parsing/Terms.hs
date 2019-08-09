@@ -10,7 +10,7 @@ module Data.Morpheus.Document.Parsing.Terms
   , pipe
   , wrappedType
   , setOf
-  , ignoreComments
+  , spaceAndComments
   , Parser
   , Position
   ) where
@@ -21,32 +21,32 @@ import           Data.Morpheus.Types.Internal.Value (convertToHaskellName)
 import           Data.Text                          (Text)
 import qualified Data.Text                          as T (pack)
 import           Data.Void                          (Void)
-import           Text.Megaparsec                    (Parsec, SourcePos, between, getSourcePos, label, many, option,
-                                                     sepBy, sepEndBy, skipMany, skipManyTill, (<?>), (<|>))
+import           Text.Megaparsec                    (Parsec, SourcePos, between, getSourcePos, label, many, sepBy,
+                                                     sepEndBy, skipMany, skipManyTill, (<?>), (<|>))
 import           Text.Megaparsec.Char               (char, digitChar, letterChar, newline, printChar, space)
 
 type Position = SourcePos
 
 type Parser = Parsec Void Text
 
-ignoreComments :: Parser ()
-ignoreComments = space *> skipMany inlineComment *> space
+spaceAndComments :: Parser ()
+spaceAndComments = space *> skipMany inlineComment *> space
   where
     inlineComment = char '#' *> skipManyTill printChar newline *> space
 
 setOf :: Parser a -> Parser [a]
-setOf entry = setLiteral (entry `sepEndBy` many (char ',' *> ignoreComments))
+setOf entry = setLiteral (entry `sepEndBy` many (char ',' *> spaceAndComments))
 
 setLiteral :: Parser [a] -> Parser [a]
-setLiteral = between (char '{' *> ignoreComments) (char '}' *> ignoreComments)
+setLiteral = between (char '{' *> spaceAndComments) (char '}' *> spaceAndComments)
 
 pipe :: Parser ()
-pipe = char '|' *> ignoreComments
+pipe = char '|' *> spaceAndComments
 
 nonNull :: Parser [DataTypeWrapper]
 nonNull = do
   wrapper <- (char '!' $> [NonNullType]) <|> pure []
-  ignoreComments
+  spaceAndComments
   return wrapper
 
 parseMaybeTuple :: Parser a -> Parser [a]
@@ -56,15 +56,15 @@ parseTuple :: Parser a -> Parser [a]
 parseTuple parser =
   label "Tuple" $
   between
-    (char '(' *> ignoreComments)
-    (char ')' *> ignoreComments)
-    (parser `sepBy` (many (char ',') *> ignoreComments) <?> "empty Tuple value!")
+    (char '(' *> spaceAndComments)
+    (char ')' *> spaceAndComments)
+    (parser `sepBy` (many (char ',') *> spaceAndComments) <?> "empty Tuple value!")
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
 parseAssignment nameParser' valueParser' =
   label "assignment" $ do
     name' <- nameParser'
-    char ':' *> ignoreComments
+    char ':' *> spaceAndComments
     value' <- valueParser'
     pure (name', value')
 
@@ -73,7 +73,7 @@ token =
   label "token" $ do
     firstChar <- letterChar <|> char '_'
     restToken <- many $ letterChar <|> char '_' <|> digitChar
-    ignoreComments
+    spaceAndComments
     return $ convertToHaskellName $ T.pack $ firstChar : restToken
 
 qualifier :: Parser (Text, Position)
@@ -84,16 +84,16 @@ qualifier =
     return (value, position')
 
 wrappedType :: Parser ([DataTypeWrapper], Text)
-wrappedType = (unwrapped <|> wrapped) <* ignoreComments
+wrappedType = (unwrapped <|> wrapped) <* spaceAndComments
   where
     unwrapped :: Parser ([DataTypeWrapper], Text)
-    unwrapped = ([], ) <$> token <* ignoreComments
+    unwrapped = ([], ) <$> token <* spaceAndComments
     ----------------------------------------------
     wrapped :: Parser ([DataTypeWrapper], Text)
     wrapped =
       between
-        (char '[' *> ignoreComments)
-        (char ']' *> ignoreComments)
+        (char '[' *> spaceAndComments)
+        (char ']' *> spaceAndComments)
         (do (wrappers, name) <- unwrapped <|> wrapped
             nonNull' <- nonNull
             return ((ListType : nonNull') ++ wrappers, name))
