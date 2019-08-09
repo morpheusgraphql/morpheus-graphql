@@ -7,7 +7,7 @@ module Data.Morpheus.Document.Parsing.Parser
 
 import qualified Data.List.NonEmpty                      as NonEmpty
 import           Data.Morpheus.Document.Parsing.DataType (parseDataType)
-import           Data.Morpheus.Document.Parsing.Terms    (ignoreComments)
+import           Data.Morpheus.Document.Parsing.Terms    (spaceAndComments)
 import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataTypeLib (..), defineType, initTypeLib)
 import           Data.Text                               (Text, pack)
 import           Data.Void                               (Void)
@@ -39,7 +39,7 @@ parseDocument doc =
     parseDoc = runParser request "<input>" doc
     request =
       label "Document" $ do
-        ignoreComments
+        spaceAndComments
         dataTypes <- manyTill parseDataType eof
         buildLib dataTypes
       where

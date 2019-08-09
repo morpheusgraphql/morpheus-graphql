@@ -5,8 +5,8 @@ module Data.Morpheus.Document.Parsing.DataType
   ( parseDataType
   ) where
 
-import           Data.Morpheus.Document.Parsing.Terms (Parser, ignoreComments, nonNull, parseAssignment,
-                                                       parseMaybeTuple, pipe, qualifier, setOf, token, wrappedType)
+import           Data.Morpheus.Document.Parsing.Terms (Parser, nonNull, parseAssignment, parseMaybeTuple, pipe,
+                                                       qualifier, setOf, spaceAndComments, token, wrappedType)
 import           Data.Morpheus.Types.Internal.Data    (DataArgument, DataField (..), DataFingerprint (..),
                                                        DataFullType (..), DataLeaf (..), DataOutputField, DataType (..),
                                                        DataTypeKind (..), DataTypeWrapper, DataValidator (..), Key)
@@ -97,9 +97,9 @@ dataUnion =
   label "union" $ do
     typeName <- typeDef "union"
     _ <- char '='
-    ignoreComments
+    spaceAndComments
     typeData <- map unionField <$> unionsParser
-    ignoreComments
+    spaceAndComments
     pure (typeName, Union $ createType typeName typeData)
   where
     unionsParser = token `sepBy1` pipe
