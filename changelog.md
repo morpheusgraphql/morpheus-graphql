@@ -17,6 +17,7 @@
 
 - Parser supports enums inside input Object
 - fulfilled fragment Validation (added: unusedFragment,nameConflict)
+- correct decoding of Enums with more than 3 constructor #201
 
 ### Changed
 
