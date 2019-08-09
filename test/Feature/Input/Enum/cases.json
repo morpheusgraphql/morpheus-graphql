@@ -34,5 +34,9 @@
   {
     "path": "decodeMany/con6",
     "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path":"decodeInvalidValue",
+    "description":"fail on invalid enum value"
   }
 ]
