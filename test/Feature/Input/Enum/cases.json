@@ -1,0 +1,6 @@
+[
+  {
+    "path": "validDecoding",
+    "description": "decode string to correct Haskell Enum Representation"
+  }
+]
