@@ -23,7 +23,7 @@ import           Language.Haskell.TH.Quote
 -- import           Language.Haskell.TH.Syntax
 --  Morpheus
 import           Data.Morpheus.Client.Build                (defineQuery)
-import           Data.Morpheus.Document.ParseDocument      (parseGraphQLDocument)
+import           Data.Morpheus.Document.ParseDocument      (parseFullGQLDocument)
 import           Data.Morpheus.Error.Utils                 (renderErrors)
 import           Data.Morpheus.Parser.Parser               (parseGQL)
 import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..))
@@ -46,7 +46,7 @@ readSchema = L.readFile "./assets/simple.gql"
 
 compile :: String -> Q Exp
 compile queryText = do
-  eitherSchema <- parseGraphQLDocument <$> runIO readSchema
+  eitherSchema <- parseFullGQLDocument <$> runIO readSchema
   case eitherSchema of
     Left errors -> fail (show errors)
     Right schema ->
