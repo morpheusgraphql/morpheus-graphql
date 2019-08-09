@@ -24,6 +24,7 @@ defineQuery
     query GetHero {
       deity {
          power
+         fullName
         }
       hero {
          lifetime
