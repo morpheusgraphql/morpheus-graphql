@@ -1,0 +1,3 @@
+query ValidDecoding {
+  test (level:L6)
+}
