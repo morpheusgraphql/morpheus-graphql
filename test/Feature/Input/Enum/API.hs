@@ -1,7 +1,7 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE DeriveGeneric  #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeFamilies   #-}
+{-# LANGUAGE TypeOperators  #-}
 
 module Feature.Input.Enum.API
   ( api
@@ -9,19 +9,20 @@ module Feature.Input.Enum.API
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Types        (GQLRootResolver (..), GQLType (..), IORes, resolver)
-import           Data.Text                  (Text)
+import           Data.Morpheus.Kind         (ENUM)
+import           Data.Morpheus.Types        (GQLRootResolver (..), GQLType (..), IORes)
 import           GHC.Generics               (Generic)
 
-import           Data.Morpheus.Kind         (ENUM, OBJECT)
+data TwoCon
+  = LA
+  | LB
+  deriving (Show, Generic)
 
--- types & args
-newtype TestArgs = TestArgs
-  { ttt :: Level
-  } deriving (Generic, Show)
-
-instance GQLType TestArgs where
-  type KIND TestArgs = ENUM
+data ThreeCon
+  = T1
+  | T2
+  | T3
+  deriving (Show, Generic)
 
 data Level
   = L0
@@ -30,30 +31,38 @@ data Level
   | L3
   deriving (Show, Generic)
 
+-- types & args
+newtype TestArgs a = TestArgs
+  { level :: a
+  } deriving (Generic, Show)
+
 instance GQLType Level where
   type KIND Level = ENUM
 
-data TestResult = TestResult
-  { code  :: Text
-  , level :: Level
-  } deriving (Generic, Show)
+instance GQLType TwoCon where
+  type KIND TwoCon = ENUM
 
-instance GQLType TestResult where
-  type KIND TestResult = OBJECT
+instance GQLType ThreeCon where
+  type KIND ThreeCon = ENUM
 
 -- query
-qTest :: TestArgs -> IORes TestResult
-qTest args = resolver $ return $ Right $ TestResult {code = "ok", level = ttt args}
+testRes :: TestArgs a -> IORes a
+testRes TestArgs {level} = return level
 
 -- resolver
-newtype Query = Query
-  { test :: TestArgs -> IORes TestResult
+data Query = Query
+  { test  :: TestArgs Level -> IORes Level
+  , test2 :: TestArgs TwoCon -> IORes TwoCon
+  , test3 :: TestArgs ThreeCon -> IORes ThreeCon
   } deriving (Generic)
 
 rootResolver :: GQLRootResolver IO () () Query () ()
 rootResolver =
   GQLRootResolver
-    {queryResolver = return Query {test = qTest}, mutationResolver = return (), subscriptionResolver = return ()}
+    { queryResolver = return Query {test = testRes, test2 = testRes, test3 = testRes}
+    , mutationResolver = return ()
+    , subscriptionResolver = return ()
+    }
 
 api :: ByteString -> IO ByteString
 api = interpreter rootResolver

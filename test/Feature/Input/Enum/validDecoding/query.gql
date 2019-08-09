@@ -1,6 +1,0 @@
-query ValidDecoding {
-  test (ttt:L1){
-    code
-    level
-  }
-}

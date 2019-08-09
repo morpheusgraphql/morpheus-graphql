@@ -1,6 +1,14 @@
 [
   {
-    "path": "validDecoding",
+    "path": "decode2Con",
+    "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path": "decode3Con",
+    "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path": "decode4Con",
     "description": "decode string to correct Haskell Enum Representation"
   }
 ]
