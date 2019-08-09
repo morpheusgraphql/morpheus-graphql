@@ -6,15 +6,19 @@ module Data.Morpheus.Document.Parsing.Parser
   ) where
 
 import qualified Data.List.NonEmpty                      as NonEmpty
-import           Data.Morpheus.Document.Parsing.DataType (parseDataType)
-import           Data.Morpheus.Document.Parsing.Terms    (spaceAndComments)
-import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataTypeLib (..), defineType, initTypeLib)
+
+import           Data.Semigroup                          ((<>))
 import           Data.Text                               (Text, pack)
 import           Data.Void                               (Void)
 import           Text.Megaparsec                         (ParseError, ParseErrorBundle (ParseErrorBundle),
                                                           SourcePos (..), SourcePos, attachSourcePos, bundleErrors,
                                                           bundlePosState, eof, errorOffset, label, manyTill,
                                                           parseErrorPretty, runParser, sourceColumn, sourceLine, unPos)
+
+-- MORPHEUS
+import           Data.Morpheus.Document.Parsing.DataType (parseDataType)
+import           Data.Morpheus.Document.Parsing.Terms    (spaceAndComments)
+import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataTypeLib (..), defineType, initTypeLib)
 
 processErrorBundle :: ParseErrorBundle Text Void -> [Text]
 processErrorBundle = fmap parseErrorToGQLError . bundleToErrors
