@@ -104,8 +104,8 @@ because there will be no unused fragment we will validate all subfields.
 
 - **Variable:** input Value Will be validated on query argument validation, because there will not be unused Variable all inputValues(variables) will be checked
 
-  - **nameConflict**: can't provide, variables are parsed by `Aeson`  bos/aeson/#531
-  - **valueNotProvided**: variable defined in query head ,but not found request body ✅ + 🧪
+  - **nameConflict**: duplicated fields result in a parsing error ✅ + 🧪
+  - **valueNotProvided**: variable defined in query head, but not found request body ✅ + 🧪
   - **undefinedVariable**: referenced variable is not defined by operation QueryName | MutationName ✅ + 🧪
   - **unknownType**: variable type does not exists ✅ + 🧪
   - **incompatibleVariableType**: argument references variable with different type ✅ + 🧪 (>= 0.1.0)

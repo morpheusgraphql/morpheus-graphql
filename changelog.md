@@ -42,6 +42,13 @@
 
   data Deity = Deity { fullName :: Text } deriving (Generic)
   ```
+- Duplicated variable names in Http requests are validated using `Aeson`'s `jsonNoDup` function. So the following request will
+  result in a parsing error
+
+  ```
+  {"query":"...",
+  "variables":{"email":"foo@mail.net", "email":"bar@mail.net",...}}
+  ```
 
 ## [0.1.1] - 1.07.2019
 
