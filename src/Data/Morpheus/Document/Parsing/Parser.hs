@@ -7,22 +7,28 @@ module Data.Morpheus.Document.Parsing.Parser
 
 import qualified Data.List.NonEmpty                      as NonEmpty
 import           Data.Morpheus.Document.Parsing.DataType (parseDataType)
+import           Data.Morpheus.Document.Parsing.Terms    (ignoreComments)
 import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataTypeLib (..), defineType, initTypeLib)
 import           Data.Text                               (Text, pack)
 import           Data.Void                               (Void)
-import           Text.Megaparsec                         (ParseError, ParseErrorBundle (ParseErrorBundle), SourcePos,
-                                                          attachSourcePos, bundleErrors, bundlePosState, eof,
-                                                          errorOffset, label, manyTill, parseErrorPretty, runParser)
-import           Text.Megaparsec.Char                    (space)
+import           Text.Megaparsec                         (ParseError, ParseErrorBundle (ParseErrorBundle),
+                                                          SourcePos (..), SourcePos, attachSourcePos, bundleErrors,
+                                                          bundlePosState, eof, errorOffset, label, manyTill,
+                                                          parseErrorPretty, runParser, sourceColumn, sourceLine, unPos)
 
 processErrorBundle :: ParseErrorBundle Text Void -> [Text]
 processErrorBundle = fmap parseErrorToGQLError . bundleToErrors
   where
     parseErrorToGQLError :: (ParseError Text Void, SourcePos) -> Text
-    parseErrorToGQLError (err, _) = pack (parseErrorPretty err)
+    parseErrorToGQLError (err, pos) = pack (parseErrorPretty err) <> toError pos
+    -----------------------------------------------------------------------------------
     bundleToErrors :: ParseErrorBundle Text Void -> [(ParseError Text Void, SourcePos)]
     bundleToErrors ParseErrorBundle {bundleErrors, bundlePosState} =
       NonEmpty.toList $ fst $ attachSourcePos errorOffset bundleErrors bundlePosState
+    --------------------------------------------
+    toError :: SourcePos -> Text
+    toError SourcePos {sourceLine, sourceColumn} =
+      pack $ "Pos: " <> show (unPos sourceLine) <> ", " <> show (unPos sourceColumn)
 
 parseDocument :: Text -> Either [Text] DataTypeLib
 parseDocument doc =
@@ -33,7 +39,7 @@ parseDocument doc =
     parseDoc = runParser request "<input>" doc
     request =
       label "Document" $ do
-        space
+        ignoreComments
         dataTypes <- manyTill parseDataType eof
         buildLib dataTypes
       where
