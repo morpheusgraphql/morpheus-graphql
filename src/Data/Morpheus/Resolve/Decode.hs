@@ -142,7 +142,7 @@ instance (GQLScalar a) => Decode a SCALAR where
 -- ENUM
 --
 instance (Generic a, EnumRep (Rep a)) => Decode a ENUM where
-  __decode _ (Enum value) = pure (to $ gToEnum value)
+  __decode _ (Enum value) = to <$> decodeEnum value
   __decode _ isType       = internalTypeMismatch "Enum" isType
 
 --

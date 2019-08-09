@@ -8,7 +8,19 @@
     "description": "decode string to correct Haskell Enum Representation"
   },
   {
-    "path": "decode4Con",
+    "path": "decode4Con0",
+    "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path": "decode4Con1",
+    "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path": "decode4Con2",
+    "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path": "decode4Con3",
     "description": "decode string to correct Haskell Enum Representation"
   }
 ]
