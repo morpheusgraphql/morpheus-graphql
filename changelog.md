@@ -42,11 +42,12 @@
 
   data Deity = Deity { fullName :: Text } deriving (Generic)
   ```
-- Duplicated fields are validated using `Aeson`'s `jsonNoDup` function. So the following schema will
+- Duplicated variable names in Http requests are validated using `Aeson`'s `jsonNoDup` function. So the following request will
   result in a parsing error
 
   ```
-  { user { email, email } }
+  {"query":"...",
+  "variables":{"email":"foo@mail.net", "email":"bar@mail.net",...}}
   ```
 
 ## [0.1.1] - 1.07.2019
