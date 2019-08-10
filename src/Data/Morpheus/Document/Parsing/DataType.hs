@@ -6,13 +6,13 @@ module Data.Morpheus.Document.Parsing.DataType
   ) where
 
 import           Data.Morpheus.Document.Parsing.Terms (Parser, nonNull, parseAssignment, parseMaybeTuple, pipe,
-                                                       qualifier, setOf, token, wrappedType)
+                                                       qualifier, setOf, spaceAndComments, token, wrappedType)
 import           Data.Morpheus.Types.Internal.Data    (DataArgument, DataField (..), DataFingerprint (..),
                                                        DataFullType (..), DataLeaf (..), DataOutputField, DataType (..),
                                                        DataTypeKind (..), DataTypeWrapper, DataValidator (..), Key)
 import           Data.Text                            (Text)
 import           Text.Megaparsec                      (label, sepBy1, (<|>))
-import           Text.Megaparsec.Char                 (char, space, space1, string)
+import           Text.Megaparsec.Char                 (char, space1, string)
 
 createType :: Text -> a -> DataType a
 createType typeName typeData =
@@ -97,9 +97,9 @@ dataUnion =
   label "union" $ do
     typeName <- typeDef "union"
     _ <- char '='
-    space
+    spaceAndComments
     typeData <- map unionField <$> unionsParser
-    space
+    spaceAndComments
     pure (typeName, Union $ createType typeName typeData)
   where
     unionsParser = token `sepBy1` pipe
