@@ -10,10 +10,10 @@ module Data.Morpheus.Client
   ) where
 
 --import           Data.Data
-import           Data.Aeson                                (encode)
-import qualified Data.ByteString.Lazy                      as L (readFile)
-import           Data.ByteString.Lazy.Char8                (ByteString, unpack)
-import qualified Data.Text                                 as T (pack, unpack)
+import           Data.Aeson                           (encode)
+import qualified Data.ByteString.Lazy                 as L (readFile)
+import           Data.ByteString.Lazy.Char8           (ByteString, unpack)
+import qualified Data.Text                            as T (pack)
 
 --- Template Haskell
 import           Language.Haskell.TH
@@ -21,19 +21,15 @@ import           Language.Haskell.TH.Quote
 
 -- import           Language.Haskell.TH.Lib
 -- import           Language.Haskell.TH.Syntax
+--
 --  Morpheus
-import           Data.Morpheus.Client.Build                (defineQuery)
-import           Data.Morpheus.Document.ParseDocument      (parseFullGQLDocument)
-import           Data.Morpheus.Error.Utils                 (renderErrors)
-import           Data.Morpheus.Parser.Parser               (parseGQL)
-import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..), ValidOperator)
-import           Data.Morpheus.Types.IO                    (GQLRequest (..))
-import           Data.Morpheus.Validation.Validation       (validateRequest)
-
--- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data         (DataArgument, DataField (..), DataFullType (..),
-                                                            DataLeaf (..), DataType (..), DataTypeLib, allDataTypes,
-                                                            showWrappedType)
+import           Data.Morpheus.Client.Build           (defineQuery)
+import           Data.Morpheus.Client.Selection       (operationTypes)
+import           Data.Morpheus.Document.ParseDocument (parseFullGQLDocument)
+import           Data.Morpheus.Error.Utils            (renderErrors)
+import           Data.Morpheus.Parser.Parser          (parseGQL)
+import           Data.Morpheus.Types.IO               (GQLRequest (..))
+import           Data.Morpheus.Validation.Validation  (validateRequest)
 
 gql :: QuasiQuoter
 gql =
@@ -49,9 +45,6 @@ gql =
 readSchema :: IO ByteString
 readSchema = L.readFile "./assets/simple.gql"
 
-selectQueryTypes :: DataTypeLib -> ValidOperator -> [((String, [(String, String)]), String)]
-selectQueryTypes _ _ = []
-
 compile :: String -> Q Exp
 compile queryText = do
   eitherSchema <- parseFullGQLDocument <$> runIO readSchema
@@ -61,17 +54,12 @@ compile queryText = do
       case parseGQL request >>= validateRequest schema of
         Left errors -> fail gqlCompileErrors
           where gqlCompileErrors = unpack $ encode $ renderErrors errors
-        Right op -> [|buildCon|]
-          where buildCon :: ((String, [(String, String)]), String)
-                buildCon = ((T.unpack operatorName, map toDataBuilder operatorSelection), queryText)
-                -------------------------
-                toDataBuilder x = (T.unpack $ fst x, "String")
-                ------------------------------------------------------
-                Operator' {operatorName, operatorSelection} = getOp op
-                ---------------------------
-                getOp (Query x)        = x
-                getOp (Mutation x)     = x
-                getOp (Subscription x) = x
+        Right operation -> [|buildCon|]
+          where buildCon :: ([(String, [(String, String)])], String)
+                buildCon =
+                  case operationTypes schema operation of
+                    Left err -> fail $ show err
+                    Right x  -> (x, queryText)
   where
     request = GQLRequest {query = T.pack queryText, operationName = Nothing, variables = Nothing}
 ------ LIFT --------------------------------------------

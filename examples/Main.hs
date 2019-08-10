@@ -19,6 +19,12 @@ import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
+data Lifetime =
+  Lifetime
+
+data Power =
+  Power
+
 defineQuery
   [gql|
     query GetHero {
@@ -32,15 +38,16 @@ defineQuery
     }
   |]
 
-instance Show GetHero where
-  show _ = "Test show"
-
-getHero :: String -> IO GetHero
-getHero _ = return GetHero {getHeroDeity = "dsa", getHeroHero = "ass"}
+getDeity :: String -> IO GetHero
+getDeity _ =
+  return
+    GetHero
+      {getHeroDeity = Deity {deityPower = Power, deityFullName = "ass"}, getHeroHero = Human {humanLifetime = Lifetime}}
 
 main :: IO ()
-main = do
-  getHero "" >>= print
+main
+  --getDeity "" >>= print
+ = do
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
