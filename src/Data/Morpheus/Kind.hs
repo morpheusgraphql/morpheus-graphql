@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies  #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -10,25 +11,36 @@ module Data.Morpheus.Kind
   , UNION
   , INPUT_OBJECT
   , INPUT_UNION
-  ) where
+  , GQL_KIND
+  )
+where
+
+data GQL_KIND
+  = SCALAR
+  | OBJECT
+  | ENUM
+  | INPUT_OBJECT
+  | UNION
+  | INPUT_UNION
+  | WRAPPER
 
 -- | GraphQL Scalar: Int, Float, String, Boolean or any user defined custom Scalar type
-data SCALAR
+type SCALAR = 'SCALAR
 
 -- | GraphQL Object
-data OBJECT
+type OBJECT = 'OBJECT
 
 -- | GraphQL Enum
-data ENUM
+type ENUM = 'ENUM
 
 -- | GraphQL input Object
-data INPUT_OBJECT
+type INPUT_OBJECT = 'INPUT_OBJECT
 
 -- | GraphQL Union
-data UNION
+type UNION = 'UNION
 
 -- | extension for graphQL
-data INPUT_UNION
+type INPUT_UNION = 'INPUT_UNION
 
 -- | GraphQL Arrays , Resolvers and NonNull fields
-data WRAPPER
+type WRAPPER = 'WRAPPER
