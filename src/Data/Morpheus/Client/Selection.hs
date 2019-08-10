@@ -2,6 +2,7 @@
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections       #-}
 {-# LANGUAGE TypeOperators       #-}
 
 module Data.Morpheus.Client.Selection
@@ -17,28 +18,6 @@ import           Data.Morpheus.Types.Internal.Data          (DataField (..), Dat
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Validation.Utils.Utils       (lookupType)
 import           Data.Text                                  (Text, unpack)
-
-internalError :: Text -> GQLErrors
-internalError x = internalUnknownTypeMessage $ "Missing Type:" <> x
-
-getType :: DataTypeLib -> Text -> Validation DataFullType
-getType lib typename = lookupType (internalError typename) (allDataTypes lib) typename
-
-typeFrom :: DataFullType -> Text
-typeFrom (Leaf (LeafScalar x)) = typeName x
-typeFrom (Leaf (LeafEnum x))   = typeName x
-typeFrom (InputObject x)       = typeName x
-typeFrom (OutputObject x)      = typeName x
-typeFrom (Union x)             = typeName x
-typeFrom (InputUnion x)        = typeName x
-
-fieldTypename :: DataFullType -> Text -> Validation Text
-fieldTypename (OutputObject DataType {typeData}) key =
-  maybe (Left $ internalError key) (Right . fieldType) (lookup key typeData)
-fieldTypename _ key = Left (internalError key)
-
-typeNameFromField :: DataTypeLib -> DataFullType -> (Text, Selection) -> Validation (Text, Text)
-typeNameFromField _ datatype (key, _) = fieldTypename datatype key >>= \x -> pure (key, x)
 
 operationTypes :: DataTypeLib -> ValidOperator -> Validation [(String, [(String, String)])]
 operationTypes lib op = map transform <$> getOperatorTypes lib op
@@ -64,7 +43,10 @@ getOperatorTypes lib = genOp . getOp
       subTypes <- newFieldTypes dataType selectionSet
       pure $ (typeName, fields) : subTypes
     -----------------------------
-    genFields datatype = mapM (typeNameFromField lib datatype)
+    genFields datatype = mapM typeNameFromField
+      where
+        typeNameFromField :: (Text, Selection) -> Validation (Text, Text)
+        typeNameFromField (key, _) = (key, ) <$> fieldTypename datatype key
     ------------------------------
     newFieldTypes parentType = fmap concat <$> mapM validateSelection
       where
@@ -74,6 +56,25 @@ getOperatorTypes lib = genOp . getOp
           genRecordType (typeFrom datatype) datatype selectionSet
         validateSelection (key, Selection {selectionRec = SelectionField}) = defineEnum <$> key `typeByField` parentType
         validateSelection _ = pure []
+
+internalError :: Text -> GQLErrors
+internalError x = internalUnknownTypeMessage $ "Missing Type:" <> x
+
+getType :: DataTypeLib -> Text -> Validation DataFullType
+getType lib typename = lookupType (internalError typename) (allDataTypes lib) typename
+
+typeFrom :: DataFullType -> Text
+typeFrom (Leaf (LeafScalar x)) = typeName x
+typeFrom (Leaf (LeafEnum x))   = typeName x
+typeFrom (InputObject x)       = typeName x
+typeFrom (OutputObject x)      = typeName x
+typeFrom (Union x)             = typeName x
+typeFrom (InputUnion x)        = typeName x
+
+fieldTypename :: DataFullType -> Text -> Validation Text
+fieldTypename (OutputObject DataType {typeData}) key =
+  maybe (Left $ internalError key) (Right . fieldType) (lookup key typeData)
+fieldTypename _ key = Left (internalError key)
 
 defineEnum :: DataFullType -> [(Text, [(Text, Text)])]
 defineEnum (Leaf (LeafEnum x)) = [(typeName x, [])]
