@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DataKinds       #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -35,7 +36,7 @@ import           GHC.Generics
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal               (internalErrorT)
 import           Data.Morpheus.Error.Selection              (fieldNotResolved, subfieldsNotSelected)
-import           Data.Morpheus.Kind                         (ENUM, OBJECT, SCALAR, UNION, WRAPPER)
+import           Data.Morpheus.Kind                         (ENUM, GQL_KIND, OBJECT, SCALAR, UNION, WRAPPER)
 import           Data.Morpheus.Resolve.Decode               (ArgumentsConstraint, decodeArguments)
 import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
 import           Data.Morpheus.Types.Custom                 (MapKind, Pair (..), mapKindFromList)
@@ -124,7 +125,7 @@ type UnionConstraint a m = (Monad m, Generic a, GQLType a, UnionResolvers (Rep a
 
 type EnumConstraint a = (Generic a, EnumRep (Rep a))
 
-newtype WithGQLKind a b = WithGQLKind
+newtype WithGQLKind a (b :: GQL_KIND) = WithGQLKind
   { resolverValue :: a
   }
 
