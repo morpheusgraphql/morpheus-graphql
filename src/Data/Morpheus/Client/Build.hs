@@ -6,8 +6,8 @@ module Data.Morpheus.Client.Build
 import           Data.Char           (toLower, toUpper)
 import           Language.Haskell.TH
 
-defineQuery :: ((String, [(String, String)]), String) -> Q [Dec]
-defineQuery (x, _) = define x
+defineQuery :: ([(String, [(String, String)])], String) -> Q [Dec]
+defineQuery (x, _) = concat <$> mapM define x
 
 define :: (String, [(String, String)]) -> Q [Dec]
 define (strName, fields) = (pure . pure) $ DataD [] typeName [] Nothing [recordCon] []
