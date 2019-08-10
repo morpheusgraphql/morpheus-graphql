@@ -26,9 +26,14 @@ import           Data.Morpheus.Client.Build                (defineQuery)
 import           Data.Morpheus.Document.ParseDocument      (parseFullGQLDocument)
 import           Data.Morpheus.Error.Utils                 (renderErrors)
 import           Data.Morpheus.Parser.Parser               (parseGQL)
-import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..))
+import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..), ValidOperator)
 import           Data.Morpheus.Types.IO                    (GQLRequest (..))
 import           Data.Morpheus.Validation.Validation       (validateRequest)
+
+-- MORPHEUS
+import           Data.Morpheus.Types.Internal.Data         (DataArgument, DataField (..), DataFullType (..),
+                                                            DataLeaf (..), DataType (..), DataTypeLib, allDataTypes,
+                                                            showWrappedType)
 
 gql :: QuasiQuoter
 gql =
@@ -43,6 +48,9 @@ gql =
 
 readSchema :: IO ByteString
 readSchema = L.readFile "./assets/simple.gql"
+
+selectQueryTypes :: DataTypeLib -> ValidOperator -> [((String, [(String, String)]), String)]
+selectQueryTypes _ _ = []
 
 compile :: String -> Q Exp
 compile queryText = do
