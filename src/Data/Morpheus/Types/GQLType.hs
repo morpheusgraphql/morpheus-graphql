@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds    #-}
 {-# LANGUAGE DefaultSignatures    #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
@@ -59,7 +60,7 @@ ignoreResolver (con, args) = con : concatMap (ignoreResolver . splitTyConApp) ar
 --       description = const "your description ..."
 --  @
 class GQLType a where
-  type KIND a :: *
+  type KIND a :: GQL_KIND
   description :: Proxy a -> Text
   description _ = ""
   __typeVisibility :: Proxy a -> Bool
