@@ -68,8 +68,6 @@ recDefinition (strName, fields) = (typeName, [recordCon])
     recordCon = RecC typeName (map genField fields)
       where
         genField (fieldName, fType) = (mkName fieldName, defBang, ConT $ mkName fType)
-          where
-            _name name = "_" <> name
 
 buildRec :: (Name, [Con]) -> Dec
 buildRec (name, cons) = DataD [] name [] Nothing cons $ map derive ["Show", "Generic"]
