@@ -40,7 +40,8 @@ renderRootResolver _ DataTypeLib {mutation, subscription} = renderSignature <> r
 renderResolver :: Context -> (Text, DataFullType) -> Text
 renderResolver Context {scope, pubSub = (channel, content)} (name, dataType) = renderSig dataType
   where
-    renderSig (Leaf LeafScalar {}) = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
+    renderSig (Leaf BaseScalar {}) = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
+    renderSig (Leaf CustomScalar {}) = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
     renderSig (Leaf (LeafEnum DataType {typeData})) = defFunc <> renderReturn <> renderCon (head typeData)
     renderSig (Union DataType {typeData}) = defFunc <> renderUnionCon name typeCon <> " <$> " <> "resolve" <> typeCon
       where

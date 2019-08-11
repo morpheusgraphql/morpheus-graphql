@@ -95,7 +95,7 @@ type InputObjectConstraint a = (GQL_TYPE a, ObjectRep (Rep a) ())
 type ObjectConstraint a = (GQL_TYPE a, ObjectRep (Rep a) DataArguments)
 
 scalarTypeOf :: GQLType a => DataValidator -> Proxy a -> DataFullType
-scalarTypeOf validator = Leaf . LeafScalar . buildType validator
+scalarTypeOf validator = Leaf . CustomScalar . buildType validator
 
 enumTypeOf :: GQLType a => [Text] -> Proxy a -> DataFullType
 enumTypeOf tags' = Leaf . LeafEnum . buildType tags'

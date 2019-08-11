@@ -22,18 +22,20 @@ renderGraphQLDocument lib = encodeUtf8 $ LT.fromStrict $ intercalate "\n\n" $ ma
     visibleTypes = filter (isVisible . snd) (allDataTypes lib)
 
 isVisible :: DataFullType -> Bool
-isVisible (Leaf (LeafScalar DataType {typeVisibility})) = typeVisibility
-isVisible (Leaf (LeafEnum DataType {typeVisibility}))   = typeVisibility
-isVisible (Union DataType {typeVisibility})             = typeVisibility
-isVisible (InputObject DataType {typeVisibility})       = typeVisibility
-isVisible (InputUnion DataType {typeVisibility})        = typeVisibility
-isVisible (OutputObject DataType {typeVisibility})      = typeVisibility
+isVisible (Leaf (BaseScalar DataType {typeVisibility}))   = typeVisibility
+isVisible (Leaf (CustomScalar DataType {typeVisibility})) = typeVisibility
+isVisible (Leaf (LeafEnum DataType {typeVisibility}))     = typeVisibility
+isVisible (Union DataType {typeVisibility})               = typeVisibility
+isVisible (InputObject DataType {typeVisibility})         = typeVisibility
+isVisible (InputUnion DataType {typeVisibility})          = typeVisibility
+isVisible (OutputObject DataType {typeVisibility})        = typeVisibility
 
 renderIndent :: Text
 renderIndent = "  "
 
 renderType :: (Text, DataFullType) -> Text
-renderType (name, Leaf (LeafScalar _)) = "scalar " <> name
+renderType (name, Leaf (BaseScalar _)) = "scalar " <> name
+renderType (name, Leaf (CustomScalar _)) = "scalar " <> name
 renderType (name, Leaf (LeafEnum DataType {typeData})) = "enum " <> name <> renderObject id typeData
 renderType (name, Union DataType {typeData}) =
   "union " <> name <> " =\n    " <> intercalate ("\n" <> renderIndent <> "| ") (map fieldType typeData)

@@ -28,10 +28,6 @@ import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
-type Lifetime = String
-
-type Power = String
-
 defineQuery
   [gql|
     query GetHero {

@@ -67,9 +67,10 @@ fieldFromObjectField (key, field'@DataField {fieldType, fieldArgs}) lib = do
     traverse (`inputValueFromArg` lib) fieldArgs
 
 typeFromLeaf :: (Text, DataLeaf) -> Type
-typeFromLeaf (key', LeafScalar DataType {typeDescription = desc'}) = createLeafType SCALAR key' desc' Nothing
-typeFromLeaf (key', LeafEnum DataType {typeDescription = desc', typeData = tags'}) =
-  createLeafType ENUM key' desc' (Just $ map createEnumValue tags')
+typeFromLeaf (key, BaseScalar DataType {typeDescription}) = createLeafType SCALAR key typeDescription Nothing
+typeFromLeaf (key, CustomScalar DataType {typeDescription}) = createLeafType SCALAR key typeDescription Nothing
+typeFromLeaf (key, LeafEnum DataType {typeDescription, typeData}) =
+  createLeafType ENUM key typeDescription (Just $ map createEnumValue typeData)
 
 createLeafType :: TypeKind -> Text -> Text -> Maybe [EnumValue] -> Type
 createLeafType kind' name' desc' enums' =

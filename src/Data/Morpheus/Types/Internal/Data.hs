@@ -113,7 +113,8 @@ data DataType a = DataType
   } deriving (Show)
 
 data DataLeaf
-  = LeafScalar DataScalar
+  = BaseScalar DataScalar
+  | CustomScalar DataScalar
   | LeafEnum DataEnum
   deriving (Show)
 
@@ -185,12 +186,13 @@ isTypeDefined :: Text -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name_ lib' = getTypeFingerprint <$> name_ `lookup` allDataTypes lib'
   where
     getTypeFingerprint :: DataFullType -> DataFingerprint
-    getTypeFingerprint (Leaf (LeafScalar dataType')) = typeFingerprint dataType'
-    getTypeFingerprint (Leaf (LeafEnum dataType'))   = typeFingerprint dataType'
-    getTypeFingerprint (InputObject dataType')       = typeFingerprint dataType'
-    getTypeFingerprint (OutputObject dataType')      = typeFingerprint dataType'
-    getTypeFingerprint (Union dataType')             = typeFingerprint dataType'
-    getTypeFingerprint (InputUnion dataType')        = typeFingerprint dataType'
+    getTypeFingerprint (Leaf (BaseScalar dataType'))   = typeFingerprint dataType'
+    getTypeFingerprint (Leaf (CustomScalar dataType')) = typeFingerprint dataType'
+    getTypeFingerprint (Leaf (LeafEnum dataType'))     = typeFingerprint dataType'
+    getTypeFingerprint (InputObject dataType')         = typeFingerprint dataType'
+    getTypeFingerprint (OutputObject dataType')        = typeFingerprint dataType'
+    getTypeFingerprint (Union dataType')               = typeFingerprint dataType'
+    getTypeFingerprint (InputUnion dataType')          = typeFingerprint dataType'
 
 defineType :: (Text, DataFullType) -> DataTypeLib -> DataTypeLib
 defineType (key', Leaf type') lib         = lib {leaf = (key', type') : leaf lib}

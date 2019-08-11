@@ -34,7 +34,7 @@ getOperatorTypes lib = genOp . getOp
     queryDataType = OutputObject $ snd $ query lib
     -----------------------------------------------------
     typeByField :: Text -> DataFullType -> Validation DataFullType
-    typeByField key datatype = fieldTypename datatype key >>= getType lib
+    typeByField key datatype = fieldDataType lib datatype key
     -----------------------------------------------------
     genOp Operator' {operatorName, operatorSelection} = genRecordType operatorName queryDataType operatorSelection
     -------------------------------------------
@@ -46,7 +46,7 @@ getOperatorTypes lib = genOp . getOp
     genFields datatype = mapM typeNameFromField
       where
         typeNameFromField :: (Text, Selection) -> Validation (Text, Text)
-        typeNameFromField (key, _) = (key, ) <$> fieldTypename datatype key
+        typeNameFromField (key, _) = (key, ) . typeFrom <$> fieldDataType lib datatype key
     ------------------------------
     newFieldTypes parentType = fmap concat <$> mapM validateSelection
       where
@@ -64,17 +64,18 @@ getType :: DataTypeLib -> Text -> Validation DataFullType
 getType lib typename = lookupType (internalError typename) (allDataTypes lib) typename
 
 typeFrom :: DataFullType -> Text
-typeFrom (Leaf (LeafScalar x)) = typeName x
-typeFrom (Leaf (LeafEnum x))   = typeName x
-typeFrom (InputObject x)       = typeName x
-typeFrom (OutputObject x)      = typeName x
-typeFrom (Union x)             = typeName x
-typeFrom (InputUnion x)        = typeName x
+typeFrom (Leaf (BaseScalar x))   = typeName x
+typeFrom (Leaf (CustomScalar _)) = "String"
+typeFrom (Leaf (LeafEnum x))     = typeName x
+typeFrom (InputObject x)         = typeName x
+typeFrom (OutputObject x)        = typeName x
+typeFrom (Union x)               = typeName x
+typeFrom (InputUnion x)          = typeName x
 
-fieldTypename :: DataFullType -> Text -> Validation Text
-fieldTypename (OutputObject DataType {typeData}) key =
-  maybe (Left $ internalError key) (Right . fieldType) (lookup key typeData)
-fieldTypename _ key = Left (internalError key)
+fieldDataType :: DataTypeLib -> DataFullType -> Text -> Validation DataFullType
+fieldDataType lib (OutputObject DataType {typeData}) key =
+  maybe (Left $ internalError key) (Right . fieldType) (lookup key typeData) >>= getType lib
+fieldDataType _ _ key = Left (internalError key)
 
 defineEnum :: DataFullType -> [(Text, [(Text, Text)])]
 defineEnum (Leaf (LeafEnum x)) = [(typeName x, [])]

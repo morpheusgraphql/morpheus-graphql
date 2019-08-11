@@ -9,7 +9,7 @@ import           Data.Morpheus.Document.Parsing.Terms (Parser, nonNull, parseAss
                                                        qualifier, setOf, spaceAndComments, token, wrappedType)
 import           Data.Morpheus.Types.Internal.Data    (DataArgument, DataField (..), DataFingerprint (..),
                                                        DataFullType (..), DataLeaf (..), DataOutputField, DataType (..),
-                                                       DataTypeKind (..), DataTypeWrapper, DataValidator (..), Key)
+                                                       DataTypeWrapper, DataValidator (..), Key)
 import           Data.Text                            (Text)
 import           Text.Megaparsec                      (label, sepBy1, (<|>))
 import           Text.Megaparsec.Char                 (char, space1, string)
@@ -76,7 +76,7 @@ dataScalar :: Parser (Text, DataFullType)
 dataScalar =
   label "scalar" $ do
     typeName <- typeDef "scalar"
-    pure (typeName, Leaf $ LeafScalar $ createType typeName (DataValidator pure))
+    pure (typeName, Leaf $ CustomScalar $ createType typeName (DataValidator pure))
 
 dataEnum :: Parser (Text, DataFullType)
 dataEnum =

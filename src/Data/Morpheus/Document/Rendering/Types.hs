@@ -20,7 +20,8 @@ import           Data.Morpheus.Types.Internal.Data      (DataArgument, DataField
 renderType :: Context -> (Text, DataFullType) -> Text
 renderType context (name, dataType) = typeIntro <> renderData name <> renderT dataType
   where
-    renderT (Leaf (LeafScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name
+    renderT (Leaf (BaseScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name
+    renderT (Leaf (CustomScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name
     renderT (Leaf (LeafEnum DataType {typeData})) = unionType typeData <> defineTypeClass "ENUM"
     renderT (Union DataType {typeData}) = renderUnion name typeData <> defineTypeClass "UNION"
     renderT (InputObject DataType {typeData}) =
