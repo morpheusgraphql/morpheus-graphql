@@ -3,6 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables     #-}
 {-# LANGUAGE TemplateHaskell         #-}
 {-# LANGUAGE TypeApplications        #-}
+{-# LANGUAGE TypeFamilies            #-}
 
 module Data.Morpheus.Client.Build
   ( defineQuery
@@ -11,7 +12,6 @@ module Data.Morpheus.Client.Build
 
 import           Data.Aeson
 import           Data.ByteString.Lazy (ByteString)
-import           Data.Proxy
 import           Language.Haskell.TH
 
 defineQuery :: ([(String, [(String, String)])], String) -> Q [Dec]
@@ -23,17 +23,19 @@ defineQuery (rootType:types, query) = do
     rootDec = defineWithInstance query rootType
 defineQuery ([], _) = return []
 
-class Fetch a where
-  queryFor :: Proxy a -> String
+class Fetch a
+  -- type Args a :: *
+  where
+  __fetch :: (Monad m, FromJSON a) => String -> (String -> m ByteString) -> m (Either String a)
+  __fetch query trans = eitherDecode <$> trans query
   fetch :: (Monad m, FromJSON a) => (String -> m ByteString) -> m (Either String a)
-  fetch trans = eitherDecode <$> trans (queryFor (Proxy :: Proxy a))
 
 fetchInstance :: Name -> String -> Q [Dec]
 fetchInstance typeName query = do
   dec <- instanceD (cxt []) (appT (conT ''Fetch) (conT typeName)) [queryFor']
   return [dec]
   where
-    queryFor' = funD (mkName "queryFor") [clause [varP (mkName "_")] (normalB [|query|]) []]
+    queryFor' = funD (mkName "fetch") [clause [] (normalB [|__fetch query|]) []]
 
 aesonObjectInstance :: RecType -> Q [Dec]
 aesonObjectInstance (name, fields) = do

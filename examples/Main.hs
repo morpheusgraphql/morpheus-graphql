@@ -11,15 +11,13 @@ module Main
   ( main
   ) where
 
-import           Control.Applicative
 import           Control.Monad.IO.Class         (liftIO)
-import           Data.Aeson
+import           Data.Aeson                     (FromJSON (..))
 import           Data.ByteString.Lazy           (ByteString)
 import           Data.Morpheus                  (Interpreter (..))
 import           Data.Morpheus.Client           (Fetch (..), defineQuery, gql)
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
-import           Data.Proxy                     (Proxy (..))
 import           Deprecated.API                 (Channel, Content, gqlRoot)
 import           GHC.Generics
 import           Mythology.API                  (mythologyApi)
@@ -56,12 +54,8 @@ getHero = GetHero {deity = Deity {power = "", fullName = "ass"}, hero = Human {l
 fetchHero :: IO (Either String GetHero)
 fetchHero = fetch jsonRes
 
-myQuery :: String
-myQuery = queryFor (Proxy :: Proxy GetHero)
-
 main :: IO ()
 main = do
-  print myQuery
   print getHero
   fetchHero >>= print
   state <- initGQLState
