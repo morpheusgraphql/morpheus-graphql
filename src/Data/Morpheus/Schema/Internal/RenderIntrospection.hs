@@ -17,7 +17,8 @@ import           Data.Morpheus.Schema.Type         (Type (..))
 import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data (DataField (..), DataFullType (..), DataInputField, DataInputObject,
                                                     DataLeaf (..), DataOutputField, DataType (..), DataTypeKind (..),
-                                                    DataTypeLib, DataTypeWrapper (..), DataUnion)
+                                                    DataTypeLib, DataTypeWrapper (..), DataUnion, kindOf,
+                                                    lookupDataType)
 import           Data.Text                         (Text)
 
 type InputValue = IN.InputValue Type
@@ -41,7 +42,7 @@ renderTypeKind :: DataTypeKind -> TypeKind
 renderTypeKind KindScalar      = SCALAR
 renderTypeKind KindObject      = OBJECT
 renderTypeKind KindUnion       = UNION
-renderTypeKind KindInputUnion  = OBJECT
+renderTypeKind KindInputUnion  = INPUT_OBJECT
 renderTypeKind KindEnum        = ENUM
 renderTypeKind KindInputObject = INPUT_OBJECT
 renderTypeKind KindList        = LIST
@@ -57,12 +58,15 @@ wrapByTypeWrapper :: DataTypeWrapper -> Type -> Type
 wrapByTypeWrapper ListType    = wrapAs LIST
 wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 
-kindOf :: Text -> Result DataTypeKind
-kindOf _ _ = Right KindObject
+lookupKind :: Text -> Result DataTypeKind
+lookupKind name lib =
+  case lookupDataType name lib of
+    Nothing    -> Left ""
+    Just value -> Right (kindOf value)
 
 fieldFromObjectField :: (Text, DataOutputField) -> Result Field
 fieldFromObjectField (key, field'@DataField {fieldType, fieldArgs}) lib = do
-  kind <- renderTypeKind <$> kindOf fieldType lib
+  kind <- renderTypeKind <$> lookupKind fieldType lib
   F.createFieldWith key (wrap field' $ createType kind fieldType "" $ Just []) <$>
     traverse (`inputValueFromArg` lib) fieldArgs
 
@@ -105,7 +109,7 @@ inputValueFromArg (key, input) = fmap (IN.createInputValueWith key) . createInpu
 
 createInputObjectType :: DataInputField -> Result Type
 createInputObjectType field@DataField {fieldType} lib = do
-  kind <- renderTypeKind <$> kindOf fieldType lib
+  kind <- renderTypeKind <$> lookupKind fieldType lib
   pure $ wrap field $ createType kind fieldType "" $ Just []
 
 renderInputObject :: (Text, DataInputObject) -> Result Type

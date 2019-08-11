@@ -31,6 +31,8 @@ module Data.Morpheus.Types.Internal.Data
   , showFullAstType
   , isFieldNullable
   , allDataTypes
+  , lookupDataType
+  , kindOf
   ) where
 
 import           Data.Morpheus.Types.Internal.Value (Value (..))
@@ -182,8 +184,20 @@ allDataTypes (DataTypeLib leaf' inputObject' object' union' inputUnion' query' m
     fromMaybeType (Just (key', dataType')) = [(key', OutputObject dataType')]
     fromMaybeType Nothing                  = []
 
+lookupDataType :: Text -> DataTypeLib -> Maybe DataFullType
+lookupDataType name lib = name `lookup` allDataTypes lib
+
+kindOf :: DataFullType -> DataTypeKind
+kindOf (Leaf (BaseScalar _))   = KindScalar
+kindOf (Leaf (CustomScalar _)) = KindScalar
+kindOf (Leaf (LeafEnum _))     = KindEnum
+kindOf (InputObject _)         = KindInputObject
+kindOf (OutputObject _)        = KindObject
+kindOf (Union _)               = KindUnion
+kindOf (InputUnion _)          = KindInputUnion
+
 isTypeDefined :: Text -> DataTypeLib -> Maybe DataFingerprint
-isTypeDefined name_ lib' = getTypeFingerprint <$> name_ `lookup` allDataTypes lib'
+isTypeDefined name lib = getTypeFingerprint <$> lookupDataType name lib
   where
     getTypeFingerprint :: DataFullType -> DataFingerprint
     getTypeFingerprint (Leaf (BaseScalar dataType'))   = typeFingerprint dataType'
