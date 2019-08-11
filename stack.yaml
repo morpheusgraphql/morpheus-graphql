@@ -1,10 +1,6 @@
 resolver: lts-13.24
 
 extra-deps:
-<<<<<<< HEAD
-- megaparsec-7.0.5
-=======
-- megaparsec-7.0.5
-- aeson-1.4.4.0
-- time-compat-1.9.2.2
->>>>>>> origin/master
+  - megaparsec-7.0.5
+  - aeson-1.4.4.0
+  - time-compat-1.9.2.2
