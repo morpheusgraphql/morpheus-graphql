@@ -37,6 +37,7 @@ testByFiles testApi (Case path' description') = do
   testCaseVariables <- maybeVariables path'
   expectedValue <- getResponseBody path'
   gqlResponse <- testApi $ packGQLRequest testCaseQuery testCaseVariables
+ 
   case decode gqlResponse of
     Nothing -> assertFailure "Bad Response"
     Just response -> return $ testCase (unpack path' ++ " | " ++ description') $ customTest expectedValue response

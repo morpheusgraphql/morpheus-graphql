@@ -186,7 +186,7 @@ introspectEnum ::
      forall a f. (GQLType a, EnumRep (Rep a))
   => Context a (KIND a) f
   -> TypeUpdater
-introspectEnum _ = updateLib (enumTypeOf $ getTags (Proxy @(Rep a))) [] (Proxy @a)
+introspectEnum _ = updateLib (enumTypeOf $ enumTags (Proxy @(Rep a))) [] (Proxy @a)
 
 --
 -- OBJECTS , INPUT_OBJECT

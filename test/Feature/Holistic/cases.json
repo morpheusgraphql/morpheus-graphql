@@ -64,6 +64,14 @@
     "description": "fail when: fragments are defined with same name"
   },
   {
+    "path": "parsing/duplicatedFields",
+    "description": "fail when: user supplies duplicated fields"
+  },
+  {
+    "path": "parsing/invalidFields",
+    "description": "fail when: user supplies invalid fields"
+  },
+  {
     "path": "parsing/invalidNotNullOperator",
     "description": "fail when: user supplies '@' instead of '!'"
   },

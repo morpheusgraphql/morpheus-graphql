@@ -1,0 +1,42 @@
+[
+  {
+    "path": "decode2Con",
+    "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path": "decode3Con",
+    "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path": "decodeMany/con0",
+    "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path": "decodeMany/con1",
+    "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path": "decodeMany/con2",
+    "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path": "decodeMany/con3",
+    "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path": "decodeMany/con4",
+    "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path": "decodeMany/con5",
+    "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path": "decodeMany/con6",
+    "description": "decode string to correct Haskell Enum Representation"
+  },
+  {
+    "path":"decodeInvalidValue",
+    "description":"fail on invalid enum value"
+  }
+]

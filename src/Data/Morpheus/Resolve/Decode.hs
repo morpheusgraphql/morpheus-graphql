@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -21,7 +22,7 @@ import           GHC.Generics
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal               (internalArgumentError, internalTypeMismatch)
-import           Data.Morpheus.Kind                         (ENUM, INPUT_OBJECT, INPUT_UNION, SCALAR, WRAPPER)
+import           Data.Morpheus.Kind                         (ENUM, GQL_KIND, INPUT_OBJECT, INPUT_UNION, SCALAR, WRAPPER)
 import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
 import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..), toScalar)
 import           Data.Morpheus.Types.GQLType                (GQLType (KIND, __typeName))
@@ -126,7 +127,7 @@ decode ::
 decode = __decode (Proxy @(KIND a))
 
 -- | Decode GraphQL query arguments and input values
-class Decode a b where
+class Decode a (b :: GQL_KIND) where
   __decode :: Proxy b -> Value -> Validation a
 
 --
@@ -142,7 +143,7 @@ instance (GQLScalar a) => Decode a SCALAR where
 -- ENUM
 --
 instance (Generic a, EnumRep (Rep a)) => Decode a ENUM where
-  __decode _ (Enum value) = pure (to $ gToEnum value)
+  __decode _ (Enum value) = to <$> decodeEnum value
   __decode _ isType       = internalTypeMismatch "Enum" isType
 
 --

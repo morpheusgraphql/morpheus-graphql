@@ -14,9 +14,13 @@ module Data.Morpheus.Resolve.Resolve
   , fullSchema
   ) where
 
+import qualified Codec.Binary.UTF8.String                as UTF8
 import           Control.Monad.Trans.Except                (ExceptT (..), runExceptT)
-import           Data.Aeson                                (eitherDecode, encode)
-import           Data.ByteString.Lazy.Char8                (ByteString)
+import           Data.Aeson                                (Result (..), encode, fromJSON)
+import           Data.Aeson.Parser                         (jsonNoDup)
+import           Data.Attoparsec.ByteString                (parseOnly)
+import qualified Data.ByteString                         as S
+import qualified Data.ByteString.Lazy.Char8              as L
 import           Data.Proxy
 import           GHC.Generics
 
@@ -54,11 +58,17 @@ type RootResCon m event cont query mutation subscription
      , EncodeMutCon m event cont mutation
      , EncodeSubCon m event cont subscription)
 
-byteStringIO :: Monad m => (GQLRequest -> m GQLResponse) -> ByteString -> m ByteString
+decodeNoDup :: L.ByteString -> Result GQLRequest
+decodeNoDup bs =
+  case parseOnly jsonNoDup (S.pack . UTF8.encode $ L.unpack bs) of
+    Left e  -> Error e
+    Right v -> fromJSON v
+
+byteStringIO :: Monad m => (GQLRequest -> m GQLResponse) -> L.ByteString -> m L.ByteString
 byteStringIO resolver request =
-  case eitherDecode request of
-    Left aesonError' -> return $ badRequestError aesonError'
-    Right req        -> encode <$> resolver req
+  case decodeNoDup request of
+    Error aesonError' -> return $ badRequestError aesonError'
+    Success req       -> encode <$> resolver req
 
 statelessResolver ::
      (Monad m, RootResCon m s cont query mut sub)
@@ -98,9 +108,9 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
 statefulResolver ::
      EventCon s
   => GQLState IO s cont
-  -> (ByteString -> ResponseStream IO s cont ByteString)
-  -> ByteString
-  -> IO ByteString
+  -> (L.ByteString -> ResponseStream IO s cont L.ByteString)
+  -> L.ByteString
+  -> IO L.ByteString
 statefulResolver state streamApi request = do
   (actions, value) <- closeStream (streamApi request)
   mapM_ execute actions

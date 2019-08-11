@@ -1,0 +1,13 @@
+{
+	"errors": [
+    {
+      "message": "duplicate selection of key \"email\" on type \"User\".",
+      "locations": [
+        {
+          "line": 1,
+          "column": 17
+        }
+      ]
+    }
+  ]
+}

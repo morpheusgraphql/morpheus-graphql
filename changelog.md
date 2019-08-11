@@ -17,6 +17,7 @@
 
 - Parser supports enums inside input Object
 - fulfilled fragment Validation (added: unusedFragment,nameConflict)
+- correct decoding of Enums with more than 3 constructor #201
 
 ### Changed
 
@@ -41,6 +42,13 @@
   description = const "Custom Description for Client Defined User Type"
 
   data Deity = Deity { fullName :: Text } deriving (Generic)
+  ```
+- Duplicated variable names in Http requests are validated using `Aeson`'s `jsonNoDup` function. So the following request will
+  result in a parsing error
+
+  ```
+  {"query":"...",
+  "variables":{"email":"foo@mail.net", "email":"bar@mail.net",...}}
   ```
 
 ## [0.1.1] - 1.07.2019

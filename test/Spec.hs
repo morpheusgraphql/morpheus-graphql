@@ -5,6 +5,7 @@ module Main
   ) where
 
 import qualified Feature.Holistic.API        as Holistic (api)
+import qualified Feature.Input.Enum.API      as InputEnum (api)
 import qualified Feature.InputType.API       as InputType (api)
 import qualified Feature.Schema.API          as Schema (api)
 import qualified Feature.UnionType.API       as UnionType (api)
@@ -19,4 +20,5 @@ main = do
   inputTest <- testFeature InputType.api "Feature/InputType"
   schemaTest <- testFeature Schema.api "Feature/Schema"
   typeName <- testFeature TypeName.api "Feature/WrappedTypeName"
-  defaultMain (testGroup "Morpheus Graphql Tests" [ioTests, unionTest, inputTest, schemaTest, typeName])
+  inputEnum <- testFeature InputEnum.api "Feature/Input/Enum"
+  defaultMain (testGroup "Morpheus Graphql Tests" [ioTests, unionTest, inputTest, schemaTest, typeName, inputEnum])
