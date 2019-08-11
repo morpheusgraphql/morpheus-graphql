@@ -11,6 +11,7 @@ module Main
   ( main
   ) where
 
+import           Control.Applicative
 import           Control.Monad.IO.Class         (liftIO)
 import           Data.Aeson
 import           Data.ByteString.Lazy           (ByteString)
