@@ -1,6 +1,8 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 module Main
   ( main
@@ -8,7 +10,7 @@ module Main
 
 import           Control.Monad.IO.Class         (liftIO)
 import           Data.Morpheus                  (Interpreter (..))
-import           Data.Morpheus.Client           (defineQuery, gql)
+import           Data.Morpheus.Client           (Fetch (..), defineQuery, gql)
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Deprecated.API                 (Channel, Content, gqlRoot)
@@ -38,16 +40,17 @@ defineQuery
     }
   |]
 
-getDeity :: String -> IO GetHero
-getDeity _ =
-  return
-    GetHero
-      {getHeroDeity = Deity {deityPower = Power, deityFullName = "ass"}, getHeroHero = Human {humanLifetime = Lifetime}}
+--bla = deity getHero
+getHero :: GetHero
+getHero = GetHero {_deity = Deity {_power = Power, _fullName = "ass"}, _hero = Human {_lifetime = Lifetime}}
+
+myQuery = queryFor (Deity {_power = Power, _fullName = "ass"})
 
 main :: IO ()
 main
   --getDeity "" >>= print
  = do
+  print myQuery
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp

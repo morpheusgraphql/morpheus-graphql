@@ -7,6 +7,7 @@
 module Data.Morpheus.Client
   ( gql
   , defineQuery
+  , Fetch(..)
   ) where
 
 --import           Data.Data
@@ -23,7 +24,7 @@ import           Language.Haskell.TH.Quote
 -- import           Language.Haskell.TH.Syntax
 --
 --  Morpheus
-import           Data.Morpheus.Client.Build           (defineQuery)
+import           Data.Morpheus.Client.Build           (defineQuery,Fetch(..))
 import           Data.Morpheus.Client.Selection       (operationTypes)
 import           Data.Morpheus.Document.ParseDocument (parseFullGQLDocument)
 import           Data.Morpheus.Error.Utils            (renderErrors)
