@@ -11,6 +11,7 @@ module Main
   ( main
   ) where
 
+import           Control.Lens
 import           Control.Monad.IO.Class         (liftIO)
 import           Data.Aeson                     (FromJSON (..))
 import           Data.ByteString.Lazy           (ByteString)
@@ -53,7 +54,7 @@ fetchHero = fetch jsonRes
 
 main :: IO ()
 main = do
-  fetchHero () >>= print
+  fetchHero () >>= \x -> print (view deity <$> x)
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp

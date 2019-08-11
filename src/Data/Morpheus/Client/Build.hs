@@ -10,6 +10,7 @@ module Data.Morpheus.Client.Build
   , Fetch(..)
   ) where
 
+import           Control.Lens         (declareLenses)
 import           Data.Aeson
 import           Data.ByteString.Lazy (ByteString)
 import           Language.Haskell.TH
@@ -78,13 +79,15 @@ buildRec (name, cons) = DataD [] name [] Nothing cons $ map derive ["Show", "Gen
 -------------------------------
 defineRec :: RecType -> Q [Dec]
 defineRec x = do
+  record <- declareLenses (pure [buildRec (recDefinition x)])
   toJson <- aesonObjectInstance x
-  pure $ buildRec (recDefinition x) : toJson
+  pure $ record <> toJson
 
 defineWithInstance :: String -> RecType -> Q [Dec]
 defineWithInstance query recType = do
-  instDec <- fetchInstance typeName query
+  record <- declareLenses (pure [buildRec (typeName, cons)])
   toJson <- aesonObjectInstance recType
-  pure $ buildRec (typeName, cons) : toJson <> instDec
+  instDec <- fetchInstance typeName query
+  pure $ record <> toJson <> instDec
   where
     (typeName, cons) = recDefinition recType
