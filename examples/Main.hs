@@ -1,3 +1,6 @@
+{-# LANGUAGE DeriveAnyClass        #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
@@ -9,12 +12,15 @@ module Main
   ) where
 
 import           Control.Monad.IO.Class         (liftIO)
+import           Data.Aeson
+import           Data.ByteString.Lazy           (ByteString)
 import           Data.Morpheus                  (Interpreter (..))
 import           Data.Morpheus.Client           (Fetch (..), defineQuery, gql)
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Data.Proxy                     (Proxy (..))
 import           Deprecated.API                 (Channel, Content, gqlRoot)
+import           GHC.Generics
 import           Mythology.API                  (mythologyApi)
 import qualified Network.Wai                    as Wai
 import qualified Network.Wai.Handler.Warp       as Warp
@@ -22,11 +28,9 @@ import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
-data Lifetime =
-  Lifetime
+type Lifetime = String
 
-data Power =
-  Power
+type Power = String
 
 defineQuery
   [gql|
@@ -41,8 +45,15 @@ defineQuery
     }
   |]
 
+jsonRes :: String -> IO ByteString
+jsonRes _ =
+  return "{\"deity\":{ \"power\":\"Power\",  \"fullName\":\"name\" }, \"hero\":{ \"lifetime\":\"Lifetime\"}  }"
+
 getHero :: GetHero
-getHero = GetHero {_deity = Deity {_power = Power, _fullName = "ass"}, _hero = Human {_lifetime = Lifetime}}
+getHero = GetHero {deity = Deity {power = "", fullName = "ass"}, hero = Human {lifetime = ""}}
+
+fetchHero :: IO (Either String GetHero)
+fetchHero = fetch jsonRes
 
 myQuery :: String
 myQuery = queryFor (Proxy :: Proxy GetHero)
@@ -50,6 +61,8 @@ myQuery = queryFor (Proxy :: Proxy GetHero)
 main :: IO ()
 main = do
   print myQuery
+  print getHero
+  fetchHero >>= print
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
