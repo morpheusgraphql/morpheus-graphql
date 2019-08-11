@@ -24,7 +24,7 @@ import           Language.Haskell.TH.Quote
 -- import           Language.Haskell.TH.Syntax
 --
 --  Morpheus
-import           Data.Morpheus.Client.Build           (defineQuery,Fetch(..))
+import           Data.Morpheus.Client.Build           (Fetch (..), defineQuery)
 import           Data.Morpheus.Client.Selection       (operationTypes)
 import           Data.Morpheus.Document.ParseDocument (parseFullGQLDocument)
 import           Data.Morpheus.Error.Utils            (renderErrors)
@@ -63,19 +63,3 @@ compile queryText = do
                     Right x  -> (x, queryText)
   where
     request = GQLRequest {query = T.pack queryText, operationName = Nothing, variables = Nothing}
------- LIFT --------------------------------------------
-{-
-instance (Lift (Operator' a b)) => Lift (Operator a b) where
-  lift (Query x)        = apply 'Query [lift x]
-  lift (Mutation x)     = apply 'Mutation [lift x]
-  lift (Subscription x) = apply 'Subscription [lift x]
-
-instance (Lift a, Lift b) => Lift (Operator' a b) where
-  lift (Operator' name args sel pos) = apply 'Operator' [lift name, lift args, lift sel, lift pos]
-
-instance Lift SourcePos where
-  lift (SourcePos a b c ) = apply 'SourcePos []
-
-apply :: Name -> [Q Exp] -> Q Exp
-apply n = foldl appE (conE n)
--}

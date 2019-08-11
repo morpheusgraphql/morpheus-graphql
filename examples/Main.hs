@@ -13,6 +13,7 @@ import           Data.Morpheus                  (Interpreter (..))
 import           Data.Morpheus.Client           (Fetch (..), defineQuery, gql)
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
+import           Data.Proxy                     (Proxy (..))
 import           Deprecated.API                 (Channel, Content, gqlRoot)
 import           Mythology.API                  (mythologyApi)
 import qualified Network.Wai                    as Wai
@@ -40,16 +41,14 @@ defineQuery
     }
   |]
 
---bla = deity getHero
 getHero :: GetHero
 getHero = GetHero {_deity = Deity {_power = Power, _fullName = "ass"}, _hero = Human {_lifetime = Lifetime}}
 
-myQuery = queryFor (Deity {_power = Power, _fullName = "ass"})
+myQuery :: String
+myQuery = queryFor (Proxy :: Proxy GetHero)
 
 main :: IO ()
-main
-  --getDeity "" >>= print
- = do
+main = do
   print myQuery
   state <- initGQLState
   httpApp <- httpServer state
