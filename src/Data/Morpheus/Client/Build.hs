@@ -23,12 +23,12 @@ defineQuery (rootType:types, query) = do
     rootDec = defineWithInstance query rootType
 defineQuery ([], _) = return []
 
-class Fetch a
-  -- type Args a :: *
-  where
-  __fetch :: (Monad m, FromJSON a) => String -> (String -> m ByteString) -> m (Either String a)
-  __fetch query trans = eitherDecode <$> trans query
-  fetch :: (Monad m, FromJSON a) => (String -> m ByteString) -> m (Either String a)
+class Fetch a where
+  type Args a :: *
+  type Args a = ()
+  __fetch :: (Monad m, FromJSON a) => String -> (String -> m ByteString) -> Args a -> m (Either String a)
+  __fetch query trans _args = eitherDecode <$> trans query
+  fetch :: (Monad m, FromJSON a) => (String -> m ByteString) -> Args a -> m (Either String a)
 
 fetchInstance :: Name -> String -> Q [Dec]
 fetchInstance typeName query = do
@@ -43,10 +43,9 @@ aesonObjectInstance (name, fields) = do
   return [dec]
   where
     typeName = mkName name
-    fieldNames = map fst fields
     fromJson = funD (mkName "parseJSON") [clause [] (normalB parseJ) []]
       where
-        parseJ = appE [|withObject name|] (lamE [varP (mkName "o")] (startExp fieldNames))
+        parseJ = appE [|withObject name|] (lamE [varP (mkName "o")] (startExp (map fst fields)))
           where
             defField n = [|o .: n|]
             liftTH = varE '(<*>)

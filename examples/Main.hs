@@ -48,16 +48,12 @@ jsonRes :: String -> IO ByteString
 jsonRes _ =
   return "{\"deity\":{ \"power\":\"Power\",  \"fullName\":\"name\" }, \"hero\":{ \"lifetime\":\"Lifetime\"}  }"
 
-getHero :: GetHero
-getHero = GetHero {deity = Deity {power = "", fullName = "ass"}, hero = Human {lifetime = ""}}
-
-fetchHero :: IO (Either String GetHero)
+fetchHero :: Args GetHero -> IO (Either String GetHero)
 fetchHero = fetch jsonRes
 
 main :: IO ()
 main = do
-  print getHero
-  fetchHero >>= print
+  fetchHero () >>= print
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
