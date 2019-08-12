@@ -74,7 +74,10 @@ defType TypeD {tName, tCons} = DataD [] typeName [] Nothing (map cons tCons) $ m
     derive className = DerivClause Nothing [ConT (mkName className)]
     cons ConsD {cFields} = RecC typeName (map genField cFields)
       where
-        genField FieldD {fieldNameD, fieldTypeD} = (mkName fieldNameD, defBang, ConT $ mkName fieldTypeD)
+        genField FieldD {fieldNameD, fieldTypeD} = (mkName fieldNameD, defBang, genFieldT fieldTypeD)
+          where
+            genFieldT ([], name)   = ConT (mkName name)
+            genFieldT (name:xs, c) = AppT (ConT $ mkName name) (genFieldT (xs, c))
 
 defineRec :: TypeD -> Q [Dec]
 defineRec x = do

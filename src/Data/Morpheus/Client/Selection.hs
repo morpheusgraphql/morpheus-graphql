@@ -2,6 +2,8 @@
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TupleSections       #-}
 {-# LANGUAGE TypeOperators       #-}
 
 module Data.Morpheus.Client.Selection
@@ -39,10 +41,11 @@ operationTypes lib variables = genOp . unpackOperator
     rootArguments :: Text -> Validation [TypeD]
     rootArguments name = do
       subTypes <- pure [] -- TODO: real inputTypeGeneration
-      pure $ TypeD {tName = unpack name, tCons = [ConsD {cName = unpack name, cFields = map fieldD variables}]} : subTypes
+      pure $
+        TypeD {tName = unpack name, tCons = [ConsD {cName = unpack name, cFields = map fieldD variables}]} : subTypes
       where
         fieldD :: (Text, Variable ()) -> FieldD
-        fieldD (key, Variable {variableType}) = FieldD (unpack key) (unpack variableType)
+        fieldD (key, Variable {variableType, variableTypeWrappers}) = FieldD (unpack key) ([], unpack variableType)
     -------------------------------------------
     genRecordType name dataType selectionSet = do
       cFields <- genFields dataType selectionSet
@@ -53,7 +56,8 @@ operationTypes lib variables = genOp . unpackOperator
         genFields datatype = mapM typeNameFromField
           where
             typeNameFromField :: (Text, Selection) -> Validation FieldD
-            typeNameFromField (key, _) = FieldD (unpack key) . unpack . typeFrom <$> fieldDataType lib datatype key
+            typeNameFromField (key, _) =
+              FieldD (unpack key) . ([], ) . unpack . typeFrom <$> fieldDataType lib datatype key
     ------------------------------------------------------------------------------------------------------------
     newFieldTypes parentType = fmap concat <$> mapM validateSelection
       where

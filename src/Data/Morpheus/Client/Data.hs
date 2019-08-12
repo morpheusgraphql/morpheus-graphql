@@ -18,7 +18,7 @@ data QueryD = QueryD
 
 data FieldD = FieldD
   { fieldNameD :: String
-  , fieldTypeD :: String
+  , fieldTypeD :: ([String], String)
   } deriving (Show)
 
 data TypeD = TypeD
