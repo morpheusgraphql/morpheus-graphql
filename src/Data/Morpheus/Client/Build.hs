@@ -50,14 +50,12 @@ defineInstanceFromJSON TypeD {tName, tCons = [ConsD {cFields}]} =
         parseJ = appE [|withObject tName|] (lamE [varP (mkName "o")] (startExp (map fieldNameD cFields)))
           where
             defField n = [|o .: n|]
-            liftTH = varE '(<*>)
-            mapTH = varE '(<$>)
             startExp [] = conE typeName
-            startExp fNames = uInfixE (conE typeName) mapTH (applyFields fNames)
+            startExp fNames = uInfixE (conE typeName) (varE '(<*>)) (applyFields fNames)
               where
                 applyFields []     = fail "No Empty fields"
                 applyFields [x]    = defField x
-                applyFields (x:xs) = uInfixE (defField x) liftTH (applyFields xs)
+                applyFields (x:xs) = uInfixE (defField x) (varE '(<$>)) (applyFields xs)
 defineInstanceFromJSON TypeD {} = fail "No Multiple Types"
 
 defType :: TypeD -> Dec
