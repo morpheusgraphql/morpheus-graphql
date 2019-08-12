@@ -15,18 +15,17 @@ module Data.Morpheus.Client.Build
 import           Control.Lens              (declareLenses)
 import           Data.Aeson
 import           Data.ByteString.Lazy      (ByteString)
-import           Data.Morpheus.Client.Data (ConsD (..), FieldD (..), TypeD (..))
+import           Data.Morpheus.Client.Data (ConsD (..), FieldD (..), QueryD (..), TypeD (..))
 import           Language.Haskell.TH
 
---type RecType
-defineQuery :: ([TypeD], String) -> Q [Dec]
-defineQuery (rootType:types, query) = do
+defineQuery :: QueryD -> Q [Dec]
+defineQuery QueryD {queryTypes = rootType:types, queryText} = do
   rootDecs <- rootDec
   subTypeDecs <- concat <$> mapM defineRec types
   return $ rootDecs ++ subTypeDecs
   where
-    rootDec = defineWithInstance query rootType
-defineQuery ([], _) = return []
+    rootDec = defineWithInstance queryText rootType
+defineQuery QueryD {queryTypes = []} = return []
 
 class Fetch a where
   type Args a :: *
@@ -36,11 +35,9 @@ class Fetch a where
   fetch :: (Monad m, FromJSON a) => (String -> m ByteString) -> Args a -> m (Either String a)
 
 defineInstanceFetch :: Name -> String -> Q [Dec]
-defineInstanceFetch typeName query = do
-  dec <- instanceD (cxt []) (appT (conT ''Fetch) (conT typeName)) [queryFor']
-  return [dec]
+defineInstanceFetch typeName query = pure <$> instanceD (cxt []) (appT (conT ''Fetch) (conT typeName)) methods
   where
-    queryFor' = funD (mkName "fetch") [clause [] (normalB [|__fetch query|]) []]
+    methods = [funD (mkName "fetch") [clause [] (normalB [|__fetch query|]) []]]
 
 defineInstanceFromJSON :: TypeD -> Q [Dec]
 defineInstanceFromJSON TypeD {tCons = []} = fail "No Multiple Types"
