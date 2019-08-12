@@ -18,11 +18,11 @@ import           Data.ByteString.Lazy      (ByteString)
 import           Data.Morpheus.Client.Data (ConsD (..), FieldD (..), QueryD (..), TypeD (..))
 import           Language.Haskell.TH
 
-queryArgumentType :: [TypeD] -> (Type, Q [Dec])
-queryArgumentType [] = (ConT $ mkName "()", pure [])
-queryArgumentType (rootType:_) = (ConT $ mkName "TestType", types)
+queryArgumentType :: TypeD -> [TypeD] -> (Type, Q [Dec])
+queryArgumentType _ [] = (ConT $ mkName "()", pure [])
+queryArgumentType TypeD {tName} (rootType:xs) = (ConT $ mkName $ tName <> "Args", types)
   where
-    types = pure [defType rootType]
+    types = pure $ map defType (rootType : xs)
 
 defineQuery :: QueryD -> Q [Dec]
 defineQuery QueryD {queryTypes = rootType:types, queryText, queryArgTypes} = do
@@ -30,7 +30,7 @@ defineQuery QueryD {queryTypes = rootType:types, queryText, queryArgTypes} = do
   subTypeDecs <- concat <$> mapM defineRec types
   return $ rootDecs ++ subTypeDecs
   where
-    rootDec = defineWithInstance (queryArgumentType queryArgTypes) queryText rootType
+    rootDec = defineWithInstance (queryArgumentType rootType queryArgTypes) queryText rootType
 defineQuery QueryD {queryTypes = []} = return []
 
 class Fetch a where
