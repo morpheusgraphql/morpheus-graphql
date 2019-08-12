@@ -8,6 +8,7 @@ module Data.Morpheus.Types.Internal.AST.Operator
   , ValidOperator'
   , RawOperator'
   , ValidVariables
+  , unpackOperator
   ) where
 
 import           Data.Morpheus.Types.Internal.AST.RawSelection (RawSelectionSet)
@@ -42,6 +43,11 @@ data Operator' args sel = Operator'
   , operatorSelection :: sel
   , operatorPosition  :: Position
   } deriving (Show)
+
+unpackOperator :: Operator a b -> Operator' a b
+unpackOperator (Query x)        = x
+unpackOperator (Mutation x)     = x
+unpackOperator (Subscription x) = x
 
 data Operator args sel
   = Query (Operator' args sel)

@@ -20,7 +20,7 @@ import           Language.Haskell.TH
 
 queryArgumentType :: [TypeD] -> (Type, Q [Dec])
 queryArgumentType [] = (ConT $ mkName "()", pure [])
-queryArgumentType (rootType@TypeD {tName}:xs) = (ConT $ mkName $ tName <> "Args", types)
+queryArgumentType (rootType@TypeD {tName}:xs) = (ConT $ mkName tName, types)
   where
     types = pure $ map defType (rootType : xs)
 
@@ -83,8 +83,9 @@ defineRec x = do
   pure $ record <> toJson
 
 defineWithInstance :: (Type, Q [Dec]) -> String -> TypeD -> Q [Dec]
-defineWithInstance (argType, _) query datatype = do
+defineWithInstance (argType, argumentTypes) query datatype = do
   record <- declareLenses (pure [defType datatype])
   toJson <- instanceFromJSON datatype
+  args <- argumentTypes
   instDec <- instanceFetch argType (mkName $ tName datatype) query
-  pure $ record <> toJson <> instDec
+  pure $ record <> toJson <> instDec <> args

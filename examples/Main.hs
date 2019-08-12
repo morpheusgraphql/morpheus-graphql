@@ -31,8 +31,8 @@ import           Web.Scotty                     (body, file, get, post, raw, sco
 
 defineQuery
   [gql|
-    query GetHero {
-      deity {
+    query GetHero ( $heroName : String ) {
+      deity (mythology: $heroName) {
          power
          fullName
         }
@@ -51,7 +51,7 @@ fetchHero = fetch jsonRes
 
 main :: IO ()
 main = do
-  fetchHero () >>= \x -> print (view deity <$> x)
+  fetchHero (GetHeroArgs {heroName = ""}) >>= \x -> print (view deity <$> x)
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
