@@ -32,7 +32,9 @@ compile ioSchema queryText = do
           where gqlCompileErrors = unpack $ encode $ renderErrors errors
         Right operation ->
           case operationTypes schema operation of
-            Left err         -> fail $ show err
-            Right queryTypes -> [|QueryD queryText queryTypes|]
+            Left err -> fail $ show err
+            Right queryTypes -> [|queryD|]
+              where queryD = QueryD {queryText, queryTypes, queryArgTypes}
+                    queryArgTypes = []
   where
     request = GQLRequest {query = T.pack queryText, operationName = Nothing, variables = Nothing}

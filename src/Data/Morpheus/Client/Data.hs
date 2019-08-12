@@ -11,8 +11,9 @@ import           Language.Haskell.TH.Lib    (appE, conE)
 import           Language.Haskell.TH.Syntax (Exp, Lift (..), Name, Q)
 
 data QueryD = QueryD
-  { queryText  :: String
-  , queryTypes :: [TypeD]
+  { queryText     :: String
+  , queryTypes    :: [TypeD]
+  , queryArgTypes :: [TypeD]
   } deriving (Show)
 
 data FieldD = FieldD
@@ -31,7 +32,7 @@ data ConsD = ConsD
   } deriving (Show)
 
 instance Lift QueryD where
-  lift (QueryD n t) = apply 'QueryD [lift n, lift t]
+  lift (QueryD n t a) = apply 'QueryD [lift n, lift t, lift a]
 
 instance Lift FieldD where
   lift (FieldD n t) = apply 'FieldD [lift n, lift t]

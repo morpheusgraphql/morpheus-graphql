@@ -51,11 +51,11 @@ instanceFromJSON TypeD {tName, tCons = [ConsD {cFields}]} =
           where
             defField n = [|o .: n|]
             startExp [] = conE typeName
-            startExp fNames = uInfixE (conE typeName) (varE '(<*>)) (applyFields fNames)
+            startExp fNames = uInfixE (conE typeName) (varE '(<$>)) (applyFields fNames)
               where
                 applyFields []     = fail "No Empty fields"
                 applyFields [x]    = defField x
-                applyFields (x:xs) = uInfixE (defField x) (varE '(<$>)) (applyFields xs)
+                applyFields (x:xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
 instanceFromJSON TypeD {} = fail "No Multiple Types"
 
 defType :: TypeD -> Dec
