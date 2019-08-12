@@ -22,4 +22,4 @@ gql =
     , quoteDec = notHandled "declarations"
     }
   where
-    notHandled things = error $ things ++ " are not handled by the regex quasiquoter."
+    notHandled things = error $ things ++ " are not supported by the GraphQL QuasiQuoter"
