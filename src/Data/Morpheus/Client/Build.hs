@@ -34,14 +34,14 @@ class Fetch a where
   __fetch query trans _args = eitherDecode <$> trans query
   fetch :: (Monad m, FromJSON a) => (String -> m ByteString) -> Args a -> m (Either String a)
 
-defineInstanceFetch :: Name -> String -> Q [Dec]
-defineInstanceFetch typeName query = pure <$> instanceD (cxt []) (appT (conT ''Fetch) (conT typeName)) methods
+instanceFetch :: Name -> String -> Q [Dec]
+instanceFetch typeName query = pure <$> instanceD (cxt []) (appT (conT ''Fetch) (conT typeName)) methods
   where
     methods = [funD (mkName "fetch") [clause [] (normalB [|__fetch query|]) []]]
 
-defineInstanceFromJSON :: TypeD -> Q [Dec]
-defineInstanceFromJSON TypeD {tCons = []} = fail "No Multiple Types"
-defineInstanceFromJSON TypeD {tName, tCons = [ConsD {cFields}]} =
+instanceFromJSON :: TypeD -> Q [Dec]
+instanceFromJSON TypeD {tCons = []} = fail "No Multiple Types"
+instanceFromJSON TypeD {tName, tCons = [ConsD {cFields}]} =
   pure <$> instanceD (cxt []) (appT (conT ''FromJSON) (conT typeName)) [fromJson]
   where
     typeName = mkName tName
@@ -56,7 +56,7 @@ defineInstanceFromJSON TypeD {tName, tCons = [ConsD {cFields}]} =
                 applyFields []     = fail "No Empty fields"
                 applyFields [x]    = defField x
                 applyFields (x:xs) = uInfixE (defField x) (varE '(<$>)) (applyFields xs)
-defineInstanceFromJSON TypeD {} = fail "No Multiple Types"
+instanceFromJSON TypeD {} = fail "No Multiple Types"
 
 defType :: TypeD -> Dec
 defType TypeD {tName, tCons} = DataD [] typeName [] Nothing (map cons tCons) $ map derive ["Show", "Generic"]
@@ -71,12 +71,12 @@ defType TypeD {tName, tCons} = DataD [] typeName [] Nothing (map cons tCons) $ m
 defineRec :: TypeD -> Q [Dec]
 defineRec x = do
   record <- declareLenses (pure [defType x])
-  toJson <- defineInstanceFromJSON x
+  toJson <- instanceFromJSON x
   pure $ record <> toJson
 
 defineWithInstance :: String -> TypeD -> Q [Dec]
 defineWithInstance query datatype = do
   record <- declareLenses (pure [defType datatype])
-  toJson <- defineInstanceFromJSON datatype
-  instDec <- defineInstanceFetch (mkName $ tName datatype) query
+  toJson <- instanceFromJSON datatype
+  instDec <- instanceFetch (mkName $ tName datatype) query
   pure $ record <> toJson <> instDec
