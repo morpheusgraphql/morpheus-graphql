@@ -18,13 +18,17 @@ import           Data.ByteString.Lazy      (ByteString)
 import           Data.Morpheus.Client.Data (ConsD (..), FieldD (..), QueryD (..), TypeD (..))
 import           Language.Haskell.TH
 
+queryArgumentType :: [TypeD] -> Type
+queryArgumentType [] = ConT $ mkName "()"
+queryArgumentType _  = ConT $ mkName "TestType"
+
 defineQuery :: QueryD -> Q [Dec]
-defineQuery QueryD {queryTypes = rootType:types, queryText} = do
+defineQuery QueryD {queryTypes = rootType:types, queryText, queryArgTypes} = do
   rootDecs <- rootDec
   subTypeDecs <- concat <$> mapM defineRec types
   return $ rootDecs ++ subTypeDecs
   where
-    rootDec = defineWithInstance queryText rootType
+    rootDec = defineWithInstance (queryArgumentType queryArgTypes) queryText rootType
 defineQuery QueryD {queryTypes = []} = return []
 
 class Fetch a where
@@ -34,8 +38,8 @@ class Fetch a where
   __fetch query trans _args = eitherDecode <$> trans query
   fetch :: (Monad m, FromJSON a) => (String -> m ByteString) -> Args a -> m (Either String a)
 
-instanceFetch :: Name -> String -> Q [Dec]
-instanceFetch typeName query = pure <$> instanceD (cxt []) (appT (conT ''Fetch) (conT typeName)) methods
+instanceFetch :: Type -> Name -> String -> Q [Dec]
+instanceFetch _argumentType typeName query = pure <$> instanceD (cxt []) (appT (conT ''Fetch) (conT typeName)) methods
   where
     methods = [funD (mkName "fetch") [clause [] (normalB [|__fetch query|]) []]]
 
@@ -74,9 +78,9 @@ defineRec x = do
   toJson <- instanceFromJSON x
   pure $ record <> toJson
 
-defineWithInstance :: String -> TypeD -> Q [Dec]
-defineWithInstance query datatype = do
+defineWithInstance :: Type -> String -> TypeD -> Q [Dec]
+defineWithInstance typeInstName query datatype = do
   record <- declareLenses (pure [defType datatype])
   toJson <- instanceFromJSON datatype
-  instDec <- instanceFetch (mkName $ tName datatype) query
+  instDec <- instanceFetch typeInstName (mkName $ tName datatype) query
   pure $ record <> toJson <> instDec
