@@ -18,9 +18,11 @@ import           Data.ByteString.Lazy      (ByteString)
 import           Data.Morpheus.Client.Data (ConsD (..), FieldD (..), QueryD (..), TypeD (..))
 import           Language.Haskell.TH
 
-queryArgumentType :: [TypeD] -> Type
-queryArgumentType [] = ConT $ mkName "()"
-queryArgumentType _  = ConT $ mkName "TestType"
+queryArgumentType :: [TypeD] -> (Type, Q [Dec])
+queryArgumentType [] = (ConT $ mkName "()", pure [])
+queryArgumentType (rootType:_) = (ConT $ mkName "TestType", types)
+  where
+    types = pure [defType rootType]
 
 defineQuery :: QueryD -> Q [Dec]
 defineQuery QueryD {queryTypes = rootType:types, queryText, queryArgTypes} = do
@@ -80,9 +82,9 @@ defineRec x = do
   toJson <- instanceFromJSON x
   pure $ record <> toJson
 
-defineWithInstance :: Type -> String -> TypeD -> Q [Dec]
-defineWithInstance typeInstName query datatype = do
+defineWithInstance :: (Type, Q [Dec]) -> String -> TypeD -> Q [Dec]
+defineWithInstance (argType, _) query datatype = do
   record <- declareLenses (pure [defType datatype])
   toJson <- instanceFromJSON datatype
-  instDec <- instanceFetch typeInstName (mkName $ tName datatype) query
+  instDec <- instanceFetch argType (mkName $ tName datatype) query
   pure $ record <> toJson <> instDec
