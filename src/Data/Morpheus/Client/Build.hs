@@ -33,15 +33,17 @@ defineQuery QueryD {queryTypes = []} = return []
 
 class Fetch a where
   type Args a :: *
-  type Args a = ()
   __fetch :: (Monad m, FromJSON a) => String -> (String -> m ByteString) -> Args a -> m (Either String a)
   __fetch query trans _args = eitherDecode <$> trans query
   fetch :: (Monad m, FromJSON a) => (String -> m ByteString) -> Args a -> m (Either String a)
 
 instanceFetch :: Type -> Name -> String -> Q [Dec]
-instanceFetch _argumentType typeName query = pure <$> instanceD (cxt []) (appT (conT ''Fetch) (conT typeName)) methods
+instanceFetch argumentType typeName query = pure <$> instanceD (cxt []) (appT (conT ''Fetch) (conT typeName)) methods
   where
-    methods = [funD (mkName "fetch") [clause [] (normalB [|__fetch query|]) []]]
+    methods =
+      [ funD (mkName "fetch") [clause [] (normalB [|__fetch query|]) []]
+      , pure $ TySynInstD (mkName "Args") (TySynEqn [ConT typeName] argumentType)
+      ]
 
 instanceFromJSON :: TypeD -> Q [Dec]
 instanceFromJSON TypeD {tCons = []} = fail "No Multiple Types"
