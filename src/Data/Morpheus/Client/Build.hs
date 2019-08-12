@@ -1,4 +1,6 @@
 {-# LANGUAGE ConstrainedClassMethods #-}
+{-# LANGUAGE DataKinds               #-}
+{-# LANGUAGE NamedFieldPuns          #-}
 {-# LANGUAGE OverloadedStrings       #-}
 {-# LANGUAGE ScopedTypeVariables     #-}
 {-# LANGUAGE TemplateHaskell         #-}
@@ -10,12 +12,14 @@ module Data.Morpheus.Client.Build
   , Fetch(..)
   ) where
 
-import           Control.Lens         (declareLenses)
+import           Control.Lens              (declareLenses)
 import           Data.Aeson
-import           Data.ByteString.Lazy (ByteString)
+import           Data.ByteString.Lazy      (ByteString)
+import           Data.Morpheus.Client.Data (ConsD (..), FieldD (..), TypeD (..))
 import           Language.Haskell.TH
 
-defineQuery :: ([(String, [(String, String)])], String) -> Q [Dec]
+--type RecType
+defineQuery :: ([TypeD], String) -> Q [Dec]
 defineQuery (rootType:types, query) = do
   rootDecs <- rootDec
   subTypeDecs <- concat <$> mapM defineRec types
@@ -31,22 +35,22 @@ class Fetch a where
   __fetch query trans _args = eitherDecode <$> trans query
   fetch :: (Monad m, FromJSON a) => (String -> m ByteString) -> Args a -> m (Either String a)
 
-fetchInstance :: Name -> String -> Q [Dec]
-fetchInstance typeName query = do
+defineInstanceFetch :: Name -> String -> Q [Dec]
+defineInstanceFetch typeName query = do
   dec <- instanceD (cxt []) (appT (conT ''Fetch) (conT typeName)) [queryFor']
   return [dec]
   where
     queryFor' = funD (mkName "fetch") [clause [] (normalB [|__fetch query|]) []]
 
-aesonObjectInstance :: RecType -> Q [Dec]
-aesonObjectInstance (name, fields) = do
-  dec <- instanceD (cxt []) (appT (conT ''FromJSON) (conT typeName)) [fromJson]
-  return [dec]
+defineInstanceFromJSON :: TypeD -> Q [Dec]
+defineInstanceFromJSON TypeD {tCons = []} = fail "No Multiple Types"
+defineInstanceFromJSON TypeD {tName, tCons = [ConsD {cFields}]} =
+  pure <$> instanceD (cxt []) (appT (conT ''FromJSON) (conT typeName)) [fromJson]
   where
-    typeName = mkName name
+    typeName = mkName tName
     fromJson = funD (mkName "parseJSON") [clause [] (normalB parseJ) []]
       where
-        parseJ = appE [|withObject name|] (lamE [varP (mkName "o")] (startExp (map fst fields)))
+        parseJ = appE [|withObject tName|] (lamE [varP (mkName "o")] (startExp (map fieldNameD cFields)))
           where
             defField n = [|o .: n|]
             liftTH = varE '(<*>)
@@ -57,35 +61,27 @@ aesonObjectInstance (name, fields) = do
                 applyFields []     = fail "No Empty fields"
                 applyFields [x]    = defField x
                 applyFields (x:xs) = uInfixE (defField x) liftTH (applyFields xs)
+defineInstanceFromJSON TypeD {} = fail "No Multiple Types"
 
-type RecType = (String, [(String, String)])
-
-recDefinition :: RecType -> (Name, [Con])
-recDefinition (strName, fields) = (typeName, [recordCon])
+defType :: TypeD -> Dec
+defType TypeD {tName, tCons} = DataD [] typeName [] Nothing (map cons tCons) $ map derive ["Show", "Generic"]
   where
-    typeName = mkName strName
+    typeName = mkName tName
     defBang = Bang NoSourceUnpackedness NoSourceStrictness
-    recordCon = RecC typeName (map genField fields)
-      where
-        genField (fieldName, fType) = (mkName fieldName, defBang, ConT $ mkName fType)
-
-buildRec :: (Name, [Con]) -> Dec
-buildRec (name, cons) = DataD [] name [] Nothing cons $ map derive ["Show", "Generic"]
-  where
     derive className = DerivClause Nothing [ConT (mkName className)]
+    cons ConsD {cFields} = RecC typeName (map genField cFields)
+      where
+        genField FieldD {fieldNameD, fieldTypeD} = (mkName fieldNameD, defBang, ConT $ mkName fieldTypeD)
 
--------------------------------
-defineRec :: RecType -> Q [Dec]
+defineRec :: TypeD -> Q [Dec]
 defineRec x = do
-  record <- declareLenses (pure [buildRec (recDefinition x)])
-  toJson <- aesonObjectInstance x
+  record <- declareLenses (pure [defType x])
+  toJson <- defineInstanceFromJSON x
   pure $ record <> toJson
 
-defineWithInstance :: String -> RecType -> Q [Dec]
-defineWithInstance query recType = do
-  record <- declareLenses (pure [buildRec (typeName, cons)])
-  toJson <- aesonObjectInstance recType
-  instDec <- fetchInstance typeName query
+defineWithInstance :: String -> TypeD -> Q [Dec]
+defineWithInstance query datatype = do
+  record <- declareLenses (pure [defType datatype])
+  toJson <- defineInstanceFromJSON datatype
+  instDec <- defineInstanceFetch (mkName $ tName datatype) query
   pure $ record <> toJson <> instDec
-  where
-    (typeName, cons) = recDefinition recType

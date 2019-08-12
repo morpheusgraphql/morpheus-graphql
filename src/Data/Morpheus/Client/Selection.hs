@@ -2,7 +2,6 @@
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections       #-}
 {-# LANGUAGE TypeOperators       #-}
 
 module Data.Morpheus.Client.Selection
@@ -10,6 +9,10 @@ module Data.Morpheus.Client.Selection
   ) where
 
 import           Data.Maybe                                 (maybe)
+import           Data.Morpheus.Client.Data                  (ConsD (..), FieldD (..), TypeD (..))
+  --  where
+  --  transform (x, y) = (unpack x, map (\(a, b) -> (unpack a, unpack b)) y)
+
 import           Data.Morpheus.Error.Internal               (internalUnknownTypeMessage)
 import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Operator' (..), ValidOperator)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
@@ -19,13 +22,10 @@ import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validati
 import           Data.Morpheus.Validation.Utils.Utils       (lookupType)
 import           Data.Text                                  (Text, unpack)
 
-operationTypes :: DataTypeLib -> ValidOperator -> Validation [(String, [(String, String)])]
-operationTypes lib op = map transform <$> getOperatorTypes lib op
-  where
-    transform (x, y) = (unpack x, map (\(a, b) -> (unpack a, unpack b)) y)
-
-getOperatorTypes :: DataTypeLib -> ValidOperator -> Validation [(Text, [(Text, Text)])]
-getOperatorTypes lib = genOp . getOp
+-- operationTypes :: DataTypeLib -> ValidOperator -> Validation [TypeD]
+-- operationTypes lib op = getOperatorTypes lib op
+operationTypes :: DataTypeLib -> ValidOperator -> Validation [TypeD]
+operationTypes lib = genOp . getOp
   where
     getOp (Query x)        = x
     getOp (Mutation x)     = x
@@ -38,23 +38,27 @@ getOperatorTypes lib = genOp . getOp
     -----------------------------------------------------
     genOp Operator' {operatorName, operatorSelection} = genRecordType operatorName queryDataType operatorSelection
     -------------------------------------------
-    genRecordType typeName dataType selectionSet = do
-      fields <- genFields dataType selectionSet
+    genRecordType name dataType selectionSet = do
+      cFields <- genFields dataType selectionSet
       subTypes <- newFieldTypes dataType selectionSet
-      pure $ (typeName, fields) : subTypes
+      pure $ TypeD {tName = unpack name, tCons = [ConsD {cName = unpack name, cFields}]} : subTypes
     -----------------------------
     genFields datatype = mapM typeNameFromField
       where
-        typeNameFromField :: (Text, Selection) -> Validation (Text, Text)
-        typeNameFromField (key, _) = (key, ) . typeFrom <$> fieldDataType lib datatype key
+        typeNameFromField :: (Text, Selection) -> Validation FieldD
+        typeNameFromField (key, _) = FieldD (unpack key) . unpack . typeFrom <$> fieldDataType lib datatype key
     ------------------------------
     newFieldTypes parentType = fmap concat <$> mapM validateSelection
       where
-        validateSelection :: (Text, Selection) -> Validation [(Text, [(Text, Text)])]
+        validateSelection :: (Text, Selection) -> Validation [TypeD]
         validateSelection (key, Selection {selectionRec = SelectionSet selectionSet}) = do
           datatype <- key `typeByField` parentType
           genRecordType (typeFrom datatype) datatype selectionSet
-        validateSelection (key, Selection {selectionRec = SelectionField}) = defineEnum <$> key `typeByField` parentType
+        --validateSelection (key, Selection {selectionRec = SelectionField}) = defineEnum <$> key `typeByField` parentType
+        --  where
+        --        defineEnum :: DataFullType -> [TypeD]
+        --        defineEnum (Leaf (LeafEnum x)) = [typeName x, [])]
+        --        defineEnum _                   = []
         validateSelection _ = pure []
 
 internalError :: Text -> GQLErrors
@@ -76,7 +80,3 @@ fieldDataType :: DataTypeLib -> DataFullType -> Text -> Validation DataFullType
 fieldDataType lib (OutputObject DataType {typeData}) key =
   maybe (Left $ internalError key) (Right . fieldType) (lookup key typeData) >>= getType lib
 fieldDataType _ _ key = Left (internalError key)
-
-defineEnum :: DataFullType -> [(Text, [(Text, Text)])]
-defineEnum (Leaf (LeafEnum x)) = [(typeName x, [])]
-defineEnum _                   = []

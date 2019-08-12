@@ -8,6 +8,9 @@ module Data.Morpheus.Client
   ( gql
   , defineQuery
   , Fetch(..)
+  , TypeD(..)
+  , FieldD(..)
+  , ConsD(..)
   ) where
 
 --import           Data.Data
@@ -19,12 +22,11 @@ import qualified Data.Text                            as T (pack)
 --- Template Haskell
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote
+import           Data.Morpheus.Client.Build           (Fetch (..), defineQuery)
 
--- import           Language.Haskell.TH.Lib
--- import           Language.Haskell.TH.Syntax
 --
 --  Morpheus
-import           Data.Morpheus.Client.Build           (Fetch (..), defineQuery)
+import           Data.Morpheus.Client.Data            (ConsD (..), FieldD (..), TypeD (..))
 import           Data.Morpheus.Client.Selection       (operationTypes)
 import           Data.Morpheus.Document.ParseDocument (parseFullGQLDocument)
 import           Data.Morpheus.Error.Utils            (renderErrors)
@@ -56,7 +58,7 @@ compile queryText = do
         Left errors -> fail gqlCompileErrors
           where gqlCompileErrors = unpack $ encode $ renderErrors errors
         Right operation -> [|buildCon|]
-          where buildCon :: ([(String, [(String, String)])], String)
+          where buildCon :: ([TypeD], String)
                 buildCon =
                   case operationTypes schema operation of
                     Left err -> fail $ show err
