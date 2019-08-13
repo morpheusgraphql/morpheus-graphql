@@ -13,7 +13,7 @@ union Character = Creature | Deity  | Human
 
 type Deity {
   fullName: String!
-  power: Power!
+  power: Power
 }
 
 type Creature {
