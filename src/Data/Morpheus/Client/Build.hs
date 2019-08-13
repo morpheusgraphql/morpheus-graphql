@@ -15,7 +15,7 @@ module Data.Morpheus.Client.Build
 import           Control.Lens              (declareLenses)
 import           Data.Aeson
 import           Data.ByteString.Lazy      (ByteString)
-import           Data.Morpheus.Client.Data (ConsD (..), FieldD (..), QueryD (..), TypeD (..))
+import           Data.Morpheus.Client.Data (AppD (..), ConsD (..), FieldD (..), QueryD (..), TypeD (..))
 import           Language.Haskell.TH
 
 queryArgumentType :: [TypeD] -> (Type, Q [Dec])
@@ -76,8 +76,9 @@ defType TypeD {tName, tCons} = DataD [] typeName [] Nothing (map cons tCons) $ m
       where
         genField FieldD {fieldNameD, fieldTypeD} = (mkName fieldNameD, defBang, genFieldT fieldTypeD)
           where
-            genFieldT ([], name)   = ConT (mkName name)
-            genFieldT (name:xs, c) = AppT (ConT $ mkName name) (genFieldT (xs, c))
+            genFieldT (ListD td)   = AppT (ConT $ mkName "[]") (genFieldT td)
+            genFieldT (MaybeD td)  = AppT (ConT $ mkName "Maybe") (genFieldT td)
+            genFieldT (BaseD name) = ConT (mkName name)
 
 defineRec :: TypeD -> Q [Dec]
 defineRec x = do

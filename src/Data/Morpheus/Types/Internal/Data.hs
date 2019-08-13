@@ -89,6 +89,8 @@ type DataInputType = DataKind DataInputField
 
 type DataArguments = [(Key, DataArgument)]
 
+
+
 data DataTypeWrapper
   = ListType
   | NonNullType
@@ -105,6 +107,7 @@ data DataField a = DataField
 isFieldNullable :: DataField a -> Bool
 isFieldNullable DataField {fieldTypeWrappers = NonNullType:_} = False
 isFieldNullable _                                             = True
+
 
 data DataType a = DataType
   { typeName        :: Text

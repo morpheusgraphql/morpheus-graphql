@@ -5,10 +5,27 @@ module Data.Morpheus.Client.Data
   , TypeD(..)
   , ConsD(..)
   , QueryD(..)
+  , AppD(..)
+  , gqlToHSWrappers
   ) where
 
-import           Language.Haskell.TH.Lib    (appE, conE)
-import           Language.Haskell.TH.Syntax (Exp, Lift (..), Name, Q)
+import           Language.Haskell.TH.Lib           (appE, conE)
+import           Language.Haskell.TH.Syntax        (Exp, Lift (..), Name, Q)
+
+import           Data.Morpheus.Types.Internal.Data (DataTypeWrapper (..))
+
+data AppD a
+  = ListD (AppD a)
+  | MaybeD (AppD a)
+  | BaseD a
+  deriving (Show)
+
+gqlToHSWrappers :: [DataTypeWrapper] -> a -> AppD a
+gqlToHSWrappers []                             = MaybeD . BaseD
+gqlToHSWrappers [NonNullType]                  = BaseD
+gqlToHSWrappers (NonNullType:(ListType:xs))    = ListD . gqlToHSWrappers xs
+gqlToHSWrappers (NonNullType:(NonNullType:xs)) = gqlToHSWrappers xs
+gqlToHSWrappers (ListType:xs)                  = MaybeD . ListD . gqlToHSWrappers xs
 
 data QueryD = QueryD
   { queryText     :: String
@@ -18,7 +35,7 @@ data QueryD = QueryD
 
 data FieldD = FieldD
   { fieldNameD :: String
-  , fieldTypeD :: ([String], String)
+  , fieldTypeD :: AppD String
   } deriving (Show)
 
 data TypeD = TypeD
@@ -33,6 +50,11 @@ data ConsD = ConsD
 
 instance Lift QueryD where
   lift (QueryD n t a) = apply 'QueryD [lift n, lift t, lift a]
+
+instance Lift a => Lift (AppD a) where
+  lift (ListD x)  = apply 'ListD [lift x]
+  lift (MaybeD x) = apply 'MaybeD [lift x]
+  lift (BaseD x)  = apply 'BaseD [lift x]
 
 instance Lift FieldD where
   lift (FieldD n t) = apply 'FieldD [lift n, lift t]

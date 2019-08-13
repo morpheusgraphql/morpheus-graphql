@@ -2,22 +2,20 @@
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TupleSections       #-}
 {-# LANGUAGE TypeOperators       #-}
 
 module Data.Morpheus.Client.Selection
   ( operationTypes
   ) where
 
-import           Data.Maybe                                 (maybe)
-import           Data.Morpheus.Client.Data                  (ConsD (..), FieldD (..), TypeD (..))
+import           Data.Morpheus.Client.Data                  (ConsD (..), FieldD (..), TypeD (..), gqlToHSWrappers)
 import           Data.Morpheus.Error.Internal               (internalUnknownTypeMessage)
 import           Data.Morpheus.Types.Internal.AST.Operator  (Operator' (..), ValidOperator, Variable (..),
                                                              VariableDefinitions, unpackOperator)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Data          (DataField (..), DataFullType (..), DataLeaf (..),
-                                                             DataType (..), DataTypeLib (..), allDataTypes)
+                                                             DataType (..), DataTypeLib (..), DataTypeWrapper,
+                                                             allDataTypes)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Validation.Utils.Utils       (lookupType)
 import           Data.Text                                  (Text, unpack)
@@ -31,7 +29,15 @@ operationTypes lib variables = genOp . unpackOperator
     queryDataType = OutputObject $ snd $ query lib
     -----------------------------------------------------
     typeByField :: Text -> DataFullType -> Validation DataFullType
-    typeByField key datatype = fieldDataType lib datatype key
+    typeByField key datatype = fst <$> fieldDataType datatype key
+    ------------------------------------------------------
+    fieldDataType :: DataFullType -> Text -> Validation (DataFullType, [DataTypeWrapper])
+    fieldDataType (OutputObject DataType {typeData}) key =
+      case lookup key typeData of
+        Just DataField {fieldTypeWrappers, fieldType} -> trans <$> getType lib fieldType
+          where trans x = (x, fieldTypeWrappers)
+        Nothing -> Left (compileError key)
+    fieldDataType _ key = Left (compileError key)
     -----------------------------------------------------
     genOp Operator' {operatorName, operatorSelection} = do
       argTypes <- rootArguments (operatorName <> "Args")
@@ -41,11 +47,14 @@ operationTypes lib variables = genOp . unpackOperator
     rootArguments :: Text -> Validation [TypeD]
     rootArguments name = do
       subTypes <- pure [] -- TODO: real inputTypeGeneration
-      pure $
-        TypeD {tName = unpack name, tCons = [ConsD {cName = unpack name, cFields = map fieldD variables}]} : subTypes
+      pure $ typeD : subTypes
       where
+        typeD :: TypeD
+        typeD = TypeD {tName = unpack name, tCons = [ConsD {cName = unpack name, cFields = map fieldD variables}]}
         fieldD :: (Text, Variable ()) -> FieldD
-        fieldD (key, Variable {variableType, variableTypeWrappers}) = FieldD (unpack key) ([], unpack variableType)
+        fieldD (key, Variable {variableType, variableTypeWrappers}) = FieldD (unpack key) wrType
+          where
+            wrType = gqlToHSWrappers variableTypeWrappers (unpack variableType)
     -------------------------------------------
     genRecordType name dataType selectionSet = do
       cFields <- genFields dataType selectionSet
@@ -56,8 +65,11 @@ operationTypes lib variables = genOp . unpackOperator
         genFields datatype = mapM typeNameFromField
           where
             typeNameFromField :: (Text, Selection) -> Validation FieldD
-            typeNameFromField (key, _) =
-              FieldD (unpack key) . ([], ) . unpack . typeFrom <$> fieldDataType lib datatype key
+            typeNameFromField (key, _) = FieldD (unpack key) <$> wrType
+              where
+                wrType = do
+                  (newType, wrappers) <- fieldDataType datatype key
+                  pure $ gqlToHSWrappers wrappers (unpack $ typeFrom newType)
     ------------------------------------------------------------------------------------------------------------
     newFieldTypes parentType = fmap concat <$> mapM validateSelection
       where
@@ -78,8 +90,3 @@ typeFrom (InputObject x)         = typeName x
 typeFrom (OutputObject x)        = typeName x
 typeFrom (Union x)               = typeName x
 typeFrom (InputUnion x)          = typeName x
-
-fieldDataType :: DataTypeLib -> DataFullType -> Text -> Validation DataFullType
-fieldDataType lib (OutputObject DataType {typeData}) key =
-  maybe (Left $ compileError key) (Right . fieldType) (lookup key typeData) >>= getType lib
-fieldDataType _ _ key = Left (compileError key)
