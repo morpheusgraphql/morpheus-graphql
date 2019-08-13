@@ -21,7 +21,7 @@ import           Data.Morpheus.Validation.Utils.Utils       (lookupType)
 import           Data.Text                                  (Text, unpack)
 
 compileError :: Text -> GQLErrors
-compileError = internalUnknownTypeMessage
+compileError x = internalUnknownTypeMessage $ " \"" <> x <> "\" ;"
 
 operationTypes :: DataTypeLib -> VariableDefinitions -> ValidOperator -> Validation ([TypeD], [TypeD])
 operationTypes lib variables = genOp . unpackOperator
@@ -44,13 +44,34 @@ operationTypes lib variables = genOp . unpackOperator
       queryTypes <- genRecordType operatorName queryDataType operatorSelection
       pure (argTypes, queryTypes)
     -------------------------------------------{--}
+    genInputType :: Text -> Validation [TypeD]
+    genInputType name = getType lib name >>= subTypes
+      where
+        subTypes (OutputObject DataType {typeName, typeData}) = do
+          types <- concat <$> mapM toInputTypeD typeData
+          pure $ typeD : types
+          where
+            typeD =
+              TypeD
+                {tName = unpack typeName, tCons = [ConsD {cName = unpack typeName, cFields = map toFieldD typeData}]}
+            ---------------------------------------------------------------
+            toInputTypeD :: (Text, DataField a) -> Validation [TypeD]
+            toInputTypeD (_, DataField {fieldType}) = genInputType fieldType
+            ----------------------------------------------------------------
+            toFieldD :: (Text, DataField a) -> FieldD
+            toFieldD (key, DataField {fieldType, fieldTypeWrappers}) = FieldD (unpack key) wrType
+              where
+                wrType = gqlToHSWrappers fieldTypeWrappers (unpack fieldType)
+        subTypes _ = pure []
+    -------------------------------------------
     rootArguments :: Text -> Validation [TypeD]
     rootArguments name = do
-      subTypes <- pure [] -- TODO: real inputTypeGeneration
-      pure $ typeD : subTypes
+      types <- concat <$> traverse (genInputType . variableType . snd) variables
+      pure $ typeD : types
       where
         typeD :: TypeD
         typeD = TypeD {tName = unpack name, tCons = [ConsD {cName = unpack name, cFields = map fieldD variables}]}
+        ---------------------------------------
         fieldD :: (Text, Variable ()) -> FieldD
         fieldD (key, Variable {variableType, variableTypeWrappers}) = FieldD (unpack key) wrType
           where
