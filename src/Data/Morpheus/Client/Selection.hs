@@ -62,6 +62,7 @@ operationTypes lib variables = genOp . unpackOperator
             toFieldD (key, DataField {fieldType, fieldTypeWrappers}) = FieldD (unpack key) wrType
               where
                 wrType = gqlToHSWrappers fieldTypeWrappers (unpack fieldType)
+        subTypes (Leaf x) = buildLeaf x
         subTypes _ = pure []
     -------------------------------------------
     rootArguments :: Text -> Validation [TypeD]
@@ -98,7 +99,19 @@ operationTypes lib variables = genOp . unpackOperator
         validateSelection (key, Selection {selectionRec = SelectionSet selectionSet}) = do
           datatype <- key `typeByField` parentType
           genRecordType (typeFrom datatype) datatype selectionSet
+        validateSelection (key, Selection {selectionRec = SelectionField}) =
+          key `typeByField` parentType >>= buildSelField
+          where
+            buildSelField (Leaf x) = buildLeaf x
+            buildSelField _        = Left $ compileError "Invalid schema Expected scalar"
         validateSelection _ = pure []
+
+buildLeaf :: DataLeaf -> Validation [TypeD]
+buildLeaf (LeafEnum DataType {typeName, typeData}) =
+  pure [TypeD {tName = unpack typeName, tCons = map enumOption typeData}]
+  where
+    enumOption name = ConsD {cName = unpack name, cFields = []}
+buildLeaf _ = pure []
 
 getType :: DataTypeLib -> Text -> Validation DataFullType
 getType lib typename = lookupType (compileError typename) (allDataTypes lib) typename
