@@ -21,7 +21,7 @@ data GQLRequest = GQLRequest
   { query         :: Key
   , operationName :: Maybe Key
   , variables     :: Maybe (Map Key Value)
-  } deriving (Show, Generic, FromJSON)
+  } deriving (Show, Generic, FromJSON, ToJSON)
 
 -- | GraphQL Response
 data GQLResponse

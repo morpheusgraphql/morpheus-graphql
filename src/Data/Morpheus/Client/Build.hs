@@ -16,6 +16,8 @@ import           Control.Lens              (declareLenses)
 import           Data.Aeson
 import           Data.ByteString.Lazy      (ByteString)
 import           Data.Morpheus.Client.Data (AppD (..), ConsD (..), FieldD (..), QueryD (..), TypeD (..))
+import           Data.Morpheus.Types.IO    (GQLRequest (..))
+import           Data.Text                 (pack)
 import           Language.Haskell.TH
 
 queryArgumentType :: [TypeD] -> (Type, Q [Dec])
@@ -35,9 +37,11 @@ defineQuery QueryD {queryTypes = []} = return []
 
 class Fetch a where
   type Args a :: *
-  __fetch :: (Monad m, FromJSON a) => String -> (String -> m ByteString) -> Args a -> m (Either String a)
-  __fetch query trans _args = eitherDecode <$> trans query
-  fetch :: (Monad m, FromJSON a) => (String -> m ByteString) -> Args a -> m (Either String a)
+  __fetch :: (Monad m, FromJSON a) => String -> (ByteString -> m ByteString) -> Args a -> m (Either String a)
+  __fetch strQuery trans _variables = eitherDecode <$> trans (encode gqlReq)
+    where
+      gqlReq = GQLRequest {operationName = Just "<TODO>", query = pack strQuery, variables = Nothing}
+  fetch :: (Monad m, FromJSON a) => (ByteString -> m ByteString) -> Args a -> m (Either String a)
 
 instanceFetch :: Type -> Name -> String -> Q [Dec]
 instanceFetch argumentType typeName query = pure <$> instanceD (cxt []) (appT (conT ''Fetch) (conT typeName)) methods

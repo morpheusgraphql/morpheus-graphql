@@ -33,7 +33,7 @@ defineQuery
   [gql|
     query GetHero ($god: Realm)
       {
-          deity (mythology:$god) {
+        deity (mythology:$god) {
               power
               fullName
           }
@@ -43,8 +43,9 @@ defineQuery
       }
   |]
 
-jsonRes :: String -> IO ByteString
-jsonRes _ =
+jsonRes :: ByteString -> IO ByteString
+jsonRes request = do
+  print request
   return "{\"deity\":{ \"power\":\"Power\",  \"fullName\":\"name\" }, \"hero\":{ \"lifetime\":\"Lifetime\"}  }"
 
 fetchHero :: Args GetHero -> IO (Either String GetHero)
