@@ -48,7 +48,7 @@ instanceFetch argumentType typeName query = pure <$> instanceD (cxt []) (appT (c
   where
     methods =
       [ funD (mkName "fetch") [clause [] (normalB [|__fetch query|]) []]
-      , pure $ TySynInstD (mkName "Args") (TySynEqn [ConT typeName] argumentType)
+      , pure $ TySynInstD ''Args (TySynEqn [ConT typeName] argumentType)
       ]
 
 instanceFromJSON :: TypeD -> Q [Dec]
