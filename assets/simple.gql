@@ -1,8 +1,10 @@
 type Query {
-  deity (name: [[[[[String!]]!]]], mythology: String): Deity!
+  deity (name: [[[[[String!]]!]]], mythology: Realm): Deity!
   character (characterID: String! , age: Int ): Character!
   hero: Human!
 }
+
+scalar Int
 
 type Mutation {
   createDeity (deityName: [[[[[String!]]!]]], deityMythology: String): Deity!
@@ -29,7 +31,7 @@ type Human {
 
 input Realm {
   owner: String!
-  place: Int
+  surface: Int
 }
 
 enum City {
