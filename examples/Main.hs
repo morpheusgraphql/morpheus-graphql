@@ -46,7 +46,7 @@ defineQuery
 jsonRes :: ByteString -> IO ByteString
 jsonRes request = do
   print request
-  return "{\"deity\":{ \"power\":\"Power\",  \"fullName\":\"name\" }, \"hero\":{ \"lifetime\":\"Lifetime\"}  }"
+  return "{\"deity\":{ \"fullName\":\"name\" }, \"hero\":{ \"lifetime\":\"Lifetime\"}  }"
 
 fetchHero :: Args GetHero -> IO (Either String GetHero)
 fetchHero = fetch jsonRes

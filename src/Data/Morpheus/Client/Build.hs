@@ -59,15 +59,19 @@ instanceFromJSON TypeD {tName, tCons = [ConsD {cFields}]} =
     typeName = mkName tName
     fromJson = funD (mkName "parseJSON") [clause [] (normalB parseJ) []]
       where
-        parseJ = appE [|withObject tName|] (lamE [varP (mkName "o")] (startExp (map fieldNameD cFields)))
+        parseJ = appE [|withObject tName|] (lamE [varP (mkName "o")] (startExp cFields))
+        ----------------------------------------------------------------------------------
+        -- Optional Field
+        defField FieldD {fieldNameD, fieldTypeD = MaybeD _} = [|o .:? fieldNameD|]
+        -- Required Field
+        defField FieldD {fieldNameD}                        = [|o .: fieldNameD|]
+        -------------------------------------------------------------------
+        startExp [] = conE typeName
+        startExp fNames = uInfixE (conE typeName) (varE '(<$>)) (applyFields fNames)
           where
-            defField n = [|o .: n|]
-            startExp [] = conE typeName
-            startExp fNames = uInfixE (conE typeName) (varE '(<$>)) (applyFields fNames)
-              where
-                applyFields []     = fail "No Empty fields"
-                applyFields [x]    = defField x
-                applyFields (x:xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
+            applyFields []     = fail "No Empty fields"
+            applyFields [x]    = defField x
+            applyFields (x:xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
 instanceFromJSON TypeD {} = fail "No Multiple Types"
 
 defType :: TypeD -> Dec
