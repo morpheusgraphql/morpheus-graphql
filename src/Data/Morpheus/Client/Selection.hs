@@ -47,7 +47,7 @@ operationTypes lib variables = genOp . unpackOperator
     genInputType :: Text -> Validation [TypeD]
     genInputType name = getType lib name >>= subTypes
       where
-        subTypes (OutputObject DataType {typeName, typeData}) = do
+        subTypes (InputObject DataType {typeName, typeData}) = do
           types <- concat <$> mapM toInputTypeD typeData
           pure $ typeD : types
           where
@@ -66,7 +66,7 @@ operationTypes lib variables = genOp . unpackOperator
     -------------------------------------------
     rootArguments :: Text -> Validation [TypeD]
     rootArguments name = do
-      types <- concat <$> traverse (genInputType . variableType . snd) variables
+      types <- concat <$> mapM (genInputType . variableType . snd) variables
       pure $ typeD : types
       where
         typeD :: TypeD
