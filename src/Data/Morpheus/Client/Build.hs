@@ -27,15 +27,6 @@ queryArgumentType (rootType@TypeD {tName}:xs) = (ConT $ mkName tName, types)
   where
     types = pure $ map defType (rootType : xs)
 
-defineQuery :: QueryD -> Q [Dec]
-defineQuery QueryD {queryTypes = rootType:types, queryText, queryArgTypes} = do
-  rootDecs <- rootDec
-  subTypeDecs <- concat <$> mapM defineRec types
-  return $ rootDecs ++ subTypeDecs
-  where
-    rootDec = defineWithInstance (queryArgumentType queryArgTypes) queryText rootType
-defineQuery QueryD {queryTypes = []} = return []
-
 class Fetch a where
   type Args a :: *
   __fetch :: (Monad m, FromJSON a) => String -> (ByteString -> m ByteString) -> Args a -> m (Either String a)
@@ -140,8 +131,8 @@ defType TypeD {tName, tCons} = DataD [] (mkName tName) [] Nothing (map cons tCon
             genFieldT (MaybeD td)  = AppT (ConT $ mkName "Maybe") (genFieldT td)
             genFieldT (BaseD name) = ConT (mkName name)
 
-defineRec :: TypeD -> Q [Dec]
-defineRec x = do
+defineType :: TypeD -> Q [Dec]
+defineType x = do
   record <- declareLenses (pure [defType x])
   toJson <- instanceFromJSON x
   pure $ record <> [toJson]
@@ -153,3 +144,10 @@ defineWithInstance (argType, argumentTypes) query datatype = do
   args <- argumentTypes
   instDec <- instanceFetch argType (mkName $ tName datatype) query
   pure $ record <> [toJson] <> instDec <> args
+
+defineQuery :: QueryD -> Q [Dec]
+defineQuery QueryD {queryTypes = rootType:types, queryText, queryArgTypes} = do
+  rootDecs <- defineWithInstance (queryArgumentType queryArgTypes) queryText rootType
+  subTypeDecs <- concat <$> mapM defineType types
+  return $ rootDecs ++ subTypeDecs
+defineQuery QueryD {queryTypes = []} = return []
