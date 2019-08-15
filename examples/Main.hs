@@ -29,7 +29,7 @@ import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
-queryData =
+defineQuery
   [gql|
     query GetHero ($god: Realm)
       {
@@ -49,21 +49,6 @@ queryData =
       }
   |]
 
-defineQuery
-  [gql|
-    query GetHero ($god: Realm)
-      {
-        deity (mythology:$god) {
-              power
-              fullName
-          }
-          hero {
-              lifetime
-              profession
-          }
-      }
-  |]
-
 jsonRes :: ByteString -> IO ByteString
 jsonRes request = do
   print request
@@ -74,8 +59,8 @@ fetchHero = fetch jsonRes
 
 main :: IO ()
 main = do
-  print queryData
-  fetchHero (GetHeroArgs {god = Just (Realm {owner = "Zeus", surface = Just 10})}) >>= \x -> print (view hero <$> x)
+  fetchHero (GetHeroArgs {god = Just (Realm {owner = "Zeus", surface = Just 10})}) >>= \x ->
+    print (view character <$> x)
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
