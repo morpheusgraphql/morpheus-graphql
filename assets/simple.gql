@@ -26,7 +26,13 @@ type Creature {
 type Human {
   humanName: String!
   lifetime: Lifetime!
-  profession: String
+  profession: Profession
+}
+
+enum Profession {
+    Priest
+    Farmer
+    Artist
 }
 
 input Realm {

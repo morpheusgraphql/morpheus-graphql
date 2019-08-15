@@ -52,7 +52,7 @@ instanceFetch argumentType typeName query = pure <$> instanceD (cxt []) (appT (c
       ]
 
 instanceFromJSON :: TypeD -> Q [Dec]
-instanceFromJSON TypeD {tCons = []} = fail "No Multiple Types"
+instanceFromJSON TypeD {tCons = []} = fail "Type Should Have at least one Constructor"
 instanceFromJSON TypeD {tName, tCons = [ConsD {cFields}]} =
   pure <$> instanceD (cxt []) (appT (conT ''FromJSON) (conT typeName)) [fromJson]
   where
@@ -72,7 +72,7 @@ instanceFromJSON TypeD {tName, tCons = [ConsD {cFields}]} =
             applyFields []     = fail "No Empty fields"
             applyFields [x]    = defField x
             applyFields (x:xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
-instanceFromJSON TypeD {} = fail "No Multiple Types"
+instanceFromJSON TypeD {} = fail "<TODO> write Mutliple Types"
 
 defType :: TypeD -> Dec
 defType TypeD {tName, tCons} = DataD [] typeName [] Nothing (map cons tCons) $ map derive ["Show", "Generic"]
