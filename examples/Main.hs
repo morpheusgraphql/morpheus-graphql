@@ -47,14 +47,14 @@ defineQuery
 jsonRes :: ByteString -> IO ByteString
 jsonRes request = do
   print request
-  return "{\"deity\":{ \"fullName\": \"name\" }, \"hero\":{ \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }"
+  return "{\"deity\":{ \"fullName\": \"name\" }, \"hero\":{ \"lifetime\": \"Lifetime\", \"profession\": \"Prist\" }  }"
 
 fetchHero :: Args GetHero -> IO (Either String GetHero)
 fetchHero = fetch jsonRes
 
 main :: IO ()
 main = do
-  fetchHero (GetHeroArgs {god = Just (Realm {owner = "Zeus", surface = Just 10})}) >>= \x -> print (view deity <$> x)
+  fetchHero (GetHeroArgs {god = Just (Realm {owner = "Zeus", surface = Just 10})}) >>= \x -> print (view hero <$> x)
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp

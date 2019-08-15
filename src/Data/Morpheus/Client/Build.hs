@@ -51,36 +51,73 @@ instanceFetch argumentType typeName query = pure <$> instanceD (cxt []) (appT (c
       , pure $ TySynInstD ''Args (TySynEqn [ConT typeName] argumentType)
       ]
 
-instanceFromJSON :: TypeD -> Q [Dec]
-instanceFromJSON TypeD {tCons = []} = fail "Type Should Have at least one Constructor"
-instanceFromJSON TypeD {tName, tCons = [ConsD {cFields}]} =
-  pure <$> instanceD (cxt []) (appT (conT ''FromJSON) (conT typeName)) [fromJson]
+aesonConsFromJSON :: ConsD -> Q Dec
+aesonConsFromJSON ConsD {cName, cFields} = fromJson
   where
-    typeName = mkName tName
+    consName = mkName cName
+    fromJson = funD (mkName "parseJSON") [clause [] (normalB $ parseJ cFields) []]
+      where
+        parseJ [] = appE [|withText cName|] (lamE [varP (mkName "jsonText")] jsonParser)
+          where
+            jsonParser = appE (varE $ mkName "pure") (conE consName)
+        parseJ fields = appE [|withObject cName|] (lamE [varP (mkName "o")] (startExp fields))
+            ----------------------------------------------------------------------------------
+            -- Optional Field
+          where
+            defField FieldD {fieldNameD, fieldTypeD = MaybeD _} = [|o .:? fieldNameD|]
+            -- Required Field
+            defField FieldD {fieldNameD}                        = [|o .: fieldNameD|]
+            -------------------------------------------------------------------
+            startExp fNames = uInfixE (conE consName) (varE '(<$>)) (applyFields fNames)
+              where
+                applyFields []     = fail "No Empty fields"
+                applyFields [x]    = defField x
+                applyFields (x:xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
+
+aesonEnum :: [ConsD] -> Q Dec
+aesonEnum cons = fromJson
+  where
     fromJson = funD (mkName "parseJSON") [clause [] (normalB parseJ) []]
       where
-        parseJ = appE [|withObject tName|] (lamE [varP (mkName "o")] (startExp cFields))
-        ----------------------------------------------------------------------------------
-        -- Optional Field
-        defField FieldD {fieldNameD, fieldTypeD = MaybeD _} = [|o .:? fieldNameD|]
-        -- Required Field
-        defField FieldD {fieldNameD}                        = [|o .: fieldNameD|]
-        -------------------------------------------------------------------
-        startExp [] = conE typeName
-        startExp fNames = uInfixE (conE typeName) (varE '(<$>)) (applyFields fNames)
+        parseJ = lamCaseE ((map buildMatch cons) <> [buildElse])
           where
-            applyFields []     = fail "No Empty fields"
-            applyFields [x]    = defField x
-            applyFields (x:xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
-instanceFromJSON TypeD {} = fail "<TODO> write Mutliple Types"
+            buildElse = match (varP varName) body []
+              where
+                varName = mkName "otherwise"
+                body =
+                  normalB $
+                  appE
+                    (varE $ mkName "fail")
+                    (uInfixE
+                       (appE (varE 'show) (varE varName))
+                       (varE '(<>))
+                       (stringE $ " is Not Valid Enum Constructor"))
+            buildMatch ConsD {cName} = match pattern body []
+              where
+                pattern = litP $ stringL cName
+                body = normalB $ appE (varE $ mkName "pure") (conE $ mkName cName)
+ --body []
+        -- appE [|withText cName|] (lamE [varP (mkName "jsonText")] jsonParser)
+    --      where
+       --     jsonParser = a
 
+--data AA = Boo | Goo
+--instance FromJSON Boo where
+--  parseJSON o = withText
+instanceFromJSON :: TypeD -> Q [Dec]
+instanceFromJSON TypeD {tCons = []} = fail "Type Should Have at least one Constructor"
+instanceFromJSON TypeD {tName, tCons = [cons]} =
+  pure <$> instanceD (cxt []) (appT (conT ''FromJSON) (conT $ mkName tName)) [aesonConsFromJSON cons]
+instanceFromJSON TypeD {tName, tCons = cons} = do
+  pure <$> instanceD (cxt []) (appT (conT ''FromJSON) (conT $ mkName tName)) [aesonEnum cons]
+
+-- =
 defType :: TypeD -> Dec
-defType TypeD {tName, tCons} = DataD [] typeName [] Nothing (map cons tCons) $ map derive ["Show", "Generic"]
+defType TypeD {tName, tCons} = DataD [] (mkName tName) [] Nothing (map cons tCons) $ map derive ["Show", "Generic"]
   where
-    typeName = mkName tName
     defBang = Bang NoSourceUnpackedness NoSourceStrictness
     derive className = DerivClause Nothing [ConT (mkName className)]
-    cons ConsD {cFields} = RecC typeName (map genField cFields)
+    cons ConsD {cName, cFields} = RecC (mkName cName) (map genField cFields)
       where
         genField FieldD {fieldNameD, fieldTypeD} = (mkName fieldNameD, defBang, genFieldT fieldTypeD)
           where
