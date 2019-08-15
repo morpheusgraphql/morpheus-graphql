@@ -60,6 +60,18 @@ data DeityArgs = DeityArgs
 For each field in the `Query` type defined via `a -> ResM b` (like `deity`) we will define a resolver implementation that provides the values during runtime by referring to
 some data source, e.g. a database or another API. Fields that are defined without `a -> ResM b` you can just provide a value.
 
+In above example, the field of `DeityArgs` could also be named using reserved identities (such as: `type`, `where`, etc), in order to avoid conflict, a prime symbol (`'`) must be attached. For example, you can have:
+
+```haskell
+data DeityArgs = DeityArgs
+  { name      :: Text        -- Required Argument
+  , mythology :: Maybe Text  -- Optional Argument
+  , type'     :: Text
+  } deriving (Generic)
+```
+
+The field name in the final request will be `type` instead of `type'`. The Morpheus request parser converts each of the reserved identities in Haskell 2010 to their corresponding names internally. This also applies to selections.
+
 ```haskell
 resolveDeity :: DeityArgs -> ResM Deity
 resolveDeity args = gqlResolver $ askDB (name args) (mythology args)

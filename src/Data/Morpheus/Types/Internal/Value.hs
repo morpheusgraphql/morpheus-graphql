@@ -14,16 +14,47 @@ import qualified Data.HashMap.Strict as M (toList)
 import           Data.Scientific     (Scientific, floatingOrInteger)
 import           Data.Semigroup      ((<>))
 import           Data.Text           (Text)
+import qualified Data.Text           as T
 import qualified Data.Vector         as V (toList)
 import           GHC.Generics        (Generic)
 
+isReserved :: Text -> Bool
+isReserved "case"     = True
+isReserved "class"    = True
+isReserved "data"     = True
+isReserved "default"  = True
+isReserved "deriving" = True
+isReserved "do"       = True
+isReserved "else"     = True
+isReserved "foreign"  = True
+isReserved "if"       = True
+isReserved "import"   = True
+isReserved "in"       = True
+isReserved "infix"    = True
+isReserved "infixl"   = True
+isReserved "infixr"   = True
+isReserved "instance" = True
+isReserved "let"      = True
+isReserved "module"   = True
+isReserved "newtype"  = True
+isReserved "of"       = True
+isReserved "then"     = True
+isReserved "type"     = True
+isReserved "where"    = True
+isReserved "_"        = True
+isReserved _          = False
+{-# INLINE isReserved #-}
+
 convertToJSONName :: Text -> Text
-convertToJSONName "type'" = "type"
-convertToJSONName x       = x
+convertToJSONName hsName
+  | not (T.null hsName) && isReserved name && (T.last hsName == '\'') = name
+  | otherwise = hsName
+  where name = T.init hsName
 
 convertToHaskellName :: Text -> Text
-convertToHaskellName "type" = "type'"
-convertToHaskellName x      = x
+convertToHaskellName name
+  | isReserved name = name <> "'"
+  | otherwise = name
 
 -- | Primitive Values for GQLScalar: 'Int', 'Float', 'String', 'Boolean'.
 -- for performance reason type 'Text' represents GraphQl 'String' value

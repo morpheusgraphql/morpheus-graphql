@@ -12,6 +12,7 @@
   ```
 
   [details](https://github.com/morpheusgraphql/morpheus-graphql/issues/184)
+- `convertToJSONName` & `convertToHaskellName` has been extended to support all Haskell 2010 reserved identities. [details](https://github.com/morpheusgraphql/morpheus-graphql/issues/207)
 
 ### Fixed:
 
