@@ -35,33 +35,34 @@ checkDuplicatesOn DataType {typeName = name'} keys = checkNameCollision enhanced
 
 clusterUnionSelection ::
      FragmentLib -> Text -> [DataOutputObject] -> (Text, RawSelection) -> Validation ([Fragment], SelectionSet)
-clusterUnionSelection fragments' type' possibleTypes' = splitFrag
+clusterUnionSelection fragments type' possibleTypes' = splitFrag
   where
-    packFragment fragment' = return ([fragment'], [])
+    packFragment fragment = return ([fragment], [])
     typeNames = map typeName possibleTypes'
     splitFrag :: (Text, RawSelection) -> Validation ([Fragment], SelectionSet)
-    splitFrag (_, Spread reference') = resolveSpread fragments' typeNames reference' >>= packFragment
+    splitFrag (_, Spread ref) = resolveSpread fragments typeNames ref >>= packFragment
     splitFrag ("__typename", RawSelectionField RawSelection' {rawSelectionPosition = position'}) =
       return
         ( []
         , [ ( "__typename"
             , Selection {selectionRec = SelectionField, selectionArguments = [], selectionPosition = position'})
           ])
-    splitFrag (key', RawSelectionSet RawSelection' {rawSelectionPosition = position'}) =
-      Left $ cannotQueryField key' type' position'
-    splitFrag (key', RawSelectionField RawSelection' {rawSelectionPosition = position'}) =
-      Left $ cannotQueryField key' type' position'
+    splitFrag (key, RawSelectionSet RawSelection' {rawSelectionPosition}) =
+      Left $ cannotQueryField key type' rawSelectionPosition
+    splitFrag (key, RawSelectionField RawSelection' {rawSelectionPosition}) =
+      Left $ cannotQueryField key type' rawSelectionPosition
     splitFrag (key', RawAlias {rawAliasPosition = position'}) = Left $ cannotQueryField key' type' position'
     splitFrag (_, InlineFragment fragment') =
       castFragmentType Nothing (fragmentPosition fragment') typeNames fragment' >>= packFragment
 
 categorizeTypes :: [DataOutputObject] -> [Fragment] -> [(DataOutputObject, [Fragment])]
-categorizeTypes types' fragments' = map categorizeType types'
+categorizeTypes types fragments =   filter notEmpty $ map categorizeType types
   where
+    notEmpty = (0 /=) . length . snd
     categorizeType :: DataOutputObject -> (DataOutputObject, [Fragment])
-    categorizeType type' = (type', filter matches fragments')
+    categorizeType datatype = (datatype, filter matches fragments)
       where
-        matches fragment' = fragmentType fragment' == typeName type'
+        matches fragment = fragmentType fragment == typeName datatype
 
 flatTuple :: [([a], [b])] -> ([a], [b])
 flatTuple list' = (concatMap fst list', concatMap snd list')
@@ -127,16 +128,16 @@ validateSelectionSet lib fragments' operatorName variables = __validate
         validateSelection (key', RawSelectionSet fullRawSelection'@RawSelection' { rawSelectionRec = rawSelectors
                                                                                  , rawSelectionPosition = position'
                                                                                  }) = do
-          (dataField', dataType, arguments') <- getValidationData key' fullRawSelection'
+          (dataField', dataType, arguments) <- getValidationData key' fullRawSelection'
           case dataType of
             Union _ -> do
-              (categories', __typename') <- clusterTypes
-              mapM (validateCluster __typename') categories' >>= returnSelection arguments' . UnionSelection
+              (categories, __typename) <- clusterTypes
+              mapM (validateCluster __typename) categories >>= returnSelection arguments . UnionSelection
               where clusterTypes = do
-                      unionTypes' <- lookupUnionTypes position' key' lib dataField'
-                      (spreads', __typename') <-
-                        flatTuple <$> mapM (clusterUnionSelection fragments' typeName' unionTypes') rawSelectors
-                      return (categorizeTypes unionTypes' spreads', __typename')
+                      unionTypes <- lookupUnionTypes position' key' lib dataField'
+                      (spreads, __typename) <-
+                        flatTuple <$> mapM (clusterUnionSelection fragments' typeName' unionTypes) rawSelectors
+                      return (categorizeTypes unionTypes spreads, __typename)
                     --
                     --    second arguments will be added to every selection cluster
                     validateCluster :: SelectionSet -> (DataOutputObject, [Fragment]) -> Validation (Text, SelectionSet)
@@ -145,7 +146,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
                       return (typeName type', sysSelection' ++ selection')
             OutputObject _ -> do
               fieldType' <- lookupFieldAsSelectionSet position' key' lib dataField'
-              __validate fieldType' rawSelectors >>= returnSelection arguments' . SelectionSet
+              __validate fieldType' rawSelectors >>= returnSelection arguments . SelectionSet
                  -- DataFullType
                        --   = Leaf DataLeaf
                        --   | InputObject DataInputObject
