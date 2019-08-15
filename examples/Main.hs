@@ -29,6 +29,26 @@ import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
+queryData =
+  [gql|
+    query GetHero ($god: Realm)
+      {
+        deity (mythology:$god) {
+          power
+          fullName
+        }
+        character(characterID: "morpheus") {
+          ...on Creature {
+            creatureName
+          }
+          ...on Human {
+            lifetime
+            profession
+          }
+        }
+      }
+  |]
+
 defineQuery
   [gql|
     query GetHero ($god: Realm)
@@ -54,6 +74,7 @@ fetchHero = fetch jsonRes
 
 main :: IO ()
 main = do
+  print queryData
   fetchHero (GetHeroArgs {god = Just (Realm {owner = "Zeus", surface = Just 10})}) >>= \x -> print (view hero <$> x)
   state <- initGQLState
   httpApp <- httpServer state
