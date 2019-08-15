@@ -83,7 +83,7 @@ aesonEnum cons = fromJson
           where
             buildElse = match (varP varName) body []
               where
-                varName = mkName "otherwise"
+                varName = mkName "invalidValue"
                 body =
                   normalB $
                   appE
