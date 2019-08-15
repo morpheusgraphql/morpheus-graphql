@@ -78,10 +78,10 @@ operationTypes lib variables = genOp . unpackOperator
           where
             wrType = gqlToHSWrappers variableTypeWrappers (unpack variableType)
     -------------------------------------------
-    genRecordType name dataType selectionSet = do
+    getCon name dataType selectionSet = do
       cFields <- genFields dataType selectionSet
       subTypes <- newFieldTypes dataType selectionSet
-      pure $ TypeD {tName = unpack name, tCons = [ConsD {cName = unpack name, cFields}]} : subTypes
+      pure (ConsD {cName = unpack name, cFields}, subTypes)
       ---------------------------------------------------------------------------------------------
       where
         genFields datatype = mapM typeNameFromField
@@ -92,6 +92,10 @@ operationTypes lib variables = genOp . unpackOperator
                 wrType = do
                   (newType, wrappers) <- fieldDataType datatype key
                   pure $ gqlToHSWrappers wrappers (unpack $ typeFrom newType)
+    --------------------------------------------
+    genRecordType name dataType selectionSet = do
+      (con, subTypes) <- getCon name dataType selectionSet
+      pure $ TypeD {tName = unpack name, tCons = [con]} : subTypes
     ------------------------------------------------------------------------------------------------------------
     newFieldTypes parentType = fmap concat <$> mapM validateSelection
       where
@@ -104,6 +108,14 @@ operationTypes lib variables = genOp . unpackOperator
           where
             buildSelField (Leaf x) = buildLeaf x
             buildSelField _        = Left $ compileError "Invalid schema Expected scalar"
+        validateSelection (key, Selection {selectionRec = UnionSelection unionSelections}) = do
+          unionTypeName <- typeFrom <$> key `typeByField` parentType
+          (tCons, subTypes) <- unzip <$> mapM getUnionType unionSelections
+          pure $ TypeD {tName = unpack unionTypeName, tCons} : concat subTypes
+          where
+            getUnionType (typeKey, selSet) = do
+              conDatatype <- getType lib typeKey
+              getCon typeKey conDatatype selSet
         validateSelection _ = pure []
 
 buildLeaf :: DataLeaf -> Validation [TypeD]

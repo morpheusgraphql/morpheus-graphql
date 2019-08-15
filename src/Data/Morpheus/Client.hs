@@ -16,7 +16,7 @@ import           Language.Haskell.TH.Quote
 gql :: QuasiQuoter
 gql =
   QuasiQuoter
-    { quoteExp = compile (L.readFile "./assets/simple.gql")
+    { quoteExp = compile $ L.readFile "./assets/simple.gql"
     , quotePat = notHandled "patterns"
     , quoteType = notHandled "types"
     , quoteDec = notHandled "declarations"
