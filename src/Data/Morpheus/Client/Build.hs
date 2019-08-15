@@ -96,20 +96,19 @@ aesonEnum cons = fromJson
               where
                 pattern = litP $ stringL cName
                 body = normalB $ appE (varE $ mkName "pure") (conE $ mkName cName)
- --body []
-        -- appE [|withText cName|] (lamE [varP (mkName "jsonText")] jsonParser)
-    --      where
-       --     jsonParser = a
 
---data AA = Boo | Goo
---instance FromJSON Boo where
---  parseJSON o = withText
+isEnum :: [ConsD] -> Bool
+isEnum = not . isEmpty . filter (isEmpty . cFields)
+  where
+    isEmpty = (0 ==) . length
+
 instanceFromJSON :: TypeD -> Q [Dec]
 instanceFromJSON TypeD {tCons = []} = fail "Type Should Have at least one Constructor"
 instanceFromJSON TypeD {tName, tCons = [cons]} =
   pure <$> instanceD (cxt []) (appT (conT ''FromJSON) (conT $ mkName tName)) [aesonConsFromJSON cons]
-instanceFromJSON TypeD {tName, tCons = cons} = do
-  pure <$> instanceD (cxt []) (appT (conT ''FromJSON) (conT $ mkName tName)) [aesonEnum cons]
+instanceFromJSON TypeD {tName, tCons}
+  | isEnum tCons = do pure <$> instanceD (cxt []) (appT (conT ''FromJSON) (conT $ mkName tName)) [aesonEnum tCons]
+  | otherwise = fail "<TODO> Union Types"
 
 -- =
 defType :: TypeD -> Dec
