@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstrainedClassMethods #-}
 {-# LANGUAGE DataKinds               #-}
+{-# LANGUAGE LambdaCase              #-}
 {-# LANGUAGE NamedFieldPuns          #-}
 {-# LANGUAGE OverloadedStrings       #-}
 {-# LANGUAGE ScopedTypeVariables     #-}
@@ -9,9 +10,11 @@
 
 module Data.Morpheus.Client.Aeson
   ( deriveFromJSON
+  , takeValueType
   ) where
 
 import           Data.Aeson
+import           Data.Aeson.Types
 import qualified Data.HashMap.Lazy         as H (lookup)
 import           Data.Morpheus.Client.Data (AppD (..), ConsD (..), FieldD (..), TypeD (..))
 import           Data.Text                 (unpack)
@@ -24,40 +27,15 @@ deriveFromJSON typeD@TypeD {tName, tCons}
   | isEnum tCons = defineFromJSON tName aesonEnum tCons
   | otherwise = defineFromJSON tName aesonUnionObject typeD
 
-aesonUnionObject :: TypeD -> ExpQ
-aesonUnionObject TypeD {tCons} = appE (lamCaseE ((map buildMatch tCons) <> [elseCaseEXP])) (varE 'takeValueType)
-  where
-    buildMatch ConsD {cName} = match pattern body []
-      where
-        pattern = tupP [litP (stringL cName), varP $ mkName "o"]
-        body = normalB $ appE (varE 'pure) (conE $ mkName cName)
-
-defineFromJSON :: String -> (t -> ExpQ) -> t -> DecQ
-defineFromJSON tName func inp =
-  instanceD (cxt []) (appT (conT ''FromJSON) (conT $ mkName tName)) [parseJSONExp func inp]
-  where
-    parseJSONExp :: (t -> ExpQ) -> t -> DecQ
-    parseJSONExp parseJ cFields = funD 'parseJSON [clause [] (normalB $ parseJ cFields) []]
-
-isEnum :: [ConsD] -> Bool
-isEnum = not . isEmpty . filter (isEmpty . cFields)
-  where
-    isEmpty = (0 ==) . length
-
-takeValueType :: Value -> Either String (String, Value)
-takeValueType (Object hMap) =
-  case H.lookup "__typename" hMap of
-    Nothing         -> Left "key \"__typename\" not found on object"
-    Just (String x) -> pure (unpack x, Object hMap)
-    Just val        -> Left $ "key \"__typename\" should be string but found: " <> show val
-takeValueType _ = Left $ "expected Object"
-
 aesonObject :: ConsD -> ExpQ
-aesonObject ConsD {cName, cFields} = handleFields cFields
+aesonObject con@ConsD {cName} = appE [|withObject cName|] (lamE [varP (mkName "o")] (aesonObjectBody con))
+
+aesonObjectBody :: ConsD -> ExpQ
+aesonObjectBody ConsD {cName, cFields} = handleFields cFields
   where
     consName = mkName cName
     handleFields [] = fail $ "No Empty Object"
-    handleFields fields = appE [|withObject cName|] (lamE [varP (mkName "o")] (startExp fields))
+    handleFields fields = startExp fields
     ----------------------------------------------------------------------------------
          -- Optional Field
       where
@@ -70,6 +48,34 @@ aesonObject ConsD {cName, cFields} = handleFields cFields
             applyFields []     = fail "No Empty fields"
             applyFields [x]    = defField x
             applyFields (x:xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
+
+aesonUnionObject :: TypeD -> ExpQ
+aesonUnionObject TypeD {tCons} = appE (varE $ 'takeValueType) (lamCaseE ((map buildMatch tCons) <> [elseCaseEXP]))
+  where
+    buildMatch cons@ConsD {cName} = match pattern body []
+      where
+        pattern = tupP [litP (stringL cName), varP $ mkName "o"]
+        body = normalB (aesonObjectBody cons)
+
+takeValueType :: ((String, Object) -> Parser a) -> Value -> Parser a
+takeValueType f (Object hMap) =
+  case H.lookup "__typename" hMap of
+    Nothing         -> fail "key \"__typename\" not found on object"
+    Just (String x) -> pure (unpack x, hMap) >>= f
+    Just val        -> fail $ "key \"__typename\" should be string but found: " <> show val
+takeValueType _ _ = fail $ "expected Object"
+
+defineFromJSON :: String -> (t -> ExpQ) -> t -> DecQ
+defineFromJSON tName func inp =
+  instanceD (cxt []) (appT (conT ''FromJSON) (conT $ mkName tName)) [parseJSONExp func inp]
+  where
+    parseJSONExp :: (t -> ExpQ) -> t -> DecQ
+    parseJSONExp parseJ cFields = funD 'parseJSON [clause [] (normalB $ parseJ cFields) []]
+
+isEnum :: [ConsD] -> Bool
+isEnum = not . isEmpty . filter (isEmpty . cFields)
+  where
+    isEmpty = (0 ==) . length
 
 aesonEnum :: [ConsD] -> ExpQ
 aesonEnum cons = lamCaseE handlers
