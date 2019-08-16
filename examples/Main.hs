@@ -5,6 +5,7 @@ module Main
   ) where
 
 import           Control.Monad.IO.Class         (liftIO)
+import           Data.Functor.Identity          (Identity(..))
 import           Data.Morpheus                  (Interpreter (..))
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
@@ -29,6 +30,6 @@ main = do
       scottyApp $ do
         post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
         get "/" $ file "examples/index.html"
-        get "/schema.gql" $ raw (toGraphQLDocument gqlRoot)
+        get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
         post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
         get "/mythology" $ file "examples/index.html"
