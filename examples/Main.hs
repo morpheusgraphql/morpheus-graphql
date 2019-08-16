@@ -12,7 +12,6 @@ module Main
   ( main
   ) where
 
---import           Control.Lens
 import           Control.Monad.IO.Class         (liftIO)
 import           Data.ByteString.Lazy           (ByteString)
 import           Data.Morpheus                  (Interpreter (..))

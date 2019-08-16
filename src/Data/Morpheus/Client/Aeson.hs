@@ -85,7 +85,7 @@ aesonEnum cons = lamCaseE handlers
         buildMatch ConsD {cName} = match pattern body []
           where
             pattern = litP $ stringL cName
-            body = normalB $ appE (varE $ mkName "pure") (conE $ mkName cName)
+            body = normalB $ appE (varE 'pure) (conE $ mkName cName)
 
 elseCaseEXP :: MatchQ
 elseCaseEXP = match (varP varName) body []
