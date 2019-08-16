@@ -8,7 +8,7 @@ module Data.Morpheus.Types.IO
   ) where
 
 import           Data.Aeson                              (FromJSON (..), ToJSON (..), pairs, (.=))
-import           Data.Map                                (Map)
+import qualified Data.Aeson                              as Aeson (Value (..))
 import           GHC.Generics                            (Generic)
 
 -- MORPHEUS
@@ -20,7 +20,7 @@ import           Data.Morpheus.Types.Internal.Value      (Value)
 data GQLRequest = GQLRequest
   { query         :: Key
   , operationName :: Maybe Key
-  , variables     :: Maybe (Map Key Value)
+  , variables     :: Maybe Aeson.Value
   } deriving (Show, Generic, FromJSON, ToJSON)
 
 -- | GraphQL Response

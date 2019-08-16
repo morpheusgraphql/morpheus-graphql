@@ -10,7 +10,7 @@ module Data.Morpheus.Server.Apollo
   , toApolloResponse
   ) where
 
-import           Data.Aeson                         (FromJSON (..), ToJSON (..), eitherDecode, encode, pairs,
+import           Data.Aeson                         (FromJSON (..),Value(..), ToJSON (..), eitherDecode, encode, pairs,
                                                      withObject, (.:), (.:?), (.=))
 import           Data.ByteString.Lazy.Char8         (ByteString)
 import           Data.Map                           (Map)
@@ -38,7 +38,7 @@ instance FromJSON a => FromJSON (ApolloSubscription a) where
 data RequestPayload = RequestPayload
   { payloadOperationName :: Maybe Text
   , payloadQuery         :: Maybe Text
-  , payloadVariables     :: Maybe (Map Text V.Value)
+  , payloadVariables     :: Maybe Value
   } deriving (Show, Generic)
 
 instance FromJSON RequestPayload where

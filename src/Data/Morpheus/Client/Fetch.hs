@@ -24,7 +24,7 @@ class Fetch a where
   fetch :: (Monad m, FromJSON a) => (ByteString -> m ByteString) -> Args a -> m (Either String a)
 
 deriveFetch :: Type -> Name -> String -> Q [Dec]
-deriveFetch argDatatype typeName _query = pure <$> instanceD (cxt []) (appT (conT ''Fetch) (conT typeName)) methods
+deriveFetch argDatatype typeName query = pure <$> instanceD (cxt []) (appT (conT ''Fetch) (conT typeName)) methods
   where
     methods =
       [ funD (mkName "fetch") [clause [] (normalB [|__fetch query|]) []]

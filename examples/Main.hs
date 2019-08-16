@@ -50,7 +50,7 @@ defineQuery
 jsonRes :: ByteString -> IO ByteString
 jsonRes _request =
   return
-    "{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Hun\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }"
+    "{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }"
 
 fetchHero :: Args GetHero -> IO (Either String GetHero)
 fetchHero = fetch jsonRes
