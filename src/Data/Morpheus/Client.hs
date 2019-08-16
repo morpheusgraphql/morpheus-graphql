@@ -9,8 +9,9 @@ module Data.Morpheus.Client
   ) where
 
 import qualified Data.ByteString.Lazy         as L (readFile)
-import           Data.Morpheus.Client.Build   (Fetch (..), defineQuery)
+import           Data.Morpheus.Client.Build   (defineQuery)
 import           Data.Morpheus.Client.Compile (compile)
+import           Data.Morpheus.Client.Fetch   (Fetch (..))
 import           Language.Haskell.TH.Quote
 
 gql :: QuasiQuoter
