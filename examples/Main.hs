@@ -13,6 +13,7 @@ module Main
   ) where
 
 import           Control.Monad.IO.Class         (liftIO)
+import           Data.Aeson                     (ToJSON (..))
 import           Data.ByteString.Lazy           (ByteString)
 import           Data.Morpheus                  (Interpreter (..))
 import           Data.Morpheus.Client           (Fetch (..), defineQuery, gql)
@@ -48,7 +49,8 @@ defineQuery
   |]
 
 jsonRes :: ByteString -> IO ByteString
-jsonRes _request =
+jsonRes req = do
+  print req
   return
     "{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }"
 

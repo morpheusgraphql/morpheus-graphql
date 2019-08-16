@@ -22,10 +22,11 @@ queryArgumentType :: [TypeD] -> (Type, Q [Dec])
 queryArgumentType [] = (ConT $ mkName "()", pure [])
 queryArgumentType (rootType@TypeD {tName}:xs) = (ConT $ mkName tName, types)
   where
-    types = pure $ map defineType (rootType : xs)
+    types = pure $ map (defineType ["ToJSON"]) (rootType : xs)
 
-defineType :: TypeD -> Dec
-defineType TypeD {tName, tCons} = DataD [] (mkName tName) [] Nothing (map cons tCons) $ map derive ["Show", "Generic"]
+defineType :: [String] -> TypeD -> Dec
+defineType derivings TypeD {tName, tCons} =
+  DataD [] (mkName tName) [] Nothing (map cons tCons) $ map derive (["Show", "Generic"] ++ derivings)
   where
     defBang = Bang NoSourceUnpackedness NoSourceStrictness
     derive className = DerivClause Nothing [ConT (mkName className)]
@@ -39,7 +40,7 @@ defineType TypeD {tName, tCons} = DataD [] (mkName tName) [] Nothing (map cons t
 
 defineJSONType :: TypeD -> Q [Dec]
 defineJSONType datatype = do
-  record <- declareLenses (pure [defineType datatype])
+  record <- declareLenses (pure [defineType [] datatype])
   toJson <- pure <$> deriveFromJSON datatype
   pure $ record <> toJson
 
