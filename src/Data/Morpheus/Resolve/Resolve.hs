@@ -21,6 +21,7 @@ import           Data.Aeson.Parser                         (jsonNoDup)
 import           Data.Attoparsec.ByteString                (parseOnly)
 import qualified Data.ByteString                         as S
 import qualified Data.ByteString.Lazy.Char8              as L
+import           Data.Functor.Identity                     (Identity(..))
 import           Data.Proxy
 import           GHC.Generics
 
@@ -89,7 +90,7 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
     renderResponse (Right value) = Data value
     ---------------------------------------------------------
     validRequest = do
-      schema <- fullSchema root
+      schema <- fullSchema $ Identity root
       query <- parseGQL request >>= validateRequest schema
       return (schema, query)
     ----------------------------------------------------------
@@ -120,8 +121,8 @@ statefulResolver state streamApi request = do
     execute Subscribe {}      = pure ()
 
 fullSchema ::
-     forall m s cont query mutation subscription. (IntroCon query, IntroCon mutation, IntroCon subscription)
-  => GQLRootResolver m s cont query mutation subscription
+     forall proxy m s cont query mutation subscription . (IntroCon query, IntroCon mutation, IntroCon subscription)
+  => proxy (GQLRootResolver m s cont query mutation subscription)
   -> SchemaValidation DataTypeLib
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
