@@ -69,7 +69,10 @@ parseMaybeTuple parser = parseTuple parser <|> pure []
 parseTuple :: Parser a -> Parser [a]
 parseTuple parser =
   label "Tuple" $
-  between (char '(' *> space) (char ')' *> space) (parser `sepBy` (char ',' *> space) <?> "empty Tuple value!")
+  between
+    (char '(' *> spaceAndComments)
+    (char ')' *> spaceAndComments)
+    (parser `sepBy` (many (char ',') *> spaceAndComments) <?> "empty Tuple value!")
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
 parseAssignment nameParser' valueParser' =

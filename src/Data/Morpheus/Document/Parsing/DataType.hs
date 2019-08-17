@@ -5,10 +5,10 @@ module Data.Morpheus.Document.Parsing.DataType
   ( parseDataType
   ) where
 
-import           Data.Morpheus.Parsing.Internal.DocumentTerms (parseAssignment, parseMaybeTuple, pipe, setOf)
+import           Data.Morpheus.Parsing.Internal.DocumentTerms (parseAssignment, pipe, setOf)
 import           Data.Morpheus.Parsing.Internal.Internal      (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms         (parseNonNull, parseWrappedType, qualifier,
-                                                               spaceAndComments, token)
+import           Data.Morpheus.Parsing.Internal.Terms         (parseMaybeTuple, parseNonNull, parseWrappedType,
+                                                               qualifier, spaceAndComments, token)
 import           Data.Morpheus.Types.Internal.Data            (DataArgument, DataField (..), DataFingerprint (..),
                                                                DataFullType (..), DataLeaf (..), DataOutputField,
                                                                DataType (..), DataTypeWrapper, DataValidator (..), Key)
