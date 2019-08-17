@@ -1,21 +1,21 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Document.Rendering.Types
+module Data.Morpheus.Rendering.Haskell.Types
   ( renderType
   ) where
 
-import           Data.Maybe                             (catMaybes)
-import           Data.Semigroup                         ((<>))
-import           Data.Text                              (Text, intercalate, pack, toUpper)
-import qualified Data.Text                              as T (head, tail)
+import           Data.Maybe                            (catMaybes)
+import           Data.Semigroup                        ((<>))
+import           Data.Text                             (Text, intercalate, pack, toUpper)
+import qualified Data.Text                             as T (head, tail)
 
 -- MORPHEUS
-import           Data.Morpheus.Document.Rendering.Terms (Context (..), Scope (..), indent, renderAssignment, renderCon,
-                                                         renderData, renderSet, renderTuple, renderUnionCon,
-                                                         renderWrapped)
-import           Data.Morpheus.Types.Internal.Data      (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
-                                                         DataType (..), DataTypeWrapper (..))
+import           Data.Morpheus.Rendering.Haskell.Terms (Context (..), Scope (..), indent, renderAssignment, renderCon,
+                                                        renderData, renderSet, renderTuple, renderUnionCon,
+                                                        renderWrapped)
+import           Data.Morpheus.Types.Internal.Data     (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
+                                                        DataType (..), DataTypeWrapper (..))
 
 renderType :: Context -> (Text, DataFullType) -> Text
 renderType context (name, dataType) = typeIntro <> renderData name <> renderT dataType

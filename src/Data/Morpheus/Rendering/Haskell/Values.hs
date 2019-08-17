@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Document.Rendering.Values
+module Data.Morpheus.Rendering.Haskell.Values
   ( renderRootResolver
   , renderResolver
   , Scope(..)
@@ -11,7 +11,7 @@ import           Data.Semigroup                         ((<>))
 import           Data.Text                              (Text)
 
 -- MORPHEUS
-import           Data.Morpheus.Document.Rendering.Terms (Context (..), Scope (..), renderAssignment, renderCon,
+import           Data.Morpheus.Rendering.Haskell.Terms (Context (..), Scope (..), renderAssignment, renderCon,
                                                          renderEqual, renderReturn, renderSet, renderUnionCon)
 import           Data.Morpheus.Types.Internal.Data      (DataField (..), DataFullType (..), DataLeaf (..),
                                                          DataType (..), DataTypeLib (..), DataTypeWrapper (..))

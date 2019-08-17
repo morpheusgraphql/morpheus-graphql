@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Document.Rendering.Terms
+module Data.Morpheus.Rendering.Haskell.Terms
   ( indent
   , renderReturn
   , renderData

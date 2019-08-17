@@ -2,22 +2,22 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Document.RenderHaskell
+module Data.Morpheus.Rendering.Haskell.Render
   ( renderHaskellDocument
   ) where
 
-import           Data.ByteString.Lazy.Char8              (ByteString)
-import           Data.Semigroup                          ((<>))
-import           Data.Text                               (Text, intercalate, pack)
-import qualified Data.Text                               as T (concat)
-import qualified Data.Text.Lazy                          as LT (fromStrict)
-import           Data.Text.Lazy.Encoding                 (encodeUtf8)
+import           Data.ByteString.Lazy.Char8             (ByteString)
+import           Data.Semigroup                         ((<>))
+import           Data.Text                              (Text, intercalate, pack)
+import qualified Data.Text                              as T (concat)
+import qualified Data.Text.Lazy                         as LT (fromStrict)
+import           Data.Text.Lazy.Encoding                (encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Document.Rendering.Terms  (Context (..), renderExtension)
-import           Data.Morpheus.Document.Rendering.Types  (renderType)
-import           Data.Morpheus.Document.Rendering.Values (Scope (..), renderResolver, renderRootResolver)
-import           Data.Morpheus.Types.Internal.Data       (DataTypeLib (..), allDataTypes)
+import           Data.Morpheus.Rendering.Haskell.Terms  (Context (..), renderExtension)
+import           Data.Morpheus.Rendering.Haskell.Types  (renderType)
+import           Data.Morpheus.Rendering.Haskell.Values (Scope (..), renderResolver, renderRootResolver)
+import           Data.Morpheus.Types.Internal.Data      (DataTypeLib (..), allDataTypes)
 
 renderHaskellDocument :: String -> DataTypeLib -> ByteString
 renderHaskellDocument modName lib =

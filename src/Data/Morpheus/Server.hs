@@ -11,23 +11,23 @@ module Data.Morpheus.Server
   , GQLState
   ) where
 
-import           Control.Exception                      (finally)
-import           Control.Monad                          (forever)
-import           Data.Text                              (Text)
-import           Network.WebSockets                     (ServerApp, acceptRequestWith, forkPingThread, pendingRequest,
-                                                         receiveData, sendTextData)
+import           Control.Exception                                   (finally)
+import           Control.Monad                                       (forever)
+import           Data.Text                                           (Text)
+import           Network.WebSockets                                  (ServerApp, acceptRequestWith, forkPingThread,
+                                                                      pendingRequest, receiveData, sendTextData)
 
 -- MORPHEUS
-import           Data.Morpheus.Execution.Server.Resolve          (RootResCon, streamResolver)
-import           Data.Morpheus.Server.Apollo            (SubAction (..), acceptApolloSubProtocol, apolloFormat,
-                                                         toApolloResponse)
-import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubscription, connectClient,
-                                                         disconnectClient, initGQLState, publishUpdates,
-                                                         removeClientSubscription)
-import           Data.Morpheus.Types.Internal.Stream    (ResponseEvent (..), ResponseStream, closeStream)
-import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..))
-import           Data.Morpheus.Types.IO                 (GQLResponse (..))
-import           Data.Morpheus.Types.Resolver           (GQLRootResolver (..))
+import           Data.Morpheus.Execution.Server.Resolve              (RootResCon, streamResolver)
+import           Data.Morpheus.Execution.Subscription.Apollo         (SubAction (..), acceptApolloSubProtocol,
+                                                                      apolloFormat, toApolloResponse)
+import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, addClientSubscription, connectClient,
+                                                                      disconnectClient, initGQLState, publishUpdates,
+                                                                      removeClientSubscription)
+import           Data.Morpheus.Types.Internal.Stream                 (ResponseEvent (..), ResponseStream, closeStream)
+import           Data.Morpheus.Types.Internal.WebSocket              (GQLClient (..))
+import           Data.Morpheus.Types.IO                              (GQLResponse (..))
+import           Data.Morpheus.Types.Resolver                        (GQLRootResolver (..))
 
 handleSubscription :: Eq e => GQLClient IO e c -> GQLState IO e c -> Text -> ResponseStream IO e c GQLResponse -> IO ()
 handleSubscription GQLClient {clientConnection, clientID} state sessionId stream = do
