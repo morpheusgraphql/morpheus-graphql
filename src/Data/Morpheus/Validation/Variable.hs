@@ -87,9 +87,11 @@ lookupAndValidateValueOnBody typeLib bodyVariables (key, var@Variable { variable
                                                                       }) =
   toVariable <$> (getVariableType variableType variablePosition typeLib >>= checkType isVariableRequired)
   where
-    toVariable (verKey, variableValue) = (verKey, var {variableValue})
-    checkType True _type =
-      lookupVariable bodyVariables key (uninitializedVariable variablePosition variableType) >>= validator _type
-    checkType False _type = maybe (pure (key, Null)) (validator _type) (M.lookup key bodyVariables)
-    validator _type varValue =
-      handleInputError key variablePosition $ validateInputValue typeLib [] variableTypeWrappers _type (key, varValue)
+    toVariable (varKey, variableValue) = (varKey, var {variableValue})
+    ------------------------------------------------------------------
+    checkType True varType =
+      lookupVariable bodyVariables key (uninitializedVariable variablePosition variableType) >>= validator varType
+    checkType False varType = maybe (pure (key, Null)) (validator varType) (M.lookup key bodyVariables)
+    -----------------------------------------------------------------------------------------------
+    validator varType varValue =
+      handleInputError key variablePosition $ validateInputValue typeLib [] variableTypeWrappers varType (key, varValue)
