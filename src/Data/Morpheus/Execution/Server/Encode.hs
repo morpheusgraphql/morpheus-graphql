@@ -12,7 +12,7 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Morpheus.Resolve.Encode
+module Data.Morpheus.Execution.Server.Encode
   ( EncodeCon
   , EncodeMutCon
   , EncodeSubCon
@@ -21,35 +21,35 @@ module Data.Morpheus.Resolve.Encode
   , encodeSub
   ) where
 
-import           Control.Monad                              ((>=>))
+import           Control.Monad                                   ((>=>))
 import           Control.Monad.Trans.Except
-import           Data.Map                                   (Map)
-import qualified Data.Map                                   as M (toList)
-import           Data.Maybe                                 (fromMaybe)
-import           Data.Proxy                                 (Proxy (..))
-import           Data.Set                                   (Set)
-import qualified Data.Set                                   as S (toList)
-import           Data.Text                                  (Text, pack)
-import           Data.Typeable                              (Typeable)
+import           Data.Map                                        (Map)
+import qualified Data.Map                                        as M (toList)
+import           Data.Maybe                                      (fromMaybe)
+import           Data.Proxy                                      (Proxy (..))
+import           Data.Set                                        (Set)
+import qualified Data.Set                                        as S (toList)
+import           Data.Text                                       (Text, pack)
+import           Data.Typeable                                   (Typeable)
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal               (internalErrorT)
-import           Data.Morpheus.Error.Selection              (fieldNotResolved, subfieldsNotSelected)
-import           Data.Morpheus.Kind                         (ENUM, GQL_KIND, OBJECT, SCALAR, UNION, WRAPPER)
-import           Data.Morpheus.Resolve.Decode               (ArgumentsConstraint, decodeArguments)
-import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
-import           Data.Morpheus.Types.Custom                 (MapKind, Pair (..), mapKindFromList)
-import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..))
-import           Data.Morpheus.Types.GQLType                (GQLType (KIND, __typeName))
-import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), ValidOperation)
-import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
-import           Data.Morpheus.Types.Internal.Base          (Position)
-import           Data.Morpheus.Types.Internal.Stream        (PublishStream, StreamState (..), StreamT (..),
-                                                             SubscribeStream)
-import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, ResolveT, failResolveT)
-import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
-import           Data.Morpheus.Types.Resolver               (Event (..), Resolver, SubResolveT, SubResolver)
+import           Data.Morpheus.Error.Internal                    (internalErrorT)
+import           Data.Morpheus.Error.Selection                   (fieldNotResolved, subfieldsNotSelected)
+import           Data.Morpheus.Execution.Server.Decode           (ArgumentsConstraint, decodeArguments)
+import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
+import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, OBJECT, SCALAR, UNION, WRAPPER)
+import           Data.Morpheus.Types.Custom                      (MapKind, Pair (..), mapKindFromList)
+import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
+import           Data.Morpheus.Types.GQLType                     (GQLType (KIND, __typeName))
+import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation)
+import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
+import           Data.Morpheus.Types.Internal.Base               (Position)
+import           Data.Morpheus.Types.Internal.Stream             (PublishStream, StreamState (..), StreamT (..),
+                                                                  SubscribeStream)
+import           Data.Morpheus.Types.Internal.Validation         (GQLErrors, ResolveT, failResolveT)
+import           Data.Morpheus.Types.Internal.Value              (ScalarValue (..), Value (..))
+import           Data.Morpheus.Types.Resolver                    (Event (..), Resolver, SubResolveT, SubResolver)
 
 type EncodeOperator m a value = Resolver m a -> ValidOperation -> m (Either GQLErrors value)
 

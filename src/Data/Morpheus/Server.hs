@@ -18,7 +18,7 @@ import           Network.WebSockets                     (ServerApp, acceptReques
                                                          receiveData, sendTextData)
 
 -- MORPHEUS
-import           Data.Morpheus.Resolve.Resolve          (RootResCon, streamResolver)
+import           Data.Morpheus.Execution.Server.Resolve          (RootResCon, streamResolver)
 import           Data.Morpheus.Server.Apollo            (SubAction (..), acceptApolloSubProtocol, apolloFormat,
                                                          toApolloResponse)
 import           Data.Morpheus.Server.ClientRegister    (GQLState, addClientSubscription, connectClient,

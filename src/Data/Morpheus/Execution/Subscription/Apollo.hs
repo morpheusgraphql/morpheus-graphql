@@ -3,22 +3,22 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Server.Apollo
+module Data.Morpheus.Execution.Subscription.Apollo
   ( SubAction(..)
   , apolloFormat
   , acceptApolloSubProtocol
   , toApolloResponse
   ) where
 
-import           Data.Aeson                         (FromJSON (..),Value(..), ToJSON (..), eitherDecode, encode, pairs,
-                                                     withObject, (.:), (.:?), (.=))
-import           Data.ByteString.Lazy.Char8         (ByteString)
-import           Data.Morpheus.Types                (GQLRequest (..))
-import           Data.Morpheus.Types.IO             (GQLResponse)
-import           Data.Semigroup                     ((<>))
-import           Data.Text                          (Text)
-import           GHC.Generics                       (Generic)
-import           Network.WebSockets                 (AcceptRequest (..), RequestHead, getRequestSubprotocols)
+import           Data.Aeson                 (FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, pairs,
+                                             withObject, (.:), (.:?), (.=))
+import           Data.ByteString.Lazy.Char8 (ByteString)
+import           Data.Morpheus.Types        (GQLRequest (..))
+import           Data.Morpheus.Types.IO     (GQLResponse)
+import           Data.Semigroup             ((<>))
+import           Data.Text                  (Text)
+import           GHC.Generics               (Generic)
+import           Network.WebSockets         (AcceptRequest (..), RequestHead, getRequestSubprotocols)
 
 type ApolloID = Text
 
@@ -70,9 +70,9 @@ apolloFormat = toWsAPI . eitherDecode
     toWsAPI (Right ApolloSubscription { apolloType = "start"
                                       , apolloId = Just sessionId
                                       , apolloPayload = Just RequestPayload { payloadQuery = Just query
-                                                                                  , payloadOperationName = operationName
-                                                                                  , payloadVariables = variables
-                                                                                  }
+                                                                            , payloadOperationName = operationName
+                                                                            , payloadVariables = variables
+                                                                            }
                                       }) = AddSub sessionId (GQLRequest {query, operationName, variables})
     toWsAPI (Right ApolloSubscription {apolloType = "stop", apolloId = Just sessionId}) = RemoveSub sessionId
     toWsAPI (Right x) = SubError (show x)

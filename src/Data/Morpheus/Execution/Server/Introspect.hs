@@ -12,36 +12,36 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Morpheus.Resolve.Introspect
+module Data.Morpheus.Execution.Server.Introspect
   ( introspectOutputType
   , TypeUpdater
   , ObjectRep(..)
   , resolveTypes
   ) where
 
-import           Control.Monad                           (foldM)
-import           Data.Function                           ((&))
-import           Data.Map                                (Map)
-import           Data.Proxy                              (Proxy (..))
-import           Data.Semigroup                          ((<>))
-import           Data.Set                                (Set)
-import           Data.Text                               (Text, pack)
+import           Control.Monad                                   (foldM)
+import           Data.Function                                   ((&))
+import           Data.Map                                        (Map)
+import           Data.Proxy                                      (Proxy (..))
+import           Data.Semigroup                                  ((<>))
+import           Data.Set                                        (Set)
+import           Data.Text                                       (Text, pack)
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Schema              (nameCollisionError)
-import           Data.Morpheus.Kind                      (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR, UNION,
-                                                          WRAPPER)
-import           Data.Morpheus.Resolve.Generics.EnumRep  (EnumRep (..))
-import           Data.Morpheus.Types.Custom              (MapKind, Pair)
-import           Data.Morpheus.Types.GQLScalar           (GQLScalar (..))
-import           Data.Morpheus.Types.GQLType             (GQLType (..))
-import           Data.Morpheus.Types.Internal.Data       (DataArguments, DataField (..), DataFullType (..),
-                                                          DataInputField, DataLeaf (..), DataType (..), DataTypeLib,
-                                                          DataTypeWrapper (..), DataValidator, defineType,
-                                                          isTypeDefined)
-import           Data.Morpheus.Types.Internal.Validation (SchemaValidation)
-import           Data.Morpheus.Types.Resolver            (Resolver, SubResolver)
+import           Data.Morpheus.Error.Schema                      (nameCollisionError)
+import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
+import           Data.Morpheus.Kind                              (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR,
+                                                                  UNION, WRAPPER)
+import           Data.Morpheus.Types.Custom                      (MapKind, Pair)
+import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
+import           Data.Morpheus.Types.GQLType                     (GQLType (..))
+import           Data.Morpheus.Types.Internal.Data               (DataArguments, DataField (..), DataFullType (..),
+                                                                  DataInputField, DataLeaf (..), DataType (..),
+                                                                  DataTypeLib, DataTypeWrapper (..), DataValidator,
+                                                                  defineType, isTypeDefined)
+import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
+import           Data.Morpheus.Types.Resolver                    (Resolver, SubResolver)
 
 type SelOf s = M1 S s (Rec0 ()) ()
 

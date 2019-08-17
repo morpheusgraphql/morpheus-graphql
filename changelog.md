@@ -118,7 +118,7 @@ thanks for contributing to: @krisajenkins, @hovind, @vmchale, @msvbg
   - Data.Morpheus
   - Data.Morpheus.Kind
   - Data.Morpheus.Types
-  - Data.Morpheus.Server
+  - Data.Morpheus.Execution.Subscription
 
 ### Fixed:
 

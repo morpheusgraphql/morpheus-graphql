@@ -10,25 +10,26 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Morpheus.Resolve.Decode
+module Data.Morpheus.Execution.Server.Decode
   ( ArgumentsConstraint
   , decodeArguments
   ) where
 
-import           Data.Proxy                                 (Proxy (..))
-import           Data.Semigroup                             ((<>))
-import           Data.Text                                  (Text, pack)
+import           Data.Proxy                                      (Proxy (..))
+import           Data.Semigroup                                  ((<>))
+import           Data.Text                                       (Text, pack)
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal               (internalArgumentError, internalTypeMismatch)
-import           Data.Morpheus.Kind                         (ENUM, GQL_KIND, INPUT_OBJECT, INPUT_UNION, SCALAR, WRAPPER)
-import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
-import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..), toScalar)
-import           Data.Morpheus.Types.GQLType                (GQLType (KIND, __typeName))
-import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..), Arguments)
-import           Data.Morpheus.Types.Internal.Validation    (Validation)
-import           Data.Morpheus.Types.Internal.Value         (Value (..))
+import           Data.Morpheus.Error.Internal                    (internalArgumentError, internalTypeMismatch)
+import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
+import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, INPUT_OBJECT, INPUT_UNION, SCALAR,
+                                                                  WRAPPER)
+import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..), toScalar)
+import           Data.Morpheus.Types.GQLType                     (GQLType (KIND, __typeName))
+import           Data.Morpheus.Types.Internal.AST.Selection      (Argument (..), Arguments)
+import           Data.Morpheus.Types.Internal.Validation         (Validation)
+import           Data.Morpheus.Types.Internal.Value              (Value (..))
 
 --
 -- GENERIC UNION

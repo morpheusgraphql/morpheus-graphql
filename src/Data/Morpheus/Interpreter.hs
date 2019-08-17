@@ -7,20 +7,20 @@ module Data.Morpheus.Interpreter
   ( Interpreter(..)
   ) where
 
-import           Data.Aeson                          (encode)
-import           Data.ByteString                     (ByteString)
-import qualified Data.ByteString.Lazy.Char8          as LB (ByteString, fromStrict, toStrict)
-import           Data.Text                           (Text)
-import qualified Data.Text.Lazy                      as LT (Text, fromStrict, toStrict)
-import           Data.Text.Lazy.Encoding             (decodeUtf8, encodeUtf8)
+import           Data.Aeson                             (encode)
+import           Data.ByteString                        (ByteString)
+import qualified Data.ByteString.Lazy.Char8             as LB (ByteString, fromStrict, toStrict)
+import           Data.Text                              (Text)
+import qualified Data.Text.Lazy                         as LT (Text, fromStrict, toStrict)
+import           Data.Text.Lazy.Encoding                (decodeUtf8, encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Resolve.Resolve       (RootResCon, byteStringIO, statefulResolver, statelessResolver,
-                                                      streamResolver)
-import           Data.Morpheus.Server.ClientRegister (GQLState)
-import           Data.Morpheus.Types.Internal.Stream (ResponseStream)
-import           Data.Morpheus.Types.IO              (GQLRequest, GQLResponse)
-import           Data.Morpheus.Types.Resolver        (GQLRootResolver (..))
+import           Data.Morpheus.Execution.Server.Resolve (RootResCon, byteStringIO, statefulResolver, statelessResolver,
+                                                         streamResolver)
+import           Data.Morpheus.Server.ClientRegister    (GQLState)
+import           Data.Morpheus.Types.Internal.Stream    (ResponseStream)
+import           Data.Morpheus.Types.IO                 (GQLRequest, GQLResponse)
+import           Data.Morpheus.Types.Resolver           (GQLRootResolver (..))
 
 -- | main query processor and resolver
 --  possible versions of interpreter

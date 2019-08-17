@@ -1,6 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Data.Morpheus.Server.ClientRegister
+module Data.Morpheus.Execution.Subscription.ClientRegister
   ( ClientRegister
   , GQLState
   , initGQLState
@@ -12,17 +12,17 @@ module Data.Morpheus.Server.ClientRegister
   , removeClientSubscription
   ) where
 
-import           Control.Concurrent                     (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
-import           Data.Foldable                          (traverse_)
-import           Data.List                              (intersect)
-import           Data.Text                              (Text)
-import           Data.UUID.V4                           (nextRandom)
-import           Network.WebSockets                     (Connection, sendTextData)
+import           Control.Concurrent                          (MVar, modifyMVar, modifyMVar_, newMVar, readMVar)
+import           Data.Foldable                               (traverse_)
+import           Data.List                                   (intersect)
+import           Data.Text                                   (Text)
+import           Data.UUID.V4                                (nextRandom)
+import           Network.WebSockets                          (Connection, sendTextData)
 
 -- MORPHEUS
-import           Data.Morpheus.Server.Apollo            (toApolloResponse)
-import           Data.Morpheus.Types.Internal.Stream    (Event (..), PubEvent, SubEvent)
-import           Data.Morpheus.Types.Internal.WebSocket (ClientID, ClientSession (..), GQLClient (..))
+import           Data.Morpheus.Execution.Subscription.Apollo (toApolloResponse)
+import           Data.Morpheus.Types.Internal.Stream         (Event (..), PubEvent, SubEvent)
+import           Data.Morpheus.Types.Internal.WebSocket      (ClientID, ClientSession (..), GQLClient (..))
 
 type ClientRegister m e c = [(ClientID, GQLClient m e c)]
 
