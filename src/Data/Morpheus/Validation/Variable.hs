@@ -74,22 +74,22 @@ resolveOperationVariables typeLib lib root Operation {operationName, operationSe
     varToKey (key', Variable {variablePosition}) = EnhancedKey key' variablePosition
     --
     checkUnusedVariables :: [EnhancedKey] -> Validation ()
-    checkUnusedVariables references' =
-      case map varToKey operationArgs \\ references' of
+    checkUnusedVariables refs =
+      case map varToKey operationArgs \\ refs of
         []      -> pure ()
         unused' -> Left $ unusedVariables operationName unused'
 
 lookupAndValidateValueOnBody :: DataTypeLib -> Variables -> (Text, Variable ()) -> Validation (Text, Variable Value)
-lookupAndValidateValueOnBody typeLib bodyVariables (key', var@Variable { variableType
-                                                                       , variablePosition
-                                                                       , isVariableRequired
-                                                                       , variableTypeWrappers
-                                                                       }) =
+lookupAndValidateValueOnBody typeLib bodyVariables (key, var@Variable { variableType
+                                                                      , variablePosition
+                                                                      , isVariableRequired
+                                                                      , variableTypeWrappers
+                                                                      }) =
   toVariable <$> (getVariableType variableType variablePosition typeLib >>= checkType isVariableRequired)
   where
-    toVariable (k, x) = (k, var {variableValue = x})
+    toVariable (verKey, variableValue) = (verKey, var {variableValue})
     checkType True _type =
-      lookupVariable bodyVariables key' (uninitializedVariable variablePosition variableType) >>= validator _type
-    checkType False _type = maybe (pure (key', Null)) (validator _type) (M.lookup key' bodyVariables)
+      lookupVariable bodyVariables key (uninitializedVariable variablePosition variableType) >>= validator _type
+    checkType False _type = maybe (pure (key, Null)) (validator _type) (M.lookup key bodyVariables)
     validator _type varValue =
-      handleInputError key' variablePosition $ validateInputValue typeLib [] variableTypeWrappers _type (key', varValue)
+      handleInputError key variablePosition $ validateInputValue typeLib [] variableTypeWrappers _type (key, varValue)
