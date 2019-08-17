@@ -11,7 +11,7 @@ module Data.Morpheus.Validation.Selection
 import           Data.Morpheus.Error.Selection                 (cannotQueryField, duplicateQuerySelections,
                                                                 hasNoSubfields, subfieldsNotSelected)
 import           Data.Morpheus.Error.Variable                  (unknownType)
-import           Data.Morpheus.Types.Internal.AST.Operator     (ValidVariables)
+import           Data.Morpheus.Types.Internal.AST.Operation    (ValidVariables)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawSelection (..),
                                                                 RawSelection' (..), RawSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionRec (..), SelectionSet)
@@ -56,7 +56,7 @@ clusterUnionSelection fragments type' possibleTypes' = splitFrag
       castFragmentType Nothing (fragmentPosition fragment') typeNames fragment' >>= packFragment
 
 categorizeTypes :: [DataOutputObject] -> [Fragment] -> [(DataOutputObject, [Fragment])]
-categorizeTypes types fragments =   filter notEmpty $ map categorizeType types
+categorizeTypes types fragments = filter notEmpty $ map categorizeType types
   where
     notEmpty = (0 /=) . length . snd
     categorizeType :: DataOutputObject -> (DataOutputObject, [Fragment])

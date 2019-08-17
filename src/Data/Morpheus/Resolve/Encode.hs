@@ -1,5 +1,5 @@
 {-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE DataKinds       #-}
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -42,7 +42,7 @@ import           Data.Morpheus.Resolve.Generics.EnumRep     (EnumRep (..))
 import           Data.Morpheus.Types.Custom                 (MapKind, Pair (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar              (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                (GQLType (KIND, __typeName))
-import           Data.Morpheus.Types.Internal.AST.Operator  (Operator' (..), ValidOperator')
+import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), ValidOperation)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base          (Position)
 import           Data.Morpheus.Types.Internal.Stream        (PublishStream, StreamState (..), StreamT (..),
@@ -51,7 +51,7 @@ import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, ResolveT
 import           Data.Morpheus.Types.Internal.Value         (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver               (Event (..), Resolver, SubResolveT, SubResolver)
 
-type EncodeOperator m a value = Resolver m a -> ValidOperator' -> m (Either GQLErrors value)
+type EncodeOperator m a value = Resolver m a -> ValidOperation -> m (Either GQLErrors value)
 
 -- EXPORT -------------------------------------------------------
 type EncodeCon m a v = (Generic a, Typeable a, ObjectFieldResolvers (Rep a) (ResolveT m v))
@@ -61,10 +61,10 @@ type EncodeMutCon m event con mut = EncodeCon (PublishStream m event con) mut Va
 type EncodeSubCon m event con sub = EncodeCon (SubscribeStream m event) sub (Event event con -> ResolveT m Value)
 
 encodeQuery :: (Monad m, EncodeCon m schema Value, EncodeCon m a Value) => schema -> EncodeOperator m a Value
-encodeQuery types rootResolver operator@Operator' {operatorSelection} =
+encodeQuery types rootResolver operator@Operation {operationSelection} =
   runExceptT
     (fmap resolversBy (operatorToResolveT operator rootResolver) >>=
-     resolveBySelection operatorSelection . (++) (resolversBy types))
+     resolveBySelection operationSelection . (++) (resolversBy types))
 
 encodeMut :: (Monad m, EncodeCon m a Value) => EncodeOperator m a Value
 encodeMut = encodeOperator resolveBySelection
@@ -259,12 +259,12 @@ encodeResolver selection@(fieldName, Selection {selectionPosition}) =
 decodeArgs :: (Monad m, ArgumentsConstraint a) => (Text, Selection) -> ResolveT m a
 decodeArgs (_, Selection {selectionArguments}) = ExceptT $ pure $ decodeArguments selectionArguments
 
-operatorToResolveT :: Monad m => ValidOperator' -> Resolver m a -> ResolveT m a
-operatorToResolveT Operator' {operatorPosition, operatorName} = resolverToResolveT operatorPosition operatorName
+operatorToResolveT :: Monad m => ValidOperation -> Resolver m a -> ResolveT m a
+operatorToResolveT Operation {operationPosition, operationName} = resolverToResolveT operationPosition operationName
 
 encodeOperator :: (Monad m, EncodeCon m a v) => ResolveSel (ResolveT m v) -> EncodeOperator m a v
-encodeOperator resSel rootResolver operator@Operator' {operatorSelection} =
-  runExceptT (operatorToResolveT operator rootResolver >>= resSel operatorSelection . resolversBy)
+encodeOperator resSel rootResolver operation@Operation {operationSelection} =
+  runExceptT (operatorToResolveT operation rootResolver >>= resSel operationSelection . resolversBy)
 
 resolveBySelection :: Monad m => ResolveSel (ResolveT m Value)
 resolveBySelection selection resolvers = Object <$> mapM (selectResolver Null resolvers) selection

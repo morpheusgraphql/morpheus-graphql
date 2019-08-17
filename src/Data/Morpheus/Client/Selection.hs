@@ -10,8 +10,8 @@ module Data.Morpheus.Client.Selection
 
 import           Data.Morpheus.Client.Data                  (ConsD (..), FieldD (..), TypeD (..), gqlToHSWrappers)
 import           Data.Morpheus.Error.Internal               (internalUnknownTypeMessage)
-import           Data.Morpheus.Types.Internal.AST.Operator  (Operator' (..), ValidOperator, Variable (..),
-                                                             VariableDefinitions, unpackOperator)
+import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), ValidOperation, Variable (..),
+                                                             VariableDefinitions)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Data          (DataField (..), DataFullType (..), DataLeaf (..),
                                                              DataType (..), DataTypeLib (..), DataTypeWrapper,
@@ -23,8 +23,8 @@ import           Data.Text                                  (Text, unpack)
 compileError :: Text -> GQLErrors
 compileError x = internalUnknownTypeMessage $ " \"" <> x <> "\" ;"
 
-operationTypes :: DataTypeLib -> VariableDefinitions -> ValidOperator -> Validation ([TypeD], [TypeD])
-operationTypes lib variables = genOp . unpackOperator
+operationTypes :: DataTypeLib -> VariableDefinitions -> ValidOperation -> Validation ([TypeD], [TypeD])
+operationTypes lib variables = genOperation
   where
     queryDataType = OutputObject $ snd $ query lib
     -----------------------------------------------------
@@ -39,9 +39,9 @@ operationTypes lib variables = genOp . unpackOperator
         Nothing -> Left (compileError key)
     fieldDataType _ key = Left (compileError key)
     -----------------------------------------------------
-    genOp Operator' {operatorName, operatorSelection} = do
-      argTypes <- rootArguments (operatorName <> "Args")
-      queryTypes <- genRecordType operatorName queryDataType operatorSelection
+    genOperation Operation {operationName, operationSelection} = do
+      argTypes <- rootArguments (operationName <> "Args")
+      queryTypes <- genRecordType operationName queryDataType operationSelection
       pure (argTypes, queryTypes)
     -------------------------------------------{--}
     genInputType :: Text -> Validation [TypeD]

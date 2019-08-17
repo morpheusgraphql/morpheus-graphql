@@ -14,34 +14,34 @@ module Data.Morpheus.Resolve.Resolve
   , fullSchema
   ) where
 
-import qualified Codec.Binary.UTF8.String                as UTF8
-import           Control.Monad.Trans.Except                (ExceptT (..), runExceptT)
-import           Data.Aeson                                (Result (..), encode, fromJSON)
-import           Data.Aeson.Parser                         (jsonNoDup)
-import           Data.Attoparsec.ByteString                (parseOnly)
-import qualified Data.ByteString                         as S
-import qualified Data.ByteString.Lazy.Char8              as L
+import qualified Codec.Binary.UTF8.String                   as UTF8
+import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT)
+import           Data.Aeson                                 (Result (..), encode, fromJSON)
+import           Data.Aeson.Parser                          (jsonNoDup)
+import           Data.Attoparsec.ByteString                 (parseOnly)
+import qualified Data.ByteString                            as S
+import qualified Data.ByteString.Lazy.Char8                 as L
 import           Data.Proxy
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils                 (badRequestError, renderErrors)
-import           Data.Morpheus.Parser.Parser               (parseGQL)
-import           Data.Morpheus.Resolve.Encode              (EncodeCon, EncodeMutCon, EncodeSubCon, encodeMut,
-                                                            encodeQuery, encodeSub)
-import           Data.Morpheus.Resolve.Introspect          (ObjectRep (..), resolveTypes)
-import           Data.Morpheus.Schema.SchemaAPI            (hiddenRootFields, schemaAPI, schemaTypes)
-import           Data.Morpheus.Server.ClientRegister       (GQLState, publishUpdates)
-import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..))
-import           Data.Morpheus.Types.Internal.Data         (DataArguments, DataFingerprint (..), DataType (..),
-                                                            DataTypeLib (..), initTypeLib)
-import           Data.Morpheus.Types.Internal.Stream       (Event (..), ResponseEvent (..), ResponseStream,
-                                                            StreamState (..), StreamT (..), closeStream, mapS)
-import           Data.Morpheus.Types.Internal.Validation   (SchemaValidation)
-import           Data.Morpheus.Types.Internal.Value        (Value (..))
-import           Data.Morpheus.Types.IO                    (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver              (GQLRootResolver (..))
-import           Data.Morpheus.Validation.Validation       (validateRequest)
+import           Data.Morpheus.Error.Utils                  (badRequestError, renderErrors)
+import           Data.Morpheus.Parser.Parser                (parseGQL)
+import           Data.Morpheus.Resolve.Encode               (EncodeCon, EncodeMutCon, EncodeSubCon, encodeMut,
+                                                             encodeQuery, encodeSub)
+import           Data.Morpheus.Resolve.Introspect           (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Schema.SchemaAPI             (hiddenRootFields, schemaAPI, schemaTypes)
+import           Data.Morpheus.Server.ClientRegister        (GQLState, publishUpdates)
+import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), OperationKind (..))
+import           Data.Morpheus.Types.Internal.Data          (DataArguments, DataFingerprint (..), DataType (..),
+                                                             DataTypeLib (..), initTypeLib)
+import           Data.Morpheus.Types.Internal.Stream        (Event (..), ResponseEvent (..), ResponseStream,
+                                                             StreamState (..), StreamT (..), closeStream, mapS)
+import           Data.Morpheus.Types.Internal.Validation    (SchemaValidation)
+import           Data.Morpheus.Types.Internal.Value         (Value (..))
+import           Data.Morpheus.Types.IO                     (GQLRequest (..), GQLResponse (..))
+import           Data.Morpheus.Types.Resolver               (GQLRootResolver (..))
+import           Data.Morpheus.Validation.Validation        (validateRequest)
 
 type EventCon event = Eq event
 
@@ -93,11 +93,12 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
       query <- parseGQL request >>= validateRequest schema
       return (schema, query)
     ----------------------------------------------------------
-    execOperator (schema, Query operator) =
-      StreamT $ StreamState [] <$> encodeQuery (schemaAPI schema) queryResolver operator
-    execOperator (_, Mutation operator) = mapS Publish (encodeMut mutationResolver operator)
-    execOperator (_, Subscription operator) =
-      StreamT $ handleActions <$> closeStream (encodeSub subscriptionResolver operator)
+    execOperator (schema, operation@Operation {operationKind = QUERY}) =
+      StreamT $ StreamState [] <$> encodeQuery (schemaAPI schema) queryResolver operation
+    execOperator (_, operation@Operation {operationKind = MUTATION}) =
+      mapS Publish (encodeMut mutationResolver operation)
+    execOperator (_, operation@Operation {operationKind = SUBSCRIPTION}) =
+      StreamT $ handleActions <$> closeStream (encodeSub subscriptionResolver operation)
       where
         handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
         handleActions (channels, Right subResolver) =

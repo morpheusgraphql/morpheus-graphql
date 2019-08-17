@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Morpheus.Validation.Variable
-  ( resolveOperatorVariables
+  ( resolveOperationVariables
   ) where
 
 import           Data.List                                     ((\\))
@@ -10,7 +10,7 @@ import           Data.Maybe                                    (maybe)
 import           Data.Morpheus.Error.Input                     (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Variable                  (uninitializedVariable, unknownType, unusedVariables,
                                                                 variableGotInvalidValue)
-import           Data.Morpheus.Types.Internal.AST.Operator     (Operator' (..), RawOperator', ValidVariables,
+import           Data.Morpheus.Types.Internal.AST.Operation    (Operation (..), RawOperation, ValidVariables,
                                                                 Variable (..))
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawArgument (..),
                                                                 RawSelection (..), RawSelection' (..), RawSelectionSet,
@@ -65,19 +65,19 @@ allVariableReferences fragmentLib = concatMapM (concatMapM searchReferences)
     searchReferences (_, Spread reference) =
       getFragment reference fragmentLib >>= concatMapM searchReferences . fragmentSelection
 
-resolveOperatorVariables :: DataTypeLib -> FragmentLib -> Variables -> RawOperator' -> Validation ValidVariables
-resolveOperatorVariables typeLib fragmentLib root operator' = do
-  allVariableReferences fragmentLib [operatorSelection operator'] >>= checkUnusedVariables
-  mapM (lookupAndValidateValueOnBody typeLib root) (operatorArgs operator')
+resolveOperationVariables :: DataTypeLib -> FragmentLib -> Variables -> RawOperation -> Validation ValidVariables
+resolveOperationVariables typeLib lib root Operation {operationName, operationSelection, operationArgs} = do
+  allVariableReferences lib [operationSelection] >>= checkUnusedVariables
+  mapM (lookupAndValidateValueOnBody typeLib root) operationArgs
   where
     varToKey :: (Text, Variable ()) -> EnhancedKey
     varToKey (key', Variable {variablePosition}) = EnhancedKey key' variablePosition
     --
     checkUnusedVariables :: [EnhancedKey] -> Validation ()
     checkUnusedVariables references' =
-      case map varToKey (operatorArgs operator') \\ references' of
+      case map varToKey operationArgs \\ references' of
         []      -> pure ()
-        unused' -> Left $ unusedVariables (operatorName operator') unused'
+        unused' -> Left $ unusedVariables operationName unused'
 
 lookupAndValidateValueOnBody :: DataTypeLib -> Variables -> (Text, Variable ()) -> Validation (Text, Variable Value)
 lookupAndValidateValueOnBody typeLib bodyVariables (key', var@Variable { variableType

@@ -10,7 +10,7 @@ import           Data.HashMap.Lazy                       (toList)
 import qualified Data.List.NonEmpty                      as NonEmpty
 import           Data.Morpheus.Parser.Fragment           (fragment)
 import           Data.Morpheus.Parser.Internal           (Parser)
-import           Data.Morpheus.Parser.Operator           (parseAnonymousQuery, parseOperator)
+import           Data.Morpheus.Parser.Operation          (parseAnonymousQuery, parseOperation)
 import           Data.Morpheus.Types.Internal.Validation (GQLError (GQLError), GQLErrors, Validation, desc, positions)
 import           Data.Morpheus.Types.Internal.Value      (Value (..), replaceValue)
 import           Data.Morpheus.Types.IO                  (GQLRequest (..))
@@ -39,9 +39,9 @@ parseGQLSyntax = runParser request "<input>"
     request =
       label "GQLQueryRoot" $ do
         space
-        operator <- parseAnonymousQuery <|> parseOperator
+        operation <- parseAnonymousQuery <|> parseOperation
         fragments <- manyTill fragment eof
-        pure GQLQueryRoot {operator, fragments, inputVariables = []}
+        pure GQLQueryRoot {operation, fragments, inputVariables = []}
 
 toVariableMap :: Maybe Aeson.Value -> [(Text, Value)]
 toVariableMap (Just (Aeson.Object x)) = map toMorpheusValue (toList x)

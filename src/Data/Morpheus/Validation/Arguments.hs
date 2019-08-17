@@ -10,7 +10,7 @@ import           Data.Morpheus.Error.Arguments                 (argumentGotInval
 import           Data.Morpheus.Error.Input                     (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Internal                  (internalUnknownTypeMessage)
 import           Data.Morpheus.Error.Variable                  (incompatibleVariableType, undefinedVariable)
-import           Data.Morpheus.Types.Internal.AST.Operator     (ValidVariables, Variable (..))
+import           Data.Morpheus.Types.Internal.AST.Operation     (ValidVariables, Variable (..))
 import           Data.Morpheus.Types.Internal.AST.RawSelection (RawArgument (..), RawArguments, Reference (..))
 import           Data.Morpheus.Types.Internal.AST.Selection    (Argument (..), Arguments)
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
@@ -27,9 +27,9 @@ resolveArgumentVariables :: Text -> ValidVariables -> DataOutputField -> RawArgu
 resolveArgumentVariables operatorName variables DataField {fieldName, fieldArgs} = mapM resolveVariable
   where
     resolveVariable :: (Text, RawArgument) -> Validation (Text, Argument)
-    resolveVariable (key', RawArgument argument') = pure (key', argument')
-    resolveVariable (key', VariableReference Reference {referenceName, referencePosition}) =
-      (key', ) . (`Argument` referencePosition) <$> lookupVar
+    resolveVariable (key, RawArgument argument) = pure (key, argument)
+    resolveVariable (key, VariableReference Reference {referenceName, referencePosition}) =
+      (key, ) . (`Argument` referencePosition) <$> lookupVar
       where
         stricter [] []                               = True
         stricter (NonNullType:xs1) (NonNullType:xs2) = stricter xs1 xs2
@@ -40,8 +40,8 @@ resolveArgumentVariables operatorName variables DataField {fieldName, fieldArgs}
           case lookup referenceName variables of
             Nothing -> Left $ undefinedVariable operatorName referencePosition referenceName
             Just Variable {variableValue, variableType, variableTypeWrappers} ->
-              case lookup key' fieldArgs of
-                Nothing -> Left $ unknownArguments fieldName [EnhancedKey key' referencePosition]
+              case lookup key fieldArgs of
+                Nothing -> Left $ unknownArguments fieldName [EnhancedKey key referencePosition]
                 Just DataField {fieldType, fieldTypeWrappers} ->
                   if variableType == fieldType && stricter variableTypeWrappers fieldTypeWrappers
                     then return variableValue
@@ -50,8 +50,8 @@ resolveArgumentVariables operatorName variables DataField {fieldName, fieldArgs}
                         fieldSignature = showWrappedType fieldTypeWrappers fieldType
 
 handleInputError :: Text -> Position -> InputValidation a -> Validation ()
-handleInputError key' position' (Left error') = Left $ argumentGotInvalidValue key' (inputErrorMessage error') position'
-handleInputError _ _ _ = pure ()
+handleInputError key position' (Left error') = Left $ argumentGotInvalidValue key (inputErrorMessage error') position'
+handleInputError _ _ _                       = pure ()
 
 validateArgumentValue :: DataTypeLib -> DataField a -> (Text, Argument) -> Validation (Text, Argument)
 validateArgumentValue lib' DataField {fieldType = typeName', fieldTypeWrappers = wrappers'} (key', Argument value' position') =
@@ -73,14 +73,14 @@ validateArgument types position' requestArgs (key', arg) =
         else Left $ undefinedArgument (EnhancedKey key' position')
 
 checkForUnknownArguments :: (Text, DataOutputField) -> Arguments -> Validation [(Text, DataInputField)]
-checkForUnknownArguments (fieldKey', DataField {fieldArgs = astArgs'}) args' =
-  checkForUnknownKeys enhancedKeys fieldKeys error' >> checkNameCollision enhancedKeys argumentNameCollision >>
-  pure astArgs'
+checkForUnknownArguments (key, DataField {fieldArgs}) args =
+  checkForUnknownKeys enhancedKeys fieldKeys argError >> checkNameCollision enhancedKeys argumentNameCollision >>
+  pure fieldArgs
   where
-    error' = unknownArguments fieldKey'
-    enhancedKeys = map argToKey args'
+    argError = unknownArguments key
+    enhancedKeys = map argToKey args
     argToKey (key', Argument _ pos) = EnhancedKey key' pos
-    fieldKeys = map fst astArgs'
+    fieldKeys = map fst fieldArgs
 
 validateArguments ::
      DataTypeLib
