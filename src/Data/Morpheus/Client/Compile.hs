@@ -3,11 +3,11 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Data.Morpheus.Client.Compile
-  ( compile
+  ( compileWith
   ) where
 
 import           Data.Aeson                                 (encode)
-import           Data.ByteString.Lazy.Char8                 (ByteString, unpack)
+import           Data.ByteString.Lazy.Char8                 (unpack)
 import qualified Data.Text                                  as T (pack)
 import           Language.Haskell.TH
 
@@ -15,30 +15,27 @@ import           Language.Haskell.TH
 --  Morpheus
 import           Data.Morpheus.Client.Data                  (QueryD (..))
 import           Data.Morpheus.Client.Selection             (operationTypes)
-import           Data.Morpheus.Document.ParseDocument       (parseFullGQLDocument)
 import           Data.Morpheus.Error.Utils                  (renderErrors)
 import           Data.Morpheus.Parser.Parser                (parseGQL)
 import qualified Data.Morpheus.Types.Internal.AST.Operation as O (Operation (..))
+import           Data.Morpheus.Types.Internal.Data          (DataTypeLib)
+import           Data.Morpheus.Types.Internal.Validation    (Validation)
 import           Data.Morpheus.Types.IO                     (GQLRequest (..))
 import           Data.Morpheus.Types.Types                  (GQLQueryRoot (..))
 import           Data.Morpheus.Validation.Utils.Utils       (VALIDATION_MODE (..))
 import           Data.Morpheus.Validation.Validation        (validateRequest)
 
-compile :: IO ByteString -> String -> Q Exp
-compile ioSchema queryText = do
-  eitherSchema <- parseFullGQLDocument <$> runIO ioSchema
-  case eitherSchema of
-    Left errors -> fail (show errors)
-    Right schema ->
-      case parseGQL request of
-        Left compErrors -> fail (show compErrors)
-        Right rawRequest@GQLQueryRoot {operation} ->
-          case validateRequest schema WITHOUT_VARIABLES rawRequest of
-            Left errors -> fail (unpack $ encode $ renderErrors errors)
-            Right validOperation ->
-              case operationTypes schema (O.operationArgs operation) validOperation of
-                Left err -> fail $ show err
-                Right (queryArgTypes, queryTypes) -> [|queryD|]
-                  where queryD = QueryD {queryText, queryTypes, queryArgTypes}
+compileWith :: IO (Validation DataTypeLib) -> String -> Q Exp
+compileWith ioSchema queryText = do
+  mSchema <- runIO ioSchema
+  case validateBy mSchema of
+    Left errors  -> fail (unpack $ encode $ renderErrors errors)
+    Right queryD -> [|queryD|]
   where
+    validateBy mSchema = do
+      schema <- mSchema
+      rawRequest@GQLQueryRoot {operation} <- parseGQL request
+      validOperation <- validateRequest schema WITHOUT_VARIABLES rawRequest
+      (queryArgTypes, queryTypes) <- operationTypes schema (O.operationArgs operation) validOperation
+      return QueryD {queryText, queryTypes, queryArgTypes}
     request = GQLRequest {query = T.pack queryText, operationName = Nothing, variables = Nothing}

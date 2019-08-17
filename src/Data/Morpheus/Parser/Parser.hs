@@ -3,6 +3,7 @@
 
 module Data.Morpheus.Parser.Parser
   ( parseGQL
+  , processErrorBundle
   ) where
 
 import qualified Data.Aeson                              as Aeson (Value (..))
