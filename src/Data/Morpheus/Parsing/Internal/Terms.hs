@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 
 module Data.Morpheus.Parsing.Internal.Terms
   ( onType
@@ -7,6 +8,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , parseNonNull
   , parseMaybeTuple
   , parseAssignment
+  , parseWrappedType
   ) where
 
 import           Data.Functor                             (($>))
@@ -57,3 +59,18 @@ spreadLiteral = do
   _ <- string "..."
   space
   return index
+
+parseWrappedType :: Parser ([DataTypeWrapper], Text)
+parseWrappedType = (unwrapped <|> wrapped) <* spaceAndComments
+  where
+    unwrapped :: Parser ([DataTypeWrapper], Text)
+    unwrapped = ([], ) <$> token <* spaceAndComments
+    ----------------------------------------------
+    wrapped :: Parser ([DataTypeWrapper], Text)
+    wrapped =
+      between
+        (char '[' *> spaceAndComments)
+        (char ']' *> spaceAndComments)
+        (do (wrappers, name) <- unwrapped <|> wrapped
+            nonNull' <- parseNonNull
+            return ((ListType : nonNull') ++ wrappers, name))

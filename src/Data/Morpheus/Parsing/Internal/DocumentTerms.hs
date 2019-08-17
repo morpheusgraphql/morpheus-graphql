@@ -1,20 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections     #-}
 
-module Data.Morpheus.Parsing.Internal.Terms2
+module Data.Morpheus.Parsing.Internal.DocumentTerms
   ( parseMaybeTuple
   , parseAssignment
   , token
   , qualifier
   , pipe
-  , wrappedType
   , setOf
   , Parser
   , Position
   ) where
 
-import           Data.Morpheus.Parsing.Internal.Terms (parseNonNull, spaceAndComments)
-import           Data.Morpheus.Types.Internal.Data    (DataTypeWrapper (..))
+import           Data.Morpheus.Parsing.Internal.Terms (spaceAndComments)
 import           Data.Morpheus.Types.Internal.Value   (convertToHaskellName)
 import           Data.Text                            (Text)
 import qualified Data.Text                            as T (pack)
@@ -69,18 +66,3 @@ qualifier =
     position' <- getSourcePos
     value <- token
     return (value, position')
-
-wrappedType :: Parser ([DataTypeWrapper], Text)
-wrappedType = (unwrapped <|> wrapped) <* spaceAndComments
-  where
-    unwrapped :: Parser ([DataTypeWrapper], Text)
-    unwrapped = ([], ) <$> token <* spaceAndComments
-    ----------------------------------------------
-    wrapped :: Parser ([DataTypeWrapper], Text)
-    wrapped =
-      between
-        (char '[' *> spaceAndComments)
-        (char ']' *> spaceAndComments)
-        (do (wrappers, name) <- unwrapped <|> wrapped
-            nonNull' <- parseNonNull
-            return ((ListType : nonNull') ++ wrappers, name))

@@ -5,15 +5,15 @@ module Data.Morpheus.Document.Parsing.DataType
   ( parseDataType
   ) where
 
-import           Data.Morpheus.Parsing.Internal.Terms  (parseNonNull, spaceAndComments)
-import           Data.Morpheus.Parsing.Internal.Terms2 (Parser, parseAssignment, parseMaybeTuple, pipe, qualifier,
-                                                        setOf, token, wrappedType)
-import           Data.Morpheus.Types.Internal.Data     (DataArgument, DataField (..), DataFingerprint (..),
-                                                        DataFullType (..), DataLeaf (..), DataOutputField,
-                                                        DataType (..), DataTypeWrapper, DataValidator (..), Key)
-import           Data.Text                             (Text)
-import           Text.Megaparsec                       (label, sepBy1, (<|>))
-import           Text.Megaparsec.Char                  (char, space1, string)
+import           Data.Morpheus.Parsing.Internal.DocumentTerms (Parser, parseAssignment, parseMaybeTuple, pipe,
+                                                               qualifier, setOf, token)
+import           Data.Morpheus.Parsing.Internal.Terms         (parseNonNull, parseWrappedType, spaceAndComments)
+import           Data.Morpheus.Types.Internal.Data            (DataArgument, DataField (..), DataFingerprint (..),
+                                                               DataFullType (..), DataLeaf (..), DataOutputField,
+                                                               DataType (..), DataTypeWrapper, DataValidator (..), Key)
+import           Data.Text                                    (Text)
+import           Text.Megaparsec                              (label, sepBy1, (<|>))
+import           Text.Megaparsec.Char                         (char, space1, string)
 
 createType :: Text -> a -> DataType a
 createType typeName typeData =
@@ -26,7 +26,7 @@ createField fieldArgs fieldName (fieldTypeWrappers, fieldType) =
 dataArgument :: Parser (Text, DataArgument)
 dataArgument =
   label "Argument" $ do
-    ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier wrappedType
+    ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
     nonNull <- parseNonNull
     pure (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
 
@@ -40,7 +40,7 @@ entries = label "entries" $ setOf entry
         return (name, args)
     entry =
       label "entry" $ do
-        ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs wrappedType
+        ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs parseWrappedType
         nonNull <- parseNonNull
         return (fieldName, createField fieldArgs fieldName (nonNull ++ wrappers, fieldType))
 
@@ -49,7 +49,7 @@ inputEntries = label "inputEntries" $ setOf entry
   where
     entry =
       label "entry" $ do
-        ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier wrappedType
+        ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
         nonNull <- parseNonNull
         return (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
 
