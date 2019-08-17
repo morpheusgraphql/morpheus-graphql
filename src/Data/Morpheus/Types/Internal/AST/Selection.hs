@@ -4,13 +4,20 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , SelectionSet
   , Selection(..)
   , SelectionRec(..)
+  , ArgumentOrigin(..)
   ) where
 
 import           Data.Morpheus.Types.Internal.Base  (Collection, Key, Position)
 import           Data.Morpheus.Types.Internal.Value (Value)
 
+data ArgumentOrigin
+  = VARIABLE
+  | INLINE
+  deriving (Show)
+
 data Argument = Argument
   { argumentValue    :: Value
+  , argumentOrigin   :: ArgumentOrigin
   , argumentPosition :: Position
   } deriving (Show)
 

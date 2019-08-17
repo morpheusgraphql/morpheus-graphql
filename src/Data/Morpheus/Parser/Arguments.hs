@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Data.Morpheus.Parser.Arguments
   ( maybeArguments
   ) where
@@ -8,18 +10,21 @@ import           Data.Morpheus.Parser.Terms                    (parseAssignment,
 import           Data.Morpheus.Parser.Value                    (enumValue, parseValue)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Argument (..), RawArgument (..), RawArguments,
                                                                 Reference (..))
+import           Data.Morpheus.Types.Internal.AST.Selection    (ArgumentOrigin (..))
 import           Text.Megaparsec                               (getSourcePos, label, (<|>))
 
 valueArgument :: Parser RawArgument
-valueArgument = label "valueArgument" $ do
-  position' <- getSourcePos
-  value' <- parseValue <|> enumValue
-  pure $ RawArgument $ Argument {argumentValue = value', argumentPosition = position'}
+valueArgument =
+  label "valueArgument" $ do
+    argumentPosition <- getSourcePos
+    argumentValue <- parseValue <|> enumValue
+    pure $ RawArgument $ Argument {argumentValue, argumentOrigin = INLINE, argumentPosition}
 
 variableArgument :: Parser RawArgument
-variableArgument = label "variableArgument" $ do
-  (reference', position') <- variable
-  pure $ VariableReference $ Reference {referenceName = reference', referencePosition = position'}
+variableArgument =
+  label "variableArgument" $ do
+    (referenceName, referencePosition) <- variable
+    pure $ VariableReference $ Reference {referenceName, referencePosition}
 
 maybeArguments :: Parser RawArguments
 maybeArguments = label "maybeArguments" $ parseMaybeTuple argument
