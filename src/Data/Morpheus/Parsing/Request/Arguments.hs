@@ -1,6 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Data.Morpheus.Parser.Arguments
+module Data.Morpheus.Parsing.Request.Arguments
   ( maybeArguments
   ) where
 

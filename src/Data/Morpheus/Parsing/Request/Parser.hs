@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Parser.Parser
+module Data.Morpheus.Parsing.Request.Parser
   ( parseGQL
   ) where
 

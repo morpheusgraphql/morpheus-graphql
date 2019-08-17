@@ -16,7 +16,7 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Client.Data                  (QueryD (..))
 import           Data.Morpheus.Client.Selection             (operationTypes)
 import           Data.Morpheus.Error.Utils                  (renderErrors)
-import           Data.Morpheus.Parser.Parser                (parseGQL)
+import           Data.Morpheus.Parsing.Request.Parser       (parseGQL)
 import qualified Data.Morpheus.Types.Internal.AST.Operation as O (Operation (..))
 import           Data.Morpheus.Types.Internal.Data          (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation    (Validation)

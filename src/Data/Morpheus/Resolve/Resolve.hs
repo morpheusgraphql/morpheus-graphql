@@ -26,7 +26,7 @@ import           GHC.Generics
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                  (badRequestError, renderErrors)
-import           Data.Morpheus.Parser.Parser                (parseGQL)
+import           Data.Morpheus.Parsing.Request.Parser       (parseGQL)
 import           Data.Morpheus.Resolve.Encode               (EncodeCon, EncodeMutCon, EncodeSubCon, encodeMut,
                                                              encodeQuery, encodeSub)
 import           Data.Morpheus.Resolve.Introspect           (ObjectRep (..), resolveTypes)

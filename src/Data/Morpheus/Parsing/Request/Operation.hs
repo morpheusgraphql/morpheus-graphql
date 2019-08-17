@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Parser.Operation
+module Data.Morpheus.Parsing.Request.Operation
   ( parseAnonymousQuery
   , parseOperation
   ) where

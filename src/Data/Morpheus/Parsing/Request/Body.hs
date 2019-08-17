@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Parser.Body
+module Data.Morpheus.Parsing.Request.Body
   ( entries
   ) where
 

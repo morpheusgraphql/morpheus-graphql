@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Parser.Fragment
+module Data.Morpheus.Parsing.Request.Fragment
   ( fragment
   ) where
 

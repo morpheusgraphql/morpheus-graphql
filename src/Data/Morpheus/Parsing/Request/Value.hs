@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
 
-module Data.Morpheus.Parser.Value
+module Data.Morpheus.Parsing.Request.Value
   ( parseValue
   , enumValue
   ) where
