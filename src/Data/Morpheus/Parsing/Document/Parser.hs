@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Document.Parsing.Parser
+module Data.Morpheus.Parsing.Document.Parser
   ( parseDocument
   ) where
 
@@ -9,7 +9,7 @@ import           Data.Text                               (Text)
 import           Text.Megaparsec                         (eof, label, manyTill, runParser)
 
 -- MORPHEUS
-import           Data.Morpheus.Document.Parsing.DataType (parseDataType)
+import           Data.Morpheus.Parsing.Document.DataType (parseDataType)
 import           Data.Morpheus.Parsing.Internal.Internal (processErrorBundle)
 import           Data.Morpheus.Parsing.Internal.Terms    (spaceAndComments)
 import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataTypeLib (..), defineType, initTypeLib)

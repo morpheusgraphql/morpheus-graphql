@@ -13,7 +13,7 @@ import qualified Data.Text.Lazy                          as LT (toStrict)
 import           Data.Text.Lazy.Encoding                 (decodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Document.Parsing.Parser   (parseDocument)
+import           Data.Morpheus.Parsing.Document.Parser   (parseDocument)
 import           Data.Morpheus.Schema.SchemaAPI          (schemaTypes)
 import           Data.Morpheus.Types.Internal.Data       (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
