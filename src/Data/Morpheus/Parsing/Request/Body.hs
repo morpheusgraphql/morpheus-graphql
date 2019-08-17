@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Parsing.Request.Body
@@ -5,15 +6,13 @@ module Data.Morpheus.Parsing.Request.Body
   ) where
 
 import           Data.Text                                     (Text)
-import           Text.Megaparsec                               (between, getSourcePos, label, many, sepEndBy, try,
-                                                                (<|>))
-import           Text.Megaparsec.Char                          (char, space)
+import           Text.Megaparsec                               (getSourcePos, label, try, (<|>))
 
 --
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal       (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms          (onType, parseAssignment, qualifier, spreadLiteral,
-                                                                token)
+import           Data.Morpheus.Parsing.Internal.Terms          (onType, parseAssignment, qualifier, setOf,
+                                                                spreadLiteral, token)
 import           Data.Morpheus.Parsing.Request.Arguments       (maybeArguments)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
                                                                 RawSelection' (..), RawSelectionSet, Reference (..))
@@ -21,19 +20,17 @@ import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), R
 spread :: Parser (Text, RawSelection)
 spread =
   label "spread" $ do
-    index <- spreadLiteral
-    key' <- token
-    return (key', Spread $ Reference {referenceName = key', referencePosition = index})
+    referencePosition <- spreadLiteral
+    referenceName <- token
+    return (referenceName, Spread $ Reference {referenceName, referencePosition})
 
 inlineFragment :: Parser (Text, RawSelection)
 inlineFragment =
   label "InlineFragment" $ do
-    index <- spreadLiteral
-    type' <- onType
-    fragmentBody <- entries
-    pure
-      ( "INLINE_FRAGMENT"
-      , InlineFragment $ Fragment {fragmentType = type', fragmentSelection = fragmentBody, fragmentPosition = index})
+    fragmentPosition <- spreadLiteral
+    fragmentType <- onType
+    fragmentSelection <- entries
+    pure ("INLINE_FRAGMENT", InlineFragment $ Fragment {fragmentType, fragmentSelection, fragmentPosition})
 
 {-
   accept:
@@ -45,32 +42,28 @@ inlineFragment =
 parseSelectionField :: Parser (Text, RawSelection)
 parseSelectionField =
   label "SelectionField" $ do
-    (name', position') <- qualifier
-    arguments' <- maybeArguments
-    value' <- body arguments' <|> buildField arguments' position'
-    return (name', value')
+    (name, position) <- qualifier
+    arguments <- maybeArguments
+    value <- body arguments <|> buildField arguments position
+    return (name, value)
   where
-    buildField arguments' position' =
-      pure
-        (RawSelectionField $
-         RawSelection' {rawSelectionArguments = arguments', rawSelectionRec = (), rawSelectionPosition = position'})
+    buildField rawSelectionArguments rawSelectionPosition =
+      pure (RawSelectionField $ RawSelection' {rawSelectionArguments, rawSelectionRec = (), rawSelectionPosition})
 
 alias :: Parser (Text, RawSelection)
 alias =
   label "alias" $ do
-    ((name', position'), selection') <- parseAssignment qualifier parseSelectionField
-    return (name', RawAlias {rawAliasPosition = position', rawAliasSelection = selection'})
+    ((name, rawAliasPosition), rawAliasSelection) <- parseAssignment qualifier parseSelectionField
+    return (name, RawAlias {rawAliasPosition, rawAliasSelection})
 
 entries :: Parser RawSelectionSet
-entries = label "entries" $ between (char '{' *> space) (char '}' *> space) (entry `sepEndBy` many (char ',' *> space))
+entries = label "entries" $ setOf entry
   where
     entry = label "entry" $ try inlineFragment <|> try spread <|> try alias <|> parseSelectionField
 
 body :: RawArguments -> Parser RawSelection
-body args =
+body rawSelectionArguments =
   label "body" $ do
-    index <- getSourcePos
-    entries' <- entries
-    return
-      (RawSelectionSet $
-       RawSelection' {rawSelectionArguments = args, rawSelectionRec = entries', rawSelectionPosition = index})
+    rawSelectionPosition <- getSourcePos
+    rawSelectionRec <- entries
+    return (RawSelectionSet $ RawSelection' {rawSelectionArguments, rawSelectionRec, rawSelectionPosition})

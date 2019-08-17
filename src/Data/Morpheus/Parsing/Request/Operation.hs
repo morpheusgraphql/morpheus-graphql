@@ -8,44 +8,22 @@ module Data.Morpheus.Parsing.Request.Operation
 
 import           Data.Functor                               (($>))
 import           Data.Text                                  (Text)
-import           Text.Megaparsec                            (between, getSourcePos, label, (<?>), (<|>))
-import           Text.Megaparsec.Char                       (char, space, space1, string)
+import           Text.Megaparsec                            (getSourcePos, label, (<?>), (<|>))
+import           Text.Megaparsec.Char                       (space1, string)
 
 --
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal    (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms       (parseAssignment, parseMaybeTuple, parseNonNull, token,
-                                                             variable)
+import           Data.Morpheus.Parsing.Internal.Terms       (parseAssignment, parseMaybeTuple, parseNonNull,
+                                                             parseWrappedType, token, variable)
 import           Data.Morpheus.Parsing.Request.Body         (entries)
 import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), OperationKind (..), RawOperation,
                                                              Variable (..))
-import           Data.Morpheus.Types.Internal.Data          (DataTypeWrapper (..))
-
-wrapMock :: Parser ([DataTypeWrapper], Text)
-wrapMock = do
-  mock <- token
-  space
-  return ([], mock)
-
-insideList :: Parser ([DataTypeWrapper], Text)
-insideList =
-  between
-    (char '[' *> space)
-    (char ']' *> space)
-    (do (list, name) <- wrapMock <|> insideList
-        nonNull <- parseNonNull
-        return ((ListType : nonNull) ++ list, name))
-
-wrappedSignature :: Parser ([DataTypeWrapper], Text)
-wrappedSignature = do
-  sig <- insideList <|> wrapMock
-  space
-  return sig
 
 operationArgument :: Parser (Text, Variable ())
 operationArgument =
   label "operatorArgument" $ do
-    ((name, variablePosition), (wrappers, variableType)) <- parseAssignment variable wrappedSignature
+    ((name, variablePosition), (wrappers, variableType)) <- parseAssignment variable parseWrappedType
     nonNull <- parseNonNull
     pure
       ( name

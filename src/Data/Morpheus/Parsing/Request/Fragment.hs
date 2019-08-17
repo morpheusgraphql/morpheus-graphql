@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Parsing.Request.Fragment
@@ -19,8 +20,8 @@ fragment =
   label "fragment" $ do
     _ <- string "fragment"
     space
-    index <- getSourcePos
-    name' <- token
-    type' <- onType
-    fragmentBody <- entries
-    pure (name', Fragment {fragmentType = type', fragmentSelection = fragmentBody, fragmentPosition = index})
+    fragmentPosition <- getSourcePos
+    name <- token
+    fragmentType <- onType
+    fragmentSelection <- entries
+    pure (name, Fragment {fragmentType, fragmentSelection, fragmentPosition})

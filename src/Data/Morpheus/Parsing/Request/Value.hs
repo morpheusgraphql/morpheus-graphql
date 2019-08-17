@@ -15,7 +15,7 @@ import           Text.Megaparsec.Char.Lexer              (scientific)
 --
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, token)
+import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, setOf, token)
 import           Data.Morpheus.Types.Internal.Value      (ScalarValue (..), Value (..), decodeScientific)
 
 parseValue :: Parser Value
@@ -63,7 +63,6 @@ listValue =
   label "listValue" $ List <$> between (char '[' *> space) (char ']' *> space) (parseValue `sepBy` (char ',' *> space))
 
 objectValue :: Parser Value
-objectValue =
-  label "objectValue" $
-  Object <$>
-  between (char '{' *> space) (char '}' *> space) (parseAssignment token parseValue `sepBy` (char ',' *> space))
+objectValue = label "objectValue" $ Object <$> setOf entry
+  where
+    entry = parseAssignment token parseValue

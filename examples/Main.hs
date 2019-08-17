@@ -35,6 +35,8 @@ defineQuery
     query GetHero ($god: Realm, $charID: String!)
       {
         deity (mythology:$god) {
+         # bono <->
+        ## <<
           power
           fullName
         }
