@@ -2,37 +2,30 @@
 {-# LANGUAGE TupleSections     #-}
 
 module Data.Morpheus.Parsing.Internal.Terms2
-  ( nonNull
-  , parseMaybeTuple
+  ( parseMaybeTuple
   , parseAssignment
   , token
   , qualifier
   , pipe
   , wrappedType
   , setOf
-  , spaceAndComments
   , Parser
   , Position
   ) where
 
-import           Data.Functor                       (($>))
-import           Data.Morpheus.Types.Internal.Data  (DataTypeWrapper (..))
-import           Data.Morpheus.Types.Internal.Value (convertToHaskellName)
-import           Data.Text                          (Text)
-import qualified Data.Text                          as T (pack)
-import           Data.Void                          (Void)
-import           Text.Megaparsec                    (Parsec, SourcePos, between, getSourcePos, label, many, sepBy,
-                                                     sepEndBy, skipMany, skipManyTill, (<?>), (<|>))
-import           Text.Megaparsec.Char               (char, digitChar, letterChar, newline, printChar, space)
+import           Data.Morpheus.Parsing.Internal.Terms (parseNonNull, spaceAndComments)
+import           Data.Morpheus.Types.Internal.Data    (DataTypeWrapper (..))
+import           Data.Morpheus.Types.Internal.Value   (convertToHaskellName)
+import           Data.Text                            (Text)
+import qualified Data.Text                            as T (pack)
+import           Data.Void                            (Void)
+import           Text.Megaparsec                      (Parsec, SourcePos, between, getSourcePos, label, many, sepBy,
+                                                       sepEndBy, (<?>), (<|>))
+import           Text.Megaparsec.Char                 (char, digitChar, letterChar)
 
 type Position = SourcePos
 
 type Parser = Parsec Void Text
-
-spaceAndComments :: Parser ()
-spaceAndComments = space *> skipMany inlineComment *> space
-  where
-    inlineComment = char '#' *> skipManyTill printChar newline *> space
 
 setOf :: Parser a -> Parser [a]
 setOf entry = setLiteral (entry `sepEndBy` many (char ',' *> spaceAndComments))
@@ -42,12 +35,6 @@ setLiteral = between (char '{' *> spaceAndComments) (char '}' *> spaceAndComment
 
 pipe :: Parser ()
 pipe = char '|' *> spaceAndComments
-
-nonNull :: Parser [DataTypeWrapper]
-nonNull = do
-  wrapper <- (char '!' $> [NonNullType]) <|> pure []
-  spaceAndComments
-  return wrapper
 
 parseMaybeTuple :: Parser a -> Parser [a]
 parseMaybeTuple parser = parseTuple parser <|> pure []
@@ -95,5 +82,5 @@ wrappedType = (unwrapped <|> wrapped) <* spaceAndComments
         (char '[' *> spaceAndComments)
         (char ']' *> spaceAndComments)
         (do (wrappers, name) <- unwrapped <|> wrapped
-            nonNull' <- nonNull
+            nonNull' <- parseNonNull
             return ((ListType : nonNull') ++ wrappers, name))

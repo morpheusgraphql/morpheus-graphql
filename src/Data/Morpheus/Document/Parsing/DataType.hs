@@ -5,8 +5,9 @@ module Data.Morpheus.Document.Parsing.DataType
   ( parseDataType
   ) where
 
-import           Data.Morpheus.Parsing.Internal.Terms2 (Parser, nonNull, parseAssignment, parseMaybeTuple, pipe,
-                                                        qualifier, setOf, spaceAndComments, token, wrappedType)
+import           Data.Morpheus.Parsing.Internal.Terms  (parseNonNull, spaceAndComments)
+import           Data.Morpheus.Parsing.Internal.Terms2 (Parser, parseAssignment, parseMaybeTuple, pipe, qualifier,
+                                                        setOf, token, wrappedType)
 import           Data.Morpheus.Types.Internal.Data     (DataArgument, DataField (..), DataFingerprint (..),
                                                         DataFullType (..), DataLeaf (..), DataOutputField,
                                                         DataType (..), DataTypeWrapper, DataValidator (..), Key)
@@ -25,9 +26,9 @@ createField fieldArgs fieldName (fieldTypeWrappers, fieldType) =
 dataArgument :: Parser (Text, DataArgument)
 dataArgument =
   label "Argument" $ do
-    ((fieldName, _), (wrappers', fieldType)) <- parseAssignment qualifier wrappedType
-    nonNull' <- nonNull
-    pure (fieldName, createField () fieldName (nonNull' ++ wrappers', fieldType))
+    ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier wrappedType
+    nonNull <- parseNonNull
+    pure (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
 
 entries :: Parser [(Key, DataOutputField)]
 entries = label "entries" $ setOf entry
@@ -39,18 +40,18 @@ entries = label "entries" $ setOf entry
         return (name, args)
     entry =
       label "entry" $ do
-        ((fieldName, fieldArgs), (wrappers', fieldType)) <- parseAssignment fieldWithArgs wrappedType
-        nonNull' <- nonNull
-        return (fieldName, createField fieldArgs fieldName (nonNull' ++ wrappers', fieldType))
+        ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs wrappedType
+        nonNull <- parseNonNull
+        return (fieldName, createField fieldArgs fieldName (nonNull ++ wrappers, fieldType))
 
 inputEntries :: Parser [(Key, DataArgument)]
 inputEntries = label "inputEntries" $ setOf entry
   where
     entry =
       label "entry" $ do
-        ((fieldName, _), (wrappers', fieldType)) <- parseAssignment qualifier wrappedType
-        nonNull' <- nonNull
-        return (fieldName, createField () fieldName (nonNull' ++ wrappers', fieldType))
+        ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier wrappedType
+        nonNull <- parseNonNull
+        return (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
 
 typeDef :: Text -> Parser Text
 typeDef kind = do

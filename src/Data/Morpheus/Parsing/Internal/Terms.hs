@@ -2,8 +2,9 @@
 
 module Data.Morpheus.Parsing.Internal.Terms
   ( onType
+  , spaceAndComments
   , spreadLiteral
-  , nonNull
+  , parseNonNull
   , parseMaybeTuple
   , parseAssignment
   ) where
@@ -13,13 +14,19 @@ import           Data.Morpheus.Parsing.Internal.Internal  (Parser, Position)
 import           Data.Morpheus.Parsing.Internal.Primitive (token)
 import           Data.Morpheus.Types.Internal.Data        (DataTypeWrapper (..))
 import           Data.Text                                (Text)
-import           Text.Megaparsec                          (between, getSourcePos, label, sepBy, (<?>), (<|>))
-import           Text.Megaparsec.Char                     (char, space, space1, string)
+import           Text.Megaparsec                          (between, getSourcePos, label, sepBy, skipMany, skipManyTill,
+                                                           (<?>), (<|>))
+import           Text.Megaparsec.Char                     (char, newline, printChar, space, space1, string)
 
-nonNull :: Parser [DataTypeWrapper]
-nonNull = do
+spaceAndComments :: Parser ()
+spaceAndComments = space *> skipMany inlineComment *> space
+  where
+    inlineComment = char '#' *> skipManyTill printChar newline *> space
+
+parseNonNull :: Parser [DataTypeWrapper]
+parseNonNull = do
   wrapper <- (char '!' $> [NonNullType]) <|> pure []
-  space
+  spaceAndComments
   return wrapper
 
 parseMaybeTuple :: Parser a -> Parser [a]

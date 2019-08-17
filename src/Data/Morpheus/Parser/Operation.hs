@@ -10,7 +10,7 @@ import           Data.Functor                               (($>))
 import           Data.Morpheus.Parser.Body                  (entries)
 import           Data.Morpheus.Parsing.Internal.Internal    (Parser)
 import           Data.Morpheus.Parsing.Internal.Primitive   (token, variable)
-import           Data.Morpheus.Parsing.Internal.Terms       (nonNull, parseAssignment, parseMaybeTuple)
+import           Data.Morpheus.Parsing.Internal.Terms       (parseAssignment, parseMaybeTuple, parseNonNull)
 import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), OperationKind (..), RawOperation,
                                                              Variable (..))
 import           Data.Morpheus.Types.Internal.Data          (DataTypeWrapper (..))
@@ -30,8 +30,8 @@ insideList =
     (char '[' *> space)
     (char ']' *> space)
     (do (list, name) <- wrapMock <|> insideList
-        nonNull' <- nonNull
-        return ((ListType : nonNull') ++ list, name))
+        nonNull <- parseNonNull
+        return ((ListType : nonNull) ++ list, name))
 
 wrappedSignature :: Parser ([DataTypeWrapper], Text)
 wrappedSignature = do
@@ -43,13 +43,13 @@ operationArgument :: Parser (Text, Variable ())
 operationArgument =
   label "operatorArgument" $ do
     ((name, variablePosition), (wrappers, variableType)) <- parseAssignment variable wrappedSignature
-    nonNull' <- nonNull
+    nonNull <- parseNonNull
     pure
       ( name
       , Variable
           { variableType
-          , isVariableRequired = 0 < length nonNull'
-          , variableTypeWrappers = nonNull' ++ wrappers
+          , isVariableRequired = 0 < length nonNull
+          , variableTypeWrappers = nonNull ++ wrappers
           , variablePosition
           , variableValue = ()
           })
