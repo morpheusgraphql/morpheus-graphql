@@ -5,9 +5,9 @@ module Data.Morpheus.Parser.Fragment
   ) where
 
 import           Data.Morpheus.Parser.Body                     (entries)
-import           Data.Morpheus.Parser.Internal                 (Parser)
-import           Data.Morpheus.Parser.Primitive                (token)
-import           Data.Morpheus.Parser.Terms                    (onType)
+import           Data.Morpheus.Parsing.Internal.Internal       (Parser)
+import           Data.Morpheus.Parsing.Internal.Primitive      (token)
+import           Data.Morpheus.Parsing.Internal.Terms          (onType)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..))
 import           Data.Text                                     (Text)
 import           Text.Megaparsec                               (getSourcePos, label)

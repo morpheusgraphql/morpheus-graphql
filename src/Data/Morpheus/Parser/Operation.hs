@@ -8,9 +8,9 @@ module Data.Morpheus.Parser.Operation
 
 import           Data.Functor                               (($>))
 import           Data.Morpheus.Parser.Body                  (entries)
-import           Data.Morpheus.Parser.Internal              (Parser)
-import           Data.Morpheus.Parser.Primitive             (token, variable)
-import           Data.Morpheus.Parser.Terms                 (nonNull, parseAssignment, parseMaybeTuple)
+import           Data.Morpheus.Parsing.Internal.Internal    (Parser)
+import           Data.Morpheus.Parsing.Internal.Primitive   (token, variable)
+import           Data.Morpheus.Parsing.Internal.Terms       (nonNull, parseAssignment, parseMaybeTuple)
 import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), OperationKind (..), RawOperation,
                                                              Variable (..))
 import           Data.Morpheus.Types.Internal.Data          (DataTypeWrapper (..))

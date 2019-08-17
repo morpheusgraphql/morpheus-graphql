@@ -10,8 +10,8 @@ import           Text.Megaparsec                         (eof, label, manyTill, 
 
 -- MORPHEUS
 import           Data.Morpheus.Document.Parsing.DataType (parseDataType)
-import           Data.Morpheus.Document.Parsing.Terms    (spaceAndComments)
-import           Data.Morpheus.Parser.Parser             (processErrorBundle)
+import           Data.Morpheus.Parsing.Internal.Internal (processErrorBundle)
+import           Data.Morpheus.Parsing.Internal.Terms2   (spaceAndComments)
 import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataTypeLib (..), defineType, initTypeLib)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 

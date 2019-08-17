@@ -4,10 +4,10 @@ module Data.Morpheus.Parser.Arguments
   ( maybeArguments
   ) where
 
-import           Data.Morpheus.Parser.Internal                 (Parser)
-import           Data.Morpheus.Parser.Primitive                (token, variable)
-import           Data.Morpheus.Parser.Terms                    (parseAssignment, parseMaybeTuple)
 import           Data.Morpheus.Parser.Value                    (enumValue, parseValue)
+import           Data.Morpheus.Parsing.Internal.Internal       (Parser)
+import           Data.Morpheus.Parsing.Internal.Primitive      (token, variable)
+import           Data.Morpheus.Parsing.Internal.Terms          (parseAssignment, parseMaybeTuple)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Argument (..), RawArgument (..), RawArguments,
                                                                 Reference (..))
 import           Data.Morpheus.Types.Internal.AST.Selection    (ArgumentOrigin (..))

@@ -1,18 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Parser.Primitive
+module Data.Morpheus.Parsing.Internal.Primitive
   ( token
   , qualifier
   , variable
   ) where
 
-import           Data.Morpheus.Parser.Internal      (Parser)
-import           Data.Morpheus.Types.Internal.Base  (Position)
-import           Data.Morpheus.Types.Internal.Value (convertToHaskellName)
-import           Data.Text                          (Text)
-import qualified Data.Text                          as T (pack)
-import           Text.Megaparsec                    (getSourcePos, label, many, (<|>))
-import           Text.Megaparsec.Char               (char, digitChar, letterChar, space)
+import           Data.Morpheus.Parsing.Internal.Internal (Parser)
+import           Data.Morpheus.Types.Internal.Base       (Position)
+import           Data.Morpheus.Types.Internal.Value      (convertToHaskellName)
+import           Data.Text                               (Text)
+import qualified Data.Text                               as T (pack)
+import           Text.Megaparsec                         (getSourcePos, label, many, (<|>))
+import           Text.Megaparsec.Char                    (char, digitChar, letterChar, space)
 
 token :: Parser Text
 token =

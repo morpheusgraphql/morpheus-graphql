@@ -6,15 +6,15 @@ module Data.Morpheus.Parser.Value
   , enumValue
   ) where
 
-import           Data.Functor                       (($>))
-import           Data.Morpheus.Parser.Internal      (Parser)
-import           Data.Morpheus.Parser.Primitive     (token)
-import           Data.Morpheus.Parser.Terms         (parseAssignment)
-import           Data.Morpheus.Types.Internal.Value (ScalarValue (..), Value (..), decodeScientific)
-import           Data.Text                          (pack)
-import           Text.Megaparsec                    (anySingleBut, between, choice, label, many, sepBy, (<|>))
-import           Text.Megaparsec.Char               (char, space, string)
-import           Text.Megaparsec.Char.Lexer         (scientific)
+import           Data.Functor                             (($>))
+import           Data.Morpheus.Parsing.Internal.Internal  (Parser)
+import           Data.Morpheus.Parsing.Internal.Primitive (token)
+import           Data.Morpheus.Parsing.Internal.Terms     (parseAssignment)
+import           Data.Morpheus.Types.Internal.Value       (ScalarValue (..), Value (..), decodeScientific)
+import           Data.Text                                (pack)
+import           Text.Megaparsec                          (anySingleBut, between, choice, label, many, sepBy, (<|>))
+import           Text.Megaparsec.Char                     (char, space, string)
+import           Text.Megaparsec.Char.Lexer               (scientific)
 
 parseValue :: Parser Value
 parseValue =

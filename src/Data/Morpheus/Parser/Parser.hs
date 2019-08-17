@@ -3,35 +3,22 @@
 
 module Data.Morpheus.Parser.Parser
   ( parseGQL
-  , processErrorBundle
   ) where
 
 import qualified Data.Aeson                              as Aeson (Value (..))
 import           Data.HashMap.Lazy                       (toList)
-import qualified Data.List.NonEmpty                      as NonEmpty
 import           Data.Morpheus.Parser.Fragment           (fragment)
-import           Data.Morpheus.Parser.Internal           (Parser)
 import           Data.Morpheus.Parser.Operation          (parseAnonymousQuery, parseOperation)
-import           Data.Morpheus.Types.Internal.Validation (GQLError (GQLError), GQLErrors, Validation, desc, positions)
+import           Data.Morpheus.Parsing.Internal.Internal (Parser, processErrorBundle)
+import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value (..), replaceValue)
 import           Data.Morpheus.Types.IO                  (GQLRequest (..))
 import           Data.Morpheus.Types.Types               (GQLQueryRoot (..))
-import           Data.Text                               (Text, pack)
+import           Data.Text                               (Text)
 import           Data.Void                               (Void)
-import           Text.Megaparsec                         (ParseError, ParseErrorBundle (ParseErrorBundle), SourcePos,
-                                                          attachSourcePos, bundleErrors, bundlePosState, eof,
-                                                          errorOffset, label, manyTill, parseErrorPretty, runParser,
-                                                          (<|>))
+import           Text.Megaparsec                         (ParseErrorBundle (ParseErrorBundle), eof, label, manyTill,
+                                                          runParser, (<|>))
 import           Text.Megaparsec.Char                    (space)
-
-processErrorBundle :: ParseErrorBundle Text Void -> GQLErrors
-processErrorBundle = fmap parseErrorToGQLError . bundleToErrors
-  where
-    parseErrorToGQLError :: (ParseError Text Void, SourcePos) -> GQLError
-    parseErrorToGQLError (err, position) = GQLError {desc = pack (parseErrorPretty err), positions = [position]}
-    bundleToErrors :: ParseErrorBundle Text Void -> [(ParseError Text Void, SourcePos)]
-    bundleToErrors ParseErrorBundle {bundleErrors, bundlePosState} =
-      NonEmpty.toList $ fst $ attachSourcePos errorOffset bundleErrors bundlePosState
 
 parseGQLSyntax :: Text -> Either (ParseErrorBundle Text Void) GQLQueryRoot
 parseGQLSyntax = runParser request "<input>"

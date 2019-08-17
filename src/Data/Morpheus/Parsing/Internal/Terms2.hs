@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 
-module Data.Morpheus.Document.Parsing.Terms
+module Data.Morpheus.Parsing.Internal.Terms2
   ( nonNull
   , parseMaybeTuple
   , parseAssignment

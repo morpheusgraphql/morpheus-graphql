@@ -5,14 +5,14 @@ module Data.Morpheus.Document.Parsing.DataType
   ( parseDataType
   ) where
 
-import           Data.Morpheus.Document.Parsing.Terms (Parser, nonNull, parseAssignment, parseMaybeTuple, pipe,
-                                                       qualifier, setOf, spaceAndComments, token, wrappedType)
-import           Data.Morpheus.Types.Internal.Data    (DataArgument, DataField (..), DataFingerprint (..),
-                                                       DataFullType (..), DataLeaf (..), DataOutputField, DataType (..),
-                                                       DataTypeWrapper, DataValidator (..), Key)
-import           Data.Text                            (Text)
-import           Text.Megaparsec                      (label, sepBy1, (<|>))
-import           Text.Megaparsec.Char                 (char, space1, string)
+import           Data.Morpheus.Parsing.Internal.Terms2 (Parser, nonNull, parseAssignment, parseMaybeTuple, pipe,
+                                                        qualifier, setOf, spaceAndComments, token, wrappedType)
+import           Data.Morpheus.Types.Internal.Data     (DataArgument, DataField (..), DataFingerprint (..),
+                                                        DataFullType (..), DataLeaf (..), DataOutputField,
+                                                        DataType (..), DataTypeWrapper, DataValidator (..), Key)
+import           Data.Text                             (Text)
+import           Text.Megaparsec                       (label, sepBy1, (<|>))
+import           Text.Megaparsec.Char                  (char, space1, string)
 
 createType :: Text -> a -> DataType a
 createType typeName typeData =
