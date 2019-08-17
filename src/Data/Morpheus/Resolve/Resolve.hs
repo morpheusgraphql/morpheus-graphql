@@ -41,6 +41,7 @@ import           Data.Morpheus.Types.Internal.Validation    (SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Morpheus.Types.IO                     (GQLRequest (..), GQLResponse (..))
 import           Data.Morpheus.Types.Resolver               (GQLRootResolver (..))
+import           Data.Morpheus.Validation.Utils.Utils       (VALIDATION_MODE (..))
 import           Data.Morpheus.Validation.Validation        (validateRequest)
 
 type EventCon event = Eq event
@@ -90,7 +91,7 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
     ---------------------------------------------------------
     validRequest = do
       schema <- fullSchema root
-      query <- parseGQL request >>= validateRequest schema
+      query <- parseGQL request >>= validateRequest schema FULL_VALIDATION
       return (schema, query)
     ----------------------------------------------------------
     execOperator (schema, operation@Operation {operationKind = QUERY}) =

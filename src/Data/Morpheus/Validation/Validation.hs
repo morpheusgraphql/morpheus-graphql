@@ -17,6 +17,7 @@ import           Data.Morpheus.Types.Internal.Validation    (Validation)
 import           Data.Morpheus.Types.Types                  (GQLQueryRoot (..))
 import           Data.Morpheus.Validation.Fragment          (validateFragments)
 import           Data.Morpheus.Validation.Selection         (validateSelectionSet)
+import           Data.Morpheus.Validation.Utils.Utils       (VALIDATION_MODE)
 import           Data.Morpheus.Validation.Variable          (resolveOperationVariables)
 
 getOperationDataType :: RawOperation -> DataTypeLib -> Validation DataOutputObject
@@ -30,17 +31,17 @@ getOperationDataType Operation {operationKind = SUBSCRIPTION, operationPosition}
     Just (_, subscription') -> pure subscription'
     Nothing                 -> Left $ subscriptionIsNotDefined operationPosition
 
-validateRequest :: DataTypeLib -> GQLQueryRoot -> Validation ValidOperation
-validateRequest lib GQLQueryRoot { fragments
-                                 , inputVariables
-                                 , operation = rawOperation@Operation { operationName
-                                                                      , operationKind
-                                                                      , operationSelection
-                                                                      , operationPosition
-                                                                      }
-                                 } = do
+validateRequest :: DataTypeLib -> VALIDATION_MODE -> GQLQueryRoot -> Validation ValidOperation
+validateRequest lib validationMode GQLQueryRoot { fragments
+                                                , inputVariables
+                                                , operation = rawOperation@Operation { operationName
+                                                                                     , operationKind
+                                                                                     , operationSelection
+                                                                                     , operationPosition
+                                                                                     }
+                                                } = do
   operationDataType <- getOperationDataType rawOperation lib
-  variables <- resolveOperationVariables lib fragments (fromList inputVariables) rawOperation
+  variables <- resolveOperationVariables lib fragments (fromList inputVariables) validationMode rawOperation
   validateFragments lib fragments operationSelection
   selection <- validateSelectionSet lib fragments operationName variables operationDataType operationSelection
   pure $ Operation {operationName, operationKind, operationArgs = [], operationSelection = selection, operationPosition}

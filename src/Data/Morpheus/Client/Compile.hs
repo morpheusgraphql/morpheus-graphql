@@ -21,6 +21,7 @@ import           Data.Morpheus.Parser.Parser                (parseGQL)
 import qualified Data.Morpheus.Types.Internal.AST.Operation as O (Operation (..))
 import           Data.Morpheus.Types.IO                     (GQLRequest (..))
 import           Data.Morpheus.Types.Types                  (GQLQueryRoot (..))
+import           Data.Morpheus.Validation.Utils.Utils       (VALIDATION_MODE (..))
 import           Data.Morpheus.Validation.Validation        (validateRequest)
 
 compile :: IO ByteString -> String -> Q Exp
@@ -32,7 +33,7 @@ compile ioSchema queryText = do
       case parseGQL request of
         Left compErrors -> fail (show compErrors)
         Right rawRequest@GQLQueryRoot {operation} ->
-          case validateRequest schema rawRequest of
+          case validateRequest schema WITHOUT_VARIABLES rawRequest of
             Left errors -> fail (unpack $ encode $ renderErrors errors)
             Right validOperation ->
               case operationTypes schema (O.operationArgs operation) validOperation of

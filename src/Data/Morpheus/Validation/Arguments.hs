@@ -63,16 +63,16 @@ validateArgumentValue lib DataField {fieldType, fieldTypeWrappers} arg@(key, Arg
       handleInputError key argumentPosition (validateInputValue lib [] fieldTypeWrappers type' (key, argumentValue))
 
 validateArgument :: DataTypeLib -> Position -> Arguments -> (Text, DataArgument) -> Validation (Text, Argument)
-validateArgument types argumentPosition requestArgs (key', arg) =
-  case lookup key' requestArgs of
-    Nothing                              -> handleNullable
-    Just Argument {argumentValue = Null} -> handleNullable
-    Just argument                        -> validateArgumentValue types arg (key', argument)
+validateArgument types argumentPosition requestArgs (key, arg) =
+  case lookup key requestArgs of
+    Nothing                                            -> handleNullable
+    Just argument@Argument {argumentOrigin = VARIABLE} -> pure (key, argument) -- Variables are already checked in Variable Validation
+    Just Argument {argumentValue = Null}               -> handleNullable
+    Just argument                                      -> validateArgumentValue types arg (key, argument)
   where
-    handleNullable =
-      if isFieldNullable arg
-        then pure (key', Argument {argumentValue = Null, argumentOrigin = INLINE, argumentPosition})
-        else Left $ undefinedArgument (EnhancedKey key' argumentPosition)
+    handleNullable
+      | isFieldNullable arg = pure (key, Argument {argumentValue = Null, argumentOrigin = INLINE, argumentPosition})
+      | otherwise = Left $ undefinedArgument (EnhancedKey key argumentPosition)
 
 checkForUnknownArguments :: (Text, DataOutputField) -> Arguments -> Validation [(Text, DataInputField)]
 checkForUnknownArguments (key, DataField {fieldArgs}) args =
