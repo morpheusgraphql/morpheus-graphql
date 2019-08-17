@@ -9,7 +9,6 @@ module Data.Morpheus.Document.ParseDocument
 
 import           Control.Monad                           ((>=>))
 import           Data.ByteString.Lazy.Char8              (ByteString)
-import           Data.Text                               (Text)
 import qualified Data.Text.Lazy                          as LT (toStrict)
 import           Data.Text.Lazy.Encoding                 (decodeUtf8)
 

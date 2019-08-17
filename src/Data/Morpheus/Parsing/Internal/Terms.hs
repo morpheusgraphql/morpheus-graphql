@@ -6,7 +6,9 @@ module Data.Morpheus.Parsing.Internal.Terms
   , qualifier
   , variable
   , spaceAndComments
+  , pipeLiteral
   -------------
+  , setOf
   , onType
   , spreadLiteral
   , parseNonNull
@@ -20,10 +22,17 @@ import           Data.Morpheus.Parsing.Internal.Internal (Parser, Position)
 import           Data.Morpheus.Types.Internal.Data       (DataTypeWrapper (..))
 import           Data.Morpheus.Types.Internal.Value      (convertToHaskellName)
 import           Data.Text                               (Text, pack)
-import           Text.Megaparsec                         (between, getSourcePos, label, many, sepBy, skipMany,
+import           Text.Megaparsec                         (between, getSourcePos, label, many, sepBy, sepEndBy, skipMany,
                                                           skipManyTill, (<?>), (<|>))
 import           Text.Megaparsec.Char                    (char, digitChar, letterChar, newline, printChar, space,
                                                           space1, string)
+
+-- LITERALS
+setLiteral :: Parser [a] -> Parser [a]
+setLiteral = between (char '{' *> spaceAndComments) (char '}' *> spaceAndComments)
+
+pipeLiteral :: Parser ()
+pipeLiteral = char '|' *> spaceAndComments
 
 -- PRIMITIVE
 ------------------------------------
@@ -57,6 +66,9 @@ spaceAndComments = space *> skipMany inlineComment *> space
 
 -- COMPLEX
 -----------------------------
+setOf :: Parser a -> Parser [a]
+setOf entry = setLiteral (entry `sepEndBy` many (char ',' *> spaceAndComments))
+
 parseNonNull :: Parser [DataTypeWrapper]
 parseNonNull = do
   wrapper <- (char '!' $> [NonNullType]) <|> pure []
@@ -75,11 +87,11 @@ parseTuple parser =
     (parser `sepBy` (many (char ',') *> spaceAndComments) <?> "empty Tuple value!")
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
-parseAssignment nameParser' valueParser' =
+parseAssignment nameParser valueParser =
   label "assignment" $ do
-    name' <- nameParser'
-    char ':' *> space
-    value' <- valueParser'
+    name' <- nameParser
+    char ':' *> spaceAndComments
+    value' <- valueParser
     pure (name', value')
 
 onType :: Parser Text

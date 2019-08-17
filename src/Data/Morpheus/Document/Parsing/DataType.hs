@@ -5,16 +5,16 @@ module Data.Morpheus.Document.Parsing.DataType
   ( parseDataType
   ) where
 
-import           Data.Morpheus.Parsing.Internal.DocumentTerms (parseAssignment, pipe, setOf)
-import           Data.Morpheus.Parsing.Internal.Internal      (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms         (parseMaybeTuple, parseNonNull, parseWrappedType,
-                                                               qualifier, spaceAndComments, token)
-import           Data.Morpheus.Types.Internal.Data            (DataArgument, DataField (..), DataFingerprint (..),
-                                                               DataFullType (..), DataLeaf (..), DataOutputField,
-                                                               DataType (..), DataTypeWrapper, DataValidator (..), Key)
-import           Data.Text                                    (Text)
-import           Text.Megaparsec                              (label, sepBy1, (<|>))
-import           Text.Megaparsec.Char                         (char, space1, string)
+import           Data.Morpheus.Parsing.Internal.Internal (Parser)
+import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parseMaybeTuple, parseNonNull,
+                                                          parseWrappedType, pipeLiteral, qualifier, setOf,
+                                                          spaceAndComments, token)
+import           Data.Morpheus.Types.Internal.Data       (DataArgument, DataField (..), DataFingerprint (..),
+                                                          DataFullType (..), DataLeaf (..), DataOutputField,
+                                                          DataType (..), DataTypeWrapper, DataValidator (..), Key)
+import           Data.Text                               (Text)
+import           Text.Megaparsec                         (label, sepBy1, (<|>))
+import           Text.Megaparsec.Char                    (char, space1, string)
 
 createType :: Text -> a -> DataType a
 createType typeName typeData =
@@ -97,7 +97,7 @@ dataUnion =
     spaceAndComments
     pure (typeName, Union $ createType typeName typeData)
   where
-    unionsParser = token `sepBy1` pipe
+    unionsParser = token `sepBy1` pipeLiteral
     unionField fieldType = createField () "" ([], fieldType)
 
 parseDataType :: Parser (Text, DataFullType)
