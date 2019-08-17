@@ -6,8 +6,8 @@ module Data.Morpheus.Parser.Body
 
 import           Data.Morpheus.Parser.Arguments                (maybeArguments)
 import           Data.Morpheus.Parsing.Internal.Internal       (Parser)
-import           Data.Morpheus.Parsing.Internal.Primitive      (qualifier, token)
-import           Data.Morpheus.Parsing.Internal.Terms          (onType, parseAssignment, spreadLiteral)
+import           Data.Morpheus.Parsing.Internal.Terms          (onType, parseAssignment, qualifier, spreadLiteral,
+                                                                token)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
                                                                 RawSelection' (..), RawSelectionSet, Reference (..))
 import           Data.Text                                     (Text)

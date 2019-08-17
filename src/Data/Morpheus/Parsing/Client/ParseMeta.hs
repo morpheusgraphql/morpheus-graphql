@@ -5,12 +5,11 @@ module Data.Morpheus.Parsing.Client.ParseMeta
   ( parseMeta
   ) where
 
-import           Data.Morpheus.Parsing.Internal.Internal  (Parser)
-import           Data.Morpheus.Parsing.Internal.Primitive (token)
-import           Data.Morpheus.Parsing.Internal.Terms     (parseAssignment)
-import           Data.Text                                (Text)
-import           Text.Megaparsec                          (between, label)
-import           Text.Megaparsec.Char                     (char, space)
+import           Data.Morpheus.Parsing.Internal.Internal (Parser)
+import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, token)
+import           Data.Text                               (Text)
+import           Text.Megaparsec                         (between, label)
+import           Text.Megaparsec.Char                    (char, space)
 
 parseMeta :: Parser (Text, Text)
 parseMeta =

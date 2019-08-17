@@ -2,8 +2,12 @@
 {-# LANGUAGE TupleSections     #-}
 
 module Data.Morpheus.Parsing.Internal.Terms
-  ( onType
+  ( token
+  , qualifier
+  , variable
   , spaceAndComments
+  -------------
+  , onType
   , spreadLiteral
   , parseNonNull
   , parseMaybeTuple
@@ -11,20 +15,48 @@ module Data.Morpheus.Parsing.Internal.Terms
   , parseWrappedType
   ) where
 
-import           Data.Functor                             (($>))
-import           Data.Morpheus.Parsing.Internal.Internal  (Parser, Position)
-import           Data.Morpheus.Parsing.Internal.Primitive (token)
-import           Data.Morpheus.Types.Internal.Data        (DataTypeWrapper (..))
-import           Data.Text                                (Text)
-import           Text.Megaparsec                          (between, getSourcePos, label, sepBy, skipMany, skipManyTill,
-                                                           (<?>), (<|>))
-import           Text.Megaparsec.Char                     (char, newline, printChar, space, space1, string)
+import           Data.Functor                            (($>))
+import           Data.Morpheus.Parsing.Internal.Internal (Parser, Position)
+import           Data.Morpheus.Types.Internal.Data       (DataTypeWrapper (..))
+import           Data.Morpheus.Types.Internal.Value      (convertToHaskellName)
+import           Data.Text                               (Text, pack)
+import           Text.Megaparsec                         (between, getSourcePos, label, many, sepBy, skipMany,
+                                                          skipManyTill, (<?>), (<|>))
+import           Text.Megaparsec.Char                    (char, digitChar, letterChar, newline, printChar, space,
+                                                          space1, string)
+
+-- PRIMITIVE
+------------------------------------
+token :: Parser Text
+token =
+  label "token" $ do
+    firstChar <- letterChar <|> char '_'
+    restToken <- many $ letterChar <|> char '_' <|> digitChar
+    spaceAndComments
+    return $ convertToHaskellName $ pack $ firstChar : restToken
+
+qualifier :: Parser (Text, Position)
+qualifier =
+  label "qualifier" $ do
+    position <- getSourcePos
+    value <- token
+    return (value, position)
+
+variable :: Parser (Text, Position)
+variable =
+  label "variable" $ do
+    position' <- getSourcePos
+    _ <- char '$'
+    varName' <- token
+    return (varName', position')
 
 spaceAndComments :: Parser ()
 spaceAndComments = space *> skipMany inlineComment *> space
   where
     inlineComment = char '#' *> skipManyTill printChar newline *> space
 
+-- COMPLEX
+-----------------------------
 parseNonNull :: Parser [DataTypeWrapper]
 parseNonNull = do
   wrapper <- (char '!' $> [NonNullType]) <|> pure []

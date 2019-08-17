@@ -3,26 +3,14 @@
 module Data.Morpheus.Parsing.Internal.DocumentTerms
   ( parseMaybeTuple
   , parseAssignment
-  , token
-  , qualifier
   , pipe
   , setOf
-  , Parser
-  , Position
   ) where
 
-import           Data.Morpheus.Parsing.Internal.Terms (spaceAndComments)
-import           Data.Morpheus.Types.Internal.Value   (convertToHaskellName)
-import           Data.Text                            (Text)
-import qualified Data.Text                            as T (pack)
-import           Data.Void                            (Void)
-import           Text.Megaparsec                      (Parsec, SourcePos, between, getSourcePos, label, many, sepBy,
-                                                       sepEndBy, (<?>), (<|>))
-import           Text.Megaparsec.Char                 (char, digitChar, letterChar)
-
-type Position = SourcePos
-
-type Parser = Parsec Void Text
+import           Data.Morpheus.Parsing.Internal.Internal (Parser)
+import           Data.Morpheus.Parsing.Internal.Terms    (spaceAndComments)
+import           Text.Megaparsec                         (between, label, many, sepBy, sepEndBy, (<?>), (<|>))
+import           Text.Megaparsec.Char                    (char)
 
 setOf :: Parser a -> Parser [a]
 setOf entry = setLiteral (entry `sepEndBy` many (char ',' *> spaceAndComments))
@@ -51,18 +39,3 @@ parseAssignment nameParser' valueParser' =
     char ':' *> spaceAndComments
     value' <- valueParser'
     pure (name', value')
-
-token :: Parser Text
-token =
-  label "token" $ do
-    firstChar <- letterChar <|> char '_'
-    restToken <- many $ letterChar <|> char '_' <|> digitChar
-    spaceAndComments
-    return $ convertToHaskellName $ T.pack $ firstChar : restToken
-
-qualifier :: Parser (Text, Position)
-qualifier =
-  label "qualifier" $ do
-    position' <- getSourcePos
-    value <- token
-    return (value, position')

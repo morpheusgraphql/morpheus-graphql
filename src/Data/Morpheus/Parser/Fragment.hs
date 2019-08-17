@@ -6,8 +6,7 @@ module Data.Morpheus.Parser.Fragment
 
 import           Data.Morpheus.Parser.Body                     (entries)
 import           Data.Morpheus.Parsing.Internal.Internal       (Parser)
-import           Data.Morpheus.Parsing.Internal.Primitive      (token)
-import           Data.Morpheus.Parsing.Internal.Terms          (onType)
+import           Data.Morpheus.Parsing.Internal.Terms          (onType, token)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..))
 import           Data.Text                                     (Text)
 import           Text.Megaparsec                               (getSourcePos, label)

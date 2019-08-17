@@ -16,8 +16,7 @@ import           Data.Morpheus.Types.IO                  (GQLRequest (..))
 import           Data.Morpheus.Types.Types               (GQLQueryRoot (..))
 import           Data.Text                               (Text)
 import           Data.Void                               (Void)
-import           Text.Megaparsec                         (ParseErrorBundle (ParseErrorBundle), eof, label, manyTill,
-                                                          runParser, (<|>))
+import           Text.Megaparsec                         (ParseErrorBundle, eof, label, manyTill, runParser, (<|>))
 import           Text.Megaparsec.Char                    (space)
 
 parseGQLSyntax :: Text -> Either (ParseErrorBundle Text Void) GQLQueryRoot

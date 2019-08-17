@@ -6,8 +6,7 @@ module Data.Morpheus.Parser.Arguments
 
 import           Data.Morpheus.Parser.Value                    (enumValue, parseValue)
 import           Data.Morpheus.Parsing.Internal.Internal       (Parser)
-import           Data.Morpheus.Parsing.Internal.Primitive      (token, variable)
-import           Data.Morpheus.Parsing.Internal.Terms          (parseAssignment, parseMaybeTuple)
+import           Data.Morpheus.Parsing.Internal.Terms          (parseAssignment, parseMaybeTuple, token, variable)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Argument (..), RawArgument (..), RawArguments,
                                                                 Reference (..))
 import           Data.Morpheus.Types.Internal.AST.Selection    (ArgumentOrigin (..))
