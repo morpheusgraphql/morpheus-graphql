@@ -32,7 +32,7 @@ import           Web.Scotty                     (body, file, get, post, raw, sco
 
 defineQuery
   [gql|
-    # {schema:name}
+    # Query Hero
     query GetHero ($god: Realm, $charID: String!)
       {
         deity (mythology:$god) {

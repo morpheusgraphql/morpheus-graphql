@@ -13,9 +13,7 @@ module Data.Morpheus.Server.Apollo
 import           Data.Aeson                         (FromJSON (..),Value(..), ToJSON (..), eitherDecode, encode, pairs,
                                                      withObject, (.:), (.:?), (.=))
 import           Data.ByteString.Lazy.Char8         (ByteString)
-import           Data.Map                           (Map)
 import           Data.Morpheus.Types                (GQLRequest (..))
-import qualified Data.Morpheus.Types.Internal.Value as V (Value)
 import           Data.Morpheus.Types.IO             (GQLResponse)
 import           Data.Semigroup                     ((<>))
 import           Data.Text                          (Text)
