@@ -4,9 +4,9 @@ module Data.Morpheus.Parser.Arguments
   ( maybeArguments
   ) where
 
-import           Data.Morpheus.Parser.Value                    (enumValue, parseValue)
 import           Data.Morpheus.Parsing.Internal.Internal       (Parser)
 import           Data.Morpheus.Parsing.Internal.Terms          (parseAssignment, parseMaybeTuple, token, variable)
+import           Data.Morpheus.Parsing.Request.Value           (enumValue, parseValue)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Argument (..), RawArgument (..), RawArguments,
                                                                 Reference (..))
 import           Data.Morpheus.Types.Internal.AST.Selection    (ArgumentOrigin (..))

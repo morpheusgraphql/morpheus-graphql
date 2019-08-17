@@ -7,16 +7,19 @@ module Data.Morpheus.Parser.Operation
   ) where
 
 import           Data.Functor                               (($>))
-import           Data.Morpheus.Parser.Body                  (entries)
-import           Data.Morpheus.Parsing.Internal.Internal    (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms       (parseAssignment, parseMaybeTuple, parseNonNull, token,
-                                                             variable)
-import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), OperationKind (..), RawOperation,
-                                                             Variable (..))
-import           Data.Morpheus.Types.Internal.Data          (DataTypeWrapper (..))
 import           Data.Text                                  (Text)
 import           Text.Megaparsec                            (between, getSourcePos, label, (<?>), (<|>))
 import           Text.Megaparsec.Char                       (char, space, space1, string)
+
+--
+-- MORPHEUS
+import           Data.Morpheus.Parsing.Internal.Internal    (Parser)
+import           Data.Morpheus.Parsing.Internal.Terms       (parseAssignment, parseMaybeTuple, parseNonNull, token,
+                                                             variable)
+import           Data.Morpheus.Parsing.Request.Body         (entries)
+import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), OperationKind (..), RawOperation,
+                                                             Variable (..))
+import           Data.Morpheus.Types.Internal.Data          (DataTypeWrapper (..))
 
 wrapMock :: Parser ([DataTypeWrapper], Text)
 wrapMock = do

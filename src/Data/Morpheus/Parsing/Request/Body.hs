@@ -4,16 +4,19 @@ module Data.Morpheus.Parser.Body
   ( entries
   ) where
 
-import           Data.Morpheus.Parser.Arguments                (maybeArguments)
-import           Data.Morpheus.Parsing.Internal.Internal       (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms          (onType, parseAssignment, qualifier, spreadLiteral,
-                                                                token)
-import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
-                                                                RawSelection' (..), RawSelectionSet, Reference (..))
 import           Data.Text                                     (Text)
 import           Text.Megaparsec                               (between, getSourcePos, label, many, sepEndBy, try,
                                                                 (<|>))
 import           Text.Megaparsec.Char                          (char, space)
+
+--
+-- MORPHEUS
+import           Data.Morpheus.Parsing.Internal.Internal       (Parser)
+import           Data.Morpheus.Parsing.Internal.Terms          (onType, parseAssignment, qualifier, spreadLiteral,
+                                                                token)
+import           Data.Morpheus.Parsing.Request.Arguments       (maybeArguments)
+import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
+                                                                RawSelection' (..), RawSelectionSet, Reference (..))
 
 spread :: Parser (Text, RawSelection)
 spread =

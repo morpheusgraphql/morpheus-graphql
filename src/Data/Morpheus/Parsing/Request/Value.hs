@@ -7,13 +7,16 @@ module Data.Morpheus.Parser.Value
   ) where
 
 import           Data.Functor                            (($>))
-import           Data.Morpheus.Parsing.Internal.Internal (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, token)
-import           Data.Morpheus.Types.Internal.Value      (ScalarValue (..), Value (..), decodeScientific)
 import           Data.Text                               (pack)
 import           Text.Megaparsec                         (anySingleBut, between, choice, label, many, sepBy, (<|>))
 import           Text.Megaparsec.Char                    (char, space, string)
 import           Text.Megaparsec.Char.Lexer              (scientific)
+
+--
+-- MORPHEUS
+import           Data.Morpheus.Parsing.Internal.Internal (Parser)
+import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, token)
+import           Data.Morpheus.Types.Internal.Value      (ScalarValue (..), Value (..), decodeScientific)
 
 parseValue :: Parser Value
 parseValue =

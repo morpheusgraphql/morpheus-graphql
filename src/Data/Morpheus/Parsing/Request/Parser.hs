@@ -7,17 +7,20 @@ module Data.Morpheus.Parser.Parser
 
 import qualified Data.Aeson                              as Aeson (Value (..))
 import           Data.HashMap.Lazy                       (toList)
-import           Data.Morpheus.Parser.Fragment           (fragment)
-import           Data.Morpheus.Parser.Operation          (parseAnonymousQuery, parseOperation)
-import           Data.Morpheus.Parsing.Internal.Internal (Parser, processErrorBundle)
-import           Data.Morpheus.Types.Internal.Validation (Validation)
-import           Data.Morpheus.Types.Internal.Value      (Value (..), replaceValue)
-import           Data.Morpheus.Types.IO                  (GQLRequest (..))
-import           Data.Morpheus.Types.Types               (GQLQueryRoot (..))
 import           Data.Text                               (Text)
 import           Data.Void                               (Void)
 import           Text.Megaparsec                         (ParseErrorBundle, eof, label, manyTill, runParser, (<|>))
 import           Text.Megaparsec.Char                    (space)
+
+--
+-- MORPHEUS
+import           Data.Morpheus.Parsing.Internal.Internal (Parser, processErrorBundle)
+import           Data.Morpheus.Parsing.Request.Fragment  (fragment)
+import           Data.Morpheus.Parsing.Request.Operation (parseAnonymousQuery, parseOperation)
+import           Data.Morpheus.Types.Internal.Validation (Validation)
+import           Data.Morpheus.Types.Internal.Value      (Value (..), replaceValue)
+import           Data.Morpheus.Types.IO                  (GQLRequest (..))
+import           Data.Morpheus.Types.Types               (GQLQueryRoot (..))
 
 parseGQLSyntax :: Text -> Either (ParseErrorBundle Text Void) GQLQueryRoot
 parseGQLSyntax = runParser request "<input>"

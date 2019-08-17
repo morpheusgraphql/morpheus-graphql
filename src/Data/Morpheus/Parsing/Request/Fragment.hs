@@ -4,13 +4,15 @@ module Data.Morpheus.Parser.Fragment
   ( fragment
   ) where
 
-import           Data.Morpheus.Parser.Body                     (entries)
-import           Data.Morpheus.Parsing.Internal.Internal       (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms          (onType, token)
-import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..))
 import           Data.Text                                     (Text)
 import           Text.Megaparsec                               (getSourcePos, label)
 import           Text.Megaparsec.Char                          (space, string)
+
+-- MORPHEUS
+import           Data.Morpheus.Parsing.Internal.Internal       (Parser)
+import           Data.Morpheus.Parsing.Internal.Terms          (onType, token)
+import           Data.Morpheus.Parsing.Request.Body            (entries)
+import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..))
 
 fragment :: Parser (Text, Fragment)
 fragment =
