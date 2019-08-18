@@ -15,8 +15,7 @@ module Main
 import           Control.Monad.IO.Class         (liftIO)
 import           Data.Aeson                     (ToJSON (..))
 import           Data.ByteString.Lazy           (ByteString)
-import qualified Data.ByteString.Lazy           as L (readFile)
-import           Data.Functor.Identity          (Identity(..))
+import           Data.Functor.Identity          (Identity (..))
 import           Data.Morpheus                  (Interpreter (..))
 import           Data.Morpheus.Client           (Fetch (..), defineQuery)
 import           Data.Morpheus.Document         (toGraphQLDocument)
@@ -24,7 +23,6 @@ import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQL
 import           Deprecated.API                 (Channel, Content, gqlRoot)
 import           GHC.Generics
 import           GQLClient                      (gql)
-import           Language.Haskell.TH.Quote
 import           Mythology.API                  (mythologyApi)
 import qualified Network.Wai                    as Wai
 import qualified Network.Wai.Handler.Warp       as Warp

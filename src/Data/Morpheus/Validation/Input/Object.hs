@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Validation.Input.Object
@@ -55,7 +56,7 @@ validateInputValue lib' prop' = validate
             getField = lookupField _name parentFields' (UnknownField prop' _name)
     -- VALIDATE INPUT UNION
     -- TODO: Validate Union
-    validate [] (UnionKind DataType {typeData = parentFields'}) (_, Object fields) = return (Object fields)
+    validate [] (UnionKind DataType {typeData}) (_, Object fields) = return (Object fields)
     {-- VALIDATE SCALAR --}
     validate [] (EnumKind DataType {typeData = tags', typeName = name'}) (_, value') =
       validateEnum (UnexpectedType prop' name' value' Nothing) tags' value'
