@@ -16,6 +16,7 @@ import           Control.Monad.IO.Class         (liftIO)
 import           Data.Aeson                     (ToJSON (..))
 import           Data.ByteString.Lazy           (ByteString)
 import qualified Data.ByteString.Lazy           as L (readFile)
+import           Data.Functor.Identity          (Identity(..))
 import           Data.Morpheus                  (Interpreter (..))
 import           Data.Morpheus.Client           (Fetch (..), defineQuery)
 import           Data.Morpheus.Document         (toGraphQLDocument)
@@ -77,6 +78,6 @@ main = do
       scottyApp $ do
         post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
         get "/" $ file "examples/index.html"
-        get "/schema.gql" $ raw (toGraphQLDocument gqlRoot)
+        get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
         post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
         get "/mythology" $ file "examples/index.html"
