@@ -13,7 +13,7 @@ import           Data.Text.Lazy.Encoding                 (decodeUtf8)
 
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Document.Parser   (parseDocument)
-import           Data.Morpheus.Schema.SchemaAPI          (schemaTypes)
+import           Data.Morpheus.Schema.SchemaAPI          (defaultTypes)
 import           Data.Morpheus.Types.Internal.Data       (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 
@@ -21,4 +21,4 @@ parseGraphQLDocument :: ByteString -> Validation DataTypeLib
 parseGraphQLDocument x = parseDocument (LT.toStrict $ decodeUtf8 x)
 
 parseFullGQLDocument :: ByteString -> Validation DataTypeLib
-parseFullGQLDocument = parseGraphQLDocument >=> schemaTypes
+parseFullGQLDocument = parseGraphQLDocument >=> defaultTypes

@@ -26,7 +26,7 @@ import           Data.Morpheus.Types.GQLType        (GQLType (KIND, description)
 import           Data.Morpheus.Types.ID             (ID (..))
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
 import           Data.Morpheus.Types.IO             (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver       (Event (..), GQLRootResolver (..), MutResolver, Resolver, Resolver,
+import           Data.Morpheus.Types.Resolver       (Event (..), GQLRootResolver (..), MutResolver, Resolver,
                                                      SubResolver, SubRootRes, mutResolver, resolver, toMutResolver)
 
 type IORes = Resolver IO
