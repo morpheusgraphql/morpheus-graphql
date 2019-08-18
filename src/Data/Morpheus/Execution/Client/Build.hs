@@ -7,8 +7,6 @@
 
 module Data.Morpheus.Execution.Client.Build
   ( defineQuery
-  , defineQueryWith
-
   ) where
 
 import           Control.Lens                            (declareLenses)
@@ -58,15 +56,15 @@ defineOperationType (argType, argumentTypes) query datatype = do
   args <- argumentTypes
   pure $ rootType <> typeClassFetch <> args
 
-defineQuery :: QueryD -> Q [Dec]
-defineQuery QueryD {queryTypes = rootType:subTypes, queryText, queryArgTypes} = do
+defineQueryD :: QueryD -> Q [Dec]
+defineQueryD QueryD {queryTypes = rootType:subTypes, queryText, queryArgTypes} = do
   rootDecs <- defineOperationType (queryArgumentType queryArgTypes) queryText rootType
   subTypeDecs <- concat <$> mapM defineJSONType subTypes
   return $ rootDecs ++ subTypeDecs
-defineQuery QueryD {queryTypes = []} = return []
+defineQueryD QueryD {queryTypes = []} = return []
 
-defineQueryWith :: IO (Validation DataTypeLib) -> (GQLQueryRoot, String) -> Q [Dec]
-defineQueryWith ioSchema queryRoot = do
+defineQuery :: IO (Validation DataTypeLib) -> (GQLQueryRoot, String) -> Q [Dec]
+defineQuery ioSchema queryRoot = do
   schema <- runIO ioSchema
   validate schema
   where
@@ -75,5 +73,5 @@ defineQueryWith ioSchema queryRoot = do
         Left errors -> fail (show errors)
         Right schema ->
           case validateWith schema queryRoot of
-            Left errors -> fail (show errors)
-            Right query -> defineQuery query
+            Left errors  -> fail (show errors)
+            Right queryD -> defineQueryD queryD
