@@ -49,7 +49,8 @@ renderTuple :: Text -> Text
 renderTuple typeName = "(" <> typeName <> ")"
 
 renderSet :: [Text] -> Text
-renderSet fields = bracket "{ " <> intercalate ("\n  ," <> indent) fields <> bracket "}\n"
+renderSet fields =
+  bracket "{ " <> intercalate ("\n  ," <> indent) fields <> bracket "}\n"
   where
     bracket x = "\n    " <> x
 
@@ -78,10 +79,11 @@ data Scope
   | Subscription
   | Query
 
-data Context = Context
-  { moduleName :: Text
-  , imports    :: [(Text, [Text])]
-  , extensions :: [Text]
-  , scope      :: Scope
-  , pubSub     :: (Text, Text)
-  }
+data Context =
+  Context
+    { moduleName :: Text
+    , imports    :: [(Text, [Text])]
+    , extensions :: [Text]
+    , scope      :: Scope
+    , pubSub     :: (Text, Text)
+    }

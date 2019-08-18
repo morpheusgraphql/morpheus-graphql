@@ -17,11 +17,13 @@ import           Data.Morpheus.Types.Internal.Validation (JSONError (..))
 import           Data.Morpheus.Types.Internal.Value      (Value)
 
 -- | GraphQL HTTP Request Body
-data GQLRequest = GQLRequest
-  { query         :: Key
-  , operationName :: Maybe Key
-  , variables     :: Maybe Aeson.Value
-  } deriving (Show, Generic, FromJSON, ToJSON)
+data GQLRequest =
+  GQLRequest
+    { query         :: Key
+    , operationName :: Maybe Key
+    , variables     :: Maybe Aeson.Value
+    }
+  deriving (Show, Generic, FromJSON, ToJSON)
 
 -- | GraphQL Response
 data GQLResponse

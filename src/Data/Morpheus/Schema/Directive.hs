@@ -19,9 +19,11 @@ instance GQLType Directive where
   __typeName = const "__Directive"
   __typeVisibility = const False
 
-data Directive = Directive
-  { name        :: Text
-  , description :: Maybe Text
-  , locations   :: [DirectiveLocation]
-  , args        :: [InputValue]
-  } deriving (Generic)
+data Directive =
+  Directive
+    { name        :: Text
+    , description :: Maybe Text
+    , locations   :: [DirectiveLocation]
+    , args        :: [InputValue]
+    }
+  deriving (Generic)

@@ -17,7 +17,9 @@ valueArgument =
   label "valueArgument" $ do
     argumentPosition <- getSourcePos
     argumentValue <- parseValue <|> enumValue
-    pure $ RawArgument $ Argument {argumentValue, argumentOrigin = INLINE, argumentPosition}
+    pure $
+      RawArgument $
+      Argument {argumentValue, argumentOrigin = INLINE, argumentPosition}
 
 variableArgument :: Parser RawArgument
 variableArgument =

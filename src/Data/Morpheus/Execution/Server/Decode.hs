@@ -42,7 +42,8 @@ instance (Datatype c, DecodeInputUnion f) => DecodeInputUnion (M1 D c f) where
   decodeUnion = fmap M1 . decodeUnion
   unionTags _ = unionTags (Proxy @f)
 
-instance (Constructor c, DecodeInputUnion f) => DecodeInputUnion (M1 C c f) where
+instance (Constructor c, DecodeInputUnion f) =>
+         DecodeInputUnion (M1 C c f) where
   decodeUnion = fmap M1 . decodeUnion
   unionTags _ = unionTags (Proxy @f)
 
@@ -50,13 +51,16 @@ instance (Selector c, DecodeInputUnion f) => DecodeInputUnion (M1 S c f) where
   decodeUnion = fmap M1 . decodeUnion
   unionTags _ = unionTags (Proxy @f)
 
-instance (DecodeInputUnion a, DecodeInputUnion b) => DecodeInputUnion (a :+: b) where
+instance (DecodeInputUnion a, DecodeInputUnion b) =>
+         DecodeInputUnion (a :+: b) where
   decodeUnion (Object pairs) =
     case lookup "tag" pairs of
       Nothing -> internalArgumentError "tag not found on Input Union"
       Just (Enum name) ->
         case lookup name pairs of
-          Nothing -> internalArgumentError ("type \"" <> name <> "\" was not provided on object")
+          Nothing ->
+            internalArgumentError
+              ("type \"" <> name <> "\" was not provided on object")
           -- Decodes first Matching Union Type Value
           Just value
             | [name] == l1Tags -> L1 <$> decodeUnion value
@@ -66,7 +70,9 @@ instance (DecodeInputUnion a, DecodeInputUnion b) => DecodeInputUnion (a :+: b) 
           Just _
             -- JUMPS to Next Union Pair
             | name `elem` r1Tags -> R1 <$> decodeUnion (Object pairs)
-          Just _ -> internalArgumentError ("type \"" <> name <> "\" could not find in union")
+          Just _ ->
+            internalArgumentError
+              ("type \"" <> name <> "\" could not find in union")
         where l1Tags = unionTags $ Proxy @a
               r1Tags = unionTags $ Proxy @b
       Just _ -> internalArgumentError "tag must be Enum"
@@ -82,8 +88,10 @@ instance (GQLType a, Decode a (KIND a)) => DecodeInputUnion (K1 i a) where
 --
 type ArgumentsConstraint a = (Generic a, DecodeInputObject (Rep a))
 
-decodeArguments :: (Generic p, DecodeInputObject (Rep p)) => Arguments -> Validation p
-decodeArguments args = to <$> decodeObject (Object $ fmap (\(x, y) -> (x, argumentValue y)) args)
+decodeArguments ::
+     (Generic p, DecodeInputObject (Rep p)) => Arguments -> Validation p
+decodeArguments args =
+  to <$> decodeObject (Object $ fmap (\(x, y) -> (x, argumentValue y)) args)
 
 class DecodeInputObject f where
   decodeObject :: Value -> Validation (f a)
@@ -115,7 +123,8 @@ instance DecodeInputObject f => DecodeInputObject (M1 D c f) where
 instance DecodeInputObject f => DecodeInputObject (M1 C c f) where
   decodeObject = fmap M1 . decodeObject
 
-instance (DecodeInputObject f, DecodeInputObject g) => DecodeInputObject (f :*: g) where
+instance (DecodeInputObject f, DecodeInputObject g) =>
+         DecodeInputObject (f :*: g) where
   decodeObject gql = (:*:) <$> decodeObject gql <*> decodeObject gql
 
 instance (Decode a (KIND a)) => DecodeInputObject (K1 i a) where

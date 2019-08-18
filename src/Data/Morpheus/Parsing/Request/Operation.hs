@@ -23,7 +23,8 @@ import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), Ope
 operationArgument :: Parser (Text, Variable ())
 operationArgument =
   label "operatorArgument" $ do
-    ((name, variablePosition), (wrappers, variableType)) <- parseAssignment variable parseWrappedType
+    ((name, variablePosition), (wrappers, variableType)) <-
+      parseAssignment variable parseWrappedType
     nonNull <- parseNonNull
     pure
       ( name
@@ -43,7 +44,14 @@ parseOperation =
     operationName <- token
     operationArgs <- parseMaybeTuple operationArgument
     operationSelection <- entries
-    pure (Operation {operationName, operationKind, operationArgs, operationSelection, operationPosition})
+    pure
+      (Operation
+         { operationName
+         , operationKind
+         , operationArgs
+         , operationSelection
+         , operationPosition
+         })
 
 parseAnonymousQuery :: Parser RawOperation
 parseAnonymousQuery =
@@ -63,6 +71,8 @@ parseAnonymousQuery =
 parseOperationKind :: Parser OperationKind
 parseOperationKind =
   label "operatorKind" $ do
-    kind <- (string "query" $> QUERY) <|> (string "mutation" $> MUTATION) <|> (string "subscription" $> SUBSCRIPTION)
+    kind <-
+      (string "query" $> QUERY) <|> (string "mutation" $> MUTATION) <|>
+      (string "subscription" $> SUBSCRIPTION)
     space1
     return kind

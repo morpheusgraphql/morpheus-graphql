@@ -29,7 +29,8 @@ import           Text.Megaparsec.Char                    (char, digitChar, lette
 
 -- LITERALS
 setLiteral :: Parser [a] -> Parser [a]
-setLiteral = between (char '{' *> spaceAndComments) (char '}' *> spaceAndComments)
+setLiteral =
+  between (char '{' *> spaceAndComments) (char '}' *> spaceAndComments)
 
 pipeLiteral :: Parser ()
 pipeLiteral = char '|' *> spaceAndComments
@@ -84,7 +85,8 @@ parseTuple parser =
   between
     (char '(' *> spaceAndComments)
     (char ')' *> spaceAndComments)
-    (parser `sepBy` (many (char ',') *> spaceAndComments) <?> "empty Tuple value!")
+    (parser `sepBy` (many (char ',') *> spaceAndComments) <?>
+     "empty Tuple value!")
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
 parseAssignment nameParser valueParser =

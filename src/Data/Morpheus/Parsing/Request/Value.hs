@@ -21,7 +21,10 @@ import           Data.Morpheus.Types.Internal.Value      (ScalarValue (..), Valu
 parseValue :: Parser Value
 parseValue =
   label "value" $ do
-    value <- valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue <|> objectValue <|> listValue
+    value <-
+      valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue <|>
+      objectValue <|>
+      listValue
     space
     return value
 
@@ -56,11 +59,18 @@ escaped =
     escapeChar code replacement = char code >> return replacement
 
 stringValue :: Parser Value
-stringValue = label "stringValue" $ Scalar . String . pack <$> between (char '"') (char '"') (many escaped)
+stringValue =
+  label "stringValue" $
+  Scalar . String . pack <$> between (char '"') (char '"') (many escaped)
 
 listValue :: Parser Value
 listValue =
-  label "listValue" $ List <$> between (char '[' *> space) (char ']' *> space) (parseValue `sepBy` (char ',' *> space))
+  label "listValue" $
+  List <$>
+  between
+    (char '[' *> space)
+    (char ']' *> space)
+    (parseValue `sepBy` (char ',' *> space))
 
 objectValue :: Parser Value
 objectValue = label "objectValue" $ Object <$> setOf entry

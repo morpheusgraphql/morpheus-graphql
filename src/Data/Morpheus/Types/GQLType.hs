@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds    #-}
+{-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE DefaultSignatures    #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
@@ -43,7 +43,8 @@ replacePairCon x = x
 ignoreResolver :: (TyCon, [TypeRep]) -> [TyCon]
 ignoreResolver (con, _)
   | con == resolverCon = []
-ignoreResolver (con, args) = con : concatMap (ignoreResolver . splitTyConApp) args
+ignoreResolver (con, args) =
+  con : concatMap (ignoreResolver . splitTyConApp) args
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
@@ -70,13 +71,17 @@ class GQLType a where
     Proxy a -> Text
   __typeName _ = intercalate "_" (getName $ Proxy @a)
     where
-      getName = fmap (map (pack . tyConName)) (map replacePairCon . ignoreResolver . splitTyConApp . typeRep)
+      getName =
+        fmap
+          (map (pack . tyConName))
+          (map replacePairCon . ignoreResolver . splitTyConApp . typeRep)
   __typeFingerprint :: Proxy a -> DataFingerprint
   default __typeFingerprint :: (Typeable a) =>
     Proxy a -> DataFingerprint
   __typeFingerprint _ = TypeableFingerprint $ conFingerprints (Proxy @a)
     where
-      conFingerprints = fmap (map tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
+      conFingerprints =
+        fmap (map tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 
 instance GQLType Int where
   type KIND Int = SCALAR
@@ -115,10 +120,12 @@ instance GQLType a => GQLType (Set a) where
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
-instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) where
+instance (Typeable a, Typeable b, GQLType a, GQLType b) =>
+         GQLType (Pair a b) where
   type KIND (Pair a b) = OBJECT
 
-instance (Typeable a, Typeable b, Typeable m, GQLType a, GQLType b) => GQLType (MapKind a b m) where
+instance (Typeable a, Typeable b, Typeable m, GQLType a, GQLType b) =>
+         GQLType (MapKind a b m) where
   type KIND (MapKind a b m) = OBJECT
 
 instance (Typeable k, Typeable v) => GQLType (Map k v) where

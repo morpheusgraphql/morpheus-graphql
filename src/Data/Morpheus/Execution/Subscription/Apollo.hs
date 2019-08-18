@@ -22,45 +22,55 @@ import           Network.WebSockets         (AcceptRequest (..), RequestHead, ge
 
 type ApolloID = Text
 
-data ApolloSubscription payload = ApolloSubscription
-  { apolloId      :: Maybe ApolloID
-  , apolloType    :: Text
-  , apolloPayload :: Maybe payload
-  } deriving (Show, Generic)
+data ApolloSubscription payload =
+  ApolloSubscription
+    { apolloId      :: Maybe ApolloID
+    , apolloType    :: Text
+    , apolloPayload :: Maybe payload
+    }
+  deriving (Show, Generic)
 
 instance FromJSON a => FromJSON (ApolloSubscription a) where
   parseJSON = withObject "ApolloSubscription" objectParser
     where
-      objectParser o = ApolloSubscription <$> o .:? "id" <*> o .: "type" <*> o .:? "payload"
+      objectParser o =
+        ApolloSubscription <$> o .:? "id" <*> o .: "type" <*> o .:? "payload"
 
-data RequestPayload = RequestPayload
-  { payloadOperationName :: Maybe Text
-  , payloadQuery         :: Maybe Text
-  , payloadVariables     :: Maybe Value
-  } deriving (Show, Generic)
+data RequestPayload =
+  RequestPayload
+    { payloadOperationName :: Maybe Text
+    , payloadQuery         :: Maybe Text
+    , payloadVariables     :: Maybe Value
+    }
+  deriving (Show, Generic)
 
 instance FromJSON RequestPayload where
   parseJSON = withObject "ApolloPayload" objectParser
     where
-      objectParser o = RequestPayload <$> o .:? "operationName" <*> o .:? "query" <*> o .:? "variables"
+      objectParser o =
+        RequestPayload <$> o .:? "operationName" <*> o .:? "query" <*>
+        o .:? "variables"
 
 instance ToJSON a => ToJSON (ApolloSubscription a) where
-  toEncoding (ApolloSubscription id' type' payload') = pairs $ "id" .= id' <> "type" .= type' <> "payload" .= payload'
+  toEncoding (ApolloSubscription id' type' payload') =
+    pairs $ "id" .= id' <> "type" .= type' <> "payload" .= payload'
 
 acceptApolloSubProtocol :: RequestHead -> AcceptRequest
-acceptApolloSubProtocol reqHead = apolloProtocol (getRequestSubprotocols reqHead)
+acceptApolloSubProtocol reqHead =
+  apolloProtocol (getRequestSubprotocols reqHead)
   where
-    apolloProtocol ["graphql-subscriptions"] = AcceptRequest (Just "graphql-subscriptions") []
-    apolloProtocol ["graphql-ws"]            = AcceptRequest (Just "graphql-ws") []
-    apolloProtocol _                         = AcceptRequest Nothing []
+    apolloProtocol ["graphql-subscriptions"] =
+      AcceptRequest (Just "graphql-subscriptions") []
+    apolloProtocol ["graphql-ws"] = AcceptRequest (Just "graphql-ws") []
+    apolloProtocol _ = AcceptRequest Nothing []
 
 toApolloResponse :: ApolloID -> GQLResponse -> ByteString
-toApolloResponse sid val = encode $ ApolloSubscription (Just sid) "data" (Just val)
+toApolloResponse sid val =
+  encode $ ApolloSubscription (Just sid) "data" (Just val)
 
 data SubAction
   = RemoveSub ApolloID
-  | AddSub ApolloID
-           GQLRequest
+  | AddSub ApolloID GQLRequest
   | SubError String
 
 apolloFormat :: ByteString -> SubAction
@@ -73,7 +83,10 @@ apolloFormat = toWsAPI . eitherDecode
                                                                             , payloadOperationName = operationName
                                                                             , payloadVariables = variables
                                                                             }
-                                      }) = AddSub sessionId (GQLRequest {query, operationName, variables})
-    toWsAPI (Right ApolloSubscription {apolloType = "stop", apolloId = Just sessionId}) = RemoveSub sessionId
+                                      }) =
+      AddSub sessionId (GQLRequest {query, operationName, variables})
+    toWsAPI (Right ApolloSubscription { apolloType = "stop"
+                                      , apolloId = Just sessionId
+                                      }) = RemoveSub sessionId
     toWsAPI (Right x) = SubError (show x)
     toWsAPI (Left x) = SubError x

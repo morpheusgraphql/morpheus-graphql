@@ -9,4 +9,5 @@ import           Data.Morpheus.Types.Internal.Base       (Position)
 import           Data.Morpheus.Types.Internal.Validation (GQLErrors)
 
 mutationIsNotDefined :: Position -> GQLErrors
-mutationIsNotDefined position' = errorMessage position' "Schema is not configured for mutations."
+mutationIsNotDefined position' =
+  errorMessage position' "Schema is not configured for mutations."

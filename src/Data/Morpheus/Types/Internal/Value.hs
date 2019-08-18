@@ -44,13 +44,14 @@ isReserved "type"     = True
 isReserved "where"    = True
 isReserved "_"        = True
 isReserved _          = False
-{-# INLINE isReserved #-}
 
+{-# INLINE isReserved #-}
 convertToJSONName :: Text -> Text
 convertToJSONName hsName
   | not (T.null hsName) && isReserved name && (T.last hsName == '\'') = name
   | otherwise = hsName
-  where name = T.init hsName
+  where
+    name = T.init hsName
 
 convertToHaskellName :: Text -> Text
 convertToHaskellName name

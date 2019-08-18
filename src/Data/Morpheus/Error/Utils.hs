@@ -23,11 +23,13 @@ renderErrors :: [GQLError] -> [JSONError]
 renderErrors = map renderError
 
 renderError :: GQLError -> JSONError
-renderError GQLError {desc, positions} = JSONError {message = desc, locations = map toErrorLocation positions}
+renderError GQLError {desc, positions} =
+  JSONError {message = desc, locations = map toErrorLocation positions}
 
 toErrorLocation :: Position -> ErrorLocation
 toErrorLocation SourcePos {sourceLine, sourceColumn} =
   ErrorLocation {line = unPos sourceLine, column = unPos sourceColumn}
 
 badRequestError :: String -> ByteString
-badRequestError aesonError' = pack $ "Bad Request. Could not decode Request body: " ++ aesonError'
+badRequestError aesonError' =
+  pack $ "Bad Request. Could not decode Request body: " ++ aesonError'

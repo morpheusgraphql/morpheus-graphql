@@ -42,10 +42,12 @@ connectClient clientConnection varState' = do
   where
     newClient = do
       clientID <- nextRandom
-      return (clientID, GQLClient {clientID, clientConnection, clientSessions = []})
+      return
+        (clientID, GQLClient {clientID, clientConnection, clientSessions = []})
     addClient client' state' = return (client' : state')
 
-disconnectClient :: GQLClient m e c -> GQLState m e c -> IO (ClientRegister m e c)
+disconnectClient ::
+     GQLClient m e c -> GQLState m e c -> IO (ClientRegister m e c)
 disconnectClient client state = modifyMVar state removeUser
   where
     removeUser state' =
@@ -54,8 +56,13 @@ disconnectClient client state = modifyMVar state removeUser
     removeClient :: ClientRegister m e c -> ClientRegister m e c
     removeClient = filter ((/= clientID client) . fst)
 
-updateClientByID :: ClientID -> (GQLClient m e c -> GQLClient m e c) -> MVar (ClientRegister m e c) -> IO ()
-updateClientByID id' updateFunc state = modifyMVar_ state (return . map updateClient)
+updateClientByID ::
+     ClientID
+  -> (GQLClient m e c -> GQLClient m e c)
+  -> MVar (ClientRegister m e c)
+  -> IO ()
+updateClientByID id' updateFunc state =
+  modifyMVar_ state (return . map updateClient)
   where
     updateClient (key', client')
       | key' == id' = (key', updateFunc client')
@@ -67,19 +74,36 @@ publishUpdates state event = do
   traverse_ sendMessage state'
   where
     sendMessage (_, GQLClient {clientSessions = []}) = return ()
-    sendMessage (_, GQLClient {clientSessions, clientConnection}) = mapM_ __send (filterByChannels clientSessions)
+    sendMessage (_, GQLClient {clientSessions, clientConnection}) =
+      mapM_ __send (filterByChannels clientSessions)
       where
-        __send ClientSession {sessionId, sessionSubscription = Event {content = subscriptionRes}} =
-          subscriptionRes event >>= sendTextData clientConnection . toApolloResponse sessionId
-        filterByChannels = filter (([] /=) . intersect (channels event) . channels . sessionSubscription)
+        __send ClientSession { sessionId
+                             , sessionSubscription = Event {content = subscriptionRes}
+                             } =
+          subscriptionRes event >>=
+          sendTextData clientConnection . toApolloResponse sessionId
+        filterByChannels =
+          filter
+            (([] /=) .
+             intersect (channels event) . channels . sessionSubscription)
 
 removeClientSubscription :: ClientID -> Text -> GQLState m e c -> IO ()
 removeClientSubscription id' sid' = updateClientByID id' stopSubscription
   where
-    stopSubscription client' = client' {clientSessions = filter ((sid' /=) . sessionId) (clientSessions client')}
+    stopSubscription client' =
+      client'
+        { clientSessions =
+            filter ((sid' /=) . sessionId) (clientSessions client')
+        }
 
-addClientSubscription :: ClientID -> SubEvent m e c -> Text -> GQLState m e c -> IO ()
-addClientSubscription id' sessionSubscription sessionId = updateClientByID id' startSubscription
+addClientSubscription ::
+     ClientID -> SubEvent m e c -> Text -> GQLState m e c -> IO ()
+addClientSubscription id' sessionSubscription sessionId =
+  updateClientByID id' startSubscription
   where
     startSubscription client' =
-      client' {clientSessions = ClientSession {sessionId, sessionSubscription} : clientSessions client'}
+      client'
+        { clientSessions =
+            ClientSession {sessionId, sessionSubscription} :
+            clientSessions client'
+        }

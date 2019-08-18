@@ -9,4 +9,5 @@ import           Data.Morpheus.Types.Internal.Base       (Position)
 import           Data.Morpheus.Types.Internal.Validation (GQLErrors)
 
 subscriptionIsNotDefined :: Position -> GQLErrors
-subscriptionIsNotDefined position' = errorMessage position' "Schema is not configured for subscriptions."
+subscriptionIsNotDefined position' =
+  errorMessage position' "Schema is not configured for subscriptions."

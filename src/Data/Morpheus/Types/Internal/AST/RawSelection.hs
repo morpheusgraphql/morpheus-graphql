@@ -13,22 +13,28 @@ module Data.Morpheus.Types.Internal.AST.RawSelection
 import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..))
 import           Data.Morpheus.Types.Internal.Base          (Collection, Key, Position)
 
-data Reference = Reference
-  { referenceName     :: Key
-  , referencePosition :: Position
-  } deriving (Show)
+data Reference =
+  Reference
+    { referenceName     :: Key
+    , referencePosition :: Position
+    }
+  deriving (Show)
 
-data Fragment = Fragment
-  { fragmentType      :: Key
-  , fragmentPosition  :: Position
-  , fragmentSelection :: RawSelectionSet
-  } deriving (Show)
+data Fragment =
+  Fragment
+    { fragmentType      :: Key
+    , fragmentPosition  :: Position
+    , fragmentSelection :: RawSelectionSet
+    }
+  deriving (Show)
 
-data RawSelection' a = RawSelection'
-  { rawSelectionArguments :: RawArguments
-  , rawSelectionPosition  :: Position
-  , rawSelectionRec       :: a
-  } deriving (Show)
+data RawSelection' a =
+  RawSelection'
+    { rawSelectionArguments :: RawArguments
+    , rawSelectionPosition  :: Position
+    , rawSelectionRec       :: a
+    }
+  deriving (Show)
 
 type FragmentLib = [(Key, Fragment)]
 
@@ -46,6 +52,8 @@ data RawSelection
   | RawSelectionField (RawSelection' ())
   | InlineFragment Fragment
   | Spread Reference
-  | RawAlias { rawAliasPosition  :: Position
-             , rawAliasSelection :: (Key, RawSelection) }
+  | RawAlias
+      { rawAliasPosition  :: Position
+      , rawAliasSelection :: (Key, RawSelection)
+      }
   deriving (Show)

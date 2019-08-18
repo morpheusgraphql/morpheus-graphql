@@ -18,16 +18,23 @@ instance GQLType EnumValue where
   __typeName = const "__EnumValue"
   __typeVisibility = const False
 
-data EnumValue = EnumValue
-  { name              :: Text
-  , description       :: Maybe Text
-  , isDeprecated      :: Bool
-  , deprecationReason :: Maybe Text
-  } deriving (Generic)
+data EnumValue =
+  EnumValue
+    { name              :: Text
+    , description       :: Maybe Text
+    , isDeprecated      :: Bool
+    , deprecationReason :: Maybe Text
+    }
+  deriving (Generic)
 
 createEnumValue :: Text -> EnumValue
 createEnumValue enumName =
-  EnumValue {name = enumName, description = Nothing, isDeprecated = False, deprecationReason = Nothing}
+  EnumValue
+    { name = enumName
+    , description = Nothing
+    , isDeprecated = False
+    , deprecationReason = Nothing
+    }
 
 isEnumValue :: Text -> EnumValue -> Bool
 isEnumValue inpName enum = inpName == name enum

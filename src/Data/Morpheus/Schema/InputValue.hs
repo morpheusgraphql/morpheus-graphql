@@ -19,13 +19,20 @@ instance Typeable a => GQLType (InputValue a) where
   __typeName = const "__InputValue"
   __typeVisibility = const False
 
-data InputValue t = InputValue
-  { name         :: Text
-  , description  :: Maybe Text
-  , type'        :: t
-  , defaultValue :: Maybe Text
-  } deriving (Generic)
+data InputValue t =
+  InputValue
+    { name         :: Text
+    , description  :: Maybe Text
+    , type'        :: t
+    , defaultValue :: Maybe Text
+    }
+  deriving (Generic)
 
 createInputValueWith :: Text -> a -> InputValue a
 createInputValueWith _name ofType =
-  InputValue {name = _name, description = Nothing, type' = ofType, defaultValue = Nothing}
+  InputValue
+    { name = _name
+    , description = Nothing
+    , type' = ofType
+    , defaultValue = Nothing
+    }

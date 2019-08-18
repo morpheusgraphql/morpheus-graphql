@@ -23,21 +23,44 @@ fieldNotResolved position' key' message' = errorMessage position' text
 hasNoSubfields :: Text -> Text -> Position -> GQLErrors
 hasNoSubfields key typeName position = errorMessage position text
   where
-    text = T.concat ["Field \"", key, "\" must not have a selection since type \"", typeName, "\" has no subfields."]
+    text =
+      T.concat
+        [ "Field \""
+        , key
+        , "\" must not have a selection since type \""
+        , typeName
+        , "\" has no subfields."
+        ]
 
 cannotQueryField :: Text -> Text -> Position -> GQLErrors
 cannotQueryField key typeName position = errorMessage position text
   where
-    text = T.concat ["Cannot query field \"", key, "\" on type \"", typeName, "\"."]
+    text =
+      T.concat ["Cannot query field \"", key, "\" on type \"", typeName, "\"."]
 
 duplicateQuerySelections :: Text -> [EnhancedKey] -> GQLErrors
 duplicateQuerySelections parentType = map keyToError
   where
-    keyToError (EnhancedKey key' pos) = GQLError {desc = toMessage key', positions = [pos]}
-    toMessage key' = T.concat ["duplicate selection of key \"", key', "\" on type \"", parentType, "\"."]
+    keyToError (EnhancedKey key' pos) =
+      GQLError {desc = toMessage key', positions = [pos]}
+    toMessage key' =
+      T.concat
+        [ "duplicate selection of key \""
+        , key'
+        , "\" on type \""
+        , parentType
+        , "\"."
+        ]
 
 -- GQL:: Field \"hobby\" of type \"Hobby!\" must have a selection of subfields. Did you mean \"hobby { ... }\"?
 subfieldsNotSelected :: Text -> Text -> Position -> GQLErrors
 subfieldsNotSelected key typeName position = errorMessage position text
   where
-    text = T.concat ["Field \"", key, "\" of type \"", typeName, "\" must have a selection of subfields"]
+    text =
+      T.concat
+        [ "Field \""
+        , key
+        , "\" of type \""
+        , typeName
+        , "\" must have a selection of subfields"
+        ]

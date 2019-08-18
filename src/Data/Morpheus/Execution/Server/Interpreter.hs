@@ -57,13 +57,16 @@ instance Interpreter (StateLess m LB.ByteString) m e c where
   interpreter root = byteStringIO (statelessResolver root)
 
 instance Interpreter (StateLess m LT.Text) m e c where
-  interpreter root request = decodeUtf8 <$> interpreter root (encodeUtf8 request)
+  interpreter root request =
+    decodeUtf8 <$> interpreter root (encodeUtf8 request)
 
 instance Interpreter (StateLess m ByteString) m e c where
-  interpreter root request = LB.toStrict <$> interpreter root (LB.fromStrict request)
+  interpreter root request =
+    LB.toStrict <$> interpreter root (LB.fromStrict request)
 
 instance Interpreter (StateLess m Text) m e c where
-  interpreter root request = LT.toStrict <$> interpreter root (LT.fromStrict request)
+  interpreter root request =
+    LT.toStrict <$> interpreter root (LT.fromStrict request)
 
 {-
    HTTP Interpreter with state and side effects, every mutation will
@@ -72,16 +75,20 @@ instance Interpreter (StateLess m Text) m e c where
 type WSPub m e c a = GQLState m e c -> a -> m a
 
 instance Interpreter (WSPub IO e c LB.ByteString) IO e c where
-  interpreter root state = statefulResolver state (byteStringIO (streamResolver root))
+  interpreter root state =
+    statefulResolver state (byteStringIO (streamResolver root))
 
 instance Interpreter (WSPub IO e c LT.Text) IO e c where
-  interpreter root state request = decodeUtf8 <$> interpreter root state (encodeUtf8 request)
+  interpreter root state request =
+    decodeUtf8 <$> interpreter root state (encodeUtf8 request)
 
 instance Interpreter (WSPub IO e c ByteString) IO e c where
-  interpreter root state request = LB.toStrict <$> interpreter root state (LB.fromStrict request)
+  interpreter root state request =
+    LB.toStrict <$> interpreter root state (LB.fromStrict request)
 
 instance Interpreter (WSPub IO e c Text) IO e c where
-  interpreter root state request = LT.toStrict <$> interpreter root state (LT.fromStrict request)
+  interpreter root state request =
+    LT.toStrict <$> interpreter root state (LT.fromStrict request)
 
 {-
    WebSocket Interpreter without state and side effects, mutations and subscription will return Actions
@@ -96,10 +103,13 @@ instance Interpreter (WSSub m e c LB.ByteString) m e c where
   interpreter root = byteStringIO (streamResolver root)
 
 instance Interpreter (WSSub m e c LT.Text) m e c where
-  interpreter root request = decodeUtf8 <$> interpreter root (encodeUtf8 request)
+  interpreter root request =
+    decodeUtf8 <$> interpreter root (encodeUtf8 request)
 
 instance Interpreter (WSSub m e c ByteString) m e c where
-  interpreter root request = LB.toStrict <$> interpreter root (LB.fromStrict request)
+  interpreter root request =
+    LB.toStrict <$> interpreter root (LB.fromStrict request)
 
 instance Interpreter (WSSub m e c Text) m e c where
-  interpreter root request = LT.toStrict <$> interpreter root (LT.fromStrict request)
+  interpreter root request =
+    LT.toStrict <$> interpreter root (LT.fromStrict request)

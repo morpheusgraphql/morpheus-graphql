@@ -19,20 +19,25 @@ module Data.Morpheus.Types.Internal.Stream
 
 import           Data.Morpheus.Types.IO (GQLResponse)
 
-data Event e c = Event
-  { channels :: [e]
-  , content  :: c
-  }
+data Event e c =
+  Event
+    { channels :: [e]
+    , content  :: c
+    }
 
-data StreamState c v = StreamState
-  { streamEvents :: [c]
-  , streamValue  :: v
-  } deriving (Functor)
+data StreamState c v =
+  StreamState
+    { streamEvents :: [c]
+    , streamValue  :: v
+    }
+  deriving (Functor)
 
 -- | Monad Transformer that sums all effect Together
-newtype StreamT m s a = StreamT
-  { runStreamT :: m (StreamState s a)
-  } deriving (Functor)
+newtype StreamT m s a =
+  StreamT
+    { runStreamT :: m (StreamState s a)
+    }
+  deriving (Functor)
 
 instance Monad m => Applicative (StreamT m c) where
   pure = StreamT . return . StreamState []

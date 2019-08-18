@@ -22,18 +22,22 @@ instance GQLType Type where
   __typeName = const "__Type"
   __typeVisibility = const False
 
-data Type = Type
-  { kind          :: TypeKind
-  , name          :: Maybe Text
-  , description   :: Maybe Text
-  , fields        :: DeprecationArgs -> Either String (Maybe [F.Field Type])
-  , interfaces    :: Maybe [Type]
-  , possibleTypes :: Maybe [Type]
-  , enumValues    :: DeprecationArgs -> Either String (Maybe [EnumValue])
-  , inputFields   :: Maybe [I.InputValue Type]
-  , ofType        :: Maybe Type
-  } deriving (Generic)
+data Type =
+  Type
+    { kind          :: TypeKind
+    , name          :: Maybe Text
+    , description   :: Maybe Text
+    , fields        :: DeprecationArgs -> Either String (Maybe [F.Field Type])
+    , interfaces    :: Maybe [Type]
+    , possibleTypes :: Maybe [Type]
+    , enumValues    :: DeprecationArgs -> Either String (Maybe [EnumValue])
+    , inputFields   :: Maybe [I.InputValue Type]
+    , ofType        :: Maybe Type
+    }
+  deriving (Generic)
 
-newtype DeprecationArgs = DeprecationArgs
-  { includeDeprecated :: Maybe Bool
-  } deriving (Generic)
+newtype DeprecationArgs =
+  DeprecationArgs
+    { includeDeprecated :: Maybe Bool
+    }
+  deriving (Generic)

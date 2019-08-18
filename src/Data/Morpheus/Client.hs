@@ -27,7 +27,8 @@ parseGQLWith schema =
     , quoteDec = notHandled "Declarations"
     }
   where
-    notHandled things = error $ things ++ " are not supported by the GraphQL QuasiQuoter"
+    notHandled things =
+      error $ things ++ " are not supported by the GraphQL QuasiQuoter"
 
 schemaByDocument :: IO ByteString -> IO (Validation DataTypeLib)
 schemaByDocument documentGQL = parseFullGQLDocument <$> documentGQL

@@ -33,16 +33,23 @@ fragmentNameCollision :: [EnhancedKey] -> GQLErrors
 fragmentNameCollision = map toError
   where
     toError EnhancedKey {uid, location} =
-      GQLError {desc = "There can be only one fragment named \"" <> uid <> "\".", positions = [location]}
+      GQLError
+        { desc = "There can be only one fragment named \"" <> uid <> "\"."
+        , positions = [location]
+        }
 
 unusedFragment :: [EnhancedKey] -> GQLErrors
 unusedFragment = map toError
   where
     toError EnhancedKey {uid, location} =
-      GQLError {desc = "Fragment \"" <> uid <> "\" is never used.", positions = [location]}
+      GQLError
+        { desc = "Fragment \"" <> uid <> "\" is never used."
+        , positions = [location]
+        }
 
 cannotSpreadWithinItself :: [EnhancedKey] -> GQLErrors
-cannotSpreadWithinItself fragments = [GQLError {desc = text, positions = map location fragments}]
+cannotSpreadWithinItself fragments =
+  [GQLError {desc = text, positions = map location fragments}]
   where
     text =
       T.concat
@@ -61,7 +68,8 @@ unknownFragment key' position' = errorMessage position' text
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
 cannotBeSpreadOnType :: Maybe Text -> Text -> Position -> Text -> GQLErrors
-cannotBeSpreadOnType key' type' position' selectionType' = errorMessage position' text
+cannotBeSpreadOnType key' type' position' selectionType' =
+  errorMessage position' text
   where
     text =
       T.concat

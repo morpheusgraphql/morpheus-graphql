@@ -24,13 +24,15 @@ instance GQLType Schema where
   __typeName = const "__Schema"
   __typeVisibility = const False
 
-data Schema = Schema
-  { types            :: [Type]
-  , queryType        :: Type
-  , mutationType     :: Maybe Type
-  , subscriptionType :: Maybe Type
-  , directives       :: [Directive]
-  } deriving (Generic)
+data Schema =
+  Schema
+    { types            :: [Type]
+    , queryType        :: Type
+    , mutationType     :: Maybe Type
+    , subscriptionType :: Maybe Type
+    , directives       :: [Directive]
+    }
+  deriving (Generic)
 
 convertTypes :: DataTypeLib -> [Type]
 convertTypes lib =

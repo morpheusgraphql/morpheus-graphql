@@ -17,14 +17,16 @@ instance Typeable a => GQLType (Field a) where
   __typeName = const "__Field"
   __typeVisibility = const False
 
-data Field t = Field
-  { name              :: Text
-  , description       :: Maybe Text
-  , args              :: [InputValue t]
-  , type'             :: t
-  , isDeprecated      :: Bool
-  , deprecationReason :: Maybe Text
-  } deriving (Generic)
+data Field t =
+  Field
+    { name              :: Text
+    , description       :: Maybe Text
+    , args              :: [InputValue t]
+    , type'             :: t
+    , isDeprecated      :: Bool
+    , deprecationReason :: Maybe Text
+    }
+  deriving (Generic)
 
 createFieldWith :: Text -> a -> [InputValue a] -> Field a
 createFieldWith _name fieldType fieldArgs =

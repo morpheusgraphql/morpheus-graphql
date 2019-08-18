@@ -18,16 +18,24 @@ import           Text.Megaparsec.Char                    (char, space1, string)
 
 createType :: Text -> a -> DataType a
 createType typeName typeData =
-  DataType {typeName, typeDescription = "", typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData}
+  DataType
+    { typeName
+    , typeDescription = ""
+    , typeFingerprint = SystemFingerprint ""
+    , typeVisibility = True
+    , typeData
+    }
 
 createField :: a -> Text -> ([DataTypeWrapper], Text) -> DataField a
 createField fieldArgs fieldName (fieldTypeWrappers, fieldType) =
-  DataField {fieldArgs, fieldName, fieldType, fieldTypeWrappers, fieldHidden = False}
+  DataField
+    {fieldArgs, fieldName, fieldType, fieldTypeWrappers, fieldHidden = False}
 
 dataArgument :: Parser (Text, DataArgument)
 dataArgument =
   label "Argument" $ do
-    ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
+    ((fieldName, _), (wrappers, fieldType)) <-
+      parseAssignment qualifier parseWrappedType
     nonNull <- parseNonNull
     pure (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
 
@@ -41,18 +49,23 @@ entries = label "entries" $ setOf entry
         return (name, args)
     entry =
       label "entry" $ do
-        ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs parseWrappedType
+        ((fieldName, fieldArgs), (wrappers, fieldType)) <-
+          parseAssignment fieldWithArgs parseWrappedType
         nonNull <- parseNonNull
-        return (fieldName, createField fieldArgs fieldName (nonNull ++ wrappers, fieldType))
+        return
+          ( fieldName
+          , createField fieldArgs fieldName (nonNull ++ wrappers, fieldType))
 
 inputEntries :: Parser [(Key, DataArgument)]
 inputEntries = label "inputEntries" $ setOf entry
   where
     entry =
       label "entry" $ do
-        ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
+        ((fieldName, _), (wrappers, fieldType)) <-
+          parseAssignment qualifier parseWrappedType
         nonNull <- parseNonNull
-        return (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
+        return
+          (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
 
 typeDef :: Text -> Parser Text
 typeDef kind = do
@@ -78,7 +91,8 @@ dataScalar :: Parser (Text, DataFullType)
 dataScalar =
   label "scalar" $ do
     typeName <- typeDef "scalar"
-    pure (typeName, Leaf $ CustomScalar $ createType typeName (DataValidator pure))
+    pure
+      (typeName, Leaf $ CustomScalar $ createType typeName (DataValidator pure))
 
 dataEnum :: Parser (Text, DataFullType)
 dataEnum =
@@ -101,4 +115,6 @@ dataUnion =
     unionField fieldType = createField () "" ([], fieldType)
 
 parseDataType :: Parser (Text, DataFullType)
-parseDataType = label "dataType" $ dataObject <|> dataInputObject <|> dataUnion <|> dataEnum <|> dataScalar
+parseDataType =
+  label "dataType" $
+  dataObject <|> dataInputObject <|> dataUnion <|> dataEnum <|> dataScalar

@@ -28,18 +28,22 @@ data OperationKind
   | SUBSCRIPTION
   deriving (Show)
 
-data Operation args sel = Operation
-  { operationName      :: Key
-  , operationKind      :: OperationKind
-  , operationArgs      :: args
-  , operationSelection :: sel
-  , operationPosition  :: Position
-  } deriving (Show)
+data Operation args sel =
+  Operation
+    { operationName      :: Key
+    , operationKind      :: OperationKind
+    , operationArgs      :: args
+    , operationSelection :: sel
+    , operationPosition  :: Position
+    }
+  deriving (Show)
 
-data Variable a = Variable
-  { variableType         :: Key
-  , isVariableRequired   :: Bool
-  , variableTypeWrappers :: [DataTypeWrapper]
-  , variablePosition     :: Position
-  , variableValue        :: a
-  } deriving (Show)
+data Variable a =
+  Variable
+    { variableType         :: Key
+    , isVariableRequired   :: Bool
+    , variableTypeWrappers :: [DataTypeWrapper]
+    , variablePosition     :: Position
+    , variableValue        :: a
+    }
+  deriving (Show)

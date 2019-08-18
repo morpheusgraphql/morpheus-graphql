@@ -22,7 +22,10 @@ processErrorBundle :: ParseErrorBundle Text Void -> GQLErrors
 processErrorBundle = fmap parseErrorToGQLError . bundleToErrors
   where
     parseErrorToGQLError :: (ParseError Text Void, SourcePos) -> GQLError
-    parseErrorToGQLError (err, position) = GQLError {desc = pack (parseErrorPretty err), positions = [position]}
-    bundleToErrors :: ParseErrorBundle Text Void -> [(ParseError Text Void, SourcePos)]
+    parseErrorToGQLError (err, position) =
+      GQLError {desc = pack (parseErrorPretty err), positions = [position]}
+    bundleToErrors ::
+         ParseErrorBundle Text Void -> [(ParseError Text Void, SourcePos)]
     bundleToErrors ParseErrorBundle {bundleErrors, bundlePosState} =
-      NonEmpty.toList $ fst $ attachSourcePos errorOffset bundleErrors bundlePosState
+      NonEmpty.toList $
+      fst $ attachSourcePos errorOffset bundleErrors bundlePosState

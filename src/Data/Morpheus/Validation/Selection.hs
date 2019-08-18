@@ -27,35 +27,49 @@ import           Data.Morpheus.Validation.Utils.Utils          (checkNameCollisi
 import           Data.Text                                     (Text)
 
 checkDuplicatesOn :: DataOutputObject -> SelectionSet -> Validation SelectionSet
-checkDuplicatesOn DataType {typeName = name'} keys = checkNameCollision enhancedKeys selError >> pure keys
+checkDuplicatesOn DataType {typeName = name'} keys =
+  checkNameCollision enhancedKeys selError >> pure keys
   where
     selError = duplicateQuerySelections name'
     enhancedKeys = map selToKey keys
-    selToKey (key', Selection {selectionPosition = position'}) = EnhancedKey key' position'
+    selToKey (key', Selection {selectionPosition = position'}) =
+      EnhancedKey key' position'
 
 clusterUnionSelection ::
-     FragmentLib -> Text -> [DataOutputObject] -> (Text, RawSelection) -> Validation ([Fragment], SelectionSet)
+     FragmentLib
+  -> Text
+  -> [DataOutputObject]
+  -> (Text, RawSelection)
+  -> Validation ([Fragment], SelectionSet)
 clusterUnionSelection fragments type' possibleTypes' = splitFrag
   where
     packFragment fragment = return ([fragment], [])
     typeNames = map typeName possibleTypes'
     splitFrag :: (Text, RawSelection) -> Validation ([Fragment], SelectionSet)
-    splitFrag (_, Spread ref) = resolveSpread fragments typeNames ref >>= packFragment
+    splitFrag (_, Spread ref) =
+      resolveSpread fragments typeNames ref >>= packFragment
     splitFrag ("__typename", RawSelectionField RawSelection' {rawSelectionPosition = position'}) =
       return
         ( []
         , [ ( "__typename"
-            , Selection {selectionRec = SelectionField, selectionArguments = [], selectionPosition = position'})
+            , Selection
+                { selectionRec = SelectionField
+                , selectionArguments = []
+                , selectionPosition = position'
+                })
           ])
     splitFrag (key, RawSelectionSet RawSelection' {rawSelectionPosition}) =
       Left $ cannotQueryField key type' rawSelectionPosition
     splitFrag (key, RawSelectionField RawSelection' {rawSelectionPosition}) =
       Left $ cannotQueryField key type' rawSelectionPosition
-    splitFrag (key', RawAlias {rawAliasPosition = position'}) = Left $ cannotQueryField key' type' position'
+    splitFrag (key', RawAlias {rawAliasPosition = position'}) =
+      Left $ cannotQueryField key' type' position'
     splitFrag (_, InlineFragment fragment') =
-      castFragmentType Nothing (fragmentPosition fragment') typeNames fragment' >>= packFragment
+      castFragmentType Nothing (fragmentPosition fragment') typeNames fragment' >>=
+      packFragment
 
-categorizeTypes :: [DataOutputObject] -> [Fragment] -> [(DataOutputObject, [Fragment])]
+categorizeTypes ::
+     [DataOutputObject] -> [Fragment] -> [(DataOutputObject, [Fragment])]
 categorizeTypes types fragments = filter notEmpty $ map categorizeType types
   where
     notEmpty = (0 /=) . length . snd
@@ -89,14 +103,19 @@ validateSelectionSet ::
 validateSelectionSet lib fragments' operatorName variables = __validate
   where
     __validate dataType'@DataType {typeName = typeName'} selectionSet' =
-      concat <$> mapM validateSelection selectionSet' >>= checkDuplicatesOn dataType'
+      concat <$> mapM validateSelection selectionSet' >>=
+      checkDuplicatesOn dataType'
       where
-        validateFragment Fragment {fragmentSelection = selection'} = __validate dataType' selection'
+        validateFragment Fragment {fragmentSelection = selection'} =
+          __validate dataType' selection'
         {-
             get dataField and validated arguments for RawSelection
         -}
-        getValidationData key RawSelection' {rawSelectionArguments, rawSelectionPosition} = do
-          selectionField <- lookupSelectionField rawSelectionPosition key dataType'
+        getValidationData key RawSelection' { rawSelectionArguments
+                                            , rawSelectionPosition
+                                            } = do
+          selectionField <-
+            lookupSelectionField rawSelectionPosition key dataType'
           -- validate field Argument -----
           arguments <-
             validateArguments
@@ -116,37 +135,55 @@ validateSelectionSet lib fragments' operatorName variables = __validate
         -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
         --
         validateSelection :: (Text, RawSelection) -> Validation SelectionSet
-        validateSelection (key', RawAlias {rawAliasSelection = rawSelection', rawAliasPosition = position'}) =
+        validateSelection (key', RawAlias { rawAliasSelection = rawSelection'
+                                          , rawAliasPosition = position'
+                                          }) =
           fmap processSingleSelection <$> validateSelection rawSelection'
           where
             processSingleSelection (selKey', selection') =
               ( key'
               , selection'
-                  { selectionRec = SelectionAlias {aliasFieldName = selKey', aliasSelection = selectionRec selection'}
+                  { selectionRec =
+                      SelectionAlias
+                        { aliasFieldName = selKey'
+                        , aliasSelection = selectionRec selection'
+                        }
                   , selectionPosition = position'
                   })
         validateSelection (key', RawSelectionSet fullRawSelection'@RawSelection' { rawSelectionRec = rawSelectors
                                                                                  , rawSelectionPosition = position'
                                                                                  }) = do
-          (dataField', dataType, arguments) <- getValidationData key' fullRawSelection'
+          (dataField', dataType, arguments) <-
+            getValidationData key' fullRawSelection'
           case dataType of
             Union _ -> do
               (categories, __typename) <- clusterTypes
-              mapM (validateCluster __typename) categories >>= returnSelection arguments . UnionSelection
+              mapM (validateCluster __typename) categories >>=
+                returnSelection arguments . UnionSelection
               where clusterTypes = do
-                      unionTypes <- lookupUnionTypes position' key' lib dataField'
+                      unionTypes <-
+                        lookupUnionTypes position' key' lib dataField'
                       (spreads, __typename) <-
-                        flatTuple <$> mapM (clusterUnionSelection fragments' typeName' unionTypes) rawSelectors
+                        flatTuple <$>
+                        mapM
+                          (clusterUnionSelection fragments' typeName' unionTypes)
+                          rawSelectors
                       return (categorizeTypes unionTypes spreads, __typename)
                     --
                     --    second arguments will be added to every selection cluster
-                    validateCluster :: SelectionSet -> (DataOutputObject, [Fragment]) -> Validation (Text, SelectionSet)
+                    validateCluster ::
+                         SelectionSet
+                      -> (DataOutputObject, [Fragment])
+                      -> Validation (Text, SelectionSet)
                     validateCluster sysSelection' (type', frags') = do
-                      selection' <- __validate type' (concatMap fragmentSelection frags')
+                      selection' <-
+                        __validate type' (concatMap fragmentSelection frags')
                       return (typeName type', sysSelection' ++ selection')
             OutputObject _ -> do
-              fieldType' <- lookupFieldAsSelectionSet position' key' lib dataField'
-              __validate fieldType' rawSelectors >>= returnSelection arguments . SelectionSet
+              fieldType' <-
+                lookupFieldAsSelectionSet position' key' lib dataField'
+              __validate fieldType' rawSelectors >>=
+                returnSelection arguments . SelectionSet
                  -- DataFullType
                        --   = Leaf DataLeaf
                        --   | InputObject DataInputObject
@@ -157,10 +194,14 @@ validateSelectionSet lib fragments' operatorName variables = __validate
               pure
                 [ ( key'
                   , Selection
-                      {selectionArguments = arguments', selectionRec = selection', selectionPosition = position'})
+                      { selectionArguments = arguments'
+                      , selectionRec = selection'
+                      , selectionPosition = position'
+                      })
                 ]
         validateSelection (key', RawSelectionField fullRawSelection'@RawSelection' {rawSelectionPosition}) = do
-          (dataField, datatype, arguments') <- getValidationData key' fullRawSelection'
+          (dataField, datatype, arguments') <-
+            getValidationData key' fullRawSelection'
           isLeaf datatype dataField
           pure
             [ ( key'
@@ -171,8 +212,15 @@ validateSelectionSet lib fragments' operatorName variables = __validate
                   })
             ]
           where
-            isLeaf (Leaf _) _              = Right ()
-            isLeaf _ DataField {fieldType} = Left $ subfieldsNotSelected key' fieldType rawSelectionPosition
-        validateSelection (_, Spread reference') = resolveSpread fragments' [typeName'] reference' >>= validateFragment
+            isLeaf (Leaf _) _ = Right ()
+            isLeaf _ DataField {fieldType} =
+              Left $ subfieldsNotSelected key' fieldType rawSelectionPosition
+        validateSelection (_, Spread reference') =
+          resolveSpread fragments' [typeName'] reference' >>= validateFragment
         validateSelection (_, InlineFragment fragment') =
-          castFragmentType Nothing (fragmentPosition fragment') [typeName'] fragment' >>= validateFragment
+          castFragmentType
+            Nothing
+            (fragmentPosition fragment')
+            [typeName']
+            fragment' >>=
+          validateFragment

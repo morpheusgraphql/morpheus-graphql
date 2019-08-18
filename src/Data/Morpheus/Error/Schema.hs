@@ -11,8 +11,11 @@ import           Data.Semigroup                          ((<>))
 import           Data.Text                               (Text)
 
 schemaValidationError :: Text -> GQLErrors
-schemaValidationError error' = globalErrorMessage $ "Schema Validation Error, " <> error'
+schemaValidationError error' =
+  globalErrorMessage $ "Schema Validation Error, " <> error'
 
 nameCollisionError :: Text -> GQLErrors
 nameCollisionError name =
-  schemaValidationError $ "Name collision: \"" <> name <> "\" is used for different dataTypes in two separate modules"
+  schemaValidationError $
+  "Name collision: \"" <> name <>
+  "\" is used for different dataTypes in two separate modules"

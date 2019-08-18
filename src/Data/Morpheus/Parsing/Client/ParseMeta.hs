@@ -16,4 +16,7 @@ parseMeta =
   label "MetaData" $ do
     space
     _ <- char '#'
-    between (char '{' *> space) (char '}' *> space) (parseAssignment token token)
+    between
+      (char '{' *> space)
+      (char '}' *> space)
+      (parseAssignment token token)

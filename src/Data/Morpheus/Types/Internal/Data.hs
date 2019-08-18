@@ -58,9 +58,10 @@ data DataFingerprint
   | TypeableFingerprint [Fingerprint]
   deriving (Show, Eq, Ord)
 
-newtype DataValidator = DataValidator
-  { validateValue :: Value -> Either Text Value
-  }
+newtype DataValidator =
+  DataValidator
+    { validateValue :: Value -> Either Text Value
+    }
 
 instance Show DataValidator where
   show _ = "DataValidator"
@@ -94,25 +95,29 @@ data DataTypeWrapper
   | NonNullType
   deriving (Show)
 
-data DataField a = DataField
-  { fieldArgs         :: a
-  , fieldName         :: Text
-  , fieldType         :: Text
-  , fieldTypeWrappers :: [DataTypeWrapper]
-  , fieldHidden       :: Bool
-  } deriving (Show)
+data DataField a =
+  DataField
+    { fieldArgs         :: a
+    , fieldName         :: Text
+    , fieldType         :: Text
+    , fieldTypeWrappers :: [DataTypeWrapper]
+    , fieldHidden       :: Bool
+    }
+  deriving (Show)
 
 isFieldNullable :: DataField a -> Bool
 isFieldNullable DataField {fieldTypeWrappers = NonNullType:_} = False
 isFieldNullable _                                             = True
 
-data DataType a = DataType
-  { typeName        :: Text
-  , typeFingerprint :: DataFingerprint
-  , typeDescription :: Text
-  , typeVisibility  :: Bool
-  , typeData        :: a
-  } deriving (Show)
+data DataType a =
+  DataType
+    { typeName        :: Text
+    , typeFingerprint :: DataFingerprint
+    , typeDescription :: Text
+    , typeVisibility  :: Bool
+    , typeData        :: a
+    }
+  deriving (Show)
 
 data DataLeaf
   = BaseScalar DataScalar
@@ -135,27 +140,33 @@ data DataFullType
   | InputUnion DataUnion
   deriving (Show)
 
-data DataTypeLib = DataTypeLib
-  { leaf         :: [(Text, DataLeaf)]
-  , inputObject  :: [(Text, DataInputObject)]
-  , object       :: [(Text, DataOutputObject)]
-  , union        :: [(Text, DataUnion)]
-  , inputUnion   :: [(Text, DataUnion)]
-  , query        :: (Text, DataOutputObject)
-  , mutation     :: Maybe (Text, DataOutputObject)
-  , subscription :: Maybe (Text, DataOutputObject)
-  } deriving (Show)
+data DataTypeLib =
+  DataTypeLib
+    { leaf         :: [(Text, DataLeaf)]
+    , inputObject  :: [(Text, DataInputObject)]
+    , object       :: [(Text, DataOutputObject)]
+    , union        :: [(Text, DataUnion)]
+    , inputUnion   :: [(Text, DataUnion)]
+    , query        :: (Text, DataOutputObject)
+    , mutation     :: Maybe (Text, DataOutputObject)
+    , subscription :: Maybe (Text, DataOutputObject)
+    }
+  deriving (Show)
 
 showWrappedType :: [DataTypeWrapper] -> Text -> Text
-showWrappedType [] type'               = type'
-showWrappedType (ListType:xs) type'    = T.concat ["[", showWrappedType xs type', "]"]
-showWrappedType (NonNullType:xs) type' = T.concat [showWrappedType xs type', "!"]
+showWrappedType [] type' = type'
+showWrappedType (ListType:xs) type' =
+  T.concat ["[", showWrappedType xs type', "]"]
+showWrappedType (NonNullType:xs) type' =
+  T.concat [showWrappedType xs type', "!"]
 
 showFullAstType :: [DataTypeWrapper] -> DataKind a -> Text
-showFullAstType wrappers' (ScalarKind x) = showWrappedType wrappers' (typeName x)
-showFullAstType wrappers' (EnumKind x)   = showWrappedType wrappers' (typeName x)
-showFullAstType wrappers' (ObjectKind x) = showWrappedType wrappers' (typeName x)
-showFullAstType wrappers' (UnionKind x)  = showWrappedType wrappers' (typeName x)
+showFullAstType wrappers' (ScalarKind x) =
+  showWrappedType wrappers' (typeName x)
+showFullAstType wrappers' (EnumKind x) = showWrappedType wrappers' (typeName x)
+showFullAstType wrappers' (ObjectKind x) =
+  showWrappedType wrappers' (typeName x)
+showFullAstType wrappers' (UnionKind x) = showWrappedType wrappers' (typeName x)
 
 initTypeLib :: (Text, DataOutputObject) -> DataTypeLib
 initTypeLib query' =
@@ -177,7 +188,8 @@ allDataTypes (DataTypeLib leaf' inputObject' object' union' inputUnion' query' m
   fromMaybeType subscription' ++
   map (packType Leaf) leaf' ++
   map (packType InputObject) inputObject' ++
-  map (packType InputUnion) inputUnion' ++ map (packType OutputObject) object' ++ map (packType Union) union'
+  map (packType InputUnion) inputUnion' ++
+  map (packType OutputObject) object' ++ map (packType Union) union'
   where
     packType f (x, y) = (x, f y)
     fromMaybeType :: Maybe (Text, DataOutputObject) -> [(Text, DataFullType)]
@@ -200,17 +212,21 @@ isTypeDefined :: Text -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name lib = getTypeFingerprint <$> lookupDataType name lib
   where
     getTypeFingerprint :: DataFullType -> DataFingerprint
-    getTypeFingerprint (Leaf (BaseScalar dataType'))   = typeFingerprint dataType'
-    getTypeFingerprint (Leaf (CustomScalar dataType')) = typeFingerprint dataType'
-    getTypeFingerprint (Leaf (LeafEnum dataType'))     = typeFingerprint dataType'
-    getTypeFingerprint (InputObject dataType')         = typeFingerprint dataType'
-    getTypeFingerprint (OutputObject dataType')        = typeFingerprint dataType'
-    getTypeFingerprint (Union dataType')               = typeFingerprint dataType'
-    getTypeFingerprint (InputUnion dataType')          = typeFingerprint dataType'
+    getTypeFingerprint (Leaf (BaseScalar dataType')) = typeFingerprint dataType'
+    getTypeFingerprint (Leaf (CustomScalar dataType')) =
+      typeFingerprint dataType'
+    getTypeFingerprint (Leaf (LeafEnum dataType')) = typeFingerprint dataType'
+    getTypeFingerprint (InputObject dataType') = typeFingerprint dataType'
+    getTypeFingerprint (OutputObject dataType') = typeFingerprint dataType'
+    getTypeFingerprint (Union dataType') = typeFingerprint dataType'
+    getTypeFingerprint (InputUnion dataType') = typeFingerprint dataType'
 
 defineType :: (Text, DataFullType) -> DataTypeLib -> DataTypeLib
-defineType (key', Leaf type') lib         = lib {leaf = (key', type') : leaf lib}
-defineType (key', InputObject type') lib  = lib {inputObject = (key', type') : inputObject lib}
-defineType (key', OutputObject type') lib = lib {object = (key', type') : object lib}
-defineType (key', Union type') lib        = lib {union = (key', type') : union lib}
-defineType (key', InputUnion type') lib   = lib {inputUnion = (key', type') : inputUnion lib}
+defineType (key', Leaf type') lib = lib {leaf = (key', type') : leaf lib}
+defineType (key', InputObject type') lib =
+  lib {inputObject = (key', type') : inputObject lib}
+defineType (key', OutputObject type') lib =
+  lib {object = (key', type') : object lib}
+defineType (key', Union type') lib = lib {union = (key', type') : union lib}
+defineType (key', InputUnion type') lib =
+  lib {inputUnion = (key', type') : inputUnion lib}

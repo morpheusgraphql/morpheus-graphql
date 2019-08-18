@@ -36,6 +36,9 @@ compileWith ioSchema queryText = do
       schema <- mSchema
       rawRequest@GQLQueryRoot {operation} <- parseGQL request
       validOperation <- validateRequest schema WITHOUT_VARIABLES rawRequest
-      (queryArgTypes, queryTypes) <- operationTypes schema (O.operationArgs operation) validOperation
+      (queryArgTypes, queryTypes) <-
+        operationTypes schema (O.operationArgs operation) validOperation
       return QueryD {queryText, queryTypes, queryArgTypes}
-    request = GQLRequest {query = T.pack queryText, operationName = Nothing, variables = Nothing}
+    request =
+      GQLRequest
+        {query = T.pack queryText, operationName = Nothing, variables = Nothing}

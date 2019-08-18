@@ -11,8 +11,10 @@ import           Data.Morpheus.Types.Internal.Value            (Value)
 
 type Variables = Map Key Value
 
-data GQLQueryRoot = GQLQueryRoot
-  { fragments      :: FragmentLib
-  , operation      :: RawOperation
-  , inputVariables :: [(Key, Value)]
-  } deriving (Show)
+data GQLQueryRoot =
+  GQLQueryRoot
+    { fragments      :: FragmentLib
+    , operation      :: RawOperation
+    , inputVariables :: [(Key, Value)]
+    }
+  deriving (Show)

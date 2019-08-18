@@ -20,22 +20,28 @@ import           Data.Morpheus.Types.Internal.Value (Value)
 import           Data.Text                          (Text)
 import           GHC.Generics                       (Generic)
 
-data GQLError = GQLError
-  { desc      :: Text
-  , positions :: [Position]
-  } deriving (Show)
+data GQLError =
+  GQLError
+    { desc      :: Text
+    , positions :: [Position]
+    }
+  deriving (Show)
 
 type GQLErrors = [GQLError]
 
-data ErrorLocation = ErrorLocation
-  { line   :: Int
-  , column :: Int
-  } deriving (Show, Generic, ToJSON)
+data ErrorLocation =
+  ErrorLocation
+    { line   :: Int
+    , column :: Int
+    }
+  deriving (Show, Generic, ToJSON)
 
-data JSONError = JSONError
-  { message   :: Text
-  , locations :: [ErrorLocation]
-  } deriving (Show, Generic, ToJSON)
+data JSONError =
+  JSONError
+    { message   :: Text
+    , locations :: [ErrorLocation]
+    }
+  deriving (Show, Generic, ToJSON)
 
 type Validation a = Either GQLErrors a
 

@@ -20,11 +20,14 @@ internalError :: Text -> Either GQLErrors b
 internalError x = Left $ globalErrorMessage $ T.concat ["INTERNAL ERROR: ", x]
 
 internalErrorT :: Monad m => Text -> ResolveT m b
-internalErrorT x = failResolveT $ globalErrorMessage $ T.concat ["INTERNAL ERROR: ", x]
+internalErrorT x =
+  failResolveT $ globalErrorMessage $ T.concat ["INTERNAL ERROR: ", x]
 
 -- if type did not not found, but was defined by Schema
 internalUnknownTypeMessage :: Text -> GQLErrors
-internalUnknownTypeMessage x = globalErrorMessage $ T.concat ["type did not not found, but was defined by Schema", x]
+internalUnknownTypeMessage x =
+  globalErrorMessage $
+  T.concat ["type did not not found, but was defined by Schema", x]
 
 -- if arguments is already validated but has not found required argument
 internalArgumentError :: Text -> Either GQLErrors b
@@ -32,4 +35,5 @@ internalArgumentError x = internalError $ T.concat ["Argument ", x]
 
 -- if value is already validated but value has different type
 internalTypeMismatch :: Text -> Value -> Either GQLErrors b
-internalTypeMismatch text jsType = internalError $ T.concat ["Type mismatch ", text, T.pack $ show jsType]
+internalTypeMismatch text jsType =
+  internalError $ T.concat ["Type mismatch ", text, T.pack $ show jsType]

@@ -43,7 +43,8 @@ type MutResolver m e c = Resolver (PublishStream m e c)
 
 type SubResolver m e c a = Event e (Event e c -> Resolver m a)
 
-type SubResolveT m e c a = ResolveT (SubscribeStream m e) (Event e c -> ResolveT m a)
+type SubResolveT m e c a
+   = ResolveT (SubscribeStream m e) (Event e c -> ResolveT m a)
 
 type SubRootRes m e sub = Resolver (SubscribeStream m e) sub
 
@@ -56,10 +57,15 @@ resolver :: m (Either String a) -> Resolver m a
 resolver = ExceptT
 
 toMutResolver :: Monad m => [Event e c] -> Resolver m a -> MutResolver m e c a
-toMutResolver channels = ExceptT . StreamT . fmap (StreamState channels) . runExceptT
+toMutResolver channels =
+  ExceptT . StreamT . fmap (StreamState channels) . runExceptT
 
 -- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver
-mutResolver :: Monad m => [Event e c] -> (StreamT m (Event e c)) (Either String a) -> MutResolver m e c a
+mutResolver ::
+     Monad m
+  => [Event e c]
+  -> (StreamT m (Event e c)) (Either String a)
+  -> MutResolver m e c a
 mutResolver channels = ExceptT . StreamT . fmap effectPlus . runStreamT
   where
     effectPlus state = state {streamEvents = channels ++ streamEvents state}
@@ -68,8 +74,9 @@ mutResolver channels = ExceptT . StreamT . fmap effectPlus . runStreamT
 --
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
-data GQLRootResolver m e c query mut sub = GQLRootResolver
-  { queryResolver        :: Resolver m query
-  , mutationResolver     :: Resolver (PublishStream m e c) mut
-  , subscriptionResolver :: SubRootRes m e sub
-  }
+data GQLRootResolver m e c query mut sub =
+  GQLRootResolver
+    { queryResolver        :: Resolver m query
+    , mutationResolver     :: Resolver (PublishStream m e c) mut
+    , subscriptionResolver :: SubRootRes m e sub
+    }

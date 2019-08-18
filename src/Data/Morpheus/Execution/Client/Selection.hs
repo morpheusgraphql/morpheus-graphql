@@ -27,7 +27,11 @@ import           Data.Morpheus.Validation.Utils.Utils       (lookupType)
 compileError :: Text -> GQLErrors
 compileError x = internalUnknownTypeMessage $ " \"" <> x <> "\" ;"
 
-operationTypes :: DataTypeLib -> VariableDefinitions -> ValidOperation -> Validation ([TypeD], [TypeD])
+operationTypes ::
+     DataTypeLib
+  -> VariableDefinitions
+  -> ValidOperation
+  -> Validation ([TypeD], [TypeD])
 operationTypes lib variables = genOperation
   where
     queryDataType = OutputObject $ snd $ query lib
@@ -35,10 +39,12 @@ operationTypes lib variables = genOperation
     typeByField :: Text -> DataFullType -> Validation DataFullType
     typeByField key datatype = fst <$> fieldDataType datatype key
     ------------------------------------------------------
-    fieldDataType :: DataFullType -> Text -> Validation (DataFullType, [DataTypeWrapper])
+    fieldDataType ::
+         DataFullType -> Text -> Validation (DataFullType, [DataTypeWrapper])
     fieldDataType (OutputObject DataType {typeData}) key =
       case lookup key typeData of
-        Just DataField {fieldTypeWrappers, fieldType} -> trans <$> getType lib fieldType
+        Just DataField {fieldTypeWrappers, fieldType} ->
+          trans <$> getType lib fieldType
           where trans x = (x, fieldTypeWrappers)
         Nothing -> Left (compileError key)
     fieldDataType _ key = Left (compileError key)
@@ -57,13 +63,21 @@ operationTypes lib variables = genOperation
           where
             typeD =
               TypeD
-                {tName = unpack typeName, tCons = [ConsD {cName = unpack typeName, cFields = map toFieldD typeData}]}
+                { tName = unpack typeName
+                , tCons =
+                    [ ConsD
+                        { cName = unpack typeName
+                        , cFields = map toFieldD typeData
+                        }
+                    ]
+                }
             ---------------------------------------------------------------
             toInputTypeD :: (Text, DataField a) -> Validation [TypeD]
             toInputTypeD (_, DataField {fieldType}) = genInputType fieldType
             ----------------------------------------------------------------
             toFieldD :: (Text, DataField a) -> FieldD
-            toFieldD (key, DataField {fieldType, fieldTypeWrappers}) = FieldD (unpack key) wrType
+            toFieldD (key, DataField {fieldType, fieldTypeWrappers}) =
+              FieldD (unpack key) wrType
               where
                 wrType = gqlToHSWrappers fieldTypeWrappers (unpack fieldType)
         subTypes (Leaf x) = buildLeaf x
@@ -75,10 +89,16 @@ operationTypes lib variables = genOperation
       pure $ typeD : types
       where
         typeD :: TypeD
-        typeD = TypeD {tName = unpack name, tCons = [ConsD {cName = unpack name, cFields = map fieldD variables}]}
+        typeD =
+          TypeD
+            { tName = unpack name
+            , tCons =
+                [ConsD {cName = unpack name, cFields = map fieldD variables}]
+            }
         ---------------------------------------
         fieldD :: (Text, Variable ()) -> FieldD
-        fieldD (key, Variable {variableType, variableTypeWrappers}) = FieldD (unpack key) wrType
+        fieldD (key, Variable {variableType, variableTypeWrappers}) =
+          FieldD (unpack key) wrType
           where
             wrType = gqlToHSWrappers variableTypeWrappers (unpack variableType)
     -------------------------------------------
@@ -111,7 +131,8 @@ operationTypes lib variables = genOperation
           key `typeByField` parentType >>= buildSelField
           where
             buildSelField (Leaf x) = buildLeaf x
-            buildSelField _        = Left $ compileError "Invalid schema Expected scalar"
+            buildSelField _ =
+              Left $ compileError "Invalid schema Expected scalar"
         validateSelection (key, Selection {selectionRec = UnionSelection unionSelections}) = do
           unionTypeName <- typeFrom <$> key `typeByField` parentType
           (tCons, subTypes) <- unzip <$> mapM getUnionType unionSelections
@@ -130,7 +151,8 @@ buildLeaf (LeafEnum DataType {typeName, typeData}) =
 buildLeaf _ = pure []
 
 getType :: DataTypeLib -> Text -> Validation DataFullType
-getType lib typename = lookupType (compileError typename) (allDataTypes lib) typename
+getType lib typename =
+  lookupType (compileError typename) (allDataTypes lib) typename
 
 typeFrom :: DataFullType -> Text
 typeFrom (Leaf (BaseScalar x))   = typeName x

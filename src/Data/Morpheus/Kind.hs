@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds     #-}
 {-# LANGUAGE TypeFamilies  #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -12,8 +12,7 @@ module Data.Morpheus.Kind
   , INPUT_OBJECT
   , INPUT_UNION
   , GQL_KIND
-  )
-where
+  ) where
 
 data GQL_KIND
   = SCALAR

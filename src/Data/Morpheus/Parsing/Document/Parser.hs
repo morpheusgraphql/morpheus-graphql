@@ -34,10 +34,14 @@ parseDocument doc =
               case takeByKey "Mutation" lib1 of
                 (mutation, lib2) ->
                   case takeByKey "Subscription" lib2 of
-                    (subscription, lib3) -> pure ((foldr defineType (initTypeLib query) lib3) {mutation, subscription})
+                    (subscription, lib3) ->
+                      pure
+                        ((foldr defineType (initTypeLib query) lib3)
+                           {mutation, subscription})
             _ -> fail "Query Not Defined"
         ----------------------------------------------------------------------------
         takeByKey key lib =
           case lookup key lib of
-            Just (OutputObject value) -> (Just (key, value), filter ((/= key) . fst) lib)
-            _                         -> (Nothing, lib)
+            Just (OutputObject value) ->
+              (Just (key, value), filter ((/= key) . fst) lib)
+            _ -> (Nothing, lib)

@@ -51,8 +51,10 @@ getInputType typeName' lib error' =
             Just (CustomScalar x) -> pure (ScalarKind x)
             Just (LeafEnum x)     -> pure (EnumKind x)
 
-existsObjectType :: Position -> Text -> DataTypeLib -> Validation DataOutputObject
-existsObjectType position' typeName' lib = lookupType error' (object lib) typeName'
+existsObjectType ::
+     Position -> Text -> DataTypeLib -> Validation DataOutputObject
+existsObjectType position' typeName' lib =
+  lookupType error' (object lib) typeName'
   where
     error' = unknownType typeName' position'
 
@@ -65,13 +67,18 @@ removeDuplicates = S.toList . S.fromList
 elementOfKeys :: [Text] -> EnhancedKey -> Bool
 elementOfKeys keys' EnhancedKey {uid = id'} = id' `elem` keys'
 
-checkNameCollision :: [EnhancedKey] -> ([EnhancedKey] -> error) -> Either error [EnhancedKey]
+checkNameCollision ::
+     [EnhancedKey] -> ([EnhancedKey] -> error) -> Either error [EnhancedKey]
 checkNameCollision enhancedKeys errorGenerator =
   case enhancedKeys \\ removeDuplicates enhancedKeys of
     []         -> pure enhancedKeys
     duplicates -> Left $ errorGenerator duplicates
 
-checkForUnknownKeys :: [EnhancedKey] -> [Text] -> ([EnhancedKey] -> error) -> Either error [EnhancedKey]
+checkForUnknownKeys ::
+     [EnhancedKey]
+  -> [Text]
+  -> ([EnhancedKey] -> error)
+  -> Either error [EnhancedKey]
 checkForUnknownKeys enhancedKeys' keys' errorGenerator' =
   case filter (not . elementOfKeys keys') enhancedKeys' of
     []           -> pure enhancedKeys'

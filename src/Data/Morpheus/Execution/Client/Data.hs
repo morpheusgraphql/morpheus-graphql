@@ -29,26 +29,34 @@ gqlToHSWrappers (NonNullType:(ListType:xs))    = ListD . gqlToHSWrappers xs
 gqlToHSWrappers (NonNullType:(NonNullType:xs)) = gqlToHSWrappers xs
 gqlToHSWrappers (ListType:xs)                  = MaybeD . ListD . gqlToHSWrappers xs
 
-data QueryD = QueryD
-  { queryText     :: String
-  , queryTypes    :: [TypeD]
-  , queryArgTypes :: [TypeD]
-  } deriving (Show)
+data QueryD =
+  QueryD
+    { queryText     :: String
+    , queryTypes    :: [TypeD]
+    , queryArgTypes :: [TypeD]
+    }
+  deriving (Show)
 
-data FieldD = FieldD
-  { fieldNameD :: String
-  , fieldTypeD :: AppD String
-  } deriving (Show)
+data FieldD =
+  FieldD
+    { fieldNameD :: String
+    , fieldTypeD :: AppD String
+    }
+  deriving (Show)
 
-data TypeD = TypeD
-  { tName :: String
-  , tCons :: [ConsD]
-  } deriving (Show)
+data TypeD =
+  TypeD
+    { tName :: String
+    , tCons :: [ConsD]
+    }
+  deriving (Show)
 
-data ConsD = ConsD
-  { cName   :: String
-  , cFields :: [FieldD]
-  } deriving (Show)
+data ConsD =
+  ConsD
+    { cName   :: String
+    , cFields :: [FieldD]
+    }
+  deriving (Show)
 
 instance Lift QueryD where
   lift (QueryD n t a) = apply 'QueryD [lift n, lift t, lift a]

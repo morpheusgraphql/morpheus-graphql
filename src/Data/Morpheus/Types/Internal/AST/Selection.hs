@@ -15,11 +15,13 @@ data ArgumentOrigin
   | INLINE
   deriving (Show)
 
-data Argument = Argument
-  { argumentValue    :: Value
-  , argumentOrigin   :: ArgumentOrigin
-  , argumentPosition :: Position
-  } deriving (Show)
+data Argument =
+  Argument
+    { argumentValue    :: Value
+    , argumentOrigin   :: ArgumentOrigin
+    , argumentPosition :: Position
+    }
+  deriving (Show)
 
 type Arguments = Collection Argument
 
@@ -27,16 +29,20 @@ type SelectionSet = Collection Selection
 
 type UnionSelection = Collection SelectionSet
 
-data Selection = Selection
-  { selectionArguments :: Arguments
-  , selectionPosition  :: Position
-  , selectionRec       :: SelectionRec
-  } deriving (Show)
+data Selection =
+  Selection
+    { selectionArguments :: Arguments
+    , selectionPosition  :: Position
+    , selectionRec       :: SelectionRec
+    }
+  deriving (Show)
 
 data SelectionRec
   = SelectionSet SelectionSet
   | UnionSelection UnionSelection
-  | SelectionAlias { aliasFieldName :: Key
-                   , aliasSelection :: SelectionRec }
+  | SelectionAlias
+      { aliasFieldName :: Key
+      , aliasSelection :: SelectionRec
+      }
   | SelectionField
   deriving (Show)

@@ -38,5 +38,6 @@ instance (EnumRep a, EnumRep b) => EnumRep (a :+: b) where
   decodeEnum name
     | name `elem` enumTags (Proxy @a) = L1 <$> decodeEnum name
     | name `elem` enumTags (Proxy @b) = R1 <$> decodeEnum name
-    | otherwise = internalError ("Constructor \"" <> name <> "\" could not find in Union")
+    | otherwise =
+      internalError ("Constructor \"" <> name <> "\" could not find in Union")
   enumTags _ = enumTags (Proxy @a) ++ enumTags (Proxy @b)
