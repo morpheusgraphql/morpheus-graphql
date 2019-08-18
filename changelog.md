@@ -1,7 +1,7 @@
 ## [0.2.0] - \*.08.2019
 
 ### Added
-
+- Parser Supports GraphQL comments
 - Enhanced Subscription: mutation can trigger subscription with arguments
 - Experimental Support of Input Unions
 - GraphQL schema generating with: `Data.Morpheus.Document.toGraphQLDocument`
