@@ -8,10 +8,11 @@ module Data.Morpheus.Document
 
 import           Data.ByteString.Lazy.Char8             (ByteString, pack)
 
+--
 -- MORPHEUS
-import           Data.Morpheus.Document.ParseDocument   (parseGraphQLDocument)
-import           Data.Morpheus.Document.RenderGraphQL   (renderGraphQLDocument)
 import           Data.Morpheus.Execution.Server.Resolve (RootResCon, fullSchema)
+import           Data.Morpheus.Parsing.Document.Parse   (parseGraphQLDocument)
+import           Data.Morpheus.Rendering.GQL            (renderGraphQLDocument)
 import           Data.Morpheus.Rendering.Haskell.Render (renderHaskellDocument)
 import           Data.Morpheus.Types                    (GQLRootResolver)
 

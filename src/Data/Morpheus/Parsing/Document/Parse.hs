@@ -1,8 +1,7 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns   #-}
 
-module Data.Morpheus.Document.ParseDocument
+module Data.Morpheus.Parsing.Document.Parse
   ( parseGraphQLDocument
   , parseFullGQLDocument
   ) where

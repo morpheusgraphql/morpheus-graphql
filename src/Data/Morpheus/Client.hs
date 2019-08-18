@@ -13,7 +13,7 @@ import qualified Data.ByteString.Lazy                    as L (readFile)
 import           Data.Morpheus.Client.Build              (defineQuery)
 import           Data.Morpheus.Client.Compile            (compileWith)
 import           Data.Morpheus.Client.Fetch              (Fetch (..))
-import           Data.Morpheus.Document.ParseDocument    (parseFullGQLDocument)
+import           Data.Morpheus.Parsing.Document.Parse    (parseFullGQLDocument)
 import           Data.Morpheus.Types.Internal.Data       (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Language.Haskell.TH.Quote
