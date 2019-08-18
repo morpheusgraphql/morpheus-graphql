@@ -16,7 +16,7 @@ import qualified Data.Text                                     as T (concat)
 import           Data.Morpheus.Error.Fragment                  (cannotBeSpreadOnType, cannotSpreadWithinItself,
                                                                 fragmentNameCollision, unknownFragment, unusedFragment)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawSelection (..),
-                                                                RawSelection' (..), Reference (..), Reference (..))
+                                                                RawSelection' (..), Reference (..))
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Data             (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)

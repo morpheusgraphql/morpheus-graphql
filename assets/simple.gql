@@ -4,8 +4,6 @@ type Query {
   hero: Human!
 }
 
-scalar Int
-
 type Mutation {
   createDeity (deityName: [[[[[String!]]!]]], deityMythology: String): Deity!
   createCharacter (charRealm: Realm! , charMutID: String! ): Character!

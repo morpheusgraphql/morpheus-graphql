@@ -11,8 +11,8 @@ import           Data.Morpheus.Types.Internal.Validation (GQLError (..), GQLErro
 import           Data.Text                               (Text, pack)
 import           Data.Void                               (Void)
 import           Text.Megaparsec                         (ParseError, ParseErrorBundle (ParseErrorBundle), Parsec,
-                                                          SourcePos, SourcePos, attachSourcePos, bundleErrors,
-                                                          bundlePosState, errorOffset, parseErrorPretty)
+                                                          SourcePos, attachSourcePos, bundleErrors, bundlePosState,
+                                                          errorOffset, parseErrorPretty)
 
 type Position = SourcePos
 

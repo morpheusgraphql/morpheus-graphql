@@ -32,7 +32,7 @@ import           Data.Morpheus.Execution.Server.Encode               (EncodeCon,
 import           Data.Morpheus.Execution.Server.Introspect           (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, publishUpdates)
 import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
-import           Data.Morpheus.Schema.SchemaAPI                      (hiddenRootFields, schemaAPI, schemaTypes)
+import           Data.Morpheus.Schema.SchemaAPI                      (defaultTypes, hiddenRootFields, schemaAPI)
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), OperationKind (..))
 import           Data.Morpheus.Types.Internal.Data                   (DataArguments, DataFingerprint (..),
                                                                       DataType (..), DataTypeLib (..), initTypeLib)
@@ -66,8 +66,7 @@ decodeNoDup bs =
     Left e  -> Error e
     Right v -> fromJSON v
 
-byteStringIO ::
-     Monad m => (GQLRequest -> m GQLResponse) -> L.ByteString -> m L.ByteString
+byteStringIO :: Monad m => (GQLRequest -> m GQLResponse) -> L.ByteString -> m L.ByteString
 byteStringIO resolver request =
   case decodeNoDup request of
     Error aesonError' -> return $ badRequestError aesonError'
@@ -85,12 +84,8 @@ streamResolver ::
   => GQLRootResolver m s cont query mut sub
   -> GQLRequest
   -> ResponseStream m s cont GQLResponse
-streamResolver root@GQLRootResolver { queryResolver
-                                    , mutationResolver
-                                    , subscriptionResolver
-                                    } request =
-  renderResponse <$>
-  runExceptT (ExceptT (pure validRequest) >>= ExceptT . execOperator)
+streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
+  renderResponse <$> runExceptT (ExceptT (pure validRequest) >>= ExceptT . execOperator)
   where
     renderResponse (Left errors) = Errors $ renderErrors errors
     renderResponse (Right value) = Data value
@@ -101,19 +96,15 @@ streamResolver root@GQLRootResolver { queryResolver
       return (schema, query)
     ----------------------------------------------------------
     execOperator (schema, operation@Operation {operationKind = QUERY}) =
-      StreamT $
-      StreamState [] <$> encodeQuery (schemaAPI schema) queryResolver operation
+      StreamT $ StreamState [] <$> encodeQuery (schemaAPI schema) queryResolver operation
     execOperator (_, operation@Operation {operationKind = MUTATION}) =
       mapS Publish (encodeMut mutationResolver operation)
     execOperator (_, operation@Operation {operationKind = SUBSCRIPTION}) =
-      StreamT $
-      handleActions <$> closeStream (encodeSub subscriptionResolver operation)
+      StreamT $ handleActions <$> closeStream (encodeSub subscriptionResolver operation)
       where
         handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
         handleActions (channels, Right subResolver) =
-          StreamState
-            [Subscribe $ Event (concat channels) handleRes]
-            (Right Null)
+          StreamState [Subscribe $ Event (concat channels) handleRes] (Right Null)
           where
             handleRes event = renderResponse <$> runExceptT (subResolver event)
 
@@ -132,32 +123,22 @@ statefulResolver state streamApi request = do
     execute Subscribe {}      = pure ()
 
 fullSchema ::
-     forall proxy m s cont query mutation subscription.
-     (IntroCon query, IntroCon mutation, IntroCon subscription)
+     forall proxy m s cont query mutation subscription. (IntroCon query, IntroCon mutation, IntroCon subscription)
   => proxy (GQLRootResolver m s cont query mutation subscription)
   -> SchemaValidation DataTypeLib
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
-    querySchema =
-      resolveTypes
-        (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query"))
-        (schemaTypes : types)
+    querySchema = resolveTypes (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query")) (defaultTypes : types)
       where
         (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep query))
     ------------------------------
-    mutationSchema lib =
-      resolveTypes (lib {mutation = maybeOperator fields "Mutation"}) types
+    mutationSchema lib = resolveTypes (lib {mutation = maybeOperator fields "Mutation"}) types
       where
-        (fields, types) =
-          unzip $ objectFieldTypes (Proxy :: Proxy (Rep mutation))
+        (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep mutation))
     ------------------------------
-    subscriptionSchema lib =
-      resolveTypes
-        (lib {subscription = maybeOperator fields "Subscription"})
-        types
+    subscriptionSchema lib = resolveTypes (lib {subscription = maybeOperator fields "Subscription"}) types
       where
-        (fields, types) =
-          unzip $ objectFieldTypes (Proxy :: Proxy (Rep subscription))
+        (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep subscription))
      -- maybeOperator :: [a] -> Text -> Maybe (Text, DataType [a])
     maybeOperator []     = const Nothing
     maybeOperator fields = Just . operatorType fields
