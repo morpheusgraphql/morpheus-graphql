@@ -16,9 +16,13 @@ module Data.Morpheus.Execution.Client.Aeson
 import           Data.Aeson
 import           Data.Aeson.Types
 import qualified Data.HashMap.Lazy                   as H (lookup)
-import           Data.Morpheus.Execution.Client.Data (AppD (..), ConsD (..), FieldD (..), TypeD (..))
+import           Data.Semigroup                      ((<>))
 import           Data.Text                           (unpack)
 import           Language.Haskell.TH
+
+--
+-- MORPHEUS
+import           Data.Morpheus.Execution.Client.Data (AppD (..), ConsD (..), FieldD (..), TypeD (..))
 
 deriveFromJSON :: TypeD -> Q Dec
 deriveFromJSON TypeD {tCons = []} = fail "Type Should Have at least one Constructor"

@@ -8,6 +8,11 @@ module Data.Morpheus.Execution.Client.Selection
   ( operationTypes
   ) where
 
+import           Data.Semigroup                             ((<>))
+import           Data.Text                                  (Text, unpack)
+
+--
+-- MORPHEUS
 import           Data.Morpheus.Error.Internal               (internalUnknownTypeMessage)
 import           Data.Morpheus.Execution.Client.Data        (ConsD (..), FieldD (..), TypeD (..), gqlToHSWrappers)
 import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), ValidOperation, Variable (..),
@@ -18,7 +23,6 @@ import           Data.Morpheus.Types.Internal.Data          (DataField (..), Dat
                                                              allDataTypes)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Validation.Utils.Utils       (lookupType)
-import           Data.Text                                  (Text, unpack)
 
 compileError :: Text -> GQLErrors
 compileError x = internalUnknownTypeMessage $ " \"" <> x <> "\" ;"

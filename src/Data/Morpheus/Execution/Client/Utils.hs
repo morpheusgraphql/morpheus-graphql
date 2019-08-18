@@ -4,7 +4,8 @@ module Data.Morpheus.Execution.Client.Utils
   , nameSpaceWith
   ) where
 
-import           Data.Char (toLower, toUpper)
+import           Data.Char      (toLower, toUpper)
+import           Data.Semigroup ((<>))
 
 nameSpaceWith :: String -> String -> String
 nameSpaceWith nSpace name = nonCapital nSpace <> capital name

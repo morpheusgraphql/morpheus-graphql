@@ -10,6 +10,7 @@ module Data.Morpheus.Execution.Client.Build
   ) where
 
 import           Control.Lens                         (declareLenses)
+import           Data.Semigroup                       ((<>))
 import           Language.Haskell.TH
 
 --

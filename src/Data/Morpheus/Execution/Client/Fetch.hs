@@ -12,9 +12,12 @@ module Data.Morpheus.Execution.Client.Fetch
 
 import           Data.Aeson             (FromJSON, ToJSON (..), eitherDecode, encode)
 import           Data.ByteString.Lazy   (ByteString)
-import           Data.Morpheus.Types.IO (GQLRequest (..))
 import           Data.Text              (pack)
 import           Language.Haskell.TH
+
+--
+-- MORPHEUS
+import           Data.Morpheus.Types.IO (GQLRequest (..))
 
 class Fetch a where
   type Args a :: *

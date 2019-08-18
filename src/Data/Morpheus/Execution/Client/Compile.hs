@@ -13,9 +13,9 @@ import           Language.Haskell.TH
 
 --
 --  Morpheus
-import           Data.Morpheus.Execution.Client.Data                  (QueryD (..))
-import           Data.Morpheus.Execution.Client.Selection             (operationTypes)
 import           Data.Morpheus.Error.Utils                  (renderErrors)
+import           Data.Morpheus.Execution.Client.Data        (QueryD (..))
+import           Data.Morpheus.Execution.Client.Selection   (operationTypes)
 import           Data.Morpheus.Parsing.Request.Parser       (parseGQL)
 import qualified Data.Morpheus.Types.Internal.AST.Operation as O (Operation (..))
 import           Data.Morpheus.Types.Internal.Data          (DataTypeLib)
