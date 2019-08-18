@@ -4,13 +4,14 @@
 
 module Data.Morpheus.Client
   ( gql
-  , schemaByDocument
+  , Fetch(..)
   , defineQuery
   , defineByDocument
-  , Fetch(..)
+  , defineByDocumentFile
   ) where
 
 import           Data.ByteString.Lazy                    (ByteString)
+import qualified Data.ByteString.Lazy                    as L (readFile)
 import           Data.Morpheus.Execution.Client.Build    (defineQuery)
 import           Data.Morpheus.Execution.Client.Compile  (compileSyntax)
 import           Data.Morpheus.Execution.Client.Fetch    (Fetch (..))
@@ -32,8 +33,15 @@ gql =
   where
     notHandled things = error $ things ++ " are not supported by the GraphQL QuasiQuoter"
 
+defineByDocumentFile :: String -> (GQLQueryRoot, String) -> Q [Dec]
+defineByDocumentFile = defineByDocument . L.readFile
+
 defineByDocument :: IO ByteString -> (GQLQueryRoot, String) -> Q [Dec]
 defineByDocument doc = defineQuery (schemaByDocument doc)
 
 schemaByDocument :: IO ByteString -> IO (Validation DataTypeLib)
 schemaByDocument documentGQL = parseFullGQLDocument <$> documentGQL
+-- TODO : Define By Introspection File
+-- Validates By JSON Introspection file
+-- TODO: Define By API
+-- Validates By Server API

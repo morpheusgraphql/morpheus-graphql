@@ -17,12 +17,11 @@ import           Data.Aeson                     (ToJSON (..))
 import           Data.ByteString.Lazy           (ByteString)
 import           Data.Functor.Identity          (Identity (..))
 import           Data.Morpheus                  (Interpreter (..))
-import           Data.Morpheus.Client           (Fetch (..), defineByDocument, gql)
+import           Data.Morpheus.Client           (Fetch (..), defineByDocumentFile, gql)
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Deprecated.API                 (Channel, Content, gqlRoot)
 import           GHC.Generics
-import           GQLSchema                      (gqlSchema)
 import           Mythology.API                  (mythologyApi)
 import qualified Network.Wai                    as Wai
 import qualified Network.Wai.Handler.Warp       as Warp
@@ -36,8 +35,8 @@ jsonRes req = do
   return
     "{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }"
 
-defineByDocument
-  gqlSchema
+defineByDocumentFile
+  "./assets/simple.gql"
   [gql|
     # Query Hero with Compile time Validation
     query GetHero ($god: Realm, $charID: String!)
