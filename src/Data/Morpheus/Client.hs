@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Execution.Client
+module Data.Morpheus.Client
   ( gql
   , defineQuery
   , Fetch(..)
