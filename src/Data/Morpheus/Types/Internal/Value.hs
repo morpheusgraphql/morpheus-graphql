@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE DeriveLift        #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Types.Internal.Value
@@ -10,14 +11,15 @@ module Data.Morpheus.Types.Internal.Value
   , convertToHaskellName
   ) where
 
-import qualified Data.Aeson          as A (FromJSON (..), ToJSON (..), Value (..), object, pairs, (.=))
-import qualified Data.HashMap.Strict as M (toList)
-import           Data.Scientific     (Scientific, floatingOrInteger)
-import           Data.Semigroup      ((<>))
-import           Data.Text           (Text)
-import qualified Data.Text           as T
-import qualified Data.Vector         as V (toList)
-import           GHC.Generics        (Generic)
+import qualified Data.Aeson                 as A (FromJSON (..), ToJSON (..), Value (..), object, pairs, (.=))
+import qualified Data.HashMap.Strict        as M (toList)
+import           Data.Scientific            (Scientific, floatingOrInteger)
+import           Data.Semigroup             ((<>))
+import           Data.Text                  (Text)
+import qualified Data.Text                  as T
+import qualified Data.Vector                as V (toList)
+import           GHC.Generics               (Generic)
+import           Language.Haskell.TH.Syntax (Lift)
 
 isReserved :: Text -> Bool
 isReserved "case"     = True
@@ -65,7 +67,7 @@ data ScalarValue
   | Float Float
   | String Text
   | Boolean Bool
-  deriving (Show, Generic)
+  deriving (Show, Generic, Lift)
 
 instance A.ToJSON ScalarValue where
   toEncoding (Float x)   = A.toEncoding x
@@ -79,7 +81,9 @@ data Value
   | Enum Text
   | Scalar ScalarValue
   | Null
-  deriving (Show, Generic)
+  deriving (Show, Generic, Lift)
+
+instance Lift Text
 
 instance A.ToJSON Value where
   toEncoding Null = A.toEncoding A.Null

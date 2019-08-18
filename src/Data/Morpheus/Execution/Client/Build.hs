@@ -9,15 +9,17 @@ module Data.Morpheus.Execution.Client.Build
   ( defineQuery
   ) where
 
-import           Control.Lens                         (declareLenses)
-import           Data.Semigroup                       ((<>))
+import           Control.Lens                            (declareLenses)
+import           Data.Semigroup                          ((<>))
 import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Execution.Client.Aeson (deriveFromJSON)
-import           Data.Morpheus.Execution.Client.Data  (AppD (..), ConsD (..), FieldD (..), QueryD (..), TypeD (..))
-import           Data.Morpheus.Execution.Client.Fetch (deriveFetch)
+import           Data.Morpheus.Execution.Client.Aeson    (deriveFromJSON)
+import           Data.Morpheus.Execution.Client.Data     (AppD (..), ConsD (..), FieldD (..), QueryD (..), TypeD (..))
+import           Data.Morpheus.Execution.Client.Fetch    (deriveFetch)
+import           Data.Morpheus.Types.Internal.Data       (DataTypeLib)
+import           Data.Morpheus.Types.Internal.Validation (Validation)
 
 queryArgumentType :: [TypeD] -> (Type, Q [Dec])
 queryArgumentType [] = (ConT $ mkName "()", pure [])
@@ -52,9 +54,10 @@ defineOperationType (argType, argumentTypes) query datatype = do
   args <- argumentTypes
   pure $ rootType <> typeClassFetch <> args
 
-defineQuery :: QueryD -> Q [Dec]
-defineQuery QueryD {queryTypes = rootType:subTypes, queryText, queryArgTypes} = do
+defineQuery :: IO (Validation DataTypeLib) -> QueryD -> Q [Dec]
+defineQuery ioSchema QueryD {queryTypes = rootType:subTypes, queryText, queryArgTypes} = do
+  schema <- runIO ioSchema
   rootDecs <- defineOperationType (queryArgumentType queryArgTypes) queryText rootType
   subTypeDecs <- concat <$> mapM defineJSONType subTypes
   return $ rootDecs ++ subTypeDecs
-defineQuery QueryD {queryTypes = []} = return []
+defineQuery _ QueryD {queryTypes = []} = return []

@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveLift #-}
+
 module Data.Morpheus.Types.Internal.AST.RawSelection
   ( Reference(..)
   , Argument(..)
@@ -12,36 +14,32 @@ module Data.Morpheus.Types.Internal.AST.RawSelection
 
 import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..))
 import           Data.Morpheus.Types.Internal.Base          (Collection, Key, Position)
+import           Data.Text                                  (Text)
+import           Language.Haskell.TH.Syntax                 (Lift (..))
 
-data Reference =
-  Reference
-    { referenceName     :: Key
-    , referencePosition :: Position
-    }
-  deriving (Show)
+data Reference = Reference
+  { referenceName     :: Key
+  , referencePosition :: Position
+  } deriving (Show, Lift)
 
-data Fragment =
-  Fragment
-    { fragmentType      :: Key
-    , fragmentPosition  :: Position
-    , fragmentSelection :: RawSelectionSet
-    }
-  deriving (Show)
+data Fragment = Fragment
+  { fragmentType      :: Key
+  , fragmentPosition  :: Position
+  , fragmentSelection :: RawSelectionSet
+  } deriving (Show, Lift)
 
-data RawSelection' a =
-  RawSelection'
-    { rawSelectionArguments :: RawArguments
-    , rawSelectionPosition  :: Position
-    , rawSelectionRec       :: a
-    }
-  deriving (Show)
+data RawSelection' a = RawSelection'
+  { rawSelectionArguments :: RawArguments
+  , rawSelectionPosition  :: Position
+  , rawSelectionRec       :: a
+  } deriving (Show, Lift)
 
 type FragmentLib = [(Key, Fragment)]
 
 data RawArgument
   = VariableReference Reference
   | RawArgument Argument
-  deriving (Show)
+  deriving (Show, Lift)
 
 type RawArguments = Collection RawArgument
 
@@ -52,8 +50,6 @@ data RawSelection
   | RawSelectionField (RawSelection' ())
   | InlineFragment Fragment
   | Spread Reference
-  | RawAlias
-      { rawAliasPosition  :: Position
-      , rawAliasSelection :: (Key, RawSelection)
-      }
-  deriving (Show)
+  | RawAlias { rawAliasPosition  :: Position
+             , rawAliasSelection :: (Key, RawSelection) }
+  deriving (Show, Lift)

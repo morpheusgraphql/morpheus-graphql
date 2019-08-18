@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveLift #-}
+
 module Data.Morpheus.Types.Internal.AST.Operation
   ( Operation(..)
   , Variable(..)
@@ -13,6 +15,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection    (Arguments, Selec
 import           Data.Morpheus.Types.Internal.Base             (Collection, Key, Position)
 import           Data.Morpheus.Types.Internal.Data             (DataTypeWrapper)
 import           Data.Morpheus.Types.Internal.Value            (Value)
+import           Language.Haskell.TH.Syntax                    (Lift)
 
 type VariableDefinitions = Collection (Variable ())
 
@@ -26,24 +29,20 @@ data OperationKind
   = QUERY
   | MUTATION
   | SUBSCRIPTION
-  deriving (Show)
+  deriving (Show, Lift)
 
-data Operation args sel =
-  Operation
-    { operationName      :: Key
-    , operationKind      :: OperationKind
-    , operationArgs      :: args
-    , operationSelection :: sel
-    , operationPosition  :: Position
-    }
-  deriving (Show)
+data Operation args sel = Operation
+  { operationName      :: Key
+  , operationKind      :: OperationKind
+  , operationArgs      :: args
+  , operationSelection :: sel
+  , operationPosition  :: Position
+  } deriving (Show, Lift)
 
-data Variable a =
-  Variable
-    { variableType         :: Key
-    , isVariableRequired   :: Bool
-    , variableTypeWrappers :: [DataTypeWrapper]
-    , variablePosition     :: Position
-    , variableValue        :: a
-    }
-  deriving (Show)
+data Variable a = Variable
+  { variableType         :: Key
+  , isVariableRequired   :: Bool
+  , variableTypeWrappers :: [DataTypeWrapper]
+  , variablePosition     :: Position
+  , variableValue        :: a
+  } deriving (Show, Lift)

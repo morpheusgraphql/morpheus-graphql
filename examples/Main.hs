@@ -22,7 +22,7 @@ import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Deprecated.API                 (Channel, Content, gqlRoot)
 import           GHC.Generics
-import           GQLClient                      (gql)
+import           GQLClient                      (gql, gqlSchema)
 import           Mythology.API                  (mythologyApi)
 import qualified Network.Wai                    as Wai
 import qualified Network.Wai.Handler.Warp       as Warp
@@ -30,7 +30,18 @@ import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
+import qualified Data.ByteString.Lazy           as L (readFile)
+import           Data.Morpheus.Client           (parseGQLWith, schemaByDocument)
+import           Language.Haskell.TH.Quote
+
+jsonRes :: ByteString -> IO ByteString
+jsonRes req = do
+  print req
+  return
+    "{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }"
+
 defineQuery
+  gqlSchema
   [gql|
     # Query Hero
     query GetHero ($god: Realm, $charID: String!)
@@ -52,12 +63,6 @@ defineQuery
         }
       }
   |]
-
-jsonRes :: ByteString -> IO ByteString
-jsonRes req = do
-  print req
-  return
-    "{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }"
 
 fetchHero :: Args GetHero -> IO (Either String GetHero)
 fetchHero = fetch jsonRes

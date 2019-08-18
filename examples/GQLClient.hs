@@ -1,5 +1,6 @@
 module GQLClient
   ( gql
+  , gqlSchema
   ) where
 
 import qualified Data.ByteString.Lazy      as L (readFile)
@@ -8,3 +9,5 @@ import           Language.Haskell.TH.Quote
 
 gql :: QuasiQuoter
 gql = parseGQLWith $ schemaByDocument (L.readFile "./assets/simple.gql")
+
+gqlSchema = schemaByDocument (L.readFile "./assets/simple.gql")
