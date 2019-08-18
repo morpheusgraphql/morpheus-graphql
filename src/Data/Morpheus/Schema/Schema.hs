@@ -33,13 +33,21 @@ data Schema = Schema
   } deriving (Generic)
 
 convertTypes :: DataTypeLib -> [Type]
-convertTypes lib' = map renderType (allDataTypes lib')
+convertTypes lib =
+  case traverse (`renderType` lib) (allDataTypes lib) of
+    Left _  -> []
+    Right x -> x
 
 buildSchemaLinkType :: (Text, DataOutputObject) -> Type
 buildSchemaLinkType (key', _) = createObjectType key' "" $ Just []
 
 findType :: Text -> DataTypeLib -> Maybe Type
-findType name lib = renderType . (name, ) <$> lookup name (allDataTypes lib)
+findType name lib = (name, ) <$> lookup name (allDataTypes lib) >>= renderT
+  where
+    renderT i =
+      case renderType i lib of
+        Left _  -> Nothing
+        Right x -> Just x
 
 initSchema :: DataTypeLib -> Schema
 initSchema types' =

@@ -1,7 +1,7 @@
 ## [0.2.0] - \*.08.2019
 
 ### Added
-
+- Parser Supports GraphQL comments
 - Enhanced Subscription: mutation can trigger subscription with arguments
 - Experimental Support of Input Unions
 - GraphQL schema generating with: `Data.Morpheus.Document.toGraphQLDocument`
@@ -13,6 +13,36 @@
 
   [details](https://github.com/morpheusgraphql/morpheus-graphql/issues/184)
 - `convertToJSONName` & `convertToHaskellName` has been extended to support all Haskell 2010 reserved identities. [details](https://github.com/morpheusgraphql/morpheus-graphql/issues/207)
+- GraphQL client with Template haskell QuasiQuotes (Experimental, Not fully Implemented)
+
+  ```haskell
+  defineQuery
+    [gql|
+      query GetHero ($god: Realm)
+        {
+          deity (mythology:$god) {
+            power
+            fullName
+          }
+        }
+    |]
+  ```
+  will Generate:
+    - response type  `GetHero`, `Deity` with `Lens` Instances
+    - input types: `GetHeroArgs` , `Realm`
+    -  instance for `Fetch` typeClass
+
+   so that
+  ```haskell
+    fetchHero :: Args GetHero -> m (Either String GetHero)
+    fetchHero = fetch jsonRes args
+        where
+          args = GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}}
+          jsonRes :: ByteString -> m ByteString
+          jsonRes = <fetch query from server>
+  ```
+
+  resolves well typed response `GetHero`.
 
 ### Fixed:
 
@@ -119,7 +149,7 @@ thanks for contributing to: @krisajenkins, @hovind, @vmchale, @msvbg
   - Data.Morpheus
   - Data.Morpheus.Kind
   - Data.Morpheus.Types
-  - Data.Morpheus.Server
+  - Data.Morpheus.Execution.Subscription
 
 ### Fixed:
 

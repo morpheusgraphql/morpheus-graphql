@@ -1,8 +1,10 @@
 type Query {
-  deity (name: [[[[[String!]]!]]], mythology: String): Deity!
+  deity (name: [[[[[String!]]!]]], mythology: Realm): Deity!
   character (characterID: String! , age: Int ): Character!
   hero: Human!
 }
+
+scalar Int
 
 type Mutation {
   createDeity (deityName: [[[[[String!]]!]]], deityMythology: String): Deity!
@@ -13,7 +15,7 @@ union Character = Creature | Deity  | Human
 
 type Deity {
   fullName: String!
-  power: Power!
+  power: Power
 }
 
 type Creature {
@@ -23,12 +25,19 @@ type Creature {
 
 type Human {
   humanName: String!
-  profession: String
+  lifetime: Lifetime!
+  profession: Profession
+}
+
+enum Profession {
+    Priest
+    Farmer
+    Artist
 }
 
 input Realm {
   owner: String!
-  place: Int
+  surface: Int
 }
 
 enum City {
@@ -37,4 +46,5 @@ enum City {
     Sparta Troy
 }
 
+scalar Lifetime
 scalar Power

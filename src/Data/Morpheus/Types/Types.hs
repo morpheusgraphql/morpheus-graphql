@@ -4,7 +4,7 @@ module Data.Morpheus.Types.Types
   ) where
 
 import           Data.Map                                      (Map)
-import           Data.Morpheus.Types.Internal.AST.Operator     (RawOperator)
+import           Data.Morpheus.Types.Internal.AST.Operation    (RawOperation)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (FragmentLib)
 import           Data.Morpheus.Types.Internal.Base             (Key)
 import           Data.Morpheus.Types.Internal.Value            (Value)
@@ -13,6 +13,6 @@ type Variables = Map Key Value
 
 data GQLQueryRoot = GQLQueryRoot
   { fragments      :: FragmentLib
-  , operator      :: RawOperator
+  , operation      :: RawOperation
   , inputVariables :: [(Key, Value)]
-  }
+  } deriving (Show)

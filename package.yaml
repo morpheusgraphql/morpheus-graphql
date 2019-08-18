@@ -31,6 +31,8 @@ dependencies:
   - wai-websockets        >= 1.0       && <= 3.5
   - utf8-string           >= 1.0.1     && <  1.1
   - uuid                  >= 1.0       && <= 1.4
+  - template-haskell
+  - lens
 
 library:
   source-dirs: src
@@ -40,6 +42,7 @@ library:
     - Data.Morpheus.Types
     - Data.Morpheus.Server
     - Data.Morpheus.Document
+    - Data.Morpheus.Client
   ghc-options: -Wall
 
 tests:

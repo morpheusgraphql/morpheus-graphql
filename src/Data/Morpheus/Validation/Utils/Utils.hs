@@ -6,6 +6,7 @@ module Data.Morpheus.Validation.Utils.Utils
   , lookupField
   , checkNameCollision
   , checkForUnknownKeys
+  , VALIDATION_MODE(..)
   ) where
 
 import           Data.List                               ((\\))
@@ -18,6 +19,11 @@ import qualified Data.Set                                as S
 import           Data.Text                               (Text)
 
 type GenError error a = error -> Either error a
+
+data VALIDATION_MODE
+  = WITHOUT_VARIABLES
+  | FULL_VALIDATION
+  deriving (Eq, Show)
 
 lookupType :: error -> [(Text, a)] -> Text -> Either error a
 lookupType error' lib' typeName' =
@@ -40,9 +46,10 @@ getInputType typeName' lib error' =
         Just x -> pure (UnionKind x)
         Nothing ->
           case lookup typeName' (leaf lib) of
-            Nothing             -> Left error'
-            Just (LeafScalar x) -> pure (ScalarKind x)
-            Just (LeafEnum x)   -> pure (EnumKind x)
+            Nothing               -> Left error'
+            Just (BaseScalar x)   -> pure (ScalarKind x)
+            Just (CustomScalar x) -> pure (ScalarKind x)
+            Just (LeafEnum x)     -> pure (EnumKind x)
 
 existsObjectType :: Position -> Text -> DataTypeLib -> Validation DataOutputObject
 existsObjectType position' typeName' lib = lookupType error' (object lib) typeName'

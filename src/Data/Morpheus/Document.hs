@@ -6,14 +6,15 @@ module Data.Morpheus.Document
   , toMorpheusHaskellAPi
   ) where
 
-import           Data.ByteString.Lazy.Char8           (ByteString, pack)
+import           Data.ByteString.Lazy.Char8             (ByteString, pack)
 
+--
 -- MORPHEUS
-import           Data.Morpheus.Document.ParseDocument (parseGraphQLDocument)
-import           Data.Morpheus.Document.RenderGraphQL (renderGraphQLDocument)
-import           Data.Morpheus.Document.RenderHaskell (renderHaskellDocument)
-import           Data.Morpheus.Resolve.Resolve        (RootResCon, fullSchema)
-import           Data.Morpheus.Types                  (GQLRootResolver)
+import           Data.Morpheus.Execution.Server.Resolve (RootResCon, fullSchema)
+import           Data.Morpheus.Parsing.Document.Parse   (parseGraphQLDocument)
+import           Data.Morpheus.Rendering.GQL            (renderGraphQLDocument)
+import           Data.Morpheus.Rendering.Haskell.Render (renderHaskellDocument)
+import           Data.Morpheus.Types                    (GQLRootResolver)
 
 -- | Generates schema.gql file from 'GQLRootResolver'
 toGraphQLDocument :: RootResCon m e c query mut sub => proxy (GQLRootResolver m e c query mut sub) -> ByteString

@@ -14,7 +14,7 @@ import           Data.Text                         (Text)
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Resolve.Introspect  (ObjectRep (..), TypeUpdater, introspectOutputType)
+import           Data.Morpheus.Execution.Server.Introspect  (ObjectRep (..), TypeUpdater, introspectOutputType)
 import           Data.Morpheus.Schema.Schema       (Schema, Type, findType, initSchema)
 import           Data.Morpheus.Types.Internal.Data (DataField (..), DataOutputField, DataTypeLib (..))
 

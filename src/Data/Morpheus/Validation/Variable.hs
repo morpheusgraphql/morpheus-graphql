@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Morpheus.Validation.Variable
-  ( resolveOperatorVariables
+  ( resolveOperationVariables
   ) where
 
 import           Data.List                                     ((\\))
@@ -10,7 +10,7 @@ import           Data.Maybe                                    (maybe)
 import           Data.Morpheus.Error.Input                     (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Variable                  (uninitializedVariable, unknownType, unusedVariables,
                                                                 variableGotInvalidValue)
-import           Data.Morpheus.Types.Internal.AST.Operator     (Operator' (..), RawOperator', ValidVariables,
+import           Data.Morpheus.Types.Internal.AST.Operation    (Operation (..), RawOperation, ValidVariables,
                                                                 Variable (..))
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawArgument (..),
                                                                 RawSelection (..), RawSelection' (..), RawSelectionSet,
@@ -22,7 +22,7 @@ import           Data.Morpheus.Types.Internal.Value            (Value (..))
 import           Data.Morpheus.Types.Types                     (Variables)
 import           Data.Morpheus.Validation.Fragment             (getFragment)
 import           Data.Morpheus.Validation.Input.Object         (validateInputValue)
-import           Data.Morpheus.Validation.Utils.Utils          (getInputType)
+import           Data.Morpheus.Validation.Utils.Utils          (VALIDATION_MODE (..), getInputType)
 import           Data.Semigroup                                ((<>))
 import           Data.Text                                     (Text)
 
@@ -65,31 +65,37 @@ allVariableReferences fragmentLib = concatMapM (concatMapM searchReferences)
     searchReferences (_, Spread reference) =
       getFragment reference fragmentLib >>= concatMapM searchReferences . fragmentSelection
 
-resolveOperatorVariables :: DataTypeLib -> FragmentLib -> Variables -> RawOperator' -> Validation ValidVariables
-resolveOperatorVariables typeLib fragmentLib root operator' = do
-  allVariableReferences fragmentLib [operatorSelection operator'] >>= checkUnusedVariables
-  mapM (lookupAndValidateValueOnBody typeLib root) (operatorArgs operator')
+resolveOperationVariables ::
+     DataTypeLib -> FragmentLib -> Variables -> VALIDATION_MODE -> RawOperation -> Validation ValidVariables
+resolveOperationVariables typeLib lib root validationMode Operation {operationName, operationSelection, operationArgs} = do
+  allVariableReferences lib [operationSelection] >>= checkUnusedVariables
+  mapM (lookupAndValidateValueOnBody typeLib root validationMode) operationArgs
   where
     varToKey :: (Text, Variable ()) -> EnhancedKey
     varToKey (key', Variable {variablePosition}) = EnhancedKey key' variablePosition
     --
     checkUnusedVariables :: [EnhancedKey] -> Validation ()
-    checkUnusedVariables references' =
-      case map varToKey (operatorArgs operator') \\ references' of
+    checkUnusedVariables refs =
+      case map varToKey operationArgs \\ refs of
         []      -> pure ()
-        unused' -> Left $ unusedVariables (operatorName operator') unused'
+        unused' -> Left $ unusedVariables operationName unused'
 
-lookupAndValidateValueOnBody :: DataTypeLib -> Variables -> (Text, Variable ()) -> Validation (Text, Variable Value)
-lookupAndValidateValueOnBody typeLib bodyVariables (key', var@Variable { variableType
-                                                                       , variablePosition
-                                                                       , isVariableRequired
-                                                                       , variableTypeWrappers
-                                                                       }) =
-  toVariable <$> (getVariableType variableType variablePosition typeLib >>= checkType isVariableRequired)
+lookupAndValidateValueOnBody ::
+     DataTypeLib -> Variables -> VALIDATION_MODE -> (Text, Variable ()) -> Validation (Text, Variable Value)
+lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType
+                                                                                     , variablePosition
+                                                                                     , isVariableRequired
+                                                                                     , variableTypeWrappers
+                                                                                     }) =
+  toVariable <$>
+  (getVariableType variableType variablePosition typeLib >>=
+   checkType (validationMode /= WITHOUT_VARIABLES && isVariableRequired))
   where
-    toVariable (k, x) = (k, var {variableValue = x})
-    checkType True _type =
-      lookupVariable bodyVariables key' (uninitializedVariable variablePosition variableType) >>= validator _type
-    checkType False _type = maybe (pure (key', Null)) (validator _type) (M.lookup key' bodyVariables)
-    validator _type varValue =
-      handleInputError key' variablePosition $ validateInputValue typeLib [] variableTypeWrappers _type (key', varValue)
+    toVariable (varKey, variableValue) = (varKey, var {variableValue})
+    ------------------------------------------------------------------
+    checkType True varType =
+      lookupVariable bodyVariables key (uninitializedVariable variablePosition variableType) >>= validator varType
+    checkType False varType = maybe (pure (key, Null)) (validator varType) (M.lookup key bodyVariables)
+    -----------------------------------------------------------------------------------------------
+    validator varType varValue =
+      handleInputError key variablePosition $ validateInputValue typeLib [] variableTypeWrappers varType (key, varValue)

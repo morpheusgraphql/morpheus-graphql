@@ -1,15 +1,28 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveAnyClass        #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DerivingStrategies    #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module Main
   ( main
   ) where
 
 import           Control.Monad.IO.Class         (liftIO)
-import           Data.Functor.Identity          (Identity(..))
+import           Data.Aeson                     (ToJSON (..))
+import           Data.ByteString.Lazy           (ByteString)
+import           Data.Functor.Identity          (Identity (..))
 import           Data.Morpheus                  (Interpreter (..))
+import           Data.Morpheus.Client           (Fetch (..), defineQuery)
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Deprecated.API                 (Channel, Content, gqlRoot)
+import           GHC.Generics
+import           GQLClient                      (gql)
 import           Mythology.API                  (mythologyApi)
 import qualified Network.Wai                    as Wai
 import qualified Network.Wai.Handler.Warp       as Warp
@@ -17,8 +30,41 @@ import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
+defineQuery
+  [gql|
+    # Query Hero
+    query GetHero ($god: Realm, $charID: String!)
+      {
+        deity (mythology:$god) {
+         # bono <->
+         ## some comment ++
+          power
+          fullName
+        }
+        character(characterID: $charID ) {
+          ...on Creature {
+            creatureName
+          }
+          ...on Human {
+            lifetime
+            profession
+          }
+        }
+      }
+  |]
+
+jsonRes :: ByteString -> IO ByteString
+jsonRes req = do
+  print req
+  return
+    "{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }"
+
+fetchHero :: Args GetHero -> IO (Either String GetHero)
+fetchHero = fetch jsonRes
+
 main :: IO ()
 main = do
+  fetchHero (GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}, charID = "Hercules"}) >>= print
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp

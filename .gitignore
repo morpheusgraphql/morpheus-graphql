@@ -4,3 +4,4 @@
 morpheus-graphql.cabal
 morpheus-graphql.iml
 docs/vendor
+out/

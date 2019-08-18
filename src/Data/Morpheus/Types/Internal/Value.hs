@@ -4,6 +4,7 @@
 module Data.Morpheus.Types.Internal.Value
   ( Value(..)
   , ScalarValue(..)
+  , replaceValue
   , decodeScientific
   , convertToJSONName
   , convertToHaskellName

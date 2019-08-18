@@ -3,4 +3,4 @@ module Data.Morpheus
   ( Interpreter(..)
   ) where
 
-import           Data.Morpheus.Interpreter (Interpreter (..))
+import           Data.Morpheus.Execution.Server.Interpreter (Interpreter (..))
