@@ -24,28 +24,20 @@ class Fetch a where
   __fetch ::
        (Monad m, ToJSON (Args a), FromJSON a)
     => String
+    -> String
     -> (ByteString -> m ByteString)
     -> Args a
     -> m (Either String a)
-  __fetch strQuery trans vars = eitherDecode <$> trans (encode gqlReq)
+  __fetch strQuery opName trans vars = eitherDecode <$> trans (encode gqlReq)
     where
-      gqlReq =
-        GQLRequest
-          { operationName = Just "<TODO>"
-          , query = pack strQuery
-          , variables = Just (toJSON vars)
-          }
-  fetch ::
-       (Monad m, FromJSON a)
-    => (ByteString -> m ByteString)
-    -> Args a
-    -> m (Either String a)
+      gqlReq = GQLRequest {operationName = Just (pack opName), query = pack strQuery, variables = Just (toJSON vars)}
+  fetch :: (Monad m, FromJSON a) => (ByteString -> m ByteString) -> Args a -> m (Either String a)
 
-deriveFetch :: Type -> Name -> String -> Q [Dec]
+deriveFetch :: Type -> String -> String -> Q [Dec]
 deriveFetch argDatatype typeName query =
-  pure <$> instanceD (cxt []) (appT (conT ''Fetch) (conT typeName)) methods
+  pure <$> instanceD (cxt []) (appT (conT ''Fetch) (conT $ mkName typeName)) methods
   where
     methods =
-      [ funD (mkName "fetch") [clause [] (normalB [|__fetch query|]) []]
-      , pure $ TySynInstD ''Args (TySynEqn [ConT typeName] argDatatype)
+      [ funD (mkName "fetch") [clause [] (normalB [|__fetch query typeName|]) []]
+      , pure $ TySynInstD ''Args (TySynEqn [ConT $ mkName typeName] argDatatype)
       ]
