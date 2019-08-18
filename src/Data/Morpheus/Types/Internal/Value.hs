@@ -21,6 +21,9 @@ import qualified Data.Vector                as V (toList)
 import           GHC.Generics               (Generic)
 import           Language.Haskell.TH.Syntax (Lift)
 
+--  TEMPLATE HASKELL INSTANCE FOR TEXT
+import           Instances.TH.Lift
+
 isReserved :: Text -> Bool
 isReserved "case"     = True
 isReserved "class"    = True
@@ -82,8 +85,6 @@ data Value
   | Scalar ScalarValue
   | Null
   deriving (Show, Generic, Lift)
-
-instance Lift Text
 
 instance A.ToJSON Value where
   toEncoding Null = A.toEncoding A.Null
