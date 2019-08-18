@@ -17,12 +17,11 @@ import           Data.Aeson                     (ToJSON (..))
 import           Data.ByteString.Lazy           (ByteString)
 import           Data.Functor.Identity          (Identity (..))
 import           Data.Morpheus                  (Interpreter (..))
-import           Data.Morpheus.Client           (Fetch (..), defineQuery)
+import           Data.Morpheus.Client           (Fetch (..), defineQueryWith, gqlCore, schemaByDocument)
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Deprecated.API                 (Channel, Content, gqlRoot)
 import           GHC.Generics
-import           GQLClient                      (gql, gqlSchema)
 import           Mythology.API                  (mythologyApi)
 import qualified Network.Wai                    as Wai
 import qualified Network.Wai.Handler.Warp       as Warp
@@ -31,24 +30,21 @@ import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
 import qualified Data.ByteString.Lazy           as L (readFile)
-import           Data.Morpheus.Client           (parseGQLWith, schemaByDocument)
 import           Language.Haskell.TH.Quote
 
-jsonRes :: ByteString -> IO ByteString
-jsonRes req = do
-  print req
-  return
-    "{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }"
+--jsonRes :: ByteString -> IO ByteString
+--jsonRes req = do
+--  print req
+--  return
+--    "{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }"
 
-defineQuery
-  gqlSchema
-  [gql|
+--defineQueryWith
+--  gqlSchema
+bla = [gqlCore|
     # Query Hero
     query GetHero ($god: Realm, $charID: String!)
       {
         deity (mythology:$god) {
-         # bono <->
-         ## some comment ++
           power
           fullName
         }
@@ -64,12 +60,13 @@ defineQuery
       }
   |]
 
-fetchHero :: Args GetHero -> IO (Either String GetHero)
-fetchHero = fetch jsonRes
+--fetchHero :: Args GetHero -> IO (Either String GetHero)
+--fetchHero = fetch jsonRes
 
 main :: IO ()
 main = do
-  fetchHero (GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}, charID = "Hercules"}) >>= print
+  --fetchHero (GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}, charID = "Hercules"}) >>= print
+  print bla
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp

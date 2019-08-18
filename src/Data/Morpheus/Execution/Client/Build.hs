@@ -7,6 +7,8 @@
 
 module Data.Morpheus.Execution.Client.Build
   ( defineQuery
+  , defineQueryWith
+
   ) where
 
 import           Control.Lens                            (declareLenses)
@@ -16,10 +18,12 @@ import           Language.Haskell.TH
 --
 -- MORPHEUS
 import           Data.Morpheus.Execution.Client.Aeson    (deriveFromJSON)
+import           Data.Morpheus.Execution.Client.Compile  (validateWith)
 import           Data.Morpheus.Execution.Client.Data     (AppD (..), ConsD (..), FieldD (..), QueryD (..), TypeD (..))
 import           Data.Morpheus.Execution.Client.Fetch    (deriveFetch)
 import           Data.Morpheus.Types.Internal.Data       (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
+import           Data.Morpheus.Types.Types               (GQLQueryRoot (..))
 
 queryArgumentType :: [TypeD] -> (Type, Q [Dec])
 queryArgumentType [] = (ConT $ mkName "()", pure [])
@@ -54,10 +58,22 @@ defineOperationType (argType, argumentTypes) query datatype = do
   args <- argumentTypes
   pure $ rootType <> typeClassFetch <> args
 
-defineQuery :: IO (Validation DataTypeLib) -> QueryD -> Q [Dec]
-defineQuery ioSchema QueryD {queryTypes = rootType:subTypes, queryText, queryArgTypes} = do
-  schema <- runIO ioSchema
+defineQuery :: QueryD -> Q [Dec]
+defineQuery QueryD {queryTypes = rootType:subTypes, queryText, queryArgTypes} = do
   rootDecs <- defineOperationType (queryArgumentType queryArgTypes) queryText rootType
   subTypeDecs <- concat <$> mapM defineJSONType subTypes
   return $ rootDecs ++ subTypeDecs
-defineQuery _ QueryD {queryTypes = []} = return []
+defineQuery QueryD {queryTypes = []} = return []
+
+defineQueryWith :: IO (Validation DataTypeLib) -> (GQLQueryRoot, String) -> Q [Dec]
+defineQueryWith ioSchema queryRoot = do
+  schema <- runIO ioSchema
+  validate schema
+  where
+    validate x =
+      case x of
+        Left errors -> fail (show errors)
+        Right schema ->
+          case validateWith schema queryRoot of
+            Left errors -> fail (show errors)
+            Right query -> defineQuery query
