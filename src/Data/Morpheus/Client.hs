@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Client
+module Data.Morpheus.Execution.Client
   ( gql
   , defineQuery
   , Fetch(..)
@@ -10,9 +10,9 @@ module Data.Morpheus.Client
 
 import           Data.ByteString.Lazy                    (ByteString)
 import qualified Data.ByteString.Lazy                    as L (readFile)
-import           Data.Morpheus.Client.Build              (defineQuery)
-import           Data.Morpheus.Client.Compile            (compileWith)
-import           Data.Morpheus.Client.Fetch              (Fetch (..))
+import           Data.Morpheus.Execution.Client.Build    (defineQuery)
+import           Data.Morpheus.Execution.Client.Compile  (compileWith)
+import           Data.Morpheus.Execution.Client.Fetch    (Fetch (..))
 import           Data.Morpheus.Parsing.Document.Parse    (parseFullGQLDocument)
 import           Data.Morpheus.Types.Internal.Data       (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation (Validation)

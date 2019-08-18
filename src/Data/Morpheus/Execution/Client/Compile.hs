@@ -2,7 +2,7 @@
 {-# LANGUAGE QuasiQuotes     #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Data.Morpheus.Client.Compile
+module Data.Morpheus.Execution.Client.Compile
   ( compileWith
   ) where
 
@@ -13,8 +13,8 @@ import           Language.Haskell.TH
 
 --
 --  Morpheus
-import           Data.Morpheus.Client.Data                  (QueryD (..))
-import           Data.Morpheus.Client.Selection             (operationTypes)
+import           Data.Morpheus.Execution.Client.Data                  (QueryD (..))
+import           Data.Morpheus.Execution.Client.Selection             (operationTypes)
 import           Data.Morpheus.Error.Utils                  (renderErrors)
 import           Data.Morpheus.Parsing.Request.Parser       (parseGQL)
 import qualified Data.Morpheus.Types.Internal.AST.Operation as O (Operation (..))

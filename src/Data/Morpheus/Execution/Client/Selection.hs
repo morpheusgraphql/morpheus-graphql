@@ -4,12 +4,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Data.Morpheus.Client.Selection
+module Data.Morpheus.Execution.Client.Selection
   ( operationTypes
   ) where
 
-import           Data.Morpheus.Client.Data                  (ConsD (..), FieldD (..), TypeD (..), gqlToHSWrappers)
 import           Data.Morpheus.Error.Internal               (internalUnknownTypeMessage)
+import           Data.Morpheus.Execution.Client.Data        (ConsD (..), FieldD (..), TypeD (..), gqlToHSWrappers)
 import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), ValidOperation, Variable (..),
                                                              VariableDefinitions)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))

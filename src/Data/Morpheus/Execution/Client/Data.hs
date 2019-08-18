@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Data.Morpheus.Client.Data
+module Data.Morpheus.Execution.Client.Data
   ( FieldD(..)
   , TypeD(..)
   , ConsD(..)

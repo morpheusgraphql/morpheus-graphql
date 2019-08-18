@@ -5,7 +5,7 @@
 {-# LANGUAGE TemplateHaskell         #-}
 {-# LANGUAGE TypeFamilies            #-}
 
-module Data.Morpheus.Client.Fetch
+module Data.Morpheus.Execution.Client.Fetch
   ( Fetch(..)
   , deriveFetch
   ) where

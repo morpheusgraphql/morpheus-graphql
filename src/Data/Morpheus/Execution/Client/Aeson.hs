@@ -8,16 +8,16 @@
 {-# LANGUAGE TypeApplications        #-}
 {-# LANGUAGE TypeFamilies            #-}
 
-module Data.Morpheus.Client.Aeson
+module Data.Morpheus.Execution.Client.Aeson
   ( deriveFromJSON
   , takeValueType
   ) where
 
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.HashMap.Lazy         as H (lookup)
-import           Data.Morpheus.Client.Data (AppD (..), ConsD (..), FieldD (..), TypeD (..))
-import           Data.Text                 (unpack)
+import qualified Data.HashMap.Lazy                   as H (lookup)
+import           Data.Morpheus.Execution.Client.Data (AppD (..), ConsD (..), FieldD (..), TypeD (..))
+import           Data.Text                           (unpack)
 import           Language.Haskell.TH
 
 deriveFromJSON :: TypeD -> Q Dec
