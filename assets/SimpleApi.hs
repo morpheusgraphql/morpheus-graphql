@@ -26,7 +26,7 @@ data Query = Query
 
 data ArgDeity = ArgDeity
   { name      :: Maybe [Maybe [Maybe [[Maybe [Text]]]]]
-  , mythology :: Maybe Text
+  , mythology :: Maybe Realm
   } deriving (Generic)
 
 data ArgCharacter = ArgCharacter
@@ -62,6 +62,19 @@ instance GQLType Mutation where
 resolveMutation :: IOMutRes () () Mutation
 resolveMutation = return Mutation {createDeity = const resolveDeity, createCharacter = const resolveCharacter}
 
+---- GQL Profession -------------------------------
+data Profession
+  = Priest
+  | Farmer
+  | Artist
+  deriving (Generic)
+
+instance GQLType Profession where
+  type KIND Profession = ENUM
+
+resolveProfession :: IORes Profession
+resolveProfession = return Priest
+
 ---- GQL City -------------------------------
 data City
   = Athens
@@ -75,6 +88,21 @@ instance GQLType City where
 
 resolveCity :: IORes City
 resolveCity = return Athens
+
+---- GQL Lifetime -------------------------------
+data Lifetime =
+  Lifetime Int
+           Int
+
+instance GQLType Lifetime where
+  type KIND Lifetime = SCALAR
+
+instance GQLScalar Lifetime where
+  parseValue _ = pure (Lifetime 0 0)
+  serialize (Lifetime x y) = Int (x + y)
+
+resolveLifetime :: IORes Lifetime
+resolveLifetime = return $ Lifetime 0 0
 
 ---- GQL Power -------------------------------
 data Power =
@@ -93,8 +121,8 @@ resolvePower = return $ Power 0 0
 
 ---- GQL Realm -------------------------------
 data Realm = Realm
-  { owner :: Text
-  , place :: Maybe Int
+  { owner   :: Text
+  , surface :: Maybe Int
   } deriving (Generic)
 
 instance GQLType Realm where
@@ -103,14 +131,14 @@ instance GQLType Realm where
 ---- GQL Deity -------------------------------
 data Deity = Deity
   { fullName :: () -> IORes Text
-  , power    :: () -> IORes Power
+  , power    :: () -> IORes (Maybe Power)
   } deriving (Generic)
 
 instance GQLType Deity where
   type KIND Deity = OBJECT
 
 resolveDeity :: IORes Deity
-resolveDeity = return Deity {fullName = const $ return "", power = const resolvePower}
+resolveDeity = return Deity {fullName = const $ return "", power = const $ return Nothing}
 
 ---- GQL Creature -------------------------------
 data Creature = Creature
@@ -127,14 +155,16 @@ resolveCreature = return Creature {creatureName = const $ return "", realm = con
 ---- GQL Human -------------------------------
 data Human = Human
   { humanName  :: () -> IORes Text
-  , profession :: () -> IORes (Maybe Text)
+  , lifetime   :: () -> IORes Lifetime
+  , profession :: () -> IORes (Maybe Profession)
   } deriving (Generic)
 
 instance GQLType Human where
   type KIND Human = OBJECT
 
 resolveHuman :: IORes Human
-resolveHuman = return Human {humanName = const $ return "", profession = const $ return Nothing}
+resolveHuman =
+  return Human {humanName = const $ return "", lifetime = const resolveLifetime, profession = const $ return Nothing}
 
 ---- GQL Character -------------------------------
 data Character
