@@ -17,11 +17,12 @@ import           Data.Aeson                     (ToJSON (..))
 import           Data.ByteString.Lazy           (ByteString)
 import qualified Data.ByteString.Lazy           as L (readFile)
 import           Data.Morpheus                  (Interpreter (..))
-import           Data.Morpheus.Client           (Fetch (..), defineQuery, gql)
+import           Data.Morpheus.Client           (Fetch (..), defineQuery)
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Deprecated.API                 (Channel, Content, gqlRoot)
 import           GHC.Generics
+import           GQLClient                      (gql)
 import           Language.Haskell.TH.Quote
 import           Mythology.API                  (mythologyApi)
 import qualified Network.Wai                    as Wai
@@ -37,7 +38,7 @@ defineQuery
       {
         deity (mythology:$god) {
          # bono <->
-         ## <<
+         ## some comment ++
           power
           fullName
         }
