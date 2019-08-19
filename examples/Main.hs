@@ -57,12 +57,14 @@ defineByDocumentFile
       }
   |]
 
-fetchHero :: Args GetHero -> IO (Either String GetHero)
-fetchHero = fetch jsonRes
+fetchHero :: IO (Either String GetHero)
+fetchHero = fetch jsonRes heroArgs
+  where
+    heroArgs = GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}, charID = "Hercules"}
 
 main :: IO ()
 main = do
-  fetchHero (GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}, charID = "Hercules"}) >>= print
+  fetchHero >>= print
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
