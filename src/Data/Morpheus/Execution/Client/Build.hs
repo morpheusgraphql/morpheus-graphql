@@ -13,6 +13,8 @@ import           Control.Lens                            (declareLenses)
 import           Data.Semigroup                          ((<>))
 import           Language.Haskell.TH
 
+import           Data.Morpheus.Error.Client.Client       (renderGQLErrors)
+
 --
 -- MORPHEUS
 import           Data.Morpheus.Execution.Client.Aeson    (deriveFromJSON)
@@ -66,12 +68,6 @@ defineQueryD QueryD {queryTypes = []} = return []
 defineQuery :: IO (Validation DataTypeLib) -> (GQLQueryRoot, String) -> Q [Dec]
 defineQuery ioSchema queryRoot = do
   schema <- runIO ioSchema
-  validate schema
-  where
-    validate x =
-      case x of
-        Left errors -> fail (show errors)
-        Right schema ->
-          case validateWith schema queryRoot of
-            Left errors  -> fail (show errors)
-            Right queryD -> defineQueryD queryD
+  case schema >>= (`validateWith` queryRoot) of
+    Left errors  -> fail (renderGQLErrors errors)
+    Right queryD -> defineQueryD queryD

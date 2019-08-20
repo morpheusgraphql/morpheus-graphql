@@ -7,14 +7,12 @@ module Data.Morpheus.Execution.Client.Compile
   , validateWith
   ) where
 
-import           Data.Aeson                                 (encode)
-import           Data.ByteString.Lazy.Char8                 (unpack)
 import qualified Data.Text                                  as T (pack)
 import           Language.Haskell.TH
 
+import Data.Morpheus.Error.Client.Client (renderGQLErrors)
 --
 --  Morpheus
-import           Data.Morpheus.Error.Utils                  (renderErrors)
 import           Data.Morpheus.Execution.Client.Data        (QueryD (..))
 import           Data.Morpheus.Execution.Client.Selection   (operationTypes)
 import           Data.Morpheus.Parsing.Request.Parser       (parseGQL)
@@ -29,7 +27,7 @@ import           Data.Morpheus.Validation.Validation        (validateRequest)
 compileSyntax :: String -> Q Exp
 compileSyntax queryText =
   case parseGQL request of
-    Left errors -> fail $ unpack $ encode $ renderErrors errors
+    Left errors -> fail (renderGQLErrors errors)
     Right root  -> [|(root, queryText)|]
   where
     request = GQLRequest {query = T.pack queryText, operationName = Nothing, variables = Nothing}
