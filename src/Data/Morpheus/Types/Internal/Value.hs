@@ -12,14 +12,15 @@ module Data.Morpheus.Types.Internal.Value
   , convertToHaskellName
   ) where
 
-import qualified Data.Aeson                 as A (FromJSON (..), ToJSON (..), Value (..), object, pairs, (.=))
-import qualified Data.HashMap.Strict        as M (toList)
-import           Data.Scientific            (Scientific, floatingOrInteger)
-import           Data.Semigroup             ((<>))
-import           Data.Text                  (Text, pack, unpack)
-import qualified Data.Text                  as T
-import qualified Data.Vector                as V (toList)
-import           GHC.Generics               (Generic)
+import qualified Data.Aeson                      as A (FromJSON (..), ToJSON (..), Value (..), object, pairs, (.=))
+import qualified Data.HashMap.Strict             as M (toList)
+import           Data.Morpheus.Types.Internal.TH (apply, liftText, liftTextMap)
+import           Data.Scientific                 (Scientific, floatingOrInteger)
+import           Data.Semigroup                  ((<>))
+import           Data.Text                       (Text, pack, unpack)
+import qualified Data.Text                       as T
+import qualified Data.Vector                     as V (toList)
+import           GHC.Generics                    (Generic)
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
 
@@ -74,22 +75,10 @@ data ScalarValue
   deriving (Show, Generic)
 
 instance Lift ScalarValue where
-  lift (String n)  = apply 'String [liftText n]
-  lift (Int n)     = apply 'Int [lift n]
-  lift (Float n)   = apply 'Float [lift n]
+  lift (String n) = apply 'String [liftText n]
+  lift (Int n) = apply 'Int [lift n]
+  lift (Float n) = apply 'Float [lift n]
   lift (Boolean n) = apply 'Boolean [lift n]
-
-liftText :: Text -> ExpQ
-liftText x = appE (varE 'pack) (lift (unpack x))
-
-liftTextTuple :: Lift a => (Text, a) -> ExpQ
-liftTextTuple (name, x) = tupE [liftText name, lift x]
-
-liftTextMap :: Lift a => [(Text, a)] -> ExpQ
-liftTextMap = listE . map liftTextTuple
-
-apply :: Name -> [Q Exp] -> Q Exp
-apply n = foldl appE (conE n)
 
 instance A.ToJSON ScalarValue where
   toEncoding (Float x)   = A.toEncoding x
