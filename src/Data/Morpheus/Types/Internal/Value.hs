@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE DeriveLift        #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 module Data.Morpheus.Types.Internal.Value
   ( Value(..)
@@ -15,15 +16,15 @@ import qualified Data.Aeson                 as A (FromJSON (..), ToJSON (..), Va
 import qualified Data.HashMap.Strict        as M (toList)
 import           Data.Scientific            (Scientific, floatingOrInteger)
 import           Data.Semigroup             ((<>))
-import           Data.Text                  (Text)
+import           Data.Text                  (Text, pack, unpack)
 import qualified Data.Text                  as T
 import qualified Data.Vector                as V (toList)
 import           GHC.Generics               (Generic)
-import           Language.Haskell.TH.Syntax (Lift)
+import           Language.Haskell.TH
+import           Language.Haskell.TH.Syntax
 
 --  TEMPLATE HASKELL INSTANCE FOR TEXT
-import           Instances.TH.Lift
-
+-- import           Instances.TH.Lift
 isReserved :: Text -> Bool
 isReserved "case"     = True
 isReserved "class"    = True
@@ -70,7 +71,25 @@ data ScalarValue
   | Float Float
   | String Text
   | Boolean Bool
-  deriving (Show, Generic, Lift)
+  deriving (Show, Generic)
+
+instance Lift ScalarValue where
+  lift (String n)  = apply 'String [liftText n]
+  lift (Int n)     = apply 'Int [lift n]
+  lift (Float n)   = apply 'Float [lift n]
+  lift (Boolean n) = apply 'Boolean [lift n]
+
+liftText :: Text -> ExpQ
+liftText x = appE (varE 'pack) (lift (unpack x))
+
+liftTextTuple :: Lift a => (Text, a) -> ExpQ
+liftTextTuple (name, x) = tupE [liftText name, lift x]
+
+liftTextMap :: Lift a => [(Text, a)] -> ExpQ
+liftTextMap = listE . map liftTextTuple
+
+apply :: Name -> [Q Exp] -> Q Exp
+apply n = foldl appE (conE n)
 
 instance A.ToJSON ScalarValue where
   toEncoding (Float x)   = A.toEncoding x
@@ -78,13 +97,20 @@ instance A.ToJSON ScalarValue where
   toEncoding (Boolean x) = A.toEncoding x
   toEncoding (String x)  = A.toEncoding x
 
+instance Lift Value where
+  lift (Object ls) = apply 'String [liftTextMap ls]
+  lift (List n)    = apply 'Int [lift n]
+  lift (Enum n)    = apply 'Float [liftText n]
+  lift (Scalar n)  = apply 'Boolean [lift n]
+  lift Null        = varE 'Null
+
 data Value
   = Object [(Text, Value)]
   | List [Value]
   | Enum Text
   | Scalar ScalarValue
   | Null
-  deriving (Show, Generic, Lift)
+  deriving (Show, Generic)
 
 instance A.ToJSON Value where
   toEncoding Null = A.toEncoding A.Null
