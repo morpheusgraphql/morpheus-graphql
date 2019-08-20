@@ -9,15 +9,21 @@ module Data.Morpheus.Execution.Client.Build
   ( defineQuery
   ) where
 
-import           Control.Lens                         (declareLenses)
-import           Data.Semigroup                       ((<>))
+import           Control.Lens                            (declareLenses)
+import           Data.Semigroup                          ((<>))
 import           Language.Haskell.TH
+
+import           Data.Morpheus.Error.Client.Client       (renderGQLErrors)
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Execution.Client.Aeson (deriveFromJSON)
-import           Data.Morpheus.Execution.Client.Data  (AppD (..), ConsD (..), FieldD (..), QueryD (..), TypeD (..))
-import           Data.Morpheus.Execution.Client.Fetch (deriveFetch)
+import           Data.Morpheus.Execution.Client.Aeson    (deriveFromJSON)
+import           Data.Morpheus.Execution.Client.Compile  (validateWith)
+import           Data.Morpheus.Execution.Client.Data     (AppD (..), ConsD (..), FieldD (..), QueryD (..), TypeD (..))
+import           Data.Morpheus.Execution.Client.Fetch    (deriveFetch)
+import           Data.Morpheus.Types.Internal.Data       (DataTypeLib)
+import           Data.Morpheus.Types.Internal.Validation (Validation)
+import           Data.Morpheus.Types.Types               (GQLQueryRoot (..))
 
 queryArgumentType :: [TypeD] -> (Type, Q [Dec])
 queryArgumentType [] = (ConT $ mkName "()", pure [])
@@ -52,9 +58,16 @@ defineOperationType (argType, argumentTypes) query datatype = do
   args <- argumentTypes
   pure $ rootType <> typeClassFetch <> args
 
-defineQuery :: QueryD -> Q [Dec]
-defineQuery QueryD {queryTypes = rootType:subTypes, queryText, queryArgTypes} = do
+defineQueryD :: QueryD -> Q [Dec]
+defineQueryD QueryD {queryTypes = rootType:subTypes, queryText, queryArgTypes} = do
   rootDecs <- defineOperationType (queryArgumentType queryArgTypes) queryText rootType
   subTypeDecs <- concat <$> mapM defineJSONType subTypes
   return $ rootDecs ++ subTypeDecs
-defineQuery QueryD {queryTypes = []} = return []
+defineQueryD QueryD {queryTypes = []} = return []
+
+defineQuery :: IO (Validation DataTypeLib) -> (GQLQueryRoot, String) -> Q [Dec]
+defineQuery ioSchema queryRoot = do
+  schema <- runIO ioSchema
+  case schema >>= (`validateWith` queryRoot) of
+    Left errors  -> fail (renderGQLErrors errors)
+    Right queryD -> defineQueryD queryD

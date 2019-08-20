@@ -8,12 +8,12 @@ module Data.Morpheus.Parsing.Request.Operation
 
 import           Data.Functor                               (($>))
 import           Data.Text                                  (Text)
-import           Text.Megaparsec                            (getSourcePos, label, (<?>), (<|>))
+import           Text.Megaparsec                            (label, (<?>), (<|>))
 import           Text.Megaparsec.Char                       (space1, string)
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Parsing.Internal.Internal    (Parser)
+import           Data.Morpheus.Parsing.Internal.Internal    (Parser, getLocation)
 import           Data.Morpheus.Parsing.Internal.Terms       (parseAssignment, parseMaybeTuple, parseNonNull,
                                                              parseWrappedType, token, variable)
 import           Data.Morpheus.Parsing.Request.Body         (entries)
@@ -23,8 +23,7 @@ import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), Ope
 operationArgument :: Parser (Text, Variable ())
 operationArgument =
   label "operatorArgument" $ do
-    ((name, variablePosition), (wrappers, variableType)) <-
-      parseAssignment variable parseWrappedType
+    ((name, variablePosition), (wrappers, variableType)) <- parseAssignment variable parseWrappedType
     nonNull <- parseNonNull
     pure
       ( name
@@ -39,24 +38,17 @@ operationArgument =
 parseOperation :: Parser RawOperation
 parseOperation =
   label "operator" $ do
-    operationPosition <- getSourcePos
+    operationPosition <- getLocation
     operationKind <- parseOperationKind
     operationName <- token
     operationArgs <- parseMaybeTuple operationArgument
     operationSelection <- entries
-    pure
-      (Operation
-         { operationName
-         , operationKind
-         , operationArgs
-         , operationSelection
-         , operationPosition
-         })
+    pure (Operation {operationName, operationKind, operationArgs, operationSelection, operationPosition})
 
 parseAnonymousQuery :: Parser RawOperation
 parseAnonymousQuery =
   label "AnonymousQuery" $ do
-    operationPosition <- getSourcePos
+    operationPosition <- getLocation
     operationSelection <- entries
     pure
       (Operation
@@ -71,8 +63,6 @@ parseAnonymousQuery =
 parseOperationKind :: Parser OperationKind
 parseOperationKind =
   label "operatorKind" $ do
-    kind <-
-      (string "query" $> QUERY) <|> (string "mutation" $> MUTATION) <|>
-      (string "subscription" $> SUBSCRIPTION)
+    kind <- (string "query" $> QUERY) <|> (string "mutation" $> MUTATION) <|> (string "subscription" $> SUBSCRIPTION)
     space1
     return kind
