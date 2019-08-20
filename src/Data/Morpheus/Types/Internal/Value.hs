@@ -17,15 +17,13 @@ import qualified Data.HashMap.Strict             as M (toList)
 import           Data.Morpheus.Types.Internal.TH (apply, liftText, liftTextMap)
 import           Data.Scientific                 (Scientific, floatingOrInteger)
 import           Data.Semigroup                  ((<>))
-import           Data.Text                       (Text, pack, unpack)
+import           Data.Text                       (Text)
 import qualified Data.Text                       as T
 import qualified Data.Vector                     as V (toList)
 import           GHC.Generics                    (Generic)
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
 
---  TEMPLATE HASKELL INSTANCE FOR TEXT
--- import           Instances.TH.Lift
 isReserved :: Text -> Bool
 isReserved "case"     = True
 isReserved "class"    = True
@@ -75,9 +73,9 @@ data ScalarValue
   deriving (Show, Generic)
 
 instance Lift ScalarValue where
-  lift (String n) = apply 'String [liftText n]
-  lift (Int n) = apply 'Int [lift n]
-  lift (Float n) = apply 'Float [lift n]
+  lift (String n)  = apply 'String [liftText n]
+  lift (Int n)     = apply 'Int [lift n]
+  lift (Float n)   = apply 'Float [lift n]
   lift (Boolean n) = apply 'Boolean [lift n]
 
 instance A.ToJSON ScalarValue where
