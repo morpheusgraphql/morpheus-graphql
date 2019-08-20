@@ -4,22 +4,20 @@ module Data.Morpheus.Parsing.Request.Arguments
   ( maybeArguments
   ) where
 
-import           Data.Morpheus.Parsing.Internal.Internal       (Parser)
+import           Data.Morpheus.Parsing.Internal.Internal       (Parser, getLocation)
 import           Data.Morpheus.Parsing.Internal.Terms          (parseAssignment, parseMaybeTuple, token, variable)
 import           Data.Morpheus.Parsing.Request.Value           (enumValue, parseValue)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Argument (..), RawArgument (..), RawArguments,
                                                                 Reference (..))
 import           Data.Morpheus.Types.Internal.AST.Selection    (ArgumentOrigin (..))
-import           Text.Megaparsec                               (getSourcePos, label, (<|>))
+import           Text.Megaparsec                               (label, (<|>))
 
 valueArgument :: Parser RawArgument
 valueArgument =
   label "valueArgument" $ do
-    argumentPosition <- getSourcePos
+    argumentPosition <- getLocation
     argumentValue <- parseValue <|> enumValue
-    pure $
-      RawArgument $
-      Argument {argumentValue, argumentOrigin = INLINE, argumentPosition}
+    pure $ RawArgument $ Argument {argumentValue, argumentOrigin = INLINE, argumentPosition}
 
 variableArgument :: Parser RawArgument
 variableArgument =

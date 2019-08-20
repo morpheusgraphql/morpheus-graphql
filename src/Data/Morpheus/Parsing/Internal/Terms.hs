@@ -18,19 +18,18 @@ module Data.Morpheus.Parsing.Internal.Terms
   ) where
 
 import           Data.Functor                            (($>))
-import           Data.Morpheus.Parsing.Internal.Internal (Parser, Position)
+import           Data.Morpheus.Parsing.Internal.Internal (Parser, Position, getLocation)
 import           Data.Morpheus.Types.Internal.Data       (DataTypeWrapper (..))
 import           Data.Morpheus.Types.Internal.Value      (convertToHaskellName)
 import           Data.Text                               (Text, pack)
-import           Text.Megaparsec                         (between, getSourcePos, label, many, sepBy, sepEndBy, skipMany,
-                                                          skipManyTill, (<?>), (<|>))
+import           Text.Megaparsec                         (between, label, many, sepBy, sepEndBy, skipMany, skipManyTill,
+                                                          (<?>), (<|>))
 import           Text.Megaparsec.Char                    (char, digitChar, letterChar, newline, printChar, space,
                                                           space1, string)
 
 -- LITERALS
 setLiteral :: Parser [a] -> Parser [a]
-setLiteral =
-  between (char '{' *> spaceAndComments) (char '}' *> spaceAndComments)
+setLiteral = between (char '{' *> spaceAndComments) (char '}' *> spaceAndComments)
 
 pipeLiteral :: Parser ()
 pipeLiteral = char '|' *> spaceAndComments
@@ -48,14 +47,14 @@ token =
 qualifier :: Parser (Text, Position)
 qualifier =
   label "qualifier" $ do
-    position <- getSourcePos
+    position <- getLocation
     value <- token
     return (value, position)
 
 variable :: Parser (Text, Position)
 variable =
   label "variable" $ do
-    position' <- getSourcePos
+    position' <- getLocation
     _ <- char '$'
     varName' <- token
     return (varName', position')
@@ -85,8 +84,7 @@ parseTuple parser =
   between
     (char '(' *> spaceAndComments)
     (char ')' *> spaceAndComments)
-    (parser `sepBy` (many (char ',') *> spaceAndComments) <?>
-     "empty Tuple value!")
+    (parser `sepBy` (many (char ',') *> spaceAndComments) <?> "empty Tuple value!")
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
 parseAssignment nameParser valueParser =
@@ -104,7 +102,7 @@ onType = do
 
 spreadLiteral :: Parser Position
 spreadLiteral = do
-  index <- getSourcePos
+  index <- getLocation
   _ <- string "..."
   space
   return index

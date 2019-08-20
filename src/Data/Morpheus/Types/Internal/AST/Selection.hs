@@ -12,9 +12,6 @@ module Data.Morpheus.Types.Internal.AST.Selection
 import           Data.Morpheus.Types.Internal.Base  (Collection, Key, Position)
 import           Data.Morpheus.Types.Internal.Value (Value)
 import           Language.Haskell.TH.Syntax         (Lift (..))
-import           Text.Megaparsec                    (SourcePos)
-
-instance Lift SourcePos
 
 data ArgumentOrigin
   = VARIABLE

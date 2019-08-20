@@ -5,11 +5,12 @@ module Data.Morpheus.Error.Utils
   , globalErrorMessage
   , renderErrors
   , badRequestError
+  , toLocation
   ) where
 
 import           Data.ByteString.Lazy.Char8              (ByteString, pack)
 import           Data.Morpheus.Types.Internal.Base       (Position)
-import           Data.Morpheus.Types.Internal.Validation (ErrorLocation (..), GQLError (..), GQLErrors, JSONError (..))
+import           Data.Morpheus.Types.Internal.Validation (GQLError (..), GQLErrors, JSONError (..), Location (..))
 import           Data.Text                               (Text)
 import           Text.Megaparsec                         (SourcePos (SourcePos), sourceColumn, sourceLine, unPos)
 
@@ -23,13 +24,10 @@ renderErrors :: [GQLError] -> [JSONError]
 renderErrors = map renderError
 
 renderError :: GQLError -> JSONError
-renderError GQLError {desc, positions} =
-  JSONError {message = desc, locations = map toErrorLocation positions}
+renderError GQLError {desc, positions} = JSONError {message = desc, locations = positions}
 
-toErrorLocation :: Position -> ErrorLocation
-toErrorLocation SourcePos {sourceLine, sourceColumn} =
-  ErrorLocation {line = unPos sourceLine, column = unPos sourceColumn}
+toLocation :: SourcePos -> Location
+toLocation SourcePos {sourceLine, sourceColumn} = Location {line = unPos sourceLine, column = unPos sourceColumn}
 
 badRequestError :: String -> ByteString
-badRequestError aesonError' =
-  pack $ "Bad Request. Could not decode Request body: " ++ aesonError'
+badRequestError aesonError' = pack $ "Bad Request. Could not decode Request body: " ++ aesonError'
