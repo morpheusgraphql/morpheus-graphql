@@ -33,7 +33,6 @@ dependencies:
   - uuid                  >= 1.0       && <= 1.4
   - template-haskell
   - lens
-  - th-lift-instances
 
 library:
   source-dirs: src
