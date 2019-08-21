@@ -17,7 +17,8 @@ import           Data.Morpheus.Parsing.Internal.Create   (createArgument, create
 import qualified Data.Morpheus.Schema.EnumValue          as E (EnumValue (..))
 import qualified Data.Morpheus.Schema.Field              as F (Field (..))
 import qualified Data.Morpheus.Schema.InputValue         as I (InputValue (..))
-import           Data.Morpheus.Schema.JSONType           (JSONResponse (..), JSONSchema (..), JSONType (..))
+import           Data.Morpheus.Schema.JSONType           (JSONIntro (..), JSONResponse (..), JSONSchema (..),
+                                                          JSONType (..))
 import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data       (DataFullType (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
@@ -49,5 +50,17 @@ typeFromJSON JSONType {name = Just typeName, kind = OBJECT, fields = Just oField
         genArg I.InputValue {I.name = argName, I.type' = JSONType {name = Just argType}} =
           createArgument argName [] argType
 
-decodeIntrospection :: ByteString -> Either String JSONResponse
-decodeIntrospection = eitherDecode
+schemaFromJSON :: [JSONType] -> Validation [(Text, DataFullType)]
+schemaFromJSON = traverse typeFromJSON
+
+decodeIntrospection :: ByteString -> Either String [(Text, DataFullType)]
+decodeIntrospection jsonDoc =
+  case jsonSchema of
+    Left errors -> Left errors
+    Right JSONResponse {responseData = JSONIntro {__schema = JSONSchema {types}}} ->
+      case schemaFromJSON types of
+        Left gqlErrors -> Left $ show gqlErrors
+        Right typelib  -> pure typelib
+  where
+    jsonSchema :: Either String JSONResponse
+    jsonSchema = eitherDecode jsonDoc
