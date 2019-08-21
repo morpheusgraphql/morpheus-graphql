@@ -20,6 +20,7 @@ import           Data.Morpheus                  (Interpreter (..))
 import           Data.Morpheus.Client           (Fetch (..), defineByDocumentFile, defineByIntrospectionFile, gql)
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
+import           Data.Morpheus.Types            (ScalarValue (..))
 import           Deprecated.API                 (Channel, Content, gqlRoot)
 import           GHC.Generics
 import           Mythology.API                  (mythologyApi)
@@ -34,8 +35,6 @@ jsonRes req = do
   print req
   return
     "{\"data\":{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }}"
-
-type Euro = String
 
 defineByIntrospectionFile
   "./assets/introspection.json"
@@ -84,7 +83,7 @@ fetUser :: GQLState IO Channel Content -> IO (Either String GetUser)
 fetUser state = fetch (interpreter gqlRoot state) userArgs
   where
     userArgs :: Args GetUser
-    userArgs = GetUserArgs {userCoordinates = Coordinates {longitude = [], latitude = "1"}}
+    userArgs = GetUserArgs {userCoordinates = Coordinates {longitude = [], latitude = Int 1}}
 
 main :: IO ()
 main = do
