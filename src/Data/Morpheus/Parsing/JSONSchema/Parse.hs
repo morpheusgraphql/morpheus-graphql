@@ -14,11 +14,11 @@ import           Data.Morpheus.Parsing.Internal.Create   (createArgument, create
 import qualified Data.Morpheus.Schema.EnumValue          as E (EnumValue (..))
 import qualified Data.Morpheus.Schema.Field              as F (Field (..))
 import qualified Data.Morpheus.Schema.InputValue         as I (InputValue (..))
-import           Data.Morpheus.Schema.JSONType           (JSONIntro (..), JSONResponse (..), JSONSchema (..),
-                                                          JSONType (..))
+import           Data.Morpheus.Schema.JSONType           (JSONIntro (..), JSONSchema (..), JSONType (..))
 import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataTypeLib, DataTypeWrapper (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
+import           Data.Morpheus.Types.IO                  (JSONResponse (..))
 import           Data.Semigroup                          ((<>))
 import           Data.Text                               (Text, pack)
 
@@ -68,5 +68,5 @@ decodeIntrospection jsonDoc =
     Right JSONResponse {responseData = JSONIntro {__schema = JSONSchema {types}}} ->
       schemaFromJSON types >>= createDataTypeLib
   where
-    jsonSchema :: Either String JSONResponse
+    jsonSchema :: Either String (JSONResponse JSONIntro)
     jsonSchema = eitherDecode jsonDoc

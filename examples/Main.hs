@@ -33,18 +33,20 @@ jsonRes :: ByteString -> IO ByteString
 jsonRes req = do
   print req
   return
-    "{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }"
+    "{\"data\":{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }}"
+
+type Euro = String
 
 defineByIntrospectionFile
   "./assets/introspection.json"
   [gql|
     # Query Hero with Compile time Validation
-    query GetUser
+    query GetUser ($userCoordinates: Coordinates!)
       {
         user {
            name
            email
-           address (coordinates: { longitude: [] ,latitude: 2} ){
+           address (coordinates: $userCoordinates ){
             city
            }
         }
@@ -78,11 +80,18 @@ fetchHero = fetch jsonRes heroArgs
   where
     heroArgs = GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}, charID = "Hercules"}
 
+fetUser :: GQLState IO Channel Content -> IO (Either String GetUser)
+fetUser state = fetch (interpreter gqlRoot state) userArgs
+  where
+    userArgs :: Args GetUser
+    userArgs = GetUserArgs {userCoordinates = Coordinates {longitude = [], latitude = "1"}}
+
 main :: IO ()
 main = do
   fetchHero >>= print
   state <- initGQLState
   httpApp <- httpServer state
+  fetUser state >>= print
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
   where
     settings = Warp.setPort 3000 Warp.defaultSettings
