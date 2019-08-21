@@ -30,4 +30,4 @@ createUnionType typeName typeData = (typeName, Union $ createType typeName $ map
   where
     unionField fieldType = createField () "" ([], fieldType)
 
-createArgument fieldName wrappers fieldType = (fieldName, createField () fieldName (wrappers, fieldType))
+createArgument fieldName x = (fieldName, createField () fieldName x)

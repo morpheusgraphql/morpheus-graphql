@@ -21,7 +21,7 @@ dataArgument =
   label "Argument" $ do
     ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
     nonNull <- parseNonNull
-    pure $ createArgument fieldName (nonNull ++ wrappers) fieldType
+    pure $ createArgument fieldName (nonNull ++ wrappers, fieldType)
 
 entries :: Parser [(Key, DataOutputField)]
 entries = label "entries" $ setOf entry
