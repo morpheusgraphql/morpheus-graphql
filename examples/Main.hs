@@ -12,22 +12,26 @@ module Main
   ( main
   ) where
 
-import           Control.Monad.IO.Class         (liftIO)
-import           Data.Aeson                     (ToJSON (..))
-import           Data.ByteString.Lazy           (ByteString)
-import           Data.Functor.Identity          (Identity (..))
-import           Data.Morpheus                  (Interpreter (..))
-import           Data.Morpheus.Client           (Fetch (..), defineByDocumentFile, gql)
-import           Data.Morpheus.Document         (toGraphQLDocument)
-import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
-import           Deprecated.API                 (Channel, Content, gqlRoot)
+import           Control.Monad.IO.Class                 (liftIO)
+import           Data.Aeson                             (ToJSON (..))
+import           Data.ByteString.Lazy                   (ByteString)
+import qualified Data.ByteString.Lazy                   as L
+import           Data.Functor.Identity                  (Identity (..))
+import           Data.Morpheus                          (Interpreter (..))
+import           Data.Morpheus.Client                   (Fetch (..), defineByDocumentFile, gql)
+import           Data.Morpheus.Document                 (toGraphQLDocument)
+import           Data.Morpheus.Parsing.JSONSchema.Parse
+import           Data.Morpheus.Server                   (GQLState, gqlSocketApp, initGQLState)
+import           Deprecated.API                         (Channel, Content, gqlRoot)
 import           GHC.Generics
-import           Mythology.API                  (mythologyApi)
-import qualified Network.Wai                    as Wai
-import qualified Network.Wai.Handler.Warp       as Warp
-import qualified Network.Wai.Handler.WebSockets as WaiWs
-import           Network.WebSockets             (defaultConnectionOptions)
-import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
+import           Mythology.API                          (mythologyApi)
+import qualified Network.Wai                            as Wai
+import qualified Network.Wai.Handler.Warp               as Warp
+import qualified Network.Wai.Handler.WebSockets         as WaiWs
+import           Network.WebSockets                     (defaultConnectionOptions)
+import           Web.Scotty                             (body, file, get, post, raw, scottyApp)
+
+introJSON = L.readFile "./assets/introspection.json"
 
 jsonRes :: ByteString -> IO ByteString
 jsonRes req = do
@@ -65,6 +69,7 @@ fetchHero = fetch jsonRes heroArgs
 main :: IO ()
 main = do
   fetchHero >>= print
+  introJSON >>= print . decodeIntrospection
   state <- initGQLState
   httpApp <- httpServer state
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -8,6 +9,7 @@ module Data.Morpheus.Schema.EnumValue
   , isEnumOf
   ) where
 
+import           Data.Aeson                  (FromJSON (..))
 import           Data.Morpheus.Kind          (OBJECT)
 import           Data.Morpheus.Types.GQLType (GQLType (KIND, __typeName, __typeVisibility))
 import           Data.Text                   (Text)
@@ -18,23 +20,16 @@ instance GQLType EnumValue where
   __typeName = const "__EnumValue"
   __typeVisibility = const False
 
-data EnumValue =
-  EnumValue
-    { name              :: Text
-    , description       :: Maybe Text
-    , isDeprecated      :: Bool
-    , deprecationReason :: Maybe Text
-    }
-  deriving (Generic)
+data EnumValue = EnumValue
+  { name              :: Text
+  , description       :: Maybe Text
+  , isDeprecated      :: Bool
+  , deprecationReason :: Maybe Text
+  } deriving (Show, Generic, FromJSON)
 
 createEnumValue :: Text -> EnumValue
 createEnumValue enumName =
-  EnumValue
-    { name = enumName
-    , description = Nothing
-    , isDeprecated = False
-    , deprecationReason = Nothing
-    }
+  EnumValue {name = enumName, description = Nothing, isDeprecated = False, deprecationReason = Nothing}
 
 isEnumValue :: Text -> EnumValue -> Bool
 isEnumValue inpName enum = inpName == name enum

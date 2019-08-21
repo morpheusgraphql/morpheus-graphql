@@ -4,6 +4,7 @@
 
 module Data.Morpheus.Schema.Field where
 
+import           Data.Aeson
 import           Data.Morpheus.Kind                 (OBJECT)
 import           Data.Morpheus.Schema.InputValue    (InputValue)
 import           Data.Morpheus.Types.GQLType        (GQLType (KIND, __typeName, __typeVisibility))
@@ -17,16 +18,21 @@ instance Typeable a => GQLType (Field a) where
   __typeName = const "__Field"
   __typeVisibility = const False
 
-data Field t =
-  Field
-    { name              :: Text
-    , description       :: Maybe Text
-    , args              :: [InputValue t]
-    , type'             :: t
-    , isDeprecated      :: Bool
-    , deprecationReason :: Maybe Text
-    }
-  deriving (Generic)
+data Field t = Field
+  { name              :: Text
+  , description       :: Maybe Text
+  , args              :: [InputValue t]
+  , type'             :: t
+  , isDeprecated      :: Bool
+  , deprecationReason :: Maybe Text
+  } deriving (Show, Generic)
+
+instance FromJSON a => FromJSON (Field a) where
+  parseJSON = withObject "InputValue" objectParser
+    where
+      objectParser o =
+        Field <$> o .: "name" <*> o .:? "description" <*> o .: "args" <*> o .: "type" <*> o .: "isDeprecated" <*>
+        o .:? "deprecationReason"
 
 createFieldWith :: Text -> a -> [InputValue a] -> Field a
 createFieldWith _name fieldType fieldArgs =

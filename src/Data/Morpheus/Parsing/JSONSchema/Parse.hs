@@ -7,14 +7,17 @@ module Data.Morpheus.Parsing.JSONSchema.Parse
   , Field
   , InputValue
   , typeFromJSON
+  , decodeIntrospection
   ) where
 
+import           Data.Aeson
+import           Data.ByteString.Lazy                    (ByteString)
 import           Data.Morpheus.Parsing.Internal.Create   (createArgument, createEnumType, createField, createScalarType,
                                                           createType, createUnionType)
 import qualified Data.Morpheus.Schema.EnumValue          as E (EnumValue (..))
 import qualified Data.Morpheus.Schema.Field              as F (Field (..))
 import qualified Data.Morpheus.Schema.InputValue         as I (InputValue (..))
-import           Data.Morpheus.Schema.JSONType           (JSONType (..))
+import           Data.Morpheus.Schema.JSONType           (JSONResponse (..), JSONSchema (..), JSONType (..))
 import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data       (DataFullType (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
@@ -45,3 +48,6 @@ typeFromJSON JSONType {name = Just typeName, kind = OBJECT, fields = Just oField
       where
         genArg I.InputValue {I.name = argName, I.type' = JSONType {name = Just argType}} =
           createArgument argName [] argType
+
+decodeIntrospection :: ByteString -> Either String JSONResponse
+decodeIntrospection = eitherDecode
