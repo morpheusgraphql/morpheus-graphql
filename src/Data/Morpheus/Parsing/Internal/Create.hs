@@ -3,17 +3,13 @@
 
 module Data.Morpheus.Parsing.Internal.Create where
 
-import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parseMaybeTuple, parseNonNull,
-                                                          parseWrappedType, pipeLiteral, qualifier, setOf,
-                                                          spaceAndComments, token)
-import           Data.Morpheus.Types.Internal.Data       (DataArgument, DataField (..), DataFingerprint (..),
-                                                          DataFullType (..), DataLeaf (..), DataOutputField,
-                                                          DataType (..), DataTypeLib (..), DataTypeWrapper,
-                                                          DataValidator (..), Key, defineType, initTypeLib)
-import           Data.Morpheus.Types.Internal.Validation (Validation)
-import           Data.Text                               (Text)
-import           Text.Megaparsec                         (label, sepBy1, (<|>))
-import           Text.Megaparsec.Char                    (char, space1, string)
+import           Data.Morpheus.Parsing.Internal.Terms (parseAssignment, parseMaybeTuple, parseNonNull, parseWrappedType,
+                                                       pipeLiteral, qualifier, setOf, spaceAndComments, token)
+import           Data.Morpheus.Types.Internal.Data    (DataArgument, DataField (..), DataFingerprint (..),
+                                                       DataFullType (..), DataLeaf (..), DataOutputField, DataType (..),
+                                                       DataTypeLib (..), DataTypeWrapper, DataValidator (..), Key,
+                                                       defineType, initTypeLib)
+import           Data.Text                            (Text)
 
 createField :: a -> Text -> ([DataTypeWrapper], Text) -> DataField a
 createField fieldArgs fieldName (fieldTypeWrappers, fieldType) =

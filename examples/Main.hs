@@ -43,6 +43,10 @@ defineByIntrospectionFile
       {
         user {
            name
+           email
+           address (coordinates: { longitude: [] ,latitude: 2} ){
+            city
+           }
         }
       }
   |]
