@@ -5,39 +5,23 @@ module Data.Morpheus.Parsing.Document.DataType
   ( parseDataType
   ) where
 
+import           Data.Morpheus.Parsing.Internal.Create   (createArgument, createEnumType, createField, createScalarType,
+                                                          createType, createUnionType)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parseMaybeTuple, parseNonNull,
                                                           parseWrappedType, pipeLiteral, qualifier, setOf,
                                                           spaceAndComments, token)
-import           Data.Morpheus.Types.Internal.Data       (DataArgument, DataField (..), DataFingerprint (..),
-                                                          DataFullType (..), DataLeaf (..), DataOutputField,
-                                                          DataType (..), DataTypeWrapper, DataValidator (..), Key)
+import           Data.Morpheus.Types.Internal.Data       (DataArgument, DataFullType (..), DataOutputField, Key)
 import           Data.Text                               (Text)
 import           Text.Megaparsec                         (label, sepBy1, (<|>))
 import           Text.Megaparsec.Char                    (char, space1, string)
 
-createType :: Text -> a -> DataType a
-createType typeName typeData =
-  DataType
-    { typeName
-    , typeDescription = ""
-    , typeFingerprint = SystemFingerprint ""
-    , typeVisibility = True
-    , typeData
-    }
-
-createField :: a -> Text -> ([DataTypeWrapper], Text) -> DataField a
-createField fieldArgs fieldName (fieldTypeWrappers, fieldType) =
-  DataField
-    {fieldArgs, fieldName, fieldType, fieldTypeWrappers, fieldHidden = False}
-
 dataArgument :: Parser (Text, DataArgument)
 dataArgument =
   label "Argument" $ do
-    ((fieldName, _), (wrappers, fieldType)) <-
-      parseAssignment qualifier parseWrappedType
+    ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
     nonNull <- parseNonNull
-    pure (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
+    pure $ createArgument fieldName (nonNull ++ wrappers) fieldType
 
 entries :: Parser [(Key, DataOutputField)]
 entries = label "entries" $ setOf entry
@@ -49,23 +33,18 @@ entries = label "entries" $ setOf entry
         return (name, args)
     entry =
       label "entry" $ do
-        ((fieldName, fieldArgs), (wrappers, fieldType)) <-
-          parseAssignment fieldWithArgs parseWrappedType
+        ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs parseWrappedType
         nonNull <- parseNonNull
-        return
-          ( fieldName
-          , createField fieldArgs fieldName (nonNull ++ wrappers, fieldType))
+        return (fieldName, createField fieldArgs fieldName (nonNull ++ wrappers, fieldType))
 
 inputEntries :: Parser [(Key, DataArgument)]
 inputEntries = label "inputEntries" $ setOf entry
   where
     entry =
       label "entry" $ do
-        ((fieldName, _), (wrappers, fieldType)) <-
-          parseAssignment qualifier parseWrappedType
+        ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
         nonNull <- parseNonNull
-        return
-          (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
+        return (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
 
 typeDef :: Text -> Parser Text
 typeDef kind = do
@@ -91,15 +70,14 @@ dataScalar :: Parser (Text, DataFullType)
 dataScalar =
   label "scalar" $ do
     typeName <- typeDef "scalar"
-    pure
-      (typeName, Leaf $ CustomScalar $ createType typeName (DataValidator pure))
+    pure $ createScalarType typeName
 
 dataEnum :: Parser (Text, DataFullType)
 dataEnum =
   label "enum" $ do
     typeName <- typeDef "enum"
     typeData <- setOf token
-    pure (typeName, Leaf $ LeafEnum $ createType typeName typeData)
+    pure $ createEnumType typeName typeData
 
 dataUnion :: Parser (Text, DataFullType)
 dataUnion =
@@ -107,14 +85,11 @@ dataUnion =
     typeName <- typeDef "union"
     _ <- char '='
     spaceAndComments
-    typeData <- map unionField <$> unionsParser
+    typeData <- unionsParser
     spaceAndComments
-    pure (typeName, Union $ createType typeName typeData)
+    pure $ createUnionType typeName typeData
   where
     unionsParser = token `sepBy1` pipeLiteral
-    unionField fieldType = createField () "" ([], fieldType)
 
 parseDataType :: Parser (Text, DataFullType)
-parseDataType =
-  label "dataType" $
-  dataObject <|> dataInputObject <|> dataUnion <|> dataEnum <|> dataScalar
+parseDataType = label "dataType" $ dataObject <|> dataInputObject <|> dataUnion <|> dataEnum <|> dataScalar
