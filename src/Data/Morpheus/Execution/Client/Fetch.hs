@@ -10,6 +10,7 @@ module Data.Morpheus.Execution.Client.Fetch
   , deriveFetch
   ) where
 
+import           Control.Monad          ((>=>))
 import           Data.Aeson             (FromJSON, ToJSON (..), eitherDecode, encode)
 import           Data.ByteString.Lazy   (ByteString)
 import           Data.Text              (pack)
@@ -22,15 +23,18 @@ import           Data.Morpheus.Types.IO (GQLRequest (..), JSONResponse (..))
 class Fetch a where
   type Args a :: *
   __fetch ::
-       (Monad m, ToJSON (Args a), FromJSON a)
+       (Monad m, Show a, ToJSON (Args a), FromJSON a)
     => String
     -> String
     -> (ByteString -> m ByteString)
     -> Args a
     -> m (Either String a)
-  __fetch strQuery opName trans vars = fmap responseData . eitherDecode <$> trans (encode gqlReq)
+  __fetch strQuery opName trans vars = (eitherDecode >=> processResponse) <$> trans (encode gqlReq)
     where
       gqlReq = GQLRequest {operationName = Just (pack opName), query = pack strQuery, variables = Just (toJSON vars)}
+      ----
+      processResponse JSONResponse {responseData = Just x} = pure x
+      processResponse invalidResponse                      = fail $ show invalidResponse
   fetch :: (Monad m, FromJSON a) => (ByteString -> m ByteString) -> Args a -> m (Either String a)
 
 deriveFetch :: Type -> String -> String -> Q [Dec]
