@@ -79,10 +79,10 @@ instance Lift ScalarValue where
   lift (Boolean n) = apply 'Boolean [lift n]
 
 instance A.ToJSON ScalarValue where
-  toEncoding (Float x)   = A.toEncoding x
-  toEncoding (Int x)     = A.toEncoding x
-  toEncoding (Boolean x) = A.toEncoding x
-  toEncoding (String x)  = A.toEncoding x
+  toJSON (Float x)   = A.toJSON x
+  toJSON (Int x)     = A.toJSON x
+  toJSON (Boolean x) = A.toJSON x
+  toJSON (String x)  = A.toJSON x
 
 instance A.FromJSON ScalarValue where
   parseJSON (A.Bool v)   = pure $ Boolean v
