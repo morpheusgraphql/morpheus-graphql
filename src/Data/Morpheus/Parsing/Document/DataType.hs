@@ -23,29 +23,6 @@ dataArgument =
     nonNull <- parseNonNull
     pure $ createArgument fieldName (nonNull ++ wrappers, fieldType)
 
-entries :: Parser [(Key, DataOutputField)]
-entries = label "entries" $ setOf entry
-  where
-    fieldWithArgs =
-      label "fieldWithArgs" $ do
-        (name, _) <- qualifier
-        args <- parseMaybeTuple dataArgument
-        return (name, args)
-    entry =
-      label "entry" $ do
-        ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs parseWrappedType
-        nonNull <- parseNonNull
-        return (fieldName, createField fieldArgs fieldName (nonNull ++ wrappers, fieldType))
-
-inputEntries :: Parser [(Key, DataArgument)]
-inputEntries = label "inputEntries" $ setOf entry
-  where
-    entry =
-      label "entry" $ do
-        ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
-        nonNull <- parseNonNull
-        return (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
-
 typeDef :: Text -> Parser Text
 typeDef kind = do
   _ <- string kind
@@ -58,6 +35,15 @@ dataInputObject =
     typeName <- typeDef "input"
     typeData <- inputEntries
     pure (typeName, InputObject $ createType typeName typeData)
+  where
+    inputEntries :: Parser [(Key, DataArgument)]
+    inputEntries = label "inputEntries" $ setOf entry
+      where
+        entry =
+          label "entry" $ do
+            ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
+            nonNull <- parseNonNull
+            return (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
 
 dataObject :: Parser (Text, DataFullType)
 dataObject =
@@ -65,6 +51,20 @@ dataObject =
     typeName <- typeDef "type"
     typeData <- entries
     pure (typeName, OutputObject $ createType typeName typeData)
+  where
+    entries :: Parser [(Key, DataOutputField)]
+    entries = label "entries" $ setOf entry
+      where
+        fieldWithArgs =
+          label "fieldWithArgs" $ do
+            (name, _) <- qualifier
+            args <- parseMaybeTuple dataArgument
+            return (name, args)
+        entry =
+          label "entry" $ do
+            ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs parseWrappedType
+            nonNull <- parseNonNull
+            return (fieldName, createField fieldArgs fieldName (nonNull ++ wrappers, fieldType))
 
 dataScalar :: Parser (Text, DataFullType)
 dataScalar =
