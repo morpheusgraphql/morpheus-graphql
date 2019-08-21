@@ -84,6 +84,12 @@ instance A.ToJSON ScalarValue where
   toEncoding (Boolean x) = A.toEncoding x
   toEncoding (String x)  = A.toEncoding x
 
+instance A.FromJSON ScalarValue where
+  parseJSON (A.Bool v)   = pure $ Boolean v
+  parseJSON (A.Number v) = pure $ decodeScientific v
+  parseJSON (A.String v) = pure $ String v
+  parseJSON notScalar    = fail $ "Expected Scalar got :" <> show notScalar
+
 instance Lift Value where
   lift (Object ls) = apply 'Object [liftTextMap ls]
   lift (List n)    = apply 'List [lift n]
