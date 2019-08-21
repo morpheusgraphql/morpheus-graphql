@@ -8,7 +8,7 @@ module Data.Morpheus.Types.IO
   , JSONResponse(..)
   ) where
 
-import           Data.Aeson                              (FromJSON (..), ToJSON (..), pairs, withObject, (.:), (.=))
+import           Data.Aeson                              (FromJSON (..), ToJSON (..), pairs, withObject, (.:?), (.=))
 import qualified Data.Aeson                              as Aeson (Value (..))
 import           GHC.Generics                            (Generic)
 
@@ -20,11 +20,12 @@ import           Data.Morpheus.Types.Internal.Value      (Value)
 instance FromJSON a => FromJSON (JSONResponse a) where
   parseJSON = withObject "JSONResponse" objectParser
     where
-      objectParser o = JSONResponse <$> o .: "data"
+      objectParser o = JSONResponse <$> o .:? "data" <*> o .:? "errors"
 
-newtype JSONResponse a = JSONResponse
-  { responseData :: a
-  } deriving (Generic, Show)
+data JSONResponse a = JSONResponse
+  { responseData   :: Maybe a
+  , responseErrors :: Maybe [JSONError]
+  } deriving (Generic, Show, ToJSON)
 
 -- | GraphQL HTTP Request Body
 data GQLRequest = GQLRequest

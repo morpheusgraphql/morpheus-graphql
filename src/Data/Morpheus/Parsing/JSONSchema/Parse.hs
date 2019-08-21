@@ -65,8 +65,9 @@ decodeIntrospection :: ByteString -> Validation DataTypeLib
 decodeIntrospection jsonDoc =
   case jsonSchema of
     Left errors -> internalError $ pack errors
-    Right JSONResponse {responseData = JSONIntro {__schema = JSONSchema {types}}} ->
+    Right JSONResponse {responseData = Just JSONIntro {__schema = JSONSchema {types}}} ->
       schemaFromJSON types >>= createDataTypeLib
+    Right res -> fail $ show res
   where
     jsonSchema :: Either String (JSONResponse JSONIntro)
     jsonSchema = eitherDecode jsonDoc

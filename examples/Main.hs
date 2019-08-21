@@ -83,7 +83,7 @@ fetUser :: GQLState IO Channel Content -> IO (Either String GetUser)
 fetUser state = fetch (interpreter gqlRoot state) userArgs
   where
     userArgs :: Args GetUser
-    userArgs = GetUserArgs {userCoordinates = Coordinates {longitude = [], latitude = Int 1}}
+    userArgs = GetUserArgs {userCoordinates = Coordinates {longitude = [], latitude = String "1"}}
 
 main :: IO ()
 main = do

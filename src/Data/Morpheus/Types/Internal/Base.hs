@@ -11,7 +11,7 @@ module Data.Morpheus.Types.Internal.Base
   , enhanceKeyWithNull
   ) where
 
-import           Data.Aeson                 (ToJSON)
+import           Data.Aeson                 (FromJSON, ToJSON)
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 import           Language.Haskell.TH.Syntax (Lift)
@@ -21,7 +21,7 @@ type Position = Location
 data Location = Location
   { line   :: Int
   , column :: Int
-  } deriving (Show, Generic, ToJSON, Lift)
+  } deriving (Show, Generic, FromJSON, ToJSON, Lift)
 
 type Key = Text
 

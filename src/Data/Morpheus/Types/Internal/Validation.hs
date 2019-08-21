@@ -14,7 +14,7 @@ module Data.Morpheus.Types.Internal.Validation
   ) where
 
 import           Control.Monad.Trans.Except         (ExceptT (..))
-import           Data.Aeson                         (ToJSON)
+import           Data.Aeson                         (FromJSON, ToJSON)
 import           Data.Morpheus.Types.Internal.Base  (Location (..))
 import           Data.Morpheus.Types.Internal.Value (Value)
 import           Data.Text                          (Text)
@@ -30,7 +30,7 @@ type GQLErrors = [GQLError]
 data JSONError = JSONError
   { message   :: Text
   , locations :: [Location]
-  } deriving (Show, Generic, ToJSON)
+  } deriving (Show, Generic, FromJSON, ToJSON)
 
 type Validation a = Either GQLErrors a
 
