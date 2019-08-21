@@ -12,15 +12,15 @@ module Data.Morpheus.Parsing.JSONSchema.Parse
 
 import           Data.Aeson
 import           Data.ByteString.Lazy                    (ByteString)
-import           Data.Morpheus.Parsing.Internal.Create   (createArgument, createEnumType, createField, createScalarType,
-                                                          createType, createUnionType)
+import           Data.Morpheus.Parsing.Internal.Create   (createArgument, createDataTypeLib, createEnumType,
+                                                          createField, createScalarType, createType, createUnionType)
 import qualified Data.Morpheus.Schema.EnumValue          as E (EnumValue (..))
 import qualified Data.Morpheus.Schema.Field              as F (Field (..))
 import qualified Data.Morpheus.Schema.InputValue         as I (InputValue (..))
 import           Data.Morpheus.Schema.JSONType           (JSONIntro (..), JSONResponse (..), JSONSchema (..),
                                                           JSONType (..))
 import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
-import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataTypeWrapper (..))
+import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataTypeLib, DataTypeWrapper (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Text                               (Text)
 
@@ -60,12 +60,12 @@ fieldTypeFromJSON = fieldTypeRec []
 schemaFromJSON :: [JSONType] -> Validation [(Text, DataFullType)]
 schemaFromJSON = traverse typeFromJSON
 
-decodeIntrospection :: ByteString -> Either String [(Text, DataFullType)]
+decodeIntrospection :: ByteString -> Either String DataTypeLib
 decodeIntrospection jsonDoc =
   case jsonSchema of
     Left errors -> Left errors
     Right JSONResponse {responseData = JSONIntro {__schema = JSONSchema {types}}} ->
-      case schemaFromJSON types of
+      case schemaFromJSON types >>= createDataTypeLib of
         Left gqlErrors -> Left $ show gqlErrors
         Right typelib  -> pure typelib
   where

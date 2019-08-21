@@ -9,7 +9,9 @@ import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parse
                                                           spaceAndComments, token)
 import           Data.Morpheus.Types.Internal.Data       (DataArgument, DataField (..), DataFingerprint (..),
                                                           DataFullType (..), DataLeaf (..), DataOutputField,
-                                                          DataType (..), DataTypeWrapper, DataValidator (..), Key)
+                                                          DataType (..), DataTypeLib (..), DataTypeWrapper,
+                                                          DataValidator (..), Key, defineType, initTypeLib)
+import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Text                               (Text)
 import           Text.Megaparsec                         (label, sepBy1, (<|>))
 import           Text.Megaparsec.Char                    (char, space1, string)
@@ -31,3 +33,19 @@ createUnionType typeName typeData = (typeName, Union $ createType typeName $ map
     unionField fieldType = createField () "" ([], fieldType)
 
 createArgument fieldName x = (fieldName, createField () fieldName x)
+
+createDataTypeLib :: Monad m => [(Text, DataFullType)] -> m DataTypeLib
+createDataTypeLib types =
+  case takeByKey "Query" types of
+    (Just query, lib1) ->
+      case takeByKey "Mutation" lib1 of
+        (mutation, lib2) ->
+          case takeByKey "Subscription" lib2 of
+            (subscription, lib3) -> pure ((foldr defineType (initTypeLib query) lib3) {mutation, subscription})
+    _ -> fail "Query Not Defined"
+  ----------------------------------------------------------------------------
+  where
+    takeByKey key lib =
+      case lookup key lib of
+        Just (OutputObject value) -> (Just (key, value), filter ((/= key) . fst) lib)
+        _                         -> (Nothing, lib)
