@@ -17,7 +17,7 @@ import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.IO (GQLRequest (..))
+import           Data.Morpheus.Types.IO (GQLRequest (..), JSONResponse (..))
 
 class Fetch a where
   type Args a :: *
@@ -28,7 +28,7 @@ class Fetch a where
     -> (ByteString -> m ByteString)
     -> Args a
     -> m (Either String a)
-  __fetch strQuery opName trans vars = eitherDecode <$> trans (encode gqlReq)
+  __fetch strQuery opName trans vars = fmap responseData . eitherDecode <$> trans (encode gqlReq)
     where
       gqlReq = GQLRequest {operationName = Just (pack opName), query = pack strQuery, variables = Just (toJSON vars)}
   fetch :: (Monad m, FromJSON a) => (ByteString -> m ByteString) -> Args a -> m (Either String a)

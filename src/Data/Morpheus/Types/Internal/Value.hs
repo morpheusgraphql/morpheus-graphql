@@ -85,10 +85,10 @@ instance A.ToJSON ScalarValue where
   toEncoding (String x)  = A.toEncoding x
 
 instance Lift Value where
-  lift (Object ls) = apply 'String [liftTextMap ls]
-  lift (List n)    = apply 'Int [lift n]
-  lift (Enum n)    = apply 'Float [liftText n]
-  lift (Scalar n)  = apply 'Boolean [lift n]
+  lift (Object ls) = apply 'Object [liftTextMap ls]
+  lift (List n)    = apply 'List [lift n]
+  lift (Enum n)    = apply 'Enum [liftText n]
+  lift (Scalar n)  = apply 'Scalar [lift n]
   lift Null        = varE 'Null
 
 data Value

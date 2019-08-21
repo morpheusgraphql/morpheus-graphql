@@ -17,7 +17,7 @@ import           Data.Aeson                     (ToJSON (..))
 import           Data.ByteString.Lazy           (ByteString)
 import           Data.Functor.Identity          (Identity (..))
 import           Data.Morpheus                  (Interpreter (..))
-import           Data.Morpheus.Client           (Fetch (..), defineByDocumentFile, gql)
+import           Data.Morpheus.Client           (Fetch (..), defineByDocumentFile, defineByIntrospectionFile, gql)
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Deprecated.API                 (Channel, Content, gqlRoot)
@@ -33,7 +33,25 @@ jsonRes :: ByteString -> IO ByteString
 jsonRes req = do
   print req
   return
-    "{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }"
+    "{\"data\":{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }}"
+
+type Euro = String
+
+defineByIntrospectionFile
+  "./assets/introspection.json"
+  [gql|
+    # Query Hero with Compile time Validation
+    query GetUser ($userCoordinates: Coordinates!)
+      {
+        user {
+           name
+           email
+           address (coordinates: $userCoordinates ){
+            city
+           }
+        }
+      }
+  |]
 
 defineByDocumentFile
   "./assets/simple.gql"
@@ -62,11 +80,18 @@ fetchHero = fetch jsonRes heroArgs
   where
     heroArgs = GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}, charID = "Hercules"}
 
+fetUser :: GQLState IO Channel Content -> IO (Either String GetUser)
+fetUser state = fetch (interpreter gqlRoot state) userArgs
+  where
+    userArgs :: Args GetUser
+    userArgs = GetUserArgs {userCoordinates = Coordinates {longitude = [], latitude = "1"}}
+
 main :: IO ()
 main = do
   fetchHero >>= print
   state <- initGQLState
   httpApp <- httpServer state
+  fetUser state >>= print
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
   where
     settings = Warp.setPort 3000 Warp.defaultSettings

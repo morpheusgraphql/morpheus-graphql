@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -6,6 +7,7 @@ module Data.Morpheus.Schema.TypeKind
   ( TypeKind(..)
   ) where
 
+import           Data.Aeson                  (FromJSON (..))
 import           Data.Morpheus.Kind          (ENUM)
 import           Data.Morpheus.Types.GQLType (GQLType (KIND, __typeName, __typeVisibility))
 import           GHC.Generics
@@ -24,4 +26,4 @@ data TypeKind
   | INPUT_OBJECT
   | LIST
   | NON_NULL
-  deriving (Eq, Generic, Show)
+  deriving (Eq, Generic, FromJSON, Show)
