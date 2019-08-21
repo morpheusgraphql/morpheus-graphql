@@ -144,7 +144,7 @@ isPrimitive _         = False
 typeFrom :: DataFullType -> Text
 typeFrom (Leaf (BaseScalar x)) = typeName x
 typeFrom (Leaf (CustomScalar DataType {typeName}))
-  | isPrimitive typeName = "String"
+  | isPrimitive typeName = typeName
   | otherwise = "ScalarValue"
 typeFrom (Leaf (LeafEnum x)) = typeName x
 typeFrom (InputObject x) = typeName x
