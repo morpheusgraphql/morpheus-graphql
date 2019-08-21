@@ -3,15 +3,12 @@
 {-# LANGUAGE TypeOperators     #-}
 
 module Data.Morpheus.Parsing.JSONSchema.Parse
-  ( JSONType
-  , Field
-  , InputValue
-  , typeFromJSON
-  , decodeIntrospection
+  ( decodeIntrospection
   ) where
 
 import           Data.Aeson
 import           Data.ByteString.Lazy                    (ByteString)
+import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Parsing.Internal.Create   (createArgument, createDataTypeLib, createEnumType,
                                                           createField, createScalarType, createType, createUnionType)
 import qualified Data.Morpheus.Schema.EnumValue          as E (EnumValue (..))
@@ -22,11 +19,7 @@ import           Data.Morpheus.Schema.JSONType           (JSONIntro (..), JSONRe
 import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataTypeLib, DataTypeWrapper (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
-import           Data.Text                               (Text)
-
-type InputValue = I.InputValue JSONType
-
-type Field = F.Field JSONType
+import           Data.Text                               (Text, pack)
 
 typeFromJSON :: JSONType -> Validation (Text, DataFullType)
 typeFromJSON JSONType {name = Just typeName, kind = SCALAR} = pure $ createScalarType typeName
@@ -60,14 +53,12 @@ fieldTypeFromJSON = fieldTypeRec []
 schemaFromJSON :: [JSONType] -> Validation [(Text, DataFullType)]
 schemaFromJSON = traverse typeFromJSON
 
-decodeIntrospection :: ByteString -> Either String DataTypeLib
+decodeIntrospection :: ByteString -> Validation DataTypeLib
 decodeIntrospection jsonDoc =
   case jsonSchema of
-    Left errors -> Left errors
+    Left errors -> internalError $ pack errors
     Right JSONResponse {responseData = JSONIntro {__schema = JSONSchema {types}}} ->
-      case schemaFromJSON types >>= createDataTypeLib of
-        Left gqlErrors -> Left $ show gqlErrors
-        Right typelib  -> pure typelib
+      schemaFromJSON types >>= createDataTypeLib
   where
     jsonSchema :: Either String JSONResponse
     jsonSchema = eitherDecode jsonDoc

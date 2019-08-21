@@ -3,7 +3,6 @@
 
 module Data.Morpheus.Parsing.Internal.Create where
 
-import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parseMaybeTuple, parseNonNull,
                                                           parseWrappedType, pipeLiteral, qualifier, setOf,
                                                           spaceAndComments, token)

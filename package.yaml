@@ -43,7 +43,6 @@ library:
     - Data.Morpheus.Server
     - Data.Morpheus.Document
     - Data.Morpheus.Client
-    - Data.Morpheus.Parsing.JSONSchema.Parse
   ghc-options: -Wall
 
 tests:
