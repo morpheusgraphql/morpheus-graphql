@@ -15,7 +15,7 @@ import           Data.Text                               (Text, unpack)
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataLeaf (..),
-                                                          DataType (..), DataTypeWrapper, allDataTypes)
+                                                          DataType (..))
 import           Data.Morpheus.Types.Internal.DataD      (AppD (..), ConsD (..), FieldD (..), TypeD (..),
                                                           gqlToHSWrappers)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
@@ -25,31 +25,20 @@ renderTHTypes x = concat <$> traverse renderTHType x
 
 renderTHType :: (Text, DataFullType) -> Validation [TypeD]
 renderTHType (_, x) = genType x
-    -------------------------------------------
-  {- rootArguments :: Text -> Validation [TypeD]
-    rootArguments name = do
-      types <- concat <$> mapM (genInputType . variableType . snd) variables
-      pure $ typeD : types
-      where
-        typeD :: TypeD
-        typeD = TypeD {tName = unpack name, tCons = [ConsD {cName = unpack name, cFields = map fieldD variables}]}
-        ---------------------------------------
-        fieldD :: (Text, Variable ()) -> FieldD
-        fieldD (key, Variable {variableType, variableTypeWrappers}) = FieldD (unpack key) wrType
-          where
-            wrType = gqlToHSWrappers variableTypeWrappers (unpack variableType)
-    ------------------------------------------- -}
   where
-    genRecordCon name fields = do
-      let cFields = map genField fields
-     -- subTypes <- newFieldTypes dataType
-      pure (ConsD {cName = unpack name, cFields}, []) {-subTypes-}
-      ---------------------------------------------------------------------------------------------
+    genArgumentType :: (Text, DataField [(Text, DataField ())]) -> Validation [TypeD]
+    genArgumentType (_, DataField {fieldArgs = []}) = pure []
+    genArgumentType (fieldName, DataField {fieldArgs}) =
+      pure [TypeD {tName, tCons = [ConsD {cName = tName, cFields = map genField fieldArgs}]}]
       where
-        genField :: (Text, DataField a) -> FieldD
-        genField (fName, DataField {fieldType, fieldTypeWrappers}) = FieldD (unpack fName) fType
-          where
-            fType = gqlToHSWrappers fieldTypeWrappers (unpack fieldType)
+        tName = unpack $ "Arg" <> fieldName
+        -------------------------------------------
+    genRecordCon name fields = ConsD {cName = unpack name, cFields = map genField fields}
+    ---------------------------------------------------------------------------------------------
+    genField :: (Text, DataField a) -> FieldD
+    genField (key, DataField {fieldType, fieldTypeWrappers}) = FieldD (unpack key) fType
+      where
+        fType = gqlToHSWrappers fieldTypeWrappers (unpack fieldType)
     --------------------------------------------
     genType (Leaf (LeafEnum DataType {typeName, typeData})) =
       pure [TypeD {tName = unpack typeName, tCons = map enumOption typeData}]
@@ -57,12 +46,11 @@ renderTHType (_, x) = genType x
         enumOption name = ConsD {cName = unpack name, cFields = []}
     genType (Leaf _) = internalError "Scalar Types should defined By Native Haskell Types"
     genType (InputUnion _) = internalError "Input Unions not Supported"
-    genType (InputObject DataType {typeName, typeData}) = do
-      (con, _) <- genRecordCon typeName typeData
-      pure [TypeD {tName = unpack typeName, tCons = [con]}]
+    genType (InputObject DataType {typeName, typeData}) =
+      pure [TypeD {tName = unpack typeName, tCons = [genRecordCon typeName typeData]}]
     genType (OutputObject DataType {typeName, typeData}) = do
-      (con, subTypes) <- genRecordCon typeName typeData
-      pure $ TypeD {tName = unpack typeName, tCons = [con]} : subTypes
+      subTypes <- concat <$> traverse genArgumentType typeData
+      pure $ TypeD {tName = unpack typeName, tCons = [genRecordCon typeName typeData]} : subTypes
     genType (Union DataType {typeName, typeData}) = do
       let tCons = map unionCon typeData
       pure [TypeD {tName = unpack typeName, tCons}]
