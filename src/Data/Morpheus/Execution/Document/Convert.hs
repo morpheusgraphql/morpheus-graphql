@@ -14,6 +14,7 @@ import           Data.Text                               (Text, unpack)
 --
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal            (internalError)
+import           Data.Morpheus.Execution.Internal.Utils  (capital)
 import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataLeaf (..),
                                                           DataType (..))
 import           Data.Morpheus.Types.Internal.DataD      (AppD (..), ConsD (..), FieldD (..), TypeD (..),
@@ -31,7 +32,7 @@ renderTHType (_, x) = genType x
     genArgumentType (fieldName, DataField {fieldArgs}) =
       pure [TypeD {tName, tCons = [ConsD {cName = tName, cFields = map genField fieldArgs}]}]
       where
-        tName = unpack $ "Arg" <> fieldName
+        tName = "Arg" <> capital (unpack fieldName)
         -------------------------------------------
     genRecordCon name fields = ConsD {cName = unpack name, cFields = map genField fields}
     ---------------------------------------------------------------------------------------------
