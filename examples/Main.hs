@@ -30,13 +30,20 @@ import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
---docTypes =
 [gqlDoc|
    type SomeType {
      someName: String!
      somePower: Int
    }
+
+   enum SomeEnum {
+     Bobo
+     Fobo
+   }
 |]
+
+someEnum :: SomeEnum
+someEnum = Bobo
 
 bla :: SomeType
 bla = SomeType {someName = "", somePower = Just 1}
