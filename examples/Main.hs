@@ -18,7 +18,7 @@ import           Data.ByteString.Lazy           (ByteString)
 import           Data.Functor.Identity          (Identity (..))
 import           Data.Morpheus                  (Interpreter (..))
 import           Data.Morpheus.Client           (Fetch (..), defineByDocumentFile, defineByIntrospectionFile, gql)
-import           Data.Morpheus.Document         (toGraphQLDocument)
+import           Data.Morpheus.Document         (gqlDoc, toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Data.Morpheus.Types            (ScalarValue (..))
 import           Deprecated.API                 (Channel, Content, gqlRoot)
@@ -29,6 +29,14 @@ import qualified Network.Wai.Handler.Warp       as Warp
 import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
+
+docTypes =
+  [gqlDoc|
+      type Deity {
+        fullName: String!
+        power: Power
+      }
+|]
 
 jsonRes :: ByteString -> IO ByteString
 jsonRes req = do
@@ -87,6 +95,7 @@ fetUser state = fetch (interpreter gqlRoot state) userArgs
 
 main :: IO ()
 main = do
+  print docTypes
   fetchHero >>= print
   state <- initGQLState
   httpApp <- httpServer state

@@ -14,13 +14,13 @@ import           Data.Text                                  (Text, unpack)
 --
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal               (internalUnknownTypeMessage)
-import           Data.Morpheus.Execution.Client.Data        (ConsD (..), FieldD (..), TypeD (..), gqlToHSWrappers)
 import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), ValidOperation, Variable (..),
                                                              VariableDefinitions)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Data          (DataField (..), DataFullType (..), DataLeaf (..),
                                                              DataType (..), DataTypeLib (..), DataTypeWrapper,
                                                              allDataTypes)
+import           Data.Morpheus.Types.Internal.DataD         (ConsD (..), FieldD (..), TypeD (..), gqlToHSWrappers)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Validation.Utils.Utils       (lookupType)
 
