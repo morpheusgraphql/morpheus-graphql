@@ -50,8 +50,8 @@ someEnum = Bobo
 bla :: SomeObject
 bla = SomeObject {someName = "", somePower = Just 1}
 
-jsonRes :: ByteString -> IO ByteString
-jsonRes req = do
+ioRes :: ByteString -> IO ByteString
+ioRes req = do
   print req
   return
     "{\"data\":{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }}"
@@ -95,9 +95,7 @@ defineByDocumentFile
   |]
 
 fetchHero :: IO (Either String GetHero)
-fetchHero = fetch jsonRes heroArgs
-  where
-    heroArgs = GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}, charID = "Hercules"}
+fetchHero = fetch ioRes GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}, charID = "Hercules"}
 
 fetUser :: GQLState IO Channel Content -> IO (Either String GetUser)
 fetUser state = fetch (interpreter gqlRoot state) userArgs
