@@ -30,13 +30,16 @@ import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
-docTypes =
-  [gqlDoc|
-      type Deity {
-        fullName: String!
-        power: Power
-      }
+--docTypes =
+[gqlDoc|
+   type SomeType {
+     someName: String!
+     somePower: Int
+   }
 |]
+
+bla :: SomeType
+bla = SomeType {someName = "", somePower = Just 1}
 
 jsonRes :: ByteString -> IO ByteString
 jsonRes req = do
@@ -95,7 +98,7 @@ fetUser state = fetch (interpreter gqlRoot state) userArgs
 
 main :: IO ()
 main = do
-  print docTypes
+  print bla
   fetchHero >>= print
   state <- initGQLState
   httpApp <- httpServer state
