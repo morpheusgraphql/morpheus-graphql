@@ -7,10 +7,18 @@ module Data.Morpheus.Execution.Document.Declare
 
 import           Language.Haskell.TH
 
+import           Data.Morpheus.Execution.Document.GQLType (deriveGQLType)
+
 --
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Declare (declareType)
-import           Data.Morpheus.Types.Internal.DataD       (TypeD (..))
+import           Data.Morpheus.Types.Internal.DataD       (GQLTypeD)
 
-declareTypes :: [TypeD] -> [Dec]
-declareTypes = map (declareType [])
+declareTypes :: [GQLTypeD] -> Q [Dec]
+declareTypes = fmap concat . traverse declareGQLType
+
+declareGQLType :: GQLTypeD -> Q [Dec]
+declareGQLType gqlType@(typeD, _, _) = do
+  let decT = declareType [] typeD
+  gqlTypeDec <- deriveGQLType gqlType
+  pure $ decT : gqlTypeDec

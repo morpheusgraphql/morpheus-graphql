@@ -6,6 +6,7 @@ module Data.Morpheus.Types.Internal.DataD
   , ConsD(..)
   , QueryD(..)
   , AppD(..)
+  , GQLTypeD
   , gqlToHSWrappers
   ) where
 
@@ -13,7 +14,7 @@ import           Language.Haskell.TH.Syntax        (Lift (..))
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data (DataTypeWrapper (..))
+import           Data.Morpheus.Types.Internal.Data (DataTypeKind, DataTypeWrapper (..))
 
 data AppD a
   = ListD (AppD a)
@@ -27,6 +28,8 @@ gqlToHSWrappers [NonNullType]                  = BaseD
 gqlToHSWrappers (NonNullType:(ListType:xs))    = ListD . gqlToHSWrappers xs
 gqlToHSWrappers (NonNullType:(NonNullType:xs)) = gqlToHSWrappers xs
 gqlToHSWrappers (ListType:xs)                  = MaybeD . ListD . gqlToHSWrappers xs
+
+type GQLTypeD = (TypeD, DataTypeKind, [TypeD])
 
 data QueryD = QueryD
   { queryText     :: String

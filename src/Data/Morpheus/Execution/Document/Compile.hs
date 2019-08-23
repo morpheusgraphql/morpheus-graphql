@@ -27,4 +27,4 @@ compileDec :: String -> Q [Dec]
 compileDec documentTXT =
   case parseTypes (T.pack documentTXT) >>= renderTHTypes of
     Left errors -> fail (renderGQLErrors errors)
-    Right root  -> pure $ declareTypes root
+    Right root  -> declareTypes root

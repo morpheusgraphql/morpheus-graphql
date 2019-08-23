@@ -104,19 +104,8 @@ instance Typeable a => GQLType (User a) where
    }
 |]
 
-instance GQLType CityID where
-  type KIND CityID = ENUM
-
-instance GQLType UID where
-  type KIND UID = INPUT_OBJECT
-
-instance GQLType Coordinates where
-  type KIND Coordinates = INPUT_OBJECT
-  description _ = "just random latitude and longitude"
-
-argb :: ArgSomeName
-argb = ArgSomeName {arg1 = Just 1}
-
+--argb :: ArgSomeName
+--argb = ArgSomeName {arg1 = Just 1}
 someObject :: SomeObject
 someObject = SomeObject {someName = "", somePower = Just 1}
 
