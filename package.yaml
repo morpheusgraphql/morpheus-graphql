@@ -6,9 +6,13 @@ author: "Daviti Nalchevanidze"
 category: web, graphql
 synopsis: Morpheus GraphQL
 maintainer: "d.nalchevanidze@gmail.com"
+homepage: https://morpheusgraphql.com
 copyright: "(c) 2019 Daviti Nalchevanidze"
 
 description: Build GraphQL APIs with your favourite functional language!
+
+extra-source-files:
+  - changelog.md
 
 data-files:
   - test/**/*.gql
