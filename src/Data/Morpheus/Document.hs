@@ -4,7 +4,7 @@
 module Data.Morpheus.Document
   ( toGraphQLDocument
   , toMorpheusHaskellAPi
-  , gqlDoc
+  , gqlDocument
   ) where
 
 import           Data.ByteString.Lazy.Char8               (ByteString, pack)
@@ -32,8 +32,8 @@ toMorpheusHaskellAPi moduleName doc =
     Left errors -> Left $ pack (show errors)
     Right lib   -> Right $ renderHaskellDocument moduleName lib
 
-gqlDoc :: QuasiQuoter
-gqlDoc =
+gqlDocument :: QuasiQuoter
+gqlDocument =
   QuasiQuoter
     {quoteExp = compileExp, quotePat = notHandled "Patterns", quoteType = notHandled "Types", quoteDec = compileDec}
   where
