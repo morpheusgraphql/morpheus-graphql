@@ -1,3 +1,7 @@
+## [0.2.1] - 23.08.2019
+
+- assets are added to cabal source files
+
 ## [0.2.0] - 23.08.2019
 
 ### Added

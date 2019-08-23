@@ -1,5 +1,5 @@
 name: morpheus-graphql
-version: 0.2.0
+version: 0.2.1
 github: "nalchevanidze/morpheus-graphql"
 license: BSD3
 author: "Daviti Nalchevanidze"
@@ -13,6 +13,8 @@ description: Build GraphQL APIs with your favourite functional language!
 
 extra-source-files:
   - changelog.md
+  - assets/**/*.json
+  - assets/**/*.gql
 
 data-files:
   - test/**/*.gql
