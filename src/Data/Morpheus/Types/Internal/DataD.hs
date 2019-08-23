@@ -19,8 +19,9 @@ import           Data.Morpheus.Types.Internal.Data (DataTypeKind, DataTypeWrappe
 data AppD a
   = ListD (AppD a)
   | MaybeD (AppD a)
-  | FuncD String
-          (AppD a)
+  | ResD String
+         String
+         (AppD a)
   | BaseD a
   deriving (Show, Lift)
 

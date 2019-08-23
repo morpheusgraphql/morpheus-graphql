@@ -43,7 +43,7 @@ renderTHType (_, x) = genType x
     genResField :: (Text, DataOutputField) -> FieldD
     genResField (key, DataField {fieldName, fieldArgs, fieldType, fieldTypeWrappers}) = FieldD (unpack key) fType
       where
-        fType = FuncD (argsTName fieldArgs) $ gqlToHSWrappers fieldTypeWrappers (unpack fieldType)
+        fType = ResD (argsTName fieldArgs) "IORes" $ gqlToHSWrappers fieldTypeWrappers (unpack fieldType)
         argsTName [] = "()"
         argsTName _  = argsTypeName fieldName
     --------------------------------------------
