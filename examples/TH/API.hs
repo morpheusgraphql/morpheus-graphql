@@ -104,6 +104,9 @@ instance Typeable a => GQLType (User a) where
    }
 |]
 
+bo :: SomeObject
+bo = SomeObject {someName = const "", somePower = const (Just 1)}
+
 fetchUser :: Monad m => m (Either String (User (Resolver m)))
 fetchUser =
   return $

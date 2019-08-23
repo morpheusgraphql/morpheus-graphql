@@ -28,11 +28,11 @@ queryArgumentType :: [TypeD] -> (Type, Q [Dec])
 queryArgumentType [] = (ConT $ mkName "()", pure [])
 queryArgumentType (rootType@TypeD {tName}:xs) = (ConT $ mkName tName, types)
   where
-    types = pure $ map (declareType ["ToJSON"]) (rootType : xs)
+    types = pure $ map (declareType ["Show", "ToJSON"]) (rootType : xs)
 
 defineJSONType :: TypeD -> Q [Dec]
 defineJSONType datatype = do
-  record <- declareLenses (pure [declareType [] datatype])
+  record <- declareLenses (pure [declareType ["Show"] datatype])
   toJson <- pure <$> deriveFromJSON datatype
   pure $ record <> toJson
 
