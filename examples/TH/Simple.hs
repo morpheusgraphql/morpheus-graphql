@@ -12,7 +12,6 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (gqlDocument)
-import           Data.Morpheus.Kind         (OBJECT)
 import           Data.Morpheus.Types        (GQLRootResolver (..), IORes)
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)

@@ -11,7 +11,6 @@ import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, resolv
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 import           Mythology.Character.Deity  (Deity (..), dbDeity)
-import           Data.Morpheus.Document     (gqlDocument)
 
 newtype Query = Query
   { deity :: DeityArgs -> IORes Deity

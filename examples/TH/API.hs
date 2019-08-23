@@ -15,7 +15,7 @@ import           GHC.Generics               (Generic)
 -- MORPHEUS
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (gqlDocument)
-import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Kind         (SCALAR)
 import           Data.Morpheus.Types        (GQLRootResolver (..), GQLScalar (..), GQLType (..), IORes,
                                              ScalarValue (..))
 
