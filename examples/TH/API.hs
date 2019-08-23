@@ -104,14 +104,6 @@ instance Typeable a => GQLType (User a) where
    }
 |]
 
---argb :: ArgSomeName
---argb = ArgSomeName {arg1 = Just 1}
-someObject :: SomeObject
-someObject = SomeObject {someName = "", somePower = Just 1}
-
-someUnion :: SomeUnion
-someUnion = SomeUnionSomeObject someObject
-
 fetchUser :: Monad m => m (Either String (User (Resolver m)))
 fetchUser =
   return $
