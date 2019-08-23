@@ -18,7 +18,7 @@ declareTypes :: [GQLTypeD] -> Q [Dec]
 declareTypes = fmap concat . traverse declareGQLType
 
 declareGQLType :: GQLTypeD -> Q [Dec]
-declareGQLType gqlType@(typeD, _, _) = do
-  let decT = declareType [] typeD
-  gqlTypeDec <- deriveGQLType gqlType
-  pure $ decT : gqlTypeDec
+declareGQLType gqlType@(typeD, _, argTypes) = do
+  let types = map (declareType []) (typeD : argTypes)
+  typeClasses <- deriveGQLType gqlType
+  pure $ types <> typeClasses
