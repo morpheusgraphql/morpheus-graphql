@@ -2,8 +2,8 @@
 
 Build GraphQL APIs with your favourite functional language!
 
-Morpheus GraphQL helps you to build GraphQL APIs in Haskell with native haskell types.
-Morpheus will convert your haskell types to a GraphQL schema and all your resolvers are just native Haskell functions.
+Morpheus GraphQL (Server & Client) helps you to build GraphQL APIs in Haskell with native haskell types.
+Morpheus will convert your haskell types to a GraphQL schema and all your resolvers are just native Haskell functions. Mopheus GraphQL can also convert your GraphQL Schema or Query to Haskell types and validate them in compile time.
 
 Morpheus is still in an early stage of development, so any feedback is more than welcome, and we appreciate any contribution!
 Just open an issue here on GitHub, or join [our Slack channel](https://morpheus-graphql-slack-invite.herokuapp.com/) to get in touch.
@@ -34,7 +34,7 @@ extra-deps:
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack update`
 
-### Building your first API
+### Building your first GrqphQL API
 
 To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
 which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> ResM b`, representing resolving a set of arguments `a` to a concrete value `b`.
@@ -239,6 +239,7 @@ gqlApi = interpreter rootResolver
 ```
 
 ### Subscriptions
+
 because subscriptions are at an early stage of development, we only use `Text` for communication.
 Mutation with same channel ID triggers subscription.
 
