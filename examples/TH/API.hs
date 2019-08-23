@@ -27,13 +27,13 @@ import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, OBJECT, SCALAR,
 import           Data.Morpheus.Types        (GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, IORes, Resolver,
                                              ScalarValue (..), resolver)
 
-data MyUnion m
-  = USER (User m)
-  | ADDRESS (Address m)
+data MyUnion
+  = USER User
+  | ADDRESS Address
   deriving (Generic)
 
-instance Typeable a => GQLType (MyUnion a) where
-  type KIND (MyUnion a) = UNION
+instance GQLType MyUnion where
+  type KIND MyUnion = UNION
 
 data Euro =
   Euro Int
@@ -47,14 +47,14 @@ instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
   serialize (Euro x y) = Int (x * 100 + y)
 
-data Address m = Address
-  { city        :: () -> m Text
+data Address = Address
+  { city        :: Text
   , street      :: Text
   , houseNumber :: Int
   } deriving (Generic)
 
-instance Typeable m => GQLType (Address m) where
-  type KIND (Address m) = OBJECT
+instance GQLType Address where
+  type KIND Address = OBJECT
 
 data AddressArgs = AddressArgs
   { coordinates :: Coordinates
@@ -66,16 +66,16 @@ data OfficeArgs = OfficeArgs
   , cityID  :: CityID
   } deriving (Generic)
 
-data User m = User
+data User = User
   { name    :: Text
   , email   :: Text
-  , address :: AddressArgs -> m (Address m)
-  , myUnion :: () -> m (MyUnion m)
+  , address :: AddressArgs -> IORes Address
+  , myUnion :: () -> IORes MyUnion
   , home    :: CityID
   } deriving (Generic)
 
-instance Typeable a => GQLType (User a) where
-  type KIND (User a) = OBJECT
+instance GQLType User where
+  type KIND User = OBJECT
   description _ = "Custom Description for Client Defined User Type"
 
 [gqlDoc|
@@ -107,15 +107,14 @@ instance Typeable a => GQLType (User a) where
 bo :: SomeObject
 bo = SomeObject {someName = const $ return "", somePower = const $ return (Just 1)}
 
-fetchUser :: Monad m => m (Either String (User (Resolver m)))
+fetchUser :: IORes User
 fetchUser =
   return $
-  Right $
   User {name = "George", email = "George@email.com", address, home = HH, myUnion = const $ return $ USER unionUser}
   where
-    address :: Monad m => a -> m (Address m)
-    address _ = return $ Address (const $ return "") "" 0
-    unionAddress = Address {city = const $ return "Hamburg", street = "Street", houseNumber = 20}
+    address :: a -> IORes Address
+    address _ = return $ Address "" "" 0
+    unionAddress = Address {city = "Hamburg", street = "Street", houseNumber = 20}
     unionUser =
       User
         { name = "David"
@@ -126,13 +125,13 @@ fetchUser =
         }
 
 newtype Query = Query
-  { user :: () -> IORes (User IORes)
+  { user :: () -> IORes User
   } deriving (Generic)
 
 gqlRoot :: GQLRootResolver IO () () Query () ()
 gqlRoot =
   GQLRootResolver
-    { queryResolver = return Query {user = const $ resolver fetchUser}
+    { queryResolver = return Query {user = const fetchUser}
     , mutationResolver = return ()
     , subscriptionResolver = return ()
     }

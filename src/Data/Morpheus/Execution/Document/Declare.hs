@@ -5,12 +5,12 @@ module Data.Morpheus.Execution.Document.Declare
   ( declareTypes
   ) where
 
+import           Data.Semigroup                           ((<>))
 import           Language.Haskell.TH
-
-import           Data.Morpheus.Execution.Document.GQLType (deriveGQLType)
 
 --
 -- MORPHEUS
+import           Data.Morpheus.Execution.Document.GQLType (deriveGQLType)
 import           Data.Morpheus.Execution.Internal.Declare (declareType)
 import           Data.Morpheus.Types.Internal.DataD       (GQLTypeD)
 
