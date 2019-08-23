@@ -38,11 +38,11 @@ instance GQLScalar Euro where
   }
 
   type User {
-    name                                         : Text!
-    email                                        : Text!
+    name                                      : Text!
+    email                                     : Text!
     address (zipCode: UID!, cityID : CityID ) : Address!
-    myUnion (coordinates: Coordinates)           : MyUnion!
-    home                                         : CityID!
+    myUnion (coordinates: Coordinates)        : MyUnion!
+    home                                      : CityID!
   }
 
   type Address {
