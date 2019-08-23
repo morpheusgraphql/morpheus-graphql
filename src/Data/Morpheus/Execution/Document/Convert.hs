@@ -27,12 +27,13 @@ renderTHTypes = traverse renderTHType
 renderTHType :: (Text, DataFullType) -> Validation GQLTypeD
 renderTHType (_, x) = genType x
   where
+    argsTypeName fieldName = capital (unpack fieldName) <> "Args"
     genArgumentType :: (Text, DataField [(Text, DataField ())]) -> Validation [TypeD]
     genArgumentType (_, DataField {fieldArgs = []}) = pure []
     genArgumentType (fieldName, DataField {fieldArgs}) =
       pure [TypeD {tName, tCons = [ConsD {cName = tName, cFields = map genField fieldArgs}]}]
       where
-        tName = "Arg" <> capital (unpack fieldName)
+        tName = argsTypeName fieldName
     ---------------------------------------------------------------------------------------------
     genField :: (Text, DataField a) -> FieldD
     genField (key, DataField {fieldType, fieldTypeWrappers}) = FieldD (unpack key) fType
@@ -40,9 +41,11 @@ renderTHType (_, x) = genType x
         fType = gqlToHSWrappers fieldTypeWrappers (unpack fieldType)
     ---------------------------------------------------------------------------------------------
     genResField :: (Text, DataOutputField) -> FieldD
-    genResField (key, DataField {fieldType, fieldTypeWrappers}) = FieldD (unpack key) fType
+    genResField (key, DataField {fieldName, fieldArgs, fieldType, fieldTypeWrappers}) = FieldD (unpack key) fType
       where
-        fType = FuncD "()" $ gqlToHSWrappers fieldTypeWrappers (unpack fieldType)
+        fType = FuncD (argsTName fieldArgs) $ gqlToHSWrappers fieldTypeWrappers (unpack fieldType)
+        argsTName [] = "()"
+        argsTName _  = argsTypeName fieldName
     --------------------------------------------
     genType (Leaf (LeafEnum DataType {typeName, typeData})) =
       pure (TypeD {tName = unpack typeName, tCons = map enumOption typeData}, KindEnum, [])
