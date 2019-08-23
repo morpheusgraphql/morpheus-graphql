@@ -2,19 +2,20 @@
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 module Data.Morpheus.Execution.Client.Build
   ( defineQuery
   ) where
 
 import           Control.Lens                             (declareLenses)
+import           Data.Aeson                               (ToJSON)
 import           Data.Semigroup                           ((<>))
 import           Language.Haskell.TH
 
-import           Data.Morpheus.Error.Client.Client        (renderGQLErrors)
-
 --
 -- MORPHEUS
+import           Data.Morpheus.Error.Client.Client        (renderGQLErrors)
 import           Data.Morpheus.Execution.Client.Aeson     (deriveFromJSON)
 import           Data.Morpheus.Execution.Client.Compile   (validateWith)
 import           Data.Morpheus.Execution.Client.Fetch     (deriveFetch)
@@ -28,11 +29,11 @@ queryArgumentType :: [TypeD] -> (Type, Q [Dec])
 queryArgumentType [] = (ConT $ mkName "()", pure [])
 queryArgumentType (rootType@TypeD {tName}:xs) = (ConT $ mkName tName, types)
   where
-    types = pure $ map (declareType ["Show", "ToJSON"]) (rootType : xs)
+    types = pure $ map (declareType [''Show, ''ToJSON]) (rootType : xs)
 
 defineJSONType :: TypeD -> Q [Dec]
 defineJSONType datatype = do
-  record <- declareLenses (pure [declareType ["Show"] datatype])
+  record <- declareLenses (pure [declareType [''Show] datatype])
   toJson <- pure <$> deriveFromJSON datatype
   pure $ record <> toJson
 

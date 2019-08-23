@@ -78,6 +78,9 @@
 
   Template Haskell Generates types: `Query` , `Deity`, `DeityArgs`, that can be used by `rootResolver`
 
+  generated types are not compatible with `Mutation`, `Subscription`,
+  they can be used only in `Query`, but this issue will be fixed in next release
+
 ### Fixed:
 
 - Parser supports enums inside input Object
