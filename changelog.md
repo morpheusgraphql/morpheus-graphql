@@ -21,9 +21,9 @@
   ```haskell
   defineQuery
     [gql|
-      query GetHero ($god: Realm)
+      query GetHero ($byRealm: Realm)
         {
-          deity (mythology:$god) {
+          deity (realm:$byRealm) {
             power
             fullName
           }
@@ -43,7 +43,7 @@
     fetchHero :: Args GetHero -> m (Either String GetHero)
     fetchHero = fetch jsonRes args
         where
-          args = GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}}
+          args = GetHeroArgs {byRealm = Just Realm {owner = "Zeus", surface = Just 10}}
           jsonRes :: ByteString -> m ByteString
           jsonRes = <fetch query from server>
   ```
