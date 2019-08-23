@@ -34,8 +34,10 @@ rootResolver :: GQLRootResolver IO () () Query () ()
 rootResolver =
   GQLRootResolver {queryResolver = return Query {deity}, mutationResolver = pure (), subscriptionResolver = pure ()}
   where
-    deity DeityArgs {uid} =
-      pure $ Deity {name = const $ return "Morpheus", power = const $ return $ Just "Shapeshifting"}
+    deity DeityArgs {uid} = pure Deity {name, power}
+      where
+        name _ = pure "Morpheus"
+        power _ = pure (Just "Shapeshifting")
 
 mythologyApi :: B.ByteString -> IO B.ByteString
 mythologyApi = interpreter rootResolver
