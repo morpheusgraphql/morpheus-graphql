@@ -22,7 +22,7 @@ import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Execution.Client.Data (AppD (..), ConsD (..), FieldD (..), TypeD (..))
+import Data.Morpheus.Types.Internal.DataD (AppD (..), ConsD (..), FieldD (..), TypeD (..))
 
 deriveFromJSON :: TypeD -> Q Dec
 deriveFromJSON TypeD {tCons = []} = fail "Type Should Have at least one Constructor"

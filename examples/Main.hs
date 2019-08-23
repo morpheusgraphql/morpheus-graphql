@@ -13,7 +13,6 @@ module Main
   ) where
 
 import           Control.Monad.IO.Class         (liftIO)
-import           Data.Aeson                     (ToJSON (..))
 import           Data.ByteString.Lazy           (ByteString)
 import           Data.Functor.Identity          (Identity (..))
 import           Data.Morpheus                  (Interpreter (..))
@@ -22,16 +21,17 @@ import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Data.Morpheus.Types            (ScalarValue (..))
 import           Deprecated.API                 (Channel, Content, gqlRoot)
-import           GHC.Generics
 import           Mythology.API                  (mythologyApi)
+import           TH.API                         (thApi)
+
 import qualified Network.Wai                    as Wai
 import qualified Network.Wai.Handler.Warp       as Warp
 import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
-jsonRes :: ByteString -> IO ByteString
-jsonRes req = do
+ioRes :: ByteString -> IO ByteString
+ioRes req = do
   print req
   return
     "{\"data\":{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }}"
@@ -75,9 +75,7 @@ defineByDocumentFile
   |]
 
 fetchHero :: IO (Either String GetHero)
-fetchHero = fetch jsonRes heroArgs
-  where
-    heroArgs = GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}, charID = "Hercules"}
+fetchHero = fetch ioRes GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}, charID = "Hercules"}
 
 fetUser :: GQLState IO Channel Content -> IO (Either String GetUser)
 fetUser state = fetch (interpreter gqlRoot state) userArgs
@@ -103,3 +101,5 @@ main = do
         get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
         post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
         get "/mythology" $ file "examples/index.html"
+        post "/th" $ raw =<< (liftIO . thApi =<< body)
+        get "/th" $ file "examples/index.html"

@@ -1,4 +1,4 @@
-module Data.Morpheus.Execution.Client.Utils
+module Data.Morpheus.Execution.Internal.Utils
   ( capital
   , nonCapital
   , nameSpaceWith

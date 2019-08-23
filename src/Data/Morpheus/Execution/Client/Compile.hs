@@ -10,16 +10,17 @@ module Data.Morpheus.Execution.Client.Compile
 import qualified Data.Text                                  as T (pack)
 import           Language.Haskell.TH
 
-import Data.Morpheus.Error.Client.Client (renderGQLErrors)
---
---  Morpheus
-import           Data.Morpheus.Execution.Client.Data        (QueryD (..))
+import           Data.Morpheus.Error.Client.Client          (renderGQLErrors)
+
 import           Data.Morpheus.Execution.Client.Selection   (operationTypes)
 import           Data.Morpheus.Parsing.Request.Parser       (parseGQL)
 import qualified Data.Morpheus.Types.Internal.AST.Operation as O (Operation (..))
 import           Data.Morpheus.Types.Internal.Data          (DataTypeLib)
-import           Data.Morpheus.Types.Internal.Validation    (Validation)
 import           Data.Morpheus.Types.IO                     (GQLRequest (..))
+--
+--  Morpheus
+import           Data.Morpheus.Types.Internal.DataD         (QueryD (..))
+import           Data.Morpheus.Types.Internal.Validation    (Validation)
 import           Data.Morpheus.Types.Types                  (GQLQueryRoot (..))
 import           Data.Morpheus.Validation.Utils.Utils       (VALIDATION_MODE (..))
 import           Data.Morpheus.Validation.Validation        (validateRequest)

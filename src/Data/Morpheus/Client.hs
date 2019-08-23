@@ -14,6 +14,10 @@ module Data.Morpheus.Client
 
 import           Data.ByteString.Lazy                    (ByteString)
 import qualified Data.ByteString.Lazy                    as L (readFile)
+import           Language.Haskell.TH
+import           Language.Haskell.TH.Quote
+
+-- MORPHEUS
 import           Data.Morpheus.Execution.Client.Build    (defineQuery)
 import           Data.Morpheus.Execution.Client.Compile  (compileSyntax)
 import           Data.Morpheus.Execution.Client.Fetch    (Fetch (..))
@@ -22,8 +26,6 @@ import           Data.Morpheus.Parsing.JSONSchema.Parse  (decodeIntrospection)
 import           Data.Morpheus.Types.Internal.Data       (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Types               (GQLQueryRoot)
-import           Language.Haskell.TH
-import           Language.Haskell.TH.Quote
 
 gql :: QuasiQuoter
 gql =

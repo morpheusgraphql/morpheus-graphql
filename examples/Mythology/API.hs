@@ -1,6 +1,4 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RankNTypes    #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Mythology.API
   ( mythologyApi

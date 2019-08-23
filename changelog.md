@@ -1,6 +1,7 @@
 ## [0.2.0] - \*.08.2019
 
 ### Added
+
 - Parser Supports GraphQL comments
 - Enhanced Subscription: mutation can trigger subscription with arguments
 - Experimental Support of Input Unions
@@ -12,8 +13,10 @@
   ```
 
   [details](https://github.com/morpheusgraphql/morpheus-graphql/issues/184)
+
 - `convertToJSONName` & `convertToHaskellName` has been extended to support all Haskell 2010 reserved identities. [details](https://github.com/morpheusgraphql/morpheus-graphql/issues/207)
-- GraphQL client with Template haskell QuasiQuotes (Experimental, Not fully Implemented)
+
+- `GraphQL Client` with Template haskell QuasiQuotes (Experimental, Not fully Implemented)
 
   ```haskell
   defineQuery
@@ -27,12 +30,15 @@
         }
     |]
   ```
-  will Generate:
-    - response type  `GetHero`, `Deity` with `Lens` Instances
-    - input types: `GetHeroArgs` , `Realm`
-    -  instance for `Fetch` typeClass
 
-   so that
+  will Generate:
+
+  - response type `GetHero`, `Deity` with `Lens` Instances
+  - input types: `GetHeroArgs` , `Realm`
+  - instance for `Fetch` typeClass
+
+  so that
+
   ```haskell
     fetchHero :: Args GetHero -> m (Either String GetHero)
     fetchHero = fetch jsonRes args
@@ -43,6 +49,37 @@
   ```
 
   resolves well typed response `GetHero`.
+
+- Ability to define `GQLSchema` with GraphQL syntax ,
+  so that with this schema
+
+  ```haskell
+
+  [gqlDocument|
+    type Query {
+      deity (uid: Text! ) : Deity!
+    }
+
+    type Deity {
+      name  : Text!
+      power : Text
+    }
+  |]
+
+  rootResolver :: GQLRootResolver IO () () Query () ()
+  rootResolver =
+    GQLRootResolver {queryResolver = return Query {deity}, mutationResolver = pure (), subscriptionResolver = pure ()}
+    where
+      deity DeityArgs {uid} = pure Deity {name, power}
+        where
+          name _ = pure "Morpheus"
+          power _ = pure (Just "Shapeshifting")
+  ```
+
+  Template Haskell Generates types: `Query` , `Deity`, `DeityArgs`, that can be used by `rootResolver`
+
+  generated types are not compatible with `Mutation`, `Subscription`,
+  they can be used only in `Query`, but this issue will be fixed in next release
 
 ### Fixed:
 
@@ -74,6 +111,7 @@
 
   data Deity = Deity { fullName :: Text } deriving (Generic)
   ```
+
 - Duplicated variable names in Http requests are validated using `Aeson`'s `jsonNoDup` function. So the following request will
   result in a parsing error
 

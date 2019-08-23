@@ -53,7 +53,7 @@ data DataTypeKind
   | KindList
   | KindNonNull
   | KindInputUnion
-  deriving (Eq, Show)
+  deriving (Eq, Show, Lift)
 
 data DataFingerprint
   = SystemFingerprint Text
