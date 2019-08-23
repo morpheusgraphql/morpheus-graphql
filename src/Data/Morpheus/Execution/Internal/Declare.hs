@@ -31,5 +31,5 @@ declareType derivingList TypeD {tName, tCons} =
             genFieldT (ResD arg mon td) = InfixT argType arrow resultType
               where
                 argType = ConT $ mkName arg
-                arrow = ''->
+                arrow = ''(->)
                 resultType = AppT (ConT $ mkName mon) (genFieldT td)
