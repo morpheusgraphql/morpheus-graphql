@@ -25,6 +25,7 @@ declareType derivings TypeD {tName, tCons} =
       where
         genField FieldD {fieldNameD, fieldTypeD} = (mkName fieldNameD, defBang, genFieldT fieldTypeD)
           where
-            genFieldT (ListD td)   = AppT (ConT ''[]) (genFieldT td)
-            genFieldT (MaybeD td)  = AppT (ConT ''Maybe) (genFieldT td)
-            genFieldT (BaseD name) = ConT (mkName name)
+            genFieldT (ListD td)     = AppT (ConT ''[]) (genFieldT td)
+            genFieldT (MaybeD td)    = AppT (ConT ''Maybe) (genFieldT td)
+            genFieldT (BaseD name)   = ConT (mkName name)
+            genFieldT (FuncD arg td) = AppT (ConT $ mkName arg) (AppT ArrowT (genFieldT td))

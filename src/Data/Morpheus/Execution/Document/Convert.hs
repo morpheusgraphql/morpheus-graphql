@@ -16,7 +16,7 @@ import           Data.Text                               (Text, unpack)
 import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Execution.Internal.Utils  (capital)
 import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataLeaf (..),
-                                                          DataType (..), DataTypeKind (..))
+                                                          DataOutputField, DataType (..), DataTypeKind (..))
 import           Data.Morpheus.Types.Internal.DataD      (AppD (..), ConsD (..), FieldD (..), GQLTypeD, TypeD (..),
                                                           gqlToHSWrappers)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
@@ -33,13 +33,16 @@ renderTHType (_, x) = genType x
       pure [TypeD {tName, tCons = [ConsD {cName = tName, cFields = map genField fieldArgs}]}]
       where
         tName = "Arg" <> capital (unpack fieldName)
-        -------------------------------------------
-    genRecordCon name fields = ConsD {cName = unpack name, cFields = map genField fields}
     ---------------------------------------------------------------------------------------------
     genField :: (Text, DataField a) -> FieldD
     genField (key, DataField {fieldType, fieldTypeWrappers}) = FieldD (unpack key) fType
       where
         fType = gqlToHSWrappers fieldTypeWrappers (unpack fieldType)
+    ---------------------------------------------------------------------------------------------
+    genResField :: (Text, DataOutputField) -> FieldD
+    genResField (key, DataField {fieldType, fieldTypeWrappers}) = FieldD (unpack key) fType
+      where
+        fType = FuncD "()" $ gqlToHSWrappers fieldTypeWrappers (unpack fieldType)
     --------------------------------------------
     genType (Leaf (LeafEnum DataType {typeName, typeData})) =
       pure (TypeD {tName = unpack typeName, tCons = map enumOption typeData}, KindEnum, [])
@@ -48,10 +51,16 @@ renderTHType (_, x) = genType x
     genType (Leaf _) = internalError "Scalar Types should defined By Native Haskell Types"
     genType (InputUnion _) = internalError "Input Unions not Supported"
     genType (InputObject DataType {typeName, typeData}) =
-      pure (TypeD {tName = unpack typeName, tCons = [genRecordCon typeName typeData]}, KindInputObject, [])
+      pure
+        ( TypeD {tName = unpack typeName, tCons = [ConsD {cName = unpack typeName, cFields = map genField typeData}]}
+        , KindInputObject
+        , [])
     genType (OutputObject DataType {typeName, typeData}) = do
       subTypes <- concat <$> traverse genArgumentType typeData
-      pure (TypeD {tName = unpack typeName, tCons = [genRecordCon typeName typeData]}, KindObject, subTypes)
+      pure
+        ( TypeD {tName = unpack typeName, tCons = [ConsD {cName = unpack typeName, cFields = map genResField typeData}]}
+        , KindObject
+        , subTypes)
     genType (Union DataType {typeName, typeData}) = do
       let tCons = map unionCon typeData
       pure (TypeD {tName = unpack typeName, tCons}, KindUnion, [])
