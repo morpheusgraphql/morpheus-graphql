@@ -13,7 +13,6 @@ module Main
   ) where
 
 import           Control.Monad.IO.Class         (liftIO)
-import           Data.Aeson                     (ToJSON (..))
 import           Data.ByteString.Lazy           (ByteString)
 import           Data.Functor.Identity          (Identity (..))
 import           Data.Morpheus                  (Interpreter (..))
@@ -22,7 +21,6 @@ import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Data.Morpheus.Types            (ScalarValue (..))
 import           Deprecated.API                 (Channel, Content, gqlRoot)
-import           GHC.Generics
 import           Mythology.API                  (mythologyApi)
 import           TH.API                         (thApi)
 

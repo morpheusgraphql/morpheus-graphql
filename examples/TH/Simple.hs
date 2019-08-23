@@ -14,7 +14,6 @@ import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (gqlDocument)
 import           Data.Morpheus.Types        (GQLRootResolver (..), IORes)
 import           Data.Text                  (Text)
-import           GHC.Generics               (Generic)
 
 [gqlDocument|
 
