@@ -36,6 +36,38 @@ As Morpheus is quite new, make sure stack can find morpheus-graphql by running `
 
 ### Building your first GrqphQL API
 
+### GraphQL syntax and Haskell QuasiQuotes
+
+```haskell
+
+[gqlDocument|
+  type Query {
+    deity (uid: Text! ) : Deity!
+  }
+
+  type Deity {
+    name  : Text!
+    power : Text
+  }
+|]
+
+rootResolver :: GQLRootResolver IO () () Query () ()
+rootResolver =
+  GQLRootResolver {queryResolver = return Query {deity}, mutationResolver = pure (), subscriptionResolver = pure ()}
+  where
+    deity DeityArgs {uid} = pure Deity {name, power}
+      where
+        name _ = pure "Morpheus"
+        power _ = pure (Just "Shapeshifting")
+```
+
+Template Haskell Generates types: `Query` , `Deity`, `DeityArgs`, that can be used by `rootResolver`
+
+generated types are not compatible with `Mutation`, `Subscription`,
+they can be used only in `Query`, but this issue will be fixed in next release
+
+### with Native Haskell Type
+
 To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
 which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> ResM b`, representing resolving a set of arguments `a` to a concrete value `b`.
 
