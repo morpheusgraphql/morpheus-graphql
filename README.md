@@ -36,7 +36,7 @@ As Morpheus is quite new, make sure stack can find morpheus-graphql by running `
 
 ### Building your first GrqphQL API
 
-### GraphQL syntax and Haskell QuasiQuotes
+### with GraphQL syntax and Haskell QuasiQuotes
 
 ```haskell
 
