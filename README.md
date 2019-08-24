@@ -29,12 +29,49 @@ stack.yml
 resolver: lts-12.0 # or greater
 extra-deps:
   - megaparsec-7.0.5
-  - morpheus-graphql-0.1.1
+  - aeson-1.4.4.0
+  - time-compat-1.9.2.2
+  - morpheus-graphql-0.2.1
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack update`
 
 ### Building your first GrqphQL API
+
+### with GraphQL syntax and Haskell QuasiQuotes
+
+```haskell
+
+[gqlDocument|
+  type Query {
+    deity (uid: Text!): Deity!
+  }
+
+  type Deity {
+    name  : Text!
+    power : Text
+  }
+|]
+
+rootResolver :: GQLRootResolver IO () () Query () ()
+rootResolver =
+  GQLRootResolver {queryResolver = return Query {deity}, mutationResolver = pure (), subscriptionResolver = pure ()}
+  where
+    deity DeityArgs {uid} = pure Deity {name, power}
+      where
+        name _ = pure "Morpheus"
+        power _ = pure (Just "Shapeshifting")
+
+gqlApi :: ByteString -> IO ByteString
+gqlApi = interpreter rootResolver
+```
+
+Template Haskell Generates types: `Query` , `Deity`, `DeityArgs`, that can be used by `rootResolver`
+
+generated types are not compatible with `Mutation`, `Subscription`,
+they can be used only in `Query`, but this issue will be fixed in next release
+
+### with Native Haskell Types
 
 To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
 which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> ResM b`, representing resolving a set of arguments `a` to a concrete value `b`.
@@ -47,9 +84,10 @@ data Query = Query
 data Deity = Deity
   { fullName :: Text         -- Non-Nullable Field
   , power    :: Maybe Text   -- Nullable Field
-  } deriving (Generic, GQLType)
+  } deriving (Generic)
 
-type instance KIND Deity = OBJECT
+instance GQLType Deity where
+  type  KIND Deity = OBJECT
 
 data DeityArgs = DeityArgs
   { name      :: Text        -- Required Argument
@@ -85,7 +123,7 @@ Note that the type `a -> ResM b` is just Synonym for `a -> ExceptT String IO b`
 To make this `Query` type available as an API, we define a `GQLRootResolver` and feed it to the Morpheus `interpreter`. A `GQLRootResolver` consists of `query`, `mutation` and `subscription` definitions, while we omit the latter for this example:
 
 ```haskell
-rootResolver :: GQLRootResolver IO Query () ()
+rootResolver :: GQLRootResolver IO () () Query () ()
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {deity = resolveDeity}
@@ -152,9 +190,10 @@ data City
   | Corinth
   | Delphi
   | Argos
-  deriving (Generic, GQLType)
+  deriving (Generic)
 
-type instance KIND City = ENUM
+instance GQLType City where
+  type KIND City = ENUM
 ```
 
 ### Union types
@@ -162,12 +201,13 @@ type instance KIND City = ENUM
 To use union type, all you have to do is derive the `GQLType` class. Using GraphQL [_fragments_](https://graphql.org/learn/queries/#fragments), the arguments of each data constructor can be accessed from the GraphQL client.
 
 ```haskell
-data Either b a
-  = Right a
-  | Left b
-  deriving (Generic, GQLType)
+data Character
+  = DEITY Deity
+  | HUMAN Human
+  deriving (Generic)
 
-type instance KIND City = UNION
+instance GQLType Character where
+  type KIND City = UNION
 ```
 
 ### Scalar types
@@ -175,14 +215,15 @@ type instance KIND City = UNION
 To use custom scalar types, you need to provide implementations for `parseValue` and `serialize` respectively.
 
 ```haskell
-data Odd = Int deriving (Generic, GQLType)
+data Odd = Odd Int  deriving (Generic)
 
 instance GQLScalar Odd where
   parseValue (Int x) = pure $ Odd (...  )
   parseValue (String x) = pure $ Odd (...  )
   serialize  (Odd value) = Int value
 
-type instance KIND Odd = SCALAR
+instance GQLType Odd where
+  type KIND Odd = SCALAR
 ```
 
 ### Applicative and Monad instance
@@ -218,10 +259,10 @@ Just exchange deriving `GQLQuery` for `GQLMutation` and declare them separately 
 
 ```haskell
 newtype Mutation = Mutation
-  { createDeity :: Form -> EffectM Deity
+  { createDeity :: Form -> IOMutRes Deity
   } deriving (Generic)
 
-createDeityMutation :: Form ::-> Deity
+createDeityMutation :: Form -> IOMutRes Deity
 createDeityMutation = ...
 
 rootResolver :: GQLRootResolver IO Query Mutation ()
@@ -240,42 +281,107 @@ gqlApi = interpreter rootResolver
 
 ### Subscriptions
 
-because subscriptions are at an early stage of development, we only use `Text` for communication.
-Mutation with same channel ID triggers subscription.
+im morpheus subscription and mutation communicating with Events,
+`Event` consists with user defined `Channel` and `Content`.
 
-we use `GraphiQL` with old apollo `subscriptions-transport-ws@0.5.4` for subscription handling,
-that why server will only recognize events with old apollo format.
+every subscription has own Channel by which will be triggered
 
 ```haskell
+
+data Channel = ChannelA | ChannelB
+
+data Content = ContentA Int | ContentB String
+
+
 newtype Mutation = Mutation
-  { createDeity :: DeityArgs -> EffectM Deity
+  { createDeity :: DeityArgs -> IOMutRes Channel Content Deity
   } deriving (Generic)
 
 newtype Subscription = Mutation
-  { newDeity :: () -> EffectM Deity
+  { newDeity :: () -> IOSubRes Channel Content Deity
   } deriving (Generic)
 
-createDeityResolver :: DeityArgs -> EffectM Address
-createDeityResolver args = gqlEffectResolver ["UPDATE_DEITY"] createDeityOnDB args
+
 
 newDeityResolver :: a -> EffectM Address
-newDeityResolver _ = gqlEffectResolver ["UPDATE_DEITY"] $ fetchNewDeityFromDB
+newDeityResolver _ = gqlEffectResolver [UPDATE_DEITY] $ fetchNewDeityFromDB
 
-rootResolver :: GQLRootResolver IO Query Mutation Subscription
+rootResolver :: GQLRootResolver IO Channel Content Query Mutation Subscription
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {...}
-    , mutationResolver = return Mutation {
-       createDeity = createDeityResolver
-    }
+    , mutationResolver = return Mutation { createDeity }
     , subscriptionResolver = return Subscription {
          newDeity = newDeityResolver
       }
     }
+    where
+      createDeity args = toMutResolver [Event {channels = [Channel], content = ContentB ""}] fetchUser
+      newDeity args = Event {channels = [Channel], content }
+        where
+          content (Event ChannelA (ContentB value)) = retunr Deity { ... }
+          content (Event ChannelB (ContentB value)) = ...
+
 
 gqlApi :: ByteString -> IO ByteString
 gqlApi = interpreter rootResolver
 ```
+
+## Morpheus `GraphQL Client` with Template haskell QuasiQuotes
+
+```haskell
+defineByDocumentFile
+    "./schema.gql"
+  [gql|
+    query GetHero ($byRealm: Realm)
+      {
+        deity (realm:$byRealm) {
+          power
+          fullName
+        }
+      }
+  |]
+```
+
+will validate query and Generate:
+
+- response type `GetHero`, `Deity` with `Lens` Instances
+- input types: `GetHeroArgs` , `Realm`
+- instance for `Fetch` typeClass
+
+so that
+
+```haskell
+  fetchHero :: Args GetHero -> m (Either String GetHero)
+  fetchHero = fetch jsonRes args
+      where
+        args = GetHeroArgs {byRealm = Just Realm {owner = "Zeus", surface = Just 10}}
+        jsonRes :: ByteString -> m ByteString
+        jsonRes = <GraphQL APi>
+```
+
+resolves well typed response `GetHero`.
+
+except: `defineByDocumentFile` you can use:
+
+```haskell
+defineByIntrospectionFile "./introspection.json"
+```
+
+or
+
+`defineByIntrospection` where you can directly connect it to server
+
+## Morpheus CLI for Code Generating
+
+Generating dummy Morpheus Api from `schema.gql`
+
+```
+morpheus build src/schem.gql src/GQLApi.hs
+```
+
+this command will generate Haskell API and resolvers,
+resolvers will resolve default values for every object
 
 # About
 
