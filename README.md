@@ -42,7 +42,7 @@ As Morpheus is quite new, make sure stack can find morpheus-graphql by running `
 
 [gqlDocument|
   type Query {
-    deity (uid: Text! ) : Deity!
+    deity (uid: Text!): Deity!
   }
 
   type Deity {
