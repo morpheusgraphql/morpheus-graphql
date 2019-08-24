@@ -66,7 +66,7 @@ Template Haskell Generates types: `Query` , `Deity`, `DeityArgs`, that can be us
 generated types are not compatible with `Mutation`, `Subscription`,
 they can be used only in `Query`, but this issue will be fixed in next release
 
-### with Native Haskell Type
+### with Native Haskell Types
 
 To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
 which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> ResM b`, representing resolving a set of arguments `a` to a concrete value `b`.
