@@ -184,9 +184,10 @@ data City
   | Corinth
   | Delphi
   | Argos
-  deriving (Generic, GQLType)
+  deriving (Generic)
 
-type instance KIND City = ENUM
+instance GQLType City where
+  type KIND City = ENUM
 ```
 
 ### Union types
@@ -194,12 +195,14 @@ type instance KIND City = ENUM
 To use union type, all you have to do is derive the `GQLType` class. Using GraphQL [_fragments_](https://graphql.org/learn/queries/#fragments), the arguments of each data constructor can be accessed from the GraphQL client.
 
 ```haskell
-data Either b a
-  = Right a
-  | Left b
-  deriving (Generic, GQLType)
+data Character
+  = DEITY Deity
+  | HUMAN Human
+  deriving (Generic)
 
-type instance KIND City = UNION
+
+instance GQLType Character where
+  type KIND City = UNION
 ```
 
 ### Scalar types
