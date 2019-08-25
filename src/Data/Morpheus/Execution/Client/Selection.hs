@@ -13,7 +13,7 @@ import           Data.Text                                  (Text, unpack)
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal               (internalUnknownTypeMessage)
+import           Data.Morpheus.Error.Utils                  (globalErrorMessage)
 import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), ValidOperation, Variable (..),
                                                              VariableDefinitions)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
@@ -25,7 +25,7 @@ import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validati
 import           Data.Morpheus.Validation.Utils.Utils       (lookupType)
 
 compileError :: Text -> GQLErrors
-compileError x = internalUnknownTypeMessage $ " \"" <> x <> "\" ;"
+compileError x = globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
 operationTypes :: DataTypeLib -> VariableDefinitions -> ValidOperation -> Validation ([TypeD], [TypeD])
 operationTypes lib variables = genOperation
@@ -92,11 +92,13 @@ operationTypes lib variables = genOperation
         genFields datatype = mapM typeNameFromField
           where
             typeNameFromField :: (Text, Selection) -> Validation FieldD
-            typeNameFromField (key, _) = FieldD (unpack key) <$> wrType
-              where
-                wrType = do
-                  (newType, wrappers) <- fieldDataType datatype key
-                  pure $ gqlToHSWrappers wrappers (unpack $ typeFrom newType)
+            typeNameFromField (key, Selection {selectionRec = SelectionAlias {aliasFieldName}}) =
+              FieldD (unpack key) <$> lookupFieldType aliasFieldName
+            typeNameFromField (key, _) = FieldD (unpack key) <$> lookupFieldType key
+            ------------------------------------------------------------
+            lookupFieldType key = do
+              (newType, wrappers) <- fieldDataType datatype key
+              pure $ gqlToHSWrappers wrappers (unpack $ typeFrom newType)
     --------------------------------------------
     genRecordType name dataType selectionSet = do
       (con, subTypes) <- getCon name dataType selectionSet
@@ -105,14 +107,16 @@ operationTypes lib variables = genOperation
     newFieldTypes parentType = fmap concat <$> mapM validateSelection
       where
         validateSelection :: (Text, Selection) -> Validation [TypeD]
-        validateSelection (key, Selection {selectionRec = SelectionSet selectionSet}) = do
-          datatype <- key `typeByField` parentType
-          genRecordType (typeFrom datatype) datatype selectionSet
         validateSelection (key, Selection {selectionRec = SelectionField}) =
           key `typeByField` parentType >>= buildSelField
           where
             buildSelField (Leaf x) = buildLeaf x
             buildSelField _        = Left $ compileError "Invalid schema Expected scalar"
+        validateSelection (key, Selection {selectionRec = SelectionSet selectionSet}) = do
+          datatype <- key `typeByField` parentType
+          genRecordType (typeFrom datatype) datatype selectionSet
+        validateSelection (_, selection@Selection {selectionRec = SelectionAlias {aliasFieldName, aliasSelection}}) =
+          validateSelection (aliasFieldName, selection {selectionRec = aliasSelection})
         validateSelection (key, Selection {selectionRec = UnionSelection unionSelections}) = do
           unionTypeName <- typeFrom <$> key `typeByField` parentType
           (tCons, subTypes) <- unzip <$> mapM getUnionType unionSelections
@@ -121,7 +125,6 @@ operationTypes lib variables = genOperation
             getUnionType (typeKey, selSet) = do
               conDatatype <- getType lib typeKey
               getCon typeKey conDatatype selSet
-        validateSelection _ = pure []
 
 buildLeaf :: DataLeaf -> Validation [TypeD]
 buildLeaf (LeafEnum DataType {typeName, typeData}) =
