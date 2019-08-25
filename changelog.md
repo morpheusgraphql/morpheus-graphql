@@ -1,3 +1,9 @@
+## [0.2.2] - \*.09.2019
+
+### Fixed
+
+- Morpheus GraphQL Client: Support GraphQL Alias
+
 ## [0.2.1] - 23.08.2019
 
 - assets are added to cabal source files
