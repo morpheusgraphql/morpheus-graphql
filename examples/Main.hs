@@ -22,12 +22,11 @@ import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQL
 import           Data.Morpheus.Types            (ScalarValue (..))
 import           Deprecated.API                 (Channel, Content, gqlRoot)
 import           Mythology.API                  (mythologyApi)
-import           TH.API                         (thApi)
-
 import qualified Network.Wai                    as Wai
 import qualified Network.Wai.Handler.Warp       as Warp
 import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
+import           TH.API                         (thApi)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
 ioRes :: ByteString -> IO ByteString
@@ -42,8 +41,8 @@ defineByIntrospectionFile
     # Query Hero with Compile time Validation
     query GetUser ($userCoordinates: Coordinates!)
       {
-        user {
-           name
+        myUser: user {
+           boo3: name
            email
            address (coordinates: $userCoordinates ){
             city
