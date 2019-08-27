@@ -42,8 +42,8 @@ import           Data.Morpheus.Types.Internal.Validation             (SchemaVali
 import           Data.Morpheus.Types.Internal.Value                  (Value (..))
 import           Data.Morpheus.Types.IO                              (GQLRequest (..), GQLResponse (..))
 import           Data.Morpheus.Types.Resolver                        (GQLRootResolver (..))
-import           Data.Morpheus.Validation.Utils.Utils                (VALIDATION_MODE (..))
-import           Data.Morpheus.Validation.Validation                 (validateRequest)
+import           Data.Morpheus.Validation.Internal.Utils             (VALIDATION_MODE (..))
+import           Data.Morpheus.Validation.Query.Validation           (validateRequest)
 
 type EventCon event = Eq event
 

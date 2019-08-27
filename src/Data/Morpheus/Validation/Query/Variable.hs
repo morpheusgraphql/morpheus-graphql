@@ -1,6 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Data.Morpheus.Validation.Variable
+module Data.Morpheus.Validation.Query.Variable
   ( resolveOperationVariables
   ) where
 
@@ -20,9 +20,9 @@ import           Data.Morpheus.Types.Internal.Data             (DataInputType, D
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Types.Internal.Value            (Value (..))
 import           Data.Morpheus.Types.Types                     (Variables)
-import           Data.Morpheus.Validation.Fragment             (getFragment)
-import           Data.Morpheus.Validation.Input.Object         (validateInputValue)
-import           Data.Morpheus.Validation.Utils.Utils          (VALIDATION_MODE (..), getInputType)
+import           Data.Morpheus.Validation.Internal.Utils       (VALIDATION_MODE (..), getInputType)
+import           Data.Morpheus.Validation.Query.Fragment       (getFragment)
+import           Data.Morpheus.Validation.Query.Input.Object   (validateInputValue)
 import           Data.Semigroup                                ((<>))
 import           Data.Text                                     (Text)
 
@@ -37,61 +37,42 @@ lookupVariable variables' key' error' =
     Nothing    -> Left $ error' key'
     Just value -> pure value
 
-handleInputError ::
-     Text -> Position -> InputValidation Value -> Validation (Text, Value)
-handleInputError key' position' (Left error') =
-  Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
+handleInputError :: Text -> Position -> InputValidation Value -> Validation (Text, Value)
+handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
 handleInputError key' _ (Right value') = pure (key', value')
 
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = fmap concat . mapM f
 
-allVariableReferences ::
-     FragmentLib -> [RawSelectionSet] -> Validation [EnhancedKey]
+allVariableReferences :: FragmentLib -> [RawSelectionSet] -> Validation [EnhancedKey]
 allVariableReferences fragmentLib = concatMapM (concatMapM searchReferences)
   where
     referencesFromArgument :: (Text, RawArgument) -> [EnhancedKey]
     referencesFromArgument (_, RawArgument {}) = []
-    referencesFromArgument (_, VariableReference Reference { referenceName
-                                                           , referencePosition
-                                                           }) =
+    referencesFromArgument (_, VariableReference Reference {referenceName, referencePosition}) =
       [EnhancedKey referenceName referencePosition]
     -- | search used variables in every arguments
     searchReferences :: (Text, RawSelection) -> Validation [EnhancedKey]
-    searchReferences (_, RawSelectionSet RawSelection' { rawSelectionArguments
-                                                       , rawSelectionRec
-                                                       }) =
+    searchReferences (_, RawSelectionSet RawSelection' {rawSelectionArguments, rawSelectionRec}) =
       getArgs <$> concatMapM searchReferences rawSelectionRec
       where
         getArgs :: [EnhancedKey] -> [EnhancedKey]
         getArgs x = concatMap referencesFromArgument rawSelectionArguments <> x
-    searchReferences (_, InlineFragment Fragment {fragmentSelection}) =
-      concatMapM searchReferences fragmentSelection
-    searchReferences (_, RawAlias {rawAliasSelection}) =
-      searchReferences rawAliasSelection
+    searchReferences (_, InlineFragment Fragment {fragmentSelection}) = concatMapM searchReferences fragmentSelection
+    searchReferences (_, RawAlias {rawAliasSelection}) = searchReferences rawAliasSelection
     searchReferences (_, RawSelectionField RawSelection' {rawSelectionArguments}) =
       return $ concatMap referencesFromArgument rawSelectionArguments
     searchReferences (_, Spread reference) =
-      getFragment reference fragmentLib >>=
-      concatMapM searchReferences . fragmentSelection
+      getFragment reference fragmentLib >>= concatMapM searchReferences . fragmentSelection
 
 resolveOperationVariables ::
-     DataTypeLib
-  -> FragmentLib
-  -> Variables
-  -> VALIDATION_MODE
-  -> RawOperation
-  -> Validation ValidVariables
-resolveOperationVariables typeLib lib root validationMode Operation { operationName
-                                                                    , operationSelection
-                                                                    , operationArgs
-                                                                    } = do
+     DataTypeLib -> FragmentLib -> Variables -> VALIDATION_MODE -> RawOperation -> Validation ValidVariables
+resolveOperationVariables typeLib lib root validationMode Operation {operationName, operationSelection, operationArgs} = do
   allVariableReferences lib [operationSelection] >>= checkUnusedVariables
   mapM (lookupAndValidateValueOnBody typeLib root validationMode) operationArgs
   where
     varToKey :: (Text, Variable ()) -> EnhancedKey
-    varToKey (key', Variable {variablePosition}) =
-      EnhancedKey key' variablePosition
+    varToKey (key', Variable {variablePosition}) = EnhancedKey key' variablePosition
     --
     checkUnusedVariables :: [EnhancedKey] -> Validation ()
     checkUnusedVariables refs =
@@ -100,11 +81,7 @@ resolveOperationVariables typeLib lib root validationMode Operation { operationN
         unused' -> Left $ unusedVariables operationName unused'
 
 lookupAndValidateValueOnBody ::
-     DataTypeLib
-  -> Variables
-  -> VALIDATION_MODE
-  -> (Text, Variable ())
-  -> Validation (Text, Variable Value)
+     DataTypeLib -> Variables -> VALIDATION_MODE -> (Text, Variable ()) -> Validation (Text, Variable Value)
 lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType
                                                                                      , variablePosition
                                                                                      , isVariableRequired
@@ -117,14 +94,8 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
     toVariable (varKey, variableValue) = (varKey, var {variableValue})
     ------------------------------------------------------------------
     checkType True varType =
-      lookupVariable
-        bodyVariables
-        key
-        (uninitializedVariable variablePosition variableType) >>=
-      validator varType
-    checkType False varType =
-      maybe (pure (key, Null)) (validator varType) (M.lookup key bodyVariables)
+      lookupVariable bodyVariables key (uninitializedVariable variablePosition variableType) >>= validator varType
+    checkType False varType = maybe (pure (key, Null)) (validator varType) (M.lookup key bodyVariables)
     -----------------------------------------------------------------------------------------------
     validator varType varValue =
-      handleInputError key variablePosition $
-      validateInputValue typeLib [] variableTypeWrappers varType (key, varValue)
+      handleInputError key variablePosition $ validateInputValue typeLib [] variableTypeWrappers varType (key, varValue)

@@ -22,7 +22,7 @@ import           Data.Morpheus.Types.Internal.Data          (DataField (..), Dat
                                                              allDataTypes)
 import           Data.Morpheus.Types.Internal.DataD         (ConsD (..), FieldD (..), TypeD (..), gqlToHSWrappers)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
-import           Data.Morpheus.Validation.Utils.Utils       (lookupType)
+import           Data.Morpheus.Validation.Internal.Utils    (lookupType)
 
 compileError :: Text -> GQLErrors
 compileError x = globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
