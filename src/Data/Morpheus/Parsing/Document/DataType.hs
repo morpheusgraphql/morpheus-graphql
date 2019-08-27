@@ -11,7 +11,8 @@ import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parseMaybeTuple, parseNonNull,
                                                           parseWrappedType, pipeLiteral, qualifier, setOf,
                                                           spaceAndComments, token)
-import           Data.Morpheus.Types.Internal.Data       (DataArgument, DataFullType (..), DataOutputField, Key)
+import           Data.Morpheus.Types.Internal.Data       (DataArgument, DataFullType (..), DataOutputField, Key,
+                                                          RawDataType (..))
 import           Data.Text                               (Text)
 import           Text.Megaparsec                         (label, sepBy1, (<|>))
 import           Text.Megaparsec.Char                    (char, space1, string)
@@ -33,38 +34,45 @@ dataInputObject :: Parser (Text, DataFullType)
 dataInputObject =
   label "inputObject" $ do
     typeName <- typeDef "input"
-    typeData <- inputEntries
+    typeData <- inputObjectEntries
     pure (typeName, InputObject $ createType typeName typeData)
+
+inputObjectEntries :: Parser [(Key, DataArgument)]
+inputObjectEntries = label "inputEntries" $ setOf entry
   where
-    inputEntries :: Parser [(Key, DataArgument)]
-    inputEntries = label "inputEntries" $ setOf entry
-      where
-        entry =
-          label "entry" $ do
-            ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
-            nonNull <- parseNonNull
-            return (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
+    entry =
+      label "entry" $ do
+        ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
+        nonNull <- parseNonNull
+        return (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
+
+outputObjectEntries :: Parser [(Key, DataOutputField)]
+outputObjectEntries = label "entries" $ setOf entry
+  where
+    fieldWithArgs =
+      label "fieldWithArgs" $ do
+        (name, _) <- qualifier
+        args <- parseMaybeTuple dataArgument
+        return (name, args)
+    entry =
+      label "entry" $ do
+        ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs parseWrappedType
+        nonNull <- parseNonNull
+        return (fieldName, createField fieldArgs fieldName (nonNull ++ wrappers, fieldType))
 
 dataObject :: Parser (Text, DataFullType)
 dataObject =
   label "object" $ do
     typeName <- typeDef "type"
-    typeData <- entries
+    typeData <- outputObjectEntries
     pure (typeName, OutputObject $ createType typeName typeData)
-  where
-    entries :: Parser [(Key, DataOutputField)]
-    entries = label "entries" $ setOf entry
-      where
-        fieldWithArgs =
-          label "fieldWithArgs" $ do
-            (name, _) <- qualifier
-            args <- parseMaybeTuple dataArgument
-            return (name, args)
-        entry =
-          label "entry" $ do
-            ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs parseWrappedType
-            nonNull <- parseNonNull
-            return (fieldName, createField fieldArgs fieldName (nonNull ++ wrappers, fieldType))
+
+dataInterface :: Parser (Text, RawDataType)
+dataInterface =
+  label "interface" $ do
+    typeName <- typeDef "interface"
+    typeData <- inputObjectEntries
+    pure (typeName, Interface $ createType typeName typeData)
 
 dataScalar :: Parser (Text, DataFullType)
 dataScalar =
@@ -91,5 +99,12 @@ dataUnion =
   where
     unionsParser = token `sepBy1` pipeLiteral
 
-parseDataType :: Parser (Text, DataFullType)
-parseDataType = label "dataType" $ dataObject <|> dataInputObject <|> dataUnion <|> dataEnum <|> dataScalar
+parseFinalDataType :: Parser (Text, DataFullType)
+parseFinalDataType = label "dataType" $ dataObject <|> dataInputObject <|> dataUnion <|> dataEnum <|> dataScalar
+
+parseDataType :: Parser (Text, RawDataType)
+parseDataType = label "dataType" $ finalDataT <|> dataInterface
+  where
+    finalDataT = do
+      (name, datatype) <- parseFinalDataType
+      pure (name, FinalDataType datatype)

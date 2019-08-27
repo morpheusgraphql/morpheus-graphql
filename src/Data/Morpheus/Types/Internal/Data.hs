@@ -25,7 +25,7 @@ module Data.Morpheus.Types.Internal.Data
   , DataValidator(..)
   , DataTypeKind(..)
   , DataFingerprint(..)
-  , DawDataType(..)
+  , RawDataType(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -130,8 +130,8 @@ data DataKind a
   | UnionKind DataUnion
   deriving (Show)
 
-data DawDataType
-  = MorpheusDataType DataFullType
+data RawDataType
+  = FinalDataType DataFullType
   | Interface DataInputObject
   | Implements DataOutputObject
   deriving (Show)
