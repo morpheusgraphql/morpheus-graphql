@@ -3,8 +3,12 @@ module Data.Morpheus.Validation.Document.Validation
   ) where
 
 import           Data.Maybe
-import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataInputObject, DataOutputObject,
-                                                          DataType, Key, RawDataType (..))
+
+--
+-- Morpheus
+import           Data.Morpheus.Error.Document.Interface  (unknownInterface)
+import           Data.Morpheus.Types.Internal.Base       (Location (..))
+import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataOutputObject, Key, RawDataType (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 
 validatePartialDocument :: [(Key, RawDataType)] -> Validation [(Key, DataFullType)]
@@ -20,7 +24,7 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
     mustImplement :: DataOutputObject -> [Key] -> Validation DataFullType
     mustImplement object interfaceKey = do
       interface <- traverse getInterfaceByKey interfaceKey
-      if foldl (&&) True (map (isSubset object) interface)
+      if all (isSubset object) interface
         then pure $ OutputObject object
         else fail "TODO"
     -------------------------------
@@ -31,4 +35,4 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
     getInterfaceByKey key =
       case lookup key lib of
         Just (Interface x) -> pure x
-        _                  -> fail "TDOD"
+        _                  -> Left $ unknownInterface key $ Location 0 0 -- TODO
