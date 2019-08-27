@@ -82,7 +82,7 @@ dataInterface :: Parser (Text, RawDataType)
 dataInterface =
   label "interface" $ do
     typeName <- typeDef "interface"
-    typeData <- inputObjectEntries
+    typeData <- outputObjectEntries
     pure (typeName, Interface $ createType typeName typeData)
 
 dataScalar :: Parser (Text, DataFullType)
