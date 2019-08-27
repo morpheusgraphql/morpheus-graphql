@@ -4,6 +4,10 @@ type Query {
   hero: Human!
 }
 
+interface MyInterface {
+    name: String
+}
+
 type Mutation {
   createDeity (deityName: [[[[[String!]]!]]], deityMythology: String): Deity!
   createCharacter (charRealm: Realm! , charMutID: String! ): Character!
