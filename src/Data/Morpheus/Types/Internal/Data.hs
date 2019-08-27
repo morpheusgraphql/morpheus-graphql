@@ -133,7 +133,8 @@ data DataKind a
 data RawDataType
   = FinalDataType DataFullType
   | Interface DataInputObject
-  | Implements DataOutputObject
+  | Implements { implementsInterfaces :: [Key]
+               , unImplements         :: DataOutputObject }
   deriving (Show)
 
 data DataFullType

@@ -14,7 +14,7 @@ import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parse
 import           Data.Morpheus.Types.Internal.Data       (DataArgument, DataFullType (..), DataOutputField, Key,
                                                           RawDataType (..))
 import           Data.Text                               (Text)
-import           Text.Megaparsec                         (label, sepBy1, (<|>))
+import           Text.Megaparsec                         (label, sepBy1, some, (<|>))
 import           Text.Megaparsec.Char                    (char, space1, string)
 
 dataArgument :: Parser (Text, DataArgument)
@@ -60,12 +60,23 @@ outputObjectEntries = label "entries" $ setOf entry
         nonNull <- parseNonNull
         return (fieldName, createField fieldArgs fieldName (nonNull ++ wrappers, fieldType))
 
-dataObject :: Parser (Text, DataFullType)
+dataObject :: Parser (Text, RawDataType)
 dataObject =
   label "object" $ do
     typeName <- typeDef "type"
+    interfaces <- maybeImplements
     typeData <- outputObjectEntries
-    pure (typeName, OutputObject $ createType typeName typeData)
+    pure (typeName, Implements interfaces $ createType typeName typeData)
+
+maybeImplements :: Parser [Text]
+maybeImplements = implements <|> pure []
+  where
+    implements =
+      label "implements" $ do
+        _ <- string "implements"
+        space1
+        spaceAndComments
+        some token
 
 dataInterface :: Parser (Text, RawDataType)
 dataInterface =
@@ -100,10 +111,10 @@ dataUnion =
     unionsParser = token `sepBy1` pipeLiteral
 
 parseFinalDataType :: Parser (Text, DataFullType)
-parseFinalDataType = label "dataType" $ dataObject <|> dataInputObject <|> dataUnion <|> dataEnum <|> dataScalar
+parseFinalDataType = label "dataType" $ dataInputObject <|> dataUnion <|> dataEnum <|> dataScalar
 
 parseDataType :: Parser (Text, RawDataType)
-parseDataType = label "dataType" $ finalDataT <|> dataInterface
+parseDataType = label "dataType" $ dataInterface <|> dataObject <|> finalDataT
   where
     finalDataT = do
       (name, datatype) <- parseFinalDataType

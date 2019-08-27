@@ -10,4 +10,7 @@ validatePartialDocument [] = pure []
 validatePartialDocument ((name, FinalDataType x):xs) = do
   list <- validatePartialDocument xs
   pure $ (name, x) : list
+validatePartialDocument ((name, Implements _ dt):xs) = do
+  list <- validatePartialDocument xs
+  pure $ (name, OutputObject dt) : list
 validatePartialDocument (_:xs) = validatePartialDocument xs
