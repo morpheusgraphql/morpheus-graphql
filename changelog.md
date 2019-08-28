@@ -27,6 +27,8 @@
       }  deriving (Generic)
     ```
 
+    at the time compiler does not validates field Arguments by interface
+
 ## [0.2.1] - 23.08.2019
 
 - assets are added to cabal source files
