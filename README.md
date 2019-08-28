@@ -319,7 +319,7 @@ rootResolver =
       createDeity args = toMutResolver [Event {channels = [Channel], content = ContentB ""}] fetchUser
       newDeity args = Event {channels = [Channel], content }
         where
-          content (Event ChannelA (ContentB value)) = retunr Deity { ... }
+          content (Event ChannelA (ContentB value)) = return Deity { ... }
           content (Event ChannelB (ContentB value)) = ...
 
 
