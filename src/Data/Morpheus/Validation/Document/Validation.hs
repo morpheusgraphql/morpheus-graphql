@@ -47,7 +47,7 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
                     foundType = showWrappedType fieldTypeWrappers fieldType
             Nothing -> [(typeName, key, UndefinedField)]
     -------------------------------
-    position = Location 0 0 -- TODO
+    position = Location 0 0 -- TODO: Real Position
     getInterfaceByKey :: Key -> Validation DataOutputObject
     getInterfaceByKey key =
       case lookup key lib of
