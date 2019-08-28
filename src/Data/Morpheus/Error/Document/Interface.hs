@@ -28,7 +28,8 @@ partialImplements name position = map impError
     impError (interfaceName, key, errorType) = GQLError {desc = message, positions = [position]}
       where
         message =
-          "type " <> name <> "implements Interface " <> interfaceName <> "Partially," <> detailedMessage errorType
+          "type \"" <> name <> "\" implements Interface \"" <> interfaceName <> "\" Partially," <>
+          detailedMessage errorType
         detailedMessage UnexpectedType {expectedType, foundType} =
-          " on key \"" <> key <> " expected type " <> expectedType <> " found " <> foundType <> "\"."
-        detailedMessage UndefinedField = " key \"" <> key <> "not found \"."
+          " on key \"" <> key <> "\" expected type \"" <> expectedType <> "\" found \"" <> foundType <> "\"."
+        detailedMessage UndefinedField = " key \"" <> key <> "\" not found ."
