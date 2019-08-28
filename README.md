@@ -297,7 +297,7 @@ newtype Mutation = Mutation
   { createDeity :: DeityArgs -> IOMutRes Channel Content Deity
   } deriving (Generic)
 
-newtype Subscription = Mutation
+newtype Subscription = Subscription
   { newDeity :: () -> IOSubRes Channel Content Deity
   } deriving (Generic)
 
