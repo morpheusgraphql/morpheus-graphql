@@ -288,43 +288,41 @@ every subscription has own Channel by which will be triggered
 
 ```haskell
 
-data Channel = ChannelA | ChannelB
+data Channel
+  = ChannelA
+  | ChannelB
 
-data Content = ContentA Int | ContentB String
+data Content
+  = ContentA Int
+  | ContentB Text
 
+newtype Query = Query
+  { deity :: () -> IORes Deity
+  } deriving (Generic)
 
 newtype Mutation = Mutation
-  { createDeity :: DeityArgs -> IOMutRes Channel Content Deity
+  { createDeity :: () -> IOMutRes Channel Content Deity
   } deriving (Generic)
 
 newtype Subscription = Subscription
   { newDeity :: () -> IOSubRes Channel Content Deity
   } deriving (Generic)
 
-
-
-newDeityResolver :: a -> EffectM Address
-newDeityResolver _ = gqlEffectResolver [UPDATE_DEITY] $ fetchNewDeityFromDB
-
 rootResolver :: GQLRootResolver IO Channel Content Query Mutation Subscription
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {...}
-    , mutationResolver = return Mutation { createDeity }
-    , subscriptionResolver = return Subscription {
-         newDeity = newDeityResolver
-      }
+    { queryResolver = return Query {deity = const fetchDeity}
+    , mutationResolver = return Mutation {createDeity}
+    , subscriptionResolver = return Subscription {newDeity}
     }
-    where
-      createDeity args = toMutResolver [Event {channels = [Channel], content = ContentB ""}] fetchUser
-      newDeity args = Event {channels = [Channel], content }
-        where
-          content (Event ChannelA (ContentB value)) = return Deity { ... }
-          content (Event ChannelB (ContentB value)) = ...
-
-
-gqlApi :: ByteString -> IO ByteString
-gqlApi = interpreter rootResolver
+  where
+    fetchDeity = resolver $ dbDeity "" Nothing
+    createDeity _args = toMutResolver [Event {channels = [ChannelA], content = ContentA 1}] fetchDeity
+    newDeity _args = Event {channels = [ChannelA], content}
+      where
+        content (Event [ChannelA] (ContentA _value)) = resolver $ dbDeity "" Nothing -- resolve New State
+        content (Event [ChannelA] (ContentB value))  = resolver $ dbDeity value Nothing -- resolve New State
+        content _                                    = fetchDeity -- Resolve Old State
 ```
 
 ## Morpheus `GraphQL Client` with Template haskell QuasiQuotes
