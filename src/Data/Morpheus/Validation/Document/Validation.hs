@@ -11,7 +11,8 @@ import           Data.Maybe
 import           Data.Morpheus.Error.Document.Interface  (ImplementsError (..), partialImplements, unknownInterface)
 import           Data.Morpheus.Types.Internal.Base       (Location (..))
 import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataOutputField,
-                                                          DataOutputObject, DataType (..), Key, RawDataType (..))
+                                                          DataOutputObject, DataType (..), Key, RawDataType (..),
+                                                          showWrappedType)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Validation.Internal.Utils (isEqOrStricter)
 
@@ -41,10 +42,10 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
           case lookup key objFields of
             Just DataField {fieldType, fieldTypeWrappers}
               | fieldType == interfaceTypeName && isEqOrStricter fieldTypeWrappers interfaceWrappers -> []
-            Just _ -> [(typeName, key, UnexpectedType key key)]
+              | otherwise -> [(typeName, key, UnexpectedType {expectedType, foundType})]
+              where expectedType = showWrappedType interfaceWrappers interfaceTypeName
+                    foundType = showWrappedType fieldTypeWrappers fieldType
             Nothing -> [(typeName, key, UndefinedField)]
-        -----------------------------------------------
-       -- hasSameType  y =
     -------------------------------
     position = Location 0 0 -- TODO
     getInterfaceByKey :: Key -> Validation DataOutputObject
