@@ -74,11 +74,11 @@ they can be used only in `Query`, but this issue will be fixed in next release
 ### with Native Haskell Types
 
 To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
-which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> ResM b`, representing resolving a set of arguments `a` to a concrete value `b`.
+which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> IORes b`, representing resolving a set of arguments `a` to a concrete value `b`.
 
 ```haskell
 data Query = Query
-  { deity :: DeityArgs -> ResM Deity
+  { deity :: DeityArgs -> IORes Deity
   } deriving (Generic)
 
 data Deity = Deity
@@ -95,8 +95,8 @@ data DeityArgs = DeityArgs
   } deriving (Generic)
 ```
 
-For each field in the `Query` type defined via `a -> ResM b` (like `deity`) we will define a resolver implementation that provides the values during runtime by referring to
-some data source, e.g. a database or another API. Fields that are defined without `a -> ResM b` you can just provide a value.
+For each field in the `Query` type defined via `a -> IORes b` (like `deity`) we will define a resolver implementation that provides the values during runtime by referring to
+some data source, e.g. a database or another API. Fields that are defined without `a -> IORes b` you can just provide a value.
 
 In above example, the field of `DeityArgs` could also be named using reserved identities (such as: `type`, `where`, etc), in order to avoid conflict, a prime symbol (`'`) must be attached. For example, you can have:
 
@@ -111,14 +111,14 @@ data DeityArgs = DeityArgs
 The field name in the final request will be `type` instead of `type'`. The Morpheus request parser converts each of the reserved identities in Haskell 2010 to their corresponding names internally. This also applies to selections.
 
 ```haskell
-resolveDeity :: DeityArgs -> ResM Deity
+resolveDeity :: DeityArgs -> IORes Deity
 resolveDeity args = gqlResolver $ askDB (name args) (mythology args)
 
 askDB :: Text -> Maybe Text -> IO (Either String Deity)
 askDB = ...
 ```
 
-Note that the type `a -> ResM b` is just Synonym for `a -> ExceptT String IO b`
+Note that the type `a -> IORes b` is just Synonym for `a -> ExceptT String IO b`
 
 To make this `Query` type available as an API, we define a `GQLRootResolver` and feed it to the Morpheus `interpreter`. A `GQLRootResolver` consists of `query`, `mutation` and `subscription` definitions, while we omit the latter for this example:
 
