@@ -15,11 +15,12 @@ import           Data.Morpheus.Types.Internal.AST.RawSelection (RawArgument (..)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Argument (..), ArgumentOrigin (..), Arguments)
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Data             (DataArgument, DataField (..), DataInputField,
-                                                                DataOutputField, DataTypeLib, DataTypeWrapper (..),
-                                                                isFieldNullable, showWrappedType)
+                                                                DataOutputField, DataTypeLib, isFieldNullable,
+                                                                showWrappedType)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Types.Internal.Value            (Value (Null))
-import           Data.Morpheus.Validation.Internal.Utils       (checkForUnknownKeys, checkNameCollision, getInputType)
+import           Data.Morpheus.Validation.Internal.Utils       (checkForUnknownKeys, checkNameCollision, getInputType,
+                                                                isEqOrStricter)
 import           Data.Morpheus.Validation.Query.Input.Object   (validateInputValue)
 import           Data.Text                                     (Text)
 
@@ -33,11 +34,6 @@ resolveArgumentVariables operatorName variables DataField {fieldName, fieldArgs}
       where
         toArgument argumentValue =
           Argument {argumentValue, argumentOrigin = VARIABLE, argumentPosition = referencePosition}
-        stricter [] []                               = True
-        stricter (NonNullType:xs1) (NonNullType:xs2) = stricter xs1 xs2
-        stricter (NonNullType:xs1) xs2               = stricter xs1 xs2
-        stricter (ListType:xs1) (ListType:xs2)       = stricter xs1 xs2
-        stricter _ _                                 = False
         lookupVar =
           case lookup referenceName variables of
             Nothing -> Left $ undefinedVariable operatorName referencePosition referenceName
@@ -45,7 +41,7 @@ resolveArgumentVariables operatorName variables DataField {fieldName, fieldArgs}
               case lookup key fieldArgs of
                 Nothing -> Left $ unknownArguments fieldName [EnhancedKey key referencePosition]
                 Just DataField {fieldType, fieldTypeWrappers} ->
-                  if variableType == fieldType && stricter variableTypeWrappers fieldTypeWrappers
+                  if variableType == fieldType && isEqOrStricter variableTypeWrappers fieldTypeWrappers
                     then return variableValue
                     else Left $ incompatibleVariableType referenceName varSignature fieldSignature referencePosition
                   where varSignature = showWrappedType variableTypeWrappers variableType
