@@ -10,7 +10,7 @@
       nodeId: ID!
     }
 
-    type SimpleInterfaceType implements Node {
+    type SimpleType implements Node {
       nodeId: ID!
       name: String!
     }
@@ -21,7 +21,7 @@
 
     haskell type from `simple.gql`:
     ```haskell
-     data Node = Node {
+     data SimpleType = SimpleType {
         nodeId :: ID!
         name   :: Text!
       }  deriving (Generic)
