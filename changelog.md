@@ -3,6 +3,31 @@
 ### Fixed
 
 - Morpheus GraphQL Client: Support GraphQL Alias
+- Support of GraphQL Interfaces on GraphQL Document:
+    ```gql
+    # simple.gql
+    interface Node {
+      nodeId: ID!
+    }
+
+    type SimpleType implements Node {
+      nodeId: ID!
+      name: String!
+    }
+    ```
+
+    morpheus compiler will read interfaces and validate implements.
+    template haskell will generate haskell types only for types not for interfaces.
+
+    haskell type from `simple.gql`:
+    ```haskell
+     data SimpleType = SimpleType {
+        nodeId :: ID!
+        name   :: Text!
+      }  deriving (Generic)
+    ```
+
+    at the time compiler does not validates field Arguments by interface
 
 ## [0.2.1] - 23.08.2019
 

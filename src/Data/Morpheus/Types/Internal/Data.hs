@@ -25,6 +25,7 @@ module Data.Morpheus.Types.Internal.Data
   , DataValidator(..)
   , DataTypeKind(..)
   , DataFingerprint(..)
+  , RawDataType(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -127,6 +128,13 @@ data DataKind a
   | EnumKind DataEnum
   | ObjectKind (DataObject a)
   | UnionKind DataUnion
+  deriving (Show)
+
+data RawDataType
+  = FinalDataType DataFullType
+  | Interface DataOutputObject
+  | Implements { implementsInterfaces :: [Key]
+               , unImplements         :: DataOutputObject }
   deriving (Show)
 
 data DataFullType

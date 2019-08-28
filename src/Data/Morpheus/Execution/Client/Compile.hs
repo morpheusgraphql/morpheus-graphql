@@ -17,13 +17,14 @@ import           Data.Morpheus.Parsing.Request.Parser       (parseGQL)
 import qualified Data.Morpheus.Types.Internal.AST.Operation as O (Operation (..))
 import           Data.Morpheus.Types.Internal.Data          (DataTypeLib)
 import           Data.Morpheus.Types.IO                     (GQLRequest (..))
+
 --
 --  Morpheus
 import           Data.Morpheus.Types.Internal.DataD         (QueryD (..))
 import           Data.Morpheus.Types.Internal.Validation    (Validation)
 import           Data.Morpheus.Types.Types                  (GQLQueryRoot (..))
-import           Data.Morpheus.Validation.Utils.Utils       (VALIDATION_MODE (..))
-import           Data.Morpheus.Validation.Validation        (validateRequest)
+import           Data.Morpheus.Validation.Internal.Utils    (VALIDATION_MODE (..))
+import           Data.Morpheus.Validation.Query.Validation  (validateRequest)
 
 compileSyntax :: String -> Q Exp
 compileSyntax queryText =

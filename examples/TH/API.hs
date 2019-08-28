@@ -16,7 +16,7 @@ import           GHC.Generics               (Generic)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (gqlDocument)
 import           Data.Morpheus.Kind         (SCALAR)
-import           Data.Morpheus.Types        (GQLRootResolver (..), GQLScalar (..), GQLType (..), IORes,
+import           Data.Morpheus.Types        (GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, IORes,
                                              ScalarValue (..))
 
 newtype Euro =
@@ -62,6 +62,16 @@ instance GQLScalar Euro where
   input Coordinates {
     latitude  : Euro!
     longitude : [[UID!]]!
+  }
+
+  # simple.gql
+  interface Node {
+      nodeId: ID!
+  }
+
+  type SimpleType implements Node {
+    nodeId: ID!
+    interfaceName: String!
   }
 
   input UID {

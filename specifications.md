@@ -34,26 +34,39 @@
   - `Subscription`: ✅ (>= 0.1.0)
 
 - Parser can read:
-  - Selection: ✅
-  - arguments:
-    - Values:
-      - int: ✅
-      - float: ✅
-      - String: ✅
-      - Array: ✅ (>= 0.1.0 )
-      - Input Object: ✅ (>= 0.1.0 )
-      - Enum: ✅
-      - null : ✅ (>= 0.1.0 )
-  - Fragments: ✅
-  - Inline Fragments: (>= 0.1.0)
-  - Aliases: ✅ (>= 0.1.0)
-  - Operator
-    - Query: ✅
-    - Mutation: ✅
-    - Subscription : ✅ (>= 0.1.0 )
-    - Operator Arguments:
-      - argumentTypes : ✅
-      - wrappedTypes(`[T] or T!`): ✅ (>= v0.1.0)
+
+  - Query
+
+    - Selection: ✅
+    - arguments:
+      - Values:
+        - int: ✅
+        - float: ✅
+        - String: ✅
+        - Array: ✅ (>= 0.1.0 )
+        - Input Object: ✅ (>= 0.1.0 )
+        - Enum: ✅
+        - null : ✅ (>= 0.1.0 )
+    - Fragments: ✅
+    - Inline Fragments: (>= 0.1.0)
+    - Aliases: ✅ (>= 0.1.0)
+    - Operator
+      - Query: ✅
+      - Mutation: ✅
+      - Subscription : ✅ (>= 0.1.0 )
+
+  - Document:
+
+    - type ✅ (>= 0.2.1 )
+    - scalar ✅ (>= 0.2.1 )
+    - input ✅ (>= 0.2.1 )
+    - union ✅ (>= 0.2.1 )
+    - interface, implements ✅ (>= 0.2.2 )
+
+  - Arguments:
+
+    - argumentTypes : ✅
+    - wrappedTypes(`[T] or T!`): ✅ (>= v0.1.0)
 
 # Rules:
 
