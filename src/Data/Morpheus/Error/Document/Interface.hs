@@ -7,13 +7,13 @@ module Data.Morpheus.Error.Document.Interface
   , ImplementsError(..)
   ) where
 
-import           Data.Morpheus.Error.Utils               (errorMessage)
-import           Data.Morpheus.Types.Internal.Base       (Key, Position)
+import           Data.Morpheus.Error.Utils               (globalErrorMessage)
+import           Data.Morpheus.Types.Internal.Base       (Key)
 import           Data.Morpheus.Types.Internal.Validation (GQLError (..), GQLErrors)
 import           Data.Semigroup                          ((<>))
 
-unknownInterface :: Key -> Position -> GQLErrors
-unknownInterface name = (`errorMessage` message)
+unknownInterface :: Key -> GQLErrors
+unknownInterface name = globalErrorMessage message
   where
     message = "Unknown Interface \"" <> name <> "\"."
 
@@ -22,10 +22,10 @@ data ImplementsError
                    , foundType    :: Key }
   | UndefinedField
 
-partialImplements :: Key -> Position -> [(Key, Key, ImplementsError)] -> GQLErrors
-partialImplements name position = map impError
+partialImplements :: Key -> [(Key, Key, ImplementsError)] -> GQLErrors
+partialImplements name = map impError
   where
-    impError (interfaceName, key, errorType) = GQLError {desc = message, positions = [position]}
+    impError (interfaceName, key, errorType) = GQLError {desc = message, positions = []}
       where
         message =
           "type \"" <> name <> "\" implements Interface \"" <> interfaceName <> "\" Partially," <>

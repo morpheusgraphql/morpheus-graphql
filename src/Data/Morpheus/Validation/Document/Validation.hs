@@ -31,7 +31,7 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
       interface <- traverse getInterfaceByKey interfaceKey
       case concatMap (mustBeSubset object) interface of
         []     -> pure $ OutputObject object
-        errors -> Left $ partialImplements (typeName object) position errors
+        errors -> Left $ partialImplements (typeName object)  errors
     -------------------------------
     mustBeSubset :: DataOutputObject -> DataOutputObject -> [(Key, Key, ImplementsError)]
     mustBeSubset DataType {typeData = objFields} DataType {typeName, typeData = interfaceFields} =
@@ -47,9 +47,8 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
                     foundType = showWrappedType fieldTypeWrappers fieldType
             Nothing -> [(typeName, key, UndefinedField)]
     -------------------------------
-    position = Location 0 0 -- TODO: Real Position
     getInterfaceByKey :: Key -> Validation DataOutputObject
     getInterfaceByKey key =
       case lookup key lib of
         Just (Interface x) -> pure x
-        _                  -> Left $ unknownInterface key position
+        _                  -> Left $ unknownInterface key
