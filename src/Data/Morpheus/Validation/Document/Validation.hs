@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Data.Morpheus.Validation.Document.Validation
   ( validatePartialDocument
   ) where
@@ -6,10 +8,10 @@ import           Data.Maybe
 
 --
 -- Morpheus
-import           Data.Morpheus.Error.Document.Interface  (ImplementsError, partialImplements, unknownInterface)
+import           Data.Morpheus.Error.Document.Interface  (ImplementsError (..), partialImplements, unknownInterface)
 import           Data.Morpheus.Types.Internal.Base       (Location (..))
-import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataOutputObject, DataType (..), Key,
-                                                          RawDataType (..))
+import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataOutputField, DataOutputObject,
+                                                          DataType (..), Key, RawDataType (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 
 validatePartialDocument :: [(Key, RawDataType)] -> Validation [(Key, DataFullType)]
@@ -30,7 +32,14 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
         errors -> Left $ partialImplements (typeName object) position errors
     -------------------------------
     mustBeSubset :: DataOutputObject -> DataOutputObject -> [(Key, Key, ImplementsError)]
-    mustBeSubset _ _ = []
+    mustBeSubset DataType {typeData = objFields} DataType {typeName, typeData = interfaceFields} =
+      concatMap checkField interfaceFields
+      where
+        checkField :: (Key, DataOutputField) -> [(Key, Key, ImplementsError)]
+        checkField (key, _) =
+          case lookup key objFields of
+            Just _  -> []
+            Nothing -> [(typeName, key, UndefinedField)]
     -------------------------------
     position = Location 0 0 -- TODO
     getInterfaceByKey :: Key -> Validation DataOutputObject
