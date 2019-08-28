@@ -22,10 +22,10 @@ data ImplementsError
                    , foundType    :: Key }
   | UndefinedField
 
-partialImplements :: Key -> Key -> Position -> [(Key, ImplementsError)] -> GQLErrors
-partialImplements name interfaceName position = map impError
+partialImplements :: Key -> Position -> [(Key, Key, ImplementsError)] -> GQLErrors
+partialImplements name position = map impError
   where
-    impError (key, errorType) = GQLError {desc = message, positions = [position]}
+    impError (interfaceName, key, errorType) = GQLError {desc = message, positions = [position]}
       where
         message =
           "type " <> name <> "implements Interface " <> interfaceName <> "Partially," <> detailedMessage errorType
