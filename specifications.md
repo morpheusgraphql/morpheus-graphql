@@ -36,7 +36,6 @@
 - Parser can read:
 
   - Query
-
     - Selection: ✅
     - arguments:
       - Values:
@@ -62,6 +61,8 @@
     - input ✅ (>= 0.2.1 )
     - union ✅ (>= 0.2.1 )
     - interface, implements ✅ (>= 0.2.2 )
+
+  - Comments: single & multi line comments (>= 0.2.2)
 
   - Arguments:
 

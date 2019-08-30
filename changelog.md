@@ -1,7 +1,7 @@
 ## [0.2.2] - \*.09.2019
 
 ### Fixed
-
+- Parser Supports GraphQL multiline comments
 - Morpheus GraphQL Client: Support GraphQL Alias
 - Support of GraphQL Interfaces on GraphQL Document:
     ```gql
