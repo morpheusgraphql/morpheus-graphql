@@ -10,12 +10,14 @@ module Feature.Holistic.API
   ) where
 
 import           Data.Morpheus          (interpreter)
-import           Data.Morpheus.Document (gqlDocument)
+import           Data.Morpheus.Document (importGQLDocument)
 import           Data.Morpheus.Kind     (SCALAR)
 import           Data.Morpheus.Types    (Event (..), GQLRequest, GQLResponse, GQLRootResolver (..), GQLScalar (..),
                                          GQLType (..), ID (..), IORes, IOSubRes, ScalarValue (..))
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
+
+importGQLDocument "test/Feature/Holistic/API.gql"
 
 data TestScalar =
   TestScalar Int
@@ -28,51 +30,6 @@ instance GQLType TestScalar where
 instance GQLScalar TestScalar where
   parseValue _ = pure (TestScalar 1 0)
   serialize (TestScalar x y) = Int (x * 100 + y)
-
-[gqlDocument|
-
-enum TestEnum {
-   EnumA
-   EnumB
-   EnumC
-}
-
-input NestedInputObject {
-  fieldTestID : ID!
-}
-
-input TestInputObject {
-  fieldTestScalar : TestScalar!
-  fieldNestedInputObject : [NestedInputObject]!
-}
-
-input Coordinates {
-  latitude  : TestScalar!
-  longitude : Int!
-}
-
-type Address {
-  city: Text!
-  street(argInputObject: TestInputObject!, argMaybeString: Text): [[[[Text!]!]!]]
-  houseNumber : Int!
-}
-
-union TestUnion  = User | Address
-
-type User {
-  name    : Text!
-  email   : Text!
-  address (coordinates: Coordinates!, comment: Text  ):  Address!
-  office  (zipCode: [Int!] , cityID: TestEnum! ):  Address!
-  friend  : User
-}
-
-type Query {
-  user      :  User!
-  testUnion : TestUnion
-}
-
-|]
 
 newtype Mutation = Mutation
   { createUser :: AddressArgs -> IORes User
