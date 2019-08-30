@@ -1,4 +1,4 @@
-## [0.2.2] - \*.09.2019
+## [0.2.2] - 30.08.2019
 
 ### Fixed
 - Parser Supports GraphQL multiline comments
