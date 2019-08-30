@@ -1,0 +1,116 @@
+""" %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""
+
+query
+""" 
+%&
+%wer""g ''Comme
+"""
+GetUsers """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme""" ( """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme""" $v: """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""
+ [ """ somejhgja """ Int """ 343 """ ! """ 343 """  ] # starting Comment'' # starting Comment''
+) {
+  user {
+    """ %&
+%(//
+     %& ''Comme"""
+
+    email2: """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme""" email """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""
+    name """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""
+
+    address( """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""
+      coordinates: {
+""" %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""        longitude:  0 # starting Comment''
+        latitude: "" # starting Comment'' # starting Comment'' # starting Comment''
+      }
+    ) """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme""" {
+      """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""
+      # starting Comment''
+      ...City
+    }
+    office """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme""" (
+      zipCode: $v # starting Comment''
+      cityID: EnumA 
+    ) """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme""" {
+      houseNumber """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""
+
+      ... on Address {
+""" %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""
+        city """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""
+      }
+    }
+    """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""
+  }
+""" %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""}
+# starting Comment''
+# starting Comment''
+
+fragment City  on  Address """ %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme""" {
+""" %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""
+  city""" %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""
+}
+""" %&
+%(//
+     %& %(//
+%&%&  # startin""g ''Comme"""

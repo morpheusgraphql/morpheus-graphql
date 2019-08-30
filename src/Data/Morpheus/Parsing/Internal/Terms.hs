@@ -64,9 +64,13 @@ spaceAndComments1 :: Parser ()
 spaceAndComments1 = space1 *> spaceAndComments
 
 spaceAndComments :: Parser ()
-spaceAndComments = space *> skipMany inlineComment *> space
+spaceAndComments = space *> skipMany (inlineComment <|> multilineComment) *> space
   where
     inlineComment = char '#' *> skipManyTill printChar newline *> space
+    ------------------------------------------------------------------------
+    multilineComment = multilineIndicator *> skipManyTill (printChar *> space) multilineIndicator *> space
+    --------------------
+    multilineIndicator = string "\"\"\""
 
 -- COMPLEX
 -----------------------------

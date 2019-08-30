@@ -168,7 +168,11 @@
     "description": "test introspection of UNION kind"
   },
   {
-    "path": "parsing/singleLineComment",
+    "path": "parsing/singleLineComments",
     "description": "parses single line comments"
+  },
+  {
+    "path": "parsing/multilineComments",
+    "description": "parses multiline comments"
   }
 ]
