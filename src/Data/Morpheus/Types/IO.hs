@@ -10,6 +10,7 @@ module Data.Morpheus.Types.IO
 
 import           Data.Aeson                              (FromJSON (..), ToJSON (..), pairs, withObject, (.:?), (.=))
 import qualified Data.Aeson                              as Aeson (Value (..))
+import qualified Data.HashMap.Lazy                       as LH (toList)
 import           GHC.Generics                            (Generic)
 
 -- MORPHEUS
@@ -39,6 +40,14 @@ data GQLResponse
   = Data Value
   | Errors [JSONError]
   deriving (Show, Generic)
+
+instance FromJSON GQLResponse where
+  parseJSON (Aeson.Object hm) =
+    case LH.toList hm of
+      [("data", value)]   -> Data <$> parseJSON value
+      [("errors", value)] -> Errors <$> parseJSON value
+      _                   -> fail "Invalid GraphQL Response"
+  parseJSON _ = fail "Invalid GraphQL Response"
 
 instance ToJSON GQLResponse where
   toEncoding (Data _data)     = pairs $ "data" .= _data

@@ -6,6 +6,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , qualifier
   , variable
   , spaceAndComments
+  , spaceAndComments1
   , pipeLiteral
   -------------
   , setOf
@@ -59,10 +60,17 @@ variable =
     varName' <- token
     return (varName', position')
 
+spaceAndComments1 :: Parser ()
+spaceAndComments1 = space1 *> spaceAndComments
+
 spaceAndComments :: Parser ()
-spaceAndComments = space *> skipMany inlineComment *> space
+spaceAndComments = space *> skipMany (inlineComment <|> multilineComment) *> space
   where
     inlineComment = char '#' *> skipManyTill printChar newline *> space
+    ------------------------------------------------------------------------
+    multilineComment = multilineIndicator *> skipManyTill (printChar *> space <|> space) multilineIndicator *> space
+    --------------------
+    multilineIndicator = string "\"\"\""
 
 -- COMPLEX
 -----------------------------

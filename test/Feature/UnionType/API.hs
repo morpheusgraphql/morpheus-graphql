@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -8,12 +7,11 @@ module Feature.UnionType.API
   ( api
   ) where
 
-import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (OBJECT, UNION)
-import           Data.Morpheus.Types        (GQLRootResolver (..), GQLType (..), IORes)
-import           Data.Text                  (Text)
-import           GHC.Generics               (Generic)
+import           Data.Morpheus       (interpreter)
+import           Data.Morpheus.Kind  (OBJECT, UNION)
+import           Data.Morpheus.Types (GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), IORes)
+import           Data.Text           (Text)
+import           GHC.Generics        (Generic)
 
 instance GQLType A where
   type KIND A = OBJECT
@@ -63,5 +61,5 @@ rootResolver =
     , subscriptionResolver = return ()
     }
 
-api :: ByteString -> IO ByteString
+api :: GQLRequest -> IO GQLResponse
 api = interpreter rootResolver

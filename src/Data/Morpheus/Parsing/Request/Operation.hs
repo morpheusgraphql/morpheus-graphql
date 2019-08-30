@@ -9,13 +9,13 @@ module Data.Morpheus.Parsing.Request.Operation
 import           Data.Functor                               (($>))
 import           Data.Text                                  (Text)
 import           Text.Megaparsec                            (label, (<?>), (<|>))
-import           Text.Megaparsec.Char                       (space1, string)
+import           Text.Megaparsec.Char                       (string)
 
 --
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal    (Parser, getLocation)
 import           Data.Morpheus.Parsing.Internal.Terms       (parseAssignment, parseMaybeTuple, parseNonNull,
-                                                             parseWrappedType, token, variable)
+                                                             parseWrappedType, spaceAndComments1, token, variable)
 import           Data.Morpheus.Parsing.Request.Body         (entries)
 import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), OperationKind (..), RawOperation,
                                                              Variable (..))
@@ -64,5 +64,5 @@ parseOperationKind :: Parser OperationKind
 parseOperationKind =
   label "operatorKind" $ do
     kind <- (string "query" $> QUERY) <|> (string "mutation" $> MUTATION) <|> (string "subscription" $> SUBSCRIPTION)
-    space1
+    spaceAndComments1
     return kind

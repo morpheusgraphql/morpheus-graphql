@@ -7,12 +7,11 @@ module Feature.InputType.API
   ( api
   ) where
 
-import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (OBJECT)
-import           Data.Morpheus.Types        (GQLRootResolver (..), GQLType (..), IORes)
-import           Data.Text                  (Text)
-import           GHC.Generics               (Generic)
+import           Data.Morpheus       (interpreter)
+import           Data.Morpheus.Kind  (OBJECT)
+import           Data.Morpheus.Types (GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), IORes)
+import           Data.Text           (Text)
+import           GHC.Generics        (Generic)
 
 data F1Args = F1Args
   { arg1 :: Text
@@ -44,5 +43,5 @@ rootResolver =
     , subscriptionResolver = return ()
     }
 
-api :: ByteString -> IO ByteString
+api :: GQLRequest -> IO GQLResponse
 api = interpreter rootResolver
