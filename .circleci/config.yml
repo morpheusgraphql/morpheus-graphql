@@ -8,6 +8,7 @@ jobs:
       - restore_cache:
           name: Restore Cached Dependencies
           keys:
+            - cci-demo-haskell-v1-{{ checksum "package.yaml" }}
             - cci-demo-haskell-v2-{{ checksum "package.yaml" }}
       - run:
           name: Resolve/Update Dependencies
