@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 
@@ -7,21 +9,13 @@ module Feature.Holistic.API
   ( api
   ) where
 
-import           Data.Morpheus       (interpreter)
-import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (Event (..), GQLRequest, GQLResponse, GQLRootResolver (..), GQLScalar (..),
-                                      GQLType (..), ID (..), IORes, IOSubRes, ScalarValue (..))
-import           Data.Text           (Text)
-import           GHC.Generics        (Generic)
-
-data TestEnum
-  = EnumA
-  | EnumB
-  | EnumC
-  deriving (Generic)
-
-instance GQLType TestEnum where
-  type KIND TestEnum = ENUM
+import           Data.Morpheus          (interpreter)
+import           Data.Morpheus.Document (gqlDocument)
+import           Data.Morpheus.Kind     (SCALAR)
+import           Data.Morpheus.Types    (Event (..), GQLRequest, GQLResponse, GQLRootResolver (..), GQLScalar (..),
+                                         GQLType (..), ID (..), IORes, IOSubRes, ScalarValue (..))
+import           Data.Text              (Text)
+import           GHC.Generics           (Generic)
 
 data TestScalar =
   TestScalar Int
@@ -35,77 +29,50 @@ instance GQLScalar TestScalar where
   parseValue _ = pure (TestScalar 1 0)
   serialize (TestScalar x y) = Int (x * 100 + y)
 
-newtype NestedInputObject = NestedInputObject
-  { fieldTestID :: ID
-  } deriving (Generic)
+[gqlDocument|
 
-instance GQLType NestedInputObject where
-  type KIND NestedInputObject = INPUT_OBJECT
+enum TestEnum {
+   EnumA
+   EnumB
+   EnumC
+}
 
-data TestInputObject = TestInputObject
-  { fieldTestScalar        :: TestScalar
-  , fieldNestedInputObject :: [Maybe NestedInputObject]
-  } deriving (Generic)
+input NestedInputObject {
+  fieldTestID : ID!
+}
 
-instance GQLType TestInputObject where
-  type KIND TestInputObject = INPUT_OBJECT
+input TestInputObject {
+  fieldTestScalar : TestScalar!
+  fieldNestedInputObject : [NestedInputObject]!
+}
 
-data StreetArgs = StreetArgs
-  { argInputObject :: TestInputObject
-  , argMaybeString :: Maybe Text
-  } deriving (Generic)
+input Coordinates {
+  latitude  : TestScalar!
+  longitude : Int!
+}
 
-data Address = Address
-  { city        :: Text
-  , street      :: StreetArgs -> IORes (Maybe [Maybe [[[Text]]]])
-  , houseNumber :: Int
-  } deriving (Generic)
+type Address {
+  city: Text!
+  street(argInputObject: TestInputObject!, argMaybeString: Text): [[[[Text!]!]!]]
+  houseNumber : Int!
+}
 
-instance GQLType Address where
-  type KIND Address = OBJECT
+union TestUnion  = User | Address
 
-data TestUnion
-  = UnionA User
-  | UnionB Address
-  deriving (Generic)
+type User {
+  name    : Text!
+  email   : Text!
+  address (coordinates: Coordinates!, comment: Text  ):  Address!
+  office  (zipCode: [Int!] , cityID: TestEnum! ):  Address!
+  friend  : User
+}
 
-instance GQLType TestUnion where
-  type KIND TestUnion = UNION
+type Query {
+  user      :  User!
+  testUnion : TestUnion
+}
 
-data Coordinates = Coordinates
-  { latitude  :: TestScalar
-  , longitude :: Int
-  } deriving (Generic)
-
-instance GQLType Coordinates where
-  type KIND Coordinates = INPUT_OBJECT
-
-data AddressArgs = AddressArgs
-  { coordinates :: Coordinates
-  , comment     :: Maybe Text
-  } deriving (Generic)
-
-data OfficeArgs = OfficeArgs
-  { zipCode :: Maybe [Int]
-  , cityID  :: TestEnum
-  } deriving (Generic)
-
-data User = User
-  { name    :: Text
-  , email   :: Text
-  , address :: AddressArgs -> IORes Address
-  , office  :: OfficeArgs -> IORes Address
-  , friend  :: () -> IORes (Maybe User)
-  } deriving (Generic)
-
-instance GQLType User where
-  type KIND User = OBJECT
-  description = const "Custom Description for Client Defined User Type"
-
-data Query = Query
-  { user      :: () -> IORes User
-  , testUnion :: Maybe TestUnion
-  } deriving (Generic)
+|]
 
 newtype Mutation = Mutation
   { createUser :: AddressArgs -> IORes User
@@ -119,19 +86,27 @@ newtype Subscription = Subscription
   { newUser :: AddressArgs -> IOSubRes EVENT () User
   } deriving (Generic)
 
-resolveAddress :: a -> IORes Address
-resolveAddress _ = return Address {city = "", houseNumber = 0, street = const $ return Nothing}
+resolveValue :: Monad m => b -> a -> m b
+resolveValue = const . return
 
 resolveUser :: a -> IORes User
 resolveUser _ =
   return $
   User
-    {name = "testName", email = "", address = resolveAddress, office = resolveAddress, friend = const $ return Nothing}
+    { name = resolveValue "testName"
+    , email = resolveValue ""
+    , address = resolveAddress
+    , office = resolveAddress
+    , friend = resolveValue Nothing
+    }
+  where
+    resolveAddress _ =
+      return Address {city = resolveValue "", houseNumber = resolveValue 0, street = resolveValue Nothing}
 
 rootResolver :: GQLRootResolver IO EVENT () Query Mutation Subscription
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {user = resolveUser, testUnion = Nothing}
+    { queryResolver = return Query {user = resolveUser, testUnion = const $ return Nothing}
     , mutationResolver = return Mutation {createUser = resolveUser}
     , subscriptionResolver = return Subscription {newUser = const $ Event [EVENT] resolveUser}
     }
