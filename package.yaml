@@ -13,7 +13,7 @@ description: Build GraphQL APIs with your favourite functional language!
 
 extra-source-files:
   - changelog.md
-  - readme.md
+  - README.md
   - assets/**/*.json
   - assets/**/*.gql
 
