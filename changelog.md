@@ -3,7 +3,6 @@
 ### Added
 
 - user can import GraphQL Document and generate types with it.
-  the same way as the `gqlDocument` quasiquoter.
 
   ```haskell
     importGQLDocument "API.gql"
