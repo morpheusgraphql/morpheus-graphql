@@ -7,13 +7,12 @@ module Feature.Schema.API
   ( api
   ) where
 
-import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (OBJECT)
-import           Data.Morpheus.Types        (GQLRootResolver (..), GQLType (..))
-import           Data.Text                  (Text)
-import qualified Feature.Schema.A2          as A2 (A (..))
-import           GHC.Generics               (Generic)
+import           Data.Morpheus       (interpreter)
+import           Data.Morpheus.Kind  (OBJECT)
+import           Data.Morpheus.Types (GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..))
+import           Data.Text           (Text)
+import qualified Feature.Schema.A2   as A2 (A (..))
+import           GHC.Generics        (Generic)
 
 data A = A
   { aText :: Text
@@ -36,5 +35,5 @@ rootResolver =
     , subscriptionResolver = return ()
     }
 
-api :: ByteString -> IO ByteString
+api :: GQLRequest -> IO GQLResponse
 api = interpreter rootResolver

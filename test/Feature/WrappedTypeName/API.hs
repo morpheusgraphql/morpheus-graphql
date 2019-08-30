@@ -7,13 +7,13 @@ module Feature.WrappedTypeName.API
   ( api
   ) where
 
-import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (OBJECT)
-import           Data.Morpheus.Types        (Event (..), GQLRootResolver (..), GQLType (..), IOMutRes, IORes, IOSubRes)
-import           Data.Text                  (Text)
-import           Data.Typeable              (Typeable)
-import           GHC.Generics               (Generic)
+import           Data.Morpheus       (interpreter)
+import           Data.Morpheus.Kind  (OBJECT)
+import           Data.Morpheus.Types (Event (..), GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), IOMutRes,
+                                      IORes, IOSubRes)
+import           Data.Text           (Text)
+import           Data.Typeable       (Typeable)
+import           GHC.Generics        (Generic)
 
 instance Typeable a => GQLType (WA a) where
   type KIND (WA a) = OBJECT
@@ -67,5 +67,5 @@ rootResolver =
             }
     }
 
-api :: ByteString -> IO ByteString
+api :: GQLRequest -> IO GQLResponse
 api = interpreter rootResolver

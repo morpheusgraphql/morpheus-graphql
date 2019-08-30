@@ -7,13 +7,12 @@ module Feature.Holistic.API
   ( api
   ) where
 
-import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types        (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID (..),
-                                             IORes, IOSubRes, ScalarValue (..))
-import           Data.Text                  (Text)
-import           GHC.Generics               (Generic)
+import           Data.Morpheus       (interpreter)
+import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Types (Event (..), GQLRequest, GQLResponse, GQLRootResolver (..), GQLScalar (..),
+                                      GQLType (..), ID (..), IORes, IOSubRes, ScalarValue (..))
+import           Data.Text           (Text)
+import           GHC.Generics        (Generic)
 
 data TestEnum
   = EnumA
@@ -137,5 +136,5 @@ rootResolver =
     , subscriptionResolver = return Subscription {newUser = const $ Event [EVENT] resolveUser}
     }
 
-api :: ByteString -> IO ByteString
+api :: GQLRequest -> IO GQLResponse
 api = interpreter rootResolver
