@@ -391,7 +391,7 @@ of many different APIs.
 
 ## Team
 
-Morpheus is written and maintained by [_nalchevanidze_](https://github.com/nalchevanidze) and [_PygmalionPolymorph_](https://github.com/PygmalionPolymorph).
+Morpheus is written and maintained by [_nalchevanidze_](https://github.com/nalchevanidze)
 
 ## Roadmap
 
