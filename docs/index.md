@@ -35,7 +35,7 @@ extra-deps:
   - megaparsec-7.0.5
   - aeson-1.4.4.0
   - time-compat-1.9.2.2
-  - morpheus-graphql-0.2.1
+  - morpheus-graphql-0.2.2
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack update`
