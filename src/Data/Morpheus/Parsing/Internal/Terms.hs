@@ -68,7 +68,7 @@ spaceAndComments = space *> skipMany (inlineComment <|> multilineComment) *> spa
   where
     inlineComment = char '#' *> skipManyTill printChar newline *> space
     ------------------------------------------------------------------------
-    multilineComment = multilineIndicator *> skipManyTill (printChar *> space) multilineIndicator *> space
+    multilineComment = multilineIndicator *> skipManyTill (printChar *> space <|> space) multilineIndicator *> space
     --------------------
     multilineIndicator = string "\"\"\""
 

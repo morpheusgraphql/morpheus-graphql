@@ -37,6 +37,10 @@ instance GQLScalar Euro where
     user : User!
   }
 
+
+  """
+    GraphQL Multiline Comment
+  """
   type User {
     name                                      : Text!
     email                                     : Text!
