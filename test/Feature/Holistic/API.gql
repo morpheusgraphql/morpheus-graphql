@@ -1,5 +1,3 @@
-scalar TestScalar
-
 enum TestEnum {
   EnumA
   EnumB
@@ -15,30 +13,31 @@ input TestInputObject {
   fieldNestedInputObject: [NestedInputObject]!
 }
 
-type Address {
-  city: String!
-  street(
-    argInputObject: TestInputObject!
-    argMaybeString: String
-  ): [[[[String!]!]!]]
-  houseNumber: Int!
+input Coordinates {
+  latitude: TestScalar!
+  longitude: Int!
 }
 
-type User {
-  name(id: ID!): String!
-  email: String!
-  address: Address
-  testEnum: TestEnum
+type Address {
+  city: Text!
+  street(
+    argInputObject: TestInputObject!
+    argMaybeString: Text
+  ): [[[[Text!]!]!]]
+  houseNumber: Int!
 }
 
 union TestUnion = User | Address
 
-type Query {
-  user: User!
-  myUnion: TestUnion!
-  fieldID: ID!
+type User {
+  name: Text!
+  email: Text!
+  address(coordinates: Coordinates!, comment: Text): Address!
+  office(zipCode: [Int!], cityID: TestEnum!): Address!
+  friend: User
 }
 
-type Mutation {
-  createUser: User!
+type Query {
+  user: User!
+  testUnion: TestUnion
 }

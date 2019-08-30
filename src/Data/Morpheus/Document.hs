@@ -6,6 +6,7 @@ module Data.Morpheus.Document
   , toMorpheusHaskellAPi
   , gqlDocument
   , parseFullGQLDocument
+  , importGQLDocument
   ) where
 
 import           Control.Monad                                ((>=>))
@@ -13,6 +14,7 @@ import           Data.ByteString.Lazy.Char8                   (ByteString, pack)
 import           Data.Text                                    (Text)
 import qualified Data.Text.Lazy                               as LT (toStrict)
 import           Data.Text.Lazy.Encoding                      (decodeUtf8)
+import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote
 
 --
@@ -51,6 +53,9 @@ toMorpheusHaskellAPi moduleName doc =
   case parseGraphQLDocument doc of
     Left errors -> Left $ pack (show errors)
     Right lib   -> Right $ renderHaskellDocument moduleName lib
+
+importGQLDocument :: String -> Q [Dec]
+importGQLDocument src = runIO (readFile src) >>= compileDec
 
 gqlDocument :: QuasiQuoter
 gqlDocument =
