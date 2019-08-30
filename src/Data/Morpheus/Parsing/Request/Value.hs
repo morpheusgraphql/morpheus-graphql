@@ -9,23 +9,20 @@ module Data.Morpheus.Parsing.Request.Value
 import           Data.Functor                            (($>))
 import           Data.Text                               (pack)
 import           Text.Megaparsec                         (anySingleBut, between, choice, label, many, sepBy, (<|>))
-import           Text.Megaparsec.Char                    (char, space, string)
+import           Text.Megaparsec.Char                    (char, string)
 import           Text.Megaparsec.Char.Lexer              (scientific)
 
 --
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, setOf, token)
+import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, setOf, spaceAndComments, token)
 import           Data.Morpheus.Types.Internal.Value      (ScalarValue (..), Value (..), decodeScientific)
 
 parseValue :: Parser Value
 parseValue =
   label "value" $ do
-    value <-
-      valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue <|>
-      objectValue <|>
-      listValue
-    space
+    value <- valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue <|> objectValue <|> listValue
+    spaceAndComments
     return value
 
 valueNull :: Parser Value
@@ -43,7 +40,7 @@ valueNumber = Scalar . decodeScientific <$> scientific
 enumValue :: Parser Value
 enumValue = do
   enum <- Enum <$> token
-  space
+  spaceAndComments
   return enum
 
 escaped :: Parser Char
@@ -59,18 +56,16 @@ escaped =
     escapeChar code replacement = char code >> return replacement
 
 stringValue :: Parser Value
-stringValue =
-  label "stringValue" $
-  Scalar . String . pack <$> between (char '"') (char '"') (many escaped)
+stringValue = label "stringValue" $ Scalar . String . pack <$> between (char '"') (char '"') (many escaped)
 
 listValue :: Parser Value
 listValue =
   label "listValue" $
   List <$>
   between
-    (char '[' *> space)
-    (char ']' *> space)
-    (parseValue `sepBy` (char ',' *> space))
+    (char '[' *> spaceAndComments)
+    (char ']' *> spaceAndComments)
+    (parseValue `sepBy` (char ',' *> spaceAndComments))
 
 objectValue :: Parser Value
 objectValue = label "objectValue" $ Object <$> setOf entry

@@ -120,7 +120,7 @@ newtype Subscription = Subscription
   } deriving (Generic)
 
 resolveAddress :: a -> IORes Address
-resolveAddress _ = return Address {city = "", houseNumber = 1, street = const $ return Nothing}
+resolveAddress _ = return Address {city = "", houseNumber = 0, street = const $ return Nothing}
 
 resolveUser :: a -> IORes User
 resolveUser _ =

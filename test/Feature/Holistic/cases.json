@@ -166,5 +166,9 @@
   {
     "path": "introspection/kinds/UNION",
     "description": "test introspection of UNION kind"
+  },
+  {
+    "path": "parsing/singleLineComment",
+    "description": "parses single line comments"
   }
 ]
