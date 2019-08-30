@@ -1,33 +1,49 @@
+## [0.3.0] - \*.09.2019
+
+### Added
+
+- user can import GraphQL Document and generate types with it.
+  the same way as the `gqlDocument` quasiquoter.
+
+  ```haskell
+    importGQLDocument "API.gql"
+  ```
+
+  this will generate types defined in `API.gql`
+
 ## [0.2.2] - 30.08.2019
 
 ### Fixed
+
 - Parser Supports GraphQL multiline comments
 - Morpheus GraphQL Client: Support GraphQL Alias
 - Support of GraphQL Interfaces on GraphQL Document:
-    ```gql
-    # simple.gql
-    interface Node {
-      nodeId: ID!
-    }
 
-    type SimpleType implements Node {
-      nodeId: ID!
-      name: String!
-    }
-    ```
+  ```gql
+  # simple.gql
+  interface Node {
+    nodeId: ID!
+  }
 
-    morpheus compiler will read interfaces and validate implements.
-    template haskell will generate haskell types only for types not for interfaces.
+  type SimpleType implements Node {
+    nodeId: ID!
+    name: String!
+  }
+  ```
 
-    haskell type from `simple.gql`:
-    ```haskell
-     data SimpleType = SimpleType {
-        nodeId :: ID!
-        name   :: Text!
-      }  deriving (Generic)
-    ```
+  morpheus compiler will read interfaces and validate implements.
+  template haskell will generate haskell types only for types not for interfaces.
 
-    at the time compiler does not validates field Arguments by interface
+  haskell type from `simple.gql`:
+
+  ```haskell
+   data SimpleType = SimpleType {
+      nodeId :: ID!
+      name   :: Text!
+    }  deriving (Generic)
+  ```
+
+  at the time compiler does not validates field Arguments by interface
 
 ## [0.2.1] - 23.08.2019
 
