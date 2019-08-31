@@ -117,4 +117,5 @@ workflows:
   build_all:
     jobs:
       - build-ghc-8_2_2
+      - build-ghc-8_6_5
       - default_build
