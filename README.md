@@ -1,4 +1,4 @@
-# Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) [![Build Status](https://api.travis-ci.com/morpheusgraphql/morpheus-graphql.svg?branch=master)](https://travis-ci.com/morpheusgraphql/morpheus-graphql)
+# Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) [![CircleCI](https://circleci.com/gh/morpheusgraphql/morpheus-graphql.svg?style=svg)](https://circleci.com/gh/morpheusgraphql/morpheus-graphql)
 
 Build GraphQL APIs with your favourite functional language!
 
