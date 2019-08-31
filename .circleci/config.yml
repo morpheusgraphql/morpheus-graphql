@@ -6,25 +6,32 @@ jobs:
     steps:
       - checkout
       - restore_cache:
+          name: Restore Cached Stack Version
+          keys:
+            - stack-vesrion-{{ checksum "stack.yaml" }}
+      - restore_cache:
           name: Restore Cached Dependencies
           keys:
-            - cci-demo-haskell-v1-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}
-            - cci-demo-haskell-v1-{{ checksum "stack-11.10.yaml" }}-{{ checksum "package.yaml" }}
+            - stack-dependencies-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}
       - run:
           name: Resolve/Update Dependencies
-          command: stack setup
+          command: stack --no-terminal setup
+      - save_cache:
+          key: stack-vesrion-{{ checksum "stack.yaml" }}
+          paths:
+            - /root/.stack
+      - run:
+          name: Install dependencies
+          command: stack build --skip-ghc-check --no-terminal --test --only-dependencies
+      - save_cache:
+          name: Cache Dependencies
+          key: stack-dependencies-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}
+          paths:
+            - ".stack-work"
+            - "/root/.stack"
       - run:
           name: Run tests
           command: stack test
       - run:
-          name: Install executable
+          name: Install executables
           command: stack install
-      - save_cache:
-          name: Cache Dependencies
-          key: cci-demo-haskell-v2-{{ checksum "package.yaml" }}
-          paths:
-            - ".stack-work"
-            - "/root/.stack"
-      - store_artifacts: # upload build artifact for display in CircleCi
-          path: ~/.local/bin/circleci-demo-haskell-exe
-          destination: circleci-demo-haskell-exe
