@@ -4,6 +4,7 @@ jobs:
   build-ghc-8_2_2:
     docker:
       - image: fpco/stack-build:lts-11.10
+    parallelism: 4
     steps:
       - checkout
       - restore_cache:
@@ -37,7 +38,7 @@ jobs:
           name: Install executables
           command: STACK_YAML=stack-11.10.yaml stack install
   ## Default Highest GHC Version
-  build:
+  default_build:
     docker:
       - image: fpco/stack-build:lts
     steps:
@@ -72,3 +73,10 @@ jobs:
       - run:
           name: Install executables
           command: stack install
+
+workflows:
+  version: 2.1
+  build_all_versions:
+    jobs:
+      - build-ghc-8_2_2
+      - default_build
