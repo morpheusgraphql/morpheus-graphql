@@ -1,0 +1,124 @@
+version: 2.1
+jobs:
+  ## Lowest GHC Version
+  build-ghc-8_2_2:
+    docker:
+      - image: fpco/stack-build:lts-11.10
+    parallelism: 4
+    steps:
+      - checkout
+      - restore_cache:
+          name: restore cached stack
+          keys:
+            - stack-vesrion-{{ checksum "stack-11.10.yaml" }}
+      - restore_cache:
+          name: restore cached dependencies
+          keys:
+            - stack-dependencies-{{ checksum "stack-11.10.yaml" }}-{{ checksum "package.yaml" }}
+      - run:
+          name: setup stack
+          command: STACK_YAML=stack-11.10.yaml stack --no-terminal setup
+      - save_cache:
+          name: cache stack
+          key: stack-vesrion-{{ checksum "stack-11.10.yaml" }}
+          paths:
+            - /root/.stack
+      - run:
+          name: install dependencies
+          command: STACK_YAML=stack-11.10.yaml stack build --skip-ghc-check --no-terminal --test --only-dependencies
+      - save_cache:
+          name: cache dependencies
+          key: stack-dependencies-{{ checksum "stack-11.10.yaml" }}-{{ checksum "package.yaml" }}
+          paths:
+            - ".stack-work"
+            - "/root/.stack"
+      - run:
+          name: run tests
+          command: STACK_YAML=stack-11.10.yaml stack test --haddock --no-haddock-deps
+      - run:
+          name: Install executables
+          command: STACK_YAML=stack-11.10.yaml stack install
+
+  build-ghc-8_6_5:
+    docker:
+      - image: fpco/stack-build:lts-13.24
+    parallelism: 4
+    steps:
+      - checkout
+      - restore_cache:
+          name: restore cached stack
+          keys:
+            - stack-vesrion-{{ checksum "stack-13.24.yaml" }}
+      - restore_cache:
+          name: restore cached dependencies
+          keys:
+            - stack-dependencies-{{ checksum "stack-13.24.yaml" }}-{{ checksum "package.yaml" }}
+      - run:
+          name: setup stack
+          command: STACK_YAML=stack-13.24.yaml stack --no-terminal setup
+      - save_cache:
+          name: cache stack
+          key: stack-vesrion-{{ checksum "stack-13.24.yaml" }}
+          paths:
+            - /root/.stack
+      - run:
+          name: install dependencies
+          command: STACK_YAML=stack-13.24.yaml stack build --skip-ghc-check --no-terminal --test --only-dependencies
+      - save_cache:
+          name: cache dependencies
+          key: stack-dependencies-{{ checksum "stack-13.24.yaml" }}-{{ checksum "package.yaml" }}
+          paths:
+            - ".stack-work"
+            - "/root/.stack"
+      - run:
+          name: Run tests
+          command: STACK_YAML=stack-13.24.yaml stack test --haddock --no-haddock-deps
+      - run:
+          name: Install executables
+          command: STACK_YAML=stack-13.24.yaml stack install
+
+  ## Default Highest GHC Version
+  default_build:
+    docker:
+      - image: fpco/stack-build:lts
+    steps:
+      - checkout
+      - restore_cache:
+          name: restore cached stack
+          keys:
+            - stack-vesrion-{{ checksum "stack.yaml" }}
+      - restore_cache:
+          name: restore cached dependencies
+          keys:
+            - stack-dependencies-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}
+      - run:
+          name: setup stack
+          command: stack --no-terminal setup
+      - save_cache:
+          name: cache stack
+          key: stack-vesrion-{{ checksum "stack.yaml" }}
+          paths:
+            - /root/.stack
+      - run:
+          name: install dependencies
+          command: stack build --skip-ghc-check --no-terminal --test --only-dependencies
+      - save_cache:
+          name: cache dependencies
+          key: stack-dependencies-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}
+          paths:
+            - ".stack-work"
+            - "/root/.stack"
+      - run:
+          name: Run tests
+          command: stack test --haddock --no-haddock-deps
+      - run:
+          name: Install executables
+          command: stack install
+
+workflows:
+  version: 2.1
+  build_all:
+    jobs:
+      - build-ghc-8_2_2
+      - build-ghc-8_6_5
+      - default_build
