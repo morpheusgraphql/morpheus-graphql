@@ -1,5 +1,42 @@
 version: 2.1
 jobs:
+  ## Lowest GHC Version
+  build-ghc-8.2.2:
+    docker:
+      - image: fpco/stack-build:lts-11.10
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore Cached Stack Version
+          keys:
+            - stack-vesrion-{{ checksum "stack-11.10.yaml" }}
+      - restore_cache:
+          name: Restore Cached Dependencies
+          keys:
+            - stack-dependencies-{{ checksum "stack-11.10.yaml" }}-{{ checksum "package.yaml" }}
+      - run:
+          name: Resolve/Update Dependencies
+          command: STACK_YAML=stack-11.10.yaml stack --no-terminal setup
+      - save_cache:
+          key: stack-vesrion-{{ checksum "stack-11.10.yaml" }}
+          paths:
+            - /root/.stack
+      - run:
+          name: Install dependencies
+          command: STACK_YAML=stack-11.10.yaml stack build --skip-ghc-check --no-terminal --test --only-dependencies
+      - save_cache:
+          name: Cache Dependencies
+          key: stack-dependencies-{{ checksum "stack-11.10.yaml" }}-{{ checksum "package.yaml" }}
+          paths:
+            - ".stack-work"
+            - "/root/.stack"
+      - run:
+          name: Run tests
+          command: STACK_YAML=stack-11.10.yaml stack test --haddock --no-haddock-deps
+      - run:
+          name: Install executables
+          command: STACK_YAML=stack-11.10.yaml stack install
+  ## Default Highest GHC Version
   build:
     docker:
       - image: fpco/stack-build:lts
@@ -31,7 +68,7 @@ jobs:
             - "/root/.stack"
       - run:
           name: Run tests
-          command: stack test
+          command: stack test --haddock --no-haddock-deps
       - run:
           name: Install executables
           command: stack install
