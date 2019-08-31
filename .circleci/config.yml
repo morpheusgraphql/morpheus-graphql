@@ -1,7 +1,7 @@
 version: 2.1
 jobs:
   ## Lowest GHC Version
-  build-ghc-8.2.2:
+  build-ghc-8_2_2:
     docker:
       - image: fpco/stack-build:lts-11.10
     steps:
