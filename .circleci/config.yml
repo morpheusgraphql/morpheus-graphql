@@ -76,7 +76,7 @@ jobs:
 
 workflows:
   version: 2.1
-  build_all_versions:
+  build_all:
     jobs:
       - build-ghc-8_2_2
       - default_build
