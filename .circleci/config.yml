@@ -8,31 +8,32 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          name: Restore Cached Stack Version
+          name: restore cached stack
           keys:
             - stack-vesrion-{{ checksum "stack-11.10.yaml" }}
       - restore_cache:
-          name: Restore Cached Dependencies
+          name: restore cached dependencies
           keys:
             - stack-dependencies-{{ checksum "stack-11.10.yaml" }}-{{ checksum "package.yaml" }}
       - run:
-          name: Resolve/Update Dependencies
+          name: setup stack
           command: STACK_YAML=stack-11.10.yaml stack --no-terminal setup
       - save_cache:
+          name: cache stack
           key: stack-vesrion-{{ checksum "stack-11.10.yaml" }}
           paths:
             - /root/.stack
       - run:
-          name: Install dependencies
+          name: install dependencies
           command: STACK_YAML=stack-11.10.yaml stack build --skip-ghc-check --no-terminal --test --only-dependencies
       - save_cache:
-          name: Cache Dependencies
+          name: cache dependencies
           key: stack-dependencies-{{ checksum "stack-11.10.yaml" }}-{{ checksum "package.yaml" }}
           paths:
             - ".stack-work"
             - "/root/.stack"
       - run:
-          name: Run tests
+          name: run tests
           command: STACK_YAML=stack-11.10.yaml stack test --haddock --no-haddock-deps
       - run:
           name: Install executables
@@ -45,25 +46,26 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          name: Restore Cached Stack Version
+          name: restore cached stack
           keys:
             - stack-vesrion-{{ checksum "stack-13.24.yaml" }}
       - restore_cache:
-          name: Restore Cached Dependencies
+          name: restore cached dependencies
           keys:
             - stack-dependencies-{{ checksum "stack-13.24.yaml" }}-{{ checksum "package.yaml" }}
       - run:
-          name: Resolve/Update Dependencies
+          name: setup stack
           command: STACK_YAML=stack-13.24.yaml stack --no-terminal setup
       - save_cache:
+          name: cache stack
           key: stack-vesrion-{{ checksum "stack-13.24.yaml" }}
           paths:
             - /root/.stack
       - run:
-          name: Install dependencies
+          name: install dependencies
           command: STACK_YAML=stack-13.24.yaml stack build --skip-ghc-check --no-terminal --test --only-dependencies
       - save_cache:
-          name: Cache Dependencies
+          name: cache dependencies
           key: stack-dependencies-{{ checksum "stack-13.24.yaml" }}-{{ checksum "package.yaml" }}
           paths:
             - ".stack-work"
@@ -82,25 +84,26 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          name: Restore Cached Stack Version
+          name: restore cached stack
           keys:
             - stack-vesrion-{{ checksum "stack.yaml" }}
       - restore_cache:
-          name: Restore Cached Dependencies
+          name: restore cached dependencies
           keys:
             - stack-dependencies-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}
       - run:
-          name: Resolve/Update Dependencies
+          name: setup stack
           command: stack --no-terminal setup
       - save_cache:
+          name: cache stack
           key: stack-vesrion-{{ checksum "stack.yaml" }}
           paths:
             - /root/.stack
       - run:
-          name: Install dependencies
+          name: install dependencies
           command: stack build --skip-ghc-check --no-terminal --test --only-dependencies
       - save_cache:
-          name: Cache Dependencies
+          name: cache dependencies
           key: stack-dependencies-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}
           paths:
             - ".stack-work"
