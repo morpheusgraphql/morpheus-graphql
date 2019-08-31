@@ -37,6 +37,44 @@ jobs:
       - run:
           name: Install executables
           command: STACK_YAML=stack-11.10.yaml stack install
+
+  build-ghc-8_6_5:
+    docker:
+      - image: fpco/stack-build:lts-13.24
+    parallelism: 4
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore Cached Stack Version
+          keys:
+            - stack-vesrion-{{ checksum "stack-13.24.yaml" }}
+      - restore_cache:
+          name: Restore Cached Dependencies
+          keys:
+            - stack-dependencies-{{ checksum "stack-13.24.yaml" }}-{{ checksum "package.yaml" }}
+      - run:
+          name: Resolve/Update Dependencies
+          command: STACK_YAML=stack-13.24.yaml stack --no-terminal setup
+      - save_cache:
+          key: stack-vesrion-{{ checksum "stack-13.24.yaml" }}
+          paths:
+            - /root/.stack
+      - run:
+          name: Install dependencies
+          command: STACK_YAML=stack-13.24.yaml stack build --skip-ghc-check --no-terminal --test --only-dependencies
+      - save_cache:
+          name: Cache Dependencies
+          key: stack-dependencies-{{ checksum "stack-13.24.yaml" }}-{{ checksum "package.yaml" }}
+          paths:
+            - ".stack-work"
+            - "/root/.stack"
+      - run:
+          name: Run tests
+          command: STACK_YAML=stack-13.24.yaml stack test --haddock --no-haddock-deps
+      - run:
+          name: Install executables
+          command: STACK_YAML=stack-13.24.yaml stack install
+
   ## Default Highest GHC Version
   default_build:
     docker:
