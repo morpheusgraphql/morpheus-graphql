@@ -4,6 +4,3 @@ module Data.Morpheus
   ) where
 
 import           Data.Morpheus.Execution.Server.Interpreter (Interpreter (..))
-
-
-bla = "x" <> "y"
