@@ -1,7 +1,7 @@
 version: 2.1
 jobs:
   ## Lowest GHC Version
-  build-ghc-8_2_2:
+  ghc_8_2_2:
     docker:
       - image: fpco/stack-build:lts-11.10
     steps:
@@ -38,7 +38,7 @@ jobs:
           name: Install executables
           command: STACK_YAML=stack-11.10.yaml stack install
 
-  build-ghc-8_6_5:
+  ghc_8_4_4:
     docker:
       - image: fpco/stack-build:lts-12.16
     steps:
@@ -76,7 +76,7 @@ jobs:
           command: STACK_YAML=stack-12.16.yaml stack install
 
   ## GHC 8.6.5
-  default_build:
+  ghc_8_6_5:
     docker:
       - image: fpco/stack-build:lts
     steps:
@@ -117,6 +117,6 @@ workflows:
   version: 2.1
   build_all:
     jobs:
-      - build-ghc-8_2_2
-      - build-ghc-8_6_5
-      - default_build
+      - ghc_8_2_2
+      - ghc_8_4_4
+      - ghc_8_6_5
