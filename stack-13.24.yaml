@@ -1,4 +1,4 @@
-# ghc 8.6.5
+# ghc  8.6.5
 resolver: lts-13.24
 
 extra-deps:
