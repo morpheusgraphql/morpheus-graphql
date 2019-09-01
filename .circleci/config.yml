@@ -9,34 +9,34 @@ jobs:
       - restore_cache:
           name: restore cached stack
           keys:
-            - stack-vesrion-{{ checksum ".circleci/stack-ghc-8.2.2.yaml" }}
+            - stack-vesrion-{{ checksum "stack-11.10.yaml" }}
       - restore_cache:
           name: restore cached dependencies
           keys:
-            - stack-dependencies-{{ checksum ".circleci/stack-ghc-8.2.2.yaml" }}-{{ checksum "package.yaml" }}
+            - stack-dependencies-{{ checksum "stack-11.10.yaml" }}-{{ checksum "package.yaml" }}
       - run:
           name: setup stack
-          command: STACK_YAML=.circleci/stack-ghc-8.2.2.yaml stack --no-terminal setup
+          command: STACK_YAML=stack-11.10.yaml stack --no-terminal setup
       - save_cache:
           name: cache stack
-          key: stack-vesrion-{{ checksum ".circleci/stack-ghc-8.2.2.yaml" }}
+          key: stack-vesrion-{{ checksum "stack-11.10.yaml" }}
           paths:
             - /root/.stack
       - run:
           name: install dependencies
-          command: STACK_YAML=.circleci/stack-ghc-8.2.2.yaml stack build --skip-ghc-check --no-terminal --test --only-dependencies
+          command: STACK_YAML=stack-11.10.yaml stack build --skip-ghc-check --no-terminal --test --only-dependencies
       - save_cache:
           name: cache dependencies
-          key: stack-dependencies-{{ checksum ".circleci/stack-ghc-8.2.2.yaml" }}-{{ checksum "package.yaml" }}
+          key: stack-dependencies-{{ checksum "stack-11.10.yaml" }}-{{ checksum "package.yaml" }}
           paths:
             - ".stack-work"
             - "/root/.stack"
       - run:
           name: run tests
-          command: STACK_YAML=.circleci/stack-ghc-8.2.2.yaml stack test --haddock --no-haddock-deps
+          command: STACK_YAML=stack-11.10.yaml stack test --haddock --no-haddock-deps
       - run:
           name: Install executables
-          command: STACK_YAML=.circleci/stack-ghc-8.2.2.yaml stack install
+          command: STACK_YAML=stack-11.10.yaml stack install
 
   build-ghc-8_6_5:
     docker:
