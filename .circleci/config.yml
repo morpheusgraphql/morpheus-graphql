@@ -4,7 +4,6 @@ jobs:
   build-ghc-8_2_2:
     docker:
       - image: fpco/stack-build:lts-11.10
-    parallelism: 4
     steps:
       - checkout
       - restore_cache:
@@ -42,7 +41,6 @@ jobs:
   build-ghc-8_6_5:
     docker:
       - image: fpco/stack-build:lts-13.24
-    parallelism: 4
     steps:
       - checkout
       - restore_cache:
@@ -81,7 +79,6 @@ jobs:
   default_build:
     docker:
       - image: fpco/stack-build:lts
-    parallelism: 4
     steps:
       - checkout
       - restore_cache:
