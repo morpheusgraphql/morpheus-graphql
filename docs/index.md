@@ -2,7 +2,7 @@
 layout: home
 ---
 
-# Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) [![Build Status](https://api.travis-ci.com/morpheusgraphql/morpheus-graphql.svg?branch=master)](https://travis-ci.com/morpheusgraphql/morpheus-graphql)
+# Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) [![CircleCI](https://circleci.com/gh/morpheusgraphql/morpheus-graphql.svg?style=svg)](https://circleci.com/gh/morpheusgraphql/morpheus-graphql)
 
 Build GraphQL APIs with your favourite functional language!
 
@@ -30,12 +30,12 @@ Additionally, you should tell stack which version to pick:
 stack.yml
 
 ```yaml
-resolver: lts-12.0 # or greater
+resolver: lts-13.24
+
 extra-deps:
   - megaparsec-7.0.5
   - aeson-1.4.4.0
   - time-compat-1.9.2.2
-  - morpheus-graphql-0.2.2
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack update`
@@ -48,12 +48,12 @@ As Morpheus is quite new, make sure stack can find morpheus-graphql by running `
 
 [gqlDocument|
   type Query {
-    deity (uid: Text!): Deity!
+    deity (uid: String!): Deity!
   }
 
   type Deity {
-    name  : Text!
-    power : Text
+    name  : String!
+    power : String
   }
 |]
 
@@ -78,11 +78,11 @@ they can be used only in `Query`, but this issue will be fixed in next release
 ### with Native Haskell Types
 
 To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
-which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> ResM b`, representing resolving a set of arguments `a` to a concrete value `b`.
+which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> IORes b`, representing resolving a set of arguments `a` to a concrete value `b`.
 
 ```haskell
 data Query = Query
-  { deity :: DeityArgs -> ResM Deity
+  { deity :: DeityArgs -> IORes Deity
   } deriving (Generic)
 
 data Deity = Deity
@@ -99,8 +99,8 @@ data DeityArgs = DeityArgs
   } deriving (Generic)
 ```
 
-For each field in the `Query` type defined via `a -> ResM b` (like `deity`) we will define a resolver implementation that provides the values during runtime by referring to
-some data source, e.g. a database or another API. Fields that are defined without `a -> ResM b` you can just provide a value.
+For each field in the `Query` type defined via `a -> IORes b` (like `deity`) we will define a resolver implementation that provides the values during runtime by referring to
+some data source, e.g. a database or another API. Fields that are defined without `a -> IORes b` you can just provide a value.
 
 In above example, the field of `DeityArgs` could also be named using reserved identities (such as: `type`, `where`, etc), in order to avoid conflict, a prime symbol (`'`) must be attached. For example, you can have:
 
@@ -115,14 +115,14 @@ data DeityArgs = DeityArgs
 The field name in the final request will be `type` instead of `type'`. The Morpheus request parser converts each of the reserved identities in Haskell 2010 to their corresponding names internally. This also applies to selections.
 
 ```haskell
-resolveDeity :: DeityArgs -> ResM Deity
+resolveDeity :: DeityArgs -> IORes Deity
 resolveDeity args = gqlResolver $ askDB (name args) (mythology args)
 
 askDB :: Text -> Maybe Text -> IO (Either String Deity)
 askDB = ...
 ```
 
-Note that the type `a -> ResM b` is just Synonym for `a -> ExceptT String IO b`
+Note that the type `a -> IORes b` is just Synonym for `a -> ExceptT String IO b`
 
 To make this `Query` type available as an API, we define a `GQLRootResolver` and feed it to the Morpheus `interpreter`. A `GQLRootResolver` consists of `query`, `mutation` and `subscription` definitions, while we omit the latter for this example:
 
@@ -292,43 +292,41 @@ every subscription has own Channel by which will be triggered
 
 ```haskell
 
-data Channel = ChannelA | ChannelB
+data Channel
+  = ChannelA
+  | ChannelB
 
-data Content = ContentA Int | ContentB String
+data Content
+  = ContentA Int
+  | ContentB Text
 
+newtype Query = Query
+  { deity :: () -> IORes Deity
+  } deriving (Generic)
 
 newtype Mutation = Mutation
-  { createDeity :: DeityArgs -> IOMutRes Channel Content Deity
+  { createDeity :: () -> IOMutRes Channel Content Deity
   } deriving (Generic)
 
-newtype Subscription = Mutation
+newtype Subscription = Subscription
   { newDeity :: () -> IOSubRes Channel Content Deity
   } deriving (Generic)
-
-
-
-newDeityResolver :: a -> EffectM Address
-newDeityResolver _ = gqlEffectResolver [UPDATE_DEITY] $ fetchNewDeityFromDB
 
 rootResolver :: GQLRootResolver IO Channel Content Query Mutation Subscription
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {...}
-    , mutationResolver = return Mutation { createDeity }
-    , subscriptionResolver = return Subscription {
-         newDeity = newDeityResolver
-      }
+    { queryResolver = return Query {deity = const fetchDeity}
+    , mutationResolver = return Mutation {createDeity}
+    , subscriptionResolver = return Subscription {newDeity}
     }
-    where
-      createDeity args = toMutResolver [Event {channels = [Channel], content = ContentB ""}] fetchUser
-      newDeity args = Event {channels = [Channel], content }
-        where
-          content (Event ChannelA (ContentB value)) = retunr Deity { ... }
-          content (Event ChannelB (ContentB value)) = ...
-
-
-gqlApi :: ByteString -> IO ByteString
-gqlApi = interpreter rootResolver
+  where
+    fetchDeity = resolver $ dbDeity "" Nothing
+    createDeity _args = toMutResolver [Event {channels = [ChannelA], content = ContentA 1}] fetchDeity
+    newDeity _args = Event {channels = [ChannelA], content}
+      where
+        content (Event [ChannelA] (ContentA _value)) = resolver $ dbDeity "" Nothing -- resolve New State
+        content (Event [ChannelA] (ContentB value))  = resolver $ dbDeity value Nothing -- resolve New State
+        content _                                    = fetchDeity -- Resolve Old State
 ```
 
 ## Morpheus `GraphQL Client` with Template haskell QuasiQuotes
