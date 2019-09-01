@@ -34,16 +34,19 @@ renderTHType (_, x) = genType x
       pure [TypeD {tName, tCons = [ConsD {cName = tName, cFields = map genField fieldArgs}]}]
       where
         tName = argsTypeName fieldName
+    -------------------------------------------
+    genFieldTypeName "String" = "Text"
+    genFieldTypeName name     = unpack name
     ---------------------------------------------------------------------------------------------
     genField :: (Text, DataField a) -> FieldD
     genField (key, DataField {fieldType, fieldTypeWrappers}) = FieldD (unpack key) fType
       where
-        fType = gqlToHSWrappers fieldTypeWrappers (unpack fieldType)
+        fType = gqlToHSWrappers fieldTypeWrappers (genFieldTypeName fieldType)
     ---------------------------------------------------------------------------------------------
     genResField :: (Text, DataOutputField) -> FieldD
     genResField (key, DataField {fieldName, fieldArgs, fieldType, fieldTypeWrappers}) = FieldD (unpack key) fType
       where
-        fType = ResD (argsTName fieldArgs) "IORes" $ gqlToHSWrappers fieldTypeWrappers (unpack fieldType)
+        fType = ResD (argsTName fieldArgs) "IORes" $ gqlToHSWrappers fieldTypeWrappers (genFieldTypeName fieldType)
         argsTName [] = "()"
         argsTName _  = argsTypeName fieldName
     --------------------------------------------

@@ -19,20 +19,20 @@ input Coordinates {
 }
 
 type Address {
-  city: Text!
+  city: String!
   street(
     argInputObject: TestInputObject!
-    argMaybeString: Text
-  ): [[[[Text!]!]!]]
+    argMaybeString: String
+  ): [[[[String!]!]!]]
   houseNumber: Int!
 }
 
 union TestUnion = User | Address
 
 type User {
-  name: Text!
-  email: Text!
-  address(coordinates: Coordinates!, comment: Text): Address!
+  name: String!
+  email: String!
+  address(coordinates: Coordinates!, comment: String): Address!
   office(zipCode: [Int!], cityID: TestEnum!): Address!
   friend: User
 }

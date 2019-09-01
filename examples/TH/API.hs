@@ -42,16 +42,16 @@ instance GQLScalar Euro where
     GraphQL Multiline Comment
   """
   type User {
-    name                                      : Text!
-    email                                     : Text!
+    name                                      : String!
+    email                                     : String!
     address (zipCode: UID!, cityID : CityID ) : Address!
     myUnion (coordinates: Coordinates)        : MyUnion!
     home                                      : CityID!
   }
 
   type Address {
-    city        : Text!
-    street      : Text!
+    city        : String!
+    street      : String!
     houseNumber : Int!
   }
 
@@ -79,7 +79,7 @@ instance GQLScalar Euro where
   }
 
   input UID {
-    uid: Text!
+    uid: String!
   }
 |]
 
