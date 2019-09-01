@@ -10,6 +10,8 @@
 
   this will generate types defined in `API.gql`
 
+- `String` defined in GQLDcoument will be converted to `Text` by template haskell
+
 ## [0.2.2] - 30.08.2019
 
 ### Fixed

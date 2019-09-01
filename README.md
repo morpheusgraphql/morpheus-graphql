@@ -26,12 +26,12 @@ Additionally, you should tell stack which version to pick:
 stack.yml
 
 ```yaml
-resolver: lts-12.0 # or greater
+resolver: lts-13.24
+
 extra-deps:
   - megaparsec-7.0.5
   - aeson-1.4.4.0
   - time-compat-1.9.2.2
-  - morpheus-graphql-0.2.2
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack update`
@@ -44,12 +44,12 @@ As Morpheus is quite new, make sure stack can find morpheus-graphql by running `
 
 [gqlDocument|
   type Query {
-    deity (uid: Text!): Deity!
+    deity (uid: String!): Deity!
   }
 
   type Deity {
-    name  : Text!
-    power : Text
+    name  : String!
+    power : String
   }
 |]
 
