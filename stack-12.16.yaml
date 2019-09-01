@@ -5,3 +5,4 @@ extra-deps:
   - megaparsec-7.0.5
   - aeson-1.4.4.0
   - time-compat-1.9.2.2
+  - base-orphans-0.8.1
