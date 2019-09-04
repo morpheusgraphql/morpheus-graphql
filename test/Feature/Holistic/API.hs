@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TemplateHaskell   #-}
@@ -13,7 +14,7 @@ import           Data.Morpheus          (interpreter)
 import           Data.Morpheus.Document (importGQLDocument)
 import           Data.Morpheus.Kind     (SCALAR)
 import           Data.Morpheus.Types    (Event (..), GQLRequest, GQLResponse, GQLRootResolver (..), GQLScalar (..),
-                                         GQLType (..), ID (..), IORes, IOSubRes, ScalarValue (..))
+                                         GQLType (..), ID (..), IOMutRes, IORes, IOSubRes, ScalarValue (..))
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
 
@@ -31,10 +32,6 @@ instance GQLScalar TestScalar where
   parseValue _ = pure (TestScalar 1 0)
   serialize (TestScalar x y) = Int (x * 100 + y)
 
-newtype Mutation = Mutation
-  { createUser :: AddressArgs -> IORes (User IORes)
-  } deriving (Generic)
-
 data EVENT =
   EVENT
   deriving (Show, Eq)
@@ -46,27 +43,27 @@ newtype Subscription = Subscription
 resolveValue :: Monad m => b -> a -> m b
 resolveValue = const . return
 
-resolveUser :: a -> IORes (User IORes)
-resolveUser _ =
-  return $
-  User
-    { name = resolveValue "testName"
-    , email = resolveValue ""
-    , address = resolveAddress
-    , office = resolveAddress
-    , friend = resolveValue Nothing
-    }
-  where
-    resolveAddress _ =
-      return Address {city = resolveValue "", houseNumber = resolveValue 0, street = resolveValue Nothing}
-
-rootResolver :: GQLRootResolver IO EVENT () (Query IORes) Mutation Subscription
+rootResolver :: GQLRootResolver IO EVENT () (Query IORes) (Mutation (IOMutRes EVENT ())) Subscription
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {user = resolveUser, testUnion = const $ return Nothing}
-    , mutationResolver = return Mutation {createUser = resolveUser}
-    , subscriptionResolver = return Subscription {newUser = const $ Event [EVENT] resolveUser}
+    { queryResolver = return Query {user, testUnion = const $ return Nothing}
+    , mutationResolver = return Mutation {createUser = user}
+    , subscriptionResolver = return Subscription {newUser = const $ Event [EVENT] user}
     }
+  where
+    user :: Monad m => args -> m (User m)
+    user _ =
+      return $
+      User
+        { name = resolveValue "testName"
+        , email = resolveValue ""
+        , address = resolveAddress
+        , office = resolveAddress
+        , friend = resolveValue Nothing
+        }
+      where
+        resolveAddress _ =
+          return Address {city = resolveValue "", houseNumber = resolveValue 0, street = resolveValue Nothing}
 
 api :: GQLRequest -> IO GQLResponse
 api = interpreter rootResolver
