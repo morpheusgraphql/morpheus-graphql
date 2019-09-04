@@ -83,13 +83,13 @@ instance GQLScalar Euro where
   }
 |]
 
-gqlRoot :: GQLRootResolver IO () () Query () ()
+gqlRoot :: GQLRootResolver IO () () (Query IORes) () ()
 gqlRoot = GQLRootResolver {queryResolver, mutationResolver = return (), subscriptionResolver = return ()}
   where
-    queryResolver :: IORes Query
+    queryResolver :: IORes (Query IORes)
     queryResolver = return Query {user}
       where
-        user :: () -> IORes User
+        user :: () -> IORes (User IORes)
         user _ =
           return
             User
@@ -99,7 +99,7 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver = return (), subscrip
               , home = const $ pure HH
               , myUnion = const $ pure $ MyUnionAddress $ simpleAddress "boo"
               }
-        address :: AddressArgs -> IORes Address
+        address :: AddressArgs -> IORes (Address IORes)
         address AddressArgs {zipCode = UID {uid}} = return $ simpleAddress uid
         --------------------------------
         simpleAddress streetID =
