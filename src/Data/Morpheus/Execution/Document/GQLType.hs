@@ -19,9 +19,13 @@ import           Data.Morpheus.Types.Internal.DataD (GQLTypeD, TypeD (..))
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
 deriveGQLType (TypeD {tName}, gqlKind, _) =
-  pure <$> instanceD (cxt []) (appT (conT ''GQLType) (conT $ mkName tName)) methods
+  pure <$> instanceD (cxt []) (appT (conT ''GQLType) (genHeadSig gqlKind)) [methods]
   where
-    methods = [pure $ TySynInstD ''KIND (TySynEqn [ConT $ mkName tName] (ConT $ toKIND gqlKind))]
+    genHeadSig KindObject = appT (conT $ mkName tName) (varT $ mkName "m")
+    genHeadSig _          = conT $ mkName tName
+    methods = do
+      typeN <- genHeadSig gqlKind
+      pure $ TySynInstD ''KIND (TySynEqn [typeN] (ConT $ toKIND gqlKind))
     toKIND KindScalar      = ''SCALAR
     toKIND KindEnum        = ''ENUM
     toKIND KindObject      = ''OBJECT
