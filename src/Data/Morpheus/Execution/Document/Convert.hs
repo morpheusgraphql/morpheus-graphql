@@ -28,7 +28,7 @@ renderTHTypes lib = traverse renderTHType lib
       case lookup key lib of
         Nothing              -> ExternalResolver
         Just OutputObject {} -> TypeVarResolver
-        Just Union {}   -> TypeVarResolver
+        Just Union {}        -> TypeVarResolver
         Just _               -> PlainResolver
     renderTHType :: (Text, DataFullType) -> Validation GQLTypeD
     renderTHType (_, x) = genType x
