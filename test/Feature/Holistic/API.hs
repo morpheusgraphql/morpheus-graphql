@@ -32,7 +32,7 @@ instance GQLScalar TestScalar where
   serialize (TestScalar x y) = Int (x * 100 + y)
 
 newtype Mutation = Mutation
-  { createUser :: AddressArgs -> IORes User
+  { createUser :: AddressArgs -> IORes (User IORes)
   } deriving (Generic)
 
 data EVENT =
@@ -40,13 +40,13 @@ data EVENT =
   deriving (Show, Eq)
 
 newtype Subscription = Subscription
-  { newUser :: AddressArgs -> IOSubRes EVENT () User
+  { newUser :: AddressArgs -> IOSubRes EVENT () (User IORes)
   } deriving (Generic)
 
 resolveValue :: Monad m => b -> a -> m b
 resolveValue = const . return
 
-resolveUser :: a -> IORes User
+resolveUser :: a -> IORes (User IORes)
 resolveUser _ =
   return $
   User
@@ -60,7 +60,7 @@ resolveUser _ =
     resolveAddress _ =
       return Address {city = resolveValue "", houseNumber = resolveValue 0, street = resolveValue Nothing}
 
-rootResolver :: GQLRootResolver IO EVENT () Query Mutation Subscription
+rootResolver :: GQLRootResolver IO EVENT () (Query IORes) Mutation Subscription
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {user = resolveUser, testUnion = const $ return Nothing}
