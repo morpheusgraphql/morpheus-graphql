@@ -20,16 +20,19 @@ import           Data.Typeable                      (Typeable)
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
 deriveGQLType (TypeD {tName}, gqlKind, _) =
-  pure <$> instanceD (cxt $ constrains gqlKind) (appT (conT ''GQLType) (genHeadSig gqlKind)) [methods]
+  pure <$> instanceD (cxt constrains) (appT (conT ''GQLType) genHeadSig) [methods]
   where
-    genHeadSig KindObject = appT (conT $ mkName tName) (varT $ mkName "m")
-    genHeadSig _          = conT $ mkName tName
+    withVar = gqlKind == KindObject || gqlKind == KindUnion
+    genHeadSig
+      | withVar = appT (conT $ mkName tName) (varT $ mkName "m")
+      | otherwise = conT $ mkName tName
     ----------
-    constrains KindObject = [appT (conT ''Typeable) (varT $ mkName "m")]
-    constrains _          = []
+    constrains
+      | withVar = [appT (conT ''Typeable) (varT $ mkName "m")]
+      | otherwise = []
     ----
     methods = do
-      typeN <- genHeadSig gqlKind
+      typeN <- genHeadSig
       pure $ TySynInstD ''KIND (TySynEqn [typeN] (ConT $ toKIND gqlKind))
     toKIND KindScalar      = ''SCALAR
     toKIND KindEnum        = ''ENUM
