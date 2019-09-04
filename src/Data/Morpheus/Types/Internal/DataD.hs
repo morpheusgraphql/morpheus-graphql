@@ -7,6 +7,7 @@ module Data.Morpheus.Types.Internal.DataD
   , QueryD(..)
   , AppD(..)
   , GQLTypeD
+  , ResolverKind(..)
   , gqlToHSWrappers
   ) where
 
@@ -16,11 +17,17 @@ import           Language.Haskell.TH.Syntax        (Lift (..))
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Data (DataTypeKind, DataTypeWrapper (..))
 
+data ResolverKind
+  = PlainResolver
+  | TypeVarResolver
+  | ExternalResolver
+  deriving (Show, Lift)
+
 data AppD a
   = ListD (AppD a)
   | MaybeD (AppD a)
   | ResD String
-         String
+         ResolverKind
          (AppD a)
   | BaseD a
   deriving (Show, Lift)
@@ -44,7 +51,6 @@ data FieldD = FieldD
   { fieldNameD :: String
   , fieldTypeD :: AppD String
   } deriving (Show, Lift)
-
 
 data TypeD = TypeD
   { tName :: String
