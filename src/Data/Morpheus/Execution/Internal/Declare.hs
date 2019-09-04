@@ -24,20 +24,20 @@ import           GHC.Generics                       (Generic)
 type FUNC = (->)
 
 declareType :: [Name] -> TypeD -> Dec
-declareType = __declareType False
+declareType = __declareType Nothing
 
 declareResolverType :: DataTypeKind -> [Name] -> TypeD -> Dec
-declareResolverType KindObject = __declareType True
-declareResolverType _          = __declareType False
+declareResolverType x = __declareType (Just x)
 
 --
 --
-__declareType :: Bool -> [Name] -> TypeD -> Dec
-__declareType isResolver derivingList TypeD {tName, tCons} =
+__declareType :: Maybe DataTypeKind -> [Name] -> TypeD -> Dec
+__declareType gqlKind derivingList TypeD {tName, tCons} =
   DataD [] (mkName tName) tVars Nothing (map cons tCons) $ map derive (''Generic : derivingList)
   where
+    withTyCon = gqlKind == Just KindObject || gqlKind == Just KindUnion
     tVars
-      | isResolver = [PlainTV $ mkName "m"]
+      | withTyCon = [PlainTV $ mkName "m"]
       | otherwise = []
     defBang = Bang NoSourceUnpackedness NoSourceStrictness
     derive className = DerivClause Nothing [ConT className]
@@ -50,6 +50,8 @@ __declareType isResolver derivingList TypeD {tName, tCons} =
             genFieldT resM (ListD td) = AppT (ConT ''[]) (genFieldT resM td)
             genFieldT resM (MaybeD td) = AppT (ConT ''Maybe) (genFieldT resM td)
             genFieldT True (BaseD name) = AppT (ConT (mkName name)) monadVar
+            genFieldT False (BaseD name)
+              | gqlKind == Just KindUnion = AppT (ConT (mkName name)) monadVar
             genFieldT False (BaseD name) = ConT (mkName name)
             genFieldT _ (ResD arg resKind td) = AppT (AppT arrowType argType) (resultType resKind)
               where
