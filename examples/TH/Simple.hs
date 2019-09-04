@@ -28,7 +28,7 @@ import           Data.Text                  (Text)
 
 |]
 
-rootResolver :: GQLRootResolver IO () () Query () ()
+rootResolver :: GQLRootResolver IO () () (Query IORes) () ()
 rootResolver =
   GQLRootResolver {queryResolver = return Query {deity}, mutationResolver = pure (), subscriptionResolver = pure ()}
   where
