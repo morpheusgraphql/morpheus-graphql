@@ -45,6 +45,7 @@ data FieldD = FieldD
   , fieldTypeD :: AppD String
   } deriving (Show, Lift)
 
+
 data TypeD = TypeD
   { tName :: String
   , tCons :: [ConsD]
