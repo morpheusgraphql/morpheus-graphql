@@ -9,8 +9,8 @@ module Feature.WrappedTypeName.API
 
 import           Data.Morpheus       (interpreter)
 import           Data.Morpheus.Kind  (OBJECT)
-import           Data.Morpheus.Types (Event (..), GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), IOMutRes,
-                                      IORes, IOSubRes)
+import           Data.Morpheus.Types (GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), IOMutRes, IORes,
+                                      IOSubRes, SubResolver (..))
 import           Data.Text           (Text)
 import           Data.Typeable       (Typeable)
 import           GHC.Generics        (Generic)
@@ -61,9 +61,9 @@ rootResolver =
     , subscriptionResolver =
         return
           Subscription
-            { sub1 = const $ Event [EVENT] (const $ return Nothing)
-            , sub2 = const $ Event [EVENT] (const $ return Nothing)
-            , sub3 = const $ Event [EVENT] (const $ return Nothing)
+            { sub1 = const SubResolver {subChannels = [EVENT], subResolver = const $ return Nothing}
+            , sub2 = const SubResolver {subChannels = [EVENT], subResolver = const $ return Nothing}
+            , sub3 = const SubResolver {subChannels = [EVENT], subResolver = const $ return Nothing}
             }
     }
 
