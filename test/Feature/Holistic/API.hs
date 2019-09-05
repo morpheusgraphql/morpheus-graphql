@@ -36,9 +36,6 @@ data EVENT =
 
 importGQLDocument "test/Feature/Holistic/API.gql"
 
---newtype Subscription subM m = Subscription
---  { newUser :: () -> subM (User m)
---  } deriving (Generic)
 resolveValue :: Monad m => b -> a -> m b
 resolveValue = const . return
 
@@ -48,7 +45,8 @@ rootResolver =
   GQLRootResolver
     { queryResolver = return Query {user, testUnion = const $ return Nothing}
     , mutationResolver = return Mutation {createUser = user}
-    , subscriptionResolver = return Subscription {newUser = const $ SubResolver [EVENT] user}
+    , subscriptionResolver =
+        return Subscription {newUser = const SubResolver {subChannels = [EVENT], subResolver = user}}
     }
   where
     user _ =
