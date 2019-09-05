@@ -18,7 +18,7 @@ import           Data.Morpheus.Types.Internal.Data  (DataTypeKind (..))
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.DataD (AppD (..), ConsD (..), FieldD (..), KindD, ResolverKind (..),
+import           Data.Morpheus.Types.Internal.DataD (AppD (..), ConsD (..), FieldD (..), KindD (..), ResolverKind (..),
                                                      TypeD (..), unKindD)
 import           GHC.Generics                       (Generic)
 
@@ -39,8 +39,10 @@ __declareType kindD derivingList TypeD {tName, tCons} =
     gqlKind = unKindD <$> kindD
     withTyCon = gqlKind == Just KindObject || gqlKind == Just KindUnion
     tVars
-      | withTyCon = [PlainTV $ mkName "m"]
+      | kindD == Just SubscriptionD = declareTyVar ["m", "e", "c"]
+      | withTyCon = declareTyVar ["m"]
       | otherwise = []
+    declareTyVar = map (PlainTV . mkName)
     defBang = Bang NoSourceUnpackedness NoSourceStrictness
     derive className = DerivClause Nothing [ConT className]
     cons ConsD {cName, cFields} = RecC (mkName cName) (map genField cFields)

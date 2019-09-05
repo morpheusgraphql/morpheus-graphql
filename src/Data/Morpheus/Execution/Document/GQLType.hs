@@ -15,7 +15,7 @@ import           Data.Morpheus.Kind                 (ENUM, INPUT_OBJECT, INPUT_U
 -- MORPHEUS
 import           Data.Morpheus.Types.GQLType        (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data  (DataTypeKind (..))
-import           Data.Morpheus.Types.Internal.DataD (GQLTypeD (..), TypeD (..), unKindD)
+import           Data.Morpheus.Types.Internal.DataD (GQLTypeD (..), KindD (..), TypeD (..), unKindD)
 import           Data.Typeable                      (Typeable)
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
@@ -24,13 +24,18 @@ deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} =
   where
     gqlKind = unKindD typeKindD
     withVar = gqlKind == KindObject || gqlKind == KindUnion
+    isSubscription = typeKindD == SubscriptionD
     genHeadSig
+      | isSubscription =
+        appT (appT (appT (conT $ mkName tName) (varT $ mkName "m")) (varT $ mkName "e")) (varT $ mkName "c")
       | withVar = appT (conT $ mkName tName) (varT $ mkName "m")
       | otherwise = conT $ mkName tName
     ----------
     constrains
-      | withVar = [appT (conT ''Typeable) (varT $ mkName "m")]
+      | isSubscription = map consTypeable ["m", "e", "c"]
+      | withVar = [consTypeable "m"]
       | otherwise = []
+    consTypeable = appT (conT ''Typeable) . (varT . mkName)
     ----
     methods = do
       typeN <- genHeadSig

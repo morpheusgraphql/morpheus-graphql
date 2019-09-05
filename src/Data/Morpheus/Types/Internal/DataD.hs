@@ -48,7 +48,7 @@ unKindD (RegularKindD kind) = kind
 data KindD
   = SubscriptionD
   | RegularKindD DataTypeKind
-  deriving (Show, Lift)
+  deriving (Show, Eq, Lift)
 
 data GQLTypeD = GQLTypeD
   { typeD     :: TypeD

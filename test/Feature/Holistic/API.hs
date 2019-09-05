@@ -14,8 +14,7 @@ import           Data.Morpheus          (interpreter)
 import           Data.Morpheus.Document (importGQLDocument)
 import           Data.Morpheus.Kind     (SCALAR)
 import           Data.Morpheus.Types    (Event (..), GQLRequest, GQLResponse, GQLRootResolver (..), GQLScalar (..),
-                                         GQLType (..), ID (..), IOMutRes, IORes, Resolver, ScalarValue (..),
-                                         SubResolver)
+                                         GQLType (..), ID (..), IOMutRes, IORes, ScalarValue (..))
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
 
@@ -37,10 +36,11 @@ data EVENT =
 
 importGQLDocument "test/Feature/Holistic/API.gql"
 
+{-
 newtype Subscription m e c = Subscription
   { newUser :: () -> SubResolver m e c (User (Resolver m))
   } deriving (Generic)
-
+-}
 resolveValue :: Monad m => b -> a -> m b
 resolveValue = const . return
 
