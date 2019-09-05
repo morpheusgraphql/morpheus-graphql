@@ -19,8 +19,6 @@ import           Data.Morpheus.Types    (Event (..), GQLRequest, GQLResponse, GQ
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
 
-importGQLDocument "test/Feature/Holistic/API.gql"
-
 data TestScalar =
   TestScalar Int
              Int
@@ -36,6 +34,8 @@ instance GQLScalar TestScalar where
 data EVENT =
   EVENT
   deriving (Show, Eq)
+
+importGQLDocument "test/Feature/Holistic/API.gql"
 
 newtype Subscription m e c = Subscription
   { newUser :: () -> SubResolver m e c (User (Resolver m))
