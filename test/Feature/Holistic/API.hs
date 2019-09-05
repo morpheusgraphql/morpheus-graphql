@@ -14,7 +14,7 @@ import           Data.Morpheus          (interpreter)
 import           Data.Morpheus.Document (importGQLDocument)
 import           Data.Morpheus.Kind     (SCALAR)
 import           Data.Morpheus.Types    (GQLRequest, GQLResponse, GQLRootResolver (..), GQLScalar (..), GQLType (..),
-                                         ID (..), IOMutRes, IORes, ScalarValue (..), SubResolver (..))
+                                         ID (..), IOMutRes, IORes, IOSubRes, ScalarValue (..), SubResolver (..))
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
 
@@ -40,7 +40,7 @@ resolveValue :: Monad m => b -> a -> m b
 resolveValue = const . return
 
 rootResolver ::
-     GQLRootResolver IO EVENT () (Query IORes) (Mutation (IOMutRes EVENT ())) (Subscription (SubResolver IO EVENT ()) IORes)
+     GQLRootResolver IO EVENT () (Query IORes) (Mutation (IOMutRes EVENT ())) (Subscription (IOSubRes EVENT ()) IORes)
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {user, testUnion = const $ return Nothing}
