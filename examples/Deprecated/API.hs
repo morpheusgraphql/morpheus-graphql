@@ -25,7 +25,8 @@ import           GHC.Generics        (Generic)
 -- MORPHEUS
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, IOMutRes,
-                                      IORes, IOSubRes, Resolver, ScalarValue (..), mutResolver, resolver)
+                                      IORes, IOSubRes, Resolver, ScalarValue (..), SubResolver (..), mutResolver,
+                                      resolver)
 
 newtype Cat = Cat
   { catName :: Text
@@ -230,8 +231,9 @@ gqlRoot =
     , subscriptionResolver = return Subscription {newAddress, newUser}
     }
   where
-    newUser _ = Event [UPDATE_USER] $ \(Event _ Update {}) -> resolver fetchUser
-    newAddress _ = Event [UPDATE_ADDRESS] $ \(Event _ Update {contentID}) -> resolver $ fetchAddress (Euro contentID 0)
+    newUser _ = SubResolver {subChannels = [UPDATE_USER], subResolver = \(Event _ Update {}) -> resolver fetchUser}
+    newAddress _ =
+      SubResolver [UPDATE_ADDRESS] $ \(Event _ Update {contentID}) -> resolver $ fetchAddress (Euro contentID 0)
     createUser _ =
       mutResolver [Event [UPDATE_USER] (Update {contentID = 12, contentMessage = "some message for user"})] fetchUser
     createAddress :: () -> MutRes Address

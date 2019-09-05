@@ -4,8 +4,8 @@
 
 module Subscription.SimpleSubscription where
 
-import           Data.Morpheus.Types       (Event (..), GQLRootResolver (..), IOMutRes, IORes, IOSubRes, resolver,
-                                            toMutResolver)
+import           Data.Morpheus.Types       (Event (..), GQLRootResolver (..), IOMutRes, IORes, IOSubRes,
+                                            SubResolver (..), resolver, toMutResolver)
 import           Data.Text                 (Text)
 import           GHC.Generics              (Generic)
 import           Mythology.Character.Deity (Deity (..), dbDeity)
@@ -40,8 +40,8 @@ rootResolver =
   where
     fetchDeity = resolver $ dbDeity "" Nothing
     createDeity _args = toMutResolver [Event {channels = [ChannelA], content = ContentA 1}] fetchDeity
-    newDeity _args = Event {channels = [ChannelA], content}
+    newDeity _args = SubResolver {subChannels = [ChannelA], subResolver}
       where
-        content (Event [ChannelA] (ContentA _value)) = resolver $ dbDeity "" Nothing -- resolve New State
-        content (Event [ChannelA] (ContentB value))  = resolver $ dbDeity value Nothing -- resolve New State
-        content _                                    = fetchDeity -- Resolve Old State
+        subResolver (Event [ChannelA] (ContentA _value)) = resolver $ dbDeity "" Nothing -- resolve New State
+        subResolver (Event [ChannelA] (ContentB value))  = resolver $ dbDeity value Nothing -- resolve New State
+        subResolver _                                    = fetchDeity -- Resolve Old State
