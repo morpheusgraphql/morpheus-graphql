@@ -12,7 +12,6 @@ import           Data.Aeson                 (FromJSON, Value (..), decode)
 import qualified Data.ByteString.Lazy       as L (readFile)
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Maybe                 (fromMaybe)
-import           Data.Morpheus.Types        (GQLResponse (..))
 import           Data.Text                  (Text, unpack)
 
 path :: Text -> String

@@ -14,7 +14,8 @@ import           Data.Morpheus          (interpreter)
 import           Data.Morpheus.Document (importGQLDocument)
 import           Data.Morpheus.Kind     (SCALAR)
 import           Data.Morpheus.Types    (Event (..), GQLRequest, GQLResponse, GQLRootResolver (..), GQLScalar (..),
-                                         GQLType (..), ID (..), IOMutRes, IORes, IOSubRes, ScalarValue (..))
+                                         GQLType (..), ID (..), IOMutRes, IORes, Resolver, ScalarValue (..),
+                                         SubResolver)
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
 
@@ -36,14 +37,14 @@ data EVENT =
   EVENT
   deriving (Show, Eq)
 
-newtype Subscription = Subscription
-  { newUser :: AddressArgs -> IOSubRes EVENT () (User IORes)
+newtype Subscription m e c = Subscription
+  { newUser :: () -> SubResolver m e c (User (Resolver m))
   } deriving (Generic)
 
 resolveValue :: Monad m => b -> a -> m b
 resolveValue = const . return
 
-rootResolver :: GQLRootResolver IO EVENT () (Query IORes) (Mutation (IOMutRes EVENT ())) Subscription
+rootResolver :: GQLRootResolver IO EVENT () (Query IORes) (Mutation (IOMutRes EVENT ())) (Subscription IO EVENT ())
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {user, testUnion = const $ return Nothing}
@@ -51,7 +52,6 @@ rootResolver =
     , subscriptionResolver = return Subscription {newUser = const $ Event [EVENT] user}
     }
   where
-    user :: Monad m => args -> m (User m)
     user _ =
       return $
       User
