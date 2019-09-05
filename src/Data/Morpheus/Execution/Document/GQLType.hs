@@ -26,13 +26,12 @@ deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} =
     withVar = gqlKind == KindObject || gqlKind == KindUnion
     isSubscription = typeKindD == SubscriptionD
     genHeadSig
-      | isSubscription =
-        appT (appT (appT (conT $ mkName tName) (varT $ mkName "m")) (varT $ mkName "e")) (varT $ mkName "c")
+      | isSubscription = appT (appT (conT $ mkName tName) (varT $ mkName "subscriptionM")) (varT $ mkName "m")
       | withVar = appT (conT $ mkName tName) (varT $ mkName "m")
       | otherwise = conT $ mkName tName
     ----------
     constrains
-      | isSubscription = map consTypeable ["m", "e", "c"]
+      | isSubscription = map consTypeable ["subscriptionM", "m"]
       | withVar = [consTypeable "m"]
       | otherwise = []
     consTypeable = appT (conT ''Typeable) . (varT . mkName)

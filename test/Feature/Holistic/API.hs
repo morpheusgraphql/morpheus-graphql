@@ -36,10 +36,9 @@ data EVENT =
 
 importGQLDocument "test/Feature/Holistic/API.gql"
 
-newtype Subscription subM m = Subscription
-  { newUser :: () -> subM (User m)
-  } deriving (Generic)
-
+--newtype Subscription subM m = Subscription
+--  { newUser :: () -> subM (User m)
+--  } deriving (Generic)
 resolveValue :: Monad m => b -> a -> m b
 resolveValue = const . return
 

@@ -20,7 +20,6 @@ import           Data.Morpheus.Types.Internal.Data  (DataTypeKind (..))
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.DataD (AppD (..), ConsD (..), FieldD (..), KindD (..), ResolverKind (..),
                                                      TypeD (..), unKindD)
-import           Data.Morpheus.Types.Resolver       (SubResolver)
 import           GHC.Generics                       (Generic)
 
 type FUNC = (->)
@@ -41,7 +40,7 @@ __declareType kindD derivingList TypeD {tName, tCons} =
     isSubscription = kindD == Just SubscriptionD
     withTyCon = gqlKind == Just KindObject || gqlKind == Just KindUnion
     tVars
-      | isSubscription = declareTyVar ["m", "e", "c"]
+      | isSubscription = declareTyVar ["subscriptionM", "m"]
       | withTyCon = declareTyVar ["m"]
       | otherwise = []
     declareTyVar = map (PlainTV . mkName)
@@ -52,6 +51,7 @@ __declareType kindD derivingList TypeD {tName, tCons} =
         genField FieldD {fieldNameD, fieldTypeD} = (mkName fieldNameD, defBang, genFieldT False fieldTypeD)
           where
             monadVar = VarT $ mkName "m"
+            subscriptionVar = VarT $ mkName "subscriptionM"
             ---------------------------
             genFieldT resM (ListD td) = AppT (ConT ''[]) (genFieldT resM td)
             genFieldT resM (MaybeD td) = AppT (ConT ''Maybe) (genFieldT resM td)
@@ -61,10 +61,9 @@ __declareType kindD derivingList TypeD {tName, tCons} =
             genFieldT False (BaseD name) = ConT (mkName name)
             genFieldT _ (ResD arg resKind td) = AppT (AppT arrowType argType) (resultType resKind)
               where
-                subResolver = AppT (AppT (AppT (ConT ''SubResolver) monadVar) (VarT $ mkName "e")) (VarT $ mkName "c")
                 argType = ConT $ mkName arg
                 arrowType = ConT ''FUNC
                 resultType _
-                  | isSubscription = AppT subResolver (genFieldT True td)
+                  | isSubscription = AppT subscriptionVar (genFieldT True td)
                 resultType TypeVarResolver = AppT monadVar (genFieldT True td)
                 resultType _ = AppT monadVar (genFieldT False td)
