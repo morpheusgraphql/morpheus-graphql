@@ -202,7 +202,7 @@ data Content = Update
 
 type MutRes = IOMutRes Channel Content
 
-type SubRes a = IOSubRes Channel Content a
+type SubRes = IOSubRes Channel Content
 
 data Mutation = Mutation
   { createUser    :: () -> MutRes (User MutRes)

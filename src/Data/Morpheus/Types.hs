@@ -34,4 +34,4 @@ type IORes = Resolver IO
 
 type IOMutRes e c = MutResolver IO e c
 
-type IOSubRes e c a = SubResolver IO e c a
+type IOSubRes e c = SubResolver IO e c
