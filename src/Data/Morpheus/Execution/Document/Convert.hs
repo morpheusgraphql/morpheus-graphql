@@ -89,7 +89,10 @@ renderTHTypes lib = traverse renderTHType lib
                     { tName = unpack typeName
                     , tCons = [ConsD {cName = unpack typeName, cFields = map genResField typeData}]
                     }
-              , typeKindD = RegularKindD KindObject
+              , typeKindD =
+                  if typeName == "Subscription"
+                    then SubscriptionD
+                    else RegularKindD KindObject
               , typeArgD
               }
         genType (Union DataType {typeName, typeData}) = do

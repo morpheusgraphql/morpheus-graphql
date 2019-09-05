@@ -28,14 +28,15 @@ declareType :: [Name] -> TypeD -> Dec
 declareType = __declareType Nothing
 
 declareResolverType :: KindD -> [Name] -> TypeD -> Dec
-declareResolverType x = __declareType (Just $ unKindD x)
+declareResolverType x = __declareType (Just x)
 
 --
 --
-__declareType :: Maybe DataTypeKind -> [Name] -> TypeD -> Dec
-__declareType gqlKind derivingList TypeD {tName, tCons} =
+__declareType :: Maybe KindD -> [Name] -> TypeD -> Dec
+__declareType kindD derivingList TypeD {tName, tCons} =
   DataD [] (mkName tName) tVars Nothing (map cons tCons) $ map derive (''Generic : derivingList)
   where
+    gqlKind = unKindD <$> kindD
     withTyCon = gqlKind == Just KindObject || gqlKind == Just KindUnion
     tVars
       | withTyCon = [PlainTV $ mkName "m"]
