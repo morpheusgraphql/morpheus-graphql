@@ -15,13 +15,14 @@ import           Data.Morpheus.Kind                 (ENUM, INPUT_OBJECT, INPUT_U
 -- MORPHEUS
 import           Data.Morpheus.Types.GQLType        (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data  (DataTypeKind (..))
-import           Data.Morpheus.Types.Internal.DataD (GQLTypeD, TypeD (..))
+import           Data.Morpheus.Types.Internal.DataD (GQLTypeD (..), TypeD (..), unKindD)
 import           Data.Typeable                      (Typeable)
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
-deriveGQLType (TypeD {tName}, gqlKind, _) =
+deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} =
   pure <$> instanceD (cxt constrains) (appT (conT ''GQLType) genHeadSig) [methods]
   where
+    gqlKind = unKindD typeKindD
     withVar = gqlKind == KindObject || gqlKind == KindUnion
     genHeadSig
       | withVar = appT (conT $ mkName tName) (varT $ mkName "m")

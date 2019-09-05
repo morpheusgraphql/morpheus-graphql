@@ -18,7 +18,8 @@ import           Data.Morpheus.Types.Internal.Data  (DataTypeKind (..))
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.DataD (AppD (..), ConsD (..), FieldD (..), ResolverKind (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.DataD (AppD (..), ConsD (..), FieldD (..), KindD, ResolverKind (..),
+                                                     TypeD (..), unKindD)
 import           GHC.Generics                       (Generic)
 
 type FUNC = (->)
@@ -26,8 +27,8 @@ type FUNC = (->)
 declareType :: [Name] -> TypeD -> Dec
 declareType = __declareType Nothing
 
-declareResolverType :: DataTypeKind -> [Name] -> TypeD -> Dec
-declareResolverType x = __declareType (Just x)
+declareResolverType :: KindD -> [Name] -> TypeD -> Dec
+declareResolverType x = __declareType (Just $ unKindD x)
 
 --
 --
