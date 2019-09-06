@@ -20,6 +20,7 @@ module Data.Morpheus.Types
   , ID(..)
   , ScalarValue(..)
   , GQLRootResolver(..)
+  , constRes
   ) where
 
 import           Data.Morpheus.Types.GQLScalar      (GQLScalar (parseValue, serialize))
@@ -29,6 +30,10 @@ import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
 import           Data.Morpheus.Types.IO             (GQLRequest (..), GQLResponse (..))
 import           Data.Morpheus.Types.Resolver       (Event (..), GQLRootResolver (..), MutResolver, Resolver,
                                                      SubResolver (..), SubRootRes, mutResolver, resolver, toMutResolver)
+
+-- resolves constant value on any argument
+constRes :: Monad m => b -> a -> m b
+constRes = const . return
 
 type IORes = Resolver IO
 

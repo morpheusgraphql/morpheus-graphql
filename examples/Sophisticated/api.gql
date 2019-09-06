@@ -1,0 +1,36 @@
+# for Input Union
+
+input Cat {
+  catName: String!
+}
+
+input Dog {
+  dogName: Text
+}
+
+input Bird {
+  birdName: Text
+}
+
+# Main APi
+
+enum CityID {
+  Paris
+  BLN
+  HH
+}
+
+input Coordinates {
+  latitude: Euro!
+  longitude: [[[UniqueID!]!]]!
+}
+
+input UniqueID {
+  uid: String!
+}
+
+type Address {
+  city: String!
+  street: String!
+  houseNumber: Int!
+}

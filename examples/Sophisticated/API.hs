@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds         #-}
 {-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeInType        #-}
 {-# LANGUAGE TypeOperators     #-}
@@ -14,73 +15,40 @@ module Sophisticated.API
   , Content
   ) where
 
-import           Data.Map            (Map)
-import qualified Data.Map            as M (fromList)
-import           Data.Set            (Set)
-import qualified Data.Set            as S (fromList)
-import           Data.Text           (Text, pack)
-import           Data.Typeable       (Typeable)
-import           GHC.Generics        (Generic)
+import           Data.Map               (Map)
+import qualified Data.Map               as M (fromList)
+import           Data.Set               (Set)
+import qualified Data.Set               as S (fromList)
+import           Data.Text              (Text, pack)
+import           Data.Typeable          (Typeable)
+import           GHC.Generics           (Generic)
+
+import           Data.Morpheus.Document (importGQLDocument)
 
 -- MORPHEUS
-import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, IOMutRes,
-                                      IORes, IOSubRes, Resolver, ScalarValue (..), SubResolver (..), mutResolver,
-                                      resolver)
+import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, IOMutRes,
+                                         IORes, IOSubRes, Resolver, ScalarValue (..), SubResolver (..), constRes,
+                                         mutResolver, resolver)
 
-newtype Cat = Cat
-  { catName :: Text
-  } deriving (Show, Generic)
-
-instance GQLType Cat where
-  type KIND Cat = INPUT_OBJECT
-
-newtype Dog = Dog
-  { dogName :: Text
-  } deriving (Show, Generic)
-
-instance GQLType Dog where
-  type KIND Dog = INPUT_OBJECT
-
-newtype Bird = Bird
-  { birdName :: Text
-  } deriving (Show, Generic)
-
-instance GQLType Bird where
-  type KIND Bird = INPUT_OBJECT
+importGQLDocument "examples/Sophisticated/api.gql"
 
 data Animal
   = CAT Cat
   | DOG Dog
   | BIRD Bird
-  deriving (Show, Generic)
+  deriving (Generic)
 
 instance GQLType Animal where
   type KIND Animal = INPUT_UNION
 
-newtype UniqueID = UniqueID
-  { uid :: Text
-  } deriving (Show, Generic)
-
-instance GQLType UniqueID where
-  type KIND UniqueID = INPUT_OBJECT
-
-data MyUnion res
-  = USER (User res)
-  | ADDRESS Address
+data MyUnion m
+  = USER (User m)
+  | ADDRESS (Address m)
   deriving (Generic)
 
 instance Typeable a => GQLType (MyUnion a) where
   type KIND (MyUnion a) = UNION
-
-data CityID
-  = Paris
-  | BLN
-  | HH
-  deriving (Generic)
-
-instance GQLType CityID where
-  type KIND CityID = ENUM
 
 data Euro =
   Euro Int
@@ -93,24 +61,6 @@ instance GQLType Euro where
 instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
   serialize (Euro x y) = Int (x * 100 + y)
-
-data Coordinates = Coordinates
-  { latitude  :: Euro
-  , longitude :: [Maybe [[UniqueID]]]
-  } deriving (Generic)
-
-instance GQLType Coordinates where
-  type KIND Coordinates = INPUT_OBJECT
-  description _ = "just random latitude and longitude"
-
-data Address = Address
-  { city        :: Text
-  , street      :: Text
-  , houseNumber :: Int
-  } deriving (Generic)
-
-instance GQLType Address where
-  type KIND Address = OBJECT
 
 data AddressArgs = AddressArgs
   { coordinates :: Coordinates
@@ -125,8 +75,8 @@ data OfficeArgs = OfficeArgs
 data User m = User
   { name    :: Text
   , email   :: Text
-  , address :: AddressArgs -> m Address
-  , office  :: OfficeArgs -> m Address
+  , address :: AddressArgs -> m (Address m)
+  , office  :: OfficeArgs -> m (Address m)
   , myUnion :: () -> m (MyUnion m)
   , home    :: CityID
   } deriving (Generic)
@@ -142,8 +92,8 @@ newtype A a = A
   { wrappedA :: a
   } deriving (Generic)
 
-fetchAddress :: Monad m => Euro -> m (Either String Address)
-fetchAddress _ = return $ Right $ Address " " "" 0
+fetchAddress :: Monad m => Euro -> m (Either String (Address (Resolver m)))
+fetchAddress _ = return $ Right Address {city = constRes "", street = constRes "", houseNumber = constRes 0}
 
 fetchUser :: Monad m => m (Either String (User (Resolver m)))
 fetchUser =
@@ -158,7 +108,7 @@ fetchUser =
     , myUnion = const $ return $ USER unionUser
     }
   where
-    unionAddress = Address {city = "Hamburg", street = "Street", houseNumber = 20}
+    unionAddress = Address {city = constRes "Hamburg", street = constRes "Street", houseNumber = constRes 20}
   -- Office
     resolveOffice OfficeArgs {cityID = Paris} = resolver $ fetchAddress (Euro 1 1)
     resolveOffice OfficeArgs {cityID = BLN}   = resolver $ fetchAddress (Euro 1 2)
@@ -176,10 +126,10 @@ fetchUser =
 
 newtype AnimalArgs = AnimalArgs
   { animal :: Animal
-  } deriving (Show, Generic)
+  } deriving (Generic)
 
 setAnimalResolver :: AnimalArgs -> IORes Text
-setAnimalResolver AnimalArgs {animal} = return $ pack $ show animal
+setAnimalResolver AnimalArgs {animal} = return "TODO: $ pack $ show animal"
 
 data Query = Query
   { user       :: () -> IORes (User IORes)
@@ -206,11 +156,11 @@ type SubRes = IOSubRes Channel Content
 
 data Mutation = Mutation
   { createUser    :: () -> MutRes (User MutRes)
-  , createAddress :: () -> MutRes Address
+  , createAddress :: () -> MutRes (Address MutRes)
   } deriving (Generic)
 
 data Subscription = Subscription
-  { newAddress :: () -> SubRes Address
+  { newAddress :: () -> SubRes (Address IORes)
   , newUser    :: () -> SubRes (User IORes)
   } deriving (Generic)
 
@@ -236,7 +186,7 @@ gqlRoot =
       SubResolver [UPDATE_ADDRESS] $ \(Event _ Update {contentID}) -> resolver $ fetchAddress (Euro contentID 0)
     createUser _ =
       mutResolver [Event [UPDATE_USER] (Update {contentID = 12, contentMessage = "some message for user"})] fetchUser
-    createAddress :: () -> MutRes Address
+    createAddress :: () -> MutRes (Address MutRes)
     createAddress _ =
       mutResolver
         [Event [UPDATE_ADDRESS] (Update {contentID = 10, contentMessage = "message for address"})]
