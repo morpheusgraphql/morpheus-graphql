@@ -30,8 +30,8 @@
 
   ```haskell
      data Deity m = Deity {
-       name: () -> m String
-       power: () -> m (Power m)
+       name :: () -> m String
+       power :: () -> m (Power m)
      }
   ```
 
@@ -50,8 +50,8 @@
 
   ```haskell
   data Subscription sm m = Subscription {
-    newAddress: () -> sm (Address m)
-    newUser: () -> sm (User m)
+    newAddress :: () -> sm (Address m)
+    newUser :: () -> sm (User m)
   }
   ```
 
