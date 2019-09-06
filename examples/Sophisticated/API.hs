@@ -1,14 +1,10 @@
-{-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE NamedFieldPuns     #-}
 {-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE PolyKinds          #-}
 {-# LANGUAGE RankNTypes         #-}
 {-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE TypeFamilies       #-}
-{-# LANGUAGE TypeInType         #-}
-{-# LANGUAGE TypeOperators      #-}
 
 module Sophisticated.API
   ( gqlRoot
