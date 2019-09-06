@@ -2,6 +2,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeFamilies      #-}
 
 module TH.Simple
@@ -11,22 +12,11 @@ module TH.Simple
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Document     (gqlDocument)
+import           Data.Morpheus.Document     (importGQLDocument)
 import           Data.Morpheus.Types        (GQLRootResolver (..), IORes)
 import           Data.Text                  (Text)
 
-[gqlDocument|
-
-  type Query {
-    deity (uid: Text! ) : Deity!
-  }
-
-  type Deity {
-    name : Text!
-    power    : Text
-  }
-
-|]
+importGQLDocument "examples/TH/simple.gql"
 
 rootResolver :: GQLRootResolver IO () () (Query IORes) () ()
 rootResolver =
