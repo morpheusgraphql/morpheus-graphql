@@ -111,9 +111,12 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
     ----------------------------------------------------------------
     subscriptionResolver = return Subscription {newAddress, newUser}
       where
-        newUser _ = SubResolver {subChannels = [UPDATE_USER], subResolver = \(Event _ Update {}) -> resolver fetchUser}
-        newAddress _ =
-          SubResolver [UPDATE_ADDRESS] $ \(Event _ Update {contentID}) -> resolver $ fetchAddress (Euro contentID 0)
+        newUser () = SubResolver {subChannels = [UPDATE_USER], subResolver}
+          where
+            subResolver (Event _ Update {}) = resolver fetchUser
+        newAddress () = SubResolver {subChannels = [UPDATE_ADDRESS], subResolver}
+          where
+            subResolver (Event _ Update {contentID}) = resolver $ fetchAddress (Euro contentID 0)
 
 fetchAddress :: Monad m => Euro -> m (Either String (Address (Resolver m)))
 fetchAddress _ = return $ Right Address {city = constRes "", street = constRes "", houseNumber = constRes 0}
