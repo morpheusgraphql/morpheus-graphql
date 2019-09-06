@@ -3,7 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeOperators         #-}
 
-module Deprecated.Model
+module Sophisticated.Model
   ( jsonAddress
   , jsonUser
   , JSONUser(..)

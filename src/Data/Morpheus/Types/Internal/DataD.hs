@@ -6,7 +6,11 @@ module Data.Morpheus.Types.Internal.DataD
   , ConsD(..)
   , QueryD(..)
   , AppD(..)
-  , GQLTypeD
+  , GQLTypeD(..)
+  , ResolverKind(..)
+  , KindD(..)
+  , unKindD
+  , isInputKind
   , gqlToHSWrappers
   ) where
 
@@ -14,13 +18,19 @@ import           Language.Haskell.TH.Syntax        (Lift (..))
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data (DataTypeKind, DataTypeWrapper (..))
+import           Data.Morpheus.Types.Internal.Data (DataTypeKind (..), DataTypeWrapper (..))
+
+data ResolverKind
+  = PlainResolver
+  | TypeVarResolver
+  | ExternalResolver
+  deriving (Show, Lift)
 
 data AppD a
   = ListD (AppD a)
   | MaybeD (AppD a)
   | ResD String
-         String
+         ResolverKind
          (AppD a)
   | BaseD a
   deriving (Show, Lift)
@@ -32,7 +42,24 @@ gqlToHSWrappers (NonNullType:(ListType:xs))    = ListD . gqlToHSWrappers xs
 gqlToHSWrappers (NonNullType:(NonNullType:xs)) = gqlToHSWrappers xs
 gqlToHSWrappers (ListType:xs)                  = MaybeD . ListD . gqlToHSWrappers xs
 
-type GQLTypeD = (TypeD, DataTypeKind, [TypeD])
+unKindD :: KindD -> DataTypeKind
+unKindD SubscriptionD       = KindObject
+unKindD (RegularKindD kind) = kind
+
+isInputKind :: KindD -> Bool
+isInputKind (RegularKindD KindInputObject) = True
+isInputKind _                              = False
+
+data KindD
+  = SubscriptionD
+  | RegularKindD DataTypeKind
+  deriving (Show, Eq, Lift)
+
+data GQLTypeD = GQLTypeD
+  { typeD     :: TypeD
+  , typeKindD :: KindD
+  , typeArgD  :: [TypeD]
+  } deriving (Show, Lift)
 
 data QueryD = QueryD
   { queryText     :: String

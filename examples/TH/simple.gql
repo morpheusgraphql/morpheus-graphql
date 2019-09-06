@@ -1,0 +1,8 @@
+type Query {
+  deity(uid: String!): Deity!
+}
+
+type Deity {
+  name: String!
+  power: String
+}
