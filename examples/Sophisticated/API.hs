@@ -1,13 +1,14 @@
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PolyKinds         #-}
-{-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE TypeInType        #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE DataKinds          #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE NamedFieldPuns     #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE PolyKinds          #-}
+{-# LANGUAGE RankNTypes         #-}
+{-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE TypeInType         #-}
+{-# LANGUAGE TypeOperators      #-}
 
 module Sophisticated.API
   ( gqlRoot
@@ -45,7 +46,7 @@ data Animal
   = CAT Cat
   | DOG Dog
   | BIRD Bird
-  deriving (Generic)
+  deriving (Show, Generic)
 
 instance GQLType Animal where
   type KIND Animal = INPUT_UNION
@@ -53,7 +54,7 @@ instance GQLType Animal where
 data Euro =
   Euro Int
        Int
-  deriving (Generic)
+  deriving (Show, Generic)
 
 instance GQLType Euro where
   type KIND Euro = SCALAR
@@ -91,7 +92,7 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
         Query
           { user = const $ resolver fetchUser
           , wrappedA1 = constRes $ A (0, "")
-          , setAnimal = \SetAnimalArgs {animal} -> return "TODO: $ pack $ show animal"
+          , setAnimal = \SetAnimalArgs {animal} -> return $ pack $ show animal
           , wrappedA2 = constRes $ A ""
           , integerSet = constRes $ S.fromList [1, 2]
           , textIntMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]

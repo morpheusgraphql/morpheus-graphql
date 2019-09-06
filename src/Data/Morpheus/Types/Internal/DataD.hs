@@ -10,6 +10,7 @@ module Data.Morpheus.Types.Internal.DataD
   , ResolverKind(..)
   , KindD(..)
   , unKindD
+  , isInputKind
   , gqlToHSWrappers
   ) where
 
@@ -44,6 +45,10 @@ gqlToHSWrappers (ListType:xs)                  = MaybeD . ListD . gqlToHSWrapper
 unKindD :: KindD -> DataTypeKind
 unKindD SubscriptionD       = KindObject
 unKindD (RegularKindD kind) = kind
+
+isInputKind :: KindD -> Bool
+isInputKind (RegularKindD KindInputObject) = True
+isInputKind _                              = False
 
 data KindD
   = SubscriptionD
