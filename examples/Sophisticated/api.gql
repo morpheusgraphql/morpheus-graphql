@@ -45,3 +45,22 @@ type User {
 }
 
 union MyUnion = User | Address
+
+type Query {
+  user: User!
+  wrappedA1: AIntText!
+  setAnimal(animal: Animal): String!
+  wrappedA2: AText!
+  integerSet: SetInt!
+  textIntMap: MapTextInt!
+}
+
+type Mutation {
+  createUser: User!
+  createAddress: Address!
+}
+
+type Subscription {
+  newAddress: Address!
+  newUser: User!
+}

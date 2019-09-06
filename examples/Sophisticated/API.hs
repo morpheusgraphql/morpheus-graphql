@@ -33,6 +33,14 @@ import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLSc
 
 importGQLDocument "examples/Sophisticated/api.gql"
 
+type AIntText = A (Int, Text)
+
+type AText = A Text
+
+type SetInt = Set Int
+
+type MapTextInt = Map Text Int
+
 data Animal
   = CAT Cat
   | DOG Dog
@@ -60,6 +68,52 @@ instance Typeable a => GQLType (A a) where
 newtype A a = A
   { wrappedA :: a
   } deriving (Generic)
+
+data Channel
+  = UPDATE_USER
+  | UPDATE_ADDRESS
+  deriving (Show, Eq, Ord)
+
+data Content = Update
+  { contentID      :: Int
+  , contentMessage :: Text
+  }
+
+type MutRes = IOMutRes Channel Content
+
+type SubRes = IOSubRes Channel Content
+
+gqlRoot :: GQLRootResolver IO Channel Content (Query IORes) (Mutation MutRes) (Subscription SubRes IORes)
+gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
+  where
+    queryResolver =
+      return
+        Query
+          { user = const $ resolver fetchUser
+          , wrappedA1 = constRes $ A (0, "")
+          , setAnimal = \SetAnimalArgs {animal} -> return "TODO: $ pack $ show animal"
+          , wrappedA2 = constRes $ A ""
+          , integerSet = constRes $ S.fromList [1, 2]
+          , textIntMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]
+          }
+    -------------------------------------------------------------
+    mutationResolver = return Mutation {createAddress, createUser}
+      where
+        createUser _ =
+          mutResolver
+            [Event [UPDATE_USER] (Update {contentID = 12, contentMessage = "some message for user"})]
+            fetchUser
+        createAddress :: () -> MutRes (Address MutRes)
+        createAddress _ =
+          mutResolver
+            [Event [UPDATE_ADDRESS] (Update {contentID = 10, contentMessage = "message for address"})]
+            (fetchAddress (Euro 1 0))
+    ----------------------------------------------------------------
+    subscriptionResolver = return Subscription {newAddress, newUser}
+      where
+        newUser _ = SubResolver {subChannels = [UPDATE_USER], subResolver = \(Event _ Update {}) -> resolver fetchUser}
+        newAddress _ =
+          SubResolver [UPDATE_ADDRESS] $ \(Event _ Update {contentID}) -> resolver $ fetchAddress (Euro contentID 0)
 
 fetchAddress :: Monad m => Euro -> m (Either String (Address (Resolver m)))
 fetchAddress _ = return $ Right Address {city = constRes "", street = constRes "", houseNumber = constRes 0}
@@ -92,71 +146,3 @@ fetchUser =
         , home = constRes BLN
         , myUnion = const $ return $ MyUnionAddress unionAddress
         }
-
-newtype AnimalArgs = AnimalArgs
-  { animal :: Animal
-  } deriving (Generic)
-
-setAnimalResolver :: AnimalArgs -> IORes Text
-setAnimalResolver AnimalArgs {animal} = return "TODO: $ pack $ show animal"
-
-data Query = Query
-  { user       :: () -> IORes (User IORes)
-  , wrappedA1  :: A (Int, Text)
-  , setAnimal  :: AnimalArgs -> IORes Text
-  , wrappedA2  :: A Text
-  , integerSet :: Set Int
-  , textIntMap :: Map Text Int
-  } deriving (Generic)
-
-data Channel
-  = UPDATE_USER
-  | UPDATE_ADDRESS
-  deriving (Show, Eq, Ord)
-
-data Content = Update
-  { contentID      :: Int
-  , contentMessage :: Text
-  }
-
-type MutRes = IOMutRes Channel Content
-
-type SubRes = IOSubRes Channel Content
-
-data Mutation = Mutation
-  { createUser    :: () -> MutRes (User MutRes)
-  , createAddress :: () -> MutRes (Address MutRes)
-  } deriving (Generic)
-
-data Subscription = Subscription
-  { newAddress :: () -> SubRes (Address IORes)
-  , newUser    :: () -> SubRes (User IORes)
-  } deriving (Generic)
-
-gqlRoot :: GQLRootResolver IO Channel Content Query Mutation Subscription
-gqlRoot =
-  GQLRootResolver
-    { queryResolver =
-        return
-          Query
-            { user = const $ resolver fetchUser
-            , wrappedA1 = A (0, "")
-            , setAnimal = setAnimalResolver
-            , wrappedA2 = A ""
-            , integerSet = S.fromList [1, 2]
-            , textIntMap = M.fromList [("robin", 1), ("carl", 2)]
-            }
-    , mutationResolver = return Mutation {createAddress, createUser}
-    , subscriptionResolver = return Subscription {newAddress, newUser}
-    }
-  where
-    newUser _ = SubResolver {subChannels = [UPDATE_USER], subResolver = \(Event _ Update {}) -> resolver fetchUser}
-    newAddress _ =
-      SubResolver [UPDATE_ADDRESS] $ \(Event _ Update {contentID}) -> resolver $ fetchAddress (Euro contentID 0)
-    createUser _ =
-      mutResolver [Event [UPDATE_USER] (Update {contentID = 12, contentMessage = "some message for user"})] fetchUser
-    createAddress :: () -> MutRes (Address MutRes)
-    createAddress _ =
-      mutResolver
-        [Event [UPDATE_ADDRESS] (Update {contentID = 10, contentMessage = "message for address"})]
-        (fetchAddress (Euro 1 0))
