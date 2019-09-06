@@ -10,7 +10,10 @@
 
   this will generate types defined in `API.gql`
 
+### Fixed
+
 - `String` defined in GQLDcoument will be converted to `Text` by template haskell
+
 - `importGQLDocument` and `gqlDocument` supports Mutation, Subscription and Resolvers with custom Monad
 
   for example. if we have:
@@ -53,6 +56,22 @@
   ```
 
   because subscription are only allowed on root level. that why only `Subscription` fields will be resolved by `sm` (Subscription Monad). nested objects will receive just regular resolver Monad `m`.
+
+### Changed
+
+- subscription Resolver changed
+
+  from:
+
+  ```haskell
+    Subscription {newDeity = \args -> Event {channels = [ChannelA], content = newDeityResolver } }
+  ```
+
+  to:
+
+  ```haskell
+    Subscription {newDeity = \args -> SubResolver {subChannels = [ChannelA], subResolver = newDeityResolver } }
+  ```
 
 ## [0.2.2] - 30.08.2019
 
