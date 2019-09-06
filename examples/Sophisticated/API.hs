@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeInType        #-}
 {-# LANGUAGE TypeOperators     #-}
 
-module Deprecated.API
+module Sophisticated.API
   ( gqlRoot
   , Channel
   , Content

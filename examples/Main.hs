@@ -20,7 +20,7 @@ import           Data.Morpheus.Client           (Fetch (..), defineByDocumentFil
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Data.Morpheus.Types            (ScalarValue (..))
-import           Deprecated.API                 (Channel, Content, gqlRoot)
+import           Sophisticated.API                 (Channel, Content, gqlRoot)
 import           Mythology.API                  (mythologyApi)
 import qualified Network.Wai                    as Wai
 import qualified Network.Wai.Handler.Warp       as Warp
@@ -28,6 +28,9 @@ import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
 import           TH.API                         (thApi)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
+
+
+
 
 ioRes :: ByteString -> IO ByteString
 ioRes req = do
