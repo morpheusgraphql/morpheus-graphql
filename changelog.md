@@ -11,6 +11,48 @@
   this will generate types defined in `API.gql`
 
 - `String` defined in GQLDcoument will be converted to `Text` by template haskell
+- `importGQLDocument` and `gqlDocument` supports Mutation, Subscription and Resolvers with custom Monad
+
+  for example. if we have:
+
+  ```gql
+  type Deity {
+    name: String!
+    power: Power!
+  }
+  ```
+
+  where `Power` is another object defined by gql schema.
+  template haskell will represent this type as:
+
+  ```haskell
+     data Deity m = Deity {
+       name: () -> m String
+       power: () -> m (Power m)
+     }
+  ```
+
+  where `m` is resolver Monad.
+
+  special case is `subscription`:
+
+  ```gql
+  type Subscription {
+    newAddress: Address!
+    newUser: User!
+  }
+  ```
+
+  will be represent as:
+
+  ```haskell
+  data Subscription sm m = Subscription {
+    newAddress: () -> sm (Address m)
+    newUser: () -> sm (User m)
+  }
+  ```
+
+  because subscription are only allowed on root level. that why only `Subscription` fields will be resolved by `sm` (Subscription Monad). nested objects will receive just regular resolver Monad `m`.
 
 ## [0.2.2] - 30.08.2019
 
