@@ -26,7 +26,7 @@ import           GHC.Generics           (Generic)
 import           Data.Morpheus.Document (importGQLDocument)
 
 -- MORPHEUS
-import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
 import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, IOMutRes,
                                          IORes, IOSubRes, Resolver, ScalarValue (..), SubResolver (..), constRes,
                                          mutResolver, resolver)
@@ -42,14 +42,6 @@ data Animal
 instance GQLType Animal where
   type KIND Animal = INPUT_UNION
 
-data MyUnion m
-  = USER (User m)
-  | ADDRESS (Address m)
-  deriving (Generic)
-
-instance Typeable a => GQLType (MyUnion a) where
-  type KIND (MyUnion a) = UNION
-
 data Euro =
   Euro Int
        Int
@@ -61,29 +53,6 @@ instance GQLType Euro where
 instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
   serialize (Euro x y) = Int (x * 100 + y)
-
-data AddressArgs = AddressArgs
-  { coordinates :: Coordinates
-  , comment     :: Maybe Text
-  } deriving (Generic)
-
-data OfficeArgs = OfficeArgs
-  { zipCode :: Maybe [[Maybe [ID]]]
-  , cityID  :: CityID
-  } deriving (Generic)
-
-data User m = User
-  { name    :: Text
-  , email   :: Text
-  , address :: AddressArgs -> m (Address m)
-  , office  :: OfficeArgs -> m (Address m)
-  , myUnion :: () -> m (MyUnion m)
-  , home    :: CityID
-  } deriving (Generic)
-
-instance Typeable a => GQLType (User a) where
-  type KIND (User a) = OBJECT
-  description _ = "Custom Description for Client Defined User Type"
 
 instance Typeable a => GQLType (A a) where
   type KIND (A a) = OBJECT
@@ -100,12 +69,12 @@ fetchUser =
   return $
   Right $
   User
-    { name = "George"
-    , email = "George@email.com"
+    { name = constRes "George"
+    , email = constRes "George@email.com"
     , address = const resolveAddress
     , office = resolveOffice
-    , home = HH
-    , myUnion = const $ return $ USER unionUser
+    , home = constRes HH
+    , myUnion = constRes $ MyUnionUser unionUser
     }
   where
     unionAddress = Address {city = constRes "Hamburg", street = constRes "Street", houseNumber = constRes 20}
@@ -116,12 +85,12 @@ fetchUser =
     resolveAddress = resolver $ fetchAddress (Euro 1 0)
     unionUser =
       User
-        { name = "David"
-        , email = "David@email.com"
+        { name = constRes "David"
+        , email = constRes "David@email.com"
         , address = const resolveAddress
         , office = resolveOffice
-        , home = BLN
-        , myUnion = const $ return $ ADDRESS unionAddress
+        , home = constRes BLN
+        , myUnion = const $ return $ MyUnionAddress unionAddress
         }
 
 newtype AnimalArgs = AnimalArgs

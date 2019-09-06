@@ -34,3 +34,14 @@ type Address {
   street: String!
   houseNumber: Int!
 }
+
+type User {
+  name: String!
+  email: String!
+  address(coordinates: Coordinates!, comment: String): Address!
+  office(zipCode: [[[ID!]]!], cityID: CityID!): Address!
+  myUnion: MyUnion!
+  home: CityID!
+}
+
+union MyUnion = User | Address
