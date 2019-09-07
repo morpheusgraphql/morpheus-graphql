@@ -22,7 +22,7 @@ rootResolver :: GQLRootResolver IO () () (Query IORes) () ()
 rootResolver =
   GQLRootResolver {queryResolver = return Query {deity}, mutationResolver = pure (), subscriptionResolver = pure ()}
   where
-    deity DeityArgs {uid} = pure Deity {name, power}
+    deity _deityArgs = pure Deity {name, power}
       where
         name _ = pure "Morpheus"
         power _ = pure (Just "Shapeshifting")

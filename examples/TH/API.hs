@@ -9,6 +9,7 @@ module TH.API
   ( thApi
   ) where
 
+import           Control.Lens               (view)
 import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
@@ -50,7 +51,7 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver = return (), subscrip
               , myUnion = const $ pure $ MyUnionAddress $ simpleAddress "boo"
               }
         address :: AddressArgs -> IORes (Address IORes)
-        address AddressArgs {zipCode = UID {uid}} = return $ simpleAddress uid
+        address args = return $ simpleAddress (view (zipCode . uid) args)
         --------------------------------
         simpleAddress streetID =
           Address {city = const $ pure "Hamburg", street = const $ pure streetID, houseNumber = const $ pure 20}
