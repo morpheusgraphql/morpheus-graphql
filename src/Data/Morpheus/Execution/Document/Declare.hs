@@ -6,15 +6,16 @@ module Data.Morpheus.Execution.Document.Declare
   ( declareTypes
   ) where
 
-import           Control.Lens                             (declareLenses)
-import           Data.Semigroup                           ((<>))
+import           Control.Lens                                   (declareLenses)
+import           Data.Semigroup                                 ((<>))
 import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Execution.Document.GQLType (deriveGQLType)
-import           Data.Morpheus.Execution.Internal.Declare (declareResolverType, declareType)
-import           Data.Morpheus.Types.Internal.DataD       (GQLTypeD (..), isInputKind)
+import           Data.Morpheus.Execution.Document.GQLType       (deriveGQLType)
+import           Data.Morpheus.Execution.Document.Introspection (deriveObjectRep)
+import           Data.Morpheus.Execution.Internal.Declare       (declareResolverType, declareType)
+import           Data.Morpheus.Types.Internal.DataD             (GQLTypeD (..), isInputKind)
 
 declareTypes :: [GQLTypeD] -> Q [Dec]
 declareTypes = fmap concat . traverse declareGQLType
@@ -23,9 +24,13 @@ declareGQLType :: GQLTypeD -> Q [Dec]
 declareGQLType gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
   argTypes <- declareLenses $ pure $ map (declareType []) typeArgD
   types <- declareGQL
+  introspection <- deriveIntrospection
   typeClasses <- deriveGQLType gqlType
-  pure $ types <> typeClasses <> argTypes
+  pure $ types <> typeClasses <> argTypes <> introspection
   where
+    deriveIntrospection
+      | isInputKind typeKindD = deriveObjectRep gqlType
+      | otherwise = pure []
     declareGQL
       | isInputKind typeKindD = declareLenses declareT
       | otherwise = declareT
