@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module TH.API
   ( thApi
