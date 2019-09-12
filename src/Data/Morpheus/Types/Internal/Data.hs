@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveLift        #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 module Data.Morpheus.Types.Internal.Data
   ( Key
@@ -37,11 +38,12 @@ module Data.Morpheus.Types.Internal.Data
   , kindOf
   ) where
 
+import           Data.Morpheus.Types.Internal.TH    (apply, liftText)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
 import           Data.Text                          (Text)
 import qualified Data.Text                          as T (concat)
 import           GHC.Fingerprint.Type               (Fingerprint)
-import           Language.Haskell.TH.Syntax         (Lift)
+import           Language.Haskell.TH.Syntax         (Lift (..))
 
 type Key = Text
 
@@ -104,6 +106,9 @@ data DataField a = DataField
   , fieldTypeWrappers :: [DataTypeWrapper]
   , fieldHidden       :: Bool
   } deriving (Show)
+
+instance Lift a => Lift (DataField a) where
+  lift (DataField arg nm ty tw hid) = apply 'DataField [lift arg, liftText nm, liftText ty, lift tw, lift hid]
 
 isFieldNullable :: DataField a -> Bool
 isFieldNullable DataField {fieldTypeWrappers = NonNullType:_} = False
