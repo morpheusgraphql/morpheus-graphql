@@ -11,6 +11,7 @@ module Sophisticated.API
   , Content
   ) where
 
+import           Control.Lens           (view)
 import           Data.Map               (Map)
 import qualified Data.Map               as M (fromList)
 import           Data.Set               (Set)
@@ -19,9 +20,8 @@ import           Data.Text              (Text, pack)
 import           Data.Typeable          (Typeable)
 import           GHC.Generics           (Generic)
 
-import           Data.Morpheus.Document (importGQLDocument)
-
 -- MORPHEUS
+import           Data.Morpheus.Document (importGQLDocument)
 import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
 import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, IOMutRes,
                                          IORes, IOSubRes, Resolver, ScalarValue (..), SubResolver (..), constRes,
@@ -87,7 +87,7 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
         Query
           { user = const $ resolver fetchUser
           , wrappedA1 = constRes $ A (0, "")
-          , setAnimal = \SetAnimalArgs {animal} -> return $ pack $ show animal
+          , setAnimal = \args -> return (pack $ show (view animal args))
           , wrappedA2 = constRes $ A ""
           , integerSet = constRes $ S.fromList [1, 2]
           , textIntMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]
@@ -132,9 +132,7 @@ fetchUser =
   where
     unionAddress = Address {city = constRes "Hamburg", street = constRes "Street", houseNumber = constRes 20}
   -- Office
-    resolveOffice OfficeArgs {cityID = Paris} = resolver $ fetchAddress (Euro 1 1)
-    resolveOffice OfficeArgs {cityID = BLN}   = resolver $ fetchAddress (Euro 1 2)
-    resolveOffice OfficeArgs {cityID = HH}    = resolver $ fetchAddress (Euro 1 3)
+    resolveOffice _officeArgs = resolver $ fetchAddress (Euro 1 1)
     resolveAddress = resolver $ fetchAddress (Euro 1 0)
     unionUser =
       User
