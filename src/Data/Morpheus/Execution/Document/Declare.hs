@@ -24,12 +24,13 @@ declareGQLType :: GQLTypeD -> Q [Dec]
 declareGQLType gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
   argTypes <- declareLenses $ pure $ map (declareType []) typeArgD
   types <- declareGQL
+  introspectArgs <- concat <$> traverse deriveObjectRep typeArgD
   introspection <- deriveIntrospection
   typeClasses <- deriveGQLType gqlType
-  pure $ types <> typeClasses <> argTypes <> introspection
+  pure $ types <> typeClasses <> argTypes <> introspection <> introspectArgs
   where
     deriveIntrospection
-      | isInputKind typeKindD = deriveObjectRep gqlType
+      | isInputKind typeKindD = deriveObjectRep typeD
       | otherwise = pure []
     declareGQL
       | isInputKind typeKindD = declareLenses declareT

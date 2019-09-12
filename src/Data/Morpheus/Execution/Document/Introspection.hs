@@ -15,8 +15,8 @@ import           Data.Morpheus.Types.Internal.Data         (DataField (..))
 import           Data.Morpheus.Types.Internal.DataD        (ConsD (..), FieldD (..), GQLTypeD (..), TypeD (..))
 import           Data.Text                                 (pack)
 
-deriveObjectRep :: GQLTypeD -> Q [Dec]
-deriveObjectRep GQLTypeD {typeD = TypeD {tName, tCons = [ConsD {cFields}]}} =
+deriveObjectRep :: TypeD -> Q [Dec]
+deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} =
   pure <$> instanceD (cxt []) appHead methods
   where
     appHead = appT (appT (conT ''ObjectRep) (conT $ mkName tName)) (conT ''())
