@@ -10,6 +10,7 @@ import           Control.Lens                                (declareLenses)
 import           Data.Semigroup                              ((<>))
 import           Language.Haskell.TH
 
+import           Data.Morpheus.Execution.Document.Decode     (deriveDecode)
 --
 -- MORPHEUS
 import           Data.Morpheus.Execution.Document.GQLType    (deriveGQLType)
@@ -24,12 +25,12 @@ declareGQLType :: GQLTypeD -> Q [Dec]
 declareGQLType gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
   types <- declareGQL
  -- introspectArgs <- concat <$> traverse deriveObjectRep typeArgD
-  introspection <- deriveIntrospection
+  introspection <- deriveGQLInstances
   typeClasses <- deriveGQLType gqlType
   pure $ types <> typeClasses <> map (declareType []) typeArgD <> introspection -- <> introspectArgs
   where
-    deriveIntrospection
-      | isInputKind typeKindD = deriveObjectRep typeD
+    deriveGQLInstances
+      | isInputKind typeKindD = concat <$> traverse (\x -> x typeD) [deriveObjectRep, deriveDecode]
       | otherwise = pure []
     declareGQL
       | isInputKind typeKindD = declareLenses declareT
