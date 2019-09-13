@@ -14,8 +14,7 @@ import           Data.Text                                 (Text)
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Execution.Server.Introspect (ObjectRep (..), TypeUpdater, introspectOutputType,
-                                                            resolveTypes)
+import           Data.Morpheus.Execution.Server.Introspect (ObjectRep (..), TypeUpdater, introspect, resolveTypes)
 import           Data.Morpheus.Schema.Schema               (Schema, Type, findType, initSchema)
 import           Data.Morpheus.Types.ID                    (ID)
 import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataOutputField, DataTypeLib (..))
@@ -39,12 +38,12 @@ defaultTypes :: TypeUpdater
 defaultTypes =
   flip
     resolveTypes
-    [ introspectOutputType (Proxy @Bool)
-    , introspectOutputType (Proxy @Int)
-    , introspectOutputType (Proxy @Float)
-    , introspectOutputType (Proxy @Text)
-    , introspectOutputType (Proxy @ID)
-    , introspectOutputType (Proxy @Schema)
+    [ introspect (Proxy @Bool)
+    , introspect (Proxy @Int)
+    , introspect (Proxy @Float)
+    , introspect (Proxy @Text)
+    , introspect (Proxy @ID)
+    , introspect (Proxy @Schema)
     ]
 
 schemaAPI :: DataTypeLib -> SchemaAPI
