@@ -128,6 +128,7 @@ updateLib typeBuilder stack proxy lib' =
 
 class Introspect a where
   type IRep a :: *
+  type IRep a = Context a (KIND a)
   field :: proxy a -> Text -> DataField
   default field :: Introspect1 a (KIND a) =>
     proxy a -> Text -> DataField
@@ -137,8 +138,7 @@ class Introspect a where
     proxy a -> TypeUpdater
   introspect _ = __introspect (Context :: IRep a)
 
-instance {-# OVERLAPPABLE #-} Introspect1 a (KIND a) => Introspect a where
-  type IRep a = Context a (KIND a)
+instance {-# OVERLAPPABLE #-} Introspect1 a (KIND a) => Introspect a
 
 -- |   Generates internal GraphQL Schema for query validation and introspection rendering
 -- * 'kind': object, scalar, enum ...
