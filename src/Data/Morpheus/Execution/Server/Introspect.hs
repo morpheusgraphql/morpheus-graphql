@@ -129,7 +129,7 @@ class Introspect a where
   field :: proxy a -> Text -> DataField
   introspect :: proxy a -> TypeUpdater
 
-instance Introspect1 a (KIND a) => Introspect a where
+instance {-# OVERLAPPABLE #-} Introspect1 a (KIND a) => Introspect a where
   type IRep a = Context a (KIND a)
   --selector _ name = ((name, __field (Context :: IRep a) name), introspect (Proxy @a))
   field _ = __field (Context :: IRep a)

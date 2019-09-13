@@ -18,12 +18,10 @@ import           Data.Text                                 (pack)
 deriveObjectRep :: TypeD -> Q [Dec]
 deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (cxt []) appHead methods
   where
-    appHead = appT (appT (appT classT typeT) aT) bT
+    appHead = appT classT typeT
       where
         classT = conT ''Introspect
         typeT = conT $ mkName tName
-        bT = varT (mkName "a")
-        aT = varT (mkName "a")
      -- objectFieldTypes :: Proxy rep -> [((Text, DataField t), TypeUpdater)]
     fields = map genField cFields
       where
