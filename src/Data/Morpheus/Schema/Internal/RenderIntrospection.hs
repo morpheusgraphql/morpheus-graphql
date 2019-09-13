@@ -10,20 +10,24 @@ module Data.Morpheus.Schema.Internal.RenderIntrospection
   , createObjectType
   ) where
 
-import           Data.Morpheus.Schema.EnumValue    (EnumValue, createEnumValue)
-import qualified Data.Morpheus.Schema.Field        as F (Field (..), createFieldWith)
-import qualified Data.Morpheus.Schema.InputValue   as IN (InputValue (..), createInputValueWith)
-import           Data.Morpheus.Schema.Type         (Type (..))
-import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
-import           Data.Morpheus.Types.Internal.Data (DataField (..), DataFullType (..), DataInputField, DataInputObject,
-                                                    DataLeaf (..), DataOutputField, DataType (..), DataTypeKind (..),
-                                                    DataTypeLib, DataTypeWrapper (..), DataUnion, kindOf,
-                                                    lookupDataType)
-import           Data.Text                         (Text, unpack)
+import           Data.Text                               (Text)
+
+-- Morpheus
+import           Data.Morpheus.Error.Internal            (internalError)
+import           Data.Morpheus.Schema.EnumValue          (EnumValue, createEnumValue)
+import qualified Data.Morpheus.Schema.Field              as F (Field (..), createFieldWith)
+import qualified Data.Morpheus.Schema.InputValue         as IN (InputValue (..), createInputValueWith)
+import           Data.Morpheus.Schema.Type               (Type (..))
+import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
+import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataInputField,
+                                                          DataInputObject, DataLeaf (..), DataOutputField,
+                                                          DataType (..), DataTypeKind (..), DataTypeLib,
+                                                          DataTypeWrapper (..), DataUnion, kindOf, lookupDataType)
+import           Data.Morpheus.Types.Internal.Validation (Validation)
 
 type InputValue = IN.InputValue Type
 
-type Result a = DataTypeLib -> Either String a
+type Result a = DataTypeLib -> Validation a
 
 type Field = F.Field Type
 
@@ -61,7 +65,7 @@ wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 lookupKind :: Text -> Result DataTypeKind
 lookupKind name lib =
   case lookupDataType name lib of
-    Nothing    -> Left $ unpack ("Kind Not Found: " <> name)
+    Nothing    -> internalError $ "Kind Not Found: " <> name
     Just value -> Right (kindOf value)
 
 fieldFromObjectField :: (Text, DataOutputField) -> Result Field
