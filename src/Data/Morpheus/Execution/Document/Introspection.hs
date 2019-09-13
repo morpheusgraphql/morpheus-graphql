@@ -10,14 +10,18 @@ import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Execution.Server.Introspect (Introspect (..))
-import           Data.Morpheus.Types.Internal.Data         (DataField (..))
+import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), updateLib)
+import           Data.Morpheus.Types.GQLType               (GQLType (..))
+import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataFingerprint (..), DataFullType (..),
+                                                            DataType (..))
 import           Data.Morpheus.Types.Internal.DataD        (ConsD (..), FieldD (..), TypeD (..))
+import           Data.Proxy                                (Proxy (..))
 import           Data.Text                                 (pack)
 
 deriveObjectRep :: TypeD -> Q [Dec]
 deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (cxt []) appHead methods
   where
+    typeName = conT $ mkName tName
     appHead = appT classT typeT
       where
         classT = conT ''Introspect
@@ -35,10 +39,28 @@ deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (c
                 , fieldTypeWrappers = []
                 , fieldHidden = False
                 }
-    methods = [funD 'introspect [clause args (normalB body) []]]
+    methods = [funD 'introspect [clause argsE (normalB body) []]]
       where
-        args = [varP (mkName "_")]
-        body = varE 'pure
+        argsE = [varP (mkName "_")]
+        body = [|updateLib $(datatypeE) $(types) $(proxyE)|]
+        types = [|[]|]
+        fieldsE = [|[]|]
+        proxyE = [|(Proxy :: (Proxy $(typeName)))|]
+        datatypeE =
+          [|const $
+            InputObject $
+            DataType
+              { typeName = tName
+              , typeFingerprint = __typeFingerprint $(proxyE)
+              , typeDescription = tName
+              , typeVisibility = True
+              , typeData = $(fieldsE)
+              }|]
+       -- updateLib :: GQLType a => (Proxy a -> DataFullType) -> [TypeUpdater] -> Proxy a -> TypeUpdater
+--instance ObjectConstraint a => Introspect1 a INPUT_OBJECT where
+--  __introspect _ = updateLib  stack' (Proxy @a)
+--    where
+--      (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
 deriveObjectRep _ = pure []
 --
 --
