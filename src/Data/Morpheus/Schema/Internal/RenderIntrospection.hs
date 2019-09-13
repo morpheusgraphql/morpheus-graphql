@@ -19,7 +19,7 @@ import           Data.Morpheus.Types.Internal.Data (DataField (..), DataFullType
                                                     DataLeaf (..), DataOutputField, DataType (..), DataTypeKind (..),
                                                     DataTypeLib, DataTypeWrapper (..), DataUnion, kindOf,
                                                     lookupDataType)
-import           Data.Text                         (Text)
+import           Data.Text                         (Text, unpack)
 
 type InputValue = IN.InputValue Type
 
@@ -29,7 +29,7 @@ type Field = F.Field Type
 
 renderType :: (Text, DataFullType) -> Result Type
 renderType (name', Leaf leaf') = const $ pure $ typeFromLeaf (name', leaf')
-renderType (name', InputObject iObject') = renderInputObject (name', iObject')
+renderType (name, InputObject iObject) = renderInputObject (name, iObject)
 renderType (name', OutputObject object') = typeFromObject (name', object')
   where
     typeFromObject (key, DataType {typeData, typeDescription}) lib =
@@ -61,7 +61,7 @@ wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 lookupKind :: Text -> Result DataTypeKind
 lookupKind name lib =
   case lookupDataType name lib of
-    Nothing    -> Left ""
+    Nothing    -> Left $ unpack ("Kind Not Found: " <> name)
     Just value -> Right (kindOf value)
 
 fieldFromObjectField :: (Text, DataOutputField) -> Result Field
