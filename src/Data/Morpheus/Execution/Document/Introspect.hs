@@ -28,7 +28,7 @@ deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (c
     methods = [funD 'introspect [clause argsE (normalB body) []]]
       where
         argsE = [varP (mkName "_")]
-        body = [|updateLib $(typeBuilder) $(types) (Proxy :: (Proxy $(typeName)))|]
+        body = [| updateLib $(typeBuilder) $(types) (Proxy :: (Proxy $(typeName)))|]
         types = listE $ map introspectType cFields
           where
             introspectType fieldD = [|introspect (Proxy :: Proxy $(lookupType fieldD))|]
