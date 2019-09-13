@@ -12,8 +12,7 @@ import           Language.Haskell.TH
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), updateLib)
 import           Data.Morpheus.Types.GQLType               (GQLType (..))
-import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataFingerprint (..), DataFullType (..),
-                                                            DataType (..))
+import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataFullType (..), DataType (..))
 import           Data.Morpheus.Types.Internal.DataD        (ConsD (..), FieldD (..), TypeD (..))
 import           Data.Proxy                                (Proxy (..))
 import           Data.Text                                 (pack)
@@ -27,24 +26,22 @@ deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (c
         classT = conT ''Introspect
         typeT = conT $ mkName tName
      -- objectFieldTypes :: Proxy rep -> [((Text, DataField t), TypeUpdater)]
-    fields = map genField cFields
-      where
-        genField FieldD {fieldNameD} = [|((fieldNameD, field), pure)|]
-          where
-            field =
-              DataField
-                { fieldArgs = []
-                , fieldName = pack fieldNameD
-                , fieldType = pack "JOE"
-                , fieldTypeWrappers = []
-                , fieldHidden = False
-                }
     methods = [funD 'introspect [clause argsE (normalB body) []]]
       where
         argsE = [varP (mkName "_")]
         body = [|updateLib $(datatypeE) $(types) $(proxyE)|]
         types = [|[]|]
-        fieldsE = [|[]|]
+        fieldsE = listE (map genField cFields)
+          where
+            genField FieldD {fieldNameD} =
+              [|( fieldNameD
+                , DataField
+                    { fieldArgs = []
+                    , fieldName = fieldNameD
+                    , fieldType = "JOE"
+                    , fieldTypeWrappers = []
+                    , fieldHidden = False
+                    })|]
         proxyE = [|(Proxy :: (Proxy $(typeName)))|]
         datatypeE =
           [|const $
@@ -54,7 +51,7 @@ deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (c
               , typeFingerprint = __typeFingerprint $(proxyE)
               , typeDescription = tName
               , typeVisibility = True
-              , typeData = $(fieldsE)
+              , typeData = []
               }|]
        -- updateLib :: GQLType a => (Proxy a -> DataFullType) -> [TypeUpdater] -> Proxy a -> TypeUpdater
 --instance ObjectConstraint a => Introspect1 a INPUT_OBJECT where
