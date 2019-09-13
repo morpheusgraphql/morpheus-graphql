@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -17,6 +18,7 @@ module Data.Morpheus.Execution.Server.Introspect
   , ObjectRep(..)
   , Introspect(..)
   , resolveTypes
+  , updateLib
   ) where
 
 import           Control.Monad                                   (foldM)
@@ -38,8 +40,8 @@ import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..)
 import           Data.Morpheus.Types.GQLType                     (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data               (DataArguments, DataField (..), DataFullType (..),
                                                                   DataInputField, DataLeaf (..), DataType (..),
-                                                                  DataTypeLib, DataTypeWrapper (..),
-                                                                  defineType, isTypeDefined)
+                                                                  DataTypeLib, DataTypeWrapper (..), defineType,
+                                                                  isTypeDefined)
 import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
 import           Data.Morpheus.Types.Resolver                    (Resolver, SubResolver)
 
@@ -125,15 +127,17 @@ updateLib typeBuilder stack proxy lib' =
 
 class Introspect a where
   type IRep a :: *
-  --selector :: Proxy a -> Text -> ((Text, DataField), TypeUpdater)
   field :: proxy a -> Text -> DataField
+  default field :: Introspect1 a (KIND a) =>
+    proxy a -> Text -> DataField
+  field _ = __field (Context :: IRep a)
   introspect :: proxy a -> TypeUpdater
+  default introspect :: Introspect1 a (KIND a) =>
+    proxy a -> TypeUpdater
+  introspect _ = __introspect (Context :: IRep a)
 
 instance {-# OVERLAPPABLE #-} Introspect1 a (KIND a) => Introspect a where
   type IRep a = Context a (KIND a)
-  --selector _ name = ((name, __field (Context :: IRep a) name), introspect (Proxy @a))
-  field _ = __field (Context :: IRep a)
-  introspect _ = __introspect (Context :: IRep a)
 
 -- |   Generates internal GraphQL Schema for query validation and introspection rendering
 -- * 'kind': object, scalar, enum ...
@@ -142,6 +146,9 @@ instance {-# OVERLAPPABLE #-} Introspect1 a (KIND a) => Introspect a where
 --    * 'DataArguments' for field Resolvers Types, where 'DataArguments' is type of arguments
 class Introspect1 a kind where
   __field :: Context a kind -> Text -> DataField
+  default __field :: GQLType a =>
+    Context a kind -> Text -> DataField
+  __field _ = buildField (Proxy @a) []
     --   generates data field representation of object field
     --   according to parameter 'args' it could be
     --   * input object field: if args is '()'
@@ -154,7 +161,6 @@ type OutputConstraint a = Introspect a
 -- SCALAR
 --
 instance (GQLScalar a, GQLType a) => Introspect1 a SCALAR where
-  __field _ = buildField (Proxy @a) []
   __introspect _ = updateLib scalarType [] (Proxy @a)
     where
       scalarType :: Proxy a -> DataFullType
@@ -166,7 +172,6 @@ instance (GQLScalar a, GQLType a) => Introspect1 a SCALAR where
 -- ENUM
 --
 instance EnumConstraint a => Introspect1 a ENUM where
-  __field _ = buildField (Proxy @a) []
   __introspect _ = updateLib enumType [] (Proxy @a)
     where
       enumType :: Proxy a -> DataFullType
@@ -178,13 +183,11 @@ instance EnumConstraint a => Introspect1 a ENUM where
 -- OBJECTS , INPUT_OBJECT
 --
 instance ObjectConstraint a => Introspect1 a INPUT_OBJECT where
-  __field _ = buildField (Proxy @a) []
   __introspect _ = updateLib (InputObject . buildType fields') stack' (Proxy @a)
     where
       (fields', stack') = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 instance ObjectConstraint a => Introspect1 a OBJECT where
-  __field _ = buildField (Proxy @a) []
   __introspect _ = updateLib (OutputObject . buildType (__typename : fields')) stack' (Proxy @a)
     where
       __typename =
@@ -208,7 +211,6 @@ instance (OutputConstraint a, ObjectConstraint a) => UnionRep (RecSel s a) where
   possibleTypes _ = [(buildField (Proxy @a) [] "", introspect (Proxy @a))]
 
 instance (GQL_TYPE a, UnionRep (Rep a)) => Introspect1 a UNION where
-  __field _ = buildField (Proxy @a) []
   __introspect _ = updateLib (Union . buildType fields) stack (Proxy @a)
     where
       (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
