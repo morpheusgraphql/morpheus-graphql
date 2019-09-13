@@ -1,6 +1,7 @@
-{-# LANGUAGE NamedFieldPuns  #-}
-{-# LANGUAGE QuasiQuotes     #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 module Data.Morpheus.Execution.Document.Introspect
   ( deriveObjectRep
@@ -49,7 +50,9 @@ appDToField = appDToField []
   where
     appDToField wrappers (MaybeD (ListD td))   = appDToField (ListType : wrappers) td
     appDToField wrappers (MaybeD (MaybeD td))  = appDToField wrappers (MaybeD td)
-    appDToField wrappers (MaybeD (BaseD name)) = (wrappers, pack name)
+    appDToField wrappers (MaybeD (BaseD name)) = (wrappers, convertName name)
     ----------------------------------- NONNULL
     appDToField wrappers (ListD td)            = appDToField ([NonNullType, ListType] <> wrappers) td
-    appDToField wrappers (BaseD name)          = (NonNullType : wrappers, pack name)
+    appDToField wrappers (BaseD name)          = (NonNullType : wrappers, convertName name)
+    convertName "Text" = "String"
+    convertName name   = pack name
