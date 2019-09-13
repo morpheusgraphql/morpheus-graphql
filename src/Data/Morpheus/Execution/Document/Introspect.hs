@@ -12,12 +12,10 @@ import           Language.Haskell.TH
 --
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), buildType, updateLib)
-import           Data.Morpheus.Types.GQLType               (GQLType (..))
-import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataFullType (..), DataTypeWrapper (..),
-                                                            Key)
+import           Data.Morpheus.Types.GQLType               (GQLType (__typeName))
+import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataFullType (..), DataTypeWrapper (..))
 import           Data.Morpheus.Types.Internal.DataD        (AppD (..), ConsD (..), FieldD (..), TypeD (..))
 import           Data.Proxy                                (Proxy (..))
-import           Data.Text                                 (Text, pack)
 
 deriveObjectRep :: TypeD -> Q [Dec]
 deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (cxt []) appHead methods
@@ -30,29 +28,30 @@ deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (c
     methods = [funD 'introspect [clause argsE (normalB body) []]]
       where
         argsE = [varP (mkName "_")]
-        body = [|updateLib (typeBuilder cFields) [] (Proxy :: (Proxy $(typeName)))|]
+        body = [|updateLib $(typeBuilder) [] (Proxy :: (Proxy $(typeName)))|]
+        typeBuilder = [|InputObject . buildType $(buildFields cFields)|]
+          where
+            buildFields = listE . map buildField
+              where
+                buildField FieldD {fieldNameD, fieldTypeD} =
+                  [|( fieldNameD
+                    , DataField
+                        { fieldName = fieldNameD
+                        , fieldArgs = []
+                        , fieldTypeWrappers
+                        , fieldType = __typeName (Proxy :: (Proxy $(conT $ mkName fieldType)))
+                        , fieldHidden = False
+                        })|]
+                  where
+                    (fieldTypeWrappers, fieldType) = appDToField fieldTypeD
 deriveObjectRep _ = pure []
 
-typeBuilder :: GQLType a => [FieldD] -> (Proxy a -> DataFullType)
-typeBuilder fields = InputObject . buildType (buildFields fields)
-
-buildFields :: [FieldD] -> [(Key, DataField)]
-buildFields = map buildField
-  where
-    buildField FieldD {fieldNameD, fieldTypeD} =
-      ( pack fieldNameD
-      , DataField {fieldName = pack fieldNameD, fieldArgs = [], fieldTypeWrappers, fieldType, fieldHidden = False})
-      where
-        (fieldTypeWrappers, fieldType) = appDToField fieldTypeD
-
-appDToField :: AppD String -> ([DataTypeWrapper], Text)
+appDToField :: AppD String -> ([DataTypeWrapper], String)
 appDToField = appDToField []
   where
     appDToField wrappers (MaybeD (ListD td))   = appDToField (ListType : wrappers) td
     appDToField wrappers (MaybeD (MaybeD td))  = appDToField wrappers (MaybeD td)
-    appDToField wrappers (MaybeD (BaseD name)) = (wrappers, convertName name)
+    appDToField wrappers (MaybeD (BaseD name)) = (wrappers, name)
     ----------------------------------- NONNULL
     appDToField wrappers (ListD td)            = appDToField ([NonNullType, ListType] <> wrappers) td
-    appDToField wrappers (BaseD name)          = (NonNullType : wrappers, convertName name)
-    convertName "Text" = "String"
-    convertName name   = pack name
+    appDToField wrappers (BaseD name)          = (NonNullType : wrappers, name)
