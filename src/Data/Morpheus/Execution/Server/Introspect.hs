@@ -19,6 +19,7 @@ module Data.Morpheus.Execution.Server.Introspect
   , Introspect(..)
   , resolveTypes
   , updateLib
+  , buildType
   ) where
 
 import           Control.Monad                                   (foldM)
@@ -219,7 +220,6 @@ instance (GQL_TYPE a, UnionRep (Rep a)) => Introspect1 a UNION where
 -- INPUT_UNION
 --
 instance (GQL_TYPE a, UnionRep (Rep a)) => Introspect1 a INPUT_UNION where
-  __field _ = buildField (Proxy @a) []
   __introspect _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
     where
       (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
