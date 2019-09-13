@@ -21,7 +21,6 @@ import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.Internal.RenderIntrospection (Type, createObjectType, renderType)
 import           Data.Morpheus.Types.GQLType                       (GQLType (KIND, __typeName, __typeVisibility))
 import           Data.Morpheus.Types.Internal.Data                 (DataOutputObject, DataTypeLib (..), allDataTypes)
-import           Data.Morpheus.Types.Internal.Validation           (Validation)
 
 instance GQLType Schema where
   type KIND Schema = OBJECT
@@ -36,7 +35,7 @@ data Schema = Schema
   , directives       :: [Directive Type]
   } deriving (Generic)
 
-convertTypes :: DataTypeLib -> Validation [Type]
+convertTypes :: DataTypeLib -> Either String [Type]
 convertTypes lib = traverse (`renderType` lib) (allDataTypes lib)
 
 buildSchemaLinkType :: (Text, DataOutputObject) -> Type
@@ -50,7 +49,7 @@ findType name lib = (name, ) <$> lookup name (allDataTypes lib) >>= renderT
         Left _  -> Nothing
         Right x -> Just x
 
-initSchema :: DataTypeLib -> Validation Schema
+initSchema :: DataTypeLib -> Either String Schema
 initSchema lib = do
   types <- convertTypes lib
   pure $

@@ -25,7 +25,7 @@ newtype TypeArgs = TypeArgs
 
 data SchemaAPI = SchemaAPI
   { __type   :: TypeArgs -> Either String (Maybe Type)
-  , __schema :: Schema
+  , __schema :: () -> Either String Schema
   } deriving (Generic)
 
 hideFields :: (Text, DataField) -> (Text, DataField)
@@ -47,4 +47,7 @@ defaultTypes =
     ]
 
 schemaAPI :: DataTypeLib -> SchemaAPI
-schemaAPI lib = SchemaAPI {__type = \TypeArgs {name} -> return $ findType name lib, __schema = initSchema lib}
+schemaAPI lib = SchemaAPI {__type, __schema}
+  where
+    __type TypeArgs {name} = return $ findType name lib
+    __schema _ = initSchema lib

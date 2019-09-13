@@ -12,8 +12,8 @@ import           Language.Haskell.TH
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), buildType, updateLib)
 import           Data.Morpheus.Types.GQLType               (GQLType (..))
-import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataFullType (..),
-                                                            DataType (..), DataTypeWrapper (..), Key)
+import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataFullType (..), DataTypeWrapper (..),
+                                                            Key)
 import           Data.Morpheus.Types.Internal.DataD        (ConsD (..), FieldD (..), TypeD (..))
 import           Data.Proxy                                (Proxy (..))
 import           Data.Text                                 (pack)
@@ -44,6 +44,6 @@ buildFields = map buildField
           { fieldName = pack fieldNameD
           , fieldArgs = []
           , fieldTypeWrappers = [NonNullType]
-          , fieldType = pack "Text"
+          , fieldType = pack "String"
           , fieldHidden = False
           })
