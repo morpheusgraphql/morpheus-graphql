@@ -34,10 +34,7 @@ renderType (name', OutputObject object') = typeFromObject (name', object')
   where
     typeFromObject (key, DataType {typeData, typeDescription}) lib =
       createObjectType key typeDescription <$>
-      (Just <$>
-       traverse
-         (`fieldFromObjectField` lib)
-         (filter (not . fieldHidden . snd) typeData))
+      (Just <$> traverse (`fieldFromObjectField` lib) (filter (not . fieldHidden . snd) typeData))
 renderType (name', Union union') = const $ pure $ typeFromUnion (name', union')
 renderType (name', InputUnion inpUnion') = renderInputUnion (name', inpUnion')
 
@@ -51,7 +48,7 @@ renderTypeKind KindInputObject = INPUT_OBJECT
 renderTypeKind KindList        = LIST
 renderTypeKind KindNonNull     = NON_NULL
 
-wrap :: DataField a -> Type -> Type
+wrap :: DataField -> Type -> Type
 wrap field' = wrapRec (fieldTypeWrappers field')
 
 wrapRec :: [DataTypeWrapper] -> Type -> Type
@@ -74,10 +71,8 @@ fieldFromObjectField (key, field'@DataField {fieldType, fieldArgs}) lib = do
     traverse (`inputValueFromArg` lib) fieldArgs
 
 typeFromLeaf :: (Text, DataLeaf) -> Type
-typeFromLeaf (key, BaseScalar DataType {typeDescription}) =
-  createLeafType SCALAR key typeDescription Nothing
-typeFromLeaf (key, CustomScalar DataType {typeDescription}) =
-  createLeafType SCALAR key typeDescription Nothing
+typeFromLeaf (key, BaseScalar DataType {typeDescription}) = createLeafType SCALAR key typeDescription Nothing
+typeFromLeaf (key, CustomScalar DataType {typeDescription}) = createLeafType SCALAR key typeDescription Nothing
 typeFromLeaf (key, LeafEnum DataType {typeDescription, typeData}) =
   createLeafType ENUM key typeDescription (Just $ map createEnumValue typeData)
 
@@ -96,9 +91,7 @@ createLeafType kind' name' desc' enums' =
     }
 
 typeFromUnion :: (Text, DataUnion) -> Type
-typeFromUnion (name', DataType { typeData = fields'
-                               , typeDescription = description'
-                               }) =
+typeFromUnion (name', DataType {typeData = fields', typeDescription = description'}) =
   Type
     { kind = UNION
     , name = Just name'
@@ -106,15 +99,13 @@ typeFromUnion (name', DataType { typeData = fields'
     , fields = const $ return Nothing
     , ofType = Nothing
     , interfaces = Nothing
-    , possibleTypes =
-        Just (map (\x -> createObjectType (fieldType x) "" $ Just []) fields')
+    , possibleTypes = Just (map (\x -> createObjectType (fieldType x) "" $ Just []) fields')
     , enumValues = const $ return Nothing
     , inputFields = Nothing
     }
 
 inputValueFromArg :: (Text, DataInputField) -> Result InputValue
-inputValueFromArg (key, input) =
-  fmap (IN.createInputValueWith key) . createInputObjectType input
+inputValueFromArg (key, input) = fmap (IN.createInputValueWith key) . createInputObjectType input
 
 createInputObjectType :: DataInputField -> Result Type
 createInputObjectType field@DataField {fieldType} lib = do
@@ -130,9 +121,7 @@ renderInputUnion :: (Text, DataUnion) -> Result Type
 renderInputUnion (key', DataType {typeData, typeDescription}) lib =
   createInputObject key' typeDescription <$> traverse createField typeData
   where
-    createField field =
-      IN.createInputValueWith (fieldName field) <$>
-      createInputObjectType field lib
+    createField field = IN.createInputValueWith (fieldName field) <$> createInputObjectType field lib
 
 createObjectType :: Text -> Text -> Maybe [Field] -> Type
 createObjectType name' desc' fields' =

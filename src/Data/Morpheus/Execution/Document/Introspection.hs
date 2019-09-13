@@ -31,7 +31,7 @@ deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (c
           where
             field =
               DataField
-                { fieldArgs = ()
+                { fieldArgs = []
                 , fieldName = pack fieldNameD
                 , fieldType = pack "JOE"
                 , fieldTypeWrappers = []

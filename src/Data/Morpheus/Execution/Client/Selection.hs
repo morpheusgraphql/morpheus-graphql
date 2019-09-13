@@ -58,10 +58,10 @@ operationTypes lib variables = genOperation
           where
             typeD fields = TypeD {tName = unpack typeName, tCons = [ConsD {cName = unpack typeName, cFields = fields}]}
             ---------------------------------------------------------------
-            toInputTypeD :: (Text, DataField a) -> Validation [TypeD]
+            toInputTypeD :: (Text, DataField) -> Validation [TypeD]
             toInputTypeD (_, DataField {fieldType}) = genInputType fieldType
             ----------------------------------------------------------------
-            toFieldD :: (Text, DataField a) -> Validation FieldD
+            toFieldD :: (Text, DataField) -> Validation FieldD
             toFieldD (key, DataField {fieldType, fieldTypeWrappers}) = do
               fType <- typeFrom <$> getType lib fieldType
               pure $ FieldD (unpack key) (wrType fType)

@@ -51,7 +51,7 @@ handleInputError :: Text -> Position -> InputValidation a -> Validation ()
 handleInputError key position' (Left error') = Left $ argumentGotInvalidValue key (inputErrorMessage error') position'
 handleInputError _ _ _                       = pure ()
 
-validateArgumentValue :: DataTypeLib -> DataField a -> (Text, Argument) -> Validation (Text, Argument)
+validateArgumentValue :: DataTypeLib -> DataField -> (Text, Argument) -> Validation (Text, Argument)
 validateArgumentValue lib DataField {fieldType, fieldTypeWrappers} arg@(key, Argument {argumentValue, argumentPosition}) =
   getInputType fieldType lib (internalUnknownTypeMessage fieldType) >>= checkType >> pure arg
   where

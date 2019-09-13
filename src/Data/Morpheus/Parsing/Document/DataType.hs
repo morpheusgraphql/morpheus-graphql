@@ -44,7 +44,7 @@ inputObjectEntries = label "inputEntries" $ setOf entry
       label "entry" $ do
         ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
         nonNull <- parseNonNull
-        return (fieldName, createField () fieldName (nonNull ++ wrappers, fieldType))
+        return (fieldName, createField [] fieldName (nonNull ++ wrappers, fieldType))
 
 outputObjectEntries :: Parser [(Key, DataOutputField)]
 outputObjectEntries = label "entries" $ setOf entry

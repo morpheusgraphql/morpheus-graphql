@@ -11,17 +11,17 @@ module Data.Morpheus.Parsing.Internal.Create
   , createDataTypeLib
   ) where
 
-import           Data.Morpheus.Types.Internal.Data (DataField (..), DataFingerprint (..), DataFullType (..),
-                                                    DataLeaf (..), DataType (..), DataTypeLib (..), DataTypeWrapper,
-                                                    DataValidator (..), defineType, initTypeLib)
+import           Data.Morpheus.Types.Internal.Data (DataArguments, DataField (..), DataFingerprint (..),
+                                                    DataFullType (..), DataLeaf (..), DataType (..), DataTypeLib (..),
+                                                    DataTypeWrapper, DataValidator (..), defineType, initTypeLib)
 import           Data.Text                         (Text)
 
-createField :: a -> Text -> ([DataTypeWrapper], Text) -> DataField a
+createField :: DataArguments -> Text -> ([DataTypeWrapper], Text) -> DataField
 createField fieldArgs fieldName (fieldTypeWrappers, fieldType) =
   DataField {fieldArgs, fieldName, fieldType, fieldTypeWrappers, fieldHidden = False}
 
-createArgument :: Text -> ([DataTypeWrapper], Text) -> (Text, DataField ())
-createArgument fieldName x = (fieldName, createField () fieldName x)
+createArgument :: Text -> ([DataTypeWrapper], Text) -> (Text, DataField)
+createArgument fieldName x = (fieldName, createField [] fieldName x)
 
 createType :: Text -> a -> DataType a
 createType typeName typeData =
@@ -36,7 +36,7 @@ createEnumType typeName typeData = (typeName, Leaf $ LeafEnum $ createType typeN
 createUnionType :: Text -> [Text] -> (Text, DataFullType)
 createUnionType typeName typeData = (typeName, Union $ createType typeName $ map unionField typeData)
   where
-    unionField fieldType = createField () "" ([], fieldType)
+    unionField fieldType = createField [] "" ([], fieldType)
 
 createDataTypeLib :: Monad m => [(Text, DataFullType)] -> m DataTypeLib
 createDataTypeLib types =

@@ -34,8 +34,8 @@ import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, 
 import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
 import           Data.Morpheus.Schema.SchemaAPI                      (defaultTypes, hiddenRootFields, schemaAPI)
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), OperationKind (..))
-import           Data.Morpheus.Types.Internal.Data                   (DataArguments, DataFingerprint (..),
-                                                                      DataType (..), DataTypeLib (..), initTypeLib)
+import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataType (..),
+                                                                      DataTypeLib (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Stream                 (Event (..), ResponseEvent (..), ResponseStream,
                                                                       StreamState (..), StreamT (..), closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation             (SchemaValidation)
@@ -47,7 +47,7 @@ import           Data.Morpheus.Validation.Query.Validation           (validateRe
 
 type EventCon event = Eq event
 
-type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments)
+type IntroCon a = (Generic a, ObjectRep (Rep a))
 
 type RootResCon m event cont query mutation subscription
    = ( EventCon event

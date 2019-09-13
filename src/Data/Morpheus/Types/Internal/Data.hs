@@ -38,7 +38,7 @@ module Data.Morpheus.Types.Internal.Data
   , kindOf
   ) where
 
-import           Data.Morpheus.Types.Internal.TH    (apply, liftText)
+import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
 import           Data.Text                          (Text)
 import qualified Data.Text                          as T (concat)
@@ -76,17 +76,17 @@ type DataEnum = DataType [Key]
 
 type DataObject a = DataType [(Key, a)]
 
-type DataInputField = DataField ()
+type DataInputField = DataField
 
 type DataArgument = DataInputField
 
-type DataOutputField = DataField [(Key, DataArgument)]
+type DataOutputField = DataField
 
 type DataInputObject = DataObject DataInputField
 
 type DataOutputObject = DataObject DataOutputField
 
-type DataUnion = DataType [DataField ()]
+type DataUnion = DataType [DataField]
 
 type DataOutputType = DataKind DataOutputField
 
@@ -99,18 +99,18 @@ data DataTypeWrapper
   | NonNullType
   deriving (Show, Lift)
 
-data DataField a = DataField
-  { fieldArgs         :: a
+data DataField = DataField
+  { fieldArgs         :: [(Key, DataArgument)]
   , fieldName         :: Text
   , fieldType         :: Text
   , fieldTypeWrappers :: [DataTypeWrapper]
   , fieldHidden       :: Bool
   } deriving (Show)
 
-instance Lift a => Lift (DataField a) where
-  lift (DataField arg nm ty tw hid) = apply 'DataField [lift arg, liftText nm, liftText ty, lift tw, lift hid]
+instance Lift DataField where
+  lift (DataField arg nm ty tw hid) = apply 'DataField [liftTextMap arg, liftText nm, liftText ty, lift tw, lift hid]
 
-isFieldNullable :: DataField a -> Bool
+isFieldNullable :: DataField -> Bool
 isFieldNullable DataField {fieldTypeWrappers = NonNullType:_} = False
 isFieldNullable _                                             = True
 

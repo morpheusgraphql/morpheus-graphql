@@ -34,7 +34,7 @@ renderTHTypes lib = traverse renderTHType lib
     renderTHType (_, x) = genType x
       where
         argsTypeName fieldName = capital (unpack fieldName) <> "Args"
-        genArgumentType :: (Text, DataField [(Text, DataField ())]) -> Validation [TypeD]
+        genArgumentType :: (Text, DataField) -> Validation [TypeD]
         genArgumentType (_, DataField {fieldArgs = []}) = pure []
         genArgumentType (fieldName, DataField {fieldArgs}) =
           pure [TypeD {tName, tCons = [ConsD {cName = tName, cFields = map genField fieldArgs}]}]
@@ -44,7 +44,7 @@ renderTHTypes lib = traverse renderTHType lib
         genFieldTypeName "String" = "Text"
         genFieldTypeName name     = unpack name
         ---------------------------------------------------------------------------------------------
-        genField :: (Text, DataField a) -> FieldD
+        genField :: (Text, DataField) -> FieldD
         genField (key, DataField {fieldType, fieldTypeWrappers}) = FieldD (unpack key) fType
           where
             fType = gqlToHSWrappers fieldTypeWrappers (genFieldTypeName fieldType)

@@ -29,7 +29,7 @@ data SchemaAPI = SchemaAPI
   , __schema :: Schema
   } deriving (Generic)
 
-hideFields :: (Text, DataField a) -> (Text, DataField a)
+hideFields :: (Text, DataField) -> (Text, DataField)
 hideFields (key', field) = (key', field {fieldHidden = True})
 
 hiddenRootFields :: [(Text, DataOutputField)]

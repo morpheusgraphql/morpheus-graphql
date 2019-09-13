@@ -36,7 +36,7 @@ typeFromJSON JSONType {name = Just typeName, kind = INPUT_OBJECT, inputFields = 
   where
     iField I.InputValue {I.name = fieldName, I.type' = fType} = do
       fieldType <- fieldTypeFromJSON fType
-      pure (fieldName, createField () fieldName fieldType)
+      pure (fieldName, createField [] fieldName fieldType)
 typeFromJSON JSONType {name = Just typeName, kind = OBJECT, fields = Just oFields} = do
   fields <- traverse oField oFields
   pure (typeName, OutputObject $ createType typeName fields)
