@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -125,9 +126,11 @@ instance Decode a => DecodeInputObject (K1 i a) where
 -- | Decode GraphQL query arguments and input values
 class Decode a where
   decode :: Value -> Validation a
-
-instance {-# OVERLAPPABLE #-} Decode1 a (KIND a) => Decode a where
+  default decode :: Decode1 a (KIND a) =>
+    Value -> Validation a
   decode = __decode (Proxy @(KIND a))
+
+instance {-# OVERLAPPABLE #-} Decode1 a (KIND a) => Decode a
 
 -- | Decode GraphQL query arguments and input values
 class Decode1 a (b :: GQL_KIND) where
