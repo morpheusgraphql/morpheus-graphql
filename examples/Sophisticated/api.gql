@@ -5,11 +5,11 @@ input Cat {
 }
 
 input Dog {
-  dogName: Text
+  dogName: String!
 }
 
 input Bird {
-  birdName: Text
+  birdName: String!
 }
 
 # Main APi
