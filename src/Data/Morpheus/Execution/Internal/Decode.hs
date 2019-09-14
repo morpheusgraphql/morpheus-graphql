@@ -4,6 +4,9 @@
 
 module Data.Morpheus.Execution.Internal.Decode
   ( withObject
+  , withMaybe
+  , withList
+  , withEnum
   , withUnion
   , decodeFieldWith
   , decodeObjectExpQ
@@ -35,6 +38,18 @@ decodeObjectExpQ fieldDecoder ConsD {cName, cFields} = handleFields cFields
 withObject :: (Object -> Validation a) -> Value -> Validation a
 withObject f (Object object) = f object
 withObject _ isType          = internalTypeMismatch "Object" isType
+
+withMaybe :: Monad m => (Value -> m a) -> Value -> m (Maybe a)
+withMaybe _ Null   = pure Nothing
+withMaybe decode x = Just <$> decode x
+
+withList :: (Value -> Validation a) -> Value -> Validation [a]
+withList decode (List li) = mapM decode li
+withList _ isType         = internalTypeMismatch "List" isType
+
+withEnum :: (Key -> Validation a) -> Value -> Validation a
+withEnum decode (Enum value) = decode value
+withEnum _ isType            = internalTypeMismatch "Enum" isType
 
 withUnion :: (Key -> Object -> Object -> Validation a) -> Object -> Validation a
 withUnion decoder unions =

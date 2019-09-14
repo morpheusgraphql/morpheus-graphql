@@ -36,7 +36,7 @@ import           GHC.Generics
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal                    (internalErrorT)
 import           Data.Morpheus.Error.Selection                   (fieldNotResolved, subfieldsNotSelected)
-import           Data.Morpheus.Execution.Server.Decode           (ArgumentsConstraint, decodeArguments)
+import           Data.Morpheus.Execution.Server.Decode           (DecodeObject, decodeArguments)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, OBJECT, SCALAR, UNION, WRAPPER)
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair (..), mapKindFromList)
@@ -185,22 +185,22 @@ instance (GQLType a, Encoder a (KIND a) result) => UnionResolvers (K1 s a) resul
 --
 -- | Handles all operators: Query, Mutation and Subscription,
 -- if you use it with Mutation or Subscription all effects inside will be lost
-instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
+instance (DecodeObject a, Monad m, Encoder b (KIND b) (ResValue m)) =>
          Encoder (a -> Resolver m b) WRAPPER (ResValue m) where
   __encode (WithGQLKind resolver) selection = decodeArgs selection >>= encodeResolver selection . resolver
 
 -- packs Monad in StreamMonad
-instance (Monad m, Encoder a (KIND a) (ResValue m), ArgumentsConstraint p) =>
+instance (Monad m, Encoder a (KIND a) (ResValue m), DecodeObject p) =>
          Encoder (p -> Either String a) WRAPPER (ResValue m) where
   __encode (WithGQLKind resolver) selection =
     decodeArgs selection >>= encodeResolver selection . (ExceptT . pure . resolver)
 
 -- packs Monad in StreamMonad
-instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
+instance (DecodeObject a, Monad m, Encoder b (KIND b) (ResValue m)) =>
          Encoder (a -> Resolver m b) WRAPPER (ResValue (StreamT m c)) where
   __encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (__encode resolver selection)
 
-instance (ArgumentsConstraint a, Monad m, Encoder b (KIND b) (ResValue m)) =>
+instance (DecodeObject a, Monad m, Encoder b (KIND b) (ResValue m)) =>
          Encoder (a -> SubResolver m e c b) WRAPPER (SubResolveT m e c Value) where
   __encode (WithGQLKind resolver) selection = decodeArgs selection >>= handleResolver . resolver
     where
@@ -256,7 +256,7 @@ encodeResolver :: (Monad m, Encoder a (KIND a) (ResValue m)) => (Text, Selection
 encodeResolver selection@(fieldName, Selection {selectionPosition}) =
   resolverToResolveT selectionPosition fieldName >=> (`encode` selection)
 
-decodeArgs :: (Monad m, ArgumentsConstraint a) => (Text, Selection) -> ResolveT m a
+decodeArgs :: (Monad m, DecodeObject a) => (Text, Selection) -> ResolveT m a
 decodeArgs (_, Selection {selectionArguments}) = ExceptT $ pure $ decodeArguments selectionArguments
 
 operatorToResolveT :: Monad m => ValidOperation -> Resolver m a -> ResolveT m a
