@@ -12,15 +12,13 @@ module Data.Morpheus.Execution.Document.Decode
 import           Data.Text                               (Text)
 import           Language.Haskell.TH
 
-import           Data.Morpheus.Error.Internal            (internalArgumentError, internalTypeMismatch)
-
 --
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Decode   (Decode (..), DecodeObject (..))
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), FieldD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Object)
-import           Data.Morpheus.Execution.Internal.Decode (withObject,decodeFieldWith)
+import           Data.Morpheus.Execution.Internal.Decode (decodeFieldWith)
 
 objectBody :: ConsD -> ExpQ
 objectBody ConsD {cName, cFields} = handleFields cFields
