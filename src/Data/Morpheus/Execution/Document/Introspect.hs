@@ -9,6 +9,7 @@ module Data.Morpheus.Execution.Document.Introspect
   ) where
 
 import           Data.Proxy                                (Proxy (..))
+import           Data.Semigroup                            ((<>))
 import           Language.Haskell.TH
 
 --
