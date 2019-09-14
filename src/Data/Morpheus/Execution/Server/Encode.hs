@@ -64,7 +64,7 @@ instance DefaultValue Value where
   stringValue = Scalar . String
   objectValue = Object
 
-instance Monad m => DefaultValue (Event event con -> ResolveT m Value) where
+instance Monad m => DefaultValue (a -> m Value) where
   nullValue = const (pure Null)
 
 class Encode a result where
@@ -192,6 +192,7 @@ instance (GQLType a, DefaultValue res, ResConstraint a m res) => Encoder a OBJEC
     where
       __typenameResolver = ("__typename", const $ return $ stringValue $ __typeName (Proxy @a))
   __encode _ (key, Selection {selectionPosition}) = failResolveT $ subfieldsNotSelected key "" selectionPosition
+
 -- | Resolves and encodes UNION,
 -- Handles all operators: Query, Mutation and Subscription,
 instance ResConstraint a m res => Encoder a UNION (ResolveT m res) where
@@ -218,43 +219,40 @@ encodeSub ::
   => EncodeOperator (SubscribeStream m event) a (Event event con -> ResolveT m Value)
 encodeSub = encodeOperator (flip resolveSelection)
   where
-    resolveSelection resolvers = fmap toObj . mapM (selectResolver nullValue resolvers)
+    resolveSelection resolvers = fmap toObj . traverse (selectResolver resolvers)
       where
-        toObj pairs args = objectValue <$> mapM keyVal pairs
+        toObj pairs args = objectValue <$> traverse keyVal pairs
           where
             keyVal (key, valFunc) = (key, ) <$> valFunc args
-
-resolverToResolveT :: Monad m => Position -> Text -> Resolver m a -> ResolveT m a
-resolverToResolveT pos name = ExceptT . (fmap (resolverError pos name) . runExceptT)
 
 encodeResolver :: (Monad m, Encode a (ResolveT m res)) => (Text, Selection) -> Resolver m a -> ResolveT m res
 encodeResolver selection@(fieldName, Selection {selectionPosition}) =
   resolverToResolveT selectionPosition fieldName >=> (`encode` selection)
 
-decodeArgs :: (Monad m, DecodeObject a) => (Text, Selection) -> ResolveT m a
-decodeArgs (_, Selection {selectionArguments}) = ExceptT $ pure $ decodeArguments selectionArguments
-
-operatorToResolveT :: Monad m => ValidOperation -> Resolver m a -> ResolveT m a
-operatorToResolveT Operation {operationPosition, operationName} = resolverToResolveT operationPosition operationName
+resolverToResolveT :: Monad m => Position -> Text -> Resolver m a -> ResolveT m a
+resolverToResolveT pos name = ExceptT . (fmap (resolverError pos name) . runExceptT)
 
 encodeOperator :: (Monad m, EncodeCon m a res) => ResolveSel (ResolveT m res) -> EncodeOperator m a res
 encodeOperator resSel rootResolver operation@Operation {operationSelection} =
   runExceptT (operatorToResolveT operation rootResolver >>= resSel operationSelection . resolversBy)
 
-resolveBySelection :: (Monad m, DefaultValue res) => ResolveSel (ResolveT m res)
-resolveBySelection selection resolvers = objectValue <$> mapM (selectResolver nullValue resolvers) selection
+operatorToResolveT :: Monad m => ValidOperation -> Resolver m a -> ResolveT m a
+operatorToResolveT Operation {operationPosition, operationName} = resolverToResolveT operationPosition operationName
 
-selectResolver :: Monad m => a -> [(Text, (Text, Selection) -> m a)] -> (Text, Selection) -> m (Text, a)
-selectResolver defaultValue resolvers (key, selection) =
+decodeArgs :: (Monad m, DecodeObject a) => (Text, Selection) -> ResolveT m a
+decodeArgs (_, Selection {selectionArguments}) = ExceptT $ pure $ decodeArguments selectionArguments
+
+resolveBySelection :: (Monad m, DefaultValue res) => ResolveSel (ResolveT m res)
+resolveBySelection selection resolvers = objectValue <$> selectResolver resolvers `traverse` selection
+
+selectResolver :: (Monad m, DefaultValue a) => [(Text, (Text, Selection) -> m a)] -> (Text, Selection) -> m (Text, a)
+selectResolver resolvers (key, selection) =
   case selectionRec selection of
-    SelectionAlias name selectionRec -> unwrapMonadTuple (key, lookupResolver name (selection {selectionRec}))
-    _                                -> unwrapMonadTuple (key, lookupResolver key selection)
-  where
-    unwrapMonadTuple :: Monad m => (Text, m a) -> m (Text, a)
-    unwrapMonadTuple (text, ioa) = ioa >>= \x -> pure (text, x)
+    SelectionAlias name selectionRec -> (key, ) <$> lookupResolver name (selection {selectionRec})
+    _                                -> (key, ) <$> lookupResolver key selection
     -------------------------------------------------------------
-    lookupResolver resolverKey sel =
-      (fromMaybe (const $ return $defaultValue) $ lookup resolverKey resolvers) (key, sel)
+  where
+    lookupResolver resolverKey sel = (fromMaybe (const $ return nullValue) $ lookup resolverKey resolvers) (key, sel)
 
 resolversBy :: (Generic a, GResolver (Rep a) result) => a -> [(Text, (Text, Selection) -> result)]
 resolversBy = fieldResolvers . from
