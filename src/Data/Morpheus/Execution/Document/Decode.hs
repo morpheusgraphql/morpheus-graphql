@@ -12,27 +12,13 @@ module Data.Morpheus.Execution.Document.Decode
 import           Data.Text                               (Text)
 import           Language.Haskell.TH
 
-import           Data.Morpheus.Execution.Internal.Decode (decodeFieldWith)
-
 --
 -- MORPHEUS
+import           Data.Morpheus.Execution.Internal.Decode (decodeFieldWith, decodeObjectExpQ)
 import           Data.Morpheus.Execution.Server.Decode   (Decode (..), DecodeObject (..))
-import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), FieldD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.DataD      (TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Object)
-
-objectBody :: ConsD -> ExpQ
-objectBody ConsD {cName, cFields} = handleFields cFields
-  where
-    consName = conE (mkName cName)
-    ----------------------------------------------------------------------------------
-    handleFields fNames = uInfixE consName (varE '(<$>)) (applyFields fNames)
-      where
-        applyFields []     = fail "No Empty fields"
-        applyFields [x]    = defField x
-        applyFields (x:xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
-        ------------------------------------------------------------------------
-        defField FieldD {fieldNameD} = [|o .: fieldNameD|]
 
 (.:) :: Decode a => Object -> Text -> Validation a
 object .: selectorName = decodeFieldWith decode selectorName object
@@ -47,5 +33,5 @@ deriveDecode TypeD {tName, tCons = [cons]} = pure <$> instanceD (cxt []) appHead
     methods = [funD 'decodeObject [clause argsE (normalB body) []]]
       where
         argsE = [varP (mkName "o")]
-        body = objectBody cons
+        body = decodeObjectExpQ [|(.:)|] cons
 deriveDecode _ = pure []
