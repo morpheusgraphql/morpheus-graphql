@@ -41,9 +41,8 @@ import           Data.Morpheus.Types.Custom                      (MapKind, Pair)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data               (DataArguments, DataField (..), DataFullType (..),
-                                                                  DataInputField, DataLeaf (..), DataType (..),
-                                                                  DataTypeLib, DataTypeWrapper (..), defineType,
-                                                                  isTypeDefined)
+                                                                  DataLeaf (..), DataType (..), DataTypeLib,
+                                                                  DataTypeWrapper (..), defineType, isTypeDefined)
 import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
 import           Data.Morpheus.Types.Resolver                    (Resolver, SubResolver)
 
@@ -128,10 +127,10 @@ updateLib typeBuilder stack proxy lib' =
     Just _ -> Left $ nameCollisionError (__typeName proxy)
 
 class ObjectFields a where
-  fieldTypes :: proxy a -> [((Text, DataField), TypeUpdater)]
-  default fieldTypes :: ObjectRep (Rep a) =>
-    proxy a -> [((Text, DataField), TypeUpdater)]
-  fieldTypes _ = objectFieldTypes (Proxy @(Rep a))
+  objectFields :: proxy a -> ([(Text, DataField)], [TypeUpdater])
+  default objectFields :: ObjectRep (Rep a) =>
+    proxy a -> ([(Text, DataField)], [TypeUpdater])
+  objectFields _ = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 instance {-# OVERLAPPABLE #-} ObjectRep (Rep a) => ObjectFields a
 
@@ -196,7 +195,7 @@ instance EnumConstraint a => Introspect1 a ENUM where
 instance (GQL_TYPE a, ObjectFields a) => Introspect1 a INPUT_OBJECT where
   __introspect _ = updateLib (InputObject . buildType fields') stack' (Proxy @a)
     where
-      (fields', stack') = unzip $ fieldTypes (Proxy @a)
+      (fields', stack') = objectFields (Proxy @a)
 
 instance (GQL_TYPE a, ObjectFields a) => Introspect1 a OBJECT where
   __introspect _ = updateLib (OutputObject . buildType (__typename : fields')) stack' (Proxy @a)
@@ -205,7 +204,7 @@ instance (GQL_TYPE a, ObjectFields a) => Introspect1 a OBJECT where
         ( "__typename"
         , DataField
             {fieldName = "__typename", fieldArgs = [], fieldTypeWrappers = [], fieldType = "String", fieldHidden = True})
-      (fields', stack') = unzip $ fieldTypes (Proxy @a)
+      (fields', stack') = objectFields (Proxy @a)
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
 -- iterates on field types  and introspects them recursively
@@ -294,22 +293,22 @@ instance Introspect1 (MapKind k v MockRes) OBJECT => Introspect1 (Map k v) WRAPP
 
 -- |introspects Of Resolver 'a' as argument and 'b' as output type
 instance (ObjectFields a, OutputConstraint b) => Introspect1 (a -> Resolver m b) WRAPPER where
-  __field _ name = (field (Proxy @b) name) {fieldArgs = map fst $ fieldTypes (Proxy @a)}
-  __introspect _ typeLib = resolveTypes typeLib $ map snd args ++ [introspect (Proxy @b)]
-    where
-      args :: [((Text, DataInputField), TypeUpdater)]
-      args = fieldTypes (Proxy @a)
-
-instance (ObjectFields a, OutputConstraint b) => Introspect1 (a -> Either String b) WRAPPER where
-  __field _ name = (field (Proxy @b) name) {fieldArgs = map fst $ fieldTypes (Proxy @a)}
-  __introspect _ typeLib = resolveTypes typeLib $ map snd args ++ [introspect (Proxy @b)]
-    where
-      args :: [((Text, DataInputField), TypeUpdater)]
-      args = fieldTypes (Proxy @a)
-
-instance (ObjectFields a, OutputConstraint b) => Introspect1 (a -> SubResolver m c v b) WRAPPER where
-  __field _ name = (field (Proxy @b) name) {fieldArgs = map fst $ fieldTypes (Proxy @a)}
+  __field _ name = (field (Proxy @b) name) {fieldArgs = fst $ objectFields (Proxy @a)}
   __introspect _ typeLib = resolveTypes typeLib (introspect (Proxy @b) : argTypes)
     where
       argTypes :: [TypeUpdater]
-      argTypes = map snd $ fieldTypes (Proxy @a)
+      argTypes = snd $ objectFields (Proxy @a)
+
+instance (ObjectFields a, OutputConstraint b) => Introspect1 (a -> Either String b) WRAPPER where
+  __field _ name = (field (Proxy @b) name) {fieldArgs = fst $ objectFields (Proxy @a)}
+  __introspect _ typeLib = resolveTypes typeLib (introspect (Proxy @b) : argTypes)
+    where
+      argTypes :: [TypeUpdater]
+      argTypes = snd $ objectFields (Proxy @a)
+
+instance (ObjectFields a, OutputConstraint b) => Introspect1 (a -> SubResolver m c v b) WRAPPER where
+  __field _ name = (field (Proxy @b) name) {fieldArgs = fst $ objectFields (Proxy @a)}
+  __introspect _ typeLib = resolveTypes typeLib (introspect (Proxy @b) : argTypes)
+    where
+      argTypes :: [TypeUpdater]
+      argTypes = snd $ objectFields (Proxy @a)
