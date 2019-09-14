@@ -84,14 +84,22 @@ instance (GQLType a, Decode a) => DecodeInputUnion (K1 i a) where
 --
 type ArgumentsConstraint a = (Generic a, DecodeInputObject (Rep a))
 
-decodeArguments :: (Generic p, DecodeInputObject (Rep p)) => Arguments -> Validation p
-decodeArguments args = to <$> decodeObject (Object $ fmap (\(x, y) -> (x, argumentValue y)) args)
+decodeArguments :: (Generic p, DecodeObject p) => Arguments -> Validation p
+decodeArguments args = decodeObject (Object $ fmap (\(x, y) -> (x, argumentValue y)) args)
+
+class DecodeObject a where
+  decodeObject :: Value -> Validation a
+  default decodeObject :: (Generic a, DecodeInputObject (Rep a)) =>
+    Value -> Validation a
+  decodeObject value = to <$> __decodeObject value
+
+instance {-# OVERLAPPABLE #-} (Generic a, DecodeInputObject (Rep a)) => DecodeObject a
 
 class DecodeInputObject f where
-  decodeObject :: Value -> Validation (f a)
+  __decodeObject :: Value -> Validation (f a)
 
 instance DecodeInputObject U1 where
-  decodeObject _ = pure U1
+  __decodeObject _ = pure U1
 
 type Sel s = M1 S s
 
@@ -102,26 +110,26 @@ proxySelName ::
 proxySelName _ = pack $ selName (undefined :: M1 S s f a)
 
 instance (Selector s, DecodeInputObject f) => DecodeInputObject (M1 S s f) where
-  decodeObject (Object object) = M1 <$> selectFromObject
+  __decodeObject (Object object) = M1 <$> selectFromObject
     where
       selectorName = proxySelName (Proxy @(Sel s))
       selectFromObject =
         case lookup selectorName object of
           Nothing    -> internalArgumentError ("Missing Field: " <> selectorName)
-          Just value -> decodeObject value
-  decodeObject isType = internalTypeMismatch "InputObject" isType
+          Just value -> __decodeObject value
+  __decodeObject isType = internalTypeMismatch "InputObject" isType
 
 instance DecodeInputObject f => DecodeInputObject (M1 D c f) where
-  decodeObject = fmap M1 . decodeObject
+  __decodeObject = fmap M1 . __decodeObject
 
 instance DecodeInputObject f => DecodeInputObject (M1 C c f) where
-  decodeObject = fmap M1 . decodeObject
+  __decodeObject = fmap M1 . __decodeObject
 
 instance (DecodeInputObject f, DecodeInputObject g) => DecodeInputObject (f :*: g) where
-  decodeObject gql = (:*:) <$> decodeObject gql <*> decodeObject gql
+  __decodeObject gql = (:*:) <$> __decodeObject gql <*> __decodeObject gql
 
 instance Decode a => DecodeInputObject (K1 i a) where
-  decodeObject = fmap K1 . decode
+  __decodeObject = fmap K1 . decode
 
 -- | Decode GraphQL query arguments and input values
 class Decode a where
@@ -155,8 +163,8 @@ instance (Generic a, EnumRep (Rep a)) => Decode1 a ENUM where
 --
 -- INPUT_OBJECT
 --
-instance (Generic a, DecodeInputObject (Rep a)) => Decode1 a INPUT_OBJECT where
-  __decode _ (Object x) = to <$> decodeObject (Object x)
+instance DecodeObject a => Decode1 a INPUT_OBJECT where
+  __decode _ (Object x) = decodeObject (Object x)
   __decode _ isType     = internalTypeMismatch "InputObject" isType
 
 --

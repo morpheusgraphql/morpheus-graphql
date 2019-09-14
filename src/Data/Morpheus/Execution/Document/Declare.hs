@@ -27,9 +27,10 @@ declareGQLType gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
   types <- declareGQL
   argTypes <- declareLenses $ pure (map (declareType []) typeArgD)
   introspectArgs <- concat <$> traverse deriveArguments typeArgD
+  decodeArgs <- concat <$> traverse deriveDecode typeArgD
   introspection <- deriveGQLInstances
   typeClasses <- deriveGQLType gqlType
-  pure $ types <> typeClasses <> argTypes <> introspection <> introspectArgs
+  pure $ types <> typeClasses <> argTypes <> introspection <> introspectArgs <> decodeArgs
   where
     deriveGQLInstances
       | isInputKind typeKindD = concat <$> traverse (\x -> x typeD) [deriveIntrospect, deriveDecode]
