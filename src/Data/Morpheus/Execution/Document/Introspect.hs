@@ -75,9 +75,8 @@ buildFields = listE . map buildField
 appDToField :: AppD String -> ([DataTypeWrapper], String)
 appDToField = appDToField []
   where
-    appDToField wrappers (MaybeD (ListD td))   = appDToField (ListType : wrappers) td
+    appDToField wrappers (MaybeD (ListD td))   = appDToField (wrappers <> [ListType]) td
+    appDToField wrappers (ListD td)            = appDToField (wrappers <> [NonNullType, ListType]) td
     appDToField wrappers (MaybeD (MaybeD td))  = appDToField wrappers (MaybeD td)
     appDToField wrappers (MaybeD (BaseD name)) = (wrappers, name)
-    ----------------------------------- NONNULL
-    appDToField wrappers (ListD td)            = appDToField ([NonNullType, ListType] <> wrappers) td
-    appDToField wrappers (BaseD name)          = (NonNullType : wrappers, name)
+    appDToField wrappers (BaseD name)          = (wrappers <> [NonNullType], name)
