@@ -36,7 +36,7 @@ import           GHC.Generics
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal                    (internalErrorT)
-import           Data.Morpheus.Error.Selection                   (fieldNotResolved, subfieldsNotSelected)
+import           Data.Morpheus.Error.Selection                   (resolverError, subfieldsNotSelected)
 import           Data.Morpheus.Execution.Server.Decode           (DecodeObject, decodeArguments)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, OBJECT, SCALAR, UNION, WRAPPER)
@@ -192,14 +192,13 @@ instance (GQLType a, DefaultValue res, ResConstraint a m res) => Encoder a OBJEC
     where
       __typenameResolver = ("__typename", const $ return $ stringValue $ __typeName (Proxy @a))
   __encode _ (key, Selection {selectionPosition}) = failResolveT $ subfieldsNotSelected key "" selectionPosition
-
 -- | Resolves and encodes UNION,
 -- Handles all operators: Query, Mutation and Subscription,
 instance ResConstraint a m res => Encoder a UNION (ResolveT m res) where
   __encode (WithGQLKind value) (key, sel@Selection {selectionRec = UnionSelection selections}) =
     resolver (key, sel {selectionRec = SelectionSet lookupSelection})
-    where
       -- SPEC: if there is no any fragment that supports current object Type GQL returns {}
+    where
       lookupSelection = fromMaybe [] $ lookup typeName selections
       (typeName, resolver) = unionResolvers (from value)
   __encode _ _ = internalErrorT "union Resolver only should recieve UnionSelection"
@@ -226,14 +225,7 @@ encodeSub = encodeOperator (flip resolveSelection)
             keyVal (key, valFunc) = (key, ) <$> valFunc args
 
 resolverToResolveT :: Monad m => Position -> Text -> Resolver m a -> ResolveT m a
-resolverToResolveT pos name = ExceptT . toResolveM
-  where
-    toResolveM :: Monad m => Resolver m a -> m (Either GQLErrors a)
-    toResolveM resolver = runExceptT resolver >>= runExceptT . liftEither
-      where
-        liftEither :: Monad m => Either String a -> ResolveT m a
-        liftEither (Left message) = failResolveT $ fieldNotResolved pos name (pack message)
-        liftEither (Right value)  = pure value
+resolverToResolveT pos name = ExceptT . (fmap (resolverError pos name) . runExceptT)
 
 encodeResolver :: (Monad m, Encode a (ResolveT m res)) => (Text, Selection) -> Resolver m a -> ResolveT m res
 encodeResolver selection@(fieldName, Selection {selectionPosition}) =
