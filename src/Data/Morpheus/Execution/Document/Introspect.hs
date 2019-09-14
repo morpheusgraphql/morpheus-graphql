@@ -4,21 +4,38 @@
 {-# LANGUAGE TemplateHaskell   #-}
 
 module Data.Morpheus.Execution.Document.Introspect
-  ( deriveObjectRep
+  ( deriveArguments
+  , deriveIntrospect
   ) where
 
+import           Data.Proxy                                (Proxy (..))
 import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), buildType, updateLib)
+import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..), buildType, updateLib)
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName))
 import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataFullType (..), DataTypeWrapper (..))
 import           Data.Morpheus.Types.Internal.DataD        (AppD (..), ConsD (..), FieldD (..), TypeD (..))
-import           Data.Proxy                                (Proxy (..))
 
-deriveObjectRep :: TypeD -> Q [Dec]
-deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (cxt []) appHead methods
+-- [((Text, DataField), TypeUpdater)]
+deriveArguments :: TypeD -> Q [Dec]
+deriveArguments TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (cxt []) appHead methods
+  where
+    appHead = appT classT typeT
+      where
+        classT = conT ''ObjectFields
+        typeT = conT $ mkName tName
+    methods = [funD 'objectFields [clause argsE (normalB body) []]]
+      where
+        argsE = [varP (mkName "_")]
+        body = [|($(fields), $(types))|]
+        types = buildTypes cFields
+        fields = buildFields cFields
+deriveArguments _ = pure []
+
+deriveIntrospect :: TypeD -> Q [Dec]
+deriveIntrospect TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (cxt []) appHead methods
   where
     typeName = conT $ mkName tName
     appHead = appT classT typeT
@@ -28,28 +45,32 @@ deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (c
     methods = [funD 'introspect [clause argsE (normalB body) []]]
       where
         argsE = [varP (mkName "_")]
-        body = [| updateLib $(typeBuilder) $(types) (Proxy :: (Proxy $(typeName)))|]
-        types = listE $ map introspectType cFields
-          where
-            introspectType fieldD = [|introspect (Proxy :: Proxy $(lookupType fieldD))|]
-              where
-                lookupType FieldD {fieldTypeD} = conT $ mkName $ snd $ appDToField fieldTypeD
+        body = [|updateLib $(typeBuilder) $(types) (Proxy :: (Proxy $(typeName)))|]
+        types = buildTypes cFields
         typeBuilder = [|InputObject . buildType $(buildFields cFields)|]
-          where
-            buildFields = listE . map buildField
-              where
-                buildField FieldD {fieldNameD, fieldTypeD} =
-                  [|( fieldNameD
-                    , DataField
-                        { fieldName = fieldNameD
-                        , fieldArgs = []
-                        , fieldTypeWrappers
-                        , fieldType = __typeName (Proxy :: (Proxy $(conT $ mkName fieldType)))
-                        , fieldHidden = False
-                        })|]
-                  where
-                    (fieldTypeWrappers, fieldType) = appDToField fieldTypeD
-deriveObjectRep _ = pure []
+deriveIntrospect _ = pure []
+
+buildTypes :: [FieldD] -> ExpQ
+buildTypes = listE . map introspectType
+  where
+    introspectType fieldD = [|introspect (Proxy :: Proxy $(lookupType fieldD))|]
+      where
+        lookupType FieldD {fieldTypeD} = conT $ mkName $ snd $ appDToField fieldTypeD
+
+buildFields :: [FieldD] -> ExpQ
+buildFields = listE . map buildField
+  where
+    buildField FieldD {fieldNameD, fieldTypeD} =
+      [|( fieldNameD
+        , DataField
+            { fieldName = fieldNameD
+            , fieldArgs = []
+            , fieldTypeWrappers
+            , fieldType = __typeName (Proxy :: (Proxy $(conT $ mkName fieldType)))
+            , fieldHidden = False
+            })|]
+      where
+        (fieldTypeWrappers, fieldType) = appDToField fieldTypeD
 
 appDToField :: AppD String -> ([DataTypeWrapper], String)
 appDToField = appDToField []
