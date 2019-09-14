@@ -16,7 +16,7 @@ import           Data.Morpheus.Error.Internal            (internalArgumentError,
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Execution.Server.Decode   (Decode(..), DecodeObject (..))
+import           Data.Morpheus.Execution.Server.Decode   (Decode (..), DecodeObject (..))
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), FieldD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value (..))
@@ -39,7 +39,7 @@ objectBody ConsD {cName, cFields} = handleFields cFields
   where
     selectFromObject =
       case lookup selectorName object of
-        Nothing    -> internalArgumentError ("Missing Field: " <> selectorName)
+        Nothing    -> internalArgumentError ("Missing Field: \"" <> selectorName <> "\"")
         Just value -> decode value
 isType .: _ = internalTypeMismatch "InputObject" isType
 

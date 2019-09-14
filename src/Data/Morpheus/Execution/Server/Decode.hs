@@ -83,7 +83,7 @@ instance (GQLType a, Decode a) => DecodeInputUnion (K1 i a) where
 --
 --  GENERIC INPUT OBJECT AND ARGUMENTS
 --
-type ArgumentsConstraint a = (Generic a, DecodeInputObject (Rep a))
+type ArgumentsConstraint a = (Generic a, DecodeObject a)
 
 decodeArguments :: (Generic p, DecodeObject p) => Arguments -> Validation p
 decodeArguments args = decodeObject (Object $ fmap (\(x, y) -> (x, argumentValue y)) args)
