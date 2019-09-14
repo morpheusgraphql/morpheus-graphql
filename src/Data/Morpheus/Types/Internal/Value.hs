@@ -6,6 +6,7 @@
 module Data.Morpheus.Types.Internal.Value
   ( Value(..)
   , ScalarValue(..)
+  , Object
   , replaceValue
   , decodeScientific
   , convertToJSONName
@@ -97,8 +98,10 @@ instance Lift Value where
   lift (Scalar n)  = apply 'Scalar [lift n]
   lift Null        = varE 'Null
 
+type Object = [(Text, Value)]
+
 data Value
-  = Object [(Text, Value)]
+  = Object Object
   | List [Value]
   | Enum Text
   | Scalar ScalarValue

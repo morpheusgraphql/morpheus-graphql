@@ -25,6 +25,7 @@ import           GHC.Generics
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal                    (internalArgumentError, internalTypeMismatch)
+import           Data.Morpheus.Execution.Internal.Decode         (decodeFieldWith, withObject)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, INPUT_OBJECT, INPUT_UNION, SCALAR,
                                                                   WRAPPER)
@@ -32,13 +33,13 @@ import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..)
 import           Data.Morpheus.Types.GQLType                     (GQLType (KIND, __typeName))
 import           Data.Morpheus.Types.Internal.AST.Selection      (Argument (..), Arguments)
 import           Data.Morpheus.Types.Internal.Validation         (Validation)
-import           Data.Morpheus.Types.Internal.Value              (Value (..))
+import           Data.Morpheus.Types.Internal.Value              (Object, Value (..))
 
 --
 -- GENERIC UNION
 --
 class DecodeInputUnion f where
-  decodeUnion :: Value -> Validation (f a)
+  decodeUnion :: Object -> Validation (f a)
   unionTags :: Proxy f -> [Text]
 
 instance (Datatype c, DecodeInputUnion f) => DecodeInputUnion (M1 D c f) where
@@ -54,30 +55,27 @@ instance (Selector c, DecodeInputUnion f) => DecodeInputUnion (M1 S c f) where
   unionTags _ = unionTags (Proxy @f)
 
 instance (DecodeInputUnion a, DecodeInputUnion b) => DecodeInputUnion (a :+: b) where
-  decodeUnion (Object pairs) =
+  decodeUnion pairs =
     case lookup "tag" pairs of
       Nothing -> internalArgumentError "tag not found on Input Union"
       Just (Enum name) ->
         case lookup name pairs of
           Nothing -> internalArgumentError ("type \"" <> name <> "\" was not provided on object")
+          Just value
           -- Decodes first Matching Union Type Value
-          Just value
-            | [name] == l1Tags -> L1 <$> decodeUnion value
+            | [name] == l1Tags -> L1 <$> withObject decodeUnion value
           -- Decodes last Matching Union Type Value
-          Just value
-            | [name] == r1Tags -> R1 <$> decodeUnion value
-          Just _
-            -- JUMPS to Next Union Pair
-            | name `elem` r1Tags -> R1 <$> decodeUnion (Object pairs)
-          Just _ -> internalArgumentError ("type \"" <> name <> "\" could not find in union")
+            | [name] == r1Tags -> R1 <$> withObject decodeUnion value
+          -- JUMPS to Next Union Pair
+            | name `elem` r1Tags -> R1 <$> decodeUnion pairs
+            | otherwise -> internalArgumentError ("type \"" <> name <> "\" could not find in union")
         where l1Tags = unionTags $ Proxy @a
               r1Tags = unionTags $ Proxy @b
       Just _ -> internalArgumentError "tag must be Enum"
-  decodeUnion _ = internalArgumentError "Expected Input Object Union!"
   unionTags _ = unionTags (Proxy @a) ++ unionTags (Proxy @b)
 
 instance (GQLType a, Decode a) => DecodeInputUnion (K1 i a) where
-  decodeUnion value = K1 <$> decode value
+  decodeUnion = fmap K1 . decode . Object
   unionTags _ = [__typeName (Proxy @a)]
 
 --
@@ -86,13 +84,13 @@ instance (GQLType a, Decode a) => DecodeInputUnion (K1 i a) where
 type ArgumentsConstraint a = (Generic a, DecodeObject a)
 
 decodeArguments :: (Generic p, DecodeObject p) => Arguments -> Validation p
-decodeArguments args = decodeObject (Object $ fmap (\(x, y) -> (x, argumentValue y)) args)
+decodeArguments args = decodeObject (fmap (\(x, y) -> (x, argumentValue y)) args)
 
 class DecodeObject a where
-  decodeObject :: Value -> Validation a
+  decodeObject :: Object -> Validation a
   default decodeObject :: (Generic a, DecodeInputObject (Rep a)) =>
-    Value -> Validation a
-  decodeObject value = to <$> __decodeObject value
+    Object -> Validation a
+  decodeObject = fmap to . __decodeObject . Object
 
 instance {-# OVERLAPPABLE #-} (Generic a, DecodeInputObject (Rep a)) => DecodeObject a
 
@@ -102,23 +100,10 @@ class DecodeInputObject f where
 instance DecodeInputObject U1 where
   __decodeObject _ = pure U1
 
-type Sel s = M1 S s
-
-proxySelName ::
-     forall s. Selector s
-  => Proxy (M1 S s)
-  -> Text
-proxySelName _ = pack $ selName (undefined :: M1 S s f a)
-
 instance (Selector s, DecodeInputObject f) => DecodeInputObject (M1 S s f) where
-  __decodeObject (Object object) = M1 <$> selectFromObject
+  __decodeObject = fmap M1 . withObject (decodeFieldWith __decodeObject fieldName)
     where
-      selectorName = proxySelName (Proxy @(Sel s))
-      selectFromObject =
-        case lookup selectorName object of
-          Nothing    -> internalArgumentError ("Missing Field: " <> selectorName)
-          Just value -> __decodeObject value
-  __decodeObject isType = internalTypeMismatch "InputObject" isType
+      fieldName = pack $ selName (undefined :: M1 S s f a)
 
 instance DecodeInputObject f => DecodeInputObject (M1 D c f) where
   __decodeObject = fmap M1 . __decodeObject
@@ -145,38 +130,27 @@ instance {-# OVERLAPPABLE #-} Decode1 a (KIND a) => Decode a
 class Decode1 a (b :: GQL_KIND) where
   __decode :: Proxy b -> Value -> Validation a
 
---
 -- SCALAR
---
 instance (GQLScalar a) => Decode1 a SCALAR where
   __decode _ value =
     case toScalar value >>= parseValue of
       Right scalar      -> return scalar
       Left errorMessage -> internalTypeMismatch errorMessage value
 
---
 -- ENUM
---
 instance (Generic a, EnumRep (Rep a)) => Decode1 a ENUM where
   __decode _ (Enum value) = to <$> decodeEnum value
   __decode _ isType       = internalTypeMismatch "Enum" isType
 
---
 -- INPUT_OBJECT
---
 instance DecodeObject a => Decode1 a INPUT_OBJECT where
-  __decode _ = decodeObject
+  __decode _ = withObject decodeObject
 
---
 -- INPUT_UNION
---
 instance (Generic a, DecodeInputUnion (Rep a)) => Decode1 a INPUT_UNION where
-  __decode _ (Object x) = to <$> decodeUnion (Object x)
-  __decode _ isType     = internalTypeMismatch "InputObject" isType
+  __decode _ = withObject (fmap to . decodeUnion)
 
---
 -- WRAPPERS: Maybe, List
---
 instance Decode a => Decode1 (Maybe a) WRAPPER where
   __decode _ Null = pure Nothing
   __decode _ x    = Just <$> decode x

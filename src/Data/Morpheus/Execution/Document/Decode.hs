@@ -19,7 +19,8 @@ import           Data.Morpheus.Error.Internal            (internalArgumentError,
 import           Data.Morpheus.Execution.Server.Decode   (Decode (..), DecodeObject (..))
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), FieldD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
-import           Data.Morpheus.Types.Internal.Value      (Value (..))
+import           Data.Morpheus.Types.Internal.Value      (Object)
+import           Data.Morpheus.Execution.Internal.Decode (withObject,decodeFieldWith)
 
 objectBody :: ConsD -> ExpQ
 objectBody ConsD {cName, cFields} = handleFields cFields
@@ -34,14 +35,8 @@ objectBody ConsD {cName, cFields} = handleFields cFields
             ----------
         defField FieldD {fieldNameD} = [|o .: fieldNameD|]
 
-(.:) :: Decode a => Value -> Text -> Validation a
-(Object object) .: selectorName = selectFromObject
-  where
-    selectFromObject =
-      case lookup selectorName object of
-        Nothing    -> internalArgumentError ("Missing Field: \"" <> selectorName <> "\"")
-        Just value -> decode value
-isType .: _ = internalTypeMismatch "InputObject" isType
+(.:) :: Decode a => Object -> Text -> Validation a
+object .: selectorName = decodeFieldWith decode selectorName object
 
 deriveDecode :: TypeD -> Q [Dec]
 deriveDecode TypeD {tName, tCons = [cons]} = pure <$> instanceD (cxt []) appHead methods
