@@ -16,7 +16,7 @@ import           Data.Morpheus.Error.Internal            (internalArgumentError,
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Execution.Server.Decode   (Decode (..))
+import           Data.Morpheus.Execution.Server.Decode   (Decode(..), DecodeObject (..))
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), FieldD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value (..))
@@ -48,9 +48,9 @@ deriveDecode TypeD {tName, tCons = [cons]} = pure <$> instanceD (cxt []) appHead
   where
     appHead = appT classT typeT
       where
-        classT = conT ''Decode
+        classT = conT ''DecodeObject
         typeT = conT $ mkName tName
-    methods = [funD 'decode [clause argsE (normalB body) []]]
+    methods = [funD 'decodeObject [clause argsE (normalB body) []]]
       where
         argsE = [varP (mkName "o")]
         body = objectBody cons

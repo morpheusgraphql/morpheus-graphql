@@ -15,6 +15,7 @@ module Data.Morpheus.Execution.Server.Decode
   ( ArgumentsConstraint
   , decodeArguments
   , Decode(..)
+  , DecodeObject(..)
   ) where
 
 import           Data.Proxy                                      (Proxy (..))
