@@ -93,6 +93,33 @@ instance (Eq k, Monad m, Encode (MapKind k v (Resolver m)) (ResolveT m res)) => 
 instance (Monad m, DefaultValue res, Encode a (m res)) => Encode [a] (m res) where
   encode list query = listValue <$> mapM (`encode` query) list
 
+--
+--  RESOLVERS
+--
+-- | Handles all operators: Query, Mutation and Subscription,
+-- if you use it with Mutation or Subscription all effects inside will be lost
+
+-- Pure Resolver
+instance (Monad m, Encode a (ResolveT m res), DecodeObject p) => Encode (p -> Either String a) (ResolveT m res) where
+  encode resolver selection = decodeArgs selection >>= encodeResolver selection . (ExceptT . pure . resolver)
+
+--  GQL Resolver
+instance (DecodeObject a, Monad m, Encode b (ResolveT m res)) => Encode (a -> Resolver m b) (ResolveT m res) where
+  encode resolver selection = decodeArgs selection >>= encodeResolver selection . resolver
+
+-- Mutation Resolver
+instance (DecodeObject a, Monad m, Encode b (ResolveT m res)) =>
+         Encode (a -> Resolver m b)  (ResolveT (StreamT m c) res) where
+  encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (encode resolver selection)
+
+-- Subscription Resolver
+instance (DecodeObject a, Monad m, Encode b (ResolveT m Value)) =>
+         Encoder (a -> SubResolver m e c b) WRAPPER (SubResolveT m e c Value) where
+  __encode (WithGQLKind resolver) selection = decodeArgs selection >>= handleResolver . resolver
+    where
+      handleResolver SubResolver {subChannels, subResolver} =
+        ExceptT $ StreamT $ pure $ StreamState [subChannels] (Right $ encodeResolver selection . subResolver)
+
 -- EXPORT -------------------------------------------------------
 type EncodeOperator m a value = Resolver m a -> ValidOperation -> m (Either GQLErrors value)
 
@@ -192,32 +219,6 @@ instance ResConstraint a m res => Encoder a UNION (ResolveT m res) where
       (typeName, resolver) = unionResolvers (from value)
   __encode _ _ = internalErrorT "union Resolver only should recieve UnionSelection"
 
---
---  RESOLVERS
---
--- | Handles all operators: Query, Mutation and Subscription,
--- if you use it with Mutation or Subscription all effects inside will be lost
-instance (DecodeObject a, Monad m, Encode b (ResolveT m res)) =>
-         Encoder (a -> Resolver m b) WRAPPER (ResolveT m res) where
-  __encode (WithGQLKind resolver) selection = decodeArgs selection >>= encodeResolver selection . resolver
-
--- packs Monad in StreamMonad
-instance (Monad m, Encode a (ResolveT m res), DecodeObject p) =>
-         Encoder (p -> Either String a) WRAPPER (ResolveT m res) where
-  __encode (WithGQLKind resolver) selection =
-    decodeArgs selection >>= encodeResolver selection . (ExceptT . pure . resolver)
-
--- packs Monad in StreamMonad
-instance (DecodeObject a, Monad m, Encode b (ResolveT m res)) =>
-         Encoder (a -> Resolver m b) WRAPPER (ResolveT (StreamT m c) res) where
-  __encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (__encode resolver selection)
-
-instance (DecodeObject a, Monad m, Encode b (ResolveT m Value)) =>
-         Encoder (a -> SubResolver m e c b) WRAPPER (SubResolveT m e c Value) where
-  __encode (WithGQLKind resolver) selection = decodeArgs selection >>= handleResolver . resolver
-    where
-      handleResolver SubResolver {subChannels, subResolver} =
-        ExceptT $ StreamT $ pure $ StreamState [subChannels] (Right $ encodeResolver selection . subResolver)
 
 ----- HELPERS ----------------------------
 type ResolveSel result = SelectionSet -> [(Text, (Text, Selection) -> result)] -> result
