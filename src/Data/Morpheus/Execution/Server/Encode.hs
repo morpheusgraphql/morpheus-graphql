@@ -55,10 +55,14 @@ import           Data.Morpheus.Types.Resolver                    (Event (..), Re
 class DefaultValue a where
   nullValue :: a
   listValue :: [a] -> a
+  stringValue :: Text -> a
+  objectValue :: [(Text, a)] -> a
 
 instance DefaultValue Value where
   nullValue = Null
   listValue = List
+  stringValue = Scalar . String
+  objectValue = Object
 
 class Encode a result where
   encode :: a -> (Text, Selection) -> result
@@ -82,7 +86,7 @@ instance Encode [a] result => Encode (Set a) result where
   encode = encode . S.toList
 
 --  Map
-instance (Eq k, Monad m, Encode (MapKind k v (Resolver m)) (ResValue m)) => Encode (Map k v) (ResValue m) where
+instance (Eq k, Monad m, Encode (MapKind k v (Resolver m)) (ResolveT m res)) => Encode (Map k v) (ResolveT m res) where
   encode value = encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver m))
 
 -- LIST []
@@ -146,7 +150,7 @@ instance (GResolver a res, GResolver b res) => GResolver (a :+: b) res where
   unionResolvers (L1 x) = unionResolvers x
   unionResolvers (R1 x) = unionResolvers x
 
-type ResConstraint a m = (Monad m, Generic a, GResolver (Rep a) (ResolveT m Value))
+type ResConstraint a m res = (Monad m, Generic a, GResolver (Rep a) (ResolveT m res))
 
 type EnumConstraint a = (Generic a, EnumRep (Rep a))
 
@@ -159,33 +163,26 @@ type GQLKindOf a = WithGQLKind a (KIND a)
 class Encoder a kind result where
   __encode :: WithGQLKind a kind -> (Text, Selection) -> result
 
-type ResValue m = (ResolveT m Value)
-
---
+-- type ResValue m = (ResolveT m Value)
 -- SCALAR
---
 instance (GQLScalar a, Monad m) => Encoder a SCALAR (m Value) where
   __encode = pure . pure . Scalar . serialize . resolverValue
 
---
 -- ENUM
---
 instance (EnumConstraint a, Monad m) => Encoder a ENUM (m Value) where
   __encode = pure . pure . Scalar . String . encodeRep . from . resolverValue
 
---
 --  OBJECTS
---
-instance (GQLType a, ResConstraint a m) => Encoder a OBJECT (ResValue m) where
+instance (GQLType a, DefaultValue res, ResConstraint a m res) => Encoder a OBJECT (ResolveT m res) where
   __encode (WithGQLKind value) (_, Selection {selectionRec = SelectionSet selection'}) =
     resolveBySelection selection' (__typenameResolver : resolversBy value)
     where
-      __typenameResolver = ("__typename", const $ return $ Scalar $ String $ __typeName (Proxy @a))
+      __typenameResolver = ("__typename", const $ return $ stringValue $ __typeName (Proxy @a))
   __encode _ (key, Selection {selectionPosition}) = failResolveT $ subfieldsNotSelected key "" selectionPosition
 
 -- | Resolves and encodes UNION,
 -- Handles all operators: Query, Mutation and Subscription,
-instance ResConstraint a m => Encoder a UNION (ResValue m) where
+instance ResConstraint a m res => Encoder a UNION (ResolveT m res) where
   __encode (WithGQLKind value) (key', sel@Selection {selectionRec = UnionSelection selections'}) =
     resolver (key', sel {selectionRec = SelectionSet lookupSelection})
     where
@@ -200,20 +197,22 @@ instance ResConstraint a m => Encoder a UNION (ResValue m) where
 --
 -- | Handles all operators: Query, Mutation and Subscription,
 -- if you use it with Mutation or Subscription all effects inside will be lost
-instance (DecodeObject a, Monad m, Encode b (ResValue m)) => Encoder (a -> Resolver m b) WRAPPER (ResValue m) where
+instance (DecodeObject a, Monad m, Encode b (ResolveT m res)) =>
+         Encoder (a -> Resolver m b) WRAPPER (ResolveT m res) where
   __encode (WithGQLKind resolver) selection = decodeArgs selection >>= encodeResolver selection . resolver
 
 -- packs Monad in StreamMonad
-instance (Monad m, Encode a (ResValue m), DecodeObject p) => Encoder (p -> Either String a) WRAPPER (ResValue m) where
+instance (Monad m, Encode a (ResolveT m res), DecodeObject p) =>
+         Encoder (p -> Either String a) WRAPPER (ResolveT m res) where
   __encode (WithGQLKind resolver) selection =
     decodeArgs selection >>= encodeResolver selection . (ExceptT . pure . resolver)
 
 -- packs Monad in StreamMonad
-instance (DecodeObject a, Monad m, Encode b (ResValue m)) =>
-         Encoder (a -> Resolver m b) WRAPPER (ResValue (StreamT m c)) where
+instance (DecodeObject a, Monad m, Encode b (ResolveT m res)) =>
+         Encoder (a -> Resolver m b) WRAPPER (ResolveT (StreamT m c) res) where
   __encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (__encode resolver selection)
 
-instance (DecodeObject a, Monad m, Encode b (ResValue m)) =>
+instance (DecodeObject a, Monad m, Encode b (ResolveT m Value)) =>
          Encoder (a -> SubResolver m e c b) WRAPPER (SubResolveT m e c Value) where
   __encode (WithGQLKind resolver) selection = decodeArgs selection >>= handleResolver . resolver
     where
@@ -233,7 +232,7 @@ resolverToResolveT pos name = ExceptT . toResolveM
         liftEither (Left message) = failResolveT $ fieldNotResolved pos name (pack message)
         liftEither (Right value)  = pure value
 
-encodeResolver :: (Monad m, Encode a (ResValue m)) => (Text, Selection) -> Resolver m a -> ResValue m
+encodeResolver :: (Monad m, Encode a (ResolveT m res)) => (Text, Selection) -> Resolver m a -> ResolveT m res
 encodeResolver selection@(fieldName, Selection {selectionPosition}) =
   resolverToResolveT selectionPosition fieldName >=> (`encode` selection)
 
@@ -247,8 +246,8 @@ encodeOperator :: (Monad m, EncodeCon m a v) => ResolveSel (ResolveT m v) -> Enc
 encodeOperator resSel rootResolver operation@Operation {operationSelection} =
   runExceptT (operatorToResolveT operation rootResolver >>= resSel operationSelection . resolversBy)
 
-resolveBySelection :: Monad m => ResolveSel (ResolveT m Value)
-resolveBySelection selection resolvers = Object <$> mapM (selectResolver Null resolvers) selection
+resolveBySelection :: (Monad m, DefaultValue res) => ResolveSel (ResolveT m res)
+resolveBySelection selection resolvers = objectValue <$> mapM (selectResolver nullValue resolvers) selection
 
 selectResolver :: Monad m => a -> [(Text, (Text, Selection) -> m a)] -> (Text, Selection) -> m (Text, a)
 selectResolver defaultValue resolvers (key, selection) =
