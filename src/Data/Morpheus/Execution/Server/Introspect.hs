@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -35,8 +36,8 @@ import           GHC.Generics
 -- MORPHEUS
 import           Data.Morpheus.Error.Schema                      (nameCollisionError)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
-import           Data.Morpheus.Kind                              (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR,
-                                                                  UNION, WRAPPER)
+import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, INPUT_OBJECT, INPUT_UNION, OBJECT,
+                                                                  SCALAR, UNION, WRAPPER)
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (..))
@@ -154,7 +155,7 @@ instance {-# OVERLAPPABLE #-} (Introspect1 a (KIND a)) => Introspect a
 -- * 'args': type of field arguments
 --    * '()' for 'input values' , they are just JSON properties and does not have any argument
 --    * 'DataArguments' for field Resolvers Types, where 'DataArguments' is type of arguments
-class Introspect1 a kind where
+class Introspect1 a (kind :: GQL_KIND) where
   __field :: Context a kind -> Text -> DataField
   default __field :: GQLType a =>
     Context a kind -> Text -> DataField
