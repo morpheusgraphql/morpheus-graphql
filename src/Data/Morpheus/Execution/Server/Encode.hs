@@ -133,6 +133,16 @@ type EncodeSubCon m event con sub = EncodeCon (SubscribeStream m event) sub (Eve
 
 type ResolveSel result = SelectionSet -> [(Text, (Text, Selection) -> result)] -> result
 
+type ResConstraint a m res = (Monad m, Generic a, GResolver (Rep a) (ResolveT m res))
+
+type EnumConstraint a = (Generic a, EnumRep (Rep a))
+
+type GQLKindOf a = WithGQLKind a (KIND a)
+
+newtype WithGQLKind a (b :: GQL_KIND) = WithGQLKind
+  { resolverValue :: a
+  }
+
 --- GENERICS ------------------------------------------------
 --
 --  OBJECT
@@ -163,16 +173,6 @@ instance (GResolver a res, GResolver b res) => GResolver (a :+: b) res where
   unionResolvers (L1 x) = unionResolvers x
   unionResolvers (R1 x) = unionResolvers x
 
-type ResConstraint a m res = (Monad m, Generic a, GResolver (Rep a) (ResolveT m res))
-
-type EnumConstraint a = (Generic a, EnumRep (Rep a))
-
-newtype WithGQLKind a (b :: GQL_KIND) = WithGQLKind
-  { resolverValue :: a
-  }
-
-type GQLKindOf a = WithGQLKind a (KIND a)
-
 class Encoder a kind result where
   __encode :: WithGQLKind a kind -> (Text, Selection) -> result
 
@@ -196,10 +196,9 @@ instance (GQLType a, DefaultValue res, ResConstraint a m res) => Encoder a OBJEC
 -- | Resolves and encodes UNION,
 -- Handles all operators: Query, Mutation and Subscription,
 instance ResConstraint a m res => Encoder a UNION (ResolveT m res) where
-  __encode (WithGQLKind value) (key', sel@Selection {selectionRec = UnionSelection selections}) =
-    resolver (key', sel {selectionRec = SelectionSet lookupSelection})
+  __encode (WithGQLKind value) (key, sel@Selection {selectionRec = UnionSelection selections}) =
+    resolver (key, sel {selectionRec = SelectionSet lookupSelection})
     where
-      lookupSelection :: SelectionSet
       -- SPEC: if there is no any fragment that supports current object Type GQL returns {}
       lookupSelection = fromMaybe [] $ lookup typeName selections
       (typeName, resolver) = unionResolvers (from value)
