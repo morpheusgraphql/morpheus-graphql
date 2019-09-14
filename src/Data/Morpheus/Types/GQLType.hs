@@ -25,7 +25,7 @@ import           Data.Typeable                     (TyCon, TypeRep, Typeable, sp
 import           Data.Morpheus.Kind
 import           Data.Morpheus.Types.Custom        (MapKind, Pair)
 import           Data.Morpheus.Types.Internal.Data (DataFingerprint (..))
-import           Data.Morpheus.Types.Resolver      (Resolver)
+import           Data.Morpheus.Types.Resolver      (Resolver, SubResolver)
 
 resolverCon :: TyCon
 resolverCon = fst $ splitTyConApp $ typeRep $ Proxy @(Resolver Maybe)
@@ -43,8 +43,7 @@ replacePairCon x = x
 ignoreResolver :: (TyCon, [TypeRep]) -> [TyCon]
 ignoreResolver (con, _)
   | con == resolverCon = []
-ignoreResolver (con, args) =
-  con : concatMap (ignoreResolver . splitTyConApp) args
+ignoreResolver (con, args) = con : concatMap (ignoreResolver . splitTyConApp) args
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
@@ -71,17 +70,13 @@ class GQLType a where
     Proxy a -> Text
   __typeName _ = intercalate "_" (getName $ Proxy @a)
     where
-      getName =
-        fmap
-          (map (pack . tyConName))
-          (map replacePairCon . ignoreResolver . splitTyConApp . typeRep)
+      getName = fmap (map (pack . tyConName)) (map replacePairCon . ignoreResolver . splitTyConApp . typeRep)
   __typeFingerprint :: Proxy a -> DataFingerprint
   default __typeFingerprint :: (Typeable a) =>
     Proxy a -> DataFingerprint
   __typeFingerprint _ = TypeableFingerprint $ conFingerprints (Proxy @a)
     where
-      conFingerprints =
-        fmap (map tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
+      conFingerprints = fmap (map tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 
 instance GQLType Int where
   type KIND Int = SCALAR
@@ -120,19 +115,27 @@ instance GQLType a => GQLType (Set a) where
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
-instance (Typeable a, Typeable b, GQLType a, GQLType b) =>
-         GQLType (Pair a b) where
+instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) where
   type KIND (Pair a b) = OBJECT
 
-instance (Typeable a, Typeable b, Typeable m, GQLType a, GQLType b) =>
-         GQLType (MapKind a b m) where
+instance (Typeable a, Typeable b, Typeable m, GQLType a, GQLType b) => GQLType (MapKind a b m) where
   type KIND (MapKind a b m) = OBJECT
 
 instance (Typeable k, Typeable v) => GQLType (Map k v) where
   type KIND (Map k v) = WRAPPER
 
+instance GQLType a => GQLType (Either s a) where
+  type KIND (Either s a) = WRAPPER
+  __typeName _ = __typeName (Proxy @a)
+  __typeFingerprint _ = __typeFingerprint (Proxy @a)
+
 instance GQLType a => GQLType (Resolver m a) where
   type KIND (Resolver m a) = WRAPPER
+  __typeName _ = __typeName (Proxy @a)
+  __typeFingerprint _ = __typeFingerprint (Proxy @a)
+
+instance GQLType a => GQLType (SubResolver m e c a) where
+  type KIND (SubResolver m e c a) = WRAPPER
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
