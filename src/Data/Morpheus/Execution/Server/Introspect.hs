@@ -45,7 +45,6 @@ import           Data.Morpheus.Types.Internal.Data               (DataArguments,
                                                                   DataLeaf (..), DataType (..), DataTypeLib,
                                                                   DataTypeWrapper (..), defineType, isTypeDefined)
 import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
-import           Data.Morpheus.Types.Resolver                    (Resolver, SubResolver)
 
 type SelOf s = M1 S s (Rec0 ()) ()
 
@@ -276,29 +275,11 @@ instance Introspect [a] => Introspect (Set a) where
   field _ = field (Proxy @[a])
   introspect _ = introspect (Proxy @[a])
 
--- | introspection Does not care about resolving monad, some fake monad just for mocking
-type MockRes = (Resolver Maybe)
+instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
+  field _ = field (Proxy @(MapKind k v Maybe))
+  introspect _ = introspect (Proxy @(MapKind k v Maybe))
 
-instance Introspect (MapKind k v MockRes) => Introspect (Map k v) where
-  field _ = field (Proxy @(MapKind k v MockRes))
-  introspect _ = introspect (Proxy @(MapKind k v MockRes))
-
--- |introspects Of Resolver 'a' as argument and 'b' as output type
-instance (ObjectFields a, OutputConstraint b) => Introspect (a -> Resolver m b) where
-  field _ name = (field (Proxy @b) name) {fieldArgs = fst $ objectFields (Proxy @a)}
-  introspect _ typeLib = resolveTypes typeLib (introspect (Proxy @b) : argTypes)
-    where
-      argTypes :: [TypeUpdater]
-      argTypes = snd $ objectFields (Proxy @a)
-
-instance (ObjectFields a, OutputConstraint b) => Introspect (a -> Either String b) where
-  field _ name = (field (Proxy @b) name) {fieldArgs = fst $ objectFields (Proxy @a)}
-  introspect _ typeLib = resolveTypes typeLib (introspect (Proxy @b) : argTypes)
-    where
-      argTypes :: [TypeUpdater]
-      argTypes = snd $ objectFields (Proxy @a)
-
-instance (ObjectFields a, OutputConstraint b) => Introspect (a -> SubResolver m c v b) where
+instance (ObjectFields a, OutputConstraint b) => Introspect (a -> m b) where
   field _ name = (field (Proxy @b) name) {fieldArgs = fst $ objectFields (Proxy @a)}
   introspect _ typeLib = resolveTypes typeLib (introspect (Proxy @b) : argTypes)
     where
