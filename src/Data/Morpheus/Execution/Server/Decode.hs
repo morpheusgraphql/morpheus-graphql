@@ -25,7 +25,7 @@ import           GHC.Generics
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal                    (internalArgumentError, internalTypeMismatch)
-import           Data.Morpheus.Execution.Internal.Decode         (decodeFieldWith, withObject)
+import           Data.Morpheus.Execution.Internal.Decode         (decodeFieldWith, withObject, withUnion)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, INPUT_OBJECT, INPUT_UNION, SCALAR,
                                                                   WRAPPER)
@@ -74,23 +74,17 @@ instance (GQLType a, Decode a) => DecodeInput (K1 i a) where
   __decodeObject = fmap K1 . decode
 
 instance (DecodeInput a, DecodeInput b) => DecodeInput (a :+: b) where
-  decodeUnion pairs =
-    case lookup "tag" pairs of
-      Nothing -> internalArgumentError "tag not found on Input Union"
-      Just (Enum name) ->
-        case lookup name pairs of
-          Nothing -> internalArgumentError ("type \"" <> name <> "\" was not provided on object")
-          Just value
-          -- Decodes first Matching Union Type Value
-            | [name] == l1Tags -> L1 <$> withObject decodeUnion value
-          -- Decodes last Matching Union Type Value
-            | [name] == r1Tags -> R1 <$> withObject decodeUnion value
-          -- JUMPS to Next Union Pair
-            | name `elem` r1Tags -> R1 <$> decodeUnion pairs
-            | otherwise -> internalArgumentError ("type \"" <> name <> "\" could not find in union")
-        where l1Tags = unionTags $ Proxy @a
-              r1Tags = unionTags $ Proxy @b
-      Just _ -> internalArgumentError "tag must be Enum"
+  decodeUnion = withUnion handleUnion
+    where
+      handleUnion name unions object
+        | [name] == l1Tags = L1 <$> decodeUnion object
+        | [name] == r1Tags = R1 <$> decodeUnion object
+        | name `elem` l1Tags = L1 <$> decodeUnion unions
+        | name `elem` r1Tags = R1 <$> decodeUnion unions
+        | otherwise = internalArgumentError ("type \"" <> name <> "\" could not find in union")
+        where
+          l1Tags = unionTags $ Proxy @a
+          r1Tags = unionTags $ Proxy @b
   unionTags _ = unionTags (Proxy @a) ++ unionTags (Proxy @b)
 
 --

@@ -4,6 +4,7 @@
 
 module Data.Morpheus.Execution.Internal.Decode
   ( withObject
+  , withUnion
   , decodeFieldWith
   , decodeObjectExpQ
   ) where
@@ -34,6 +35,16 @@ decodeObjectExpQ fieldDecoder ConsD {cName, cFields} = handleFields cFields
 withObject :: (Object -> Validation a) -> Value -> Validation a
 withObject f (Object object) = f object
 withObject _ isType          = internalTypeMismatch "Object" isType
+
+withUnion :: (Key -> Object -> Object -> Validation a) -> Object -> Validation a
+withUnion decoder unions =
+  case lookup "tag" unions of
+    Just (Enum key) ->
+      case lookup key unions of
+        Nothing    -> internalArgumentError ("type \"" <> key <> "\" was not provided on object")
+        Just value -> withObject (decoder key unions) value
+    Just _ -> internalArgumentError "tag must be Enum"
+    Nothing -> internalArgumentError "tag not found on Input Union"
 
 decodeFieldWith :: (Value -> Validation a) -> Key -> Object -> Validation a
 decodeFieldWith decoder name object =
