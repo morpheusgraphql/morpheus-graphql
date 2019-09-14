@@ -174,8 +174,8 @@ instance (EnumConstraint a, Monad m) => Encoder a ENUM (m Value) where
 
 --  OBJECTS
 instance (GQLType a, DefaultValue res, ResConstraint a m res) => Encoder a OBJECT (ResolveT m res) where
-  __encode (WithGQLKind value) (_, Selection {selectionRec = SelectionSet selection'}) =
-    resolveBySelection selection' (__typenameResolver : resolversBy value)
+  __encode (WithGQLKind value) (_, Selection {selectionRec = SelectionSet selection}) =
+    resolveBySelection selection (__typenameResolver : resolversBy value)
     where
       __typenameResolver = ("__typename", const $ return $ stringValue $ __typeName (Proxy @a))
   __encode _ (key, Selection {selectionPosition}) = failResolveT $ subfieldsNotSelected key "" selectionPosition
