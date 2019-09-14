@@ -98,7 +98,6 @@ instance (Monad m, DefaultValue res, Encode a (m res)) => Encode [a] (m res) whe
 --
 -- | Handles all operators: Query, Mutation and Subscription,
 -- if you use it with Mutation or Subscription all effects inside will be lost
-
 -- Pure Resolver
 instance (Monad m, Encode a (ResolveT m res), DecodeObject p) => Encode (p -> Either String a) (ResolveT m res) where
   encode resolver selection = decodeArgs selection >>= encodeResolver selection . (ExceptT . pure . resolver)
@@ -109,7 +108,7 @@ instance (DecodeObject a, Monad m, Encode b (ResolveT m res)) => Encode (a -> Re
 
 -- Mutation Resolver
 instance (DecodeObject a, Monad m, Encode b (ResolveT m res)) =>
-         Encode (a -> Resolver m b)  (ResolveT (StreamT m c) res) where
+         Encode (a -> Resolver m b) (ResolveT (StreamT m c) res) where
   encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (encode resolver selection)
 
 -- Subscription Resolver
@@ -143,9 +142,9 @@ encodeSub ::
   => EncodeOperator (SubscribeStream m event) a (Event event con -> ResolveT m Value)
 encodeSub = encodeOperator (flip resolveSelection)
   where
-    resolveSelection resolvers = fmap toObj . mapM (selectResolver (const $ pure Null) resolvers)
+    resolveSelection resolvers = fmap toObj . mapM (selectResolver (const $ pure nullValue) resolvers)
       where
-        toObj pairs args = Object <$> mapM (\(key, valFunc) -> (key, ) <$> valFunc args) pairs
+        toObj pairs args = objectValue <$> mapM (\(key, valFunc) -> (key, ) <$> valFunc args) pairs
 
 ---------------------------------------------------------
 --
@@ -219,7 +218,6 @@ instance ResConstraint a m res => Encoder a UNION (ResolveT m res) where
       (typeName, resolver) = unionResolvers (from value)
   __encode _ _ = internalErrorT "union Resolver only should recieve UnionSelection"
 
-
 ----- HELPERS ----------------------------
 type ResolveSel result = SelectionSet -> [(Text, (Text, Selection) -> result)] -> result
 
@@ -243,7 +241,7 @@ decodeArgs (_, Selection {selectionArguments}) = ExceptT $ pure $ decodeArgument
 operatorToResolveT :: Monad m => ValidOperation -> Resolver m a -> ResolveT m a
 operatorToResolveT Operation {operationPosition, operationName} = resolverToResolveT operationPosition operationName
 
-encodeOperator :: (Monad m, EncodeCon m a v) => ResolveSel (ResolveT m v) -> EncodeOperator m a v
+encodeOperator :: (Monad m, EncodeCon m a res) => ResolveSel (ResolveT m res) -> EncodeOperator m a res
 encodeOperator resSel rootResolver operation@Operation {operationSelection} =
   runExceptT (operatorToResolveT operation rootResolver >>= resSel operationSelection . resolversBy)
 
