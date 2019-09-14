@@ -12,12 +12,12 @@ module Data.Morpheus.Error.Selection
 import           Data.Morpheus.Error.Utils               (errorMessage)
 import           Data.Morpheus.Types.Internal.Base       (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Validation (GQLError (..), GQLErrors)
-import           Data.Text                               (Text)
+import           Data.Text                               (Text, pack)
 import qualified Data.Text                               as T (concat)
 
 resolverError :: Position -> Text -> Either String a -> Either GQLErrors a
 resolverError pos name (Left message) = Left $ fieldNotResolved pos name (pack message)
-resolverError _ _  (Right value)  = pure value
+resolverError _ _ (Right value)       = pure value
 
 fieldNotResolved :: Position -> Text -> Text -> GQLErrors
 fieldNotResolved position' key' message' = errorMessage position' text
