@@ -64,6 +64,9 @@ instance DefaultValue Value where
   stringValue = Scalar . String
   objectValue = Object
 
+instance Monad m => DefaultValue (Event event con -> ResolveT m Value) where
+  nullValue = const (pure Null)
+
 class Encode a result where
   encode :: a -> (Text, Selection) -> result
   default encode :: Encoder a (KIND a) result =>
@@ -119,7 +122,7 @@ instance (DecodeObject a, Monad m, Encode b (ResolveT m Value)) =>
       handleResolver SubResolver {subChannels, subResolver} =
         ExceptT $ StreamT $ pure $ StreamState [subChannels] (Right $ encodeResolver selection . subResolver)
 
--- EXPORT -------------------------------------------------------
+-- Types & Constrains -------------------------------------------------------
 type EncodeOperator m a value = Resolver m a -> ValidOperation -> m (Either GQLErrors value)
 
 type EncodeCon m a v = (Generic a, Typeable a, GResolver (Rep a) (ResolveT m v))
@@ -128,49 +131,33 @@ type EncodeMutCon m event con mut = EncodeCon (PublishStream m event con) mut Va
 
 type EncodeSubCon m event con sub = EncodeCon (SubscribeStream m event) sub (Event event con -> ResolveT m Value)
 
-encodeQuery :: (Monad m, EncodeCon m schema Value, EncodeCon m a Value) => schema -> EncodeOperator m a Value
-encodeQuery types rootResolver operator@Operation {operationSelection} =
-  runExceptT
-    (fmap resolversBy (operatorToResolveT operator rootResolver) >>=
-     resolveBySelection operationSelection . (++) (resolversBy types))
+type ResolveSel result = SelectionSet -> [(Text, (Text, Selection) -> result)] -> result
 
-encodeMut :: (Monad m, EncodeCon m a Value) => EncodeOperator m a Value
-encodeMut = encodeOperator resolveBySelection
-
-encodeSub ::
-     (Monad m, EncodeSubCon m event con a)
-  => EncodeOperator (SubscribeStream m event) a (Event event con -> ResolveT m Value)
-encodeSub = encodeOperator (flip resolveSelection)
-  where
-    resolveSelection resolvers = fmap toObj . mapM (selectResolver (const $ pure nullValue) resolvers)
-      where
-        toObj pairs args = objectValue <$> mapM (\(key, valFunc) -> (key, ) <$> valFunc args) pairs
-
----------------------------------------------------------
+--- GENERICS ------------------------------------------------
 --
 --  OBJECT
 -- | Derives resolvers by object fields
 class GResolver f result where
-  objectFieldResolvers :: f a -> [(Text, (Text, Selection) -> result)]
+  fieldResolvers :: f a -> [(Text, (Text, Selection) -> result)]
   unionResolvers :: f a -> (Text, (Text, Selection) -> result)
 
 instance GResolver U1 res where
-  objectFieldResolvers _ = []
+  fieldResolvers _ = []
 
 instance (Selector s, GQLType a, Encode a res) => GResolver (M1 S s (K1 s2 a)) res where
-  objectFieldResolvers m@(M1 (K1 src)) = [(pack $ selName m, encode src)]
+  fieldResolvers m@(M1 (K1 src)) = [(pack $ selName m, encode src)]
   unionResolvers (M1 (K1 src)) = (__typeName (Proxy @a), encode src)
 
 instance GResolver f res => GResolver (M1 D c f) res where
-  objectFieldResolvers (M1 src) = objectFieldResolvers src
+  fieldResolvers (M1 src) = fieldResolvers src
   unionResolvers (M1 x) = unionResolvers x
 
 instance GResolver f res => GResolver (M1 C c f) res where
-  objectFieldResolvers (M1 src) = objectFieldResolvers src
+  fieldResolvers (M1 src) = fieldResolvers src
   unionResolvers (M1 x) = unionResolvers x
 
 instance (GResolver f res, GResolver g res) => GResolver (f :*: g) res where
-  objectFieldResolvers (a :*: b) = objectFieldResolvers a ++ objectFieldResolvers b
+  fieldResolvers (a :*: b) = fieldResolvers a ++ fieldResolvers b
 
 instance (GResolver a res, GResolver b res) => GResolver (a :+: b) res where
   unionResolvers (L1 x) = unionResolvers x
@@ -209,17 +196,35 @@ instance (GQLType a, DefaultValue res, ResConstraint a m res) => Encoder a OBJEC
 -- | Resolves and encodes UNION,
 -- Handles all operators: Query, Mutation and Subscription,
 instance ResConstraint a m res => Encoder a UNION (ResolveT m res) where
-  __encode (WithGQLKind value) (key', sel@Selection {selectionRec = UnionSelection selections'}) =
+  __encode (WithGQLKind value) (key', sel@Selection {selectionRec = UnionSelection selections}) =
     resolver (key', sel {selectionRec = SelectionSet lookupSelection})
     where
       lookupSelection :: SelectionSet
       -- SPEC: if there is no any fragment that supports current object Type GQL returns {}
-      lookupSelection = fromMaybe [] $ lookup typeName selections'
+      lookupSelection = fromMaybe [] $ lookup typeName selections
       (typeName, resolver) = unionResolvers (from value)
   __encode _ _ = internalErrorT "union Resolver only should recieve UnionSelection"
 
 ----- HELPERS ----------------------------
-type ResolveSel result = SelectionSet -> [(Text, (Text, Selection) -> result)] -> result
+encodeQuery :: (Monad m, EncodeCon m schema Value, EncodeCon m a Value) => schema -> EncodeOperator m a Value
+encodeQuery types rootResolver operator@Operation {operationSelection} =
+  runExceptT
+    (fmap resolversBy (operatorToResolveT operator rootResolver) >>=
+     resolveBySelection operationSelection . (++) (resolversBy types))
+
+encodeMut :: (Monad m, EncodeCon m a res, DefaultValue res) => EncodeOperator m a res
+encodeMut = encodeOperator resolveBySelection
+
+encodeSub ::
+     (Monad m, EncodeSubCon m event con a)
+  => EncodeOperator (SubscribeStream m event) a (Event event con -> ResolveT m Value)
+encodeSub = encodeOperator (flip resolveSelection)
+  where
+    resolveSelection resolvers = fmap toObj . mapM (selectResolver nullValue resolvers)
+      where
+        toObj pairs args = objectValue <$> mapM keyVal pairs
+          where
+            keyVal (key, valFunc) = (key, ) <$> valFunc args
 
 resolverToResolveT :: Monad m => Position -> Text -> Resolver m a -> ResolveT m a
 resolverToResolveT pos name = ExceptT . toResolveM
@@ -261,5 +266,5 @@ selectResolver defaultValue resolvers (key, selection) =
       (fromMaybe (const $ return $defaultValue) $ lookup resolverKey resolvers) (key, sel)
 
 resolversBy :: (Generic a, GResolver (Rep a) result) => a -> [(Text, (Text, Selection) -> result)]
-resolversBy = objectFieldResolvers . from
+resolversBy = fieldResolvers . from
 --------------------------------------------
