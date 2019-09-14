@@ -165,8 +165,7 @@ instance (Generic a, EnumRep (Rep a)) => Decode1 a ENUM where
 -- INPUT_OBJECT
 --
 instance DecodeObject a => Decode1 a INPUT_OBJECT where
-  __decode _ (Object x) = decodeObject (Object x)
-  __decode _ isType     = internalTypeMismatch "InputObject" isType
+  __decode _ = decodeObject
 
 --
 -- INPUT_UNION
