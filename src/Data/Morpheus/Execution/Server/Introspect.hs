@@ -249,16 +249,15 @@ instance (GQL_TYPE a, UnionRep (Rep a)) => Introspect1 a INPUT_UNION where
 --
 -- WRAPPER : Maybe, LIST , Resolver
 --
-maybeField :: DataField -> DataField
-maybeField dataField@DataField {fieldTypeWrappers = NonNullType:xs} = dataField {fieldTypeWrappers = xs}
-maybeField dataField                                                = dataField
-
 instance Introspect a => Introspect (Maybe a) where
-  field _ name = maybeField $ field (Proxy @a) name
+  field _ = maybeField . field (Proxy @a)
+    where
+      maybeField dataField@DataField {fieldTypeWrappers = NonNullType:xs} = dataField {fieldTypeWrappers = xs}
+      maybeField dataField                                                = dataField
   introspect _ = introspect (Proxy @a)
 
 instance Introspect a => Introspect [a] where
-  field _ name = listField $ field (Proxy @a) name
+  field _ = listField . field (Proxy @a)
     where
       listField :: DataField -> DataField
       listField x = x {fieldTypeWrappers = [NonNullType, ListType] ++ fieldTypeWrappers x}
