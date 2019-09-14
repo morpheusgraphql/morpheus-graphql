@@ -7,6 +7,7 @@ module Data.Morpheus.Execution.Document.Declare
   ) where
 
 import           Control.Lens                                (declareLenses)
+import           Data.Function                               ((&))
 import           Data.Semigroup                              ((<>))
 import           Language.Haskell.TH
 
@@ -33,13 +34,13 @@ declareGQLType gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
   pure $ types <> typeClasses <> argTypes <> introspection <> introspectArgs <> decodeArgs
   where
     deriveGQLInstances
-      | isInputKind typeKindD = concat <$> traverse (\x -> x typeD) [deriveIntrospect, deriveDecode]
+      | isInputKind typeKindD = concat <$> traverse (typeD &) [deriveIntrospect, deriveDecode]
       | otherwise = pure []
     declareGQL
       | isInputKind typeKindD = declareLenses declareT
       | otherwise = declareT
       where
         declareT = pure [declareResolverType typeKindD derivingClasses typeD]
-    derivingClasses
-      | isInputKind typeKindD = [''Show]
-      | otherwise = []
+        derivingClasses
+          | isInputKind typeKindD = [''Show]
+          | otherwise = []

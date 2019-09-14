@@ -10,6 +10,7 @@ module Data.Morpheus.Schema.Internal.RenderIntrospection
   , createObjectType
   ) where
 
+import           Data.Semigroup                    ((<>))
 import           Data.Text                         (Text, unpack)
 
 -- Morpheus
