@@ -131,19 +131,12 @@ class ObjectFields a where
 instance {-# OVERLAPPABLE #-} ObjectRep (Rep a) => ObjectFields a
 
 class Introspect a where
-  type IRep a :: *
-  type IRep a = Context a (KIND a)
   field :: proxy a -> Text -> DataField
-  default field :: Introspect1 a (KIND a) =>
-    proxy a -> Text -> DataField
-  field _ = __field (Context :: IRep a)
-  ------------------------------------------
   introspect :: proxy a -> TypeUpdater
-  default introspect :: Introspect1 a (KIND a) =>
-    proxy a -> TypeUpdater
-  introspect _ = __introspect (Context :: IRep a)
 
-instance {-# OVERLAPPABLE #-} (Introspect1 a (KIND a)) => Introspect a
+instance {-# OVERLAPPABLE #-} (Introspect1 a (KIND a)) => Introspect a where
+  field _ = __field (Context :: Context a (KIND a))
+  introspect _ = __introspect (Context :: Context a (KIND a))
 
 -- |   Generates internal GraphQL Schema for query validation and introspection rendering
 -- * 'kind': object, scalar, enum ...
