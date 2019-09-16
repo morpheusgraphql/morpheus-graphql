@@ -1,6 +1,5 @@
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -37,11 +36,9 @@ import           Data.Morpheus.Types.Internal.Value              (Object, Value 
 -- | Decode GraphQL query arguments and input values
 class Decode a where
   decode :: Value -> Validation a
-  default decode :: Decode1 a (KIND a) =>
-    Value -> Validation a
-  decode = __decode (Proxy @(KIND a))
 
-instance {-# OVERLAPPABLE #-} Decode1 a (KIND a) => Decode a
+instance {-# OVERLAPPABLE #-} DecodeKind (KIND a) a => Decode a where
+  decode = __decode (Proxy @(KIND a))
 
 instance Decode a => Decode (Maybe a) where
   decode = withMaybe decode
@@ -49,57 +46,56 @@ instance Decode a => Decode (Maybe a) where
 instance Decode a => Decode [a] where
   decode = withList decode
 
--- Decode1
--- | Decode GraphQL query arguments and input values
-class Decode1 a (b :: GQL_KIND) where
-  __decode :: Proxy b -> Value -> Validation a
+-- | Decode GraphQL type with Specific Kind
+class DecodeKind (kind :: GQL_KIND) a where
+  __decode :: Proxy kind -> Value -> Validation a
 
 -- SCALAR
-instance (GQLScalar a) => Decode1 a SCALAR where
+instance (GQLScalar a) => DecodeKind SCALAR a where
   __decode _ value =
     case toScalar value >>= parseValue of
       Right scalar      -> return scalar
       Left errorMessage -> internalTypeMismatch errorMessage value
 
 -- ENUM
-instance (Generic a, EnumRep (Rep a)) => Decode1 a ENUM where
+instance (Generic a, EnumRep (Rep a)) => DecodeKind ENUM a where
   __decode _ = withEnum (fmap to . decodeEnum)
 
 -- INPUT_OBJECT
-instance DecodeObject a => Decode1 a INPUT_OBJECT where
+instance DecodeObject a => DecodeKind INPUT_OBJECT a where
   __decode _ = withObject decodeObject
 
 -- INPUT_UNION
-instance (Generic a, DecodeInput (Rep a)) => Decode1 a INPUT_UNION where
+instance (Generic a, GDecode (Rep a)) => DecodeKind INPUT_UNION a where
   __decode _ = withObject (fmap to . decodeUnion)
 
 -- GENERIC
 decodeArguments :: DecodeObject p => Arguments -> Validation p
-decodeArguments args = decodeObject (fmap (\(x, y) -> (x, argumentValue y)) args)
+decodeArguments = decodeObject . fmap toObject
+  where
+    toObject (x, y) = (x, argumentValue y)
 
 class DecodeObject a where
   decodeObject :: Object -> Validation a
-  default decodeObject :: (Generic a, DecodeInput (Rep a)) =>
-    Object -> Validation a
-  decodeObject = fmap to . __decodeObject . Object
 
-instance {-# OVERLAPPABLE #-} (Generic a, DecodeInput (Rep a)) => DecodeObject a
+instance {-# OVERLAPPABLE #-} (Generic a, GDecode (Rep a)) => DecodeObject a where
+  decodeObject = fmap to . __decodeObject . Object
 
 --
 -- GENERICS
 --
-class DecodeInput f where
+class GDecode f where
   decodeUnion :: Object -> Validation (f a)
   __decodeObject :: Value -> Validation (f a)
   unionTags :: Proxy f -> [Text]
 
-instance DecodeInput U1 where
+instance GDecode U1 where
   __decodeObject _ = pure U1
   decodeUnion _ = pure U1
   unionTags _ = []
 
 -- Recursive Decoding: (Selector (Rec1 ))
-instance (Selector s, GQLType a, Decode a) => DecodeInput (M1 S s (K1 i a)) where
+instance (Selector s, GQLType a, Decode a) => GDecode (M1 S s (K1 i a)) where
   decodeUnion = fmap (M1 . K1) . decode . Object
   unionTags _ = [__typeName (Proxy @a)]
   __decodeObject = fmap (M1 . K1) . decodeRec
@@ -107,20 +103,20 @@ instance (Selector s, GQLType a, Decode a) => DecodeInput (M1 S s (K1 i a)) wher
       fieldName = pack $ selName (undefined :: M1 S s f a)
       decodeRec = withObject (decodeFieldWith decode fieldName)
 
-instance (Datatype c, DecodeInput f) => DecodeInput (M1 D c f) where
+instance (Datatype c, GDecode f) => GDecode (M1 D c f) where
   decodeUnion = fmap M1 . decodeUnion
   unionTags _ = unionTags (Proxy @f)
   __decodeObject = fmap M1 . __decodeObject
 
-instance (Constructor c, DecodeInput f) => DecodeInput (M1 C c f) where
+instance (Constructor c, GDecode f) => GDecode (M1 C c f) where
   decodeUnion = fmap M1 . decodeUnion
   unionTags _ = unionTags (Proxy @f)
   __decodeObject = fmap M1 . __decodeObject
 
-instance (DecodeInput f, DecodeInput g) => DecodeInput (f :*: g) where
+instance (GDecode f, GDecode g) => GDecode (f :*: g) where
   __decodeObject gql = (:*:) <$> __decodeObject gql <*> __decodeObject gql
 
-instance (DecodeInput a, DecodeInput b) => DecodeInput (a :+: b) where
+instance (GDecode a, GDecode b) => GDecode (a :+: b) where
   decodeUnion = withUnion handleUnion
     where
       handleUnion name unions object
