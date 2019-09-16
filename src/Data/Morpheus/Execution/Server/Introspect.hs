@@ -59,12 +59,12 @@ class Introspect a where
   field :: proxy a -> Text -> DataField
   introspect :: proxy a -> TypeUpdater
   -----------------------------------------------
-  default field :: (IntrospectKind (KIND a) a) =>
+  default field :: GQLType a =>
     proxy a -> Text -> DataField
-  field _ = __field (Context :: Context a (KIND a))
+  field _ = buildField (Proxy @a) []
 
-instance {-# OVERLAPPABLE #-} (IntrospectKind (KIND a) a) => Introspect a where
-  introspect _ = __introspect (Context :: Context a (KIND a))
+instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect a where
+  introspect _ = introspectKind (Context :: Context a (KIND a))
 
 -- Maybe
 instance Introspect a => Introspect (Maybe a) where
@@ -107,37 +107,29 @@ instance (ObjectFields a, Introspect b) => Introspect (a -> m b) where
 
 -- | Introspect With specific Kind: 'kind': object, scalar, enum ...
 class IntrospectKind (kind :: GQL_KIND) a where
-  __field :: Context a kind -> Text -> DataField
-  default __field :: GQLType a =>
-    Context a kind -> Text -> DataField
-  __field _ = buildField (Proxy @a) []
-    --   generates data field representation of object field
-    --   according to parameter 'args' it could be
-    --   * input object field: if args is '()'
-    --   * object: if args is 'DataArguments'
-  __introspect :: Context a kind -> TypeUpdater -- Generates internal GraphQL Schema
+  introspectKind :: Context a kind -> TypeUpdater -- Generates internal GraphQL Schema
 
 -- SCALAR
 instance (GQLType a, GQLScalar a) => IntrospectKind SCALAR a where
-  __introspect _ = updateLib scalarType [] (Proxy @a)
+  introspectKind _ = updateLib scalarType [] (Proxy @a)
     where
       scalarType = Leaf . CustomScalar . buildType (scalarValidator (Proxy @a))
 
 -- ENUM
 instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
-  __introspect _ = updateLib enumType [] (Proxy @a)
+  introspectKind _ = updateLib enumType [] (Proxy @a)
     where
       enumType = Leaf . LeafEnum . buildType (enumTags (Proxy @(Rep a)))
 
 -- INPUT_OBJECT
 instance (GQL_TYPE a, ObjectFields a) => IntrospectKind INPUT_OBJECT a where
-  __introspect _ = updateLib (InputObject . buildType fields) types (Proxy @a)
+  introspectKind _ = updateLib (InputObject . buildType fields) types (Proxy @a)
     where
       (fields, types) = objectFields (Proxy @a)
 
 -- OBJECTS
 instance (GQL_TYPE a, ObjectFields a) => IntrospectKind OBJECT a where
-  __introspect _ = updateLib (OutputObject . buildType (__typename : fields)) types (Proxy @a)
+  introspectKind _ = updateLib (OutputObject . buildType (__typename : fields)) types (Proxy @a)
     where
       __typename =
         ( "__typename"
@@ -147,13 +139,13 @@ instance (GQL_TYPE a, ObjectFields a) => IntrospectKind OBJECT a where
 
 -- UNION
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind UNION a where
-  __introspect _ = updateLib (Union . buildType fields) stack (Proxy @a)
+  introspectKind _ = updateLib (Union . buildType fields) stack (Proxy @a)
     where
       (fields, stack) = unzip $ gqlRep (Context :: Context (Rep a) UNION)
 
 -- INPUT_UNION
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a where
-  __introspect _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
+  introspectKind _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
     where
       (fields, stack) = unzip $ gqlRep (Context :: Context (Rep a) UNION)
       -- for every input Union 'User' adds enum type of possible TypeNames 'UserTags'
