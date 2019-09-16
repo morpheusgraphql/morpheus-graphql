@@ -22,15 +22,15 @@ import           Data.Attoparsec.ByteString                          (parseOnly)
 import qualified Data.ByteString                                     as S
 import qualified Data.ByteString.Lazy.Char8                          as L
 import           Data.Functor.Identity                               (Identity (..))
-import           Data.Proxy
 import           GHC.Generics
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                           (badRequestError, renderErrors)
 import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, EncodeMutCon, EncodeSubCon, encodeMut,
                                                                       encodeQuery, encodeSub)
-import           Data.Morpheus.Execution.Server.Introspect           (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Execution.Server.Introspect           (Context (..), GRep (..), resolveTypes)
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, publishUpdates)
+import           Data.Morpheus.Kind                                  (OBJECT)
 import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
 import           Data.Morpheus.Schema.SchemaAPI                      (defaultTypes, hiddenRootFields, schemaAPI)
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), OperationKind (..))
@@ -47,7 +47,7 @@ import           Data.Morpheus.Validation.Query.Validation           (validateRe
 
 type EventCon event = Eq event
 
-type IntroCon a = (Generic a, ObjectRep (Rep a))
+type IntroCon a = (Generic a, GRep OBJECT (Rep a))
 
 type RootResCon m event cont query mutation subscription
    = ( EventCon event
@@ -130,15 +130,15 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
     querySchema = resolveTypes (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query")) (defaultTypes : types)
       where
-        (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep query))
+        (fields, types) = unzip $ objectFieldTypes (Context :: Context (Rep query) OBJECT)
     ------------------------------
     mutationSchema lib = resolveTypes (lib {mutation = maybeOperator fields "Mutation"}) types
       where
-        (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep mutation))
+        (fields, types) = unzip $ objectFieldTypes (Context :: Context (Rep mutation) OBJECT)
     ------------------------------
     subscriptionSchema lib = resolveTypes (lib {subscription = maybeOperator fields "Subscription"}) types
       where
-        (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep subscription))
+        (fields, types) = unzip $ objectFieldTypes (Context :: Context (Rep subscription) OBJECT)
      -- maybeOperator :: [a] -> Text -> Maybe (Text, DataType [a])
     maybeOperator []     = const Nothing
     maybeOperator fields = Just . operatorType fields

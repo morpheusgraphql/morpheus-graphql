@@ -16,9 +16,10 @@
 
 module Data.Morpheus.Execution.Server.Introspect
   ( TypeUpdater
-  , ObjectRep(..)
   , Introspect(..)
   , ObjectFields(..)
+  , GRep(..)
+  , Context(..)
   , resolveTypes
   , updateLib
   , buildType
@@ -45,6 +46,13 @@ import           Data.Morpheus.Types.Internal.Data               (DataArguments,
                                                                   DataLeaf (..), DataType (..), DataTypeLib,
                                                                   DataTypeWrapper (..), defineType, isTypeDefined)
 import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
+
+--type ObjectConstraint a =
+-- | context , like Proxy with multiple parameters
+-- * 'a': actual gql type
+-- * 'kind': object, scalar, enum ...
+data Context a (kind :: GQL_KIND) =
+  Context
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class Introspect a where
@@ -144,10 +152,10 @@ instance (GQL_TYPE a, GRep UNION a) => IntrospectKind UNION a where
       (fields, stack) = unzip $ possibleTypes (Context :: Context a UNION)
 
 -- INPUT_UNION
-instance (GQL_TYPE a, GRep INPUT_UNION a) => IntrospectKind INPUT_UNION a where
+instance (GQL_TYPE a, GRep UNION a) => IntrospectKind INPUT_UNION a where
   __introspect _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
     where
-      (fields, stack) = unzip $ possibleTypes (Context :: Context a INPUT_UNION)
+      (fields, stack) = unzip $ possibleTypes (Context :: Context a UNION)
       -- for every input Union 'User' adds enum type of possible TypeNames 'UserTags'
       tagsEnumType :: TypeUpdater
       tagsEnumType x = pure $ defineType (enumTypeName, Leaf $ LeafEnum tagsEnum) x
@@ -176,63 +184,49 @@ type TypeUpdater = DataTypeLib -> SchemaValidation DataTypeLib
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
---type ObjectConstraint a =
--- | context , like Proxy with multiple parameters
--- * 'a': actual gql type
--- * 'kind': object, scalar, enum ...
-data Context a kind =
-  Context
-
 -- Object Fields
 class ObjectFields a where
   objectFields :: proxy a -> ([(Text, DataField)], [TypeUpdater])
 
-instance {-# OVERLAPPABLE #-} ObjectRep (Rep a) => ObjectFields a where
-  objectFields _ = unzip $ objectFieldTypes (Proxy @(Rep a))
+instance {-# OVERLAPPABLE #-} GRep OBJECT a => ObjectFields a where
+  objectFields _ = unzip $ objectFieldTypes (Context :: Context a OBJECT)
 
 --  GENERIC UNION
 class GRep (kind :: GQL_KIND) f where
   possibleTypes :: Context f kind -> [(DataField, TypeUpdater)]
+  objectFieldTypes :: Context f kind -> [((Text, DataField), TypeUpdater)]
 
 instance GRep kind (Rep a) => GRep kind a where
   possibleTypes _ = possibleTypes (Context :: Context (Rep a) kind)
+  objectFieldTypes _ = objectFieldTypes (Context :: Context (Rep a) kind)
 
-instance GRep kind f => GRep kind (M1 D x f) where
+instance GRep kind f => GRep kind (M1 D d f) where
   possibleTypes _ = possibleTypes (Context :: Context f kind)
+  objectFieldTypes _ = objectFieldTypes (Context :: Context f kind)
 
-instance GRep kind f => GRep kind (M1 C x f) where
+instance GRep kind f => GRep kind (M1 C c f) where
   possibleTypes _ = possibleTypes (Context :: Context f kind)
+  objectFieldTypes _ = objectFieldTypes (Context :: Context f kind)
 
-instance (GRep INPUT_UNION a, GRep INPUT_UNION b) => GRep INPUT_UNION (a :+: b) where
-  possibleTypes _ = possibleTypes (Context :: Context a INPUT_UNION) ++ possibleTypes (Context :: Context b INPUT_UNION)
-
+-- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
 instance (GRep UNION a, GRep UNION b) => GRep UNION (a :+: b) where
   possibleTypes _ = possibleTypes (Context :: Context a UNION) ++ possibleTypes (Context :: Context b UNION)
 
-instance (GQL_TYPE a, Introspect a) => GRep kind (M1 S s (Rec0 a)) where
+instance (GQL_TYPE a, Introspect a) => GRep UNION (M1 S s (Rec0 a)) where
   possibleTypes _ = [(buildField (Proxy @a) [] "", introspect (Proxy @a))]
 
---  GENERIC OBJECT
-class ObjectRep rep where
-  objectFieldTypes :: proxy rep -> [((Text, DataField), TypeUpdater)]
-
-instance ObjectRep f => ObjectRep (M1 D x f) where
-  objectFieldTypes _ = objectFieldTypes (Proxy @f)
-
-instance ObjectRep f => ObjectRep (M1 C x f) where
-  objectFieldTypes _ = objectFieldTypes (Proxy @f)
-
-instance (ObjectRep a, ObjectRep b) => ObjectRep (a :*: b) where
-  objectFieldTypes _ = objectFieldTypes (Proxy @a) ++ objectFieldTypes (Proxy @b)
-
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
-instance (Selector s, Introspect a) => ObjectRep (M1 S s (Rec0 a)) where
+instance (GRep OBJECT a, GRep OBJECT b) => GRep OBJECT (a :*: b) where
+  objectFieldTypes _ = objectFieldTypes (Context :: Context a OBJECT) ++ objectFieldTypes (Context :: Context b OBJECT)
+
+instance (Selector s, Introspect a) => GRep OBJECT (M1 S s (Rec0 a)) where
   objectFieldTypes _ = [((name, field (Proxy @a) name), introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
 
-instance ObjectRep U1 where
+instance GRep OBJECT U1 where
   objectFieldTypes _ = []
+  possibleTypes _ = []
 
 -- Helper Functions
 resolveTypes :: DataTypeLib -> [TypeUpdater] -> SchemaValidation DataTypeLib
