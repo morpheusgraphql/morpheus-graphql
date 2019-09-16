@@ -138,16 +138,16 @@ instance (GQL_TYPE a, ObjectFields a) => IntrospectKind OBJECT a where
       (fields, types) = objectFields (Proxy @a)
 
 -- UNION
-instance (GQL_TYPE a, UnionRep (Rep a)) => IntrospectKind UNION a where
+instance (GQL_TYPE a, GRep UNION a) => IntrospectKind UNION a where
   __introspect _ = updateLib (Union . buildType fields) stack (Proxy @a)
     where
-      (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
+      (fields, stack) = unzip $ possibleTypes (Context :: Context a UNION)
 
 -- INPUT_UNION
-instance (GQL_TYPE a, UnionRep (Rep a)) => IntrospectKind INPUT_UNION a where
+instance (GQL_TYPE a, GRep INPUT_UNION a) => IntrospectKind INPUT_UNION a where
   __introspect _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
     where
-      (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
+      (fields, stack) = unzip $ possibleTypes (Context :: Context a INPUT_UNION)
       -- for every input Union 'User' adds enum type of possible TypeNames 'UserTags'
       tagsEnumType :: TypeUpdater
       tagsEnumType x = pure $ defineType (enumTypeName, Leaf $ LeafEnum tagsEnum) x
@@ -191,19 +191,25 @@ instance {-# OVERLAPPABLE #-} ObjectRep (Rep a) => ObjectFields a where
   objectFields _ = unzip $ objectFieldTypes (Proxy @(Rep a))
 
 --  GENERIC UNION
-class UnionRep f where
-  possibleTypes :: Proxy f -> [(DataField, TypeUpdater)]
+class GRep (kind :: GQL_KIND) f where
+  possibleTypes :: Context f kind -> [(DataField, TypeUpdater)]
 
-instance UnionRep f => UnionRep (M1 D x f) where
-  possibleTypes _ = possibleTypes (Proxy @f)
+instance GRep kind (Rep a) => GRep kind a where
+  possibleTypes _ = possibleTypes (Context :: Context (Rep a) kind)
 
-instance UnionRep f => UnionRep (M1 C x f) where
-  possibleTypes _ = possibleTypes (Proxy @f)
+instance GRep kind f => GRep kind (M1 D x f) where
+  possibleTypes _ = possibleTypes (Context :: Context f kind)
 
-instance (UnionRep a, UnionRep b) => UnionRep (a :+: b) where
-  possibleTypes _ = possibleTypes (Proxy @a) ++ possibleTypes (Proxy @b)
+instance GRep kind f => GRep kind (M1 C x f) where
+  possibleTypes _ = possibleTypes (Context :: Context f kind)
 
-instance (GQL_TYPE a, Introspect a) => UnionRep (M1 S s (Rec0 a)) where
+instance (GRep INPUT_UNION a, GRep INPUT_UNION b) => GRep INPUT_UNION (a :+: b) where
+  possibleTypes _ = possibleTypes (Context :: Context a INPUT_UNION) ++ possibleTypes (Context :: Context b INPUT_UNION)
+
+instance (GRep UNION a, GRep UNION b) => GRep UNION (a :+: b) where
+  possibleTypes _ = possibleTypes (Context :: Context a UNION) ++ possibleTypes (Context :: Context b UNION)
+
+instance (GQL_TYPE a, Introspect a) => GRep kind (M1 S s (Rec0 a)) where
   possibleTypes _ = [(buildField (Proxy @a) [] "", introspect (Proxy @a))]
 
 --  GENERIC OBJECT
