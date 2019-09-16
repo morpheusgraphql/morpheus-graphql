@@ -13,11 +13,8 @@ import           Data.Proxy
 import           Data.Text                                 (Text)
 import           GHC.Generics
 
-import           Data.Morpheus.Execution.Server.Introspect (Context (..), GRep (..), TypeUpdater, introspect,
-                                                            resolveTypes)
-
 -- MORPHEUS
-import           Data.Morpheus.Kind                        (OBJECT)
+import           Data.Morpheus.Execution.Server.Introspect (ObjectFields (..), TypeUpdater, introspect, resolveTypes)
 import           Data.Morpheus.Schema.Schema               (Schema, Type, findType, initSchema)
 import           Data.Morpheus.Types.ID                    (ID)
 import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataOutputField, DataTypeLib (..))
@@ -35,7 +32,7 @@ hideFields :: (Text, DataField) -> (Text, DataField)
 hideFields (key', field) = (key', field {fieldHidden = True})
 
 hiddenRootFields :: [(Text, DataOutputField)]
-hiddenRootFields = map (hideFields . fst) $ objectFieldTypes (Context :: Context SchemaAPI OBJECT)
+hiddenRootFields = map hideFields $ fst $objectFields (Proxy @SchemaAPI)
 
 defaultTypes :: TypeUpdater
 defaultTypes =

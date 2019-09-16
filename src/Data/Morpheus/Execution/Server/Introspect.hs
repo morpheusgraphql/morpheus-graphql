@@ -188,17 +188,13 @@ type GQL_TYPE a = (Generic a, GQLType a)
 class ObjectFields a where
   objectFields :: proxy a -> ([(Text, DataField)], [TypeUpdater])
 
-instance {-# OVERLAPPABLE #-} GRep OBJECT a => ObjectFields a where
-  objectFields _ = unzip $ objectFieldTypes (Context :: Context a OBJECT)
+instance {-# OVERLAPPABLE #-} GRep OBJECT (Rep a) => ObjectFields a where
+  objectFields _ = unzip $ objectFieldTypes (Context :: Context (Rep a) OBJECT)
 
 --  GENERIC UNION
 class GRep (kind :: GQL_KIND) f where
   possibleTypes :: Context f kind -> [(DataField, TypeUpdater)]
   objectFieldTypes :: Context f kind -> [((Text, DataField), TypeUpdater)]
-
-instance GRep kind (Rep a) => GRep kind a where
-  possibleTypes _ = possibleTypes (Context :: Context (Rep a) kind)
-  objectFieldTypes _ = objectFieldTypes (Context :: Context (Rep a) kind)
 
 instance GRep kind f => GRep kind (M1 D d f) where
   possibleTypes _ = possibleTypes (Context :: Context f kind)
