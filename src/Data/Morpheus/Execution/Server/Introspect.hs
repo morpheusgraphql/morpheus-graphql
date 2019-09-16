@@ -183,15 +183,15 @@ class ObjectFields a where
 instance {-# OVERLAPPABLE #-} GQLRep OBJECT (Rep a) => ObjectFields a where
   objectFields _ = unzip $ gqlRep (Context :: Context (Rep a) OBJECT)
 
-type family RepValue (a :: GQL_KIND) :: *
+type family GQLRepResult (a :: GQL_KIND) :: *
 
-type instance RepValue OBJECT = (Text, DataField)
+type instance GQLRepResult OBJECT = (Text, DataField)
 
-type instance RepValue UNION = DataField
+type instance GQLRepResult UNION = DataField
 
 --  GENERIC UNION
 class GQLRep (kind :: GQL_KIND) f where
-  gqlRep :: Context f kind -> [(RepValue kind, TypeUpdater)]
+  gqlRep :: Context f kind -> [(GQLRepResult kind, TypeUpdater)]
 
 instance GQLRep kind f => GQLRep kind (M1 D d f) where
   gqlRep _ = gqlRep (Context :: Context f kind)
