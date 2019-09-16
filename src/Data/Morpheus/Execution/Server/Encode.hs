@@ -1,6 +1,5 @@
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -39,45 +38,28 @@ import           Data.Morpheus.Error.Internal                    (internalErrorT
 import           Data.Morpheus.Error.Selection                   (resolverError, subfieldsNotSelected)
 import           Data.Morpheus.Execution.Server.Decode           (DecodeObject, decodeArguments)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
-import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, OBJECT, SCALAR, UNION, WRAPPER)
+import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (KIND, __typeName))
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Position)
-import           Data.Morpheus.Types.Internal.Stream             (PublishStream, StreamState (..), StreamT (..),
-                                                                  SubscribeStream)
+import           Data.Morpheus.Types.Internal.Stream             (PublishStream, StreamT (..), SubscribeStream,
+                                                                  initExceptStream, injectEvents)
 import           Data.Morpheus.Types.Internal.Validation         (GQLErrors, ResolveT, failResolveT)
 import           Data.Morpheus.Types.Internal.Value              (ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver                    (Event (..), Resolver, SubResolveT, SubResolver (..))
 
-class DefaultValue a where
-  nullValue :: a
-  listValue :: [a] -> a
-  stringValue :: Text -> a
-  objectValue :: [(Text, a)] -> a
-
-instance DefaultValue Value where
-  nullValue = Null
-  listValue = List
-  stringValue = Scalar . String
-  objectValue = Object
-
-instance Monad m => DefaultValue (a -> m Value) where
-  nullValue = const (pure Null)
-
 class Encode a result where
   encode :: a -> (Text, Selection) -> result
-  default encode :: Encoder a (KIND a) result =>
-    a -> (Text, Selection) -> result
-  encode resolver = __encode (WithGQLKind resolver :: GQLKindOf a)
 
-instance {-# OVERLAPPABLE #-} Encoder a (KIND a) res => Encode a res
+instance {-# OVERLAPPABLE #-} EncodeKind (KIND a) a res => Encode a res where
+  encode resolver = encodeKind (ResKind resolver :: ResKind (KIND a) a)
 
 -- MAYBE
-instance (Monad m, DefaultValue res, Encode a (m res)) => Encode (Maybe a) (m res) where
-  encode Nothing      = const $ pure (nullValue :: res)
+instance (DefaultValue res, Encode a res) => Encode (Maybe a) res where
+  encode Nothing      = const (nullValue :: res)
   encode (Just value) = encode value
 
 --  Tuple  (a,b)
@@ -96,31 +78,56 @@ instance (Eq k, Monad m, Encode (MapKind k v (Resolver m)) (ResolveT m res)) => 
 instance (Monad m, DefaultValue res, Encode a (m res)) => Encode [a] (m res) where
   encode list query = listValue <$> mapM (`encode` query) list
 
---
---  RESOLVERS
---
--- | Handles all operators: Query, Mutation and Subscription,
--- if you use it with Mutation or Subscription all effects inside will be lost
--- Pure Resolver
+-- GQL Either Resolver
 instance (Monad m, Encode a (ResolveT m res), DecodeObject p) => Encode (p -> Either String a) (ResolveT m res) where
   encode resolver selection = decodeArgs selection >>= encodeResolver selection . (ExceptT . pure . resolver)
 
---  GQL Resolver
+--  GQL ExceptT Resolver
 instance (DecodeObject a, Monad m, Encode b (ResolveT m res)) => Encode (a -> Resolver m b) (ResolveT m res) where
   encode resolver selection = decodeArgs selection >>= encodeResolver selection . resolver
 
--- Mutation Resolver
+-- GQL Mutation Resolver
 instance (DecodeObject a, Monad m, Encode b (ResolveT m res)) =>
          Encode (a -> Resolver m b) (ResolveT (StreamT m c) res) where
-  encode resolver selection = ExceptT $ StreamT $ StreamState [] <$> runExceptT (encode resolver selection)
+  encode resolver = injectEvents [] . encode resolver
 
--- Subscription Resolver
+-- GQL Subscription Resolver
 instance (DecodeObject a, Monad m, Encode b (ResolveT m Value)) =>
-         Encoder (a -> SubResolver m e c b) WRAPPER (SubResolveT m e c Value) where
-  __encode (WithGQLKind resolver) selection = decodeArgs selection >>= handleResolver . resolver
+         Encode (a -> SubResolver m e c b) (SubResolveT m e c Value) where
+  encode resolver selection = decodeArgs selection >>= handleResolver . resolver
     where
       handleResolver SubResolver {subChannels, subResolver} =
-        ExceptT $ StreamT $ pure $ StreamState [subChannels] (Right $ encodeResolver selection . subResolver)
+        initExceptStream [subChannels] (encodeResolver selection . subResolver)
+
+-- ENCODE GQL KIND
+class EncodeKind (kind :: GQL_KIND) a result where
+  encodeKind :: ResKind kind a -> (Text, Selection) -> result
+
+-- SCALAR
+instance (GQLScalar a, Monad m) => EncodeKind SCALAR a (m Value) where
+  encodeKind = pure . pure . Scalar . serialize . unResKind
+
+-- ENUM
+instance (EnumConstraint a, Monad m) => EncodeKind ENUM a (m Value) where
+  encodeKind = pure . pure . Scalar . String . encodeRep . from . unResKind
+
+--  OBJECTS
+instance (GQLType a, DefaultValue res, ResConstraint a m res) => EncodeKind OBJECT a (ResolveT m res) where
+  encodeKind (ResKind value) (_, Selection {selectionRec = SelectionSet selection}) =
+    resolveBySelection selection (__typenameResolver : resolversBy value)
+    where
+      __typenameResolver = ("__typename", const $ return $ stringValue $ __typeName (Proxy @a))
+  encodeKind _ (key, Selection {selectionPosition}) = failResolveT $ subfieldsNotSelected key "" selectionPosition
+
+-- UNION,
+instance ResConstraint a m res => EncodeKind UNION a (ResolveT m res) where
+  encodeKind (ResKind value) (key, sel@Selection {selectionRec = UnionSelection selections}) =
+    resolver (key, sel {selectionRec = SelectionSet lookupSelection})
+      -- SPEC: if there is no any fragment that supports current object Type GQL returns {}
+    where
+      lookupSelection = fromMaybe [] $ lookup typeName selections
+      (typeName, resolver) = unionResolvers (from value)
+  encodeKind _ _ = internalErrorT "union Resolver only should recieve UnionSelection"
 
 -- Types & Constrains -------------------------------------------------------
 type EncodeOperator m a value = Resolver m a -> ValidOperation -> m (Either GQLErrors value)
@@ -137,10 +144,8 @@ type ResConstraint a m res = (Monad m, Generic a, GResolver (Rep a) (ResolveT m 
 
 type EnumConstraint a = (Generic a, EnumRep (Rep a))
 
-type GQLKindOf a = WithGQLKind a (KIND a)
-
-newtype WithGQLKind a (b :: GQL_KIND) = WithGQLKind
-  { resolverValue :: a
+newtype ResKind (kind :: GQL_KIND) a = ResKind
+  { unResKind :: a
   }
 
 --- GENERICS ------------------------------------------------
@@ -172,37 +177,6 @@ instance (GResolver f res, GResolver g res) => GResolver (f :*: g) res where
 instance (GResolver a res, GResolver b res) => GResolver (a :+: b) res where
   unionResolvers (L1 x) = unionResolvers x
   unionResolvers (R1 x) = unionResolvers x
-
-class Encoder a kind result where
-  __encode :: WithGQLKind a kind -> (Text, Selection) -> result
-
--- type ResValue m = (ResolveT m Value)
--- SCALAR
-instance (GQLScalar a, Monad m) => Encoder a SCALAR (m Value) where
-  __encode = pure . pure . Scalar . serialize . resolverValue
-
--- ENUM
-instance (EnumConstraint a, Monad m) => Encoder a ENUM (m Value) where
-  __encode = pure . pure . Scalar . String . encodeRep . from . resolverValue
-
---  OBJECTS
-instance (GQLType a, DefaultValue res, ResConstraint a m res) => Encoder a OBJECT (ResolveT m res) where
-  __encode (WithGQLKind value) (_, Selection {selectionRec = SelectionSet selection}) =
-    resolveBySelection selection (__typenameResolver : resolversBy value)
-    where
-      __typenameResolver = ("__typename", const $ return $ stringValue $ __typeName (Proxy @a))
-  __encode _ (key, Selection {selectionPosition}) = failResolveT $ subfieldsNotSelected key "" selectionPosition
-
--- | Resolves and encodes UNION,
--- Handles all operators: Query, Mutation and Subscription,
-instance ResConstraint a m res => Encoder a UNION (ResolveT m res) where
-  __encode (WithGQLKind value) (key, sel@Selection {selectionRec = UnionSelection selections}) =
-    resolver (key, sel {selectionRec = SelectionSet lookupSelection})
-      -- SPEC: if there is no any fragment that supports current object Type GQL returns {}
-    where
-      lookupSelection = fromMaybe [] $ lookup typeName selections
-      (typeName, resolver) = unionResolvers (from value)
-  __encode _ _ = internalErrorT "union Resolver only should recieve UnionSelection"
 
 ----- HELPERS ----------------------------
 encodeQuery :: (Monad m, EncodeCon m schema Value, EncodeCon m a Value) => schema -> EncodeOperator m a Value
@@ -256,4 +230,25 @@ selectResolver resolvers (key, selection) =
 
 resolversBy :: (Generic a, GResolver (Rep a) result) => a -> [(Text, (Text, Selection) -> result)]
 resolversBy = fieldResolvers . from
+
 --------------------------------------------
+class DefaultValue a where
+  nullValue :: a
+  listValue :: [a] -> a
+  stringValue :: Text -> a
+  objectValue :: [(Text, a)] -> a
+
+instance DefaultValue Value where
+  nullValue = Null
+  listValue = List
+  stringValue = Scalar . String
+  objectValue = Object
+
+instance DefaultValue b => DefaultValue (a -> b) where
+  nullValue = const nullValue
+  stringValue = const . stringValue
+
+instance Monad m => DefaultValue (m Value) where
+  nullValue = pure nullValue
+  listValue = pure nullValue
+  stringValue = pure . stringValue
