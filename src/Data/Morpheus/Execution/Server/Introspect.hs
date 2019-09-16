@@ -146,16 +146,16 @@ instance (GQL_TYPE a, ObjectFields a) => IntrospectKind OBJECT a where
       (fields, types) = objectFields (Proxy @a)
 
 -- UNION
-instance (GQL_TYPE a, GRep UNION a) => IntrospectKind UNION a where
+instance (GQL_TYPE a, GRep UNION (Rep a)) => IntrospectKind UNION a where
   __introspect _ = updateLib (Union . buildType fields) stack (Proxy @a)
     where
-      (fields, stack) = unzip $ possibleTypes (Context :: Context a UNION)
+      (fields, stack) = unzip $ possibleTypes (Context :: Context (Rep a) UNION)
 
 -- INPUT_UNION
-instance (GQL_TYPE a, GRep UNION a) => IntrospectKind INPUT_UNION a where
+instance (GQL_TYPE a, GRep UNION (Rep a)) => IntrospectKind INPUT_UNION a where
   __introspect _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
     where
-      (fields, stack) = unzip $ possibleTypes (Context :: Context a UNION)
+      (fields, stack) = unzip $ possibleTypes (Context :: Context (Rep a) UNION)
       -- for every input Union 'User' adds enum type of possible TypeNames 'UserTags'
       tagsEnumType :: TypeUpdater
       tagsEnumType x = pure $ defineType (enumTypeName, Leaf $ LeafEnum tagsEnum) x
