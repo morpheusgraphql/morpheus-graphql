@@ -98,17 +98,19 @@ instance DecodeInput U1 where
   decodeUnion _ = pure U1
   unionTags _ = []
 
+-- Recursive Decoding: (Selector (Rec1 ))
+instance (Selector s, GQLType a, Decode a) => DecodeInput (M1 S s (K1 i a)) where
+  decodeUnion = fmap (M1 . K1) . decode . Object
+  unionTags _ = [__typeName (Proxy @a)]
+  __decodeObject = fmap (M1 . K1) . decodeRec
+    where
+      fieldName = pack $ selName (undefined :: M1 S s f a)
+      decodeRec = withObject (decodeFieldWith decode fieldName)
+
 instance (Datatype c, DecodeInput f) => DecodeInput (M1 D c f) where
   decodeUnion = fmap M1 . decodeUnion
   unionTags _ = unionTags (Proxy @f)
   __decodeObject = fmap M1 . __decodeObject
-
-instance (Selector s, DecodeInput f) => DecodeInput (M1 S s f) where
-  decodeUnion = fmap M1 . decodeUnion
-  unionTags _ = unionTags (Proxy @f)
-  __decodeObject = fmap M1 . withObject (decodeFieldWith __decodeObject fieldName)
-    where
-      fieldName = pack $ selName (undefined :: M1 S s f a)
 
 instance (Constructor c, DecodeInput f) => DecodeInput (M1 C c f) where
   decodeUnion = fmap M1 . decodeUnion
@@ -117,11 +119,6 @@ instance (Constructor c, DecodeInput f) => DecodeInput (M1 C c f) where
 
 instance (DecodeInput f, DecodeInput g) => DecodeInput (f :*: g) where
   __decodeObject gql = (:*:) <$> __decodeObject gql <*> __decodeObject gql
-
-instance (GQLType a, Decode a) => DecodeInput (K1 i a) where
-  decodeUnion = fmap K1 . decode . Object
-  unionTags _ = [__typeName (Proxy @a)]
-  __decodeObject = fmap K1 . decode
 
 instance (DecodeInput a, DecodeInput b) => DecodeInput (a :+: b) where
   decodeUnion = withUnion handleUnion
