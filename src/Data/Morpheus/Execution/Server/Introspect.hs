@@ -46,11 +46,159 @@ import           Data.Morpheus.Types.Internal.Data               (DataArguments,
                                                                   DataTypeWrapper (..), defineType, isTypeDefined)
 import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
 
+-- |  Generates internal GraphQL Schema for query validation and introspection rendering
+class Introspect a where
+  field :: proxy a -> Text -> DataField
+  introspect :: proxy a -> TypeUpdater
+  -----------------------------------------------
+  default field :: (IntrospectKind (KIND a) a) =>
+    proxy a -> Text -> DataField
+  field _ = __field (Context :: Context a (KIND a))
+
+instance {-# OVERLAPPABLE #-} (IntrospectKind (KIND a) a) => Introspect a where
+  introspect _ = __introspect (Context :: Context a (KIND a))
+
+-- Maybe
+instance Introspect a => Introspect (Maybe a) where
+  field _ = maybeField . field (Proxy @a)
+    where
+      maybeField dataField@DataField {fieldTypeWrappers = NonNullType:xs} = dataField {fieldTypeWrappers = xs}
+      maybeField dataField                                                = dataField
+  introspect _ = introspect (Proxy @a)
+
+-- List
+instance Introspect a => Introspect [a] where
+  field _ = listField . field (Proxy @a)
+    where
+      listField :: DataField -> DataField
+      listField x = x {fieldTypeWrappers = [NonNullType, ListType] ++ fieldTypeWrappers x}
+  introspect _ = introspect (Proxy @a)
+
+-- Tuple
+instance Introspect (Pair k v) => Introspect (k, v) where
+  field _ = field (Proxy @(Pair k v))
+  introspect _ = introspect (Proxy @(Pair k v))
+
+-- Set
+instance Introspect [a] => Introspect (Set a) where
+  field _ = field (Proxy @[a])
+  introspect _ = introspect (Proxy @[a])
+
+-- Map
+instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
+  field _ = field (Proxy @(MapKind k v Maybe))
+  introspect _ = introspect (Proxy @(MapKind k v Maybe))
+
+-- Resolver : a -> Resolver b
+instance (ObjectFields a, OutputConstraint b) => Introspect (a -> m b) where
+  field _ name = (field (Proxy @b) name) {fieldArgs = fst $ objectFields (Proxy @a)}
+  introspect _ typeLib = resolveTypes typeLib (introspect (Proxy @b) : argTypes)
+    where
+      argTypes :: [TypeUpdater]
+      argTypes = snd $ objectFields (Proxy @a)
+
+-- | Introspect With specific Kind: 'kind': object, scalar, enum ...
+class IntrospectKind (kind :: GQL_KIND) a where
+  __field :: Context a kind -> Text -> DataField
+  default __field :: GQLType a =>
+    Context a kind -> Text -> DataField
+  __field _ = buildField (Proxy @a) []
+    --   generates data field representation of object field
+    --   according to parameter 'args' it could be
+    --   * input object field: if args is '()'
+    --   * object: if args is 'DataArguments'
+  __introspect :: Context a kind -> TypeUpdater -- Generates internal GraphQL Schema
+
+-- SCALAR
+instance (GQLScalar a, GQLType a) => IntrospectKind SCALAR a where
+  __introspect _ = updateLib scalarType [] (Proxy @a)
+    where
+      scalarType = Leaf . CustomScalar . buildType validator
+        where
+          validator = scalarValidator (Proxy @a)
+
+-- ENUM
+instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
+  __introspect _ = updateLib enumType [] (Proxy @a)
+    where
+      enumType = Leaf . LeafEnum . buildType tags
+        where
+          tags = enumTags (Proxy @(Rep a))
+
+--
+-- OBJECTS , INPUT_OBJECT
+instance (GQL_TYPE a, ObjectFields a) => IntrospectKind INPUT_OBJECT a where
+  __introspect _ = updateLib (InputObject . buildType fields) types (Proxy @a)
+    where
+      (fields, types) = objectFields (Proxy @a)
+
+instance (GQL_TYPE a, ObjectFields a) => IntrospectKind OBJECT a where
+  __introspect _ = updateLib (OutputObject . buildType (__typename : fields)) types (Proxy @a)
+    where
+      __typename =
+        ( "__typename"
+        , DataField
+            {fieldName = "__typename", fieldArgs = [], fieldTypeWrappers = [], fieldType = "String", fieldHidden = True})
+      (fields, types) = objectFields (Proxy @a)
+
+-- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
+-- iterates on field types  and introspects them recursively
+instance (Selector s, Introspect a) => ObjectRep (RecSel s a) where
+  objectFieldTypes _ = [((name, field (Proxy @a) name), introspect (Proxy @a))]
+    where
+      name = pack $ selName (undefined :: SelOf s)
+
+--
+-- UNION
+-- | recursion for union types
+-- iterates on possible types for UNION and introspects them recursively
+instance (OutputConstraint a, ObjectConstraint a) => UnionRep (RecSel s a) where
+  possibleTypes _ = [(buildField (Proxy @a) [] "", introspect (Proxy @a))]
+
+instance (GQL_TYPE a, UnionRep (Rep a)) => IntrospectKind UNION a where
+  __introspect _ = updateLib (Union . buildType fields) stack (Proxy @a)
+    where
+      (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
+
+--
+-- INPUT_UNION
+--
+instance (GQL_TYPE a, UnionRep (Rep a)) => IntrospectKind INPUT_UNION a where
+  __introspect _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
+    where
+      (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
+      -- for every input Union 'User' adds enum type of possible TypeNames 'UserTags'
+      tagsEnumType :: TypeUpdater
+      tagsEnumType x = pure $ defineType (enumTypeName, Leaf $ LeafEnum tagsEnum) x
+        where
+          tagsEnum =
+            DataType
+              { typeName = enumTypeName
+              -- has same fingerprint as object because it depends on it
+              , typeFingerprint = __typeFingerprint (Proxy @a)
+              , typeVisibility = __typeVisibility (Proxy @a)
+              , typeDescription = ""
+              , typeData = map fieldName fields
+              }
+      enumTypeName = __typeName (Proxy @a) <> "Tags"
+      fieldTag =
+        DataField
+          { fieldName = "tag"
+          , fieldArgs = []
+          , fieldTypeWrappers = [NonNullType]
+          , fieldType = enumTypeName
+          , fieldHidden = False
+          }
+
+--
+-- Types
 type SelOf s = M1 S s (Rec0 ()) ()
 
 type RecSel s a = M1 S s (Rec0 a)
 
 type TypeUpdater = DataTypeLib -> SchemaValidation DataTypeLib
+
+type OutputConstraint a = Introspect a
 
 --
 --  GENERIC UNION
@@ -124,156 +272,6 @@ updateLib typeBuilder stack proxy lib' =
 
 class ObjectFields a where
   objectFields :: proxy a -> ([(Text, DataField)], [TypeUpdater])
-  default objectFields :: ObjectRep (Rep a) =>
-    proxy a -> ([(Text, DataField)], [TypeUpdater])
+
+instance {-# OVERLAPPABLE #-} ObjectRep (Rep a) => ObjectFields a where
   objectFields _ = unzip $ objectFieldTypes (Proxy @(Rep a))
-
-instance {-# OVERLAPPABLE #-} ObjectRep (Rep a) => ObjectFields a
-
-class Introspect a where
-  field :: proxy a -> Text -> DataField
-  introspect :: proxy a -> TypeUpdater
-
-instance {-# OVERLAPPABLE #-} (Introspect1 a (KIND a)) => Introspect a where
-  field _ = __field (Context :: Context a (KIND a))
-  introspect _ = __introspect (Context :: Context a (KIND a))
-
--- |   Generates internal GraphQL Schema for query validation and introspection rendering
--- * 'kind': object, scalar, enum ...
--- * 'args': type of field arguments
---    * '()' for 'input values' , they are just JSON properties and does not have any argument
---    * 'DataArguments' for field Resolvers Types, where 'DataArguments' is type of arguments
-class Introspect1 a (kind :: GQL_KIND) where
-  __field :: Context a kind -> Text -> DataField
-  default __field :: GQLType a =>
-    Context a kind -> Text -> DataField
-  __field _ = buildField (Proxy @a) []
-    --   generates data field representation of object field
-    --   according to parameter 'args' it could be
-    --   * input object field: if args is '()'
-    --   * object: if args is 'DataArguments'
-  __introspect :: Context a kind -> TypeUpdater -- Generates internal GraphQL Schema
-
-type OutputConstraint a = Introspect a
-
---
--- SCALAR
-instance (GQLScalar a, GQLType a) => Introspect1 a SCALAR where
-  __introspect _ = updateLib scalarType [] (Proxy @a)
-    where
-      scalarType = Leaf . CustomScalar . buildType validator
-        where
-          validator = scalarValidator (Proxy @a)
-
---
--- ENUM
-instance (GQL_TYPE a, EnumRep (Rep a)) => Introspect1 a ENUM where
-  __introspect _ = updateLib enumType [] (Proxy @a)
-    where
-      enumType = Leaf . LeafEnum . buildType tags
-        where
-          tags = enumTags (Proxy @(Rep a))
-
---
--- OBJECTS , INPUT_OBJECT
-instance (GQL_TYPE a, ObjectFields a) => Introspect1 a INPUT_OBJECT where
-  __introspect _ = updateLib (InputObject . buildType fields) types (Proxy @a)
-    where
-      (fields, types) = objectFields (Proxy @a)
-
-instance (GQL_TYPE a, ObjectFields a) => Introspect1 a OBJECT where
-  __introspect _ = updateLib (OutputObject . buildType (__typename : fields)) types (Proxy @a)
-    where
-      __typename =
-        ( "__typename"
-        , DataField
-            {fieldName = "__typename", fieldArgs = [], fieldTypeWrappers = [], fieldType = "String", fieldHidden = True})
-      (fields, types) = objectFields (Proxy @a)
-
--- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
--- iterates on field types  and introspects them recursively
-instance (Selector s, Introspect a) => ObjectRep (RecSel s a) where
-  objectFieldTypes _ = [((name, field (Proxy @a) name), introspect (Proxy @a))]
-    where
-      name = pack $ selName (undefined :: SelOf s)
-
---
--- UNION
--- | recursion for union types
--- iterates on possible types for UNION and introspects them recursively
-instance (OutputConstraint a, ObjectConstraint a) => UnionRep (RecSel s a) where
-  possibleTypes _ = [(buildField (Proxy @a) [] "", introspect (Proxy @a))]
-
-instance (GQL_TYPE a, UnionRep (Rep a)) => Introspect1 a UNION where
-  __introspect _ = updateLib (Union . buildType fields) stack (Proxy @a)
-    where
-      (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
-
---
--- INPUT_UNION
---
-instance (GQL_TYPE a, UnionRep (Rep a)) => Introspect1 a INPUT_UNION where
-  __introspect _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
-    where
-      (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
-      -- for every input Union 'User' adds enum type of possible TypeNames 'UserTags'
-      tagsEnumType :: TypeUpdater
-      tagsEnumType x = pure $ defineType (enumTypeName, Leaf $ LeafEnum tagsEnum) x
-        where
-          tagsEnum =
-            DataType
-              { typeName = enumTypeName
-              -- has same fingerprint as object because it depends on it
-              , typeFingerprint = __typeFingerprint (Proxy @a)
-              , typeVisibility = __typeVisibility (Proxy @a)
-              , typeDescription = ""
-              , typeData = map fieldName fields
-              }
-      enumTypeName = __typeName (Proxy @a) <> "Tags"
-      fieldTag =
-        DataField
-          { fieldName = "tag"
-          , fieldArgs = []
-          , fieldTypeWrappers = [NonNullType]
-          , fieldType = enumTypeName
-          , fieldHidden = False
-          }
-
---
--- WRAPPER : Maybe, LIST , Resolver
---
-instance Introspect a => Introspect (Maybe a) where
-  field _ = maybeField . field (Proxy @a)
-    where
-      maybeField dataField@DataField {fieldTypeWrappers = NonNullType:xs} = dataField {fieldTypeWrappers = xs}
-      maybeField dataField                                                = dataField
-  introspect _ = introspect (Proxy @a)
-
-instance Introspect a => Introspect [a] where
-  field _ = listField . field (Proxy @a)
-    where
-      listField :: DataField -> DataField
-      listField x = x {fieldTypeWrappers = [NonNullType, ListType] ++ fieldTypeWrappers x}
-  introspect _ = introspect (Proxy @a)
-
---
--- CUSTOM Types: Tuple, Map, Set
---
-instance Introspect (Pair k v) => Introspect (k, v) where
-  field _ = field (Proxy @(Pair k v))
-  introspect _ = introspect (Proxy @(Pair k v))
-
-instance Introspect [a] => Introspect (Set a) where
-  field _ = field (Proxy @[a])
-  introspect _ = introspect (Proxy @[a])
-
-instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
-  field _ = field (Proxy @(MapKind k v Maybe))
-  introspect _ = introspect (Proxy @(MapKind k v Maybe))
-
-instance (ObjectFields a, OutputConstraint b) => Introspect (a -> m b) where
-  field _ name = (field (Proxy @b) name) {fieldArgs = fst $ objectFields (Proxy @a)}
-  introspect _ typeLib = resolveTypes typeLib (introspect (Proxy @b) : argTypes)
-    where
-      argTypes :: [TypeUpdater]
-      argTypes = snd $ objectFields (Proxy @a)
