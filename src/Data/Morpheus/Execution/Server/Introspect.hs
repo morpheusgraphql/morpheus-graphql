@@ -18,7 +18,7 @@ module Data.Morpheus.Execution.Server.Introspect
   ( TypeUpdater
   , Introspect(..)
   , ObjectFields(..)
-  , GRep(..)
+  , GQLRep(..)
   , Context(..)
   , resolveTypes
   , updateLib
@@ -146,16 +146,16 @@ instance (GQL_TYPE a, ObjectFields a) => IntrospectKind OBJECT a where
       (fields, types) = objectFields (Proxy @a)
 
 -- UNION
-instance (GQL_TYPE a, GRep UNION (Rep a)) => IntrospectKind UNION a where
+instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind UNION a where
   __introspect _ = updateLib (Union . buildType fields) stack (Proxy @a)
     where
-      (fields, stack) = unzip $ possibleTypes (Context :: Context (Rep a) UNION)
+      (fields, stack) = unzip $ gqlRep (Context :: Context (Rep a) UNION)
 
 -- INPUT_UNION
-instance (GQL_TYPE a, GRep UNION (Rep a)) => IntrospectKind INPUT_UNION a where
+instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a where
   __introspect _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
     where
-      (fields, stack) = unzip $ possibleTypes (Context :: Context (Rep a) UNION)
+      (fields, stack) = unzip $ gqlRep (Context :: Context (Rep a) UNION)
       -- for every input Union 'User' adds enum type of possible TypeNames 'UserTags'
       tagsEnumType :: TypeUpdater
       tagsEnumType x = pure $ defineType (enumTypeName, Leaf $ LeafEnum tagsEnum) x
@@ -188,41 +188,43 @@ type GQL_TYPE a = (Generic a, GQLType a)
 class ObjectFields a where
   objectFields :: proxy a -> ([(Text, DataField)], [TypeUpdater])
 
-instance {-# OVERLAPPABLE #-} GRep OBJECT (Rep a) => ObjectFields a where
-  objectFields _ = unzip $ objectFieldTypes (Context :: Context (Rep a) OBJECT)
+instance {-# OVERLAPPABLE #-} GQLRep OBJECT (Rep a) => ObjectFields a where
+  objectFields _ = unzip $ gqlRep (Context :: Context (Rep a) OBJECT)
+
+type family RepValue (a :: GQL_KIND) :: *
+
+type instance RepValue OBJECT = (Text, DataField)
+
+type instance RepValue UNION = DataField
 
 --  GENERIC UNION
-class GRep (kind :: GQL_KIND) f where
-  possibleTypes :: Context f kind -> [(DataField, TypeUpdater)]
-  objectFieldTypes :: Context f kind -> [((Text, DataField), TypeUpdater)]
+class GQLRep (kind :: GQL_KIND) f where
+  gqlRep :: Context f kind -> [(RepValue kind, TypeUpdater)]
 
-instance GRep kind f => GRep kind (M1 D d f) where
-  possibleTypes _ = possibleTypes (Context :: Context f kind)
-  objectFieldTypes _ = objectFieldTypes (Context :: Context f kind)
+instance GQLRep kind f => GQLRep kind (M1 D d f) where
+  gqlRep _ = gqlRep (Context :: Context f kind)
 
-instance GRep kind f => GRep kind (M1 C c f) where
-  possibleTypes _ = possibleTypes (Context :: Context f kind)
-  objectFieldTypes _ = objectFieldTypes (Context :: Context f kind)
+instance GQLRep kind f => GQLRep kind (M1 C c f) where
+  gqlRep _ = gqlRep (Context :: Context f kind)
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
-instance (GRep UNION a, GRep UNION b) => GRep UNION (a :+: b) where
-  possibleTypes _ = possibleTypes (Context :: Context a UNION) ++ possibleTypes (Context :: Context b UNION)
+instance (GQLRep UNION a, GQLRep UNION b) => GQLRep UNION (a :+: b) where
+  gqlRep _ = gqlRep (Context :: Context a UNION) ++ gqlRep (Context :: Context b UNION)
 
-instance (GQL_TYPE a, Introspect a) => GRep UNION (M1 S s (Rec0 a)) where
-  possibleTypes _ = [(buildField (Proxy @a) [] "", introspect (Proxy @a))]
+instance (GQL_TYPE a, Introspect a) => GQLRep UNION (M1 S s (Rec0 a)) where
+  gqlRep _ = [(buildField (Proxy @a) [] "", introspect (Proxy @a))]
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
-instance (GRep OBJECT a, GRep OBJECT b) => GRep OBJECT (a :*: b) where
-  objectFieldTypes _ = objectFieldTypes (Context :: Context a OBJECT) ++ objectFieldTypes (Context :: Context b OBJECT)
+instance (GQLRep OBJECT a, GQLRep OBJECT b) => GQLRep OBJECT (a :*: b) where
+  gqlRep _ = gqlRep (Context :: Context a OBJECT) ++ gqlRep (Context :: Context b OBJECT)
 
-instance (Selector s, Introspect a) => GRep OBJECT (M1 S s (Rec0 a)) where
-  objectFieldTypes _ = [((name, field (Proxy @a) name), introspect (Proxy @a))]
+instance (Selector s, Introspect a) => GQLRep OBJECT (M1 S s (Rec0 a)) where
+  gqlRep _ = [((name, field (Proxy @a) name), introspect (Proxy @a))]
     where
       name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
 
-instance GRep OBJECT U1 where
-  objectFieldTypes _ = []
-  possibleTypes _ = []
+instance GQLRep OBJECT U1 where
+  gqlRep _ = []
 
 -- Helper Functions
 resolveTypes :: DataTypeLib -> [TypeUpdater] -> SchemaValidation DataTypeLib

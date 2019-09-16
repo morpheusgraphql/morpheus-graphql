@@ -28,7 +28,7 @@ import           GHC.Generics
 import           Data.Morpheus.Error.Utils                           (badRequestError, renderErrors)
 import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, EncodeMutCon, EncodeSubCon, encodeMut,
                                                                       encodeQuery, encodeSub)
-import           Data.Morpheus.Execution.Server.Introspect           (Context (..), GRep (..), resolveTypes)
+import           Data.Morpheus.Execution.Server.Introspect           (Context (..), GQLRep (..), resolveTypes)
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, publishUpdates)
 import           Data.Morpheus.Kind                                  (OBJECT)
 import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
@@ -47,7 +47,7 @@ import           Data.Morpheus.Validation.Query.Validation           (validateRe
 
 type EventCon event = Eq event
 
-type IntroCon a = (Generic a, GRep OBJECT (Rep a))
+type IntroCon a = (Generic a, GQLRep OBJECT (Rep a))
 
 type RootResCon m event cont query mutation subscription
    = ( EventCon event
@@ -130,15 +130,15 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
     querySchema = resolveTypes (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query")) (defaultTypes : types)
       where
-        (fields, types) = unzip $ objectFieldTypes (Context :: Context (Rep query) OBJECT)
+        (fields, types) = unzip $ gqlRep (Context :: Context (Rep query) OBJECT)
     ------------------------------
     mutationSchema lib = resolveTypes (lib {mutation = maybeOperator fields "Mutation"}) types
       where
-        (fields, types) = unzip $ objectFieldTypes (Context :: Context (Rep mutation) OBJECT)
+        (fields, types) = unzip $ gqlRep (Context :: Context (Rep mutation) OBJECT)
     ------------------------------
     subscriptionSchema lib = resolveTypes (lib {subscription = maybeOperator fields "Subscription"}) types
       where
-        (fields, types) = unzip $ objectFieldTypes (Context :: Context (Rep subscription) OBJECT)
+        (fields, types) = unzip $ gqlRep (Context :: Context (Rep subscription) OBJECT)
      -- maybeOperator :: [a] -> Text -> Maybe (Text, DataType [a])
     maybeOperator []     = const Nothing
     maybeOperator fields = Just . operatorType fields
