@@ -90,7 +90,7 @@ instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
   introspect _ = introspect (Proxy @(MapKind k v Maybe))
 
 -- Resolver : a -> Resolver b
-instance (ObjectFields a, OutputConstraint b) => Introspect (a -> m b) where
+instance (ObjectFields a, Introspect b) => Introspect (a -> m b) where
   field _ name = (field (Proxy @b) name) {fieldArgs = fst $ objectFields (Proxy @a)}
   introspect _ typeLib = resolveTypes typeLib (introspect (Proxy @b) : argTypes)
     where
@@ -110,28 +110,24 @@ class IntrospectKind (kind :: GQL_KIND) a where
   __introspect :: Context a kind -> TypeUpdater -- Generates internal GraphQL Schema
 
 -- SCALAR
-instance (GQLScalar a, GQLType a) => IntrospectKind SCALAR a where
+instance (GQLType a, GQLScalar a) => IntrospectKind SCALAR a where
   __introspect _ = updateLib scalarType [] (Proxy @a)
     where
-      scalarType = Leaf . CustomScalar . buildType validator
-        where
-          validator = scalarValidator (Proxy @a)
+      scalarType = Leaf . CustomScalar . buildType (scalarValidator (Proxy @a))
 
 -- ENUM
 instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
   __introspect _ = updateLib enumType [] (Proxy @a)
     where
-      enumType = Leaf . LeafEnum . buildType tags
-        where
-          tags = enumTags (Proxy @(Rep a))
+      enumType = Leaf . LeafEnum . buildType (enumTags (Proxy @(Rep a)))
 
---
--- OBJECTS , INPUT_OBJECT
+-- INPUT_OBJECT
 instance (GQL_TYPE a, ObjectFields a) => IntrospectKind INPUT_OBJECT a where
   __introspect _ = updateLib (InputObject . buildType fields) types (Proxy @a)
     where
       (fields, types) = objectFields (Proxy @a)
 
+-- OBJECTS
 instance (GQL_TYPE a, ObjectFields a) => IntrospectKind OBJECT a where
   __introspect _ = updateLib (OutputObject . buildType (__typename : fields)) types (Proxy @a)
     where
@@ -141,28 +137,13 @@ instance (GQL_TYPE a, ObjectFields a) => IntrospectKind OBJECT a where
             {fieldName = "__typename", fieldArgs = [], fieldTypeWrappers = [], fieldType = "String", fieldHidden = True})
       (fields, types) = objectFields (Proxy @a)
 
--- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
--- iterates on field types  and introspects them recursively
-instance (Selector s, Introspect a) => ObjectRep (RecSel s a) where
-  objectFieldTypes _ = [((name, field (Proxy @a) name), introspect (Proxy @a))]
-    where
-      name = pack $ selName (undefined :: SelOf s)
-
---
 -- UNION
--- | recursion for union types
--- iterates on possible types for UNION and introspects them recursively
-instance (OutputConstraint a, ObjectConstraint a) => UnionRep (RecSel s a) where
-  possibleTypes _ = [(buildField (Proxy @a) [] "", introspect (Proxy @a))]
-
 instance (GQL_TYPE a, UnionRep (Rep a)) => IntrospectKind UNION a where
   __introspect _ = updateLib (Union . buildType fields) stack (Proxy @a)
     where
       (fields, stack) = unzip $ possibleTypes (Proxy @(Rep a))
 
---
 -- INPUT_UNION
---
 instance (GQL_TYPE a, UnionRep (Rep a)) => IntrospectKind INPUT_UNION a where
   __introspect _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
     where
@@ -190,19 +171,26 @@ instance (GQL_TYPE a, UnionRep (Rep a)) => IntrospectKind INPUT_UNION a where
           , fieldHidden = False
           }
 
---
 -- Types
-type SelOf s = M1 S s (Rec0 ()) ()
-
-type RecSel s a = M1 S s (Rec0 a)
-
 type TypeUpdater = DataTypeLib -> SchemaValidation DataTypeLib
 
-type OutputConstraint a = Introspect a
+type GQL_TYPE a = (Generic a, GQLType a)
 
---
+--type ObjectConstraint a =
+-- | context , like Proxy with multiple parameters
+-- * 'a': actual gql type
+-- * 'kind': object, scalar, enum ...
+data Context a kind =
+  Context
+
+-- Object Fields
+class ObjectFields a where
+  objectFields :: proxy a -> ([(Text, DataField)], [TypeUpdater])
+
+instance {-# OVERLAPPABLE #-} ObjectRep (Rep a) => ObjectFields a where
+  objectFields _ = unzip $ objectFieldTypes (Proxy @(Rep a))
+
 --  GENERIC UNION
---
 class UnionRep f where
   possibleTypes :: Proxy f -> [(DataField, TypeUpdater)]
 
@@ -215,12 +203,10 @@ instance UnionRep f => UnionRep (M1 C x f) where
 instance (UnionRep a, UnionRep b) => UnionRep (a :+: b) where
   possibleTypes _ = possibleTypes (Proxy @a) ++ possibleTypes (Proxy @b)
 
---
---  GENERIC OBJECT: INPUT and OUTPUT plus ARGUMENTS
---
-resolveTypes :: DataTypeLib -> [TypeUpdater] -> SchemaValidation DataTypeLib
-resolveTypes = foldM (&)
+instance (GQL_TYPE a, Introspect a) => UnionRep (M1 S s (Rec0 a)) where
+  possibleTypes _ = [(buildField (Proxy @a) [] "", introspect (Proxy @a))]
 
+--  GENERIC OBJECT
 class ObjectRep rep where
   objectFieldTypes :: proxy rep -> [((Text, DataField), TypeUpdater)]
 
@@ -233,19 +219,18 @@ instance ObjectRep f => ObjectRep (M1 C x f) where
 instance (ObjectRep a, ObjectRep b) => ObjectRep (a :*: b) where
   objectFieldTypes _ = objectFieldTypes (Proxy @a) ++ objectFieldTypes (Proxy @b)
 
+-- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
+instance (Selector s, Introspect a) => ObjectRep (M1 S s (Rec0 a)) where
+  objectFieldTypes _ = [((name, field (Proxy @a) name), introspect (Proxy @a))]
+    where
+      name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
+
 instance ObjectRep U1 where
   objectFieldTypes _ = []
 
--- class Types class
-type GQL_TYPE a = (Generic a, GQLType a)
-
-type ObjectConstraint a = (GQL_TYPE a, ObjectRep (Rep a))
-
--- | context , like Proxy with multiple parameters
--- * 'a': actual gql type
--- * 'kind': object, scalar, enum ...
-data Context a kind =
-  Context
+-- Helper Functions
+resolveTypes :: DataTypeLib -> [TypeUpdater] -> SchemaValidation DataTypeLib
+resolveTypes = foldM (&)
 
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName =
@@ -269,9 +254,3 @@ updateLib typeBuilder stack proxy lib' =
       | fingerprint' == __typeFingerprint proxy -> return lib'
     -- throw error if 2 different types has same name
     Just _ -> Left $ nameCollisionError (__typeName proxy)
-
-class ObjectFields a where
-  objectFields :: proxy a -> ([(Text, DataField)], [TypeUpdater])
-
-instance {-# OVERLAPPABLE #-} ObjectRep (Rep a) => ObjectFields a where
-  objectFields _ = unzip $ objectFieldTypes (Proxy @(Rep a))
