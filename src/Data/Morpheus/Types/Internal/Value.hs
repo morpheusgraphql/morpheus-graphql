@@ -178,7 +178,7 @@ instance Monad m => DefaultValue (args -> m Value) where
    -- [a -> m Value] -> a -> m Value
   listValue res args = listValue <$> traverse (args &) res
   ----------------------------------------
-  -- [(Text, a -> m Value )] -> a -> m [(Text,Value)]
+  -- [(Text, a -> m Value )] -> a -> m Value
   objectValue res args = objectValue <$> traverse keyVal res
     where
       keyVal :: Monad m => (Text, args -> m Value) -> m (Text, Value)
