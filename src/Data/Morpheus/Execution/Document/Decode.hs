@@ -30,6 +30,6 @@ deriveDecode TypeD {tName, tCons = [cons]} = pure <$> instanceD (cxt []) appHead
     appHead = instanceHeadT ''DecodeObject [tName]
     methods = [funD 'decodeObject [clause argsE (normalB body) []]]
       where
-        argsE = [varP (mkName "o")]
+        argsE = map (varP . mkName) ["o"]
         body = decodeObjectExpQ [|(.:)|] cons
 deriveDecode _ = pure []
