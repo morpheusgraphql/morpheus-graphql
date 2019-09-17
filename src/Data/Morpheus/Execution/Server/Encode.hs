@@ -18,7 +18,6 @@ module Data.Morpheus.Execution.Server.Encode
   , EncodeSubCon
   , encodeQuery
   , encodeOperator
-  , encodeSub
   ) where
 
 import           Control.Monad                                   ((>=>))
@@ -177,19 +176,16 @@ instance (GResolver a res, GResolver b res) => GResolver (a :+: b) res where
 
 ----- HELPERS ----------------------------
 encodeQuery :: (Monad m, EncodeCon m schema Value, EncodeCon m a Value) => schema -> EncodeOperator m a Value
-encodeQuery types rootResolver operator@Operation {operationSelection} =
-  runExceptT
-    (fmap resolversBy (operatorToResolveT operator rootResolver) >>=
-     resolveFields operationSelection . (++) (resolversBy types))
-
-encodeSub ::
-     (Monad m, EncodeSubCon m event con a)
-  => EncodeOperator (SubscribeStream m event) a (Event event con -> ResolveT m Value)
-encodeSub = encodeOperator
+encodeQuery schema = encodeOperatorWith (resolversBy schema)
 
 encodeOperator :: (Monad m, EncodeCon m a res, DefaultValue res) => EncodeOperator m a res
-encodeOperator rootResolver operation@Operation {operationSelection} =
-  runExceptT (operatorToResolveT operation rootResolver >>= resolveFields operationSelection . resolversBy)
+encodeOperator = encodeOperatorWith []
+
+encodeOperatorWith ::
+     (Monad m, EncodeCon m a value, DefaultValue value) => [FieldRes m value] -> EncodeOperator m a value
+encodeOperatorWith externalRes rootResolver operator@Operation {operationSelection} =
+  runExceptT $
+  operatorToResolveT operator rootResolver >>= resolveFields operationSelection . (++) externalRes . resolversBy
 
 encodeResolver :: (Monad m, Encode a (ResolveT m res)) => (Text, Selection) -> Resolver m a -> ResolveT m res
 encodeResolver selection@(fieldName, Selection {selectionPosition}) =

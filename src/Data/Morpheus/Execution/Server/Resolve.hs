@@ -27,7 +27,7 @@ import           GHC.Generics
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                           (badRequestError, renderErrors)
 import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, EncodeMutCon, EncodeSubCon,
-                                                                      encodeOperator, encodeQuery, encodeSub)
+                                                                      encodeOperator, encodeQuery)
 import           Data.Morpheus.Execution.Server.Introspect           (Context (..), GQLRep (..), resolveTypes)
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, publishUpdates)
 import           Data.Morpheus.Kind                                  (OBJECT)
@@ -100,7 +100,7 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
     execOperator (_, operation@Operation {operationKind = MUTATION}) =
       mapS Publish (encodeOperator mutationResolver operation)
     execOperator (_, operation@Operation {operationKind = SUBSCRIPTION}) =
-      StreamT $ handleActions <$> closeStream (encodeSub subscriptionResolver operation)
+      StreamT $ handleActions <$> closeStream (encodeOperator subscriptionResolver operation)
       where
         handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
         handleActions (channels, Right subResolver) =
