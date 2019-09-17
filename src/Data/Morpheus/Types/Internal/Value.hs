@@ -1,9 +1,10 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE DeriveLift        #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE DeriveLift          #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TupleSections       #-}
 
 module Data.Morpheus.Types.Internal.Value
   ( Value(..)
@@ -160,12 +161,14 @@ instance DefaultValue Value where
 instance Monad m => DefaultValue (m Value) where
   nullValue = pure nullValue
   stringValue = pure . stringValue
-  ----------------------------------------
+  -----------------------------------------
   -- [m Value] -> a -> m Value
-  listValue x = listValue <$> sequence x
-    -- [(Text, m Value )] -> m [(Text,Value)]
-  objectValue x = objectValue <$> traverse keyVal x
+  listValue = fmap listValue . sequence
+  -----------------------------------------
+  -- [(Text, m Value )] -> m [(Text,Value)]
+  objectValue = fmap objectValue . traverse keyVal
     where
+      keyVal :: Monad m => (Text, m Value) -> m (Text, Value)
       keyVal (key, valFunc) = (key, ) <$> valFunc
 
 instance Monad m => DefaultValue (args -> m Value) where
@@ -173,13 +176,10 @@ instance Monad m => DefaultValue (args -> m Value) where
   stringValue = const . pure . stringValue
   ----------------------------------------
    -- [a -> m Value] -> a -> m Value
-  listValue res = finalRes
-    where
-      finalRes args = listValue <$> traverse (args &) res
+  listValue res args = listValue <$> traverse (args &) res
   ----------------------------------------
   -- [(Text, a -> m Value )] -> a -> m [(Text,Value)]
-  objectValue res = finalRes
+  objectValue res args = objectValue <$> traverse keyVal res
     where
-      finalRes args = objectValue <$> traverse keyVal res
-        where
-          keyVal (key, valFunc) = (key, ) <$> valFunc args
+      keyVal :: Monad m => (Text, args -> m Value) -> m (Text, Value)
+      keyVal (key, valFunc) = (key, ) <$> valFunc args
