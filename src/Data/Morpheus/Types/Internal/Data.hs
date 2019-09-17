@@ -36,6 +36,8 @@ module Data.Morpheus.Types.Internal.Data
   , allDataTypes
   , lookupDataType
   , kindOf
+  , toNullableField
+  , toListField
   ) where
 
 import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
@@ -229,3 +231,10 @@ defineType (key', InputObject type') lib  = lib {inputObject = (key', type') : i
 defineType (key', OutputObject type') lib = lib {object = (key', type') : object lib}
 defineType (key', Union type') lib        = lib {union = (key', type') : union lib}
 defineType (key', InputUnion type') lib   = lib {inputUnion = (key', type') : inputUnion lib}
+
+toNullableField :: DataField -> DataField
+toNullableField dataField@DataField {fieldTypeWrappers = NonNullType:xs} = dataField {fieldTypeWrappers = xs}
+toNullableField dataField                                                = dataField
+
+toListField :: DataField -> DataField
+toListField x = x {fieldTypeWrappers = [NonNullType, ListType] ++ fieldTypeWrappers x}

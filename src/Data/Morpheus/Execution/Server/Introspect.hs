@@ -44,7 +44,8 @@ import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..)
 import           Data.Morpheus.Types.GQLType                     (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data               (DataArguments, DataField (..), DataFullType (..),
                                                                   DataLeaf (..), DataType (..), DataTypeLib,
-                                                                  DataTypeWrapper (..), defineType, isTypeDefined)
+                                                                  DataTypeWrapper (..), defineType, isTypeDefined,
+                                                                  toListField, toNullableField)
 import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
 
 --type ObjectConstraint a =
@@ -68,18 +69,12 @@ instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspe
 
 -- Maybe
 instance Introspect a => Introspect (Maybe a) where
-  field _ = maybeField . field (Proxy @a)
-    where
-      maybeField dataField@DataField {fieldTypeWrappers = NonNullType:xs} = dataField {fieldTypeWrappers = xs}
-      maybeField dataField                                                = dataField
+  field _ = toNullableField . field (Proxy @a)
   introspect _ = introspect (Proxy @a)
 
 -- List
 instance Introspect a => Introspect [a] where
-  field _ = listField . field (Proxy @a)
-    where
-      listField :: DataField -> DataField
-      listField x = x {fieldTypeWrappers = [NonNullType, ListType] ++ fieldTypeWrappers x}
+  field _ = toListField . field (Proxy @a)
   introspect _ = introspect (Proxy @a)
 
 -- Tuple
@@ -147,27 +142,28 @@ instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind UNION a where
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a where
   introspectKind _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
     where
-      (fields, stack) = unzip $ gqlRep (Context :: Context (Rep a) UNION)
+      (inputUnions, stack) = unzip $ gqlRep (Context :: Context (Rep a) UNION)
+      fields = map toNullableField inputUnions
       -- for every input Union 'User' adds enum type of possible TypeNames 'UserTags'
       tagsEnumType :: TypeUpdater
-      tagsEnumType x = pure $ defineType (enumTypeName, Leaf $ LeafEnum tagsEnum) x
+      tagsEnumType x = pure $ defineType (typeName, Leaf $ LeafEnum tagsEnum) x
         where
           tagsEnum =
             DataType
-              { typeName = enumTypeName
-              -- has same fingerprint as object because it depends on it
+              { typeName
+                -- has same fingerprint as object because it depends on it
               , typeFingerprint = __typeFingerprint (Proxy @a)
               , typeVisibility = __typeVisibility (Proxy @a)
               , typeDescription = ""
-              , typeData = map fieldName fields
+              , typeData = map fieldName inputUnions
               }
-      enumTypeName = __typeName (Proxy @a) <> "Tags"
+      typeName = __typeName (Proxy @a) <> "Tags"
       fieldTag =
         DataField
           { fieldName = "tag"
           , fieldArgs = []
           , fieldTypeWrappers = [NonNullType]
-          , fieldType = enumTypeName
+          , fieldType = typeName
           , fieldHidden = False
           }
 
@@ -204,7 +200,7 @@ instance (GQLRep UNION a, GQLRep UNION b) => GQLRep UNION (a :+: b) where
   gqlRep _ = gqlRep (Context :: Context a UNION) ++ gqlRep (Context :: Context b UNION)
 
 instance (GQL_TYPE a, Introspect a) => GQLRep UNION (M1 S s (Rec0 a)) where
-  gqlRep _ = [(buildField (Proxy @a) [] "", introspect (Proxy @a))]
+  gqlRep _ = [(buildField (Proxy @a) [] (__typeName (Proxy @a)), introspect (Proxy @a))]
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
 instance (GQLRep OBJECT a, GQLRep OBJECT b) => GQLRep OBJECT (a :*: b) where
