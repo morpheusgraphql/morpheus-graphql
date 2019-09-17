@@ -49,8 +49,8 @@ import           Data.Morpheus.Types.Internal.Validation         (GQLErrors, Res
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver                    (Event (..), Resolver, SubResolveT, SubResolver (..))
 
-class Encode a result where
-  encode :: a -> (Text, Selection) -> result
+class Encode resolver value where
+  encode :: resolver -> (Text, Selection) -> value
 
 instance {-# OVERLAPPABLE #-} EncodeKind (KIND a) a res => Encode a res where
   encode resolver = encodeKind (ResKind resolver :: ResKind (KIND a) a)
