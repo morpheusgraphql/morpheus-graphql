@@ -1,12 +1,15 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE DeriveLift        #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
 
 module Data.Morpheus.Types.Internal.Value
   ( Value(..)
   , ScalarValue(..)
   , Object
+  , DefaultValue(..)
   , replaceValue
   , decodeScientific
   , convertToJSONName
@@ -14,8 +17,8 @@ module Data.Morpheus.Types.Internal.Value
   ) where
 
 import qualified Data.Aeson                      as A (FromJSON (..), ToJSON (..), Value (..), object, pairs, (.=))
+import           Data.Function                   ((&))
 import qualified Data.HashMap.Strict             as M (toList)
-import           Data.Morpheus.Types.Internal.TH (apply, liftText, liftTextMap)
 import           Data.Scientific                 (Scientific, floatingOrInteger)
 import           Data.Semigroup                  ((<>))
 import           Data.Text                       (Text)
@@ -24,6 +27,9 @@ import qualified Data.Vector                     as V (toList)
 import           GHC.Generics                    (Generic)
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
+
+-- MORPHEUS
+import           Data.Morpheus.Types.Internal.TH (apply, liftText, liftTextMap)
 
 isReserved :: Text -> Bool
 isReserved "case"     = True
@@ -137,3 +143,43 @@ replaceValue A.Null       = Null
 
 instance A.FromJSON Value where
   parseJSON = pure . replaceValue
+
+-- DEFAULT VALUES
+class DefaultValue a where
+  nullValue :: a
+  stringValue :: Text -> a
+  listValue :: [a] -> a
+  objectValue :: [(Text, a)] -> a
+
+instance DefaultValue Value where
+  nullValue = Null
+  listValue = List
+  stringValue = Scalar . String
+  objectValue = Object
+
+instance Monad m => DefaultValue (m Value) where
+  nullValue = pure nullValue
+  stringValue = pure . stringValue
+  ----------------------------------------
+  -- [m Value] -> a -> m Value
+  listValue x = listValue <$> sequence x
+    -- [(Text, m Value )] -> m [(Text,Value)]
+  objectValue x = objectValue <$> traverse keyVal x
+    where
+      keyVal (key, valFunc) = (key, ) <$> valFunc
+
+instance Monad m => DefaultValue (args -> m Value) where
+  nullValue = const $ pure nullValue
+  stringValue = const . pure . stringValue
+  ----------------------------------------
+   -- [a -> m Value] -> a -> m Value
+  listValue res = finalRes
+    where
+      finalRes args = listValue <$> traverse (args &) res
+  ----------------------------------------
+  -- [(Text, a -> m Value )] -> a -> m [(Text,Value)]
+  objectValue res = finalRes
+    where
+      finalRes args = objectValue <$> traverse keyVal res
+        where
+          keyVal (key, valFunc) = (key, ) <$> valFunc args
