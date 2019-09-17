@@ -162,7 +162,7 @@ instance Monad m => DefaultValue (m Value) where
   nullValue = pure nullValue
   stringValue = pure . stringValue
   -----------------------------------------
-  -- [m Value] -> a -> m Value
+  -- [m Value] -> m Value
   listValue = fmap listValue . sequence
   -----------------------------------------
   -- [(Text, m Value )] -> m Value
