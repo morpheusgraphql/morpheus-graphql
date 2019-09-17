@@ -28,7 +28,7 @@ import           Data.Maybe                                      (fromMaybe)
 import           Data.Proxy                                      (Proxy (..))
 import           Data.Set                                        (Set)
 import qualified Data.Set                                        as S (toList)
-import           Data.Text                                       (Text, pack)
+import           Data.Text                                       (pack)
 import           Data.Typeable                                   (Typeable)
 import           GHC.Generics
 
@@ -43,6 +43,7 @@ import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..)
 import           Data.Morpheus.Types.GQLType                     (GQLType (KIND, __typeName))
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
+import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Stream             (PublishStream, StreamT (..), SubscribeStream,
                                                                   initExceptStream, injectEvents)
 import           Data.Morpheus.Types.Internal.Validation         (GQLErrors, ResolveT, failResolveT)
@@ -50,7 +51,7 @@ import           Data.Morpheus.Types.Internal.Value              (GQLValue (..),
 import           Data.Morpheus.Types.Resolver                    (Event (..), Resolver, SubResolveT, SubResolver (..))
 
 class Encode resolver value where
-  encode :: resolver -> (Text, Selection) -> value
+  encode :: resolver -> (Key, Selection) -> value
 
 instance {-# OVERLAPPABLE #-} EncodeKind (KIND a) a res => Encode a res where
   encode resolver = encodeKind (ResKind resolver :: ResKind (KIND a) a)
@@ -101,7 +102,7 @@ instance (DecodeObject a, Monad m, Encode b (ResolveT m Value)) =>
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a value where
-  encodeKind :: ResKind kind a -> (Text, Selection) -> value
+  encodeKind :: ResKind kind a -> (Key, Selection) -> value
 
 -- SCALAR
 instance (GQLScalar a, GQLValue value) => EncodeKind SCALAR a value where
@@ -142,7 +143,7 @@ type ResConstraint a m res = (Monad m, Generic a, GResolver (Rep a) (ResolveT m 
 
 type EnumConstraint a = (Generic a, EnumRep (Rep a))
 
-type FieldRes m value = (Text, (Text, Selection) -> ResolveT m value)
+type FieldRes m value = (Key, (Key, Selection) -> ResolveT m value)
 
 newtype ResKind (kind :: GQL_KIND) a = ResKind
   { unResKind :: a
@@ -151,14 +152,14 @@ newtype ResKind (kind :: GQL_KIND) a = ResKind
 --- GENERICS ------------------------------------------------
 -- | Derives resolvers by object fields
 class GResolver f result where
-  fieldResolvers :: f a -> [(Text, (Text, Selection) -> result)]
-  unionResolvers :: f a -> (Text, (Text, Selection) -> result)
+  fieldResolvers :: f a -> [(Key, (Key, Selection) -> result)]
+  unionResolvers :: f a -> (Key, (Key, Selection) -> result)
 
 instance GResolver U1 res where
   fieldResolvers _ = []
 
 instance (Selector s, GQLType a, Encode a value) => GResolver (M1 S s (K1 s2 a)) value where
-  fieldResolvers m@(M1 (K1 src)) = [(pack $ selName m, encode src)]
+  fieldResolvers m@(M1 (K1 src)) = [(pack (selName m), encode src)]
   unionResolvers (M1 (K1 src)) = (__typeName (Proxy @a), encode src)
 
 instance GResolver f value => GResolver (M1 D c f) value where
@@ -189,11 +190,11 @@ encodeOperatorWith externalRes rootResolver Operation {operationSelection, opera
   where
     operationResolveT = withExceptT (resolverError operationPosition operationName) rootResolver
 
-encodeResolver :: (Monad m, Encode a (ResolveT m res)) => (Text, Selection) -> Resolver m a -> ResolveT m res
+encodeResolver :: (Monad m, Encode a (ResolveT m res)) => (Key, Selection) -> Resolver m a -> ResolveT m res
 encodeResolver selection@(fieldName, Selection {selectionPosition}) =
   withExceptT (resolverError selectionPosition fieldName) >=> (`encode` selection)
 
-decodeArgs :: (Monad m, DecodeObject a) => (Text, Selection) -> ResolveT m a
+decodeArgs :: (Monad m, DecodeObject a) => (Key, Selection) -> ResolveT m a
 decodeArgs = liftEither . decodeArguments . selectionArguments . snd
 
 resolveFields :: (Monad m, GQLValue a) => SelectionSet -> [FieldRes m a] -> ResolveT m a
@@ -208,5 +209,5 @@ resolveFields selectionSet resolvers = gqlObject <$> traverse selectResolver sel
       where
         lookupRes resKey sel = (fromMaybe (const $ return gqlNull) $ lookup resKey resolvers) (key, sel)
 
-resolversBy :: (Generic a, GResolver (Rep a) value) => a -> [(Text, (Text, Selection) -> value)]
+resolversBy :: (Generic a, GResolver (Rep a) value) => a -> [(Key, (Key, Selection) -> value)]
 resolversBy = fieldResolvers . from
