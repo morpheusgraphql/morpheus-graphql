@@ -10,7 +10,7 @@ module Data.Morpheus.Types.Internal.Value
   ( Value(..)
   , ScalarValue(..)
   , Object
-  , DefaultValue(..)
+  , GQLValue(..)
   , replaceValue
   , decodeScientific
   , convertToJSONName
@@ -146,40 +146,42 @@ instance A.FromJSON Value where
   parseJSON = pure . replaceValue
 
 -- DEFAULT VALUES
-class DefaultValue a where
-  nullValue :: a
-  stringValue :: Text -> a
-  listValue :: [a] -> a
-  objectValue :: [(Text, a)] -> a
+class GQLValue a where
+  gqlNull :: a
+  gqlString :: Text -> a
+  gqlList :: [a] -> a
+  gqlObject :: [(Text, a)] -> a
 
-instance DefaultValue Value where
-  nullValue = Null
-  listValue = List
-  stringValue = Scalar . String
-  objectValue = Object
+-- build GQL Values for Subscription Resolver
+instance GQLValue Value where
+  gqlNull = Null
+  gqlString = Scalar . String
+  gqlList = List
+  gqlObject = Object
 
-instance Monad m => DefaultValue (m Value) where
-  nullValue = pure nullValue
-  stringValue = pure . stringValue
+instance Monad m => GQLValue (m Value) where
+  gqlNull = pure gqlNull
+  gqlString = pure . gqlString
   -----------------------------------------
-  -- [m Value] -> m Value
-  listValue = fmap listValue . sequence
+  -- listValue :: [m Value] -> m Value
+  gqlList = fmap gqlList . sequence
   -----------------------------------------
-  -- [(Text, m Value )] -> m Value
-  objectValue = fmap objectValue . traverse keyVal
+  -- objectValue :: [(Text, m Value )] -> m Value
+  gqlObject = fmap gqlObject . traverse keyVal
     where
       keyVal :: Monad m => (Text, m Value) -> m (Text, Value)
       keyVal (key, valFunc) = (key, ) <$> valFunc
 
-instance Monad m => DefaultValue (args -> m Value) where
-  nullValue = const $ pure nullValue
-  stringValue = const . pure . stringValue
+-- build GQL Values for Subscription Resolver
+instance Monad m => GQLValue (args -> m Value) where
+  gqlNull = const gqlNull
+  gqlString = const . gqlString
   ----------------------------------------
-   -- [a -> m Value] -> ( a -> m Value )
-  listValue res args = listValue <$> traverse (args &) res
+   -- listValue :: [a -> m Value] -> ( a -> m Value )
+  gqlList res args = gqlList <$> traverse (args &) res
   ----------------------------------------
-  -- [(Text, a -> m Value )] -> ( a -> m Value )
-  objectValue res args = objectValue <$> traverse keyVal res
+  -- objectValue :: [(Text, a -> m Value )] -> ( a -> m Value )
+  gqlObject res args = gqlObject <$> traverse keyVal res
     where
       keyVal :: Monad m => (Text, args -> m Value) -> m (Text, Value)
       keyVal (key, valFunc) = (key, ) <$> valFunc args

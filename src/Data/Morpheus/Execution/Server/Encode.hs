@@ -46,7 +46,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..)
 import           Data.Morpheus.Types.Internal.Stream             (PublishStream, StreamT (..), SubscribeStream,
                                                                   initExceptStream, injectEvents)
 import           Data.Morpheus.Types.Internal.Validation         (GQLErrors, ResolveT, failResolveT)
-import           Data.Morpheus.Types.Internal.Value              (DefaultValue (..), ScalarValue (..), Value (..))
+import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), ScalarValue (..), Value (..))
 import           Data.Morpheus.Types.Resolver                    (Event (..), Resolver, SubResolveT, SubResolver (..))
 
 class Encode a result where
@@ -56,8 +56,8 @@ instance {-# OVERLAPPABLE #-} EncodeKind (KIND a) a res => Encode a res where
   encode resolver = encodeKind (ResKind resolver :: ResKind (KIND a) a)
 
 -- MAYBE
-instance (DefaultValue res, Encode a res) => Encode (Maybe a) res where
-  encode Nothing      = const (nullValue :: res)
+instance (GQLValue res, Encode a res) => Encode (Maybe a) res where
+  encode Nothing      = const gqlNull
   encode (Just value) = encode value
 
 --  Tuple  (a,b)
@@ -73,8 +73,8 @@ instance (Eq k, Monad m, Encode (MapKind k v (Resolver m)) (ResolveT m res)) => 
   encode value = encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver m))
 
 -- LIST []
-instance (Monad m, DefaultValue res, Encode a (m res)) => Encode [a] (m res) where
-  encode list query = listValue <$> mapM (`encode` query) list
+instance (Monad m, GQLValue res, Encode a (m res)) => Encode [a] (m res) where
+  encode list query = gqlList <$> traverse (`encode` query) list
 
 -- GQL Either Resolver
 instance (Monad m, Encode a (ResolveT m res), DecodeObject p) => Encode (p -> Either String a) (ResolveT m res) where
@@ -110,11 +110,11 @@ instance (EnumConstraint a, Monad m) => EncodeKind ENUM a (m Value) where
   encodeKind = pure . pure . Scalar . String . encodeRep . from . unResKind
 
 --  OBJECTS
-instance (GQLType a, DefaultValue res, ResConstraint a m res) => EncodeKind OBJECT a (ResolveT m res) where
+instance (GQLType a, GQLValue value, ResConstraint a m value) => EncodeKind OBJECT a (ResolveT m value) where
   encodeKind (ResKind value) (_, Selection {selectionRec = SelectionSet selection}) =
     resolveFields selection (__typenameResolver : resolversBy value)
     where
-      __typenameResolver = ("__typename", const $ return $ stringValue $ __typeName (Proxy @a))
+      __typenameResolver = ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))
   encodeKind _ (key, Selection {selectionPosition}) = failResolveT $ subfieldsNotSelected key "" selectionPosition
 
 -- UNION,
@@ -178,11 +178,10 @@ instance (GResolver a res, GResolver b res) => GResolver (a :+: b) res where
 encodeQuery :: (Monad m, EncodeCon m schema Value, EncodeCon m a Value) => schema -> EncodeOperator m a Value
 encodeQuery schema = encodeOperatorWith (resolversBy schema)
 
-encodeOperator :: (Monad m, EncodeCon m a res, DefaultValue res) => EncodeOperator m a res
+encodeOperator :: (Monad m, EncodeCon m a res, GQLValue res) => EncodeOperator m a res
 encodeOperator = encodeOperatorWith []
 
-encodeOperatorWith ::
-     (Monad m, EncodeCon m a value, DefaultValue value) => [FieldRes m value] -> EncodeOperator m a value
+encodeOperatorWith :: (Monad m, EncodeCon m a value, GQLValue value) => [FieldRes m value] -> EncodeOperator m a value
 encodeOperatorWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
   runExceptT $ operationResolveT >>= resolveFields operationSelection . (++) externalRes . resolversBy
   where
@@ -195,8 +194,8 @@ encodeResolver selection@(fieldName, Selection {selectionPosition}) =
 decodeArgs :: (Monad m, DecodeObject a) => (Text, Selection) -> ResolveT m a
 decodeArgs = liftEither . decodeArguments . selectionArguments . snd
 
-resolveFields :: (Monad m, DefaultValue a) => SelectionSet -> [FieldRes m a] -> ResolveT m a
-resolveFields selectionSet resolvers = objectValue <$> traverse selectResolver selectionSet
+resolveFields :: (Monad m, GQLValue a) => SelectionSet -> [FieldRes m a] -> ResolveT m a
+resolveFields selectionSet resolvers = gqlObject <$> traverse selectResolver selectionSet
   where
     selectResolver (key, selection) =
       (key, ) <$>
@@ -205,7 +204,7 @@ resolveFields selectionSet resolvers = objectValue <$> traverse selectResolver s
         _                                -> lookupRes key selection
         -------------------------------------------------------------
       where
-        lookupRes resKey sel = (fromMaybe (const $ return nullValue) $ lookup resKey resolvers) (key, sel)
+        lookupRes resKey sel = (fromMaybe (const $ return gqlNull) $ lookup resKey resolvers) (key, sel)
 
 resolversBy :: (Generic a, GResolver (Rep a) result) => a -> [(Text, (Text, Selection) -> result)]
 resolversBy = fieldResolvers . from
