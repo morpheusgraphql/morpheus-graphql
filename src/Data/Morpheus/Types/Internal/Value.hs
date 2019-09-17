@@ -165,7 +165,7 @@ instance Monad m => DefaultValue (m Value) where
   -- [m Value] -> a -> m Value
   listValue = fmap listValue . sequence
   -----------------------------------------
-  -- [(Text, m Value )] -> m [(Text,Value)]
+  -- [(Text, m Value )] -> m Value
   objectValue = fmap objectValue . traverse keyVal
     where
       keyVal :: Monad m => (Text, m Value) -> m (Text, Value)
@@ -175,10 +175,10 @@ instance Monad m => DefaultValue (args -> m Value) where
   nullValue = const $ pure nullValue
   stringValue = const . pure . stringValue
   ----------------------------------------
-   -- [a -> m Value] -> a -> m Value
+   -- [a -> m Value] -> ( a -> m Value )
   listValue res args = listValue <$> traverse (args &) res
   ----------------------------------------
-  -- [(Text, a -> m Value )] -> a -> m Value
+  -- [(Text, a -> m Value )] -> ( a -> m Value )
   objectValue res args = objectValue <$> traverse keyVal res
     where
       keyVal :: Monad m => (Text, args -> m Value) -> m (Text, Value)
