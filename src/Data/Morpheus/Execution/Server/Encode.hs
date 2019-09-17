@@ -21,7 +21,7 @@ module Data.Morpheus.Execution.Server.Encode
   ) where
 
 import           Control.Monad                                   ((>=>))
-import           Control.Monad.Except                            (ExceptT (..), liftEither, runExceptT, withExceptT)
+import           Control.Monad.Except                            (liftEither, runExceptT, withExceptT)
 import           Data.Map                                        (Map)
 import qualified Data.Map                                        as M (toList)
 import           Data.Maybe                                      (fromMaybe)
@@ -78,7 +78,7 @@ instance (Monad m, DefaultValue res, Encode a (m res)) => Encode [a] (m res) whe
 
 -- GQL Either Resolver
 instance (Monad m, Encode a (ResolveT m res), DecodeObject p) => Encode (p -> Either String a) (ResolveT m res) where
-  encode resolver selection = decodeArgs selection >>= encodeResolver selection . (ExceptT . pure . resolver)
+  encode resolver selection = decodeArgs selection >>= encodeResolver selection . (liftEither . resolver)
 
 --  GQL ExceptT Resolver
 instance (DecodeObject a, Monad m, Encode b (ResolveT m res)) => Encode (a -> Resolver m b) (ResolveT m res) where
@@ -183,17 +183,14 @@ encodeOperator = encodeOperatorWith []
 
 encodeOperatorWith ::
      (Monad m, EncodeCon m a value, DefaultValue value) => [FieldRes m value] -> EncodeOperator m a value
-encodeOperatorWith externalRes rootResolver operator@Operation {operationSelection} =
-  runExceptT $
-  operatorToResolveT operator rootResolver >>= resolveFields operationSelection . (++) externalRes . resolversBy
+encodeOperatorWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
+  runExceptT $ operationResolveT >>= resolveFields operationSelection . (++) externalRes . resolversBy
+  where
+    operationResolveT = withExceptT (resolverError operationPosition operationName) rootResolver
 
 encodeResolver :: (Monad m, Encode a (ResolveT m res)) => (Text, Selection) -> Resolver m a -> ResolveT m res
 encodeResolver selection@(fieldName, Selection {selectionPosition}) =
   withExceptT (resolverError selectionPosition fieldName) >=> (`encode` selection)
-
-operatorToResolveT :: Monad m => ValidOperation -> Resolver m a -> ResolveT m a
-operatorToResolveT Operation {operationPosition, operationName} =
-  withExceptT (resolverError operationPosition operationName)
 
 decodeArgs :: (Monad m, DecodeObject a) => (Text, Selection) -> ResolveT m a
 decodeArgs = liftEither . decodeArguments . selectionArguments . snd
