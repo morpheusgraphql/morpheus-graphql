@@ -22,7 +22,10 @@ module Data.Morpheus.Execution.Server.Encode
   ) where
 
 import           Control.Monad                                   ((>=>))
-import           Control.Monad.Trans.Except
+
+--import           Control.Monad.Trans.Except
+import           Control.Monad.Except                            (ExceptT (..), liftEither, runExceptT, withExceptT)
+
 import           Data.Map                                        (Map)
 import qualified Data.Map                                        as M (toList)
 import           Data.Maybe                                      (fromMaybe)
@@ -44,7 +47,6 @@ import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..)
 import           Data.Morpheus.Types.GQLType                     (GQLType (KIND, __typeName))
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
-import           Data.Morpheus.Types.Internal.Base               (Position)
 import           Data.Morpheus.Types.Internal.Stream             (PublishStream, StreamT (..), SubscribeStream,
                                                                   initExceptStream, injectEvents)
 import           Data.Morpheus.Types.Internal.Validation         (GQLErrors, ResolveT, failResolveT)
@@ -138,18 +140,17 @@ type EncodeMutCon m event con mut = EncodeCon (PublishStream m event con) mut Va
 
 type EncodeSubCon m event con sub = EncodeCon (SubscribeStream m event) sub (Event event con -> ResolveT m Value)
 
-type ResolveSel result = SelectionSet -> [(Text, (Text, Selection) -> result)] -> result
-
 type ResConstraint a m res = (Monad m, Generic a, GResolver (Rep a) (ResolveT m res))
 
 type EnumConstraint a = (Generic a, EnumRep (Rep a))
+
+type FieldRes m res = (Text, (Text, Selection) -> ResolveT m res)
 
 newtype ResKind (kind :: GQL_KIND) a = ResKind
   { unResKind :: a
   }
 
 --- GENERICS ------------------------------------------------
---
 --  OBJECT
 -- | Derives resolvers by object fields
 class GResolver f result where
@@ -201,32 +202,34 @@ encodeSub = encodeOperator (flip resolveSelection)
 
 encodeResolver :: (Monad m, Encode a (ResolveT m res)) => (Text, Selection) -> Resolver m a -> ResolveT m res
 encodeResolver selection@(fieldName, Selection {selectionPosition}) =
-  resolverToResolveT selectionPosition fieldName >=> (`encode` selection)
+  withExceptT (resolverError selectionPosition fieldName) >=> (`encode` selection)
 
-resolverToResolveT :: Monad m => Position -> Text -> Resolver m a -> ResolveT m a
-resolverToResolveT pos name = ExceptT . (fmap (resolverError pos name) . runExceptT)
-
-encodeOperator :: (Monad m, EncodeCon m a res) => ResolveSel (ResolveT m res) -> EncodeOperator m a res
+encodeOperator ::
+     (Monad m, EncodeCon m a res) => (SelectionSet -> [FieldRes m res] -> ResolveT m res) -> EncodeOperator m a res
 encodeOperator resSel rootResolver operation@Operation {operationSelection} =
   runExceptT (operatorToResolveT operation rootResolver >>= resSel operationSelection . resolversBy)
 
 operatorToResolveT :: Monad m => ValidOperation -> Resolver m a -> ResolveT m a
-operatorToResolveT Operation {operationPosition, operationName} = resolverToResolveT operationPosition operationName
+operatorToResolveT Operation {operationPosition, operationName} =
+  withExceptT (resolverError operationPosition operationName)
 
 decodeArgs :: (Monad m, DecodeObject a) => (Text, Selection) -> ResolveT m a
-decodeArgs (_, Selection {selectionArguments}) = ExceptT $ pure $ decodeArguments selectionArguments
+decodeArgs = liftEither . decodeArguments . selectionArguments . snd
 
-resolveBySelection :: (Monad m, DefaultValue res) => ResolveSel (ResolveT m res)
-resolveBySelection selection resolvers = objectValue <$> selectResolver resolvers `traverse` selection
+resolveBySelection :: (Monad m, DefaultValue res) => SelectionSet -> [FieldRes m res] -> ResolveT m res
+resolveBySelection = flip (resolveGroup objectValue)
 
-selectResolver :: (Monad m, DefaultValue a) => [(Text, (Text, Selection) -> m a)] -> (Text, Selection) -> m (Text, a)
+resolveGroup :: (Monad m, DefaultValue a) => ([(Text, a)] -> b) -> [FieldRes m a] -> SelectionSet -> ResolveT m b
+resolveGroup toObj resolvers = fmap toObj . traverse (selectResolver resolvers)
+
+selectResolver :: (Monad m, DefaultValue a) => [FieldRes m a] -> (Text, Selection) -> ResolveT m (Text, a)
 selectResolver resolvers (key, selection) =
   case selectionRec selection of
-    SelectionAlias name selectionRec -> (key, ) <$> lookupResolver name (selection {selectionRec})
-    _                                -> (key, ) <$> lookupResolver key selection
+    SelectionAlias name selectionRec -> (key, ) <$> lookupRes name (selection {selectionRec})
+    _                                -> (key, ) <$> lookupRes key selection
     -------------------------------------------------------------
   where
-    lookupResolver resolverKey sel = (fromMaybe (const $ return nullValue) $ lookup resolverKey resolvers) (key, sel)
+    lookupRes resKey sel = (fromMaybe (const $ return nullValue) $ lookup resKey resolvers) (key, sel)
 
 resolversBy :: (Generic a, GResolver (Rep a) result) => a -> [(Text, (Text, Selection) -> result)]
 resolversBy = fieldResolvers . from

@@ -15,9 +15,8 @@ import           Data.Morpheus.Types.Internal.Validation (GQLError (..), GQLErro
 import           Data.Text                               (Text, pack)
 import qualified Data.Text                               as T (concat)
 
-resolverError :: Position -> Text -> Either String a -> Either GQLErrors a
-resolverError pos name (Left message) = Left $ fieldNotResolved pos name (pack message)
-resolverError _ _ (Right value)       = pure value
+resolverError :: Position -> Text -> String -> GQLErrors
+resolverError pos name message = fieldNotResolved pos name (pack message)
 
 fieldNotResolved :: Position -> Text -> Text -> GQLErrors
 fieldNotResolved position' key' message' = errorMessage position' text
