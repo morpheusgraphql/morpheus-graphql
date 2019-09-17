@@ -177,10 +177,10 @@ instance Monad m => GQLValue (args -> m Value) where
   gqlNull = const gqlNull
   gqlString = const . gqlString
   ----------------------------------------
-   -- listValue :: [a -> m Value] -> ( a -> m Value )
+   -- listValue :: [args -> m Value] -> ( args -> m Value )
   gqlList res args = gqlList <$> traverse (args &) res
   ----------------------------------------
-  -- objectValue :: [(Text, a -> m Value )] -> ( a -> m Value )
+  -- objectValue :: [(Text, args -> m Value )] -> ( args -> m Value )
   gqlObject res args = gqlObject <$> traverse keyVal res
     where
       keyVal :: Monad m => (Text, args -> m Value) -> m (Text, Value)
