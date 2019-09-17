@@ -18,7 +18,7 @@ module Data.Morpheus.Execution.Server.Decode
 
 import           Data.Proxy                                      (Proxy (..))
 import           Data.Semigroup                                  ((<>))
-import           Data.Text                                       (Text, pack)
+import           Data.Text                                       (pack)
 import           GHC.Generics
 
 -- MORPHEUS
@@ -30,6 +30,7 @@ import           Data.Morpheus.Kind                              (ENUM, GQL_KIND
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..), toScalar)
 import           Data.Morpheus.Types.GQLType                     (GQLType (KIND, __typeName))
 import           Data.Morpheus.Types.Internal.AST.Selection      (Argument (..), Arguments)
+import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Validation         (Validation)
 import           Data.Morpheus.Types.Internal.Value              (Object, Value (..))
 
@@ -38,7 +39,7 @@ class Decode a where
   decode :: Value -> Validation a
 
 instance {-# OVERLAPPABLE #-} DecodeKind (KIND a) a => Decode a where
-  decode = __decode (Proxy @(KIND a))
+  decode = decodeKind (Proxy @(KIND a))
 
 instance Decode a => Decode (Maybe a) where
   decode = withMaybe decode
@@ -48,26 +49,26 @@ instance Decode a => Decode [a] where
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: GQL_KIND) a where
-  __decode :: Proxy kind -> Value -> Validation a
+  decodeKind :: Proxy kind -> Value -> Validation a
 
 -- SCALAR
 instance (GQLScalar a) => DecodeKind SCALAR a where
-  __decode _ value =
+  decodeKind _ value =
     case toScalar value >>= parseValue of
       Right scalar      -> return scalar
       Left errorMessage -> internalTypeMismatch errorMessage value
 
 -- ENUM
 instance (Generic a, EnumRep (Rep a)) => DecodeKind ENUM a where
-  __decode _ = withEnum (fmap to . decodeEnum)
+  decodeKind _ = withEnum (fmap to . decodeEnum)
 
 -- INPUT_OBJECT
 instance DecodeObject a => DecodeKind INPUT_OBJECT a where
-  __decode _ = withObject decodeObject
+  decodeKind _ = withObject decodeObject
 
 -- INPUT_UNION
 instance (Generic a, GDecode (Rep a)) => DecodeKind INPUT_UNION a where
-  __decode _ = withObject (fmap to . decodeUnion)
+  decodeKind _ = withObject (fmap to . decodeUnion)
 
 -- GENERIC
 decodeArguments :: DecodeObject p => Arguments -> Validation p
@@ -85,19 +86,19 @@ instance {-# OVERLAPPABLE #-} (Generic a, GDecode (Rep a)) => DecodeObject a whe
 -- GENERICS
 --
 class GDecode f where
+  unionTags :: Proxy f -> [Key]
   decodeUnion :: Object -> Validation (f a)
   __decodeObject :: Value -> Validation (f a)
-  unionTags :: Proxy f -> [Text]
 
 instance GDecode U1 where
+  unionTags _ = []
   __decodeObject _ = pure U1
   decodeUnion _ = pure U1
-  unionTags _ = []
 
 -- Recursive Decoding: (Selector (Rec1 ))
 instance (Selector s, GQLType a, Decode a) => GDecode (M1 S s (K1 i a)) where
-  decodeUnion = fmap (M1 . K1) . decode . Object
   unionTags _ = [__typeName (Proxy @a)]
+  decodeUnion = fmap (M1 . K1) . decode . Object
   __decodeObject = fmap (M1 . K1) . decodeRec
     where
       fieldName = pack $ selName (undefined :: M1 S s f a)
