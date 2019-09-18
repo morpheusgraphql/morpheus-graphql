@@ -29,7 +29,6 @@ import           Data.Proxy                                      (Proxy (..))
 import           Data.Set                                        (Set)
 import qualified Data.Set                                        as S (toList)
 import           Data.Text                                       (pack)
-import           Data.Typeable                                   (Typeable)
 import           GHC.Generics
 
 -- MORPHEUS
@@ -136,7 +135,7 @@ type GQL_RES m a value = (Monad m, Generic a, GQLType a, GQLValue value)
 
 type EncodeOperator m a value = Resolver m a -> ValidOperation -> m (Either GQLErrors value)
 
-type EncodeCon m a v = (Generic a, Typeable a, GResolver OBJECT (Rep a) (ResolveT m v))
+type EncodeCon m a value = (Generic a, GResolver OBJECT (Rep a) (ResolveT m value))
 
 type EncodeMutCon m event con mut = EncodeCon (PublishStream m event con) mut Value
 
@@ -158,6 +157,15 @@ type instance GRes OBJECT v = [(Key, (Key, Selection) -> v)]
 type instance GRes UNION v = (Key, (Key, Selection) -> v)
 
 --- GENERICS ------------------------------------------------
+class ObjectResolvers a value where
+  objectResolvers :: a -> [(Key, (Key, Selection) -> value)]
+
+instance (Generic a, GResolver OBJECT (Rep a) value) => ObjectResolvers a value where
+  objectResolvers = getResolvers (Context :: Context OBJECT value) . from
+
+unionResolver :: (Generic a, GResolver UNION (Rep a) value) => a -> (Key, (Key, Selection) -> value)
+unionResolver = getResolvers (Context :: Context UNION value) . from
+
 -- | Derives resolvers for OBJECT and UNION
 class GResolver (kind :: GQL_KIND) f value where
   getResolvers :: Context kind value -> f a -> GRes kind value
@@ -217,9 +225,3 @@ resolveFields selectionSet resolvers = gqlObject <$> traverse selectResolver sel
         -------------------------------------------------------------
       where
         lookupRes resKey sel = (fromMaybe (const $ return gqlNull) $ lookup resKey resolvers) (key, sel)
-
-objectResolvers :: (Generic a, GResolver OBJECT (Rep a) value) => a -> [(Key, (Key, Selection) -> value)]
-objectResolvers = getResolvers (Context :: Context OBJECT value) . from
-
-unionResolver :: (Generic a, GResolver UNION (Rep a) value) => a -> (Key, (Key, Selection) -> value)
-unionResolver = getResolvers (Context :: Context UNION value) . from
