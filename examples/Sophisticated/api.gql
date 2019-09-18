@@ -40,7 +40,7 @@ type User {
   email: String!
   address(coordinates: Coordinates!, comment: String): Address!
   office(zipCode: [[[ID!]]!], id: CityID!): Address!
-  myUnion: MyUnion!
+  entity: MyUnion!
   home: CityID!
 }
 
@@ -48,11 +48,11 @@ union MyUnion = User | Address
 
 type Query {
   user: User!
-  wrappedA1: AIntText!
-  setAnimal(animal: Animal): String!
-  wrappedA2: AText!
-  integerSet: SetInt!
-  textIntMap: MapTextInt!
+  animal(animal: Animal): String!
+  wrapped1: AIntText!
+  wrapped2: AText!
+  set: SetInt!
+  map: MapTextInt!
 }
 
 type Mutation {

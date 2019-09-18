@@ -29,7 +29,7 @@ import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLSc
                                          IORes, IOSubRes, Resolver, ScalarValue (..), SubResolver (..), constRes,
                                          mutResolver, resolver)
 
-importGQLDocument "examples/Sophisticated/api.gql"
+$(importGQLDocument "examples/Sophisticated/api.gql")
 
 type AIntText = A (Int, Text)
 
@@ -88,11 +88,11 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
       return
         Query
           { queryUser = const $ resolver fetchUser
-          , queryWrappedA1 = constRes $ A (0, "")
-          , querySetAnimal = \args -> return (pack $ show (view animal args))
-          , queryWrappedA2 = constRes $ A ""
-          , queryIntegerSet = constRes $ S.fromList [1, 2]
-          , queryTextIntMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]
+          , queryAnimal = \args -> return (pack $ show (view animal args))
+          , querySet = constRes $ S.fromList [1, 2]
+          , queryMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]
+          , queryWrapped1 = constRes $ A (0, "")
+          , queryWrapped2 = constRes $ A ""
           }
     -------------------------------------------------------------
     mutationResolver = return Mutation {mutationCreateAddress, mutationCreateUser}
@@ -130,7 +130,7 @@ fetchUser =
     , userAddress = const resolveAddress
     , userOffice = resolveOffice
     , userHome = constRes HH
-    , userMyUnion = constRes $ MyUnionUser unionUser
+    , userEntity = constRes $ MyUnionUser unionUser
     }
   where
     unionAddress =
@@ -145,5 +145,5 @@ fetchUser =
         , userAddress = const resolveAddress
         , userOffice = resolveOffice
         , userHome = constRes BLN
-        , userMyUnion = const $ return $ MyUnionAddress unionAddress
+        , userEntity = const $ return $ MyUnionAddress unionAddress
         }
