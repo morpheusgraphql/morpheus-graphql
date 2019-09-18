@@ -18,8 +18,7 @@ module Data.Morpheus.Execution.Server.Introspect
   ( TypeUpdater
   , Introspect(..)
   , ObjectFields(..)
-  , GQLRep(..)
-  , Context(..)
+  , IntroCon
   , resolveTypes
   , updateLib
   , buildType
@@ -47,6 +46,8 @@ import           Data.Morpheus.Types.Internal.Data               (DataArguments,
                                                                   DataTypeWrapper (..), defineType, isTypeDefined,
                                                                   toListField, toNullableField)
 import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
+
+type IntroCon a = (Generic a, GQLRep OBJECT (Rep a))
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class Introspect a where

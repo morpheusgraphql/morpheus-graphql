@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Data.Morpheus.Execution.Server.Resolve
   ( statelessResolver
@@ -22,15 +23,14 @@ import           Data.Attoparsec.ByteString                          (parseOnly)
 import qualified Data.ByteString                                     as S
 import qualified Data.ByteString.Lazy.Char8                          as L
 import           Data.Functor.Identity                               (Identity (..))
-import           GHC.Generics
+import           Data.Proxy                                          (Proxy (..))
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                           (badRequestError, renderErrors)
 import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, EncodeMutCon, EncodeSubCon,
                                                                       encodeOperation, encodeQuery)
-import           Data.Morpheus.Execution.Server.Introspect           (Context (..), GQLRep (..), resolveTypes)
+import           Data.Morpheus.Execution.Server.Introspect           (IntroCon, ObjectFields (..), resolveTypes)
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, publishUpdates)
-import           Data.Morpheus.Kind                                  (OBJECT)
 import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
 import           Data.Morpheus.Schema.SchemaAPI                      (defaultTypes, hiddenRootFields, schemaAPI)
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), OperationKind (..))
@@ -46,8 +46,6 @@ import           Data.Morpheus.Validation.Internal.Utils             (VALIDATION
 import           Data.Morpheus.Validation.Query.Validation           (validateRequest)
 
 type EventCon event = Eq event
-
-type IntroCon a = (Generic a, GQLRep OBJECT (Rep a))
 
 type RootResCon m event cont query mutation subscription
    = ( EventCon event
@@ -130,15 +128,15 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
     querySchema = resolveTypes (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query")) (defaultTypes : types)
       where
-        (fields, types) = unzip $ gqlRep (Context :: Context OBJECT (Rep query))
+        (fields, types) = objectFields (Proxy @query)
     ------------------------------
     mutationSchema lib = resolveTypes (lib {mutation = maybeOperator fields "Mutation"}) types
       where
-        (fields, types) = unzip $ gqlRep (Context :: Context OBJECT (Rep mutation))
+        (fields, types) = objectFields (Proxy @mutation)
     ------------------------------
     subscriptionSchema lib = resolveTypes (lib {subscription = maybeOperator fields "Subscription"}) types
       where
-        (fields, types) = unzip $ gqlRep (Context :: Context OBJECT (Rep subscription))
+        (fields, types) = objectFields (Proxy @subscription)
      -- maybeOperator :: [a] -> Text -> Maybe (Text, DataType [a])
     maybeOperator []     = const Nothing
     maybeOperator fields = Just . operatorType fields

@@ -18,6 +18,7 @@ module Data.Morpheus.Execution.Server.Encode
   , EncodeSubCon
   , encodeQuery
   , encodeOperation
+  , ObjectResolvers(..)
   ) where
 
 import           Control.Monad                                   ((>=>))
