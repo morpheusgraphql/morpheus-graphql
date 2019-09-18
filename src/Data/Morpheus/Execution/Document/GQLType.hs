@@ -16,28 +16,26 @@ import           Data.Morpheus.Kind                 (ENUM, INPUT_OBJECT, INPUT_U
 import           Data.Morpheus.Types.GQLType        (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data  (DataTypeKind (..))
 import           Data.Morpheus.Types.Internal.DataD (GQLTypeD (..), KindD (..), TypeD (..), unKindD)
-import           Data.Morpheus.Types.Internal.TH    (applyT, headT)
+import           Data.Morpheus.Types.Internal.TH    (instanceHeadT, typeT)
 import           Data.Typeable                      (Typeable)
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
-deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} =
-  pure <$> instanceD (cxt constrains) (applyT ''GQLType [headSig]) [methods]
+deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} = pure <$> instanceD (cxt constrains) iHead [methods]
   where
     gqlKind = unKindD typeKindD
-    withVar = gqlKind == KindObject || gqlKind == KindUnion
-    isSubscription = typeKindD == SubscriptionD
-    headVars
-      | isSubscription = ["subscriptionM", "m"]
-      | withVar = ["m"]
+    ---------------------------
+    typeArgs
+      | typeKindD == SubscriptionD = ["subscriptionM", "m"]
+      | gqlKind == KindObject || gqlKind == KindUnion = ["m"]
       | otherwise = []
-    headSig = headT (mkName tName) headVars
-    ----------
-    constrains
-      | isSubscription = map consTypeable ["subscriptionM", "m"]
-      | withVar = [consTypeable "m"]
-      | otherwise = []
-    consTypeable = appT (conT ''Typeable) . (varT . mkName)
-    ----
+    ----------------------------------------------
+    iHead = instanceHeadT ''GQLType tName typeArgs
+    headSig = typeT (mkName tName) typeArgs
+    -----------------------------------------------
+    constrains = map conTypeable typeArgs
+      where
+        conTypeable name = typeT ''Typeable [name]
+    ---------------------------------------------
     methods = do
       typeN <- headSig
       pure $ TySynInstD ''KIND (TySynEqn [typeN] (ConT $ toKIND gqlKind))

@@ -21,5 +21,11 @@ apply n = foldl appE (conE n)
 applyT :: Name -> [Q Type] -> Q Type
 applyT name = foldl appT (conT name)
 
-headT :: Name -> [String] -> Q Type
-headT name li = applyT name (map (conT . mkName) li)
+typeT :: Name -> [String] -> Q Type
+typeT name li = applyT name (map (varT . mkName) li)
+
+instanceHeadT :: Name -> String -> [String] -> Q Type
+instanceHeadT cName iType tArgs = applyT cName [applyT (mkName iType) (map (varT . mkName) tArgs)]
+--
+-- instanceHeadMultiT :: Name -> Q Type -> [String] -> Q Type
+-- instanceHeadMultiT className iType li = applyT className (iType : map (varT . mkName) li)
