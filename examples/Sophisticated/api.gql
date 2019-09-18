@@ -26,7 +26,7 @@ input Coordinates {
 }
 
 input UniqueID {
-  uid: String!
+  id: String!
 }
 
 type Address {
@@ -39,7 +39,7 @@ type User {
   name: String!
   email: String!
   address(coordinates: Coordinates!, comment: String): Address!
-  office(zipCode: [[[ID!]]!], cityID: CityID!): Address!
+  office(zipCode: [[[ID!]]!], id: CityID!): Address!
   myUnion: MyUnion!
   home: CityID!
 }
