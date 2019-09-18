@@ -109,7 +109,7 @@ instance (GQLScalar a, GQLValue value) => EncodeKind SCALAR a value where
   encodeKind = pure . gqlScalar . serialize . unResKind
 
 -- ENUM
-instance (EnumConstraint a, GQLValue value) => EncodeKind ENUM a value where
+instance (Generic a, EnumRep (Rep a), GQLValue value) => EncodeKind ENUM a value where
   encodeKind = pure . gqlString . encodeRep . from . unResKind
 
 --  OBJECT
@@ -141,8 +141,6 @@ type EncodeCon m a v = (Generic a, Typeable a, GResolver OBJECT (Rep a) (Resolve
 type EncodeMutCon m event con mut = EncodeCon (PublishStream m event con) mut Value
 
 type EncodeSubCon m event con sub = EncodeCon (SubscribeStream m event) sub (Event event con -> ResolveT m Value)
-
-type EnumConstraint a = (Generic a, EnumRep (Rep a))
 
 type FieldRes m value = (Key, (Key, Selection) -> ResolveT m value)
 
