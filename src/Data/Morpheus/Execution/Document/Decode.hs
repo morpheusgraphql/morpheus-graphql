@@ -17,7 +17,7 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Execution.Internal.Decode (decodeFieldWith, decodeObjectExpQ)
 import           Data.Morpheus.Execution.Server.Decode   (Decode (..), DecodeObject (..))
 import           Data.Morpheus.Types.Internal.DataD      (TypeD (..))
-import           Data.Morpheus.Types.Internal.TH         (instanceHeadT)
+import           Data.Morpheus.Types.Internal.TH         (headT)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Object)
 
@@ -27,7 +27,7 @@ object .: selectorName = decodeFieldWith decode selectorName object
 deriveDecode :: TypeD -> Q [Dec]
 deriveDecode TypeD {tName, tCons = [cons]} = pure <$> instanceD (cxt []) appHead methods
   where
-    appHead = instanceHeadT ''DecodeObject [tName]
+    appHead = headT ''DecodeObject [tName]
     methods = [funD 'decodeObject [clause argsE (normalB body) []]]
       where
         argsE = map (varP . mkName) ["o"]
