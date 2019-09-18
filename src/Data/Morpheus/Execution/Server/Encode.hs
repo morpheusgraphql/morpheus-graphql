@@ -36,7 +36,8 @@ import           Data.Morpheus.Error.Internal                    (internalErrorT
 import           Data.Morpheus.Error.Selection                   (resolverError, subfieldsNotSelected)
 import           Data.Morpheus.Execution.Server.Decode           (DecodeObject, decodeArguments)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
-import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, OBJECT, SCALAR, UNION)
+import           Data.Morpheus.Kind                              (Context (..), ENUM, GQL_KIND, OBJECT, SCALAR, UNION,
+                                                                  VContext (..))
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (KIND, __typeName))
@@ -53,7 +54,7 @@ class Encode resolver value where
   encode :: resolver -> (Key, Selection) -> value
 
 instance {-# OVERLAPPABLE #-} EncodeKind (KIND a) a res => Encode a res where
-  encode resolver = encodeKind (ResKind resolver :: ResKind (KIND a) a)
+  encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
 
 -- MAYBE
 instance (GQLValue value, Encode a value) => Encode (Maybe a) value where
@@ -101,20 +102,20 @@ instance (DecodeObject a, Monad m, Encode b (ResolveT m Value)) =>
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a value where
-  encodeKind :: ResKind kind a -> (Key, Selection) -> value
+  encodeKind :: VContext kind a -> (Key, Selection) -> value
 
 -- SCALAR
 instance (GQLScalar a, GQLValue value) => EncodeKind SCALAR a value where
-  encodeKind = pure . gqlScalar . serialize . unResKind
+  encodeKind = pure . gqlScalar . serialize . unVContext
 
 -- ENUM
 instance (Generic a, EnumRep (Rep a), GQLValue value) => EncodeKind ENUM a value where
-  encodeKind = pure . gqlString . encodeRep . from . unResKind
+  encodeKind = pure . gqlString . encodeRep . from . unVContext
 
 --  OBJECT
 instance (GQL_RES m a value, GResolver OBJECT (Rep a) (ResolveT m value)) =>
          EncodeKind OBJECT a (ResolveT m value) where
-  encodeKind (ResKind value) (_, Selection {selectionRec = SelectionSet selection}) =
+  encodeKind (VContext value) (_, Selection {selectionRec = SelectionSet selection}) =
     resolveFields selection (__typenameResolver : objectResolvers value)
     where
       __typenameResolver = ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))
@@ -122,7 +123,7 @@ instance (GQL_RES m a value, GResolver OBJECT (Rep a) (ResolveT m value)) =>
 
 -- UNION
 instance (GQL_RES m a value, GResolver UNION (Rep a) (ResolveT m value)) => EncodeKind UNION a (ResolveT m value) where
-  encodeKind (ResKind value) (key, sel@Selection {selectionRec = UnionSelection selections}) =
+  encodeKind (VContext value) (key, sel@Selection {selectionRec = UnionSelection selections}) =
     resolver (key, sel {selectionRec = SelectionSet lookupSelection})
       -- SPEC: if there is no any fragment that supports current object Type GQL returns {}
     where
@@ -142,13 +143,6 @@ type EncodeMutCon m event con mut = EncodeCon (PublishStream m event con) mut Va
 type EncodeSubCon m event con sub = EncodeCon (SubscribeStream m event) sub (Event event con -> ResolveT m Value)
 
 type FieldRes m value = (Key, (Key, Selection) -> ResolveT m value)
-
-newtype ResKind (kind :: GQL_KIND) a = ResKind
-  { unResKind :: a
-  }
-
-data Context (kind :: GQL_KIND) value =
-  Context
 
 type family GRes (kind :: GQL_KIND) value :: *
 

@@ -14,6 +14,7 @@ module Data.Morpheus.Kind
   , INPUT_UNION
   , GQL_KIND
   , Context(..)
+  , VContext(..)
   ) where
 
 data GQL_KIND
@@ -31,6 +32,10 @@ data GQL_KIND
 -- * 'a': actual gql type
 data Context (kind :: GQL_KIND) a =
   Context
+
+newtype VContext (kind :: GQL_KIND) a = VContext
+  { unVContext :: a
+  }
 
 -- | GraphQL Scalar: Int, Float, String, Boolean or any user defined custom Scalar type
 type SCALAR = 'SCALAR
