@@ -15,14 +15,15 @@ module Data.Morpheus.Execution.Client.Aeson
 
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.HashMap.Lazy                   as H (lookup)
-import           Data.Semigroup                      ((<>))
-import           Data.Text                           (unpack)
+import qualified Data.HashMap.Lazy                  as H (lookup)
+import           Data.Semigroup                     ((<>))
+import           Data.Text                          (unpack)
 import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import Data.Morpheus.Types.Internal.DataD (AppD (..), ConsD (..), FieldD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.DataD (AppD (..), ConsD (..), FieldD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.TH    (instanceFunD, instanceHeadT)
 
 deriveFromJSON :: TypeD -> Q Dec
 deriveFromJSON TypeD {tCons = []} = fail "Type Should Have at least one Constructor"
@@ -70,11 +71,11 @@ takeValueType f (Object hMap) =
 takeValueType _ _ = fail $ "expected Object"
 
 defineFromJSON :: String -> (t -> ExpQ) -> t -> DecQ
-defineFromJSON tName func inp =
-  instanceD (cxt []) (appT (conT ''FromJSON) (conT $ mkName tName)) [parseJSONExp func inp]
+defineFromJSON tName parseJ cFields = instanceD (cxt []) iHead [method]
   where
-    parseJSONExp :: (t -> ExpQ) -> t -> DecQ
-    parseJSONExp parseJ cFields = funD 'parseJSON [clause [] (normalB $ parseJ cFields) []]
+    iHead = instanceHeadT ''FromJSON tName []
+    -----------------------------------------
+    method = instanceFunD 'parseJSON [] (parseJ cFields)
 
 isEnum :: [ConsD] -> Bool
 isEnum = not . isEmpty . filter (isEmpty . cFields)
