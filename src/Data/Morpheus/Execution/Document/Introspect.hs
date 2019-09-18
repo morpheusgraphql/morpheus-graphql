@@ -18,37 +18,28 @@ import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), Obj
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName))
 import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataFullType (..), DataTypeWrapper (..))
 import           Data.Morpheus.Types.Internal.DataD        (AppD (..), ConsD (..), FieldD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceHeadT)
 
 -- [((Text, DataField), TypeUpdater)]
 deriveArguments :: TypeD -> Q [Dec]
 deriveArguments TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (cxt []) appHead methods
   where
-    appHead = appT classT typeT
+    appHead = instanceHeadT ''ObjectFields tName []
+    methods = [instanceFunD 'objectFields ["_"] body]
       where
-        classT = conT ''ObjectFields
-        typeT = conT $ mkName tName
-    methods = [funD 'objectFields [clause argsE (normalB body) []]]
-      where
-        argsE = [varP (mkName "_")]
-        body = [|($(fields), $(types))|]
-        types = buildTypes cFields
-        fields = buildFields cFields
+        body = [|($(buildFields cFields), $(buildTypes cFields))|]
 deriveArguments _ = pure []
 
 deriveIntrospect :: TypeD -> Q [Dec]
 deriveIntrospect TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (cxt []) appHead methods
   where
-    typeName = conT $ mkName tName
-    appHead = appT classT typeT
+    appHead = instanceHeadT ''Introspect tName []
+    methods = [instanceFunD 'introspect ["_"] body]
       where
-        classT = conT ''Introspect
-        typeT = conT $ mkName tName
-    methods = [funD 'introspect [clause argsE (normalB body) []]]
-      where
-        argsE = [varP (mkName "_")]
         body = [|updateLib $(typeBuilder) $(types) (Proxy :: (Proxy $(typeName)))|]
-        types = buildTypes cFields
         typeBuilder = [|InputObject . buildType $(buildFields cFields)|]
+        types = buildTypes cFields
+        typeName = conT $ mkName tName
 deriveIntrospect _ = pure []
 
 buildTypes :: [FieldD] -> ExpQ
