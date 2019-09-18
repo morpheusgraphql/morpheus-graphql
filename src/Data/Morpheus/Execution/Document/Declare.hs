@@ -18,29 +18,37 @@ import           Data.Morpheus.Execution.Document.Decode     (deriveDecode)
 import           Data.Morpheus.Execution.Document.GQLType    (deriveGQLType)
 import           Data.Morpheus.Execution.Document.Introspect (deriveObjectRep)
 import           Data.Morpheus.Execution.Internal.Declare    (declareResolverType, declareType)
-import           Data.Morpheus.Types.Internal.DataD          (GQLTypeD (..), isInputKind)
+import           Data.Morpheus.Types.Internal.DataD          (GQLTypeD (..), isInput, isObject)
 
 declareTypes :: [GQLTypeD] -> Q [Dec]
 declareTypes = fmap concat . traverse declareGQLType
 
 declareGQLType :: GQLTypeD -> Q [Dec]
 declareGQLType gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
-  types <- declareGQL
-  argTypes <- declareLenses $ pure (map (declareType []) typeArgD)
-  introspectArgs <- concat <$> traverse deriveObjectRep typeArgD
-  decodeArgs <- concat <$> traverse deriveDecode typeArgD
-  introspection <- deriveGQLInstances
+  mainType <- declareMainType
+  argTypes <- declareArgTypes
+  gqlInstances <- deriveGQLInstances
   typeClasses <- deriveGQLType gqlType
-  pure $ types <> typeClasses <> argTypes <> introspection <> introspectArgs <> decodeArgs
+  pure $ mainType <> typeClasses <> argTypes <> gqlInstances
   where
-    deriveGQLInstances
-      | isInputKind typeKindD = concat <$> traverse (typeD &) [deriveObjectRep, deriveDecode]
-      | otherwise = pure []
-    declareGQL
-      | isInputKind typeKindD = declareLenses declareT
+    deriveGQLInstances = concat <$> traverse (typeD &) gqlInstances
+      where
+        gqlInstances
+          | isObject typeKindD && isInput typeKindD = [deriveObjectRep, deriveDecode]
+          -- | isObject typeKindD = [deriveObjectRep]
+          | otherwise = []
+    --------------------------------------------------
+    declareArgTypes = do
+      introspectArgs <- concat <$> traverse deriveObjectRep typeArgD
+      decodeArgs <- concat <$> traverse deriveDecode typeArgD
+      lenses <- declareLenses (pure (map (declareType []) typeArgD))
+      return $ decodeArgs <> introspectArgs <> lenses
+    --------------------------------------------------
+    declareMainType
+      | isInput typeKindD = declareLenses declareT
       | otherwise = declareT
       where
         declareT = pure [declareResolverType typeKindD derivingClasses typeD]
         derivingClasses
-          | isInputKind typeKindD = [''Show]
+          | isInput typeKindD = [''Show]
           | otherwise = []
