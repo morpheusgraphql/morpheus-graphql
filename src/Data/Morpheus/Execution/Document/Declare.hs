@@ -17,7 +17,7 @@ import           Data.Morpheus.Execution.Document.Decode     (deriveDecode)
 -- MORPHEUS
 import           Data.Morpheus.Execution.Document.GQLType    (deriveGQLType)
 import           Data.Morpheus.Execution.Document.Introspect (deriveObjectRep)
-import           Data.Morpheus.Execution.Internal.Declare    (declareResolverType, declareType)
+import           Data.Morpheus.Execution.Internal.Declare    (declareGQLT)
 import           Data.Morpheus.Types.Internal.DataD          (GQLTypeD (..), isInput, isObject)
 
 declareTypes :: [GQLTypeD] -> Q [Dec]
@@ -41,14 +41,14 @@ declareGQLType gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
     declareArgTypes = do
       introspectArgs <- concat <$> traverse deriveObjectRep typeArgD
       decodeArgs <- concat <$> traverse deriveDecode typeArgD
-      lenses <- declareLenses (pure (map (declareType []) typeArgD))
+      lenses <- declareLenses (pure (map (declareGQLT False Nothing []) typeArgD))
       return $ decodeArgs <> introspectArgs <> lenses
     --------------------------------------------------
     declareMainType
       | isInput typeKindD = declareLenses declareT
       | otherwise = declareT
       where
-        declareT = pure [declareResolverType typeKindD derivingClasses typeD]
+        declareT = pure [declareGQLT True (Just typeKindD) derivingClasses typeD]
         derivingClasses
           | isInput typeKindD = [''Show]
           | otherwise = []

@@ -1,15 +1,15 @@
 # for Input Union
 
 input Cat {
-  catName: String!
+  name: String!
 }
 
 input Dog {
-  dogName: String!
+  name: String!
 }
 
 input Bird {
-  birdName: String!
+  name: String!
 }
 
 # Main APi

@@ -20,17 +20,14 @@ import           Data.Morpheus.Client           (Fetch (..), defineByDocumentFil
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
 import           Data.Morpheus.Types            (ScalarValue (..))
-import           Sophisticated.API                 (Channel, Content, gqlRoot)
 import           Mythology.API                  (mythologyApi)
 import qualified Network.Wai                    as Wai
 import qualified Network.Wai.Handler.Warp       as Warp
 import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
+import           Sophisticated.API              (Channel, Content, gqlRoot)
 import           TH.API                         (thApi)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
-
-
-
 
 ioRes :: ByteString -> IO ByteString
 ioRes req = do
@@ -86,11 +83,12 @@ fetUser state = fetch (interpreter gqlRoot state) userArgs
     userArgs = GetUserArgs {userCoordinates = Coordinates {longitude = [], latitude = String "1"}}
 
 main :: IO ()
-main = do
-  fetchHero >>= print
+main
+  --fetchHero >>= print
+ = do
   state <- initGQLState
   httpApp <- httpServer state
-  fetUser state >>= print
+  -- fetUser state >>= print
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
   where
     settings = Warp.setPort 3000 Warp.defaultSettings

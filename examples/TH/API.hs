@@ -1,10 +1,10 @@
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE NamedFieldPuns     #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE TemplateHaskell    #-}
-{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module TH.API
   ( thApi
@@ -20,7 +20,7 @@ import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocument)
 import           Data.Morpheus.Kind         (SCALAR)
 import           Data.Morpheus.Types        (GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, IORes,
-                                             ScalarValue (..))
+                                             ScalarValue (..), constRes)
 
 importGQLDocument "./examples/TH/api.gql"
 
@@ -39,23 +39,28 @@ gqlRoot :: GQLRootResolver IO () () (Query IORes) () ()
 gqlRoot = GQLRootResolver {queryResolver, mutationResolver = return (), subscriptionResolver = return ()}
   where
     queryResolver :: IORes (Query IORes)
-    queryResolver = return Query {user}
+    queryResolver = return Query {queryUser}
       where
-        user :: () -> IORes (User IORes)
-        user _ =
+        queryUser :: () -> IORes (User IORes)
+        queryUser _ =
           return
             User
-              { name = const $ pure "David"
-              , email = const $ pure "David@email.com"
-              , address
-              , home = const $ pure HH
-              , myUnion = const $ pure $ MyUnionAddress $ simpleAddress "boo"
+              { userName = constRes "David"
+              , userEmail = constRes "David@email.com"
+              , userAddress
+              , userHome = constRes HH
+              , userMyUnion = constRes $ MyUnionAddress $ simpleAddress "boo"
               }
-        address :: AddressArgs -> IORes (Address IORes)
-        address args = return $ simpleAddress (view (zipCode . uid) args)
+        userAddress :: AddressArgs -> IORes (Address IORes)
+        userAddress args = return $ simpleAddress ""
+        --(view (zipCode . uid) args)
         --------------------------------
         simpleAddress streetID =
-          Address {city = const $ pure "Hamburg", street = const $ pure streetID, houseNumber = const $ pure 20}
+          Address
+            { addressCity = const $ pure "Hamburg"
+            , addressStreet = const $ pure streetID
+            , addressHouseNumber = const $ pure 20
+            }
 
 thApi :: B.ByteString -> IO B.ByteString
 thApi = interpreter gqlRoot

@@ -87,61 +87,63 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
     queryResolver =
       return
         Query
-          { user = const $ resolver fetchUser
-          , wrappedA1 = constRes $ A (0, "")
-          , setAnimal = \args -> return (pack $ show (view animal args))
-          , wrappedA2 = constRes $ A ""
-          , integerSet = constRes $ S.fromList [1, 2]
-          , textIntMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]
+          { queryUser = const $ resolver fetchUser
+          , queryWrappedA1 = constRes $ A (0, "")
+          , querySetAnimal = \args -> return (pack $ show (view animal args))
+          , queryWrappedA2 = constRes $ A ""
+          , queryIntegerSet = constRes $ S.fromList [1, 2]
+          , queryTextIntMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]
           }
     -------------------------------------------------------------
-    mutationResolver = return Mutation {createAddress, createUser}
+    mutationResolver = return Mutation {mutationCreateAddress, mutationCreateUser}
       where
-        createUser _ =
+        mutationCreateUser _ =
           mutResolver
             [Event [UPDATE_USER] (Update {contentID = 12, contentMessage = "some message for user"})]
             fetchUser
-        createAddress :: () -> MutRes (Address MutRes)
-        createAddress _ =
+        --mutationCreateAddress :: () -> MutRes (Address MutRes)
+        mutationCreateAddress _ =
           mutResolver
             [Event [UPDATE_ADDRESS] (Update {contentID = 10, contentMessage = "message for address"})]
             (fetchAddress (Euro 1 0))
     ----------------------------------------------------------------
-    subscriptionResolver = return Subscription {newAddress, newUser}
+    subscriptionResolver = return Subscription {subscriptionNewAddress, subscriptionNewUser}
       where
-        newUser () = SubResolver {subChannels = [UPDATE_USER], subResolver}
+        subscriptionNewUser () = SubResolver {subChannels = [UPDATE_USER], subResolver}
           where
             subResolver (Event _ Update {}) = resolver fetchUser
-        newAddress () = SubResolver {subChannels = [UPDATE_ADDRESS], subResolver}
+        subscriptionNewAddress () = SubResolver {subChannels = [UPDATE_ADDRESS], subResolver}
           where
             subResolver (Event _ Update {contentID}) = resolver $ fetchAddress (Euro contentID 0)
 
 fetchAddress :: Monad m => Euro -> m (Either String (Address (Resolver m)))
-fetchAddress _ = return $ Right Address {city = constRes "", street = constRes "", houseNumber = constRes 0}
+fetchAddress _ =
+  return $ Right Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
 
 fetchUser :: Monad m => m (Either String (User (Resolver m)))
 fetchUser =
   return $
   Right $
   User
-    { name = constRes "George"
-    , email = constRes "George@email.com"
-    , address = const resolveAddress
-    , office = resolveOffice
-    , home = constRes HH
-    , myUnion = constRes $ MyUnionUser unionUser
+    { userName = constRes "George"
+    , userEmail = constRes "George@email.com"
+    , userAddress = const resolveAddress
+    , userOffice = resolveOffice
+    , userHome = constRes HH
+    , userMyUnion = constRes $ MyUnionUser unionUser
     }
   where
-    unionAddress = Address {city = constRes "Hamburg", street = constRes "Street", houseNumber = constRes 20}
+    unionAddress =
+      Address {addressCity = constRes "Hamburg", addressStreet = constRes "Street", addressHouseNumber = constRes 20}
   -- Office
     resolveOffice _officeArgs = resolver $ fetchAddress (Euro 1 1)
     resolveAddress = resolver $ fetchAddress (Euro 1 0)
     unionUser =
       User
-        { name = constRes "David"
-        , email = constRes "David@email.com"
-        , address = const resolveAddress
-        , office = resolveOffice
-        , home = constRes BLN
-        , myUnion = const $ return $ MyUnionAddress unionAddress
+        { userName = constRes "David"
+        , userEmail = constRes "David@email.com"
+        , userAddress = const resolveAddress
+        , userOffice = resolveOffice
+        , userHome = constRes BLN
+        , userMyUnion = const $ return $ MyUnionAddress unionAddress
         }

@@ -9,7 +9,7 @@
 
 module Data.Morpheus.Execution.Internal.Declare
   ( declareType
-  , declareResolverType
+  , declareGQLT
   ) where
 
 import           GHC.Generics                           (Generic)
@@ -24,14 +24,11 @@ import           Data.Morpheus.Types.Internal.DataD     (AppD (..), ConsD (..), 
 type FUNC = (->)
 
 declareType :: [Name] -> TypeD -> Dec
-declareType = __declareType False Nothing
-
-declareResolverType :: KindD -> [Name] -> TypeD -> Dec
-declareResolverType x = __declareType False (Just x)
+declareType = declareGQLT False Nothing
 
 -- declareType
-__declareType :: Bool -> Maybe KindD -> [Name] -> TypeD -> Dec
-__declareType namespace kindD derivingList TypeD {tName, tCons} =
+declareGQLT :: Bool -> Maybe KindD -> [Name] -> TypeD -> Dec
+declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
   DataD [] (mkName tName) tVars Nothing (map cons tCons) $ map derive (''Generic : derivingList)
   where
     gqlKind = unKindD <$> kindD

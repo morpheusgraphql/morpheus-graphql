@@ -21,12 +21,12 @@ importGQLDocument "examples/TH/simple.gql"
 
 rootResolver :: GQLRootResolver IO () () (Query IORes) () ()
 rootResolver =
-  GQLRootResolver {queryResolver = return Query {deity}, mutationResolver = pure (), subscriptionResolver = pure ()}
+  GQLRootResolver {queryResolver = return Query { queryDeity }, mutationResolver = pure (), subscriptionResolver = pure ()}
   where
-    deity _deityArgs = pure Deity {name, power}
+    queryDeity _deityArgs = pure Deity {deityName, deityPower}
       where
-        name _ = pure "Morpheus"
-        power _ = pure (Just "Shapeshifting")
+        deityName _ = pure "Morpheus"
+        deityPower _ = pure (Just "Shapeshifting")
 
 mythologyApi :: B.ByteString -> IO B.ByteString
 mythologyApi = interpreter rootResolver
