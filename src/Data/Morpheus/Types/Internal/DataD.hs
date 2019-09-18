@@ -25,7 +25,7 @@ data ResolverKind
   = PlainResolver
   | TypeVarResolver
   | ExternalResolver
-  deriving (Show, Lift)
+  deriving (Show, Eq, Lift)
 
 data AppD a
   = ListD (AppD a)

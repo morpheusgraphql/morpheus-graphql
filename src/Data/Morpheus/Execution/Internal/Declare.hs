@@ -59,20 +59,22 @@ declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
                 monadVar = VarT $ mkName "m"
                 subscriptionVar = VarT $ mkName "subscriptionM"
                 ---------------------------
-                genFieldT Nothing = fType False
-                genFieldT (Just (argsTypeName, resKind)) = AppT (AppT arrowType argType) (fType True)
+                genFieldT Nothing = fType False False
+                genFieldT (Just (argsTypeName, resKind)) = AppT (AppT arrowType argType) (fType True hasTyVars)
                   where
                     argType = ConT $ mkName argsTypeName
                     arrowType = ConT ''FUNC
+                    hasTyVars
+                      | TypeVarResolver == resKind = True
+                      | otherwise = False
                 ------------------------------------------------
-                fType isResolver
-                  | isSubscription = AppT subscriptionVar resultType
-                  | isResolver = AppT monadVar resultType
-                  | otherwise = resultType
-                    -- monadType TypeVarResolver = AppT monadVar (genFieldT True td)
+                fType isResolver hasTyVars
+                  | isSubscription = AppT subscriptionVar (resultType hasTyVars)
+                  | isResolver = AppT monadVar (resultType hasTyVars)
+                  | otherwise = resultType hasTyVars
                 ------------------------------------------------
-                resultType = wrappedT parameter fieldTypeD
+                resultType hasTypVars = wrappedT parameter fieldTypeD
                   where
                     parameter
-                      | gqlKind == Just KindUnion || gqlKind == Just KindObject || isSubscription = Just monadVar
+                      | gqlKind == Just KindUnion || hasTypVars = Just monadVar
                       | otherwise = Nothing
