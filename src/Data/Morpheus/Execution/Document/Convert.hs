@@ -45,16 +45,17 @@ renderTHTypes lib = traverse renderTHType lib
         genFieldTypeName name     = unpack name
         ---------------------------------------------------------------------------------------------
         genField :: (Text, DataField) -> FieldD
-        genField (key, DataField {fieldType, fieldTypeWrappers}) = FieldD (unpack key) fType
+        genField (key, DataField {fieldType, fieldTypeWrappers}) =
+          FieldD {fieldNameD = unpack key, fieldTypeD, fieldArgsD = Nothing}
           where
-            fType = gqlToHSWrappers fieldTypeWrappers (genFieldTypeName fieldType)
+            fieldTypeD = gqlToHSWrappers fieldTypeWrappers (genFieldTypeName fieldType)
         ---------------------------------------------------------------------------------------------
         genResField :: (Text, DataOutputField) -> FieldD
-        genResField (key, DataField {fieldName, fieldArgs, fieldType, fieldTypeWrappers}) = FieldD (unpack key) fType
+        genResField (key, DataField {fieldName, fieldArgs, fieldType, fieldTypeWrappers}) =
+          FieldD {fieldNameD = unpack key, fieldTypeD, fieldArgsD}
           where
-            fType =
-              ResD (argsTName fieldArgs) (getFieldType $ pack $ genFieldTypeName fieldType) $
-              gqlToHSWrappers fieldTypeWrappers (genFieldTypeName fieldType)
+            fieldArgsD = Just (argsTName fieldArgs, getFieldType $ pack $ genFieldTypeName fieldType)
+            fieldTypeD = gqlToHSWrappers fieldTypeWrappers (genFieldTypeName fieldType)
             argsTName [] = "()"
             argsTName _  = argsTypeName fieldName
         --------------------------------------------
@@ -101,7 +102,10 @@ renderTHTypes lib = traverse renderTHType lib
             GQLTypeD {typeD = TypeD {tName = unpack typeName, tCons}, typeKindD = RegularKindD KindUnion, typeArgD = []}
           where
             unionCon DataField {fieldType} =
-              ConsD {cName, cFields = [FieldD {fieldNameD = "un" <> cName, fieldTypeD = BaseD utName}]}
+              ConsD
+                { cName
+                , cFields = [FieldD {fieldNameD = "un" <> cName, fieldArgsD = Nothing, fieldTypeD = BaseD utName}]
+                }
               where
                 cName = unpack typeName <> utName
                 utName = unpack fieldType

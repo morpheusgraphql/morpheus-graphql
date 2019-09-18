@@ -64,7 +64,7 @@ operationTypes lib variables = genOperation
             toFieldD :: (Text, DataField) -> Validation FieldD
             toFieldD (key, DataField {fieldType, fieldTypeWrappers}) = do
               fType <- typeFrom <$> getType lib fieldType
-              pure $ FieldD (unpack key) (wrType fType)
+              pure $ FieldD {fieldNameD = unpack key, fieldTypeD = wrType fType, fieldArgsD = Nothing}
               where
                 wrType fieldT = gqlToHSWrappers fieldTypeWrappers (unpack fieldT)
         subTypes (Leaf x) = buildLeaf x
@@ -79,9 +79,10 @@ operationTypes lib variables = genOperation
         typeD = TypeD {tName = unpack name, tCons = [ConsD {cName = unpack name, cFields = map fieldD variables}]}
         ---------------------------------------
         fieldD :: (Text, Variable ()) -> FieldD
-        fieldD (key, Variable {variableType, variableTypeWrappers}) = FieldD (unpack key) wrType
+        fieldD (key, Variable {variableType, variableTypeWrappers}) =
+          FieldD {fieldNameD = unpack key, fieldArgsD = Nothing, fieldTypeD}
           where
-            wrType = gqlToHSWrappers variableTypeWrappers (unpack variableType)
+            fieldTypeD = gqlToHSWrappers variableTypeWrappers (unpack variableType)
     -------------------------------------------
     getCon name dataType selectionSet = do
       cFields <- genFields dataType selectionSet
@@ -93,8 +94,8 @@ operationTypes lib variables = genOperation
           where
             typeNameFromField :: (Text, Selection) -> Validation FieldD
             typeNameFromField (key, Selection {selectionRec = SelectionAlias {aliasFieldName}}) =
-              FieldD (unpack key) <$> lookupFieldType aliasFieldName
-            typeNameFromField (key, _) = FieldD (unpack key) <$> lookupFieldType key
+              FieldD (unpack key) Nothing <$> lookupFieldType aliasFieldName
+            typeNameFromField (key, _) = FieldD (unpack key) Nothing <$> lookupFieldType key
             ------------------------------------------------------------
             lookupFieldType key = do
               (newType, wrappers) <- fieldDataType datatype key

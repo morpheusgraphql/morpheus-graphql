@@ -26,6 +26,12 @@ type FUNC = (->)
 declareType :: [Name] -> TypeD -> Dec
 declareType = declareGQLT False Nothing
 
+wrappedT :: Maybe Type -> AppD String -> Type
+wrappedT par (ListD td)          = AppT (ConT ''[]) (wrappedT par td)
+wrappedT par (MaybeD td)         = AppT (ConT ''Maybe) (wrappedT par td)
+wrappedT (Just par) (BaseD name) = AppT (ConT (mkName name)) par
+wrappedT Nothing (BaseD name)    = ConT (mkName name)
+
 -- declareType
 declareGQLT :: Bool -> Maybe KindD -> [Name] -> TypeD -> Dec
 declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
@@ -43,27 +49,30 @@ declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
     derive className = DerivClause Nothing [ConT className]
     cons ConsD {cName, cFields} = RecC (mkName cName) (map declareField cFields)
       where
-        declareField FieldD {fieldNameD, fieldTypeD} = (fieldName, defBang, fieldType)
+        declareField FieldD {fieldNameD, fieldArgsD, fieldTypeD} = (fieldName, defBang, fieldType)
           where
             fieldName
               | namespace = mkName (nameSpaceWith tName fieldNameD)
               | otherwise = mkName fieldNameD
-            fieldType = genFieldT False fieldTypeD
+            fieldType = genFieldT fieldArgsD
               where
                 monadVar = VarT $ mkName "m"
                 subscriptionVar = VarT $ mkName "subscriptionM"
                 ---------------------------
-                genFieldT resM (ListD td) = AppT (ConT ''[]) (genFieldT resM td)
-                genFieldT resM (MaybeD td) = AppT (ConT ''Maybe) (genFieldT resM td)
-                genFieldT True (BaseD name) = AppT (ConT (mkName name)) monadVar
-                genFieldT False (BaseD name)
-                  | gqlKind == Just KindUnion = AppT (ConT (mkName name)) monadVar
-                genFieldT False (BaseD name) = ConT (mkName name)
-                genFieldT _ (ResD arg resKind td) = AppT (AppT arrowType argType) (resultType resKind)
+                genFieldT Nothing = fType False
+                genFieldT (Just (argsTypeName, resKind)) = AppT (AppT arrowType argType) (fType True)
                   where
-                    argType = ConT $ mkName arg
+                    argType = ConT $ mkName argsTypeName
                     arrowType = ConT ''FUNC
-                    resultType _
-                      | isSubscription = AppT subscriptionVar (genFieldT True td)
-                    resultType TypeVarResolver = AppT monadVar (genFieldT True td)
-                    resultType _ = AppT monadVar (genFieldT False td)
+                ------------------------------------------------
+                fType isResolver
+                  | isSubscription = AppT subscriptionVar resultType
+                  | isResolver = AppT monadVar resultType
+                  | otherwise = resultType
+                    -- monadType TypeVarResolver = AppT monadVar (genFieldT True td)
+                ------------------------------------------------
+                resultType = wrappedT parameter fieldTypeD
+                  where
+                    parameter
+                      | gqlKind == Just KindUnion || gqlKind == Just KindObject || isSubscription = Just monadVar
+                      | otherwise = Nothing

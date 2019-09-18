@@ -30,9 +30,6 @@ data ResolverKind
 data AppD a
   = ListD (AppD a)
   | MaybeD (AppD a)
-  | ResD String
-         ResolverKind
-         (AppD a)
   | BaseD a
   deriving (Show, Lift)
 
@@ -75,6 +72,7 @@ data QueryD = QueryD
 
 data FieldD = FieldD
   { fieldNameD :: String
+  , fieldArgsD :: Maybe (String, ResolverKind)
   , fieldTypeD :: AppD String
   } deriving (Show, Lift)
 
