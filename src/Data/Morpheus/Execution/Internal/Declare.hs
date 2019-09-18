@@ -12,15 +12,14 @@ module Data.Morpheus.Execution.Internal.Declare
   , declareResolverType
   ) where
 
+import           GHC.Generics                           (Generic)
 import           Language.Haskell.TH
 
-import           Data.Morpheus.Types.Internal.Data  (DataTypeKind (..))
-
---
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.DataD (AppD (..), ConsD (..), FieldD (..), KindD (..), ResolverKind (..),
-                                                     TypeD (..), unKindD)
-import           GHC.Generics                       (Generic)
+import           Data.Morpheus.Execution.Internal.Utils (nameSpaceWith)
+import           Data.Morpheus.Types.Internal.Data      (DataTypeKind (..))
+import           Data.Morpheus.Types.Internal.DataD     (AppD (..), ConsD (..), FieldD (..), KindD (..),
+                                                         ResolverKind (..), TypeD (..), unKindD)
 
 type FUNC = (->)
 
@@ -30,8 +29,7 @@ declareType = __declareType False Nothing
 declareResolverType :: KindD -> [Name] -> TypeD -> Dec
 declareResolverType x = __declareType False (Just x)
 
---
---
+-- declareType
 __declareType :: Bool -> Maybe KindD -> [Name] -> TypeD -> Dec
 __declareType namespace kindD derivingList TypeD {tName, tCons} =
   DataD [] (mkName tName) tVars Nothing (map cons tCons) $ map derive (''Generic : derivingList)
@@ -50,7 +48,9 @@ __declareType namespace kindD derivingList TypeD {tName, tCons} =
       where
         declareField FieldD {fieldNameD, fieldTypeD} = (fieldName, defBang, fieldType)
           where
-            fieldName = mkName fieldNameD
+            fieldName
+              | namespace = mkName (nameSpaceWith tName fieldNameD)
+              | otherwise = mkName fieldNameD
             fieldType = genFieldT False fieldTypeD
               where
                 monadVar = VarT $ mkName "m"
