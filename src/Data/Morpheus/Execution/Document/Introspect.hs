@@ -4,8 +4,7 @@
 {-# LANGUAGE TemplateHaskell   #-}
 
 module Data.Morpheus.Execution.Document.Introspect
-  ( deriveArguments
-  , deriveIntrospect
+  ( deriveObjectRep
   ) where
 
 import           Data.Proxy                                (Proxy (..))
@@ -14,15 +13,15 @@ import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..), buildType, updateLib)
+import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName))
-import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataFullType (..), DataTypeWrapper (..))
+import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataTypeWrapper (..))
 import           Data.Morpheus.Types.Internal.DataD        (AppD (..), ConsD (..), FieldD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceHeadT)
 
 -- [((Text, DataField), TypeUpdater)]
-deriveArguments :: TypeD -> Q [Dec]
-deriveArguments TypeD {tName, tCons = [ConsD {cFields}]} =
+deriveObjectRep :: TypeD -> Q [Dec]
+deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} =
   pure <$> instanceWithOverlapD overlapping (cxt []) appHead methods
   where
     overlapping = Just Overlapping
@@ -30,19 +29,7 @@ deriveArguments TypeD {tName, tCons = [ConsD {cFields}]} =
     methods = [instanceFunD 'objectFields ["_"] body]
       where
         body = [|($(buildFields cFields), $(buildTypes cFields))|]
-deriveArguments _ = pure []
-
-deriveIntrospect :: TypeD -> Q [Dec]
-deriveIntrospect TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (cxt []) appHead methods
-  where
-    appHead = instanceHeadT ''Introspect tName []
-    methods = [instanceFunD 'introspect ["_"] body]
-      where
-        body = [|updateLib $(typeBuilder) $(types) (Proxy :: (Proxy $(typeName)))|]
-        typeBuilder = [|InputObject . buildType $(buildFields cFields)|]
-        types = buildTypes cFields
-        typeName = conT $ mkName tName
-deriveIntrospect _ = pure []
+deriveObjectRep _ = pure []
 
 buildTypes :: [FieldD] -> ExpQ
 buildTypes = listE . map introspectType
