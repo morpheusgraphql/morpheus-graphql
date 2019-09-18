@@ -22,8 +22,10 @@ import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instan
 
 -- [((Text, DataField), TypeUpdater)]
 deriveArguments :: TypeD -> Q [Dec]
-deriveArguments TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (cxt []) appHead methods
+deriveArguments TypeD {tName, tCons = [ConsD {cFields}]} =
+  pure <$> instanceWithOverlapD overlapping (cxt []) appHead methods
   where
+    overlapping = Just Overlapping
     appHead = instanceHeadT ''ObjectFields tName []
     methods = [instanceFunD 'objectFields ["_"] body]
       where

@@ -176,7 +176,7 @@ type GQL_TYPE a = (Generic a, GQLType a)
 class ObjectFields a where
   objectFields :: proxy a -> ([(Text, DataField)], [TypeUpdater])
 
-instance {-# OVERLAPPABLE #-} GQLRep OBJECT (Rep a) => ObjectFields a where
+instance GQLRep OBJECT (Rep a) => ObjectFields a where
   objectFields _ = unzip $ gqlRep (Context :: Context (Rep a) OBJECT)
 
 type family GQLRepResult (a :: GQL_KIND) :: *
