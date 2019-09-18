@@ -17,7 +17,7 @@ module Data.Morpheus.Execution.Server.Encode
   , EncodeMutCon
   , EncodeSubCon
   , encodeQuery
-  , encodeOperator
+  , encodeOperation
   ) where
 
 import           Control.Monad                                   ((>=>))
@@ -196,13 +196,13 @@ instance (GResolver UNION a value, GResolver UNION b value) => GResolver UNION (
 
 ----- HELPERS ----------------------------
 encodeQuery :: (Monad m, EncodeCon m schema Value, EncodeCon m a Value) => schema -> EncodeOperator m a Value
-encodeQuery schema = encodeOperatorWith (objectResolvers schema)
+encodeQuery schema = encodeOperationWith (objectResolvers schema)
 
-encodeOperator :: (Monad m, EncodeCon m a value, GQLValue value) => EncodeOperator m a value
-encodeOperator = encodeOperatorWith []
+encodeOperation :: (Monad m, EncodeCon m a value, GQLValue value) => EncodeOperator m a value
+encodeOperation = encodeOperationWith []
 
-encodeOperatorWith :: (Monad m, EncodeCon m a value, GQLValue value) => [FieldRes m value] -> EncodeOperator m a value
-encodeOperatorWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
+encodeOperationWith :: (Monad m, EncodeCon m a value, GQLValue value) => [FieldRes m value] -> EncodeOperator m a value
+encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
   runExceptT $ operationResolveT >>= resolveFields operationSelection . (++) externalRes . objectResolvers
   where
     operationResolveT = withExceptT (resolverError operationPosition operationName) rootResolver

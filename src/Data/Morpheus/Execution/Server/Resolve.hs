@@ -27,7 +27,7 @@ import           GHC.Generics
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                           (badRequestError, renderErrors)
 import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, EncodeMutCon, EncodeSubCon,
-                                                                      encodeOperator, encodeQuery)
+                                                                      encodeOperation, encodeQuery)
 import           Data.Morpheus.Execution.Server.Introspect           (Context (..), GQLRep (..), resolveTypes)
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, publishUpdates)
 import           Data.Morpheus.Kind                                  (OBJECT)
@@ -98,9 +98,9 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
     execOperator (schema, operation@Operation {operationKind = QUERY}) =
       StreamT $ StreamState [] <$> encodeQuery (schemaAPI schema) queryResolver operation
     execOperator (_, operation@Operation {operationKind = MUTATION}) =
-      mapS Publish (encodeOperator mutationResolver operation)
+      mapS Publish (encodeOperation mutationResolver operation)
     execOperator (_, operation@Operation {operationKind = SUBSCRIPTION}) =
-      StreamT $ handleActions <$> closeStream (encodeOperator subscriptionResolver operation)
+      StreamT $ handleActions <$> closeStream (encodeOperation subscriptionResolver operation)
       where
         handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
         handleActions (channels, Right subResolver) =
@@ -130,15 +130,15 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
     querySchema = resolveTypes (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query")) (defaultTypes : types)
       where
-        (fields, types) = unzip $ gqlRep (Context :: Context (Rep query) OBJECT)
+        (fields, types) = unzip $ gqlRep (Context :: Context OBJECT (Rep query))
     ------------------------------
     mutationSchema lib = resolveTypes (lib {mutation = maybeOperator fields "Mutation"}) types
       where
-        (fields, types) = unzip $ gqlRep (Context :: Context (Rep mutation) OBJECT)
+        (fields, types) = unzip $ gqlRep (Context :: Context OBJECT (Rep mutation))
     ------------------------------
     subscriptionSchema lib = resolveTypes (lib {subscription = maybeOperator fields "Subscription"}) types
       where
-        (fields, types) = unzip $ gqlRep (Context :: Context (Rep subscription) OBJECT)
+        (fields, types) = unzip $ gqlRep (Context :: Context OBJECT (Rep subscription))
      -- maybeOperator :: [a] -> Text -> Maybe (Text, DataType [a])
     maybeOperator []     = const Nothing
     maybeOperator fields = Just . operatorType fields

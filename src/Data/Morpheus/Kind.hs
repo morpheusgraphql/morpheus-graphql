@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds     #-}
+{-# LANGUAGE PolyKinds     #-}
 {-# LANGUAGE TypeFamilies  #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -12,6 +13,7 @@ module Data.Morpheus.Kind
   , INPUT_OBJECT
   , INPUT_UNION
   , GQL_KIND
+  , Context(..)
   ) where
 
 data GQL_KIND
@@ -22,6 +24,13 @@ data GQL_KIND
   | UNION
   | INPUT_UNION
   | WRAPPER
+
+--type ObjectConstraint a =
+-- | context , like Proxy with multiple parameters
+-- * 'kind': object, scalar, enum ...
+-- * 'a': actual gql type
+data Context (kind :: GQL_KIND) a =
+  Context
 
 -- | GraphQL Scalar: Int, Float, String, Boolean or any user defined custom Scalar type
 type SCALAR = 'SCALAR

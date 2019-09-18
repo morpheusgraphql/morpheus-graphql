@@ -37,8 +37,8 @@ import           GHC.Generics
 -- MORPHEUS
 import           Data.Morpheus.Error.Schema                      (nameCollisionError)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
-import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, INPUT_OBJECT, INPUT_UNION, OBJECT,
-                                                                  SCALAR, UNION)
+import           Data.Morpheus.Kind                              (Context (..), ENUM, GQL_KIND, INPUT_OBJECT,
+                                                                  INPUT_UNION, OBJECT, SCALAR, UNION)
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (..))
@@ -47,13 +47,6 @@ import           Data.Morpheus.Types.Internal.Data               (DataArguments,
                                                                   DataTypeWrapper (..), defineType, isTypeDefined,
                                                                   toListField, toNullableField)
 import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
-
---type ObjectConstraint a =
--- | context , like Proxy with multiple parameters
--- * 'a': actual gql type
--- * 'kind': object, scalar, enum ...
-data Context a (kind :: GQL_KIND) =
-  Context
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class Introspect a where
@@ -65,7 +58,7 @@ class Introspect a where
   field _ = buildField (Proxy @a) []
 
 instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect a where
-  introspect _ = introspectKind (Context :: Context a (KIND a))
+  introspect _ = introspectKind (Context :: Context (KIND a) a)
 
 -- Maybe
 instance Introspect a => Introspect (Maybe a) where
@@ -102,7 +95,7 @@ instance (ObjectFields a, Introspect b) => Introspect (a -> m b) where
 
 -- | Introspect With specific Kind: 'kind': object, scalar, enum ...
 class IntrospectKind (kind :: GQL_KIND) a where
-  introspectKind :: Context a kind -> TypeUpdater -- Generates internal GraphQL Schema
+  introspectKind :: Context kind a -> TypeUpdater -- Generates internal GraphQL Schema
 
 -- SCALAR
 instance (GQLType a, GQLScalar a) => IntrospectKind SCALAR a where
@@ -136,13 +129,13 @@ instance (GQL_TYPE a, ObjectFields a) => IntrospectKind OBJECT a where
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind UNION a where
   introspectKind _ = updateLib (Union . buildType fields) stack (Proxy @a)
     where
-      (fields, stack) = unzip $ gqlRep (Context :: Context (Rep a) UNION)
+      (fields, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
 
 -- INPUT_UNION
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a where
   introspectKind _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
     where
-      (inputUnions, stack) = unzip $ gqlRep (Context :: Context (Rep a) UNION)
+      (inputUnions, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
       fields = map toNullableField inputUnions
       -- for every input Union 'User' adds enum type of possible TypeNames 'UserTags'
       tagsEnumType :: TypeUpdater
@@ -177,7 +170,7 @@ class ObjectFields a where
   objectFields :: proxy a -> ([(Text, DataField)], [TypeUpdater])
 
 instance GQLRep OBJECT (Rep a) => ObjectFields a where
-  objectFields _ = unzip $ gqlRep (Context :: Context (Rep a) OBJECT)
+  objectFields _ = unzip $ gqlRep (Context :: Context OBJECT (Rep a))
 
 type family GQLRepResult (a :: GQL_KIND) :: *
 
@@ -187,24 +180,24 @@ type instance GQLRepResult UNION = DataField
 
 --  GENERIC UNION
 class GQLRep (kind :: GQL_KIND) f where
-  gqlRep :: Context f kind -> [(GQLRepResult kind, TypeUpdater)]
+  gqlRep :: Context kind f -> [(GQLRepResult kind, TypeUpdater)]
 
 instance GQLRep kind f => GQLRep kind (M1 D d f) where
-  gqlRep _ = gqlRep (Context :: Context f kind)
+  gqlRep _ = gqlRep (Context :: Context kind f)
 
 instance GQLRep kind f => GQLRep kind (M1 C c f) where
-  gqlRep _ = gqlRep (Context :: Context f kind)
+  gqlRep _ = gqlRep (Context :: Context kind f)
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
 instance (GQLRep UNION a, GQLRep UNION b) => GQLRep UNION (a :+: b) where
-  gqlRep _ = gqlRep (Context :: Context a UNION) ++ gqlRep (Context :: Context b UNION)
+  gqlRep _ = gqlRep (Context :: Context UNION a) ++ gqlRep (Context :: Context UNION b)
 
 instance (GQL_TYPE a, Introspect a) => GQLRep UNION (M1 S s (Rec0 a)) where
   gqlRep _ = [(buildField (Proxy @a) [] (__typeName (Proxy @a)), introspect (Proxy @a))]
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
 instance (GQLRep OBJECT a, GQLRep OBJECT b) => GQLRep OBJECT (a :*: b) where
-  gqlRep _ = gqlRep (Context :: Context a OBJECT) ++ gqlRep (Context :: Context b OBJECT)
+  gqlRep _ = gqlRep (Context :: Context OBJECT a) ++ gqlRep (Context :: Context OBJECT b)
 
 instance (Selector s, Introspect a) => GQLRep OBJECT (M1 S s (Rec0 a)) where
   gqlRep _ = [((name, field (Proxy @a) name), introspect (Proxy @a))]
