@@ -18,19 +18,19 @@ import           Language.Haskell.TH
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Utils (nameSpaceWith)
 import           Data.Morpheus.Types.Internal.Data      (DataTypeKind (..))
-import           Data.Morpheus.Types.Internal.DataD     (AppD (..), ConsD (..), FieldD (..), KindD (..),
-                                                         ResolverKind (..), TypeD (..), unKindD)
+import           Data.Morpheus.Types.Internal.DataD     (AppD (..), ConsD (..), FieldD (..), KindD (..), TypeD (..),
+                                                         unKindD)
 
 type FUNC = (->)
 
 declareType :: [Name] -> TypeD -> Dec
 declareType = declareGQLT False Nothing
 
-wrappedT :: Maybe Type -> AppD String -> Type
-wrappedT par (ListD td)          = AppT (ConT ''[]) (wrappedT par td)
-wrappedT par (MaybeD td)         = AppT (ConT ''Maybe) (wrappedT par td)
-wrappedT (Just par) (BaseD name) = AppT (ConT (mkName name)) par
-wrappedT Nothing (BaseD name)    = ConT (mkName name)
+wrappedT :: AppD (String, [String]) -> Type
+wrappedT (ListD td)            = AppT (ConT ''[]) (wrappedT td)
+wrappedT (MaybeD td)           = AppT (ConT ''Maybe) (wrappedT td)
+wrappedT (BaseD (name, [par])) = AppT (ConT (mkName name)) (VarT $ mkName par)
+wrappedT (BaseD (name, _))     = ConT (mkName name)
 
 -- declareType
 declareGQLT :: Bool -> Maybe KindD -> [Name] -> TypeD -> Dec
@@ -59,22 +59,15 @@ declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
                 monadVar = VarT $ mkName "m"
                 subscriptionVar = VarT $ mkName "subscriptionM"
                 ---------------------------
-                genFieldT Nothing = fType False False
-                genFieldT (Just (argsTypeName, resKind)) = AppT (AppT arrowType argType) (fType True hasTyVars)
+                genFieldT Nothing = fType False
+                genFieldT (Just (argsTypeName, _)) = AppT (AppT arrowType argType) (fType True)
                   where
                     argType = ConT $ mkName argsTypeName
                     arrowType = ConT ''FUNC
-                    hasTyVars
-                      | TypeVarResolver == resKind = True
-                      | otherwise = False
                 ------------------------------------------------
-                fType isResolver hasTyVars
-                  | isSubscription = AppT subscriptionVar (resultType hasTyVars)
-                  | isResolver = AppT monadVar (resultType hasTyVars)
-                  | otherwise = resultType hasTyVars
+                fType isResolver
+                  | isSubscription = AppT subscriptionVar result
+                  | isResolver = AppT monadVar result
+                  | otherwise = result
                 ------------------------------------------------
-                resultType hasTypVars = wrappedT parameter fieldTypeD
-                  where
-                    parameter
-                      | gqlKind == Just KindUnion || hasTypVars = Just monadVar
-                      | otherwise = Nothing
+                result = wrappedT fieldTypeD

@@ -35,7 +35,7 @@ declareGQLType gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
       where
         gqlInstances
           | isObject typeKindD && isInput typeKindD = [deriveObjectRep, deriveDecode]
-          -- | isObject typeKindD = [deriveObjectRep]
+          | isObject typeKindD = [deriveObjectRep]
           | otherwise = []
     --------------------------------------------------
     declareArgTypes = do

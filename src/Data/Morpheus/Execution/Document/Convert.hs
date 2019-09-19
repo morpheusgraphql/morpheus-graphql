@@ -30,6 +30,11 @@ renderTHTypes lib = traverse renderTHType lib
         Just OutputObject {} -> TypeVarResolver
         Just Union {}        -> TypeVarResolver
         Just _               -> PlainResolver
+    getTypeVarPair key =
+      case lookup (pack key) lib of
+        Just OutputObject {} -> (key, ["m"])
+        Just Union {}        -> (key, ["m"])
+        _                    -> (key, [])
     renderTHType :: (Text, DataFullType) -> Validation GQLTypeD
     renderTHType (_, x) = genType x
       where
@@ -48,14 +53,14 @@ renderTHTypes lib = traverse renderTHType lib
         genField (key, DataField {fieldType, fieldTypeWrappers}) =
           FieldD {fieldNameD = unpack key, fieldTypeD, fieldArgsD = Nothing}
           where
-            fieldTypeD = gqlToHSWrappers fieldTypeWrappers (genFieldTypeName fieldType)
+            fieldTypeD = gqlToHSWrappers fieldTypeWrappers (genFieldTypeName fieldType, [])
         ---------------------------------------------------------------------------------------------
         genResField :: (Text, DataOutputField) -> FieldD
         genResField (key, DataField {fieldName, fieldArgs, fieldType, fieldTypeWrappers}) =
           FieldD {fieldNameD = unpack key, fieldTypeD, fieldArgsD}
           where
             fieldArgsD = Just (argsTName fieldArgs, getFieldType $ pack $ genFieldTypeName fieldType)
-            fieldTypeD = gqlToHSWrappers fieldTypeWrappers (genFieldTypeName fieldType)
+            fieldTypeD = gqlToHSWrappers fieldTypeWrappers (getTypeVarPair (genFieldTypeName fieldType))
             argsTName [] = "()"
             argsTName _  = argsTypeName fieldName
         --------------------------------------------
@@ -104,7 +109,8 @@ renderTHTypes lib = traverse renderTHType lib
             unionCon DataField {fieldType} =
               ConsD
                 { cName
-                , cFields = [FieldD {fieldNameD = "un" <> cName, fieldArgsD = Nothing, fieldTypeD = BaseD utName}]
+                , cFields =
+                    [FieldD {fieldNameD = "un" <> cName, fieldArgsD = Nothing, fieldTypeD = BaseD (utName, ["m"])}]
                 }
               where
                 cName = unpack typeName <> utName

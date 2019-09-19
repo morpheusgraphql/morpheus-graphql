@@ -73,7 +73,7 @@ data QueryD = QueryD
 data FieldD = FieldD
   { fieldNameD :: String
   , fieldArgsD :: Maybe (String, ResolverKind)
-  , fieldTypeD :: AppD String
+  , fieldTypeD :: AppD (String, [String])
   } deriving (Show, Lift)
 
 data TypeD = TypeD

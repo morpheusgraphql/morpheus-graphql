@@ -66,7 +66,7 @@ operationTypes lib variables = genOperation
               fType <- typeFrom <$> getType lib fieldType
               pure $ FieldD {fieldNameD = unpack key, fieldTypeD = wrType fType, fieldArgsD = Nothing}
               where
-                wrType fieldT = gqlToHSWrappers fieldTypeWrappers (unpack fieldT)
+                wrType fieldT = gqlToHSWrappers fieldTypeWrappers (unpack fieldT, [])
         subTypes (Leaf x) = buildLeaf x
         subTypes _ = pure []
     -------------------------------------------
@@ -82,7 +82,7 @@ operationTypes lib variables = genOperation
         fieldD (key, Variable {variableType, variableTypeWrappers}) =
           FieldD {fieldNameD = unpack key, fieldArgsD = Nothing, fieldTypeD}
           where
-            fieldTypeD = gqlToHSWrappers variableTypeWrappers (unpack variableType)
+            fieldTypeD = gqlToHSWrappers variableTypeWrappers (unpack variableType, [])
     -------------------------------------------
     getCon name dataType selectionSet = do
       cFields <- genFields dataType selectionSet
@@ -99,7 +99,7 @@ operationTypes lib variables = genOperation
             ------------------------------------------------------------
             lookupFieldType key = do
               (newType, wrappers) <- fieldDataType datatype key
-              pure $ gqlToHSWrappers wrappers (unpack $ typeFrom newType)
+              pure $ gqlToHSWrappers wrappers (unpack $ typeFrom newType, [])
     --------------------------------------------
     genRecordType name dataType selectionSet = do
       (con, subTypes) <- getCon name dataType selectionSet
