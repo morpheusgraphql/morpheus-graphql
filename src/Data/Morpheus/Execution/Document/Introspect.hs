@@ -9,22 +9,30 @@ module Data.Morpheus.Execution.Document.Introspect
 
 import           Data.Proxy                                (Proxy (..))
 import           Data.Semigroup                            ((<>))
+import           Data.Typeable                             (Typeable)
 import           Language.Haskell.TH
 
---
 -- MORPHEUS
+import           Data.Morpheus.Execution.Document.GQLType  (genTypeArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName))
 import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataTypeWrapper (..))
-import           Data.Morpheus.Types.Internal.DataD        (AppD (..), ConsD (..), FieldD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceHeadT)
+import           Data.Morpheus.Types.Internal.DataD        (AppD (..), ConsD (..), FieldD (..), KindD, TypeD (..))
+import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceHeadT, typeT)
 
 -- [((Text, DataField), TypeUpdater)]
-deriveObjectRep :: TypeD -> Q [Dec]
-deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} =
-  pure <$> instanceWithOverlapD overlapping (cxt []) appHead methods
+deriveObjectRep :: (TypeD, Maybe KindD) -> Q [Dec]
+deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
+  pure <$> instanceWithOverlapD overlapping (cxt constrains) appHead methods
   where
     overlapping = Just Overlapping
+    -----------------------------------------------
+    constrains =
+      case tKind of
+        Just typeKind -> map conTypeable (genTypeArgs typeKind)
+          where conTypeable name = typeT ''Typeable [name]
+        Nothing -> []
+    -----------------------------------------------
     appHead = instanceHeadT ''ObjectFields tName []
     methods = [instanceFunD 'objectFields ["_"] body]
       where

@@ -7,14 +7,13 @@ module Data.Morpheus.Execution.Document.Declare
   ) where
 
 import           Control.Lens                                (declareLenses)
-import           Data.Function                               ((&))
 import           Data.Semigroup                              ((<>))
 import           Language.Haskell.TH
 
-import           Data.Morpheus.Execution.Document.Decode     (deriveDecode)
 
 --
 -- MORPHEUS
+import           Data.Morpheus.Execution.Document.Decode     (deriveDecode)
 import           Data.Morpheus.Execution.Document.GQLType    (deriveGQLType)
 import           Data.Morpheus.Execution.Document.Introspect (deriveObjectRep)
 import           Data.Morpheus.Execution.Internal.Declare    (declareGQLT)
@@ -31,15 +30,15 @@ declareGQLType gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
   typeClasses <- deriveGQLType gqlType
   pure $ mainType <> typeClasses <> argTypes <> gqlInstances
   where
-    deriveGQLInstances = concat <$> traverse (typeD &) gqlInstances
+    deriveGQLInstances = concat <$> sequence gqlInstances
       where
         gqlInstances
-          | isObject typeKindD && isInput typeKindD = [deriveObjectRep, deriveDecode]
-          | isObject typeKindD = [deriveObjectRep]
+          | isObject typeKindD && isInput typeKindD = [deriveObjectRep (typeD, Just typeKindD), deriveDecode typeD]
+          | isObject typeKindD = [deriveObjectRep (typeD, Just typeKindD)]
           | otherwise = []
     --------------------------------------------------
     declareArgTypes = do
-      introspectArgs <- concat <$> traverse deriveObjectRep typeArgD
+      introspectArgs <- concat <$> traverse (\x -> deriveObjectRep (x, Nothing)) typeArgD
       decodeArgs <- concat <$> traverse deriveDecode typeArgD
       lenses <- declareLenses (pure (map (declareGQLT False Nothing []) typeArgD))
       return $ decodeArgs <> introspectArgs <> lenses
