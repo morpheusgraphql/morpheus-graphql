@@ -23,17 +23,18 @@ import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instan
 -- [((Text, DataField), TypeUpdater)]
 deriveObjectRep :: (TypeD, Maybe KindD) -> Q [Dec]
 deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
-  pure <$> instanceWithOverlapD overlapping (cxt constrains) appHead methods
+  pure <$> instanceWithOverlapD overlapping (cxt constrains) iHead methods
   where
     overlapping = Just Overlapping
-    -----------------------------------------------
-    constrains =
+    typeArgs =
       case tKind of
-        Just typeKind -> map conTypeable (genTypeArgs typeKind)
-          where conTypeable name = typeT ''Typeable [name]
-        Nothing -> []
+        Just typeKind -> genTypeArgs typeKind
+        Nothing       -> []
+    constrains = map conTypeable typeArgs
+      where
+        conTypeable name = typeT ''Typeable [name]
     -----------------------------------------------
-    appHead = instanceHeadT ''ObjectFields tName []
+    iHead = instanceHeadT ''ObjectFields tName typeArgs
     methods = [instanceFunD 'objectFields ["_"] body]
       where
         body = [|($(buildFields cFields), $(buildTypes cFields))|]
