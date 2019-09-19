@@ -32,11 +32,15 @@ deriveObjectRep TypeD {tName, tCons = [ConsD {cFields}]} =
 deriveObjectRep _ = pure []
 
 buildTypes :: [FieldD] -> ExpQ
-buildTypes = listE . map introspectType
+buildTypes = listE . map introspectField
   where
-    introspectType fieldD = [|introspect (Proxy :: Proxy $(lookupType fieldD))|]
-      where
-        lookupType FieldD {fieldTypeD} = conT $ mkName $ snd $ appDToField fieldTypeD
+    introspectField FieldD {fieldTypeD} = [|introspect $(proxyT $ snd (appDToField fieldTypeD))|]
+
+proxyT :: (String, [String]) -> Q Exp
+proxyT t = [|(Proxy :: Proxy $(genSig t))|]
+  where
+    genSig (name, [m]) = appT (conT $ mkName name) (varT $ mkName m)
+    genSig (name, _)   = conT $ mkName name
 
 buildFields :: [FieldD] -> ExpQ
 buildFields = listE . map buildField
@@ -47,17 +51,17 @@ buildFields = listE . map buildField
             { fieldName = fieldNameD
             , fieldArgs = []
             , fieldTypeWrappers
-            , fieldType = __typeName (Proxy :: (Proxy $(conT $ mkName fieldType)))
+            , fieldType = __typeName $(proxyT fieldType)
             , fieldHidden = False
             })|]
       where
         (fieldTypeWrappers, fieldType) = appDToField fieldTypeD
 
-appDToField :: AppD (String, [String]) -> ([DataTypeWrapper], String)
-appDToField = appDToField []
+appDToField :: AppD (String, [String]) -> ([DataTypeWrapper], (String, [String]))
+appDToField = toField []
   where
-    appDToField wrappers (MaybeD (ListD td))        = appDToField (wrappers <> [ListType]) td
-    appDToField wrappers (ListD td)                 = appDToField (wrappers <> [NonNullType, ListType]) td
-    appDToField wrappers (MaybeD (MaybeD td))       = appDToField wrappers (MaybeD td)
-    appDToField wrappers (MaybeD (BaseD (name, _))) = (wrappers, name)
-    appDToField wrappers (BaseD (name, _))          = (wrappers <> [NonNullType], name)
+    toField wrappers (MaybeD (ListD td))  = toField (wrappers <> [ListType]) td
+    toField wrappers (ListD td)           = toField (wrappers <> [NonNullType, ListType]) td
+    toField wrappers (MaybeD (MaybeD td)) = toField wrappers (MaybeD td)
+    toField wrappers (MaybeD (BaseD ty))  = (wrappers, ty)
+    toField wrappers (BaseD ty)           = (wrappers <> [NonNullType], ty)
