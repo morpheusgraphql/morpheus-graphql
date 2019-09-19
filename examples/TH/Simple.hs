@@ -1,10 +1,9 @@
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 module TH.Simple
   ( mythologyApi
@@ -21,7 +20,8 @@ importGQLDocument "examples/TH/simple.gql"
 
 rootResolver :: GQLRootResolver IO () () (Query IORes) () ()
 rootResolver =
-  GQLRootResolver {queryResolver = return Query { queryDeity }, mutationResolver = pure (), subscriptionResolver = pure ()}
+  GQLRootResolver
+    {queryResolver = return Query {queryDeity}, mutationResolver = pure (), subscriptionResolver = pure ()}
   where
     queryDeity _deityArgs = pure Deity {deityName, deityPower}
       where
