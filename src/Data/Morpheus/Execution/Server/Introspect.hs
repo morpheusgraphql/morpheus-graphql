@@ -47,7 +47,7 @@ import           Data.Morpheus.Types.Internal.Data               (DataArguments,
                                                                   toListField, toNullableField)
 import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
 
-type IntroCon a = (Generic a, GQLRep OBJECT (Rep a))
+type IntroCon a = ObjectFields a
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class Introspect a where
@@ -167,7 +167,9 @@ type TypeUpdater = DataTypeLib -> SchemaValidation DataTypeLib
 type GQL_TYPE a = (Generic a, GQLType a)
 
 -- Object Fields
-class ObjectFields a where
+class GQLRep OBJECT (Rep a) =>
+      ObjectFields a
+  where
   objectFields :: proxy a -> ([(Text, DataField)], [TypeUpdater])
 
 instance GQLRep OBJECT (Rep a) => ObjectFields a where
