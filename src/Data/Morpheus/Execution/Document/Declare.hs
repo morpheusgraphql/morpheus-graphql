@@ -37,10 +37,13 @@ declareGQLType namespace gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
           | otherwise = []
     --------------------------------------------------
     declareArgTypes = do
-      introspectArgs <- concat <$> traverse (\x -> deriveObjectRep (x, Nothing)) typeArgD
+      introspectArgs <- concat <$> traverse deriveArgsRep typeArgD
       decodeArgs <- concat <$> traverse deriveDecode typeArgD
-      lenses <- declareLenses (pure (map (declareGQLT False Nothing []) typeArgD))
-      return $ decodeArgs <> introspectArgs <> lenses
+      return $ decodeArgs <> introspectArgs <> argDecs
+      where
+        deriveArgsRep args = deriveObjectRep (args, Nothing)
+        ----------------------------------------------------
+        argDecs = map (declareGQLT namespace Nothing []) typeArgD
     --------------------------------------------------
     declareMainType
       | isInput typeKindD = declareLenses declareT
