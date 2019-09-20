@@ -1,10 +1,7 @@
-{-# LANGUAGE NamedFieldPuns  #-}
-{-# LANGUAGE QuasiQuotes     #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Morpheus.Execution.Document.Compile
-  ( compileExp
-  , compileDec
+  ( compileDocument
   ) where
 
 import qualified Data.Text                                    as T (pack)
@@ -18,14 +15,8 @@ import           Data.Morpheus.Execution.Document.Declare     (declareTypes)
 import           Data.Morpheus.Parsing.Document.Parser        (parseTypes)
 import           Data.Morpheus.Validation.Document.Validation
 
-compileExp :: String -> Q Exp
-compileExp documentTXT =
-  case parseTypes (T.pack documentTXT) >>= validatePartialDocument >>= renderTHTypes of
-    Left errors -> fail (renderGQLErrors errors)
-    Right root  -> [|root|]
-
-compileDec :: String -> Q [Dec]
-compileDec documentTXT =
+compileDocument :: Bool -> String -> Q [Dec]
+compileDocument namespace documentTXT =
   case parseTypes (T.pack documentTXT) >>= validatePartialDocument >>= renderTHTypes of
     Left errors -> fail (renderGQLErrors errors)
     Right root  -> declareTypes root

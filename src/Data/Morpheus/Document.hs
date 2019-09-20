@@ -19,7 +19,7 @@ import           Language.Haskell.TH.Quote
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Execution.Document.Compile     (compileDec, compileExp)
+import           Data.Morpheus.Execution.Document.Compile     (compileDocument)
 import           Data.Morpheus.Execution.Server.Resolve       (RootResCon, fullSchema)
 import           Data.Morpheus.Rendering.GQL                  (renderGraphQLDocument)
 import           Data.Morpheus.Rendering.Haskell.Render       (renderHaskellDocument)
@@ -55,11 +55,18 @@ toMorpheusHaskellAPi moduleName doc =
     Right lib   -> Right $ renderHaskellDocument moduleName lib
 
 importGQLDocument :: String -> Q [Dec]
-importGQLDocument src = runIO (readFile src) >>= compileDec
+importGQLDocument src = runIO (readFile src) >>= compileDocument False
+
+importGQLDocumentWithNamespace :: String -> Q [Dec]
+importGQLDocumentWithNamespace src = runIO (readFile src) >>= compileDocument True
 
 gqlDocument :: QuasiQuoter
 gqlDocument =
   QuasiQuoter
-    {quoteExp = compileExp, quotePat = notHandled "Patterns", quoteType = notHandled "Types", quoteDec = compileDec}
+    { quoteExp = notHandled "Expressions"
+    , quotePat = notHandled "Patterns"
+    , quoteType = notHandled "Types"
+    , quoteDec = compileDocument False
+    }
   where
     notHandled things = error $ things ++ " are not supported by the GraphQL QuasiQuoter"
