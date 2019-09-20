@@ -7,6 +7,7 @@ module Data.Morpheus.Document
   , gqlDocument
   , parseFullGQLDocument
   , importGQLDocument
+  , importGQLDocumentWithNamespace
   ) where
 
 import           Control.Monad                                ((>=>))

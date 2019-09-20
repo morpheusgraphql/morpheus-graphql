@@ -10,7 +10,6 @@ import           Control.Lens                                (declareLenses)
 import           Data.Semigroup                              ((<>))
 import           Language.Haskell.TH
 
-
 --
 -- MORPHEUS
 import           Data.Morpheus.Execution.Document.Decode     (deriveDecode)
@@ -19,11 +18,11 @@ import           Data.Morpheus.Execution.Document.Introspect (deriveObjectRep)
 import           Data.Morpheus.Execution.Internal.Declare    (declareGQLT)
 import           Data.Morpheus.Types.Internal.DataD          (GQLTypeD (..), isInput, isObject)
 
-declareTypes :: [GQLTypeD] -> Q [Dec]
-declareTypes = fmap concat . traverse declareGQLType
+declareTypes :: Bool -> [GQLTypeD] -> Q [Dec]
+declareTypes namespace = fmap concat . traverse (declareGQLType namespace)
 
-declareGQLType :: GQLTypeD -> Q [Dec]
-declareGQLType gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
+declareGQLType :: Bool -> GQLTypeD -> Q [Dec]
+declareGQLType namespace gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
   mainType <- declareMainType
   argTypes <- declareArgTypes
   gqlInstances <- deriveGQLInstances
@@ -47,7 +46,7 @@ declareGQLType gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
       | isInput typeKindD = declareLenses declareT
       | otherwise = declareT
       where
-        declareT = pure [declareGQLT True (Just typeKindD) derivingClasses typeD]
+        declareT = pure [declareGQLT namespace (Just typeKindD) derivingClasses typeD]
         derivingClasses
           | isInput typeKindD = [''Show]
           | otherwise = []

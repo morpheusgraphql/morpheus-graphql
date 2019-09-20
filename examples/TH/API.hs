@@ -1,10 +1,10 @@
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE DerivingStrategies    #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE DerivingStrategies  #-}
+{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 module TH.API
   ( thApi
@@ -17,12 +17,12 @@ import           GHC.Generics               (Generic)
 
 -- MORPHEUS
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Document     (importGQLDocument)
+import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind         (SCALAR)
 import           Data.Morpheus.Types        (GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, IORes,
                                              ScalarValue (..), constRes)
 
-importGQLDocument "./examples/TH/api.gql"
+importGQLDocumentWithNamespace "./examples/TH/api.gql"
 
 newtype Euro =
   Euro Int

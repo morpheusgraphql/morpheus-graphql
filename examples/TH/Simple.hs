@@ -12,11 +12,11 @@ module TH.Simple
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Document     (importGQLDocument)
+import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Types        (GQLRootResolver (..), IORes)
 import           Data.Text                  (Text)
 
-importGQLDocument "examples/TH/simple.gql"
+importGQLDocumentWithNamespace "examples/TH/simple.gql"
 
 rootResolver :: GQLRootResolver IO () () (Query IORes) () ()
 rootResolver =

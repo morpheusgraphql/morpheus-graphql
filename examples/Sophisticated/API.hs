@@ -23,13 +23,13 @@ import           Data.Typeable          (Typeable)
 import           GHC.Generics           (Generic)
 
 -- MORPHEUS
-import           Data.Morpheus.Document (importGQLDocument)
+import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
 import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, IOMutRes,
                                          IORes, IOSubRes, Resolver, ScalarValue (..), SubResolver (..), constRes,
                                          mutResolver, resolver)
 
-$(importGQLDocument "examples/Sophisticated/api.gql")
+$(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
 
 type AIntText = A (Int, Text)
 
