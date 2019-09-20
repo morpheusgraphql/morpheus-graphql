@@ -16,7 +16,7 @@ import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), F
                                                                 RawSelection (..), RawSelection' (..), RawSelectionSet,
                                                                 Reference (..))
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
-import           Data.Morpheus.Types.Internal.Data             (DataInputType, DataTypeLib)
+import           Data.Morpheus.Types.Internal.Data             (DataKind, DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Types.Internal.Value            (Value (..))
 import           Data.Morpheus.Types.Types                     (Variables)
@@ -26,7 +26,7 @@ import           Data.Morpheus.Validation.Query.Input.Object   (validateInputVal
 import           Data.Semigroup                                ((<>))
 import           Data.Text                                     (Text)
 
-getVariableType :: Text -> Position -> DataTypeLib -> Validation DataInputType
+getVariableType :: Text -> Position -> DataTypeLib -> Validation DataKind
 getVariableType type' position' lib' = getInputType type' lib' error'
   where
     error' = unknownType type' position'

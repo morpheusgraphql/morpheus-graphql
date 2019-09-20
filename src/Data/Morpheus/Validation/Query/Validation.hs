@@ -12,7 +12,7 @@ import           Data.Morpheus.Error.Mutation               (mutationIsNotDefine
 import           Data.Morpheus.Error.Subscription           (subscriptionIsNotDefined)
 import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), OperationKind (..), RawOperation,
                                                              ValidOperation)
-import           Data.Morpheus.Types.Internal.Data          (DataOutputObject, DataTypeLib (..))
+import           Data.Morpheus.Types.Internal.Data          (DataObject, DataTypeLib (..))
 import           Data.Morpheus.Types.Internal.Validation    (Validation)
 import           Data.Morpheus.Types.Types                  (GQLQueryRoot (..))
 import           Data.Morpheus.Validation.Internal.Utils    (VALIDATION_MODE)
@@ -20,7 +20,7 @@ import           Data.Morpheus.Validation.Query.Fragment    (validateFragments)
 import           Data.Morpheus.Validation.Query.Selection   (validateSelectionSet)
 import           Data.Morpheus.Validation.Query.Variable    (resolveOperationVariables)
 
-getOperationDataType :: RawOperation -> DataTypeLib -> Validation DataOutputObject
+getOperationDataType :: RawOperation -> DataTypeLib -> Validation DataObject
 getOperationDataType Operation {operationKind = QUERY} lib = pure $ snd $ query lib
 getOperationDataType Operation {operationKind = MUTATION, operationPosition} lib =
   case mutation lib of

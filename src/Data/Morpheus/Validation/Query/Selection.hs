@@ -16,7 +16,7 @@ import           Data.Morpheus.Types.Internal.AST.RawSelection  (Fragment (..), 
                                                                  RawSelection' (..), RawSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base              (EnhancedKey (..))
-import           Data.Morpheus.Types.Internal.Data              (DataField (..), DataFullType (..), DataOutputObject,
+import           Data.Morpheus.Types.Internal.Data              (DataField (..), DataFullType (..), DataObject,
                                                                  DataType (..), DataTypeLib (..), allDataTypes)
 import           Data.Morpheus.Types.Internal.Validation        (Validation)
 import           Data.Morpheus.Validation.Internal.Utils        (checkNameCollision, lookupType)
@@ -26,7 +26,7 @@ import           Data.Morpheus.Validation.Query.Utils.Selection (lookupFieldAsSe
                                                                  lookupUnionTypes)
 import           Data.Text                                      (Text)
 
-checkDuplicatesOn :: DataOutputObject -> SelectionSet -> Validation SelectionSet
+checkDuplicatesOn :: DataObject -> SelectionSet -> Validation SelectionSet
 checkDuplicatesOn DataType {typeName = name'} keys = checkNameCollision enhancedKeys selError >> pure keys
   where
     selError = duplicateQuerySelections name'
@@ -34,7 +34,7 @@ checkDuplicatesOn DataType {typeName = name'} keys = checkNameCollision enhanced
     selToKey (key', Selection {selectionPosition = position'}) = EnhancedKey key' position'
 
 clusterUnionSelection ::
-     FragmentLib -> Text -> [DataOutputObject] -> (Text, RawSelection) -> Validation ([Fragment], SelectionSet)
+     FragmentLib -> Text -> [DataObject] -> (Text, RawSelection) -> Validation ([Fragment], SelectionSet)
 clusterUnionSelection fragments type' possibleTypes' = splitFrag
   where
     packFragment fragment = return ([fragment], [])
@@ -55,11 +55,11 @@ clusterUnionSelection fragments type' possibleTypes' = splitFrag
     splitFrag (_, InlineFragment fragment') =
       castFragmentType Nothing (fragmentPosition fragment') typeNames fragment' >>= packFragment
 
-categorizeTypes :: [DataOutputObject] -> [Fragment] -> [(DataOutputObject, [Fragment])]
+categorizeTypes :: [DataObject] -> [Fragment] -> [(DataObject, [Fragment])]
 categorizeTypes types fragments = filter notEmpty $ map categorizeType types
   where
     notEmpty = (0 /=) . length . snd
-    categorizeType :: DataOutputObject -> (DataOutputObject, [Fragment])
+    categorizeType :: DataObject -> (DataObject, [Fragment])
     categorizeType datatype = (datatype, filter matches fragments)
       where
         matches fragment = fragmentType fragment == typeName datatype
@@ -79,13 +79,7 @@ flatTuple list' = (concatMap fst list', concatMap snd list')
  -}
 
 validateSelectionSet ::
-     DataTypeLib
-  -> FragmentLib
-  -> Text
-  -> ValidVariables
-  -> DataOutputObject
-  -> RawSelectionSet
-  -> Validation SelectionSet
+     DataTypeLib -> FragmentLib -> Text -> ValidVariables -> DataObject -> RawSelectionSet -> Validation SelectionSet
 validateSelectionSet lib fragments' operatorName variables = __validate
   where
     __validate dataType'@DataType {typeName = typeName'} selectionSet' =
@@ -140,7 +134,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
                       return (categorizeTypes unionTypes spreads, __typename)
                     --
                     --    second arguments will be added to every selection cluster
-                    validateCluster :: SelectionSet -> (DataOutputObject, [Fragment]) -> Validation (Text, SelectionSet)
+                    validateCluster :: SelectionSet -> (DataObject, [Fragment]) -> Validation (Text, SelectionSet)
                     validateCluster sysSelection' (type', frags') = do
                       selection' <- __validate type' (concatMap fragmentSelection frags')
                       return (typeName type', sysSelection' ++ selection')
