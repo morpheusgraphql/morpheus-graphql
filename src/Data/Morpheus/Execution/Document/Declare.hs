@@ -6,7 +6,6 @@ module Data.Morpheus.Execution.Document.Declare
   ( declareTypes
   ) where
 
-import           Control.Lens                                (declareLenses)
 import           Data.Semigroup                              ((<>))
 import           Language.Haskell.TH
 
@@ -39,14 +38,14 @@ declareGQLType namespace gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
     declareArgTypes = do
       introspectArgs <- concat <$> traverse deriveArgsRep typeArgD
       decodeArgs <- concat <$> traverse deriveDecode typeArgD
-      return $ decodeArgs <> introspectArgs <> argDecs
+      return $ argsTypeDecs <> decodeArgs <> introspectArgs
       where
         deriveArgsRep args = deriveObjectRep (args, Nothing)
         ----------------------------------------------------
-        argDecs = map (declareGQLT namespace Nothing []) typeArgD
+        argsTypeDecs = map (declareGQLT namespace Nothing []) typeArgD
     --------------------------------------------------
     declareMainType
-      | isInput typeKindD = declareLenses declareT
+      | isInput typeKindD = declareT -- TODO: declareLenses
       | otherwise = declareT
       where
         declareT = pure [declareGQLT namespace (Just typeKindD) derivingClasses typeD]
