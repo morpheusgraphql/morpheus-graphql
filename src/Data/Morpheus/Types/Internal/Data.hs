@@ -7,14 +7,8 @@ module Data.Morpheus.Types.Internal.Data
   , DataScalar
   , DataEnum
   , DataObject
-  , DataInputField
   , DataArgument
-  , DataOutputField
-  , DataInputObject
-  , DataOutputObject
   , DataUnion
-  , DataOutputType
-  , DataInputType
   , DataArguments
   , DataField(..)
   , DataType(..)
@@ -76,23 +70,11 @@ type DataScalar = DataType DataValidator
 
 type DataEnum = DataType [Key]
 
-type DataObject a = DataType [(Key, a)]
+type DataObject = DataType [(Key, DataField)]
 
-type DataInputField = DataField
-
-type DataArgument = DataInputField
-
-type DataOutputField = DataField
-
-type DataInputObject = DataObject DataInputField
-
-type DataOutputObject = DataObject DataOutputField
+type DataArgument = DataField
 
 type DataUnion = DataType [DataField]
-
-type DataOutputType = DataKind DataOutputField
-
-type DataInputType = DataKind DataInputField
 
 type DataArguments = [(Key, DataArgument)]
 
@@ -130,37 +112,37 @@ data DataLeaf
   | LeafEnum DataEnum
   deriving (Show)
 
-data DataKind a
+data DataKind
   = ScalarKind DataScalar
   | EnumKind DataEnum
-  | ObjectKind (DataObject a)
+  | ObjectKind DataObject
   | UnionKind DataUnion
   deriving (Show)
 
 data RawDataType
   = FinalDataType DataFullType
-  | Interface DataOutputObject
+  | Interface DataObject
   | Implements { implementsInterfaces :: [Key]
-               , unImplements         :: DataOutputObject }
+               , unImplements         :: DataObject }
   deriving (Show)
 
 data DataFullType
   = Leaf DataLeaf
-  | InputObject DataInputObject
-  | OutputObject DataOutputObject
+  | InputObject DataObject
+  | OutputObject DataObject
   | Union DataUnion
   | InputUnion DataUnion
   deriving (Show)
 
 data DataTypeLib = DataTypeLib
   { leaf         :: [(Text, DataLeaf)]
-  , inputObject  :: [(Text, DataInputObject)]
-  , object       :: [(Text, DataOutputObject)]
+  , inputObject  :: [(Text, DataObject)]
+  , object       :: [(Text, DataObject)]
   , union        :: [(Text, DataUnion)]
   , inputUnion   :: [(Text, DataUnion)]
-  , query        :: (Text, DataOutputObject)
-  , mutation     :: Maybe (Text, DataOutputObject)
-  , subscription :: Maybe (Text, DataOutputObject)
+  , query        :: (Text, DataObject)
+  , mutation     :: Maybe (Text, DataObject)
+  , subscription :: Maybe (Text, DataObject)
   } deriving (Show)
 
 showWrappedType :: [DataTypeWrapper] -> Text -> Text
@@ -168,13 +150,13 @@ showWrappedType [] type'               = type'
 showWrappedType (ListType:xs) type'    = T.concat ["[", showWrappedType xs type', "]"]
 showWrappedType (NonNullType:xs) type' = T.concat [showWrappedType xs type', "!"]
 
-showFullAstType :: [DataTypeWrapper] -> DataKind a -> Text
+showFullAstType :: [DataTypeWrapper] -> DataKind -> Text
 showFullAstType wrappers' (ScalarKind x) = showWrappedType wrappers' (typeName x)
 showFullAstType wrappers' (EnumKind x)   = showWrappedType wrappers' (typeName x)
 showFullAstType wrappers' (ObjectKind x) = showWrappedType wrappers' (typeName x)
 showFullAstType wrappers' (UnionKind x)  = showWrappedType wrappers' (typeName x)
 
-initTypeLib :: (Text, DataOutputObject) -> DataTypeLib
+initTypeLib :: (Text, DataObject) -> DataTypeLib
 initTypeLib query' =
   DataTypeLib
     { leaf = []
@@ -197,7 +179,7 @@ allDataTypes (DataTypeLib leaf' inputObject' object' union' inputUnion' query' m
   map (packType InputUnion) inputUnion' ++ map (packType OutputObject) object' ++ map (packType Union) union'
   where
     packType f (x, y) = (x, f y)
-    fromMaybeType :: Maybe (Text, DataOutputObject) -> [(Text, DataFullType)]
+    fromMaybeType :: Maybe (Text, DataObject) -> [(Text, DataFullType)]
     fromMaybeType (Just (key', dataType')) = [(key', OutputObject dataType')]
     fromMaybeType Nothing                  = []
 

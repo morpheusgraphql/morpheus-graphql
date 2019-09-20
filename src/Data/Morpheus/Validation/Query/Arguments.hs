@@ -14,9 +14,8 @@ import           Data.Morpheus.Types.Internal.AST.Operation    (ValidVariables, 
 import           Data.Morpheus.Types.Internal.AST.RawSelection (RawArgument (..), RawArguments, Reference (..))
 import           Data.Morpheus.Types.Internal.AST.Selection    (Argument (..), ArgumentOrigin (..), Arguments)
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
-import           Data.Morpheus.Types.Internal.Data             (DataArgument, DataField (..), DataInputField,
-                                                                DataOutputField, DataTypeLib, isFieldNullable,
-                                                                showWrappedType)
+import           Data.Morpheus.Types.Internal.Data             (DataArgument, DataField (..), DataField, DataTypeLib,
+                                                                isFieldNullable, showWrappedType)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Types.Internal.Value            (Value (Null))
 import           Data.Morpheus.Validation.Internal.Utils       (checkForUnknownKeys, checkNameCollision, getInputType,
@@ -24,7 +23,7 @@ import           Data.Morpheus.Validation.Internal.Utils       (checkForUnknownK
 import           Data.Morpheus.Validation.Query.Input.Object   (validateInputValue)
 import           Data.Text                                     (Text)
 
-resolveArgumentVariables :: Text -> ValidVariables -> DataOutputField -> RawArguments -> Validation Arguments
+resolveArgumentVariables :: Text -> ValidVariables -> DataField -> RawArguments -> Validation Arguments
 resolveArgumentVariables operatorName variables DataField {fieldName, fieldArgs} = mapM resolveVariable
   where
     resolveVariable :: (Text, RawArgument) -> Validation (Text, Argument)
@@ -70,7 +69,7 @@ validateArgument types argumentPosition requestArgs (key, arg) =
       | isFieldNullable arg = pure (key, Argument {argumentValue = Null, argumentOrigin = INLINE, argumentPosition})
       | otherwise = Left $ undefinedArgument (EnhancedKey key argumentPosition)
 
-checkForUnknownArguments :: (Text, DataOutputField) -> Arguments -> Validation [(Text, DataInputField)]
+checkForUnknownArguments :: (Text, DataField) -> Arguments -> Validation [(Text, DataField)]
 checkForUnknownArguments (key, DataField {fieldArgs}) args =
   checkForUnknownKeys enhancedKeys fieldKeys argError >> checkNameCollision enhancedKeys argumentNameCollision >>
   pure fieldArgs
@@ -81,13 +80,7 @@ checkForUnknownArguments (key, DataField {fieldArgs}) args =
     fieldKeys = map fst fieldArgs
 
 validateArguments ::
-     DataTypeLib
-  -> Text
-  -> ValidVariables
-  -> (Text, DataOutputField)
-  -> Position
-  -> RawArguments
-  -> Validation Arguments
+     DataTypeLib -> Text -> ValidVariables -> (Text, DataField) -> Position -> RawArguments -> Validation Arguments
 validateArguments typeLib operatorName variables inputs pos rawArgs = do
   args <- resolveArgumentVariables operatorName variables (snd inputs) rawArgs
   dataArgs <- checkForUnknownArguments inputs args

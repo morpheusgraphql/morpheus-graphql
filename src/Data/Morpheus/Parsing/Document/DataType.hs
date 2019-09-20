@@ -11,7 +11,7 @@ import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parseMaybeTuple, parseNonNull,
                                                           parseWrappedType, pipeLiteral, qualifier, setOf,
                                                           spaceAndComments, token)
-import           Data.Morpheus.Types.Internal.Data       (DataArgument, DataFullType (..), DataOutputField, Key,
+import           Data.Morpheus.Types.Internal.Data       (DataArgument, DataField, DataFullType (..), Key,
                                                           RawDataType (..))
 import           Data.Text                               (Text)
 import           Text.Megaparsec                         (label, sepBy1, some, (<|>))
@@ -46,7 +46,7 @@ inputObjectEntries = label "inputEntries" $ setOf entry
         nonNull <- parseNonNull
         return (fieldName, createField [] fieldName (nonNull ++ wrappers, fieldType))
 
-outputObjectEntries :: Parser [(Key, DataOutputField)]
+outputObjectEntries :: Parser [(Key, DataField)]
 outputObjectEntries = label "entries" $ setOf entry
   where
     fieldWithArgs =

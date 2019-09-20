@@ -9,10 +9,8 @@ import           Data.Maybe
 --
 -- Morpheus
 import           Data.Morpheus.Error.Document.Interface  (ImplementsError (..), partialImplements, unknownInterface)
-import           Data.Morpheus.Types.Internal.Base       (Location (..))
-import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataOutputField,
-                                                          DataOutputObject, DataType (..), Key, RawDataType (..),
-                                                          showWrappedType)
+import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataObject, DataType (..),
+                                                          Key, RawDataType (..), showWrappedType)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Validation.Internal.Utils (isEqOrStricter)
 
@@ -26,18 +24,18 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
     -----------------------------------
     asTuple name x = Just (name, x)
     -----------------------------------
-    mustImplement :: DataOutputObject -> [Key] -> Validation DataFullType
+    mustImplement :: DataObject -> [Key] -> Validation DataFullType
     mustImplement object interfaceKey = do
       interface <- traverse getInterfaceByKey interfaceKey
       case concatMap (mustBeSubset object) interface of
         []     -> pure $ OutputObject object
-        errors -> Left $ partialImplements (typeName object)  errors
+        errors -> Left $ partialImplements (typeName object) errors
     -------------------------------
-    mustBeSubset :: DataOutputObject -> DataOutputObject -> [(Key, Key, ImplementsError)]
+    mustBeSubset :: DataObject -> DataObject -> [(Key, Key, ImplementsError)]
     mustBeSubset DataType {typeData = objFields} DataType {typeName, typeData = interfaceFields} =
       concatMap checkField interfaceFields
       where
-        checkField :: (Key, DataOutputField) -> [(Key, Key, ImplementsError)]
+        checkField :: (Key, DataField) -> [(Key, Key, ImplementsError)]
         checkField (key, DataField {fieldType = interfaceTypeName, fieldTypeWrappers = interfaceWrappers}) =
           case lookup key objFields of
             Just DataField {fieldType, fieldTypeWrappers}
@@ -47,7 +45,7 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
                     foundType = showWrappedType fieldTypeWrappers fieldType
             Nothing -> [(typeName, key, UndefinedField)]
     -------------------------------
-    getInterfaceByKey :: Key -> Validation DataOutputObject
+    getInterfaceByKey :: Key -> Validation DataObject
     getInterfaceByKey key =
       case lookup key lib of
         Just (Interface x) -> pure x

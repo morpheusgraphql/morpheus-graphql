@@ -20,7 +20,7 @@ import           Data.Morpheus.Kind                                (OBJECT)
 import           Data.Morpheus.Schema.Directive                    (Directive)
 import           Data.Morpheus.Schema.Internal.RenderIntrospection (Type, createObjectType, renderType)
 import           Data.Morpheus.Types.GQLType                       (GQLType (KIND, __typeName, __typeVisibility))
-import           Data.Morpheus.Types.Internal.Data                 (DataOutputObject, DataTypeLib (..), allDataTypes)
+import           Data.Morpheus.Types.Internal.Data                 (DataObject, DataTypeLib (..), allDataTypes)
 
 instance GQLType Schema where
   type KIND Schema = OBJECT
@@ -38,7 +38,7 @@ data Schema = Schema
 convertTypes :: DataTypeLib -> Either String [Type]
 convertTypes lib = traverse (`renderType` lib) (allDataTypes lib)
 
-buildSchemaLinkType :: (Text, DataOutputObject) -> Type
+buildSchemaLinkType :: (Text, DataObject) -> Type
 buildSchemaLinkType (key', _) = createObjectType key' "" $ Just []
 
 findType :: Text -> DataTypeLib -> Maybe Type

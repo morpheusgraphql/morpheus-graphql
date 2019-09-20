@@ -15,8 +15,8 @@ import           Data.Text                               (Text, pack, unpack)
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Execution.Internal.Utils  (capital)
-import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataLeaf (..),
-                                                          DataOutputField, DataType (..), DataTypeKind (..))
+import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataField, DataFullType (..), DataLeaf (..),
+                                                          DataType (..), DataTypeKind (..))
 import           Data.Morpheus.Types.Internal.DataD      (AppD (..), ConsD (..), FieldD (..), GQLTypeD (..), KindD (..),
                                                           ResolverKind (..), TypeD (..), gqlToHSWrappers)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
@@ -55,7 +55,7 @@ renderTHTypes lib = traverse renderTHType lib
           where
             fieldTypeD = gqlToHSWrappers fieldTypeWrappers (genFieldTypeName fieldType, [])
         ---------------------------------------------------------------------------------------------
-        genResField :: (Text, DataOutputField) -> FieldD
+        genResField :: (Text, DataField) -> FieldD
         genResField (key, DataField {fieldName, fieldArgs, fieldType, fieldTypeWrappers}) =
           FieldD {fieldNameD = unpack key, fieldTypeD, fieldArgsD}
           where

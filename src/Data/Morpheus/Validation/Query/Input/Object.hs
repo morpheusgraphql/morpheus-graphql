@@ -5,28 +5,27 @@ module Data.Morpheus.Validation.Query.Input.Object
   ( validateInputValue
   ) where
 
-import           Data.Morpheus.Error.Input                  (InputError (..), InputValidation, Prop (..))
-import           Data.Morpheus.Types.Internal.Data          (DataField (..), DataInputType, DataKind (..),
-                                                             DataType (..), DataTypeLib (..), DataTypeWrapper (..),
-                                                             DataValidator (..), showFullAstType)
-import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Morpheus.Validation.Query.Input.Enum  (validateEnum)
-import           Data.Morpheus.Validation.Internal.Utils (getInputType, lookupField)
-import           Data.Text                                  (Text)
+import           Data.Morpheus.Error.Input                 (InputError (..), InputValidation, Prop (..))
+import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataKind (..), DataType (..),
+                                                            DataTypeLib (..), DataTypeWrapper (..), DataValidator (..),
+                                                            showFullAstType)
+import           Data.Morpheus.Types.Internal.Value        (Value (..))
+import           Data.Morpheus.Validation.Internal.Utils   (getInputType, lookupField)
+import           Data.Morpheus.Validation.Query.Input.Enum (validateEnum)
+import           Data.Text                                 (Text)
 
 typeMismatch :: Value -> Text -> [Prop] -> InputError
 typeMismatch jsType expected' path' = UnexpectedType path' expected' jsType Nothing
 
 -- Validate Variable Argument or all Possible input Values
-validateInputValue ::
-     DataTypeLib -> [Prop] -> [DataTypeWrapper] -> DataInputType -> (Text, Value) -> InputValidation Value
+validateInputValue :: DataTypeLib -> [Prop] -> [DataTypeWrapper] -> DataKind -> (Text, Value) -> InputValidation Value
 validateInputValue lib' prop' = validate
   where
-    throwError :: [DataTypeWrapper] -> DataInputType -> Value -> InputValidation Value
+    throwError :: [DataTypeWrapper] -> DataKind -> Value -> InputValidation Value
     throwError wrappers' type' value' = Left $ UnexpectedType prop' (showFullAstType wrappers' type') value' Nothing
     {-- VALIDATION --}
     {-- 1. VALIDATE WRAPPERS -}
-    validate :: [DataTypeWrapper] -> DataInputType -> (Text, Value) -> InputValidation Value
+    validate :: [DataTypeWrapper] -> DataKind -> (Text, Value) -> InputValidation Value
     -- throw error on not nullable type if value = null
     validate (NonNullType:wrappers') type' (_, Null) = throwError wrappers' type' Null
     -- resolves nullable value as null
