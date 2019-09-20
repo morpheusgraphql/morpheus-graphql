@@ -13,7 +13,6 @@ module Sophisticated.API
   , Content
   ) where
 
-import           Control.Lens           (view)
 import           Data.Map               (Map)
 import qualified Data.Map               as M (fromList)
 import           Data.Set               (Set)
