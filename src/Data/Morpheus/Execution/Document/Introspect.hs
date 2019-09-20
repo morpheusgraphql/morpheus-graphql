@@ -16,8 +16,8 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Execution.Document.GQLType  (genTypeArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName))
-import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataTypeWrapper (..))
-import           Data.Morpheus.Types.Internal.DataD        (AppD (..), ConsD (..), FieldD (..), KindD, TypeD (..))
+import           Data.Morpheus.Types.Internal.Data         ( DataField (..), DataTypeWrapper (..))
+import           Data.Morpheus.Types.Internal.DataD        (AppD (..), ResolverKind , ConsD (..), FieldD (..), KindD, TypeD (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceHeadT, typeT)
 
 -- [((Text, DataField), TypeUpdater)]
@@ -51,14 +51,18 @@ proxyT t = [|(Proxy :: Proxy $(genSig t))|]
     genSig (name, [m]) = appT (conT $ mkName name) (varT $ mkName m)
     genSig (name, _)   = conT $ mkName name
 
+fieldArgsRep :: Maybe (String,ResolverKind) -> Q Exp
+fieldArgsRep  (Just (name, _)) = [| objectFields $(proxyT (name, []))|]
+fieldArgsRep  _                = [|([],[])|]
+
 buildFields :: [FieldD] -> ExpQ
 buildFields = listE . map buildField
   where
-    buildField FieldD {fieldNameD, fieldTypeD} =
+    buildField FieldD {fieldNameD, fieldTypeD, fieldArgsD} =
       [|( fieldNameD
         , DataField
             { fieldName = fieldNameD
-            , fieldArgs = []
+            , fieldArgs = fst $(fieldArgsRep fieldArgsD)
             , fieldTypeWrappers
             , fieldType = __typeName $(proxyT fieldType)
             , fieldHidden = False
