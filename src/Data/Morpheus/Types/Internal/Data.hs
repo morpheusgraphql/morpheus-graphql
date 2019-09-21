@@ -40,7 +40,6 @@ module Data.Morpheus.Types.Internal.Data
   , toHSWrappers
   , KindD(..)
   , isNullable
-  , hsToGQLWrapper
   , toGQLWrapper
   , isEqOrStricter
   ) where
@@ -85,18 +84,14 @@ isNullable :: [WrapperD] -> Bool
 isNullable (MaybeD:_) = True
 isNullable _          = False
 
-hsToGQLWrapper :: ([WrapperD], (String, [String])) -> ([DataTypeWrapper], (String, [String]))
-hsToGQLWrapper (wr, name) = (toGQLWrapper wr, name)
-
 isEqOrStricter :: [WrapperD] -> [WrapperD] -> Bool
-isEqOrStricter x y = isEqOrStricterGQL (toGQLWrapper x) (toGQLWrapper y)
+isEqOrStricter x = not . isWeaker x
 
-isEqOrStricterGQL :: [DataTypeWrapper] -> [DataTypeWrapper] -> Bool
-isEqOrStricterGQL [] []                               = True
-isEqOrStricterGQL (NonNullType:xs1) (NonNullType:xs2) = isEqOrStricterGQL xs1 xs2
-isEqOrStricterGQL (NonNullType:xs1) xs2               = isEqOrStricterGQL xs1 xs2
-isEqOrStricterGQL (ListType:xs1) (ListType:xs2)       = isEqOrStricterGQL xs1 xs2
-isEqOrStricterGQL _ _                                 = False
+isWeaker :: [WrapperD] -> [WrapperD] -> Bool
+isWeaker (MaybeD:xs1) (MaybeD:xs2) = isWeaker xs1 xs2
+isWeaker (MaybeD:_) _              = True
+isWeaker (_:xs1) (_:xs2)           = isWeaker xs1 xs2
+isWeaker _ _                       = False
 
 toGQLWrapper :: [WrapperD] -> [DataTypeWrapper]
 toGQLWrapper (MaybeD:(MaybeD:tw)) = toGQLWrapper (MaybeD : tw)
