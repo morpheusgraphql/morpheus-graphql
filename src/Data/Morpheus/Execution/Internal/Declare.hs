@@ -17,20 +17,21 @@ import           Language.Haskell.TH
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Utils (nameSpaceWith)
-import           Data.Morpheus.Types.Internal.Data      (DataTypeKind (..))
-import           Data.Morpheus.Types.Internal.DataD     (AppD (..), ConsD (..), FieldD (..), KindD (..), TypeD (..),
-                                                         unKindD)
+import           Data.Morpheus.Types.Internal.Data      (DataTypeKind (..), KindD (..), WrapperD (..), unKindD)
+import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), FieldD (..), TypeD (..))
 
 type FUNC = (->)
 
 declareType :: [Name] -> TypeD -> Dec
 declareType = declareGQLT False Nothing
 
-wrappedT :: AppD (String, [String]) -> Type
-wrappedT (ListD td)            = AppT (ConT ''[]) (wrappedT td)
-wrappedT (MaybeD td)           = AppT (ConT ''Maybe) (wrappedT td)
-wrappedT (BaseD (name, [par])) = AppT (ConT (mkName name)) (VarT $ mkName par)
-wrappedT (BaseD (name, _))     = ConT (mkName name)
+wrappedT :: [WrapperD] -> (String, [String]) -> Type
+wrappedT (ListD:xs) = AppT (ConT ''[]) . wrappedT xs
+wrappedT (MaybeD:xs) = AppT (ConT ''Maybe) . wrappedT xs
+wrappedT [] = decType
+  where
+    decType (name, [par]) = AppT (ConT (mkName name)) (VarT $ mkName par)
+    decType (name, _)     = ConT (mkName name)
 
 -- declareType
 declareGQLT :: Bool -> Maybe KindD -> [Name] -> TypeD -> Dec
@@ -49,7 +50,8 @@ declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
     derive className = DerivClause Nothing [ConT className]
     cons ConsD {cName, cFields} = RecC (mkName cName) (map declareField cFields)
       where
-        declareField FieldD {fieldNameD, fieldArgsD, fieldTypeD} = (fieldName, defBang, fieldType)
+        declareField FieldD {fieldNameD, fieldArgsD, fieldTypeD = (wrappers, typeName)} =
+          (fieldName, defBang, fieldType)
           where
             fieldName
               | namespace = mkName (nameSpaceWith tName fieldNameD)
@@ -70,4 +72,4 @@ declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
                   | isResolver = AppT monadVar result
                   | otherwise = result
                 ------------------------------------------------
-                result = wrappedT fieldTypeD
+                result = wrappedT wrappers typeName

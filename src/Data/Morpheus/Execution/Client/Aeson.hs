@@ -22,7 +22,8 @@ import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.DataD (AppD (..), ConsD (..), FieldD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.Data  (isNullable)
+import           Data.Morpheus.Types.Internal.DataD (ConsD (..), FieldD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH    (instanceFunD, instanceHeadT)
 
 deriveFromJSON :: TypeD -> Q Dec
@@ -39,14 +40,15 @@ aesonObjectBody :: ConsD -> ExpQ
 aesonObjectBody ConsD {cName, cFields} = handleFields cFields
   where
     consName = mkName cName
+    ------------------------------------------
     handleFields [] = fail $ "No Empty Object"
     handleFields fields = startExp fields
     ----------------------------------------------------------------------------------
-         -- Optional Field
+      -- Optional Field
       where
-        defField FieldD {fieldNameD, fieldTypeD = MaybeD _} = [|o .:? fieldNameD|]
-        -- Required Field
-        defField FieldD {fieldNameD}                        = [|o .: fieldNameD|]
+        defField FieldD {fieldNameD, fieldTypeD = (wrappers, _)}
+          | isNullable wrappers = [|o .:? fieldNameD|]
+          | otherwise = [|o .: fieldNameD|]
             -------------------------------------------------------------------
         startExp fNames = uInfixE (conE consName) (varE '(<$>)) (applyFields fNames)
           where

@@ -21,6 +21,8 @@ module Data.Morpheus.Types.Internal.Data
   , DataTypeKind(..)
   , DataFingerprint(..)
   , RawDataType(..)
+  , ResolverKind(..)
+  , WrapperD(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -32,8 +34,16 @@ module Data.Morpheus.Types.Internal.Data
   , kindOf
   , toNullableField
   , toListField
+  , unKindD
+  , isObject
+  , isInput
+  , gqlToHSWrappers
+  , KindD(..)
+  , isNullable
+  , hsToGQLWrapper
   ) where
 
+import           Data.Semigroup                     ((<>))
 import           GHC.Fingerprint.Type               (Fingerprint)
 import           Language.Haskell.TH.Syntax         (Lift (..))
 
@@ -42,6 +52,55 @@ import           Data.Morpheus.Types.Internal.Base  (Key)
 import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
 import qualified Data.Text                          as T (concat)
+
+unKindD :: KindD -> DataTypeKind
+unKindD SubscriptionD       = KindObject
+unKindD (RegularKindD kind) = kind
+
+isObject :: KindD -> Bool
+isObject (RegularKindD KindObject)      = True
+isObject (RegularKindD KindInputObject) = True
+isObject _                              = False
+
+isInput :: KindD -> Bool
+isInput (RegularKindD KindInputObject) = True
+isInput _                              = False
+
+data ResolverKind
+  = PlainResolver
+  | TypeVarResolver
+  | ExternalResolver
+  deriving (Show, Eq, Lift)
+
+data WrapperD
+  = ListD
+  | MaybeD
+  deriving (Show, Lift)
+
+isNullable :: [WrapperD] -> Bool
+isNullable (MaybeD:_) = True
+isNullable _          = False
+
+hsToGQLWrapper :: ([WrapperD], (String, [String])) -> ([DataTypeWrapper], (String, [String]))
+hsToGQLWrapper (wr, name) = (toWrappers wr, name)
+  where
+    toWrappers (MaybeD:(MaybeD:tw)) = toWrappers (MaybeD : tw)
+    toWrappers (MaybeD:(ListD:tw))  = ListType : toWrappers tw
+    toWrappers (ListD:tw)           = [NonNullType, ListType] <> toWrappers tw
+    toWrappers [MaybeD]             = []
+    toWrappers []                   = [NonNullType]
+
+gqlToHSWrappers :: [DataTypeWrapper] -> [WrapperD]
+gqlToHSWrappers []                             = [MaybeD]
+gqlToHSWrappers [NonNullType]                  = []
+gqlToHSWrappers (NonNullType:(ListType:xs))    = ListD : gqlToHSWrappers xs
+gqlToHSWrappers (NonNullType:(NonNullType:xs)) = gqlToHSWrappers xs
+gqlToHSWrappers (ListType:xs)                  = [MaybeD, ListD] <> gqlToHSWrappers xs
+
+data KindD
+  = SubscriptionD
+  | RegularKindD DataTypeKind
+  deriving (Show, Eq, Lift)
 
 data DataTypeKind
   = KindScalar

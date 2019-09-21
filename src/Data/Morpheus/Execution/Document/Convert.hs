@@ -16,9 +16,9 @@ import           Data.Text                               (Text, pack, unpack)
 import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Execution.Internal.Utils  (capital)
 import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataField, DataFullType (..), DataLeaf (..),
-                                                          DataTyCon(..), DataTypeKind (..))
-import           Data.Morpheus.Types.Internal.DataD      (AppD (..), ConsD (..), FieldD (..), GQLTypeD (..), KindD (..),
-                                                          ResolverKind (..), TypeD (..), gqlToHSWrappers)
+                                                          DataTyCon (..), DataTypeKind (..), KindD (..),
+                                                          ResolverKind (..), gqlToHSWrappers)
+import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), FieldD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 
 renderTHTypes :: [(Text, DataFullType)] -> Validation [GQLTypeD]
@@ -53,18 +53,18 @@ renderTHTypes lib = traverse renderTHType lib
         genField (key, DataField {fieldType, fieldTypeWrappers}) =
           FieldD {fieldNameD = unpack key, fieldTypeD, fieldArgsD = Nothing}
           where
-            fieldTypeD = gqlToHSWrappers fieldTypeWrappers (genFieldTypeName fieldType, [])
+            fieldTypeD = (gqlToHSWrappers fieldTypeWrappers, (genFieldTypeName fieldType, []))
         ---------------------------------------------------------------------------------------------
         genResField :: (Text, DataField) -> FieldD
         genResField (key, DataField {fieldName, fieldArgs, fieldType, fieldTypeWrappers}) =
           FieldD {fieldNameD = unpack key, fieldTypeD, fieldArgsD}
           where
             fieldArgsD = Just (argsTName fieldArgs, getFieldType $ pack $ genFieldTypeName fieldType)
-            fieldTypeD = gqlToHSWrappers fieldTypeWrappers (getTypeVarPair (genFieldTypeName fieldType))
+            fieldTypeD = (gqlToHSWrappers fieldTypeWrappers, getTypeVarPair (genFieldTypeName fieldType))
             argsTName [] = "()"
             argsTName _  = argsTypeName fieldName
         --------------------------------------------
-        genType (Leaf (LeafEnum DataTyCon{typeName, typeData})) =
+        genType (Leaf (LeafEnum DataTyCon {typeName, typeData})) =
           pure
             GQLTypeD
               { typeD = TypeD {tName = unpack typeName, tCons = map enumOption typeData}
@@ -75,7 +75,7 @@ renderTHTypes lib = traverse renderTHType lib
             enumOption name = ConsD {cName = unpack name, cFields = []}
         genType (Leaf _) = internalError "Scalar Types should defined By Native Haskell Types"
         genType (InputUnion _) = internalError "Input Unions not Supported"
-        genType (InputObject DataTyCon{typeName, typeData}) =
+        genType (InputObject DataTyCon {typeName, typeData}) =
           pure
             GQLTypeD
               { typeD =
@@ -86,7 +86,7 @@ renderTHTypes lib = traverse renderTHType lib
               , typeKindD = RegularKindD KindInputObject
               , typeArgD = []
               }
-        genType (OutputObject DataTyCon{typeName, typeData}) = do
+        genType (OutputObject DataTyCon {typeName, typeData}) = do
           typeArgD <- concat <$> traverse genArgumentType typeData
           pure
             GQLTypeD
@@ -101,7 +101,7 @@ renderTHTypes lib = traverse renderTHType lib
                     else RegularKindD KindObject
               , typeArgD
               }
-        genType (Union DataTyCon{typeName, typeData}) = do
+        genType (Union DataTyCon {typeName, typeData}) = do
           let tCons = map unionCon typeData
           pure
             GQLTypeD {typeD = TypeD {tName = unpack typeName, tCons}, typeKindD = RegularKindD KindUnion, typeArgD = []}
@@ -110,7 +110,7 @@ renderTHTypes lib = traverse renderTHType lib
               ConsD
                 { cName
                 , cFields =
-                    [FieldD {fieldNameD = "un" <> cName, fieldArgsD = Nothing, fieldTypeD = BaseD (utName, ["m"])}]
+                    [FieldD {fieldNameD = "un" <> cName, fieldArgsD = Nothing, fieldTypeD = ([], (utName, ["m"]))}]
                 }
               where
                 cName = unpack typeName <> utName

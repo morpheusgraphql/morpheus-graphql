@@ -15,7 +15,8 @@ import           Data.Morpheus.Execution.Document.Decode     (deriveDecode)
 import           Data.Morpheus.Execution.Document.GQLType    (deriveGQLType)
 import           Data.Morpheus.Execution.Document.Introspect (deriveObjectRep)
 import           Data.Morpheus.Execution.Internal.Declare    (declareGQLT)
-import           Data.Morpheus.Types.Internal.DataD          (GQLTypeD (..), isInput, isObject)
+import           Data.Morpheus.Types.Internal.Data           (isInput, isObject)
+import           Data.Morpheus.Types.Internal.DataD          (GQLTypeD (..))
 
 declareTypes :: Bool -> [GQLTypeD] -> Q [Dec]
 declareTypes namespace = fmap concat . traverse (declareGQLType namespace)

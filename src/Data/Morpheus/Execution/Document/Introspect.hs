@@ -8,7 +8,6 @@ module Data.Morpheus.Execution.Document.Introspect
   ) where
 
 import           Data.Proxy                                (Proxy (..))
-import           Data.Semigroup                            ((<>))
 import           Data.Typeable                             (Typeable)
 import           Language.Haskell.TH
 
@@ -16,9 +15,8 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Execution.Document.GQLType  (genTypeArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName))
-import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataTypeWrapper (..))
-import           Data.Morpheus.Types.Internal.DataD        (AppD (..), ConsD (..), FieldD (..), KindD, ResolverKind,
-                                                            TypeD (..))
+import           Data.Morpheus.Types.Internal.Data         (DataField (..), KindD, ResolverKind, hsToGQLWrapper)
+import           Data.Morpheus.Types.Internal.DataD        (ConsD (..), FieldD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceHeadT, typeT)
 
 -- [((Text, DataField), TypeUpdater)]
@@ -44,7 +42,7 @@ deriveObjectRep _ = pure []
 buildTypes :: [FieldD] -> ExpQ
 buildTypes = listE . concatMap introspectField
   where
-    introspectField FieldD {fieldTypeD} = [[|introspect $(proxyT $ snd (appDToField fieldTypeD))|]]
+    introspectField FieldD {fieldTypeD} = [[|introspect $(proxyT $ snd (hsToGQLWrapper fieldTypeD))|]]
 
 proxyT :: (String, [String]) -> Q Exp
 proxyT t = [|(Proxy :: Proxy $(genSig t))|]
@@ -69,13 +67,4 @@ buildFields = listE . map buildField
             , fieldHidden = False
             })|]
       where
-        (fieldTypeWrappers, fieldType) = appDToField fieldTypeD
-
-appDToField :: AppD (String, [String]) -> ([DataTypeWrapper], (String, [String]))
-appDToField = toField []
-  where
-    toField wrappers (MaybeD (ListD td))  = toField (wrappers <> [ListType]) td
-    toField wrappers (ListD td)           = toField (wrappers <> [NonNullType, ListType]) td
-    toField wrappers (MaybeD (MaybeD td)) = toField wrappers (MaybeD td)
-    toField wrappers (MaybeD (BaseD ty))  = (wrappers, ty)
-    toField wrappers (BaseD ty)           = (wrappers <> [NonNullType], ty)
+        (fieldTypeWrappers, fieldType) = hsToGQLWrapper fieldTypeD

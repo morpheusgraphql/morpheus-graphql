@@ -15,8 +15,8 @@ import           Data.Morpheus.Kind                 (ENUM, INPUT_OBJECT, INPUT_U
 --
 -- MORPHEUS
 import           Data.Morpheus.Types.GQLType        (GQLType (..))
-import           Data.Morpheus.Types.Internal.Data  (DataTypeKind (..))
-import           Data.Morpheus.Types.Internal.DataD (GQLTypeD (..), KindD (..), TypeD (..), unKindD)
+import           Data.Morpheus.Types.Internal.Data  (DataTypeKind (..), KindD (..), unKindD)
+import           Data.Morpheus.Types.Internal.DataD (GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH    (instanceHeadT, typeT)
 import           Data.Typeable                      (Typeable)
 
