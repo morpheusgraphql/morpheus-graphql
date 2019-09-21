@@ -43,8 +43,8 @@ import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..)
 import           Data.Morpheus.Types.GQLType                     (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data               (DataArguments, DataField (..), DataFullType (..),
                                                                   DataLeaf (..), DataTyCon (..), DataTypeLib,
-                                                                  DataTypeWrapper (..), defineType, isTypeDefined,
-                                                                  toListField, toNullableField)
+                                                                  defineType, isTypeDefined, toListField,
+                                                                  toNullableField)
 import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
 
 type IntroCon a = ObjectFields a
@@ -153,13 +153,7 @@ instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a wher
               }
       typeName = __typeName (Proxy @a) <> "Tags"
       fieldTag =
-        DataField
-          { fieldName = "tag"
-          , fieldArgs = []
-          , fieldTypeWrappers = [NonNullType]
-          , fieldType = typeName
-          , fieldHidden = False
-          }
+        DataField {fieldName = "tag", fieldArgs = [], fieldTypeWrappers = [], fieldType = typeName, fieldHidden = False}
 
 -- Types
 type TypeUpdater = DataTypeLib -> SchemaValidation DataTypeLib
@@ -216,7 +210,7 @@ resolveTypes = foldM (&)
 
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName =
-  DataField {fieldName, fieldArgs, fieldTypeWrappers = [NonNullType], fieldType = __typeName proxy, fieldHidden = False}
+  DataField {fieldName, fieldArgs, fieldTypeWrappers = [], fieldType = __typeName proxy, fieldHidden = False}
 
 buildType :: GQLType a => t -> Proxy a -> DataTyCon t
 buildType typeData proxy =

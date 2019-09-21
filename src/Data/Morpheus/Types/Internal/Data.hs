@@ -37,10 +37,12 @@ module Data.Morpheus.Types.Internal.Data
   , unKindD
   , isObject
   , isInput
-  , gqlToHSWrappers
+  , toHSWrappers
   , KindD(..)
   , isNullable
   , hsToGQLWrapper
+  , toGQLWrapper
+  , isEqOrStricter
   ) where
 
 import           Data.Semigroup                     ((<>))
@@ -77,25 +79,39 @@ data WrapperD
   | MaybeD
   deriving (Show, Lift)
 
+isFieldNullable :: DataField -> Bool
+isFieldNullable = isNullable . fieldTypeWrappers
+
 isNullable :: [WrapperD] -> Bool
 isNullable (MaybeD:_) = True
 isNullable _          = False
 
 hsToGQLWrapper :: ([WrapperD], (String, [String])) -> ([DataTypeWrapper], (String, [String]))
-hsToGQLWrapper (wr, name) = (toWrappers wr, name)
-  where
-    toWrappers (MaybeD:(MaybeD:tw)) = toWrappers (MaybeD : tw)
-    toWrappers (MaybeD:(ListD:tw))  = ListType : toWrappers tw
-    toWrappers (ListD:tw)           = [NonNullType, ListType] <> toWrappers tw
-    toWrappers [MaybeD]             = []
-    toWrappers []                   = [NonNullType]
+hsToGQLWrapper (wr, name) = (toGQLWrapper wr, name)
 
-gqlToHSWrappers :: [DataTypeWrapper] -> [WrapperD]
-gqlToHSWrappers []                             = [MaybeD]
-gqlToHSWrappers [NonNullType]                  = []
-gqlToHSWrappers (NonNullType:(ListType:xs))    = ListD : gqlToHSWrappers xs
-gqlToHSWrappers (NonNullType:(NonNullType:xs)) = gqlToHSWrappers xs
-gqlToHSWrappers (ListType:xs)                  = [MaybeD, ListD] <> gqlToHSWrappers xs
+isEqOrStricter :: [WrapperD] -> [WrapperD] -> Bool
+isEqOrStricter x y = isEqOrStricterGQL (toGQLWrapper x) (toGQLWrapper y)
+
+isEqOrStricterGQL :: [DataTypeWrapper] -> [DataTypeWrapper] -> Bool
+isEqOrStricterGQL [] []                               = True
+isEqOrStricterGQL (NonNullType:xs1) (NonNullType:xs2) = isEqOrStricterGQL xs1 xs2
+isEqOrStricterGQL (NonNullType:xs1) xs2               = isEqOrStricterGQL xs1 xs2
+isEqOrStricterGQL (ListType:xs1) (ListType:xs2)       = isEqOrStricterGQL xs1 xs2
+isEqOrStricterGQL _ _                                 = False
+
+toGQLWrapper :: [WrapperD] -> [DataTypeWrapper]
+toGQLWrapper (MaybeD:(MaybeD:tw)) = toGQLWrapper (MaybeD : tw)
+toGQLWrapper (MaybeD:(ListD:tw))  = ListType : toGQLWrapper tw
+toGQLWrapper (ListD:tw)           = [NonNullType, ListType] <> toGQLWrapper tw
+toGQLWrapper [MaybeD]             = []
+toGQLWrapper []                   = [NonNullType]
+
+toHSWrappers :: [DataTypeWrapper] -> [WrapperD]
+toHSWrappers []                             = [MaybeD]
+toHSWrappers [NonNullType]                  = []
+toHSWrappers (NonNullType:(ListType:xs))    = ListD : toHSWrappers xs
+toHSWrappers (NonNullType:(NonNullType:xs)) = toHSWrappers xs
+toHSWrappers (ListType:xs)                  = [MaybeD, ListD] <> toHSWrappers xs
 
 data KindD
   = SubscriptionD
@@ -146,16 +162,12 @@ data DataField = DataField
   { fieldArgs         :: [(Key, DataArgument)]
   , fieldName         :: Key
   , fieldType         :: Key
-  , fieldTypeWrappers :: [DataTypeWrapper]
+  , fieldTypeWrappers :: [WrapperD]
   , fieldHidden       :: Bool
   } deriving (Show)
 
 instance Lift DataField where
   lift (DataField arg nm ty tw hid) = apply 'DataField [liftTextMap arg, liftText nm, liftText ty, lift tw, lift hid]
-
-isFieldNullable :: DataField -> Bool
-isFieldNullable DataField {fieldTypeWrappers = NonNullType:_} = False
-isFieldNullable _                                             = True
 
 data DataTyCon a = DataTyCon
   { typeName        :: Key
@@ -204,16 +216,19 @@ data DataTypeLib = DataTypeLib
   , subscription :: Maybe (Key, DataObject)
   } deriving (Show)
 
-showWrappedType :: [DataTypeWrapper] -> Key -> Key
-showWrappedType [] type'               = type'
-showWrappedType (ListType:xs) type'    = T.concat ["[", showWrappedType xs type', "]"]
-showWrappedType (NonNullType:xs) type' = T.concat [showWrappedType xs type', "!"]
-
-showFullAstType :: [DataTypeWrapper] -> DataKind -> Key
+showFullAstType :: [WrapperD] -> DataKind -> Key
 showFullAstType wrappers' (ScalarKind x) = showWrappedType wrappers' (typeName x)
 showFullAstType wrappers' (EnumKind x)   = showWrappedType wrappers' (typeName x)
 showFullAstType wrappers' (ObjectKind x) = showWrappedType wrappers' (typeName x)
 showFullAstType wrappers' (UnionKind x)  = showWrappedType wrappers' (typeName x)
+
+showWrappedType :: [WrapperD] -> Key -> Key
+showWrappedType wr = showGQLWrapper (toGQLWrapper wr)
+
+showGQLWrapper :: [DataTypeWrapper] -> Key -> Key
+showGQLWrapper [] type'               = type'
+showGQLWrapper (ListType:xs) type'    = T.concat ["[", showGQLWrapper xs type', "]"]
+showGQLWrapper (NonNullType:xs) type' = T.concat [showGQLWrapper xs type', "!"]
 
 initTypeLib :: (Key, DataObject) -> DataTypeLib
 initTypeLib query' =
@@ -274,8 +289,8 @@ defineType (key', Union type') lib        = lib {union = (key', type') : union l
 defineType (key', InputUnion type') lib   = lib {inputUnion = (key', type') : inputUnion lib}
 
 toNullableField :: DataField -> DataField
-toNullableField dataField@DataField {fieldTypeWrappers = NonNullType:xs} = dataField {fieldTypeWrappers = xs}
-toNullableField dataField                                                = dataField
+toNullableField dataField@DataField {fieldTypeWrappers = MaybeD:xs} = dataField {fieldTypeWrappers = xs}
+toNullableField dataField                                           = dataField
 
 toListField :: DataField -> DataField
-toListField x = x {fieldTypeWrappers = [NonNullType, ListType] ++ fieldTypeWrappers x}
+toListField x = x {fieldTypeWrappers = ListD : fieldTypeWrappers x}

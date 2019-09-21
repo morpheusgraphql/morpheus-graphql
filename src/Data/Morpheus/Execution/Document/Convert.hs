@@ -17,7 +17,7 @@ import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Execution.Internal.Utils  (capital)
 import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataField, DataFullType (..), DataLeaf (..),
                                                           DataTyCon (..), DataTypeKind (..), KindD (..),
-                                                          ResolverKind (..), gqlToHSWrappers)
+                                                          ResolverKind (..))
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), FieldD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 
@@ -53,14 +53,14 @@ renderTHTypes lib = traverse renderTHType lib
         genField (key, DataField {fieldType, fieldTypeWrappers}) =
           FieldD {fieldNameD = unpack key, fieldTypeD, fieldArgsD = Nothing}
           where
-            fieldTypeD = (gqlToHSWrappers fieldTypeWrappers, (genFieldTypeName fieldType, []))
+            fieldTypeD = (fieldTypeWrappers, (genFieldTypeName fieldType, []))
         ---------------------------------------------------------------------------------------------
         genResField :: (Text, DataField) -> FieldD
         genResField (key, DataField {fieldName, fieldArgs, fieldType, fieldTypeWrappers}) =
           FieldD {fieldNameD = unpack key, fieldTypeD, fieldArgsD}
           where
             fieldArgsD = Just (argsTName fieldArgs, getFieldType $ pack $ genFieldTypeName fieldType)
-            fieldTypeD = (gqlToHSWrappers fieldTypeWrappers, getTypeVarPair (genFieldTypeName fieldType))
+            fieldTypeD = (fieldTypeWrappers, getTypeVarPair (genFieldTypeName fieldType))
             argsTName [] = "()"
             argsTName _  = argsTypeName fieldName
         --------------------------------------------

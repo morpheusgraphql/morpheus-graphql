@@ -10,9 +10,8 @@ import           Data.Maybe
 -- Morpheus
 import           Data.Morpheus.Error.Document.Interface  (ImplementsError (..), partialImplements, unknownInterface)
 import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataObject, DataTyCon (..),
-                                                          Key, RawDataType (..), showWrappedType)
+                                                          Key, RawDataType (..), isEqOrStricter, showWrappedType)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
-import           Data.Morpheus.Validation.Internal.Utils (isEqOrStricter)
 
 validatePartialDocument :: [(Key, RawDataType)] -> Validation [(Key, DataFullType)]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib

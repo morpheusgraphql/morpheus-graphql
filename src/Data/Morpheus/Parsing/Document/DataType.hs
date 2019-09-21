@@ -12,7 +12,7 @@ import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parse
                                                           parseWrappedType, pipeLiteral, qualifier, setOf,
                                                           spaceAndComments, token)
 import           Data.Morpheus.Types.Internal.Data       (DataArgument, DataField, DataFullType (..), Key,
-                                                          RawDataType (..))
+                                                          RawDataType (..), toHSWrappers)
 import           Data.Text                               (Text)
 import           Text.Megaparsec                         (label, sepBy1, some, (<|>))
 import           Text.Megaparsec.Char                    (char, space1, string)
@@ -22,7 +22,7 @@ dataArgument =
   label "Argument" $ do
     ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
     nonNull <- parseNonNull
-    pure $ createArgument fieldName (nonNull ++ wrappers, fieldType)
+    pure $ createArgument fieldName (toHSWrappers $ nonNull ++ wrappers, fieldType)
 
 typeDef :: Text -> Parser Text
 typeDef kind = do
@@ -44,7 +44,7 @@ inputObjectEntries = label "inputEntries" $ setOf entry
       label "entry" $ do
         ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
         nonNull <- parseNonNull
-        return (fieldName, createField [] fieldName (nonNull ++ wrappers, fieldType))
+        return (fieldName, createField [] fieldName (toHSWrappers $ nonNull ++ wrappers, fieldType))
 
 outputObjectEntries :: Parser [(Key, DataField)]
 outputObjectEntries = label "entries" $ setOf entry
@@ -58,7 +58,7 @@ outputObjectEntries = label "entries" $ setOf entry
       label "entry" $ do
         ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs parseWrappedType
         nonNull <- parseNonNull
-        return (fieldName, createField fieldArgs fieldName (nonNull ++ wrappers, fieldType))
+        return (fieldName, createField fieldArgs fieldName (toHSWrappers $ nonNull ++ wrappers, fieldType))
 
 dataObject :: Parser (Text, RawDataType)
 dataObject =

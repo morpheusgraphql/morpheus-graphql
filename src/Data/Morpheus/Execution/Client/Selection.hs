@@ -18,8 +18,7 @@ import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), Val
                                                              VariableDefinitions)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Data          (DataField (..), DataFullType (..), DataLeaf (..),
-                                                             DataTyCon (..), DataTypeLib (..), DataTypeWrapper,
-                                                             allDataTypes, gqlToHSWrappers)
+                                                             DataTyCon (..), DataTypeLib (..), WrapperD, allDataTypes)
 import           Data.Morpheus.Types.Internal.DataD         (ConsD (..), FieldD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Validation.Internal.Utils    (lookupType)
@@ -35,7 +34,7 @@ operationTypes lib variables = genOperation
     typeByField :: Text -> DataFullType -> Validation DataFullType
     typeByField key datatype = fst <$> fieldDataType datatype key
     ------------------------------------------------------
-    fieldDataType :: DataFullType -> Text -> Validation (DataFullType, [DataTypeWrapper])
+    fieldDataType :: DataFullType -> Text -> Validation (DataFullType, [WrapperD])
     fieldDataType (OutputObject DataTyCon {typeData}) key =
       case lookup key typeData of
         Just DataField {fieldTypeWrappers, fieldType} -> trans <$> getType lib fieldType
@@ -66,7 +65,7 @@ operationTypes lib variables = genOperation
               fType <- typeFrom <$> getType lib fieldType
               pure $ FieldD {fieldNameD = unpack key, fieldTypeD = wrType fType, fieldArgsD = Nothing}
               where
-                wrType fieldT = (gqlToHSWrappers fieldTypeWrappers, (unpack fieldT, []))
+                wrType fieldT = (fieldTypeWrappers, (unpack fieldT, []))
         subTypes (Leaf x) = buildLeaf x
         subTypes _ = pure []
     -------------------------------------------
@@ -82,7 +81,7 @@ operationTypes lib variables = genOperation
         fieldD (key, Variable {variableType, variableTypeWrappers}) =
           FieldD {fieldNameD = unpack key, fieldArgsD = Nothing, fieldTypeD}
           where
-            fieldTypeD = (gqlToHSWrappers variableTypeWrappers, (unpack variableType, []))
+            fieldTypeD = (variableTypeWrappers, (unpack variableType, []))
     -------------------------------------------
     getCon name dataType selectionSet = do
       cFields <- genFields dataType selectionSet
@@ -99,7 +98,7 @@ operationTypes lib variables = genOperation
             ------------------------------------------------------------
             lookupFieldType key = do
               (newType, wrappers) <- fieldDataType datatype key
-              pure (gqlToHSWrappers wrappers, (unpack $ typeFrom newType, []))
+              pure (wrappers, (unpack $ typeFrom newType, []))
     --------------------------------------------
     genRecordType name dataType selectionSet = do
       (con, subTypes) <- getCon name dataType selectionSet

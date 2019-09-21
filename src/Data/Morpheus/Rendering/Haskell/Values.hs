@@ -14,7 +14,7 @@ import           Data.Text                             (Text)
 import           Data.Morpheus.Rendering.Haskell.Terms (Context (..), Scope (..), renderAssignment, renderCon,
                                                         renderEqual, renderReturn, renderSet, renderUnionCon)
 import           Data.Morpheus.Types.Internal.Data     (DataField (..), DataFullType (..), DataLeaf (..),
-                                                        DataTyCon (..), DataTypeLib (..), DataTypeWrapper (..))
+                                                        DataTyCon (..), DataTypeLib (..), WrapperD (..))
 
 renderRootResolver :: Context -> DataTypeLib -> Text
 renderRootResolver _ DataTypeLib {mutation, subscription} = renderSignature <> renderBody <> "\n\n"
@@ -52,11 +52,9 @@ renderResolver Context {scope, pubSub = (channel, content)} (name, dataType) = r
         renderFieldRes (key, DataField {fieldType, fieldTypeWrappers}) =
           (key, "const " <> withScope scope (renderValue fieldTypeWrappers fieldType))
           where
-            renderValue []                             = const $ "$ " <> renderReturn <> "Nothing"
-            renderValue [NonNullType]                  = fieldValue
-            renderValue (ListType:_)                   = const $ "$ " <> renderReturn <> "Just []"
-            renderValue (NonNullType:(ListType:_))     = const $ "$ " <> renderReturn <> "[]"
-            renderValue (NonNullType:(NonNullType:xs)) = renderValue (NonNullType : xs)
+            renderValue (MaybeD:_) = const $ "$ " <> renderReturn <> "Nothing"
+            renderValue (ListD:_)  = const $ "$ " <> renderReturn <> "[]"
+            renderValue []         = fieldValue
             ----------------------------------------------------------------------------
             fieldValue "String" = "$ return \"\""
             fieldValue "Int"    = "$ return 0"

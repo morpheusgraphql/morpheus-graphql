@@ -7,8 +7,8 @@ module Data.Morpheus.Validation.Query.Input.Object
 
 import           Data.Morpheus.Error.Input                 (InputError (..), InputValidation, Prop (..))
 import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataKind (..), DataTyCon (..),
-                                                            DataTypeLib (..), DataTypeWrapper (..), DataValidator (..),
-                                                            showFullAstType)
+                                                            DataTypeLib (..), DataValidator (..), WrapperD (..),
+                                                            isNullable, showFullAstType)
 import           Data.Morpheus.Types.Internal.Value        (Value (..))
 import           Data.Morpheus.Validation.Internal.Utils   (getInputType, lookupField)
 import           Data.Morpheus.Validation.Query.Input.Enum (validateEnum)
@@ -18,24 +18,22 @@ typeMismatch :: Value -> Text -> [Prop] -> InputError
 typeMismatch jsType expected' path' = UnexpectedType path' expected' jsType Nothing
 
 -- Validate Variable Argument or all Possible input Values
-validateInputValue :: DataTypeLib -> [Prop] -> [DataTypeWrapper] -> DataKind -> (Text, Value) -> InputValidation Value
-validateInputValue lib' prop' = validate
+validateInputValue :: DataTypeLib -> [Prop] -> [WrapperD] -> DataKind -> (Text, Value) -> InputValidation Value
+validateInputValue lib prop' = validate
   where
-    throwError :: [DataTypeWrapper] -> DataKind -> Value -> InputValidation Value
+    throwError :: [WrapperD] -> DataKind -> Value -> InputValidation Value
     throwError wrappers' type' value' = Left $ UnexpectedType prop' (showFullAstType wrappers' type') value' Nothing
-    {-- VALIDATION --}
-    {-- 1. VALIDATE WRAPPERS -}
-    validate :: [DataTypeWrapper] -> DataKind -> (Text, Value) -> InputValidation Value
-    -- throw error on not nullable type if value = null
-    validate (NonNullType:wrappers') type' (_, Null) = throwError wrappers' type' Null
-    -- resolves nullable value as null
-    validate _ _ (_, Null) = return Null
-    -- ignores NonNUllTypes if value /= null
-    validate (NonNullType:wrappers') type' value' = validateInputValue lib' prop' wrappers' type' value'
-    {-- VALIDATE LIST -}
-    validate (ListType:wrappers') type' (key', List list') = List <$> mapM validateElement list'
+    -- VALIDATION
+    validate :: [WrapperD] -> DataKind -> (Text, Value) -> InputValidation Value
+    -- Validate Null. value = null ?
+    validate wrappers tName (_, Null)
+      | isNullable wrappers = return Null
+      | otherwise = throwError wrappers tName Null
+    -- Validate LIST
+    validate (MaybeD:wrappers) type' value' = validateInputValue lib prop' wrappers type' value'
+    validate (ListD:wrappers) type' (key', List list') = List <$> mapM validateElement list'
       where
-        validateElement element' = validateInputValue lib' prop' wrappers' type' (key', element')
+        validateElement element' = validateInputValue lib prop' wrappers type' (key', element')
     {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
     {-- VALIDATE OBJECT--}
     validate [] (ObjectKind DataTyCon {typeData = parentFields'}) (_, Object fields) =
@@ -44,13 +42,13 @@ validateInputValue lib' prop' = validate
         validateField (_name, value') = do
           (type', currentProp') <- validationData value'
           wrappers' <- fieldTypeWrappers <$> getField
-          value'' <- validateInputValue lib' currentProp' wrappers' type' (_name, value')
+          value'' <- validateInputValue lib currentProp' wrappers' type' (_name, value')
           return (_name, value'')
           where
             validationData x = do
               fieldTypeName' <- fieldType <$> getField
               let currentProp = prop' ++ [Prop _name fieldTypeName']
-              type' <- getInputType fieldTypeName' lib' (typeMismatch x fieldTypeName' currentProp)
+              type' <- getInputType fieldTypeName' lib (typeMismatch x fieldTypeName' currentProp)
               return (type', currentProp)
             getField = lookupField _name parentFields' (UnknownField prop' _name)
     -- VALIDATE INPUT UNION

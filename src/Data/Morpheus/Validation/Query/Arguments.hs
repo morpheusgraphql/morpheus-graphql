@@ -15,11 +15,10 @@ import           Data.Morpheus.Types.Internal.AST.RawSelection (RawArgument (..)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Argument (..), ArgumentOrigin (..), Arguments)
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Data             (DataArgument, DataField (..), DataField, DataTypeLib,
-                                                                isFieldNullable, showWrappedType)
+                                                                isEqOrStricter, isFieldNullable, showWrappedType)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Types.Internal.Value            (Value (Null))
-import           Data.Morpheus.Validation.Internal.Utils       (checkForUnknownKeys, checkNameCollision, getInputType,
-                                                                isEqOrStricter)
+import           Data.Morpheus.Validation.Internal.Utils       (checkForUnknownKeys, checkNameCollision, getInputType)
 import           Data.Morpheus.Validation.Query.Input.Object   (validateInputValue)
 import           Data.Text                                     (Text)
 

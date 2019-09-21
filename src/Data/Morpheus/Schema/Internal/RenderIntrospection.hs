@@ -21,7 +21,8 @@ import           Data.Morpheus.Schema.Type         (Type (..))
 import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data (DataField (..), DataField, DataFullType (..), DataLeaf (..),
                                                     DataObject, DataTyCon (..), DataTypeKind (..), DataTypeLib,
-                                                    DataTypeWrapper (..), DataUnion, kindOf, lookupDataType)
+                                                    DataTypeWrapper (..), DataUnion, WrapperD, kindOf, lookupDataType,
+                                                    toGQLWrapper)
 
 type InputValue = IN.InputValue Type
 
@@ -53,8 +54,8 @@ renderTypeKind KindNonNull     = NON_NULL
 wrap :: DataField -> Type -> Type
 wrap field' = wrapRec (fieldTypeWrappers field')
 
-wrapRec :: [DataTypeWrapper] -> Type -> Type
-wrapRec xs type' = foldr wrapByTypeWrapper type' xs
+wrapRec :: [WrapperD] -> Type -> Type
+wrapRec xs typ = foldr wrapByTypeWrapper typ (toGQLWrapper xs)
 
 wrapByTypeWrapper :: DataTypeWrapper -> Type -> Type
 wrapByTypeWrapper ListType    = wrapAs LIST

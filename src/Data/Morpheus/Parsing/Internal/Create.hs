@@ -13,14 +13,14 @@ module Data.Morpheus.Parsing.Internal.Create
 
 import           Data.Morpheus.Types.Internal.Data (DataArguments, DataField (..), DataFingerprint (..),
                                                     DataFullType (..), DataLeaf (..), DataTyCon (..), DataTypeLib (..),
-                                                    DataTypeWrapper, DataValidator (..), defineType, initTypeLib)
+                                                    DataValidator (..), WrapperD, defineType, initTypeLib)
 import           Data.Text                         (Text)
 
-createField :: DataArguments -> Text -> ([DataTypeWrapper], Text) -> DataField
+createField :: DataArguments -> Text -> ([WrapperD], Text) -> DataField
 createField fieldArgs fieldName (fieldTypeWrappers, fieldType) =
   DataField {fieldArgs, fieldName, fieldType, fieldTypeWrappers, fieldHidden = False}
 
-createArgument :: Text -> ([DataTypeWrapper], Text) -> (Text, DataField)
+createArgument :: Text -> ([WrapperD], Text) -> (Text, DataField)
 createArgument fieldName x = (fieldName, createField [] fieldName x)
 
 createType :: Text -> a -> DataTyCon a

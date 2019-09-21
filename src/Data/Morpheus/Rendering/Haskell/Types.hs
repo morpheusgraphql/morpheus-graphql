@@ -15,7 +15,7 @@ import           Data.Morpheus.Rendering.Haskell.Terms (Context (..), Scope (..)
                                                         renderData, renderSet, renderTuple, renderUnionCon,
                                                         renderWrapped)
 import           Data.Morpheus.Types.Internal.Data     (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
-                                                        DataTyCon (..), DataTypeWrapper (..))
+                                                        DataTyCon (..), isNullable)
 
 renderType :: Context -> (Text, DataFullType) -> Text
 renderType context (name, dataType) = typeIntro <> renderData name <> renderT dataType
@@ -74,8 +74,9 @@ renderField Context {scope, pubSub = (channel, content)} (key, DataField {fieldT
         _    -> "IOMutRes " <> channel <> " " <> content <> " "
     renderMonad _ = "IORes "
     -----------------------------------------------------------------
-    result wrappers@(NonNullType:_) = renderWrapped wrappers fieldType
-    result wrappers                 = renderTuple (renderWrapped wrappers fieldType)
+    result wrappers
+      | isNullable wrappers = renderTuple (renderWrapped wrappers fieldType)
+      | otherwise = renderWrapped wrappers fieldType
     (argTypeName, argTypes) = renderArguments fieldArgs
     renderArguments :: [(Text, DataArgument)] -> (Text, Maybe Text)
     renderArguments [] = ("()", Nothing)
