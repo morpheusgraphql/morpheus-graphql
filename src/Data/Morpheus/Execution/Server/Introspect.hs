@@ -148,7 +148,7 @@ instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a wher
                 -- has same fingerprint as object because it depends on it
               , typeFingerprint = __typeFingerprint (Proxy @a)
               , typeVisibility = __typeVisibility (Proxy @a)
-              , typeDescription = ""
+              , typeDescription = Nothing
               , typeData = map fieldName inputUnions
               }
       typeName = __typeName (Proxy @a) <> "Tags"

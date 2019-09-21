@@ -39,7 +39,7 @@ convertTypes :: DataTypeLib -> Either String [Type]
 convertTypes lib = traverse (`renderType` lib) (allDataTypes lib)
 
 buildSchemaLinkType :: (Text, DataObject) -> Type
-buildSchemaLinkType (key', _) = createObjectType key' "" $ Just []
+buildSchemaLinkType (key', _) = createObjectType key' Nothing $ Just []
 
 findType :: Text -> DataTypeLib -> Maybe Type
 findType name lib = (name, ) <$> lookup name (allDataTypes lib) >>= renderT

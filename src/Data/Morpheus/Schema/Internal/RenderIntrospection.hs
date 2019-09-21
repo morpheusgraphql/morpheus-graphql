@@ -79,12 +79,12 @@ typeFromLeaf (key, CustomScalar DataTyCon {typeDescription}) = createLeafType SC
 typeFromLeaf (key, LeafEnum DataTyCon {typeDescription, typeData}) =
   createLeafType ENUM key typeDescription (Just $ map createEnumValue typeData)
 
-createLeafType :: TypeKind -> Text -> Text -> Maybe [EnumValue] -> Type
-createLeafType kind' name' desc' enums' =
+createLeafType :: TypeKind -> Text -> Maybe Text -> Maybe [EnumValue] -> Type
+createLeafType kind' name' description enums' =
   Type
     { kind = kind'
     , name = Just name'
-    , description = Just desc'
+    , description
     , fields = const $ return Nothing
     , ofType = Nothing
     , interfaces = Nothing
@@ -94,15 +94,15 @@ createLeafType kind' name' desc' enums' =
     }
 
 typeFromUnion :: (Text, DataUnion) -> Type
-typeFromUnion (name', DataTyCon {typeData = fields', typeDescription = description'}) =
+typeFromUnion (name', DataTyCon {typeData = fields', typeDescription = description}) =
   Type
     { kind = UNION
     , name = Just name'
-    , description = Just description'
+    , description
     , fields = const $ return Nothing
     , ofType = Nothing
     , interfaces = Nothing
-    , possibleTypes = Just (map (\x -> createObjectType (fieldType x) "" $ Just []) fields')
+    , possibleTypes = Just (map (\x -> createObjectType (fieldType x) Nothing $ Just []) fields')
     , enumValues = const $ return Nothing
     , inputFields = Nothing
     }
@@ -126,12 +126,12 @@ renderInputUnion (key', DataTyCon {typeData, typeDescription}) lib =
   where
     createField field = IN.createInputValueWith (fieldName field) <$> createInputObjectType field lib
 
-createObjectType :: Text -> Text -> Maybe [Field] -> Type
-createObjectType name' desc' fields' =
+createObjectType :: Text -> Maybe Text -> Maybe [Field] -> Type
+createObjectType name' description fields' =
   Type
     { kind = OBJECT
     , name = Just name'
-    , description = Just desc'
+    , description
     , fields = const $ return fields'
     , ofType = Nothing
     , interfaces = Just []
@@ -140,12 +140,12 @@ createObjectType name' desc' fields' =
     , inputFields = Nothing
     }
 
-createInputObject :: Text -> Text -> [InputValue] -> Type
-createInputObject name' desc' fields' =
+createInputObject :: Text -> Maybe Text -> [InputValue] -> Type
+createInputObject name' description fields' =
   Type
     { kind = INPUT_OBJECT
     , name = Just name'
-    , description = Just desc'
+    , description
     , fields = const $ return Nothing
     , ofType = Nothing
     , interfaces = Nothing

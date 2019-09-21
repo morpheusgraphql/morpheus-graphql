@@ -25,7 +25,8 @@ createArgument fieldName x = (fieldName, createField [] fieldName x)
 
 createType :: Text -> a -> DataTyCon a
 createType typeName typeData =
-  DataTyCon {typeName, typeDescription = "", typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData}
+  DataTyCon
+    {typeName, typeDescription = Nothing, typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData}
 
 createScalarType :: Text -> (Text, DataFullType)
 createScalarType typeName = (typeName, Leaf $ CustomScalar $ createType typeName (DataValidator pure))

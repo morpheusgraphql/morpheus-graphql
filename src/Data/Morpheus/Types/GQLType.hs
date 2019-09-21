@@ -61,8 +61,8 @@ ignoreResolver (con, args) = con : concatMap (ignoreResolver . splitTyConApp) ar
 --  @
 class GQLType a where
   type KIND a :: GQL_KIND
-  description :: Proxy a -> Text
-  description _ = ""
+  description :: Proxy a -> Maybe Text
+  description _ = Nothing
   __typeVisibility :: Proxy a -> Bool
   __typeVisibility = const True
   __typeName :: Proxy a -> Text

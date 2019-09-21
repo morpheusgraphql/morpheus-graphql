@@ -196,7 +196,7 @@ instance Lift DataField where
 data DataTyCon a = DataTyCon
   { typeName        :: Key
   , typeFingerprint :: DataFingerprint
-  , typeDescription :: Key
+  , typeDescription :: Maybe Key
   , typeVisibility  :: Bool
   , typeData        :: a
   } deriving (Show)

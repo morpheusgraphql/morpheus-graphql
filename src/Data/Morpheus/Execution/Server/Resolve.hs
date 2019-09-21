@@ -148,5 +148,5 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
           , typeVisibility = True
           , typeName
           , typeFingerprint = SystemFingerprint typeName
-          , typeDescription = ""
+          , typeDescription = Nothing
           })
