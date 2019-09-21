@@ -34,7 +34,7 @@ import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, 
 import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
 import           Data.Morpheus.Schema.SchemaAPI                      (defaultTypes, hiddenRootFields, schemaAPI)
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), OperationKind (..))
-import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataType (..),
+import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataTyCon (..),
                                                                       DataTypeLib (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Stream                 (Event (..), ResponseEvent (..), ResponseStream,
                                                                       StreamState (..), StreamT (..), closeStream, mapS)
@@ -137,13 +137,13 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
     subscriptionSchema lib = resolveTypes (lib {subscription = maybeOperator fields "Subscription"}) types
       where
         (fields, types) = objectFields (Proxy @subscription)
-     -- maybeOperator :: [a] -> Text -> Maybe (Text, DataType [a])
+     -- maybeOperator :: [a] -> Text -> Maybe (Text, DataTyCon[a])
     maybeOperator []     = const Nothing
     maybeOperator fields = Just . operatorType fields
-    -- operatorType :: [a] -> Text -> (Text, DataType [a])
+    -- operatorType :: [a] -> Text -> (Text, DataTyCon[a])
     operatorType typeData typeName =
       ( typeName
-      , DataType
+      , DataTyCon
           { typeData
           , typeVisibility = True
           , typeName

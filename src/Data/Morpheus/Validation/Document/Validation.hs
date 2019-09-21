@@ -9,7 +9,7 @@ import           Data.Maybe
 --
 -- Morpheus
 import           Data.Morpheus.Error.Document.Interface  (ImplementsError (..), partialImplements, unknownInterface)
-import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataObject, DataType (..),
+import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataObject, DataTyCon (..),
                                                           Key, RawDataType (..), showWrappedType)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Validation.Internal.Utils (isEqOrStricter)
@@ -32,7 +32,7 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
         errors -> Left $ partialImplements (typeName object) errors
     -------------------------------
     mustBeSubset :: DataObject -> DataObject -> [(Key, Key, ImplementsError)]
-    mustBeSubset DataType {typeData = objFields} DataType {typeName, typeData = interfaceFields} =
+    mustBeSubset DataTyCon {typeData = objFields} DataTyCon {typeName, typeData = interfaceFields} =
       concatMap checkField interfaceFields
       where
         checkField :: (Key, DataField) -> [(Key, Key, ImplementsError)]

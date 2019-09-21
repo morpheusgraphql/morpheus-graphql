@@ -17,7 +17,7 @@ import           Data.Morpheus.Types.Internal.AST.RawSelection  (Fragment (..), 
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base              (EnhancedKey (..))
 import           Data.Morpheus.Types.Internal.Data              (DataField (..), DataFullType (..), DataObject,
-                                                                 DataType (..), DataTypeLib (..), allDataTypes)
+                                                                 DataTyCon (..), DataTypeLib (..), allDataTypes)
 import           Data.Morpheus.Types.Internal.Validation        (Validation)
 import           Data.Morpheus.Validation.Internal.Utils        (checkNameCollision, lookupType)
 import           Data.Morpheus.Validation.Query.Arguments       (validateArguments)
@@ -27,7 +27,7 @@ import           Data.Morpheus.Validation.Query.Utils.Selection (lookupFieldAsSe
 import           Data.Text                                      (Text)
 
 checkDuplicatesOn :: DataObject -> SelectionSet -> Validation SelectionSet
-checkDuplicatesOn DataType {typeName = name'} keys = checkNameCollision enhancedKeys selError >> pure keys
+checkDuplicatesOn DataTyCon {typeName = name'} keys = checkNameCollision enhancedKeys selError >> pure keys
   where
     selError = duplicateQuerySelections name'
     enhancedKeys = map selToKey keys
@@ -82,7 +82,7 @@ validateSelectionSet ::
      DataTypeLib -> FragmentLib -> Text -> ValidVariables -> DataObject -> RawSelectionSet -> Validation SelectionSet
 validateSelectionSet lib fragments' operatorName variables = __validate
   where
-    __validate dataType'@DataType {typeName = typeName'} selectionSet' =
+    __validate dataType'@DataTyCon {typeName = typeName'} selectionSet' =
       concat <$> mapM validateSelection selectionSet' >>= checkDuplicatesOn dataType'
       where
         validateFragment Fragment {fragmentSelection = selection'} = __validate dataType' selection'

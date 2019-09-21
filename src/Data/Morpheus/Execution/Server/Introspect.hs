@@ -42,7 +42,7 @@ import           Data.Morpheus.Types.Custom                      (MapKind, Pair)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data               (DataArguments, DataField (..), DataFullType (..),
-                                                                  DataLeaf (..), DataType (..), DataTypeLib,
+                                                                  DataLeaf (..), DataTyCon (..), DataTypeLib,
                                                                   DataTypeWrapper (..), defineType, isTypeDefined,
                                                                   toListField, toNullableField)
 import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
@@ -143,7 +143,7 @@ instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a wher
       tagsEnumType x = pure $ defineType (typeName, Leaf $ LeafEnum tagsEnum) x
         where
           tagsEnum =
-            DataType
+            DataTyCon
               { typeName
                 -- has same fingerprint as object because it depends on it
               , typeFingerprint = __typeFingerprint (Proxy @a)
@@ -218,9 +218,9 @@ buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName =
   DataField {fieldName, fieldArgs, fieldTypeWrappers = [NonNullType], fieldType = __typeName proxy, fieldHidden = False}
 
-buildType :: GQLType a => t -> Proxy a -> DataType t
+buildType :: GQLType a => t -> Proxy a -> DataTyCon t
 buildType typeData proxy =
-  DataType
+  DataTyCon
     { typeName = __typeName proxy
     , typeFingerprint = __typeFingerprint proxy
     , typeDescription = description proxy

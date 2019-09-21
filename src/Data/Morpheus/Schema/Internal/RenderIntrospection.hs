@@ -20,7 +20,7 @@ import qualified Data.Morpheus.Schema.InputValue   as IN (InputValue (..), creat
 import           Data.Morpheus.Schema.Type         (Type (..))
 import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data (DataField (..), DataField, DataFullType (..), DataLeaf (..),
-                                                    DataObject, DataType (..), DataTypeKind (..), DataTypeLib,
+                                                    DataObject, DataTyCon (..), DataTypeKind (..), DataTypeLib,
                                                     DataTypeWrapper (..), DataUnion, kindOf, lookupDataType)
 
 type InputValue = IN.InputValue Type
@@ -34,7 +34,7 @@ renderType (name', Leaf leaf') = const $ pure $ typeFromLeaf (name', leaf')
 renderType (name, InputObject iObject) = renderInputObject (name, iObject)
 renderType (name', OutputObject object') = typeFromObject (name', object')
   where
-    typeFromObject (key, DataType {typeData, typeDescription}) lib =
+    typeFromObject (key, DataTyCon {typeData, typeDescription}) lib =
       createObjectType key typeDescription <$>
       (Just <$> traverse (`fieldFromObjectField` lib) (filter (not . fieldHidden . snd) typeData))
 renderType (name', Union union') = const $ pure $ typeFromUnion (name', union')
@@ -73,9 +73,9 @@ fieldFromObjectField (key, field'@DataField {fieldType, fieldArgs}) lib = do
     traverse (`inputValueFromArg` lib) fieldArgs
 
 typeFromLeaf :: (Text, DataLeaf) -> Type
-typeFromLeaf (key, BaseScalar DataType {typeDescription}) = createLeafType SCALAR key typeDescription Nothing
-typeFromLeaf (key, CustomScalar DataType {typeDescription}) = createLeafType SCALAR key typeDescription Nothing
-typeFromLeaf (key, LeafEnum DataType {typeDescription, typeData}) =
+typeFromLeaf (key, BaseScalar DataTyCon {typeDescription}) = createLeafType SCALAR key typeDescription Nothing
+typeFromLeaf (key, CustomScalar DataTyCon {typeDescription}) = createLeafType SCALAR key typeDescription Nothing
+typeFromLeaf (key, LeafEnum DataTyCon {typeDescription, typeData}) =
   createLeafType ENUM key typeDescription (Just $ map createEnumValue typeData)
 
 createLeafType :: TypeKind -> Text -> Text -> Maybe [EnumValue] -> Type
@@ -93,7 +93,7 @@ createLeafType kind' name' desc' enums' =
     }
 
 typeFromUnion :: (Text, DataUnion) -> Type
-typeFromUnion (name', DataType {typeData = fields', typeDescription = description'}) =
+typeFromUnion (name', DataTyCon {typeData = fields', typeDescription = description'}) =
   Type
     { kind = UNION
     , name = Just name'
@@ -115,12 +115,12 @@ createInputObjectType field@DataField {fieldType} lib = do
   pure $ wrap field $ createType kind fieldType "" $ Just []
 
 renderInputObject :: (Text, DataObject) -> Result Type
-renderInputObject (key, DataType {typeData, typeDescription}) lib = do
+renderInputObject (key, DataTyCon {typeData, typeDescription}) lib = do
   fields <- traverse (`inputValueFromArg` lib) typeData
   pure $ createInputObject key typeDescription fields
 
 renderInputUnion :: (Text, DataUnion) -> Result Type
-renderInputUnion (key', DataType {typeData, typeDescription}) lib =
+renderInputUnion (key', DataTyCon {typeData, typeDescription}) lib =
   createInputObject key' typeDescription <$> traverse createField typeData
   where
     createField field = IN.createInputValueWith (fieldName field) <$> createInputObjectType field lib

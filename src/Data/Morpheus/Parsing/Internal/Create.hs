@@ -12,7 +12,7 @@ module Data.Morpheus.Parsing.Internal.Create
   ) where
 
 import           Data.Morpheus.Types.Internal.Data (DataArguments, DataField (..), DataFingerprint (..),
-                                                    DataFullType (..), DataLeaf (..), DataType (..), DataTypeLib (..),
+                                                    DataFullType (..), DataLeaf (..), DataTyCon (..), DataTypeLib (..),
                                                     DataTypeWrapper, DataValidator (..), defineType, initTypeLib)
 import           Data.Text                         (Text)
 
@@ -23,9 +23,9 @@ createField fieldArgs fieldName (fieldTypeWrappers, fieldType) =
 createArgument :: Text -> ([DataTypeWrapper], Text) -> (Text, DataField)
 createArgument fieldName x = (fieldName, createField [] fieldName x)
 
-createType :: Text -> a -> DataType a
+createType :: Text -> a -> DataTyCon a
 createType typeName typeData =
-  DataType {typeName, typeDescription = "", typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData}
+  DataTyCon {typeName, typeDescription = "", typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData}
 
 createScalarType :: Text -> (Text, DataFullType)
 createScalarType typeName = (typeName, Leaf $ CustomScalar $ createType typeName (DataValidator pure))

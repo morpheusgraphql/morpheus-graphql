@@ -6,7 +6,7 @@ module Data.Morpheus.Validation.Query.Input.Object
   ) where
 
 import           Data.Morpheus.Error.Input                 (InputError (..), InputValidation, Prop (..))
-import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataKind (..), DataType (..),
+import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataKind (..), DataTyCon (..),
                                                             DataTypeLib (..), DataTypeWrapper (..), DataValidator (..),
                                                             showFullAstType)
 import           Data.Morpheus.Types.Internal.Value        (Value (..))
@@ -38,7 +38,7 @@ validateInputValue lib' prop' = validate
         validateElement element' = validateInputValue lib' prop' wrappers' type' (key', element')
     {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
     {-- VALIDATE OBJECT--}
-    validate [] (ObjectKind DataType {typeData = parentFields'}) (_, Object fields) =
+    validate [] (ObjectKind DataTyCon {typeData = parentFields'}) (_, Object fields) =
       Object <$> mapM validateField fields
       where
         validateField (_name, value') = do
@@ -55,12 +55,12 @@ validateInputValue lib' prop' = validate
             getField = lookupField _name parentFields' (UnknownField prop' _name)
     -- VALIDATE INPUT UNION
     -- TODO: Validate Union
-    validate [] (UnionKind DataType {typeData}) (_, Object fields) = return (Object fields)
+    validate [] (UnionKind DataTyCon {typeData}) (_, Object fields) = return (Object fields)
     {-- VALIDATE SCALAR --}
-    validate [] (EnumKind DataType {typeData = tags', typeName = name'}) (_, value') =
+    validate [] (EnumKind DataTyCon {typeData = tags', typeName = name'}) (_, value') =
       validateEnum (UnexpectedType prop' name' value' Nothing) tags' value'
     {-- VALIDATE ENUM --}
-    validate [] (ScalarKind DataType {typeName = name', typeData = DataValidator {validateValue = validator'}}) (_, value') =
+    validate [] (ScalarKind DataTyCon {typeName = name', typeData = DataValidator {validateValue = validator'}}) (_, value') =
       case validator' value' of
         Right _           -> return value'
         Left ""           -> Left $ UnexpectedType prop' name' value' Nothing

@@ -11,7 +11,7 @@ module Data.Morpheus.Types.Internal.Data
   , DataUnion
   , DataArguments
   , DataField(..)
-  , DataType(..)
+  , DataTyCon(..)
   , DataLeaf(..)
   , DataKind(..)
   , DataFullType(..)
@@ -34,14 +34,14 @@ module Data.Morpheus.Types.Internal.Data
   , toListField
   ) where
 
-import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
-import           Data.Morpheus.Types.Internal.Value (Value (..))
-import           Data.Text                          (Text)
-import qualified Data.Text                          as T (concat)
 import           GHC.Fingerprint.Type               (Fingerprint)
 import           Language.Haskell.TH.Syntax         (Lift (..))
 
-type Key = Text
+-- MORPHEUS
+import           Data.Morpheus.Types.Internal.Base  (Key)
+import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
+import           Data.Morpheus.Types.Internal.Value (Value (..))
+import qualified Data.Text                          as T (concat)
 
 data DataTypeKind
   = KindScalar
@@ -55,26 +55,26 @@ data DataTypeKind
   deriving (Eq, Show, Lift)
 
 data DataFingerprint
-  = SystemFingerprint Text
+  = SystemFingerprint Key
   | TypeableFingerprint [Fingerprint]
   deriving (Show, Eq, Ord)
 
 newtype DataValidator = DataValidator
-  { validateValue :: Value -> Either Text Value
+  { validateValue :: Value -> Either Key Value
   }
 
 instance Show DataValidator where
   show _ = "DataValidator"
 
-type DataScalar = DataType DataValidator
+type DataScalar = DataTyCon DataValidator
 
-type DataEnum = DataType [Key]
+type DataEnum = DataTyCon [Key]
 
-type DataObject = DataType [(Key, DataField)]
+type DataObject = DataTyCon [(Key, DataField)]
 
 type DataArgument = DataField
 
-type DataUnion = DataType [DataField]
+type DataUnion = DataTyCon [DataField]
 
 type DataArguments = [(Key, DataArgument)]
 
@@ -85,8 +85,8 @@ data DataTypeWrapper
 
 data DataField = DataField
   { fieldArgs         :: [(Key, DataArgument)]
-  , fieldName         :: Text
-  , fieldType         :: Text
+  , fieldName         :: Key
+  , fieldType         :: Key
   , fieldTypeWrappers :: [DataTypeWrapper]
   , fieldHidden       :: Bool
   } deriving (Show)
@@ -98,10 +98,10 @@ isFieldNullable :: DataField -> Bool
 isFieldNullable DataField {fieldTypeWrappers = NonNullType:_} = False
 isFieldNullable _                                             = True
 
-data DataType a = DataType
-  { typeName        :: Text
+data DataTyCon a = DataTyCon
+  { typeName        :: Key
   , typeFingerprint :: DataFingerprint
-  , typeDescription :: Text
+  , typeDescription :: Key
   , typeVisibility  :: Bool
   , typeData        :: a
   } deriving (Show)
@@ -135,28 +135,28 @@ data DataFullType
   deriving (Show)
 
 data DataTypeLib = DataTypeLib
-  { leaf         :: [(Text, DataLeaf)]
-  , inputObject  :: [(Text, DataObject)]
-  , object       :: [(Text, DataObject)]
-  , union        :: [(Text, DataUnion)]
-  , inputUnion   :: [(Text, DataUnion)]
-  , query        :: (Text, DataObject)
-  , mutation     :: Maybe (Text, DataObject)
-  , subscription :: Maybe (Text, DataObject)
+  { leaf         :: [(Key, DataLeaf)]
+  , inputObject  :: [(Key, DataObject)]
+  , object       :: [(Key, DataObject)]
+  , union        :: [(Key, DataUnion)]
+  , inputUnion   :: [(Key, DataUnion)]
+  , query        :: (Key, DataObject)
+  , mutation     :: Maybe (Key, DataObject)
+  , subscription :: Maybe (Key, DataObject)
   } deriving (Show)
 
-showWrappedType :: [DataTypeWrapper] -> Text -> Text
+showWrappedType :: [DataTypeWrapper] -> Key -> Key
 showWrappedType [] type'               = type'
 showWrappedType (ListType:xs) type'    = T.concat ["[", showWrappedType xs type', "]"]
 showWrappedType (NonNullType:xs) type' = T.concat [showWrappedType xs type', "!"]
 
-showFullAstType :: [DataTypeWrapper] -> DataKind -> Text
+showFullAstType :: [DataTypeWrapper] -> DataKind -> Key
 showFullAstType wrappers' (ScalarKind x) = showWrappedType wrappers' (typeName x)
 showFullAstType wrappers' (EnumKind x)   = showWrappedType wrappers' (typeName x)
 showFullAstType wrappers' (ObjectKind x) = showWrappedType wrappers' (typeName x)
 showFullAstType wrappers' (UnionKind x)  = showWrappedType wrappers' (typeName x)
 
-initTypeLib :: (Text, DataObject) -> DataTypeLib
+initTypeLib :: (Key, DataObject) -> DataTypeLib
 initTypeLib query' =
   DataTypeLib
     { leaf = []
@@ -169,7 +169,7 @@ initTypeLib query' =
     , subscription = Nothing
     }
 
-allDataTypes :: DataTypeLib -> [(Text, DataFullType)]
+allDataTypes :: DataTypeLib -> [(Key, DataFullType)]
 allDataTypes (DataTypeLib leaf' inputObject' object' union' inputUnion' query' mutation' subscription') =
   packType OutputObject query' :
   fromMaybeType mutation' ++
@@ -179,11 +179,11 @@ allDataTypes (DataTypeLib leaf' inputObject' object' union' inputUnion' query' m
   map (packType InputUnion) inputUnion' ++ map (packType OutputObject) object' ++ map (packType Union) union'
   where
     packType f (x, y) = (x, f y)
-    fromMaybeType :: Maybe (Text, DataObject) -> [(Text, DataFullType)]
+    fromMaybeType :: Maybe (Key, DataObject) -> [(Key, DataFullType)]
     fromMaybeType (Just (key', dataType')) = [(key', OutputObject dataType')]
     fromMaybeType Nothing                  = []
 
-lookupDataType :: Text -> DataTypeLib -> Maybe DataFullType
+lookupDataType :: Key -> DataTypeLib -> Maybe DataFullType
 lookupDataType name lib = name `lookup` allDataTypes lib
 
 kindOf :: DataFullType -> DataTypeKind
@@ -195,7 +195,7 @@ kindOf (OutputObject _)        = KindObject
 kindOf (Union _)               = KindUnion
 kindOf (InputUnion _)          = KindInputUnion
 
-isTypeDefined :: Text -> DataTypeLib -> Maybe DataFingerprint
+isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name lib = getTypeFingerprint <$> lookupDataType name lib
   where
     getTypeFingerprint :: DataFullType -> DataFingerprint
@@ -207,7 +207,7 @@ isTypeDefined name lib = getTypeFingerprint <$> lookupDataType name lib
     getTypeFingerprint (Union dataType')               = typeFingerprint dataType'
     getTypeFingerprint (InputUnion dataType')          = typeFingerprint dataType'
 
-defineType :: (Text, DataFullType) -> DataTypeLib -> DataTypeLib
+defineType :: (Key, DataFullType) -> DataTypeLib -> DataTypeLib
 defineType (key', Leaf type') lib         = lib {leaf = (key', type') : leaf lib}
 defineType (key', InputObject type') lib  = lib {inputObject = (key', type') : inputObject lib}
 defineType (key', OutputObject type') lib = lib {object = (key', type') : object lib}

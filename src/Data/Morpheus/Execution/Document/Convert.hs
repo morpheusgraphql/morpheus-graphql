@@ -16,7 +16,7 @@ import           Data.Text                               (Text, pack, unpack)
 import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Execution.Internal.Utils  (capital)
 import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataField, DataFullType (..), DataLeaf (..),
-                                                          DataType (..), DataTypeKind (..))
+                                                          DataTyCon(..), DataTypeKind (..))
 import           Data.Morpheus.Types.Internal.DataD      (AppD (..), ConsD (..), FieldD (..), GQLTypeD (..), KindD (..),
                                                           ResolverKind (..), TypeD (..), gqlToHSWrappers)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
@@ -64,7 +64,7 @@ renderTHTypes lib = traverse renderTHType lib
             argsTName [] = "()"
             argsTName _  = argsTypeName fieldName
         --------------------------------------------
-        genType (Leaf (LeafEnum DataType {typeName, typeData})) =
+        genType (Leaf (LeafEnum DataTyCon{typeName, typeData})) =
           pure
             GQLTypeD
               { typeD = TypeD {tName = unpack typeName, tCons = map enumOption typeData}
@@ -75,7 +75,7 @@ renderTHTypes lib = traverse renderTHType lib
             enumOption name = ConsD {cName = unpack name, cFields = []}
         genType (Leaf _) = internalError "Scalar Types should defined By Native Haskell Types"
         genType (InputUnion _) = internalError "Input Unions not Supported"
-        genType (InputObject DataType {typeName, typeData}) =
+        genType (InputObject DataTyCon{typeName, typeData}) =
           pure
             GQLTypeD
               { typeD =
@@ -86,7 +86,7 @@ renderTHTypes lib = traverse renderTHType lib
               , typeKindD = RegularKindD KindInputObject
               , typeArgD = []
               }
-        genType (OutputObject DataType {typeName, typeData}) = do
+        genType (OutputObject DataTyCon{typeName, typeData}) = do
           typeArgD <- concat <$> traverse genArgumentType typeData
           pure
             GQLTypeD
@@ -101,7 +101,7 @@ renderTHTypes lib = traverse renderTHType lib
                     else RegularKindD KindObject
               , typeArgD
               }
-        genType (Union DataType {typeName, typeData}) = do
+        genType (Union DataTyCon{typeName, typeData}) = do
           let tCons = map unionCon typeData
           pure
             GQLTypeD {typeD = TypeD {tName = unpack typeName, tCons}, typeKindD = RegularKindD KindUnion, typeArgD = []}

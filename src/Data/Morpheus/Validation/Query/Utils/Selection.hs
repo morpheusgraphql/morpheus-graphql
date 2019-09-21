@@ -6,7 +6,7 @@ module Data.Morpheus.Validation.Query.Utils.Selection
 
 import           Data.Morpheus.Error.Selection           (cannotQueryField, hasNoSubfields)
 import           Data.Morpheus.Types.Internal.Base       (Position)
-import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataObject, DataType (..), DataTypeLib (..))
+import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataObject, DataTyCon (..), DataTypeLib (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Validation.Internal.Utils (lookupField, lookupType)
 import           Data.Text                               (Text)
@@ -23,6 +23,6 @@ lookupFieldAsSelectionSet position key' lib' DataField {fieldType = type'} = loo
     error' = hasNoSubfields key' type' position
 
 lookupSelectionField :: Position -> Text -> DataObject -> Validation DataField
-lookupSelectionField position' key' DataType {typeData = fields', typeName = name'} = lookupField key' fields' error'
+lookupSelectionField position' key' DataTyCon {typeData = fields', typeName = name'} = lookupField key' fields' error'
   where
     error' = cannotQueryField key' name' position'

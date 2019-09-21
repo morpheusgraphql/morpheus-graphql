@@ -15,19 +15,19 @@ import           Data.Morpheus.Rendering.Haskell.Terms (Context (..), Scope (..)
                                                         renderData, renderSet, renderTuple, renderUnionCon,
                                                         renderWrapped)
 import           Data.Morpheus.Types.Internal.Data     (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
-                                                        DataType (..), DataTypeWrapper (..))
+                                                        DataTyCon (..), DataTypeWrapper (..))
 
 renderType :: Context -> (Text, DataFullType) -> Text
 renderType context (name, dataType) = typeIntro <> renderData name <> renderT dataType
   where
     renderT (Leaf (BaseScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name
     renderT (Leaf (CustomScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name
-    renderT (Leaf (LeafEnum DataType {typeData})) = unionType typeData <> defineTypeClass "ENUM"
-    renderT (Union DataType {typeData}) = renderUnion name typeData <> defineTypeClass "UNION"
-    renderT (InputObject DataType {typeData}) =
+    renderT (Leaf (LeafEnum DataTyCon {typeData})) = unionType typeData <> defineTypeClass "ENUM"
+    renderT (Union DataTyCon {typeData}) = renderUnion name typeData <> defineTypeClass "UNION"
+    renderT (InputObject DataTyCon {typeData}) =
       renderCon name <> renderObject renderInputField typeData <> defineTypeClass "INPUT_OBJECT"
     renderT (InputUnion _) = "\n -- Error: Input Union Not Supported"
-    renderT (OutputObject DataType {typeData}) =
+    renderT (OutputObject DataTyCon {typeData}) =
       renderCon name <> renderObject (renderField context) typeData <> defineTypeClass "OBJECT"
     ----------------------------------------------------------------------------------------------------------
     typeIntro = "\n\n---- GQL " <> name <> " ------------------------------- \n"

@@ -18,7 +18,7 @@ import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), Val
                                                              VariableDefinitions)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Data          (DataField (..), DataFullType (..), DataLeaf (..),
-                                                             DataType (..), DataTypeLib (..), DataTypeWrapper,
+                                                             DataTyCon (..), DataTypeLib (..), DataTypeWrapper,
                                                              allDataTypes)
 import           Data.Morpheus.Types.Internal.DataD         (ConsD (..), FieldD (..), TypeD (..), gqlToHSWrappers)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
@@ -36,7 +36,7 @@ operationTypes lib variables = genOperation
     typeByField key datatype = fst <$> fieldDataType datatype key
     ------------------------------------------------------
     fieldDataType :: DataFullType -> Text -> Validation (DataFullType, [DataTypeWrapper])
-    fieldDataType (OutputObject DataType {typeData}) key =
+    fieldDataType (OutputObject DataTyCon {typeData}) key =
       case lookup key typeData of
         Just DataField {fieldTypeWrappers, fieldType} -> trans <$> getType lib fieldType
           where trans x = (x, fieldTypeWrappers)
@@ -51,7 +51,7 @@ operationTypes lib variables = genOperation
     genInputType :: Text -> Validation [TypeD]
     genInputType name = getType lib name >>= subTypes
       where
-        subTypes (InputObject DataType {typeName, typeData}) = do
+        subTypes (InputObject DataTyCon {typeName, typeData}) = do
           types <- concat <$> mapM toInputTypeD typeData
           fields <- traverse toFieldD typeData
           pure $ typeD fields : types
@@ -128,7 +128,7 @@ operationTypes lib variables = genOperation
               getCon typeKey conDatatype selSet
 
 buildLeaf :: DataLeaf -> Validation [TypeD]
-buildLeaf (LeafEnum DataType {typeName, typeData}) =
+buildLeaf (LeafEnum DataTyCon {typeName, typeData}) =
   pure [TypeD {tName = unpack typeName, tCons = map enumOption typeData}]
   where
     enumOption name = ConsD {cName = unpack name, cFields = []}
@@ -147,7 +147,7 @@ isPrimitive _         = False
 
 typeFrom :: DataFullType -> Text
 typeFrom (Leaf (BaseScalar x)) = typeName x
-typeFrom (Leaf (CustomScalar DataType {typeName}))
+typeFrom (Leaf (CustomScalar DataTyCon {typeName}))
   | isPrimitive typeName = typeName
   | otherwise = "ScalarValue"
 typeFrom (Leaf (LeafEnum x)) = typeName x
