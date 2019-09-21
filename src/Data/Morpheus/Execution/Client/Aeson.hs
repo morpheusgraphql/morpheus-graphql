@@ -22,7 +22,7 @@ import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data  (isNullable)
+import           Data.Morpheus.Types.Internal.Data  (TypeAlias (..), isNullable)
 import           Data.Morpheus.Types.Internal.DataD (ConsD (..), FieldD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH    (instanceFunD, instanceHeadT)
 
@@ -46,8 +46,8 @@ aesonObjectBody ConsD {cName, cFields} = handleFields cFields
     ----------------------------------------------------------------------------------
       -- Optional Field
       where
-        defField FieldD {fieldNameD, fieldTypeD = (wrappers, _)}
-          | isNullable wrappers = [|o .:? fieldNameD|]
+        defField FieldD {fieldNameD, fieldTypeD = TypeAlias {aliasWrappers}}
+          | isNullable aliasWrappers = [|o .:? fieldNameD|]
           | otherwise = [|o .: fieldNameD|]
             -------------------------------------------------------------------
         startExp fNames = uInfixE (conE consName) (varE '(<$>)) (applyFields fNames)

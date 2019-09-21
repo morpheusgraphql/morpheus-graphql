@@ -12,12 +12,14 @@ module Data.Morpheus.Execution.Internal.Declare
   , declareGQLT
   ) where
 
+import           Data.Text                              (unpack)
 import           GHC.Generics                           (Generic)
 import           Language.Haskell.TH
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Utils (nameSpaceWith)
-import           Data.Morpheus.Types.Internal.Data      (DataTypeKind (..), KindD (..), WrapperD (..), unKindD)
+import           Data.Morpheus.Types.Internal.Data      (DataTypeKind (..), KindD (..), TypeAlias (..), WrapperD (..),
+                                                         unKindD)
 import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), FieldD (..), TypeD (..))
 
 type FUNC = (->)
@@ -25,13 +27,18 @@ type FUNC = (->)
 declareType :: [Name] -> TypeD -> Dec
 declareType = declareGQLT False Nothing
 
-wrappedT :: [WrapperD] -> (String, [String]) -> Type
-wrappedT (ListD:xs) = AppT (ConT ''[]) . wrappedT xs
-wrappedT (MaybeD:xs) = AppT (ConT ''Maybe) . wrappedT xs
-wrappedT [] = decType
+declareTypeAlias :: TypeAlias -> Type
+declareTypeAlias TypeAlias {aliasTyCon, aliasWrappers, aliasArgs} = wrappedT aliasWrappers
   where
-    decType (name, [par]) = AppT (ConT (mkName name)) (VarT $ mkName par)
-    decType (name, _)     = ConT (mkName name)
+    wrappedT :: [WrapperD] -> Type
+    wrappedT (ListD:xs)  = AppT (ConT ''[]) $ wrappedT xs
+    wrappedT (MaybeD:xs) = AppT (ConT ''Maybe) $ wrappedT xs
+    wrappedT []          = decType aliasArgs
+    ------------------------------------------------------
+    typeName = ConT (mkName $ unpack aliasTyCon)
+    --------------------------------------------
+    decType (Just par) = AppT typeName (VarT $ mkName $ unpack par)
+    decType _          = typeName
 
 -- declareType
 declareGQLT :: Bool -> Maybe KindD -> [Name] -> TypeD -> Dec
@@ -50,8 +57,7 @@ declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
     derive className = DerivClause Nothing [ConT className]
     cons ConsD {cName, cFields} = RecC (mkName cName) (map declareField cFields)
       where
-        declareField FieldD {fieldNameD, fieldArgsD, fieldTypeD = (wrappers, typeName)} =
-          (fieldName, defBang, fieldType)
+        declareField FieldD {fieldNameD, fieldArgsD, fieldTypeD} = (fieldName, defBang, fieldType)
           where
             fieldName
               | namespace = mkName (nameSpaceWith tName fieldNameD)
@@ -72,4 +78,4 @@ declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
                   | isResolver = AppT monadVar result
                   | otherwise = result
                 ------------------------------------------------
-                result = wrappedT wrappers typeName
+                result = declareTypeAlias fieldTypeD

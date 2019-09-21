@@ -12,7 +12,7 @@ import           Language.Haskell.TH.Syntax        (Lift (..))
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data (KindD, ResolverKind, WrapperD)
+import           Data.Morpheus.Types.Internal.Data (KindD, ResolverKind, TypeAlias)
 
 data GQLTypeD = GQLTypeD
   { typeD     :: TypeD
@@ -29,7 +29,7 @@ data QueryD = QueryD
 data FieldD = FieldD
   { fieldNameD :: String
   , fieldArgsD :: Maybe (String, ResolverKind)
-  , fieldTypeD :: ([WrapperD], (String, [String]))
+  , fieldTypeD :: TypeAlias
   } deriving (Show, Lift)
 
 data TypeD = TypeD

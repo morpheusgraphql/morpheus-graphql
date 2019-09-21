@@ -18,7 +18,8 @@ import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), Val
                                                              VariableDefinitions)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Data          (DataField (..), DataFullType (..), DataLeaf (..),
-                                                             DataTyCon (..), DataTypeLib (..), WrapperD, allDataTypes)
+                                                             DataTyCon (..), DataTypeLib (..), TypeAlias (..), WrapperD,
+                                                             allDataTypes)
 import           Data.Morpheus.Types.Internal.DataD         (ConsD (..), FieldD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Validation.Internal.Utils    (lookupType)
@@ -65,7 +66,7 @@ operationTypes lib variables = genOperation
               fType <- typeFrom <$> getType lib fieldType
               pure $ FieldD {fieldNameD = unpack key, fieldTypeD = wrType fType, fieldArgsD = Nothing}
               where
-                wrType fieldT = (fieldTypeWrappers, (unpack fieldT, []))
+                wrType fType = TypeAlias {aliasWrappers = fieldTypeWrappers, aliasTyCon = fType, aliasArgs = Nothing}
         subTypes (Leaf x) = buildLeaf x
         subTypes _ = pure []
     -------------------------------------------
@@ -81,7 +82,8 @@ operationTypes lib variables = genOperation
         fieldD (key, Variable {variableType, variableTypeWrappers}) =
           FieldD {fieldNameD = unpack key, fieldArgsD = Nothing, fieldTypeD}
           where
-            fieldTypeD = (variableTypeWrappers, (unpack variableType, []))
+            fieldTypeD =
+              TypeAlias {aliasWrappers = variableTypeWrappers, aliasTyCon = variableType, aliasArgs = Nothing}
     -------------------------------------------
     getCon name dataType selectionSet = do
       cFields <- genFields dataType selectionSet
@@ -95,10 +97,10 @@ operationTypes lib variables = genOperation
             typeNameFromField (key, Selection {selectionRec = SelectionAlias {aliasFieldName}}) =
               FieldD (unpack key) Nothing <$> lookupFieldType aliasFieldName
             typeNameFromField (key, _) = FieldD (unpack key) Nothing <$> lookupFieldType key
-            ------------------------------------------------------------
+            --------------------------------------------------------------------------------
             lookupFieldType key = do
-              (newType, wrappers) <- fieldDataType datatype key
-              pure (wrappers, (unpack $ typeFrom newType, []))
+              (newType, aliasWrappers) <- fieldDataType datatype key
+              pure $ TypeAlias {aliasTyCon = typeFrom newType, aliasArgs = Nothing, aliasWrappers}
     --------------------------------------------
     genRecordType name dataType selectionSet = do
       (con, subTypes) <- getCon name dataType selectionSet

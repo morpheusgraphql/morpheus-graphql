@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveLift        #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
@@ -23,6 +24,7 @@ module Data.Morpheus.Types.Internal.Data
   , RawDataType(..)
   , ResolverKind(..)
   , WrapperD(..)
+  , TypeAlias(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -45,6 +47,7 @@ module Data.Morpheus.Types.Internal.Data
   ) where
 
 import           Data.Semigroup                     ((<>))
+import           Data.Text                          (pack, unpack)
 import           GHC.Fingerprint.Type               (Fingerprint)
 import           Language.Haskell.TH.Syntax         (Lift (..))
 
@@ -165,6 +168,19 @@ data DataTypeWrapper
   = ListType
   | NonNullType
   deriving (Show, Lift)
+
+data TypeAlias = TypeAlias
+  { aliasTyCon    :: Key
+  , aliasArgs     :: Maybe Key
+  , aliasWrappers :: [WrapperD]
+  } deriving (Show)
+
+instance Lift TypeAlias where
+  lift TypeAlias {aliasTyCon = x, aliasArgs, aliasWrappers} =
+    [|TypeAlias {aliasTyCon = pack name, aliasArgs = pack <$> args, aliasWrappers}|]
+    where
+      name = unpack x
+      args = unpack <$> aliasArgs
 
 data DataField = DataField
   { fieldArgs         :: [(Key, DataArgument)]

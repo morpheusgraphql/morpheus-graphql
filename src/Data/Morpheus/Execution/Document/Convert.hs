@@ -17,7 +17,7 @@ import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Execution.Internal.Utils  (capital)
 import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataField, DataFullType (..), DataLeaf (..),
                                                           DataTyCon (..), DataTypeKind (..), KindD (..),
-                                                          ResolverKind (..))
+                                                          ResolverKind (..), TypeAlias (..))
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), FieldD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 
@@ -30,11 +30,6 @@ renderTHTypes lib = traverse renderTHType lib
         Just OutputObject {} -> TypeVarResolver
         Just Union {}        -> TypeVarResolver
         Just _               -> PlainResolver
-    getTypeVarPair key =
-      case lookup (pack key) lib of
-        Just OutputObject {} -> (key, ["m"])
-        Just Union {}        -> (key, ["m"])
-        _                    -> (key, [])
     renderTHType :: (Text, DataFullType) -> Validation GQLTypeD
     renderTHType (_, x) = genType x
       where
@@ -47,22 +42,34 @@ renderTHTypes lib = traverse renderTHType lib
             tName = argsTypeName fieldName
         -------------------------------------------
         genFieldTypeName "String" = "Text"
-        genFieldTypeName name     = unpack name
+        genFieldTypeName name     = name
         ---------------------------------------------------------------------------------------------
         genField :: (Text, DataField) -> FieldD
         genField (key, DataField {fieldType, fieldTypeWrappers}) =
           FieldD {fieldNameD = unpack key, fieldTypeD, fieldArgsD = Nothing}
           where
-            fieldTypeD = (fieldTypeWrappers, (genFieldTypeName fieldType, []))
+            fieldTypeD =
+              TypeAlias
+                {aliasTyCon = genFieldTypeName fieldType, aliasArgs = Nothing, aliasWrappers = fieldTypeWrappers}
         ---------------------------------------------------------------------------------------------
         genResField :: (Text, DataField) -> FieldD
         genResField (key, DataField {fieldName, fieldArgs, fieldType, fieldTypeWrappers}) =
           FieldD {fieldNameD = unpack key, fieldTypeD, fieldArgsD}
           where
-            fieldArgsD = Just (argsTName fieldArgs, getFieldType $ pack $ genFieldTypeName fieldType)
-            fieldTypeD = (fieldTypeWrappers, getTypeVarPair (genFieldTypeName fieldType))
+            fieldArgsD = Just (argsTName fieldArgs, getFieldType $ genFieldTypeName fieldType)
+            -----------------------------------------------------------------------------------
+            fieldTypeD = TypeAlias {aliasTyCon, aliasArgs, aliasWrappers = fieldTypeWrappers}
+            --------------------------------------
             argsTName [] = "()"
             argsTName _  = argsTypeName fieldName
+            --------------------------------------
+            aliasTyCon = genFieldTypeName fieldType
+            ---------------------------------------
+            aliasArgs =
+              case lookup aliasTyCon lib of
+                Just OutputObject {} -> Just "m"
+                Just Union {}        -> Just "m"
+                _                    -> Nothing
         --------------------------------------------
         genType (Leaf (LeafEnum DataTyCon {typeName, typeData})) =
           pure
@@ -110,7 +117,12 @@ renderTHTypes lib = traverse renderTHType lib
               ConsD
                 { cName
                 , cFields =
-                    [FieldD {fieldNameD = "un" <> cName, fieldArgsD = Nothing, fieldTypeD = ([], (utName, ["m"]))}]
+                    [ FieldD
+                        { fieldNameD = "un" <> cName
+                        , fieldArgsD = Nothing
+                        , fieldTypeD = TypeAlias {aliasTyCon = pack utName, aliasArgs = Just "m", aliasWrappers = []}
+                        }
+                    ]
                 }
               where
                 cName = unpack typeName <> utName
