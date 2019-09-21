@@ -15,7 +15,7 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Execution.Document.GQLType  (genTypeArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName))
-import           Data.Morpheus.Types.Internal.Data         (DataField (..), KindD, ResolverKind, hsToGQLWrapper)
+import           Data.Morpheus.Types.Internal.Data         (DataField (..), KindD, ResolverKind)
 import           Data.Morpheus.Types.Internal.DataD        (ConsD (..), FieldD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceHeadT, typeT)
 
@@ -42,7 +42,7 @@ deriveObjectRep _ = pure []
 buildTypes :: [FieldD] -> ExpQ
 buildTypes = listE . concatMap introspectField
   where
-    introspectField FieldD {fieldTypeD} = [[|introspect $(proxyT $ snd (hsToGQLWrapper fieldTypeD))|]]
+    introspectField FieldD {fieldTypeD} = [[|introspect $(proxyT $ snd fieldTypeD)|]]
 
 proxyT :: (String, [String]) -> Q Exp
 proxyT t = [|(Proxy :: Proxy $(genSig t))|]
@@ -67,4 +67,4 @@ buildFields = listE . map buildField
             , fieldHidden = False
             })|]
       where
-        (fieldTypeWrappers, fieldType) = hsToGQLWrapper fieldTypeD
+        (fieldTypeWrappers, fieldType) = fieldTypeD
