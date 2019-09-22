@@ -6,9 +6,10 @@ module Data.Morpheus.Validation.Query.Input.Object
   ) where
 
 import           Data.Morpheus.Error.Input                 (InputError (..), InputValidation, Prop (..))
+import           Data.Morpheus.Rendering.RenderGQL         (renderWrapped)
 import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataKind (..), DataTyCon (..),
-                                                            DataTypeLib (..), DataValidator (..), WrapperD (..),
-                                                            isNullable, showFullAstType)
+                                                            DataTypeLib (..), DataValidator (..), TypeAlias (..),
+                                                            WrapperD (..), isNullable)
 import           Data.Morpheus.Types.Internal.Value        (Value (..))
 import           Data.Morpheus.Validation.Internal.Utils   (getInputType, lookupField)
 import           Data.Morpheus.Validation.Query.Input.Enum (validateEnum)
@@ -22,7 +23,7 @@ validateInputValue :: DataTypeLib -> [Prop] -> [WrapperD] -> DataKind -> (Text, 
 validateInputValue lib prop' = validate
   where
     throwError :: [WrapperD] -> DataKind -> Value -> InputValidation Value
-    throwError wrappers' type' value' = Left $ UnexpectedType prop' (showFullAstType wrappers' type') value' Nothing
+    throwError wrappers type' value' = Left $ UnexpectedType prop' (renderWrapped type' wrappers) value' Nothing
     -- VALIDATION
     validate :: [WrapperD] -> DataKind -> (Text, Value) -> InputValidation Value
     -- Validate Null. value = null ?
@@ -39,14 +40,14 @@ validateInputValue lib prop' = validate
     validate [] (ObjectKind DataTyCon {typeData = parentFields'}) (_, Object fields) =
       Object <$> mapM validateField fields
       where
-        validateField (_name, value') = do
-          (type', currentProp') <- validationData value'
-          wrappers' <- fieldTypeWrappers <$> getField
-          value'' <- validateInputValue lib currentProp' wrappers' type' (_name, value')
+        validateField (_name, value) = do
+          (type', currentProp') <- validationData value
+          wrappers' <- aliasWrappers . fieldType <$> getField
+          value'' <- validateInputValue lib currentProp' wrappers' type' (_name, value)
           return (_name, value'')
           where
             validationData x = do
-              fieldTypeName' <- fieldType <$> getField
+              fieldTypeName' <- aliasTyCon . fieldType <$> getField
               let currentProp = prop' ++ [Prop _name fieldTypeName']
               type' <- getInputType fieldTypeName' lib (typeMismatch x fieldTypeName' currentProp)
               return (type', currentProp)

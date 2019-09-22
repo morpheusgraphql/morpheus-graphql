@@ -15,55 +15,51 @@ import           Data.Text                               (Text, pack, unpack)
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Execution.Internal.Utils  (capital)
-import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataField, DataFullType (..), DataLeaf (..),
-                                                          DataTyCon (..), DataTypeKind (..), KindD (..),
+import           Data.Morpheus.Types.Internal.Data       (ArgsType (..), DataField (..), DataField, DataFullType (..),
+                                                          DataLeaf (..), DataTyCon (..), DataTypeKind (..), KindD (..),
                                                           ResolverKind (..), TypeAlias (..))
-import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), FieldD (..), GQLTypeD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 
 renderTHTypes :: [(Text, DataFullType)] -> Validation [GQLTypeD]
 renderTHTypes lib = traverse renderTHType lib
   where
-    getFieldType key =
-      case lookup key lib of
-        Nothing              -> ExternalResolver
-        Just OutputObject {} -> TypeVarResolver
-        Just Union {}        -> TypeVarResolver
-        Just _               -> PlainResolver
     renderTHType :: (Text, DataFullType) -> Validation GQLTypeD
     renderTHType (_, x) = genType x
       where
-        argsTypeName fieldName = capital (unpack fieldName) <> "Args"
+        genArgsTypeName fieldName = capital fieldName <> "Args"
         genArgumentType :: (Text, DataField) -> Validation [TypeD]
         genArgumentType (_, DataField {fieldArgs = []}) = pure []
         genArgumentType (fieldName, DataField {fieldArgs}) =
           pure [TypeD {tName, tCons = [ConsD {cName = tName, cFields = map genField fieldArgs}]}]
           where
-            tName = argsTypeName fieldName
+            tName = genArgsTypeName $ unpack fieldName
         -------------------------------------------
         genFieldTypeName "String" = "Text"
         genFieldTypeName name     = name
         ---------------------------------------------------------------------------------------------
-        genField :: (Text, DataField) -> FieldD
-        genField (key, DataField {fieldType, fieldTypeWrappers}) =
-          FieldD {fieldNameD = unpack key, fieldTypeD, fieldArgsD = Nothing}
-          where
-            fieldTypeD =
-              TypeAlias
-                {aliasTyCon = genFieldTypeName fieldType, aliasArgs = Nothing, aliasWrappers = fieldTypeWrappers}
+        genField :: (Text, DataField) -> DataField
+        genField (_, field@DataField {fieldType = alias@TypeAlias {aliasTyCon}}) =
+          field {fieldType = alias {aliasTyCon = genFieldTypeName aliasTyCon}}
         ---------------------------------------------------------------------------------------------
-        genResField :: (Text, DataField) -> FieldD
-        genResField (key, DataField {fieldName, fieldArgs, fieldType, fieldTypeWrappers}) =
-          FieldD {fieldNameD = unpack key, fieldTypeD, fieldArgsD}
+        genResField :: (Text, DataField) -> DataField
+        genResField (_, field@DataField {fieldName, fieldArgs, fieldType = alias@TypeAlias {aliasTyCon}}) =
+          field {fieldType = alias {aliasTyCon = ftName, aliasArgs}, fieldArgsType = faType}
           where
-            fieldArgsD = Just (argsTName fieldArgs, getFieldType $ genFieldTypeName fieldType)
-            -----------------------------------------------------------------------------------
-            fieldTypeD = TypeAlias {aliasTyCon, aliasArgs, aliasWrappers = fieldTypeWrappers}
-            --------------------------------------
-            argsTName [] = "()"
-            argsTName _  = argsTypeName fieldName
-            --------------------------------------
-            aliasTyCon = genFieldTypeName fieldType
+            faType = Just $ ArgsType {argsTypeName, resKind = getFieldType ftName}
+              where
+                argsTypeName
+                  | null fieldArgs = "()"
+                  | otherwise = pack $ genArgsTypeName $ unpack fieldName
+                --------------------------------------
+                getFieldType key =
+                  case lookup key lib of
+                    Nothing              -> ExternalResolver
+                    Just OutputObject {} -> TypeVarResolver
+                    Just Union {}        -> TypeVarResolver
+                    Just _               -> PlainResolver
+            ------------------------------------
+            ftName = genFieldTypeName aliasTyCon
             ---------------------------------------
             aliasArgs =
               case lookup aliasTyCon lib of
@@ -113,17 +109,16 @@ renderTHTypes lib = traverse renderTHType lib
           pure
             GQLTypeD {typeD = TypeD {tName = unpack typeName, tCons}, typeKindD = RegularKindD KindUnion, typeArgD = []}
           where
-            unionCon DataField {fieldType} =
+            unionCon field@DataField {fieldType} =
               ConsD
                 { cName
                 , cFields =
-                    [ FieldD
-                        { fieldNameD = "un" <> cName
-                        , fieldArgsD = Nothing
-                        , fieldTypeD = TypeAlias {aliasTyCon = pack utName, aliasArgs = Just "m", aliasWrappers = []}
+                    [ field
+                        { fieldName = pack $ "un" <> cName
+                        , fieldType = TypeAlias {aliasTyCon = pack utName, aliasArgs = Just "m", aliasWrappers = []}
                         }
                     ]
                 }
               where
                 cName = unpack typeName <> utName
-                utName = unpack fieldType
+                utName = unpack $ aliasTyCon fieldType

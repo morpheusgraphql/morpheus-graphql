@@ -1,7 +1,15 @@
-{-# LANGUAGE DeriveLift        #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DefaultSignatures     #-}
+{-# LANGUAGE DeriveLift            #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 
 module Data.Morpheus.Types.Internal.Data
   ( Key
@@ -25,11 +33,10 @@ module Data.Morpheus.Types.Internal.Data
   , ResolverKind(..)
   , WrapperD(..)
   , TypeAlias(..)
+  , ArgsType(..)
   , isTypeDefined
   , initTypeLib
   , defineType
-  , showWrappedType
-  , showFullAstType
   , isFieldNullable
   , allDataTypes
   , lookupDataType
@@ -43,11 +50,11 @@ module Data.Morpheus.Types.Internal.Data
   , KindD(..)
   , isNullable
   , toGQLWrapper
-  , isEqOrStricter
+  , isWeaker
   ) where
 
 import           Data.Semigroup                     ((<>))
-import           Data.Text                          (pack, unpack)
+import qualified Data.Text                          as T (pack, unpack)
 import           GHC.Fingerprint.Type               (Fingerprint)
 import           Language.Haskell.TH.Syntax         (Lift (..))
 
@@ -81,14 +88,11 @@ data WrapperD
   deriving (Show, Lift)
 
 isFieldNullable :: DataField -> Bool
-isFieldNullable = isNullable . fieldTypeWrappers
+isFieldNullable = isNullable . aliasWrappers . fieldType
 
 isNullable :: [WrapperD] -> Bool
 isNullable (MaybeD:_) = True
 isNullable _          = False
-
-isEqOrStricter :: [WrapperD] -> [WrapperD] -> Bool
-isEqOrStricter x = not . isWeaker x
 
 isWeaker :: [WrapperD] -> [WrapperD] -> Bool
 isWeaker (MaybeD:xs1) (MaybeD:xs2) = isWeaker xs1 xs2
@@ -109,20 +113,6 @@ toHSWrappers (NonNullType:(ListType:xs))    = ListD : toHSWrappers xs
 toHSWrappers (ListType:xs)                  = [MaybeD, ListD] <> toHSWrappers xs
 toHSWrappers []                             = [MaybeD]
 toHSWrappers [NonNullType]                  = []
-
-showGQLWrapper :: [DataTypeWrapper] -> Key -> Key
-showGQLWrapper [] name               = name
-showGQLWrapper (ListType:xs) name    = "[" <> showGQLWrapper xs name <> "]"
-showGQLWrapper (NonNullType:xs) name = showGQLWrapper xs name <> "!"
-
-showFullAstType :: [WrapperD] -> DataKind -> Key
-showFullAstType wrappers' (ScalarKind x) = showWrappedType wrappers' (typeName x)
-showFullAstType wrappers' (EnumKind x)   = showWrappedType wrappers' (typeName x)
-showFullAstType wrappers' (ObjectKind x) = showWrappedType wrappers' (typeName x)
-showFullAstType wrappers' (UnionKind x)  = showWrappedType wrappers' (typeName x)
-
-showWrappedType :: [WrapperD] -> Key -> Key
-showWrappedType wr = showGQLWrapper (toGQLWrapper wr)
 
 data KindD
   = SubscriptionD
@@ -177,21 +167,30 @@ data TypeAlias = TypeAlias
 
 instance Lift TypeAlias where
   lift TypeAlias {aliasTyCon = x, aliasArgs, aliasWrappers} =
-    [|TypeAlias {aliasTyCon = pack name, aliasArgs = pack <$> args, aliasWrappers}|]
+    [|TypeAlias {aliasTyCon = name, aliasArgs = T.pack <$> args, aliasWrappers}|]
     where
-      name = unpack x
-      args = unpack <$> aliasArgs
+      name = T.unpack x
+      args = T.unpack <$> aliasArgs
+
+data ArgsType = ArgsType
+  { argsTypeName :: Key
+  , resKind      :: ResolverKind
+  } deriving (Show)
+
+instance Lift ArgsType where
+  lift (ArgsType argT kind) = apply 'ArgsType [liftText argT, lift kind]
 
 data DataField = DataField
-  { fieldArgs         :: [(Key, DataArgument)]
-  , fieldName         :: Key
-  , fieldType         :: Key
-  , fieldTypeWrappers :: [WrapperD]
-  , fieldHidden       :: Bool
+  { fieldName     :: Key
+  , fieldArgs     :: [(Key, DataArgument)]
+  , fieldArgsType :: Maybe ArgsType
+  , fieldType     :: TypeAlias
+  , fieldHidden   :: Bool
   } deriving (Show)
 
 instance Lift DataField where
-  lift (DataField arg nm ty tw hid) = apply 'DataField [liftTextMap arg, liftText nm, liftText ty, lift tw, lift hid]
+  lift (DataField name args argsT ft hid) =
+    apply 'DataField [liftText name, liftTextMap args, lift argsT, lift ft, lift hid]
 
 data DataTyCon a = DataTyCon
   { typeName        :: Key
@@ -207,6 +206,7 @@ data DataLeaf
   | LeafEnum DataEnum
   deriving (Show)
 
+-- DATA KIND
 data DataKind
   = ScalarKind DataScalar
   | EnumKind DataEnum
@@ -241,11 +241,11 @@ data DataTypeLib = DataTypeLib
   } deriving (Show)
 
 initTypeLib :: (Key, DataObject) -> DataTypeLib
-initTypeLib query' =
+initTypeLib query =
   DataTypeLib
     { leaf = []
     , inputObject = []
-    , query = query'
+    , query = query
     , object = []
     , union = []
     , inputUnion = []
@@ -300,8 +300,12 @@ defineType (key', InputUnion type') lib   = lib {inputUnion = (key', type') : in
 
 toNullableField :: DataField -> DataField
 toNullableField dataField
-  | isNullable (fieldTypeWrappers dataField) = dataField
-  | otherwise = dataField {fieldTypeWrappers = MaybeD : fieldTypeWrappers dataField}
+  | isNullable (aliasWrappers $ fieldType dataField) = dataField
+  | otherwise = dataField {fieldType = nullable (fieldType dataField)}
+  where
+    nullable alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = MaybeD : aliasWrappers}
 
 toListField :: DataField -> DataField
-toListField dataField = dataField {fieldTypeWrappers = ListD : fieldTypeWrappers dataField}
+toListField dataField = dataField {fieldType = listW (fieldType dataField)}
+  where
+    listW alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = ListD : aliasWrappers}

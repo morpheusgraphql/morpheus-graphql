@@ -18,9 +18,9 @@ import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), Val
                                                              VariableDefinitions)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Data          (DataField (..), DataFullType (..), DataLeaf (..),
-                                                             DataTyCon (..), DataTypeLib (..), TypeAlias (..), WrapperD,
+                                                             DataTyCon (..), DataTypeLib (..), TypeAlias (..),
                                                              allDataTypes)
-import           Data.Morpheus.Types.Internal.DataD         (ConsD (..), FieldD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.DataD         (ConsD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Validation.Internal.Utils    (lookupType)
 
@@ -33,15 +33,15 @@ operationTypes lib variables = genOperation
     queryDataType = OutputObject $ snd $ query lib
     -----------------------------------------------------
     typeByField :: Text -> DataFullType -> Validation DataFullType
-    typeByField key datatype = fst <$> fieldDataType datatype key
+    typeByField key datatype = fst <$> lookupFieldType datatype key
     ------------------------------------------------------
-    fieldDataType :: DataFullType -> Text -> Validation (DataFullType, [WrapperD])
-    fieldDataType (OutputObject DataTyCon {typeData}) key =
+    lookupFieldType :: DataFullType -> Text -> Validation (DataFullType, TypeAlias)
+    lookupFieldType (OutputObject DataTyCon {typeData}) key =
       case lookup key typeData of
-        Just DataField {fieldTypeWrappers, fieldType} -> trans <$> getType lib fieldType
-          where trans x = (x, fieldTypeWrappers)
+        Just DataField {fieldType = alias@TypeAlias {aliasTyCon}} -> trans <$> getType lib aliasTyCon
+          where trans x = (x, alias {aliasTyCon = typeFrom x, aliasArgs = Nothing})
         Nothing -> Left (compileError key)
-    fieldDataType _ key = Left (compileError key)
+    lookupFieldType _ key = Left (compileError key)
     -----------------------------------------------------
     genOperation Operation {operationName, operationSelection} = do
       argTypes <- rootArguments (operationName <> "Args")
@@ -59,14 +59,12 @@ operationTypes lib variables = genOperation
             typeD fields = TypeD {tName = unpack typeName, tCons = [ConsD {cName = unpack typeName, cFields = fields}]}
             ---------------------------------------------------------------
             toInputTypeD :: (Text, DataField) -> Validation [TypeD]
-            toInputTypeD (_, DataField {fieldType}) = genInputType fieldType
+            toInputTypeD (_, DataField {fieldType}) = genInputType $ aliasTyCon fieldType
             ----------------------------------------------------------------
-            toFieldD :: (Text, DataField) -> Validation FieldD
-            toFieldD (key, DataField {fieldType, fieldTypeWrappers}) = do
-              fType <- typeFrom <$> getType lib fieldType
-              pure $ FieldD {fieldNameD = unpack key, fieldTypeD = wrType fType, fieldArgsD = Nothing}
-              where
-                wrType fType = TypeAlias {aliasWrappers = fieldTypeWrappers, aliasTyCon = fType, aliasArgs = Nothing}
+            toFieldD :: (Text, DataField) -> Validation DataField
+            toFieldD (_, field@DataField {fieldType}) = do
+              aliasTyCon <- typeFrom <$> getType lib (aliasTyCon fieldType)
+              pure $ field {fieldType = fieldType {aliasTyCon}}
         subTypes (Leaf x) = buildLeaf x
         subTypes _ = pure []
     -------------------------------------------
@@ -78,12 +76,16 @@ operationTypes lib variables = genOperation
         typeD :: TypeD
         typeD = TypeD {tName = unpack name, tCons = [ConsD {cName = unpack name, cFields = map fieldD variables}]}
         ---------------------------------------
-        fieldD :: (Text, Variable ()) -> FieldD
+        fieldD :: (Text, Variable ()) -> DataField
         fieldD (key, Variable {variableType, variableTypeWrappers}) =
-          FieldD {fieldNameD = unpack key, fieldArgsD = Nothing, fieldTypeD}
-          where
-            fieldTypeD =
-              TypeAlias {aliasWrappers = variableTypeWrappers, aliasTyCon = variableType, aliasArgs = Nothing}
+          DataField
+            { fieldName = key
+            , fieldArgs = []
+            , fieldArgsType = Nothing
+            , fieldType =
+                TypeAlias {aliasWrappers = variableTypeWrappers, aliasTyCon = variableType, aliasArgs = Nothing}
+            , fieldHidden = False
+            }
     -------------------------------------------
     getCon name dataType selectionSet = do
       cFields <- genFields dataType selectionSet
@@ -93,14 +95,13 @@ operationTypes lib variables = genOperation
       where
         genFields datatype = mapM typeNameFromField
           where
-            typeNameFromField :: (Text, Selection) -> Validation FieldD
-            typeNameFromField (key, Selection {selectionRec = SelectionAlias {aliasFieldName}}) =
-              FieldD (unpack key) Nothing <$> lookupFieldType aliasFieldName
-            typeNameFromField (key, _) = FieldD (unpack key) Nothing <$> lookupFieldType key
-            --------------------------------------------------------------------------------
-            lookupFieldType key = do
-              (newType, aliasWrappers) <- fieldDataType datatype key
-              pure $ TypeAlias {aliasTyCon = typeFrom newType, aliasArgs = Nothing, aliasWrappers}
+            typeNameFromField :: (Text, Selection) -> Validation DataField
+            typeNameFromField (fieldName, Selection {selectionRec = SelectionAlias {aliasFieldName}}) = do
+              fieldType <- snd <$> lookupFieldType datatype aliasFieldName
+              pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
+            typeNameFromField (fieldName, _) = do
+              fieldType <- snd <$> lookupFieldType datatype fieldName
+              pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
     --------------------------------------------
     genRecordType name dataType selectionSet = do
       (con, subTypes) <- getCon name dataType selectionSet

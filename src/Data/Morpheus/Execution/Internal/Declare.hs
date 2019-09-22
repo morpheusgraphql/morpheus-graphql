@@ -18,9 +18,9 @@ import           Language.Haskell.TH
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Utils (nameSpaceWith)
-import           Data.Morpheus.Types.Internal.Data      (DataTypeKind (..), KindD (..), TypeAlias (..), WrapperD (..),
-                                                         unKindD)
-import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), FieldD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.Data      (ArgsType (..), DataField (..), DataTypeKind (..), KindD (..),
+                                                         TypeAlias (..), WrapperD (..), unKindD)
+import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), TypeD (..))
 
 type FUNC = (->)
 
@@ -57,20 +57,20 @@ declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
     derive className = DerivClause Nothing [ConT className]
     cons ConsD {cName, cFields} = RecC (mkName cName) (map declareField cFields)
       where
-        declareField FieldD {fieldNameD, fieldArgsD, fieldTypeD} = (fieldName, defBang, fieldType)
+        declareField DataField {fieldName, fieldArgsType, fieldType} = (fName, defBang, fiType)
           where
-            fieldName
-              | namespace = mkName (nameSpaceWith tName fieldNameD)
-              | otherwise = mkName fieldNameD
-            fieldType = genFieldT fieldArgsD
+            fName
+              | namespace = mkName (nameSpaceWith tName (unpack fieldName))
+              | otherwise = mkName (unpack fieldName)
+            fiType = genFieldT fieldArgsType
               where
                 monadVar = VarT $ mkName "m"
                 subscriptionVar = VarT $ mkName "subscriptionM"
                 ---------------------------
                 genFieldT Nothing = fType False
-                genFieldT (Just (argsTypeName, _)) = AppT (AppT arrowType argType) (fType True)
+                genFieldT (Just ArgsType {argsTypeName}) = AppT (AppT arrowType argType) (fType True)
                   where
-                    argType = ConT $ mkName argsTypeName
+                    argType = ConT $ mkName (unpack argsTypeName)
                     arrowType = ConT ''FUNC
                 ------------------------------------------------
                 fType isResolver
@@ -78,4 +78,4 @@ declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
                   | isResolver = AppT monadVar result
                   | otherwise = result
                 ------------------------------------------------
-                result = declareTypeAlias fieldTypeD
+                result = declareTypeAlias fieldType

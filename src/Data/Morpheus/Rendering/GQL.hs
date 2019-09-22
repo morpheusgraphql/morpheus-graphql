@@ -13,8 +13,9 @@ import qualified Data.Text.Lazy                    as LT (fromStrict)
 import           Data.Text.Lazy.Encoding           (encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
-                                                    DataTyCon (..), DataTypeLib, allDataTypes, showWrappedType)
+import       Data.Morpheus.Rendering.RenderGQL (RenderGQL(..))
+import       Data.Morpheus.Types.Internal.Data (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
+                                                    DataTyCon (..), DataTypeLib, allDataTypes)
 
 renderGraphQLDocument :: DataTypeLib -> ByteString
 renderGraphQLDocument lib = encodeUtf8 $ LT.fromStrict $ intercalate "\n\n" $ map renderType visibleTypes
@@ -38,7 +39,7 @@ renderType (name, Leaf (BaseScalar _)) = "scalar " <> name
 renderType (name, Leaf (CustomScalar _)) = "scalar " <> name
 renderType (name, Leaf (LeafEnum DataTyCon {typeData})) = "enum " <> name <> renderObject id typeData
 renderType (name, Union DataTyCon {typeData}) =
-  "union " <> name <> " =\n    " <> intercalate ("\n" <> renderIndent <> "| ") (map fieldType typeData)
+  "union " <> name <> " =\n    " <> intercalate ("\n" <> renderIndent <> "| ") (map (render . fieldType) typeData)
 renderType (name, InputObject DataTyCon {typeData}) = "input " <> name <> renderDataObject renderInputField typeData
 renderType (name, InputUnion DataTyCon {typeData}) =
   "input " <> name <> renderDataObject renderInputField (mapKeys typeData)
@@ -57,12 +58,12 @@ renderDataObject f list = renderObject f (ignoreHidden list)
     ignoreHidden = filter (not . fieldHidden . snd)
 
 renderInputField :: (Text, DataField) -> Text
-renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
-  key <> ": " <> showWrappedType fieldTypeWrappers fieldType
+renderInputField (key, DataField {fieldType}) =
+  key <> ": " <> render fieldType
 
 renderField :: (Text, DataField) -> Text
-renderField (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
-  key <> renderArguments fieldArgs <> ": " <> showWrappedType fieldTypeWrappers fieldType
+renderField (key, DataField {fieldType, fieldArgs}) =
+  key <> renderArguments fieldArgs <> ": " <> render fieldType
   where
     renderArguments :: [(Text, DataArgument)] -> Text
     renderArguments []   = ""

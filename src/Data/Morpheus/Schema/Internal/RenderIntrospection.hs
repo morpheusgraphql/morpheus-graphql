@@ -21,8 +21,8 @@ import           Data.Morpheus.Schema.Type         (Type (..))
 import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data (DataField (..), DataField, DataFullType (..), DataLeaf (..),
                                                     DataObject, DataTyCon (..), DataTypeKind (..), DataTypeLib,
-                                                    DataTypeWrapper (..), DataUnion, WrapperD, kindOf, lookupDataType,
-                                                    toGQLWrapper)
+                                                    DataTypeWrapper (..), DataUnion, TypeAlias (..), kindOf,
+                                                    lookupDataType, toGQLWrapper)
 
 type InputValue = IN.InputValue Type
 
@@ -52,10 +52,7 @@ renderTypeKind KindList        = LIST
 renderTypeKind KindNonNull     = NON_NULL
 
 wrap :: DataField -> Type -> Type
-wrap field' = wrapRec (fieldTypeWrappers field')
-
-wrapRec :: [WrapperD] -> Type -> Type
-wrapRec xs typ = foldr wrapByTypeWrapper typ (toGQLWrapper xs)
+wrap DataField {fieldType = TypeAlias {aliasWrappers}} typ = foldr wrapByTypeWrapper typ (toGQLWrapper aliasWrappers)
 
 wrapByTypeWrapper :: DataTypeWrapper -> Type -> Type
 wrapByTypeWrapper ListType    = wrapAs LIST
@@ -68,9 +65,9 @@ lookupKind name lib =
     Just value -> Right (kindOf value)
 
 fieldFromObjectField :: (Text, DataField) -> Result Field
-fieldFromObjectField (key, field'@DataField {fieldType, fieldArgs}) lib = do
-  kind <- renderTypeKind <$> lookupKind fieldType lib
-  F.createFieldWith key (wrap field' $ createType kind fieldType "" $ Just []) <$>
+fieldFromObjectField (key, field'@DataField {fieldType = TypeAlias {aliasTyCon}, fieldArgs}) lib = do
+  kind <- renderTypeKind <$> lookupKind aliasTyCon lib
+  F.createFieldWith key (wrap field' $ createType kind aliasTyCon "" $ Just []) <$>
     traverse (`inputValueFromArg` lib) fieldArgs
 
 typeFromLeaf :: (Text, DataLeaf) -> Type
@@ -94,7 +91,7 @@ createLeafType kind' name' description enums' =
     }
 
 typeFromUnion :: (Text, DataUnion) -> Type
-typeFromUnion (name', DataTyCon {typeData = fields', typeDescription = description}) =
+typeFromUnion (name', DataTyCon {typeData, typeDescription = description}) =
   Type
     { kind = UNION
     , name = Just name'
@@ -102,7 +99,7 @@ typeFromUnion (name', DataTyCon {typeData = fields', typeDescription = descripti
     , fields = const $ return Nothing
     , ofType = Nothing
     , interfaces = Nothing
-    , possibleTypes = Just (map (\x -> createObjectType (fieldType x) Nothing $ Just []) fields')
+    , possibleTypes = Just (map (\x -> createObjectType (aliasTyCon $ fieldType x) Nothing $ Just []) typeData)
     , enumValues = const $ return Nothing
     , inputFields = Nothing
     }
@@ -111,9 +108,9 @@ inputValueFromArg :: (Text, DataField) -> Result InputValue
 inputValueFromArg (key, input) = fmap (IN.createInputValueWith key) . createInputObjectType input
 
 createInputObjectType :: DataField -> Result Type
-createInputObjectType field@DataField {fieldType} lib = do
-  kind <- renderTypeKind <$> lookupKind fieldType lib
-  pure $ wrap field $ createType kind fieldType "" $ Just []
+createInputObjectType field@DataField {fieldType = TypeAlias {aliasTyCon}} lib = do
+  kind <- renderTypeKind <$> lookupKind aliasTyCon lib
+  pure $ wrap field $ createType kind aliasTyCon "" $ Just []
 
 renderInputObject :: (Text, DataObject) -> Result Type
 renderInputObject (key, DataTyCon {typeData, typeDescription}) lib = do

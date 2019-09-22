@@ -5,12 +5,14 @@ module Data.Morpheus.Validation.Document.Validation
   ) where
 
 import           Data.Maybe
+import           Data.Text                               (pack)
 
 --
 -- Morpheus
 import           Data.Morpheus.Error.Document.Interface  (ImplementsError (..), partialImplements, unknownInterface)
+import           Data.Morpheus.Rendering.RenderGQL       (RenderGQL (..))
 import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataObject, DataTyCon (..),
-                                                          Key, RawDataType (..), isEqOrStricter, showWrappedType)
+                                                          Key, RawDataType (..), TypeAlias (..), isWeaker, isWeaker)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 
 validatePartialDocument :: [(Key, RawDataType)] -> Validation [(Key, DataFullType)]
@@ -35,13 +37,14 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
       concatMap checkField interfaceFields
       where
         checkField :: (Key, DataField) -> [(Key, Key, ImplementsError)]
-        checkField (key, DataField {fieldType = interfaceTypeName, fieldTypeWrappers = interfaceWrappers}) =
+        checkField (key, DataField {fieldType = interfaceT@TypeAlias { aliasTyCon = interfaceTypeName
+                                                                     , aliasWrappers = interfaceWrappers
+                                                                     }}) =
           case lookup key objFields of
-            Just DataField {fieldType, fieldTypeWrappers}
-              | fieldType == interfaceTypeName && isEqOrStricter fieldTypeWrappers interfaceWrappers -> []
-              | otherwise -> [(typeName, key, UnexpectedType {expectedType, foundType})]
-              where expectedType = showWrappedType interfaceWrappers interfaceTypeName
-                    foundType = showWrappedType fieldTypeWrappers fieldType
+            Just DataField {fieldType = objT@TypeAlias {aliasTyCon, aliasWrappers}}
+              | aliasTyCon == interfaceTypeName && not (isWeaker aliasWrappers interfaceWrappers) -> []
+              | otherwise ->
+                [(typeName, key, UnexpectedType {expectedType = render interfaceT, foundType = render objT})]
             Nothing -> [(typeName, key, UndefinedField)]
     -------------------------------
     getInterfaceByKey :: Key -> Validation DataObject

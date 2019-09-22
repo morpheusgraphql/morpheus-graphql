@@ -16,8 +16,8 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Execution.Document.GQLType  (genTypeArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName))
-import           Data.Morpheus.Types.Internal.Data         (DataField (..), KindD, ResolverKind, TypeAlias (..))
-import           Data.Morpheus.Types.Internal.DataD        (ConsD (..), FieldD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.Data         (DataField (..), KindD, TypeAlias (..))
+import           Data.Morpheus.Types.Internal.DataD        (ConsD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceHeadT, typeT)
 
 -- [((Text, DataField), TypeUpdater)]
@@ -40,31 +40,33 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
         body = [|($(buildFields cFields), $(buildTypes cFields))|]
 deriveObjectRep _ = pure []
 
-buildTypes :: [FieldD] -> ExpQ
+buildTypes :: [DataField] -> ExpQ
 buildTypes = listE . concatMap introspectField
   where
-    introspectField FieldD {fieldTypeD = TypeAlias {aliasTyCon, aliasArgs}} =
-      [[|introspect $(proxyT (unpack aliasTyCon) (unpack <$> aliasArgs))|]]
+    introspectField DataField {fieldType} = [[|introspect $(proxyT fieldType)|]]
 
-proxyT :: String -> Maybe String -> Q Exp
-proxyT name args = [|(Proxy :: Proxy $(genSig args))|]
+proxyT :: TypeAlias -> Q Exp
+proxyT TypeAlias {aliasTyCon, aliasArgs} = [|(Proxy :: Proxy $(genSig aliasArgs))|]
   where
-    genSig (Just m) = appT (conT $ mkName name) (varT $ mkName m)
-    genSig _        = conT $ mkName name
+    genSig (Just m) = appT (conT $ mkName $ unpack aliasTyCon) (varT $ mkName $ unpack m)
+    genSig _        = conT $ mkName $ unpack aliasTyCon
 
-fieldArgsRep :: Maybe (String, ResolverKind) -> Q Exp
-fieldArgsRep (Just (name, _)) = [|objectFields $(proxyT name Nothing)|]
-fieldArgsRep _                = [|([], [])|]
-
-buildFields :: [FieldD] -> ExpQ
+--fieldArgsRep :: Maybe (String, ResolverKind) -> Q Exp
+--fieldArgsRep (Just (name, _)) = [|objectFields $(proxyT name Nothing)|]
+--fieldArgsRep _                = [|([], [])|]
+buildFields :: [DataField] -> ExpQ
 buildFields = listE . map buildField
   where
-    buildField FieldD {fieldNameD, fieldArgsD, fieldTypeD = TypeAlias {aliasTyCon, aliasArgs, aliasWrappers}} =
-      [|( fieldNameD
+    buildField DataField {fieldName, fieldArgs, fieldType = alias@TypeAlias {aliasArgs, aliasWrappers}} =
+      [|( fName
         , DataField
-            { fieldName = fieldNameD
-            , fieldArgs = fst $(fieldArgsRep fieldArgsD)
-            , fieldTypeWrappers = aliasWrappers
-            , fieldType = __typeName $(proxyT (unpack aliasTyCon) (unpack <$> aliasArgs))
+            { fieldName = fName
+            , fieldArgs = fArgs
+            , fieldType = TypeAlias {aliasTyCon =  __typeName $(proxyT alias), aliasArgs = aArgs, aliasWrappers}
             , fieldHidden = False
             })|]
+      where
+        fName = unpack fieldName
+        fArgs = map (\(k, v) -> (unpack k, v)) fieldArgs
+        aArgs = unpack <$> aliasArgs
+        -- fst $(fieldArgsRep fieldArgsD)

@@ -13,12 +13,13 @@ module Data.Morpheus.Execution.Internal.Decode
   ) where
 
 import           Data.Semigroup                          ((<>))
+import           Data.Text                               (unpack)
 import           Language.Haskell.TH                     (ExpQ, conE, mkName, uInfixE, varE)
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal            (internalArgumentError, internalTypeMismatch)
-import           Data.Morpheus.Types.Internal.Data       (Key)
-import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), FieldD (..))
+import           Data.Morpheus.Types.Internal.Data       (DataField (..), Key)
+import           Data.Morpheus.Types.Internal.DataD      (ConsD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Object, Value (..))
 
@@ -33,7 +34,9 @@ decodeObjectExpQ fieldDecoder ConsD {cName, cFields} = handleFields cFields
         applyFields [x]    = defField x
         applyFields (x:xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
         ------------------------------------------------------------------------
-        defField FieldD {fieldNameD} = uInfixE (varE (mkName "o")) fieldDecoder [|fieldNameD|]
+        defField DataField {fieldName} = uInfixE (varE (mkName "o")) fieldDecoder [|fName|]
+          where
+            fName = unpack fieldName
 
 withObject :: (Object -> Validation a) -> Value -> Validation a
 withObject f (Object object) = f object

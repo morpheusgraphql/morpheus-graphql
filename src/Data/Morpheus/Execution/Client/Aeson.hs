@@ -22,8 +22,8 @@ import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data  (TypeAlias (..), isNullable)
-import           Data.Morpheus.Types.Internal.DataD (ConsD (..), FieldD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.Data  (DataField (..), isFieldNullable)
+import           Data.Morpheus.Types.Internal.DataD (ConsD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH    (instanceFunD, instanceHeadT)
 
 deriveFromJSON :: TypeD -> Q Dec
@@ -46,9 +46,11 @@ aesonObjectBody ConsD {cName, cFields} = handleFields cFields
     ----------------------------------------------------------------------------------
       -- Optional Field
       where
-        defField FieldD {fieldNameD, fieldTypeD = TypeAlias {aliasWrappers}}
-          | isNullable aliasWrappers = [|o .:? fieldNameD|]
-          | otherwise = [|o .: fieldNameD|]
+        defField field@DataField {fieldName}
+          | isFieldNullable field = [|o .:? fName|]
+          | otherwise = [|o .: fName|]
+          where
+            fName = unpack fieldName
             -------------------------------------------------------------------
         startExp fNames = uInfixE (conE consName) (varE '(<$>)) (applyFields fNames)
           where

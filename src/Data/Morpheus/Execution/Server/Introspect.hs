@@ -43,8 +43,8 @@ import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..)
 import           Data.Morpheus.Types.GQLType                     (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data               (DataArguments, DataField (..), DataFullType (..),
                                                                   DataLeaf (..), DataTyCon (..), DataTypeLib,
-                                                                  defineType, isTypeDefined, toListField,
-                                                                  toNullableField)
+                                                                  TypeAlias (..), defineType, isTypeDefined,
+                                                                  toListField, toNullableField)
 import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
 
 type IntroCon a = ObjectFields a
@@ -123,7 +123,12 @@ instance (GQL_TYPE a, ObjectFields a) => IntrospectKind OBJECT a where
       __typename =
         ( "__typename"
         , DataField
-            {fieldName = "__typename", fieldArgs = [], fieldTypeWrappers = [], fieldType = "String", fieldHidden = True})
+            { fieldName = "__typename"
+            , fieldArgs = []
+            , fieldArgsType = Nothing
+            , fieldType = buildAlias "String"
+            , fieldHidden = True
+            })
       (fields, types) = objectFields (Proxy @a)
 
 -- UNION
@@ -153,7 +158,13 @@ instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a wher
               }
       typeName = __typeName (Proxy @a) <> "Tags"
       fieldTag =
-        DataField {fieldName = "tag", fieldArgs = [], fieldTypeWrappers = [], fieldType = typeName, fieldHidden = False}
+        DataField
+          { fieldName = "tag"
+          , fieldArgs = []
+          , fieldArgsType = Nothing
+          , fieldType = buildAlias typeName
+          , fieldHidden = False
+          }
 
 -- Types
 type TypeUpdater = DataTypeLib -> SchemaValidation DataTypeLib
@@ -204,13 +215,17 @@ instance (Selector s, Introspect a) => GQLRep OBJECT (M1 S s (Rec0 a)) where
 instance GQLRep OBJECT U1 where
   gqlRep _ = []
 
+buildAlias :: Text -> TypeAlias
+buildAlias aliasTyCon = TypeAlias {aliasTyCon, aliasWrappers = [], aliasArgs = Nothing}
+
 -- Helper Functions
 resolveTypes :: DataTypeLib -> [TypeUpdater] -> SchemaValidation DataTypeLib
 resolveTypes = foldM (&)
 
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName =
-  DataField {fieldName, fieldArgs, fieldTypeWrappers = [], fieldType = __typeName proxy, fieldHidden = False}
+  DataField
+    {fieldName, fieldArgs, fieldArgsType = Nothing, fieldType = buildAlias $ __typeName proxy, fieldHidden = False}
 
 buildType :: GQLType a => t -> Proxy a -> DataTyCon t
 buildType typeData proxy =

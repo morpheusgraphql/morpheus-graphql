@@ -10,12 +10,13 @@ import           Data.Morpheus.Error.Arguments                 (argumentGotInval
 import           Data.Morpheus.Error.Input                     (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Internal                  (internalUnknownTypeMessage)
 import           Data.Morpheus.Error.Variable                  (incompatibleVariableType, undefinedVariable)
+import           Data.Morpheus.Rendering.RenderGQL             (RenderGQL (..))
 import           Data.Morpheus.Types.Internal.AST.Operation    (ValidVariables, Variable (..))
 import           Data.Morpheus.Types.Internal.AST.RawSelection (RawArgument (..), RawArguments, Reference (..))
 import           Data.Morpheus.Types.Internal.AST.Selection    (Argument (..), ArgumentOrigin (..), Arguments)
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Data             (DataArgument, DataField (..), DataField, DataTypeLib,
-                                                                isEqOrStricter, isFieldNullable, showWrappedType)
+                                                                TypeAlias (..), isFieldNullable, isWeaker)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Types.Internal.Value            (Value (Null))
 import           Data.Morpheus.Validation.Internal.Utils       (checkForUnknownKeys, checkNameCollision, getInputType)
@@ -38,23 +39,25 @@ resolveArgumentVariables operatorName variables DataField {fieldName, fieldArgs}
             Just Variable {variableValue, variableType, variableTypeWrappers} ->
               case lookup key fieldArgs of
                 Nothing -> Left $ unknownArguments fieldName [EnhancedKey key referencePosition]
-                Just DataField {fieldType, fieldTypeWrappers} ->
-                  if variableType == fieldType && isEqOrStricter variableTypeWrappers fieldTypeWrappers
+                Just DataField {fieldType = fieldT@TypeAlias {aliasTyCon, aliasWrappers}} ->
+                  if variableType == aliasTyCon && not (isWeaker variableTypeWrappers aliasWrappers)
                     then return variableValue
                     else Left $ incompatibleVariableType referenceName varSignature fieldSignature referencePosition
-                  where varSignature = showWrappedType variableTypeWrappers variableType
-                        fieldSignature = showWrappedType fieldTypeWrappers fieldType
+                  where varSignature = renderWrapped variableType variableTypeWrappers
+                        fieldSignature = render fieldT
 
 handleInputError :: Text -> Position -> InputValidation a -> Validation ()
 handleInputError key position' (Left error') = Left $ argumentGotInvalidValue key (inputErrorMessage error') position'
 handleInputError _ _ _                       = pure ()
 
 validateArgumentValue :: DataTypeLib -> DataField -> (Text, Argument) -> Validation (Text, Argument)
-validateArgumentValue lib DataField {fieldType, fieldTypeWrappers} arg@(key, Argument {argumentValue, argumentPosition}) =
-  getInputType fieldType lib (internalUnknownTypeMessage fieldType) >>= checkType >> pure arg
+validateArgumentValue lib DataField {fieldType = TypeAlias {aliasTyCon, aliasWrappers}} arg@(key, Argument { argumentValue
+                                                                                                           , argumentPosition
+                                                                                                           }) =
+  getInputType aliasTyCon lib (internalUnknownTypeMessage aliasTyCon) >>= checkType >> pure arg
   where
     checkType type' =
-      handleInputError key argumentPosition (validateInputValue lib [] fieldTypeWrappers type' (key, argumentValue))
+      handleInputError key argumentPosition (validateInputValue lib [] aliasWrappers type' (key, argumentValue))
 
 validateArgument :: DataTypeLib -> Position -> Arguments -> (Text, DataArgument) -> Validation (Text, Argument)
 validateArgument types argumentPosition requestArgs (key, arg) =

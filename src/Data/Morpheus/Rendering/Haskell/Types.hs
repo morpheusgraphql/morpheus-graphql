@@ -15,7 +15,7 @@ import           Data.Morpheus.Rendering.Haskell.Terms (Context (..), Scope (..)
                                                         renderData, renderSet, renderTuple, renderUnionCon,
                                                         renderWrapped)
 import           Data.Morpheus.Types.Internal.Data     (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
-                                                        DataTyCon (..), isNullable)
+                                                        DataTyCon (..), TypeAlias (..), isNullable)
 
 renderType :: Context -> (Text, DataFullType) -> Text
 renderType context (name, dataType) = typeIntro <> renderData name <> renderT dataType
@@ -48,7 +48,7 @@ renderGQLScalar name = renderTypeInstanceHead "GQLScalar " name <> renderParse <
 renderUnion :: Text -> [DataField] -> Text
 renderUnion typeName = unionType . map renderElem
   where
-    renderElem DataField {fieldType} = renderUnionCon typeName fieldType <> fieldType
+    renderElem DataField {fieldType = TypeAlias {aliasTyCon}} = renderUnionCon typeName aliasTyCon <> aliasTyCon
 
 unionType :: [Text] -> Text
 unionType ls = "\n" <> indent <> intercalate ("\n" <> indent <> "| ") ls <> " deriving (Generic)"
@@ -60,12 +60,16 @@ renderObject f list = intercalate "\n\n" $ renderMainType : catMaybes types
     (fields, types) = unzip (map f list)
 
 renderInputField :: (Text, DataField) -> (Text, Maybe Text)
-renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
-  (key `renderAssignment` renderWrapped fieldTypeWrappers fieldType, Nothing)
+renderInputField (key, DataField {fieldType = TypeAlias {aliasTyCon, aliasWrappers}}) =
+  (key `renderAssignment` renderWrapped aliasWrappers aliasTyCon, Nothing)
 
 renderField :: Context -> (Text, DataField) -> (Text, Maybe Text)
-renderField Context {scope, pubSub = (channel, content)} (key, DataField {fieldTypeWrappers, fieldType, fieldArgs}) =
-  (key `renderAssignment` argTypeName <> " -> " <> renderMonad scope <> result fieldTypeWrappers, argTypes)
+renderField Context {scope, pubSub = (channel, content)} (key, DataField { fieldType = TypeAlias { aliasWrappers
+                                                                                                 , aliasTyCon
+                                                                                                 }
+                                                                         , fieldArgs
+                                                                         }) =
+  (key `renderAssignment` argTypeName <> " -> " <> renderMonad scope <> result aliasWrappers, argTypes)
   where
     renderMonad Subscription = "IOSubRes " <> channel <> " " <> content <> " "
     renderMonad Mutation =
@@ -75,8 +79,8 @@ renderField Context {scope, pubSub = (channel, content)} (key, DataField {fieldT
     renderMonad _ = "IORes "
     -----------------------------------------------------------------
     result wrappers
-      | isNullable wrappers = renderTuple (renderWrapped wrappers fieldType)
-      | otherwise = renderWrapped wrappers fieldType
+      | isNullable wrappers = renderTuple (renderWrapped wrappers aliasTyCon)
+      | otherwise = renderWrapped wrappers aliasTyCon
     (argTypeName, argTypes) = renderArguments fieldArgs
     renderArguments :: [(Text, DataArgument)] -> (Text, Maybe Text)
     renderArguments [] = ("()", Nothing)
