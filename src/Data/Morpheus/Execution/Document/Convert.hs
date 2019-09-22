@@ -44,9 +44,17 @@ renderTHTypes lib = traverse renderTHType lib
         ---------------------------------------------------------------------------------------------
         genResField :: (Text, DataField) -> DataField
         genResField (_, field@DataField {fieldName, fieldArgs, fieldType = alias@TypeAlias {aliasTyCon}}) =
-          field {fieldType = alias {aliasTyCon = ftName, aliasArgs}, fieldArgsType = faType}
+          field {fieldType = alias {aliasTyCon = ftName, aliasArgs}, fieldArgsType}
           where
-            faType = Just $ ArgsType {argsTypeName, resKind = getFieldType ftName}
+            ftName = genFieldTypeName aliasTyCon
+            ---------------------------------------
+            aliasArgs =
+              case lookup aliasTyCon lib of
+                Just OutputObject {} -> Just "m"
+                Just Union {}        -> Just "m"
+                _                    -> Nothing
+            -----------------------------------
+            fieldArgsType = Just $ ArgsType {argsTypeName, resKind = getFieldType ftName}
               where
                 argsTypeName
                   | null fieldArgs = "()"
@@ -58,14 +66,6 @@ renderTHTypes lib = traverse renderTHType lib
                     Just OutputObject {} -> TypeVarResolver
                     Just Union {}        -> TypeVarResolver
                     Just _               -> PlainResolver
-            ------------------------------------
-            ftName = genFieldTypeName aliasTyCon
-            ---------------------------------------
-            aliasArgs =
-              case lookup aliasTyCon lib of
-                Just OutputObject {} -> Just "m"
-                Just Union {}        -> Just "m"
-                _                    -> Nothing
         --------------------------------------------
         genType (Leaf (LeafEnum DataTyCon {typeName, typeData})) =
           pure
