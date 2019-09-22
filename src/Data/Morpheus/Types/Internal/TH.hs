@@ -29,6 +29,6 @@ instanceHeadT cName iType tArgs = applyT cName [applyT (mkName iType) (map (varT
 
 instanceFunD :: Name -> [String] -> Q Exp -> Q Dec
 instanceFunD name args body = funD name [clause (map (varP . mkName) args) (normalB body) []]
---
--- instanceHeadMultiT :: Name -> Q Type -> [String] -> Q Type
--- instanceHeadMultiT className iType li = applyT className (iType : map (varT . mkName) li)
+
+instanceHeadMultiT :: Name -> Q Type -> [String] -> Q Type
+instanceHeadMultiT className iType li = applyT className (iType : map (varT . mkName) li)

@@ -12,6 +12,7 @@ import           Language.Haskell.TH
 --
 -- MORPHEUS
 import           Data.Morpheus.Execution.Document.Decode     (deriveDecode)
+import           Data.Morpheus.Execution.Document.Encode     (deriveEncode)
 import           Data.Morpheus.Execution.Document.GQLType    (deriveGQLType)
 import           Data.Morpheus.Execution.Document.Introspect (deriveObjectRep)
 import           Data.Morpheus.Execution.Internal.Declare    (declareGQLT)
@@ -33,7 +34,7 @@ declareGQLType namespace gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
       where
         gqlInstances
           | isObject typeKindD && isInput typeKindD = [deriveObjectRep (typeD, Just typeKindD), deriveDecode typeD]
-          | isObject typeKindD = [deriveObjectRep (typeD, Just typeKindD)]
+          | isObject typeKindD = [deriveObjectRep (typeD, Just typeKindD), deriveEncode typeD]
           | otherwise = []
     --------------------------------------------------
     declareArgTypes = do

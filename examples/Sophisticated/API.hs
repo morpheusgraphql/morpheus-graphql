@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -87,7 +88,7 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
       return
         Query
           { queryUser = const $ resolver fetchUser
-          , queryAnimal = \AnimalArgs { animalArgsAnimal } -> return (pack $ show animalArgsAnimal)
+          , queryAnimal = \AnimalArgs {animalArgsAnimal} -> return (pack $ show animalArgsAnimal)
           , querySet = constRes $ S.fromList [1, 2]
           , queryMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]
           , queryWrapped1 = constRes $ A (0, "")
