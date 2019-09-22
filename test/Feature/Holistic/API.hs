@@ -1,10 +1,12 @@
-{-# LANGUAGE DeriveGeneric       #-}
-{-# LANGUAGE DerivingStrategies  #-}
-{-# LANGUAGE NamedFieldPuns      #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DerivingStrategies    #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module Feature.Holistic.API
   ( api
