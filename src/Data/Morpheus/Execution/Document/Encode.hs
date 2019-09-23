@@ -1,6 +1,6 @@
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 module Data.Morpheus.Execution.Document.Encode
   ( deriveEncode
@@ -30,9 +30,10 @@ deriveEncode TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (cxt 
     constrains =
       [typeT ''Typeable ["m"], typeT ''Monad ["m"], typeT ''GQLValue ["value"], appT (conT ''GQLValue) resolveT]
     -------------------------------------------------------------------
-    -- defines:  instance <constraint> =>  ObjectResolvers (<Type> (ResolveT m)) (ResolveT m value) where
+    -- defines: instance <constraint> =>  ObjectResolvers (<Type> (ResolveT m)) (ResolveT m value) where
     appHead = instanceHeadMultiT ''ObjectResolvers (applyT (mkName tName) [typeT ''Resolver ["m"]]) [resolveT]
     ------------------------------------------------------------------
+    -- defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
     methods = [funD 'objectResolvers [clause argsE (normalB body) []]]
       where
         argsE = [conP (mkName tName) $ map (varP . mkName) varNames]
