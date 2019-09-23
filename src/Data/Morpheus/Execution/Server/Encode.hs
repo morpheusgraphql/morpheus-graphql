@@ -16,6 +16,7 @@ module Data.Morpheus.Execution.Server.Encode
   ( EncodeCon
   , EncodeMutCon
   , EncodeSubCon
+  , Encode(..)
   , encodeQuery
   , encodeOperation
   , ObjectResolvers(..)
@@ -79,24 +80,25 @@ instance (Eq k, Monad m, Encode (MapKind k v (Resolver m)) (ResolveT m value)) =
 instance (Monad m, GQLValue value, Encode a (m value)) => Encode [a] (m value) where
   encode list query = gqlList <$> traverse (`encode` query) list
 
--- GQL Either Resolver
-instance (Monad m, Encode a (ResolveT m value), DecodeObject p) =>
-         Encode (p -> Either String a) (ResolveT m value) where
-  encode resolver selection = decodeArgs selection >>= encodeResolver selection . (liftEither . resolver)
+--  GQL a -> b
+instance (DecodeObject a, Monad m, Encode b (ResolveT m value)) => Encode (a -> b) (ResolveT m value) where
+  encode resolver selection = decodeArgs selection >>= (`encode` selection) . resolver
 
---  GQL ExceptT Resolver
-instance (DecodeObject a, Monad m, Encode b (ResolveT m value)) => Encode (a -> Resolver m b) (ResolveT m value) where
-  encode resolver selection = decodeArgs selection >>= encodeResolver selection . resolver
+-- GQL Either Resolver Monad
+instance (Monad m, Encode a (ResolveT m value)) => Encode (Either String a) (ResolveT m value) where
+  encode resolver = (`encodeResolver` liftEither resolver)
 
--- GQL Mutation Resolver
-instance (DecodeObject a, Monad m, Encode b (ResolveT m value)) =>
-         Encode (a -> Resolver m b) (ResolveT (StreamT m c) value) where
+--  GQL ExceptT Resolver Monad
+instance (Monad m, Encode b (ResolveT m value)) => Encode (Resolver m b) (ResolveT m value) where
+  encode = flip encodeResolver
+
+-- GQL Mutation Resolver Monad
+instance (Monad m, Encode b (ResolveT m value)) => Encode (Resolver m b) (ResolveT (StreamT m c) value) where
   encode resolver = injectEvents [] . encode resolver
 
--- GQL Subscription Resolver
-instance (DecodeObject a, Monad m, Encode b (ResolveT m Value)) =>
-         Encode (a -> SubResolver m e c b) (SubResolveT m e c Value) where
-  encode resolver selection = decodeArgs selection >>= handleResolver . resolver
+-- GQL Subscription Resolver Monad
+instance (Monad m, Encode b (ResolveT m Value)) => Encode (SubResolver m e c b) (SubResolveT m e c Value) where
+  encode resolver selection = handleResolver resolver
     where
       handleResolver SubResolver {subChannels, subResolver} =
         initExceptStream [subChannels] (encodeResolver selection . subResolver)
