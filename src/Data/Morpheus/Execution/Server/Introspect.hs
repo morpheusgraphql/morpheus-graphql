@@ -47,7 +47,7 @@ import           Data.Morpheus.Types.Internal.Data               (DataArguments,
                                                                   toListField, toNullableField)
 import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
 
-type IntroCon a = ObjectFields a
+type IntroCon a = (GQLType a, ObjectFields (CUSTOM a) a)
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class Introspect a where
@@ -87,12 +87,12 @@ instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
   introspect _ = introspect (Proxy @(MapKind k v Maybe))
 
 -- Resolver : a -> Resolver b
-instance (ObjectFields a, Introspect b) => Introspect (a -> m b) where
-  field _ name = (field (Proxy @b) name) {fieldArgs = fst $ objectFields (Proxy @a)}
+instance (ObjectFields 'False a, Introspect b) => Introspect (a -> m b) where
+  field _ name = (field (Proxy @b) name) {fieldArgs = fst $ objectFields (Proxy :: Proxy 'False) (Proxy @a)}
   introspect _ typeLib = resolveTypes typeLib (introspect (Proxy @b) : argTypes)
     where
       argTypes :: [TypeUpdater]
-      argTypes = snd $ objectFields (Proxy @a)
+      argTypes = snd $ objectFields (Proxy :: Proxy 'False) (Proxy @a)
 
 -- | Introspect With specific Kind: 'kind': object, scalar, enum ...
 class IntrospectKind (kind :: GQL_KIND) a where
@@ -111,13 +111,13 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
       enumType = Leaf . LeafEnum . buildType (enumTags (Proxy @(Rep a)))
 
 -- INPUT_OBJECT
-instance (GQL_TYPE a, ObjectFields a) => IntrospectKind INPUT_OBJECT a where
+instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT a where
   introspectKind _ = updateLib (InputObject . buildType fields) types (Proxy @a)
     where
-      (fields, types) = objectFields (Proxy @a)
+      (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
 
 -- OBJECTS
-instance (GQL_TYPE a, ObjectFields a) => IntrospectKind OBJECT a where
+instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a where
   introspectKind _ = updateLib (OutputObject . buildType (__typename : fields)) types (Proxy @a)
     where
       __typename =
@@ -129,7 +129,7 @@ instance (GQL_TYPE a, ObjectFields a) => IntrospectKind OBJECT a where
             , fieldType = buildAlias "String"
             , fieldHidden = True
             })
-      (fields, types) = objectFields (Proxy @a)
+      (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
 
 -- UNION
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind UNION a where
@@ -172,13 +172,11 @@ type TypeUpdater = DataTypeLib -> SchemaValidation DataTypeLib
 type GQL_TYPE a = (Generic a, GQLType a)
 
 -- Object Fields
-class GQLRep OBJECT (Rep a) =>
-      ObjectFields a
-  where
-  objectFields :: proxy a -> ([(Text, DataField)], [TypeUpdater])
+class ObjectFields (custom :: Bool) a where
+  objectFields :: proxy1 custom -> proxy2 a -> ([(Text, DataField)], [TypeUpdater])
 
-instance GQLRep OBJECT (Rep a) => ObjectFields a where
-  objectFields _ = unzip $ gqlRep (Context :: Context OBJECT (Rep a))
+instance GQLRep OBJECT (Rep a) => ObjectFields 'False a where
+  objectFields _ _ = unzip $ gqlRep (Context :: Context OBJECT (Rep a))
 
 type family GQLRepResult (a :: GQL_KIND) :: *
 
