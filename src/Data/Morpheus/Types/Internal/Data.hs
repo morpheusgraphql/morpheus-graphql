@@ -280,26 +280,20 @@ kindOf (OutputObject _)        = KindObject
 kindOf (Union _)               = KindUnion
 kindOf (InputUnion _)          = KindInputUnion
 
+fromDataType :: (DataTyCon () -> v) -> DataFullType -> v
+fromDataType f (Leaf (BaseScalar dt))   = f dt {typeData = ()}
+fromDataType f (Leaf (CustomScalar dt)) = f dt {typeData = ()}
+fromDataType f (Leaf (LeafEnum dt))     = f dt {typeData = ()}
+fromDataType f (Union dt)               = f dt {typeData = ()}
+fromDataType f (InputObject dt)         = f dt {typeData = ()}
+fromDataType f (InputUnion dt)          = f dt {typeData = ()}
+fromDataType f (OutputObject dt)        = f dt {typeData = ()}
+
 isVisible :: DataFullType -> Bool
-isVisible (Leaf (BaseScalar DataTyCon {typeVisibility}))   = typeVisibility
-isVisible (Leaf (CustomScalar DataTyCon {typeVisibility})) = typeVisibility
-isVisible (Leaf (LeafEnum DataTyCon {typeVisibility}))     = typeVisibility
-isVisible (Union DataTyCon {typeVisibility})               = typeVisibility
-isVisible (InputObject DataTyCon {typeVisibility})         = typeVisibility
-isVisible (InputUnion DataTyCon {typeVisibility})          = typeVisibility
-isVisible (OutputObject DataTyCon {typeVisibility})        = typeVisibility
+isVisible = fromDataType typeVisibility
 
 isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
-isTypeDefined name lib = getTypeFingerprint <$> lookupDataType name lib
-  where
-    getTypeFingerprint :: DataFullType -> DataFingerprint
-    getTypeFingerprint (Leaf (BaseScalar dataType'))   = typeFingerprint dataType'
-    getTypeFingerprint (Leaf (CustomScalar dataType')) = typeFingerprint dataType'
-    getTypeFingerprint (Leaf (LeafEnum dataType'))     = typeFingerprint dataType'
-    getTypeFingerprint (InputObject dataType')         = typeFingerprint dataType'
-    getTypeFingerprint (OutputObject dataType')        = typeFingerprint dataType'
-    getTypeFingerprint (Union dataType')               = typeFingerprint dataType'
-    getTypeFingerprint (InputUnion dataType')          = typeFingerprint dataType'
+isTypeDefined name lib = fromDataType typeFingerprint <$> lookupDataType name lib
 
 defineType :: (Key, DataFullType) -> DataTypeLib -> DataTypeLib
 defineType (key', Leaf type') lib         = lib {leaf = (key', type') : leaf lib}
