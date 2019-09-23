@@ -46,44 +46,44 @@ resolveArgumentVariables operatorName variables DataField {fieldName, fieldArgs}
                   where varSignature = renderWrapped variableType variableTypeWrappers
                         fieldSignature = render fieldT
 
-handleInputError :: Text -> Position -> InputValidation a -> Validation ()
-handleInputError key position' (Left error') = Left $ argumentGotInvalidValue key (inputErrorMessage error') position'
-handleInputError _ _ _                       = pure ()
-
-validateArgumentValue :: DataTypeLib -> DataField -> (Text, Argument) -> Validation (Text, Argument)
-validateArgumentValue lib DataField {fieldType = TypeAlias {aliasTyCon, aliasWrappers}} arg@(key, Argument { argumentValue
-                                                                                                           , argumentPosition
-                                                                                                           }) =
-  getInputType aliasTyCon lib (internalUnknownTypeMessage aliasTyCon) >>= checkType >> pure arg
-  where
-    checkType type' =
-      handleInputError key argumentPosition (validateInputValue lib [] aliasWrappers type' (key, argumentValue))
-
 validateArgument :: DataTypeLib -> Position -> Arguments -> (Text, DataArgument) -> Validation (Text, Argument)
-validateArgument types argumentPosition requestArgs (key, arg) =
+validateArgument lib fieldPosition requestArgs (key, argType@DataField {fieldType = TypeAlias { aliasTyCon
+                                                                                              , aliasWrappers
+                                                                                              }}) =
   case lookup key requestArgs of
     Nothing                                            -> handleNullable
     Just argument@Argument {argumentOrigin = VARIABLE} -> pure (key, argument) -- Variables are already checked in Variable Validation
     Just Argument {argumentValue = Null}               -> handleNullable
-    Just argument                                      -> validateArgumentValue types arg (key, argument)
+    Just argument                                      -> validateArgumentValue argument
   where
     handleNullable
-      | isFieldNullable arg = pure (key, Argument {argumentValue = Null, argumentOrigin = INLINE, argumentPosition})
-      | otherwise = Left $ undefinedArgument (EnhancedKey key argumentPosition)
-
-checkForUnknownArguments :: (Text, DataField) -> Arguments -> Validation [(Text, DataField)]
-checkForUnknownArguments (key, DataField {fieldArgs}) args =
-  checkForUnknownKeys enhancedKeys fieldKeys argError >> checkNameCollision enhancedKeys argumentNameCollision >>
-  pure fieldArgs
-  where
-    argError = unknownArguments key
-    enhancedKeys = map argToKey args
-    argToKey (key', Argument {argumentPosition}) = EnhancedKey key' argumentPosition
-    fieldKeys = map fst fieldArgs
+      | isFieldNullable argType =
+        pure (key, Argument {argumentValue = Null, argumentOrigin = INLINE, argumentPosition = fieldPosition})
+      | otherwise = Left $ undefinedArgument (EnhancedKey key fieldPosition)
+    -------------------------------------------------------------------------
+    validateArgumentValue :: Argument -> Validation (Text, Argument)
+    validateArgumentValue arg@Argument {argumentValue, argumentPosition} =
+      getInputType aliasTyCon lib (internalUnknownTypeMessage aliasTyCon) >>= checkType >> pure (key, arg)
+      where
+        checkType type' = handleInputError (validateInputValue lib [] aliasWrappers type' (key, argumentValue))
+        ---------
+        handleInputError :: InputValidation a -> Validation ()
+        handleInputError (Left err) = Left $ argumentGotInvalidValue key (inputErrorMessage err) argumentPosition
+        handleInputError _          = pure ()
 
 validateArguments ::
      DataTypeLib -> Text -> ValidVariables -> (Text, DataField) -> Position -> RawArguments -> Validation Arguments
-validateArguments typeLib operatorName variables inputs pos rawArgs = do
-  args <- resolveArgumentVariables operatorName variables (snd inputs) rawArgs
-  dataArgs <- checkForUnknownArguments inputs args
+validateArguments typeLib operatorName variables (key, field@DataField {fieldArgs}) pos rawArgs = do
+  args <- resolveArgumentVariables operatorName variables field rawArgs
+  dataArgs <- checkForUnknownArguments args
   mapM (validateArgument typeLib pos args) dataArgs
+  where
+    checkForUnknownArguments :: Arguments -> Validation [(Text, DataField)]
+    checkForUnknownArguments args =
+      checkForUnknownKeys enhancedKeys fieldKeys argError >> checkNameCollision enhancedKeys argumentNameCollision >>
+      pure fieldArgs
+      where
+        argError = unknownArguments key
+        enhancedKeys = map argToKey args
+        argToKey (key', Argument {argumentPosition}) = EnhancedKey key' argumentPosition
+        fieldKeys = map fst fieldArgs
