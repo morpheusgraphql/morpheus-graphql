@@ -7,6 +7,9 @@ module Data.Morpheus.Rendering.Haskell.RenderHS
   ( RenderHS(..)
   ) where
 
+import           Data.Semigroup                    ((<>))
+
+-- MORPHEUS
 import           Data.Morpheus.Types.Internal.Data
 
 class RenderHS a where
