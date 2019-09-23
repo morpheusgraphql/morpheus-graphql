@@ -7,6 +7,9 @@ module Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL(..)
   ) where
 
+import           Data.Semigroup                    ((<>))
+
+-- MORPHEUS
 import           Data.Morpheus.Types.Internal.Data
 
 class RenderGQL a where
