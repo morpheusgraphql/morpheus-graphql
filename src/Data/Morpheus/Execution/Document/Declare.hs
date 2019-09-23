@@ -45,10 +45,8 @@ declareGQLType namespace gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
         deriveArgsRep args = deriveObjectRep (args, Nothing)
         ----------------------------------------------------
         argsTypeDecs = map (declareGQLT namespace Nothing []) typeArgD
-    --------------------------------------------------
-    declareMainType
-      | isInput typeKindD = declareT -- TODO: declareLenses
-      | otherwise = declareT
+        --------------------------------------------------
+    declareMainType = declareT
       where
         declareT = pure [declareGQLT namespace (Just typeKindD) derivingClasses typeD]
         derivingClasses

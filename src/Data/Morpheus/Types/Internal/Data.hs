@@ -52,6 +52,7 @@ module Data.Morpheus.Types.Internal.Data
   , toGQLWrapper
   , isWeaker
   , isVisible
+  , isSubscription
   ) where
 
 import           Data.Semigroup                     ((<>))
@@ -68,7 +69,12 @@ unKindD :: KindD -> DataTypeKind
 unKindD SubscriptionD       = KindObject
 unKindD (RegularKindD kind) = kind
 
+isSubscription :: KindD -> Bool
+isSubscription SubscriptionD = True
+isSubscription _             = False
+
 isObject :: KindD -> Bool
+isObject SubscriptionD                  = True
 isObject (RegularKindD KindObject)      = True
 isObject (RegularKindD KindInputObject) = True
 isObject _                              = False
