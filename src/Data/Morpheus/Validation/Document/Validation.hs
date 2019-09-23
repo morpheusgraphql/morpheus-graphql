@@ -5,7 +5,6 @@ module Data.Morpheus.Validation.Document.Validation
   ) where
 
 import           Data.Maybe
-import           Data.Text                               (pack)
 
 --
 -- Morpheus
