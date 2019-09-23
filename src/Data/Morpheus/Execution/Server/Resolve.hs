@@ -33,6 +33,7 @@ import           Data.Morpheus.Execution.Server.Introspect           (IntroCon, 
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, publishUpdates)
 import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
 import           Data.Morpheus.Schema.SchemaAPI                      (defaultTypes, hiddenRootFields, schemaAPI)
+import           Data.Morpheus.Types.GQLType                         (GQLType (CUSTOM))
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), OperationKind (..))
 import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataTyCon (..),
                                                                       DataTypeLib (..), initTypeLib)
@@ -128,15 +129,15 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
     querySchema = resolveTypes (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query")) (defaultTypes : types)
       where
-        (fields, types) = objectFields (Proxy @query)
+        (fields, types) = objectFields (Proxy @(CUSTOM query)) (Proxy @query)
     ------------------------------
     mutationSchema lib = resolveTypes (lib {mutation = maybeOperator fields "Mutation"}) types
       where
-        (fields, types) = objectFields (Proxy @mutation)
+        (fields, types) = objectFields (Proxy @(CUSTOM mutation)) (Proxy @mutation)
     ------------------------------
     subscriptionSchema lib = resolveTypes (lib {subscription = maybeOperator fields "Subscription"}) types
       where
-        (fields, types) = objectFields (Proxy @subscription)
+        (fields, types) = objectFields (Proxy @(CUSTOM subscription)) (Proxy @subscription)
      -- maybeOperator :: [a] -> Text -> Maybe (Text, DataTyCon[a])
     maybeOperator []     = const Nothing
     maybeOperator fields = Just . operatorType fields
