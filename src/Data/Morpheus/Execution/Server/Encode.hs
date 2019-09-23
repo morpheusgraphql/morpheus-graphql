@@ -83,6 +83,9 @@ instance (Monad m, GQLValue value, Encode a (m value)) => Encode [a] (m value) w
 --  GQL a -> b
 instance (DecodeObject a, Monad m, Encode b (ResolveT m value)) => Encode (a -> b) (ResolveT m value) where
   encode resolver selection = decodeArgs selection >>= (`encode` selection) . resolver
+    where
+      decodeArgs :: (Key, Selection) -> ResolveT m a
+      decodeArgs = liftEither . decodeArguments . selectionArguments . snd
 
 -- GQL Either Resolver Monad
 instance (Monad m, Encode a (ResolveT m value)) => Encode (Either String a) (ResolveT m value) where
@@ -207,9 +210,6 @@ encodeOperationWith externalRes rootResolver Operation {operationSelection, oper
 encodeResolver :: (Monad m, Encode a (ResolveT m res)) => (Key, Selection) -> Resolver m a -> ResolveT m res
 encodeResolver selection@(fieldName, Selection {selectionPosition}) =
   withExceptT (resolverError selectionPosition fieldName) >=> (`encode` selection)
-
-decodeArgs :: (Monad m, DecodeObject a) => (Key, Selection) -> ResolveT m a
-decodeArgs = liftEither . decodeArguments . selectionArguments . snd
 
 resolveFields :: (Monad m, GQLValue a) => SelectionSet -> [FieldRes m a] -> ResolveT m a
 resolveFields selectionSet resolvers = gqlObject <$> traverse selectResolver selectionSet
