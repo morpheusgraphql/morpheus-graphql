@@ -51,6 +51,7 @@ module Data.Morpheus.Types.Internal.Data
   , isNullable
   , toGQLWrapper
   , isWeaker
+  , isVisible
   ) where
 
 import           Data.Semigroup                     ((<>))
@@ -278,6 +279,15 @@ kindOf (InputObject _)         = KindInputObject
 kindOf (OutputObject _)        = KindObject
 kindOf (Union _)               = KindUnion
 kindOf (InputUnion _)          = KindInputUnion
+
+isVisible :: DataFullType -> Bool
+isVisible (Leaf (BaseScalar DataTyCon {typeVisibility}))   = typeVisibility
+isVisible (Leaf (CustomScalar DataTyCon {typeVisibility})) = typeVisibility
+isVisible (Leaf (LeafEnum DataTyCon {typeVisibility}))     = typeVisibility
+isVisible (Union DataTyCon {typeVisibility})               = typeVisibility
+isVisible (InputObject DataTyCon {typeVisibility})         = typeVisibility
+isVisible (InputUnion DataTyCon {typeVisibility})          = typeVisibility
+isVisible (OutputObject DataTyCon {typeVisibility})        = typeVisibility
 
 isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name lib = getTypeFingerprint <$> lookupDataType name lib

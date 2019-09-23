@@ -22,8 +22,8 @@ import           Language.Haskell.TH.Quote
 -- MORPHEUS
 import           Data.Morpheus.Execution.Document.Compile     (compileDocument)
 import           Data.Morpheus.Execution.Server.Resolve       (RootResCon, fullSchema)
-import           Data.Morpheus.Rendering.GQL                  (renderGraphQLDocument)
 import           Data.Morpheus.Rendering.Haskell.Render       (renderHaskellDocument)
+import           Data.Morpheus.Rendering.RenderGQL            (renderGraphQLDocument)
 import           Data.Morpheus.Types                          (GQLRootResolver)
 
 import           Data.Morpheus.Parsing.Document.Parser        (parseTypes)
