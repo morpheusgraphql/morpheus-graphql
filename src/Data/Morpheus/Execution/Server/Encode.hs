@@ -32,7 +32,6 @@ import           Data.Proxy                                      (Proxy (..))
 import           Data.Set                                        (Set)
 import qualified Data.Set                                        as S (toList)
 import           Data.Text                                       (pack)
-import           Debug.Trace
 import           GHC.Generics
 
 -- MORPHEUS
@@ -235,6 +234,4 @@ resolveFields selectionSet resolvers = gqlObject <$> traverse selectResolver sel
         _                                -> lookupRes key selection
         -------------------------------------------------------------
       where
-        lookupRes resKey sel =
-          traceShow (map fst resolvers) (fromMaybe (const $ return gqlNull) $ lookup resKey resolvers) (key, sel)
-          -- TODO: delete it
+        lookupRes resKey sel = (fromMaybe (const $ return gqlNull) $ lookup resKey resolvers) (key, sel)
