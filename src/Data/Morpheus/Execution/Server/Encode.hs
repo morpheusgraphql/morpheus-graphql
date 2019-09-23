@@ -120,7 +120,7 @@ instance (Generic a, EnumRep (Rep a), GQLValue value) => EncodeKind ENUM a value
   encodeKind = pure . gqlString . encodeRep . from . unVContext
 
 --  OBJECT
-instance EncodeCon m a value => EncodeKind OBJECT a (ResolveT m value) where
+instance (Monad m, EncodeCon m a value, GQLValue value) => EncodeKind OBJECT a (ResolveT m value) where
   encodeKind (VContext value) (_, Selection {selectionRec = SelectionSet selection}) =
     resolveFields selection (__typenameResolver : objectResolvers (Proxy :: Proxy (CUSTOM a)) value)
     where
@@ -128,7 +128,7 @@ instance EncodeCon m a value => EncodeKind OBJECT a (ResolveT m value) where
   encodeKind _ (key, Selection {selectionPosition}) = failResolveT $ subfieldsNotSelected key "" selectionPosition
 
 -- UNION
-instance (GQL_RES m a value, GResolver UNION (Rep a) (ResolveT m value)) => EncodeKind UNION a (ResolveT m value) where
+instance (Monad m, GQL_RES a, GResolver UNION (Rep a) (ResolveT m value)) => EncodeKind UNION a (ResolveT m value) where
   encodeKind (VContext value) (key, sel@Selection {selectionRec = UnionSelection selections}) =
     resolver (key, sel {selectionRec = SelectionSet lookupSelection})
       -- SPEC: if there is no any fragment that supports current object Type GQL returns {}
@@ -138,11 +138,11 @@ instance (GQL_RES m a value, GResolver UNION (Rep a) (ResolveT m value)) => Enco
   encodeKind _ _ = internalErrorT "union Resolver only should recieve UnionSelection"
 
 -- Types & Constrains -------------------------------------------------------
-type GQL_RES m a value = (Monad m, Generic a, GQLType a, GQLValue value)
+type GQL_RES a = (Generic a, GQLType a)
 
 type EncodeOperator m a value = Resolver m a -> ValidOperation -> m (Either GQLErrors value)
 
-type EncodeCon m a value = (GQL_RES m a value, ObjectResolvers (CUSTOM a) a (ResolveT m value))
+type EncodeCon m a value = (GQL_RES a, ObjectResolvers (CUSTOM a) a (ResolveT m value))
 
 type EncodeMutCon m event con mut = EncodeCon (PublishStream m event con) mut Value
 
@@ -197,7 +197,8 @@ instance (GResolver UNION a value, GResolver UNION b value) => GResolver UNION (
 ----- HELPERS ----------------------------
 encodeQuery ::
      forall m a schema.
-     ( GQL_RES m a Value
+     ( GQL_RES a
+     , Monad m
      , ObjectResolvers (CUSTOM schema) schema (ResolveT m Value)
      , EncodeCon m schema Value
      , EncodeCon m a Value
@@ -206,11 +207,11 @@ encodeQuery ::
   -> EncodeOperator m a Value
 encodeQuery schema = encodeOperationWith (objectResolvers (Proxy :: Proxy (CUSTOM schema)) schema)
 
-encodeOperation :: (GQL_RES m a value, EncodeCon m a value, GQLValue value) => EncodeOperator m a value
+encodeOperation :: (Monad m, GQL_RES a, EncodeCon m a value, GQLValue value) => EncodeOperator m a value
 encodeOperation = encodeOperationWith []
 
 encodeOperationWith ::
-     forall m a value. (GQL_RES m a value, EncodeCon m a value)
+     forall m a value. (Monad m, GQL_RES a, GQLValue value, EncodeCon m a value)
   => [FieldRes m value]
   -> EncodeOperator m a value
 encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
