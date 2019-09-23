@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass   #-}
 {-# LANGUAGE DeriveGeneric    #-}
 {-# LANGUAGE NamedFieldPuns   #-}
 {-# LANGUAGE TypeApplications #-}
@@ -16,6 +17,7 @@ import           GHC.Generics
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Introspect (ObjectFields (..), TypeUpdater, introspect, resolveTypes)
 import           Data.Morpheus.Schema.Schema               (Schema, Type, findType, initSchema)
+import           Data.Morpheus.Types.GQLType               (GQLType)
 import           Data.Morpheus.Types.ID                    (ID)
 import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataTypeLib (..))
 
@@ -26,7 +28,7 @@ newtype TypeArgs = TypeArgs
 data SchemaAPI = SchemaAPI
   { __type   :: TypeArgs -> Either String (Maybe Type)
   , __schema :: () -> Either String Schema
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 
 hideFields :: (Text, DataField) -> (Text, DataField)
 hideFields (key', field) = (key', field {fieldHidden = True})

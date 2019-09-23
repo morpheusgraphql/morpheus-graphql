@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
@@ -13,6 +14,7 @@ import           Language.Haskell.TH
 --
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Encode   (Encode (..), ObjectResolvers (..))
+import           Data.Morpheus.Types.GQLType             (TRUE)
 import           Data.Morpheus.Types.Internal.Data       (DataField (..))
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH         (applyT, instanceHeadMultiT, typeT)
@@ -23,20 +25,21 @@ import           Data.Morpheus.Types.Resolver
 deriveEncode :: TypeD -> Q [Dec]
 deriveEncode TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (cxt constrains) appHead methods
   where
-    resolveT = typeT ''ResolveT ["m", "value"]
+    result = typeT ''ResolveT ["m", "value"]
+    mainType = applyT (mkName tName) [typeT ''Resolver ["m"]]
     -- defines Type : ResolveT m value
     -------------------------------------------------
     -- defines Constraint: (Typeable m, Monad m, GQLValue (ResolveT m value), GQLValue value)
     constrains =
-      [typeT ''Typeable ["m"], typeT ''Monad ["m"], typeT ''GQLValue ["value"], appT (conT ''GQLValue) resolveT]
+      [typeT ''Typeable ["m"], typeT ''Monad ["m"], typeT ''GQLValue ["value"], appT (conT ''GQLValue) result]
     -------------------------------------------------------------------
-    -- defines: instance <constraint> =>  ObjectResolvers (<Type> (ResolveT m)) (ResolveT m value) where
-    appHead = instanceHeadMultiT ''ObjectResolvers (applyT (mkName tName) [typeT ''Resolver ["m"]]) [resolveT]
+    -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where
+    appHead = instanceHeadMultiT ''ObjectResolvers (conT ''TRUE) [mainType, result]
     ------------------------------------------------------------------
     -- defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
     methods = [funD 'objectResolvers [clause argsE (normalB body) []]]
       where
-        argsE = [conP (mkName tName) $ map (varP . mkName) varNames]
+        argsE = [varP (mkName "_"), conP (mkName tName) (map (varP . mkName) varNames)]
         body = listE $ map decodeVar varNames
         decodeVar name = [|(name, encode $(varName))|]
           where

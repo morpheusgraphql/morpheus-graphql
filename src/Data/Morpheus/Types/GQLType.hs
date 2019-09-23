@@ -12,6 +12,8 @@
 
 module Data.Morpheus.Types.GQLType
   ( GQLType(..)
+  , TRUE
+  , FALSE
   ) where
 
 import           Data.Map                          (Map)
@@ -26,6 +28,10 @@ import           Data.Morpheus.Kind
 import           Data.Morpheus.Types.Custom        (MapKind, Pair)
 import           Data.Morpheus.Types.Internal.Data (DataFingerprint (..))
 import           Data.Morpheus.Types.Resolver      (Resolver, SubResolver)
+
+type TRUE = 'True
+
+type FALSE = 'False
 
 resolverCon :: TyCon
 resolverCon = fst $ splitTyConApp $ typeRep $ Proxy @(Resolver Maybe)
@@ -61,6 +67,9 @@ ignoreResolver (con, args) = con : concatMap (ignoreResolver . splitTyConApp) ar
 --  @
 class GQLType a where
   type KIND a :: GQL_KIND
+  type KIND a = OBJECT
+  type CUSTOM a :: Bool
+  type CUSTOM a = FALSE
   description :: Proxy a -> Maybe Text
   description _ = Nothing
   __typeVisibility :: Proxy a -> Bool
@@ -77,6 +86,10 @@ class GQLType a where
   __typeFingerprint _ = TypeableFingerprint $ conFingerprints (Proxy @a)
     where
       conFingerprints = fmap (map tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
+
+instance GQLType () where
+  type KIND () = WRAPPER
+  type CUSTOM () = 'False
 
 instance GQLType Int where
   type KIND Int = SCALAR
