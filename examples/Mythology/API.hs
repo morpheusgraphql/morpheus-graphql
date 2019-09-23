@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric  #-}
 
 module Mythology.API
   ( mythologyApi
@@ -7,14 +8,14 @@ module Mythology.API
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, resolver)
+import           Data.Morpheus.Types        (GQLRootResolver (..), GQLType, IORes, resolver)
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 import           Mythology.Character.Deity  (Deity (..), dbDeity)
 
 newtype Query = Query
   { deity :: DeityArgs -> IORes Deity
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 
 data DeityArgs = DeityArgs
   { name      :: Text -- Required Argument
