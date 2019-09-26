@@ -6,35 +6,29 @@
 
 module Data.Morpheus.Execution.Document.GQLType
   ( deriveGQLType
-  , genTypeArgs
   ) where
 
 import           Language.Haskell.TH
 
-import           Data.Morpheus.Kind                 (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR, UNION, WRAPPER)
+import           Data.Morpheus.Kind                       (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR, UNION,
+                                                           WRAPPER)
+
+import           Data.Morpheus.Execution.Internal.Declare (tyConArgs)
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.GQLType        (GQLType (..), TRUE)
-import           Data.Morpheus.Types.Internal.Data  (DataTypeKind (..), KindD (..), unKindD)
-import           Data.Morpheus.Types.Internal.DataD (GQLTypeD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.TH    (instanceHeadT, typeT)
-import           Data.Typeable                      (Typeable)
-
-genTypeArgs :: KindD -> [String]
-genTypeArgs typeKindD
-  | typeKindD == SubscriptionD = ["subscriptionM", "m"]
-  | gqlKind == KindObject || gqlKind == KindUnion = ["m"]
-  | otherwise = []
-  where
-    gqlKind = unKindD typeKindD
+import           Data.Morpheus.Types.GQLType              (GQLType (..), TRUE)
+import           Data.Morpheus.Types.Internal.Data        (DataTypeKind (..), unKindD)
+import           Data.Morpheus.Types.Internal.DataD       (GQLTypeD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.TH          (instanceHeadT, typeT)
+import           Data.Typeable                            (Typeable)
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
 deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} = pure <$> instanceD (cxt constrains) iHead typeFamilies
   where
     gqlKind = unKindD typeKindD
     ---------------------------
-    typeArgs = genTypeArgs typeKindD
+    typeArgs = tyConArgs typeKindD
     ----------------------------------------------
     iHead = instanceHeadT ''GQLType tName typeArgs
     headSig = typeT (mkName tName) typeArgs

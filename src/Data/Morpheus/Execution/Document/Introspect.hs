@@ -13,7 +13,7 @@ import           Data.Typeable                             (Typeable)
 import           Language.Haskell.TH
 
 -- MORPHEUS
-import           Data.Morpheus.Execution.Document.GQLType  (genTypeArgs)
+import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
 import           Data.Morpheus.Types.Internal.Data         (ArgsType (..), DataField (..), KindD, TypeAlias (..))
@@ -28,7 +28,7 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
     overlapping = Just Overlapping
     typeArgs =
       case tKind of
-        Just typeKind -> genTypeArgs typeKind
+        Just typeKind -> tyConArgs typeKind
         Nothing       -> []
     constrains = map conTypeable typeArgs
       where

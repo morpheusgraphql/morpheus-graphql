@@ -10,8 +10,10 @@
 module Data.Morpheus.Execution.Internal.Declare
   ( declareType
   , declareGQLT
+  , tyConArgs
   ) where
 
+import           Data.Maybe                             (maybe)
 import           Data.Text                              (unpack)
 import           GHC.Generics                           (Generic)
 import           Language.Haskell.TH
@@ -19,7 +21,7 @@ import           Language.Haskell.TH
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Utils (nameSpaceWith)
 import           Data.Morpheus.Types.Internal.Data      (ArgsType (..), DataField (..), DataTypeKind (..), KindD (..),
-                                                         TypeAlias (..), WrapperD (..), unKindD)
+                                                         TypeAlias (..), WrapperD (..), isSubscription, unKindD)
 import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), TypeD (..))
 
 type FUNC = (->)
@@ -40,19 +42,22 @@ declareTypeAlias TypeAlias {aliasTyCon, aliasWrappers, aliasArgs} = wrappedT ali
     decType (Just par) = AppT typeName (VarT $ mkName $ unpack par)
     decType _          = typeName
 
+tyConArgs :: KindD -> [String]
+tyConArgs kindD
+  | isSubscription kindD = ["subscriptionM", "m"]
+  | gqlKind == KindObject || gqlKind == KindUnion = ["m"]
+  | otherwise = []
+  where
+    gqlKind = unKindD kindD
+
 -- declareType
 declareGQLT :: Bool -> Maybe KindD -> [Name] -> TypeD -> Dec
 declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
   DataD [] (mkName tName) tVars Nothing (map cons tCons) $ map derive (''Generic : derivingList)
   where
-    gqlKind = unKindD <$> kindD
-    isSubscription = kindD == Just SubscriptionD
-    withTyCon = gqlKind == Just KindObject || gqlKind == Just KindUnion
-    tVars
-      | isSubscription = declareTyVar ["subscriptionM", "m"]
-      | withTyCon = declareTyVar ["m"]
-      | otherwise = []
-    declareTyVar = map (PlainTV . mkName)
+    tVars = maybe [] (declareTyVar . tyConArgs) kindD
+      where
+        declareTyVar = map (PlainTV . mkName)
     defBang = Bang NoSourceUnpackedness NoSourceStrictness
     derive className = DerivClause Nothing [ConT className]
     cons ConsD {cName, cFields} = RecC (mkName cName) (map declareField cFields)
@@ -74,7 +79,7 @@ declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
                     arrowType = ConT ''FUNC
                 ------------------------------------------------
                 fType isResolver
-                  | isSubscription = AppT subscriptionVar result
+                  | maybe False isSubscription kindD = AppT subscriptionVar result
                   | isResolver = AppT monadVar result
                   | otherwise = result
                 ------------------------------------------------
