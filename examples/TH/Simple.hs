@@ -31,5 +31,5 @@ rootResolver =
         deityName _ = pure "Morpheus"
         deityPower _ = pure (Just "Shapeshifting")
 
-mythologyApi :: B.ByteString -> IO B.ByteString
-mythologyApi = interpreter rootResolver
+thSimpleApi :: B.ByteString -> IO B.ByteString
+thSimpleApi = interpreter rootResolver
