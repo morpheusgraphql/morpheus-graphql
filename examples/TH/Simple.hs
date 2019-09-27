@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 
 module TH.Simple
-  ( mythologyApi
+  ( thSimpleApi
   ) where
 
 import qualified Data.ByteString.Lazy.Char8 as B

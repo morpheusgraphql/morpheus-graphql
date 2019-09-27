@@ -18,7 +18,7 @@ import           Data.Morpheus.Execution.Internal.Declare (tyConArgs)
 --
 -- MORPHEUS
 import           Data.Morpheus.Types.GQLType              (GQLType (..), TRUE)
-import           Data.Morpheus.Types.Internal.Data        (DataTypeKind (..), unKindD)
+import           Data.Morpheus.Types.Internal.Data        (DataTypeKind (..), unKindD,isSubscription)
 import           Data.Morpheus.Types.Internal.DataD       (GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH          (instanceHeadT, typeT)
 import           Data.Typeable                            (Typeable)
@@ -38,7 +38,8 @@ deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} = pure <$> instanceD (
         conTypeable name = typeT ''Typeable [name]
     -----------------------------------------------
     typeFamilies
-      | gqlKind == KindObject = [deriveCUSTOM, deriveKind]
+       -- TODO: enable subscription
+      | gqlKind == KindObject && not (isSubscription typeKindD) = [deriveCUSTOM, deriveKind]
       | otherwise = [deriveKind]
     ---------------------------------------------
       where

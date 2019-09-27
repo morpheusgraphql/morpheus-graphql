@@ -24,6 +24,8 @@ import           Data.Morpheus.Types.Resolver
 
 --(ObjectResolvers TRUE (Subscription (IOSubRes EVENT ()) IORes) (ResolveT (SubscribeStream IO EVENT) (Event EVENT ()) -> ResolveT IO Value))
 deriveEncode :: GQLTypeD -> Q [Dec]
+-- TODO: derive subscription
+deriveEncode GQLTypeD{ typeKindD } | isSubscription typeKindD = pure []
 deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}]}} =
   pure <$> instanceD (cxt constrains) appHead methods
     -- (Event EVENT () -> ResolveT IO Value)

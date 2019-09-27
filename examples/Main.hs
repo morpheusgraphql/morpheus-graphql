@@ -23,11 +23,12 @@ import           Sophisticated.API              (Channel, Content, gqlRoot)
 import           TH.Simple                      (thSimpleApi)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
-fetUser :: GQLState IO Channel Content -> IO (Either String GetUser)
-fetUser state = fetch (interpreter gqlRoot state) userArgs
-  where
-    userArgs :: Args GetUser
-    userArgs = GetUserArgs {userCoordinates = Coordinates {longitude = [], latitude = String "1"}}
+-- TODO: restore
+--fetUser :: GQLState IO Channel Content -> IO (Either String GetUser)
+--fetUser state = fetch (interpreter gqlRoot state) userArgs
+--  where
+--    userArgs :: Args GetUser
+--    userArgs = GetUserArgs {userCoordinates = Coordinates {longitude = [], latitude = String "1"}}
 
 main :: IO ()
 main = do
