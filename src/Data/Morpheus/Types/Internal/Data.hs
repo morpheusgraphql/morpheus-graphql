@@ -53,6 +53,7 @@ module Data.Morpheus.Types.Internal.Data
   , isWeaker
   , isVisible
   , isSubscription
+  , Operation(..)
   ) where
 
 import           Data.Semigroup                     ((<>))
@@ -64,6 +65,11 @@ import           Language.Haskell.TH.Syntax         (Lift (..))
 import           Data.Morpheus.Types.Internal.Base  (Key)
 import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
+
+data Operation
+  = Query
+  | Subscription
+  | Mutation
 
 unKindD :: KindD -> DataTypeKind
 unKindD SubscriptionD       = KindObject
