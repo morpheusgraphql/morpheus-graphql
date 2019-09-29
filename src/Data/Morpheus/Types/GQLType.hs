@@ -134,8 +134,10 @@ instance GQLType a => GQLType (Set a) where
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) where
   type KIND (Pair a b) = OBJECT
 
-instance (Typeable a, Typeable b, Typeable m, GQLType a, GQLType b) => GQLType (MapKind a b m) where
+instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (MapKind a b m) where
   type KIND (MapKind a b m) = OBJECT
+  __typeName _ = __typeName (Proxy @(Map a b))
+  __typeFingerprint _ = __typeFingerprint (Proxy @(Map a b))
 
 instance (Typeable k, Typeable v) => GQLType (Map k v) where
   type KIND (Map k v) = WRAPPER
