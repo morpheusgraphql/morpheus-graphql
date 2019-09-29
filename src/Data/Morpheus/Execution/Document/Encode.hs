@@ -46,7 +46,7 @@ deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}
         mainTypeArg
           | isSubscription typeKindD = typeT ''SubResolver ["m", "e", "c"] -- (SubResolver m e c)
           | otherwise = typeT ''Resolver ["m"] -- (Resolver m)
-    -------------------------------------------------
+    -----------------------------------------------------------------------------------------
     -- defines Constraint: (Typeable m, Monad m, GQLValue (ResolveT m value), GQLValue value)
     constrains
       | isSubscription typeKindD = baseConstrains
