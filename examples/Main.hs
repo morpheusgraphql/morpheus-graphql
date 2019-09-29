@@ -28,7 +28,8 @@ main = do
   state <- initGQLState
   httpApp <- httpServer state
   fetchHero >>= print
-  fetUser (interpreter gqlRoot state) >>= print
+  -- TODO: fix it
+  --fetUser (interpreter gqlRoot state) >>= print
   Warp.runSettings settings $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
   where
     settings = Warp.setPort 3000 Warp.defaultSettings
