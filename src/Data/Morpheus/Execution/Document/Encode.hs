@@ -19,40 +19,37 @@ import           Data.Morpheus.Types.Internal.Data       (DataField (..), isSubs
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH         (applyT, instanceHeadMultiT, typeT)
 import           Data.Morpheus.Types.Internal.Validation (ResolveT)
-import           Data.Morpheus.Types.Internal.Value      (GQLValue (..), Value)
+import           Data.Morpheus.Types.Internal.Value      (Value)
 import           Data.Morpheus.Types.Resolver
 
 -- @Subscription:
 --
---     instance (Monad m, Typeable m) => ObjectResolvers 'True (Subscription (SubResolver m e c)) (SubResolveT m e c Value) where
---
---          objectResolvers _ (Subscription x y) = [("newAddress", encode x), ("newUser", encode y)]
+--     instance (Monad m, Typeable m) => ObjectResolvers 'True (<Subscription> (SubResolver m e c)) (SubResolveT m e c Value) where
+--          objectResolvers _ (<Subscription> x y) = [("newAddress", encode x), ("newUser", encode y)]
 --
 -- @Object:
 --
---
---
+--   instance (Monad m, Typeable m) => ObjectResolvers 'True (<Object> (Resolver m)) (ResolveT m Value) where
+--          objectResolvers _ (<Object> x y) = [("field1", encode x), ("field2", encode y)]
 --
 --
 deriveEncode :: GQLTypeD -> Q [Dec]
 deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}]}} =
   pure <$> instanceD (cxt constrains) appHead methods
   where
-    result
-      | isSubscription typeKindD = applyT ''SubResolveT $ map (varT . mkName) ["m", "e", "c"] <> [conT ''Value] -- (SubResolveT m e c Value)
-      | otherwise = typeT ''ResolveT ["m", "value"] -- (ResolveT (SubscribeStream IO EVENT)
+    result = appT resultMonad (conT ''Value)
+      where
+        resultMonad
+          | isSubscription typeKindD = typeT ''SubResolveT ["m", "e", "c"] -- (SubResolveT m e c Value)
+          | otherwise = typeT ''ResolveT ["m"] -- (ResolveT m Value)
     mainType = applyT (mkName tName) [mainTypeArg] -- defines  (<Type> (SubResolver m e c)) or (<Type> (Resolver m))
       where
         mainTypeArg
           | isSubscription typeKindD = typeT ''SubResolver ["m", "e", "c"] -- (SubResolver m e c)
           | otherwise = typeT ''Resolver ["m"] -- (Resolver m)
     -----------------------------------------------------------------------------------------
-    -- defines Constraint: (Typeable m, Monad m, GQLValue (ResolveT m value), GQLValue value)
-    constrains
-      | isSubscription typeKindD = baseConstrains
-      | otherwise = baseConstrains <> [typeT ''GQLValue ["value"], appT (conT ''GQLValue) result]
-      where
-        baseConstrains = [typeT ''Monad ["m"], typeT ''Typeable ["m"]]
+    -- defines Constraint: (Typeable m, Monad m)
+    constrains = [typeT ''Monad ["m"], typeT ''Typeable ["m"]]
     -------------------------------------------------------------------
     -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where
     appHead = instanceHeadMultiT ''ObjectResolvers (conT ''TRUE) [mainType, result]
