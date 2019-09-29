@@ -44,8 +44,8 @@ replacePairCon :: TyCon -> TyCon
 replacePairCon x
   | hsPair == x = gqlPair
   where
-    hsPair = fst $ splitTyConApp $ typeRep $ Proxy @(Int, Int)
-    gqlPair = fst $ splitTyConApp $ typeRep $ Proxy @(Pair Int Int)
+    hsPair = typeRepTyCon $ typeRep $ Proxy @(Int, Int)
+    gqlPair = typeRepTyCon $ typeRep $ Proxy @(Pair Int Int)
 replacePairCon x = x
 
 -- Ignores Resolver name  from typeName
