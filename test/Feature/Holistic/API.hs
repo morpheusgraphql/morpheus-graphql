@@ -43,7 +43,7 @@ resolveValue :: Monad m => b -> a -> m b
 resolveValue = const . return
 
 rootResolver ::
-     GQLRootResolver IO EVENT () (Query IORes) (Mutation (IOMutRes EVENT ())) (Subscription (IOSubRes EVENT ()) IORes)
+     GQLRootResolver IO EVENT () (Query IORes) (Mutation (IOMutRes EVENT ())) (Subscription (IOSubRes EVENT ()))
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {user, testUnion = const $ return Nothing}
