@@ -42,7 +42,7 @@ subResCon = typeRepTyCon $ typeRep $ Proxy @(SubResolver Maybe)
 -- | replaces typeName (A,B) with Pair_A_B
 replacePairCon :: TyCon -> TyCon
 replacePairCon x
-  | hsPair == x || subResCon == x = gqlPair
+  | hsPair == x = gqlPair
   where
     hsPair = fst $ splitTyConApp $ typeRep $ Proxy @(Int, Int)
     gqlPair = fst $ splitTyConApp $ typeRep $ Proxy @(Pair Int Int)
@@ -51,7 +51,7 @@ replacePairCon x = x
 -- Ignores Resolver name  from typeName
 ignoreResolver :: (TyCon, [TypeRep]) -> [TyCon]
 ignoreResolver (con, _)
-  | con == resolverCon = []
+  | con `elem` [resolverCon, subResCon] = []
 ignoreResolver (con, args) = con : concatMap (ignoreResolver . splitTyConApp) args
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
