@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -35,13 +36,13 @@ data Query = Query
   { a1 :: WA IORes
   , a2 :: Maybe (Wrapped Int Int)
   , a3 :: Maybe (Wrapped (Wrapped Text Int) Text)
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 
 data Mutation = Mutation
   { mut1 :: Maybe (WA (IOMutRes EVENT ()))
   , mut2 :: Maybe (Wrapped Int Int)
   , mut3 :: Maybe (Wrapped (Wrapped Text Int) Text)
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 
 data EVENT =
   EVENT
@@ -51,7 +52,7 @@ data Subscription = Subscription
   { sub1 :: () -> IOSubRes EVENT () (Maybe (WA IORes))
   , sub2 :: () -> IOSubRes EVENT () (Maybe (Wrapped Int Int))
   , sub3 :: () -> IOSubRes EVENT () (Maybe (Wrapped (Wrapped Text Int) Text))
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 
 rootResolver :: GQLRootResolver IO EVENT () Query Mutation Subscription
 rootResolver =

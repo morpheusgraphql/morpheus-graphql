@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -48,7 +49,7 @@ data AOrB
 data Query = Query
   { union :: () -> IORes [AOrB]
   , fc    :: C
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 
 resolveUnion :: () -> IORes [AOrB]
 resolveUnion _ = return [A' A {aText = "at", aInt = 1}, B' B {bText = "bt", bInt = 2}]
