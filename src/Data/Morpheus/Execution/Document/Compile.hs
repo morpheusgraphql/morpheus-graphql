@@ -17,6 +17,6 @@ import           Data.Morpheus.Validation.Document.Validation
 
 compileDocument :: Bool -> String -> Q [Dec]
 compileDocument namespace documentTXT =
-  case parseTypes (T.pack documentTXT) >>= validatePartialDocument >>= renderTHTypes of
+  case parseTypes (T.pack documentTXT) >>= validatePartialDocument >>= renderTHTypes namespace of
     Left errors  -> fail (renderGQLErrors errors)
     Right schema -> declareTypes namespace schema

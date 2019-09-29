@@ -21,13 +21,17 @@ import           Data.Morpheus.Types.Internal.Data       (ArgsType (..), DataFie
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 
-renderTHTypes :: [(Text, DataFullType)] -> Validation [GQLTypeD]
-renderTHTypes lib = traverse renderTHType lib
+renderTHTypes :: Bool -> [(Text, DataFullType)] -> Validation [GQLTypeD]
+renderTHTypes namespace lib = traverse renderTHType lib
   where
     renderTHType :: (Text, DataFullType) -> Validation GQLTypeD
-    renderTHType (_, x) = genType x
+    renderTHType (tyConName, x) = genType x
       where
-        genArgsTypeName fieldName = capital fieldName <> "Args"
+        genArgsTypeName fieldName
+          | namespace = unpack tyConName <> argTName
+          | otherwise = argTName
+          where
+            argTName = capital fieldName <> "Args"
         genArgumentType :: (Text, DataField) -> Validation [TypeD]
         genArgumentType (_, DataField {fieldArgs = []}) = pure []
         genArgumentType (fieldName, DataField {fieldArgs}) =

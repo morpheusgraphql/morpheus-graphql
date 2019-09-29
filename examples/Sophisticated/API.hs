@@ -82,8 +82,6 @@ type MutRes = IOMutRes Channel Content
 
 type SubRes = IOSubRes Channel Content
 
-
-
 gqlRoot :: GQLRootResolver IO Channel Content (Query IORes) (Mutation MutRes) (Subscription SubRes)
 gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
   where
@@ -91,7 +89,7 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
       return
         Query
           { queryUser = const $ resolver fetchUser
-          , queryAnimal = \AnimalArgs {animalArgsAnimal} -> return (pack $ show animalArgsAnimal)
+          , queryAnimal = \QueryAnimalArgs {queryAnimalArgsAnimal} -> return (pack $ show animalArgsAnimal)
           , querySet = constRes $ S.fromList [1, 2]
           , queryMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]
           , queryWrapped1 = constRes $ A (0, "")
