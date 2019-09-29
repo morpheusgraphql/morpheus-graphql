@@ -21,7 +21,7 @@ import           Data.Proxy                        (Proxy (..))
 import           Data.Set                          (Set)
 import           Data.Text                         (Text, intercalate, pack)
 import           Data.Typeable                     (TyCon, TypeRep, Typeable, splitTyConApp, tyConFingerprint,
-                                                    tyConName, typeRep)
+                                                    tyConName, typeRep, typeRepTyCon)
 
 -- MORPHEUS
 import           Data.Morpheus.Kind
@@ -34,12 +34,15 @@ type TRUE = 'True
 type FALSE = 'False
 
 resolverCon :: TyCon
-resolverCon = fst $ splitTyConApp $ typeRep $ Proxy @(Resolver Maybe)
+resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver Maybe)
+
+subResCon :: TyCon
+subResCon = typeRepTyCon $ typeRep $ Proxy @(SubResolver Maybe)
 
 -- | replaces typeName (A,B) with Pair_A_B
 replacePairCon :: TyCon -> TyCon
 replacePairCon x
-  | hsPair == x = gqlPair
+  | hsPair == x || subResCon == x = gqlPair
   where
     hsPair = fst $ splitTyConApp $ typeRep $ Proxy @(Int, Int)
     gqlPair = fst $ splitTyConApp $ typeRep $ Proxy @(Pair Int Int)
