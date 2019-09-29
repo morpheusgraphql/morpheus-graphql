@@ -37,28 +37,34 @@
 
   where `m` is resolver Monad.
 
-  special case is `subscription`:
+- `importGQLDocumentWithNamespace` generates namespaced haskell records. so that you have no more problem with name collision.
+  from this gql type:
 
   ```gql
-  type Subscription {
-    newAddress: Address!
-    newUser: User!
+  type Deity {
+    name: (id:Int)String!
+    power: Power!
   }
   ```
 
-  will be represent as:
+  will be generated.
 
   ```haskell
-  data Subscription sm m = Subscription {
-    newAddress :: () -> sm (Address m)
-    newUser :: () -> sm (User m)
+  $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
+
+  data Deity m = Deity {
+    DeityName :: DeityNameArgs -> m String
+    DeityPower :: () -> m (Power m)
+  }
+
+  data DeityNameArgs = DeityNameArgs {
+    deityNameId :: Int
   }
   ```
-
-  because subscription are only allowed on root level. that why only `Subscription` fields will be resolved by `sm` (Subscription Monad). nested objects will receive just regular resolver Monad `m`.
 
 ### Changed
 
+- `GQLType` is mandatory for every GQL Type (including Query, Mutation and Subscription)
 - subscription Resolver changed
 
   from:
