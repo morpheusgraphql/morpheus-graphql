@@ -89,7 +89,7 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
       return
         Query
           { queryUser = const $ resolver fetchUser
-          , queryAnimal = \QueryAnimalArgs {queryAnimalArgsAnimal} -> return (pack $ show animalArgsAnimal)
+          , queryAnimal = \QueryAnimalArgs {queryAnimalArgsAnimal} -> return (pack $ show queryAnimalArgsAnimal)
           , querySet = constRes $ S.fromList [1, 2]
           , queryMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]
           , queryWrapped1 = constRes $ A (0, "")
