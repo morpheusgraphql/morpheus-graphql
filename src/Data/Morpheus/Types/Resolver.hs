@@ -19,6 +19,7 @@ module Data.Morpheus.Types.Resolver
   , SubRootRes
   , Event(..)
   , GQLRootResolver(..)
+  , UnSubResolver
   , resolver
   , mutResolver
   , toMutResolver
@@ -32,21 +33,33 @@ import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStr
                                                           SubscribeStream)
 import           Data.Morpheus.Types.Internal.Validation (ResolveT)
 
--- SubResolver m (Event [c1, c2] d) a
 ----------------------------------------------------------------------------------------
-type MutResolveT m e c a = ResolveT (PublishStream m e c) a
+{--
+newtype SubResolveT m e c a = SubResolveT
+  { unSubResolveT :: ResolveT (SubscribeStream m e) (Event e c -> ResolveT m a)
+  }
 
+newtype MutResolveT m e c a = MutResolveT
+  { unMutResolveT :: ResolveT (PublishStream m e c) a
+  }
+-}
 data SubResolver m e c a = SubResolver
   { subChannels :: [e]
   , subResolver :: Event e c -> Resolver m a
   }
 
+type family UnSubResolver (a :: * -> *) :: (* -> *)
+
+type instance UnSubResolver (SubResolver m e c) = Resolver m
+
 -------------------------------------------------------------------
 type Resolver = ExceptT String
 
-type MutResolver m e c = Resolver (PublishStream m e c)
+type MutResolveT m e c a = ResolveT (PublishStream m e c) a
 
 type SubResolveT m e c a = ResolveT (SubscribeStream m e) (Event e c -> ResolveT m a)
+
+type MutResolver m e c = Resolver (PublishStream m e c)
 
 type SubRootRes m e sub = Resolver (SubscribeStream m e) sub
 

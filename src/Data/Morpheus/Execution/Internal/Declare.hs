@@ -23,14 +23,15 @@ import           Data.Morpheus.Execution.Internal.Utils (nameSpaceWith)
 import           Data.Morpheus.Types.Internal.Data      (ArgsType (..), DataField (..), DataTypeKind (..), KindD (..),
                                                          TypeAlias (..), WrapperD (..), isSubscription, unKindD)
 import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), TypeD (..))
+import           Data.Morpheus.Types.Resolver           (UnSubResolver)
 
 type FUNC = (->)
 
 declareType :: [Name] -> TypeD -> Dec
 declareType = declareGQLT False Nothing
 
-declareTypeAlias :: TypeAlias -> Type
-declareTypeAlias TypeAlias {aliasTyCon, aliasWrappers, aliasArgs} = wrappedT aliasWrappers
+declareTypeAlias :: Bool -> TypeAlias -> Type
+declareTypeAlias isSub TypeAlias {aliasTyCon, aliasWrappers, aliasArgs} = wrappedT aliasWrappers
   where
     wrappedT :: [WrapperD] -> Type
     wrappedT (ListD:xs)  = AppT (ConT ''[]) $ wrappedT xs
@@ -39,13 +40,14 @@ declareTypeAlias TypeAlias {aliasTyCon, aliasWrappers, aliasArgs} = wrappedT ali
     ------------------------------------------------------
     typeName = ConT (mkName $ unpack aliasTyCon)
     --------------------------------------------
+    decType _
+      | isSub = AppT typeName (AppT (ConT ''UnSubResolver) (VarT $ mkName "m"))
     decType (Just par) = AppT typeName (VarT $ mkName $ unpack par)
-    decType _          = typeName
+    decType _ = typeName
 
 tyConArgs :: KindD -> [String]
 tyConArgs kindD
-  | isSubscription kindD = ["subscriptionM", "m"]
-  | gqlKind == KindObject || gqlKind == KindUnion = ["m"]
+  | isSubscription kindD || gqlKind == KindObject || gqlKind == KindUnion = ["m"]
   | otherwise = []
   where
     gqlKind = unKindD kindD
@@ -70,7 +72,6 @@ declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
             fiType = genFieldT fieldArgsType
               where
                 monadVar = VarT $ mkName "m"
-                subscriptionVar = VarT $ mkName "subscriptionM"
                 ---------------------------
                 genFieldT Nothing = fType False
                 genFieldT (Just ArgsType {argsTypeName}) = AppT (AppT arrowType argType) (fType True)
@@ -79,8 +80,8 @@ declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
                     arrowType = ConT ''FUNC
                 ------------------------------------------------
                 fType isResolver
-                  | maybe False isSubscription kindD = AppT subscriptionVar result
+                  | maybe False isSubscription kindD = AppT monadVar result
                   | isResolver = AppT monadVar result
                   | otherwise = result
                 ------------------------------------------------
-                result = declareTypeAlias fieldType
+                result = declareTypeAlias (maybe False isSubscription kindD) fieldType
