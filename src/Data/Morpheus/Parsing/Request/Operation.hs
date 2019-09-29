@@ -17,9 +17,8 @@ import           Data.Morpheus.Parsing.Internal.Internal    (Parser, getLocation
 import           Data.Morpheus.Parsing.Internal.Terms       (parseAssignment, parseMaybeTuple, parseNonNull,
                                                              parseWrappedType, spaceAndComments1, token, variable)
 import           Data.Morpheus.Parsing.Request.Body         (entries)
-import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), OperationKind (..), RawOperation,
-                                                             Variable (..))
-import           Data.Morpheus.Types.Internal.Data          (toHSWrappers)
+import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), RawOperation, Variable (..))
+import           Data.Morpheus.Types.Internal.Data          (OperationKind (..), toHSWrappers)
 
 operationArgument :: Parser (Text, Variable ())
 operationArgument =
@@ -54,7 +53,7 @@ parseAnonymousQuery =
     pure
       (Operation
          { operationName = "AnonymousQuery"
-         , operationKind = QUERY
+         , operationKind = Query
          , operationArgs = []
          , operationSelection
          , operationPosition
@@ -64,6 +63,6 @@ parseAnonymousQuery =
 parseOperationKind :: Parser OperationKind
 parseOperationKind =
   label "operatorKind" $ do
-    kind <- (string "query" $> QUERY) <|> (string "mutation" $> MUTATION) <|> (string "subscription" $> SUBSCRIPTION)
+    kind <- (string "query" $> Query) <|> (string "mutation" $> Mutation) <|> (string "subscription" $> Subscription)
     spaceAndComments1
     return kind
