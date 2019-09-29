@@ -15,14 +15,16 @@ module Data.Morpheus.Execution.Client.Aeson
 
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.HashMap.Lazy                   as H (lookup)
-import           Data.Semigroup                      ((<>))
-import           Data.Text                           (unpack)
+import qualified Data.HashMap.Lazy                  as H (lookup)
+import           Data.Semigroup                     ((<>))
+import           Data.Text                          (unpack)
 import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import Data.Morpheus.Types.Internal.DataD (AppD (..), ConsD (..), FieldD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.Data  (DataField (..), isFieldNullable)
+import           Data.Morpheus.Types.Internal.DataD (ConsD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.TH    (instanceFunD, instanceHeadT)
 
 deriveFromJSON :: TypeD -> Q Dec
 deriveFromJSON TypeD {tCons = []} = fail "Type Should Have at least one Constructor"
@@ -38,14 +40,17 @@ aesonObjectBody :: ConsD -> ExpQ
 aesonObjectBody ConsD {cName, cFields} = handleFields cFields
   where
     consName = mkName cName
+    ------------------------------------------
     handleFields [] = fail $ "No Empty Object"
     handleFields fields = startExp fields
     ----------------------------------------------------------------------------------
-         -- Optional Field
+      -- Optional Field
       where
-        defField FieldD {fieldNameD, fieldTypeD = MaybeD _} = [|o .:? fieldNameD|]
-        -- Required Field
-        defField FieldD {fieldNameD}                        = [|o .: fieldNameD|]
+        defField field@DataField {fieldName}
+          | isFieldNullable field = [|o .:? fName|]
+          | otherwise = [|o .: fName|]
+          where
+            fName = unpack fieldName
             -------------------------------------------------------------------
         startExp fNames = uInfixE (conE consName) (varE '(<$>)) (applyFields fNames)
           where
@@ -70,11 +75,11 @@ takeValueType f (Object hMap) =
 takeValueType _ _ = fail $ "expected Object"
 
 defineFromJSON :: String -> (t -> ExpQ) -> t -> DecQ
-defineFromJSON tName func inp =
-  instanceD (cxt []) (appT (conT ''FromJSON) (conT $ mkName tName)) [parseJSONExp func inp]
+defineFromJSON tName parseJ cFields = instanceD (cxt []) iHead [method]
   where
-    parseJSONExp :: (t -> ExpQ) -> t -> DecQ
-    parseJSONExp parseJ cFields = funD 'parseJSON [clause [] (normalB $ parseJ cFields) []]
+    iHead = instanceHeadT ''FromJSON tName []
+    -----------------------------------------
+    method = instanceFunD 'parseJSON [] (parseJ cFields)
 
 isEnum :: [ConsD] -> Bool
 isEnum = not . isEmpty . filter (isEmpty . cFields)

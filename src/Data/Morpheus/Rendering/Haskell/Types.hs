@@ -15,62 +15,43 @@ import           Data.Morpheus.Rendering.Haskell.Terms (Context (..), Scope (..)
                                                         renderData, renderSet, renderTuple, renderUnionCon,
                                                         renderWrapped)
 import           Data.Morpheus.Types.Internal.Data     (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
-                                                        DataType (..), DataTypeWrapper (..))
+                                                        DataTyCon (..), TypeAlias (..), isNullable)
 
 renderType :: Context -> (Text, DataFullType) -> Text
-renderType context (name, dataType) =
-  typeIntro <> renderData name <> renderT dataType
+renderType context (name, dataType) = typeIntro <> renderData name <> renderT dataType
   where
-    renderT (Leaf (BaseScalar _)) =
-      renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <>
-      renderGQLScalar name
-    renderT (Leaf (CustomScalar _)) =
-      renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <>
-      renderGQLScalar name
-    renderT (Leaf (LeafEnum DataType {typeData})) =
-      unionType typeData <> defineTypeClass "ENUM"
-    renderT (Union DataType {typeData}) =
-      renderUnion name typeData <> defineTypeClass "UNION"
-    renderT (InputObject DataType {typeData}) =
-      renderCon name <> renderObject renderInputField typeData <>
-      defineTypeClass "INPUT_OBJECT"
+    renderT (Leaf (BaseScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name
+    renderT (Leaf (CustomScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name
+    renderT (Leaf (LeafEnum DataTyCon {typeData})) = unionType typeData <> defineTypeClass "ENUM"
+    renderT (Union DataTyCon {typeData}) = renderUnion name typeData <> defineTypeClass "UNION"
+    renderT (InputObject DataTyCon {typeData}) =
+      renderCon name <> renderObject renderInputField typeData <> defineTypeClass "INPUT_OBJECT"
     renderT (InputUnion _) = "\n -- Error: Input Union Not Supported"
-    renderT (OutputObject DataType {typeData}) =
-      renderCon name <> renderObject (renderField context) typeData <>
-      defineTypeClass "OBJECT"
+    renderT (OutputObject DataTyCon {typeData}) =
+      renderCon name <> renderObject (renderField context) typeData <> defineTypeClass "OBJECT"
     ----------------------------------------------------------------------------------------------------------
     typeIntro = "\n\n---- GQL " <> name <> " ------------------------------- \n"
     ----------------------------------------------------------------------------------------------------------
     defineTypeClass kind =
-      "\n\n" <> renderTypeInstanceHead "GQLType" name <> indent <> "type KIND " <>
-      name <>
-      " = " <>
-      kind <>
-      "\n\n"
+      "\n\n" <> renderTypeInstanceHead "GQLType" name <> indent <> "type KIND " <> name <> " = " <> kind <> "\n\n"
     ----------------------------------------------------------------------------------------------------------
 
 renderTypeInstanceHead :: Text -> Text -> Text
-renderTypeInstanceHead className name =
-  "instance " <> className <> " " <> name <> " where\n"
+renderTypeInstanceHead className name = "instance " <> className <> " " <> name <> " where\n"
 
 renderGQLScalar :: Text -> Text
-renderGQLScalar name =
-  renderTypeInstanceHead "GQLScalar " name <> renderParse <> renderSerialize <>
-  "\n\n"
+renderGQLScalar name = renderTypeInstanceHead "GQLScalar " name <> renderParse <> renderSerialize <> "\n\n"
   where
     renderParse = indent <> "parseValue _ = pure (" <> name <> " 0 0 )" <> "\n"
     renderSerialize = indent <> "serialize (" <> name <> " x y ) = Int (x + y)"
 
-renderUnion :: Text -> [DataField ()] -> Text
+renderUnion :: Text -> [DataField] -> Text
 renderUnion typeName = unionType . map renderElem
   where
-    renderElem DataField {fieldType} =
-      renderUnionCon typeName fieldType <> fieldType
+    renderElem DataField {fieldType = TypeAlias {aliasTyCon}} = renderUnionCon typeName aliasTyCon <> aliasTyCon
 
 unionType :: [Text] -> Text
-unionType ls =
-  "\n" <> indent <> intercalate ("\n" <> indent <> "| ") ls <>
-  " deriving (Generic)"
+unionType ls = "\n" <> indent <> intercalate ("\n" <> indent <> "| ") ls <> " deriving (Generic)"
 
 renderObject :: (a -> (Text, Maybe Text)) -> [a] -> Text
 renderObject f list = intercalate "\n\n" $ renderMainType : catMaybes types
@@ -78,19 +59,17 @@ renderObject f list = intercalate "\n\n" $ renderMainType : catMaybes types
     renderMainType = renderSet fields <> " deriving (Generic)"
     (fields, types) = unzip (map f list)
 
-renderInputField :: (Text, DataField ()) -> (Text, Maybe Text)
-renderInputField (key, DataField {fieldTypeWrappers, fieldType}) =
-  (key `renderAssignment` renderWrapped fieldTypeWrappers fieldType, Nothing)
+renderInputField :: (Text, DataField) -> (Text, Maybe Text)
+renderInputField (key, DataField {fieldType = TypeAlias {aliasTyCon, aliasWrappers}}) =
+  (key `renderAssignment` renderWrapped aliasWrappers aliasTyCon, Nothing)
 
-renderField ::
-     Context -> (Text, DataField [(Text, DataArgument)]) -> (Text, Maybe Text)
-renderField Context {scope, pubSub = (channel, content)} (key, DataField { fieldTypeWrappers
-                                                                         , fieldType
+renderField :: Context -> (Text, DataField) -> (Text, Maybe Text)
+renderField Context {scope, pubSub = (channel, content)} (key, DataField { fieldType = TypeAlias { aliasWrappers
+                                                                                                 , aliasTyCon
+                                                                                                 }
                                                                          , fieldArgs
                                                                          }) =
-  ( key `renderAssignment` argTypeName <> " -> " <> renderMonad scope <>
-    result fieldTypeWrappers
-  , argTypes)
+  (key `renderAssignment` argTypeName <> " -> " <> renderMonad scope <> result aliasWrappers, argTypes)
   where
     renderMonad Subscription = "IOSubRes " <> channel <> " " <> content <> " "
     renderMonad Mutation =
@@ -99,16 +78,15 @@ renderField Context {scope, pubSub = (channel, content)} (key, DataField { field
         _    -> "IOMutRes " <> channel <> " " <> content <> " "
     renderMonad _ = "IORes "
     -----------------------------------------------------------------
-    result wrappers@(NonNullType:_) = renderWrapped wrappers fieldType
-    result wrappers                 = renderTuple (renderWrapped wrappers fieldType)
+    result wrappers
+      | isNullable wrappers = renderTuple (renderWrapped wrappers aliasTyCon)
+      | otherwise = renderWrapped wrappers aliasTyCon
     (argTypeName, argTypes) = renderArguments fieldArgs
     renderArguments :: [(Text, DataArgument)] -> (Text, Maybe Text)
     renderArguments [] = ("()", Nothing)
     renderArguments list =
       ( fieldArgTypeName
-      , Just
-          (renderData fieldArgTypeName <> renderCon fieldArgTypeName <>
-           renderObject renderInputField list))
+      , Just (renderData fieldArgTypeName <> renderCon fieldArgTypeName <> renderObject renderInputField list))
       where
         fieldArgTypeName = "Arg" <> camelCase key
         camelCase :: Text -> Text

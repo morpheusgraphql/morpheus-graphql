@@ -9,12 +9,10 @@ import           Data.Maybe
 --
 -- Morpheus
 import           Data.Morpheus.Error.Document.Interface  (ImplementsError (..), partialImplements, unknownInterface)
-import           Data.Morpheus.Types.Internal.Base       (Location (..))
-import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataOutputField,
-                                                          DataOutputObject, DataType (..), Key, RawDataType (..),
-                                                          showWrappedType)
+import           Data.Morpheus.Rendering.RenderGQL       (RenderGQL (..))
+import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataObject, DataTyCon (..),
+                                                          Key, RawDataType (..), TypeAlias (..), isWeaker, isWeaker)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
-import           Data.Morpheus.Validation.Internal.Utils (isEqOrStricter)
 
 validatePartialDocument :: [(Key, RawDataType)] -> Validation [(Key, DataFullType)]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib
@@ -26,28 +24,29 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
     -----------------------------------
     asTuple name x = Just (name, x)
     -----------------------------------
-    mustImplement :: DataOutputObject -> [Key] -> Validation DataFullType
+    mustImplement :: DataObject -> [Key] -> Validation DataFullType
     mustImplement object interfaceKey = do
       interface <- traverse getInterfaceByKey interfaceKey
       case concatMap (mustBeSubset object) interface of
         []     -> pure $ OutputObject object
-        errors -> Left $ partialImplements (typeName object)  errors
+        errors -> Left $ partialImplements (typeName object) errors
     -------------------------------
-    mustBeSubset :: DataOutputObject -> DataOutputObject -> [(Key, Key, ImplementsError)]
-    mustBeSubset DataType {typeData = objFields} DataType {typeName, typeData = interfaceFields} =
+    mustBeSubset :: DataObject -> DataObject -> [(Key, Key, ImplementsError)]
+    mustBeSubset DataTyCon {typeData = objFields} DataTyCon {typeName, typeData = interfaceFields} =
       concatMap checkField interfaceFields
       where
-        checkField :: (Key, DataOutputField) -> [(Key, Key, ImplementsError)]
-        checkField (key, DataField {fieldType = interfaceTypeName, fieldTypeWrappers = interfaceWrappers}) =
+        checkField :: (Key, DataField) -> [(Key, Key, ImplementsError)]
+        checkField (key, DataField {fieldType = interfaceT@TypeAlias { aliasTyCon = interfaceTypeName
+                                                                     , aliasWrappers = interfaceWrappers
+                                                                     }}) =
           case lookup key objFields of
-            Just DataField {fieldType, fieldTypeWrappers}
-              | fieldType == interfaceTypeName && isEqOrStricter fieldTypeWrappers interfaceWrappers -> []
-              | otherwise -> [(typeName, key, UnexpectedType {expectedType, foundType})]
-              where expectedType = showWrappedType interfaceWrappers interfaceTypeName
-                    foundType = showWrappedType fieldTypeWrappers fieldType
+            Just DataField {fieldType = objT@TypeAlias {aliasTyCon, aliasWrappers}}
+              | aliasTyCon == interfaceTypeName && not (isWeaker aliasWrappers interfaceWrappers) -> []
+              | otherwise ->
+                [(typeName, key, UnexpectedType {expectedType = render interfaceT, foundType = render objT})]
             Nothing -> [(typeName, key, UndefinedField)]
     -------------------------------
-    getInterfaceByKey :: Key -> Validation DataOutputObject
+    getInterfaceByKey :: Key -> Validation DataObject
     getInterfaceByKey key =
       case lookup key lib of
         Just (Interface x) -> pure x

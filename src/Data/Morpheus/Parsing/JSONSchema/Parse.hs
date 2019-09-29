@@ -16,7 +16,8 @@ import qualified Data.Morpheus.Schema.Field              as F (Field (..))
 import qualified Data.Morpheus.Schema.InputValue         as I (InputValue (..))
 import           Data.Morpheus.Schema.JSONType           (JSONIntro (..), JSONSchema (..), JSONType (..))
 import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
-import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataTypeLib, DataTypeWrapper (..))
+import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataTypeLib, DataTypeWrapper (..),
+                                                          WrapperD, toHSWrappers)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.IO                  (JSONResponse (..))
 import           Data.Semigroup                          ((<>))
@@ -36,7 +37,7 @@ typeFromJSON JSONType {name = Just typeName, kind = INPUT_OBJECT, inputFields = 
   where
     iField I.InputValue {I.name = fieldName, I.type' = fType} = do
       fieldType <- fieldTypeFromJSON fType
-      pure (fieldName, createField () fieldName fieldType)
+      pure (fieldName, createField [] fieldName fieldType)
 typeFromJSON JSONType {name = Just typeName, kind = OBJECT, fields = Just oFields} = do
   fields <- traverse oField oFields
   pure (typeName, OutputObject $ createType typeName fields)
@@ -49,9 +50,10 @@ typeFromJSON JSONType {name = Just typeName, kind = OBJECT, fields = Just oField
         genArg I.InputValue {I.name = argName, I.type' = argType} = createArgument argName <$> fieldTypeFromJSON argType
 typeFromJSON x = internalError $ "Unsuported type" <> pack (show x)
 
-fieldTypeFromJSON :: JSONType -> Validation ([DataTypeWrapper], Text)
-fieldTypeFromJSON = fieldTypeRec []
+fieldTypeFromJSON :: JSONType -> Validation ([WrapperD], Text)
+fieldTypeFromJSON = fmap toHs . fieldTypeRec []
   where
+    toHs (w, t) = (toHSWrappers w, t)
     fieldTypeRec :: [DataTypeWrapper] -> JSONType -> Validation ([DataTypeWrapper], Text)
     fieldTypeRec acc JSONType {kind = LIST, ofType = Just ofType} = fieldTypeRec (ListType : acc) ofType
     fieldTypeRec acc JSONType {kind = NON_NULL, ofType = Just ofType} = fieldTypeRec (NonNullType : acc) ofType

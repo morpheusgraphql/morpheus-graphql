@@ -1,15 +1,15 @@
 # for Input Union
 
 input Cat {
-  catName: String!
+  name: String!
 }
 
 input Dog {
-  dogName: Text
+  name: String!
 }
 
 input Bird {
-  birdName: Text
+  name: String!
 }
 
 # Main APi
@@ -26,7 +26,7 @@ input Coordinates {
 }
 
 input UniqueID {
-  uid: String!
+  id: String!
 }
 
 type Address {
@@ -39,8 +39,8 @@ type User {
   name: String!
   email: String!
   address(coordinates: Coordinates!, comment: String): Address!
-  office(zipCode: [[[ID!]]!], cityID: CityID!): Address!
-  myUnion: MyUnion!
+  office(zipCode: [[[ID!]]!], id: CityID!): Address!
+  entity: MyUnion!
   home: CityID!
 }
 
@@ -48,11 +48,11 @@ union MyUnion = User | Address
 
 type Query {
   user: User!
-  wrappedA1: AIntText!
-  setAnimal(animal: Animal): String!
-  wrappedA2: AText!
-  integerSet: SetInt!
-  textIntMap: MapTextInt!
+  animal(animal: Animal): String!
+  wrapped1: AIntText!
+  wrapped2: AText!
+  set: SetInt!
+  map: MapTextInt!
 }
 
 type Mutation {

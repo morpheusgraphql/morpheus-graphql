@@ -1,11 +1,16 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE DeriveLift        #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE DeriveLift          #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TupleSections       #-}
 
 module Data.Morpheus.Types.Internal.Value
   ( Value(..)
   , ScalarValue(..)
+  , Object
+  , GQLValue(..)
   , replaceValue
   , decodeScientific
   , convertToJSONName
@@ -13,8 +18,8 @@ module Data.Morpheus.Types.Internal.Value
   ) where
 
 import qualified Data.Aeson                      as A (FromJSON (..), ToJSON (..), Value (..), object, pairs, (.=))
+import           Data.Function                   ((&))
 import qualified Data.HashMap.Strict             as M (toList)
-import           Data.Morpheus.Types.Internal.TH (apply, liftText, liftTextMap)
 import           Data.Scientific                 (Scientific, floatingOrInteger)
 import           Data.Semigroup                  ((<>))
 import           Data.Text                       (Text)
@@ -23,6 +28,9 @@ import qualified Data.Vector                     as V (toList)
 import           GHC.Generics                    (Generic)
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
+
+-- MORPHEUS
+import           Data.Morpheus.Types.Internal.TH (apply, liftText, liftTextMap)
 
 isReserved :: Text -> Bool
 isReserved "case"     = True
@@ -97,8 +105,10 @@ instance Lift Value where
   lift (Scalar n)  = apply 'Scalar [lift n]
   lift Null        = varE 'Null
 
+type Object = [(Text, Value)]
+
 data Value
-  = Object [(Text, Value)]
+  = Object Object
   | List [Value]
   | Enum Text
   | Scalar ScalarValue
@@ -115,9 +125,6 @@ instance A.ToJSON Value where
     where
       encodeField (key, value) = convertToJSONName key A..= value
 
-replace :: (a, A.Value) -> (a, Value)
-replace (key, val) = (key, replaceValue val)
-
 decodeScientific :: Scientific -> ScalarValue
 decodeScientific v =
   case floatingOrInteger v of
@@ -125,12 +132,64 @@ decodeScientific v =
     Right int  -> Int int
 
 replaceValue :: A.Value -> Value
-replaceValue (A.Bool v)   = Scalar $ Boolean v
+replaceValue (A.Bool v) = gqlBoolean v
 replaceValue (A.Number v) = Scalar $ decodeScientific v
-replaceValue (A.String v) = Scalar $ String v
-replaceValue (A.Object v) = Object $ map replace (M.toList v)
-replaceValue (A.Array li) = List (map replaceValue (V.toList li))
-replaceValue A.Null       = Null
+replaceValue (A.String v) = gqlString v
+replaceValue (A.Object v) = gqlObject $ map replace (M.toList v)
+  where
+    replace :: (a, A.Value) -> (a, Value)
+    replace (key, val) = (key, replaceValue val)
+replaceValue (A.Array li) = gqlList (map replaceValue (V.toList li))
+replaceValue A.Null = gqlNull
 
 instance A.FromJSON Value where
   parseJSON = pure . replaceValue
+
+-- DEFAULT VALUES
+class GQLValue a where
+  gqlNull :: a
+  gqlScalar :: ScalarValue -> a
+  gqlBoolean :: Bool -> a
+  gqlString :: Text -> a
+  gqlList :: [a] -> a
+  gqlObject :: [(Text, a)] -> a
+
+-- build GQL Values for Subscription Resolver
+instance GQLValue Value where
+  gqlNull = Null
+  gqlScalar = Scalar
+  gqlBoolean = Scalar . Boolean
+  gqlString = Scalar . String
+  gqlList = List
+  gqlObject = Object
+
+instance Monad m => GQLValue (m Value) where
+  gqlNull = pure gqlNull
+  gqlScalar = pure . gqlScalar
+  gqlBoolean = pure . gqlBoolean
+  gqlString = pure . gqlString
+  -----------------------------------------
+  -- listValue :: [m Value] -> m Value
+  gqlList = fmap gqlList . sequence
+  -----------------------------------------
+  -- objectValue :: [(Text, m Value )] -> m Value
+  gqlObject = fmap gqlObject . traverse keyVal
+    where
+      keyVal :: Monad m => (Text, m Value) -> m (Text, Value)
+      keyVal (key, valFunc) = (key, ) <$> valFunc
+
+-- build GQL Values for Subscription Resolver
+instance Monad m => GQLValue (args -> m Value) where
+  gqlNull = const gqlNull
+  gqlScalar = const . gqlScalar
+  gqlBoolean = pure . gqlBoolean
+  gqlString = const . gqlString
+  ----------------------------------------
+   -- listValue :: [args -> m Value] -> ( args -> m Value )
+  gqlList res args = gqlList <$> traverse (args &) res
+  ----------------------------------------
+  -- objectValue :: [(Text, args -> m Value )] -> ( args -> m Value )
+  gqlObject res args = gqlObject <$> traverse keyVal res
+    where
+      keyVal :: Monad m => (Text, args -> m Value) -> m (Text, Value)
+      keyVal (key, valFunc) = (key, ) <$> valFunc args

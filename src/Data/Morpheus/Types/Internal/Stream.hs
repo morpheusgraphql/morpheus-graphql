@@ -1,6 +1,8 @@
-{-# LANGUAGE DeriveFunctor  #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE TypeFamilies   #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE DeriveFunctor     #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 module Data.Morpheus.Types.Internal.Stream
   ( StreamState(..)
@@ -15,29 +17,55 @@ module Data.Morpheus.Types.Internal.Stream
   , ResponseStream
   , closeStream
   , mapS
+  , injectEvents
+  , initExceptStream
+  , GQLStream(..)
   ) where
 
-import           Data.Morpheus.Types.IO (GQLResponse)
+import           Control.Monad.Trans.Except        (ExceptT (..), runExceptT)
+import           Data.Morpheus.Types.Internal.Data (Operation (..))
+import           Data.Morpheus.Types.IO            (GQLResponse)
 
-data Event e c =
-  Event
-    { channels :: [e]
-    , content  :: c
-    }
+newtype GQLStream (o :: Operation) (m :: * -> *) event a = GQLStream
+  { unGQLStream :: StreamT m (CHANNEL o m event a) (RESOLVER o m event a)
+  }
 
-data StreamState c v =
-  StreamState
-    { streamEvents :: [c]
-    , streamValue  :: v
-    }
-  deriving (Functor)
+instance Functor m => Functor (GQLStream 'Query m event) where
+  fmap f (GQLStream x) = GQLStream (f <$> x)
+
+instance Functor m => Functor (GQLStream 'Mutation m event) where
+  fmap f (GQLStream x) = GQLStream (f <$> x)
+
+class STREAM (o :: Operation) where
+  type RESOLVER o (m :: * -> *) event a :: *
+  type CHANNEL o (m :: * -> *) event a :: *
+
+instance STREAM 'Query where
+  type CHANNEL 'Query m event a = ()
+  type RESOLVER 'Query m event a = a
+
+instance STREAM 'Mutation where
+  type CHANNEL 'Mutation m event a = event
+  type RESOLVER 'Mutation m event a = a
+
+instance STREAM 'Subscription where
+  type CHANNEL 'Subscription m (Event channel content) a = channel
+  type RESOLVER 'Subscription m event a = event -> m a
+
+data Event e c = Event
+  { channels :: [e]
+  , content  :: c
+  }
+
+data StreamState c v = StreamState
+  { streamEvents :: [c]
+  , streamValue  :: v
+  } deriving (Functor)
 
 -- | Monad Transformer that sums all effect Together
-newtype StreamT m s a =
-  StreamT
-    { runStreamT :: m (StreamState s a)
-    }
-  deriving (Functor)
+newtype StreamT m s a = StreamT
+  { runStreamT :: m (StreamState s a)
+  } deriving (Functor)
 
 instance Monad m => Applicative (StreamT m c) where
   pure = StreamT . return . StreamState []
@@ -83,3 +111,9 @@ mapS func (StreamT ma) =
   StreamT $ do
     state <- ma
     return $ state {streamEvents = map func (streamEvents state)}
+
+injectEvents :: Functor m => [event] -> ExceptT e m a -> ExceptT e (StreamT m event) a
+injectEvents states = ExceptT . StreamT . fmap (StreamState states) . runExceptT
+
+initExceptStream :: Applicative m => [event] -> a -> ExceptT e (StreamT m event) a
+initExceptStream events = ExceptT . StreamT . pure . StreamState events . Right

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -25,7 +26,7 @@ instance GQLType A where
 data Query = Query
   { a1 :: A
   , a2 :: A2.A
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 
 rootResolver :: GQLRootResolver IO () () Query () ()
 rootResolver =

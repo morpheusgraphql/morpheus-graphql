@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass   #-}
 {-# LANGUAGE DeriveGeneric    #-}
 {-# LANGUAGE NamedFieldPuns   #-}
 {-# LANGUAGE TypeApplications #-}
@@ -14,11 +15,11 @@ import           Data.Text                                 (Text)
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Execution.Server.Introspect (ObjectRep (..), TypeUpdater, introspectOutputType,
-                                                            resolveTypes)
+import           Data.Morpheus.Execution.Server.Introspect (ObjectFields (..), TypeUpdater, introspect, resolveTypes)
 import           Data.Morpheus.Schema.Schema               (Schema, Type, findType, initSchema)
+import           Data.Morpheus.Types.GQLType               (FALSE, GQLType (..))
 import           Data.Morpheus.Types.ID                    (ID)
-import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataOutputField, DataTypeLib (..))
+import           Data.Morpheus.Types.Internal.Data         (DataField (..), DataTypeLib (..))
 
 newtype TypeArgs = TypeArgs
   { name :: Text
@@ -26,26 +27,29 @@ newtype TypeArgs = TypeArgs
 
 data SchemaAPI = SchemaAPI
   { __type   :: TypeArgs -> Either String (Maybe Type)
-  , __schema :: Schema
-  } deriving (Generic)
+  , __schema :: () -> Either String Schema
+  } deriving (Generic, GQLType)
 
-hideFields :: (Text, DataField a) -> (Text, DataField a)
+hideFields :: (Text, DataField) -> (Text, DataField)
 hideFields (key', field) = (key', field {fieldHidden = True})
 
-hiddenRootFields :: [(Text, DataOutputField)]
-hiddenRootFields = map (hideFields . fst) $ objectFieldTypes $ Proxy @(Rep SchemaAPI)
+hiddenRootFields :: [(Text, DataField)]
+hiddenRootFields = map hideFields $ fst $ objectFields (Proxy :: Proxy FALSE) (Proxy @SchemaAPI)
 
 defaultTypes :: TypeUpdater
 defaultTypes =
   flip
     resolveTypes
-    [ introspectOutputType (Proxy @Bool)
-    , introspectOutputType (Proxy @Int)
-    , introspectOutputType (Proxy @Float)
-    , introspectOutputType (Proxy @Text)
-    , introspectOutputType (Proxy @ID)
-    , introspectOutputType (Proxy @Schema)
+    [ introspect (Proxy @Bool)
+    , introspect (Proxy @Int)
+    , introspect (Proxy @Float)
+    , introspect (Proxy @Text)
+    , introspect (Proxy @ID)
+    , introspect (Proxy @Schema)
     ]
 
 schemaAPI :: DataTypeLib -> SchemaAPI
-schemaAPI lib = SchemaAPI {__type = \TypeArgs {name} -> return $ findType name lib, __schema = initSchema lib}
+schemaAPI lib = SchemaAPI {__type, __schema}
+  where
+    __type TypeArgs {name} = return $ findType name lib
+    __schema _ = initSchema lib

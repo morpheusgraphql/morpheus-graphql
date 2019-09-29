@@ -1,22 +1,26 @@
-{-# LANGUAGE DeriveLift        #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DefaultSignatures     #-}
+{-# LANGUAGE DeriveLift            #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 
 module Data.Morpheus.Types.Internal.Data
   ( Key
   , DataScalar
   , DataEnum
   , DataObject
-  , DataInputField
   , DataArgument
-  , DataOutputField
-  , DataInputObject
-  , DataOutputObject
   , DataUnion
-  , DataOutputType
-  , DataInputType
   , DataArguments
   , DataField(..)
-  , DataType(..)
+  , DataTyCon(..)
   , DataLeaf(..)
   , DataKind(..)
   , DataFullType(..)
@@ -26,28 +30,67 @@ module Data.Morpheus.Types.Internal.Data
   , DataTypeKind(..)
   , DataFingerprint(..)
   , RawDataType(..)
+  , ResolverKind(..)
+  , WrapperD(..)
+  , TypeAlias(..)
+  , ArgsType(..)
   , isTypeDefined
   , initTypeLib
   , defineType
-  , showWrappedType
-  , showFullAstType
   , isFieldNullable
   , allDataTypes
   , lookupDataType
   , kindOf
+  , toNullableField
+  , toListField
+  , isObject
+  , isInput
+  , toHSWrappers
+  , isNullable
+  , toGQLWrapper
+  , isWeaker
+  , isVisible
+  , isSubscription
+  , isOutputObject
+  , Operation(..)
   ) where
 
-import           Data.Morpheus.Types.Internal.Value (Value (..))
-import           Data.Text                          (Text)
-import qualified Data.Text                          as T (concat)
+import           Data.Semigroup                     ((<>))
+import qualified Data.Text                          as T (pack, unpack)
 import           GHC.Fingerprint.Type               (Fingerprint)
-import           Language.Haskell.TH.Syntax         (Lift)
+import           Language.Haskell.TH.Syntax         (Lift (..))
 
-type Key = Text
+-- MORPHEUS
+import           Data.Morpheus.Types.Internal.Base  (Key)
+import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
+import           Data.Morpheus.Types.Internal.Value (Value (..))
+
+data Operation
+  = Query
+  | Subscription
+  | Mutation
+  deriving (Show, Eq, Lift)
+
+isSubscription :: DataTypeKind -> Bool
+isSubscription (KindObject (Just Subscription)) = True
+isSubscription _                                = False
+
+isOutputObject :: DataTypeKind -> Bool
+isOutputObject (KindObject _) = True
+isOutputObject _              = False
+
+isObject :: DataTypeKind -> Bool
+isObject (KindObject _)  = True
+isObject KindInputObject = True
+isObject _               = False
+
+isInput :: DataTypeKind -> Bool
+isInput KindInputObject = True
+isInput _               = False
 
 data DataTypeKind
   = KindScalar
-  | KindObject
+  | KindObject (Maybe Operation)
   | KindUnion
   | KindEnum
   | KindInputObject
@@ -56,39 +99,65 @@ data DataTypeKind
   | KindInputUnion
   deriving (Eq, Show, Lift)
 
+data ResolverKind
+  = PlainResolver
+  | TypeVarResolver
+  | ExternalResolver
+  deriving (Show, Eq, Lift)
+
+data WrapperD
+  = ListD
+  | MaybeD
+  deriving (Show, Lift)
+
+isFieldNullable :: DataField -> Bool
+isFieldNullable = isNullable . aliasWrappers . fieldType
+
+isNullable :: [WrapperD] -> Bool
+isNullable (MaybeD:_) = True
+isNullable _          = False
+
+isWeaker :: [WrapperD] -> [WrapperD] -> Bool
+isWeaker (MaybeD:xs1) (MaybeD:xs2) = isWeaker xs1 xs2
+isWeaker (MaybeD:_) _              = True
+isWeaker (_:xs1) (_:xs2)           = isWeaker xs1 xs2
+isWeaker _ _                       = False
+
+toGQLWrapper :: [WrapperD] -> [DataTypeWrapper]
+toGQLWrapper (MaybeD:(MaybeD:tw)) = toGQLWrapper (MaybeD : tw)
+toGQLWrapper (MaybeD:(ListD:tw))  = ListType : toGQLWrapper tw
+toGQLWrapper (ListD:tw)           = [NonNullType, ListType] <> toGQLWrapper tw
+toGQLWrapper [MaybeD]             = []
+toGQLWrapper []                   = [NonNullType]
+
+toHSWrappers :: [DataTypeWrapper] -> [WrapperD]
+toHSWrappers (NonNullType:(NonNullType:xs)) = toHSWrappers (NonNullType : xs)
+toHSWrappers (NonNullType:(ListType:xs))    = ListD : toHSWrappers xs
+toHSWrappers (ListType:xs)                  = [MaybeD, ListD] <> toHSWrappers xs
+toHSWrappers []                             = [MaybeD]
+toHSWrappers [NonNullType]                  = []
+
 data DataFingerprint
-  = SystemFingerprint Text
+  = SystemFingerprint Key
   | TypeableFingerprint [Fingerprint]
   deriving (Show, Eq, Ord)
 
 newtype DataValidator = DataValidator
-  { validateValue :: Value -> Either Text Value
+  { validateValue :: Value -> Either Key Value
   }
 
 instance Show DataValidator where
   show _ = "DataValidator"
 
-type DataScalar = DataType DataValidator
+type DataScalar = DataTyCon DataValidator
 
-type DataEnum = DataType [Key]
+type DataEnum = DataTyCon [Key]
 
-type DataObject a = DataType [(Key, a)]
+type DataObject = DataTyCon [(Key, DataField)]
 
-type DataInputField = DataField ()
+type DataArgument = DataField
 
-type DataArgument = DataInputField
-
-type DataOutputField = DataField [(Key, DataArgument)]
-
-type DataInputObject = DataObject DataInputField
-
-type DataOutputObject = DataObject DataOutputField
-
-type DataUnion = DataType [DataField ()]
-
-type DataOutputType = DataKind DataOutputField
-
-type DataInputType = DataKind DataInputField
+type DataUnion = DataTyCon [DataField]
 
 type DataArguments = [(Key, DataArgument)]
 
@@ -97,22 +166,43 @@ data DataTypeWrapper
   | NonNullType
   deriving (Show, Lift)
 
-data DataField a = DataField
-  { fieldArgs         :: a
-  , fieldName         :: Text
-  , fieldType         :: Text
-  , fieldTypeWrappers :: [DataTypeWrapper]
-  , fieldHidden       :: Bool
+data TypeAlias = TypeAlias
+  { aliasTyCon    :: Key
+  , aliasArgs     :: Maybe Key
+  , aliasWrappers :: [WrapperD]
   } deriving (Show)
 
-isFieldNullable :: DataField a -> Bool
-isFieldNullable DataField {fieldTypeWrappers = NonNullType:_} = False
-isFieldNullable _                                             = True
+instance Lift TypeAlias where
+  lift TypeAlias {aliasTyCon = x, aliasArgs, aliasWrappers} =
+    [|TypeAlias {aliasTyCon = name, aliasArgs = T.pack <$> args, aliasWrappers}|]
+    where
+      name = T.unpack x
+      args = T.unpack <$> aliasArgs
 
-data DataType a = DataType
-  { typeName        :: Text
+data ArgsType = ArgsType
+  { argsTypeName :: Key
+  , resKind      :: ResolverKind
+  } deriving (Show)
+
+instance Lift ArgsType where
+  lift (ArgsType argT kind) = apply 'ArgsType [liftText argT, lift kind]
+
+data DataField = DataField
+  { fieldName     :: Key
+  , fieldArgs     :: [(Key, DataArgument)]
+  , fieldArgsType :: Maybe ArgsType
+  , fieldType     :: TypeAlias
+  , fieldHidden   :: Bool
+  } deriving (Show)
+
+instance Lift DataField where
+  lift (DataField name args argsT ft hid) =
+    apply 'DataField [liftText name, liftTextMap args, lift argsT, lift ft, lift hid]
+
+data DataTyCon a = DataTyCon
+  { typeName        :: Key
   , typeFingerprint :: DataFingerprint
-  , typeDescription :: Text
+  , typeDescription :: Maybe Key
   , typeVisibility  :: Bool
   , typeData        :: a
   } deriving (Show)
@@ -123,56 +213,46 @@ data DataLeaf
   | LeafEnum DataEnum
   deriving (Show)
 
-data DataKind a
+-- DATA KIND
+data DataKind
   = ScalarKind DataScalar
   | EnumKind DataEnum
-  | ObjectKind (DataObject a)
+  | ObjectKind DataObject
   | UnionKind DataUnion
   deriving (Show)
 
 data RawDataType
   = FinalDataType DataFullType
-  | Interface DataOutputObject
+  | Interface DataObject
   | Implements { implementsInterfaces :: [Key]
-               , unImplements         :: DataOutputObject }
+               , unImplements         :: DataObject }
   deriving (Show)
 
 data DataFullType
   = Leaf DataLeaf
-  | InputObject DataInputObject
-  | OutputObject DataOutputObject
+  | InputObject DataObject
+  | OutputObject DataObject
   | Union DataUnion
   | InputUnion DataUnion
   deriving (Show)
 
 data DataTypeLib = DataTypeLib
-  { leaf         :: [(Text, DataLeaf)]
-  , inputObject  :: [(Text, DataInputObject)]
-  , object       :: [(Text, DataOutputObject)]
-  , union        :: [(Text, DataUnion)]
-  , inputUnion   :: [(Text, DataUnion)]
-  , query        :: (Text, DataOutputObject)
-  , mutation     :: Maybe (Text, DataOutputObject)
-  , subscription :: Maybe (Text, DataOutputObject)
+  { leaf         :: [(Key, DataLeaf)]
+  , inputObject  :: [(Key, DataObject)]
+  , object       :: [(Key, DataObject)]
+  , union        :: [(Key, DataUnion)]
+  , inputUnion   :: [(Key, DataUnion)]
+  , query        :: (Key, DataObject)
+  , mutation     :: Maybe (Key, DataObject)
+  , subscription :: Maybe (Key, DataObject)
   } deriving (Show)
 
-showWrappedType :: [DataTypeWrapper] -> Text -> Text
-showWrappedType [] type'               = type'
-showWrappedType (ListType:xs) type'    = T.concat ["[", showWrappedType xs type', "]"]
-showWrappedType (NonNullType:xs) type' = T.concat [showWrappedType xs type', "!"]
-
-showFullAstType :: [DataTypeWrapper] -> DataKind a -> Text
-showFullAstType wrappers' (ScalarKind x) = showWrappedType wrappers' (typeName x)
-showFullAstType wrappers' (EnumKind x)   = showWrappedType wrappers' (typeName x)
-showFullAstType wrappers' (ObjectKind x) = showWrappedType wrappers' (typeName x)
-showFullAstType wrappers' (UnionKind x)  = showWrappedType wrappers' (typeName x)
-
-initTypeLib :: (Text, DataOutputObject) -> DataTypeLib
-initTypeLib query' =
+initTypeLib :: (Key, DataObject) -> DataTypeLib
+initTypeLib query =
   DataTypeLib
     { leaf = []
     , inputObject = []
-    , query = query'
+    , query = query
     , object = []
     , union = []
     , inputUnion = []
@@ -180,7 +260,7 @@ initTypeLib query' =
     , subscription = Nothing
     }
 
-allDataTypes :: DataTypeLib -> [(Text, DataFullType)]
+allDataTypes :: DataTypeLib -> [(Key, DataFullType)]
 allDataTypes (DataTypeLib leaf' inputObject' object' union' inputUnion' query' mutation' subscription') =
   packType OutputObject query' :
   fromMaybeType mutation' ++
@@ -190,11 +270,11 @@ allDataTypes (DataTypeLib leaf' inputObject' object' union' inputUnion' query' m
   map (packType InputUnion) inputUnion' ++ map (packType OutputObject) object' ++ map (packType Union) union'
   where
     packType f (x, y) = (x, f y)
-    fromMaybeType :: Maybe (Text, DataOutputObject) -> [(Text, DataFullType)]
+    fromMaybeType :: Maybe (Key, DataObject) -> [(Key, DataFullType)]
     fromMaybeType (Just (key', dataType')) = [(key', OutputObject dataType')]
     fromMaybeType Nothing                  = []
 
-lookupDataType :: Text -> DataTypeLib -> Maybe DataFullType
+lookupDataType :: Key -> DataTypeLib -> Maybe DataFullType
 lookupDataType name lib = name `lookup` allDataTypes lib
 
 kindOf :: DataFullType -> DataTypeKind
@@ -202,25 +282,40 @@ kindOf (Leaf (BaseScalar _))   = KindScalar
 kindOf (Leaf (CustomScalar _)) = KindScalar
 kindOf (Leaf (LeafEnum _))     = KindEnum
 kindOf (InputObject _)         = KindInputObject
-kindOf (OutputObject _)        = KindObject
+kindOf (OutputObject _)        = KindObject Nothing
 kindOf (Union _)               = KindUnion
 kindOf (InputUnion _)          = KindInputUnion
 
-isTypeDefined :: Text -> DataTypeLib -> Maybe DataFingerprint
-isTypeDefined name lib = getTypeFingerprint <$> lookupDataType name lib
-  where
-    getTypeFingerprint :: DataFullType -> DataFingerprint
-    getTypeFingerprint (Leaf (BaseScalar dataType'))   = typeFingerprint dataType'
-    getTypeFingerprint (Leaf (CustomScalar dataType')) = typeFingerprint dataType'
-    getTypeFingerprint (Leaf (LeafEnum dataType'))     = typeFingerprint dataType'
-    getTypeFingerprint (InputObject dataType')         = typeFingerprint dataType'
-    getTypeFingerprint (OutputObject dataType')        = typeFingerprint dataType'
-    getTypeFingerprint (Union dataType')               = typeFingerprint dataType'
-    getTypeFingerprint (InputUnion dataType')          = typeFingerprint dataType'
+fromDataType :: (DataTyCon () -> v) -> DataFullType -> v
+fromDataType f (Leaf (BaseScalar dt))   = f dt {typeData = ()}
+fromDataType f (Leaf (CustomScalar dt)) = f dt {typeData = ()}
+fromDataType f (Leaf (LeafEnum dt))     = f dt {typeData = ()}
+fromDataType f (Union dt)               = f dt {typeData = ()}
+fromDataType f (InputObject dt)         = f dt {typeData = ()}
+fromDataType f (InputUnion dt)          = f dt {typeData = ()}
+fromDataType f (OutputObject dt)        = f dt {typeData = ()}
 
-defineType :: (Text, DataFullType) -> DataTypeLib -> DataTypeLib
+isVisible :: DataFullType -> Bool
+isVisible = fromDataType typeVisibility
+
+isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
+isTypeDefined name lib = fromDataType typeFingerprint <$> lookupDataType name lib
+
+defineType :: (Key, DataFullType) -> DataTypeLib -> DataTypeLib
 defineType (key', Leaf type') lib         = lib {leaf = (key', type') : leaf lib}
 defineType (key', InputObject type') lib  = lib {inputObject = (key', type') : inputObject lib}
 defineType (key', OutputObject type') lib = lib {object = (key', type') : object lib}
 defineType (key', Union type') lib        = lib {union = (key', type') : union lib}
 defineType (key', InputUnion type') lib   = lib {inputUnion = (key', type') : inputUnion lib}
+
+toNullableField :: DataField -> DataField
+toNullableField dataField
+  | isNullable (aliasWrappers $ fieldType dataField) = dataField
+  | otherwise = dataField {fieldType = nullable (fieldType dataField)}
+  where
+    nullable alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = MaybeD : aliasWrappers}
+
+toListField :: DataField -> DataField
+toListField dataField = dataField {fieldType = listW (fieldType dataField)}
+  where
+    listW alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = ListD : aliasWrappers}

@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Data.Morpheus.Execution.Server.Resolve
   ( statelessResolver
@@ -22,20 +23,20 @@ import           Data.Attoparsec.ByteString                          (parseOnly)
 import qualified Data.ByteString                                     as S
 import qualified Data.ByteString.Lazy.Char8                          as L
 import           Data.Functor.Identity                               (Identity (..))
-import           Data.Proxy
-import           GHC.Generics
+import           Data.Proxy                                          (Proxy (..))
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                           (badRequestError, renderErrors)
-import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, EncodeMutCon, EncodeSubCon, encodeMut,
-                                                                      encodeQuery, encodeSub)
-import           Data.Morpheus.Execution.Server.Introspect           (ObjectRep (..), resolveTypes)
+import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, EncodeMutCon, EncodeSubCon,
+                                                                      encodeOperation, encodeQuery)
+import           Data.Morpheus.Execution.Server.Introspect           (IntroCon, ObjectFields (..), resolveTypes)
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, publishUpdates)
 import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
 import           Data.Morpheus.Schema.SchemaAPI                      (defaultTypes, hiddenRootFields, schemaAPI)
+import           Data.Morpheus.Types.GQLType                         (GQLType (CUSTOM))
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), OperationKind (..))
-import           Data.Morpheus.Types.Internal.Data                   (DataArguments, DataFingerprint (..),
-                                                                      DataType (..), DataTypeLib (..), initTypeLib)
+import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataTyCon (..),
+                                                                      DataTypeLib (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Stream                 (Event (..), ResponseEvent (..), ResponseStream,
                                                                       StreamState (..), StreamT (..), closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation             (SchemaValidation)
@@ -46,8 +47,6 @@ import           Data.Morpheus.Validation.Internal.Utils             (VALIDATION
 import           Data.Morpheus.Validation.Query.Validation           (validateRequest)
 
 type EventCon event = Eq event
-
-type IntroCon a = (Generic a, ObjectRep (Rep a) DataArguments)
 
 type RootResCon m event cont query mutation subscription
    = ( EventCon event
@@ -98,9 +97,9 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
     execOperator (schema, operation@Operation {operationKind = QUERY}) =
       StreamT $ StreamState [] <$> encodeQuery (schemaAPI schema) queryResolver operation
     execOperator (_, operation@Operation {operationKind = MUTATION}) =
-      mapS Publish (encodeMut mutationResolver operation)
+      mapS Publish (encodeOperation mutationResolver operation)
     execOperator (_, operation@Operation {operationKind = SUBSCRIPTION}) =
-      StreamT $ handleActions <$> closeStream (encodeSub subscriptionResolver operation)
+      StreamT $ handleActions <$> closeStream (encodeOperation subscriptionResolver operation)
       where
         handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
         handleActions (channels, Right subResolver) =
@@ -130,25 +129,25 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
     querySchema = resolveTypes (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query")) (defaultTypes : types)
       where
-        (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep query))
+        (fields, types) = objectFields (Proxy @(CUSTOM query)) (Proxy @query)
     ------------------------------
     mutationSchema lib = resolveTypes (lib {mutation = maybeOperator fields "Mutation"}) types
       where
-        (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep mutation))
+        (fields, types) = objectFields (Proxy @(CUSTOM mutation)) (Proxy @mutation)
     ------------------------------
     subscriptionSchema lib = resolveTypes (lib {subscription = maybeOperator fields "Subscription"}) types
       where
-        (fields, types) = unzip $ objectFieldTypes (Proxy :: Proxy (Rep subscription))
-     -- maybeOperator :: [a] -> Text -> Maybe (Text, DataType [a])
+        (fields, types) = objectFields (Proxy @(CUSTOM subscription)) (Proxy @subscription)
+     -- maybeOperator :: [a] -> Text -> Maybe (Text, DataTyCon[a])
     maybeOperator []     = const Nothing
     maybeOperator fields = Just . operatorType fields
-    -- operatorType :: [a] -> Text -> (Text, DataType [a])
+    -- operatorType :: [a] -> Text -> (Text, DataTyCon[a])
     operatorType typeData typeName =
       ( typeName
-      , DataType
+      , DataTyCon
           { typeData
           , typeVisibility = True
           , typeName
           , typeFingerprint = SystemFingerprint typeName
-          , typeDescription = ""
+          , typeDescription = Nothing
           })

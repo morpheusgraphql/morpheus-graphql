@@ -22,7 +22,7 @@ data Deity = Deity
 
 instance GQLType Deity where
   type KIND Deity = OBJECT
-  description _ = "Custom Description for Client Defined User Type"
+  description _ = Just "Custom Description for Client Defined User Type"
 
 dbDeity :: Text -> Maybe Text -> IO (Either String Deity)
 dbDeity _ _ = return $ Right $ Deity {fullName = "Morpheus", power = Just "Shapeshifting", realm = Dream}

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies   #-}
@@ -56,7 +57,7 @@ data Query = Query
   { test  :: TestArgs Level -> IORes Level
   , test2 :: TestArgs TwoCon -> IORes TwoCon
   , test3 :: TestArgs ThreeCon -> IORes ThreeCon
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 
 rootResolver :: GQLRootResolver IO () () Query () ()
 rootResolver =

@@ -6,15 +6,13 @@ module Data.Morpheus.Validation.Internal.Utils
   , lookupField
   , checkNameCollision
   , checkForUnknownKeys
-  , isEqOrStricter
   , VALIDATION_MODE(..)
   ) where
 
 import           Data.List                               ((\\))
 import           Data.Morpheus.Error.Variable            (unknownType)
 import           Data.Morpheus.Types.Internal.Base       (EnhancedKey (..), Key, Position, enhanceKeyWithNull)
-import           Data.Morpheus.Types.Internal.Data       (DataInputType, DataKind (..), DataLeaf (..), DataOutputObject,
-                                                          DataTypeLib (..), DataTypeWrapper (..))
+import           Data.Morpheus.Types.Internal.Data       (DataKind (..), DataLeaf (..), DataObject, DataTypeLib (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import qualified Data.Set                                as S
 import           Data.Text                               (Text)
@@ -38,7 +36,7 @@ lookupField id' lib' error' =
     Nothing    -> Left error'
     Just field -> pure field
 
-getInputType :: Text -> DataTypeLib -> GenError error DataInputType
+getInputType :: Text -> DataTypeLib -> GenError error DataKind
 getInputType typeName' lib error' =
   case lookup typeName' (inputObject lib) of
     Just x -> pure (ObjectKind x)
@@ -52,7 +50,7 @@ getInputType typeName' lib error' =
             Just (CustomScalar x) -> pure (ScalarKind x)
             Just (LeafEnum x)     -> pure (EnumKind x)
 
-existsObjectType :: Position -> Text -> DataTypeLib -> Validation DataOutputObject
+existsObjectType :: Position -> Text -> DataTypeLib -> Validation DataObject
 existsObjectType position' typeName' lib = lookupType error' (object lib) typeName'
   where
     error' = unknownType typeName' position'
@@ -77,10 +75,3 @@ checkForUnknownKeys enhancedKeys' keys' errorGenerator' =
   case filter (not . elementOfKeys keys') enhancedKeys' of
     []           -> pure enhancedKeys'
     unknownKeys' -> Left $ errorGenerator' unknownKeys'
-
-isEqOrStricter :: [DataTypeWrapper] -> [DataTypeWrapper] -> Bool
-isEqOrStricter [] []                               = True
-isEqOrStricter (NonNullType:xs1) (NonNullType:xs2) = isEqOrStricter xs1 xs2
-isEqOrStricter (NonNullType:xs1) xs2               = isEqOrStricter xs1 xs2
-isEqOrStricter (ListType:xs1) (ListType:xs2)       = isEqOrStricter xs1 xs2
-isEqOrStricter _ _                                 = False

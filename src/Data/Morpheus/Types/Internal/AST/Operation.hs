@@ -15,7 +15,7 @@ module Data.Morpheus.Types.Internal.AST.Operation
 import           Data.Morpheus.Types.Internal.AST.RawSelection (RawSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Arguments, SelectionSet)
 import           Data.Morpheus.Types.Internal.Base             (Collection, Key, Position)
-import           Data.Morpheus.Types.Internal.Data             (DataTypeWrapper)
+import           Data.Morpheus.Types.Internal.Data             (WrapperD)
 import           Data.Morpheus.Types.Internal.TH               (apply, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value            (Value)
 import           Language.Haskell.TH.Syntax                    (Lift (..))
@@ -49,7 +49,7 @@ instance Lift (Operation VariableDefinitions RawSelectionSet) where
 data Variable a = Variable
   { variableType         :: Key
   , isVariableRequired   :: Bool
-  , variableTypeWrappers :: [DataTypeWrapper]
+  , variableTypeWrappers :: [WrapperD]
   , variablePosition     :: Position
   , variableValue        :: a
   } deriving (Show)

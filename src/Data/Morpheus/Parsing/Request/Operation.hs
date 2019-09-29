@@ -19,6 +19,7 @@ import           Data.Morpheus.Parsing.Internal.Terms       (parseAssignment, pa
 import           Data.Morpheus.Parsing.Request.Body         (entries)
 import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), OperationKind (..), RawOperation,
                                                              Variable (..))
+import           Data.Morpheus.Types.Internal.Data          (toHSWrappers)
 
 operationArgument :: Parser (Text, Variable ())
 operationArgument =
@@ -30,7 +31,7 @@ operationArgument =
       , Variable
           { variableType
           , isVariableRequired = 0 < length nonNull
-          , variableTypeWrappers = nonNull ++ wrappers
+          , variableTypeWrappers = toHSWrappers $ nonNull ++ wrappers
           , variablePosition
           , variableValue = ()
           })

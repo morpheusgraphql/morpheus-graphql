@@ -11,21 +11,29 @@ module Data.Morpheus.Parsing.Internal.Create
   , createDataTypeLib
   ) where
 
-import           Data.Morpheus.Types.Internal.Data (DataField (..), DataFingerprint (..), DataFullType (..),
-                                                    DataLeaf (..), DataType (..), DataTypeLib (..), DataTypeWrapper,
-                                                    DataValidator (..), defineType, initTypeLib)
+import           Data.Morpheus.Types.Internal.Data (DataArguments, DataField (..), DataFingerprint (..),
+                                                    DataFullType (..), DataLeaf (..), DataTyCon (..), DataTypeLib (..),
+                                                    DataValidator (..), TypeAlias (..), WrapperD, defineType,
+                                                    initTypeLib)
 import           Data.Text                         (Text)
 
-createField :: a -> Text -> ([DataTypeWrapper], Text) -> DataField a
-createField fieldArgs fieldName (fieldTypeWrappers, fieldType) =
-  DataField {fieldArgs, fieldName, fieldType, fieldTypeWrappers, fieldHidden = False}
+createField :: DataArguments -> Text -> ([WrapperD], Text) -> DataField
+createField fieldArgs fieldName (aliasWrappers, aliasTyCon) =
+  DataField
+    { fieldArgs
+    , fieldArgsType = Nothing
+    , fieldName
+    , fieldType = TypeAlias {aliasTyCon, aliasWrappers, aliasArgs = Nothing}
+    , fieldHidden = False
+    }
 
-createArgument :: Text -> ([DataTypeWrapper], Text) -> (Text, DataField ())
-createArgument fieldName x = (fieldName, createField () fieldName x)
+createArgument :: Text -> ([WrapperD], Text) -> (Text, DataField)
+createArgument fieldName x = (fieldName, createField [] fieldName x)
 
-createType :: Text -> a -> DataType a
+createType :: Text -> a -> DataTyCon a
 createType typeName typeData =
-  DataType {typeName, typeDescription = "", typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData}
+  DataTyCon
+    {typeName, typeDescription = Nothing, typeFingerprint = SystemFingerprint "", typeVisibility = True, typeData}
 
 createScalarType :: Text -> (Text, DataFullType)
 createScalarType typeName = (typeName, Leaf $ CustomScalar $ createType typeName (DataValidator pure))
@@ -36,7 +44,7 @@ createEnumType typeName typeData = (typeName, Leaf $ LeafEnum $ createType typeN
 createUnionType :: Text -> [Text] -> (Text, DataFullType)
 createUnionType typeName typeData = (typeName, Union $ createType typeName $ map unionField typeData)
   where
-    unionField fieldType = createField () "" ([], fieldType)
+    unionField fieldType = createField [] "" ([], fieldType)
 
 createDataTypeLib :: Monad m => [(Text, DataFullType)] -> m DataTypeLib
 createDataTypeLib types =

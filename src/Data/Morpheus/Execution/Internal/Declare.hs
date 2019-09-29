@@ -9,61 +9,78 @@
 
 module Data.Morpheus.Execution.Internal.Declare
   ( declareType
-  , declareResolverType
+  , declareGQLT
+  , tyConArgs
   ) where
 
+import           Data.Maybe                             (maybe)
+import           Data.Text                              (unpack)
+import           GHC.Generics                           (Generic)
 import           Language.Haskell.TH
 
-import           Data.Morpheus.Types.Internal.Data  (DataTypeKind (..))
-
---
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.DataD (AppD (..), ConsD (..), FieldD (..), KindD (..), ResolverKind (..),
-                                                     TypeD (..), unKindD)
-import           GHC.Generics                       (Generic)
+import           Data.Morpheus.Execution.Internal.Utils (nameSpaceWith)
+import           Data.Morpheus.Types.Internal.Data      (ArgsType (..), DataField (..), DataTypeKind (..),
+                                                         DataTypeKind (..), TypeAlias (..), WrapperD (..),
+                                                         isOutputObject, isSubscription)
+import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), TypeD (..))
+import           Data.Morpheus.Types.Resolver           (UnSubResolver)
 
 type FUNC = (->)
 
 declareType :: [Name] -> TypeD -> Dec
-declareType = __declareType Nothing
+declareType = declareGQLT False Nothing
 
-declareResolverType :: KindD -> [Name] -> TypeD -> Dec
-declareResolverType x = __declareType (Just x)
+declareTypeAlias :: Bool -> TypeAlias -> Type
+declareTypeAlias isSub TypeAlias {aliasTyCon, aliasWrappers, aliasArgs} = wrappedT aliasWrappers
+  where
+    wrappedT :: [WrapperD] -> Type
+    wrappedT (ListD:xs)  = AppT (ConT ''[]) $ wrappedT xs
+    wrappedT (MaybeD:xs) = AppT (ConT ''Maybe) $ wrappedT xs
+    wrappedT []          = decType aliasArgs
+    ------------------------------------------------------
+    typeName = ConT (mkName $ unpack aliasTyCon)
+    --------------------------------------------
+    decType _
+      | isSub = AppT typeName (AppT (ConT ''UnSubResolver) (VarT $ mkName "m"))
+    decType (Just par) = AppT typeName (VarT $ mkName $ unpack par)
+    decType _ = typeName
 
---
---
-__declareType :: Maybe KindD -> [Name] -> TypeD -> Dec
-__declareType kindD derivingList TypeD {tName, tCons} =
+tyConArgs :: DataTypeKind -> [String]
+tyConArgs kindD
+  | isOutputObject kindD || kindD == KindUnion = ["m"]
+  | otherwise = []
+
+-- declareType
+declareGQLT :: Bool -> Maybe DataTypeKind -> [Name] -> TypeD -> Dec
+declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
   DataD [] (mkName tName) tVars Nothing (map cons tCons) $ map derive (''Generic : derivingList)
   where
-    gqlKind = unKindD <$> kindD
-    isSubscription = kindD == Just SubscriptionD
-    withTyCon = gqlKind == Just KindObject || gqlKind == Just KindUnion
-    tVars
-      | isSubscription = declareTyVar ["subscriptionM", "m"]
-      | withTyCon = declareTyVar ["m"]
-      | otherwise = []
-    declareTyVar = map (PlainTV . mkName)
+    tVars = maybe [] (declareTyVar . tyConArgs) kindD
+      where
+        declareTyVar = map (PlainTV . mkName)
     defBang = Bang NoSourceUnpackedness NoSourceStrictness
     derive className = DerivClause Nothing [ConT className]
-    cons ConsD {cName, cFields} = RecC (mkName cName) (map genField cFields)
+    cons ConsD {cName, cFields} = RecC (mkName cName) (map declareField cFields)
       where
-        genField FieldD {fieldNameD, fieldTypeD} = (mkName fieldNameD, defBang, genFieldT False fieldTypeD)
+        declareField DataField {fieldName, fieldArgsType, fieldType} = (fName, defBang, fiType)
           where
-            monadVar = VarT $ mkName "m"
-            subscriptionVar = VarT $ mkName "subscriptionM"
-            ---------------------------
-            genFieldT resM (ListD td) = AppT (ConT ''[]) (genFieldT resM td)
-            genFieldT resM (MaybeD td) = AppT (ConT ''Maybe) (genFieldT resM td)
-            genFieldT True (BaseD name) = AppT (ConT (mkName name)) monadVar
-            genFieldT False (BaseD name)
-              | gqlKind == Just KindUnion = AppT (ConT (mkName name)) monadVar
-            genFieldT False (BaseD name) = ConT (mkName name)
-            genFieldT _ (ResD arg resKind td) = AppT (AppT arrowType argType) (resultType resKind)
+            fName
+              | namespace = mkName (nameSpaceWith tName (unpack fieldName))
+              | otherwise = mkName (unpack fieldName)
+            fiType = genFieldT fieldArgsType
               where
-                argType = ConT $ mkName arg
-                arrowType = ConT ''FUNC
-                resultType _
-                  | isSubscription = AppT subscriptionVar (genFieldT True td)
-                resultType TypeVarResolver = AppT monadVar (genFieldT True td)
-                resultType _ = AppT monadVar (genFieldT False td)
+                monadVar = VarT $ mkName "m"
+                ---------------------------
+                genFieldT Nothing = fType False
+                genFieldT (Just ArgsType {argsTypeName}) = AppT (AppT arrowType argType) (fType True)
+                  where
+                    argType = ConT $ mkName (unpack argsTypeName)
+                    arrowType = ConT ''FUNC
+                ------------------------------------------------
+                fType isResolver
+                  | maybe False isSubscription kindD = AppT monadVar result
+                  | isResolver = AppT monadVar result
+                  | otherwise = result
+                ------------------------------------------------
+                result = declareTypeAlias (maybe False isSubscription kindD) fieldType

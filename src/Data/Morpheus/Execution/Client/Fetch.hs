@@ -10,15 +10,16 @@ module Data.Morpheus.Execution.Client.Fetch
   , deriveFetch
   ) where
 
-import           Control.Monad          ((>=>))
-import           Data.Aeson             (FromJSON, ToJSON (..), eitherDecode, encode)
-import           Data.ByteString.Lazy   (ByteString)
-import           Data.Text              (pack)
+import           Control.Monad                   ((>=>))
+import           Data.Aeson                      (FromJSON, ToJSON (..), eitherDecode, encode)
+import           Data.ByteString.Lazy            (ByteString)
+import           Data.Text                       (pack)
 import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.IO (GQLRequest (..), JSONResponse (..))
+import           Data.Morpheus.Types.Internal.TH (instanceHeadT)
+import           Data.Morpheus.Types.IO          (GQLRequest (..), JSONResponse (..))
 
 class Fetch a where
   type Args a :: *
@@ -32,16 +33,16 @@ class Fetch a where
   __fetch strQuery opName trans vars = (eitherDecode >=> processResponse) <$> trans (encode gqlReq)
     where
       gqlReq = GQLRequest {operationName = Just (pack opName), query = pack strQuery, variables = Just (toJSON vars)}
-      ----
+      -------------------------------------------------------------
       processResponse JSONResponse {responseData = Just x} = pure x
       processResponse invalidResponse                      = fail $ show invalidResponse
   fetch :: (Monad m, FromJSON a) => (ByteString -> m ByteString) -> Args a -> m (Either String a)
 
 deriveFetch :: Type -> String -> String -> Q [Dec]
-deriveFetch argDatatype typeName query =
-  pure <$> instanceD (cxt []) (appT (conT ''Fetch) (conT $ mkName typeName)) methods
+deriveFetch argDatatype typeName query = pure <$> instanceD (cxt []) iHead methods
   where
+    iHead = instanceHeadT ''Fetch typeName []
     methods =
-      [ funD (mkName "fetch") [clause [] (normalB [|__fetch query typeName|]) []]
+      [ funD 'fetch [clause [] (normalB [|__fetch query typeName|]) []]
       , pure $ TySynInstD ''Args (TySynEqn [ConT $ mkName typeName] argDatatype)
       ]
