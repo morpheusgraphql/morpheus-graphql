@@ -11,11 +11,11 @@ import           Language.Haskell.TH.Syntax        (Lift (..))
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data (DataField, KindD)
+import           Data.Morpheus.Types.Internal.Data (DataField, DataTypeKind)
 
 data GQLTypeD = GQLTypeD
   { typeD     :: TypeD
-  , typeKindD :: KindD
+  , typeKindD :: DataTypeKind
   , typeArgD  :: [TypeD]
   } deriving (Show, Lift)
 

@@ -12,15 +12,15 @@ module Data.Morpheus.Schema.Schema
   , Type
   ) where
 
-import           Data.Text                                         (Text)
-import           GHC.Generics                                      (Generic)
+import           Data.Text                                   (Text)
+import           GHC.Generics                                (Generic)
 
 -- MORPHEUS
-import           Data.Morpheus.Kind                                (OBJECT)
-import           Data.Morpheus.Schema.Directive                    (Directive)
-import           Data.Morpheus.Schema.Internal.RenderIntrospection (Type, createObjectType, renderType)
-import           Data.Morpheus.Types.GQLType                       (GQLType (KIND, __typeName, __typeVisibility))
-import           Data.Morpheus.Types.Internal.Data                 (DataObject, DataTypeLib (..), allDataTypes)
+import           Data.Morpheus.Kind                          (OBJECT)
+import           Data.Morpheus.Rendering.RenderIntrospection (Type, createObjectType, renderType)
+import           Data.Morpheus.Schema.Directive              (Directive)
+import           Data.Morpheus.Types.GQLType                 (GQLType (KIND, __typeName, __typeVisibility))
+import           Data.Morpheus.Types.Internal.Data           (DataObject, DataTypeLib (..), allDataTypes)
 
 instance GQLType Schema where
   type KIND Schema = OBJECT

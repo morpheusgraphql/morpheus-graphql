@@ -20,8 +20,9 @@ import           Language.Haskell.TH
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Utils (nameSpaceWith)
-import           Data.Morpheus.Types.Internal.Data      (ArgsType (..), DataField (..), DataTypeKind (..), KindD (..),
-                                                         TypeAlias (..), WrapperD (..), isSubscription, unKindD)
+import           Data.Morpheus.Types.Internal.Data      (ArgsType (..), DataField (..), DataTypeKind (..),
+                                                         DataTypeKind (..), TypeAlias (..), WrapperD (..),
+                                                         isOutputObject, isSubscription)
 import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), TypeD (..))
 import           Data.Morpheus.Types.Resolver           (UnSubResolver)
 
@@ -45,15 +46,13 @@ declareTypeAlias isSub TypeAlias {aliasTyCon, aliasWrappers, aliasArgs} = wrappe
     decType (Just par) = AppT typeName (VarT $ mkName $ unpack par)
     decType _ = typeName
 
-tyConArgs :: KindD -> [String]
+tyConArgs :: DataTypeKind -> [String]
 tyConArgs kindD
-  | isSubscription kindD || gqlKind == KindObject || gqlKind == KindUnion = ["m"]
+  | isOutputObject kindD || kindD == KindUnion = ["m"]
   | otherwise = []
-  where
-    gqlKind = unKindD kindD
 
 -- declareType
-declareGQLT :: Bool -> Maybe KindD -> [Name] -> TypeD -> Dec
+declareGQLT :: Bool -> Maybe DataTypeKind -> [Name] -> TypeD -> Dec
 declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
   DataD [] (mkName tName) tVars Nothing (map cons tCons) $ map derive (''Generic : derivingList)
   where

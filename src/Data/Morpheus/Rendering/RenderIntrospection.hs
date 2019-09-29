@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators     #-}
 
-module Data.Morpheus.Schema.Internal.RenderIntrospection
+module Data.Morpheus.Rendering.RenderIntrospection
   ( Type
   , Field
   , InputValue
@@ -43,7 +43,7 @@ renderType (name', InputUnion inpUnion') = renderInputUnion (name', inpUnion')
 
 renderTypeKind :: DataTypeKind -> TypeKind
 renderTypeKind KindScalar      = SCALAR
-renderTypeKind KindObject      = OBJECT
+renderTypeKind (KindObject _)  = OBJECT
 renderTypeKind KindUnion       = UNION
 renderTypeKind KindInputUnion  = INPUT_OBJECT
 renderTypeKind KindEnum        = ENUM

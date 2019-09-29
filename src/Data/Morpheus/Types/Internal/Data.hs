@@ -43,16 +43,15 @@ module Data.Morpheus.Types.Internal.Data
   , kindOf
   , toNullableField
   , toListField
-  , unKindD
   , isObject
   , isInput
   , toHSWrappers
-  , KindD(..)
   , isNullable
   , toGQLWrapper
   , isWeaker
   , isVisible
   , isSubscription
+  , isOutputObject
   , Operation(..)
   ) where
 
@@ -70,24 +69,35 @@ data Operation
   = Query
   | Subscription
   | Mutation
+  deriving (Show, Eq, Lift)
 
-unKindD :: KindD -> DataTypeKind
-unKindD SubscriptionD       = KindObject
-unKindD (RegularKindD kind) = kind
+isSubscription :: DataTypeKind -> Bool
+isSubscription (KindObject (Just Subscription)) = True
+isSubscription _                                = False
 
-isSubscription :: KindD -> Bool
-isSubscription SubscriptionD = True
-isSubscription _             = False
+isOutputObject :: DataTypeKind -> Bool
+isOutputObject (KindObject _) = True
+isOutputObject _              = False
 
-isObject :: KindD -> Bool
-isObject SubscriptionD                  = True
-isObject (RegularKindD KindObject)      = True
-isObject (RegularKindD KindInputObject) = True
-isObject _                              = False
+isObject :: DataTypeKind -> Bool
+isObject (KindObject _)  = True
+isObject KindInputObject = True
+isObject _               = False
 
-isInput :: KindD -> Bool
-isInput (RegularKindD KindInputObject) = True
-isInput _                              = False
+isInput :: DataTypeKind -> Bool
+isInput KindInputObject = True
+isInput _               = False
+
+data DataTypeKind
+  = KindScalar
+  | KindObject (Maybe Operation)
+  | KindUnion
+  | KindEnum
+  | KindInputObject
+  | KindList
+  | KindNonNull
+  | KindInputUnion
+  deriving (Eq, Show, Lift)
 
 data ResolverKind
   = PlainResolver
@@ -126,22 +136,6 @@ toHSWrappers (NonNullType:(ListType:xs))    = ListD : toHSWrappers xs
 toHSWrappers (ListType:xs)                  = [MaybeD, ListD] <> toHSWrappers xs
 toHSWrappers []                             = [MaybeD]
 toHSWrappers [NonNullType]                  = []
-
-data KindD
-  = SubscriptionD
-  | RegularKindD DataTypeKind
-  deriving (Show, Eq, Lift)
-
-data DataTypeKind
-  = KindScalar
-  | KindObject
-  | KindUnion
-  | KindEnum
-  | KindInputObject
-  | KindList
-  | KindNonNull
-  | KindInputUnion
-  deriving (Eq, Show, Lift)
 
 data DataFingerprint
   = SystemFingerprint Key
@@ -288,7 +282,7 @@ kindOf (Leaf (BaseScalar _))   = KindScalar
 kindOf (Leaf (CustomScalar _)) = KindScalar
 kindOf (Leaf (LeafEnum _))     = KindEnum
 kindOf (InputObject _)         = KindInputObject
-kindOf (OutputObject _)        = KindObject
+kindOf (OutputObject _)        = KindObject Nothing
 kindOf (Union _)               = KindUnion
 kindOf (InputUnion _)          = KindInputUnion
 

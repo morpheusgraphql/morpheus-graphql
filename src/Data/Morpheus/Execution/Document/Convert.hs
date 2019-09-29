@@ -16,8 +16,9 @@ import           Data.Text                               (Text, pack, unpack)
 import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Execution.Internal.Utils  (capital)
 import           Data.Morpheus.Types.Internal.Data       (ArgsType (..), DataField (..), DataField, DataFullType (..),
-                                                          DataLeaf (..), DataTyCon (..), DataTypeKind (..), KindD (..),
-                                                          ResolverKind (..), TypeAlias (..))
+                                                          DataLeaf (..), DataTyCon (..), DataTypeKind (..),
+                                                          DataTypeKind (..), Operation (..), ResolverKind (..),
+                                                          TypeAlias (..))
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 
@@ -75,7 +76,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
           pure
             GQLTypeD
               { typeD = TypeD {tName = unpack typeName, tCons = map enumOption typeData}
-              , typeKindD = RegularKindD KindEnum
+              , typeKindD = KindEnum
               , typeArgD = []
               }
           where
@@ -90,7 +91,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
                     { tName = unpack typeName
                     , tCons = [ConsD {cName = unpack typeName, cFields = map genField typeData}]
                     }
-              , typeKindD = RegularKindD KindInputObject
+              , typeKindD = KindInputObject
               , typeArgD = []
               }
         genType (OutputObject DataTyCon {typeName, typeData}) = do
@@ -104,14 +105,13 @@ renderTHTypes namespace lib = traverse renderTHType lib
                     }
               , typeKindD =
                   if typeName == "Subscription"
-                    then SubscriptionD
-                    else RegularKindD KindObject
+                    then KindObject (Just Subscription)
+                    else KindObject Nothing
               , typeArgD
               }
         genType (Union DataTyCon {typeName, typeData}) = do
           let tCons = map unionCon typeData
-          pure
-            GQLTypeD {typeD = TypeD {tName = unpack typeName, tCons}, typeKindD = RegularKindD KindUnion, typeArgD = []}
+          pure GQLTypeD {typeD = TypeD {tName = unpack typeName, tCons}, typeKindD = KindUnion, typeArgD = []}
           where
             unionCon field@DataField {fieldType} =
               ConsD

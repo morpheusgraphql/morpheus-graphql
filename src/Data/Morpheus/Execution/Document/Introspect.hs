@@ -16,12 +16,12 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
-import           Data.Morpheus.Types.Internal.Data         (ArgsType (..), DataField (..), KindD, TypeAlias (..))
+import           Data.Morpheus.Types.Internal.Data         (ArgsType (..), DataField (..), DataTypeKind, TypeAlias (..))
 import           Data.Morpheus.Types.Internal.DataD        (ConsD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceHeadMultiT, typeT)
 
 -- [((Text, DataField), TypeUpdater)]
-deriveObjectRep :: (TypeD, Maybe KindD) -> Q [Dec]
+deriveObjectRep :: (TypeD, Maybe DataTypeKind) -> Q [Dec]
 deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
   pure <$> instanceWithOverlapD overlapping (cxt constrains) iHead methods
   where
