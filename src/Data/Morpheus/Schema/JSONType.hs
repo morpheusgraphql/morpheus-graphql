@@ -15,8 +15,6 @@ import           GHC.Generics                    (Generic)
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Schema.Directive  (Directive)
-import           Data.Morpheus.Schema.EnumValue  (EnumValue)
 import qualified Data.Morpheus.Schema.Field      as F (Field (..))
 import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..))
 import           Data.Morpheus.Schema.TypeKind   (TypeKind)
@@ -32,15 +30,11 @@ data JSONType = JSONType
   , fields        :: Maybe [F.Field JSONType]
   , interfaces    :: Maybe [JSONType]
   , possibleTypes :: Maybe [JSONType]
-  , enumValues    :: Maybe [EnumValue]
+--  , enumValues    :: Maybe [EnumValue]
   , inputFields   :: Maybe [I.InputValue JSONType]
   , ofType        :: Maybe JSONType
   } deriving (Generic, Show, FromJSON)
 
-data JSONSchema = JSONSchema
+newtype JSONSchema = JSONSchema
   { types      :: [JSONType]
-   --, queryType        :: JSONType
- -- , mutationType     :: Maybe JSONType
- -- , subscriptionType :: Maybe JSONType
-  , directives :: [Directive JSONType]
   } deriving (Generic, Show, FromJSON)

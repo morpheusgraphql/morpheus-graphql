@@ -14,7 +14,11 @@
 module Data.Morpheus.Schema.Schema
   ( initSchema
   , findType
-  , S__Schema
+  , S__Schema(..)
+  , S__Type(..)
+  , S__Field(..)
+  , S__EnumValue(..)
+  , S__InputValue(..)
   ) where
 
 import           Data.Text                                (Text)
