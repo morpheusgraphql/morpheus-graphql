@@ -24,10 +24,10 @@ import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
 constRes :: Applicative m => a -> b -> m a
 constRes = const . pure
 
-type Result a = DataTypeLib -> Either String a
+type Result m a = DataTypeLib -> m a
 
 class RenderSchema a b where
-  render :: Monad m => (Text, a) -> Result (b m)
+  render :: Monad m => (Text, a) -> DataTypeLib -> m (b m)
 
 instance RenderSchema DataFullType S__Type where
   render (name, Leaf leaf) = render (name, leaf)
@@ -62,39 +62,39 @@ renderTypeKind KindInputObject = INPUT_OBJECT
 renderTypeKind KindList        = LIST
 renderTypeKind KindNonNull     = NON_NULL
 
-wrap :: Applicative m => DataField -> S__Type m -> S__Type m
+wrap :: Monad m => DataField -> S__Type m -> S__Type m
 wrap DataField {fieldType = TypeAlias {aliasWrappers}} typ = foldr wrapByTypeWrapper typ (toGQLWrapper aliasWrappers)
 
-wrapByTypeWrapper :: Applicative m => DataTypeWrapper -> S__Type m -> S__Type m
+wrapByTypeWrapper :: Monad m => DataTypeWrapper -> S__Type m -> S__Type m
 wrapByTypeWrapper ListType    = wrapAs LIST
 wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 
-lookupKind :: Text -> Result DataTypeKind
+lookupKind :: Monad m => Text -> Result m DataTypeKind
 lookupKind name lib =
   case lookupDataType name lib of
-    Nothing    -> Left $ unpack $ "Kind Not Found: " <> name
-    Just value -> Right (kindOf value)
+    Nothing    -> fail $ unpack ("Kind Not Found: " <> name)
+    Just value -> pure (kindOf value)
 
-inputValueFromArg :: Applicative m => (Text, DataField) -> Result (S__InputValue m)
+inputValueFromArg :: Monad m => (Text, DataField) -> Result m (S__InputValue m)
 inputValueFromArg (key, input) = fmap (createInputValueWith key) . createInputObjectType input
 
-createInputObjectType :: Applicative m => DataField -> Result (S__Type m)
+createInputObjectType :: Monad m => DataField -> Result m (S__Type m)
 createInputObjectType field@DataField {fieldType = TypeAlias {aliasTyCon}} lib = do
   kind <- renderTypeKind <$> lookupKind aliasTyCon lib
   pure $ wrap field $ createType kind aliasTyCon Nothing $ Just []
 
-renderInputObject :: Applicative m => (Text, DataObject) -> Result (S__Type m)
+renderInputObject :: Monad m => (Text, DataObject) -> Result m (S__Type m)
 renderInputObject (key, DataTyCon {typeData, typeDescription}) lib = do
   fields <- traverse (`inputValueFromArg` lib) typeData
   pure $ createInputObject key typeDescription fields
 
-renderInputUnion :: Applicative m => (Text, DataUnion) -> Result (S__Type m)
+renderInputUnion :: Monad m => (Text, DataUnion) -> Result m (S__Type m)
 renderInputUnion (key', DataTyCon {typeData, typeDescription}) lib =
   createInputObject key' typeDescription <$> traverse createField typeData
   where
     createField field = createInputValueWith (fieldName field) <$> createInputObjectType field lib
 
-createLeafType :: Applicative m => TypeKind -> Text -> Maybe Text -> Maybe [S__EnumValue m] -> S__Type m
+createLeafType :: Monad m => TypeKind -> Text -> Maybe Text -> Maybe [S__EnumValue m] -> S__Type m
 createLeafType kind name description enums =
   S__Type
     { s__TypeKind = constRes kind
@@ -108,7 +108,7 @@ createLeafType kind name description enums =
     , s__TypeInputFields = constRes Nothing
     }
 
-typeFromUnion :: Applicative m => (Text, DataUnion) -> S__Type m
+typeFromUnion :: Monad m => (Text, DataUnion) -> S__Type m
 typeFromUnion (name, DataTyCon {typeData, typeDescription}) =
   S__Type
     { s__TypeKind = constRes UNION
@@ -123,7 +123,7 @@ typeFromUnion (name, DataTyCon {typeData, typeDescription}) =
     , s__TypeInputFields = constRes Nothing
     }
 
-createObjectType :: Applicative m => Text -> Maybe Text -> Maybe [S__Field m] -> S__Type m
+createObjectType :: Monad m => Text -> Maybe Text -> Maybe [S__Field m] -> S__Type m
 createObjectType name description fields =
   S__Type
     { s__TypeKind = constRes OBJECT
@@ -137,7 +137,7 @@ createObjectType name description fields =
     , s__TypeInputFields = constRes Nothing
     }
 
-createInputObject :: Applicative m => Text -> Maybe Text -> [S__InputValue m] -> S__Type m
+createInputObject :: Monad m => Text -> Maybe Text -> [S__InputValue m] -> S__Type m
 createInputObject name description fields =
   S__Type
     { s__TypeKind = constRes INPUT_OBJECT
@@ -151,7 +151,7 @@ createInputObject name description fields =
     , s__TypeInputFields = constRes $ Just fields
     }
 
-createType :: Applicative m => TypeKind -> Text -> Maybe Text -> Maybe [S__Field m] -> S__Type m
+createType :: Monad m => TypeKind -> Text -> Maybe Text -> Maybe [S__Field m] -> S__Type m
 createType kind name description fields' =
   S__Type
     { s__TypeKind = constRes kind
@@ -165,7 +165,7 @@ createType kind name description fields' =
     , s__TypeInputFields = constRes Nothing
     }
 
-wrapAs :: Applicative m => TypeKind -> S__Type m -> S__Type m
+wrapAs :: Monad m => TypeKind -> S__Type m -> S__Type m
 wrapAs kind contentType =
   S__Type
     { s__TypeKind = constRes kind
@@ -179,7 +179,7 @@ wrapAs kind contentType =
     , s__TypeInputFields = constRes Nothing
     }
 
-createFieldWith :: Applicative m => Text -> S__Type m -> [S__InputValue m] -> S__Field m
+createFieldWith :: Monad m => Text -> S__Type m -> [S__InputValue m] -> S__Field m
 createFieldWith _name fieldType fieldArgs =
   S__Field
     { s__FieldName = constRes $ convertToJSONName _name
@@ -190,7 +190,7 @@ createFieldWith _name fieldType fieldArgs =
     , s__FieldDeprecationReason = constRes Nothing
     }
 
-createInputValueWith :: Applicative m => Text -> S__Type m -> S__InputValue m
+createInputValueWith :: Monad m => Text -> S__Type m -> S__InputValue m
 createInputValueWith name ivType =
   S__InputValue
     { s__InputValueName = constRes name
@@ -199,7 +199,7 @@ createInputValueWith name ivType =
     , s__InputValueDefaultValue = constRes Nothing
     }
 
-createEnumValue :: Applicative m => Text -> S__EnumValue m
+createEnumValue :: Monad m => Text -> S__EnumValue m
 createEnumValue name =
   S__EnumValue
     { s__EnumValueName = constRes name

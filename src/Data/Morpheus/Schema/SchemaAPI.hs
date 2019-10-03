@@ -19,50 +19,49 @@ import           GHC.Generics
 import           Data.Morpheus.Execution.Server.Introspect   (ObjectFields (..), TypeUpdater, introspect, resolveTypes)
 import           Data.Morpheus.Rendering.RenderIntrospection (createObjectType, render)
 import           Data.Morpheus.Schema.Schema                 (S__Schema (..), S__Type)
+import           Data.Morpheus.Types                         (constRes)
 import           Data.Morpheus.Types.GQLType                 (FALSE, GQLType (..))
 import           Data.Morpheus.Types.ID                      (ID)
 import           Data.Morpheus.Types.Internal.Data           (DataField (..), DataObject, DataTypeLib (..),
                                                               allDataTypes)
+import           Data.Morpheus.Types.Resolver                (GQLFail (..))
 
-convertTypes :: Monad m => DataTypeLib -> Either String [S__Type m]
+convertTypes :: GQLFail m => DataTypeLib -> m [S__Type m]
 convertTypes lib = traverse (`render` lib) (allDataTypes lib)
 
-buildSchemaLinkType :: Monad m => (Text, DataObject) -> S__Type m
+buildSchemaLinkType :: GQLFail m => (Text, DataObject) -> S__Type m
 buildSchemaLinkType (key', _) = createObjectType key' Nothing $ Just []
 
-findType :: Monad m => Text -> DataTypeLib -> Maybe (S__Type m)
+findType :: GQLFail m => Text -> DataTypeLib -> Maybe (S__Type m)
 findType name lib = (name, ) <$> lookup name (allDataTypes lib) >>= renderT
   where
-    renderT i =
-      case render i lib of
-        Left _  -> Nothing
-        Right x -> Just x
+    renderT input = mapGQLFail (const Nothing) Just (render input lib)
 
-initSchema :: DataTypeLib -> Either String (S__Schema (Either String))
+initSchema :: GQLFail m => DataTypeLib -> m (S__Schema m)
 initSchema lib =
   pure
     S__Schema
       { s__SchemaTypes = const $ convertTypes lib
-      , s__SchemaQueryType = const $ pure $ buildSchemaLinkType $ query lib
-      , s__SchemaMutationType = const $ pure $ buildSchemaLinkType <$> mutation lib
-      , s__SchemaSubscriptionType = const $ pure $ buildSchemaLinkType <$> subscription lib
-      , s__SchemaDirectives = const $ return []
+      , s__SchemaQueryType = constRes $ buildSchemaLinkType $ query lib
+      , s__SchemaMutationType = constRes $ buildSchemaLinkType <$> mutation lib
+      , s__SchemaSubscriptionType = constRes $ buildSchemaLinkType <$> subscription lib
+      , s__SchemaDirectives = constRes []
       }
 
 newtype TypeArgs = TypeArgs
   { name :: Text
   } deriving (Generic)
 
-data SchemaAPI = SchemaAPI
-  { __type   :: TypeArgs -> Either String (Maybe (S__Type (Either String)))
-  , __schema :: () -> Either String (S__Schema (Either String))
+data SchemaAPI m = SchemaAPI
+  { __type   :: TypeArgs -> m (Maybe (S__Type m))
+  , __schema :: () -> m (S__Schema m)
   } deriving (Generic, GQLType)
 
 hideFields :: (Text, DataField) -> (Text, DataField)
 hideFields (key', field) = (key', field {fieldHidden = True})
 
 hiddenRootFields :: [(Text, DataField)]
-hiddenRootFields = map hideFields $ fst $ objectFields (Proxy :: Proxy FALSE) (Proxy @SchemaAPI)
+hiddenRootFields = map hideFields $ fst $ objectFields (Proxy :: Proxy FALSE) (Proxy @(SchemaAPI Maybe))
 
 defaultTypes :: TypeUpdater
 defaultTypes =
@@ -76,7 +75,7 @@ defaultTypes =
     , introspect (Proxy @(S__Schema Maybe))
     ]
 
-schemaAPI :: DataTypeLib -> SchemaAPI
+schemaAPI :: GQLFail m => DataTypeLib -> SchemaAPI m
 schemaAPI lib = SchemaAPI {__type, __schema}
   where
     __type TypeArgs {name} = return $ findType name lib

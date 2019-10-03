@@ -23,15 +23,23 @@ module Data.Morpheus.Types.Resolver
   , resolver
   , mutResolver
   , toMutResolver
+  , GQLFail(..)
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
 
 -- MORPHEUS
 --
+import           Data.Morpheus.Types.Internal.Base       (Message)
 import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStream, StreamState (..), StreamT (..),
                                                           SubscribeStream)
 import           Data.Morpheus.Types.Internal.Validation (ResolveT)
+
+class Monad m =>
+      GQLFail (m :: * -> *)
+  where
+  gqlFail :: Message -> m a
+  mapGQLFail :: (Message -> b) -> (a -> b) -> m a -> b
 
 ----------------------------------------------------------------------------------------
 {--

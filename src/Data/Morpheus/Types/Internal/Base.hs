@@ -8,6 +8,7 @@ module Data.Morpheus.Types.Internal.Base
   , Position
   , EnhancedKey(..)
   , Location(..)
+  , Message
   , enhanceKeyWithNull
   ) where
 
@@ -24,6 +25,7 @@ data Location = Location
   } deriving (Show, Generic, FromJSON, ToJSON, Lift)
 
 type Key = Text
+type Message = Text
 
 type Collection a = [(Key, a)]
 
