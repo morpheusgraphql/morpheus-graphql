@@ -34,9 +34,9 @@ import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, 
 import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
 import           Data.Morpheus.Schema.SchemaAPI                      (defaultTypes, hiddenRootFields, schemaAPI)
 import           Data.Morpheus.Types.GQLType                         (GQLType (CUSTOM))
-import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), OperationKind (..))
+import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..))
 import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataTyCon (..),
-                                                                      DataTypeLib (..), initTypeLib)
+                                                                      DataTypeLib (..), OperationKind (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Stream                 (Event (..), ResponseEvent (..), ResponseStream,
                                                                       StreamState (..), StreamT (..), closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation             (SchemaValidation)
@@ -94,11 +94,11 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
       query <- parseGQL request >>= validateRequest schema FULL_VALIDATION
       return (schema, query)
     ----------------------------------------------------------
-    execOperator (schema, operation@Operation {operationKind = QUERY}) =
+    execOperator (schema, operation@Operation {operationKind = Query}) =
       StreamT $ StreamState [] <$> encodeQuery (schemaAPI schema) queryResolver operation
-    execOperator (_, operation@Operation {operationKind = MUTATION}) =
+    execOperator (_, operation@Operation {operationKind = Mutation}) =
       mapS Publish (encodeOperation mutationResolver operation)
-    execOperator (_, operation@Operation {operationKind = SUBSCRIPTION}) =
+    execOperator (_, operation@Operation {operationKind = Subscription}) =
       StreamT $ handleActions <$> closeStream (encodeOperation subscriptionResolver operation)
       where
         handleActions (_, Left gqlError) = StreamState [] (Left gqlError)

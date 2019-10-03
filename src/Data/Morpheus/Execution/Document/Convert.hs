@@ -17,7 +17,7 @@ import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Execution.Internal.Utils  (capital)
 import           Data.Morpheus.Types.Internal.Data       (ArgsType (..), DataField (..), DataField, DataFullType (..),
                                                           DataLeaf (..), DataTyCon (..), DataTypeKind (..),
-                                                          DataTypeKind (..), Operation (..), ResolverKind (..),
+                                                          DataTypeKind (..), OperationKind (..), ResolverKind (..),
                                                           TypeAlias (..))
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)

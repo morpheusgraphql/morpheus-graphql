@@ -15,7 +15,7 @@ module Data.Morpheus.Types.Internal.AST.Operation
 import           Data.Morpheus.Types.Internal.AST.RawSelection (RawSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Arguments, SelectionSet)
 import           Data.Morpheus.Types.Internal.Base             (Collection, Key, Position)
-import           Data.Morpheus.Types.Internal.Data             (WrapperD)
+import           Data.Morpheus.Types.Internal.Data             (OperationKind, WrapperD)
 import           Data.Morpheus.Types.Internal.TH               (apply, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value            (Value)
 import           Language.Haskell.TH.Syntax                    (Lift (..))
@@ -27,12 +27,6 @@ type ValidVariables = Collection (Variable Value)
 type ValidOperation = Operation Arguments SelectionSet
 
 type RawOperation = Operation VariableDefinitions RawSelectionSet
-
-data OperationKind
-  = QUERY
-  | MUTATION
-  | SUBSCRIPTION
-  deriving (Show, Lift)
 
 data Operation args sel = Operation
   { operationName      :: Key
