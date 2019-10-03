@@ -6,15 +6,12 @@
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
 
 module Data.Morpheus.Schema.Schema
-  ( initSchema
-  , findType
-  , S__Schema(..)
+  ( S__Schema(..)
   , S__Type(..)
   , S__Field(..)
   , S__EnumValue(..)
@@ -25,8 +22,7 @@ import           Data.Text                                (Text)
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Document.Compile (gqlDocumentNamespace)
-import           Data.Morpheus.Schema.TypeKind
-import           Data.Morpheus.Types.Internal.Data        (DataObject, DataTypeLib (..), allDataTypes)
+import           Data.Morpheus.Schema.TypeKind            (TypeKind)
 
 type S__TypeKind = TypeKind
 
@@ -115,28 +111,3 @@ enum __DirectiveLocation {
 }
 
 |]
-
-convertTypes :: DataTypeLib -> Either String [S__Type m]
-convertTypes lib = traverse (`renderType` lib) (allDataTypes lib)
-
-buildSchemaLinkType :: (Text, DataObject) -> S__Type m
-buildSchemaLinkType (key', _) = createObjectType key' Nothing $ Just []
-
-findType :: Text -> DataTypeLib -> Maybe (S__Type m)
-findType name lib = (name, ) <$> lookup name (allDataTypes lib) >>= renderT
-  where
-    renderT i =
-      case renderType i lib of
-        Left _  -> Nothing
-        Right x -> Just x
-
-initSchema :: DataTypeLib -> Either String (S__Schema (Either String))
-initSchema lib =
-  pure
-    S__Schema
-      { s__SchemaTypes = const $ convertTypes lib
-      , s__SchemaQueryType = const $ pure $ buildSchemaLinkType $ query lib
-      , s__SchemaMutationType = const $ pure $ buildSchemaLinkType <$> mutation lib
-      , s__SchemaSubscriptionType = const $ pure $ buildSchemaLinkType <$> subscription lib
-      , s__SchemaDirectives = const $ return []
-      }
