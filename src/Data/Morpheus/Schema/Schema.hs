@@ -11,7 +11,9 @@
 {-# LANGUAGE TypeSynonymInstances  #-}
 
 module Data.Morpheus.Schema.Schema
-  ( S__Schema(..)
+  ( Root(..)
+  , Root__typeArgs(..)
+  , S__Schema(..)
   , S__Type(..)
   , S__Field(..)
   , S__EnumValue(..)
@@ -110,4 +112,8 @@ enum __DirectiveLocation {
   INPUT_FIELD_DEFINITION
 }
 
+  type Root  {
+    __type(name: String!): __Type
+    __schema : __Schema!
+  }
 |]

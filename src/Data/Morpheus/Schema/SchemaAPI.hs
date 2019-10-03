@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveAnyClass   #-}
-{-# LANGUAGE DeriveGeneric    #-}
 {-# LANGUAGE NamedFieldPuns   #-}
 {-# LANGUAGE TupleSections    #-}
 {-# LANGUAGE TypeApplications #-}
@@ -13,14 +11,13 @@ module Data.Morpheus.Schema.SchemaAPI
 
 import           Data.Proxy
 import           Data.Text                                   (Text)
-import           GHC.Generics
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Introspect   (ObjectFields (..), TypeUpdater, introspect, resolveTypes)
 import           Data.Morpheus.Rendering.RenderIntrospection (createObjectType, render)
-import           Data.Morpheus.Schema.Schema                 (S__Schema (..), S__Type)
+import           Data.Morpheus.Schema.Schema                 (Root (..), Root__typeArgs (..), S__Schema (..), S__Type)
 import           Data.Morpheus.Types                         (constRes)
-import           Data.Morpheus.Types.GQLType                 (FALSE, GQLType (..))
+import           Data.Morpheus.Types.GQLType                 (TRUE)
 import           Data.Morpheus.Types.ID                      (ID)
 import           Data.Morpheus.Types.Internal.Data           (DataField (..), DataObject, DataTypeLib (..),
                                                               allDataTypes)
@@ -48,20 +45,11 @@ initSchema lib =
       , s__SchemaDirectives = constRes []
       }
 
-newtype TypeArgs = TypeArgs
-  { name :: Text
-  } deriving (Generic)
-
-data SchemaAPI m = SchemaAPI
-  { __type   :: TypeArgs -> m (Maybe (S__Type m))
-  , __schema :: () -> m (S__Schema m)
-  } deriving (Generic, GQLType)
-
 hideFields :: (Text, DataField) -> (Text, DataField)
 hideFields (key', field) = (key', field {fieldHidden = True})
 
 hiddenRootFields :: [(Text, DataField)]
-hiddenRootFields = map hideFields $ fst $ objectFields (Proxy :: Proxy FALSE) (Proxy @(SchemaAPI Maybe))
+hiddenRootFields = map hideFields $ fst $ objectFields (Proxy :: Proxy TRUE) (Proxy @(Root Maybe))
 
 defaultTypes :: TypeUpdater
 defaultTypes =
@@ -75,8 +63,8 @@ defaultTypes =
     , introspect (Proxy @(S__Schema Maybe))
     ]
 
-schemaAPI :: GQLFail m => DataTypeLib -> SchemaAPI m
-schemaAPI lib = SchemaAPI {__type, __schema}
+schemaAPI :: GQLFail m => DataTypeLib -> m (Root m)
+schemaAPI lib = pure $ Root {root__type, root__schema}
   where
-    __type TypeArgs {name} = return $ findType name lib
-    __schema _ = initSchema lib
+    root__type (Root__typeArgs name) = return $ findType name lib
+    root__schema _ = initSchema lib

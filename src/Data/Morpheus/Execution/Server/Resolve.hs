@@ -27,11 +27,12 @@ import           Data.Proxy                                          (Proxy (..)
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                           (badRequestError, renderErrors)
-import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, EncodeMutCon, EncodeSubCon,
+import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, EncodeMutCon, EncodeSubCon, OBJ_RES,
                                                                       encodeOperation, encodeQuery)
 import           Data.Morpheus.Execution.Server.Introspect           (IntroCon, ObjectFields (..), resolveTypes)
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, publishUpdates)
 import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
+import           Data.Morpheus.Schema.Schema                         (Root)
 import           Data.Morpheus.Schema.SchemaAPI                      (defaultTypes, hiddenRootFields, schemaAPI)
 import           Data.Morpheus.Types.GQLType                         (GQLType (CUSTOM))
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), OperationKind (..))
@@ -42,18 +43,22 @@ import           Data.Morpheus.Types.Internal.Stream                 (Event (..)
 import           Data.Morpheus.Types.Internal.Validation             (SchemaValidation)
 import           Data.Morpheus.Types.Internal.Value                  (Value (..))
 import           Data.Morpheus.Types.IO                              (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver                        (GQLRootResolver (..))
+import           Data.Morpheus.Types.Resolver                        (GQLFail (..), GQLRootResolver (..))
 import           Data.Morpheus.Validation.Internal.Utils             (VALIDATION_MODE (..))
 import           Data.Morpheus.Validation.Query.Validation           (validateRequest)
+import           Data.Typeable                                       (Typeable)
 
 type EventCon event = Eq event
 
 type RootResCon m event cont query mutation subscription
    = ( EventCon event
+     , Typeable m
+     , GQLFail m
       -- Introspection
      , IntroCon query
      , IntroCon mutation
      , IntroCon subscription
+     , OBJ_RES m (Root m) Value
      -- Resolving
      , EncodeCon m query Value
      , EncodeMutCon m event cont mutation
@@ -95,7 +100,10 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
       return (schema, query)
     ----------------------------------------------------------
     execOperator (schema, operation@Operation {operationKind = QUERY}) =
-      StreamT $ StreamState [] <$> encodeQuery (schemaAPI schema) queryResolver operation
+      StreamT $
+      StreamState [] <$> do
+        scApi <- schemaAPI schema
+        encodeQuery scApi queryResolver operation
     execOperator (_, operation@Operation {operationKind = MUTATION}) =
       mapS Publish (encodeOperation mutationResolver operation)
     execOperator (_, operation@Operation {operationKind = SUBSCRIPTION}) =
