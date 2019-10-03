@@ -14,103 +14,111 @@
 module Data.Morpheus.Schema.Schema
   ( initSchema
   , findType
-  , Schema
-  , Type
+  , S__Schema
   ) where
 
 import           Data.Text                                (Text)
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Document.Compile (gqlDocumentNamespace)
-import           Data.Morpheus.Schema.DirectiveLocation
+import           Data.Morpheus.Schema.TypeKind
 import           Data.Morpheus.Types.Internal.Data        (DataObject, DataTypeLib (..), allDataTypes)
 
-type Boolean = Bool
+type S__TypeKind = TypeKind
 
 [gqlDocumentNamespace|
+type __Schema {
+  types: [__Type!]!
+  queryType: __Type!
+  mutationType: __Type
+  subscriptionType: __Type
+  directives: [__Directive!]!
+}
 
-  type Schema {
-    types: [Type!]!
-    queryType: Type!
-    mutationType: Type
-    subscriptionType: Type
-    directives: [Directive!]!
-  }
+type __Type {
+  kind: __TypeKind!
+  name: String
+  description: String
 
-  type Type {
-    kind: TypeKind!
-    name: String
-    description: String
+  # OBJECT and INTERFACE only
+  fields(includeDeprecated: Boolean ): [__Field!]
 
-    # OBJECT and INTERFACE only
-    fields(includeDeprecated: Boolean ): [Field!]
+  # OBJECT only
+  interfaces: [__Type!]
 
-    # OBJECT only
-    interfaces: [Type!]
+  # INTERFACE and UNION only
+  possibleTypes: [__Type!]
 
-    # INTERFACE and UNION only
-    possibleTypes: [Type!]
+  # ENUM only
+  enumValues(includeDeprecated: Boolean): [__EnumValue!]
 
-    # ENUM only
-    enumValues(includeDeprecated: Boolean ): [EnumValue!]
+  # INPUT_OBJECT only
+  inputFields: [__InputValue!]
 
-    # INPUT_OBJECT only
-    inputFields: [InputValue!]
+  # NON_NULL and LIST only
+  ofType: __Type
+}
 
-    # NON_NULL and LIST only
-    ofType: Type
-  }
+type __Field {
+  name: String!
+  description: String
+  args: [__InputValue!]!
+  type: __Type!
+  isDeprecated: Boolean!
+  deprecationReason: String
+}
 
-  type Field {
-    name: String!
-    description: String
-    args: [InputValue!]!
-    type: Type!
-    isDeprecated: Boolean!
-    deprecationReason: String
-  }
+type __InputValue {
+  name: String!
+  description: String
+  type: __Type!
+  defaultValue: String
+}
 
-  type InputValue {
-    name: String!
-    description: String
-    type: Type!
-    defaultValue: String
-  }
+type __EnumValue {
+  name: String!
+  description: String
+  isDeprecated: Boolean!
+  deprecationReason: String
+}
 
-  type EnumValue {
-    name: String!
-    description: String
-    isDeprecated: Boolean!
-    deprecationReason: String
-  }
+type __Directive {
+  name: String!
+  description: String
+  locations: [__DirectiveLocation!]!
+  args: [__InputValue!]!
+}
 
-  enum TypeKind {
-    SCALAR
-    OBJECT
-    INTERFACE
-    UNION
-    ENUM
-    INPUT_OBJECT
-    LIST
-    NON_NULL
-  }
-
-  type Directive {
-    name: String!
-    description: String
-    locations: [DirectiveLocation!]!
-    args: [InputValue!]!
-  }
+enum __DirectiveLocation {
+  QUERY
+  MUTATION
+  SUBSCRIPTION
+  FIELD
+  FRAGMENT_DEFINITION
+  FRAGMENT_SPREAD
+  INLINE_FRAGMENT
+  SCHEMA
+  SCALAR
+  OBJECT
+  FIELD_DEFINITION
+  ARGUMENT_DEFINITION
+  INTERFACE
+  UNION
+  ENUM
+  ENUM_VALUE
+  INPUT_OBJECT
+  INPUT_FIELD_DEFINITION
+}
 
 |]
 
-convertTypes :: DataTypeLib -> Either String [Type m]
+convertTypes :: DataTypeLib -> Either String [S__Type m]
 convertTypes lib = traverse (`renderType` lib) (allDataTypes lib)
 
-buildSchemaLinkType :: (Text, DataObject) -> Type m
+buildSchemaLinkType :: (Text, DataObject) -> S__Type m
 buildSchemaLinkType (key', _) = createObjectType key' Nothing $ Just []
 
-findType :: Text -> DataTypeLib -> Maybe (Type m)
+findType :: Text -> DataTypeLib -> Maybe (S__Type m)
 findType name lib = (name, ) <$> lookup name (allDataTypes lib) >>= renderT
   where
     renderT i =
@@ -118,13 +126,13 @@ findType name lib = (name, ) <$> lookup name (allDataTypes lib) >>= renderT
         Left _  -> Nothing
         Right x -> Just x
 
-initSchema :: DataTypeLib -> Either String (Schema (Either String))
+initSchema :: DataTypeLib -> Either String (S__Schema (Either String))
 initSchema lib =
   pure
-    Schema
-      { schemaTypes = const $ convertTypes lib
-      , schemaQueryType = const $ pure $ buildSchemaLinkType $ query lib
-      , schemaMutationType = const $ pure $ buildSchemaLinkType <$> mutation lib
-      , schemaSubscriptionType = const $ pure $ buildSchemaLinkType <$> subscription lib
-      , schemaDirectives = const $ return []
+    S__Schema
+      { s__SchemaTypes = const $ convertTypes lib
+      , s__SchemaQueryType = const $ pure $ buildSchemaLinkType $ query lib
+      , s__SchemaMutationType = const $ pure $ buildSchemaLinkType <$> mutation lib
+      , s__SchemaSubscriptionType = const $ pure $ buildSchemaLinkType <$> subscription lib
+      , s__SchemaDirectives = const $ return []
       }
