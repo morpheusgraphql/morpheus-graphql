@@ -1,9 +1,15 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections     #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TupleSections         #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 
 module Data.Morpheus.Schema.Schema
   ( initSchema
@@ -12,36 +18,99 @@ module Data.Morpheus.Schema.Schema
   , Type
   ) where
 
-import           Data.Text                                   (Text)
-import           GHC.Generics                                (Generic)
+import           Data.Text                                (Text)
 
 -- MORPHEUS
-import           Data.Morpheus.Kind                          (OBJECT)
-import           Data.Morpheus.Rendering.RenderIntrospection (Type, createObjectType, renderType)
-import           Data.Morpheus.Schema.Directive              (Directive)
-import           Data.Morpheus.Types.GQLType                 (GQLType (KIND, __typeName, __typeVisibility))
-import           Data.Morpheus.Types.Internal.Data           (DataObject, DataTypeLib (..), allDataTypes)
+import           Data.Morpheus.Execution.Document.Compile (gqlDocumentNamespace)
+import           Data.Morpheus.Schema.DirectiveLocation
+import           Data.Morpheus.Types.Internal.Data        (DataObject, DataTypeLib (..), allDataTypes)
 
-instance GQLType Schema where
-  type KIND Schema = OBJECT
-  __typeName = const "__Schema"
-  __typeVisibility = const False
+type Boolean = Bool
 
-data Schema = Schema
-  { types            :: [Type]
-  , queryType        :: Type
-  , mutationType     :: Maybe Type
-  , subscriptionType :: Maybe Type
-  , directives       :: [Directive Type]
-  } deriving (Generic)
+[gqlDocumentNamespace|
 
-convertTypes :: DataTypeLib -> Either String [Type]
+  type Schema {
+    types: [Type!]!
+    queryType: Type!
+    mutationType: Type
+    subscriptionType: Type
+    directives: [Directive!]!
+  }
+
+  type Type {
+    kind: TypeKind!
+    name: String
+    description: String
+
+    # OBJECT and INTERFACE only
+    fields(includeDeprecated: Boolean ): [Field!]
+
+    # OBJECT only
+    interfaces: [Type!]
+
+    # INTERFACE and UNION only
+    possibleTypes: [Type!]
+
+    # ENUM only
+    enumValues(includeDeprecated: Boolean ): [EnumValue!]
+
+    # INPUT_OBJECT only
+    inputFields: [InputValue!]
+
+    # NON_NULL and LIST only
+    ofType: Type
+  }
+
+  type Field {
+    name: String!
+    description: String
+    args: [InputValue!]!
+    type: Type!
+    isDeprecated: Boolean!
+    deprecationReason: String
+  }
+
+  type InputValue {
+    name: String!
+    description: String
+    type: Type!
+    defaultValue: String
+  }
+
+  type EnumValue {
+    name: String!
+    description: String
+    isDeprecated: Boolean!
+    deprecationReason: String
+  }
+
+  enum TypeKind {
+    SCALAR
+    OBJECT
+    INTERFACE
+    UNION
+    ENUM
+    INPUT_OBJECT
+    LIST
+    NON_NULL
+  }
+
+  type Directive {
+    name: String!
+    description: String
+    locations: [DirectiveLocation!]!
+    args: [InputValue!]!
+  }
+
+|]
+
+convertTypes :: DataTypeLib -> Either String [Type m]
 convertTypes lib = traverse (`renderType` lib) (allDataTypes lib)
 
-buildSchemaLinkType :: (Text, DataObject) -> Type
+buildSchemaLinkType :: (Text, DataObject) -> Type m
 buildSchemaLinkType (key', _) = createObjectType key' Nothing $ Just []
 
-findType :: Text -> DataTypeLib -> Maybe Type
+findType :: Text -> DataTypeLib -> Maybe (Type m)
 findType name lib = (name, ) <$> lookup name (allDataTypes lib) >>= renderT
   where
     renderT i =
@@ -49,14 +118,13 @@ findType name lib = (name, ) <$> lookup name (allDataTypes lib) >>= renderT
         Left _  -> Nothing
         Right x -> Just x
 
-initSchema :: DataTypeLib -> Either String Schema
-initSchema lib = do
-  types <- convertTypes lib
-  pure $
+initSchema :: DataTypeLib -> Either String (Schema (Either String))
+initSchema lib =
+  pure
     Schema
-      { types
-      , queryType = buildSchemaLinkType $ query lib
-      , mutationType = buildSchemaLinkType <$> mutation lib
-      , subscriptionType = buildSchemaLinkType <$> subscription lib
-      , directives = []
+      { schemaTypes = const $ convertTypes lib
+      , schemaQueryType = const $ pure $ buildSchemaLinkType $ query lib
+      , schemaMutationType = const $ pure $ buildSchemaLinkType <$> mutation lib
+      , schemaSubscriptionType = const $ pure $ buildSchemaLinkType <$> subscription lib
+      , schemaDirectives = const $ return []
       }
