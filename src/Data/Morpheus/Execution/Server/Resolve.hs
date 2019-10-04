@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.Internal.Stream                 (Event (..)
 import           Data.Morpheus.Types.Internal.Validation             (Validation)
 import           Data.Morpheus.Types.Internal.Value                  (Value (..))
 import           Data.Morpheus.Types.IO                              (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver                        (GQLFail (..), GQLRootResolver (..))
+import           Data.Morpheus.Types.Resolver                        (GQLRootResolver (..))
 import           Data.Morpheus.Validation.Internal.Utils             (VALIDATION_MODE (..))
 import           Data.Morpheus.Validation.Query.Validation           (validateRequest)
 import           Data.Typeable                                       (Typeable)
@@ -53,7 +53,6 @@ type EventCon event = Eq event
 type RootResCon m event cont query mutation subscription
    = ( EventCon event
      , Typeable m
-     , GQLFail Validation
       -- Introspection
      , IntroCon query
      , IntroCon mutation
