@@ -28,8 +28,6 @@ module Data.Morpheus.Types.Resolver
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
-
---import           Data.Morpheus.Error.Utils               (globalErrorMessage)
 import           Data.Text                               (pack, unpack)
 
 -- MORPHEUS
