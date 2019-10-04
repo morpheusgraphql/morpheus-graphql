@@ -93,7 +93,7 @@ api = interpreter rootResolver
 
 Template Haskell Generates types: `Query` , `Deity`, `DeityArgs`, that can be used by `rootResolver`
 
-`importGQLDocumentWithNamespace` will generate Types with namespaced fields. if you dont need napespacing use `importGQLDocument`
+`importGQLDocumentWithNamespace` will generate Types with namespaced fields. if you don't need napespacing use `importGQLDocument`
 
 ### with Native Haskell Types
 
@@ -342,11 +342,11 @@ rootResolver =
   where
     fetchDeity = resolver $ dbDeity "" Nothing
     createDeity _args = toMutResolver [Event {channels = [ChannelA], content = ContentA 1}] fetchDeity
-    newDeity _args = Event {channels = [ChannelA], content}
+    newDeity _args = SubResolver {subChannels = [ChannelA], subResolver}
       where
-        content (Event [ChannelA] (ContentA _value)) = resolver $ dbDeity "" Nothing -- resolve New State
-        content (Event [ChannelA] (ContentB value))  = resolver $ dbDeity value Nothing -- resolve New State
-        content _                                    = fetchDeity -- Resolve Old State
+        subResolver (Event [ChannelA] (ContentA _value)) = resolver $ dbDeity "" Nothing -- resolve New State
+        subResolver (Event [ChannelA] (ContentB value))  = resolver $ dbDeity value Nothing -- resolve New State
+        subResolver _                                    = fetchDeity -- Resolve Old State
 ```
 
 ## Morpheus `GraphQL Client` with Template haskell QuasiQuotes
