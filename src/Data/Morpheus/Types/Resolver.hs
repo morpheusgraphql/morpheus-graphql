@@ -52,10 +52,6 @@ instance Monad m => GQLFail Resolver m where
       mapCases (Right x) = fSuc x
       mapCases (Left x)  = fFail $ pack $ show x
 
---instance GQLFail Validation where
---  gqlFail = Left . globalErrorMessage
---  mapGQLFail fFail _ (Left x) = fFail $ pack $ show x
---  mapGQLFail _ fSuc (Right x) = fSuc x
 ----------------------------------------------------------------------------------------
 {--
 newtype SubResolveT m e c a = SubResolveT
