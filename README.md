@@ -14,7 +14,7 @@ Just open an issue here on GitHub, or join [our Slack channel](https://morpheus-
 
 To get started with Morpheus, you first need to add it to your project's dependencies, as follows (assuming you're using hpack):
 
-package.yml
+_package.yml_
 
 ```yaml
 dependencies:
@@ -23,7 +23,7 @@ dependencies:
 
 Additionally, you should tell stack which version to pick:
 
-stack.yml
+_stack.yml_
 
 ```yaml
 resolver: lts-13.24
@@ -38,32 +38,60 @@ As Morpheus is quite new, make sure stack can find morpheus-graphql by running `
 
 ### Building your first GrqphQL API
 
-### with GraphQL syntax and Haskell QuasiQuotes
+### with GraphQL syntax
+
+_schema.gql_
+
+```gql
+type Query {
+  deity(name: String!): Deity!
+}
+
+type Deity {
+  name: String!
+  power: String
+}
+```
+
+`importGQLDocumentWithNamespace` will generate Types namespaced fields. if you dont need napespacing use `importGQLDocument`
+
+_API.hs_
 
 ```haskell
 
-[gqlDocument|
-  type Query {
-    deity (uid: String!): Deity!
-  }
+-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
 
-  type Deity {
-    name  : String!
-    power : String
-  }
-|]
+module API (api) where
 
-rootResolver :: GQLRootResolver IO () () Query () ()
+import qualified Data.ByteString.Lazy.Char8 as B
+
+import           Data.Morpheus              (interpreter)
+import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
+import           Data.Morpheus.Types        (GQLRootResolver (..), IORes)
+import           Data.Text                  (Text)
+
+importGQLDocumentWithNamespace "examples/TH/simple.gql"
+
+rootResolver :: GQLRootResolver IO () () (Query IORes) () ()
 rootResolver =
-  GQLRootResolver {queryResolver = return Query {deity}, mutationResolver = pure (), subscriptionResolver = pure ()}
+  GQLRootResolver
+    {queryResolver = return Query {queryDeity}, mutationResolver = pure (), subscriptionResolver = pure ()}
   where
-    deity DeityArgs {uid} = pure Deity {name, power}
+    queryDeity QueryDeityArgs {queryDeityArgsName} = pure Deity {deityName, deityPower}
       where
-        name _ = pure "Morpheus"
-        power _ = pure (Just "Shapeshifting")
+        deityName _ = pure "Morpheus"
+        deityPower _ = pure (Just "Shapeshifting")
 
-gqlApi :: ByteString -> IO ByteString
-gqlApi = interpreter rootResolver
+api :: ByteString -> IO ByteString
+api = interpreter rootResolver
 ```
 
 Template Haskell Generates types: `Query` , `Deity`, `DeityArgs`, that can be used by `rootResolver`
