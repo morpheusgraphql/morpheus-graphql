@@ -35,7 +35,8 @@ import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
 import           Data.Morpheus.Schema.Schema                         (Root)
 import           Data.Morpheus.Schema.SchemaAPI                      (defaultTypes, hiddenRootFields, schemaAPI)
 import           Data.Morpheus.Types.GQLType                         (GQLType (CUSTOM))
-import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), OperationKind (..))
+import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), OperationKind (..),
+                                                                      ValidOperation)
 import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataTyCon (..),
                                                                       DataTypeLib (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Stream                 (Event (..), ResponseEvent (..), ResponseStream,
@@ -43,7 +44,7 @@ import           Data.Morpheus.Types.Internal.Stream                 (Event (..)
 import           Data.Morpheus.Types.Internal.Validation             (Validation)
 import           Data.Morpheus.Types.Internal.Value                  (Value (..))
 import           Data.Morpheus.Types.IO                              (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver                        (GQLRootResolver (..))
+import           Data.Morpheus.Types.Resolver                        (GQLRootResolver (..), ResolveT, ResponseT)
 import           Data.Morpheus.Validation.Internal.Utils             (VALIDATION_MODE (..))
 import           Data.Morpheus.Validation.Query.Validation           (validateRequest)
 import           Data.Typeable                                       (Typeable)
@@ -57,7 +58,7 @@ type RootResCon m event cont query mutation subscription
      , IntroCon query
      , IntroCon mutation
      , IntroCon subscription
-     , OBJ_RES m (Root Validation) Value
+     , OBJ_RES m (Root (ResolveT m)) Value
      -- Resolving
      , EncodeCon m query Value
      , EncodeMutCon m event cont mutation
@@ -83,28 +84,37 @@ statelessResolver ::
 statelessResolver root = fmap snd . closeStream . streamResolver root
 
 streamResolver ::
-     (Monad m, RootResCon m s cont query mut sub)
-  => GQLRootResolver m s cont query mut sub
+     (Monad m, RootResCon m event cont query mut sub)
+  => GQLRootResolver m event cont query mut sub
   -> GQLRequest
-  -> ResponseStream m s cont GQLResponse
+  -> ResponseStream m event cont GQLResponse
 streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
-  renderResponse <$> runExceptT (ExceptT (pure validRequest) >>= ExceptT . execOperator)
+  renderResponse <$> runExceptT (validRequest >>= execOperator)
+  ------------------------------------------------------------
   where
     renderResponse (Left errors) = Errors $ renderErrors errors
     renderResponse (Right value) = Data value
     ---------------------------------------------------------
-    validRequest = do
-      schema <- fullSchema $ Identity root
-      query <- parseGQL request >>= validateRequest schema FULL_VALIDATION
-      scApi <- schemaAPI schema
-      return (scApi, query)
+    validRequest :: Monad m => ResponseT m event cont (DataTypeLib, ValidOperation)
+    validRequest =
+      ExceptT $
+      pure $ do
+        schema <- fullSchema $ Identity root
+        query <- parseGQL request >>= validateRequest schema FULL_VALIDATION
+        Right (schema, query)
     ----------------------------------------------------------
+    --execOperator :: Monad m => (DataTypeLib, ValidOperation) -> ResponseT m event cont Value
     execOperator (schema, operation@Operation {operationKind = QUERY}) =
-      StreamT $ StreamState [] <$> encodeQuery schema queryResolver operation
+      ExceptT $
+      StreamT
+        (StreamState [] <$>
+         runExceptT
+           (do schemaRes <- schemaAPI schema
+               ExceptT (encodeQuery schemaRes queryResolver operation)))
     execOperator (_, operation@Operation {operationKind = MUTATION}) =
-      mapS Publish (encodeOperation mutationResolver operation)
+      ExceptT $ mapS Publish (encodeOperation mutationResolver operation)
     execOperator (_, operation@Operation {operationKind = SUBSCRIPTION}) =
-      StreamT $ handleActions <$> closeStream (encodeOperation subscriptionResolver operation)
+      ExceptT $ StreamT $ handleActions <$> closeStream (encodeOperation subscriptionResolver operation)
       where
         handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
         handleActions (channels, Right subResolver) =
