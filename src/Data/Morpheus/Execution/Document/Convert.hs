@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeOperators       #-}
 
 module Data.Morpheus.Execution.Document.Convert
-  ( renderTHTypes
+  ( renderTHTypes , sysTypes
   ) where
 
 import           Data.Semigroup                          ((<>))
@@ -21,6 +21,10 @@ import           Data.Morpheus.Types.Internal.Data       (ArgsType (..), DataFie
                                                           TypeAlias (..))
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
+
+sysTypes :: [Text]
+sysTypes =
+  ["__Schema", "__Type", "__Directive", "__TypeKind", "__Field", "__DirectiveLocation", "__InputValue", "__EnumValue"]
 
 renderTHTypes :: Bool -> [(Text, DataFullType)] -> Validation [GQLTypeD]
 renderTHTypes namespace lib = traverse renderTHType lib
@@ -42,17 +46,12 @@ renderTHTypes namespace lib = traverse renderTHType lib
         -------------------------------------------
         genFieldTypeName = genTypeName
         ------------------------------
-        genTypeName "String"              = "Text"
-        genTypeName "Boolean"             = "Bool"
-        genTypeName "__Schema"            = "S__Schema"
-        genTypeName "__Type"              = "S__Type"
-        genTypeName "__Directive"         = "S__Directive"
-        genTypeName "__TypeKind"          = "S__TypeKind"
-        genTypeName "__Field"             = "S__Field"
-        genTypeName "__DirectiveLocation" = "S__DirectiveLocation"
-        genTypeName "__InputValue"        = "S__InputValue"
-        genTypeName "__EnumValue"         = "S__EnumValue"
-        genTypeName name                  = name
+        --genTypeName :: Text -> Text
+        genTypeName "String" = "Text"
+        genTypeName "Boolean" = "Bool"
+        genTypeName name
+          | name `elem` sysTypes = "S" <> name
+        genTypeName name = name
         ----------------------------------------
         sysName = unpack . genTypeName
         ---------------------------------------------------------------------------------------------

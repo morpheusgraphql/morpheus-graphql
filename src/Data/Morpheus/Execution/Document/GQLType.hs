@@ -11,6 +11,8 @@ module Data.Morpheus.Execution.Document.GQLType
 import           Data.Text                                (pack)
 import           Language.Haskell.TH
 
+import           Data.Morpheus.Execution.Document.Convert (sysTypes)
+
 --
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Declare (tyConArgs)
@@ -22,13 +24,9 @@ import           Data.Morpheus.Types.Internal.DataD       (GQLTypeD (..), TypeD 
 import           Data.Morpheus.Types.Internal.TH          (instanceHeadT, typeT)
 import           Data.Typeable                            (Typeable)
 
-sysTypes :: [String]
-sysTypes =
-  ["__Schema", "__Type", "__Directive", "__TypeKind", "__Field", "__DirectiveLocation", "__InputValue", "__EnumValue"]
-
 genTypeName :: String -> String
 genTypeName ('S':name)
-  | name `elem` sysTypes = name
+  | pack name `elem` sysTypes = name
 genTypeName name = name
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
