@@ -1,3 +1,5 @@
+## [0.3.1] - \*.2019
+
 ## [0.3.0] - 04.10.2019
 
 ### Added
@@ -58,7 +60,7 @@
   }
 
   data DeityNameArgs = DeityNameArgs {
-    deityNameId :: Int
+    deityNameArgsId :: Int
   }
   ```
 
