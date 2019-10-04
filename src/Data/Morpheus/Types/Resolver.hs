@@ -44,6 +44,10 @@ class Monad m =>
   gqlFail :: Message -> m a
   mapGQLFail :: (Message -> b) -> (a -> b) -> m a -> b
 
+
+instance Monad m => GQLFail (Resolver m) where
+
+
 instance Monad m => GQLFail (ResolveT m) where
   gqlFail = ExceptT . pure . Left . globalErrorMessage
   --mapGQLFail fFail _ (Left x) = fFail $ pack $ show x

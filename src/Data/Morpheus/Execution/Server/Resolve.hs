@@ -44,7 +44,7 @@ import           Data.Morpheus.Types.Internal.Stream                 (Event (..)
 import           Data.Morpheus.Types.Internal.Validation             (Validation)
 import           Data.Morpheus.Types.Internal.Value                  (Value (..))
 import           Data.Morpheus.Types.IO                              (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver                        (GQLRootResolver (..), ResolveT, ResponseT)
+import           Data.Morpheus.Types.Resolver                        (GQLRootResolver (..), Resolver, ResponseT)
 import           Data.Morpheus.Validation.Internal.Utils             (VALIDATION_MODE (..))
 import           Data.Morpheus.Validation.Query.Validation           (validateRequest)
 import           Data.Typeable                                       (Typeable)
@@ -58,7 +58,7 @@ type RootResCon m event cont query mutation subscription
      , IntroCon query
      , IntroCon mutation
      , IntroCon subscription
-     , OBJ_RES m (Root (ResolveT m)) Value
+     , OBJ_RES m (Root (Resolver m)) Value
      -- Resolving
      , EncodeCon m query Value
      , EncodeMutCon m event cont mutation
@@ -103,7 +103,6 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
         query <- parseGQL request >>= validateRequest schema FULL_VALIDATION
         Right (schema, query)
     ----------------------------------------------------------
-    --execOperator :: Monad m => (DataTypeLib, ValidOperation) -> ResponseT m event cont Value
     execOperator (schema, operation@Operation {operationKind = QUERY}) =
       ExceptT $
       StreamT

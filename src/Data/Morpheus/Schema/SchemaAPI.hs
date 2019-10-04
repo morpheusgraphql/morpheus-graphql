@@ -21,7 +21,7 @@ import           Data.Morpheus.Types.GQLType                 (CUSTOM)
 import           Data.Morpheus.Types.ID                      (ID)
 import           Data.Morpheus.Types.Internal.Data           (DataField (..), DataObject, DataTypeLib (..),
                                                               allDataTypes)
-import           Data.Morpheus.Types.Resolver                (GQLFail (..))
+import           Data.Morpheus.Types.Resolver                (GQLFail (..), ResolveT, Resolver)
 
 convertTypes :: GQLFail m => DataTypeLib -> m [S__Type m]
 convertTypes lib = traverse (`render` lib) (allDataTypes lib)
@@ -63,7 +63,7 @@ defaultTypes =
     , introspect (Proxy @(S__Schema Maybe))
     ]
 
-schemaAPI :: GQLFail m => DataTypeLib -> m (Root m)
+schemaAPI :: Monad m => DataTypeLib -> ResolveT m (Root (Resolver m))
 schemaAPI lib = pure $ Root {root__type, root__schema}
   where
     root__type (Root__typeArgs name) = return $ findType name lib
