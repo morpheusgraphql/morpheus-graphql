@@ -32,7 +32,7 @@
 
   ```haskell
      data Deity m = Deity {
-       name :: () -> m String
+       name :: () -> m Text,
        power :: () -> m (Power m)
      }
   ```
@@ -55,8 +55,8 @@
   $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
 
   data Deity m = Deity {
-    DeityName :: DeityNameArgs -> m String
-    DeityPower :: () -> m (Power m)
+    deityName :: DeityNameArgs -> m Text,
+    deityPower :: () -> m (Power m)
   }
 
   data DeityNameArgs = DeityNameArgs {
