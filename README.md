@@ -53,8 +53,6 @@ type Deity {
 }
 ```
 
-`importGQLDocumentWithNamespace` will generate Types with namespaced fields. if you dont need napespacing use `importGQLDocument`
-
 _API.hs_
 
 ```haskell
@@ -95,8 +93,7 @@ api = interpreter rootResolver
 
 Template Haskell Generates types: `Query` , `Deity`, `DeityArgs`, that can be used by `rootResolver`
 
-generated types are not compatible with `Mutation`, `Subscription`,
-they can be used only in `Query`, but this issue will be fixed in next release
+`importGQLDocumentWithNamespace` will generate Types with namespaced fields. if you dont need napespacing use `importGQLDocument`
 
 ### with Native Haskell Types
 
@@ -106,7 +103,7 @@ which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` 
 ```haskell
 data Query = Query
   { deity :: DeityArgs -> IORes Deity
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 
 data Deity = Deity
   { fullName :: Text         -- Non-Nullable Field
@@ -287,7 +284,7 @@ Just exchange deriving `GQLQuery` for `GQLMutation` and declare them separately 
 ```haskell
 newtype Mutation = Mutation
   { createDeity :: Form -> IOMutRes Deity
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 
 createDeityMutation :: Form -> IOMutRes Deity
 createDeityMutation = ...
@@ -325,15 +322,15 @@ data Content
 
 newtype Query = Query
   { deity :: () -> IORes Deity
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 
 newtype Mutation = Mutation
   { createDeity :: () -> IOMutRes Channel Content Deity
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 
 newtype Subscription = Subscription
   { newDeity :: () -> IOSubRes Channel Content Deity
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 
 rootResolver :: GQLRootResolver IO Channel Content Query Mutation Subscription
 rootResolver =
