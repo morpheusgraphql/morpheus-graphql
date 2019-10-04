@@ -16,6 +16,7 @@ module Data.Morpheus.Execution.Server.Resolve
   ) where
 
 import qualified Codec.Binary.UTF8.String                            as UTF8
+import           Control.Monad.Except                                (liftEither)
 import           Control.Monad.Trans.Except                          (ExceptT (..), runExceptT)
 import           Data.Aeson                                          (Result (..), encode, fromJSON)
 import           Data.Aeson.Parser                                   (jsonNoDup)
@@ -97,8 +98,7 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
     ---------------------------------------------------------
     validRequest :: Monad m => ResponseT m event cont (DataTypeLib, ValidOperation)
     validRequest =
-      ExceptT $
-      pure $ do
+      liftEither $ do
         schema <- fullSchema $ Identity root
         query <- parseGQL request >>= validateRequest schema FULL_VALIDATION
         Right (schema, query)
