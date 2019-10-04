@@ -30,10 +30,11 @@ genTypeName ('S':name)
 genTypeName name = name
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
-deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} = pure <$> instanceD (cxt constrains) iHead typeFamilies
-    ---------------------------
+deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} =
+  pure <$> instanceD (cxt constrains) iHead (def__typeName : typeFamilies)
   where
     def__typeName = funD '__typeName [clause argsE (normalB body) []]
+    -- defines method: __typeName _ = tName
       where
         argsE = map (varP . mkName) ["_"]
         body = [|pack name|]
@@ -49,7 +50,7 @@ deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} = pure <$> instanceD (
         conTypeable name = typeT ''Typeable [name]
     -----------------------------------------------
     typeFamilies
-      | isObject typeKindD = [deriveCUSTOM, deriveKind, def__typeName]
+      | isObject typeKindD = [deriveCUSTOM, deriveKind]
       | otherwise = [deriveKind]
     ---------------------------------------------
       where
