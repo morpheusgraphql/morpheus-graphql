@@ -52,7 +52,7 @@ module Data.Morpheus.Types.Internal.Data
   , isVisible
   , isSubscription
   , isOutputObject
-  , Operation(..)
+  , OperationKind(..)
   ) where
 
 import           Data.Semigroup                     ((<>))
@@ -65,7 +65,7 @@ import           Data.Morpheus.Types.Internal.Base  (Key)
 import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
 
-data Operation
+data OperationKind
   = Query
   | Subscription
   | Mutation
@@ -90,7 +90,7 @@ isInput _               = False
 
 data DataTypeKind
   = KindScalar
-  | KindObject (Maybe Operation)
+  | KindObject (Maybe OperationKind)
   | KindUnion
   | KindEnum
   | KindInputObject

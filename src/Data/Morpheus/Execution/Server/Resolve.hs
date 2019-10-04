@@ -36,10 +36,9 @@ import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
 import           Data.Morpheus.Schema.Schema                         (Root)
 import           Data.Morpheus.Schema.SchemaAPI                      (defaultTypes, hiddenRootFields, schemaAPI)
 import           Data.Morpheus.Types.GQLType                         (GQLType (CUSTOM))
-import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), OperationKind (..),
-                                                                      ValidOperation)
+import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), ValidOperation)
 import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataTyCon (..),
-                                                                      DataTypeLib (..), initTypeLib)
+                                                                      DataTypeLib (..), OperationKind (..), initTypeLib)
 import           Data.Morpheus.Types.Internal.Stream                 (Event (..), ResponseEvent (..), ResponseStream,
                                                                       StreamState (..), StreamT (..), closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation             (Validation)
@@ -103,16 +102,16 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
         query <- parseGQL request >>= validateRequest schema FULL_VALIDATION
         Right (schema, query)
     ----------------------------------------------------------
-    execOperator (schema, operation@Operation {operationKind = QUERY}) =
+    execOperator (schema, operation@Operation {operationKind = Query}) =
       ExceptT $
       StreamT
         (StreamState [] <$>
          runExceptT
            (do schemaRes <- schemaAPI schema
                ExceptT (encodeQuery schemaRes queryResolver operation)))
-    execOperator (_, operation@Operation {operationKind = MUTATION}) =
+    execOperator (_, operation@Operation {operationKind = Mutation}) =
       ExceptT $ mapS Publish (encodeOperation mutationResolver operation)
-    execOperator (_, operation@Operation {operationKind = SUBSCRIPTION}) =
+    execOperator (_, operation@Operation {operationKind = Subscription}) =
       ExceptT $ StreamT $ handleActions <$> closeStream (encodeOperation subscriptionResolver operation)
       where
         handleActions (_, Left gqlError) = StreamState [] (Left gqlError)

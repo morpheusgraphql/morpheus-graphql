@@ -23,10 +23,10 @@ module Data.Morpheus.Types.Internal.Stream
   ) where
 
 import           Control.Monad.Trans.Except        (ExceptT (..), runExceptT)
-import           Data.Morpheus.Types.Internal.Data (Operation (..))
+import           Data.Morpheus.Types.Internal.Data (OperationKind (..))
 import           Data.Morpheus.Types.IO            (GQLResponse)
 
-newtype GQLStream (o :: Operation) (m :: * -> *) event a = GQLStream
+newtype GQLStream (o :: OperationKind) (m :: * -> *) event a = GQLStream
   { unGQLStream :: StreamT m (CHANNEL o m event a) (RESOLVER o m event a)
   }
 
@@ -36,7 +36,7 @@ instance Functor m => Functor (GQLStream 'Query m event) where
 instance Functor m => Functor (GQLStream 'Mutation m event) where
   fmap f (GQLStream x) = GQLStream (f <$> x)
 
-class STREAM (o :: Operation) where
+class STREAM (o :: OperationKind) where
   type RESOLVER o (m :: * -> *) event a :: *
   type CHANNEL o (m :: * -> *) event a :: *
 
