@@ -24,6 +24,7 @@ module Data.Morpheus.Types.Resolver
   , mutResolver
   , toMutResolver
   , GQLFail(..)
+  , ResponseT
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
@@ -33,8 +34,8 @@ import           Data.Text                               (pack)
 -- MORPHEUS
 --
 import           Data.Morpheus.Types.Internal.Base       (Message)
-import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStream, StreamState (..), StreamT (..),
-                                                          SubscribeStream)
+import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStream, ResponseStream, StreamState (..),
+                                                          StreamT (..), SubscribeStream)
 import           Data.Morpheus.Types.Internal.Validation (ResolveT, Validation)
 
 class Monad m =>
@@ -42,6 +43,11 @@ class Monad m =>
   where
   gqlFail :: Message -> m a
   mapGQLFail :: (Message -> b) -> (a -> b) -> m a -> b
+
+instance Monad m => GQLFail (ResolveT m) where
+  gqlFail = ExceptT . pure . Left . globalErrorMessage
+  --mapGQLFail fFail _ (Left x) = fFail $ pack $ show x
+  --mapGQLFail _ fSuc (Right x) = fSuc x
 
 instance GQLFail Validation where
   gqlFail = Left . globalErrorMessage
@@ -70,7 +76,9 @@ type instance UnSubResolver (SubResolver m e c) = Resolver m
 -------------------------------------------------------------------
 type Resolver = ExceptT String
 
-type MutResolveT m e c a = ResolveT (PublishStream m e c) a
+type ResponseT m e c = ResolveT (ResponseStream m e c)
+
+type MutResolveT m e c = ResolveT (PublishStream m e c)
 
 type SubResolveT m e c a = ResolveT (SubscribeStream m e) (Event e c -> ResolveT m a)
 
