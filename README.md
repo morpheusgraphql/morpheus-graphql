@@ -58,7 +58,6 @@ type Deity {
 _API.hs_
 
 ```haskell
-
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -78,7 +77,7 @@ import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Types        (GQLRootResolver (..), IORes)
 import           Data.Text                  (Text)
 
-importGQLDocumentWithNamespace "examples/TH/simple.gql"
+importGQLDocumentWithNamespace "schema.gql"
 
 rootResolver :: GQLRootResolver IO () () (Query IORes) () ()
 rootResolver =
