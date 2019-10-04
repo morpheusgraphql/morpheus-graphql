@@ -26,7 +26,7 @@ rootResolver =
   GQLRootResolver
     {queryResolver = return Query {queryDeity}, mutationResolver = pure (), subscriptionResolver = pure ()}
   where
-    queryDeity _deityArgs = pure Deity {deityName, deityPower}
+    queryDeity QueryDeityArgs {queryDeityArgsName} = pure Deity {deityName, deityPower}
       where
         deityName _ = pure "Morpheus"
         deityPower _ = pure (Just "Shapeshifting")

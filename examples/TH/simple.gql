@@ -1,5 +1,5 @@
 type Query {
-  deity(uid: String!): Deity!
+  deity(name: String!): Deity!
 }
 
 type Deity {
