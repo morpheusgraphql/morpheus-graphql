@@ -97,7 +97,7 @@ type SubscribeStream m e = StreamT m [e]
 
 type PublishStream m e c = StreamT m (PubEvent e c)
 
-type ResponseStream m event con a = StreamT m (ResponseEvent m event con) a
+type ResponseStream m event con = StreamT m (ResponseEvent m event con)
 
 -- Helper Functions
 toTuple :: StreamState s a -> ([s], a)

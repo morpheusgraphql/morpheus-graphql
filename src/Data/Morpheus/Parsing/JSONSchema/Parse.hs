@@ -1,6 +1,8 @@
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TypeOperators         #-}
 
 module Data.Morpheus.Parsing.JSONSchema.Parse
   ( decodeIntrospection
@@ -11,65 +13,66 @@ import           Data.ByteString.Lazy                    (ByteString)
 import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Parsing.Internal.Create   (createArgument, createDataTypeLib, createEnumType,
                                                           createField, createScalarType, createType, createUnionType)
-import qualified Data.Morpheus.Schema.EnumValue          as E (EnumValue (..))
-import qualified Data.Morpheus.Schema.Field              as F (Field (..))
-import qualified Data.Morpheus.Schema.InputValue         as I (InputValue (..))
-import           Data.Morpheus.Schema.JSONType           (JSONIntro (..), JSONSchema (..), JSONType (..))
+import           Data.Morpheus.Parsing.JSONSchema.Types  (EnumValue (..), Field (..), InputValue (..),
+                                                          Introspection (..), Schema (..), Type (..))
 import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
-import           Data.Morpheus.Types.Internal.Data       (DataFullType (..), DataTypeLib, DataTypeWrapper (..),
-                                                          WrapperD, toHSWrappers)
+import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullType (..), DataTypeLib,
+                                                          DataTypeWrapper (..), Key, WrapperD, toHSWrappers)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.IO                  (JSONResponse (..))
 import           Data.Semigroup                          ((<>))
 import           Data.Text                               (Text, pack)
 
-typeFromJSON :: JSONType -> Validation (Text, DataFullType)
-typeFromJSON JSONType {name = Just typeName, kind = SCALAR} = pure $ createScalarType typeName
-typeFromJSON JSONType {name = Just typeName, kind = ENUM, enumValues = Just enums} =
-  pure $ createEnumType typeName (map E.name enums)
-typeFromJSON JSONType {name = Just typeName, kind = UNION, possibleTypes = Just unions} =
-  case traverse name unions of
-    Nothing  -> fail "ERROR: GQL ERROR"
-    Just uni -> pure $ createUnionType typeName uni
-typeFromJSON JSONType {name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields} = do
-  fields <- traverse iField iFields
-  pure (typeName, InputObject $ createType typeName fields)
-  where
-    iField I.InputValue {I.name = fieldName, I.type' = fType} = do
-      fieldType <- fieldTypeFromJSON fType
-      pure (fieldName, createField [] fieldName fieldType)
-typeFromJSON JSONType {name = Just typeName, kind = OBJECT, fields = Just oFields} = do
-  fields <- traverse oField oFields
-  pure (typeName, OutputObject $ createType typeName fields)
-  where
-    oField F.Field {F.name = fieldName, F.args = fArgs, F.type' = fType} = do
-      fieldType <- fieldTypeFromJSON fType
-      args <- traverse genArg fArgs
-      pure (fieldName, createField args fieldName fieldType)
-      where
-        genArg I.InputValue {I.name = argName, I.type' = argType} = createArgument argName <$> fieldTypeFromJSON argType
-typeFromJSON x = internalError $ "Unsuported type" <> pack (show x)
-
-fieldTypeFromJSON :: JSONType -> Validation ([WrapperD], Text)
-fieldTypeFromJSON = fmap toHs . fieldTypeRec []
-  where
-    toHs (w, t) = (toHSWrappers w, t)
-    fieldTypeRec :: [DataTypeWrapper] -> JSONType -> Validation ([DataTypeWrapper], Text)
-    fieldTypeRec acc JSONType {kind = LIST, ofType = Just ofType} = fieldTypeRec (ListType : acc) ofType
-    fieldTypeRec acc JSONType {kind = NON_NULL, ofType = Just ofType} = fieldTypeRec (NonNullType : acc) ofType
-    fieldTypeRec acc JSONType {name = Just name} = pure (acc, name)
-    fieldTypeRec _ x = internalError $ "Unsuported Field" <> pack (show x)
-
-schemaFromJSON :: [JSONType] -> Validation [(Text, DataFullType)]
-schemaFromJSON = traverse typeFromJSON
-
 decodeIntrospection :: ByteString -> Validation DataTypeLib
 decodeIntrospection jsonDoc =
   case jsonSchema of
     Left errors -> internalError $ pack errors
-    Right JSONResponse {responseData = Just JSONIntro {__schema = JSONSchema {types}}} ->
-      schemaFromJSON types >>= createDataTypeLib
+    Right JSONResponse {responseData = Just Introspection {__schema = Schema {types}}} ->
+      traverse parse types >>= createDataTypeLib
     Right res -> fail $ show res
   where
-    jsonSchema :: Either String (JSONResponse JSONIntro)
+    jsonSchema :: Either String (JSONResponse Introspection)
     jsonSchema = eitherDecode jsonDoc
+
+class ParseJSONSchema a b where
+  parse :: a -> Validation (Key, b)
+
+instance ParseJSONSchema Type DataFullType where
+  parse Type {name = Just typeName, kind = SCALAR} = pure $ createScalarType typeName
+  parse Type {name = Just typeName, kind = ENUM, enumValues = Just enums} =
+    pure $ createEnumType typeName (map enumName enums)
+  parse Type {name = Just typeName, kind = UNION, possibleTypes = Just unions} =
+    case traverse name unions of
+      Nothing  -> fail "ERROR: GQL ERROR"
+      Just uni -> pure $ createUnionType typeName uni
+  parse Type {name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields} = do
+    fields <- traverse parse iFields
+    pure (typeName, InputObject $ createType typeName fields)
+  parse Type {name = Just typeName, kind = OBJECT, fields = Just oFields} = do
+    fields <- traverse parse oFields
+    pure (typeName, OutputObject $ createType typeName fields)
+  parse x = internalError $ "Unsuported type" <> pack (show x)
+
+instance ParseJSONSchema Field DataField where
+  parse Field {fieldName, fieldArgs, fieldType} = do
+    fType <- fieldTypeFromJSON fieldType
+    args <- traverse genArg fieldArgs
+    pure (fieldName, createField args fieldName fType)
+    where
+      genArg InputValue {inputName = argName, inputType = argType} =
+        createArgument argName <$> fieldTypeFromJSON argType
+
+instance ParseJSONSchema InputValue DataField where
+  parse InputValue {inputName, inputType} = do
+    fieldType <- fieldTypeFromJSON inputType
+    pure (inputName, createField [] inputName fieldType)
+
+fieldTypeFromJSON :: Type -> Validation ([WrapperD], Text)
+fieldTypeFromJSON = fmap toHs . fieldTypeRec []
+  where
+    toHs (w, t) = (toHSWrappers w, t)
+    fieldTypeRec :: [DataTypeWrapper] -> Type -> Validation ([DataTypeWrapper], Text)
+    fieldTypeRec acc Type {kind = LIST, ofType = Just ofType} = fieldTypeRec (ListType : acc) ofType
+    fieldTypeRec acc Type {kind = NON_NULL, ofType = Just ofType} = fieldTypeRec (NonNullType : acc) ofType
+    fieldTypeRec acc Type {name = Just name} = pure (acc, name)
+    fieldTypeRec _ x = internalError $ "Unsuported Field" <> pack (show x)

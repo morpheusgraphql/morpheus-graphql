@@ -21,6 +21,7 @@ module Data.Morpheus.Execution.Server.Encode
   , encodeQuery
   , encodeOperation
   , ObjectResolvers(..)
+  , OBJ_RES
   ) where
 
 import           Control.Monad                                   ((>=>))
@@ -142,7 +143,9 @@ type GQL_RES a = (Generic a, GQLType a)
 
 type EncodeOperator m a value = Resolver m a -> ValidOperation -> m (Either GQLErrors value)
 
-type EncodeCon m a value = (GQL_RES a, ObjectResolvers (CUSTOM a) a (ResolveT m value))
+type OBJ_RES m a value = ObjectResolvers (CUSTOM a) a (ResolveT m value)
+
+type EncodeCon m a value = (GQL_RES a, OBJ_RES m a value)
 
 type EncodeMutCon m event con mut = EncodeCon (PublishStream m event con) mut Value
 
@@ -196,13 +199,7 @@ instance (GResolver UNION a value, GResolver UNION b value) => GResolver UNION (
 
 ----- HELPERS ----------------------------
 encodeQuery ::
-     forall m a schema.
-     ( GQL_RES a
-     , Monad m
-     , ObjectResolvers (CUSTOM schema) schema (ResolveT m Value)
-     , EncodeCon m schema Value
-     , EncodeCon m a Value
-     )
+     forall m a schema. (GQL_RES a, GQL_RES schema, Monad m, EncodeCon m schema Value, EncodeCon m a Value)
   => schema
   -> EncodeOperator m a Value
 encodeQuery schema = encodeOperationWith (objectResolvers (Proxy :: Proxy (CUSTOM schema)) schema)

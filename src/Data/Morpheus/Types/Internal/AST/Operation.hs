@@ -5,7 +5,6 @@
 module Data.Morpheus.Types.Internal.AST.Operation
   ( Operation(..)
   , Variable(..)
-  , OperationKind(..)
   , ValidOperation
   , RawOperation
   , VariableDefinitions
