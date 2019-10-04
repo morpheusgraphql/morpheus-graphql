@@ -8,15 +8,14 @@ module Data.Morpheus.Execution.Document.GQLType
   ( deriveGQLType
   ) where
 
+import           Data.Text                                (pack)
 import           Language.Haskell.TH
-
-import           Data.Morpheus.Kind                       (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR, UNION,
-                                                           WRAPPER)
-
-import           Data.Morpheus.Execution.Internal.Declare (tyConArgs)
 
 --
 -- MORPHEUS
+import           Data.Morpheus.Execution.Internal.Declare (tyConArgs)
+import           Data.Morpheus.Kind                       (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR, UNION,
+                                                           WRAPPER)
 import           Data.Morpheus.Types.GQLType              (GQLType (..), TRUE)
 import           Data.Morpheus.Types.Internal.Data        (DataTypeKind (..), isObject)
 import           Data.Morpheus.Types.Internal.DataD       (GQLTypeD (..), TypeD (..))
@@ -27,6 +26,10 @@ deriveGQLType :: GQLTypeD -> Q [Dec]
 deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} = pure <$> instanceD (cxt constrains) iHead typeFamilies
     ---------------------------
   where
+    def__typeName = funD '__typeName [clause argsE (normalB body) []]
+      where
+        argsE = map (varP . mkName) ["_"]
+        body = [|pack tName|]
     typeArgs = tyConArgs typeKindD
     ----------------------------------------------
     iHead = instanceHeadT ''GQLType tName typeArgs
@@ -37,7 +40,7 @@ deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} = pure <$> instanceD (
         conTypeable name = typeT ''Typeable [name]
     -----------------------------------------------
     typeFamilies
-      | isObject typeKindD = [deriveCUSTOM, deriveKind]
+      | isObject typeKindD = [deriveCUSTOM, deriveKind, def__typeName]
       | otherwise = [deriveKind]
     ---------------------------------------------
       where
