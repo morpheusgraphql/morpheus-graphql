@@ -27,19 +27,26 @@ module Data.Morpheus.Types.Resolver
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
+import           Data.Morpheus.Error.Utils               (globalErrorMessage)
+import           Data.Text                               (pack)
 
 -- MORPHEUS
 --
 import           Data.Morpheus.Types.Internal.Base       (Message)
 import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStream, StreamState (..), StreamT (..),
                                                           SubscribeStream)
-import           Data.Morpheus.Types.Internal.Validation (ResolveT)
+import           Data.Morpheus.Types.Internal.Validation (ResolveT, Validation)
 
 class Monad m =>
       GQLFail (m :: * -> *)
   where
   gqlFail :: Message -> m a
   mapGQLFail :: (Message -> b) -> (a -> b) -> m a -> b
+
+instance GQLFail Validation where
+  gqlFail = Left . globalErrorMessage
+  mapGQLFail fFail _ (Left x) = fFail $ pack $ show x
+  mapGQLFail _ fSuc (Right x) = fSuc x
 
 ----------------------------------------------------------------------------------------
 {--
