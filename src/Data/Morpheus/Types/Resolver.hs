@@ -28,36 +28,34 @@ module Data.Morpheus.Types.Resolver
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
-import           Data.Morpheus.Error.Utils               (globalErrorMessage)
-import           Data.Text                               (pack)
+
+--import           Data.Morpheus.Error.Utils               (globalErrorMessage)
+import           Data.Text                               (pack, unpack)
 
 -- MORPHEUS
 --
 import           Data.Morpheus.Types.Internal.Base       (Message)
 import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStream, ResponseStream, StreamState (..),
                                                           StreamT (..), SubscribeStream)
-import           Data.Morpheus.Types.Internal.Validation (ResolveT, Validation)
+import           Data.Morpheus.Types.Internal.Validation (ResolveT)
 
 class Monad m =>
-      GQLFail (m :: * -> *)
+      GQLFail (t :: (* -> *) -> * -> *) m
   where
-  gqlFail :: Message -> m a
-  mapGQLFail :: (Message -> b) -> (a -> b) -> m a -> b
+  gqlFail :: Monad m => Message -> t m a
+  toSuccess :: Monad m => (Message -> b) -> (a -> b) -> t m a -> t m b
 
+instance Monad m => GQLFail Resolver m where
+  gqlFail = ExceptT . pure . Left . unpack
+  toSuccess fFail fSuc (ExceptT value) = ExceptT $ pure . mapCases <$> value
+    where
+      mapCases (Right x) = fSuc x
+      mapCases (Left x)  = fFail $ pack $ show x
 
-instance Monad m => GQLFail (Resolver m) where
-
-
-instance Monad m => GQLFail (ResolveT m) where
-  gqlFail = ExceptT . pure . Left . globalErrorMessage
-  --mapGQLFail fFail _ (Left x) = fFail $ pack $ show x
-  --mapGQLFail _ fSuc (Right x) = fSuc x
-
-instance GQLFail Validation where
-  gqlFail = Left . globalErrorMessage
-  mapGQLFail fFail _ (Left x) = fFail $ pack $ show x
-  mapGQLFail _ fSuc (Right x) = fSuc x
-
+--instance GQLFail Validation where
+--  gqlFail = Left . globalErrorMessage
+--  mapGQLFail fFail _ (Left x) = fFail $ pack $ show x
+--  mapGQLFail _ fSuc (Right x) = fSuc x
 ----------------------------------------------------------------------------------------
 {--
 newtype SubResolveT m e c a = SubResolveT

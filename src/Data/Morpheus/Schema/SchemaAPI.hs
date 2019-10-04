@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns   #-}
 {-# LANGUAGE TupleSections    #-}
 {-# LANGUAGE TypeApplications #-}
@@ -23,18 +24,21 @@ import           Data.Morpheus.Types.Internal.Data           (DataField (..), Da
                                                               allDataTypes)
 import           Data.Morpheus.Types.Resolver                (GQLFail (..), ResolveT, Resolver)
 
-convertTypes :: GQLFail m => DataTypeLib -> m [S__Type m]
+convertTypes :: Monad m => DataTypeLib -> (Resolver m) [S__Type (Resolver m)]
 convertTypes lib = traverse (`render` lib) (allDataTypes lib)
 
-buildSchemaLinkType :: GQLFail m => (Text, DataObject) -> S__Type m
+buildSchemaLinkType :: Monad m => (Text, DataObject) -> S__Type (Resolver m)
 buildSchemaLinkType (key', _) = createObjectType key' Nothing $ Just []
 
-findType :: GQLFail m => Text -> DataTypeLib -> Maybe (S__Type m)
-findType name lib = (name, ) <$> lookup name (allDataTypes lib) >>= renderT
+findType :: Monad m => Text -> DataTypeLib -> Resolver m (Maybe (S__Type (Resolver m)))
+findType name lib = getType >>= renderT
   where
-    renderT input = mapGQLFail (const Nothing) Just (render input lib)
+    getType = pure $ (name, ) <$> lookup name (allDataTypes lib)
+    ------------------------------------------------------------
+    renderT (Just datatype) = toSuccess (const Nothing) Just (render datatype lib)
+    renderT Nothing         = pure Nothing
 
-initSchema :: GQLFail m => DataTypeLib -> m (S__Schema m)
+initSchema :: Monad m => DataTypeLib -> (Resolver m) (S__Schema (Resolver m))
 initSchema lib =
   pure
     S__Schema
@@ -66,5 +70,5 @@ defaultTypes =
 schemaAPI :: Monad m => DataTypeLib -> ResolveT m (Root (Resolver m))
 schemaAPI lib = pure $ Root {root__type, root__schema}
   where
-    root__type (Root__typeArgs name) = return $ findType name lib
+    root__type (Root__typeArgs name) = findType name lib
     root__schema _ = initSchema lib
