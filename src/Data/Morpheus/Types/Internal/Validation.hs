@@ -32,9 +32,9 @@ data JSONError = JSONError
   , locations :: [Location]
   } deriving (Show, Generic, FromJSON, ToJSON)
 
-type Validation a = Either GQLErrors a
+type Validation = Either GQLErrors
 
-type SchemaValidation a = Validation a
+type SchemaValidation = Validation
 
 type ResolveT = ExceptT GQLErrors
 
