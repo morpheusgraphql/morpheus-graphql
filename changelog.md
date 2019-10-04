@@ -52,8 +52,6 @@
   will be generated.
 
   ```haskell
-  $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
-
   data Deity m = Deity {
     deityName :: DeityNameArgs -> m Text,
     deityPower :: () -> m (Power m)
