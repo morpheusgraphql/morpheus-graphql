@@ -53,7 +53,7 @@ type Deity {
 }
 ```
 
-`importGQLDocumentWithNamespace` will generate Types namespaced fields. if you dont need napespacing use `importGQLDocument`
+`importGQLDocumentWithNamespace` will generate Types with namespaced fields. if you dont need napespacing use `importGQLDocument`
 
 _API.hs_
 
