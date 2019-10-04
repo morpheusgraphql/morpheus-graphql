@@ -17,7 +17,7 @@ import           Data.Morpheus.Execution.Server.Introspect   (ObjectFields (..),
 import           Data.Morpheus.Rendering.RenderIntrospection (createObjectType, render)
 import           Data.Morpheus.Schema.Schema                 (Root (..), Root__typeArgs (..), S__Schema (..), S__Type)
 import           Data.Morpheus.Types                         (constRes)
-import           Data.Morpheus.Types.GQLType                 (TRUE)
+import           Data.Morpheus.Types.GQLType                 (CUSTOM)
 import           Data.Morpheus.Types.ID                      (ID)
 import           Data.Morpheus.Types.Internal.Data           (DataField (..), DataObject, DataTypeLib (..),
                                                               allDataTypes)
@@ -49,7 +49,7 @@ hideFields :: (Text, DataField) -> (Text, DataField)
 hideFields (key', field) = (key', field {fieldHidden = True})
 
 hiddenRootFields :: [(Text, DataField)]
-hiddenRootFields = map hideFields $ fst $ objectFields (Proxy :: Proxy TRUE) (Proxy @(Root Maybe))
+hiddenRootFields = map hideFields $ fst $ objectFields (Proxy :: Proxy (CUSTOM (Root Maybe))) (Proxy @(Root Maybe))
 
 defaultTypes :: TypeUpdater
 defaultTypes =
