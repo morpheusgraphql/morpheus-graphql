@@ -22,6 +22,15 @@ import           Data.Morpheus.Types.Internal.DataD       (GQLTypeD (..), TypeD 
 import           Data.Morpheus.Types.Internal.TH          (instanceHeadT, typeT)
 import           Data.Typeable                            (Typeable)
 
+sysTypes :: [String]
+sysTypes =
+  ["__Schema", "__Type", "__Directive", "__TypeKind", "__Field", "__DirectiveLocation", "__InputValue", "__EnumValue"]
+
+genTypeName :: String -> String
+genTypeName ('S':name)
+  | name `elem` sysTypes = name
+genTypeName name = name
+
 deriveGQLType :: GQLTypeD -> Q [Dec]
 deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} = pure <$> instanceD (cxt constrains) iHead typeFamilies
     ---------------------------
@@ -29,7 +38,9 @@ deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} = pure <$> instanceD (
     def__typeName = funD '__typeName [clause argsE (normalB body) []]
       where
         argsE = map (varP . mkName) ["_"]
-        body = [|pack tName|]
+        body = [|pack name|]
+          where
+            name = genTypeName tName
     typeArgs = tyConArgs typeKindD
     ----------------------------------------------
     iHead = instanceHeadT ''GQLType tName typeArgs
