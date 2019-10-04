@@ -421,7 +421,6 @@ Morpheus is written and maintained by [_nalchevanidze_](https://github.com/nalch
 
 - Medium future:
   - Stabilize API
-  - Specification-isomorphic introspection
   - Specification-isomorphic error handling
 - Long term:
   - Support all possible GQL features
