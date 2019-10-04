@@ -59,7 +59,7 @@ _API.hs_
 
 ```haskell
 
--# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
