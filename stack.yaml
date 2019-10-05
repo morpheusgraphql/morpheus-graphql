@@ -1,5 +1,5 @@
 # ghc 8.6.5
-resolver: lts-13.24
+resolver: lts-13.30
 
 extra-deps:
   - megaparsec-7.0.5
