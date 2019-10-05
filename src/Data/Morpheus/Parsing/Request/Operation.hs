@@ -16,6 +16,7 @@ import           Text.Megaparsec.Char                       (string)
 import           Data.Morpheus.Parsing.Internal.Internal    (Parser, getLocation)
 import           Data.Morpheus.Parsing.Internal.Terms       (parseAssignment, parseMaybeTuple, parseNonNull,
                                                              parseWrappedType, spaceAndComments1, token, variable)
+import           Data.Morpheus.Parsing.Internal.Value       (parseDefaultValue)
 import           Data.Morpheus.Parsing.Request.Body         (entries)
 import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), RawOperation, Variable (..))
 import           Data.Morpheus.Types.Internal.Data          (OperationKind (..), toHSWrappers)
@@ -25,6 +26,7 @@ operationArgument =
   label "operatorArgument" $ do
     ((name, variablePosition), (wrappers, variableType)) <- parseAssignment variable parseWrappedType
     nonNull <- parseNonNull
+    defaulValue <- parseDefaultValue
     pure
       ( name
       , Variable
