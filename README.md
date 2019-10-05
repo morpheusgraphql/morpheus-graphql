@@ -29,6 +29,7 @@ _stack.yml_
 resolver: lts-13.30
 
 extra-deps:
+  - morpheus-graphql-0.3.1
   - aeson-1.4.4.0
   - time-compat-1.9.2.2
 ```
