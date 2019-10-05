@@ -31,12 +31,6 @@ getVariableType type' position' lib' = getInputType type' lib' error'
   where
     error' = unknownType type' position'
 
-lookupVariable :: Variables -> Text -> (Text -> error) -> Either error Value
-lookupVariable variables' key' error' =
-  case M.lookup key' variables' of
-    Nothing    -> Left $ error' key'
-    Just value -> pure value
-
 handleInputError :: Text -> Position -> InputValidation Value -> Validation (Text, Value)
 handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
 handleInputError key' _ (Right value') = pure (key', value')
@@ -86,16 +80,22 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
                                                                                      , variablePosition
                                                                                      , isVariableRequired
                                                                                      , variableTypeWrappers
+                                                                                     , variableValue = defaultValue
                                                                                      }) =
-  toVariable <$>
-  (getVariableType variableType variablePosition typeLib >>=
-   checkType (validationMode /= WITHOUT_VARIABLES && isVariableRequired))
+  toVariable <$> (getVariableType variableType variablePosition typeLib >>= checkType getVariable defaultValue)
   where
     toVariable (varKey, variableValue) = (varKey, var {variableValue})
+    getVariable = M.lookup key bodyVariables
     ------------------------------------------------------------------
-    checkType True varType =
-      lookupVariable bodyVariables key (uninitializedVariable variablePosition variableType) >>= validator varType
-    checkType False varType = maybe (pure (key, Null)) (validator varType) (M.lookup key bodyVariables)
+    checkType (Just variable) Nothing varType = validator varType variable
+    checkType (Just variable) (Just defValue) varType = validator varType defValue >> validator varType variable
+    checkType Nothing (Just defValue) varType = validator varType defValue
+    checkType Nothing Nothing varType
+      | validationMode /= WITHOUT_VARIABLES && isVariableRequired =
+        Left $ uninitializedVariable variablePosition variableType key
+      | otherwise = returnNull
+      where
+        returnNull = maybe (pure (key, Null)) (validator varType) (M.lookup key bodyVariables)
     -----------------------------------------------------------------------------------------------
     validator varType varValue =
       handleInputError key variablePosition $ validateInputValue typeLib [] variableTypeWrappers varType (key, varValue)
