@@ -26,6 +26,7 @@ operationArgument =
   label "operatorArgument" $ do
     ((name, variablePosition), (wrappers, variableType)) <- parseAssignment variable parseWrappedType
     nonNull <- parseNonNull
+    -- TODO: handle default value
     defaulValue <- parseDefaultValue
     pure
       ( name
