@@ -15,13 +15,11 @@ module Data.Morpheus.Execution.Server.Resolve
   , fullSchema
   ) where
 
-import qualified Codec.Binary.UTF8.String                            as UTF8
 import           Control.Monad.Except                                (liftEither)
 import           Control.Monad.Trans.Except                          (ExceptT (..), runExceptT)
-import           Data.Aeson                                          (Result (..), encode, fromJSON)
-import           Data.Aeson.Parser                                   (jsonNoDup)
-import           Data.Attoparsec.ByteString                          (parseOnly)
-import qualified Data.ByteString                                     as S
+import           Data.Aeson                                          (encode)
+import           Data.Aeson.Internal                                 (formatError, ifromJSON)
+import           Data.Aeson.Parser                                   (eitherDecodeWith, jsonNoDup)
 import qualified Data.ByteString.Lazy.Char8                          as L
 import           Data.Functor.Identity                               (Identity (..))
 import           Data.Proxy                                          (Proxy (..))
@@ -64,17 +62,17 @@ type RootResCon m event cont query mutation subscription
      , EncodeMutCon m event cont mutation
      , EncodeSubCon m event cont subscription)
 
-decodeNoDup :: L.ByteString -> Result GQLRequest
-decodeNoDup bs =
-  case parseOnly jsonNoDup (S.pack . UTF8.encode $ L.unpack bs) of
-    Left e  -> Error e
-    Right v -> fromJSON v
+decodeNoDup :: L.ByteString -> Either String GQLRequest
+decodeNoDup str =
+  case eitherDecodeWith jsonNoDup ifromJSON str of
+    Left (path, x) -> Left $ formatError path x
+    Right value    -> Right value
 
 byteStringIO :: Monad m => (GQLRequest -> m GQLResponse) -> L.ByteString -> m L.ByteString
 byteStringIO resolver request =
   case decodeNoDup request of
-    Error aesonError' -> return $ badRequestError aesonError'
-    Success req       -> encode <$> resolver req
+    Left aesonError' -> return $ badRequestError aesonError'
+    Right req        -> encode <$> resolver req
 
 statelessResolver ::
      (Monad m, RootResCon m s cont query mut sub)
