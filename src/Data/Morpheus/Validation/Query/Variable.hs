@@ -10,8 +10,8 @@ import           Data.Maybe                                    (maybe)
 import           Data.Morpheus.Error.Input                     (InputValidation, inputErrorMessage)
 import           Data.Morpheus.Error.Variable                  (uninitializedVariable, unknownType, unusedVariables,
                                                                 variableGotInvalidValue)
-import           Data.Morpheus.Types.Internal.AST.Operation    (Operation (..), RawOperation, ValidVariables,
-                                                                Variable (..))
+import           Data.Morpheus.Types.Internal.AST.Operation    (DefaultValue, Operation (..), RawOperation,
+                                                                ValidVariables, Variable (..))
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawArgument (..),
                                                                 RawSelection (..), RawSelection' (..), RawSelectionSet,
                                                                 Reference (..))
@@ -71,7 +71,7 @@ resolveOperationVariables typeLib lib root validationMode Operation {operationNa
   allVariableReferences lib [operationSelection] >>= checkUnusedVariables
   mapM (lookupAndValidateValueOnBody typeLib root validationMode) operationArgs
   where
-    varToKey :: (Text, Variable ()) -> EnhancedKey
+    varToKey :: (Text, Variable a) -> EnhancedKey
     varToKey (key', Variable {variablePosition}) = EnhancedKey key' variablePosition
     --
     checkUnusedVariables :: [EnhancedKey] -> Validation ()
@@ -81,7 +81,7 @@ resolveOperationVariables typeLib lib root validationMode Operation {operationNa
         unused' -> Left $ unusedVariables operationName unused'
 
 lookupAndValidateValueOnBody ::
-     DataTypeLib -> Variables -> VALIDATION_MODE -> (Text, Variable ()) -> Validation (Text, Variable Value)
+     DataTypeLib -> Variables -> VALIDATION_MODE -> (Text, Variable DefaultValue) -> Validation (Text, Variable Value)
 lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType
                                                                                      , variablePosition
                                                                                      , isVariableRequired

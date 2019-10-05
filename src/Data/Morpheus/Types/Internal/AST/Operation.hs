@@ -9,6 +9,7 @@ module Data.Morpheus.Types.Internal.AST.Operation
   , RawOperation
   , VariableDefinitions
   , ValidVariables
+  , DefaultValue
   ) where
 
 import           Data.Morpheus.Types.Internal.AST.RawSelection (RawSelectionSet)
@@ -19,7 +20,9 @@ import           Data.Morpheus.Types.Internal.TH               (apply, liftText,
 import           Data.Morpheus.Types.Internal.Value            (Value)
 import           Language.Haskell.TH.Syntax                    (Lift (..))
 
-type VariableDefinitions = Collection (Variable ())
+type DefaultValue = Maybe Value
+
+type VariableDefinitions = Collection (Variable DefaultValue)
 
 type ValidVariables = Collection (Variable Value)
 
@@ -47,5 +50,5 @@ data Variable a = Variable
   , variableValue        :: a
   } deriving (Show)
 
-instance Lift (Variable ()) where
+instance Lift a => Lift (Variable a) where
   lift (Variable t ir w p v) = apply 'Variable [liftText t, lift ir, lift w, lift p, lift v]

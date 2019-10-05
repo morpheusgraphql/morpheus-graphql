@@ -18,16 +18,15 @@ import           Data.Morpheus.Parsing.Internal.Terms       (parseAssignment, pa
                                                              parseWrappedType, spaceAndComments1, token, variable)
 import           Data.Morpheus.Parsing.Internal.Value       (parseDefaultValue)
 import           Data.Morpheus.Parsing.Request.Body         (entries)
-import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), RawOperation, Variable (..))
+import           Data.Morpheus.Types.Internal.AST.Operation (DefaultValue, Operation (..), RawOperation, Variable (..))
 import           Data.Morpheus.Types.Internal.Data          (OperationKind (..), toHSWrappers)
 
-operationArgument :: Parser (Text, Variable ())
+operationArgument :: Parser (Text, Variable DefaultValue)
 operationArgument =
   label "operatorArgument" $ do
     ((name, variablePosition), (wrappers, variableType)) <- parseAssignment variable parseWrappedType
     nonNull <- parseNonNull
-    -- TODO: handle default value
-    defaulValue <- parseDefaultValue
+    defaultValue <- parseDefaultValue
     pure
       ( name
       , Variable
@@ -35,7 +34,7 @@ operationArgument =
           , isVariableRequired = 0 < length nonNull
           , variableTypeWrappers = toHSWrappers $ nonNull ++ wrappers
           , variablePosition
-          , variableValue = ()
+          , variableValue = defaultValue
           })
 
 parseOperation :: Parser RawOperation
