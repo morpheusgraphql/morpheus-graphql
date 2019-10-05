@@ -35,7 +35,6 @@ dependencies:
   - vector                >= 0.12.0.1  && <  0.13
   - mtl                   >= 2.0       && <= 2.2.2
   - websockets            >= 0.11.0    && <= 0.12.5.3
-  - wai-websockets        >= 1.0       && <= 3.5
   - uuid                  >= 1.0       && <= 1.4
   - template-haskell
   - lens
@@ -96,3 +95,5 @@ executables:
       - text
       - wai
       - warp
+      - wai-websockets        >= 1.0       && <= 3.5
+
