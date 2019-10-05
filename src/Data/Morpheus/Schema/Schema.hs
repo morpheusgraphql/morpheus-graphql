@@ -29,6 +29,7 @@ import           Data.Morpheus.Schema.TypeKind            (TypeKind)
 type S__TypeKind = TypeKind
 
 [gqlDocumentNamespace|
+
 type __Schema {
   types: [__Type!]!
   queryType: __Type!
@@ -43,7 +44,7 @@ type __Type {
   description: String
 
   # OBJECT and INTERFACE only
-  fields(includeDeprecated: Boolean ): [__Field!]
+  fields(includeDeprecated: Boolean = false): [__Field!]
 
   # OBJECT only
   interfaces: [__Type!]
@@ -52,7 +53,7 @@ type __Type {
   possibleTypes: [__Type!]
 
   # ENUM only
-  enumValues(includeDeprecated: Boolean): [__EnumValue!]
+  enumValues(includeDeprecated: Boolean = false): [__EnumValue!]
 
   # INPUT_OBJECT only
   inputFields: [__InputValue!]
@@ -99,7 +100,6 @@ enum __DirectiveLocation {
   FRAGMENT_DEFINITION
   FRAGMENT_SPREAD
   INLINE_FRAGMENT
-  VARIABLE_DEFINITION
   SCHEMA
   SCALAR
   OBJECT
@@ -113,8 +113,9 @@ enum __DirectiveLocation {
   INPUT_FIELD_DEFINITION
 }
 
-  type Root  {
-    __type(name: String!): __Type
-    __schema : __Schema!
-  }
+type Root  {
+  __type(name: String!): __Type
+  __schema : __Schema!
+}
+
 |]
