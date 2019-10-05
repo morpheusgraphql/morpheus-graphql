@@ -20,7 +20,7 @@ import           Data.Morpheus.Types.Internal.Data             (DataArgument, Da
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Types.Internal.Value            (Value (Null))
 import           Data.Morpheus.Validation.Internal.Utils       (checkForUnknownKeys, checkNameCollision, getInputType)
-import           Data.Morpheus.Validation.Query.Input.Object   (validateInputValue)
+import           Data.Morpheus.Validation.Internal.Value       (validateInputValue)
 import           Data.Text                                     (Text)
 
 resolveArgumentVariables :: Text -> ValidVariables -> DataField -> RawArguments -> Validation Arguments
