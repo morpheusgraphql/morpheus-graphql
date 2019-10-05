@@ -1,5 +1,10 @@
 ## [0.3.1] - \*.2019
 
+### Changed
+
+- removed dependencies: attoparsec , utf8-string
+- updated aeson lower bound up to: 1.4.4.0
+
 ## [0.3.0] - 04.10.2019
 
 ### Added
