@@ -7,7 +7,7 @@ module Data.Morpheus.Validation.Query.Variable
 import           Data.List                                     ((\\))
 import qualified Data.Map                                      as M (lookup)
 import           Data.Maybe                                    (maybe)
-import           Data.Morpheus.Error.Input                     (InputValidation, inputErrorMessage)
+import           Data.Morpheus.Error.Input                     (inputErrorMessage)
 import           Data.Morpheus.Error.Variable                  (uninitializedVariable, unknownType, unusedVariables,
                                                                 variableGotInvalidValue)
 import           Data.Morpheus.Types.Internal.AST.Operation    (DefaultValue, Operation (..), RawOperation,
@@ -30,10 +30,6 @@ getVariableType :: Text -> Position -> DataTypeLib -> Validation DataKind
 getVariableType type' position' lib' = getInputType type' lib' error'
   where
     error' = unknownType type' position'
-
-handleInputError :: Text -> Position -> InputValidation Value -> Validation (Text, Value)
-handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
-handleInputError key' _ (Right value') = pure (key', value')
 
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = fmap concat . mapM f
@@ -98,4 +94,6 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
         returnNull = maybe (pure (key, Null)) (validator varType) (M.lookup key bodyVariables)
     -----------------------------------------------------------------------------------------------
     validator varType varValue =
-      handleInputError key variablePosition $ validateInputValue typeLib [] variableTypeWrappers varType (key, varValue)
+      case validateInputValue typeLib [] variableTypeWrappers varType (key, varValue) of
+        Left message -> Left $ variableGotInvalidValue key (inputErrorMessage message) variablePosition
+        Right value  -> pure (key, value)
