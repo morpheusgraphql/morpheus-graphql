@@ -1,3 +1,11 @@
+## [0.3.2] - *.2019
+
+## Changed
+
+- support of Default Value:
+  - on query: Parsing Validating and resolving
+  - on Document: only Parsing
+
 ## [0.3.1] - 05.10.2019
 
 ### Changed
