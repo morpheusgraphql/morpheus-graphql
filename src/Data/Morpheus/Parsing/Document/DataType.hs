@@ -11,6 +11,7 @@ import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parseMaybeTuple, parseNonNull,
                                                           parseWrappedType, pipeLiteral, qualifier, setOf,
                                                           spaceAndComments, token)
+import           Data.Morpheus.Parsing.Internal.Value    (parseDefaultValue)
 import           Data.Morpheus.Types.Internal.Data       (DataArgument, DataField, DataFullType (..), Key,
                                                           RawDataType (..), toHSWrappers)
 import           Data.Text                               (Text)
@@ -22,6 +23,8 @@ dataArgument =
   label "Argument" $ do
     ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
     nonNull <- parseNonNull
+    -- TODO: handle default value
+    defaultValue <- parseDefaultValue
     pure $ createArgument fieldName (toHSWrappers $ nonNull ++ wrappers, fieldType)
 
 typeDef :: Text -> Parser Text

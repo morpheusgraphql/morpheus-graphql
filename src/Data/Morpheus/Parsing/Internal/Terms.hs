@@ -16,6 +16,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , parseMaybeTuple
   , parseAssignment
   , parseWrappedType
+  , litEquals
   ) where
 
 import           Data.Functor                            (($>))
@@ -34,6 +35,9 @@ setLiteral = between (char '{' *> spaceAndComments) (char '}' *> spaceAndComment
 
 pipeLiteral :: Parser ()
 pipeLiteral = char '|' *> spaceAndComments
+
+litEquals :: Parser ()
+litEquals = char '=' *> spaceAndComments
 
 -- PRIMITIVE
 ------------------------------------

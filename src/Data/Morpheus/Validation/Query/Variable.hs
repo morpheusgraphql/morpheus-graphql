@@ -7,11 +7,11 @@ module Data.Morpheus.Validation.Query.Variable
 import           Data.List                                     ((\\))
 import qualified Data.Map                                      as M (lookup)
 import           Data.Maybe                                    (maybe)
-import           Data.Morpheus.Error.Input                     (InputValidation, inputErrorMessage)
+import           Data.Morpheus.Error.Input                     (inputErrorMessage)
 import           Data.Morpheus.Error.Variable                  (uninitializedVariable, unknownType, unusedVariables,
                                                                 variableGotInvalidValue)
-import           Data.Morpheus.Types.Internal.AST.Operation    (Operation (..), RawOperation, ValidVariables,
-                                                                Variable (..))
+import           Data.Morpheus.Types.Internal.AST.Operation    (DefaultValue, Operation (..), RawOperation,
+                                                                ValidVariables, Variable (..))
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawArgument (..),
                                                                 RawSelection (..), RawSelection' (..), RawSelectionSet,
                                                                 Reference (..))
@@ -21,8 +21,8 @@ import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Types.Internal.Value            (Value (..))
 import           Data.Morpheus.Types.Types                     (Variables)
 import           Data.Morpheus.Validation.Internal.Utils       (VALIDATION_MODE (..), getInputType)
+import           Data.Morpheus.Validation.Internal.Value       (validateInputValue)
 import           Data.Morpheus.Validation.Query.Fragment       (getFragment)
-import           Data.Morpheus.Validation.Query.Input.Object   (validateInputValue)
 import           Data.Semigroup                                ((<>))
 import           Data.Text                                     (Text)
 
@@ -30,16 +30,6 @@ getVariableType :: Text -> Position -> DataTypeLib -> Validation DataKind
 getVariableType type' position' lib' = getInputType type' lib' error'
   where
     error' = unknownType type' position'
-
-lookupVariable :: Variables -> Text -> (Text -> error) -> Either error Value
-lookupVariable variables' key' error' =
-  case M.lookup key' variables' of
-    Nothing    -> Left $ error' key'
-    Just value -> pure value
-
-handleInputError :: Text -> Position -> InputValidation Value -> Validation (Text, Value)
-handleInputError key' position' (Left error') = Left $ variableGotInvalidValue key' (inputErrorMessage error') position'
-handleInputError key' _ (Right value') = pure (key', value')
 
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = fmap concat . mapM f
@@ -71,7 +61,7 @@ resolveOperationVariables typeLib lib root validationMode Operation {operationNa
   allVariableReferences lib [operationSelection] >>= checkUnusedVariables
   mapM (lookupAndValidateValueOnBody typeLib root validationMode) operationArgs
   where
-    varToKey :: (Text, Variable ()) -> EnhancedKey
+    varToKey :: (Text, Variable a) -> EnhancedKey
     varToKey (key', Variable {variablePosition}) = EnhancedKey key' variablePosition
     --
     checkUnusedVariables :: [EnhancedKey] -> Validation ()
@@ -81,21 +71,29 @@ resolveOperationVariables typeLib lib root validationMode Operation {operationNa
         unused' -> Left $ unusedVariables operationName unused'
 
 lookupAndValidateValueOnBody ::
-     DataTypeLib -> Variables -> VALIDATION_MODE -> (Text, Variable ()) -> Validation (Text, Variable Value)
+     DataTypeLib -> Variables -> VALIDATION_MODE -> (Text, Variable DefaultValue) -> Validation (Text, Variable Value)
 lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType
                                                                                      , variablePosition
                                                                                      , isVariableRequired
                                                                                      , variableTypeWrappers
+                                                                                     , variableValue = defaultValue
                                                                                      }) =
-  toVariable <$>
-  (getVariableType variableType variablePosition typeLib >>=
-   checkType (validationMode /= WITHOUT_VARIABLES && isVariableRequired))
+  toVariable <$> (getVariableType variableType variablePosition typeLib >>= checkType getVariable defaultValue)
   where
     toVariable (varKey, variableValue) = (varKey, var {variableValue})
+    getVariable = M.lookup key bodyVariables
     ------------------------------------------------------------------
-    checkType True varType =
-      lookupVariable bodyVariables key (uninitializedVariable variablePosition variableType) >>= validator varType
-    checkType False varType = maybe (pure (key, Null)) (validator varType) (M.lookup key bodyVariables)
+    checkType (Just variable) Nothing varType = validator varType variable
+    checkType (Just variable) (Just defValue) varType = validator varType defValue >> validator varType variable
+    checkType Nothing (Just defValue) varType = validator varType defValue
+    checkType Nothing Nothing varType
+      | validationMode /= WITHOUT_VARIABLES && isVariableRequired =
+        Left $ uninitializedVariable variablePosition variableType key
+      | otherwise = returnNull
+      where
+        returnNull = maybe (pure (key, Null)) (validator varType) (M.lookup key bodyVariables)
     -----------------------------------------------------------------------------------------------
     validator varType varValue =
-      handleInputError key variablePosition $ validateInputValue typeLib [] variableTypeWrappers varType (key, varValue)
+      case validateInputValue typeLib [] variableTypeWrappers varType (key, varValue) of
+        Left message -> Left $ variableGotInvalidValue key (inputErrorMessage message) variablePosition
+        Right value  -> pure (key, value)

@@ -1,22 +1,30 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
 
-module Data.Morpheus.Parsing.Request.Value
+module Data.Morpheus.Parsing.Internal.Value
   ( parseValue
   , enumValue
+  , parseDefaultValue
   ) where
 
 import           Data.Functor                            (($>))
 import           Data.Text                               (pack)
-import           Text.Megaparsec                         (anySingleBut, between, choice, label, many, sepBy, (<|>))
+import           Text.Megaparsec                         (anySingleBut, between, choice, label, many, optional, sepBy,
+                                                          (<|>))
 import           Text.Megaparsec.Char                    (char, string)
 import           Text.Megaparsec.Char.Lexer              (scientific)
 
 --
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, setOf, spaceAndComments, token)
+import           Data.Morpheus.Parsing.Internal.Terms    (litEquals, parseAssignment, setOf, spaceAndComments, token)
 import           Data.Morpheus.Types.Internal.Value      (ScalarValue (..), Value (..), decodeScientific)
+
+parseDefaultValue :: Parser (Maybe Value)
+parseDefaultValue =
+  optional $ do
+    litEquals
+    parseValue
 
 parseValue :: Parser Value
 parseValue =

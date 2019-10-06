@@ -14,8 +14,8 @@ import           Data.Text                                  (Text, unpack)
 --
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                  (globalErrorMessage)
-import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), ValidOperation, Variable (..),
-                                                             VariableDefinitions)
+import           Data.Morpheus.Types.Internal.AST.Operation (DefaultValue, Operation (..), ValidOperation,
+                                                             Variable (..), VariableDefinitions)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Data          (DataField (..), DataFullType (..), DataLeaf (..),
                                                              DataTyCon (..), DataTypeLib (..), TypeAlias (..),
@@ -76,7 +76,7 @@ operationTypes lib variables = genOperation
         typeD :: TypeD
         typeD = TypeD {tName = unpack name, tCons = [ConsD {cName = unpack name, cFields = map fieldD variables}]}
         ---------------------------------------
-        fieldD :: (Text, Variable ()) -> DataField
+        fieldD :: (Text, Variable DefaultValue) -> DataField
         fieldD (key, Variable {variableType, variableTypeWrappers}) =
           DataField
             { fieldName = key

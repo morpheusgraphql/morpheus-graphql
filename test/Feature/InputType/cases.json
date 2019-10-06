@@ -20,8 +20,12 @@
     "description": "fail when: variable is defined by the operation but can't found on request body"
   },
   {
-    "path": "variables/nullableVariable",
+    "path": "variables/valueNotProvided/nullableVariable",
     "description": "don't fail when: variable is defined by the operation but can't found on request body"
+  },
+  {
+    "path": "variables/valueNotProvided/nonNullVariableWithDefaultValue",
+    "description": "don't fail when: not nullable variable was not provided but has default value"
   },
   {
     "path": "variables/invalidValue/invalidListVariable",
@@ -30,6 +34,14 @@
   {
     "path": "variables/invalidValue/nestedListNonNullListReceivedNull",
     "description": "fail: if list of nonNull elements receives null"
+  },
+  {
+    "path": "variables/invalidValue/invalidDefaultValue",
+    "description": "fail: if default value is incompatible"
+  },
+  {
+    "path": "variables/invalidValue/invalidDefaultValueButVariableProvided",
+    "description": "fail: if default value is incompatible eve if correct variable value was provided"
   },
   {
     "path": "variables/nestedListNullableListReceivedNull",

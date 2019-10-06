@@ -47,6 +47,7 @@
     - Fragments: ✅
     - Inline Fragments: (>= 0.1.0)
     - Aliases: ✅ (>= 0.1.0)
+    - DefaultValues:  ✅ (>= 0.3.2)
     - Operator
       - Query: ✅
       - Mutation: ✅
