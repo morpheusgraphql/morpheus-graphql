@@ -98,12 +98,16 @@ operationTypes lib variables x = traceShow (genOperation x) (genOperation x)
           ---------------------------------------------------------------------------------------------
           where
             genField :: (Text, Selection) -> Validation DataField
-            genField (fieldName, Selection {selectionRec = SelectionAlias {aliasFieldName}}) = do
-              fieldType <- snd <$> lookupFieldType lib nextPath datatype aliasFieldName
-              pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
-            genField (fieldName, _) = do
-              fieldType <- snd <$> lookupFieldType lib nextPath datatype fieldName
-              pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
+            genField (fieldName, sel) = genFieldD sel
+              where
+                fieldPath = nextPath <> [fieldName]
+                -------------------------------
+                genFieldD Selection {selectionRec = SelectionAlias {aliasFieldName}} = do
+                  fieldType <- snd <$> lookupFieldType lib fieldPath datatype aliasFieldName
+                  pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
+                genFieldD _ = do
+                  fieldType <- snd <$> lookupFieldType lib fieldPath datatype fieldName
+                  pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
             ------------------------------------------------------------------------------------------------------------
             newFieldTypes parentType = fmap concat <$> mapM valSelection
               where
