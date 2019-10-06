@@ -1,0 +1,5 @@
+query invalidListVariable($v1: [[[Int!]!]]! = { id: "12" }) {
+  q1 {
+    a2(argList: [], argNestedList: $v1)
+  }
+}

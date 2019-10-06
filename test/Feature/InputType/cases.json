@@ -36,6 +36,14 @@
     "description": "fail: if list of nonNull elements receives null"
   },
   {
+    "path": "variables/invalidValue/invalidDefaultValue",
+    "description": "fail: if default value is incompatible"
+  },
+  {
+    "path": "variables/invalidValue/invalidDefaultValueButVariableProvided",
+    "description": "fail: if default value is incompatible eve if correct variable value was provided"
+  },
+  {
     "path": "variables/nestedListNullableListReceivedNull",
     "description": "resolve: if list of nullable elements receives null"
   },
