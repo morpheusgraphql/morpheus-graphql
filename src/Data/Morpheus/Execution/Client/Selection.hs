@@ -112,7 +112,7 @@ operationTypes lib variables = genOperation
                 validateSelection :: DataFullType -> Selection -> Validation [TypeD]
                 validateSelection dType Selection {selectionRec = SelectionField} = withLeaf buildLeaf dType
                 validateSelection dType Selection {selectionRec = SelectionSet selectionSet} =
-                  genRecordType path (typeFrom path dType) dType selectionSet
+                  genRecordType (path <> [name]) (typeFrom path dType) dType selectionSet
                 validateSelection dType selection@Selection {selectionRec = SelectionAlias {aliasSelection}} =
                   validateSelection dType selection {selectionRec = aliasSelection}
                 ---- UNION

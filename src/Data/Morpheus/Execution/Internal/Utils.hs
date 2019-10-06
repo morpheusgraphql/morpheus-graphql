@@ -10,8 +10,7 @@ import           Data.Semigroup ((<>))
 import           Data.Text      (Text, unpack)
 
 nameSpaceType :: [Text] -> Text -> String
-nameSpaceType [] name     = capital (unpack name)
-nameSpaceType (x:xs) name = capital (unpack name) <> nameSpaceType xs name
+nameSpaceType list name = concatMap (capital . unpack) (list <> [name])
 
 nameSpaceWith :: String -> String -> String
 nameSpaceWith nSpace name = nonCapital nSpace <> capital name
