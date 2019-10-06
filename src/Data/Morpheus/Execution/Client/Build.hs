@@ -47,8 +47,8 @@ defineOperationType (argType, argumentTypes) query datatype = do
 
 defineJSONType :: TypeD -> Q [Dec]
 defineJSONType datatype = do
-  toJson <- pure <$> deriveFromJSON datatype
-  pure $ declareType [''Show] datatype : toJson
+  toJson <- deriveFromJSON datatype
+  pure [declareType [''Show] datatype, toJson]
 
 queryArgumentType :: [TypeD] -> (Type, Q [Dec])
 queryArgumentType [] = (ConT $ mkName "()", pure [])
