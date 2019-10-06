@@ -101,6 +101,27 @@ operationTypes lib variables = genOperation
             genField (fieldName, _) = do
               fieldType <- snd <$> lookupFieldType datatype fieldName
               pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
+            ------------------------------------------------------------------------------------------------------------
+            newFieldTypes parentType = fmap concat <$> mapM validateSelection
+              where
+                validateSelection :: (Key, Selection) -> Validation [TypeD]
+                validateSelection (key, Selection {selectionRec = SelectionField}) =
+                  (fst <$> lookupFieldType parentType key) >>= withLeaf buildLeaf
+                validateSelection (key, Selection {selectionRec = SelectionSet selectionSet}) = do
+                  fieldDatatype <- fst <$> lookupFieldType parentType key
+                  genRecordType path (typeFrom path fieldDatatype) fieldDatatype selectionSet
+                validateSelection (_, selection@Selection {selectionRec = SelectionAlias { aliasFieldName
+                                                                                         , aliasSelection
+                                                                                         }}) =
+                  validateSelection (aliasFieldName, selection {selectionRec = aliasSelection})
+                validateSelection (key, Selection {selectionRec = UnionSelection unionSelections}) = do
+                  unionTypeName <- typeFrom path . fst <$> lookupFieldType parentType key
+                  (tCons, subTypes) <- unzip <$> mapM getUnionType unionSelections
+                  pure $ TypeD {tName = unpack unionTypeName, tCons} : concat subTypes
+                  where
+                    getUnionType (typeKey, selectionVariant) = do
+                      conDatatype <- getType lib typeKey
+                      genConsD typeKey conDatatype selectionVariant
         ------------------------------------------------------
         lookupFieldType :: DataFullType -> Text -> Validation (DataFullType, TypeAlias)
         lookupFieldType (OutputObject DataTyCon {typeData}) key =
@@ -109,25 +130,6 @@ operationTypes lib variables = genOperation
               where trans x = (x, alias {aliasTyCon = typeFrom path x, aliasArgs = Nothing})
             Nothing -> Left (compileError key)
         lookupFieldType _ key = Left (compileError key)
-        ------------------------------------------------------------------------------------------------------------
-        newFieldTypes parentType = fmap concat <$> mapM validateSelection
-          where
-            validateSelection :: (Key, Selection) -> Validation [TypeD]
-            validateSelection (key, Selection {selectionRec = SelectionField}) =
-              (fst <$> lookupFieldType parentType key) >>= withLeaf buildLeaf
-            validateSelection (key, Selection {selectionRec = SelectionSet selectionSet}) = do
-              datatype <- fst <$> lookupFieldType parentType key
-              genRecordType path (typeFrom path datatype) datatype selectionSet
-            validateSelection (_, selection@Selection {selectionRec = SelectionAlias {aliasFieldName, aliasSelection}}) =
-              validateSelection (aliasFieldName, selection {selectionRec = aliasSelection})
-            validateSelection (key, Selection {selectionRec = UnionSelection unionSelections}) = do
-              unionTypeName <- typeFrom path . fst <$> lookupFieldType parentType key
-              (tCons, subTypes) <- unzip <$> mapM getUnionType unionSelections
-              pure $ TypeD {tName = unpack unionTypeName, tCons} : concat subTypes
-              where
-                getUnionType (typeKey, selSet) = do
-                  conDatatype <- getType lib typeKey
-                  genConsD typeKey conDatatype selSet
 
 withLeaf :: (DataLeaf -> Validation b) -> DataFullType -> Validation b
 withLeaf f (Leaf x) = f x
