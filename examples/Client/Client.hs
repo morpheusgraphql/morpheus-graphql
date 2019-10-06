@@ -64,7 +64,7 @@ defineByDocumentFile
           }
           ...on Human {
               lTime: lifetime
-
+             # TODO: Profession should be defined only once! - prof: profession
           }
         }
       }
