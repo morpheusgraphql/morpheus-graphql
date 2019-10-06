@@ -97,7 +97,6 @@ operationTypes lib variables x = traceShow (genOperation x) (genOperation x)
       pure $ TypeD {tName, tNamespace = map unpack path, tCons = [con]} : subTypes
       where
         tName = unpack name
-        nextPath = path <> [name]
         genConsD :: String -> DataFullType -> SelectionSet -> Validation (ConsD, [TypeD])
         genConsD cName datatype selSet = do
           cFields <- traverse genField selSet
@@ -108,7 +107,7 @@ operationTypes lib variables x = traceShow (genOperation x) (genOperation x)
             genField :: (Text, Selection) -> Validation DataField
             genField (fieldName, sel) = genFieldD sel
               where
-                fieldPath = nextPath <> [fieldName]
+                fieldPath = path <> [fieldName]
                 -------------------------------
                 genFieldD Selection {selectionRec = SelectionAlias {aliasFieldName}} = do
                   fieldType <- snd <$> lookupFieldType lib fieldPath datatype aliasFieldName
@@ -125,8 +124,8 @@ operationTypes lib variables x = traceShow (genOperation x) (genOperation x)
                   validateSelection fieldDatatype sel
                   --------------------------------------------------------------------
                   where
-                    fieldPath = nextPath <> [selKey]
-                    -------------------
+                    fieldPath = path <> [selKey]
+                    --------------------------------------------------------------------
                     validateSelection :: DataFullType -> Selection -> Validation [TypeD]
                     validateSelection dType Selection {selectionRec = SelectionField} = withLeaf buildLeaf dType
                     validateSelection dType Selection {selectionRec = SelectionSet selectionSet} =

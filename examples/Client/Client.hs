@@ -74,7 +74,7 @@ ioRes :: ByteString -> IO ByteString
 ioRes req = do
   print req
   return
-    "{\"data\":{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }}"
+    "{\"data\":{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" } ,  \"char2\":{ \"__typename\":\"Human\", \"lTime\": \"time\"}  }}"
 
 fetchHero :: IO (Either String GetHero)
 fetchHero = fetch ioRes GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}, charID = "Hercules"}
