@@ -36,7 +36,7 @@ extra-deps:
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack update`
 
-### Building your first GrqphQL API
+### Building your first GraphQL API
 
 ### with GraphQL syntax
 
