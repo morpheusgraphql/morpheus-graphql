@@ -29,6 +29,9 @@ defineByIntrospectionFile
            address (coordinates: $userCoordinates ){
              city
            }
+           customAdress: address (coordinates: $userCoordinates ){
+               customCity: city
+           }
         }
         user {
           email
@@ -53,6 +56,15 @@ defineByDocumentFile
           ...on Human {
             lifetime
             profession
+          }
+        }
+        char2: character(characterID: $charID ) {
+          ...on Creature {
+              cName: creatureName
+          }
+          ...on Human {
+              lTime: lifetime
+
           }
         }
       }
