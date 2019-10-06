@@ -25,9 +25,9 @@ defineByIntrospectionFile
       {
         myUser: user {
            boo3: name
-           email
+           myUserEmail: email
            address (coordinates: $userCoordinates ){
-            booa: city
+             city
            }
         }
         user {
