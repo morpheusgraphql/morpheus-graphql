@@ -8,7 +8,6 @@ module Data.Morpheus.Execution.Client.Build
   ( defineQuery
   ) where
 
-import           Control.Lens                             (declareLenses)
 import           Data.Aeson                               (ToJSON)
 import           Data.Semigroup                           ((<>))
 import           Language.Haskell.TH
@@ -24,10 +23,6 @@ import           Data.Morpheus.Types.Internal.Data        (DataTypeLib)
 import           Data.Morpheus.Types.Internal.DataD       (QueryD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation  (Validation)
 import           Data.Morpheus.Types.Types                (GQLQueryRoot (..))
-
-
-
-
 
 defineQuery :: IO (Validation DataTypeLib) -> (GQLQueryRoot, String) -> Q [Dec]
 defineQuery ioSchema queryRoot = do
@@ -52,17 +47,11 @@ defineOperationType (argType, argumentTypes) query datatype = do
 
 defineJSONType :: TypeD -> Q [Dec]
 defineJSONType datatype = do
-  record <- declareLenses (pure [declareType [''Show] datatype])
   toJson <- pure <$> deriveFromJSON datatype
-  pure $ record <> toJson
+  pure $ declareType [''Show] datatype : toJson
 
 queryArgumentType :: [TypeD] -> (Type, Q [Dec])
 queryArgumentType [] = (ConT $ mkName "()", pure [])
 queryArgumentType (rootType@TypeD {tName}:xs) = (ConT $ mkName tName, types)
   where
     types = pure $ map (declareType [''Show, ''ToJSON]) (rootType : xs)
-
-
-
-
-
