@@ -25,24 +25,16 @@ import           Data.Morpheus.Types.Internal.DataD       (QueryD (..), TypeD (.
 import           Data.Morpheus.Types.Internal.Validation  (Validation)
 import           Data.Morpheus.Types.Types                (GQLQueryRoot (..))
 
-queryArgumentType :: [TypeD] -> (Type, Q [Dec])
-queryArgumentType [] = (ConT $ mkName "()", pure [])
-queryArgumentType (rootType@TypeD {tName}:xs) = (ConT $ mkName tName, types)
-  where
-    types = pure $ map (declareType [''Show, ''ToJSON]) (rootType : xs)
 
-defineJSONType :: TypeD -> Q [Dec]
-defineJSONType datatype = do
-  record <- declareLenses (pure [declareType [''Show] datatype])
-  toJson <- pure <$> deriveFromJSON datatype
-  pure $ record <> toJson
 
-defineOperationType :: (Type, Q [Dec]) -> String -> TypeD -> Q [Dec]
-defineOperationType (argType, argumentTypes) query datatype = do
-  rootType <- defineJSONType datatype
-  typeClassFetch <- deriveFetch argType (tName datatype) query
-  args <- argumentTypes
-  pure $ rootType <> typeClassFetch <> args
+
+
+defineQuery :: IO (Validation DataTypeLib) -> (GQLQueryRoot, String) -> Q [Dec]
+defineQuery ioSchema queryRoot = do
+  schema <- runIO ioSchema
+  case schema >>= (`validateWith` queryRoot) of
+    Left errors  -> fail (renderGQLErrors errors)
+    Right queryD -> defineQueryD queryD
 
 defineQueryD :: QueryD -> Q [Dec]
 defineQueryD QueryD {queryTypes = rootType:subTypes, queryText, queryArgTypes} = do
@@ -51,9 +43,26 @@ defineQueryD QueryD {queryTypes = rootType:subTypes, queryText, queryArgTypes} =
   return $ rootDecs ++ subTypeDecs
 defineQueryD QueryD {queryTypes = []} = return []
 
-defineQuery :: IO (Validation DataTypeLib) -> (GQLQueryRoot, String) -> Q [Dec]
-defineQuery ioSchema queryRoot = do
-  schema <- runIO ioSchema
-  case schema >>= (`validateWith` queryRoot) of
-    Left errors  -> fail (renderGQLErrors errors)
-    Right queryD -> defineQueryD queryD
+defineOperationType :: (Type, Q [Dec]) -> String -> TypeD -> Q [Dec]
+defineOperationType (argType, argumentTypes) query datatype = do
+  rootType <- defineJSONType datatype
+  typeClassFetch <- deriveFetch argType (tName datatype) query
+  args <- argumentTypes
+  pure $ rootType <> typeClassFetch <> args
+
+defineJSONType :: TypeD -> Q [Dec]
+defineJSONType datatype = do
+  record <- declareLenses (pure [declareType [''Show] datatype])
+  toJson <- pure <$> deriveFromJSON datatype
+  pure $ record <> toJson
+
+queryArgumentType :: [TypeD] -> (Type, Q [Dec])
+queryArgumentType [] = (ConT $ mkName "()", pure [])
+queryArgumentType (rootType@TypeD {tName}:xs) = (ConT $ mkName tName, types)
+  where
+    types = pure $ map (declareType [''Show, ''ToJSON]) (rootType : xs)
+
+
+
+
+

@@ -15,31 +15,40 @@ module Data.Morpheus.Execution.Client.Aeson
 
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.HashMap.Lazy                  as H (lookup)
-import           Data.Semigroup                     ((<>))
-import           Data.Text                          (unpack)
+import qualified Data.HashMap.Lazy                      as H (lookup)
+import           Data.Semigroup                         ((<>))
+import           Data.Text                              (unpack)
 import           Language.Haskell.TH
+
+import           Data.Morpheus.Execution.Internal.Utils (nameSpaceTypeString)
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data  (DataField (..), isFieldNullable)
-import           Data.Morpheus.Types.Internal.DataD (ConsD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.TH    (instanceFunD, instanceHeadT)
+import           Data.Morpheus.Types.Internal.Data      (DataField (..), isFieldNullable)
+import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.TH        (instanceFunD, instanceHeadT)
 
 deriveFromJSON :: TypeD -> Q Dec
 deriveFromJSON TypeD {tCons = []} = fail "Type Should Have at least one Constructor"
-deriveFromJSON TypeD {tName, tCons = [cons]} = defineFromJSON tName aesonObject cons
-deriveFromJSON typeD@TypeD {tName, tCons}
-  | isEnum tCons = defineFromJSON tName aesonEnum tCons
-  | otherwise = defineFromJSON tName aesonUnionObject typeD
-
-aesonObject :: ConsD -> ExpQ
-aesonObject con@ConsD {cName} = appE [|withObject cName|] (lamE [varP (mkName "o")] (aesonObjectBody con))
-
-aesonObjectBody :: ConsD -> ExpQ
-aesonObjectBody ConsD {cName, cFields} = handleFields cFields
+deriveFromJSON TypeD {tName, tNamespace, tCons = [cons]} = defineFromJSON name (aesonObject tNamespace) cons
   where
-    consName = mkName cName
+    name = nameSpaceTypeString tNamespace tName
+deriveFromJSON typeD@TypeD {tName, tCons, tNamespace}
+  | isEnum tCons = defineFromJSON name aesonEnum tCons
+  | otherwise = defineFromJSON name (aesonUnionObject tNamespace) typeD
+  where
+    name = nameSpaceTypeString tNamespace tName
+
+aesonObject :: [String] -> ConsD -> ExpQ
+aesonObject tNamespace con@ConsD {cName} =
+  appE [|withObject name|] (lamE [varP (mkName "o")] ((aesonObjectBody tNamespace) con))
+  where
+    name = nameSpaceTypeString tNamespace cName
+
+aesonObjectBody :: [String] -> ConsD -> ExpQ
+aesonObjectBody namespace ConsD {cName, cFields} = handleFields cFields
+  where
+    consName = mkName $ nameSpaceTypeString namespace cName
     ------------------------------------------
     handleFields [] = fail $ "No Empty Object"
     handleFields fields = startExp fields
@@ -58,13 +67,14 @@ aesonObjectBody ConsD {cName, cFields} = handleFields cFields
             applyFields [x]    = defField x
             applyFields (x:xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
 
-aesonUnionObject :: TypeD -> ExpQ
-aesonUnionObject TypeD {tCons} = appE (varE $ 'takeValueType) (lamCaseE ((map buildMatch tCons) <> [elseCaseEXP]))
+aesonUnionObject :: [String] -> TypeD -> ExpQ
+aesonUnionObject namespace TypeD {tCons} =
+  appE (varE $ 'takeValueType) (lamCaseE ((map buildMatch tCons) <> [elseCaseEXP]))
   where
     buildMatch cons@ConsD {cName} = match pattern body []
       where
         pattern = tupP [litP (stringL cName), varP $ mkName "o"]
-        body = normalB (aesonObjectBody cons)
+        body = normalB $ aesonObjectBody namespace cons
 
 takeValueType :: ((String, Object) -> Parser a) -> Value -> Parser a
 takeValueType f (Object hMap) =

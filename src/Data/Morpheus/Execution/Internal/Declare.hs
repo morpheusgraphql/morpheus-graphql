@@ -14,12 +14,12 @@ module Data.Morpheus.Execution.Internal.Declare
   ) where
 
 import           Data.Maybe                             (maybe)
-import           Data.Text                              (unpack)
+import           Data.Text                              (pack, unpack)
 import           GHC.Generics                           (Generic)
 import           Language.Haskell.TH
 
 -- MORPHEUS
-import           Data.Morpheus.Execution.Internal.Utils (nameSpaceWith)
+import           Data.Morpheus.Execution.Internal.Utils (nameSpaceType, nameSpaceWith)
 import           Data.Morpheus.Types.Internal.Data      (ArgsType (..), DataField (..), DataTypeKind (..),
                                                          DataTypeKind (..), TypeAlias (..), WrapperD (..),
                                                          isOutputObject, isSubscription)
@@ -53,15 +53,16 @@ tyConArgs kindD
 
 -- declareType
 declareGQLT :: Bool -> Maybe DataTypeKind -> [Name] -> TypeD -> Dec
-declareGQLT namespace kindD derivingList TypeD {tName, tCons} =
-  DataD [] (mkName tName) tVars Nothing (map cons tCons) $ map derive (''Generic : derivingList)
+declareGQLT namespace kindD derivingList TypeD {tName, tCons, tNamespace} =
+  DataD [] (genName tName) tVars Nothing (map cons tCons) $ map derive (''Generic : derivingList)
   where
+    genName = mkName . nameSpaceType (map pack tNamespace) . pack
     tVars = maybe [] (declareTyVar . tyConArgs) kindD
       where
         declareTyVar = map (PlainTV . mkName)
     defBang = Bang NoSourceUnpackedness NoSourceStrictness
     derive className = DerivClause Nothing [ConT className]
-    cons ConsD {cName, cFields} = RecC (mkName cName) (map declareField cFields)
+    cons ConsD {cName, cFields} = RecC (genName cName) (map declareField cFields)
       where
         declareField DataField {fieldName, fieldArgsType, fieldType} = (fName, defBang, fiType)
           where

@@ -87,16 +87,16 @@ operationTypes lib variables x = traceShow (genOperation x) (genOperation x)
                 toFieldD (_, field@DataField {fieldType}) = do
                   aliasTyCon <- typeFrom [] <$> getType lib (aliasTyCon fieldType)
                   pure $ field {fieldType = fieldType {aliasTyCon}}
-            subTypes (Leaf x) = buildLeaf x
+            subTypes (Leaf leaf) = buildLeaf leaf
             subTypes _ = pure []
     ---------------------------------------------------------
     -- generates selection Object Types
     genRecordType :: [Key] -> Key -> DataFullType -> SelectionSet -> Validation [TypeD]
     genRecordType path name dataType recordSelSet = do
-      (con, subTypes) <- genConsD tName dataType recordSelSet
-      pure $ TypeD {tName, tNamespace = map unpack nextPath, tCons = [con]} : subTypes
+      (con, subTypes) <- genConsD (unpack name) dataType recordSelSet
+      pure $ TypeD {tName, tNamespace = map unpack path, tCons = [con]} : subTypes
       where
-        tName = nameSpaceType path name
+        tName = unpack name
         nextPath = path <> [name]
         genConsD :: String -> DataFullType -> SelectionSet -> Validation (ConsD, [TypeD])
         genConsD cName datatype selSet = do
@@ -137,12 +137,12 @@ operationTypes lib variables x = traceShow (genOperation x) (genOperation x)
                     validateSelection dType Selection {selectionRec = UnionSelection unionSelections} = do
                       (tCons, subTypes) <- unzip <$> mapM getUnionType unionSelections
                       pure $
-                        TypeD {tNamespace = map unpack fieldPath, tName = unpack $ typeFrom fieldPath dType, tCons} :
+                        TypeD {tNamespace = map unpack fieldPath, tName = unpack $ typeFrom [] dType, tCons} :
                         concat subTypes
                       where
                         getUnionType (selectedTyName, selectionVariant) = do
                           conDatatype <- getType lib selectedTyName
-                          genConsD (nameSpaceType fieldPath selectedTyName) conDatatype selectionVariant
+                          genConsD (unpack selectedTyName) conDatatype selectionVariant
 
 lookupFieldType :: DataTypeLib -> [Key] -> DataFullType -> Text -> Validation (DataFullType, TypeAlias)
 lookupFieldType lib path (OutputObject DataTyCon {typeData}) key =
