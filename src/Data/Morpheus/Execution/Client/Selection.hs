@@ -99,41 +99,44 @@ operationTypes lib variables x = traceShow (genOperation x) (genOperation x)
           where
             genField :: (Text, Selection) -> Validation DataField
             genField (fieldName, Selection {selectionRec = SelectionAlias {aliasFieldName}}) = do
-              fieldType <- snd <$> lookupFieldType datatype aliasFieldName
+              fieldType <- snd <$> lookupFieldType lib nextPath datatype aliasFieldName
               pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
             genField (fieldName, _) = do
-              fieldType <- snd <$> lookupFieldType datatype fieldName
+              fieldType <- snd <$> lookupFieldType lib nextPath datatype fieldName
               pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
             ------------------------------------------------------------------------------------------------------------
             newFieldTypes parentType = fmap concat <$> mapM valSelection
               where
-                valSelection x = do
-                  let (key, sel) = getSelectionFieldKey x
-                  fieldDatatype <- fst <$> lookupFieldType parentType key
+                valSelection selection@(selKey, _) = do
+                  let (key, sel) = getSelectionFieldKey selection
+                  fieldDatatype <- fst <$> lookupFieldType lib fieldPath parentType key
                   validateSelection fieldDatatype sel
-                --------------------------------------------------------------------
-                validateSelection :: DataFullType -> Selection -> Validation [TypeD]
-                validateSelection dType Selection {selectionRec = SelectionField} = withLeaf buildLeaf dType
-                validateSelection dType Selection {selectionRec = SelectionSet selectionSet} =
-                  genRecordType nextPath (typeFrom [] dType) dType selectionSet
-                validateSelection dType selection@Selection {selectionRec = SelectionAlias {aliasSelection}} =
-                  validateSelection dType selection {selectionRec = aliasSelection}
-                ---- UNION
-                validateSelection dType Selection {selectionRec = UnionSelection unionSelections} = do
-                  (tCons, subTypes) <- unzip <$> mapM getUnionType unionSelections
-                  pure $ TypeD {tName = unpack $ typeFrom nextPath dType, tCons} : concat subTypes
+                  --------------------------------------------------------------------
                   where
-                    getUnionType (selectedTyName, selectionVariant) = do
-                      conDatatype <- getType lib selectedTyName
-                      genConsD (nameSpaceType nextPath selectedTyName) conDatatype selectionVariant
-        ------------------------------------------------------
-        lookupFieldType :: DataFullType -> Text -> Validation (DataFullType, TypeAlias)
-        lookupFieldType (OutputObject DataTyCon {typeData}) key =
-          case lookup key typeData of
-            Just DataField {fieldType = alias@TypeAlias {aliasTyCon}} -> trans <$> getType lib aliasTyCon
-              where trans x = (x, alias {aliasTyCon = typeFrom nextPath x, aliasArgs = Nothing})
-            Nothing -> Left (compileError key)
-        lookupFieldType _ key = Left (compileError key)
+                    fieldPath = nextPath <> [selKey]
+                    -------------------
+                    validateSelection :: DataFullType -> Selection -> Validation [TypeD]
+                    validateSelection dType Selection {selectionRec = SelectionField} = withLeaf buildLeaf dType
+                    validateSelection dType Selection {selectionRec = SelectionSet selectionSet} =
+                      genRecordType fieldPath (typeFrom [] dType) dType selectionSet
+                    validateSelection dType aliasSel@Selection {selectionRec = SelectionAlias {aliasSelection}} =
+                      validateSelection dType aliasSel {selectionRec = aliasSelection}
+                    ---- UNION
+                    validateSelection dType Selection {selectionRec = UnionSelection unionSelections} = do
+                      (tCons, subTypes) <- unzip <$> mapM getUnionType unionSelections
+                      pure $ TypeD {tName = unpack $ typeFrom fieldPath dType, tCons} : concat subTypes
+                      where
+                        getUnionType (selectedTyName, selectionVariant) = do
+                          conDatatype <- getType lib selectedTyName
+                          genConsD (nameSpaceType fieldPath selectedTyName) conDatatype selectionVariant
+
+lookupFieldType :: DataTypeLib -> [Key] -> DataFullType -> Text -> Validation (DataFullType, TypeAlias)
+lookupFieldType lib path (OutputObject DataTyCon {typeData}) key =
+  case lookup key typeData of
+    Just DataField {fieldType = alias@TypeAlias {aliasTyCon}} -> trans <$> getType lib aliasTyCon
+      where trans x = (x, alias {aliasTyCon = typeFrom path x, aliasArgs = Nothing})
+    Nothing -> Left (compileError key)
+lookupFieldType _ _ _ key = Left (compileError key)
 
 getSelectionFieldKey :: (Key, Selection) -> (Key, Selection)
 getSelectionFieldKey (_, selection@Selection {selectionRec = SelectionAlias {aliasFieldName, aliasSelection}}) =

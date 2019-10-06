@@ -27,8 +27,11 @@ defineByIntrospectionFile
            boo3: name
            email
            address (coordinates: $userCoordinates ){
-            city
+            booa: city
            }
+        }
+        user {
+          email
         }
       }
   |]
