@@ -55,8 +55,6 @@ defineByDocumentFile
       }
   |]
 
-boo = Address {}
-
 ioRes :: ByteString -> IO ByteString
 ioRes req = do
   print req
