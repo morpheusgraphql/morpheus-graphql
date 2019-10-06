@@ -10,6 +10,7 @@ module Data.Morpheus.Execution.Client.Selection
 
 import           Data.Semigroup                             ((<>))
 import           Data.Text                                  (Text, pack, unpack)
+import           Debug.Trace
 
 --
 -- MORPHEUS
@@ -29,7 +30,7 @@ compileError :: Text -> GQLErrors
 compileError x = globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
 operationTypes :: DataTypeLib -> VariableDefinitions -> ValidOperation -> Validation ([TypeD], [TypeD])
-operationTypes lib variables = genOperation
+operationTypes lib variables x = traceShow (genOperation x) (genOperation x)
   where
     genOperation Operation {operationName, operationSelection} = do
       argTypes <- rootArguments (operationName <> "Args")
@@ -84,14 +85,16 @@ operationTypes lib variables = genOperation
     -- generates selection Object Types
     genRecordType :: [Key] -> Key -> DataFullType -> SelectionSet -> Validation [TypeD]
     genRecordType path name dataType recordSelSet = do
-      (con, subTypes) <- genConsD name dataType recordSelSet
-      pure $ TypeD {tName = nameSpaceType path name, tCons = [con]} : subTypes
+      (con, subTypes) <- genConsD tName dataType recordSelSet
+      pure $ TypeD {tName, tCons = [con]} : subTypes
       where
-        genConsD :: Key -> DataFullType -> SelectionSet -> Validation (ConsD, [TypeD])
-        genConsD consName datatype selSet = do
+        tName = nameSpaceType path name
+        nextPath = path <> [name]
+        genConsD :: String -> DataFullType -> SelectionSet -> Validation (ConsD, [TypeD])
+        genConsD cName datatype selSet = do
           cFields <- traverse genField selSet
           subTypes <- newFieldTypes datatype selSet
-          pure (ConsD {cName = nameSpaceType path consName, cFields}, subTypes)
+          pure (ConsD {cName, cFields}, subTypes)
           ---------------------------------------------------------------------------------------------
           where
             genField :: (Text, Selection) -> Validation DataField
@@ -112,23 +115,23 @@ operationTypes lib variables = genOperation
                 validateSelection :: DataFullType -> Selection -> Validation [TypeD]
                 validateSelection dType Selection {selectionRec = SelectionField} = withLeaf buildLeaf dType
                 validateSelection dType Selection {selectionRec = SelectionSet selectionSet} =
-                  genRecordType (path <> [name]) (typeFrom path dType) dType selectionSet
+                  genRecordType nextPath (typeFrom [] dType) dType selectionSet
                 validateSelection dType selection@Selection {selectionRec = SelectionAlias {aliasSelection}} =
                   validateSelection dType selection {selectionRec = aliasSelection}
                 ---- UNION
                 validateSelection dType Selection {selectionRec = UnionSelection unionSelections} = do
                   (tCons, subTypes) <- unzip <$> mapM getUnionType unionSelections
-                  pure $ TypeD {tName = unpack $ typeFrom path dType, tCons} : concat subTypes
+                  pure $ TypeD {tName = unpack $ typeFrom nextPath dType, tCons} : concat subTypes
                   where
-                    getUnionType (typeKey, selectionVariant) = do
-                      conDatatype <- getType lib typeKey
-                      genConsD typeKey conDatatype selectionVariant
+                    getUnionType (selectedTyName, selectionVariant) = do
+                      conDatatype <- getType lib selectedTyName
+                      genConsD (nameSpaceType nextPath selectedTyName) conDatatype selectionVariant
         ------------------------------------------------------
         lookupFieldType :: DataFullType -> Text -> Validation (DataFullType, TypeAlias)
         lookupFieldType (OutputObject DataTyCon {typeData}) key =
           case lookup key typeData of
             Just DataField {fieldType = alias@TypeAlias {aliasTyCon}} -> trans <$> getType lib aliasTyCon
-              where trans x = (x, alias {aliasTyCon = typeFrom path x, aliasArgs = Nothing})
+              where trans x = (x, alias {aliasTyCon = typeFrom nextPath x, aliasArgs = Nothing})
             Nothing -> Left (compileError key)
         lookupFieldType _ key = Left (compileError key)
 
