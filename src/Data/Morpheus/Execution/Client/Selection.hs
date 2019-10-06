@@ -48,7 +48,11 @@ operationTypes lib variables x = traceShow (genOperation x) (genOperation x)
       where
         rootArgumentsType :: TypeD
         rootArgumentsType =
-          TypeD {tName = unpack argsName, tCons = [ConsD {cName = unpack argsName, cFields = map fieldD variables}]}
+          TypeD
+            { tName = unpack argsName
+            , tNamespace = []
+            , tCons = [ConsD {cName = unpack argsName, cFields = map fieldD variables}]
+            }
           where
             fieldD :: (Text, Variable DefaultValue) -> DataField
             fieldD (key, Variable {variableType, variableTypeWrappers}) =
@@ -70,7 +74,11 @@ operationTypes lib variables x = traceShow (genOperation x) (genOperation x)
               pure $ typeD fields : types
               where
                 typeD fields =
-                  TypeD {tName = unpack typeName, tCons = [ConsD {cName = unpack typeName, cFields = fields}]}
+                  TypeD
+                    { tName = unpack typeName
+                    , tNamespace = []
+                    , tCons = [ConsD {cName = unpack typeName, cFields = fields}]
+                    }
                     ---------------------------------------------------------------
                 toInputTypeD :: (Text, DataField) -> Validation [TypeD]
                 toInputTypeD (_, DataField {fieldType}) = genInputType $ aliasTyCon fieldType
@@ -86,7 +94,7 @@ operationTypes lib variables x = traceShow (genOperation x) (genOperation x)
     genRecordType :: [Key] -> Key -> DataFullType -> SelectionSet -> Validation [TypeD]
     genRecordType path name dataType recordSelSet = do
       (con, subTypes) <- genConsD tName dataType recordSelSet
-      pure $ TypeD {tName, tCons = [con]} : subTypes
+      pure $ TypeD {tName, tNamespace = map unpack nextPath, tCons = [con]} : subTypes
       where
         tName = nameSpaceType path name
         nextPath = path <> [name]
@@ -128,7 +136,9 @@ operationTypes lib variables x = traceShow (genOperation x) (genOperation x)
                     ---- UNION
                     validateSelection dType Selection {selectionRec = UnionSelection unionSelections} = do
                       (tCons, subTypes) <- unzip <$> mapM getUnionType unionSelections
-                      pure $ TypeD {tName = unpack $ typeFrom fieldPath dType, tCons} : concat subTypes
+                      pure $
+                        TypeD {tNamespace = map unpack fieldPath, tName = unpack $ typeFrom fieldPath dType, tCons} :
+                        concat subTypes
                       where
                         getUnionType (selectedTyName, selectionVariant) = do
                           conDatatype <- getType lib selectedTyName
@@ -153,7 +163,7 @@ withLeaf _ _        = Left $ compileError "Invalid schema Expected scalar"
 
 buildLeaf :: DataLeaf -> Validation [TypeD]
 buildLeaf (LeafEnum DataTyCon {typeName, typeData}) =
-  pure [TypeD {tName = unpack typeName, tCons = map enumOption typeData}]
+  pure [TypeD {tName = unpack typeName, tNamespace = [], tCons = map enumOption typeData}]
   where
     enumOption name = ConsD {cName = unpack name, cFields = []}
 buildLeaf _ = pure []

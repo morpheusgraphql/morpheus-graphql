@@ -27,7 +27,7 @@ data QueryD = QueryD
 
 data TypeD = TypeD
   { tName      :: String
-  , tNamespace :: Maybe String
+  , tNamespace :: [String]
   , tCons      :: [ConsD]
   } deriving (Show, Lift)
 
