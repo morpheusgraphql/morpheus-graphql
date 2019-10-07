@@ -38,18 +38,18 @@ operationTypes lib variables = genOperation
     genOperation Operation {operationName, operationSelection} = do
       argTypes <- rootArguments (operationName <> "Args")
       (queryTypes, requests) <- genRecordType [] operationName queryDataType operationSelection
+      inputTypeRequests <- concat <$> traverse (scanInputTypes lib . variableType . snd) variables
       listedTypes <- buildListedTypes requests
-      pure (argTypes, queryTypes <> listedTypes)
+      listedInputTypes <- buildListedTypes inputTypeRequests
+      pure (argTypes <> listedInputTypes, queryTypes <> listedTypes)
       where
         queryDataType = OutputObject $ snd $ query lib
     -------------------------------------------------------------------------
-    buildListedTypes = fmap concat . traverse genInputType . removeDuplicates
+    buildListedTypes = fmap concat . traverse (buildInputType lib) . removeDuplicates
     -------------------------------------------------------------------------
     -- generates argument types for Operation Head
     rootArguments :: Text -> Validation [TypeD]
-    rootArguments argsName = do
-      types <- concat <$> mapM (genInputType . variableType . snd) variables
-      pure $ rootArgumentsType : types
+    rootArguments argsName = pure [rootArgumentsType]
         ------------------------------------------
       where
         rootArgumentsType :: TypeD
@@ -70,28 +70,6 @@ operationTypes lib variables = genOperation
                     TypeAlias {aliasWrappers = variableTypeWrappers, aliasTyCon = variableType, aliasArgs = Nothing}
                 , fieldHidden = False
                 }
-    ------------------------------------------
-    genInputType :: Text -> Validation [TypeD]
-    genInputType name = getType lib name >>= subTypes
-      where
-        subTypes (InputObject DataTyCon {typeName, typeData}) = do
-          types <- concat <$> mapM toInputTypeD typeData
-          fields <- traverse toFieldD typeData
-          pure $ typeD fields : types
-          where
-            typeD fields =
-              TypeD
-                {tName = unpack typeName, tNamespace = [], tCons = [ConsD {cName = unpack typeName, cFields = fields}]}
-                    ---------------------------------------------------------------
-            toInputTypeD :: (Text, DataField) -> Validation [TypeD]
-            toInputTypeD (_, DataField {fieldType}) = genInputType $ aliasTyCon fieldType
-                    ----------------------------------------------------------------
-            toFieldD :: (Text, DataField) -> Validation DataField
-            toFieldD (_, field@DataField {fieldType}) = do
-              aliasTyCon <- typeFrom [] <$> getType lib (aliasTyCon fieldType)
-              pure $ field {fieldType = fieldType {aliasTyCon}}
-        subTypes (Leaf leaf) = buildLeaf leaf
-        subTypes _ = pure []
     ---------------------------------------------------------
     -- generates selection Object Types
     genRecordType :: [Key] -> Key -> DataFullType -> SelectionSet -> Validation ([TypeD], [Text])
@@ -131,7 +109,9 @@ operationTypes lib variables = genOperation
                     fieldPath = path <> [selKey]
                     --------------------------------------------------------------------
                     validateSelection :: DataFullType -> Selection -> Validation ([TypeD], [Text])
-                    validateSelection dType Selection {selectionRec = SelectionField} = withLeaf leafName dType
+                    validateSelection dType Selection {selectionRec = SelectionField} = do
+                      lName <- withLeaf (pure . leafName) dType
+                      pure ([], lName)
                     --withLeaf buildLeaf dType
                     validateSelection dType Selection {selectionRec = SelectionSet selectionSet} =
                       genRecordType fieldPath (typeFrom [] dType) dType selectionSet
@@ -148,6 +128,35 @@ operationTypes lib variables = genOperation
                         getUnionType (selectedTyName, selectionVariant) = do
                           conDatatype <- getType lib selectedTyName
                           genConsD (unpack selectedTyName) conDatatype selectionVariant
+
+scanInputTypes :: DataTypeLib -> Key -> Validation [Key]
+scanInputTypes lib name = getType lib name >>= scanTypes
+  where
+    scanTypes (InputObject DataTyCon {typeName, typeData}) = do
+      types <- concat <$> traverse toInputTypeD typeData
+      pure (typeName : types)
+        ---------------------------------------------------------------
+      where
+        toInputTypeD :: (Text, DataField) -> Validation [Key]
+        toInputTypeD (_, DataField {fieldType = TypeAlias {aliasTyCon}}) = scanInputTypes lib aliasTyCon
+    scanTypes (Leaf leaf) = pure (leafName leaf)
+    scanTypes _ = pure []
+
+buildInputType :: DataTypeLib -> Text -> Validation [TypeD]
+buildInputType lib name = getType lib name >>= subTypes
+  where
+    subTypes (InputObject DataTyCon {typeName, typeData}) = do
+      fields <- traverse toFieldD typeData
+      pure
+        [TypeD {tName = unpack typeName, tNamespace = [], tCons = [ConsD {cName = unpack typeName, cFields = fields}]}]
+          ----------------------------------------------------------------
+      where
+        toFieldD :: (Text, DataField) -> Validation DataField
+        toFieldD (_, field@DataField {fieldType}) = do
+          aliasTyCon <- typeFrom [] <$> getType lib (aliasTyCon fieldType)
+          pure $ field {fieldType = fieldType {aliasTyCon}}
+    subTypes (Leaf leaf) = buildLeaf leaf
+    subTypes _ = pure []
 
 lookupFieldType :: DataTypeLib -> [Key] -> DataFullType -> Text -> Validation (DataFullType, TypeAlias)
 lookupFieldType lib path (OutputObject DataTyCon {typeData}) key =
@@ -166,9 +175,9 @@ withLeaf :: (DataLeaf -> Validation b) -> DataFullType -> Validation b
 withLeaf f (Leaf x) = f x
 withLeaf _ _        = Left $ compileError "Invalid schema Expected scalar"
 
-leafName :: DataLeaf -> Validation ([TypeD], [Text])
-leafName (LeafEnum DataTyCon {typeName}) = pure ([], [typeName])
-leafName _                               = pure ([], [])
+leafName :: DataLeaf -> [Text]
+leafName (LeafEnum DataTyCon {typeName}) = [typeName]
+leafName _                               = []
 
 buildLeaf :: DataLeaf -> Validation [TypeD]
 buildLeaf (LeafEnum DataTyCon {typeName, typeData}) =
