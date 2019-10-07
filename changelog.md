@@ -6,6 +6,60 @@
   - on query: Parsing Validating and resolving
   - on Document: only Parsing
 
+- 'lens' is removed from Library, client field collision can be handled with GraphQL `alias`:
+  ```gql
+     {
+      user {
+        name
+         friend {
+           friendName: name
+         }
+       }
+     }
+  ```
+
+### Fixed:
+
+- Morpheus Client Generated Object And Union Types does Not collide anymore:
+
+  ```gql
+  type Person (id: ID) {
+     name: String!
+     parent: Person!
+     friend: Person!
+  }
+
+  ```
+  And we select
+
+  ```gql
+  {
+   user {
+     name
+      friend {
+        name
+      }
+      parent {
+        name
+      }
+      bestFriend: friend {
+        name
+        parent {
+          name
+        }
+      }
+    }
+  }
+  ```
+  client will Generate:
+
+  - `UserPerson` from `{user`
+  - `UserFriendPerson`: from `{user{freind`
+  - `UserParentPerson`: from `{user{parent`
+  - `UserBestFriendPerson`: from `{user{bestFrend`
+  - `UserBestFriendParentPerson`: from `{user{bestFrend{parent`
+
+
 ## [0.3.1] - 05.10.2019
 
 ### Changed
