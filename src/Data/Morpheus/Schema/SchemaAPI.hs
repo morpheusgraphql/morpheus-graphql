@@ -11,18 +11,19 @@ module Data.Morpheus.Schema.SchemaAPI
   ) where
 
 import           Data.Proxy
-import           Data.Text                                   (Text)
+import           Data.Text                                     (Text)
 
 -- MORPHEUS
-import           Data.Morpheus.Execution.Server.Introspect   (ObjectFields (..), TypeUpdater, introspect, resolveTypes)
-import           Data.Morpheus.Rendering.RenderIntrospection (createObjectType, render)
-import           Data.Morpheus.Schema.Schema                 (Root (..), Root__typeArgs (..), S__Schema (..), S__Type)
-import           Data.Morpheus.Types                         (constRes)
-import           Data.Morpheus.Types.GQLType                 (CUSTOM)
-import           Data.Morpheus.Types.ID                      (ID)
-import           Data.Morpheus.Types.Internal.Data           (DataField (..), DataObject, DataTypeLib (..),
-                                                              allDataTypes)
-import           Data.Morpheus.Types.Resolver                (GQLFail (..), ResolveT, Resolver)
+import           Data.Morpheus.Execution.Internal.GraphScanner (resolveUpdates)
+import           Data.Morpheus.Execution.Server.Introspect     (ObjectFields (..), TypeUpdater, introspect)
+import           Data.Morpheus.Rendering.RenderIntrospection   (createObjectType, render)
+import           Data.Morpheus.Schema.Schema                   (Root (..), Root__typeArgs (..), S__Schema (..), S__Type)
+import           Data.Morpheus.Types                           (constRes)
+import           Data.Morpheus.Types.GQLType                   (CUSTOM)
+import           Data.Morpheus.Types.ID                        (ID)
+import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataObject, DataTypeLib (..),
+                                                                allDataTypes)
+import           Data.Morpheus.Types.Resolver                  (GQLFail (..), ResolveT, Resolver)
 
 convertTypes :: Monad m => DataTypeLib -> (Resolver m) [S__Type (Resolver m)]
 convertTypes lib = traverse (`render` lib) (allDataTypes lib)
@@ -58,7 +59,7 @@ hiddenRootFields = map hideFields $ fst $ objectFields (Proxy :: Proxy (CUSTOM (
 defaultTypes :: TypeUpdater
 defaultTypes =
   flip
-    resolveTypes
+    resolveUpdates
     [ introspect (Proxy @Bool)
     , introspect (Proxy @Int)
     , introspect (Proxy @Float)

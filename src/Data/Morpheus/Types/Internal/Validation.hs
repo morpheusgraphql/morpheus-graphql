@@ -9,7 +9,6 @@ module Data.Morpheus.Types.Internal.Validation
   , Validation
   , ResolveT
   , failResolveT
-  , SchemaValidation
   , ResolveValue
   ) where
 
@@ -33,8 +32,6 @@ data JSONError = JSONError
   } deriving (Show, Generic, FromJSON, ToJSON)
 
 type Validation = Either GQLErrors
-
-type SchemaValidation = Validation
 
 type ResolveT = ExceptT GQLErrors
 
