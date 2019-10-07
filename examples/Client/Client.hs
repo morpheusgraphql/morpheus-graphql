@@ -25,10 +25,16 @@ defineByIntrospectionFile
       {
         myUser: user {
            boo3: name
-           email
+           myUserEmail: email
            address (coordinates: $userCoordinates ){
-            city
+             city
            }
+           customAdress: address (coordinates: $userCoordinates ){
+               customCity: city
+           }
+        }
+        user {
+          email
         }
       }
   |]
@@ -52,6 +58,15 @@ defineByDocumentFile
             profession
           }
         }
+        char2: character(characterID: $charID ) {
+          ...on Creature {
+              cName: creatureName
+          }
+          ...on Human {
+              lTime: lifetime
+             # TODO: Profession should be defined only once! - prof: profession
+          }
+        }
       }
   |]
 
@@ -59,7 +74,7 @@ ioRes :: ByteString -> IO ByteString
 ioRes req = do
   print req
   return
-    "{\"data\":{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" }  }}"
+    "{\"data\":{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" } ,  \"char2\":{ \"__typename\":\"Human\", \"lTime\": \"time\"}  }}"
 
 fetchHero :: IO (Either String GetHero)
 fetchHero = fetch ioRes GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10}, charID = "Hercules"}

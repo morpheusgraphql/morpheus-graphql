@@ -5,7 +5,8 @@
 {-# LANGUAGE TypeOperators       #-}
 
 module Data.Morpheus.Execution.Document.Convert
-  ( renderTHTypes , sysTypes
+  ( renderTHTypes
+  , sysTypes
   ) where
 
 import           Data.Semigroup                          ((<>))
@@ -40,7 +41,13 @@ renderTHTypes namespace lib = traverse renderTHType lib
         genArgumentType :: (Text, DataField) -> Validation [TypeD]
         genArgumentType (_, DataField {fieldArgs = []}) = pure []
         genArgumentType (fieldName, DataField {fieldArgs}) =
-          pure [TypeD {tName, tCons = [ConsD {cName = sysName $ pack tName, cFields = map genField fieldArgs}]}]
+          pure
+            [ TypeD
+                { tName
+                , tNamespace = []
+                , tCons = [ConsD {cName = sysName $ pack tName, cFields = map genField fieldArgs}]
+                }
+            ]
           where
             tName = genArgsTypeName $ sysName fieldName
         -------------------------------------------
@@ -87,7 +94,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
         genType (Leaf (LeafEnum DataTyCon {typeName, typeData})) =
           pure
             GQLTypeD
-              { typeD = TypeD {tName = sysName typeName, tCons = map enumOption typeData}
+              { typeD = TypeD {tName = sysName typeName, tNamespace = [], tCons = map enumOption typeData}
               , typeKindD = KindEnum
               , typeArgD = []
               }
@@ -101,6 +108,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
               { typeD =
                   TypeD
                     { tName = sysName typeName
+                    , tNamespace = []
                     , tCons = [ConsD {cName = sysName typeName, cFields = map genField typeData}]
                     }
               , typeKindD = KindInputObject
@@ -113,6 +121,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
               { typeD =
                   TypeD
                     { tName = sysName typeName
+                    , tNamespace = []
                     , tCons = [ConsD {cName = sysName typeName, cFields = map genResField typeData}]
                     }
               , typeKindD =
@@ -123,7 +132,9 @@ renderTHTypes namespace lib = traverse renderTHType lib
               }
         genType (Union DataTyCon {typeName, typeData}) = do
           let tCons = map unionCon typeData
-          pure GQLTypeD {typeD = TypeD {tName = unpack typeName, tCons}, typeKindD = KindUnion, typeArgD = []}
+          pure
+            GQLTypeD
+              {typeD = TypeD {tName = unpack typeName, tNamespace = [], tCons}, typeKindD = KindUnion, typeArgD = []}
           where
             unionCon field@DataField {fieldType} =
               ConsD
