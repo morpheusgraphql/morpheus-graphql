@@ -80,7 +80,10 @@ fetchHero :: IO (Either String GetHero)
 fetchHero =
   fetch
     ioRes
-    GetHeroArgs {god = Just Realm {owner = "Zeus", surface = Just 10, realmRec = Nothing}, charID = "Hercules"}
+    GetHeroArgs
+      { god = Just Realm {owner = "Zeus", surface = Just 10, realmRec = Nothing, realmProf = Just Artist}
+      , charID = "Hercules"
+      }
 
 fetUser :: (ByteString -> IO ByteString) -> IO (Either String GetUser)
 fetUser api = fetch api userArgs

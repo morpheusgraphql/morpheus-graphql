@@ -41,6 +41,7 @@ input Realm {
   owner: String!
   surface: Int
   realmRec: Realm
+  realmProf: Profession
 }
 
 enum City {
