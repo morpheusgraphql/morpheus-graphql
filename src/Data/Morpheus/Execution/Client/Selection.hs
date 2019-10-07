@@ -8,23 +8,24 @@ module Data.Morpheus.Execution.Client.Selection
   ( operationTypes
   ) where
 
-import           Data.Semigroup                             ((<>))
-import           Data.Text                                  (Text, pack, unpack)
+import           Data.Semigroup                                ((<>))
+import           Data.Text                                     (Text, pack, unpack)
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils                  (globalErrorMessage)
-import           Data.Morpheus.Execution.Internal.Utils     (nameSpaceType)
-import           Data.Morpheus.Types.Internal.AST.Operation (DefaultValue, Operation (..), ValidOperation,
-                                                             Variable (..), VariableDefinitions)
-import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
-import           Data.Morpheus.Types.Internal.Data          (DataField (..), DataFullType (..), DataLeaf (..),
-                                                             DataTyCon (..), DataTypeLib (..), Key, TypeAlias (..),
-                                                             allDataTypes)
-import           Data.Morpheus.Types.Internal.DataD         (ConsD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
-import           Data.Morpheus.Validation.Internal.Utils    (lookupType)
-import           Data.Set                                   (fromList, toList)
+import           Data.Morpheus.Error.Utils                     (globalErrorMessage)
+import           Data.Morpheus.Execution.Internal.GraphScanner (LibUpdater, resolveUpdates)
+import           Data.Morpheus.Execution.Internal.Utils        (nameSpaceType)
+import           Data.Morpheus.Types.Internal.AST.Operation    (DefaultValue, Operation (..), ValidOperation,
+                                                                Variable (..), VariableDefinitions)
+import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionRec (..), SelectionSet)
+import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataFullType (..), DataLeaf (..),
+                                                                DataTyCon (..), DataTypeLib (..), Key, TypeAlias (..),
+                                                                allDataTypes)
+import           Data.Morpheus.Types.Internal.DataD            (ConsD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.Validation       (GQLErrors, Validation)
+import           Data.Morpheus.Validation.Internal.Utils       (lookupType)
+import           Data.Set                                      (fromList, toList)
 
 removeDuplicates :: [Text] -> [Text]
 removeDuplicates = toList . fromList
@@ -38,7 +39,7 @@ operationTypes lib variables = genOperation
     genOperation Operation {operationName, operationSelection} = do
       argTypes <- rootArguments (operationName <> "Args")
       (queryTypes, requests) <- genRecordType [] operationName queryDataType operationSelection
-      inputTypeRequests <- concat <$> traverse (scanInputTypes lib . variableType . snd) variables
+      inputTypeRequests <- resolveUpdates [] $ map (scanInputTypes lib . variableType . snd) variables
       listedTypes <- buildListedTypes requests
       listedInputTypes <- buildListedTypes inputTypeRequests
       pure (argTypes <> listedInputTypes, queryTypes <> listedTypes)
@@ -129,18 +130,17 @@ operationTypes lib variables = genOperation
                           conDatatype <- getType lib selectedTyName
                           genConsD (unpack selectedTyName) conDatatype selectionVariant
 
-scanInputTypes :: DataTypeLib -> Key -> Validation [Key]
-scanInputTypes lib name = getType lib name >>= scanTypes
+scanInputTypes :: DataTypeLib -> Key -> LibUpdater [Key]
+scanInputTypes lib name collected
+  | name `elem` collected = pure collected
+  | otherwise = getType lib name >>= scanType
   where
-    scanTypes (InputObject DataTyCon {typeName, typeData}) = do
-      types <- concat <$> traverse toInputTypeD typeData
-      pure (typeName : types)
-        ---------------------------------------------------------------
+    scanType (InputObject DataTyCon {typeData}) = resolveUpdates (name : collected) (map toInputTypeD typeData)
       where
-        toInputTypeD :: (Text, DataField) -> Validation [Key]
+        toInputTypeD :: (Text, DataField) -> LibUpdater [Key]
         toInputTypeD (_, DataField {fieldType = TypeAlias {aliasTyCon}}) = scanInputTypes lib aliasTyCon
-    scanTypes (Leaf leaf) = pure (leafName leaf)
-    scanTypes _ = pure []
+    scanType (Leaf leaf) = pure (collected <> leafName leaf)
+    scanType _ = pure collected
 
 buildInputType :: DataTypeLib -> Text -> Validation [TypeD]
 buildInputType lib name = getType lib name >>= subTypes
