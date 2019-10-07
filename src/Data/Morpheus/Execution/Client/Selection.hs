@@ -8,8 +8,9 @@ module Data.Morpheus.Execution.Client.Selection
   ( operationTypes
   ) where
 
-import           Data.Semigroup                                ((<>))
-import           Data.Text                                     (Text, pack, unpack)
+
+import           Data.Semigroup                             ((<>))
+import           Data.Text                                  (Text, pack, unpack)
 
 --
 -- MORPHEUS
