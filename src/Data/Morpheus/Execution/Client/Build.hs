@@ -19,8 +19,8 @@ import           Data.Morpheus.Execution.Client.Aeson     (deriveFromJSON)
 import           Data.Morpheus.Execution.Client.Compile   (validateWith)
 import           Data.Morpheus.Execution.Client.Fetch     (deriveFetch)
 import           Data.Morpheus.Execution.Internal.Declare (declareType)
-import           Data.Morpheus.Types.Internal.Data        (DataTypeLib)
-import           Data.Morpheus.Types.Internal.DataD       (QueryD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.Data        (DataTypeKind (..), DataTypeLib, isOutputObject)
+import           Data.Morpheus.Types.Internal.DataD       (GQLTypeD (..), QueryD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation  (Validation)
 import           Data.Morpheus.Types.Types                (GQLQueryRoot (..))
 
@@ -32,26 +32,34 @@ defineQuery ioSchema queryRoot = do
     Right queryD -> defineQueryD queryD
 
 defineQueryD :: QueryD -> Q [Dec]
-defineQueryD QueryD {queryTypes = rootType:subTypes, queryText, queryArgTypes} = do
-  rootDecs <- defineOperationType (queryArgumentType queryArgTypes) queryText rootType
-  subTypeDecs <- concat <$> mapM defineJSONType subTypes
+defineQueryD QueryD {queryTypes = rootType:subTypes, queryText, queryArgsType} = do
+  rootDecs <- defineOperationType (queryArgumentType queryArgsType) queryText rootType
+  subTypeDecs <- concat <$> traverse declareT subTypes
   return $ rootDecs ++ subTypeDecs
+  where
+    declareT GQLTypeD {typeD, typeKindD}
+      | isOutputObject typeKindD || typeKindD == KindUnion = withToJSON declareOutputType typeD
+      | typeKindD == KindEnum = withToJSON declareInputType typeD
+      | otherwise = pure [declareInputType typeD]
 defineQueryD QueryD {queryTypes = []} = return []
 
-defineOperationType :: (Type, Q [Dec]) -> String -> TypeD -> Q [Dec]
-defineOperationType (argType, argumentTypes) query datatype = do
-  rootType <- defineJSONType datatype
-  typeClassFetch <- deriveFetch argType (tName datatype) query
-  args <- argumentTypes
-  pure $ rootType <> typeClassFetch <> args
+declareOutputType :: TypeD -> Dec
+declareOutputType = declareType [''Show]
 
-defineJSONType :: TypeD -> Q [Dec]
-defineJSONType datatype = do
+declareInputType :: TypeD -> Dec
+declareInputType = declareType [''Show, ''ToJSON]
+
+withToJSON :: (TypeD -> Dec) -> TypeD -> Q [Dec]
+withToJSON f datatype = do
   toJson <- deriveFromJSON datatype
-  pure [declareType [''Show] datatype, toJson]
+  pure [f datatype, toJson]
 
-queryArgumentType :: [TypeD] -> (Type, Q [Dec])
-queryArgumentType [] = (ConT $ mkName "()", pure [])
-queryArgumentType (rootType@TypeD {tName}:xs) = (ConT $ mkName tName, types)
-  where
-    types = pure $ map (declareType [''Show, ''ToJSON]) (rootType : xs)
+queryArgumentType :: Maybe TypeD -> (Type, [Dec])
+queryArgumentType Nothing                       = (ConT $ mkName "()", [])
+queryArgumentType (Just rootType@TypeD {tName}) = (ConT $ mkName tName, [declareInputType rootType])
+
+defineOperationType :: (Type, [Dec]) -> String -> GQLTypeD -> Q [Dec]
+defineOperationType (argType, argumentTypes) query GQLTypeD {typeD} = do
+  rootType <- withToJSON declareOutputType typeD
+  typeClassFetch <- deriveFetch argType (tName typeD) query
+  pure $ rootType <> typeClassFetch <> argumentTypes

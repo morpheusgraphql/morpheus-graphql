@@ -33,7 +33,7 @@ removeDuplicates = toList . fromList
 compileError :: Text -> GQLErrors
 compileError x = globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
-operationTypes :: DataTypeLib -> VariableDefinitions -> ValidOperation -> Validation (TypeD, [GQLTypeD])
+operationTypes :: DataTypeLib -> VariableDefinitions -> ValidOperation -> Validation (Maybe TypeD, [GQLTypeD])
 operationTypes lib variables = genOperation
   where
     genOperation Operation {operationName, operationSelection} = do
@@ -47,8 +47,10 @@ operationTypes lib variables = genOperation
     buildListedTypes = fmap concat . traverse (buildInputType lib) . removeDuplicates
     -------------------------------------------------------------------------
     -- generates argument types for Operation Head
-    rootArguments :: Text -> TypeD
-    rootArguments argsName = rootArgumentsType
+    rootArguments :: Text -> Maybe TypeD
+    rootArguments argsName
+      | null variables = Nothing
+      | otherwise = Just rootArgumentsType
         ------------------------------------------
       where
         rootArgumentsType :: TypeD
