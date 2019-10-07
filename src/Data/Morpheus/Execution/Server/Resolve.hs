@@ -26,9 +26,10 @@ import           Data.Proxy                                          (Proxy (..)
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                           (badRequestError, renderErrors)
+import           Data.Morpheus.Execution.Internal.GraphScanner       (resolveUpdates)
 import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, EncodeMutCon, EncodeSubCon, OBJ_RES,
                                                                       encodeOperation, encodeQuery)
-import           Data.Morpheus.Execution.Server.Introspect           (IntroCon, ObjectFields (..), resolveTypes)
+import           Data.Morpheus.Execution.Server.Introspect           (IntroCon, ObjectFields (..))
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, publishUpdates)
 import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
 import           Data.Morpheus.Schema.Schema                         (Root)
@@ -138,15 +139,16 @@ fullSchema ::
   -> Validation DataTypeLib
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
-    querySchema = resolveTypes (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query")) (defaultTypes : types)
+    querySchema =
+      resolveUpdates (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query")) (defaultTypes : types)
       where
         (fields, types) = objectFields (Proxy @(CUSTOM query)) (Proxy @query)
     ------------------------------
-    mutationSchema lib = resolveTypes (lib {mutation = maybeOperator fields "Mutation"}) types
+    mutationSchema lib = resolveUpdates (lib {mutation = maybeOperator fields "Mutation"}) types
       where
         (fields, types) = objectFields (Proxy @(CUSTOM mutation)) (Proxy @mutation)
     ------------------------------
-    subscriptionSchema lib = resolveTypes (lib {subscription = maybeOperator fields "Subscription"}) types
+    subscriptionSchema lib = resolveUpdates (lib {subscription = maybeOperator fields "Subscription"}) types
       where
         (fields, types) = objectFields (Proxy @(CUSTOM subscription)) (Proxy @subscription)
      -- maybeOperator :: [a] -> Text -> Maybe (Text, DataTyCon[a])

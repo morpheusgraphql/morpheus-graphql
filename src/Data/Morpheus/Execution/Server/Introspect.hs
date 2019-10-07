@@ -19,7 +19,6 @@ module Data.Morpheus.Execution.Server.Introspect
   , Introspect(..)
   , ObjectFields(..)
   , IntroCon
-  , resolveTypes
   , updateLib
   , buildType
   ) where
@@ -35,6 +34,7 @@ import           GHC.Generics
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Schema                      (nameCollisionError)
+import           Data.Morpheus.Execution.Internal.GraphScanner   (LibUpdater, resolveUpdates)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Kind                              (Context (..), ENUM, GQL_KIND, INPUT_OBJECT,
                                                                   INPUT_UNION, OBJECT, SCALAR, UNION)
@@ -45,7 +45,7 @@ import           Data.Morpheus.Types.Internal.Data               (DataArguments,
                                                                   DataLeaf (..), DataTyCon (..), DataTypeLib,
                                                                   TypeAlias (..), defineType, isTypeDefined,
                                                                   toListField, toNullableField)
-import           Data.Morpheus.Types.Internal.Validation         (SchemaValidation)
+import           Data.Morpheus.Types.Internal.Validation         (Validation)
 
 type IntroCon a = (GQLType a, ObjectFields (CUSTOM a) a)
 
@@ -89,7 +89,7 @@ instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
 -- Resolver : a -> Resolver b
 instance (ObjectFields 'False a, Introspect b) => Introspect (a -> m b) where
   field _ name = (field (Proxy @b) name) {fieldArgs = fst $ objectFields (Proxy :: Proxy 'False) (Proxy @a)}
-  introspect _ typeLib = resolveTypes typeLib (introspect (Proxy @b) : argTypes)
+  introspect _ typeLib = resolveUpdates typeLib (introspect (Proxy @b) : argTypes)
     where
       argTypes :: [TypeUpdater]
       argTypes = snd $ objectFields (Proxy :: Proxy 'False) (Proxy @a)
@@ -167,7 +167,7 @@ instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a wher
           }
 
 -- Types
-type TypeUpdater = DataTypeLib -> SchemaValidation DataTypeLib
+type TypeUpdater = LibUpdater DataTypeLib
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
@@ -216,10 +216,6 @@ instance GQLRep OBJECT U1 where
 buildAlias :: Text -> TypeAlias
 buildAlias aliasTyCon = TypeAlias {aliasTyCon, aliasWrappers = [], aliasArgs = Nothing}
 
--- Helper Functions
-resolveTypes :: DataTypeLib -> [TypeUpdater] -> SchemaValidation DataTypeLib
-resolveTypes = foldM (&)
-
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName =
   DataField
@@ -238,7 +234,7 @@ buildType typeData proxy =
 updateLib :: GQLType a => (Proxy a -> DataFullType) -> [TypeUpdater] -> Proxy a -> TypeUpdater
 updateLib typeBuilder stack proxy lib' =
   case isTypeDefined (__typeName proxy) lib' of
-    Nothing -> resolveTypes (defineType (__typeName proxy, typeBuilder proxy) lib') stack
+    Nothing -> resolveUpdates (defineType (__typeName proxy, typeBuilder proxy) lib') stack
     Just fingerprint'
       | fingerprint' == __typeFingerprint proxy -> return lib'
     -- throw error if 2 different types has same name

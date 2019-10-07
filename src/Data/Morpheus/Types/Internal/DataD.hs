@@ -13,16 +13,16 @@ import           Language.Haskell.TH.Syntax        (Lift (..))
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Data (DataField, DataTypeKind)
 
+data QueryD = QueryD
+  { queryText     :: String
+  , queryTypes    :: [GQLTypeD]
+  , queryArgsType :: Maybe TypeD
+  } deriving (Show, Lift)
+
 data GQLTypeD = GQLTypeD
   { typeD     :: TypeD
   , typeKindD :: DataTypeKind
   , typeArgD  :: [TypeD]
-  } deriving (Show, Lift)
-
-data QueryD = QueryD
-  { queryText     :: String
-  , queryTypes    :: [TypeD]
-  , queryArgTypes :: [TypeD]
   } deriving (Show, Lift)
 
 data TypeD = TypeD

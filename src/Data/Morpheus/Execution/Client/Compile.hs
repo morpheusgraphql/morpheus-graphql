@@ -37,5 +37,5 @@ compileSyntax queryText =
 validateWith :: DataTypeLib -> (GQLQueryRoot, String) -> Validation QueryD
 validateWith schema (rawRequest@GQLQueryRoot {operation}, queryText) = do
   validOperation <- validateRequest schema WITHOUT_VARIABLES rawRequest
-  (queryArgTypes, queryTypes) <- operationTypes schema (O.operationArgs operation) validOperation
-  return QueryD {queryText, queryTypes, queryArgTypes}
+  (queryArgsType, queryTypes) <- operationTypes schema (O.operationArgs operation) validOperation
+  return QueryD {queryText, queryTypes, queryArgsType}

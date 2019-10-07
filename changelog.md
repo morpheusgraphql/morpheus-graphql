@@ -59,6 +59,7 @@
   - `UserBestFriendPerson`: from `{user{bestFrend`
   - `UserBestFriendParentPerson`: from `{user{bestFrend{parent`
 
+- GraphQL Client Defines enums and Input Types only once per query and they don't collide
 
 ## [0.3.1] - 05.10.2019
 
