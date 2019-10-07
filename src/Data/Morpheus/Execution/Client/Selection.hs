@@ -10,7 +10,6 @@ module Data.Morpheus.Execution.Client.Selection
 
 import           Data.Semigroup                             ((<>))
 import           Data.Text                                  (Text, pack, unpack)
-import           Debug.Trace
 
 --
 -- MORPHEUS
@@ -30,7 +29,7 @@ compileError :: Text -> GQLErrors
 compileError x = globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
 operationTypes :: DataTypeLib -> VariableDefinitions -> ValidOperation -> Validation ([TypeD], [TypeD])
-operationTypes lib variables x = traceShow (genOperation x) (genOperation x)
+operationTypes lib variables = genOperation
   where
     genOperation Operation {operationName, operationSelection} = do
       argTypes <- rootArguments (operationName <> "Args")
