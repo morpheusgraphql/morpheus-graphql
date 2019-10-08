@@ -50,7 +50,7 @@ union MyUnion = User | Address
 type Query {
   user: User!
   animal(animal: Animal): String!
-  wrapped1(id: UniqueID): AIntText!
+  wrapped1(type: UniqueID): AIntText!
   wrapped2: AText!
   set: SetInt!
   map: MapTextInt!
