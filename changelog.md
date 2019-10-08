@@ -43,7 +43,7 @@
   wil generate:
 
   ```hs
-  data GetUser = GetUser {
+  data GetUserArgs = GetUserArgs {
     getUserArgsParent: Person
   } deriving ...
 
