@@ -29,7 +29,7 @@ _stack.yml_
 resolver: lts-13.30
 
 extra-deps:
-  - morpheus-graphql-0.3.1
+  - morpheus-graphql-0.4.0
   - aeson-1.4.4.0
   - time-compat-1.9.2.2
 ```
@@ -383,7 +383,7 @@ type Deity {
 
 will validate query and Generate:
 
-- namespaced response and variable type
+- namespaced response and variable types
 - instance for `Fetch` typeClass
 
 ```hs
