@@ -75,8 +75,6 @@ class GQLType a where
   type CUSTOM a = FALSE
   description :: Proxy a -> Maybe Text
   description _ = Nothing
-  __typeVisibility :: Proxy a -> Bool
-  __typeVisibility = const True
   __typeName :: Proxy a -> Text
   default __typeName :: (Typeable a) =>
     Proxy a -> Text
@@ -96,21 +94,17 @@ instance GQLType () where
 
 instance GQLType Int where
   type KIND Int = SCALAR
-  __typeVisibility = const False
 
 instance GQLType Float where
   type KIND Float = SCALAR
-  __typeVisibility = const False
 
 instance GQLType Text where
   type KIND Text = SCALAR
   __typeName = const "String"
-  __typeVisibility = const False
 
 instance GQLType Bool where
   type KIND Bool = SCALAR
   __typeName = const "Boolean"
-  __typeVisibility = const False
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
