@@ -8,7 +8,6 @@ module Data.Morpheus.Execution.Document.GQLType
   ( deriveGQLType
   ) where
 
-import           Data.Semigroup                           ((<>))
 import           Data.Text                                (pack)
 import           Language.Haskell.TH
 
@@ -18,28 +17,25 @@ import           Data.Morpheus.Execution.Internal.Declare (tyConArgs)
 import           Data.Morpheus.Kind                       (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR, UNION,
                                                            WRAPPER)
 import           Data.Morpheus.Types.GQLType              (GQLType (..), TRUE)
-import           Data.Morpheus.Types.Internal.Data        (DataTypeKind (..), isObject, isSystemTypeName, sysTypes)
+import           Data.Morpheus.Types.Internal.Data        (DataTypeKind (..), isObject, isSystemTypeName)
 import           Data.Morpheus.Types.Internal.DataD       (GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH          (instanceHeadT, typeT)
 import           Data.Typeable                            (Typeable)
 
 genTypeName :: String -> String
 genTypeName ('S':name)
-  | pack name `elem` sysTypes = name
+  | isSystemTypeName (pack name) = name
 genTypeName name = name
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
 deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} =
-  pure <$> instanceD (cxt constrains) iHead ([def__typeName, def__typeVisibility] <> typeFamilies)
+  pure <$> instanceD (cxt constrains) iHead (def__typeName : typeFamilies)
   where
     def__typeName = funD '__typeName [clause argsE (normalB body) []]
       where
         body = [|pack name|]
           where
             name = genTypeName tName
-    def__typeVisibility = funD '__typeVisibility [clause argsE (normalB body) []]
-      where
-        body = [|(isSystemTypeName tName)|]
     -- defines method: __typeName _ = tName
     argsE = map (varP . mkName) ["_"]
     typeArgs = tyConArgs typeKindD
