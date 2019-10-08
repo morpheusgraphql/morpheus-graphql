@@ -49,9 +49,12 @@ module Data.Morpheus.Types.Internal.Data
   , isNullable
   , toGQLWrapper
   , isWeaker
-  , isVisible
   , isSubscription
   , isOutputObject
+  , sysTypes
+  , isDefaultTypeName
+  , isSchemaTypeName
+  , isPrimitiveTypeName
   , OperationKind(..)
   ) where
 
@@ -64,6 +67,19 @@ import           Language.Haskell.TH.Syntax         (Lift (..))
 import           Data.Morpheus.Types.Internal.Base  (Key)
 import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
+
+isDefaultTypeName :: Key -> Bool
+isDefaultTypeName x = isSchemaTypeName x || isPrimitiveTypeName x
+
+isSchemaTypeName :: Key -> Bool
+isSchemaTypeName = (`elem` sysTypes)
+
+isPrimitiveTypeName :: Key -> Bool
+isPrimitiveTypeName = (`elem` ["String", "Float", "Int", "Boolean", "ID"])
+
+sysTypes :: [Key]
+sysTypes =
+  ["__Schema", "__Type", "__Directive", "__TypeKind", "__Field", "__DirectiveLocation", "__InputValue", "__EnumValue"]
 
 data OperationKind
   = Query
@@ -203,7 +219,6 @@ data DataTyCon a = DataTyCon
   { typeName        :: Key
   , typeFingerprint :: DataFingerprint
   , typeDescription :: Maybe Key
-  , typeVisibility  :: Bool
   , typeData        :: a
   } deriving (Show)
 
@@ -294,9 +309,6 @@ fromDataType f (Union dt)               = f dt {typeData = ()}
 fromDataType f (InputObject dt)         = f dt {typeData = ()}
 fromDataType f (InputUnion dt)          = f dt {typeData = ()}
 fromDataType f (OutputObject dt)        = f dt {typeData = ()}
-
-isVisible :: DataFullType -> Bool
-isVisible = fromDataType typeVisibility
 
 isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name lib = fromDataType typeFingerprint <$> lookupDataType name lib

@@ -11,6 +11,7 @@
 
 module Feature.Holistic.API
   ( api
+  , rootResolver
   ) where
 
 import           Data.Morpheus          (interpreter)

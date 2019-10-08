@@ -8,7 +8,7 @@ module Data.Morpheus.Types.ID
 
 import           Data.Morpheus.Kind                 (SCALAR)
 import           Data.Morpheus.Types.GQLScalar      (GQLScalar (..))
-import           Data.Morpheus.Types.GQLType        (GQLType (KIND, __typeVisibility))
+import           Data.Morpheus.Types.GQLType        (GQLType (KIND))
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
 import           Data.Text                          (Text, pack)
 import           GHC.Generics                       (Generic)
@@ -22,7 +22,6 @@ newtype ID = ID
 
 instance GQLType ID where
   type KIND ID = SCALAR
-  __typeVisibility _ = False
 
 instance GQLScalar ID where
   parseValue (Int x)    = return (ID $ pack $ show x)

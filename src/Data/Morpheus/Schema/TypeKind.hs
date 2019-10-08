@@ -9,13 +9,12 @@ module Data.Morpheus.Schema.TypeKind
 
 import           Data.Aeson                  (FromJSON (..))
 import           Data.Morpheus.Kind          (ENUM)
-import           Data.Morpheus.Types.GQLType (GQLType (KIND, __typeName, __typeVisibility))
+import           Data.Morpheus.Types.GQLType (GQLType (KIND, __typeName))
 import           GHC.Generics
 
 instance GQLType TypeKind where
   type KIND TypeKind = ENUM
   __typeName = const "__TypeKind"
-  __typeVisibility = const False
 
 data TypeKind
   = SCALAR
