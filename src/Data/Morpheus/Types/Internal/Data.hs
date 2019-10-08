@@ -49,7 +49,6 @@ module Data.Morpheus.Types.Internal.Data
   , isNullable
   , toGQLWrapper
   , isWeaker
-  , isVisible
   , isSubscription
   , isOutputObject
   , sysTypes
@@ -212,7 +211,6 @@ data DataTyCon a = DataTyCon
   { typeName        :: Key
   , typeFingerprint :: DataFingerprint
   , typeDescription :: Maybe Key
-  , typeVisibility  :: Bool
   , typeData        :: a
   } deriving (Show)
 
@@ -303,9 +301,6 @@ fromDataType f (Union dt)               = f dt {typeData = ()}
 fromDataType f (InputObject dt)         = f dt {typeData = ()}
 fromDataType f (InputUnion dt)          = f dt {typeData = ()}
 fromDataType f (OutputObject dt)        = f dt {typeData = ()}
-
-isVisible :: DataFullType -> Bool
-isVisible = fromDataType typeVisibility
 
 isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name lib = fromDataType typeFingerprint <$> lookupDataType name lib

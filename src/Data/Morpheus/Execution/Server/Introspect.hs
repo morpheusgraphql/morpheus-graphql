@@ -23,8 +23,6 @@ module Data.Morpheus.Execution.Server.Introspect
   , buildType
   ) where
 
-import           Control.Monad                                   (foldM)
-import           Data.Function                                   ((&))
 import           Data.Map                                        (Map)
 import           Data.Proxy                                      (Proxy (..))
 import           Data.Semigroup                                  ((<>))
@@ -45,7 +43,6 @@ import           Data.Morpheus.Types.Internal.Data               (DataArguments,
                                                                   DataLeaf (..), DataTyCon (..), DataTypeLib,
                                                                   TypeAlias (..), defineType, isTypeDefined,
                                                                   toListField, toNullableField)
-import           Data.Morpheus.Types.Internal.Validation         (Validation)
 
 type IntroCon a = (GQLType a, ObjectFields (CUSTOM a) a)
 
@@ -152,7 +149,6 @@ instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a wher
               { typeName
                 -- has same fingerprint as object because it depends on it
               , typeFingerprint = __typeFingerprint (Proxy @a)
-              , typeVisibility = __typeVisibility (Proxy @a)
               , typeDescription = Nothing
               , typeData = map fieldName inputUnions
               }
@@ -227,7 +223,6 @@ buildType typeData proxy =
     { typeName = __typeName proxy
     , typeFingerprint = __typeFingerprint proxy
     , typeDescription = description proxy
-    , typeVisibility = __typeVisibility proxy
     , typeData
     }
 
