@@ -26,6 +26,7 @@ input Coordinates {
 }
 
 input UniqueID {
+  type: String,
   id: String!
 }
 
@@ -49,7 +50,7 @@ union MyUnion = User | Address
 type Query {
   user: User!
   animal(animal: Animal): String!
-  wrapped1: AIntText!
+  wrapped1(id: UniqueID): AIntText!
   wrapped2: AText!
   set: SetInt!
   map: MapTextInt!
