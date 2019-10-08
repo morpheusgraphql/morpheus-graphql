@@ -182,7 +182,7 @@ wrapAs kind contentType =
 createFieldWith :: Monad m => Text -> S__Type m -> [S__InputValue m] -> S__Field m
 createFieldWith _name fieldType fieldArgs =
   S__Field
-    { s__FieldName = constRes $ convertToJSONName _name
+    { s__FieldName = constRes (convertToJSONName _name)
     , s__FieldDescription = constRes Nothing
     , s__FieldArgs = constRes fieldArgs
     , s__FieldType' = constRes fieldType
@@ -193,7 +193,7 @@ createFieldWith _name fieldType fieldArgs =
 createInputValueWith :: Monad m => Text -> S__Type m -> S__InputValue m
 createInputValueWith name ivType =
   S__InputValue
-    { s__InputValueName = constRes name
+    { s__InputValueName = constRes (convertToJSONName name)
     , s__InputValueDescription = constRes Nothing
     , s__InputValueType' = constRes ivType
     , s__InputValueDefaultValue = constRes Nothing
