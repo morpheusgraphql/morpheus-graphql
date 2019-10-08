@@ -9,7 +9,6 @@
 
 module Data.Morpheus.Execution.Internal.Declare
   ( declareType
-  , declareGQLT
   , tyConArgs
   ) where
 
@@ -27,9 +26,6 @@ import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), TypeD (..))
 import           Data.Morpheus.Types.Resolver           (UnSubResolver)
 
 type FUNC = (->)
-
-declareType :: [Name] -> TypeD -> Dec
-declareType = declareGQLT False Nothing
 
 declareTypeAlias :: Bool -> TypeAlias -> Type
 declareTypeAlias isSub TypeAlias {aliasTyCon, aliasWrappers, aliasArgs} = wrappedT aliasWrappers
@@ -52,8 +48,8 @@ tyConArgs kindD
   | otherwise = []
 
 -- declareType
-declareGQLT :: Bool -> Maybe DataTypeKind -> [Name] -> TypeD -> Dec
-declareGQLT namespace kindD derivingList TypeD {tName, tCons, tNamespace} =
+declareType :: Bool -> Maybe DataTypeKind -> [Name] -> TypeD -> Dec
+declareType namespace kindD derivingList TypeD {tName, tCons, tNamespace} =
   DataD [] (genName tName) tVars Nothing (map cons tCons) $ map derive (''Generic : derivingList)
   where
     genName = mkName . nameSpaceType (map pack tNamespace) . pack

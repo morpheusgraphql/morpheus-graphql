@@ -21,15 +21,15 @@ defineByIntrospectionFile
   "./assets/introspection.json"
   [gql|
     # Query Hero with Compile time Validation
-    query GetUser ($userCoordinates: Coordinates!)
+    query GetUser ($coordinates: Coordinates!)
       {
         myUser: user {
            boo3: name
            myUserEmail: email
-           address (coordinates: $userCoordinates ){
+           address (coordinates: $coordinates ){
              city
            }
-           customAdress: address (coordinates: $userCoordinates ){
+           customAdress: address (coordinates: $coordinates ){
                customCity: city
            }
         }
@@ -43,13 +43,13 @@ defineByDocumentFile
   "./assets/simple.gql"
   [gql|
     # Query Hero with Compile time Validation
-    query GetHero ($god: Realm, $charID: String!)
+    query GetHero ($god: Realm, $id: String!)
       {
         deity (mythology:$god) {
           power
           fullName
         }
-        character(characterID: $charID ) {
+        character(characterID: $id ) {
           ...on Creature {
             creatureName
           }
@@ -58,7 +58,7 @@ defineByDocumentFile
             profession
           }
         }
-        char2: character(characterID: $charID ) {
+        char2: character(characterID: $id ) {
           ...on Creature {
               cName: creatureName
           }
@@ -81,12 +81,14 @@ fetchHero =
   fetch
     ioRes
     GetHeroArgs
-      { god = Just Realm {owner = "Zeus", surface = Just 10, realmRec = Nothing, realmProf = Just Artist}
-      , charID = "Hercules"
+      { getHeroArgsGod =
+          Just Realm {realmOwner = "Zeus", realmAge = Just 10, realmRealm = Nothing, realmProfession = Just Artist}
+      , getHeroArgsId = "Hercules"
       }
 
 fetUser :: (ByteString -> IO ByteString) -> IO (Either String GetUser)
 fetUser api = fetch api userArgs
   where
     userArgs :: Args GetUser
-    userArgs = GetUserArgs {userCoordinates = Coordinates {longitude = [], latitude = String "1"}}
+    userArgs =
+      GetUserArgs {getUserArgsCoordinates = Coordinates {coordinatesLongitude = [], coordinatesLatitude = String "1"}}

@@ -9,8 +9,8 @@ interface MyInterface {
 }
 
 type Mutation {
-  createDeity (deityName: [[[[[String!]]!]]], deityMythology: String): Deity!
-  createCharacter (charRealm: Realm! , charMutID: String! ): Character!
+  createDeity (name: [[[[[String!]]!]]], mythology: String): Deity!
+  createCharacter (realm: Realm! , id: String! ): Character!
 }
 
 union Character = Creature | Deity  | Human
@@ -39,9 +39,9 @@ enum Profession {
 
 input Realm {
   owner: String!
-  surface: Int
-  realmRec: Realm
-  realmProf: Profession
+  age: Int
+  realm: Realm
+  profession: Profession
 }
 
 enum City {

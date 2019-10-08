@@ -44,10 +44,10 @@ defineQueryD QueryD {queryTypes = rootType:subTypes, queryText, queryArgsType} =
 defineQueryD QueryD {queryTypes = []} = return []
 
 declareOutputType :: TypeD -> Dec
-declareOutputType = declareType [''Show]
+declareOutputType = declareType False Nothing [''Show]
 
 declareInputType :: TypeD -> Dec
-declareInputType = declareType [''Show, ''ToJSON]
+declareInputType = declareType True Nothing [''Show, ''ToJSON]
 
 withToJSON :: (TypeD -> Dec) -> TypeD -> Q [Dec]
 withToJSON f datatype = do
