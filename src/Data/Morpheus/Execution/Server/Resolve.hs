@@ -157,10 +157,4 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
     -- operatorType :: [a] -> Text -> (Text, DataTyCon[a])
     operatorType typeData typeName =
       ( typeName
-      , DataTyCon
-          { typeData
-          , typeVisibility = True
-          , typeName
-          , typeFingerprint = SystemFingerprint typeName
-          , typeDescription = Nothing
-          })
+      , DataTyCon {typeData, typeName, typeFingerprint = SystemFingerprint typeName, typeDescription = Nothing})
