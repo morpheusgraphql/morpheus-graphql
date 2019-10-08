@@ -1,0 +1,27 @@
+enum TestEnum {
+  EnumA
+  EnumB
+  EnumC
+}
+
+input Coordinates {
+  latitude: TestScalar!
+  longitude: Int!
+}
+
+union TestUnion = User | Address
+
+type Address {
+    street: [[[[String!]!]!]]
+}
+
+type User {
+  type: String!
+  address(coordinates: Coordinates!, type: String): Int!
+  friend(id: ID! , cityID: TestEnum): User!
+}
+
+type Query {
+  user: User!
+  testUnion: TestUnion
+}
