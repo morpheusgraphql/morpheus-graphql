@@ -1,41 +1,73 @@
-## [0.3.2] - *.2019
+## [0.3.2] - \*.2019
 
 ## Changed
 
 - support of Default Value:
+
   - on query: Parsing Validating and resolving
   - on Document: only Parsing
 
 - 'lens' is removed from Library, client field collision can be handled with GraphQL `alias`:
   ```gql
-     {
-      user {
-        name
-         friend {
-           friendName: name
-         }
-       }
-     }
+  {
+    user {
+      name
+      friend {
+        friendName: name
+      }
+    }
+  }
   ```
 
 ### Fixed:
-- Data.Morpheus.Document.toGraphQLDocument generates only my user defined types. #259
-- Morpheus Client Generated Object And Union Types does Not collide anymore:
+
+- `Data.Morpheus.Document.toGraphQLDocument` generates only my user defined types. #259
+- Morpheus Client Namespaces Input Type Fields, they don't collide anymore:
+  example:
+  schema:
 
   ```gql
-  type Person (id: ID) {
-     name: String!
-     parent: Person!
-     friend: Person!
+  input Person {
+    name: String!
   }
-
   ```
+
+  query:
+
+  ```gql
+  query GetUser (parent: Person!) {
+    ....
+  }
+  ```
+
+  wil generate:
+
+  ```hs
+  data GetUser = GetUser {
+    getUserArgsParent: Person
+  } deriving ...
+
+  data Person = Person {
+    personName: Person
+  } deriving ...
+  ```
+
+- Morpheus Client Generated Output Object And Union Types don't collide:
+
+  ```gql
+  type Person {
+    name: String!
+    parent: Person!
+    friend: Person!
+  }
+  ```
+
   And we select
 
   ```gql
   {
-   user {
-     name
+    user {
+      name
       friend {
         name
       }
@@ -51,6 +83,7 @@
     }
   }
   ```
+
   client will Generate:
 
   - `UserPerson` from `{user`

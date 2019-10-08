@@ -15,7 +15,7 @@ import           Data.Morpheus.Execution.Document.Decode     (deriveDecode)
 import           Data.Morpheus.Execution.Document.Encode     (deriveEncode)
 import           Data.Morpheus.Execution.Document.GQLType    (deriveGQLType)
 import           Data.Morpheus.Execution.Document.Introspect (deriveObjectRep)
-import           Data.Morpheus.Execution.Internal.Declare    (declareGQLT)
+import           Data.Morpheus.Execution.Internal.Declare    (declareType)
 import           Data.Morpheus.Types.Internal.Data           (isInput, isObject)
 import           Data.Morpheus.Types.Internal.DataD          (GQLTypeD (..))
 
@@ -44,11 +44,11 @@ declareGQLType namespace gqlType@GQLTypeD {typeD, typeKindD, typeArgD} = do
       where
         deriveArgsRep args = deriveObjectRep (args, Nothing)
         ----------------------------------------------------
-        argsTypeDecs = map (declareGQLT namespace Nothing []) typeArgD
+        argsTypeDecs = map (declareType namespace Nothing []) typeArgD
         --------------------------------------------------
     declareMainType = declareT
       where
-        declareT = pure [declareGQLT namespace (Just typeKindD) derivingClasses typeD]
+        declareT = pure [declareType namespace (Just typeKindD) derivingClasses typeD]
         derivingClasses
           | isInput typeKindD = [''Show]
           | otherwise = []
