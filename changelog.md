@@ -19,7 +19,7 @@
   ```
 
 ### Fixed:
-
+- Data.Morpheus.Document.toGraphQLDocument generates only my user defined types. #259
 - Morpheus Client Generated Object And Union Types does Not collide anymore:
 
   ```gql
