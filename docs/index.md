@@ -1,6 +1,7 @@
 ---
 layout: home
 ---
+
 # Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) [![CircleCI](https://circleci.com/gh/morpheusgraphql/morpheus-graphql.svg?style=svg)](https://circleci.com/gh/morpheusgraphql/morpheus-graphql)
 
 Build GraphQL APIs with your favourite functional language!
@@ -32,7 +33,7 @@ _stack.yml_
 resolver: lts-13.30
 
 extra-deps:
-  - morpheus-graphql-0.3.1
+  - morpheus-graphql-0.4.0
   - aeson-1.4.4.0
   - time-compat-1.9.2.2
 ```
@@ -354,48 +355,84 @@ rootResolver =
 
 ## Morpheus `GraphQL Client` with Template haskell QuasiQuotes
 
-```haskell
+```hs
 defineByDocumentFile
     "./schema.gql"
   [gql|
-    query GetHero ($byRealm: Realm)
+    query GetHero ($character: Character)
       {
-        deity (realm:$byRealm) {
+        deity (realm:$character) {
+          name
           power
-          fullName
+          worships {
+            deity2Name: name
+          }
         }
       }
   |]
 ```
 
+with schema:
+
+```gql
+input Character {
+  name: String!
+}
+
+type Deity {
+  name: String!
+  worships: Deity
+}
+```
+
 will validate query and Generate:
 
-- response type `GetHero`, `Deity` with `Lens` Instances
-- input types: `GetHeroArgs` , `Realm`
+- namespaced response and variable types
 - instance for `Fetch` typeClass
 
-so that
+```hs
+data GetHero = GetHero {
+  deity: DeityDeity
+}
+
+-- from: {user
+data DeityDeity = DeityDeity {
+  name: Text,
+  worships: Maybe DeityWorshipsDeity
+}
+
+-- from: {deity{worships
+data DeityWorshipsDeity = DeityWorshipsDeity {
+  name: Text,
+}
+
+data GetHeroArgs = GetHeroArgs {
+  getHeroArgsCharacter: Character
+}
+
+data Character = Character {
+  characterName: Person
+}
+```
+
+as you see, response type field name collision can be handled with GraphQL `alias`.
+
+with `fetch` you can fetch well typed response `GetHero`.
 
 ```haskell
   fetchHero :: Args GetHero -> m (Either String GetHero)
   fetchHero = fetch jsonRes args
       where
-        args = GetHeroArgs {byRealm = Just Realm {owner = "Zeus", surface = Just 10}}
+        args = GetHeroArgs {getHeroArgsCharacter = Person {characterName = "Zeus"}}
         jsonRes :: ByteString -> m ByteString
         jsonRes = <GraphQL APi>
 ```
 
-resolves well typed response `GetHero`.
-
-except: `defineByDocumentFile` you can use:
+types can be generatet from `introspection` too:
 
 ```haskell
 defineByIntrospectionFile "./introspection.json"
 ```
-
-or
-
-`defineByIntrospection` where you can directly connect it to server
 
 ## Morpheus CLI for Code Generating
 
