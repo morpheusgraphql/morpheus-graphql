@@ -11,15 +11,13 @@ module Data.Morpheus.Execution.Document.GQLType
 import           Data.Text                                (pack)
 import           Language.Haskell.TH
 
-import           Data.Morpheus.Execution.Document.Convert (sysTypes)
-
 --
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Declare (tyConArgs)
 import           Data.Morpheus.Kind                       (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR, UNION,
                                                            WRAPPER)
 import           Data.Morpheus.Types.GQLType              (GQLType (..), TRUE)
-import           Data.Morpheus.Types.Internal.Data        (DataTypeKind (..), isObject)
+import           Data.Morpheus.Types.Internal.Data        (DataTypeKind (..), isObject, sysTypes)
 import           Data.Morpheus.Types.Internal.DataD       (GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH          (instanceHeadT, typeT)
 import           Data.Typeable                            (Typeable)

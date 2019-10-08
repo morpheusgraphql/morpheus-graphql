@@ -52,6 +52,7 @@ module Data.Morpheus.Types.Internal.Data
   , isVisible
   , isSubscription
   , isOutputObject
+  , sysTypes
   , OperationKind(..)
   ) where
 
@@ -64,6 +65,10 @@ import           Language.Haskell.TH.Syntax         (Lift (..))
 import           Data.Morpheus.Types.Internal.Base  (Key)
 import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
+
+sysTypes :: [Key]
+sysTypes =
+  ["__Schema", "__Type", "__Directive", "__TypeKind", "__Field", "__DirectiveLocation", "__InputValue", "__EnumValue"]
 
 data OperationKind
   = Query

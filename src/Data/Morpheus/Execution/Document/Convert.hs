@@ -6,7 +6,6 @@
 
 module Data.Morpheus.Execution.Document.Convert
   ( renderTHTypes
-  , sysTypes
   ) where
 
 import           Data.Semigroup                          ((<>))
@@ -19,13 +18,9 @@ import           Data.Morpheus.Execution.Internal.Utils  (capital)
 import           Data.Morpheus.Types.Internal.Data       (ArgsType (..), DataField (..), DataField, DataFullType (..),
                                                           DataLeaf (..), DataTyCon (..), DataTypeKind (..),
                                                           DataTypeKind (..), OperationKind (..), ResolverKind (..),
-                                                          TypeAlias (..))
+                                                          TypeAlias (..), sysTypes)
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
-
-sysTypes :: [Text]
-sysTypes =
-  ["__Schema", "__Type", "__Directive", "__TypeKind", "__Field", "__DirectiveLocation", "__InputValue", "__EnumValue"]
 
 renderTHTypes :: Bool -> [(Text, DataFullType)] -> Validation [GQLTypeD]
 renderTHTypes namespace lib = traverse renderTHType lib
