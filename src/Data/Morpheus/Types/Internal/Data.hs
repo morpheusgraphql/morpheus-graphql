@@ -53,6 +53,7 @@ module Data.Morpheus.Types.Internal.Data
   , isSubscription
   , isOutputObject
   , sysTypes
+  , isSystemTypeName
   , OperationKind(..)
   ) where
 
@@ -65,6 +66,9 @@ import           Language.Haskell.TH.Syntax         (Lift (..))
 import           Data.Morpheus.Types.Internal.Base  (Key)
 import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
+
+isSystemTypeName :: Key -> Bool
+isSystemTypeName = (`elem` sysTypes)
 
 sysTypes :: [Key]
 sysTypes =
