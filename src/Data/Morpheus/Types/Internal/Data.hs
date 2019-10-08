@@ -52,7 +52,9 @@ module Data.Morpheus.Types.Internal.Data
   , isSubscription
   , isOutputObject
   , sysTypes
-  , isSystemTypeName
+  , isDefaultTypeName
+  , isSchemaTypeName
+  , isPrimitiveTypeName
   , OperationKind(..)
   ) where
 
@@ -66,8 +68,14 @@ import           Data.Morpheus.Types.Internal.Base  (Key)
 import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
 
-isSystemTypeName :: Key -> Bool
-isSystemTypeName = (`elem` sysTypes)
+isDefaultTypeName :: Key -> Bool
+isDefaultTypeName x = isSchemaTypeName x || isPrimitiveTypeName x
+
+isSchemaTypeName :: Key -> Bool
+isSchemaTypeName = (`elem` sysTypes)
+
+isPrimitiveTypeName :: Key -> Bool
+isPrimitiveTypeName = (`elem` ["String", "Float", "Int", "Boolean", "ID"])
 
 sysTypes :: [Key]
 sysTypes =

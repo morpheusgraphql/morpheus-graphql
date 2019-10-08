@@ -17,14 +17,14 @@ import           Data.Morpheus.Execution.Internal.Declare (tyConArgs)
 import           Data.Morpheus.Kind                       (ENUM, INPUT_OBJECT, INPUT_UNION, OBJECT, SCALAR, UNION,
                                                            WRAPPER)
 import           Data.Morpheus.Types.GQLType              (GQLType (..), TRUE)
-import           Data.Morpheus.Types.Internal.Data        (DataTypeKind (..), isObject, isSystemTypeName)
+import           Data.Morpheus.Types.Internal.Data        (DataTypeKind (..), isObject, isSchemaTypeName)
 import           Data.Morpheus.Types.Internal.DataD       (GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH          (instanceHeadT, typeT)
 import           Data.Typeable                            (Typeable)
 
 genTypeName :: String -> String
 genTypeName ('S':name)
-  | isSystemTypeName (pack name) = name
+  | isSchemaTypeName (pack name) = name
 genTypeName name = name
 
 deriveGQLType :: GQLTypeD -> Q [Dec]

@@ -18,14 +18,14 @@ import           Data.Text.Lazy.Encoding            (encodeUtf8)
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataFullType (..), DataKind (..), DataLeaf (..),
                                                      DataTyCon (..), DataTypeLib, DataTypeWrapper (..), Key,
-                                                     TypeAlias (..), WrapperD (..), allDataTypes, isSystemTypeName,
+                                                     TypeAlias (..), WrapperD (..), allDataTypes, isDefaultTypeName,
                                                      toGQLWrapper)
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
 
 renderGraphQLDocument :: DataTypeLib -> ByteString
 renderGraphQLDocument lib = encodeUtf8 $ LT.fromStrict $ intercalate "\n\n" $ map render visibleTypes
   where
-    visibleTypes = filter (not . isSystemTypeName . fst) (allDataTypes lib)
+    visibleTypes = filter (not . isDefaultTypeName . fst) (allDataTypes lib)
 
 class RenderGQL a where
   render :: a -> Key
