@@ -17,7 +17,7 @@ import           Data.Morpheus.Execution.Server.Encode   (Encode (..), ObjectRes
 import           Data.Morpheus.Types.GQLType             (TRUE)
 import           Data.Morpheus.Types.Internal.Data       (DataField (..), isSubscription)
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), GQLTypeD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.TH         (applyT, instanceHeadMultiT, typeT)
+import           Data.Morpheus.Types.Internal.TH         (applyT, destructRecord, instanceHeadMultiT, typeT)
 import           Data.Morpheus.Types.Internal.Validation (ResolveT)
 import           Data.Morpheus.Types.Internal.Value      (Value)
 import           Data.Morpheus.Types.Resolver
@@ -57,7 +57,7 @@ deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}
     -- defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
     methods = [funD 'objectResolvers [clause argsE (normalB body) []]]
       where
-        argsE = [varP (mkName "_"), conP (mkName tName) (map (varP . mkName) varNames)]
+        argsE = [varP (mkName "_"), destructRecord tName varNames]
         body = listE $ map decodeVar varNames
         decodeVar name = [|(name, encode $(varName))|]
           where

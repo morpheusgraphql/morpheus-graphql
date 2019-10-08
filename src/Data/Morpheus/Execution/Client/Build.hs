@@ -8,14 +8,13 @@ module Data.Morpheus.Execution.Client.Build
   ( defineQuery
   ) where
 
-import           Data.Aeson                               (ToJSON)
 import           Data.Semigroup                           ((<>))
 import           Language.Haskell.TH
 
 --
 -- MORPHEUS
 import           Data.Morpheus.Error.Client.Client        (renderGQLErrors)
-import           Data.Morpheus.Execution.Client.Aeson     (deriveFromJSON)
+import           Data.Morpheus.Execution.Client.Aeson     (deriveFromJSON, deriveToJSON)
 import           Data.Morpheus.Execution.Client.Compile   (validateWith)
 import           Data.Morpheus.Execution.Client.Fetch     (deriveFetch)
 import           Data.Morpheus.Execution.Internal.Declare (declareType)
@@ -40,26 +39,30 @@ defineQueryD QueryD {queryTypes = rootType:subTypes, queryText, queryArgsType} =
     declareT GQLTypeD {typeD, typeKindD}
       | isOutputObject typeKindD || typeKindD == KindUnion = withToJSON declareOutputType typeD
       | typeKindD == KindEnum = withToJSON declareInputType typeD
-      | otherwise = pure [declareInputType typeD]
+      | otherwise = declareInputType typeD
 defineQueryD QueryD {queryTypes = []} = return []
 
-declareOutputType :: TypeD -> Dec
-declareOutputType = declareType False Nothing [''Show]
+declareOutputType :: TypeD -> Q [Dec]
+declareOutputType typeD = pure [declareType False Nothing [''Show] typeD]
 
-declareInputType :: TypeD -> Dec
-declareInputType = declareType True Nothing [''Show, ''ToJSON]
+declareInputType :: TypeD -> Q [Dec]
+declareInputType typeD = do
+  toJSONDec <- deriveToJSON typeD
+  pure $ declareType True Nothing [''Show] typeD : toJSONDec
 
-withToJSON :: (TypeD -> Dec) -> TypeD -> Q [Dec]
+withToJSON :: (TypeD -> Q [Dec]) -> TypeD -> Q [Dec]
 withToJSON f datatype = do
   toJson <- deriveFromJSON datatype
-  pure [f datatype, toJson]
+  dec <- f datatype
+  pure (toJson : dec)
 
-queryArgumentType :: Maybe TypeD -> (Type, [Dec])
-queryArgumentType Nothing                       = (ConT $ mkName "()", [])
-queryArgumentType (Just rootType@TypeD {tName}) = (ConT $ mkName tName, [declareInputType rootType])
+queryArgumentType :: Maybe TypeD -> (Type, Q [Dec])
+queryArgumentType Nothing                       = (ConT $ mkName "()", pure [])
+queryArgumentType (Just rootType@TypeD {tName}) = (ConT $ mkName tName, declareInputType rootType)
 
-defineOperationType :: (Type, [Dec]) -> String -> GQLTypeD -> Q [Dec]
+defineOperationType :: (Type, Q [Dec]) -> String -> GQLTypeD -> Q [Dec]
 defineOperationType (argType, argumentTypes) query GQLTypeD {typeD} = do
   rootType <- withToJSON declareOutputType typeD
   typeClassFetch <- deriveFetch argType (tName typeD) query
-  pure $ rootType <> typeClassFetch <> argumentTypes
+  argsT <- argumentTypes
+  pure $ rootType <> typeClassFetch <> argsT

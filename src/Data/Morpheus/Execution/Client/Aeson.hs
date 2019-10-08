@@ -10,6 +10,7 @@
 
 module Data.Morpheus.Execution.Client.Aeson
   ( deriveFromJSON
+  , deriveToJSON
   , takeValueType
   ) where
 
@@ -26,8 +27,9 @@ import           Data.Morpheus.Execution.Internal.Utils (nameSpaceTypeString)
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Data      (DataField (..), isFieldNullable)
 import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.TH        (instanceFunD, instanceHeadT)
+import           Data.Morpheus.Types.Internal.TH        (destructRecord, instanceFunD, instanceHeadT)
 
+-- FromJSON
 deriveFromJSON :: TypeD -> Q Dec
 deriveFromJSON TypeD {tCons = []} = fail "Type Should Have at least one Constructor"
 deriveFromJSON TypeD {tName, tNamespace, tCons = [cons]} = defineFromJSON name (aesonObject tNamespace) cons
@@ -115,3 +117,24 @@ elseCaseEXP = match (varP varName) body []
       appE
         (varE $ mkName "fail")
         (uInfixE (appE (varE 'show) (varE varName)) (varE '(<>)) (stringE $ " is Not Valid Union Constructor"))
+
+-- ToJSON
+deriveToJSON :: TypeD -> Q [Dec]
+deriveToJSON TypeD {tCons = []} = fail "Type Should Have at least one Constructor"
+deriveToJSON TypeD {tName, tCons = [ConsD {cFields}]} = pure <$> instanceD (cxt []) appHead methods
+  where
+    appHead = instanceHeadT ''ToJSON tName []
+    ------------------------------------------------------------------
+    -- defines: toJSON (User field1 field2 ...)= object ["name" .= name, "age" .= age, ...]
+    methods = [funD 'toJSON [clause argsE (normalB body) []]]
+      where
+        argsE = [destructRecord tName varNames]
+        body = appE (varE 'object) (listE $ map decodeVar varNames)
+        decodeVar name = [|name .= $(varName)|]
+          where
+            varName = varE $ mkName name
+        varNames = map (unpack . fieldName) cFields
+deriveToJSON TypeD {tName, tCons}
+  | isEnum tCons = pure <$> instanceD (cxt []) (instanceHeadT ''ToJSON tName []) []
+    -- enum: uses default aeson instance derivation methods
+  | otherwise = fail "Input Unions are not yet supported"

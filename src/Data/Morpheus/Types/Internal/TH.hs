@@ -32,3 +32,7 @@ instanceFunD name args body = funD name [clause (map (varP . mkName) args) (norm
 
 instanceHeadMultiT :: Name -> Q Type -> [Q Type] -> Q Type
 instanceHeadMultiT className iType li = applyT className (iType : li)
+
+-- "User" -> ["name","id"] -> (User name id)
+destructRecord :: String -> [String] -> PatQ
+destructRecord conName fields = conP (mkName conName) (map (varP . mkName) fields)
