@@ -357,7 +357,7 @@ defineByDocumentFile
   [gql|
     query GetHero ($character: Character)
       {
-        deity (realm:$character) {
+        deity (fatherOf:$character) {
           name
           power
           worships {
