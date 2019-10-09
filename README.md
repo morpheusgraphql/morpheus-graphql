@@ -26,12 +26,10 @@ Additionally, you should tell stack which version to pick:
 _stack.yml_
 
 ```yaml
-resolver: lts-13.30
+resolver: lts-14.8
 
 extra-deps:
   - morpheus-graphql-0.4.0
-  - aeson-1.4.4.0
-  - time-compat-1.9.2.2
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack upgrade` and `stack update`
