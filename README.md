@@ -34,7 +34,7 @@ extra-deps:
   - time-compat-1.9.2.2
 ```
 
-As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack update`
+As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack upgrade` and `stack update`
 
 ### Building your first GraphQL API
 
