@@ -8,7 +8,7 @@ module Data.Morpheus.Parsing.Request.Operation
 
 import           Data.Functor                               (($>))
 import           Data.Text                                  (Text)
-import           Text.Megaparsec                            (label, (<?>), (<|>))
+import           Text.Megaparsec                            (label,optional, (<?>), (<|>))
 import           Text.Megaparsec.Char                       (string)
 
 --
@@ -42,7 +42,7 @@ parseOperation =
   label "operator" $ do
     operationPosition <- getLocation
     operationKind <- parseOperationKind
-    operationName <- token
+    operationName <- optional token
     operationArgs <- parseMaybeTuple operationArgument
     operationSelection <- entries
     pure (Operation {operationName, operationKind, operationArgs, operationSelection, operationPosition})
@@ -54,7 +54,7 @@ parseAnonymousQuery =
     operationSelection <- entries
     pure
       (Operation
-         { operationName = "AnonymousQuery"
+         { operationName = Nothing
          , operationKind = Query
          , operationArgs = []
          , operationSelection
