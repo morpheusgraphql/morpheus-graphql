@@ -146,8 +146,8 @@ instance GQLType a => GQLType (Resolver m a) where
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
-instance GQLType a => GQLType (SubResolver m e c a) where
-  type KIND (SubResolver m e c a) = WRAPPER
+instance GQLType a => GQLType (SubResolver m e a) where
+  type KIND (SubResolver m e a) = WRAPPER
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 

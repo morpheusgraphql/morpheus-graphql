@@ -34,7 +34,7 @@ import           Data.Text                               (pack, unpack)
 --
 import           Data.Morpheus.Types.Internal.Base       (Message)
 import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStream, ResponseStream, StreamState (..),
-                                                          StreamT (..), SubscribeStream)
+                                                          StreamT (..), StreamChannel, SubscribeStream)
 import           Data.Morpheus.Types.Internal.Validation (ResolveT)
 --import           Data.Morpheus.Types.Internal.Data (OperationKind (..))
 
@@ -61,14 +61,14 @@ newtype MutResolveT m e c a = MutResolveT
   { unMutResolveT :: ResolveT (PublishStream m e c) a
   }
 -}
-data SubResolver m e c a = SubResolver
-  { subChannels :: [e]
-  , subResolver :: Event e c -> Resolver m a
+data SubResolver m e a = SubResolver
+  { subChannels :: [StreamChannel e]
+  , subResolver :: e -> Resolver m a
   }
 
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
-type instance UnSubResolver (SubResolver m e c) = Resolver m
+type instance UnSubResolver (SubResolver m e) = Resolver m
 
 -------------------------------------------------------------------
 type Resolver = ExceptT String

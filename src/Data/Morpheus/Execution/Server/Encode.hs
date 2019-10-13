@@ -102,7 +102,7 @@ instance (Monad m, Encode b (ResolveT m value)) => Encode (Resolver m b) (Resolv
   encode resolver = injectEvents [] . encode resolver
 
 -- GQL Subscription Resolver Monad
-instance (Monad m, Encode b (ResolveT m Value)) => Encode (SubResolver m e c b) (SubResolveT m e c Value) where
+instance (Monad m, Encode b (ResolveT m Value)) => Encode (SubResolver m event b) (SubResolveT m event Value) where
   encode resolver selection = handleResolver resolver
     where
       handleResolver SubResolver {subChannels, subResolver} =
