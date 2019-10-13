@@ -24,12 +24,12 @@ import           Data.Morpheus.Execution.Subscription.Apollo         (SubAction 
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, addClientSubscription, connectClient,
                                                                       disconnectClient, initGQLState, publishUpdates,
                                                                       removeClientSubscription)
-import           Data.Morpheus.Types.Internal.Stream                 (ResponseEvent (..),Channel,GQLChannel , ResponseStream, closeStream)
+import           Data.Morpheus.Types.Internal.Stream                 (ResponseEvent (..),GQLChannel(..) , ResponseStream, closeStream)
 import           Data.Morpheus.Types.Internal.WebSocket              (GQLClient (..))
 import           Data.Morpheus.Types.IO                              (GQLResponse (..))
 import           Data.Morpheus.Types.Resolver                        (GQLRootResolver (..))
 
-handleSubscription :: (Eq (Channel e), GQLChannel e) => GQLClient IO e
+handleSubscription :: (Eq (StreamChannel e), GQLChannel e) => GQLClient IO e
   -> GQLState IO e 
   -> Text
   -> ResponseStream IO e  GQLResponse

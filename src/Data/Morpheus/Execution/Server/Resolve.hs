@@ -38,7 +38,7 @@ import           Data.Morpheus.Types.GQLType                         (GQLType (C
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), ValidOperation)
 import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataTyCon (..),
                                                                       DataTypeLib (..), OperationKind (..), initTypeLib)
-import           Data.Morpheus.Types.Internal.Stream                 (Event (..), GQLChannel, Channel, ResponseEvent (..), ResponseStream,
+import           Data.Morpheus.Types.Internal.Stream                 (Event (..), GQLChannel(..), ResponseEvent (..), ResponseStream,
                                                                       StreamState (..), StreamT (..), closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation             (Validation)
 import           Data.Morpheus.Types.Internal.Value                  (Value (..))
@@ -48,7 +48,7 @@ import           Data.Morpheus.Validation.Internal.Utils             (VALIDATION
 import           Data.Morpheus.Validation.Query.Validation           (validateRequest)
 import           Data.Typeable                                       (Typeable)
 
-type EventCon event = (Eq (Channel event) ,GQLChannel event)
+type EventCon event = (Eq (StreamChannel event) ,GQLChannel event)
 
 type RootResCon m event query mutation subscription
    = ( EventCon event

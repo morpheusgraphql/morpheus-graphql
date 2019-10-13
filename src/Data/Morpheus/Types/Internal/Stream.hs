@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveFunctor     #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE TypeFamilies , GADTs     #-}
+{-# LANGUAGE TypeFamilies , GADTs   , FlexibleContexts, UndecidableInstances  #-}
 
 module Data.Morpheus.Types.Internal.Stream
   ( StreamState(..)
@@ -35,11 +35,12 @@ data GQLMonad (o::OperationKind) (m :: * -> * ) value where
     MutationM :: [Event channel event] -> m value -> GQLMonad 'Mutation m (Event channel event)
     SubscriptionM ::  [channel] -> m (Event channel event -> m value) -> GQLMonad 'Subscription m (Event channel event)
 
-
-
 newtype Channel event = Channel {
   unChannel :: StreamChannel event
 } 
+
+instance (Eq (StreamChannel event)) => Eq (Channel event) 
+  
 
 class GQLChannel a where
     type StreamChannel a :: *
