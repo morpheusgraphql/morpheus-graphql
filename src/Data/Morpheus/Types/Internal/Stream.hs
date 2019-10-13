@@ -1,8 +1,11 @@
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE DeriveFunctor     #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE TypeFamilies , GADTs   , FlexibleContexts, UndecidableInstances  #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE DeriveFunctor        #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE NamedFieldPuns       #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Types.Internal.Stream
   ( StreamState(..)
@@ -21,28 +24,18 @@ module Data.Morpheus.Types.Internal.Stream
  -- , GQLMonad(..)
   , GQLChannel(..)
   , Channel(..)
-  , GraphQLT(..)
   ) where
 
-import           Control.Monad.Trans.Except        (ExceptT (..), runExceptT)
+import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data (OperationKind (..))
-import           Data.Morpheus.Types.IO            (GQLResponse)
-import  Data.Morpheus.Types.Internal.Validation (GQLErrors)
+import           Data.Morpheus.Types.IO                  (GQLResponse)
 
 
 -- EVENTS
 data ResponseEvent m event
   = Publish event
   | Subscribe (SubEvent m event)
-
-
--- TODO: use it
-data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
-    QueryT:: ExceptT GQLErrors m value -> GraphQLT 'Query m  () value
-    MutationT :: ExceptT GQLErrors (PublishStream m event) value -> GraphQLT 'Mutation m event value
-    SubscriptionT ::  ExceptT GQLErrors (SubscribeStream m event) (event -> ExceptT GQLErrors m value) -> GraphQLT 'Subscription m event value
 
 -- STREAMS
 type SubscribeStream m e = StreamT m [Channel e]

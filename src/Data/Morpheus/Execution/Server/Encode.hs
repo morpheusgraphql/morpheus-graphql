@@ -50,9 +50,8 @@ import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..)
 import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Resolver           (ResolveT, Resolver, SubResolveT, SubResolver (..),
                                                                   failResolveT)
-import           Data.Morpheus.Types.Internal.Stream             (Channel (..), GraphQLT (..), PublishStream,
-                                                                  StreamT (..), SubscribeStream, initExceptStream,
-                                                                  injectEvents)
+import           Data.Morpheus.Types.Internal.Stream             (Channel (..), PublishStream, StreamT (..),
+                                                                  SubscribeStream, initExceptStream, injectEvents)
 import           Data.Morpheus.Types.Internal.Validation         (GQLErrors)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
 

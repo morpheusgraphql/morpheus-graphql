@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
@@ -25,18 +26,18 @@ module Data.Morpheus.Types.Internal.Resolver
   , GQLFail(..)
   , ResponseT
   , failResolveT
+  , GraphQLT(..)
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
 import           Data.Text                               (pack, unpack)
 
 -- MORPHEUS
---
 import           Data.Morpheus.Types.Internal.Base       (Message)
-import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStream, ResponseStream, StreamState (..),
-                                                          StreamT (..), StreamChannel, SubscribeStream, GraphQLT(..))
+import           Data.Morpheus.Types.Internal.Data       (OperationKind (..))
+import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStream, ResponseStream, StreamChannel,
+                                                          StreamState (..), StreamT (..), SubscribeStream)
 import           Data.Morpheus.Types.Internal.Validation (GQLErrors)
-import           Data.Morpheus.Types.Internal.Data (OperationKind (..))
 
 class Monad m =>
       GQLFail (t :: (* -> *) -> * -> *) m
@@ -86,6 +87,12 @@ type ResolveT = ExceptT GQLErrors
 
 failResolveT :: Monad m => GQLErrors -> ResolveT m a
 failResolveT = ExceptT . pure . Left
+
+-- TODO: use it
+data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
+    QueryT:: ExceptT GQLErrors m value -> GraphQLT 'Query m  () value
+    MutationT :: ExceptT GQLErrors (PublishStream m event) value -> GraphQLT 'Mutation m event value
+    SubscriptionT ::  ExceptT GQLErrors (SubscribeStream m event) (event -> ExceptT GQLErrors m value) -> GraphQLT 'Subscription m event value
 
 -------------------------------------------------------------------
 -- | Pure Resolver without effect
