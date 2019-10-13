@@ -174,5 +174,17 @@
   {
     "path": "parsing/multilineComments",
     "description": "parses multiline comments"
+  },
+  {
+    "path": "parsing/AnonymousOperation/query",
+    "description": "parse anonymous query"
+  },
+  {
+    "path": "parsing/AnonymousOperation/mutation",
+    "description": "parse anonymous mutation"
+  },
+  {
+    "path": "parsing/AnonymousOperation/subscription",
+    "description": "parse anonymous subscription"
   }
 ]

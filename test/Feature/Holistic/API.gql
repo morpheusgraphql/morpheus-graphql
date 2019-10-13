@@ -43,7 +43,7 @@ type Query {
 }
 
 type Mutation {
-  createUser(userID: String!, userName: String!): User!
+  createUser(userID: String!, userName: String): User!
 }
 
 type Subscription {
