@@ -10,8 +10,11 @@
   ```
 
 - Reduced `GQLRootResolver` signature :
+
    `GQLRootResolver IO () () Query () ()` -> `GQLRootResolver IO () Query () ()`
+   
    `GQLRootResolver IO Channel Content Query  Mutation Subscription` -> `GQLRootResolver IO APIEvent Query  Mutation Subscription`
+    
     where `APIEvent = Event Channel Content`
 
 ## [0.4.0] - 09.10.2019
