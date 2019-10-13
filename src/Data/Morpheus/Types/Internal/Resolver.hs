@@ -81,7 +81,7 @@ type SubRootRes m e sub = Resolver (SubscribeStream m e) sub
 --- Transformers
 type ResponseT m e  = ResolveT (ResponseStream m e )
 
-type SubResolveT m e a = ResolveT (SubscribeStream m e) (e -> ResolveT m a)
+type SubResolveT = GraphQLT 'Subscription
 
 type ResolveT = ExceptT GQLErrors
 
@@ -90,9 +90,34 @@ failResolveT = ExceptT . pure . Left
 
 -- TODO: use it
 data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
-    QueryT:: ExceptT GQLErrors m value -> GraphQLT 'Query m  () value
+    QueryT:: ExceptT GQLErrors m value -> GraphQLT 'Query m  event value
     MutationT :: ExceptT GQLErrors (PublishStream m event) value -> GraphQLT 'Mutation m event value
     SubscriptionT ::  ExceptT GQLErrors (SubscribeStream m event) (event -> ExceptT GQLErrors m value) -> GraphQLT 'Subscription m event value
+
+instance Functor m => Functor (GraphQLT o m event) where 
+    fmap  f (QueryT x) = QueryT (fmap f x) 
+    fmap  f (MutationT x) = MutationT (fmap f x) 
+    -- TODO: write subscription
+    --fmap  f (SubscriptionT x) = SubscriptionT (fmap f x) 
+
+instance Monad m => Applicative (GraphQLT 'Query m event) where
+    pure = QueryT .  pure 
+    QueryT x <*> QueryT y = QueryT (x <*> y)
+
+instance Monad m => Applicative (GraphQLT 'Mutation m event) where 
+    pure = MutationT .  pure 
+    MutationT x <*> MutationT y = MutationT (x <*> y)
+
+-- TODO:
+instance Monad m => Applicative (GraphQLT 'Subscription m event) where 
+    --pure = SubscriptionT .  pure 
+    --SubscriptionT x <*> SubscriptionT y = SubscriptionT (x <*> y)
+
+
+instance Monad m => Monad (GraphQLT 'Query m ()) where
+instance Monad m => Monad (GraphQLT 'Mutation m event) where
+instance Monad m => Monad (GraphQLT 'Subscription m event) where
+
 
 -------------------------------------------------------------------
 -- | Pure Resolver without effect

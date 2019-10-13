@@ -48,7 +48,8 @@ import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTO
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Resolver           (ResolveT, Resolver, SubResolveT, SubResolver (..),
+import           Data.Morpheus.Types.Internal.Data               (OperationKind(..))
+import           Data.Morpheus.Types.Internal.Resolver           (ResolveT, GraphQLT(..), Resolver, SubResolveT, SubResolver (..),
                                                                   failResolveT)
 import           Data.Morpheus.Types.Internal.Stream             (Channel (..), PublishStream, StreamT (..),
                                                                   SubscribeStream, initExceptStream, injectEvents)
@@ -84,12 +85,20 @@ instance (Monad m, GQLValue value, Encode a (m value)) => Encode [a] (m value) w
   encode list query = gqlList <$> traverse (`encode` query) list
 
 --  GQL a -> b
-instance (DecodeObject a, Monad m, Encode b (ResolveT m value)) => Encode (a -> b) (ResolveT m value) where
+instance (DecodeObject a, Monad (GraphQLT o m event) ,Monad m, Encode b (ResolveT m value)) => Encode (a -> b) (GraphQLT o  m event value) where
   encode resolver selection = decodeArgs selection >>= (`encode` selection) . resolver
     where
-      decodeArgs :: (Key, Selection) -> ResolveT m a
+      decodeArgs :: (Key, Selection) -> GraphQLT o m event a
       decodeArgs = liftEither . decodeArguments . selectionArguments . snd
 
+
+--  GQL a -> b
+--instance (DecodeObject a, Monad m, Encode b (ResolveT m value)) => Encode (a -> b) (GraphQLT 'Query m () value) where
+--  encode resolver selection = QueryT $ decodeArgs selection >>= (`encode` selection) . resolver
+--    where
+--      decodeArgs :: (Key, Selection) -> ResolveT m a
+--      decodeArgs = liftEither . decodeArguments . selectionArguments . snd
+            
 -- GQL Either Resolver Monad
 instance (Monad m, Encode a (ResolveT m value)) => Encode (Either String a) (ResolveT m value) where
   encode resolver = (`encodeResolver` liftEither resolver)
@@ -104,7 +113,7 @@ instance (Monad m, Encode b (ResolveT m value)) => Encode (Resolver m b) (Resolv
 
 -- GQL Subscription Resolver Monad
 instance (Monad m, Encode b (ResolveT m Value)) => Encode (SubResolver m event b) (SubResolveT m event Value) where
-  encode resolver selection =  handleResolver resolver
+  encode resolver selection =  SubscriptionT (handleResolver resolver)
     where
       handleResolver SubResolver {subChannels, subResolver} =
         initExceptStream [map Channel subChannels] (encodeResolver selection . subResolver)
@@ -122,7 +131,7 @@ instance (Generic a, EnumRep (Rep a), GQLValue value) => EncodeKind ENUM a value
   encodeKind = pure . gqlString . encodeRep . from . unVContext
 
 --  OBJECT
-instance (Monad m, EncodeCon m a value, GQLValue value) => EncodeKind OBJECT a (ResolveT m value) where
+instance (Monad m, EncodeCon m a value, GQLValue value) => EncodeKind OBJECT a (GraphQLT o m k value) where
   encodeKind (VContext value) (_, Selection {selectionRec = SelectionSet selection}) =
     resolveFields selection (__typenameResolver : objectResolvers (Proxy :: Proxy (CUSTOM a)) value)
     where
