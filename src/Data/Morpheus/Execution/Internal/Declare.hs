@@ -23,7 +23,7 @@ import           Data.Morpheus.Types.Internal.Data      (ArgsType (..), DataFiel
                                                          DataTypeKind (..), TypeAlias (..), WrapperD (..),
                                                          isOutputObject, isSubscription)
 import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), TypeD (..))
-import           Data.Morpheus.Types.Resolver           (UnSubResolver)
+import           Data.Morpheus.Types.Internal.Resolver  (UnSubResolver)
 
 type FUNC = (->)
 
