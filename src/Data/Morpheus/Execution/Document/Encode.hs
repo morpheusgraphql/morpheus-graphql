@@ -18,9 +18,8 @@ import           Data.Morpheus.Types.GQLType             (TRUE)
 import           Data.Morpheus.Types.Internal.Data       (DataField (..), isSubscription)
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH         (applyT, destructRecord, instanceHeadMultiT, typeT)
-import           Data.Morpheus.Types.Internal.Validation (ResolveT)
 import           Data.Morpheus.Types.Internal.Value      (Value)
-import           Data.Morpheus.Types.Resolver
+import           Data.Morpheus.Types.Resolver   (ResolveT,Resolver,SubResolveT,SubResolver)
 
 -- @Subscription:
 --

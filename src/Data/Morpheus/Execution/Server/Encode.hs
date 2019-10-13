@@ -48,11 +48,11 @@ import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTO
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Stream             (PublishStream,Channel(..), StreamT (..), SubscribeStream,
+import           Data.Morpheus.Types.Internal.Stream             (PublishStream,Channel(..),GraphQLT(..), StreamT (..), SubscribeStream,
                                                                   initExceptStream, injectEvents)
-import           Data.Morpheus.Types.Internal.Validation         (GQLErrors, ResolveT, failResolveT)
+import           Data.Morpheus.Types.Internal.Validation         (GQLErrors)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
-import           Data.Morpheus.Types.Resolver                    (Resolver, SubResolveT, SubResolver (..))
+import           Data.Morpheus.Types.Resolver                    (Resolver, ResolveT, failResolveT, SubResolveT, SubResolver (..))
 
 class Encode resolver value where
   encode :: resolver -> (Key, Selection) -> value
@@ -103,7 +103,7 @@ instance (Monad m, Encode b (ResolveT m value)) => Encode (Resolver m b) (Resolv
 
 -- GQL Subscription Resolver Monad
 instance (Monad m, Encode b (ResolveT m Value)) => Encode (SubResolver m event b) (SubResolveT m event Value) where
-  encode resolver selection = handleResolver resolver
+  encode resolver selection =  handleResolver resolver
     where
       handleResolver SubResolver {subChannels, subResolver} =
         initExceptStream [map Channel subChannels] (encodeResolver selection . subResolver)

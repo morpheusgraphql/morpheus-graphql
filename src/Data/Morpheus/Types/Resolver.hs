@@ -24,6 +24,7 @@ module Data.Morpheus.Types.Resolver
   , toMutResolver
   , GQLFail(..)
   , ResponseT
+  , failResolveT
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
@@ -34,7 +35,7 @@ import           Data.Text                               (pack, unpack)
 import           Data.Morpheus.Types.Internal.Base       (Message)
 import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStream, ResponseStream, StreamState (..),
                                                           StreamT (..), StreamChannel, SubscribeStream, GraphQLT(..))
-import           Data.Morpheus.Types.Internal.Validation (ResolveT)
+import           Data.Morpheus.Types.Internal.Validation (GQLErrors)
 import           Data.Morpheus.Types.Internal.Data (OperationKind (..))
 
 class Monad m =>
@@ -72,15 +73,19 @@ type instance UnSubResolver (SubResolver m e) = Resolver m
 -------------------------------------------------------------------
 type Resolver = ExceptT String
 
-type ResponseT m e  = ResolveT (ResponseStream m e )
-
-
-type SubResolveT m e a = ResolveT (SubscribeStream m e) (e -> ResolveT m a)
-
 type MutResolver m e = Resolver (PublishStream m e)
 
 type SubRootRes m e sub = Resolver (SubscribeStream m e) sub
 
+--- Transformers
+type ResponseT m e  = ResolveT (ResponseStream m e )
+
+type SubResolveT m e a = ResolveT (SubscribeStream m e) (e -> ResolveT m a)
+
+type ResolveT = ExceptT GQLErrors
+
+failResolveT :: Monad m => GQLErrors -> ResolveT m a
+failResolveT = ExceptT . pure . Left
 
 -------------------------------------------------------------------
 -- | Pure Resolver without effect

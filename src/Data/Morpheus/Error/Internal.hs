@@ -9,7 +9,8 @@ module Data.Morpheus.Error.Internal
   ) where
 
 import           Data.Morpheus.Error.Utils               (globalErrorMessage)
-import           Data.Morpheus.Types.Internal.Validation (GQLErrors, ResolveT, failResolveT)
+import           Data.Morpheus.Types.Internal.Validation (GQLErrors)
+import           Data.Morpheus.Types.Resolver ( ResolveT, failResolveT)
 import           Data.Morpheus.Types.Internal.Value      (Value (..))
 import           Data.Text                               (Text)
 import qualified Data.Text                               as T (concat, pack)
