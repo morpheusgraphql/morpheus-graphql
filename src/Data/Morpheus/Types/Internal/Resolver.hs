@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
-module Data.Morpheus.Types.Resolver
+module Data.Morpheus.Types.Internal.Resolver
   ( Pure
   , Resolver
   , MutResolver

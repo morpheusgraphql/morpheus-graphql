@@ -16,18 +16,19 @@ module Data.Morpheus.Types.GQLType
   , FALSE
   ) where
 
-import           Data.Map                          (Map)
-import           Data.Proxy                        (Proxy (..))
-import           Data.Set                          (Set)
-import           Data.Text                         (Text, intercalate, pack)
-import           Data.Typeable                     (TyCon, TypeRep, Typeable, splitTyConApp, tyConFingerprint,
-                                                    tyConName, typeRep, typeRepTyCon)
+import           Data.Map                              (Map)
+import           Data.Proxy                            (Proxy (..))
+import           Data.Set                              (Set)
+import           Data.Text                             (Text, intercalate, pack)
+import           Data.Typeable                         (TyCon, TypeRep, Typeable, splitTyConApp, tyConFingerprint,
+                                                        tyConName, typeRep, typeRepTyCon)
 
 -- MORPHEUS
 import           Data.Morpheus.Kind
-import           Data.Morpheus.Types.Custom        (MapKind, Pair)
-import           Data.Morpheus.Types.Internal.Data (DataFingerprint (..))
-import           Data.Morpheus.Types.Resolver      (Resolver, SubResolver)
+import           Data.Morpheus.Types.Custom            (MapKind, Pair)
+import           Data.Morpheus.Types.Internal.Data     (DataFingerprint (..))
+import           Data.Morpheus.Types.Internal.Resolver (Resolver, SubResolver)
+
 
 type TRUE = 'True
 
