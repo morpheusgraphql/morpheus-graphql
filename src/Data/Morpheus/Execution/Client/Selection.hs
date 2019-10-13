@@ -17,7 +17,7 @@ import           Data.Morpheus.Error.Utils                     (globalErrorMessa
 import           Data.Morpheus.Execution.Internal.GraphScanner (LibUpdater, resolveUpdates)
 import           Data.Morpheus.Execution.Internal.Utils        (nameSpaceType)
 import           Data.Morpheus.Types.Internal.AST.Operation    (DefaultValue, Operation (..), ValidOperation,
-                                                                Variable (..), VariableDefinitions)
+                                                                Variable (..), VariableDefinitions, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataFullType (..), DataLeaf (..),
                                                                 DataTyCon (..), DataTypeKind (..), DataTypeLib (..),
@@ -37,10 +37,10 @@ operationTypes :: DataTypeLib -> VariableDefinitions -> ValidOperation -> Valida
 operationTypes lib variables = genOperation
   where
     genOperation Operation {operationName, operationSelection} = do
-      (queryTypes, enums) <- genRecordType [] operationName queryDataType operationSelection
+      (queryTypes, enums) <- genRecordType [] (getOperationName operationName) queryDataType operationSelection
       inputTypeRequests <- resolveUpdates [] $ map (scanInputTypes lib . variableType . snd) variables
       inputTypesAndEnums <- buildListedTypes (inputTypeRequests <> enums)
-      pure (rootArguments (operationName <> "Args"), queryTypes <> inputTypesAndEnums)
+      pure (rootArguments (getOperationName operationName <> "Args"), queryTypes <> inputTypesAndEnums)
       where
         queryDataType = OutputObject $ snd $ query lib
     -------------------------------------------------------------------------
