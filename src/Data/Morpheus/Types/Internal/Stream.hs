@@ -8,7 +8,6 @@ module Data.Morpheus.Types.Internal.Stream
   ( StreamState(..)
   , ResponseEvent(..)
   , SubEvent
-  , PubEvent
   , Event(..)
   -- STREAMS
   , StreamT(..)
@@ -19,17 +18,25 @@ module Data.Morpheus.Types.Internal.Stream
   , mapS
   , injectEvents
   , initExceptStream
-  , GQLMonad(..)
+ -- , GQLMonad(..)
+  , StreamChannel
   ) where
 
 import           Control.Monad.Trans.Except        (ExceptT (..), runExceptT)
+
+-- MORPHEUS
 import           Data.Morpheus.Types.Internal.Data (OperationKind (..))
 import           Data.Morpheus.Types.IO            (GQLResponse)
 
-data GQLMonad (o::OperationKind) (m :: * -> * ) value where 
+-- TODO: use it
+data GQLMonad (o::OperationKind) (m :: * -> * ) value where
     QueryM :: m value -> GQLMonad 'Query m  ()
     MutationM :: [Event channel event] -> m value -> GQLMonad 'Mutation m (Event channel event)
     SubscriptionM ::  [channel] -> m (Event channel event -> m value) -> GQLMonad 'Subscription m (Event channel event)
+
+type family StreamChannel a  ::  *
+type instance StreamChannel (Event channel content) = channel
+
 
 data Event e c = Event
   { channels :: [e]
@@ -62,21 +69,19 @@ instance Monad m => Monad (StreamT m c) where
       (StreamState e2 v2) <- runStreamT $ mFunc v1
       return $ StreamState (e1 ++ e2) v2
 
-type SubEvent m e c = Event e (Event e c -> m GQLResponse)
-
-type PubEvent e c = Event e c
+type SubEvent m event = Event (StreamChannel event) (event-> m GQLResponse)
 
 -- EVENTS
-data ResponseEvent m e c
-  = Publish (PubEvent e c)
-  | Subscribe (SubEvent m e c)
+data ResponseEvent m event
+  = Publish event
+  | Subscribe (SubEvent m event)
 
 -- STREAMS
-type SubscribeStream m e = StreamT m [e]
+type SubscribeStream m e = StreamT m [StreamChannel e]
 
-type PublishStream m e c = StreamT m (PubEvent e c)
+type PublishStream m event = StreamT m event
 
-type ResponseStream m event con = StreamT m (ResponseEvent m event con)
+type ResponseStream m event = StreamT m (ResponseEvent m event)
 
 -- Helper Functions
 toTuple :: StreamState s a -> ([s], a)
