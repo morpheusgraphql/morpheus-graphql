@@ -35,5 +35,5 @@ instance GQLScalar TestScalar where
 
 importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 
-schemaProxy :: Proxy (GQLRootResolver IO () () (Query IORes) () ())
-schemaProxy = Proxy @(GQLRootResolver IO () () (Query IORes) () ())
+schemaProxy :: Proxy (GQLRootResolver IO () (Query IORes) () ())
+schemaProxy = Proxy @(GQLRootResolver IO () (Query IORes) () ())

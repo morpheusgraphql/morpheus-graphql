@@ -28,7 +28,7 @@ data Query = Query
   , a2 :: A2.A
   } deriving (Generic, GQLType)
 
-rootResolver :: GQLRootResolver IO () () Query () ()
+rootResolver :: GQLRootResolver IO () Query () ()
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {a1 = A "" 0, a2 = A2.A 0}

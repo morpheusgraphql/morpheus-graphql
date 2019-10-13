@@ -36,7 +36,7 @@ newtype Query = Query
   { q1 :: A
   } deriving (Generic, GQLType)
 
-rootResolver :: GQLRootResolver IO () () Query () ()
+rootResolver :: GQLRootResolver IO () Query () ()
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {q1 = A {a1 = const $ return "a1Test", a2 = const $ return 1}}

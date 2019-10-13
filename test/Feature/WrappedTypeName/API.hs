@@ -10,7 +10,7 @@ module Feature.WrappedTypeName.API
 
 import           Data.Morpheus       (interpreter)
 import           Data.Morpheus.Kind  (OBJECT)
-import           Data.Morpheus.Types (GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), IOMutRes, IORes,
+import           Data.Morpheus.Types (GQLRequest, Event, GQLResponse, GQLRootResolver (..), GQLType (..), IOMutRes, IORes,
                                       IOSubRes, SubResolver (..))
 import           Data.Text           (Text)
 import           Data.Typeable       (Typeable)
@@ -39,22 +39,24 @@ data Query = Query
   } deriving (Generic, GQLType)
 
 data Mutation = Mutation
-  { mut1 :: Maybe (WA (IOMutRes EVENT ()))
+  { mut1 :: Maybe (WA (IOMutRes EVENT))
   , mut2 :: Maybe (Wrapped Int Int)
   , mut3 :: Maybe (Wrapped (Wrapped Text Int) Text)
   } deriving (Generic, GQLType)
 
-data EVENT =
-  EVENT
+data Channel =
+  Channel
   deriving (Show, Eq)
 
+type EVENT =  Event Channel ()
+
 data Subscription = Subscription
-  { sub1 :: () -> IOSubRes EVENT () (Maybe (WA IORes))
-  , sub2 :: () -> IOSubRes EVENT () (Maybe (Wrapped Int Int))
-  , sub3 :: () -> IOSubRes EVENT () (Maybe (Wrapped (Wrapped Text Int) Text))
+  { sub1 :: () -> IOSubRes EVENT (Maybe (WA IORes))
+  , sub2 :: () -> IOSubRes EVENT (Maybe (Wrapped Int Int))
+  , sub3 :: () -> IOSubRes EVENT (Maybe (Wrapped (Wrapped Text Int) Text))
   } deriving (Generic, GQLType)
 
-rootResolver :: GQLRootResolver IO EVENT () Query Mutation Subscription
+rootResolver :: GQLRootResolver IO EVENT Query Mutation Subscription
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {a1 = WA {aText = const $ pure "test1", aInt = 0}, a2 = Nothing, a3 = Nothing}
@@ -62,9 +64,9 @@ rootResolver =
     , subscriptionResolver =
         return
           Subscription
-            { sub1 = const SubResolver {subChannels = [EVENT], subResolver = const $ return Nothing}
-            , sub2 = const SubResolver {subChannels = [EVENT], subResolver = const $ return Nothing}
-            , sub3 = const SubResolver {subChannels = [EVENT], subResolver = const $ return Nothing}
+            { sub1 = const SubResolver {subChannels = [Channel], subResolver = const $ return Nothing}
+            , sub2 = const SubResolver {subChannels = [Channel], subResolver = const $ return Nothing}
+            , sub3 = const SubResolver {subChannels = [Channel], subResolver = const $ return Nothing}
             }
     }
 
