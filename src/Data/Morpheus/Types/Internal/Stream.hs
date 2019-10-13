@@ -37,10 +37,11 @@ data GQLMonad (o::OperationKind) (m :: * -> * ) value where
 
 newtype Channel event = Channel {
   unChannel :: StreamChannel event
-} 
+}
 
-instance (Eq (StreamChannel event)) => Eq (Channel event) 
-  
+instance (Eq (StreamChannel event)) => Eq (Channel event) where
+  Channel x == Channel y = x == y
+
 
 class GQLChannel a where
     type StreamChannel a :: *
