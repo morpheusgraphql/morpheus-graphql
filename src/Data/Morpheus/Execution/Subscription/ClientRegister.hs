@@ -18,7 +18,7 @@ import           Data.List                                   (intersect)
 import           Data.Text                                   (Text)
 import           Data.UUID.V4                                (nextRandom)
 import           Network.WebSockets                          (Connection, sendTextData)
-
+ 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Subscription.Apollo (toApolloResponse)
 import           Data.Morpheus.Types.Internal.Stream         (Event (..),GQLChannel(..),Channel(..),  SubEvent)
@@ -84,7 +84,7 @@ publishUpdates state event = do
           sendTextData clientConnection . toApolloResponse sessionId
         filterByChannels =
           filter
-            (([] /=) .
+            (not . null .
              intersect (streamChannels event) . channels . sessionSubscription)
 
 removeClientSubscription :: ClientID -> Text -> GQLState m e  -> IO ()
