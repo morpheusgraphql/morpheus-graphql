@@ -19,51 +19,17 @@ module Data.Morpheus.Types.Internal.Stream
   , mapS
   , injectEvents
   , initExceptStream
- -- , GQLStream(..)
+  , GQLMonad(..)
   ) where
 
 import           Control.Monad.Trans.Except        (ExceptT (..), runExceptT)
 import           Data.Morpheus.Types.Internal.Data (OperationKind (..))
 import           Data.Morpheus.Types.IO            (GQLResponse)
 
-{-
-class STREAM (o :: OperationKind) where
-  type RESOLVER o (m :: * -> *) event a :: *
-  type CHANNEL o (m :: * -> *) event a :: *
-
-instance STREAM 'Query where
-  type CHANNEL 'Query m event a = ()
-  type RESOLVER 'Query m event a = a
-
-instance STREAM 'Mutation where
-  type CHANNEL 'Mutation m event a = event
-  type RESOLVER 'Mutation m event a = a
-
-instance STREAM 'Subscription where
-  type CHANNEL 'Subscription m (Event channel content) a = channel
-  type RESOLVER 'Subscription m event a = event -> m a
--}
--- type family RES (o :: OperationKind) :: * 
--- type instance RES MUTATION = 
-
 data GQLMonad (o::OperationKind) (m :: * -> * ) value where 
     QueryM :: m value -> GQLMonad 'Query m  ()
-    MutationM :: Event channel event -> m value -> GQLMonad 'Mutation m (Event channel event)
-    SubscriptionM ::  channel -> m (Event channel event -> m value) -> GQLMonad 'Subscription m (Event channel event)
-
-
-
---newtype GQLStream (o :: OperationKind) (m :: * -> *) event a = GQLStream
---  { unGQLStream :: StreamT m (CHANNEL o m event a) (RESOLVER o m event a)
---  }
-
---instance Functor m => Functor (GQLMonad 'Query m event) where
---  fmap f (GQLStream x) = GQLStream (f <$> x)
-
---instance Functor m => Functor (GQLMonad 'Mutation m event) where
---  fmap f (GQLStream x) = GQLStream (f <$> x)
-
-
+    MutationM :: [Event channel event] -> m value -> GQLMonad 'Mutation m (Event channel event)
+    SubscriptionM ::  [channel] -> m (Event channel event -> m value) -> GQLMonad 'Subscription m (Event channel event)
 
 data Event e c = Event
   { channels :: [e]
