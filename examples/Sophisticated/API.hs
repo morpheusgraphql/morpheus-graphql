@@ -82,7 +82,7 @@ type MutRes = IOMutRes Channel Content
 
 type SubRes = IOSubRes Channel Content
 
-gqlRoot :: GQLRootResolver IO Channel Content (Query IORes) (Mutation MutRes) (Subscription SubRes)
+gqlRoot :: GQLRootResolver IO (Event Channel Content) (Query IORes) (Mutation MutRes) (Subscription SubRes)
 gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
   where
     queryResolver =

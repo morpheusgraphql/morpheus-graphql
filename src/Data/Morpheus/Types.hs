@@ -37,6 +37,6 @@ constRes = const . return
 
 type IORes = Resolver IO
 
-type IOMutRes e c = MutResolver IO e c
+type IOMutRes e  = MutResolver IO e 
 
-type IOSubRes e c = SubResolver IO e c
+type IOSubRes e  = SubResolver IO e 

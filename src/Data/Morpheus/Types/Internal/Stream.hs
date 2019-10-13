@@ -45,6 +45,10 @@ class GQLChannel a where
     type StreamChannel a :: *
     streamChannels :: a -> [Channel a]
 
+instance GQLChannel () where
+    type StreamChannel () = ()
+    streamChannels _ = []
+
 instance GQLChannel (Event channel content)  where
    type StreamChannel (Event channel content)  = channel
    streamChannels Event { channels } =  map Channel channels
