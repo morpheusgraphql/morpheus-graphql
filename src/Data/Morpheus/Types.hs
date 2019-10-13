@@ -21,6 +21,7 @@ module Data.Morpheus.Types
   , ScalarValue(..)
   , GQLRootResolver(..)
   , constRes
+  , Empty
   ) where
 
 import           Data.Morpheus.Types.GQLScalar         (GQLScalar (parseValue, serialize))
@@ -31,6 +32,8 @@ import           Data.Morpheus.Types.Internal.Resolver (Event (..), GQLRootResol
                                                         toMutResolver)
 import           Data.Morpheus.Types.Internal.Value    (ScalarValue (..))
 import           Data.Morpheus.Types.IO                (GQLRequest (..), GQLResponse (..))
+
+type Empty m = ()
 
 -- resolves constant value on any argument
 constRes :: Monad m => b -> a -> m b
