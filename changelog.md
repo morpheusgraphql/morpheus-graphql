@@ -1,3 +1,12 @@
+## [0.4.1] - *.10.2019
+- Parser supports anonymous Operation: `query` , `mutation` , `subscription`
+ for example:
+   ```
+    mutation {
+
+    }
+   ```
+
 ## [0.4.0] - 09.10.2019
 
 ## Changed

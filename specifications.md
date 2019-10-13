@@ -48,7 +48,8 @@
     - Inline Fragments: (>= 0.1.0)
     - Aliases: ✅ (>= 0.1.0)
     - DefaultValues:  ✅ (>= 0.3.2)
-    - Operator
+    - AnonymousOperations: ✅  (>= 4.1)
+    - Operations:
       - Query: ✅
       - Mutation: ✅
       - Subscription : ✅ (>= 0.1.0 )
@@ -106,7 +107,7 @@
 
 **Fragment**: whole spread will be done there (for performance reason),
 Selection and Argument will be Validated on Query,
-because there will be no unused fragment we will validate all subfields.
+because there will be no unused fragment we will validate all sub fields.
 
 - **unusedFragment**: ✅ + 🧪 (>= 2.0)
 - **unknownTargetType**: ✅ + 🧪
