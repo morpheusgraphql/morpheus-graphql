@@ -21,7 +21,7 @@ import           Network.WebSockets                          (Connection, sendTe
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Subscription.Apollo (toApolloResponse)
-import           Data.Morpheus.Types.Internal.Stream         (Event (..),GQLChannel(..),  SubEvent)
+import           Data.Morpheus.Types.Internal.Stream         (Event (..),GQLChannel(..),Channel(..),  SubEvent)
 import           Data.Morpheus.Types.Internal.WebSocket      (ClientID, ClientSession (..), GQLClient (..))
 
 type ClientRegister m e  = [(ClientID, GQLClient m e)]
@@ -68,7 +68,7 @@ updateClientByID id' updateFunc state =
       | key' == id' = (key', updateFunc client')
     updateClient state' = state'
 
-publishUpdates :: (Eq (StreamChannel e), GQLChannel e) => GQLState IO e -> e -> IO ()
+publishUpdates :: (Eq (Channel e), GQLChannel e) => GQLState IO e -> e -> IO ()
 publishUpdates state event = do
   state' <- readMVar state
   traverse_ sendMessage state'

@@ -20,6 +20,7 @@ module Data.Morpheus.Types.Internal.Stream
   , initExceptStream
  -- , GQLMonad(..)
   , GQLChannel(..)
+  , Channel(..)
   ) where
 
 import           Control.Monad.Trans.Except        (ExceptT (..), runExceptT)
@@ -35,13 +36,18 @@ data GQLMonad (o::OperationKind) (m :: * -> * ) value where
     SubscriptionM ::  [channel] -> m (Event channel event -> m value) -> GQLMonad 'Subscription m (Event channel event)
 
 
+
+newtype Channel event = Channel {
+  unChannel :: StreamChannel event
+}
+
 class GQLChannel a where 
     type StreamChannel a :: * 
-    streamChannels :: a -> [StreamChannel a]
+    streamChannels :: a -> [Channel a]
   
 instance GQLChannel (Event channel content)  where  
    type StreamChannel (Event channel content)  = channel 
-   streamChannels Event { channels } = channels
+   streamChannels Event { channels } =  map Channel channels
    
 data Event e c = Event
   { channels :: [e]
@@ -74,15 +80,18 @@ instance Monad m => Monad (StreamT m c) where
       (StreamState e2 v2) <- runStreamT $ mFunc v1
       return $ StreamState (e1 ++ e2) v2
 
-type SubEvent m event = Event (StreamChannel event) (event-> m GQLResponse)
+type SubEvent m event = Event (Channel event) (event-> m GQLResponse)
 
 -- EVENTS
 data ResponseEvent m event
   = Publish event
   | Subscribe (SubEvent m event)
 
+
+
+
 -- STREAMS
-type SubscribeStream m e = StreamT m [StreamChannel e]
+type SubscribeStream m e = StreamT m [Channel e]
 
 type PublishStream m event = StreamT m event
 
