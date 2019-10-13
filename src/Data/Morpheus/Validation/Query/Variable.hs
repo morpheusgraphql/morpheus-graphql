@@ -7,11 +7,15 @@ module Data.Morpheus.Validation.Query.Variable
 import           Data.List                                     ((\\))
 import qualified Data.Map                                      as M (lookup)
 import           Data.Maybe                                    (maybe)
+import           Data.Semigroup                                ((<>))
+import           Data.Text                                     (Text)
+
+--- MORPHEUS
 import           Data.Morpheus.Error.Input                     (inputErrorMessage)
 import           Data.Morpheus.Error.Variable                  (uninitializedVariable, unknownType, unusedVariables,
                                                                 variableGotInvalidValue)
 import           Data.Morpheus.Types.Internal.AST.Operation    (DefaultValue, Operation (..), RawOperation,
-                                                                ValidVariables, Variable (..))
+                                                                ValidVariables, Variable (..), getOperationName)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawArgument (..),
                                                                 RawSelection (..), RawSelection' (..), RawSelectionSet,
                                                                 Reference (..))
@@ -23,8 +27,6 @@ import           Data.Morpheus.Types.Types                     (Variables)
 import           Data.Morpheus.Validation.Internal.Utils       (VALIDATION_MODE (..), getInputType)
 import           Data.Morpheus.Validation.Internal.Value       (validateInputValue)
 import           Data.Morpheus.Validation.Query.Fragment       (getFragment)
-import           Data.Semigroup                                ((<>))
-import           Data.Text                                     (Text)
 
 getVariableType :: Text -> Position -> DataTypeLib -> Validation DataKind
 getVariableType type' position' lib' = getInputType type' lib' error'
@@ -68,7 +70,7 @@ resolveOperationVariables typeLib lib root validationMode Operation {operationNa
     checkUnusedVariables refs =
       case map varToKey operationArgs \\ refs of
         []      -> pure ()
-        unused' -> Left $ unusedVariables operationName unused'
+        unused' -> Left $ unusedVariables (getOperationName operationName) unused'
 
 lookupAndValidateValueOnBody ::
      DataTypeLib -> Variables -> VALIDATION_MODE -> (Text, Variable DefaultValue) -> Validation (Text, Variable Value)

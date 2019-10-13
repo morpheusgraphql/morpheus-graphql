@@ -10,7 +10,8 @@ module Data.Morpheus.Validation.Query.Validation
 import           Data.Map                                   (fromList)
 import           Data.Morpheus.Error.Mutation               (mutationIsNotDefined)
 import           Data.Morpheus.Error.Subscription           (subscriptionIsNotDefined)
-import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), RawOperation, ValidOperation)
+import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), RawOperation, ValidOperation,
+                                                             getOperationName)
 import           Data.Morpheus.Types.Internal.Data          (DataObject, DataTypeLib (..), OperationKind (..))
 import           Data.Morpheus.Types.Internal.Validation    (Validation)
 import           Data.Morpheus.Types.Types                  (GQLQueryRoot (..))
@@ -42,5 +43,6 @@ validateRequest lib validationMode GQLQueryRoot { fragments
   operationDataType <- getOperationDataType rawOperation lib
   variables <- resolveOperationVariables lib fragments (fromList inputVariables) validationMode rawOperation
   validateFragments lib fragments operationSelection
-  selection <- validateSelectionSet lib fragments operationName variables operationDataType operationSelection
+  selection <-
+    validateSelectionSet lib fragments (getOperationName operationName) variables operationDataType operationSelection
   pure $ Operation {operationName, operationKind, operationArgs = [], operationSelection = selection, operationPosition}

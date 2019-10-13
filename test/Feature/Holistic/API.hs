@@ -27,6 +27,7 @@ data TestScalar =
              Int
   deriving (Show, Generic)
 
+
 instance GQLType TestScalar where
   type KIND TestScalar = SCALAR
 
