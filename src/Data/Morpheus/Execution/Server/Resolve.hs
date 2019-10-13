@@ -50,7 +50,7 @@ import           Data.Typeable                                       (Typeable)
 
 type EventCon event = Eq event
 
-type RootResCon m event cont query mutation subscription
+type RootResCon m event query mutation subscription
    = ( EventCon event
      , Typeable m
       -- Introspection
@@ -60,8 +60,8 @@ type RootResCon m event cont query mutation subscription
      , OBJ_RES m (Root (Resolver m)) Value
      -- Resolving
      , EncodeCon m query Value
-     , EncodeMutCon m event cont mutation
-     , EncodeSubCon m event cont subscription)
+     , EncodeMutCon m event mutation
+     , EncodeSubCon m event subscription)
 
 decodeNoDup :: L.ByteString -> Either String GQLRequest
 decodeNoDup str =
@@ -76,17 +76,17 @@ byteStringIO resolver request =
     Right req        -> encode <$> resolver req
 
 statelessResolver ::
-     (Monad m, RootResCon m s cont query mut sub)
-  => GQLRootResolver m s cont query mut sub
+     (Monad m, RootResCon m event query mut sub)
+  => GQLRootResolver m event  query mut sub
   -> GQLRequest
   -> m GQLResponse
 statelessResolver root = fmap snd . closeStream . streamResolver root
 
 streamResolver ::
-     (Monad m, RootResCon m event cont query mut sub)
-  => GQLRootResolver m event cont query mut sub
+     (Monad m, RootResCon m event  query mut sub)
+  => GQLRootResolver m event query mut sub
   -> GQLRequest
-  -> ResponseStream m event cont GQLResponse
+  -> ResponseStream m event GQLResponse
 streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver} request =
   renderResponse <$> runExceptT (validRequest >>= execOperator)
   ------------------------------------------------------------
@@ -94,7 +94,7 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
     renderResponse (Left errors) = Errors $ renderErrors errors
     renderResponse (Right value) = Data value
     ---------------------------------------------------------
-    validRequest :: Monad m => ResponseT m event cont (DataTypeLib, ValidOperation)
+    validRequest :: Monad m => ResponseT m event (DataTypeLib, ValidOperation)
     validRequest =
       liftEither $ do
         schema <- fullSchema $ Identity root
@@ -121,8 +121,8 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
 
 statefulResolver ::
      EventCon s
-  => GQLState IO s cont
-  -> (L.ByteString -> ResponseStream IO s cont L.ByteString)
+  => GQLState IO s 
+  -> (L.ByteString -> ResponseStream IO s  L.ByteString)
   -> L.ByteString
   -> IO L.ByteString
 statefulResolver state streamApi request = do
@@ -134,8 +134,8 @@ statefulResolver state streamApi request = do
     execute Subscribe {}      = pure ()
 
 fullSchema ::
-     forall proxy m s cont query mutation subscription. (IntroCon query, IntroCon mutation, IntroCon subscription)
-  => proxy (GQLRootResolver m s cont query mutation subscription)
+     forall proxy m event query mutation subscription. (IntroCon query, IntroCon mutation, IntroCon subscription)
+  => proxy (GQLRootResolver m event query mutation subscription)
   -> Validation DataTypeLib
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where

@@ -52,7 +52,7 @@ import           Data.Morpheus.Types.Internal.Stream             (PublishStream,
                                                                   initExceptStream, injectEvents)
 import           Data.Morpheus.Types.Internal.Validation         (GQLErrors, ResolveT, failResolveT)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
-import           Data.Morpheus.Types.Resolver                    (Event (..), Resolver, SubResolveT, SubResolver (..))
+import           Data.Morpheus.Types.Resolver                    (Resolver, SubResolveT, SubResolver (..))
 
 class Encode resolver value where
   encode :: resolver -> (Key, Selection) -> value
@@ -147,9 +147,9 @@ type OBJ_RES m a value = ObjectResolvers (CUSTOM a) a (ResolveT m value)
 
 type EncodeCon m a value = (GQL_RES a, OBJ_RES m a value)
 
-type EncodeMutCon m event con mut = EncodeCon (PublishStream m event) mut Value
+type EncodeMutCon m event mut = EncodeCon (PublishStream m event) mut Value
 
-type EncodeSubCon m event con sub = EncodeCon (SubscribeStream m event) sub (Event event con -> ResolveT m Value)
+type EncodeSubCon m event sub = EncodeCon (SubscribeStream m event) sub (event -> ResolveT m Value)
 
 type FieldRes m value = (Key, (Key, Selection) -> ResolveT m value)
 
