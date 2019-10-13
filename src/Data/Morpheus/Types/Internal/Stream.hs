@@ -19,7 +19,7 @@ module Data.Morpheus.Types.Internal.Stream
   , injectEvents
   , initExceptStream
  -- , GQLMonad(..)
-  , StreamChannel
+  , GQLChannel(..)
   ) where
 
 import           Control.Monad.Trans.Except        (ExceptT (..), runExceptT)
@@ -34,10 +34,15 @@ data GQLMonad (o::OperationKind) (m :: * -> * ) value where
     MutationM :: [Event channel event] -> m value -> GQLMonad 'Mutation m (Event channel event)
     SubscriptionM ::  [channel] -> m (Event channel event -> m value) -> GQLMonad 'Subscription m (Event channel event)
 
-type family StreamChannel a  ::  *
-type instance StreamChannel (Event channel content) = channel
 
-
+class GQLChannel a where 
+    type StreamChannel a :: * 
+    streamChannels :: a -> [StreamChannel a]
+  
+instance GQLChannel (Event channel content)  where  
+   type StreamChannel (Event channel content)  = channel 
+   streamChannels Event { channels } = channels
+   
 data Event e c = Event
   { channels :: [e]
   , content  :: c

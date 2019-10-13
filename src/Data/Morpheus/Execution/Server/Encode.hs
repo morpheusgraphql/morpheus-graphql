@@ -147,7 +147,7 @@ type OBJ_RES m a value = ObjectResolvers (CUSTOM a) a (ResolveT m value)
 
 type EncodeCon m a value = (GQL_RES a, OBJ_RES m a value)
 
-type EncodeMutCon m event con mut = EncodeCon (PublishStream m event con) mut Value
+type EncodeMutCon m event con mut = EncodeCon (PublishStream m event) mut Value
 
 type EncodeSubCon m event con sub = EncodeCon (SubscribeStream m event) sub (Event event con -> ResolveT m Value)
 
