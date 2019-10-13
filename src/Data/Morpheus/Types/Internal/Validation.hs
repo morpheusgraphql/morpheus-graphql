@@ -7,8 +7,6 @@ module Data.Morpheus.Types.Internal.Validation
   , GQLErrors
   , JSONError(..)
   , Validation
-  , ResolveT
-  , failResolveT
   , ResolveValue
   ) where
 
@@ -33,9 +31,4 @@ data JSONError = JSONError
 
 type Validation = Either GQLErrors
 
-type ResolveT = ExceptT GQLErrors
-
 type ResolveValue m = ExceptT GQLErrors m Value
-
-failResolveT :: Monad m => GQLErrors -> ResolveT m a
-failResolveT = ExceptT . pure . Left

@@ -48,11 +48,12 @@ import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTO
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Stream             (PublishStream, StreamT (..), SubscribeStream,
-                                                                  initExceptStream, injectEvents)
-import           Data.Morpheus.Types.Internal.Validation         (GQLErrors, ResolveT, failResolveT)
+import           Data.Morpheus.Types.Internal.Resolver           (ResolveT, Resolver, SubResolveT, SubResolver (..),
+                                                                  failResolveT)
+import           Data.Morpheus.Types.Internal.Stream             (Channel (..), PublishStream, StreamT (..),
+                                                                  SubscribeStream, initExceptStream, injectEvents)
+import           Data.Morpheus.Types.Internal.Validation         (GQLErrors)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
-import           Data.Morpheus.Types.Resolver                    (Event (..), Resolver, SubResolveT, SubResolver (..))
 
 class Encode resolver value where
   encode :: resolver -> (Key, Selection) -> value
@@ -102,11 +103,11 @@ instance (Monad m, Encode b (ResolveT m value)) => Encode (Resolver m b) (Resolv
   encode resolver = injectEvents [] . encode resolver
 
 -- GQL Subscription Resolver Monad
-instance (Monad m, Encode b (ResolveT m Value)) => Encode (SubResolver m e c b) (SubResolveT m e c Value) where
-  encode resolver selection = handleResolver resolver
+instance (Monad m, Encode b (ResolveT m Value)) => Encode (SubResolver m event b) (SubResolveT m event Value) where
+  encode resolver selection =  handleResolver resolver
     where
       handleResolver SubResolver {subChannels, subResolver} =
-        initExceptStream [subChannels] (encodeResolver selection . subResolver)
+        initExceptStream [map Channel subChannels] (encodeResolver selection . subResolver)
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a value where
@@ -147,9 +148,9 @@ type OBJ_RES m a value = ObjectResolvers (CUSTOM a) a (ResolveT m value)
 
 type EncodeCon m a value = (GQL_RES a, OBJ_RES m a value)
 
-type EncodeMutCon m event con mut = EncodeCon (PublishStream m event con) mut Value
+type EncodeMutCon m event mut = EncodeCon (PublishStream m event) mut Value
 
-type EncodeSubCon m event con sub = EncodeCon (SubscribeStream m event) sub (Event event con -> ResolveT m Value)
+type EncodeSubCon m event sub = EncodeCon (SubscribeStream m event) sub (event -> ResolveT m Value)
 
 type FieldRes m value = (Key, (Key, Selection) -> ResolveT m value)
 

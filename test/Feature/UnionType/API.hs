@@ -54,7 +54,7 @@ data Query = Query
 resolveUnion :: () -> IORes [AOrB]
 resolveUnion _ = return [A' A {aText = "at", aInt = 1}, B' B {bText = "bt", bInt = 2}]
 
-rootResolver :: GQLRootResolver IO () () Query () ()
+rootResolver :: GQLRootResolver IO () Query () ()
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {union = resolveUnion, fc = C {cText = "", cInt = 3}}

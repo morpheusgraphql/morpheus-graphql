@@ -21,7 +21,7 @@ import           Data.Text                  (Text)
 
 importGQLDocumentWithNamespace "examples/TH/simple.gql"
 
-rootResolver :: GQLRootResolver IO () () (Query IORes) () ()
+rootResolver :: GQLRootResolver IO () (Query IORes) () ()
 rootResolver =
   GQLRootResolver
     {queryResolver = return Query {queryDeity}, mutationResolver = pure (), subscriptionResolver = pure ()}

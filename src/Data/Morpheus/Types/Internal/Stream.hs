@@ -1,14 +1,16 @@
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE DeriveFunctor     #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE DeriveFunctor        #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE NamedFieldPuns       #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Types.Internal.Stream
   ( StreamState(..)
   , ResponseEvent(..)
   , SubEvent
-  , PubEvent
   , Event(..)
   -- STREAMS
   , StreamT(..)
@@ -19,38 +21,53 @@ module Data.Morpheus.Types.Internal.Stream
   , mapS
   , injectEvents
   , initExceptStream
-  , GQLStream(..)
+ -- , GQLMonad(..)
+  , GQLChannel(..)
+  , Channel(..)
   ) where
 
-import           Control.Monad.Trans.Except        (ExceptT (..), runExceptT)
-import           Data.Morpheus.Types.Internal.Data (OperationKind (..))
-import           Data.Morpheus.Types.IO            (GQLResponse)
+import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
 
-newtype GQLStream (o :: OperationKind) (m :: * -> *) event a = GQLStream
-  { unGQLStream :: StreamT m (CHANNEL o m event a) (RESOLVER o m event a)
-  }
+-- MORPHEUS
+import           Data.Morpheus.Types.IO                  (GQLResponse)
 
-instance Functor m => Functor (GQLStream 'Query m event) where
-  fmap f (GQLStream x) = GQLStream (f <$> x)
 
-instance Functor m => Functor (GQLStream 'Mutation m event) where
-  fmap f (GQLStream x) = GQLStream (f <$> x)
+-- EVENTS
+data ResponseEvent m event
+  = Publish event
+  | Subscribe (SubEvent m event)
 
-class STREAM (o :: OperationKind) where
-  type RESOLVER o (m :: * -> *) event a :: *
-  type CHANNEL o (m :: * -> *) event a :: *
+-- STREAMS
+type SubscribeStream m e = StreamT m [Channel e]
 
-instance STREAM 'Query where
-  type CHANNEL 'Query m event a = ()
-  type RESOLVER 'Query m event a = a
+type PublishStream m event = StreamT m event
 
-instance STREAM 'Mutation where
-  type CHANNEL 'Mutation m event a = event
-  type RESOLVER 'Mutation m event a = a
+type ResponseStream m event = StreamT m (ResponseEvent m event)
 
-instance STREAM 'Subscription where
-  type CHANNEL 'Subscription m (Event channel content) a = channel
-  type RESOLVER 'Subscription m event a = event -> m a
+type SubEvent m event = Event (Channel event) (event-> m GQLResponse)
+
+
+--type ResponseT m e  = ResolveT (ResponseStream m e )
+
+newtype Channel event = Channel {
+  unChannel :: StreamChannel event
+}
+
+instance (Eq (StreamChannel event)) => Eq (Channel event) where
+  Channel x == Channel y = x == y
+
+
+class GQLChannel a where
+    type StreamChannel a :: *
+    streamChannels :: a -> [Channel a]
+
+instance GQLChannel () where
+    type StreamChannel () = ()
+    streamChannels _ = []
+
+instance GQLChannel (Event channel content)  where
+   type StreamChannel (Event channel content)  = channel
+   streamChannels Event { channels } =  map Channel channels
 
 data Event e c = Event
   { channels :: [e]
@@ -83,21 +100,8 @@ instance Monad m => Monad (StreamT m c) where
       (StreamState e2 v2) <- runStreamT $ mFunc v1
       return $ StreamState (e1 ++ e2) v2
 
-type SubEvent m e c = Event e (Event e c -> m GQLResponse)
 
-type PubEvent e c = Event e c
 
--- EVENTS
-data ResponseEvent m e c
-  = Publish (PubEvent e c)
-  | Subscribe (SubEvent m e c)
-
--- STREAMS
-type SubscribeStream m e = StreamT m [e]
-
-type PublishStream m e c = StreamT m (PubEvent e c)
-
-type ResponseStream m event con = StreamT m (ResponseEvent m event con)
 
 -- Helper Functions
 toTuple :: StreamState s a -> ([s], a)

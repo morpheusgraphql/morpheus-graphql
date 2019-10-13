@@ -19,7 +19,7 @@ import qualified Network.Wai                    as Wai
 import qualified Network.Wai.Handler.Warp       as Warp
 import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
-import           Sophisticated.API              (Channel, Content, gqlRoot)
+import           Sophisticated.API              (APIEvent, gqlRoot)
 import           TH.Simple                      (thSimpleApi)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
 
@@ -33,7 +33,7 @@ main = do
   where
     settings = Warp.setPort 3000 Warp.defaultSettings
     wsApp = gqlSocketApp gqlRoot
-    httpServer :: GQLState IO Channel Content -> IO Wai.Application
+    httpServer :: GQLState IO APIEvent -> IO Wai.Application
     httpServer state =
       scottyApp $ do
         post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)

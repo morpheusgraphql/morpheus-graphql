@@ -7,20 +7,19 @@ module Data.Morpheus.Execution.Document.Encode
   ( deriveEncode
   ) where
 
-import           Data.Text                               (unpack)
-import           Data.Typeable                           (Typeable)
+import           Data.Text                             (unpack)
+import           Data.Typeable                         (Typeable)
 import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Execution.Server.Encode   (Encode (..), ObjectResolvers (..))
-import           Data.Morpheus.Types.GQLType             (TRUE)
-import           Data.Morpheus.Types.Internal.Data       (DataField (..), isSubscription)
-import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), GQLTypeD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.TH         (applyT, destructRecord, instanceHeadMultiT, typeT)
-import           Data.Morpheus.Types.Internal.Validation (ResolveT)
-import           Data.Morpheus.Types.Internal.Value      (Value)
-import           Data.Morpheus.Types.Resolver
+import           Data.Morpheus.Execution.Server.Encode (Encode (..), ObjectResolvers (..))
+import           Data.Morpheus.Types.GQLType           (TRUE)
+import           Data.Morpheus.Types.Internal.Data     (DataField (..), isSubscription)
+import           Data.Morpheus.Types.Internal.DataD    (ConsD (..), GQLTypeD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.Resolver (ResolveT, Resolver, SubResolveT, SubResolver)
+import           Data.Morpheus.Types.Internal.TH       (applyT, destructRecord, instanceHeadMultiT, typeT)
+import           Data.Morpheus.Types.Internal.Value    (Value)
 
 -- @Subscription:
 --
@@ -40,12 +39,12 @@ deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}
     result = appT resultMonad (conT ''Value)
       where
         resultMonad
-          | isSubscription typeKindD = typeT ''SubResolveT ["m", "e", "c"] -- (SubResolveT m e c Value)
+          | isSubscription typeKindD = typeT ''SubResolveT ["m", "e"] -- (SubResolveT m e Value)
           | otherwise = typeT ''ResolveT ["m"] -- (ResolveT m Value)
-    mainType = applyT (mkName tName) [mainTypeArg] -- defines  (<Type> (SubResolver m e c)) or (<Type> (Resolver m))
+    mainType = applyT (mkName tName) [mainTypeArg] -- defines  (<Type> (SubResolver m e)) or (<Type> (Resolver m))
       where
         mainTypeArg
-          | isSubscription typeKindD = typeT ''SubResolver ["m", "e", "c"] -- (SubResolver m e c)
+          | isSubscription typeKindD = typeT ''SubResolver ["m", "e"] -- (SubResolver m e)
           | otherwise = typeT ''Resolver ["m"] -- (Resolver m)
     -----------------------------------------------------------------------------------------
     -- defines Constraint: (Typeable m, Monad m)

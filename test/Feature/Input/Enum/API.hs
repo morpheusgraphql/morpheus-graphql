@@ -59,7 +59,7 @@ data Query = Query
   , test3 :: TestArgs ThreeCon -> IORes ThreeCon
   } deriving (Generic, GQLType)
 
-rootResolver :: GQLRootResolver IO () () Query () ()
+rootResolver :: GQLRootResolver IO () Query () ()
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {test = testRes, test2 = testRes, test3 = testRes}

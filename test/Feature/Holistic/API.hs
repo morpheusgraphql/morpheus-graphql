@@ -17,7 +17,7 @@ module Feature.Holistic.API
 import           Data.Morpheus          (interpreter)
 import           Data.Morpheus.Document (importGQLDocument)
 import           Data.Morpheus.Kind     (SCALAR)
-import           Data.Morpheus.Types    (GQLRequest, GQLResponse, GQLRootResolver (..), GQLScalar (..), GQLType (..),
+import           Data.Morpheus.Types    (GQLRequest,Event, GQLResponse, GQLRootResolver (..), GQLScalar (..), GQLType (..),
                                          ID (..), IOMutRes, IORes, IOSubRes, ScalarValue (..), SubResolver (..))
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
@@ -35,9 +35,11 @@ instance GQLScalar TestScalar where
   parseValue _ = pure (TestScalar 1 0)
   serialize (TestScalar x y) = Int (x * 100 + y)
 
-data EVENT =
-  EVENT
+data Channel =
+  Channel
   deriving (Show, Eq)
+
+type EVENT = Event Channel ()
 
 importGQLDocument "test/Feature/Holistic/API.gql"
 
@@ -45,13 +47,13 @@ resolveValue :: Monad m => b -> a -> m b
 resolveValue = const . return
 
 rootResolver ::
-     GQLRootResolver IO EVENT () (Query IORes) (Mutation (IOMutRes EVENT ())) (Subscription (IOSubRes EVENT ()))
+     GQLRootResolver IO EVENT (Query IORes) (Mutation (IOMutRes EVENT)) (Subscription (IOSubRes EVENT))
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {user, testUnion = const $ return Nothing}
     , mutationResolver = return Mutation {createUser = user}
     , subscriptionResolver =
-        return Subscription {newUser = const SubResolver {subChannels = [EVENT], subResolver = user}}
+        return Subscription {newUser = const SubResolver {subChannels = [Channel], subResolver = user}}
     }
   where
     user _ =

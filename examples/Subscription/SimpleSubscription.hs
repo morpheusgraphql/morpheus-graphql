@@ -18,19 +18,23 @@ data Content
   = ContentA Int
   | ContentB Text
 
+type MyEvent = Event Channel Content
+
 newtype Query = Query
   { deity :: () -> IORes Deity
   } deriving (Generic)
 
 newtype Mutation = Mutation
-  { createDeity :: () -> IOMutRes Channel Content Deity
+  { createDeity :: () -> IOMutRes MyEvent Deity
   } deriving (Generic)
 
 newtype Subscription = Subscription
-  { newDeity :: () -> IOSubRes Channel Content Deity
+  { newDeity :: () -> IOSubRes MyEvent Deity
   } deriving (Generic)
 
-rootResolver :: GQLRootResolver IO Channel Content Query Mutation Subscription
+type APIEvent = Event Channel Content
+
+rootResolver :: GQLRootResolver IO APIEvent Query Mutation Subscription
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {deity = const fetchDeity}
