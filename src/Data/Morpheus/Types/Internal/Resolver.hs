@@ -85,6 +85,11 @@ type SubResolveT m e a = ResolveT (SubscribeStream m e) (e -> ResolveT m a)
 
 type ResolveT = ExceptT GQLErrors
 
+-- TODO:
+
+
+
+--
 failResolveT :: Monad m => GQLErrors -> ResolveT m a
 failResolveT = ExceptT . pure . Left
 
