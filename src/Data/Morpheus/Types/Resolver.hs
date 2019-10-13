@@ -15,7 +15,6 @@ module Data.Morpheus.Types.Resolver
   , SubResolver(..)
   , ResolveT
   , SubResolveT
-  , MutResolveT
   , SubRootRes
   , Event(..)
   , GQLRootResolver(..)
@@ -34,9 +33,9 @@ import           Data.Text                               (pack, unpack)
 --
 import           Data.Morpheus.Types.Internal.Base       (Message)
 import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStream, ResponseStream, StreamState (..),
-                                                          StreamT (..), StreamChannel, SubscribeStream)
+                                                          StreamT (..), StreamChannel, SubscribeStream, GraphQLT(..))
 import           Data.Morpheus.Types.Internal.Validation (ResolveT)
---import           Data.Morpheus.Types.Internal.Data (OperationKind (..))
+import           Data.Morpheus.Types.Internal.Data (OperationKind (..))
 
 class Monad m =>
       GQLFail (t :: (* -> *) -> * -> *) m
@@ -75,7 +74,6 @@ type Resolver = ExceptT String
 
 type ResponseT m e  = ResolveT (ResponseStream m e )
 
-type MutResolveT m e  = ResolveT (PublishStream m e )
 
 type SubResolveT m e a = ResolveT (SubscribeStream m e) (e -> ResolveT m a)
 

@@ -39,10 +39,10 @@ data ResponseEvent m event
 
 
 -- TODO: use it
-data GraphQLT (o::OperationKind) (m :: * -> * ) value where
-    QueryT:: ResolveT m value -> GraphQLT 'Query m  ()
-    MutationT :: ResolveT (PublishStream m (Event channel event) ) value -> GraphQLT 'Mutation m (Event channel event)
-    SubscriptionT ::  ResolveT (SubscribeStream m (Event channel event)) (Event channel event -> ResolveT m a) -> GraphQLT 'Subscription m (Event channel event)
+data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
+    QueryT:: ResolveT m value -> GraphQLT 'Query m  () value
+    MutationT :: ResolveT (PublishStream m (Event channel event) ) value -> GraphQLT 'Mutation m (Event channel event) value
+    SubscriptionT ::  ResolveT (SubscribeStream m (Event channel event)) (Event channel event -> ResolveT m value) -> GraphQLT 'Subscription m (Event channel event) value
 
 -- STREAMS
 type SubscribeStream m e = StreamT m [Channel e]
