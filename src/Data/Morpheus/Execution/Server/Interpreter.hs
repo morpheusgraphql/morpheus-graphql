@@ -18,9 +18,9 @@ import           Data.Text.Lazy.Encoding                             (decodeUtf8
 import           Data.Morpheus.Execution.Server.Resolve              (RootResCon, byteStringIO, statefulResolver,
                                                                       statelessResolver, streamResolver)
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState)
+import           Data.Morpheus.Types.Internal.Resolver               (GQLRootResolver (..))
 import           Data.Morpheus.Types.Internal.Stream                 (ResponseStream)
 import           Data.Morpheus.Types.IO                              (GQLRequest, GQLResponse)
-import           Data.Morpheus.Types.Resolver                        (GQLRootResolver (..))
 
 -- | main query processor and resolver
 --  possible versions of interpreter

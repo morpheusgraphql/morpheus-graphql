@@ -23,7 +23,7 @@ import           Data.Morpheus.Types.GQLType                   (CUSTOM)
 import           Data.Morpheus.Types.ID                        (ID)
 import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataObject, DataTypeLib (..),
                                                                 allDataTypes)
-import           Data.Morpheus.Types.Resolver                  (GQLFail (..), ResolveT, Resolver)
+import           Data.Morpheus.Types.Internal.Resolver         (GQLFail (..), ResolveT, Resolver)
 
 convertTypes :: Monad m => DataTypeLib -> (Resolver m) [S__Type (Resolver m)]
 convertTypes lib = traverse (`render` lib) (allDataTypes lib)

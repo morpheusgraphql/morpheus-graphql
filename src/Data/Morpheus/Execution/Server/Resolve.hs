@@ -38,12 +38,13 @@ import           Data.Morpheus.Types.GQLType                         (GQLType (C
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), ValidOperation)
 import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataTyCon (..),
                                                                       DataTypeLib (..), OperationKind (..), initTypeLib)
-import           Data.Morpheus.Types.Internal.Stream                 (Event (..), GQLChannel(..), ResponseEvent (..), ResponseStream,
-                                                                      StreamState (..), StreamT (..), closeStream, mapS)
+import           Data.Morpheus.Types.Internal.Resolver               (GQLRootResolver (..), Resolver, ResponseT)
+import           Data.Morpheus.Types.Internal.Stream                 (Event (..), GQLChannel (..), ResponseEvent (..),
+                                                                      ResponseStream, StreamState (..), StreamT (..),
+                                                                      closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation             (Validation)
 import           Data.Morpheus.Types.Internal.Value                  (Value (..))
 import           Data.Morpheus.Types.IO                              (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Resolver                        (GQLRootResolver (..), Resolver, ResponseT)
 import           Data.Morpheus.Validation.Internal.Utils             (VALIDATION_MODE (..))
 import           Data.Morpheus.Validation.Query.Validation           (validateRequest)
 import           Data.Typeable                                       (Typeable)
@@ -121,7 +122,7 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
 
 statefulResolver ::
      EventCon s
-  => GQLState IO s 
+  => GQLState IO s
   -> (L.ByteString -> ResponseStream IO s  L.ByteString)
   -> L.ByteString
   -> IO L.ByteString
