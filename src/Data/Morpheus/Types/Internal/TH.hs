@@ -6,6 +6,10 @@ import           Data.Text                  (Text, pack, unpack)
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
 
+liftMaybeText :: Maybe Text -> ExpQ
+liftMaybeText (Just x) = appE  (conE 'Just) (liftText x)
+liftMaybeText Nothing = conE 'Nothing
+
 liftText :: Text -> ExpQ
 liftText x = appE (varE 'pack) (lift (unpack x))
 

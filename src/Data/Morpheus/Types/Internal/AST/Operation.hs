@@ -16,7 +16,7 @@ import           Data.Morpheus.Types.Internal.AST.RawSelection (RawSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Arguments, SelectionSet)
 import           Data.Morpheus.Types.Internal.Base             (Collection, Key, Position)
 import           Data.Morpheus.Types.Internal.Data             (OperationKind, WrapperD)
-import           Data.Morpheus.Types.Internal.TH               (apply, liftText, liftTextMap)
+import           Data.Morpheus.Types.Internal.TH               (apply, liftMaybeText, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value            (Value)
 import           Language.Haskell.TH.Syntax                    (Lift (..))
 
@@ -31,7 +31,7 @@ type ValidOperation = Operation Arguments SelectionSet
 type RawOperation = Operation VariableDefinitions RawSelectionSet
 
 data Operation args sel = Operation
-  { operationName      :: Key
+  { operationName      :: Maybe Key
   , operationKind      :: OperationKind
   , operationArgs      :: args
   , operationSelection :: sel
@@ -40,7 +40,7 @@ data Operation args sel = Operation
 
 instance Lift (Operation VariableDefinitions RawSelectionSet) where
   lift (Operation name kind args sel pos) =
-    apply 'Operation [liftText name, lift kind, liftTextMap args, liftTextMap sel, lift pos]
+    apply 'Operation [liftMaybeText name, lift kind, liftTextMap args, liftTextMap sel, lift pos]
 
 data Variable a = Variable
   { variableType         :: Key
