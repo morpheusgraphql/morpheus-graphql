@@ -40,12 +40,12 @@ deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}
     result = appT resultMonad (conT ''Value)
       where
         resultMonad
-          | isSubscription typeKindD = typeT ''SubResolveT ["m", "e", "c"] -- (SubResolveT m e c Value)
+          | isSubscription typeKindD = typeT ''SubResolveT ["m", "e"] -- (SubResolveT m e Value)
           | otherwise = typeT ''ResolveT ["m"] -- (ResolveT m Value)
-    mainType = applyT (mkName tName) [mainTypeArg] -- defines  (<Type> (SubResolver m e c)) or (<Type> (Resolver m))
+    mainType = applyT (mkName tName) [mainTypeArg] -- defines  (<Type> (SubResolver m e)) or (<Type> (Resolver m))
       where
         mainTypeArg
-          | isSubscription typeKindD = typeT ''SubResolver ["m", "e", "c"] -- (SubResolver m e c)
+          | isSubscription typeKindD = typeT ''SubResolver ["m", "e"] -- (SubResolver m e)
           | otherwise = typeT ''Resolver ["m"] -- (Resolver m)
     -----------------------------------------------------------------------------------------
     -- defines Constraint: (Typeable m, Monad m)

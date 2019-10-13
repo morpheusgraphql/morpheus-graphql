@@ -32,7 +32,9 @@ newtype Subscription = Subscription
   { newDeity :: () -> IOSubRes MyEvent Deity
   } deriving (Generic)
 
-rootResolver :: GQLRootResolver IO Channel Content Query Mutation Subscription
+type APIEvent = Event Channel Content
+
+rootResolver :: GQLRootResolver IO APIEvent Query Mutation Subscription
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {deity = const fetchDeity}

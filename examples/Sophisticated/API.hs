@@ -11,8 +11,7 @@
 
 module Sophisticated.API
   ( gqlRoot
-  , Channel
-  , Content
+  , APIEvent
   ) where
 
 import           Data.Map               (Map)
@@ -78,11 +77,11 @@ data Content = Update
   , contentMessage :: Text
   }
 
-type MutRes = IOMutRes Channel Content
+type APIEvent = (Event Channel Content)
+type MutRes = IOMutRes APIEvent
+type SubRes = IOSubRes APIEvent
 
-type SubRes = IOSubRes Channel Content
-
-gqlRoot :: GQLRootResolver IO (Event Channel Content) (Query IORes) (Mutation MutRes) (Subscription SubRes)
+gqlRoot :: GQLRootResolver IO APIEvent (Query IORes) (Mutation MutRes) (Subscription SubRes)
 gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
   where
     queryResolver =
