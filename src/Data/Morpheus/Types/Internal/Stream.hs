@@ -21,6 +21,7 @@ module Data.Morpheus.Types.Internal.Stream
  -- , GQLMonad(..)
   , GQLChannel(..)
   , Channel(..)
+  , GraphQLT(..)
   ) where
 
 import           Control.Monad.Trans.Except        (ExceptT (..), runExceptT)
@@ -28,12 +29,32 @@ import           Control.Monad.Trans.Except        (ExceptT (..), runExceptT)
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Data (OperationKind (..))
 import           Data.Morpheus.Types.IO            (GQLResponse)
+import  Data.Morpheus.Types.Internal.Validation (ResolveT)
+
+
+-- EVENTS
+data ResponseEvent m event
+  = Publish event
+  | Subscribe (SubEvent m event)
+
 
 -- TODO: use it
-data GQLMonad (o::OperationKind) (m :: * -> * ) value where
-    QueryM :: m value -> GQLMonad 'Query m  ()
-    MutationM :: [Event channel event] -> m value -> GQLMonad 'Mutation m (Event channel event)
-    SubscriptionM ::  [channel] -> m (Event channel event -> m value) -> GQLMonad 'Subscription m (Event channel event)
+data GraphQLT (o::OperationKind) (m :: * -> * ) value where
+    QueryT:: ResolveT m value -> GraphQLT 'Query m  ()
+    MutationT :: ResolveT (PublishStream m (Event channel event) ) value -> GraphQLT 'Mutation m (Event channel event)
+    SubscriptionT ::  ResolveT (SubscribeStream m (Event channel event)) (Event channel event -> ResolveT m a) -> GraphQLT 'Subscription m (Event channel event)
+
+-- STREAMS
+type SubscribeStream m e = StreamT m [Channel e]
+
+type PublishStream m event = StreamT m event
+
+type ResponseStream m event = StreamT m (ResponseEvent m event)
+
+type SubEvent m event = Event (Channel event) (event-> m GQLResponse)
+
+
+--type ResponseT m e  = ResolveT (ResponseStream m e )
 
 newtype Channel event = Channel {
   unChannel :: StreamChannel event
@@ -86,22 +107,8 @@ instance Monad m => Monad (StreamT m c) where
       (StreamState e2 v2) <- runStreamT $ mFunc v1
       return $ StreamState (e1 ++ e2) v2
 
-type SubEvent m event = Event (Channel event) (event-> m GQLResponse)
-
--- EVENTS
-data ResponseEvent m event
-  = Publish event
-  | Subscribe (SubEvent m event)
 
 
-
-
--- STREAMS
-type SubscribeStream m e = StreamT m [Channel e]
-
-type PublishStream m event = StreamT m event
-
-type ResponseStream m event = StreamT m (ResponseEvent m event)
 
 -- Helper Functions
 toTuple :: StreamState s a -> ([s], a)
