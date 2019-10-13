@@ -45,7 +45,7 @@ import           Data.Morpheus.Kind                              (Context (..), 
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTOM, KIND, __typeName))
-import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation)
+import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Stream             (PublishStream, StreamT (..), SubscribeStream,
@@ -216,7 +216,7 @@ encodeOperationWith externalRes rootResolver Operation {operationSelection, oper
   operationResolveT >>=
   resolveFields operationSelection . (++) externalRes . objectResolvers (Proxy :: Proxy (CUSTOM a))
   where
-    operationResolveT = withExceptT (resolverError operationPosition operationName) rootResolver
+    operationResolveT = withExceptT (resolverError operationPosition (getOperationName operationName)) rootResolver
 
 encodeResolver :: (Monad m, Encode a (ResolveT m res)) => (Key, Selection) -> Resolver m a -> ResolveT m res
 encodeResolver selection@(fieldName, Selection {selectionPosition}) =
