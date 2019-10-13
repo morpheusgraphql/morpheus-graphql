@@ -42,7 +42,7 @@ parseFullGQLDocument :: ByteString -> Validation DataTypeLib
 parseFullGQLDocument = parseGraphQLDocument >=> defaultTypes
 
 -- | Generates schema.gql file from 'GQLRootResolver'
-toGraphQLDocument :: RootResCon m e c query mut sub => proxy (GQLRootResolver m e c query mut sub) -> ByteString
+toGraphQLDocument :: RootResCon m event query mut sub => proxy (GQLRootResolver m event query mut sub) -> ByteString
 toGraphQLDocument x =
   case fullSchema x of
     Left errors -> pack (show errors)
