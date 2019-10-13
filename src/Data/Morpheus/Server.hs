@@ -24,17 +24,15 @@ import           Data.Morpheus.Execution.Subscription.Apollo         (SubAction 
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, addClientSubscription, connectClient,
                                                                       disconnectClient, initGQLState, publishUpdates,
                                                                       removeClientSubscription)
-import           Data.Morpheus.Types.Internal.Stream                 (ResponseEvent (..), ResponseStream, closeStream)
+import           Data.Morpheus.Types.Internal.Stream                 (ResponseEvent (..),Channel,GQLChannel , ResponseStream, closeStream)
 import           Data.Morpheus.Types.Internal.WebSocket              (GQLClient (..))
 import           Data.Morpheus.Types.IO                              (GQLResponse (..))
 import           Data.Morpheus.Types.Resolver                        (GQLRootResolver (..))
 
-handleSubscription ::
-     Eq e
-  => GQLClient IO e c
-  -> GQLState IO e c
+handleSubscription :: (Eq (Channel e), GQLChannel e) => GQLClient IO e
+  -> GQLState IO e 
   -> Text
-  -> ResponseStream IO e c GQLResponse
+  -> ResponseStream IO e  GQLResponse
   -> IO ()
 handleSubscription GQLClient {clientConnection, clientID} state sessionId stream = do
   (actions, response) <- closeStream stream
@@ -48,9 +46,9 @@ handleSubscription GQLClient {clientConnection, clientID} state sessionId stream
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketApp ::
-     RootResCon IO e c que mut sub
-  => GQLRootResolver IO e c que mut sub
-  -> GQLState IO e c
+     RootResCon IO e  que mut sub
+  => GQLRootResolver IO e  que mut sub
+  -> GQLState IO e
   -> ServerApp
 gqlSocketApp gqlRoot state pending = do
   connection <-
