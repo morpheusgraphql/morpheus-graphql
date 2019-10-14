@@ -81,7 +81,7 @@ type APIEvent = (Event Channel Content)
 type MutRes = IOMutRes APIEvent
 type SubRes = IOSubRes APIEvent
 
-gqlRoot :: GQLRootResolver IO APIEvent (Query IORes) (Mutation MutRes) (Subscription SubRes)
+gqlRoot :: GQLRootResolver IO APIEvent Query Mutation Subscription
 gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
   where
     queryResolver =

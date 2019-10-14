@@ -123,5 +123,5 @@ mutResolver channels = ExceptT . StreamT . fmap effectPlus . runStreamT
 data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* -> *) -> * )  (sub :: (* -> *) -> * )  = GQLRootResolver
   { queryResolver        :: Resolver m (query (Resolver m))
   , mutationResolver     :: Resolver (PublishStream m event) (mut (Resolver (PublishStream m event)))
-  , subscriptionResolver :: SubRootRes m event (sub (Resolver (SubscribeStream m event)))
+  , subscriptionResolver :: SubRootRes m event (sub (SubResolver  m event))
   }
