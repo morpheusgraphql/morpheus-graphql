@@ -10,7 +10,8 @@ module Feature.InputType.API
 
 import           Data.Morpheus       (interpreter)
 import           Data.Morpheus.Kind  (OBJECT)
-import           Data.Morpheus.Types (GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), IORes)
+import           Data.Morpheus.Types (GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), IORes,
+                                      Undefined (..))
 import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
 
@@ -32,16 +33,16 @@ data A = A
 instance GQLType A where
   type KIND A = OBJECT
 
-newtype Query = Query
+newtype Query (m :: * -> *) = Query
   { q1 :: A
   } deriving (Generic, GQLType)
 
-rootResolver :: GQLRootResolver IO () Query () ()
+rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {q1 = A {a1 = const $ return "a1Test", a2 = const $ return 1}}
-    , mutationResolver = return ()
-    , subscriptionResolver = return ()
+    , mutationResolver = return Undefined
+    , subscriptionResolver = return Undefined
     }
 
 api :: GQLRequest -> IO GQLResponse

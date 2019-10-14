@@ -10,7 +10,7 @@ module Feature.Input.Enum.API
 
 import           Data.Morpheus       (interpreter)
 import           Data.Morpheus.Kind  (ENUM)
-import           Data.Morpheus.Types (GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), IORes)
+import           Data.Morpheus.Types (GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), Undefined (..))
 import           GHC.Generics        (Generic)
 
 data TwoCon
@@ -49,22 +49,22 @@ instance GQLType ThreeCon where
   type KIND ThreeCon = ENUM
 
 -- query
-testRes :: TestArgs a -> IORes a
+testRes :: Monad m => TestArgs a -> m a
 testRes TestArgs {level} = return level
 
 -- resolver
-data Query = Query
-  { test  :: TestArgs Level -> IORes Level
-  , test2 :: TestArgs TwoCon -> IORes TwoCon
-  , test3 :: TestArgs ThreeCon -> IORes ThreeCon
+data Query m = Query
+  { test  :: TestArgs Level -> m Level
+  , test2 :: TestArgs TwoCon -> m TwoCon
+  , test3 :: TestArgs ThreeCon -> m ThreeCon
   } deriving (Generic, GQLType)
 
-rootResolver :: GQLRootResolver IO () Query () ()
+rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {test = testRes, test2 = testRes, test3 = testRes}
-    , mutationResolver = return ()
-    , subscriptionResolver = return ()
+    , mutationResolver = return Undefined
+    , subscriptionResolver = return Undefined
     }
 
 api :: GQLRequest -> IO GQLResponse
