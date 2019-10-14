@@ -26,7 +26,6 @@ module Data.Morpheus.Types.Internal.Resolver
   , GQLFail(..)
   , ResponseT
   , failResolveT
-  , GraphQLT(..)
   , GADTResolver(..)
   ) where
 
@@ -56,6 +55,7 @@ instance Monad m => GQLFail Resolver m where
 ----------------------------------------------------------------------------------------
 type SubResolver = GADTResolver 'Subscription
 
+
 data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
     QueryResolver:: m value -> GADTResolver 'Query m  event value
     MutationResolver :: [event] -> m value -> GADTResolver 'Mutation m event value
@@ -83,19 +83,14 @@ type SubResolveT m e a = ResolveT (SubscribeStream m e) (e -> ResolveT m a)
 
 type ResolveT = ExceptT GQLErrors
 
--- TODO:
-
-
-
---
 failResolveT :: Monad m => GQLErrors -> ResolveT m a
 failResolveT = ExceptT . pure . Left
 
 -- TODO: use it
-data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
-    QueryT:: ExceptT GQLErrors m value -> GraphQLT 'Query m  () value
-    MutationT :: ExceptT GQLErrors (PublishStream m event) value -> GraphQLT 'Mutation m event value
-    SubscriptionT ::  ExceptT GQLErrors (SubscribeStream m event) (event -> ExceptT GQLErrors m value) -> GraphQLT 'Subscription m event value
+--data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
+--    QueryT:: ExceptT GQLErrors m value -> GraphQLT 'Query m  () value
+--    MutationT :: ExceptT GQLErrors (PublishStream m event) value -> GraphQLT 'Mutation m event value
+--    SubscriptionT ::  ExceptT GQLErrors (SubscribeStream m event) (event -> ExceptT GQLErrors m value) -> GraphQLT 'Subscription m event value
 
 
 
