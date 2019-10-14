@@ -6,10 +6,8 @@ module Data.Morpheus.Types
   -- Resolver Monad
   , IORes
   , IOMutRes
-  , IOSubRes
   , Resolver
   , SubRootRes
-  , SubResolver(..)
   , Event(..)
   -- Type Classes
   , GQLType(KIND, description)
@@ -22,13 +20,14 @@ module Data.Morpheus.Types
   , GQLRootResolver(..)
   , constRes
   , Undefined(..)
+  , GADTResolver(..)
   ) where
 
 import           Data.Morpheus.Types.GQLScalar         (GQLScalar (parseValue, serialize))
 import           Data.Morpheus.Types.GQLType           (GQLType (KIND, description))
 import           Data.Morpheus.Types.ID                (ID (..))
-import           Data.Morpheus.Types.Internal.Resolver (Event (..), GQLRootResolver (..), MutResolver, Resolver,
-                                                        SubResolver (..), SubRootRes, mutResolver, resolver,
+import           Data.Morpheus.Types.Internal.Resolver (Event (..), GADTResolver(..), GQLRootResolver (..), MutResolver, Resolver,
+                                                        SubRootRes, mutResolver, resolver,
                                                         toMutResolver)
 import           Data.Morpheus.Types.Internal.Value    (ScalarValue (..))
 import           Data.Morpheus.Types.IO                (GQLRequest (..), GQLResponse (..))
@@ -41,5 +40,3 @@ constRes = const . return
 type IORes = Resolver IO
 
 type IOMutRes e = MutResolver IO e
-
-type IOSubRes e = SubResolver IO e

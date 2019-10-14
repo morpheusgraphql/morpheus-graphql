@@ -25,7 +25,7 @@ import           GHC.Generics           (Generic)
 -- MORPHEUS
 import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
-import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, Resolver,
+import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..),GADTResolver(..), GQLScalar (..), GQLType (..), ID, Resolver,
                                          ScalarValue (..), SubResolver (..), constRes, mutResolver, resolver)
 
 $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
