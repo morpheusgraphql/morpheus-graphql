@@ -25,9 +25,8 @@ import           GHC.Generics           (Generic)
 -- MORPHEUS
 import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
-import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, IOMutRes,
-                                         IORes, IOSubRes, Resolver, ScalarValue (..), SubResolver (..), constRes,
-                                         mutResolver, resolver)
+import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, Resolver,
+                                         ScalarValue (..), SubResolver (..), constRes, mutResolver, resolver)
 
 $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
 
@@ -78,8 +77,6 @@ data Content = Update
   }
 
 type APIEvent = (Event Channel Content)
-type MutRes = IOMutRes APIEvent
-type SubRes = IOSubRes APIEvent
 
 gqlRoot :: GQLRootResolver IO APIEvent Query Mutation Subscription
 gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
