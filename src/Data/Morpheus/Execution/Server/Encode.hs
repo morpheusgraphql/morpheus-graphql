@@ -48,7 +48,7 @@ import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTO
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Resolver           (ResolveT, Resolver, SubResolveT,GADTResolver(..), SubResolver,
+import           Data.Morpheus.Types.Internal.Resolver           (ResolveT,MutResolver, Resolver, SubResolveT,GADTResolver(..), SubResolver,
                                                                   failResolveT)
 import           Data.Morpheus.Types.Internal.Stream             (Channel (..), PublishStream, StreamT (..),
                                                                   SubscribeStream, initExceptStream, injectEvents)
@@ -109,7 +109,7 @@ instance (Monad m, Encode b (ResolveT m Value)) => Encode (SubResolver m event b
       handleResolver (SubscriptionResolver subChannels subResolver) =
         initExceptStream [map Channel subChannels] (encodeResolver selection . subResolver)
       --handleResolver (FailedResolving  errorMessage) = TODO: handle error
-      
+
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a value where
   encodeKind :: VContext kind a -> (Key, Selection) -> value

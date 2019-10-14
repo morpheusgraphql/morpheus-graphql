@@ -1,11 +1,8 @@
 -- | GQL Types
 module Data.Morpheus.Types
   ( resolver
-  , mutResolver
-  , toMutResolver
   -- Resolver Monad
   , IORes
-  , IOMutRes
   , Resolver
   , SubRootRes
   , Event(..)
@@ -28,8 +25,7 @@ import           Data.Morpheus.Types.GQLScalar         (GQLScalar (parseValue, s
 import           Data.Morpheus.Types.GQLType           (GQLType (KIND, description))
 import           Data.Morpheus.Types.ID                (ID (..))
 import           Data.Morpheus.Types.Internal.Resolver (Event (..), GADTResolver (..), GQLRootResolver (..),
-                                                        MutResolver, Resolver, SubResolver, SubRootRes, mutResolver,
-                                                        resolver, toMutResolver)
+                                                        MutResolver, Resolver, SubResolver, SubRootRes, resolver)
 import           Data.Morpheus.Types.Internal.Value    (ScalarValue (..))
 import           Data.Morpheus.Types.IO                (GQLRequest (..), GQLResponse (..))
 import           Data.Morpheus.Types.Types             (Undefined (..))
@@ -40,4 +36,3 @@ constRes = const . return
 
 type IORes = Resolver IO
 
-type IOMutRes e = MutResolver IO e

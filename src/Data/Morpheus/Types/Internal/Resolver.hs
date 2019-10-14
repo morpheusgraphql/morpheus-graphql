@@ -21,15 +21,13 @@ module Data.Morpheus.Types.Internal.Resolver
   , GQLRootResolver(..)
   , UnSubResolver
   , resolver
-  , mutResolver
-  , toMutResolver
   , GQLFail(..)
   , ResponseT
   , failResolveT
   , GADTResolver(..)
   ) where
 
-import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
+import           Control.Monad.Trans.Except              (ExceptT (..))
 import           Data.Text                               (pack, unpack)
 
 -- MORPHEUS
@@ -55,6 +53,8 @@ instance Monad m => GQLFail Resolver m where
 ----------------------------------------------------------------------------------------
 type SubResolver = GADTResolver 'Subscription
 
+type MutResolver = GADTResolver 'Mutation
+
 
 data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
     QueryResolver:: m value -> GADTResolver 'Query m  event value
@@ -72,7 +72,6 @@ type Resolver = ExceptT String
 
 -- TODO: Replace With: newtype MutResolver
 -- newtype MutResolver m e a = MutResolver {  unMutResolveT :: Resolver (PublishStream m e) a }
-type MutResolver m e = Resolver (PublishStream m e)
 
 type SubRootRes m e sub = Resolver (SubscribeStream m e) sub
 
@@ -92,8 +91,6 @@ failResolveT = ExceptT . pure . Left
 --    MutationT :: ExceptT GQLErrors (PublishStream m event) value -> GraphQLT 'Mutation m event value
 --    SubscriptionT ::  ExceptT GQLErrors (SubscribeStream m event) (event -> ExceptT GQLErrors m value) -> GraphQLT 'Subscription m event value
 
-
-
 -------------------------------------------------------------------
 -- | Pure Resolver without effect
 type Pure = Either String
@@ -102,14 +99,14 @@ type Pure = Either String
 resolver :: m (Either String a) -> Resolver m a
 resolver = ExceptT
 
-toMutResolver :: Monad m => [e] -> Resolver m a -> MutResolver m e a
-toMutResolver channels = ExceptT . StreamT . fmap (StreamState channels) . runExceptT
+-- toMutResolver :: Monad m => [e] -> Resolver m a -> MutResolver m e a
+-- toMutResolver channels = ExceptT . StreamT . fmap (StreamState channels) . runExceptT
 
 -- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver
-mutResolver :: Monad m => [e] -> (StreamT m e) (Either String a) -> MutResolver m e a
-mutResolver channels = ExceptT . StreamT . fmap effectPlus . runStreamT
-  where
-    effectPlus state = state {streamEvents = channels ++ streamEvents state}
+-- mutResolver :: Monad m => [e] -> (StreamT m e) (Either String a) -> MutResolver m e a
+-- mutResolver channels = ExceptT . StreamT . fmap effectPlus . runStreamT
+--  where
+--    effectPlus state = state {streamEvents = channels ++ streamEvents state}
 
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
 --
@@ -117,6 +114,6 @@ mutResolver channels = ExceptT . StreamT . fmap effectPlus . runStreamT
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
 data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* -> *) -> * )  (sub :: (* -> *) -> * )  = GQLRootResolver
   { queryResolver        :: Resolver m (query (Resolver m))
-  , mutationResolver     :: Resolver (PublishStream m event) (mut (Resolver (PublishStream m event)))
+  , mutationResolver     :: MutResolver m event (mut (MutResolver m event))
   , subscriptionResolver :: SubRootRes m event (sub (SubResolver  m event))
   }
