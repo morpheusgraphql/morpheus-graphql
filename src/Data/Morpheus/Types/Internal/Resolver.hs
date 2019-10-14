@@ -115,6 +115,6 @@ extractMutResolver (MutationResolver channels res) = (ExceptT . StreamT . fmap (
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
 data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* -> *) -> * )  (sub :: (* -> *) -> * )  = GQLRootResolver
   { queryResolver        :: Resolver m (query (Resolver m))
-  , mutationResolver     :: MutResolver m event (mut (MutResolver m event))
+  , mutationResolver     :: Resolver (PublishStream m event) (mut (MutResolver m event))
   , subscriptionResolver :: SubRootRes m event (sub (SubResolver  m event))
   }

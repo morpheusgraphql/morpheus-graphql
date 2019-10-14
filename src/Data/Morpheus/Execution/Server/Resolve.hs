@@ -114,7 +114,7 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
            (do schemaRes <- schemaAPI schema
                ExceptT (encodeQuery schemaRes queryResolver operation)))
     execOperator (_, operation@Operation {operationKind = Mutation}) =
-      ExceptT $ mapS Publish (encodeOperation (extractMutResolver mutationResolver) operation)
+      ExceptT $ mapS Publish (encodeOperation ({- extractMutResolver -} mutationResolver) operation)
     execOperator (_, operation@Operation {operationKind = Subscription}) =
       ExceptT $ StreamT $ handleActions <$> closeStream (encodeOperation subscriptionResolver operation)
       where
