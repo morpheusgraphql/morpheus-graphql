@@ -26,7 +26,7 @@ import           GHC.Generics           (Generic)
 import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
 import           Data.Morpheus.Types    (Event (..), GADTResolver (..), GQLRootResolver (..), GQLScalar (..),
-                                         GQLType (..), ID, Resolver, ScalarValue (..), constRes, mutResolver, resolver)
+                                         GQLType (..), ID, Resolver, ScalarValue (..), constRes, resolver)
 
 $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
 
@@ -95,12 +95,12 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
     mutationResolver = return Mutation {mutationCreateAddress, mutationCreateUser}
       where
         mutationCreateUser _ =
-          mutResolver
+          MutationResolver
             [Event [UPDATE_USER] (Update {contentID = 12, contentMessage = "some message for user"})]
             fetchUser
         --mutationCreateAddress :: () -> MutRes (Address MutRes)
         mutationCreateAddress _ =
-          mutResolver
+          MutationResolver
             [Event [UPDATE_ADDRESS] (Update {contentID = 10, contentMessage = "message for address"})]
             (fetchAddress (Euro 1 0))
     ----------------------------------------------------------------
