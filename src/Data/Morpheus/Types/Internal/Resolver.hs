@@ -60,7 +60,7 @@ data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
     QueryResolver:: m value -> GADTResolver 'Query m  event value
     MutationResolver :: [event] -> m value -> GADTResolver 'Mutation m event value
     SubscriptionResolver :: [StreamChannel event] -> (event -> Resolver m value) -> GADTResolver 'Subscription m event value
-    ResolverError :: m String -> GADTResolver o m event value
+    FailedResolving :: String -> GADTResolver o m event value
 
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
