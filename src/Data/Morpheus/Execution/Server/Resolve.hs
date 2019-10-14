@@ -38,7 +38,7 @@ import           Data.Morpheus.Types.GQLType                         (GQLType (C
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), ValidOperation)
 import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataTyCon (..),
                                                                       DataTypeLib (..), OperationKind (..), initTypeLib)
-import           Data.Morpheus.Types.Internal.Resolver               (GQLRootResolver (..), MutResolver, Resolver,
+import           Data.Morpheus.Types.Internal.Resolver               (GQLRootResolver (..),extractMutResolver, MutResolver, Resolver,
                                                                       ResponseT, SubResolver)
 import           Data.Morpheus.Types.Internal.Stream                 (Event (..), GQLChannel (..), ResponseEvent (..),
                                                                       ResponseStream, StreamState (..), StreamT (..),
@@ -114,7 +114,7 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
            (do schemaRes <- schemaAPI schema
                ExceptT (encodeQuery schemaRes queryResolver operation)))
     execOperator (_, operation@Operation {operationKind = Mutation}) =
-      ExceptT $ mapS Publish (encodeOperation mutationResolver operation)
+      ExceptT $ mapS Publish (encodeOperation (extractMutResolver mutationResolver) operation)
     execOperator (_, operation@Operation {operationKind = Subscription}) =
       ExceptT $ StreamT $ handleActions <$> closeStream (encodeOperation subscriptionResolver operation)
       where

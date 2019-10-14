@@ -25,6 +25,7 @@ module Data.Morpheus.Types.Internal.Resolver
   , ResponseT
   , failResolveT
   , GADTResolver(..)
+  , extractMutResolver
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..))
@@ -99,8 +100,8 @@ type Pure = Either String
 resolver :: m (Either String a) -> Resolver m a
 resolver = ExceptT
 
--- toMutResolver :: Monad m => [e] -> Resolver m a -> MutResolver m e a
--- toMutResolver channels = ExceptT . StreamT . fmap (StreamState channels) . runExceptT
+extractMutResolver :: Monad m => MutResolver m e a -> Resolver (PublishStream m e) a
+extractMutResolver (MutationResolver channels res) = (ExceptT . StreamT . fmap (StreamState channels . Right) )  res
 
 -- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver
 -- mutResolver :: Monad m => [e] -> (StreamT m e) (Either String a) -> MutResolver m e a
