@@ -74,6 +74,9 @@ type instance UnSubResolver (SubResolver m e) = Resolver m
 -------------------------------------------------------------------
 type Resolver = ExceptT String
 
+
+-- TODO: Replace With: newtype MutResolver
+-- newtype MutResolver m e a = MutResolver {  unMutResolveT :: Resolver (PublishStream m e) a }
 type MutResolver m e = Resolver (PublishStream m e)
 
 type SubRootRes m e sub = Resolver (SubscribeStream m e) sub
