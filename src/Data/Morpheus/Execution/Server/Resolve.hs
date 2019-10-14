@@ -55,11 +55,9 @@ import           Data.Typeable                                       (Typeable)
 type EventCon event = (Eq (StreamChannel event), GQLChannel event)
 
 type IntrospectConstraint  m event query mutation subscription =       (
-                                  IntroCon (query (ResolveT m))
-                                 , IntroCon (mutation (ResolveT (PublishStream m event)))
-                                 , IntroCon (subscription (ResolveT (SubscribeStream m event))))
-
-
+                                  IntroCon (query (Resolver m))
+                                 , IntroCon (mutation (Resolver (PublishStream m event)))
+                                 , IntroCon (subscription (Resolver (SubscribeStream m event))))
 
 type RootResCon m event query mutation subscription
    = ( EventCon event
@@ -67,9 +65,9 @@ type RootResCon m event query mutation subscription
      , IntrospectConstraint m event query mutation subscription
      , OBJ_RES m (Root (Resolver m)) Value
      -- Resolving
-     , EncodeCon m (query (ResolveT m)) Value
-     , EncodeMutCon m event (mutation (ResolveT (PublishStream m event)))
-     , EncodeSubCon m event (subscription (ResolveT (SubscribeStream m event))))
+     , EncodeCon m (query (Resolver m)) Value
+     , EncodeMutCon m event (mutation (Resolver (PublishStream m event)))
+     , EncodeSubCon m event (subscription (Resolver (SubscribeStream m event))))
 
 decodeNoDup :: L.ByteString -> Either String GQLRequest
 decodeNoDup str =
@@ -150,15 +148,15 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
     querySchema =
       resolveUpdates (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query")) (defaultTypes : types)
       where
-        (fields, types) = objectFields (Proxy @(CUSTOM (query (ResolveT m)))) (Proxy @(query (ResolveT m)))
+        (fields, types) = objectFields (Proxy @(CUSTOM (query (Resolver m)))) (Proxy @(query (Resolver m)))
     ------------------------------
     mutationSchema lib = resolveUpdates (lib {mutation = maybeOperator fields "Mutation"}) types
       where
-        (fields, types) = objectFields (Proxy @(CUSTOM (mutation (ResolveT (PublishStream m event))))) (Proxy @(mutation (ResolveT (PublishStream m event))))
+        (fields, types) = objectFields (Proxy @(CUSTOM (mutation (Resolver (PublishStream m event))))) (Proxy @(mutation (Resolver (PublishStream m event))))
     ------------------------------
     subscriptionSchema lib = resolveUpdates (lib {subscription = maybeOperator fields "Subscription"}) types
       where
-        (fields, types) = objectFields (Proxy @(CUSTOM (subscription (ResolveT (SubscribeStream m event))))) (Proxy @(subscription (ResolveT (SubscribeStream m event))))
+        (fields, types) = objectFields (Proxy @(CUSTOM (subscription (Resolver (SubscribeStream m event))))) (Proxy @(subscription (Resolver (SubscribeStream m event))))
      -- maybeOperator :: [a] -> Text -> Maybe (Text, DataTyCon[a])
     maybeOperator []     = const Nothing
     maybeOperator fields = Just . operatorType fields

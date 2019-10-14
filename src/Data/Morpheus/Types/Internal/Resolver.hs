@@ -121,7 +121,7 @@ mutResolver channels = ExceptT . StreamT . fmap effectPlus . runStreamT
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
 data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* -> *) -> * )  (sub :: (* -> *) -> * )  = GQLRootResolver
-  { queryResolver        :: Resolver m (query (ResolveT m))
-  , mutationResolver     :: Resolver (PublishStream m event) (mut (ResolveT (PublishStream m event)))
-  , subscriptionResolver :: SubRootRes m event (sub (ResolveT (SubscribeStream m event)))
+  { queryResolver        :: Resolver m (query (Resolver m))
+  , mutationResolver     :: Resolver (PublishStream m event) (mut (Resolver (PublishStream m event)))
+  , subscriptionResolver :: SubRootRes m event (sub (Resolver (SubscribeStream m event)))
   }
