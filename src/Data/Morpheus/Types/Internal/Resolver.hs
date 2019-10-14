@@ -74,6 +74,9 @@ type instance UnSubResolver (SubResolver m e) = Resolver m
 -------------------------------------------------------------------
 type Resolver = ExceptT String
 
+
+-- TODO: Replace With: newtype MutResolver
+-- newtype MutResolver m e a = MutResolver {  unMutResolveT :: Resolver (PublishStream m e) a }
 type MutResolver m e = Resolver (PublishStream m e)
 
 type SubRootRes m e sub = Resolver (SubscribeStream m e) sub
@@ -85,6 +88,11 @@ type SubResolveT m e a = ResolveT (SubscribeStream m e) (e -> ResolveT m a)
 
 type ResolveT = ExceptT GQLErrors
 
+-- TODO:
+
+
+
+--
 failResolveT :: Monad m => GQLErrors -> ResolveT m a
 failResolveT = ExceptT . pure . Left
 
@@ -115,8 +123,8 @@ mutResolver channels = ExceptT . StreamT . fmap effectPlus . runStreamT
 --
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
-data GQLRootResolver m event query mut sub = GQLRootResolver
-  { queryResolver        :: Resolver m query
-  , mutationResolver     :: Resolver (PublishStream m event) mut
-  , subscriptionResolver :: SubRootRes m event sub
+data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* -> *) -> * )  (sub :: (* -> *) -> * )  = GQLRootResolver
+  { queryResolver        :: Resolver m (query (Resolver m))
+  , mutationResolver     :: Resolver (PublishStream m event) (mut (Resolver (PublishStream m event)))
+  , subscriptionResolver :: SubRootRes m event (sub (SubResolver  m event))
   }

@@ -10,7 +10,7 @@ module Feature.WrappedTypeName.API
 
 import           Data.Morpheus       (interpreter)
 import           Data.Morpheus.Kind  (OBJECT)
-import           Data.Morpheus.Types (GQLRequest, Event, GQLResponse, GQLRootResolver (..), GQLType (..), IOMutRes, IORes,
+import           Data.Morpheus.Types (GQLRequest, Event, GQLResponse, GQLRootResolver (..), GQLType (..),  IORes,
                                       IOSubRes, SubResolver (..))
 import           Data.Text           (Text)
 import           Data.Typeable       (Typeable)
@@ -32,14 +32,14 @@ data WA m = WA
   , aInt  :: Int
   } deriving (Generic)
 
-data Query = Query
-  { a1 :: WA IORes
+data Query m = Query
+  { a1 :: WA m
   , a2 :: Maybe (Wrapped Int Int)
   , a3 :: Maybe (Wrapped (Wrapped Text Int) Text)
   } deriving (Generic, GQLType)
 
-data Mutation = Mutation
-  { mut1 :: Maybe (WA (IOMutRes EVENT))
+data Mutation m = Mutation
+  { mut1 :: Maybe (WA m)
   , mut2 :: Maybe (Wrapped Int Int)
   , mut3 :: Maybe (Wrapped (Wrapped Text Int) Text)
   } deriving (Generic, GQLType)
@@ -50,7 +50,7 @@ data Channel =
 
 type EVENT =  Event Channel ()
 
-data Subscription = Subscription
+data Subscription (m :: * -> *) = Subscription
   { sub1 :: () -> IOSubRes EVENT (Maybe (WA IORes))
   , sub2 :: () -> IOSubRes EVENT (Maybe (Wrapped Int Int))
   , sub3 :: () -> IOSubRes EVENT (Maybe (Wrapped (Wrapped Text Int) Text))

@@ -1,0 +1,11 @@
+type Query {
+  deity: Deity
+}
+
+type Mutation {
+  createDeity: Deity
+}
+
+type Subscription {
+  newDeity: Deity
+}

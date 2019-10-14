@@ -10,7 +10,8 @@ module Feature.UnionType.API
 
 import           Data.Morpheus       (interpreter)
 import           Data.Morpheus.Kind  (OBJECT, UNION)
-import           Data.Morpheus.Types (GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), IORes)
+import           Data.Morpheus.Types (GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), IORes,
+                                      Undefined (..))
 import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
 
@@ -46,20 +47,20 @@ data AOrB
   | B' B
   deriving (Generic)
 
-data Query = Query
-  { union :: () -> IORes [AOrB]
+data Query m = Query
+  { union :: () -> m [AOrB]
   , fc    :: C
   } deriving (Generic, GQLType)
 
 resolveUnion :: () -> IORes [AOrB]
 resolveUnion _ = return [A' A {aText = "at", aInt = 1}, B' B {bText = "bt", bInt = 2}]
 
-rootResolver :: GQLRootResolver IO () Query () ()
+rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {union = resolveUnion, fc = C {cText = "", cInt = 3}}
-    , mutationResolver = return ()
-    , subscriptionResolver = return ()
+    , mutationResolver = return Undefined
+    , subscriptionResolver = return Undefined
     }
 
 api :: GQLRequest -> IO GQLResponse
