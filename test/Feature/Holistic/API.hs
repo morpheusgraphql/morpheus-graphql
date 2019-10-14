@@ -17,8 +17,8 @@ module Feature.Holistic.API
 import           Data.Morpheus          (interpreter)
 import           Data.Morpheus.Document (importGQLDocument)
 import           Data.Morpheus.Kind     (SCALAR)
-import           Data.Morpheus.Types    (GQLRequest,Event, GQLResponse, GQLRootResolver (..), GQLScalar (..), GQLType (..),
-                                         ID (..), IOMutRes, IORes, IOSubRes, ScalarValue (..), SubResolver (..))
+import           Data.Morpheus.Types    (Event, GQLRequest, GQLResponse, GQLRootResolver (..), GQLScalar (..),
+                                         GQLType (..), ID (..), ScalarValue (..), SubResolver (..))
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
 
@@ -47,7 +47,7 @@ resolveValue :: Monad m => b -> a -> m b
 resolveValue = const . return
 
 rootResolver ::
-     GQLRootResolver IO EVENT (Query IORes) (Mutation (IOMutRes EVENT)) (Subscription (IOSubRes EVENT))
+     GQLRootResolver IO EVENT Query Mutation Subscription
 rootResolver =
   GQLRootResolver
     { queryResolver = return Query {user, testUnion = const $ return Nothing}

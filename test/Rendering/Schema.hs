@@ -17,7 +17,7 @@ module Rendering.Schema
 import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind     (SCALAR)
 import           Data.Morpheus.Types    (GQLRootResolver (..), GQLScalar (..), GQLType (..), ID (..), IORes,
-                                         ScalarValue (..))
+                                         ScalarValue (..), Undefined (..))
 import           Data.Proxy             (Proxy (..))
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
@@ -35,5 +35,5 @@ instance GQLScalar TestScalar where
 
 importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 
-schemaProxy :: Proxy (GQLRootResolver IO () (Query IORes) () ())
-schemaProxy = Proxy @(GQLRootResolver IO () (Query IORes) () ())
+schemaProxy :: Proxy (GQLRootResolver IO () Query  Undefined Undefined)
+schemaProxy = Proxy @(GQLRootResolver IO () Query  Undefined Undefined)

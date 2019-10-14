@@ -38,7 +38,8 @@ import           Data.Morpheus.Types.GQLType                         (GQLType (C
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), ValidOperation)
 import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataTyCon (..),
                                                                       DataTypeLib (..), OperationKind (..), initTypeLib)
-import           Data.Morpheus.Types.Internal.Resolver               (GQLRootResolver (..), Resolver, ResponseT)
+import           Data.Morpheus.Types.Internal.Resolver               (GQLRootResolver (..), MutResolver, Resolver,
+                                                                      ResponseT, SubResolver)
 import           Data.Morpheus.Types.Internal.Stream                 (Event (..), GQLChannel (..), ResponseEvent (..),
                                                                       ResponseStream, StreamState (..), StreamT (..),
                                                                       closeStream, mapS)
@@ -49,20 +50,23 @@ import           Data.Morpheus.Validation.Internal.Utils             (VALIDATION
 import           Data.Morpheus.Validation.Query.Validation           (validateRequest)
 import           Data.Typeable                                       (Typeable)
 
-type EventCon event = (Eq (StreamChannel event) ,GQLChannel event)
+
+type EventCon event = (Eq (StreamChannel event), GQLChannel event)
+
+type IntrospectConstraint  m event query mutation subscription = (
+                                  IntroCon (query (Resolver m))
+                                 , IntroCon (mutation (MutResolver m event))
+                                 , IntroCon (subscription (SubResolver m event)))
 
 type RootResCon m event query mutation subscription
    = ( EventCon event
      , Typeable m
-      -- Introspection
-     , IntroCon query
-     , IntroCon mutation
-     , IntroCon subscription
+     , IntrospectConstraint m event query mutation subscription
      , OBJ_RES m (Root (Resolver m)) Value
      -- Resolving
-     , EncodeCon m query Value
-     , EncodeMutCon m event mutation
-     , EncodeSubCon m event subscription)
+     , EncodeCon m (query (Resolver m)) Value
+     , EncodeMutCon m event (mutation (MutResolver m event))
+     , EncodeSubCon m event (subscription (SubResolver m event)))
 
 decodeNoDup :: L.ByteString -> Either String GQLRequest
 decodeNoDup str =
@@ -135,7 +139,7 @@ statefulResolver state streamApi request = do
     execute Subscribe {}      = pure ()
 
 fullSchema ::
-     forall proxy m event query mutation subscription. (IntroCon query, IntroCon mutation, IntroCon subscription)
+     forall proxy m event query mutation subscription. (IntrospectConstraint m event query mutation subscription)
   => proxy (GQLRootResolver m event query mutation subscription)
   -> Validation DataTypeLib
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
@@ -143,15 +147,15 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
     querySchema =
       resolveUpdates (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query")) (defaultTypes : types)
       where
-        (fields, types) = objectFields (Proxy @(CUSTOM query)) (Proxy @query)
+        (fields, types) = objectFields (Proxy @(CUSTOM (query (Resolver m)))) (Proxy @(query (Resolver m)))
     ------------------------------
     mutationSchema lib = resolveUpdates (lib {mutation = maybeOperator fields "Mutation"}) types
       where
-        (fields, types) = objectFields (Proxy @(CUSTOM mutation)) (Proxy @mutation)
+        (fields, types) = objectFields (Proxy @(CUSTOM (mutation (MutResolver m event)))) (Proxy @(mutation (MutResolver m event)))
     ------------------------------
     subscriptionSchema lib = resolveUpdates (lib {subscription = maybeOperator fields "Subscription"}) types
       where
-        (fields, types) = objectFields (Proxy @(CUSTOM subscription)) (Proxy @subscription)
+        (fields, types) = objectFields (Proxy @(CUSTOM (subscription (SubResolver m event)))) (Proxy @(subscription (SubResolver  m event)))
      -- maybeOperator :: [a] -> Text -> Maybe (Text, DataTyCon[a])
     maybeOperator []     = const Nothing
     maybeOperator fields = Just . operatorType fields

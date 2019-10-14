@@ -28,7 +28,7 @@ import           Data.Morpheus.Kind
 import           Data.Morpheus.Types.Custom            (MapKind, Pair)
 import           Data.Morpheus.Types.Internal.Data     (DataFingerprint (..))
 import           Data.Morpheus.Types.Internal.Resolver (Resolver, SubResolver)
-
+import           Data.Morpheus.Types.Types             (Undefined (..))
 
 type TRUE = 'True
 
@@ -92,6 +92,10 @@ class GQLType a where
 instance GQLType () where
   type KIND () = WRAPPER
   type CUSTOM () = 'False
+
+instance Typeable m => GQLType (Undefined m) where
+  type KIND (Undefined m) = WRAPPER
+  type CUSTOM (Undefined m) = 'False
 
 instance GQLType Int where
   type KIND Int = SCALAR
