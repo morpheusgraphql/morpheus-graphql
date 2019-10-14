@@ -25,7 +25,7 @@ module Data.Morpheus.Execution.Server.Encode
   ) where
 
 import           Control.Monad                                   ((>=>))
-import           Control.Monad.Except                            (liftEither, runExceptT, withExceptT)
+import           Control.Monad.Except                            (liftEither, ExceptT(..), runExceptT, withExceptT)
 import           Data.Map                                        (Map)
 import qualified Data.Map                                        as M (toList)
 import           Data.Maybe                                      (fromMaybe)
@@ -48,7 +48,7 @@ import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTO
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Resolver           (ResolveT,MutResolver, Resolver, SubResolveT,GADTResolver(..), SubResolver,
+import           Data.Morpheus.Types.Internal.Resolver           (ResolveT, MutResolver, Resolver, SubResolveT,GADTResolver(..), SubResolver,
                                                                   failResolveT)
 import           Data.Morpheus.Types.Internal.Stream             (Channel (..), PublishStream, StreamT (..),
                                                                   SubscribeStream, initExceptStream, injectEvents)
@@ -99,8 +99,8 @@ instance (Monad m, Encode b (ResolveT m value)) => Encode (Resolver m b) (Resolv
   encode = flip encodeResolver
 
 -- GQL Mutation Resolver Monad
-instance (Monad m, Encode b (ResolveT m value)) => Encode (Resolver m b) (ResolveT (StreamT m c) value) where
-  encode resolver = injectEvents [] . encode resolver
+instance (Monad m, Encode b (ResolveT m value)) => Encode (MutResolver m e b) (ResolveT (StreamT m e) value) where
+  encode (MutationResolver channels resolver) = injectEvents channels . encode ((ExceptT $ fmap Right  resolver):: Resolver m b)
 
 -- GQL Subscription Resolver Monad
 instance (Monad m, Encode b (ResolveT m Value)) => Encode (SubResolver m event b) (SubResolveT m event Value) where
