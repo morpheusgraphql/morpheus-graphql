@@ -27,7 +27,7 @@ module Data.Morpheus.Types.Internal.Resolver
   , ResponseT
   , failResolveT
   , GraphQLT(..)
-  , GResolver(..)
+  , GADTResolver(..)
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
@@ -54,13 +54,13 @@ instance Monad m => GQLFail Resolver m where
       mapCases (Left x)  = fFail $ pack $ show x
 
 ----------------------------------------------------------------------------------------
-type SubResolver = GResolver 'Subscription
+type SubResolver = GADTResolver 'Subscription
 
-data GResolver (o::OperationKind) (m :: * -> * ) event value where
-    QueryResolver:: m value -> GResolver 'Query m  event value
-    MutationResolver :: [event] -> m value -> GResolver 'Mutation m event value
-    SubscriptionResolver :: [StreamChannel event] -> (event -> Resolver m value) -> GResolver 'Subscription m event value
-    ResolverError :: m String -> GResolver o m event value
+data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
+    QueryResolver:: m value -> GADTResolver 'Query m  event value
+    MutationResolver :: [event] -> m value -> GADTResolver 'Mutation m event value
+    SubscriptionResolver :: [StreamChannel event] -> (event -> Resolver m value) -> GADTResolver 'Subscription m event value
+    ResolverError :: m String -> GADTResolver o m event value
 
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
