@@ -38,11 +38,11 @@ import           Data.Morpheus.Types.GQLType                         (GQLType (C
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), ValidOperation)
 import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataTyCon (..),
                                                                       DataTypeLib (..), OperationKind (..), initTypeLib)
-import           Data.Morpheus.Types.Internal.Resolver               (GQLRootResolver (..), Resolver, ResponseT,
-                                                                      SubResolver)
-import           Data.Morpheus.Types.Internal.Stream                 (Event (..), GQLChannel (..), PublishStream,
-                                                                      ResponseEvent (..), ResponseStream,
-                                                                      StreamState (..), StreamT (..), closeStream, mapS)
+import           Data.Morpheus.Types.Internal.Resolver               (GQLRootResolver (..), MutResolver, Resolver,
+                                                                      ResponseT, SubResolver)
+import           Data.Morpheus.Types.Internal.Stream                 (Event (..), GQLChannel (..), ResponseEvent (..),
+                                                                      ResponseStream, StreamState (..), StreamT (..),
+                                                                      closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation             (Validation)
 import           Data.Morpheus.Types.Internal.Value                  (Value (..))
 import           Data.Morpheus.Types.IO                              (GQLRequest (..), GQLResponse (..))
@@ -55,7 +55,7 @@ type EventCon event = (Eq (StreamChannel event), GQLChannel event)
 
 type IntrospectConstraint  m event query mutation subscription = (
                                   IntroCon (query (Resolver m))
-                                 , IntroCon (mutation (Resolver (PublishStream m event)))
+                                 , IntroCon (mutation (MutResolver m event))
                                  , IntroCon (subscription (SubResolver m event)))
 
 type RootResCon m event query mutation subscription
@@ -65,7 +65,7 @@ type RootResCon m event query mutation subscription
      , OBJ_RES m (Root (Resolver m)) Value
      -- Resolving
      , EncodeCon m (query (Resolver m)) Value
-     , EncodeMutCon m event (mutation (Resolver (PublishStream m event)))
+     , EncodeMutCon m event (mutation (MutResolver m event))
      , EncodeSubCon m event (subscription (SubResolver m event)))
 
 decodeNoDup :: L.ByteString -> Either String GQLRequest
@@ -151,7 +151,7 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
     ------------------------------
     mutationSchema lib = resolveUpdates (lib {mutation = maybeOperator fields "Mutation"}) types
       where
-        (fields, types) = objectFields (Proxy @(CUSTOM (mutation (Resolver (PublishStream m event))))) (Proxy @(mutation (Resolver (PublishStream m event))))
+        (fields, types) = objectFields (Proxy @(CUSTOM (mutation (MutResolver m event)))) (Proxy @(mutation (MutResolver m event)))
     ------------------------------
     subscriptionSchema lib = resolveUpdates (lib {subscription = maybeOperator fields "Subscription"}) types
       where
