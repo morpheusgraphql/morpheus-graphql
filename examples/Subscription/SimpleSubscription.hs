@@ -7,8 +7,7 @@
 
 module Subscription.SimpleSubscription where
 
-import           Data.Morpheus.Types       (Event (..), GADTResolver (..), GQLRootResolver (..), resolver,
-                                            toMutResolver)
+import           Data.Morpheus.Types       (Event (..), GADTResolver (..), GQLRootResolver (..), resolver)
 import           Data.Text                 (Text)
 import           GHC.Generics              (Generic)
 import           Mythology.Character.Deity (Deity (..), dbDeity)
