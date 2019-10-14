@@ -7,7 +7,7 @@
 
 module Subscription.SimpleSubscription where
 
-import           Data.Morpheus.Types       (Event (..), GQLRootResolver (..), IOSubRes, SubResolver (..), resolver,
+import           Data.Morpheus.Types       (Event (..), GADTResolver (..), GQLRootResolver (..), resolver,
                                             toMutResolver)
 import           Data.Text                 (Text)
 import           GHC.Generics              (Generic)
@@ -35,7 +35,7 @@ newtype Mutation m = Mutation
   } deriving (Generic)
 
 newtype Subscription (m ::  * -> * ) = Subscription
-  { newDeity :: () -> IOSubRes MyEvent Deity
+  { newDeity :: () -> m  Deity
   } deriving (Generic)
 
 type APIEvent = Event Channel Content
@@ -50,7 +50,7 @@ rootResolver =
   where
     fetchDeity = resolver $ dbDeity "" Nothing
     createDeity _args = toMutResolver [Event {channels = [ChannelA], content = ContentA 1}] fetchDeity
-    newDeity _args = SubResolver {subChannels = [ChannelA], subResolver}
+    newDeity _args = SubscriptionResolver [ChannelA] subResolver
       where
         subResolver (Event [ChannelA] (ContentA _value)) = resolver $ dbDeity "" Nothing -- resolve New State
         subResolver (Event [ChannelA] (ContentB value))  = resolver $ dbDeity value Nothing -- resolve New State

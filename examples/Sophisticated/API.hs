@@ -25,8 +25,8 @@ import           GHC.Generics           (Generic)
 -- MORPHEUS
 import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
-import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..),GADTResolver(..), GQLScalar (..), GQLType (..), ID, Resolver,
-                                         ScalarValue (..), SubResolver (..), constRes, mutResolver, resolver)
+import           Data.Morpheus.Types    (Event (..), GADTResolver (..), GQLRootResolver (..), GQLScalar (..),
+                                         GQLType (..), ID, Resolver, ScalarValue (..), constRes, mutResolver, resolver)
 
 $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
 
@@ -106,10 +106,10 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
     ----------------------------------------------------------------
     subscriptionResolver = return Subscription {subscriptionNewAddress, subscriptionNewUser}
       where
-        subscriptionNewUser () = SubResolver {subChannels = [UPDATE_USER], subResolver}
+        subscriptionNewUser () = SubscriptionResolver [UPDATE_USER] subResolver
           where
             subResolver (Event _ Update {}) = resolver fetchUser
-        subscriptionNewAddress () = SubResolver {subChannels = [UPDATE_ADDRESS], subResolver}
+        subscriptionNewAddress () = SubscriptionResolver [UPDATE_ADDRESS] subResolver
           where
             subResolver (Event _ Update {contentID}) = resolver $ fetchAddress (Euro contentID 0)
 
