@@ -67,6 +67,15 @@ data SubResolver m e a = SubResolver
   , subResolver :: e -> Resolver m a
   }
 
+
+data OperationResolver (o::OperationKind) (m :: * -> * ) event value where
+    QueryResolver:: m value -> OperationResolver 'Query m  event value
+    MutationResolver :: [event] -> m value -> OperationResolver 'Mutation m event value
+    SubscriptionResolver :: [StreamChannel event] -> (e -> Resolver m a) -> OperationResolver 'Subscription m event value
+    ResolverError :: m String -> OperationResolver o m event value
+
+
+
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
 type instance UnSubResolver (SubResolver m e) = Resolver m
@@ -101,6 +110,8 @@ data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
     QueryT:: ExceptT GQLErrors m value -> GraphQLT 'Query m  () value
     MutationT :: ExceptT GQLErrors (PublishStream m event) value -> GraphQLT 'Mutation m event value
     SubscriptionT ::  ExceptT GQLErrors (SubscribeStream m event) (event -> ExceptT GQLErrors m value) -> GraphQLT 'Subscription m event value
+
+
 
 -------------------------------------------------------------------
 -- | Pure Resolver without effect
