@@ -16,15 +16,19 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (GQLRootResolver (..), IORes)
+import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, Undefined (..))
 import           Data.Text                  (Text)
 
 importGQLDocumentWithNamespace "examples/TH/simple.gql"
 
-rootResolver :: GQLRootResolver IO () (Query IORes) () ()
+rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
-    {queryResolver = return Query {queryDeity}, mutationResolver = pure (), subscriptionResolver = pure ()}
+    {
+      queryResolver = return Query {queryDeity},
+      mutationResolver = pure Undefined,
+      subscriptionResolver = pure Undefined
+    }
   where
     queryDeity QueryDeityArgs {queryDeityArgsName} = pure Deity {deityName, deityPower}
       where
