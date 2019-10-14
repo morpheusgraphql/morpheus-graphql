@@ -1,15 +1,21 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings , ScopedTypeVariables , RankNTypes #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Subscription.SimpleSubscription where
 
-import           Data.Morpheus.Types       (Event (..), GQLRootResolver (..), IOMutRes, IORes, IOSubRes,
-                                            SubResolver (..), resolver, toMutResolver)
+import           Data.Morpheus.Types       (Event (..), GQLRootResolver (..), IOSubRes, SubResolver (..), resolver,
+                                            toMutResolver)
 import           Data.Text                 (Text)
 import           GHC.Generics              (Generic)
 import           Mythology.Character.Deity (Deity (..), dbDeity)
 
+
+-- TODO: importGQLDocument "examples/Subscription/api.gql"
+--
 data Channel
   = ChannelA
   | ChannelB
@@ -20,15 +26,15 @@ data Content
 
 type MyEvent = Event Channel Content
 
-newtype Query = Query
-  { deity :: () -> IORes Deity
+newtype Query m = Query
+  { deity :: () -> m Deity
   } deriving (Generic)
 
-newtype Mutation = Mutation
-  { createDeity :: () -> IOMutRes MyEvent Deity
+newtype Mutation m = Mutation
+  { createDeity :: () -> m Deity
   } deriving (Generic)
 
-newtype Subscription = Subscription
+newtype Subscription (m ::  * -> * ) = Subscription
   { newDeity :: () -> IOSubRes MyEvent Deity
   } deriving (Generic)
 
