@@ -1,4 +1,3 @@
-{-# LANGUAGE KindSignatures #-}
 -- | GQL Types
 module Data.Morpheus.Types
   ( resolver
@@ -33,8 +32,7 @@ import           Data.Morpheus.Types.Internal.Resolver (Event (..), GQLRootResol
                                                         toMutResolver)
 import           Data.Morpheus.Types.Internal.Value    (ScalarValue (..))
 import           Data.Morpheus.Types.IO                (GQLRequest (..), GQLResponse (..))
-
-data Undefined (m :: * -> *) = Undefined
+import           Data.Morpheus.Types.Types (Undefined(..))
 
 -- resolves constant value on any argument
 constRes :: Monad m => b -> a -> m b

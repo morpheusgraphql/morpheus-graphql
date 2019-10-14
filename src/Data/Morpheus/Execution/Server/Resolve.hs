@@ -54,7 +54,7 @@ import           Data.Typeable                                       (Typeable)
 
 type EventCon event = (Eq (StreamChannel event), GQLChannel event)
 
-type IntrospectConstraint  m event query mutation subscription =       (
+type IntrospectConstraint  m event query mutation subscription = (
                                   IntroCon (query (Resolver m))
                                  , IntroCon (mutation (Resolver (PublishStream m event)))
                                  , IntroCon (subscription (Resolver (SubscribeStream m event))))
