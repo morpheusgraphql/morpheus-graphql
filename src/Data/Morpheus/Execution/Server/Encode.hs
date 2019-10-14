@@ -108,7 +108,8 @@ instance (Monad m, Encode b (ResolveT m Value)) => Encode (SubResolver m event b
     where
       handleResolver (SubscriptionResolver subChannels subResolver) =
         initExceptStream [map Channel subChannels] (encodeResolver selection . subResolver)
-
+      --handleResolver (FailedResolving  errorMessage) = TODO: handle error
+      
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a value where
   encodeKind :: VContext kind a -> (Key, Selection) -> value
