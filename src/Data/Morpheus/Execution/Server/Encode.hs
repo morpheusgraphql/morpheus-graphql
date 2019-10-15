@@ -50,8 +50,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..)
 import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Data               (MUTATION, QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), MutResolver,
-                                                                  PackT (..), ResolveT, Resolver, SubResolver,
-                                                                  failResolveT)
+                                                                  PackT (..), ResolveT, Resolver, SubResolver)
 import           Data.Morpheus.Types.Internal.Stream             (Channel (..), PublishStream, SubscribeStream,
                                                                   initExceptStream, injectEvents)
 import           Data.Morpheus.Types.Internal.Validation         (GQLErrors)
@@ -60,11 +59,11 @@ import           Data.Morpheus.Types.Internal.Value              (GQLValue (..),
 class Encode resolver o m e where
   encode :: resolver -> (Key, Selection) -> GraphQLT o m e Value
 
-instance {-# OVERLAPPABLE #-} EncodeKind (KIND a) a res => Encode resolver o m e where
+instance {-# OVERLAPPABLE #-} EncodeKind (KIND a) a o m e => Encode a o m e where
   encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
 
 -- MAYBE
-instance (GQLValue value, Encode a o m e) => Encode (Maybe a) o m e where
+instance (Monad m , Encode a o m e) => Encode (Maybe a) o m e where
   encode Nothing      = const gqlNull
   encode (Just value) = encode value
 
@@ -81,7 +80,7 @@ instance (Eq k, Monad m, Encode (MapKind k v (GraphQLT o m e)) o m e) => Encode 
   encode value = encode ((mapKindFromList $ M.toList value) :: MapKind k v (GraphQLT o m e))
 
 -- LIST []
-instance (Monad m, GQLValue value, Encode a o m e) => Encode [a] o m e where
+instance (Monad m, Encode a o m e) => Encode [a] o m e where
   encode list query = gqlList <$> traverse (`encode` query) list
 
 --  GQL a -> b
@@ -116,19 +115,19 @@ instance (Monad m, Encode b SUBSCRIPTION m e ) => Encode (SubResolver m event b)
       --handleResolver (FailedResolving  errorMessage) = TODO: handle error
 
 -- ENCODE GQL KIND
-class EncodeKind (kind :: GQL_KIND) a value where
-  encodeKind :: VContext kind a -> (Key, Selection) -> value
+class EncodeKind (kind :: GQL_KIND) a o m e  where
+  encodeKind :: VContext kind a -> (Key, Selection) -> GraphQLT o m e Value
 
 -- SCALAR
-instance (GQLScalar a, GQLValue value) => EncodeKind SCALAR a value where
+instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o m e where
   encodeKind = pure . gqlScalar . serialize . unVContext
 
 -- ENUM
-instance (Generic a, EnumRep (Rep a), GQLValue value) => EncodeKind ENUM a value where
+instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o m e where
   encodeKind = pure . gqlString . encodeRep . from . unVContext
 
 --  OBJECT
-instance (Monad m, EncodeCon m a value, GQLValue value) => EncodeKind OBJECT a (GraphQLT o m e value) where
+instance (Monad m, EncodeCon m a Value, Monad m) => EncodeKind OBJECT a o m e where
   encodeKind (VContext value) (_, Selection {selectionRec = SelectionSet selection}) =
     resolveFields selection (__typenameResolver : objectResolvers (Proxy :: Proxy (CUSTOM a)) value)
     where
@@ -136,7 +135,7 @@ instance (Monad m, EncodeCon m a value, GQLValue value) => EncodeKind OBJECT a (
   encodeKind _ (key, Selection {selectionPosition}) = FailT $ subfieldsNotSelected key "" selectionPosition
 
 -- UNION
-instance (Monad m, GQL_RES a, GResolver UNION (Rep a) (GraphQLT o m e value)) => EncodeKind UNION a (GraphQLT o m e value) where
+instance (Monad m, GQL_RES a, GResolver UNION (Rep a) (GraphQLT o m e Value)) => EncodeKind UNION a o m e where
   encodeKind (VContext value) (key, sel@Selection {selectionRec = UnionSelection selections}) =
     resolver (key, sel {selectionRec = SelectionSet lookupSelection})
       -- SPEC: if there is no any fragment that supports current object Type GQL returns {}
