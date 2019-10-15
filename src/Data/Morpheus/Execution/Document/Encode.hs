@@ -17,9 +17,9 @@ import           Data.Morpheus.Execution.Server.Encode (Encode (..), ObjectResol
 import           Data.Morpheus.Types.GQLType           (TRUE)
 import           Data.Morpheus.Types.Internal.Data     (DataField (..), isSubscription)
 import           Data.Morpheus.Types.Internal.DataD    (ConsD (..), GQLTypeD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.Resolver (ResolveT, Resolver, SubResolveT, SubResolver)
+import           Data.Morpheus.Types.Internal.Resolver (GADTResolver, PackT, ResolveT, Resolver, SubResolveT,
+                                                        SubResolver)
 import           Data.Morpheus.Types.Internal.TH       (applyT, destructRecord, instanceHeadMultiT, typeT)
-import           Data.Morpheus.Types.Internal.Value    (Value)
 
 -- @Subscription:
 --
@@ -36,22 +36,22 @@ deriveEncode :: GQLTypeD -> Q [Dec]
 deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}]}} =
   pure <$> instanceD (cxt constrains) appHead methods
   where
-    result = appT resultMonad (conT ''Value)
-      where
-        resultMonad
-          | isSubscription typeKindD = typeT ''SubResolveT ["m", "e"] -- (SubResolveT m e Value)
-          | otherwise = typeT ''ResolveT ["m"] -- (ResolveT m Value)
+    --result = appT resultMonad (conT ''Value)
+    --  where
+    --    resultMonad
+    --      | isSubscription typeKindD = typeT ''SubResolveT ["m", "e"] -- (SubResolveT m e Value)
+    --      | otherwise = typeT ''ResolveT ["m"] -- (ResolveT m Value)
     mainType = applyT (mkName tName) [mainTypeArg] -- defines  (<Type> (SubResolver m e)) or (<Type> (Resolver m))
       where
         mainTypeArg
           | isSubscription typeKindD = typeT ''SubResolver ["m", "e"] -- (SubResolver m e)
-          | otherwise = typeT ''Resolver ["m"] -- (Resolver m)
+          | otherwise = typeT ''GADTResolver ["o","m","e"] -- (Resolver m)
     -----------------------------------------------------------------------------------------
     -- defines Constraint: (Typeable m, Monad m)
-    constrains = [typeT ''Monad ["m"], typeT ''Typeable ["m"]]
+    constrains = [typeT ''Monad ["m"], typeT ''Typeable ["o"], typeT ''Typeable ["m"],typeT ''Typeable ["e"], typeT ''PackT ["o","m","e"]]
     -------------------------------------------------------------------
     -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where
-    appHead = instanceHeadMultiT ''ObjectResolvers (conT ''TRUE) [mainType, result]
+    appHead = instanceHeadMultiT ''ObjectResolvers (conT ''TRUE) (mainType: map (varT . mkName) ["o","m","e"])
     ------------------------------------------------------------------
     -- defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
     methods = [funD 'objectResolvers [clause argsE (normalB body) []]]
