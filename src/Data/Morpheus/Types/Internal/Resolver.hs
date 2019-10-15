@@ -27,6 +27,7 @@ module Data.Morpheus.Types.Internal.Resolver
   , GADTResolver(..)
   , GraphQLT(..)
   , extractMutResolver
+  , PackT(..)
   ) where
 
 import           Control.Monad.Trans.Except              (ExceptT (..))
@@ -37,7 +38,7 @@ import           Data.Morpheus.Types.Internal.Base       (Message)
 import           Data.Morpheus.Types.Internal.Data       (OperationKind (..))
 import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStream, ResponseStream, StreamChannel,
                                                           StreamState (..), StreamT (..), SubscribeStream)
-import           Data.Morpheus.Types.Internal.Validation (GQLErrors)
+import           Data.Morpheus.Types.Internal.Validation (GQLErrors, Validation)
 
 class Monad m =>
       GQLFail (t :: (* -> *) -> * -> *) m
@@ -75,11 +76,37 @@ type ResponseT m e  = ResolveT (ResponseStream m e)
 type SubResolveT = GraphQLT 'Subscription
 
 
+class PackT (o::OperationKind) m event where
+    packT ::  Validation a -> GraphQLT o m event a
+
+instance PackT 'Query m event where
+instance PackT 'Subscription m event where
+instance PackT 'Mutation m event where
+
+class FromResT (o::OperationKind) event where
+    fromResT :: ResolveT m a -> GraphQLT o m event a
+
+instance FromResT 'Query event where
+instance FromResT 'Subscription  event where
+instance FromResT 'Mutation  event where
+
+
+
+--    packT =
+
+
 -- TODO: use it
 data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
     QueryT:: ExceptT GQLErrors m value -> GraphQLT 'Query m  event value
     MutationT :: ResolveT (StreamT m e) value -> GraphQLT 'Mutation m event value
     SubscriptionT ::  ResolveT (SubscribeStream m e) (e -> ResolveT m a) -> GraphQLT 'Subscription m event value
+    FailT :: GQLErrors -> GraphQLT o m  event value
+    
+instance Functor m => Functor (GraphQLT o m e) where
+
+instance Applicative m => Applicative (GraphQLT o m e) where
+
+instance Monad m => Monad (GraphQLT o m e) where
 
 
 data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
@@ -93,9 +120,6 @@ type family UnSubResolver (a :: * -> *) :: (* -> *)
 type instance UnSubResolver (SubResolver m e) = Resolver m
 
 -------------------------------------------------------------------
-
-
-
 
 failResolveT :: Monad m => GQLErrors -> ResolveT m a
 failResolveT = ExceptT . pure . Left
