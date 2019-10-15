@@ -25,7 +25,7 @@ module Data.Morpheus.Execution.Server.Encode
   ) where
 
 import           Control.Monad                                   ((>=>))
-import           Control.Monad.Except                            (liftEither, ExceptT(..), runExceptT, withExceptT)
+import           Control.Monad.Except                            (ExceptT (..), liftEither, runExceptT, withExceptT)
 import           Data.Map                                        (Map)
 import qualified Data.Map                                        as M (toList)
 import           Data.Maybe                                      (fromMaybe)
@@ -48,8 +48,9 @@ import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTO
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Resolver           (ResolveT, MutResolver, Resolver, SubResolveT,GADTResolver(..), SubResolver,
-                                                                  failResolveT)
+import           Data.Morpheus.Types.Internal.Data               (OperationKind (..))
+import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), MutResolver, ResolveT, Resolver,
+                                                                  SubResolveT, SubResolver, failResolveT)
 import           Data.Morpheus.Types.Internal.Stream             (Channel (..), PublishStream, StreamT (..),
                                                                   SubscribeStream, initExceptStream, injectEvents)
 import           Data.Morpheus.Types.Internal.Validation         (GQLErrors)
@@ -95,8 +96,12 @@ instance (Monad m, Encode a (ResolveT m value)) => Encode (Either String a) (Res
   encode resolver = (`encodeResolver` liftEither resolver)
 
 --  GQL ExceptT Resolver Monad
+instance (Monad m, Encode b (ResolveT m value)) => Encode (GADTResolver 'Query m e b) (ResolveT m value) where
+  encode (QueryResolver resolver) selection = encodeResolver selection resolver
+
+--- TODO: delete me
 instance (Monad m, Encode b (ResolveT m value)) => Encode (Resolver m b) (ResolveT m value) where
-  encode = flip encodeResolver
+  encode  = flip encodeResolver 
 
 -- GQL Mutation Resolver Monad
 instance (Monad m, Encode b (ResolveT m value)) => Encode (MutResolver m e b) (ResolveT (StreamT m e) value) where

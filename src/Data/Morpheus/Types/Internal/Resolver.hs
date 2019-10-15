@@ -56,12 +56,13 @@ type SubResolver = GADTResolver 'Subscription
 
 type MutResolver = GADTResolver 'Mutation
 
+type QueResolver = GADTResolver 'Query
 
 data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
-    QueryResolver:: m value -> GADTResolver 'Query m  event value
+    QueryResolver:: ExceptT String m value -> GADTResolver 'Query m  event value
     MutationResolver :: [event] -> m value -> GADTResolver 'Mutation m event value
     SubscriptionResolver :: [StreamChannel event] -> (event -> Resolver m value) -> GADTResolver 'Subscription m event value
-    FailedResolving :: String -> GADTResolver o m event value
+    --FailedResolving :: String -> GADTResolver o m event value
 
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
@@ -114,7 +115,7 @@ extractMutResolver (MutationResolver channels res) = (ExceptT . StreamT . fmap (
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
 data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* -> *) -> * )  (sub :: (* -> *) -> * )  = GQLRootResolver
-  { queryResolver        :: Resolver m (query (Resolver m))
+  { queryResolver        :: Resolver m (query (GADTResolver 'Query m  event))
   , mutationResolver     :: Resolver (PublishStream m event) (mut (MutResolver m event))
   , subscriptionResolver :: SubRootRes m event (sub (SubResolver  m event))
   }
