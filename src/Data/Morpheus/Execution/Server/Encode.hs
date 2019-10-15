@@ -21,7 +21,6 @@ module Data.Morpheus.Execution.Server.Encode
   , ObjectResolvers(..)
   ) where
 
-import           Control.Monad.Except                            (runExceptT, withExceptT)
 import           Data.Map                                        (Map)
 import qualified Data.Map                                        as M (toList)
 import           Data.Maybe                                      (fromMaybe)
@@ -33,7 +32,7 @@ import           GHC.Generics
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal                    (internalUnknownTypeMessage)
-import           Data.Morpheus.Error.Selection                   (resolverError, subfieldsNotSelected)
+import           Data.Morpheus.Error.Selection                   (subfieldsNotSelected)
 import           Data.Morpheus.Execution.Server.Decode           (DecodeObject, decodeArguments)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, OBJECT, ResContext (..), SCALAR,
@@ -44,10 +43,9 @@ import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTO
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Data               (OperationKind,QUERY)
+import           Data.Morpheus.Types.Internal.Data               (OperationKind, QUERY)
 import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), PackT (..),
-                                                                  liftResolver)
-import           Data.Morpheus.Types.Internal.Validation         (GQLErrors)
+                                                                  convertResolver, liftResolver)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
 
 class Encode resolver o m e where
@@ -117,7 +115,7 @@ instance (Monad m, GQL_RES a, GResolver UNION (Rep a) o m e) => EncodeKind UNION
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
 
-type EncodeOperator o m e a  = GADTResolver o m e a -> ValidOperation -> m (Either GQLErrors Value)
+type EncodeOperator o m e a  = GADTResolver o m e a -> ValidOperation -> GraphQLT o m e Value
 
 type EncodeCon o m e a = (GQL_RES a, ObjectResolvers (CUSTOM a) a o m e)
 
@@ -182,12 +180,10 @@ encodeOperationWith ::
   => [FieldRes o m e]
   -> EncodeOperator o m e a
 encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
-  runExceptT $
   operationResolveT >>=
   resolveFields operationSelection . (++) externalRes . objectResolvers (Proxy :: Proxy (CUSTOM a))
   where
-    operationResolveT = withExceptT (resolverError operationPosition (getOperationName operationName)) rootResolver
-
+    operationResolveT = convertResolver operationPosition (getOperationName operationName) rootResolver
 
 resolveFields :: (Monad m) => SelectionSet -> [FieldRes o m e] -> GraphQLT o m e Value
 resolveFields selectionSet resolvers = gqlObject <$> traverse selectResolver selectionSet
