@@ -28,17 +28,19 @@ module Data.Morpheus.Types.Internal.Resolver
   , GraphQLT(..)
   , extractMutResolver
   , PackT(..)
+  , liftResolver
   ) where
 
-import           Control.Monad.Trans.Except              (ExceptT (..))
-import           Data.Text                               (pack, unpack)
+import           Control.Monad.Trans.Except                 (ExceptT (..))
+import           Data.Text                                  (pack, unpack)
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Base       (Message)
-import           Data.Morpheus.Types.Internal.Data       (OperationKind (..))
-import           Data.Morpheus.Types.Internal.Stream     (Event (..), PublishStream, ResponseStream, StreamChannel,
-                                                          StreamState (..), StreamT (..), SubscribeStream)
-import           Data.Morpheus.Types.Internal.Validation (GQLErrors, Validation)
+import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..))
+import           Data.Morpheus.Types.Internal.Base          (Message)
+import           Data.Morpheus.Types.Internal.Data          (Key, OperationKind (..))
+import           Data.Morpheus.Types.Internal.Stream        (Event (..), PublishStream, ResponseStream, StreamChannel,
+                                                             StreamState (..), StreamT (..), SubscribeStream)
+import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 
 class Monad m =>
       GQLFail (t :: (* -> *) -> * -> *) m
@@ -101,12 +103,16 @@ data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
     MutationT :: ResolveT (StreamT m e) value -> GraphQLT 'Mutation m event value
     SubscriptionT ::  ResolveT (SubscribeStream m e) (e -> ResolveT m a) -> GraphQLT 'Subscription m event value
     FailT :: GQLErrors -> GraphQLT o m  event value
-    
+
 instance Functor m => Functor (GraphQLT o m e) where
 
 instance Applicative m => Applicative (GraphQLT o m e) where
 
 instance Monad m => Monad (GraphQLT o m e) where
+
+liftResolver :: Monad m => ( a -> (Key, Selection) -> GraphQLT o m e res) ->  GADTResolver o m e a -> (Key, Selection)  -> GraphQLT o m e res
+liftResolver selection@(fieldName, Selection {selectionPosition}) encode =
+   (resolverError selectionPosition fieldName) >=> (`encode` selection)
 
 
 data GADTResolver (o::OperationKind) (m :: * -> * ) event value where

@@ -21,8 +21,7 @@ module Data.Morpheus.Execution.Server.Encode
   , ObjectResolvers(..)
   ) where
 
-import           Control.Monad                                   ((>=>))
-import           Control.Monad.Except                            (ExceptT (..), runExceptT, withExceptT)
+import           Control.Monad.Except                            (runExceptT, withExceptT)
 import           Data.Map                                        (Map)
 import qualified Data.Map                                        as M (toList)
 import           Data.Maybe                                      (fromMaybe)
@@ -37,7 +36,7 @@ import           Data.Morpheus.Error.Internal                    (internalUnknow
 import           Data.Morpheus.Error.Selection                   (resolverError, subfieldsNotSelected)
 import           Data.Morpheus.Execution.Server.Decode           (DecodeObject, decodeArguments)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
-import           Data.Morpheus.Kind                              (Context (..), ENUM, GQL_KIND, OBJECT, ResContext (..),
+import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, OBJECT, ResContext (..),
                                                                   SCALAR, UNION, VContext (..))
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
@@ -47,8 +46,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..)
 import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Data               (MUTATION, OperationKind (..), QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), MutResolver,
-                                                                  PackT (..), Resolver, SubResolver)
-import           Data.Morpheus.Types.Internal.Stream             (Channel (..), initExceptStream, injectEvents)
+                                                                  PackT (..),liftResolver,  SubResolver)
 import           Data.Morpheus.Types.Internal.Validation         (GQLErrors)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
 
@@ -92,11 +90,11 @@ instance (DecodeObject a, PackT o m e ,Monad m, Encode b o m e ) => Encode (a ->
 
 --  GQL ExceptT Resolver Monad -- (GraphQLT 'Query m e value)
 instance (Monad m, Encode b QUERY m e) => Encode (GADTResolver QUERY m e b) QUERY m e where
-  encode = flip encodeResolver
+  encode = liftResolver encode
 
 -- GQL Mutation Resolver Monad
 instance (Monad m, Encode b MUTATION m e) => Encode (MutResolver m e b) MUTATION m e where
-  encode = flip encodeResolver
+  encode = liftResolver encode
 
 -- GQL Subscription Resolver Monad
 instance (Monad m, Encode b SUBSCRIPTION m e ) => Encode (SubResolver m event b) SUBSCRIPTION m e where
@@ -210,9 +208,6 @@ encodeOperationWith externalRes rootResolver Operation {operationSelection, oper
   where
     operationResolveT = withExceptT (resolverError operationPosition (getOperationName operationName)) rootResolver
 
-encodeResolver :: (Monad m, Encode a o m e) => (Key, Selection) -> GADTResolver o m e a -> GraphQLT o m e res
-encodeResolver selection@(fieldName, Selection {selectionPosition}) =
-  withExceptT (resolverError selectionPosition fieldName) >=> (`encode` selection)
 
 resolveFields :: (Monad m) => SelectionSet -> [FieldRes o m e] -> GraphQLT o m e Value
 resolveFields selectionSet resolvers = gqlObject <$> traverse selectResolver selectionSet
