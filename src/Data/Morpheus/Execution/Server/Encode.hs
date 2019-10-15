@@ -14,14 +14,11 @@
 
 module Data.Morpheus.Execution.Server.Encode
   ( EncodeCon
-  , EncodeMutCon
-  , EncodeSubCon
   , GResolver(..)
   , Encode(..)
   , encodeQuery
   , encodeOperation
   , ObjectResolvers(..)
-  , OBJ_RES
   ) where
 
 import           Control.Monad                                   ((>=>))
@@ -95,7 +92,7 @@ instance (DecodeObject a, PackT o m e ,Monad m, Encode b o m e ) => Encode (a ->
 
 --  GQL ExceptT Resolver Monad -- (GraphQLT 'Query m e value)
 instance (Monad m, Encode b QUERY m e) => Encode (GADTResolver QUERY m e b) QUERY m e where
-  encode (QueryResolver resolver) selection = QueryT $ encodeResolver selection resolver
+  encode = flip encodeResolver
 
 -- GQL Mutation Resolver Monad
 instance (Monad m, Encode b MUTATION m e) => Encode (MutResolver m e b) MUTATION m e where
@@ -122,7 +119,7 @@ instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o m e where
   encodeKind = pure . gqlString . encodeRep . from . unVContext
 
 --  OBJECT
-instance (Monad m, EncodeCon m a o e, Monad m) => EncodeKind OBJECT a o m e where
+instance (Monad m, EncodeCon o m e a, Monad m) => EncodeKind OBJECT a o m e where
   encodeKind (VContext value) (_, Selection {selectionRec = SelectionSet selection}) =
     resolveFields selection (__typenameResolver : objectResolvers (Proxy :: Proxy (CUSTOM a)) value)
     where
@@ -142,17 +139,11 @@ instance (Monad m, GQL_RES a, GResolver UNION (Rep a) o m e) => EncodeKind UNION
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
 
-type EncodeOperator m a value = Resolver m a -> ValidOperation -> m (Either GQLErrors value)
+type EncodeOperator o m e a  = GADTResolver o m e a -> ValidOperation -> m (Either GQLErrors Value)
 
-type OBJ_RES m a o e = ObjectResolvers (CUSTOM a) a o m e
+type EncodeCon o m e a = (GQL_RES a, ObjectResolvers (CUSTOM a) a o m e)
 
-type EncodeCon m a o e = (GQL_RES a, OBJ_RES m a o e)
-
-type EncodeMutCon m event mut e = EncodeCon m mut MUTATION e
-
-type EncodeSubCon m event sub e = EncodeCon m sub SUBSCRIPTION e
-
-type FieldRes  o m e value  = (Key, (Key, Selection) -> GraphQLT o m e value)
+type FieldRes  o m e   = (Key, (Key, Selection) -> GraphQLT o m e Value)
 
 type family GRes (kind :: GQL_KIND) value :: *
 
@@ -200,18 +191,18 @@ instance (GResolver UNION a o m e, GResolver UNION b o m e) => GResolver UNION (
 
 ----- HELPERS ----------------------------
 encodeQuery ::
-     forall m a schema. (GQL_RES a, GQL_RES schema, Monad m, EncodeCon m schema QUERY Value, EncodeCon m a QUERY Value)
+     forall m event query schema. (Monad m, EncodeCon QUERY m event schema, EncodeCon QUERY m event query)
   => schema
-  -> EncodeOperator m a Value
+  -> EncodeOperator QUERY m event query
 encodeQuery schema = encodeOperationWith (objectResolvers (Proxy :: Proxy (CUSTOM schema)) schema)
 
-encodeOperation :: (Monad m, GQL_RES a, EncodeCon m a o e, GQLValue value) => EncodeOperator m a value
+encodeOperation :: (Monad m, GQL_RES a, EncodeCon opKind m e a, GQLValue value) => EncodeOperator o m e a
 encodeOperation = encodeOperationWith []
 
 encodeOperationWith ::
-     forall m a o e value. (Monad m, GQL_RES a,  EncodeCon m a o e)
-  => [FieldRes o m e value]
-  -> EncodeOperator m a value
+     forall m op opKind e . (Monad m, EncodeCon opKind m e op)
+  => [FieldRes opKind m e]
+  -> EncodeOperator opKind m e op
 encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
   runExceptT $
   operationResolveT >>=
@@ -219,11 +210,11 @@ encodeOperationWith externalRes rootResolver Operation {operationSelection, oper
   where
     operationResolveT = withExceptT (resolverError operationPosition (getOperationName operationName)) rootResolver
 
-encodeResolver :: (Monad m, Encode a o m e) => (Key, Selection) -> Resolver m a -> ResolveT m res
+encodeResolver :: (Monad m, Encode a o m e) => (Key, Selection) -> GADTResolver o m e a -> GraphQLT o m e res
 encodeResolver selection@(fieldName, Selection {selectionPosition}) =
   withExceptT (resolverError selectionPosition fieldName) >=> (`encode` selection)
 
-resolveFields :: (Monad m, GQLValue a) => SelectionSet -> [FieldRes o m e value] -> GraphQLT o m e a
+resolveFields :: (Monad m) => SelectionSet -> [FieldRes o m e] -> GraphQLT o m e Value
 resolveFields selectionSet resolvers = gqlObject <$> traverse selectResolver selectionSet
   where
     selectResolver (key, selection) =
