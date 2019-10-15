@@ -35,11 +35,13 @@ import           Control.Monad.Trans.Except                 (ExceptT (..))
 import           Data.Text                                  (pack, unpack)
 
 -- MORPHEUS
+import           Data.Morpheus.Error.Selection              (resolverError)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..))
 import           Data.Morpheus.Types.Internal.Base          (Message)
 import           Data.Morpheus.Types.Internal.Data          (Key, OperationKind (..))
 import           Data.Morpheus.Types.Internal.Stream        (Event (..), PublishStream, ResponseStream, StreamChannel,
-                                                             StreamState (..), StreamT (..), SubscribeStream)
+                                                             StreamState (..), StreamT (..), SubscribeStream
+                                                             )
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 
 class Monad m =>
@@ -110,16 +112,24 @@ instance Applicative m => Applicative (GraphQLT o m e) where
 
 instance Monad m => Monad (GraphQLT o m e) where
 
-liftResolver :: Monad m => ( a -> (Key, Selection) -> GraphQLT o m e res) ->  GADTResolver o m e a -> (Key, Selection)  -> GraphQLT o m e res
-liftResolver selection@(fieldName, Selection {selectionPosition}) encode =
-   (resolverError selectionPosition fieldName) >=> (`encode` selection)
+liftResolver :: Monad m => (a -> (Key,Selection) -> GraphQLT o m e value) -> (Key, Selection) -> GADTResolver o m e a  -> GraphQLT o m e value
+liftResolver encode  selection@(fieldName, Selection {selectionPosition}) res = withRes res >>= (`encode` selection)
+   where
+    withRes :: Monad m => GADTResolver o m e a ->  GraphQLT o m e a
+    withRes (FailedResover message)       = FailT $ resolverError selectionPosition fieldName message
+    withRes (MutationResolver events res) = MutationT $ ExceptT $ StreamT (StreamState events . Right <$> res)
+--  encode resolver selection =  handleResolver resolver
+--    where
+--      handleResolver (SubscriptionResolver subChannels subResolver) =
+--        SubscriptionT $ initExceptStream [map Channel subChannels] ((encodeResolver selection . subResolver) :: event -> ResolveT m Value)
+      --handleResolver (FailedResolving  errorMessage) = TODO: handle error
 
 
 data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
     QueryResolver:: ExceptT String m value -> GADTResolver 'Query m  event value
     MutationResolver :: [event] -> m value -> GADTResolver 'Mutation m event value
     SubscriptionResolver :: [StreamChannel event] -> (event -> Resolver m value) -> GADTResolver 'Subscription m event value
-    --FailedResolving :: String -> GADTResolver o m event value
+    FailedResover :: String -> GADTResolver o m event value
 
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 

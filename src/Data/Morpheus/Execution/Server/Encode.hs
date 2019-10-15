@@ -36,8 +36,8 @@ import           Data.Morpheus.Error.Internal                    (internalUnknow
 import           Data.Morpheus.Error.Selection                   (resolverError, subfieldsNotSelected)
 import           Data.Morpheus.Execution.Server.Decode           (DecodeObject, decodeArguments)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
-import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, OBJECT, ResContext (..),
-                                                                  SCALAR, UNION, VContext (..))
+import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, OBJECT, ResContext (..), SCALAR,
+                                                                  UNION, VContext (..))
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTOM, KIND, __typeName))
@@ -46,7 +46,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..)
 import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Data               (MUTATION, OperationKind (..), QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), MutResolver,
-                                                                  PackT (..),liftResolver,  SubResolver)
+                                                                  PackT (..), SubResolver, liftResolver)
 import           Data.Morpheus.Types.Internal.Validation         (GQLErrors)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
 
@@ -77,32 +77,12 @@ instance (Eq k, Monad m, Encode (MapKind k v (GraphQLT o m e)) o m e) => Encode 
 instance (Monad m, Encode a o m e) => Encode [a] o m e where
   encode list query = gqlList <$> traverse (`encode` query) list
 
---  GQL a -> b
-instance (DecodeObject a, PackT o m e ,Monad m, Encode b o m e ) => Encode (a -> b) o m e where
-  encode resolver selection = decodeArgs selection >>= (`encode` selection) . resolver
+--  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
+instance (DecodeObject a, PackT o m e ,Monad m, Encode b o m e ) => Encode (a -> GADTResolver o m e b) o m e where
+  encode resolver selection = decodeArgs selection >>= liftResolver encode selection . resolver
     where
       decodeArgs :: (Key, Selection) -> GraphQLT o m e a
       decodeArgs = packT . decodeArguments . selectionArguments . snd
-
--- GQL Either Resolver Monad
---instance (Monad m, Encode a (GraphQLT o m e value)) => Encode (Either String a) (GraphQLT o m e value) where
---  encode resolver = (`encodeResolver` liftEither resolver)
-
---  GQL ExceptT Resolver Monad -- (GraphQLT 'Query m e value)
-instance (Monad m, Encode b QUERY m e) => Encode (GADTResolver QUERY m e b) QUERY m e where
-  encode = liftResolver encode
-
--- GQL Mutation Resolver Monad
-instance (Monad m, Encode b MUTATION m e) => Encode (MutResolver m e b) MUTATION m e where
-  encode = liftResolver encode
-
--- GQL Subscription Resolver Monad
-instance (Monad m, Encode b SUBSCRIPTION m e ) => Encode (SubResolver m event b) SUBSCRIPTION m e where
---  encode resolver selection =  handleResolver resolver
---    where
---      handleResolver (SubscriptionResolver subChannels subResolver) =
---        SubscriptionT $ initExceptStream [map Channel subChannels] ((encodeResolver selection . subResolver) :: event -> ResolveT m Value)
-      --handleResolver (FailedResolving  errorMessage) = TODO: handle error
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o m e  where
