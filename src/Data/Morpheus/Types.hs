@@ -18,6 +18,7 @@ module Data.Morpheus.Types
   , constRes
   , Undefined(..)
   , SubResolver
+  , MutResolver
   , GADTResolver(..)
   ) where
 

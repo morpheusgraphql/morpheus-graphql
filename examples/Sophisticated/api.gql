@@ -40,9 +40,9 @@ type User {
   name: String!
   email: String!
   address(coordinates: Coordinates!, comment: String): Address!
-  office(zipCode: [[[ID!]]!], id: CityID!): Address!
-  entity: MyUnion!
   home: CityID!
+  office(zipCode: [[[ID!]]!], id: CityID!): Address
+  entity: MyUnion
 }
 
 union MyUnion = User | Address
