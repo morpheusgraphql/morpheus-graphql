@@ -7,7 +7,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeFamilies      , DataKinds    #-}
 
 module Sophisticated.API
   ( gqlRoot
@@ -26,7 +26,7 @@ import           GHC.Generics           (Generic)
 import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
 import           Data.Morpheus.Types    (Event (..), GADTResolver (..), GQLRootResolver (..), GQLScalar (..),
-                                         GQLType (..), ID, MutResolver, Resolver, ScalarValue (..), constRes, resolver)
+                                         GQLType (..), ID, MutResolver, Resolver, ScalarValue (..), resolver)
 
 $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
 
@@ -77,6 +77,9 @@ data Content = Update
   }
 
 type APIEvent = (Event Channel Content)
+
+constRes :: Monad m => a -> GADTResolver 'Query m e a
+constRes = const . QueryResolver . pure 
 
 gqlRoot :: GQLRootResolver IO APIEvent Query Mutation Subscription
 gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}

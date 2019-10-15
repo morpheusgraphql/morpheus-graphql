@@ -25,6 +25,7 @@ module Data.Morpheus.Types.Internal.Resolver
   , ResponseT
   , failResolveT
   , GADTResolver(..)
+  , GraphQLT(..)
   , extractMutResolver
   ) where
 
@@ -56,7 +57,30 @@ type SubResolver = GADTResolver 'Subscription
 
 type MutResolver = GADTResolver 'Mutation
 
-type QueResolver = GADTResolver 'Query
+-- type QueResolver = GADTResolver 'Query
+
+-- TODO: Replace With: newtype MutResolver
+-- newtype MutResolver m e a = MutResolver {  unMutResolveT :: Resolver (PublishStream m e) a }
+
+type Resolver = ExceptT String
+
+type ResolveT = ExceptT GQLErrors
+
+------------------------------------------------------------
+type SubRootRes m e sub = Resolver (SubscribeStream m e) sub
+
+--- Transformers
+type ResponseT m e  = ResolveT (ResponseStream m e)
+
+type SubResolveT = GraphQLT 'Subscription
+
+
+-- TODO: use it
+data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
+    QueryT:: ExceptT GQLErrors m value -> GraphQLT 'Query m  event value
+    MutationT :: ResolveT (StreamT m e) value -> GraphQLT 'Mutation m event value
+    SubscriptionT ::  ResolveT (SubscribeStream m e) (e -> ResolveT m a) -> GraphQLT 'Subscription m event value
+
 
 data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
     QueryResolver:: ExceptT String m value -> GADTResolver 'Query m  event value
@@ -69,29 +93,13 @@ type family UnSubResolver (a :: * -> *) :: (* -> *)
 type instance UnSubResolver (SubResolver m e) = Resolver m
 
 -------------------------------------------------------------------
-type Resolver = ExceptT String
 
 
--- TODO: Replace With: newtype MutResolver
--- newtype MutResolver m e a = MutResolver {  unMutResolveT :: Resolver (PublishStream m e) a }
 
-type SubRootRes m e sub = Resolver (SubscribeStream m e) sub
-
---- Transformers
-type ResponseT m e  = ResolveT (ResponseStream m e )
-
-type SubResolveT m e a = ResolveT (SubscribeStream m e) (e -> ResolveT m a)
-
-type ResolveT = ExceptT GQLErrors
 
 failResolveT :: Monad m => GQLErrors -> ResolveT m a
 failResolveT = ExceptT . pure . Left
 
--- TODO: use it
---data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
---    QueryT:: ExceptT GQLErrors m value -> GraphQLT 'Query m  () value
---    MutationT :: ExceptT GQLErrors (PublishStream m event) value -> GraphQLT 'Mutation m event value
---    SubscriptionT ::  ExceptT GQLErrors (SubscribeStream m event) (event -> ExceptT GQLErrors m value) -> GraphQLT 'Subscription m event value
 
 -------------------------------------------------------------------
 -- | Pure Resolver without effect

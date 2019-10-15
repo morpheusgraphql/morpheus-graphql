@@ -27,7 +27,7 @@ import           Data.Typeable                         (TyCon, TypeRep, Typeable
 import           Data.Morpheus.Kind
 import           Data.Morpheus.Types.Custom            (MapKind, Pair)
 import           Data.Morpheus.Types.Internal.Data     (DataFingerprint (..))
-import           Data.Morpheus.Types.Internal.Resolver (Resolver, SubResolver)
+import           Data.Morpheus.Types.Internal.Resolver (Resolver,GADTResolver(..), SubResolver)
 import           Data.Morpheus.Types.Types             (Undefined (..))
 
 type TRUE = 'True
@@ -116,6 +116,7 @@ instance GQLType a => GQLType (Maybe a) where
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
+
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
   __typeName _ = __typeName (Proxy @a)
@@ -151,10 +152,10 @@ instance GQLType a => GQLType (Resolver m a) where
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
-instance GQLType a => GQLType (SubResolver m e a) where
-  type KIND (SubResolver m e a) = WRAPPER
-  __typeName _ = __typeName (Proxy @a)
-  __typeFingerprint _ = __typeFingerprint (Proxy @a)
+instance GQLType a => GQLType (GADTResolver o m e a) where 
+      type KIND (GADTResolver o m e a) = WRAPPER
+      __typeName _ = __typeName (Proxy @a)
+      __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance GQLType b => GQLType (a -> b) where
   type KIND (a -> b) = WRAPPER

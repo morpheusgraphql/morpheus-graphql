@@ -49,9 +49,10 @@ import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Data               (OperationKind (..))
-import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), MutResolver, ResolveT, Resolver,
-                                                                  SubResolveT, SubResolver, failResolveT)
-import           Data.Morpheus.Types.Internal.Stream             (Channel (..), PublishStream, StreamT (..),
+import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), MutResolver,
+                                                                  ResolveT, Resolver, SubResolveT, SubResolver,
+                                                                  failResolveT)
+import           Data.Morpheus.Types.Internal.Stream             (Channel (..), PublishStream,
                                                                   SubscribeStream, initExceptStream, injectEvents)
 import           Data.Morpheus.Types.Internal.Validation         (GQLErrors)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
@@ -95,24 +96,24 @@ instance (DecodeObject a, Monad m, Encode b (ResolveT m value)) => Encode (a -> 
 instance (Monad m, Encode a (ResolveT m value)) => Encode (Either String a) (ResolveT m value) where
   encode resolver = (`encodeResolver` liftEither resolver)
 
---  GQL ExceptT Resolver Monad
-instance (Monad m, Encode b (ResolveT m value)) => Encode (GADTResolver 'Query m e b) (ResolveT m value) where
-  encode (QueryResolver resolver) selection = encodeResolver selection resolver
+--  GQL ExceptT Resolver Monad -- (GraphQLT 'Query m e value)
+instance (Monad m, Encode b (ResolveT m value)) => Encode (GADTResolver 'Query m e b) (GraphQLT 'Query m e value) where
+  encode (QueryResolver resolver) selection = QueryT $ encodeResolver selection resolver
 
 --- TODO: delete me
-instance (Monad m, Encode b (ResolveT m value)) => Encode (Resolver m b) (ResolveT m value) where
-  encode  = flip encodeResolver 
+instance (Monad m, Encode b (ResolveT m value)) => Encode (GADTResolver 'Query m e b)  (ResolveT m value) where
+  encode (QueryResolver resolver) = (flip encodeResolver) resolver
 
 -- GQL Mutation Resolver Monad
-instance (Monad m, Encode b (ResolveT m value)) => Encode (MutResolver m e b) (ResolveT (StreamT m e) value) where
-  encode (MutationResolver channels resolver) = injectEvents channels . encode ((ExceptT $ fmap Right  resolver):: Resolver m b)
+instance (Monad m, Encode b (ResolveT m value)) => Encode (MutResolver m e b) (GraphQLT 'Mutation m e value) where
+  encode (MutationResolver channels resolver) = MutationT . injectEvents channels . (flip encodeResolver ((ExceptT $ fmap Right  resolver):: Resolver m b))
 
 -- GQL Subscription Resolver Monad
 instance (Monad m, Encode b (ResolveT m Value)) => Encode (SubResolver m event b) (SubResolveT m event Value) where
   encode resolver selection =  handleResolver resolver
     where
       handleResolver (SubscriptionResolver subChannels subResolver) =
-        initExceptStream [map Channel subChannels] (encodeResolver selection . subResolver)
+        SubscriptionT $ initExceptStream [map Channel subChannels] ((encodeResolver selection . subResolver) :: event -> ResolveT m Value)
       --handleResolver (FailedResolving  errorMessage) = TODO: handle error
 
 -- ENCODE GQL KIND
