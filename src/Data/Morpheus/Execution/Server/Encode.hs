@@ -44,9 +44,9 @@ import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTO
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Data               (MUTATION, OperationKind (..), QUERY, SUBSCRIPTION)
-import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), MutResolver,
-                                                                  PackT (..), SubResolver, liftResolver)
+import           Data.Morpheus.Types.Internal.Data               (OperationKind,QUERY)
+import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), PackT (..),
+                                                                  liftResolver)
 import           Data.Morpheus.Types.Internal.Validation         (GQLErrors)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
 
