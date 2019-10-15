@@ -28,20 +28,19 @@ import           Data.Proxy                                          (Proxy (..)
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                           (badRequestError, renderErrors)
 import           Data.Morpheus.Execution.Internal.GraphScanner       (resolveUpdates)
-import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, EncodeMutCon, EncodeSubCon, OBJ_RES,
-                                                                      encodeOperation, encodeQuery)
+import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, encodeOperation, encodeQuery)
 import           Data.Morpheus.Execution.Server.Introspect           (IntroCon, ObjectFields (..))
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, publishUpdates)
 import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
-import           Data.Morpheus.Schema.Schema                         (Root)
+--import           Data.Morpheus.Schema.Schema                         (Root)
 import           Data.Morpheus.Schema.SchemaAPI                      (defaultTypes, hiddenRootFields, schemaAPI)
 import           Data.Morpheus.Types.GQLType                         (GQLType (CUSTOM))
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), ValidOperation)
 import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataTyCon (..),
-                                                                      DataTypeLib (..), OperationKind (..), initTypeLib)
+                                                                      DataTypeLib (..), MUTATION, OperationKind (..),
+                                                                      QUERY, SUBSCRIPTION, initTypeLib)
 import           Data.Morpheus.Types.Internal.Resolver               (GADTResolver, GQLRootResolver (..), MutResolver,
-                                                                      Resolver, ResponseT, SubResolver,
-                                                                      extractMutResolver)
+                                                                      ResponseT, SubResolver)
 import           Data.Morpheus.Types.Internal.Stream                 (Event (..), GQLChannel (..), ResponseEvent (..),
                                                                       ResponseStream, StreamState (..), StreamT (..),
                                                                       closeStream, mapS)
@@ -64,11 +63,11 @@ type RootResCon m event query mutation subscription
    = ( EventCon event
      , Typeable m
      , IntrospectConstraint m event query mutation subscription
-     , OBJ_RES m (Root (Resolver m)) Value
+    -- , OBJ_RES m (Root (Resolver m)) Value
      -- Resolving
-     , EncodeCon m (query (GADTResolver 'Query m event)) Value
-     , EncodeMutCon m event (mutation (MutResolver m event))
-     , EncodeSubCon m event (subscription (SubResolver m event)))
+     , EncodeCon QUERY m event (query (GADTResolver QUERY m event))
+     , EncodeCon MUTATION m event (mutation (GADTResolver MUTATION m event))
+     , EncodeCon SUBSCRIPTION m event (subscription (GADTResolver SUBSCRIPTION m event)))
 
 decodeNoDup :: L.ByteString -> Either String GQLRequest
 decodeNoDup str =
