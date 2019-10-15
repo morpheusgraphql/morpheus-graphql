@@ -40,19 +40,18 @@ import           Data.Morpheus.Error.Internal                    (internalUnknow
 import           Data.Morpheus.Error.Selection                   (resolverError, subfieldsNotSelected)
 import           Data.Morpheus.Execution.Server.Decode           (DecodeObject, decodeArguments)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
-import           Data.Morpheus.Kind                              (Context (..), ENUM, GQL_KIND, OBJECT, SCALAR, UNION,
-                                                                  VContext (..))
+import           Data.Morpheus.Kind                              (Context (..), ENUM, GQL_KIND, OBJECT, ResContext (..),
+                                                                  SCALAR, UNION, VContext (..))
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTOM, KIND, __typeName))
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Data               (MUTATION, QUERY, SUBSCRIPTION)
+import           Data.Morpheus.Types.Internal.Data               (MUTATION, OperationKind (..), QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), MutResolver,
                                                                   PackT (..), ResolveT, Resolver, SubResolver)
-import           Data.Morpheus.Types.Internal.Stream             (Channel (..), PublishStream, SubscribeStream,
-                                                                  initExceptStream, injectEvents)
+import           Data.Morpheus.Types.Internal.Stream             (Channel (..), initExceptStream, injectEvents)
 import           Data.Morpheus.Types.Internal.Validation         (GQLErrors)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
 
@@ -97,10 +96,6 @@ instance (DecodeObject a, PackT o m e ,Monad m, Encode b o m e ) => Encode (a ->
 --  GQL ExceptT Resolver Monad -- (GraphQLT 'Query m e value)
 instance (Monad m, Encode b QUERY m e) => Encode (GADTResolver QUERY m e b) QUERY m e where
   encode (QueryResolver resolver) selection = QueryT $ encodeResolver selection resolver
-
---- TODO: delete me
---instance (Monad m, Encode b (ResolveT m value)) => Encode (GADTResolver 'Query m e b)  (ResolveT m value) where--
---  encode (QueryResolver resolver) = (flip encodeResolver) resolver
 
 -- GQL Mutation Resolver Monad
 instance (Monad m, Encode b MUTATION m e) => Encode (MutResolver m e b) MUTATION m e where
@@ -166,18 +161,18 @@ type instance GRes OBJECT v = [(Key, (Key, Selection) -> v)]
 type instance GRes UNION v = (Key, (Key, Selection) -> v)
 
 --- GENERICS ------------------------------------------------
-class ObjectResolvers (custom :: Bool) a o m e where
+class ObjectResolvers (custom :: Bool) a (o :: OperationKind) (m :: * -> *) e where
   objectResolvers :: Proxy custom -> a -> [(Key, (Key, Selection) -> GraphQLT o m e Value)]
 
 instance (Generic a, GResolver OBJECT (Rep a) o m e ) => ObjectResolvers 'False a o m e where
-  objectResolvers _ = getResolvers (Context :: Context OBJECT value) . from
+  objectResolvers _ = getResolvers (ResContext :: ResContext OBJECT o m e value) . from
 
 unionResolver :: (Generic a, GResolver UNION (Rep a) o m e) => a -> (Key, (Key, Selection) -> GraphQLT o m e Value)
-unionResolver = getResolvers (Context :: Context UNION value) . from
+unionResolver = getResolvers (ResContext :: ResContext UNION o m e value) . from
 
 -- | Derives resolvers for OBJECT and UNION
 class GResolver (kind :: GQL_KIND) f o m e where
-  getResolvers :: Context kind value -> f a -> GRes kind (GraphQLT o m e Value)
+  getResolvers :: ResContext kind o m e value -> f a -> GRes kind (GraphQLT o m e Value)
 
 instance GResolver kind f o m e => GResolver kind (M1 D c f) o m e where
   getResolvers context (M1 src) = getResolvers context src
