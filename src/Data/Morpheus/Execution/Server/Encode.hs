@@ -25,7 +25,7 @@ module Data.Morpheus.Execution.Server.Encode
   ) where
 
 import           Control.Monad                                   ((>=>))
-import           Control.Monad.Except                            (ExceptT (..), liftEither, runExceptT, withExceptT)
+import           Control.Monad.Except                            (ExceptT (..), runExceptT, withExceptT)
 import           Data.Map                                        (Map)
 import qualified Data.Map                                        as M (toList)
 import           Data.Maybe                                      (fromMaybe)
@@ -127,7 +127,7 @@ instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o m e where
   encodeKind = pure . gqlString . encodeRep . from . unVContext
 
 --  OBJECT
-instance (Monad m, EncodeCon m a Value, Monad m) => EncodeKind OBJECT a o m e where
+instance (Monad m, EncodeCon m a o e, Monad m) => EncodeKind OBJECT a o m e where
   encodeKind (VContext value) (_, Selection {selectionRec = SelectionSet selection}) =
     resolveFields selection (__typenameResolver : objectResolvers (Proxy :: Proxy (CUSTOM a)) value)
     where
@@ -135,7 +135,7 @@ instance (Monad m, EncodeCon m a Value, Monad m) => EncodeKind OBJECT a o m e wh
   encodeKind _ (key, Selection {selectionPosition}) = FailT $ subfieldsNotSelected key "" selectionPosition
 
 -- UNION
-instance (Monad m, GQL_RES a, GResolver UNION (Rep a) (GraphQLT o m e Value)) => EncodeKind UNION a o m e where
+instance (Monad m, GQL_RES a, GResolver UNION (Rep a) o m e) => EncodeKind UNION a o m e where
   encodeKind (VContext value) (key, sel@Selection {selectionRec = UnionSelection selections}) =
     resolver (key, sel {selectionRec = SelectionSet lookupSelection})
       -- SPEC: if there is no any fragment that supports current object Type GQL returns {}
@@ -149,15 +149,15 @@ type GQL_RES a = (Generic a, GQLType a)
 
 type EncodeOperator m a value = Resolver m a -> ValidOperation -> m (Either GQLErrors value)
 
-type OBJ_RES m a value = ObjectResolvers (CUSTOM a) a (ResolveT m value)
+type OBJ_RES m a o e = ObjectResolvers (CUSTOM a) a o m e
 
-type EncodeCon m a value = (GQL_RES a, OBJ_RES m a value)
+type EncodeCon m a o e = (GQL_RES a, OBJ_RES m a o e)
 
-type EncodeMutCon m event mut = EncodeCon (PublishStream m event) mut Value
+type EncodeMutCon m event mut e = EncodeCon m mut MUTATION e
 
-type EncodeSubCon m event sub = EncodeCon (SubscribeStream m event) sub (event -> ResolveT m Value)
+type EncodeSubCon m event sub e = EncodeCon m sub SUBSCRIPTION e
 
-type FieldRes m value = (Key, (Key, Selection) -> ResolveT m value)
+type FieldRes  o m e value  = (Key, (Key, Selection) -> GraphQLT o m e value)
 
 type family GRes (kind :: GQL_KIND) value :: *
 
@@ -166,56 +166,56 @@ type instance GRes OBJECT v = [(Key, (Key, Selection) -> v)]
 type instance GRes UNION v = (Key, (Key, Selection) -> v)
 
 --- GENERICS ------------------------------------------------
-class ObjectResolvers (custom :: Bool) a value where
-  objectResolvers :: Proxy custom -> a -> [(Key, (Key, Selection) -> value)]
+class ObjectResolvers (custom :: Bool) a o m e where
+  objectResolvers :: Proxy custom -> a -> [(Key, (Key, Selection) -> GraphQLT o m e Value)]
 
-instance (Generic a, GResolver OBJECT (Rep a) value) => ObjectResolvers 'False a value where
+instance (Generic a, GResolver OBJECT (Rep a) o m e ) => ObjectResolvers 'False a o m e where
   objectResolvers _ = getResolvers (Context :: Context OBJECT value) . from
 
-unionResolver :: (Generic a, GResolver UNION (Rep a) value) => a -> (Key, (Key, Selection) -> value)
+unionResolver :: (Generic a, GResolver UNION (Rep a) o m e) => a -> (Key, (Key, Selection) -> GraphQLT o m e Value)
 unionResolver = getResolvers (Context :: Context UNION value) . from
 
 -- | Derives resolvers for OBJECT and UNION
-class GResolver (kind :: GQL_KIND) f value where
-  getResolvers :: Context kind value -> f a -> GRes kind value
+class GResolver (kind :: GQL_KIND) f o m e where
+  getResolvers :: Context kind value -> f a -> GRes kind (GraphQLT o m e Value)
 
-instance GResolver kind f value => GResolver kind (M1 D c f) value where
+instance GResolver kind f o m e => GResolver kind (M1 D c f) o m e where
   getResolvers context (M1 src) = getResolvers context src
 
-instance GResolver kind f value => GResolver kind (M1 C c f) value where
+instance GResolver kind f o m e => GResolver kind (M1 C c f) o m e where
   getResolvers context (M1 src) = getResolvers context src
 
 -- OBJECT
-instance GResolver OBJECT U1 value where
+instance GResolver OBJECT U1 o m e where
   getResolvers _ _ = []
 
-instance (Selector s, GQLType a, Encode a o m e) => GResolver OBJECT (M1 S s (K1 s2 a)) value where
+instance (Selector s, GQLType a, Encode a o m e) => GResolver OBJECT (M1 S s (K1 s2 a)) o m e where
   getResolvers _ m@(M1 (K1 src)) = [(pack (selName m), encode src)]
 
-instance (GResolver OBJECT f value, GResolver OBJECT g value) => GResolver OBJECT (f :*: g) value where
+instance (GResolver OBJECT f o m e, GResolver OBJECT g o m e) => GResolver OBJECT (f :*: g) o m e where
   getResolvers context (a :*: b) = getResolvers context a ++ getResolvers context b
 
 -- UNION
-instance (Selector s, GQLType a, Encode a o m e) => GResolver UNION (M1 S s (K1 s2 a)) value where
+instance (Selector s, GQLType a, Encode a o m e ) => GResolver UNION (M1 S s (K1 s2 a)) o m e where
   getResolvers _ (M1 (K1 src)) = (__typeName (Proxy @a), encode src)
 
-instance (GResolver UNION a value, GResolver UNION b value) => GResolver UNION (a :+: b) value where
+instance (GResolver UNION a o m e, GResolver UNION b o m e) => GResolver UNION (a :+: b) o m e where
   getResolvers context (L1 x) = getResolvers context x
   getResolvers context (R1 x) = getResolvers context x
 
 ----- HELPERS ----------------------------
 encodeQuery ::
-     forall m a schema. (GQL_RES a, GQL_RES schema, Monad m, EncodeCon m schema Value, EncodeCon m a Value)
+     forall m a schema. (GQL_RES a, GQL_RES schema, Monad m, EncodeCon m schema QUERY Value, EncodeCon m a QUERY Value)
   => schema
   -> EncodeOperator m a Value
 encodeQuery schema = encodeOperationWith (objectResolvers (Proxy :: Proxy (CUSTOM schema)) schema)
 
-encodeOperation :: (Monad m, GQL_RES a, EncodeCon m a value, GQLValue value) => EncodeOperator m a value
+encodeOperation :: (Monad m, GQL_RES a, EncodeCon m a o e, GQLValue value) => EncodeOperator m a value
 encodeOperation = encodeOperationWith []
 
 encodeOperationWith ::
-     forall m a value. (Monad m, GQL_RES a, GQLValue value, EncodeCon m a value)
-  => [FieldRes m value]
+     forall m a o e value. (Monad m, GQL_RES a,  EncodeCon m a o e)
+  => [FieldRes o m e value]
   -> EncodeOperator m a value
 encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
   runExceptT $
@@ -228,7 +228,7 @@ encodeResolver :: (Monad m, Encode a o m e) => (Key, Selection) -> Resolver m a 
 encodeResolver selection@(fieldName, Selection {selectionPosition}) =
   withExceptT (resolverError selectionPosition fieldName) >=> (`encode` selection)
 
-resolveFields :: (Monad m, GQLValue a) => SelectionSet -> [FieldRes m a] -> GraphQLT o m e a
+resolveFields :: (Monad m, GQLValue a) => SelectionSet -> [FieldRes o m e value] -> GraphQLT o m e a
 resolveFields selectionSet resolvers = gqlObject <$> traverse selectResolver selectionSet
   where
     selectResolver (key, selection) =
