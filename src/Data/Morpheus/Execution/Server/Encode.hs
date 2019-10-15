@@ -47,7 +47,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..)
 import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Data               (MUTATION, OperationKind (..), QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), MutResolver,
-                                                                  PackT (..), ResolveT, Resolver, SubResolver)
+                                                                  PackT (..), Resolver, SubResolver)
 import           Data.Morpheus.Types.Internal.Stream             (Channel (..), initExceptStream, injectEvents)
 import           Data.Morpheus.Types.Internal.Validation         (GQLErrors)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
@@ -96,14 +96,14 @@ instance (Monad m, Encode b QUERY m e) => Encode (GADTResolver QUERY m e b) QUER
 
 -- GQL Mutation Resolver Monad
 instance (Monad m, Encode b MUTATION m e) => Encode (MutResolver m e b) MUTATION m e where
-  encode (MutationResolver channels resolver) = MutationT . injectEvents channels . (flip encodeResolver ((ExceptT $ fmap Right  resolver):: Resolver m b))
+  encode = flip encodeResolver
 
 -- GQL Subscription Resolver Monad
 instance (Monad m, Encode b SUBSCRIPTION m e ) => Encode (SubResolver m event b) SUBSCRIPTION m e where
-  encode resolver selection =  handleResolver resolver
-    where
-      handleResolver (SubscriptionResolver subChannels subResolver) =
-        SubscriptionT $ initExceptStream [map Channel subChannels] ((encodeResolver selection . subResolver) :: event -> ResolveT m Value)
+--  encode resolver selection =  handleResolver resolver
+--    where
+--      handleResolver (SubscriptionResolver subChannels subResolver) =
+--        SubscriptionT $ initExceptStream [map Channel subChannels] ((encodeResolver selection . subResolver) :: event -> ResolveT m Value)
       --handleResolver (FailedResolving  errorMessage) = TODO: handle error
 
 -- ENCODE GQL KIND
@@ -196,13 +196,13 @@ encodeQuery ::
   -> EncodeOperator QUERY m event query
 encodeQuery schema = encodeOperationWith (objectResolvers (Proxy :: Proxy (CUSTOM schema)) schema)
 
-encodeOperation :: (Monad m, GQL_RES a, EncodeCon opKind m e a, GQLValue value) => EncodeOperator o m e a
+encodeOperation :: (Monad m, GQL_RES a, EncodeCon opKind m e a) => EncodeOperator opKind m e a
 encodeOperation = encodeOperationWith []
 
 encodeOperationWith ::
-     forall m op opKind e . (Monad m, EncodeCon opKind m e op)
-  => [FieldRes opKind m e]
-  -> EncodeOperator opKind m e op
+     forall o m e a . (Monad m, EncodeCon o m e a)
+  => [FieldRes o m e]
+  -> EncodeOperator o m e a
 encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
   runExceptT $
   operationResolveT >>=
