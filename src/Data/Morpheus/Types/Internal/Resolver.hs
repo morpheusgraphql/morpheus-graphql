@@ -94,7 +94,11 @@ data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
     FailT :: GQLErrors -> GraphQLT o m  event value
 
 instance Functor m => Functor (GraphQLT o m e) where
-  --fmap x 
+    fmap f (QueryT mResolver) = QueryT $ fmap f mResolver
+    fmap f (MutationT mResolver) = MutationT $ fmap f mResolver
+    fmap f (SubscriptionT mResolver) = SubscriptionT (eventFmap <$> mResolver)
+            where
+                eventFmap res event = fmap f (res event)
 
 instance Applicative m => Applicative (GraphQLT o m e) where
 
