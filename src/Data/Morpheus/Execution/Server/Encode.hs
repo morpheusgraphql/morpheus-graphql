@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTO
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Data               (OperationKind, QUERY)
+import           Data.Morpheus.Types.Internal.Data               (OperationKind, QUERY,SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), PackT (..),
                                                                   convertResolver, liftResolver)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
@@ -81,6 +81,9 @@ instance (DecodeObject a, PackT o m e ,Monad m, Encode b o m e ) => Encode (a ->
     where
       decodeArgs :: (Key, Selection) -> GraphQLT o m e a
       decodeArgs = packT . decodeArguments . selectionArguments . snd
+
+instance Encode (a -> GADTResolver QUERY m e b) SUBSCRIPTION m e where 
+
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o m e  where
