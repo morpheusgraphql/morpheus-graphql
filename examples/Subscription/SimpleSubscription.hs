@@ -61,7 +61,7 @@ rootResolver =
         subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
         subResolver _                                    = fetchDeity -- Resolve Old State
     ---------------------------------------------------------
-    fetchDeity = QueryResolver $ return $ Right $ Deity {
+    fetchDeity = QueryResolver $ return $ Deity {
       fullName = ""
       , power  = Nothing
       , realm = Sky

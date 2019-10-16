@@ -47,9 +47,9 @@ deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}
     -----------------------------------------------------------------------------------------
     typeables 
          | isSubscription typeKindD =  []
-         | otherwise = [typeT ''Typeable ["fieldOKind"], typeT ''PackT ["fieldOKind","m","e"]]
+         | otherwise = [typeT ''Typeable ["fieldOKind"], typeT ''PackT ["fieldOKind","m","e"],  typeT ''Typeable ["o"]]
     -- defines Constraint: (Typeable m, Monad m)
-    constrains = typeables <>[typeT ''Monad ["m"], applyT ''Encode (mainType:instanceArgs) , typeT ''Typeable ["o"],  typeT ''Typeable ["m"],typeT ''Typeable ["e"], applyT ''PackT instanceArgs]
+    constrains = typeables <>[typeT ''Monad ["m"], applyT ''Encode (mainType:instanceArgs) , typeT ''Typeable ["m"],typeT ''Typeable ["e"], applyT ''PackT instanceArgs]
     -------------------------------------------------------------------
     -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where
     appHead = instanceHeadMultiT ''ObjectResolvers (conT ''TRUE) (mainType: instanceArgs)
