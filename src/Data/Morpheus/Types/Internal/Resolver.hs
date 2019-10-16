@@ -26,7 +26,6 @@ module Data.Morpheus.Types.Internal.Resolver
   , failResolveT
   , GADTResolver(..)
   , GraphQLT(..)
-  , extractMutResolver
   , PackT(..)
   , liftResolver
   , convertResolver
@@ -40,11 +39,10 @@ import           Data.Text                                  (pack, unpack)
 import           Data.Morpheus.Error.Selection              (resolverError)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..))
 import           Data.Morpheus.Types.Internal.Base          (Message, Position)
-import           Data.Morpheus.Types.Internal.Data          (Key,QUERY, OperationKind (..))
+import           Data.Morpheus.Types.Internal.Data          (Key, OperationKind (..), QUERY)
 import           Data.Morpheus.Types.Internal.Stream        (Event (..), PublishStream, ResponseEvent (..),
                                                              ResponseStream, StreamChannel, StreamState (..),
-                                                             StreamT (..), SubscribeStream, closeStream, closeStream,
-                                                             mapS)
+                                                             StreamT (..), SubscribeStream, closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Types.Internal.Value         (Value (..))
 import           Data.Morpheus.Types.IO                     (renderResponse)
@@ -122,13 +120,8 @@ liftResolver encode  selection@(fieldName, Selection {selectionPosition}) res = 
     withRes  = convertResolver selectionPosition fieldName
 
 toResponseRes :: Monad m => GraphQLT o m event a -> ResponseT m event a
---toResponseRes (schema, operation@Operation {operationKind = Query}) =
---      ExceptT $
---      StreamT
---        (StreamState [] <$>
---         runExceptT
---           (do schemaRes <- schemaAPI schema
---               ExceptT (encodeQuery schemaRes queryResolver operation)))
+-- TODO:      (do schemaRes <- schemaAPI schema
+toResponseRes (QueryT resT) = ExceptT $ StreamT (StreamState [] <$> runExceptT resT)
 toResponseRes (MutationT resT) = ExceptT $ mapS Publish (runExceptT resT)
 --toResponseRes (SubscriptionT resT)  =
 --      ExceptT $ StreamT $ handleActions <$> closeStream (runExceptT resT)
@@ -166,15 +159,6 @@ type Pure = Either String
 -- | GraphQL Resolver
 resolver :: m (Either String a) -> Resolver m a
 resolver = ExceptT
-
-extractMutResolver :: Monad m => MutResolver m e a -> Resolver (PublishStream m e) a
-extractMutResolver (MutationResolver channels res) = (ExceptT . StreamT . fmap (StreamState channels . Right) )  res
-
--- | GraphQL Resolver for mutation or subscription resolver , adds effect to normal resolver
--- mutResolver :: Monad m => [e] -> (StreamT m e) (Either String a) -> MutResolver m e a
--- mutResolver channels = ExceptT . StreamT . fmap effectPlus . runStreamT
---  where
---    effectPlus state = state {streamEvents = channels ++ streamEvents state}
 
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
 --
