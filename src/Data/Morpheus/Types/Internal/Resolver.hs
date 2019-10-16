@@ -137,6 +137,10 @@ unMutationT :: Applicative m => GraphQLT MUTATION m e a -> ResolveT (StreamT m e
 unMutationT (MutationT x) = x
 unMutationT (FailT x)     = ExceptT $ StreamT $ pure $ StreamState [] $ Left x
 
+unSubscriptionT :: Applicative m => GraphQLT SUBSCRIPTION m event value -> ResolveT (SubscribeStream m event) (event -> ResolveT m value)
+unSubscriptionT (SubscriptionT x) = x
+unSubscriptionT (FailT x)     = ExceptT $ StreamT $ pure $ StreamState [] $ Left x
+
 instance Monad m  => Monad (GraphQLT o m e) where
     return = pure
     (QueryT value) >>= nextM = QueryT (value >>= unQueryT . nextM)
