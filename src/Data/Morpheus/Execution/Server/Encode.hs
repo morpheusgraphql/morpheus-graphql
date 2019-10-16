@@ -82,9 +82,6 @@ instance (DecodeObject a, PackT o m e ,Monad m, Encode b fieldOpKind m e ) => En
  --     decodeArgs :: (Key, Selection) -> GraphQLT o m e a
  --     decodeArgs = packT . decodeArguments . selectionArguments . snd
 
-instance Encode (a -> GADTResolver QUERY m e b) SUBSCRIPTION m e where 
-
-
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o m e  where
   encodeKind :: VContext kind a -> (Key, Selection) -> GraphQLT o m e Value
