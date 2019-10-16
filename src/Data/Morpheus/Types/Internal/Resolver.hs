@@ -123,6 +123,7 @@ liftResolver encode  selection@(fieldName, Selection {selectionPosition}) res = 
     withRes  = convertResolver selectionPosition fieldName
 
 toResponseRes :: Monad m =>  GraphQLT o m event Value -> ResponseT m event Value
+toResponseRes (FailT errors) = ExceptT $ StreamT $ pure $ StreamState [] $ Left errors
 toResponseRes (QueryT resT) =  ExceptT $ StreamT $ StreamState [] <$> runExceptT resT
 toResponseRes (MutationT resT) = ExceptT $ mapS Publish (runExceptT resT)
 toResponseRes (SubscriptionT resT)  =
