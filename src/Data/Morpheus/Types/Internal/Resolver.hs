@@ -92,19 +92,6 @@ instance PackT 'Query m event where
 instance PackT 'Subscription m event where
 instance PackT 'Mutation m event where
 
-class FromResT (o::OperationKind) event where
-    fromResT :: ResolveT m a -> GraphQLT o m event a
-
-instance FromResT 'Query event where
-instance FromResT 'Subscription  event where
-instance FromResT 'Mutation  event where
-
-
-
---    packT =
-
-
--- TODO: use it
 data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
     QueryT:: ResolveT m value -> GraphQLT 'Query m  event value
     MutationT :: ResolveT (StreamT m event) value -> GraphQLT 'Mutation m event value
@@ -118,7 +105,7 @@ instance Applicative m => Applicative (GraphQLT o m e) where
 instance Monad m => Monad (GraphQLT o m e) where
 
 convertResolver :: Monad m => Position -> Key -> GADTResolver o m e a ->  GraphQLT o m e a
-convertResolver position fieldName (FailedResover message)       = FailT $ resolverError position fieldName message
+convertResolver position fieldName (FailedResolver message)       = FailT $ resolverError position fieldName message
 convertResolver _ _ (MutationResolver events res) = MutationT $ ExceptT $ StreamT (StreamState events . Right <$> res)
     --FailT $ resolverError selectionPosition fieldName message
     --withRes (MutationResolver events res) = MutationT $ ExceptT $ StreamT (StreamState events . Right <$> res)
@@ -156,7 +143,7 @@ data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
     QueryResolver:: ExceptT String m value -> GADTResolver 'Query m  event value
     MutationResolver :: [event] -> m value -> GADTResolver 'Mutation m event value
     SubscriptionResolver :: [StreamChannel event] -> (event -> GADTResolver 'Query m  event value) -> GADTResolver 'Subscription m event value
-    FailedResover :: String -> GADTResolver o m event value
+    FailedResolver :: String -> GADTResolver o m event value
 
 instance Functor (GADTResolver o m e)
 instance Applicative (GADTResolver o m e)
