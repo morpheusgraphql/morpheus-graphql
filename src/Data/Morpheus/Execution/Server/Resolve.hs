@@ -17,7 +17,7 @@ module Data.Morpheus.Execution.Server.Resolve
   ) where
 
 import           Control.Monad.Except                                (liftEither)
-import           Control.Monad.Trans.Except                          (ExceptT (..), runExceptT)
+import           Control.Monad.Trans.Except                          (runExceptT)
 import           Data.Aeson                                          (encode)
 import           Data.Aeson.Internal                                 (formatError, ifromJSON)
 import           Data.Aeson.Parser                                   (eitherDecodeWith, jsonNoDup)
@@ -26,7 +26,7 @@ import           Data.Functor.Identity                               (Identity (
 import           Data.Proxy                                          (Proxy (..))
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils                           (badRequestError, renderErrors)
+import           Data.Morpheus.Error.Utils                           (badRequestError)
 import           Data.Morpheus.Execution.Internal.GraphScanner       (resolveUpdates)
 import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, encodeOperation, encodeQuery)
 import           Data.Morpheus.Execution.Server.Introspect           (IntroCon, ObjectFields (..))
@@ -42,11 +42,9 @@ import           Data.Morpheus.Types.Internal.Data                   (DataFinger
 import           Data.Morpheus.Types.Internal.Resolver               (GADTResolver (..), GQLRootResolver (..),
                                                                       MutResolver, ResponseT, SubResolver,
                                                                       toResponseRes)
-import           Data.Morpheus.Types.Internal.Stream                 (Event (..), GQLChannel (..), ResponseEvent (..),
-                                                                      ResponseStream, StreamState (..), StreamT (..),
-                                                                      closeStream, mapS)
+import           Data.Morpheus.Types.Internal.Stream                 (GQLChannel (..), ResponseEvent (..),
+                                                                      ResponseStream, closeStream)
 import           Data.Morpheus.Types.Internal.Validation             (Validation)
-import           Data.Morpheus.Types.Internal.Value                  (Value (..))
 import           Data.Morpheus.Types.IO                              (GQLRequest (..), GQLResponse (..), renderResponse)
 import           Data.Morpheus.Validation.Internal.Utils             (VALIDATION_MODE (..))
 import           Data.Morpheus.Validation.Query.Validation           (validateRequest)
@@ -112,13 +110,6 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
         toResponseRes (encodeQuery ({- TODO: schemaRes -}) queryResolver operation)
     execOperator (_, operation@Operation {operationKind = Mutation}) = toResponseRes (encodeOperation mutationResolver operation)
     execOperator (_, operation@Operation {operationKind = Subscription}) = toResponseRes (encodeOperation subscriptionResolver operation)
-     -- ExceptT $ StreamT $ handleActions <$> closeStream (encodeOperation subscriptionResolver operation)
-     -- where
-     --   handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
- --       handleActions (channels, Right subResolver) =
- --         StreamState [Subscribe $ Event (concat channels) handleRes] (Right Null)
- --         where
- --           handleRes event = renderResponse <$> runExceptT (subResolver event)
 
 statefulResolver ::
      EventCon s
