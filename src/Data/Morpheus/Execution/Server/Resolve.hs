@@ -39,14 +39,14 @@ import           Data.Morpheus.Types.Internal.AST.Operation          (Operation 
 import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataTyCon (..),
                                                                       DataTypeLib (..), MUTATION, OperationKind (..),
                                                                       QUERY, SUBSCRIPTION, initTypeLib)
-import           Data.Morpheus.Types.Internal.Resolver               (GADTResolver, GQLRootResolver (..), MutResolver,
-                                                                      ResponseT, SubResolver)
+import           Data.Morpheus.Types.Internal.Resolver               (GADTResolver,toResponseRes, GQLRootResolver (..), MutResolver,
+                                                                      ResponseT,  SubResolver)
 import           Data.Morpheus.Types.Internal.Stream                 (Event (..), GQLChannel (..), ResponseEvent (..),
                                                                       ResponseStream, StreamState (..), StreamT (..),
                                                                       closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation             (Validation)
 import           Data.Morpheus.Types.Internal.Value                  (Value (..))
-import           Data.Morpheus.Types.IO                              (GQLRequest (..), GQLResponse (..))
+import           Data.Morpheus.Types.IO                              (GQLRequest (..),renderResponse, GQLResponse (..))
 import           Data.Morpheus.Validation.Internal.Utils             (VALIDATION_MODE (..))
 import           Data.Morpheus.Validation.Query.Validation           (validateRequest)
 import           Data.Typeable                                       (Typeable)
@@ -97,8 +97,7 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
   renderResponse <$> runExceptT (validRequest >>= execOperator)
   ------------------------------------------------------------
   where
-    renderResponse (Left errors) = Errors $ renderErrors errors
-    renderResponse (Right value) = Data value
+
     ---------------------------------------------------------
     validRequest :: Monad m => ResponseT m event (DataTypeLib, ValidOperation)
     validRequest =
@@ -107,23 +106,22 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
         query <- parseGQL request >>= validateRequest schema FULL_VALIDATION
         Right (schema, query)
     ----------------------------------------------------------
-    execOperator (schema, operation@Operation {operationKind = Query}) =
-      ExceptT $
-      StreamT
-        (StreamState [] <$>
-         runExceptT
-           (do schemaRes <- schemaAPI schema
-               ExceptT (encodeQuery schemaRes queryResolver operation)))
-    execOperator (_, operation@Operation {operationKind = Mutation}) =
-      ExceptT $ mapS Publish (encodeOperation ({- extractMutResolver -} mutationResolver) operation)
-    execOperator (_, operation@Operation {operationKind = Subscription}) =
-      ExceptT $ StreamT $ handleActions <$> closeStream (encodeOperation subscriptionResolver operation)
-      where
-        handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
-        handleActions (channels, Right subResolver) =
-          StreamState [Subscribe $ Event (concat channels) handleRes] (Right Null)
-          where
-            handleRes event = renderResponse <$> runExceptT (subResolver event)
+   -- execOperator (schema, operation@Operation {operationKind = Query}) =
+   --   ExceptT $
+   --   StreamT
+   --     (StreamState [] <$>
+   --      runExceptT
+   --        (do schemaRes <- schemaAPI schema
+   --            ExceptT (encodeQuery schemaRes queryResolver operation)))
+    execOperator (_, operation@Operation {operationKind = Mutation}) = toResponseRes (encodeOperation mutationResolver operation)
+ --   execOperator (_, operation@Operation {operationKind = Subscription}) =
+ --     ExceptT $ StreamT $ handleActions <$> closeStream (encodeOperation subscriptionResolver operation)
+ --     where
+ --       handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
+ --       handleActions (channels, Right subResolver) =
+ --         StreamState [Subscribe $ Event (concat channels) handleRes] (Right Null)
+ --         where
+ --           handleRes event = renderResponse <$> runExceptT (subResolver event)
 
 statefulResolver ::
      EventCon s

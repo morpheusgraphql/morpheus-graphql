@@ -22,7 +22,7 @@ data DeityArgs = DeityArgs
   , mythology :: Maybe Text -- Optional Argument
   } deriving (Generic)
 
-resolveDeity :: DeityArgs -> GADTResolver QUERY m e Deity
+resolveDeity :: DeityArgs -> GADTResolver QUERY IO e Deity
 resolveDeity args = QueryResolver $ resolver $ dbDeity (name args) (mythology args)
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
