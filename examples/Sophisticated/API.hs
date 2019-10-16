@@ -94,14 +94,14 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
           , queryWrapped1 = constRes $ A (0, "")
           , queryWrapped2 = constRes $ A ""
           }
-      where
-        fetchUser = User
+    ------------------
+    fetchUser = User
                 { userName = constRes "George"
                 , userEmail = constRes "George@email.com"
-                , userAddress = const resolveAddress
+                , userAddress = const fetchAddress
                 , userOffice = constRes Nothing
                 , userHome = constRes HH
-                , userEntity = constRes $ Just $ MyUnionUser unionUser
+                , userEntity = constRes Nothing
                 }
     -------------------------------------------------------------
     mutationResolver = return Mutation { mutationCreateUser , mutationCreateAddress }
@@ -127,11 +127,14 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
       where
         subscriptionNewUser () = SubscriptionResolver [UPDATE_USER] subResolver
           where
-            subResolver (Event _ Update {}) = resolver fetchUser
+            subResolver (Event _ Update {}) = fetchUser
         subscriptionNewAddress () = SubscriptionResolver [UPDATE_ADDRESS] subResolver
           where
-            subResolver (Event _ Update {contentID}) = resolver $ fetchAddress (Euro contentID 0)
+            subResolver (Event _ Update {contentID}) = fetchAddress
     ----------------------------------------------------------------------------------------------
+    fetchAddress _ =
+      return $ Right Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
+
     fetchAddressMutation = Address {
           addressCity = constResMut [] "",
           addressStreet = constResMut []  "",
@@ -141,6 +144,3 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
 constResMut :: Monad m =>  [e] -> a -> args -> MutResolver m e a
 constResMut list value = const $ MutationResolver list $ return value
 
-fetchAddress :: Monad m => Euro -> m (Either String (Address (Resolver m)))
-fetchAddress _ =
-  return $ Right Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
