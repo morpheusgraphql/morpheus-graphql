@@ -88,7 +88,7 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
     queryResolver =
       return
         Query
-          { queryUser = constRes fetchUser
+          { queryUser = fetchUser
           , queryAnimal = \QueryAnimalArgs {queryAnimalArgsAnimal} -> return (pack $ show queryAnimalArgsAnimal)
           , querySet = constRes $ S.fromList [1, 2]
           , queryMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]
@@ -97,7 +97,7 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
           }
           where
             ------------------
-            fetchUser = User
+            fetchUser = constRes User
                         { userName = constRes "George"
                         , userEmail = constRes "George@email.com"
                         , userAddress
