@@ -38,7 +38,7 @@ import           Data.Text                                  (pack, unpack)
 import           Data.Morpheus.Error.Selection              (resolverError)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..))
 import           Data.Morpheus.Types.Internal.Base          (Message, Position)
-import           Data.Morpheus.Types.Internal.Data          (Key, OperationKind (..), QUERY)
+import           Data.Morpheus.Types.Internal.Data          (Key, MUTATION, OperationKind, QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Stream        (Event (..), PublishStream, ResponseEvent (..),
                                                              ResponseStream, StreamChannel, StreamState (..),
                                                              StreamT (..), SubscribeStream, closeStream, mapS)
@@ -60,9 +60,9 @@ instance Monad m => GQLFail Resolver m where
       mapCases (Left x)  = fFail $ pack $ show x
 
 ----------------------------------------------------------------------------------------
-type SubResolver = GADTResolver 'Subscription
+type SubResolver = GADTResolver SUBSCRIPTION
 
-type MutResolver = GADTResolver 'Mutation
+type MutResolver = GADTResolver MUTATION
 
 -- type QueResolver = GADTResolver 'Query
 
@@ -77,23 +77,24 @@ type ResolveT = ExceptT GQLErrors
 --- Transformers
 type ResponseT m e  = ResolveT (ResponseStream m e)
 
-type SubResolveT = GraphQLT 'Subscription
+type SubResolveT = GraphQLT SUBSCRIPTION
 
 
 class PackT (o::OperationKind) m event where
     packT ::  Validation a -> GraphQLT o m event a
 
-instance PackT 'Query m event where
-instance PackT 'Subscription m event where
-instance PackT 'Mutation m event where
+instance PackT QUERY m event where
+instance PackT SUBSCRIPTION m event where
+instance PackT MUTATION m event where
 
 data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
-    QueryT:: ResolveT m value -> GraphQLT 'Query m  event value
-    MutationT :: ResolveT (StreamT m event) value -> GraphQLT 'Mutation m event value
-    SubscriptionT ::  ResolveT (SubscribeStream m event) (event -> ResolveT m value) -> GraphQLT 'Subscription m event value
+    QueryT:: ResolveT m value -> GraphQLT QUERY m  event value
+    MutationT :: ResolveT (StreamT m event) value -> GraphQLT MUTATION m event value
+    SubscriptionT ::  ResolveT (SubscribeStream m event) (event -> ResolveT m value) -> GraphQLT SUBSCRIPTION m event value
     FailT :: GQLErrors -> GraphQLT o m  event value
 
 instance Functor m => Functor (GraphQLT o m e) where
+  --fmap x 
 
 instance Applicative m => Applicative (GraphQLT o m e) where
 
@@ -129,18 +130,19 @@ toResponseRes (SubscriptionT resT)  =
             handleRes event = renderResponse <$> runExceptT (subResolver event)
 
 data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
-    QueryResolver:: ExceptT String m value -> GADTResolver 'Query m  event value
-    MutationResolver :: [event] -> m value -> GADTResolver 'Mutation m event value
-    SubscriptionResolver :: [StreamChannel event] -> (event -> GADTResolver 'Query m  event value) -> GADTResolver 'Subscription m event value
+    QueryResolver:: ExceptT String m value -> GADTResolver QUERY m  event value
+    MutationResolver :: [event] -> m value -> GADTResolver MUTATION m event value
+    SubscriptionResolver :: [StreamChannel event] -> (event -> GADTResolver QUERY m  event value) -> GADTResolver SUBSCRIPTION m event value
     FailedResolver :: String -> GADTResolver o m event value
 
 instance Functor (GADTResolver o m e)
 instance Applicative (GADTResolver o m e)
 instance Monad (GADTResolver o m e)
 
+
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
-type instance UnSubResolver (SubResolver m e) = GADTResolver 'Query m e
+type instance UnSubResolver (SubResolver m e) = GADTResolver QUERY m e
 
 -------------------------------------------------------------------
 
@@ -161,7 +163,7 @@ resolver = ExceptT
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
 data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* -> *) -> * )  (sub :: (* -> *) -> * )  = GQLRootResolver
-  { queryResolver        :: GADTResolver QUERY m event (query (GADTResolver 'Query m  event))
+  { queryResolver        :: GADTResolver QUERY m event (query (GADTResolver QUERY m  event))
   , mutationResolver     :: MutResolver m event (mut (MutResolver m event))
   , subscriptionResolver :: SubResolver m event (sub (SubResolver  m event))
   }
