@@ -164,7 +164,7 @@ instance Monad (GADTResolver o m e)
 
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
-type instance UnSubResolver (SubResolver m e) = Resolver m
+type instance UnSubResolver (SubResolver m e) = GADTResolver 'Query m e
 
 -------------------------------------------------------------------
 
