@@ -17,8 +17,7 @@ import           Data.Morpheus.Execution.Server.Encode (Encode (..), ObjectResol
 import           Data.Morpheus.Types.GQLType           (TRUE)
 import           Data.Morpheus.Types.Internal.Data     (DataField (..), SUBSCRIPTION, isSubscription)
 import           Data.Morpheus.Types.Internal.DataD    (ConsD (..), GQLTypeD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.Resolver (GADTResolver, PackT, ResolveT, Resolver, SubResolveT,
-                                                        SubResolver)
+import           Data.Morpheus.Types.Internal.Resolver (GADTResolver, PackT, SubResolver)
 import           Data.Morpheus.Types.Internal.TH       (applyT, destructRecord, instanceHeadMultiT, typeT)
 
 -- @Subscription:
@@ -45,7 +44,7 @@ deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}
           | isSubscription typeKindD = typeT ''SubResolver ["m", "e"] -- (SubResolver m e)
           | otherwise = typeT ''GADTResolver ["fieldOKind","m","e"] -- (Resolver m)
     -----------------------------------------------------------------------------------------
-    typeables 
+    typeables
          | isSubscription typeKindD =  []
          | otherwise = [typeT ''Typeable ["fieldOKind"], typeT ''PackT ["fieldOKind","m","e"],  typeT ''Typeable ["o"]]
     -- defines Constraint: (Typeable m, Monad m)
