@@ -155,7 +155,7 @@ toResponseRes (MutationT resT) = ExceptT $ mapS Publish (runExceptT resT)
 data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
     QueryResolver:: ExceptT String m value -> GADTResolver 'Query m  event value
     MutationResolver :: [event] -> m value -> GADTResolver 'Mutation m event value
-    SubscriptionResolver :: [StreamChannel event] -> (event -> Resolver m value) -> GADTResolver 'Subscription m event value
+    SubscriptionResolver :: [StreamChannel event] -> (event -> GADTResolver 'Query m  event value) -> GADTResolver 'Subscription m event value
     FailedResover :: String -> GADTResolver o m event value
 
 instance Functor (GADTResolver o m e)
