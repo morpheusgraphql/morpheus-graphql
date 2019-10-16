@@ -145,7 +145,13 @@ instance Monad m  => Monad (GraphQLT o m e) where
     return = pure
     (QueryT value) >>= nextM = QueryT (value >>= unQueryT . nextM)
     (MutationT value) >>= nextM = MutationT (value >>= unMutationT . nextM)
-
+    -- :TODO implement subscription
+    --(SubscriptionT value) >>= nextM = SubscriptionT (value >>= unMutationT . nextM)
+    --(SubscriptionT f)  >>= nextM = SubscriptionT $ do
+    --                       f1 <- f
+     --                      let event = \x -> unSubscriptionT  (nextM (f1 x))
+     --                      event
+                           --pure $ \event -> f1 event <*>  res1 event
 
 
 convertResolver :: Monad m => Position -> Key -> GADTResolver o m e a ->  GraphQLT o m e a
