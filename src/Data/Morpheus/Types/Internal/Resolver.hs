@@ -44,7 +44,7 @@ import           Data.Morpheus.Types.Internal.Stream        (Event (..), Publish
                                                              StreamT (..), SubscribeStream, closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Types.Internal.Value         (GQLValue (..), Value)
-import           Data.Morpheus.Types.IO                     (GQLResponse, renderResponse)
+import           Data.Morpheus.Types.IO                     (renderResponse)
 
 class Monad m =>
       GQLFail (t :: (* -> *) -> * -> *) m
@@ -94,6 +94,7 @@ data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
     FailT :: GQLErrors -> GraphQLT o m  event value
 
 instance Functor m => Functor (GraphQLT o m e) where
+    fmap _ (FailT mErrors) = FailT mErrors
     fmap f (QueryT mResolver) = QueryT $ fmap f mResolver
     fmap f (MutationT mResolver) = MutationT $ fmap f mResolver
     fmap f (SubscriptionT mResolver) = SubscriptionT (eventFmap <$> mResolver)
@@ -134,14 +135,21 @@ toResponseRes (SubscriptionT resT)  =
             handleRes event = renderResponse <$> runExceptT (subResolver event)
 
 data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
+    FailedResolver :: String -> GADTResolver o m event value
     QueryResolver:: ExceptT String m value -> GADTResolver QUERY m  event value
     MutationResolver :: [event] -> m value -> GADTResolver MUTATION m event value
     SubscriptionResolver :: [StreamChannel event] -> (event -> GADTResolver QUERY m  event value) -> GADTResolver SUBSCRIPTION m event value
-    FailedResolver :: String -> GADTResolver o m event value
 
-instance Functor (GADTResolver o m e)
-instance Applicative (GADTResolver o m e)
-instance Monad (GADTResolver o m e)
+instance Functor m => Functor (GADTResolver o m e) where
+    fmap _ (FailedResolver mErrors) = FailedResolver mErrors
+    fmap f (QueryResolver mResolver) = QueryResolver $ fmap f mResolver
+    fmap f (MutationResolver events mResolver) = MutationResolver events $ fmap f mResolver
+    fmap f (SubscriptionResolver events mResolver) = SubscriptionResolver events (eventFmap mResolver)
+            where
+                eventFmap res event = fmap f (res event)
+
+instance Applicative m => Applicative (GADTResolver o m e)
+instance Monad m => Monad (GADTResolver o m e)
 
 
 type family UnSubResolver (a :: * -> *) :: (* -> *)
