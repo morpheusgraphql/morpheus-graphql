@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -7,7 +8,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies      , DataKinds    #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module Sophisticated.API
   ( gqlRoot
@@ -25,8 +26,8 @@ import           GHC.Generics           (Generic)
 -- MORPHEUS
 import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
-import           Data.Morpheus.Types    (Event (..), GADTResolver (..),QUERY, GQLRootResolver (..), GQLScalar (..),
-                                         GQLType (..), ID, MutResolver, Resolver, ScalarValue (..), resolver)
+import           Data.Morpheus.Types    (Event (..), GADTResolver (..), GQLRootResolver (..), GQLScalar (..),
+                                         GQLType (..), ID, MutResolver, QUERY, Resolver, ScalarValue (..), resolver)
 
 $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
 
@@ -94,15 +95,18 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
           , queryWrapped1 = constRes $ A (0, "")
           , queryWrapped2 = constRes $ A ""
           }
-    ------------------
-    fetchUser = User
-                { userName = constRes "George"
-                , userEmail = constRes "George@email.com"
-                , userAddress = const fetchAddress
-                , userOffice = constRes Nothing
-                , userHome = constRes HH
-                , userEntity = constRes Nothing
-                }
+          where
+            ------------------
+            fetchUser = User
+                        { userName = constRes "George"
+                        , userEmail = constRes "George@email.com"
+                        , userAddress
+                        , userOffice = constRes Nothing
+                        , userHome = constRes HH
+                        , userEntity = constRes Nothing
+                        }
+                 where
+                    userAddress _ = QueryResolver $ return $  Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
     -------------------------------------------------------------
     mutationResolver = return Mutation { mutationCreateUser , mutationCreateAddress }
       where
@@ -127,14 +131,17 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
       where
         subscriptionNewUser () = SubscriptionResolver [UPDATE_USER] subResolver
           where
-            subResolver (Event _ Update {}) = fetchUser
+            subResolver (Event _ Update {}) = QueryResolver $ pure $  User { userName = constRes "George"
+                                            , userEmail = constRes "George@email.com"
+                                            , userAddress = const $ QueryResolver $ return $ Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
+                                            , userOffice = constRes Nothing
+                                            , userHome = constRes HH
+                                            , userEntity = constRes Nothing
+                                       }
         subscriptionNewAddress () = SubscriptionResolver [UPDATE_ADDRESS] subResolver
           where
-            subResolver (Event _ Update {contentID}) = fetchAddress
+            subResolver (Event _ Update {contentID}) =  QueryResolver $ return $ Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
     ----------------------------------------------------------------------------------------------
-    fetchAddress _ =
-      return $ Right Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
-
     fetchAddressMutation = Address {
           addressCity = constResMut [] "",
           addressStreet = constResMut []  "",
