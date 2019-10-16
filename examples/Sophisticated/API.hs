@@ -25,7 +25,7 @@ import           GHC.Generics           (Generic)
 -- MORPHEUS
 import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
-import           Data.Morpheus.Types    (Event (..), GADTResolver (..), GQLRootResolver (..), GQLScalar (..),
+import           Data.Morpheus.Types    (Event (..), GADTResolver (..),QUERY, GQLRootResolver (..), GQLScalar (..),
                                          GQLType (..), ID, MutResolver, Resolver, ScalarValue (..), resolver)
 
 $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
@@ -78,8 +78,8 @@ data Content = Update
 
 type APIEvent = (Event Channel Content)
 
-constRes :: Monad m => a -> GADTResolver 'Query m e a
-constRes = const . QueryResolver . pure 
+constRes :: Monad m => a -> b -> GADTResolver QUERY m e a
+constRes = const . QueryResolver . pure
 
 gqlRoot :: GQLRootResolver IO APIEvent Query Mutation Subscription
 gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
@@ -87,13 +87,22 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
     queryResolver =
       return
         Query
-          { queryUser = const $ resolver fetchUser
+          { queryUser = constRes fetchUser
           , queryAnimal = \QueryAnimalArgs {queryAnimalArgsAnimal} -> return (pack $ show queryAnimalArgsAnimal)
           , querySet = constRes $ S.fromList [1, 2]
           , queryMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]
           , queryWrapped1 = constRes $ A (0, "")
           , queryWrapped2 = constRes $ A ""
           }
+      where
+        fetchUser = User
+                { userName = constRes "George"
+                , userEmail = constRes "George@email.com"
+                , userAddress = const resolveAddress
+                , userOffice = constRes Nothing
+                , userHome = constRes HH
+                , userEntity = constRes $ Just $ MyUnionUser unionUser
+                }
     -------------------------------------------------------------
     mutationResolver = return Mutation { mutationCreateUser , mutationCreateAddress }
       where
@@ -135,27 +144,3 @@ constResMut list value = const $ MutationResolver list $ return value
 fetchAddress :: Monad m => Euro -> m (Either String (Address (Resolver m)))
 fetchAddress _ =
   return $ Right Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
-
-fetchUser :: Monad m => m (Either String (User (Resolver m)))
-fetchUser =
-  return $
-  Right $
-  User
-    { userName = constRes "George"
-    , userEmail = constRes "George@email.com"
-    , userAddress = const resolveAddress
-    , userOffice = constRes Nothing
-    , userHome = constRes HH
-    , userEntity = constRes $ Just $ MyUnionUser unionUser
-    }
-  where
-    resolveAddress = resolver $ fetchAddress (Euro 1 0)
-    unionUser =
-      User
-        { userName = constRes "David"
-        , userEmail = constRes "David@email.com"
-        , userAddress = const resolveAddress
-        , userOffice =  constRes Nothing
-        , userHome = constRes BLN
-        , userEntity = constRes Nothing
-        }
