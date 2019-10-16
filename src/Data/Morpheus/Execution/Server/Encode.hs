@@ -76,11 +76,11 @@ instance (Monad m, Encode a o m e) => Encode [a] o m e where
   encode list query = gqlList <$> traverse (`encode` query) list
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (DecodeObject a, PackT o m e ,Monad m, Encode b o m e ) => Encode (a -> GADTResolver o m e b) o m e where
-  encode resolver selection = decodeArgs selection >>= liftResolver encode selection . resolver
-    where
-      decodeArgs :: (Key, Selection) -> GraphQLT o m e a
-      decodeArgs = packT . decodeArguments . selectionArguments . snd
+instance (DecodeObject a, PackT o m e ,Monad m, Encode b fieldOpKind m e ) => Encode (a -> GADTResolver fieldOpKind m e b) o m e where
+--  encode resolver selection = decodeArgs selection >>= liftResolver encode selection . resolver
+ --    where
+ --     decodeArgs :: (Key, Selection) -> GraphQLT o m e a
+ --     decodeArgs = packT . decodeArguments . selectionArguments . snd
 
 instance Encode (a -> GADTResolver QUERY m e b) SUBSCRIPTION m e where 
 

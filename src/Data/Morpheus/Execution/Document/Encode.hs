@@ -43,10 +43,13 @@ deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}
       where
         mainTypeArg
           | isSubscription typeKindD = typeT ''SubResolver ["m", "e"] -- (SubResolver m e)
-          | otherwise = typeT ''GADTResolver ["o","m","e"] -- (Resolver m)
+          | otherwise = typeT ''GADTResolver ["fieldOKind","m","e"] -- (Resolver m)
     -----------------------------------------------------------------------------------------
+    typeables 
+         | isSubscription typeKindD =  []
+         | otherwise = [typeT ''Typeable ["fieldOKind"], typeT ''PackT ["fieldOKind","m","e"]]
     -- defines Constraint: (Typeable m, Monad m)
-    constrains = [typeT ''Monad ["m"], typeT ''Typeable ["o"], typeT ''Typeable ["m"],typeT ''Typeable ["e"], applyT ''PackT instanceArgs]
+    constrains = typeables <>[typeT ''Monad ["m"], applyT ''Encode (mainType:instanceArgs) , typeT ''Typeable ["o"],  typeT ''Typeable ["m"],typeT ''Typeable ["e"], applyT ''PackT instanceArgs]
     -------------------------------------------------------------------
     -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where
     appHead = instanceHeadMultiT ''ObjectResolvers (conT ''TRUE) (mainType: instanceArgs)
