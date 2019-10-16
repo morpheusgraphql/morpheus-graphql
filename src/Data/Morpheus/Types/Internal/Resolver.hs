@@ -101,9 +101,48 @@ instance Functor m => Functor (GraphQLT o m e) where
             where
                 eventFmap res event = fmap f (res event)
 
-instance Applicative m => Applicative (GraphQLT o m e) where
 
-instance Monad m => Monad (GraphQLT o m e) where
+class InitT (o::OperationKind) where
+    initT :: Monad m => a -> GraphQLT o m event a
+
+instance InitT QUERY where
+   initT = QueryT . pure
+
+instance InitT MUTATION where
+   initT = MutationT . pure
+
+instance InitT SUBSCRIPTION where
+   initT = SubscriptionT . pure . const . pure
+
+instance Monad m => Applicative (GraphQLT o m e) where
+    --pure = initT
+    -------------------------------------
+    _ <*> (FailT mErrors) = FailT mErrors
+    (FailT mErrors) <*> _ = FailT mErrors
+    -------------------------------------
+    (QueryT f) <*> (QueryT res) = QueryT (f <*> res)
+    -------------------------------------
+    (MutationT f) <*> (MutationT res) = MutationT (f <*> res)
+    --------------------------------------------------------------
+    (SubscriptionT f) <*> (SubscriptionT res) = SubscriptionT $ do
+                       f1 <- f
+                       res1 <- res
+                       pure $ \event -> f1 event <*>  res1 event
+
+unQueryT :: Applicative m => GraphQLT QUERY m e a -> ResolveT m a
+unQueryT (QueryT x) = x
+unQueryT (FailT x)  = ExceptT  $ pure $  Left x
+
+unMutationT :: Applicative m => GraphQLT MUTATION m e a -> ResolveT (StreamT m e) a
+unMutationT (MutationT x) = x
+unMutationT (FailT x)     = ExceptT $ StreamT $ pure $ StreamState [] $ Left x
+
+instance Monad m  => Monad (GraphQLT o m e) where
+    return = pure
+    (QueryT value) >>= nextM = QueryT (value >>= unQueryT . nextM)
+    (MutationT value) >>= nextM = MutationT (value >>= unMutationT . nextM)
+
+
 
 convertResolver :: Monad m => Position -> Key -> GADTResolver o m e a ->  GraphQLT o m e a
 convertResolver position fieldName (FailedResolver message)       = FailT $ resolverError position fieldName message
@@ -116,7 +155,7 @@ convertResolver _ _ (MutationResolver events res) = MutationT $ ExceptT $ Stream
 --        SubscriptionT $ initExceptStream [map Channel subChannels] ((encodeResolver selection . subResolver) :: event -> ResolveT m Value)
       --handleResolver (FailedResolving  errorMessage) = TODO: handle error
 
-liftResolver :: Monad m => (a -> (Key,Selection) -> GraphQLT o m e value) -> (Key, Selection) -> GADTResolver o m e a  -> GraphQLT o m e value
+liftResolver :: (Monad m) => (a -> (Key,Selection) -> GraphQLT o m e value) -> (Key, Selection) -> GADTResolver o m e a  -> GraphQLT o m e value
 liftResolver encode  selection@(fieldName, Selection {selectionPosition}) res = withRes res >>= (`encode` selection)
    where
     withRes :: Monad m => GADTResolver o m e a ->  GraphQLT o m e a
