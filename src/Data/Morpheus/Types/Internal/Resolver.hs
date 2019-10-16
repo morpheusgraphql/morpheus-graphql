@@ -16,7 +16,6 @@ module Data.Morpheus.Types.Internal.Resolver
   , SubResolver
   , ResolveT
   , SubResolveT
-  , SubRootRes
   , Event(..)
   , GQLRootResolver(..)
   , UnSubResolver
@@ -75,8 +74,6 @@ type Resolver = ExceptT String
 type ResolveT = ExceptT GQLErrors
 
 ------------------------------------------------------------
-type SubRootRes m e sub = Resolver (SubscribeStream m e) sub
-
 --- Transformers
 type ResponseT m e  = ResolveT (ResponseStream m e)
 
@@ -167,5 +164,5 @@ resolver = ExceptT
 data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* -> *) -> * )  (sub :: (* -> *) -> * )  = GQLRootResolver
   { queryResolver        :: GADTResolver QUERY m event (query (GADTResolver 'Query m  event))
   , mutationResolver     :: MutResolver m event (mut (MutResolver m event))
-  , subscriptionResolver :: SubRootRes m event (sub (SubResolver  m event))
+  , subscriptionResolver :: SubResolver m event (sub (SubResolver  m event))
   }
