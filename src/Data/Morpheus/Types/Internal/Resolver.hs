@@ -43,8 +43,8 @@ import           Data.Morpheus.Types.Internal.Stream        (Event (..), Publish
                                                              ResponseStream, StreamChannel, StreamState (..),
                                                              StreamT (..), SubscribeStream, closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
-import           Data.Morpheus.Types.Internal.Value         (Value (..))
-import           Data.Morpheus.Types.IO                     (renderResponse)
+import           Data.Morpheus.Types.Internal.Value         (GQLValue (..), Value)
+import           Data.Morpheus.Types.IO                     (GQLResponse, renderResponse)
 
 class Monad m =>
       GQLFail (t :: (* -> *) -> * -> *) m
@@ -116,18 +116,17 @@ liftResolver encode  selection@(fieldName, Selection {selectionPosition}) res = 
     withRes :: Monad m => GADTResolver o m e a ->  GraphQLT o m e a
     withRes  = convertResolver selectionPosition fieldName
 
-toResponseRes :: Monad m => GraphQLT o m event a -> ResponseT m event a
--- TODO:      (do schemaRes <- schemaAPI schema
-toResponseRes (QueryT resT) = ExceptT $ StreamT (StreamState [] <$> runExceptT resT)
+toResponseRes :: Monad m =>  GraphQLT o m event Value -> ResponseT m event Value
+toResponseRes (QueryT resT) =  ExceptT $ StreamT $ StreamState [] <$> runExceptT resT
 toResponseRes (MutationT resT) = ExceptT $ mapS Publish (runExceptT resT)
---toResponseRes (SubscriptionT resT)  =
---      ExceptT $ StreamT $ handleActions <$> closeStream (runExceptT resT)
---      where
---        handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
---        handleActions (channels, Right subResolver) =
---          StreamState [Subscribe $ Event (concat channels) handleRes] (Right Null)
---          where
---            handleRes event = renderResponse <$> runExceptT (subResolver event)
+toResponseRes (SubscriptionT resT)  =
+      ExceptT $ StreamT $ handleActions <$> closeStream (runExceptT resT)
+      where
+        handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
+        handleActions (channels, Right subResolver) =
+          StreamState [Subscribe $ Event (concat channels) handleRes] (Right  gqlNull)
+          where
+            handleRes event = renderResponse <$> runExceptT (subResolver event)
 
 data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
     QueryResolver:: ExceptT String m value -> GADTResolver 'Query m  event value
