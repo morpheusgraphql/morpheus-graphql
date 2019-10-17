@@ -26,6 +26,7 @@ module Data.Morpheus.Types.Internal.Resolver
   , GADTResolver(..)
   , GraphQLT(..)
   , PackT(..)
+  , PureOperation(..)
   , liftResolver
   , convertResolver
   , toResponseRes
@@ -39,9 +40,9 @@ import           Data.Morpheus.Error.Selection              (resolverError)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..))
 import           Data.Morpheus.Types.Internal.Base          (Message, Position)
 import           Data.Morpheus.Types.Internal.Data          (Key, MUTATION, OperationKind, QUERY, SUBSCRIPTION)
-import           Data.Morpheus.Types.Internal.Stream        (Event (..), PublishStream, ResponseEvent (..),
-                                                             ResponseStream, StreamChannel, StreamState (..),
-                                                             StreamT (..), SubscribeStream, closeStream, mapS)
+import           Data.Morpheus.Types.Internal.Stream        (Event (..), ResponseEvent (..), ResponseStream,
+                                                             StreamChannel, StreamState (..), StreamT (..),
+                                                             SubscribeStream, closeStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Types.Internal.Value         (GQLValue (..), Value)
 import           Data.Morpheus.Types.IO                     (renderResponse)
@@ -101,21 +102,24 @@ instance Functor m => Functor (GraphQLT o m e) where
             where
                 eventFmap res event = fmap f (res event)
 
+class PureOperation (o::OperationKind) where
+    pureGraphQLT :: Monad m => a -> GraphQLT o m event a
+    pureGADTResolver :: Monad m => a -> GADTResolver o m event a
 
-class InitT (o::OperationKind) where
-    initT :: Monad m => a -> GraphQLT o m event a
+instance PureOperation QUERY where
+   pureGraphQLT = QueryT . pure
+   pureGADTResolver = QueryResolver . pure
 
-instance InitT QUERY where
-   initT = QueryT . pure
+instance PureOperation MUTATION where
+   pureGraphQLT = MutationT . pure
+   pureGADTResolver = MutationResolver [] . pure
 
-instance InitT MUTATION where
-   initT = MutationT . pure
+instance PureOperation SUBSCRIPTION where
+   pureGraphQLT = SubscriptionT . pure . const . pure
+   pureGADTResolver = SubscriptionResolver []  . const . pure
 
-instance InitT SUBSCRIPTION where
-   initT = SubscriptionT . pure . const . pure
-
-instance Monad m => Applicative (GraphQLT o m e) where
-    --pure = initT
+instance (PureOperation o, Monad m) => Applicative (GraphQLT o m e) where
+    pure = pureGraphQLT
     -------------------------------------
     _ <*> (FailT mErrors) = FailT mErrors
     (FailT mErrors) <*> _ = FailT mErrors
@@ -139,9 +143,9 @@ unMutationT (FailT x)     = ExceptT $ StreamT $ pure $ StreamState [] $ Left x
 
 unSubscriptionT :: Applicative m => GraphQLT SUBSCRIPTION m event value -> ResolveT (SubscribeStream m event) (event -> ResolveT m value)
 unSubscriptionT (SubscriptionT x) = x
-unSubscriptionT (FailT x)     = ExceptT $ StreamT $ pure $ StreamState [] $ Left x
+unSubscriptionT (FailT x)         = ExceptT $ StreamT $ pure $ StreamState [] $ Left x
 
-instance Monad m  => Monad (GraphQLT o m e) where
+instance (Monad m, PureOperation o)  => Monad (GraphQLT o m e) where
     return = pure
     (QueryT value) >>= nextM = QueryT (value >>= unQueryT . nextM)
     (MutationT value) >>= nextM = MutationT (value >>= unMutationT . nextM)
@@ -165,7 +169,7 @@ convertResolver _ _ (MutationResolver events res) = MutationT $ ExceptT $ Stream
 --        SubscriptionT $ initExceptStream [map Channel subChannels] ((encodeResolver selection . subResolver) :: event -> ResolveT m Value)
       --handleResolver (FailedResolving  errorMessage) = TODO: handle error
 
-liftResolver :: (Monad m) => (a -> (Key,Selection) -> GraphQLT o m e value) -> (Key, Selection) -> GADTResolver o m e a  -> GraphQLT o m e value
+liftResolver :: (Monad m, PureOperation o) => (a -> (Key,Selection) -> GraphQLT o m e value) -> (Key, Selection) -> GADTResolver o m e a  -> GraphQLT o m e value
 liftResolver encode  selection@(fieldName, Selection {selectionPosition}) res = withRes res >>= (`encode` selection)
    where
     withRes :: Monad m => GADTResolver o m e a ->  GraphQLT o m e a
@@ -198,8 +202,10 @@ instance Functor m => Functor (GADTResolver o m e) where
             where
                 eventFmap res event = fmap f (res event)
 
-instance Applicative m => Applicative (GADTResolver o m e)
-instance Monad m => Monad (GADTResolver o m e)
+instance (PureOperation o ,Monad m) => Applicative (GADTResolver o m e) where
+    pure = pureGADTResolver
+
+instance (PureOperation o ,Monad m) => Monad (GADTResolver o m e)
 
 
 type family UnSubResolver (a :: * -> *) :: (* -> *)
