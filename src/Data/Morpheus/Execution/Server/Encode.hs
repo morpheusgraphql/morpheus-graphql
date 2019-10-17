@@ -43,9 +43,9 @@ import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTO
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Data               (OperationKind, QUERY, SUBSCRIPTION)
-import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), PureOperation,
-                                                                  convertResolver, liftResolver)
+import           Data.Morpheus.Types.Internal.Data               (OperationKind, QUERY)
+import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), MapGraphQLT (..),
+                                                                  PureOperation (..), convertResolver, liftResolver)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
 
 class Encode resolver o m e where
@@ -76,11 +76,11 @@ instance (Monad m, Encode a o m e) => Encode [a] o m e where
   encode list query = gqlList <$> traverse (`encode` query) list
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (DecodeObject a, Monad m, Encode b fieldOpKind m e ) => Encode (a -> GADTResolver fieldOpKind m e b) o m e where
---  encode resolver selection = decodeArgs selection >>= liftResolver encode selection . resolver
- --    where
- --     decodeArgs :: (Key, Selection) -> GraphQLT o m e a
- --     decodeArgs = packT . decodeArguments . selectionArguments . snd
+instance (DecodeObject a, Monad m,PureOperation fO, Encode b fO m e ) => Encode (a -> GADTResolver fO m e b) o m e where
+   encode resolver selection = decodeArgs selection >>= mapGraphQLT . liftResolver encode selection . resolver
+     where
+      decodeArgs :: (Key, Selection) -> GraphQLT o m e a
+      decodeArgs = eitherGraphQLT . decodeArguments . selectionArguments . snd
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o m e  where

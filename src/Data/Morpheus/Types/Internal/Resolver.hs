@@ -25,7 +25,7 @@ module Data.Morpheus.Types.Internal.Resolver
   , failResolveT
   , GADTResolver(..)
   , GraphQLT(..)
- -- , PackT(..)
+  , MapGraphQLT(..)
   , PureOperation(..)
   , liftResolver
   , convertResolver
@@ -44,7 +44,7 @@ import           Data.Morpheus.Types.Internal.Stream        (Channel (..), Event
                                                              ResponseStream, StreamChannel, StreamState (..),
                                                              StreamT (..), SubscribeStream, closeStream,
                                                              initExceptStream, mapS)
-import           Data.Morpheus.Types.Internal.Validation    (GQLErrors)
+import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Types.Internal.Value         (GQLValue (..), Value)
 import           Data.Morpheus.Types.IO                     (renderResponse)
 
@@ -76,14 +76,6 @@ type ResponseT m e  = ResolveT (ResponseStream m e)
 
 type SubResolveT = GraphQLT SUBSCRIPTION
 
-
---class PackT (o::OperationKind) m event where
---    packT ::  Validation a -> GraphQLT o m event a
-
---instance PackT QUERY m event where
---instance PackT SUBSCRIPTION m event where
---instance PackT MUTATION m event where
-
 data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
     QueryT:: ResolveT m value -> GraphQLT QUERY m  event value
     MutationT :: ResolveT (StreamT m event) value -> GraphQLT MUTATION m event value
@@ -108,10 +100,13 @@ instance Functor m => Functor (GraphQLT o m e) where
 class PureOperation (o::OperationKind) where
     pureGraphQLT :: Monad m => a -> GraphQLT o m event a
     pureGADTResolver :: Monad m => a -> GADTResolver o m event a
+    eitherGraphQLT :: Monad m => Validation a -> GraphQLT o m event a
 
 instance PureOperation QUERY where
    pureGraphQLT = QueryT . pure
    pureGADTResolver = QueryResolver . pure
+   --eitherGADT = QueryResolver . ExceptT
+
 
 instance PureOperation MUTATION where
    pureGraphQLT = MutationT . pure
@@ -179,6 +174,11 @@ convertResolver position fieldName = convert
 --      handleResolver (SubscriptionResolver subChannels subResolver) =
 --        SubscriptionT $ initExceptStream [map Channel subChannels] ((encodeResolver selection . subResolver) :: event -> ResolveT m Value)
       --handleResolver (FailedResolving  errorMessage) = TODO: handle error
+
+class MapGraphQLT fromO toO where
+   mapGraphQLT :: GraphQLT fromO m e value -> GraphQLT toO m e a
+
+instance MapGraphQLT fromO toO where
 
 liftResolver :: (Monad m, PureOperation o) => (a -> (Key,Selection) -> GraphQLT o m e value) -> (Key, Selection) -> GADTResolver o m e a  -> GraphQLT o m e value
 liftResolver encode  selection@(fieldName, Selection {selectionPosition}) res = withRes res >>= (`encode` selection)
