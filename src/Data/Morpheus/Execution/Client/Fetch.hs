@@ -16,10 +16,18 @@ import           Data.ByteString.Lazy            (ByteString)
 import           Data.Text                       (pack)
 import           Language.Haskell.TH
 
+import qualified Data.Aeson       as A
+import qualified Data.Aeson.Types as A
+
 --
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.TH (instanceHeadT)
 import           Data.Morpheus.Types.IO          (GQLRequest (..), JSONResponse (..))
+
+fixVars :: A.Value -> Maybe A.Value
+fixVars x
+  | x == A.emptyArray = Nothing
+  | otherwise         = Just x
 
 class Fetch a where
   type Args a :: *
@@ -32,7 +40,7 @@ class Fetch a where
     -> m (Either String a)
   __fetch strQuery opName trans vars = (eitherDecode >=> processResponse) <$> trans (encode gqlReq)
     where
-      gqlReq = GQLRequest {operationName = Just (pack opName), query = pack strQuery, variables = Just (toJSON vars)}
+      gqlReq = GQLRequest {operationName = Just (pack opName), query = pack strQuery, variables = fixVars (toJSON vars)}
       -------------------------------------------------------------
       processResponse JSONResponse {responseData = Just x} = pure x
       processResponse invalidResponse                      = fail $ show invalidResponse
