@@ -88,7 +88,6 @@ data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
     MutationResolver :: [event] -> m value -> GADTResolver MUTATION m event value
     SubscriptionResolver :: [StreamChannel event] -> (event -> GADTResolver QUERY m  event value) -> GADTResolver SUBSCRIPTION m event value
 
-
 instance Functor m => Functor (GraphQLT o m e) where
     fmap _ (FailT mErrors) = FailT mErrors
     fmap f (QueryT mResolver) = QueryT $ fmap f mResolver
@@ -105,16 +104,17 @@ class PureOperation (o::OperationKind) where
 instance PureOperation QUERY where
    pureGraphQLT = QueryT . pure
    pureGADTResolver = QueryResolver . pure
-   --eitherGADT = QueryResolver . ExceptT
-
+   eitherGraphQLT = QueryT . ExceptT . pure
 
 instance PureOperation MUTATION where
    pureGraphQLT = MutationT . pure
    pureGADTResolver = MutationResolver [] . pure
+   eitherGraphQLT = MutationT . ExceptT . pure
 
 instance PureOperation SUBSCRIPTION where
    pureGraphQLT = SubscriptionT . pure . const . pure
    pureGADTResolver = SubscriptionResolver []  . const . pure
+   eitherGraphQLT = SubscriptionT . pure . const . ExceptT . pure
 
 instance (PureOperation o, Monad m) => Applicative (GraphQLT o m e) where
     pure = pureGraphQLT
