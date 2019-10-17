@@ -175,10 +175,14 @@ convertResolver position fieldName = convert
 --        SubscriptionT $ initExceptStream [map Channel subChannels] ((encodeResolver selection . subResolver) :: event -> ResolveT m Value)
       --handleResolver (FailedResolving  errorMessage) = TODO: handle error
 
-class MapGraphQLT fromO toO where
-   mapGraphQLT :: GraphQLT fromO m e value -> GraphQLT toO m e a
+class MapGraphQLT (fromO :: OperationKind) (toO :: OperationKind) where
+   mapGraphQLT :: GraphQLT fromO m e a -> GraphQLT toO m e a
 
-instance MapGraphQLT fromO toO where
+instance MapGraphQLT fromO fromO where
+    mapGraphQLT = id
+
+instance MapGraphQLT QUERY SUBSCRIPTION where
+    --mapGraphQLT = id
 
 liftResolver :: (Monad m, PureOperation o) => (a -> (Key,Selection) -> GraphQLT o m e value) -> (Key, Selection) -> GADTResolver o m e a  -> GraphQLT o m e value
 liftResolver encode  selection@(fieldName, Selection {selectionPosition}) res = withRes res >>= (`encode` selection)
