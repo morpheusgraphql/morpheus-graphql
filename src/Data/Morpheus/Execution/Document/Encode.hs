@@ -17,7 +17,7 @@ import           Data.Morpheus.Execution.Server.Encode (Encode (..), ObjectResol
 import           Data.Morpheus.Types.GQLType           (TRUE)
 import           Data.Morpheus.Types.Internal.Data     (DataField (..), SUBSCRIPTION, isSubscription)
 import           Data.Morpheus.Types.Internal.DataD    (ConsD (..), GQLTypeD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.Resolver (GADTResolver, PackT, PureOperation, SubResolver)
+import           Data.Morpheus.Types.Internal.Resolver (GADTResolver, PureOperation, SubResolver)
 import           Data.Morpheus.Types.Internal.TH       (applyT, destructRecord, instanceHeadMultiT, typeT)
 
 -- @Subscription:
@@ -46,9 +46,9 @@ deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}
     -----------------------------------------------------------------------------------------
     typeables
          | isSubscription typeKindD =  []
-         | otherwise = [typeT ''PureOperation ["fieldOKind"], typeT ''Typeable ["fieldOKind"], typeT ''PackT ["fieldOKind","m","e"],  typeT ''Typeable ["o"]]
+         | otherwise = [typeT ''PureOperation ["fieldOKind"], typeT ''Typeable ["fieldOKind"] , typeT ''Typeable ["o"]]
     -- defines Constraint: (Typeable m, Monad m)
-    constrains = typeables <>[typeT ''Monad ["m"], applyT ''Encode (mainType:instanceArgs) , typeT ''Typeable ["m"],typeT ''Typeable ["e"], applyT ''PackT instanceArgs]
+    constrains = typeables <>[typeT ''Monad ["m"], applyT ''Encode (mainType:instanceArgs) , typeT ''Typeable ["m"],typeT ''Typeable ["e"]]
     -------------------------------------------------------------------
     -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where
     appHead = instanceHeadMultiT ''ObjectResolvers (conT ''TRUE) (mainType: instanceArgs)

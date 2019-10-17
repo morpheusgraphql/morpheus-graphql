@@ -25,7 +25,7 @@ module Data.Morpheus.Types.Internal.Resolver
   , failResolveT
   , GADTResolver(..)
   , GraphQLT(..)
-  , PackT(..)
+ -- , PackT(..)
   , PureOperation(..)
   , liftResolver
   , convertResolver
@@ -76,12 +76,12 @@ type ResponseT m e  = ResolveT (ResponseStream m e)
 type SubResolveT = GraphQLT SUBSCRIPTION
 
 
-class PackT (o::OperationKind) m event where
-    packT ::  Validation a -> GraphQLT o m event a
+--class PackT (o::OperationKind) m event where
+--    packT ::  Validation a -> GraphQLT o m event a
 
-instance PackT QUERY m event where
-instance PackT SUBSCRIPTION m event where
-instance PackT MUTATION m event where
+--instance PackT QUERY m event where
+--instance PackT SUBSCRIPTION m event where
+--instance PackT MUTATION m event where
 
 data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
     QueryT:: ResolveT m value -> GraphQLT QUERY m  event value
