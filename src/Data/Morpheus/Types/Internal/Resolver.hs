@@ -65,11 +65,6 @@ type SubResolver = GADTResolver SUBSCRIPTION
 
 type MutResolver = GADTResolver MUTATION
 
--- type QueResolver = GADTResolver 'Query
-
--- TODO: Replace With: newtype MutResolver
--- newtype MutResolver m e a = MutResolver {  unMutResolveT :: Resolver (PublishStream m e) a }
-
 type Resolver = ExceptT String
 
 type ResolveT = ExceptT GQLErrors
@@ -204,8 +199,19 @@ instance Functor m => Functor (GADTResolver o m e) where
 
 instance (PureOperation o ,Monad m) => Applicative (GADTResolver o m e) where
     pure = pureGADTResolver
+    -------------------------------------
+    _ <*> (FailedResolver mErrors) = FailedResolver mErrors
+    (FailedResolver mErrors) <*> _ = FailedResolver mErrors
+    -------------------------------------
+    (QueryResolver f) <*> (QueryResolver res) = QueryResolver (f <*> res)
+    ---------------------------------------------------------------------
+    (MutationResolver events1 f) <*> (MutationResolver events2 res) = MutationResolver (events1 <> events2) (f <*> res)
+    --------------------------------------------------------------
+    (SubscriptionResolver e1 f) <*> (SubscriptionResolver e2 res) = SubscriptionResolver (e1<>e2) $
+                       \event -> f event <*>  res event
 
-instance (PureOperation o ,Monad m) => Monad (GADTResolver o m e)
+instance (PureOperation o ,Monad m) => Monad (GADTResolver o m e) where
+   return = pure
 
 
 type family UnSubResolver (a :: * -> *) :: (* -> *)
