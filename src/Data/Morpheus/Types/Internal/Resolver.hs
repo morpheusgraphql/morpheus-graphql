@@ -42,7 +42,7 @@ import           Data.Morpheus.Types.Internal.Base          (Message, Position)
 import           Data.Morpheus.Types.Internal.Data          (Key, MUTATION, OperationKind, QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Stream        (Channel (..), Event (..), ResponseEvent (..),
                                                              ResponseStream, StreamChannel, StreamState (..),
-                                                             StreamT (..), SubscribeStream, closeStream,
+                                                             StreamT (..), SubscribeStream, closeStream, injectEvents,
                                                              initExceptStream, mapS)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Types.Internal.Value         (GQLValue (..), Value)
@@ -153,12 +153,24 @@ instance (Monad m, PureOperation o)  => Monad (GraphQLT o m e) where
     --           wow e_to_ma e = do
     --             a <- e_to_ma e
     --             unM (a_to_m1_Meb a) >>=  (\x -> x e)
-    (SubscriptionT startValue)  >>= nextM = SubscriptionT $ genResponse <$> startValue
+    (SubscriptionT startValue)  >>= nextM = SubscriptionT $ do 
+                  let (channels , resTStartValue ) = closeSubStream startValue
+                  injectEvents2 channels (genResponse <$> resTStartValue)
                   where
                     genResponse event_to_ma event = do
                         value_a <- event_to_ma event
-                        unSubscriptionT  (nextM value_a) >>= (\x -> x event)
+                        (snd $ closeSubStream $ unSubscriptionT (nextM value_a)) >>= (\x -> (x event))
 
+
+injectEvents2 :: Functor m => [event] -> ExceptT errors m a -> ExceptT errors (StreamT m event) a
+injectEvents2 states = ExceptT . StreamT . fmap (StreamState states) . runExceptT
+
+closeSubStream :: Monad m => ResolveT (SubscribeStream m e) (e -> ResolveT m v) -> ([[Channel e]], ResolveT m (e -> ResolveT m v))
+closeSubStream (ExceptT mon) = mon
+
+
+--closeStream :: Monad m => (StreamT m s) v -> m ([s], v)
+--closeStream resolver = toTuple <$> runStreamT resolver
 
 -- (a -> (Key,Selection) -> ResolveT m a) -> (Key,Selection)
 convertResolver :: Monad m =>  Position -> Key -> GADTResolver o m e a ->  GraphQLT o m e a
