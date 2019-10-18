@@ -21,15 +21,16 @@ module Data.Morpheus.Types.Internal.Stream
   , mapS
   , injectEvents
   , initExceptStream
+  , pushEvents
  -- , GQLMonad(..)
   , GQLChannel(..)
   , Channel(..)
   ) where
 
-import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
+import           Control.Monad.Trans.Except (ExceptT (..), runExceptT)
 
 -- MORPHEUS
-import           Data.Morpheus.Types.IO                  (GQLResponse)
+import           Data.Morpheus.Types.IO     (GQLResponse)
 
 
 -- EVENTS
@@ -115,6 +116,11 @@ mapS func (StreamT ma) =
   StreamT $ do
     state <- ma
     return $ state {streamEvents = map func (streamEvents state)}
+
+pushEvents :: Functor m => [event] -> ExceptT e (StreamT m event) a -> ExceptT e (StreamT m event) a
+pushEvents events = ExceptT . StreamT . fmap updateState . runStreamT . runExceptT
+    where
+        updateState x = x { streamEvents = events <> streamEvents x }
 
 injectEvents :: Functor m => [event] -> ExceptT e m a -> ExceptT e (StreamT m event) a
 injectEvents states = ExceptT . StreamT . fmap (StreamState states) . runExceptT

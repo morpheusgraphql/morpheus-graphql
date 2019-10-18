@@ -40,12 +40,12 @@ import           Data.Morpheus.Kind                              (ENUM, GQL_KIND
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTOM, KIND, __typeName))
-import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..),getOperationName, ValidOperation)
-import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
+import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
+import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Data               (OperationKind, QUERY)
-import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), resolveObject,resolveFields, MapGraphQLT (..),
-                                                                  PureOperation (..), Resolving (..), convertResolver)
+import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), MapGraphQLT (..),
+                                                                  PureOperation (..), Resolving (..), resolveObject)
 import           Data.Morpheus.Types.Internal.Validation         (Validation)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
 
@@ -181,6 +181,6 @@ encodeOperationWith ::
   => [FieldRes o m e]
   -> EncodeOperator o m e a
 encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
-  gqlObject <$> resolvingObject toResolvers rootResolver (getOperationName operationName,Selection { selectionRec = SelectionSet operationSelection , selectionPosition = operationPosition })
-  where 
+  gqlObject <$> resolvingObject toResolvers rootResolver (getOperationName operationName, Selection { selectionRec = SelectionSet operationSelection , selectionPosition = operationPosition })
+  where
     toResolvers = objectResolvers (Proxy :: Proxy (CUSTOM a))

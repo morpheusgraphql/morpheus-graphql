@@ -31,7 +31,7 @@ module Data.Morpheus.Types.Internal.Resolver
   , resolveObject
   , resolveFields
   --, liftResolver
-  , convertResolver
+ -- , convertResolver
   , toResponseRes
   , Resolving(..)
   ) where
@@ -47,7 +47,7 @@ import           Data.Morpheus.Types.Internal.Data          (Key, MUTATION, Oper
 import           Data.Morpheus.Types.Internal.Stream        (Channel (..), Event (..), ResponseEvent (..),
                                                              ResponseStream, StreamChannel, StreamState (..),
                                                              StreamT (..), SubscribeStream, closeStream,
-                                                             initExceptStream, injectEvents, mapS)
+                                                             initExceptStream, injectEvents, mapS, pushEvents)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Types.Internal.Value         (GQLValue (..), Value)
 import           Data.Morpheus.Types.IO                     (renderResponse)
@@ -89,7 +89,7 @@ data GraphQLT (o::OperationKind) (m :: * -> * ) event value where
 data GADTResolver (o::OperationKind) (m :: * -> * ) event value where
     FailedResolver :: String -> GADTResolver o m event value
     QueryResolver:: ExceptT String m value -> GADTResolver QUERY m  event value
-    MutationResolver :: [event] -> m value -> GADTResolver MUTATION m event value
+    MutationResolver :: [event] -> ExceptT String m value -> GADTResolver MUTATION m event value
     SubscriptionResolver :: [StreamChannel event] -> (event -> GADTResolver QUERY m  event value) -> GADTResolver SUBSCRIPTION m event value
 
 instance Functor m => Functor (GraphQLT o m e) where
@@ -178,13 +178,13 @@ unSubscriptionT (FailT x)         = ExceptT $ StreamT $ pure $ StreamState [] $ 
 --closeStream resolver = toTuple <$> runStreamT resolver
 
 -- (a -> (Key,Selection) -> ResolveT m a) -> (Key,Selection)
-convertResolver :: Monad m =>  Position -> Key -> GADTResolver o m e a ->  GraphQLT o m e a
+--convertResolver :: Monad m =>  Position -> Key -> GADTResolver o m e a ->  GraphQLT o m e a
     --FailT $ resolverError selectionPosition fieldName message
-convertResolver position fieldName = convert
- where
-    convert (QueryResolver res)           = QueryT $ withExceptT (resolverError position fieldName) res
-    convert (FailedResolver message)      = FailT $ resolverError position fieldName message
-    convert (MutationResolver events res) = MutationT $ ExceptT $ StreamT (StreamState events . Right <$> res)
+--convertResolver position fieldName = convert
+-- where
+--    convert (QueryResolver res)           = QueryT $ withExceptT (resolverError position fieldName) res
+--    convert (FailedResolver message)      = FailT $ resolverError position fieldName message
+--    convert (MutationResolver events res) = MutationT $ ExceptT $ StreamT (StreamState events . Right <$> res)
     --convert (SubscriptionResolver subChannels subResolver) = SubscriptionT $ initExceptStream [map Channel subChannels] ((encode selection . subResolver) :: event -> ResolveT m a)
 
 -- [StreamChannel event] -> (event -> GADTResolver QUERY m  event value) ->
@@ -216,20 +216,24 @@ class Resolving o m e where
      resolvingObject :: Monad m => (value -> [FieldRes o m e]) -> GADTResolver o m e value -> (Key,Selection) -> GraphQLT o m e [(Key,Value)]
      getArgs :: Validation args ->  (args -> GADTResolver o m e value) -> GADTResolver o m e value
      resolving :: Monad m => (value -> (Key,Selection) -> GraphQLT o m e Value) -> GADTResolver o m e value ->  (Key,Selection) -> GraphQLT o m e Value
-     --beta:: GraphQLT fromO m e a -> (Key, Selection) -> GraphQLT o m e Value
-    -- resolving :: GADTResolver o m e a -> (Key,Selection) -> GraphQLT o m e Value
-     --resolving :: -> GADTResolver o m e a -> (Key,Selection) -> GraphQLT o m e Value
 
 type FieldRes  o m e   = (Key, (Key, Selection) -> GraphQLT o m e Value)
 
 instance Resolving o m e where
-   resolvingObject toRes (QueryResolver res) (fieldName, Selection { selectionRec = SelectionSet x , selectionPosition}) = 
-        QueryT $ withExceptT (resolverError selectionPosition fieldName) res  >>= unQueryT . resolveFields x . toRes
    getArgs (Right x) f = f x
    getArgs (Left _) _  = FailedResolver ""
-
+   ------------------------------------------
+   resolvingObject toRes (QueryResolver res) (fieldName, Selection { selectionRec = SelectionSet x , selectionPosition}) =
+        QueryT $ withExceptT (resolverError selectionPosition fieldName) res  >>= unQueryT . resolveFields x . toRes
+   --------------------------------------------------------------------------------------------------------------------------------
+   resolvingObject toRes (MutationResolver events res) (fieldName, Selection { selectionRec = SelectionSet x , selectionPosition}) =
+      MutationT $ pushEvents events (withExceptT (resolverError selectionPosition fieldName) (injectEvents [] res)  >>= unMutationT . resolveFields x . toRes)
+   ---------------------------------------------------------------------------------------------------------------------------------------
    resolving encode (QueryResolver res) selection@(fieldName,Selection { selectionPosition }) =
         QueryT $ withExceptT (resolverError selectionPosition fieldName) res >>= unQueryT . (`encode` selection)
+   ---------------------------------------------------------------------------------------------------------------------------------------
+   resolving encode (MutationResolver events res) selection@(fieldName,Selection { selectionPosition }) =
+           MutationT $ pushEvents events $ withExceptT (resolverError selectionPosition fieldName) (injectEvents [] res)  >>= unMutationT . (`encode` selection)
 
 class MapGraphQLT (fromO :: OperationKind) (toO :: OperationKind) where
    mapGraphQLT :: GraphQLT fromO m e a -> GraphQLT toO m e a
