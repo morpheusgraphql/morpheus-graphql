@@ -6,6 +6,7 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
@@ -27,6 +28,8 @@ module Data.Morpheus.Types.Internal.Resolver
   , GraphQLT(..)
   , MapGraphQLT(..)
   , PureOperation(..)
+  , resolveObject
+  , resolveFields
   --, liftResolver
   , convertResolver
   , toResponseRes
@@ -34,16 +37,17 @@ module Data.Morpheus.Types.Internal.Resolver
   ) where
 
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT, withExceptT)
+import           Data.Maybe                                 (fromMaybe)
 import           Data.Text                                  (pack, unpack)
 -- MORPHEUS
 import           Data.Morpheus.Error.Selection              (resolverError)
-import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..))
+import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base          (Message, Position)
 import           Data.Morpheus.Types.Internal.Data          (Key, MUTATION, OperationKind, QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Stream        (Channel (..), Event (..), ResponseEvent (..),
                                                              ResponseStream, StreamChannel, StreamState (..),
-                                                             StreamT (..), SubscribeStream, closeStream, injectEvents,
-                                                             initExceptStream, mapS)
+                                                             StreamT (..), SubscribeStream, closeStream,
+                                                             initExceptStream, injectEvents, mapS)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Types.Internal.Value         (GQLValue (..), Value)
 import           Data.Morpheus.Types.IO                     (renderResponse)
@@ -193,14 +197,37 @@ convertResolver position fieldName = convert
 --        SubscriptionT $ initExceptStream [map Channel subChannels] ((encodeResolver selection . subResolver) :: event -> ResolveT m Value)
       --handleResolver (FailedResolving  errorMessage) = TODO: handle error
 
+resolveObject :: (Monad m , PureOperation o ) => SelectionSet -> [FieldRes o m e] -> GraphQLT o m e Value
+resolveObject selSet = fmap gqlObject . resolveFields selSet
+
+resolveFields :: (Monad m , PureOperation o ) => SelectionSet -> [FieldRes o m e] -> GraphQLT o m e [(Key,Value)]
+resolveFields selectionSet resolvers = traverse selectResolver selectionSet
+  where
+    selectResolver (key, selection) =
+      (key, ) <$>
+      case selectionRec selection of
+        SelectionAlias name selectionRec -> lookupRes name (selection {selectionRec})
+        _                                -> lookupRes key selection
+        -------------------------------------------------------------
+      where
+        lookupRes resKey sel = (fromMaybe (const $ pure  gqlNull) $ lookup resKey resolvers) (key, sel)
+
 class Resolving o m e where
-     resolving :: Validation args -> (args -> GADTResolver o m e value) ->  (Key,Selection) -> GraphQLT o m e Value
+     resolvingObject :: (value -> [FieldRes o m e]) -> GADTResolver o m e value -> (Key,Selection) -> GraphQLT o m e [(Key,Value)]
+     getArgs :: Validation args ->  (args -> GADTResolver o m e value) -> GADTResolver o m e value
+     resolving :: Monad m => (value -> (Key,Selection) -> GraphQLT o m e Value) -> GADTResolver o m e value ->  (Key,Selection) -> GraphQLT o m e Value
      --beta:: GraphQLT fromO m e a -> (Key, Selection) -> GraphQLT o m e Value
     -- resolving :: GADTResolver o m e a -> (Key,Selection) -> GraphQLT o m e Value
      --resolving :: -> GADTResolver o m e a -> (Key,Selection) -> GraphQLT o m e Value
 
-instance Resolving o m e where 
-    
+type FieldRes  o m e   = (Key, (Key, Selection) -> GraphQLT o m e Value)
+
+instance Resolving o m e where
+   getArgs (Right x) f = f x
+   getArgs (Left _) _  = FailedResolver ""
+
+   resolving encode (QueryResolver res) selection@(fieldName,Selection { selectionPosition }) =
+        QueryT $ withExceptT (resolverError selectionPosition fieldName) res >>= unQueryT . (`encode` selection)
 
 class MapGraphQLT (fromO :: OperationKind) (toO :: OperationKind) where
    mapGraphQLT :: GraphQLT fromO m e a -> GraphQLT toO m e a
