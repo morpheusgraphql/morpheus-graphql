@@ -32,9 +32,9 @@ module Data.Morpheus.Types.Internal.Resolver
   , toResponseRes
   ) where
 
+import           Control.Monad                              (join)
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT, withExceptT)
 import           Data.Text                                  (pack, unpack)
-
 -- MORPHEUS
 import           Data.Morpheus.Error.Selection              (resolverError)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..))
@@ -148,12 +148,16 @@ instance (Monad m, PureOperation o)  => Monad (GraphQLT o m e) where
     (QueryT value) >>= nextM = QueryT (value >>= unQueryT . nextM)
     (MutationT value) >>= nextM = MutationT (value >>= unMutationT . nextM)
     -- :TODO implement subscription
-    --(SubscriptionT value) >>= nextM = SubscriptionT (value >>= unMutationT . nextM)
-    --(SubscriptionT f)  >>= nextM = SubscriptionT $ do
-    --                       f1 <- f
-     --                      let event = \x -> unSubscriptionT  (nextM (f1 x))
-     --                      event
-                           --pure $ \event -> f1 event <*>  res1 event
+    --(M m_e_to_ma) >>= a_to_m1_Meb = M $ wow <$> m_e_to_ma
+    --         where
+    --           wow e_to_ma e = do
+    --             a <- e_to_ma e
+    --             unM (a_to_m1_Meb a) >>=  (\x -> x e)
+    (SubscriptionT startValue)  >>= nextM = SubscriptionT $ genResponse <$> startValue
+                  where
+                    genResponse event_to_ma event = do
+                        value_a <- event_to_ma event
+                        unSubscriptionT  (nextM value_a) >>= (\x -> x event)
 
 
 -- (a -> (Key,Selection) -> ResolveT m a) -> (Key,Selection)
