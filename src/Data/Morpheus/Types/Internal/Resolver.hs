@@ -159,6 +159,7 @@ instance (Monad m, PureOperation o)  => Monad (GraphQLT o m e) where
                   where
                     genResponse event_to_ma event = do
                         value_a <- event_to_ma event
+                        -- : FIXME ignores events from second monad
                         (snd $ closeSubStream $ unSubscriptionT (nextM value_a)) >>= (\x -> (x event))
 
 
