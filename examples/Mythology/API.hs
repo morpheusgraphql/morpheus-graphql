@@ -8,7 +8,8 @@ module Mythology.API
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Types        ( GQLRootResolver (..),Undefined(..), GQLType,QUERY, GADTResolver(..), resolver)
+import           Data.Morpheus.Types        (GADTResolver (..), GQLRootResolver (..), GQLType, QUERY, Undefined (..),
+                                             resolver)
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 import           Mythology.Character.Deity  (Deity (..), dbDeity)
@@ -28,9 +29,9 @@ resolveDeity args = QueryResolver $ resolver $ dbDeity (name args) (mythology ar
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {deity = resolveDeity}
-    , mutationResolver = return Undefined
-    , subscriptionResolver = return Undefined
+    { queryResolver = pure Query {deity = resolveDeity}
+    , mutationResolver = pure Undefined
+    , subscriptionResolver = pure Undefined
     }
 
 mythologyApi :: B.ByteString -> IO B.ByteString

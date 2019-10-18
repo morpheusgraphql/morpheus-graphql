@@ -33,12 +33,12 @@ data MapKind k v m =
     }
   deriving (Generic)
 
-mapKindFromList :: (Eq k, Monad m) => [(k, v)] -> MapKind k v m
+mapKindFromList :: (Eq k, Applicative m) => [(k, v)] -> MapKind k v m
 mapKindFromList inputPairs =
   MapKind {size = length inputPairs, pairs = resolvePairs}
   where
     filterBy MapArgs {oneOf = Just list} =
       filter ((`elem` list) . fst) inputPairs
     filterBy _ = inputPairs
-    resolvePairs = return . (map toGQLTuple . filterBy)
+    resolvePairs = pure . (map toGQLTuple . filterBy)
     toGQLTuple (x, y) = Pair x y

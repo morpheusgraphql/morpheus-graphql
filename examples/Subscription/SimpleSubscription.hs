@@ -43,14 +43,14 @@ type APIEvent = Event Channel Content
 rootResolver :: GQLRootResolver IO APIEvent Query Mutation Subscription
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {deity = const fetchDeity}
-    , mutationResolver = return Mutation {createDeity}
-    , subscriptionResolver = return Subscription {newDeity}
+    { queryResolver = pure Query {deity = const fetchDeity}
+    , mutationResolver = pure Mutation {createDeity}
+    , subscriptionResolver = pure Subscription {newDeity}
     }
   where
     -- TODO: resolver $ dbDeity "" Nothing
     createDeity _args = MutationResolver [Event {channels = [ChannelA], content = ContentA 1}]
-        (return Deity {
+        (pure Deity {
             fullName = ""
             , power  = Nothing
             , realm = Sky
@@ -61,7 +61,7 @@ rootResolver =
         subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
         subResolver _                                    = fetchDeity -- Resolve Old State
     ---------------------------------------------------------
-    fetchDeity = QueryResolver $ return $ Deity {
+    fetchDeity = QueryResolver $ pure $ Deity {
       fullName = ""
       , power  = Nothing
       , realm = Sky

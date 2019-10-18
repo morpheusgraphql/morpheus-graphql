@@ -155,6 +155,7 @@ instance (Monad m, PureOperation o)  => Monad (GraphQLT o m e) where
      --                      event
                            --pure $ \event -> f1 event <*>  res1 event
 
+
 -- (a -> (Key,Selection) -> ResolveT m a) -> (Key,Selection)
 convertResolver :: Monad m =>  Position -> Key -> GADTResolver o m e a ->  GraphQLT o m e a
     --FailT $ resolverError selectionPosition fieldName message
@@ -225,18 +226,13 @@ instance (PureOperation o ,Monad m) => Applicative (GADTResolver o m e) where
     (SubscriptionResolver e1 f) <*> (SubscriptionResolver e2 res) = SubscriptionResolver (e1<>e2) $
                        \event -> f event <*>  res event
 
-instance (PureOperation o ,Monad m) => Monad (GADTResolver o m e) where
-   return = pure
-
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
 type instance UnSubResolver (SubResolver m e) = GADTResolver QUERY m e
 
 -------------------------------------------------------------------
-
 failResolveT :: Monad m => GQLErrors -> ResolveT m a
 failResolveT = ExceptT . pure . Left
-
 
 -------------------------------------------------------------------
 -- | Pure Resolver without effect
