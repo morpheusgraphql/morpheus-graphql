@@ -40,13 +40,14 @@ import           Data.Morpheus.Kind                              (ENUM, GQL_KIND
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTOM, KIND, __typeName))
-import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
+import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Data               (OperationKind, QUERY)
-import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), MapGraphQLT (..),
-                                                                  PureOperation (..), convertResolver, liftResolver)
+import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), Resolving(..), GraphQLT (..), MapGraphQLT (..),
+                                                                  PureOperation (..), convertResolver)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
+import Data.Morpheus.Types.Internal.Validation (Validation)
 
 class Encode resolver o m e where
   encode :: PureOperation o => resolver -> (Key, Selection) -> GraphQLT o m e Value
@@ -56,7 +57,7 @@ instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o m e , PureOperation o) =>
 
 -- MAYBE
 instance (Monad m , Encode a o m e) => Encode (Maybe a) o m e where
-  encode Nothing      = const gqlNull
+  encode Nothing      = const $ pure gqlNull
   encode (Just value) = encode value
 
 --  Tuple  (a,b)
@@ -76,11 +77,11 @@ instance (Monad m, Encode a o m e) => Encode [a] o m e where
   encode list query = gqlList <$> traverse (`encode` query) list
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (DecodeObject a, Monad m,PureOperation fO, MapGraphQLT fO o, Encode b fO m e ) => Encode (a -> GADTResolver fO m e b) o m e where
-   encode resolver selection = decodeArgs selection >>= mapGraphQLT . liftResolver encode selection . resolver
+instance (DecodeObject a, Resolving fO m e ,Monad m,PureOperation fO, MapGraphQLT fO o, Encode b fO m e ) => Encode (a -> GADTResolver fO m e b) o m e where
+  encode resolver selection@(_, Selection { selectionArguments }) = mapGraphQLT $ resolving args resolver selection
      where
-      decodeArgs :: (Key, Selection) -> GraphQLT o m e a
-      decodeArgs = eitherGraphQLT . decodeArguments . selectionArguments . snd
+      args :: Validation a 
+      args =  decodeArguments selectionArguments 
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o m e  where
@@ -88,11 +89,11 @@ class EncodeKind (kind :: GQL_KIND) a o m e  where
 
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o m e where
-  encodeKind = pure . gqlScalar . serialize . unVContext
+  encodeKind = pure . pure . gqlScalar . serialize . unVContext
 
 -- ENUM
 instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o m e where
-  encodeKind = pure . gqlString . encodeRep . from . unVContext
+  encodeKind = pure . pure . gqlString . encodeRep . from . unVContext
 
 --  OBJECT
 instance (Monad m, EncodeCon o m e a, Monad m) => EncodeKind OBJECT a o m e where
@@ -167,23 +168,23 @@ instance (GResolver UNION a o m e, GResolver UNION b o m e) => GResolver UNION (
 
 ----- HELPERS ----------------------------
 encodeQuery ::
-     forall m event query schema. (Monad m, EncodeCon QUERY m event schema, EncodeCon QUERY m event query)
+     forall m event query schema. (Monad m, EncodeCon QUERY m event schema, EncodeCon QUERY m event query, Resolving QUERY m event)
   => schema
   -> EncodeOperator QUERY m event query
 encodeQuery schema = encodeOperationWith (objectResolvers (Proxy :: Proxy (CUSTOM schema)) schema)
 
-encodeOperation :: (Monad m, GQL_RES a, EncodeCon opKind m e a) => EncodeOperator opKind m e a
+encodeOperation :: (Monad m, GQL_RES a, EncodeCon opKind m e a , Resolving opKind  m e) => EncodeOperator opKind m e a
 encodeOperation = encodeOperationWith []
 
 encodeOperationWith ::
-     forall o m e a . (Monad m, EncodeCon o m e a)
+     forall o m e a . (Monad m, EncodeCon o m e a, Resolving o m e)
   => [FieldRes o m e]
   -> EncodeOperator o m e a
-encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
-  operationResolveT >>=
-  resolveFields operationSelection . (++) externalRes . objectResolvers (Proxy :: Proxy (CUSTOM a))
-  where
-    operationResolveT = convertResolver operationPosition (getOperationName operationName) rootResolver
+encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} = resolving (Right ()) (\() -> rootResolver) (fromMaybe "" operationName,Selection { selectionRec = SelectionSet operationSelection })  
+--  operationResolveT >>=
+--  resolveFields operationSelection . (++) externalRes . objectResolvers (Proxy :: Proxy (CUSTOM a))
+--  where
+--    operationResolveT = convertResolver operationPosition (getOperationName operationName) rootResolver
 
 resolveFields :: (Monad m , PureOperation o ) => SelectionSet -> [FieldRes o m e] -> GraphQLT o m e Value
 resolveFields selectionSet resolvers = gqlObject <$> traverse selectResolver selectionSet
@@ -195,4 +196,4 @@ resolveFields selectionSet resolvers = gqlObject <$> traverse selectResolver sel
         _                                -> lookupRes key selection
         -------------------------------------------------------------
       where
-        lookupRes resKey sel = (fromMaybe (const $ return gqlNull) $ lookup resKey resolvers) (key, sel)
+        lookupRes resKey sel = (fromMaybe (const $ pure  gqlNull) $ lookup resKey resolvers) (key, sel)
