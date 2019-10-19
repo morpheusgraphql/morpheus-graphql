@@ -133,7 +133,7 @@ instance PureOperation MUTATION where
    eitherGraphQLT = MutationT . ExceptT . pure
 
 instance PureOperation SUBSCRIPTION where
-   pureGraphQLT = SubscriptionT . pure . pure 
+   pureGraphQLT = SubscriptionT . pure . pure
    pureGADTResolver = SubscriptionResolver []  . const . pure
 --   eitherGraphQLT = SubscriptionT . pure  . ExceptT . pure
 
@@ -253,7 +253,7 @@ instance Resolving o m e where
    resolvingObject toRes (SubscriptionResolver subChannels res) (fieldName, Selection { selectionRec = SelectionSet x , selectionPosition}) =
         SubscriptionT $ ExceptT $ StreamT $
             pure $ StreamState { streamEvents = [map Channel subChannels] ,
-                                 streamValue  = pure $ \event -> withExceptT (resolverError selectionPosition fieldName) (unQueryResolver $ res event)  >>= unPure . resolveFields x . toRes
+                                 streamValue  = pure $ RecResolver $ \event -> withExceptT (resolverError selectionPosition fieldName) ( unQueryResolver $ res event)  >>= unPure . resolveFields x . toRes
                                }
    ---------------------------------------------------------------------------------------------------------------------------------------
    resolving encode (QueryResolver res) selection@(fieldName,Selection { selectionPosition }) =
@@ -289,7 +289,7 @@ toResponseRes (SubscriptionT resT)  =
         handleActions (channels, Right subResolver) =
           StreamState [Subscribe $ Event (concat channels) handleRes] (Right  gqlNull)
           where
-            handleRes event = renderResponse <$> runExceptT (subResolver event)
+            handleRes event = renderResponse <$> runExceptT (unRecResolver subResolver event)
 
 instance Functor m => Functor (GADTResolver o m e) where
     fmap _ (FailedResolver mErrors) = FailedResolver mErrors
