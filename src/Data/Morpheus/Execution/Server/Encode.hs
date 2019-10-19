@@ -56,6 +56,7 @@ class Encode resolver o m e where
 
 instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o m e , PureOperation o) => Encode a o m e where
   encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
+  exploreChannels proxy resolver = exploreKindChannels proxy (VContext resolver :: VContext (KIND a) a)
 
 -- MAYBE
 instance (Monad m , Encode a o m e) => Encode (Maybe a) o m e where
@@ -97,14 +98,17 @@ instance (DecodeObject a, Resolving fO m e ,Monad m,PureOperation fO, MapGraphQL
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o m e  where
   encodeKind :: PureOperation o =>  VContext kind a -> (Key, Selection) -> GraphQLT o m e Value
+  exploreKindChannels :: ExploreProxy o m e -> VContext kind a -> [e]
 
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o m e where
   encodeKind = pure . pure . gqlScalar . serialize . unVContext
+  exploreKindChannels _ _ = []
 
 -- ENUM
 instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o m e where
   encodeKind = pure . pure . gqlString . encodeRep . from . unVContext
+  exploreKindChannels _ _ = []
 
 --  OBJECT
 instance (Monad m, EncodeCon o m e a, Monad m) => EncodeKind OBJECT a o m e where
@@ -113,7 +117,8 @@ instance (Monad m, EncodeCon o m e a, Monad m) => EncodeKind OBJECT a o m e wher
     where
       __typenameResolver = ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))
   encodeKind _ (key, Selection {selectionPosition}) = FailT $ subfieldsNotSelected key "" selectionPosition
-
+  --------------------------------------------------------------------------------
+  -- exploreKindChannels
 -- UNION
 instance (Monad m, GQL_RES a, GResolver UNION (Rep a) o m e) => EncodeKind UNION a o m e where
   encodeKind (VContext value) (key, sel@Selection {selectionRec = UnionSelection selections}) =
