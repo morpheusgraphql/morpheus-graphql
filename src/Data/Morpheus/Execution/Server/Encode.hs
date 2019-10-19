@@ -6,7 +6,6 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -49,32 +48,44 @@ import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (
 import           Data.Morpheus.Types.Internal.Validation         (Validation)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
 
+data ExploreProxy (o::OperationKind) (m :: * -> *) e = ExploreProxy
+
 class Encode resolver o m e where
   encode :: PureOperation o => resolver -> (Key, Selection) -> GraphQLT o m e Value
+  exploreChannels :: ExploreProxy o m e -> resolver -> [e]
 
 instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o m e , PureOperation o) => Encode a o m e where
   encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
 
 -- MAYBE
 instance (Monad m , Encode a o m e) => Encode (Maybe a) o m e where
-  encode Nothing      = const $ pure gqlNull
-  encode (Just value) = encode value
+  encode = maybe (const $ pure gqlNull) encode
+  ----------------------------------------------------------
+  exploreChannels proxy = maybe []  (exploreChannels proxy)
 
 --  Tuple  (a,b)
 instance Encode (Pair k v) o m e => Encode (k, v) o m e where
   encode (key, value) = encode (Pair key value)
+  ----------------------------------------------------------
+  exploreChannels proxy (key,value)= exploreChannels proxy (Pair key value)
 
 --  Set
 instance Encode [a] o m e => Encode (Set a) o m e where
   encode = encode . S.toList
+  ----------------------------------------------------------
+  exploreChannels proxy = exploreChannels proxy . S.toList
 
 --  Map
 instance (Eq k, Monad m, Encode (MapKind k v (GADTResolver o m e)) o m e) => Encode (Map k v)  o m e  where
   encode value = encode ((mapKindFromList $ M.toList value) :: MapKind k v (GADTResolver o m e))
+  -----------------------------------------------------------------------------------------
+  -- TODO: exploreChannels proxy =
 
 -- LIST []
 instance (Monad m, Encode a o m e) => Encode [a] o m e where
   encode list query = gqlList <$> traverse (`encode` query) list
+  exploreChannels proxy  = concatMap (exploreChannels proxy)
+
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance (DecodeObject a, Resolving fO m e ,Monad m,PureOperation fO, MapGraphQLT fO o, Encode b fO m e ) => Encode (a -> GADTResolver fO m e b) o m e where
