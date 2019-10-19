@@ -312,7 +312,6 @@ resolver :: m (Either String a) -> Resolver m a
 resolver = ExceptT
 
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
---
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
 data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* -> *) -> * )  (sub :: (* -> *) -> * )  = GQLRootResolver
