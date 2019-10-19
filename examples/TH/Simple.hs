@@ -25,9 +25,9 @@ rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
     {
-      queryResolver = pure Query {queryDeity},
-      mutationResolver = pure Undefined,
-      subscriptionResolver = pure Undefined
+      queryResolver = Query {queryDeity},
+      mutationResolver =  Undefined,
+      subscriptionResolver = Undefined
     }
   where
     queryDeity QueryDeityArgs {queryDeityArgsName} = QueryResolver $ pure $ Deity {deityName, deityPower}

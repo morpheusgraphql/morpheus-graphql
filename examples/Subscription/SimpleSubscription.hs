@@ -43,9 +43,9 @@ type APIEvent = Event Channel Content
 rootResolver :: GQLRootResolver IO APIEvent Query Mutation Subscription
 rootResolver =
   GQLRootResolver
-    { queryResolver = pure Query {deity = const fetchDeity}
-    , mutationResolver = pure Mutation {createDeity}
-    , subscriptionResolver = pure Subscription {newDeity}
+    { queryResolver = Query {deity = const fetchDeity}
+    , mutationResolver = Mutation {createDeity}
+    , subscriptionResolver = Subscription {newDeity}
     }
   where
     -- TODO: resolver $ dbDeity "" Nothing

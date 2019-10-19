@@ -29,9 +29,9 @@ resolveDeity args = QueryResolver $ resolver $ dbDeity (name args) (mythology ar
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
-    { queryResolver = pure Query {deity = resolveDeity}
-    , mutationResolver = pure Undefined
-    , subscriptionResolver = pure Undefined
+    { queryResolver = Query {deity = resolveDeity}
+    , mutationResolver =  Undefined
+    , subscriptionResolver = Undefined
     }
 
 mythologyApi :: B.ByteString -> IO B.ByteString
