@@ -42,12 +42,12 @@ import           Data.Text                                  (pack, unpack)
 -- MORPHEUS
 import           Data.Morpheus.Error.Selection              (resolverError)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
-import           Data.Morpheus.Types.Internal.Base          (Message, Position)
+import           Data.Morpheus.Types.Internal.Base          (Message)
 import           Data.Morpheus.Types.Internal.Data          (Key, MUTATION, OperationKind, QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Stream        (Channel (..), Event (..), ResponseEvent (..),
                                                              ResponseStream, StreamChannel, StreamState (..),
                                                              StreamT (..), SubscribeStream, closeStream,
-                                                             initExceptStream, injectEvents, mapS, pushEvents)
+                                                              injectEvents, mapS, pushEvents)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Types.Internal.Value         (GQLValue (..), Value)
 import           Data.Morpheus.Types.IO                     (renderResponse)
@@ -101,6 +101,7 @@ instance Functor m => Functor (GraphQLT o m e) where
                 eventFmap res event = fmap f (res event)
 
 class PureOperation (o::OperationKind) where
+    unPure :: GraphQLT o m event a -> ResolveT m a
     pureGraphQLT :: Monad m => a -> GraphQLT o m event a
     pureGADTResolver :: Monad m => a -> GADTResolver o m event a
     eitherGraphQLT :: Monad m => Validation a -> GraphQLT o m event a
@@ -134,6 +135,9 @@ instance (PureOperation o, Monad m) => Applicative (GraphQLT o m e) where
                        f1 <- f
                        res1 <- res
                        pure $ \event -> f1 event <*>  res1 event
+
+unQueryResolver :: Applicative m => GADTResolver QUERY m e a -> Resolver m a
+unQueryResolver (QueryResolver x) = x
 
 unQueryT :: Applicative m => GraphQLT QUERY m e a -> ResolveT m a
 unQueryT (QueryT x) = x
@@ -228,6 +232,12 @@ instance Resolving o m e where
    --------------------------------------------------------------------------------------------------------------------------------
    resolvingObject toRes (MutationResolver events res) (fieldName, Selection { selectionRec = SelectionSet x , selectionPosition}) =
       MutationT $ pushEvents events (withExceptT (resolverError selectionPosition fieldName) (injectEvents [] res)  >>= unMutationT . resolveFields x . toRes)
+   --------------------------------------------------------------------------------------------------------------------------------
+   resolvingObject toRes (SubscriptionResolver subChannels res) (fieldName, Selection { selectionRec = SelectionSet x , selectionPosition}) =
+        SubscriptionT $ ExceptT $ StreamT $
+            pure $ StreamState { streamEvents = [map Channel subChannels] ,
+                                 streamValue  = pure $ \event -> withExceptT (resolverError selectionPosition fieldName) (unQueryResolver $ res event)  >>= unPure . resolveFields x . toRes
+                               }
    ---------------------------------------------------------------------------------------------------------------------------------------
    resolving encode (QueryResolver res) selection@(fieldName,Selection { selectionPosition }) =
         QueryT $ withExceptT (resolverError selectionPosition fieldName) res >>= unQueryT . (`encode` selection)
@@ -263,7 +273,6 @@ toResponseRes (SubscriptionT resT)  =
           StreamState [Subscribe $ Event (concat channels) handleRes] (Right  gqlNull)
           where
             handleRes event = renderResponse <$> runExceptT (subResolver event)
-
 
 instance Functor m => Functor (GADTResolver o m e) where
     fmap _ (FailedResolver mErrors) = FailedResolver mErrors
