@@ -111,14 +111,16 @@ instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o m e where
   exploreKindChannels _ _ = []
 
 --  OBJECT
-instance (Monad m, EncodeCon o m e a, Monad m) => EncodeKind OBJECT a o m e where
+instance (Monad m, EncodeCon o m e a, Monad m, GResolver OBJECT (Rep a) o m e) => EncodeKind OBJECT a o m e where
   encodeKind (VContext value) (_, Selection {selectionRec = SelectionSet selection}) =
     resolveObject selection (__typenameResolver : objectResolvers (Proxy :: Proxy (CUSTOM a)) value)
     where
       __typenameResolver = ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))
   encodeKind _ (key, Selection {selectionPosition}) = FailT $ subfieldsNotSelected key "" selectionPosition
   --------------------------------------------------------------------------------
-  -- exploreKindChannels
+  exploreKindChannels _ (VContext value)  = getChannels (ResContext :: ResContext OBJECT o m e value) (from value)
+
+-- exploreKindChannels
 -- UNION
 instance (Monad m, GQL_RES a, GResolver UNION (Rep a) o m e) => EncodeKind UNION a o m e where
   encodeKind (VContext value) (key, sel@Selection {selectionRec = UnionSelection selections}) =
@@ -128,6 +130,7 @@ instance (Monad m, GQL_RES a, GResolver UNION (Rep a) o m e) => EncodeKind UNION
       lookupSelection = fromMaybe [] $ lookup typeName selections
       (typeName, resolver) = unionResolver value
   encodeKind _ _ = FailT $ internalUnknownTypeMessage "union Resolver only should recieve UnionSelection"
+  exploreKindChannels _ (VContext value)  = getChannels (ResContext :: ResContext UNION o m e value) (from value)
 
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
@@ -157,6 +160,7 @@ unionResolver = getResolvers (ResContext :: ResContext UNION o m e value) . from
 -- | Derives resolvers for OBJECT and UNION
 class GResolver (kind :: GQL_KIND) f o m e where
   getResolvers :: PureOperation o => ResContext kind o m e value -> f a -> GRes kind (GraphQLT o m e Value)
+  getChannels :: ResContext kind o m e value -> f a -> [e]
 
 instance GResolver kind f o m e => GResolver kind (M1 D c f) o m e where
   getResolvers context (M1 src) = getResolvers context src
