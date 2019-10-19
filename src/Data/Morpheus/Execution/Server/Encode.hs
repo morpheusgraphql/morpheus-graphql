@@ -164,27 +164,35 @@ class GResolver (kind :: GQL_KIND) f o m e where
 
 instance GResolver kind f o m e => GResolver kind (M1 D c f) o m e where
   getResolvers context (M1 src) = getResolvers context src
+  getChannels context (M1 src) = getChannels context src
 
 instance GResolver kind f o m e => GResolver kind (M1 C c f) o m e where
   getResolvers context (M1 src) = getResolvers context src
+  getChannels context (M1 src) = getChannels context src
 
 -- OBJECT
 instance GResolver OBJECT U1 o m e where
   getResolvers _ _ = []
+  getChannels _ _ = []
 
 instance (Selector s, GQLType a, Encode a o m e) => GResolver OBJECT (M1 S s (K1 s2 a)) o m e where
   getResolvers _ m@(M1 (K1 src)) = [(pack (selName m), encode src)]
+  getChannels _ (M1 (K1 src)) = exploreChannels (ExploreProxy :: ExploreProxy o m e) src
 
 instance (GResolver OBJECT f o m e, GResolver OBJECT g o m e) => GResolver OBJECT (f :*: g) o m e where
   getResolvers context (a :*: b) = getResolvers context a ++ getResolvers context b
+  getChannels context (a :*: b) = getChannels context a ++ getChannels context b
 
 -- UNION
 instance (Selector s, GQLType a, Encode a o m e ) => GResolver UNION (M1 S s (K1 s2 a)) o m e where
   getResolvers _ (M1 (K1 src)) = (__typeName (Proxy @a), encode src)
+  getChannels _ (M1 (K1 src)) = exploreChannels (ExploreProxy :: ExploreProxy o m e) src
 
 instance (GResolver UNION a o m e, GResolver UNION b o m e) => GResolver UNION (a :+: b) o m e where
   getResolvers context (L1 x) = getResolvers context x
   getResolvers context (R1 x) = getResolvers context x
+  getChannels context (L1 x) = getChannels context x
+  getChannels context (R1 x) = getChannels context x
 
 ----- HELPERS ----------------------------
 encodeQuery ::
