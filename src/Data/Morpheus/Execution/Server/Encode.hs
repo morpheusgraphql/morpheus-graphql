@@ -119,7 +119,7 @@ type GQL_RES a = (Generic a, GQLType a)
 
 type EncodeOperator o m e a  = a -> ValidOperation -> GraphQLT o m e Value
 
-type EncodeCon o m e a = (GQL_RES a,  PureOperation o ,ObjectResolvers (CUSTOM a) a o m e)
+type EncodeCon o m e a = (GQL_RES a,  ObjectResolvers (CUSTOM a) a o m e)
 
 type FieldRes  o m e   = (Key, (Key, Selection) -> GraphQLT o m e Value)
 
@@ -185,7 +185,7 @@ encodeSubscription ::
 encodeSubscription = encodeOperationWith []
 
 encodeOperationWith ::
-     forall o m e a . (Monad m, EncodeCon o m e a, Resolving o m e)
+     forall o m e a . (Monad m, EncodeCon o m e a, Resolving o m e, PureOperation o)
   => [FieldRes o m e]
   -> EncodeOperator o m e a
 encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =

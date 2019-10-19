@@ -96,7 +96,6 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
   renderResponse <$> runExceptT (validRequest >>= execOperator)
   ------------------------------------------------------------
   where
-
     ---------------------------------------------------------
     validRequest :: Monad m => ResponseT m event (DataTypeLib, ValidOperation)
     validRequest =
