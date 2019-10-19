@@ -16,7 +16,8 @@ module Data.Morpheus.Execution.Server.Encode
   , GResolver(..)
   , Encode(..)
   , encodeQuery
-  , encodeOperation
+  , encodeSubscription
+  , encodeMutation
   , ObjectResolvers(..)
   ) where
 
@@ -42,7 +43,7 @@ import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTO
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Data               (OperationKind, QUERY)
+import           Data.Morpheus.Types.Internal.Data               (OperationKind, QUERY,MUTATION,SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), MapGraphQLT (..),
                                                                   PureOperation (..), Resolving (..), resolveObject)
 import           Data.Morpheus.Types.Internal.Validation         (Validation)
@@ -116,7 +117,7 @@ instance (Monad m, GQL_RES a, GResolver UNION (Rep a) o m e) => EncodeKind UNION
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
 
-type EncodeOperator o m e a  = GADTResolver o m e a -> ValidOperation -> GraphQLT o m e Value
+type EncodeOperator o m e a  = a -> ValidOperation -> GraphQLT o m e Value
 
 type EncodeCon o m e a = (GQL_RES a,  PureOperation o ,ObjectResolvers (CUSTOM a) a o m e)
 
@@ -173,14 +174,21 @@ encodeQuery ::
   -> EncodeOperator QUERY m event query
 encodeQuery schema = encodeOperationWith (objectResolvers (Proxy :: Proxy (CUSTOM schema)) schema)
 
-encodeOperation :: (Monad m, GQL_RES a, EncodeCon opKind m e a , Resolving opKind  m e) => EncodeOperator opKind m e a
-encodeOperation = encodeOperationWith []
+encodeMutation ::
+     forall m event mut. (Monad m, EncodeCon MUTATION m event mut, Resolving MUTATION m event)
+  => EncodeOperator MUTATION m event mut
+encodeMutation = encodeOperationWith []
+
+encodeSubscription ::
+     forall m event mut. (Monad m, EncodeCon SUBSCRIPTION m event mut, Resolving SUBSCRIPTION m event)
+  => EncodeOperator SUBSCRIPTION m event mut
+encodeSubscription = encodeOperationWith []
 
 encodeOperationWith ::
      forall o m e a . (Monad m, EncodeCon o m e a, Resolving o m e)
   => [FieldRes o m e]
   -> EncodeOperator o m e a
 encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
-  gqlObject <$> resolvingObject toResolvers rootResolver (getOperationName operationName, Selection { selectionRec = SelectionSet operationSelection , selectionPosition = operationPosition })
+  gqlObject <$> resolvingObject toResolvers (pure rootResolver) (getOperationName operationName, Selection { selectionRec = SelectionSet operationSelection , selectionPosition = operationPosition })
   where
     toResolvers = objectResolvers (Proxy :: Proxy (CUSTOM a))

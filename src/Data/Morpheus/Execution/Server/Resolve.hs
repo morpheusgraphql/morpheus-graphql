@@ -28,7 +28,7 @@ import           Data.Proxy                                          (Proxy (..)
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                           (badRequestError)
 import           Data.Morpheus.Execution.Internal.GraphScanner       (resolveUpdates)
-import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, encodeOperation, encodeQuery)
+import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, encodeMutation, encodeSubscription, encodeQuery)
 import           Data.Morpheus.Execution.Server.Introspect           (IntroCon, ObjectFields (..))
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, publishUpdates)
 import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
@@ -108,8 +108,8 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
     execOperator (schema, operation@Operation {operationKind = Query}) =
         --TODO:  -- do  $ schemaRes <- schemaAPI schema
         toResponseRes (encodeQuery ({- TODO: schemaRes -}) queryResolver operation)
-    execOperator (_, operation@Operation {operationKind = Mutation}) = toResponseRes (encodeOperation mutationResolver operation)
-    execOperator (_, operation@Operation {operationKind = Subscription}) = toResponseRes (encodeOperation subscriptionResolver operation)
+    execOperator (_, operation@Operation {operationKind = Mutation}) = toResponseRes (encodeMutation mutationResolver operation)
+    execOperator (_, operation@Operation {operationKind = Subscription}) = toResponseRes (encodeSubscription subscriptionResolver operation)
 
 statefulResolver ::
      EventCon s
