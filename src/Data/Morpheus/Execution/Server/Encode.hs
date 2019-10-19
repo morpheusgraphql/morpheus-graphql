@@ -52,7 +52,7 @@ data ExploreProxy (o::OperationKind) (m :: * -> *) e = ExploreProxy
 
 class Encode resolver o m e where
   encode :: PureOperation o => resolver -> (Key, Selection) -> GraphQLT o m e Value
-  exploreChannels :: ExploreProxy o m e -> resolver -> [e]
+  exploreChannels :: ExploreProxy o m e -> resolver -> (Key, Selection) -> [e]
 
 instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o m e , PureOperation o) => Encode a o m e where
   encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
@@ -62,7 +62,7 @@ instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o m e , PureOperation o) =>
 instance (Monad m , Encode a o m e) => Encode (Maybe a) o m e where
   encode = maybe (const $ pure gqlNull) encode
   ----------------------------------------------------------
-  exploreChannels proxy = maybe []  (exploreChannels proxy)
+  exploreChannels proxy = maybe (const []) (exploreChannels proxy)
 
 --  Tuple  (a,b)
 instance Encode (Pair k v) o m e => Encode (k, v) o m e where
@@ -85,7 +85,7 @@ instance (Eq k, Monad m, Encode (MapKind k v (GADTResolver o m e)) o m e) => Enc
 -- LIST []
 instance (Monad m, Encode a o m e) => Encode [a] o m e where
   encode list query = gqlList <$> traverse (`encode` query) list
-  exploreChannels proxy  = concatMap (exploreChannels proxy)
+  exploreChannels proxy list query = concatMap (flip (exploreChannels proxy) query) list
 
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
@@ -94,21 +94,28 @@ instance (DecodeObject a, Resolving fO m e ,Monad m,PureOperation fO, MapGraphQL
      where
       args :: Validation a
       args =  decodeArguments selectionArguments
+  exploreChannels proxy resolver selection@(_, Selection { selectionArguments }) = 
+        case args of
+            Right x -> case resolver x of
+                (SubscriptionResolver events res) -> []
+       where
+        args :: Validation a
+        args =  decodeArguments selectionArguments
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o m e  where
   encodeKind :: PureOperation o =>  VContext kind a -> (Key, Selection) -> GraphQLT o m e Value
-  exploreKindChannels :: ExploreProxy o m e -> VContext kind a -> [e]
+  exploreKindChannels :: ExploreProxy o m e -> VContext kind a -> (Key, Selection) -> [e]
 
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o m e where
   encodeKind = pure . pure . gqlScalar . serialize . unVContext
-  exploreKindChannels _ _ = []
+  exploreKindChannels _ _ _ = []
 
 -- ENUM
 instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o m e where
   encodeKind = pure . pure . gqlString . encodeRep . from . unVContext
-  exploreKindChannels _ _ = []
+  exploreKindChannels _ _ _ = []
 
 --  OBJECT
 instance (Monad m, EncodeCon o m e a, Monad m, GResolver OBJECT (Rep a) o m e) => EncodeKind OBJECT a o m e where
@@ -118,7 +125,7 @@ instance (Monad m, EncodeCon o m e a, Monad m, GResolver OBJECT (Rep a) o m e) =
       __typenameResolver = ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))
   encodeKind _ (key, Selection {selectionPosition}) = FailT $ subfieldsNotSelected key "" selectionPosition
   --------------------------------------------------------------------------------
-  exploreKindChannels _ (VContext value)  = getChannels (ResContext :: ResContext OBJECT o m e value) (from value)
+  exploreKindChannels _ (VContext value) = getChannels (ResContext :: ResContext OBJECT o m e value) (from value)
 
 -- exploreKindChannels
 -- UNION
@@ -130,7 +137,7 @@ instance (Monad m, GQL_RES a, GResolver UNION (Rep a) o m e) => EncodeKind UNION
       lookupSelection = fromMaybe [] $ lookup typeName selections
       (typeName, resolver) = unionResolver value
   encodeKind _ _ = FailT $ internalUnknownTypeMessage "union Resolver only should recieve UnionSelection"
-  exploreKindChannels _ (VContext value)  = getChannels (ResContext :: ResContext UNION o m e value) (from value)
+  exploreKindChannels _ (VContext value) = getChannels (ResContext :: ResContext UNION o m e value) (from value)
 
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
@@ -160,7 +167,7 @@ unionResolver = getResolvers (ResContext :: ResContext UNION o m e value) . from
 -- | Derives resolvers for OBJECT and UNION
 class GResolver (kind :: GQL_KIND) f o m e where
   getResolvers :: PureOperation o => ResContext kind o m e value -> f a -> GRes kind (GraphQLT o m e Value)
-  getChannels :: ResContext kind o m e value -> f a -> [e]
+  getChannels :: ResContext kind o m e value -> f a -> (Key,Selection) -> [e]
 
 instance GResolver kind f o m e => GResolver kind (M1 D c f) o m e where
   getResolvers context (M1 src) = getResolvers context src
@@ -173,15 +180,15 @@ instance GResolver kind f o m e => GResolver kind (M1 C c f) o m e where
 -- OBJECT
 instance GResolver OBJECT U1 o m e where
   getResolvers _ _ = []
-  getChannels _ _ = []
+  getChannels _ _ _ = []
 
 instance (Selector s, GQLType a, Encode a o m e) => GResolver OBJECT (M1 S s (K1 s2 a)) o m e where
   getResolvers _ m@(M1 (K1 src)) = [(pack (selName m), encode src)]
   getChannels _ (M1 (K1 src)) = exploreChannels (ExploreProxy :: ExploreProxy o m e) src
 
 instance (GResolver OBJECT f o m e, GResolver OBJECT g o m e) => GResolver OBJECT (f :*: g) o m e where
-  getResolvers context (a :*: b) = getResolvers context a ++ getResolvers context b
-  getChannels context (a :*: b) = getChannels context a ++ getChannels context b
+  getResolvers context (a :*: b)  = getResolvers context a  ++ getResolvers context b 
+  getChannels context (a :*: b) s = getChannels context a s ++ getChannels context b s
 
 -- UNION
 instance (Selector s, GQLType a, Encode a o m e ) => GResolver UNION (M1 S s (K1 s2 a)) o m e where
