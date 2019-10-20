@@ -27,7 +27,7 @@ import           Data.Typeable                         (TyCon, TypeRep, Typeable
 import           Data.Morpheus.Kind
 import           Data.Morpheus.Types.Custom            (MapKind, Pair)
 import           Data.Morpheus.Types.Internal.Data     (DataFingerprint (..), QUERY)
-import           Data.Morpheus.Types.Internal.Resolver (GADTResolver (..))
+import           Data.Morpheus.Types.Internal.Resolver (Resolver (..))
 import           Data.Morpheus.Types.Types             (Undefined (..))
 
 type TRUE = 'True
@@ -35,7 +35,7 @@ type TRUE = 'True
 type FALSE = 'False
 
 resolverCon :: TyCon
-resolverCon = typeRepTyCon $ typeRep $ Proxy @(GADTResolver QUERY Maybe)
+resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver QUERY Maybe)
 
 -- | replaces typeName (A,B) with Pair_A_B
 replacePairCon :: TyCon -> TyCon
@@ -144,8 +144,8 @@ instance GQLType a => GQLType (Either s a) where
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
-instance GQLType a => GQLType (GADTResolver o m e a) where
-      type KIND (GADTResolver o m e a) = WRAPPER
+instance GQLType a => GQLType (Resolver o m e a) where
+      type KIND (Resolver o m e a) = WRAPPER
       __typeName _ = __typeName (Proxy @a)
       __typeFingerprint _ = __typeFingerprint (Proxy @a)
 

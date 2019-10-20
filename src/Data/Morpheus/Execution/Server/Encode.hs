@@ -44,8 +44,8 @@ import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Data               (MUTATION, OperationKind, QUERY, SUBSCRIPTION)
-import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), MapGraphQLT (..),
-                                                                  PureOperation (..), Resolving (..), resolveObject)
+import           Data.Morpheus.Types.Internal.Resolver           (GraphQLT (..), MapGraphQLT (..), PureOperation (..),
+                                                                  Resolver (..), Resolving (..), resolveObject)
 import           Data.Morpheus.Types.Internal.Validation         (Validation)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
 
@@ -68,8 +68,8 @@ instance Encode [a] o m e => Encode (Set a) o m e where
   encode = encode . S.toList
 
 --  Map
-instance (Eq k, Monad m, Encode (MapKind k v (GADTResolver o m e)) o m e) => Encode (Map k v)  o m e  where
-  encode value = encode ((mapKindFromList $ M.toList value) :: MapKind k v (GADTResolver o m e))
+instance (Eq k, Monad m, Encode (MapKind k v (Resolver o m e)) o m e) => Encode (Map k v)  o m e  where
+  encode value = encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver o m e))
 
 -- LIST []
 instance (Monad m, Encode a o m e) => Encode [a] o m e where
@@ -77,7 +77,7 @@ instance (Monad m, Encode a o m e) => Encode [a] o m e where
 
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (DecodeObject a, Resolving fO m e ,Monad m,PureOperation fO, MapGraphQLT fO o, Encode b fO m e ) => Encode (a -> GADTResolver fO m e b) o m e where
+instance (DecodeObject a, Resolving fO m e ,Monad m,PureOperation fO, MapGraphQLT fO o, Encode b fO m e ) => Encode (a -> Resolver fO m e b) o m e where
   encode resolver selection@(_, Selection { selectionArguments }) = mapGraphQLT $ resolving encode (getArgs args resolver)  selection
      where
       args :: Validation a
@@ -169,10 +169,10 @@ instance (GResolver UNION a o m e, GResolver UNION b o m e) => GResolver UNION (
 
 ----- HELPERS ----------------------------
 encodeQuery ::
-     forall m event query (schema :: (* -> *) -> *). (Monad m, EncodeCon QUERY m event (schema (GADTResolver QUERY m event)), EncodeCon QUERY m event query, Resolving QUERY m event)
-  => schema (GADTResolver QUERY m event)
+     forall m event query (schema :: (* -> *) -> *). (Monad m, EncodeCon QUERY m event (schema (Resolver QUERY m event)), EncodeCon QUERY m event query, Resolving QUERY m event)
+  => schema (Resolver QUERY m event)
   -> EncodeOperator QUERY m event query
-encodeQuery schema = encodeOperationWith (objectResolvers (Proxy :: Proxy (CUSTOM (schema (GADTResolver QUERY m event)))) schema)
+encodeQuery schema = encodeOperationWith (objectResolvers (Proxy :: Proxy (CUSTOM (schema (Resolver QUERY m event)))) schema)
 
 encodeMutation ::
      forall m event mut. (Monad m, EncodeCon MUTATION m event mut, Resolving MUTATION m event)
