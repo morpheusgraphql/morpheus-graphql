@@ -224,7 +224,7 @@ instance Resolving o m e where
        --------------------------------------------------------------------------------------------------------------------------------
        resObj (SubscriptionResolver subChannels res)  x =
             SubscriptionT $ ExceptT $ StreamT $
-                pure $ StreamState { streamEvents = [map Channel subChannels] ,
+                pure $ StreamState { streamEvents = map Channel subChannels,
                                      streamValue  = pure $ RecResolver $ \event -> withExceptT (resolverError selectionPosition fieldName) ( unQueryResolver $ res event)  >>= unPure . resolveFields x . toRes
                                    }
    ---------------------------------------------------------------------------------------------------------------------------------------
@@ -256,7 +256,7 @@ toResponseRes (SubscriptionT resT)  =
       where
         handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
         handleActions (channels, Right subResolver) =
-          StreamState [Subscribe $ Event (concat channels) handleRes] (Right  gqlNull)
+          StreamState [Subscribe $ Event channels handleRes] (Right  gqlNull)
           where
             handleRes event = renderResponse <$> runExceptT (unRecResolver subResolver event)
 

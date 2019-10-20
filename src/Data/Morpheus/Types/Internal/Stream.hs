@@ -39,7 +39,7 @@ data ResponseEvent m event
   | Subscribe (SubEvent m event)
 
 -- STREAMS
-type SubscribeStream m e = StreamT m [Channel e]
+type SubscribeStream m e = StreamT m (Channel e)
 
 type PublishStream m event = StreamT m event
 
