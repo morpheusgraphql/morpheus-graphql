@@ -185,8 +185,7 @@ instance PureOperation MUTATION where
 instance PureOperation SUBSCRIPTION where
    pureGraphQLT = SubscriptionT . pure . pure
    pureGADTResolver = SubscriptionResolver []  . const . pure
---   eitherGraphQLT = SubscriptionT . pure  . ExceptT . pure
-
+   eitherGraphQLT = SubscriptionT . fmap pure  . ExceptT . pure
 
 resolveObject :: (Monad m , PureOperation o ) => SelectionSet -> [FieldRes o m e] -> GraphQLT o m e Value
 resolveObject selSet = fmap gqlObject . resolveFields selSet
@@ -239,13 +238,14 @@ instance Resolving o m e where
 
 
 class MapGraphQLT (fromO :: OperationKind) (toO :: OperationKind) where
-   mapGraphQLT :: GraphQLT fromO m e a -> GraphQLT toO m e a
+   mapGraphQLT :: Monad m => GraphQLT fromO m e a -> GraphQLT toO m e a
 
 instance MapGraphQLT fromO fromO where
     mapGraphQLT = id
 
 instance MapGraphQLT QUERY SUBSCRIPTION where
-    --mapGraphQLT = id
+    mapGraphQLT (QueryT x) = SubscriptionT $ injectEvents [] (fmap pure x)
+    mapGraphQLT (FailT x)  = FailT x
 
 toResponseRes :: Monad m =>  GraphQLT o m event Value -> ResponseT m event Value
 toResponseRes (FailT errors) = ExceptT $ StreamT $ pure $ StreamState [] $ Left errors
