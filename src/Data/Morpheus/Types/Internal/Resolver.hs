@@ -4,6 +4,7 @@
 {-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TupleSections         #-}
@@ -33,6 +34,7 @@ module Data.Morpheus.Types.Internal.Resolver
   --, liftResolver
  -- , convertResolver
   , toResponseRes
+  , withObject
   , Resolving(..)
   ) where
 
@@ -40,7 +42,7 @@ import           Control.Monad.Trans.Except                 (ExceptT (..), runEx
 import           Data.Maybe                                 (fromMaybe)
 import           Data.Text                                  (pack, unpack)
 -- MORPHEUS
-import           Data.Morpheus.Error.Selection              (resolverError)
+import           Data.Morpheus.Error.Selection              (resolverError, subfieldsNotSelected)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base          (Message)
 import           Data.Morpheus.Types.Internal.Data          (Key, MUTATION, OperationKind, QUERY, SUBSCRIPTION)
@@ -51,6 +53,10 @@ import           Data.Morpheus.Types.Internal.Stream        (Channel (..), Event
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Types.Internal.Value         (GQLValue (..), Value)
 import           Data.Morpheus.Types.IO                     (renderResponse)
+
+withObject :: ( SelectionSet -> GraphQLT o m e value) -> (Key,Selection)  -> GraphQLT o m e value
+withObject f (_, Selection {selectionRec = SelectionSet selection}) = f selection
+withObject _ (key, Selection {selectionPosition}) = FailT $ subfieldsNotSelected key "" selectionPosition
 
 class Monad m =>
       GQLFail (t :: (* -> *) -> * -> *) m
@@ -147,7 +153,7 @@ instance Functor m => Functor (GADTResolver o m e) where
     fmap f (SubscriptionResolver events mResolver) = SubscriptionResolver events (eventFmap mResolver)
             where
                 eventFmap res event = fmap f (res event)
-                
+
 -- GADTResolver Applicative
 instance (PureOperation o ,Monad m) => Applicative (GADTResolver o m e) where
     pure = pureGADTResolver
@@ -184,7 +190,7 @@ instance PureOperation MUTATION where
 instance PureOperation SUBSCRIPTION where
    pureGraphQLT = SubscriptionT . pure . pure
    pureGADTResolver = SubscriptionResolver []  . const . pure
-   eitherGraphQLT = SubscriptionT . pure  . ExceptT . pure
+--   eitherGraphQLT = SubscriptionT . pure  . ExceptT . pure
 
 resolveObject :: (Monad m , PureOperation o ) => SelectionSet -> [FieldRes o m e] -> GraphQLT o m e Value
 resolveObject selSet = fmap gqlObject . resolveFields selSet
@@ -212,18 +218,20 @@ instance Resolving o m e where
    getArgs (Right x) f = f x
    getArgs (Left _) _  = FailedResolver ""
    ------------------------------------------
-   resolvingObject toRes (QueryResolver res) (fieldName, Selection { selectionRec = SelectionSet x , selectionPosition}) =
-        QueryT $ withExceptT (resolverError selectionPosition fieldName) res  >>= unQueryT . resolveFields x . toRes
-   --------------------------------------------------------------------------------------------------------------------------------
-   resolvingObject toRes (MutationResolver events res) (fieldName, Selection { selectionRec = SelectionSet x , selectionPosition}) =
-      MutationT $ pushEvents events (withExceptT (resolverError selectionPosition fieldName) (injectEvents [] res)  >>= unMutationT . resolveFields x . toRes)
-   --------------------------------------------------------------------------------------------------------------------------------
-   resolvingObject toRes (SubscriptionResolver subChannels res) (fieldName, Selection { selectionRec = SelectionSet x , selectionPosition}) =
-        SubscriptionT $ ExceptT $ StreamT $
-            pure $ StreamState { streamEvents = [map Channel subChannels] ,
-                                 streamValue  = pure $ RecResolver $ \event -> withExceptT (resolverError selectionPosition fieldName) ( unQueryResolver $ res event)  >>= unPure . resolveFields x . toRes
-                               }
-
+   resolvingObject toRes operation sel@(fieldName,Selection {selectionPosition})= withObject (resObj operation) sel
+    where
+       resObj (FailedResolver errors) _ = FailT (resolverError selectionPosition fieldName errors)
+       resObj (QueryResolver res) x  =
+            QueryT $ withExceptT (resolverError selectionPosition fieldName) res  >>= unQueryT . resolveFields x . toRes
+       --------------------------------------------------------------------------------------------------------------------------------
+       resObj (MutationResolver events res)  x  =
+          MutationT $ pushEvents events (withExceptT (resolverError selectionPosition fieldName) (injectEvents [] res)  >>= unMutationT . resolveFields x . toRes)
+       --------------------------------------------------------------------------------------------------------------------------------
+       resObj (SubscriptionResolver subChannels res)  x =
+            SubscriptionT $ ExceptT $ StreamT $
+                pure $ StreamState { streamEvents = [map Channel subChannels] ,
+                                     streamValue  = pure $ RecResolver $ \event -> withExceptT (resolverError selectionPosition fieldName) ( unQueryResolver $ res event)  >>= unPure . resolveFields x . toRes
+                                   }
    ---------------------------------------------------------------------------------------------------------------------------------------
    resolving encode (QueryResolver res) selection@(fieldName,Selection { selectionPosition }) =
         QueryT $ withExceptT (resolverError selectionPosition fieldName) res >>= unQueryT . (`encode` selection)

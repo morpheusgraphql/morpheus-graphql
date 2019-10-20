@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTO
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Data               (OperationKind, QUERY,MUTATION,SUBSCRIPTION)
+import           Data.Morpheus.Types.Internal.Data               (MUTATION, OperationKind, QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Resolver           (GADTResolver (..), GraphQLT (..), MapGraphQLT (..),
                                                                   PureOperation (..), Resolving (..), resolveObject)
 import           Data.Morpheus.Types.Internal.Validation         (Validation)
@@ -157,7 +157,7 @@ instance (Selector s, GQLType a, Encode a o m e) => GResolver OBJECT (M1 S s (K1
   getResolvers _ m@(M1 (K1 src)) = [(pack (selName m), encode src)]
 
 instance (GResolver OBJECT f o m e, GResolver OBJECT g o m e) => GResolver OBJECT (f :*: g) o m e where
-  getResolvers context (a :*: b)  = getResolvers context a  ++ getResolvers context b 
+  getResolvers context (a :*: b)  = getResolvers context a  ++ getResolvers context b
 
 -- UNION
 instance (Selector s, GQLType a, Encode a o m e ) => GResolver UNION (M1 S s (K1 s2 a)) o m e where
@@ -189,6 +189,12 @@ encodeOperationWith ::
   => [FieldRes o m e]
   -> EncodeOperator o m e a
 encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
-  gqlObject <$> resolvingObject toResolvers (pure rootResolver) (getOperationName operationName, Selection { selectionRec = SelectionSet operationSelection , selectionPosition = operationPosition })
+  gqlObject <$> resolvingObject toResolvers (pure rootResolver) (getOperationName operationName, 
+      Selection { 
+        selectionArguments = [] , 
+        selectionRec = SelectionSet operationSelection , 
+        selectionPosition = operationPosition 
+      }
+  )
   where
     toResolvers = objectResolvers (Proxy :: Proxy (CUSTOM a))
