@@ -10,8 +10,8 @@ module Feature.WrappedTypeName.API
 
 import           Data.Morpheus       (interpreter)
 import           Data.Morpheus.Kind  (OBJECT)
-import           Data.Morpheus.Types (GQLRequest, Event, GQLResponse, GQLRootResolver (..), GQLType (..),  IORes,
-                                      IOSubRes, SubResolver (..))
+import           Data.Morpheus.Types (Event, GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), IORes,
+                                      Resolver (..), constRes)
 import           Data.Text           (Text)
 import           Data.Typeable       (Typeable)
 import           GHC.Generics        (Generic)
@@ -51,22 +51,20 @@ data Channel =
 type EVENT =  Event Channel ()
 
 data Subscription (m :: * -> *) = Subscription
-  { sub1 :: () -> IOSubRes EVENT (Maybe (WA IORes))
-  , sub2 :: () -> IOSubRes EVENT (Maybe (Wrapped Int Int))
-  , sub3 :: () -> IOSubRes EVENT (Maybe (Wrapped (Wrapped Text Int) Text))
+  { sub1 :: () -> m (Maybe (WA (IORes EVENT)))
+  , sub2 :: () -> m (Maybe (Wrapped Int Int))
+  , sub3 :: () -> m (Maybe (Wrapped (Wrapped Text Int) Text))
   } deriving (Generic, GQLType)
 
 rootResolver :: GQLRootResolver IO EVENT Query Mutation Subscription
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {a1 = WA {aText = const $ pure "test1", aInt = 0}, a2 = Nothing, a3 = Nothing}
-    , mutationResolver = return Mutation {mut1 = Nothing, mut2 = Nothing, mut3 = Nothing}
-    , subscriptionResolver =
-        return
-          Subscription
-            { sub1 = const SubResolver {subChannels = [Channel], subResolver = const $ return Nothing}
-            , sub2 = const SubResolver {subChannels = [Channel], subResolver = const $ return Nothing}
-            , sub3 = const SubResolver {subChannels = [Channel], subResolver = const $ return Nothing}
+    { queryResolver = Query {a1 = WA {aText = const $ pure "test1", aInt = 0}, a2 = Nothing, a3 = Nothing}
+    , mutationResolver = Mutation {mut1 = Nothing, mut2 = Nothing, mut3 = Nothing}
+    , subscriptionResolver = Subscription
+            { sub1 = const SubResolver {subChannels = [Channel], subResolver = constRes Nothing}
+            , sub2 = const SubResolver {subChannels = [Channel], subResolver = constRes  Nothing}
+            , sub3 = const SubResolver {subChannels = [Channel], subResolver = constRes Nothing}
             }
     }
 

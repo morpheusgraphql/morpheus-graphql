@@ -52,15 +52,15 @@ data Query m = Query
   , fc    :: C
   } deriving (Generic, GQLType)
 
-resolveUnion :: () -> IORes [AOrB]
+resolveUnion :: () -> IORes () [AOrB]
 resolveUnion _ = return [A' A {aText = "at", aInt = 1}, B' B {bText = "bt", bInt = 2}]
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {union = resolveUnion, fc = C {cText = "", cInt = 3}}
-    , mutationResolver = return Undefined
-    , subscriptionResolver = return Undefined
+    { queryResolver = Query {union = resolveUnion, fc = C {cText = "", cInt = 3}}
+    , mutationResolver = Undefined
+    , subscriptionResolver = Undefined
     }
 
 api :: GQLRequest -> IO GQLResponse
