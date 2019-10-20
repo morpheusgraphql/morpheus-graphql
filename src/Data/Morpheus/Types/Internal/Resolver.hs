@@ -192,6 +192,7 @@ instance PureOperation SUBSCRIPTION where
    pureGADTResolver = SubscriptionResolver []  . const . pure
 --   eitherGraphQLT = SubscriptionT . pure  . ExceptT . pure
 
+
 resolveObject :: (Monad m , PureOperation o ) => SelectionSet -> [FieldRes o m e] -> GraphQLT o m e Value
 resolveObject selSet = fmap gqlObject . resolveFields selSet
 
@@ -233,11 +234,14 @@ instance Resolving o m e where
                                      streamValue  = pure $ RecResolver $ \event -> withExceptT (resolverError selectionPosition fieldName) ( unQueryResolver $ res event)  >>= unPure . resolveFields x . toRes
                                    }
    ---------------------------------------------------------------------------------------------------------------------------------------
-   resolving encode (QueryResolver res) selection@(fieldName,Selection { selectionPosition }) =
-        QueryT $ withExceptT (resolverError selectionPosition fieldName) res >>= unQueryT . (`encode` selection)
+   resolving encode gResolver selection@(fieldName,Selection { selectionPosition }) = __resolving gResolver
+        where
+          __resolving (QueryResolver res) =
+            QueryT $ withExceptT (resolverError selectionPosition fieldName) res >>= unQueryT . (`encode` selection)
    ---------------------------------------------------------------------------------------------------------------------------------------
-   resolving encode (MutationResolver events res) selection@(fieldName,Selection { selectionPosition }) =
-           MutationT $ pushEvents events $ withExceptT (resolverError selectionPosition fieldName) (injectEvents [] res)  >>= unMutationT . (`encode` selection)
+          __resolving (MutationResolver events res)  =
+            MutationT $ pushEvents events $ withExceptT (resolverError selectionPosition fieldName) (injectEvents [] res)  >>= unMutationT . (`encode` selection)
+
 
 class MapGraphQLT (fromO :: OperationKind) (toO :: OperationKind) where
    mapGraphQLT :: GraphQLT fromO m e a -> GraphQLT toO m e a
