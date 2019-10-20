@@ -69,7 +69,7 @@ instance Encode [a] o m e => Encode (Set a) o m e where
 
 --  Map
 instance (Eq k, Monad m, Encode (MapKind k v (GADTResolver o m e)) o m e) => Encode (Map k v)  o m e  where
-  encode value = encode ((mapKindFromList $ M.toList value) :: MapKind k v (GADTResolver o m e))
+ -- encode value = encode ((mapKindFromList $ M.toList value) :: MapKind k v (GADTResolver o m e))
 
 -- LIST []
 instance (Monad m, Encode a o m e) => Encode [a] o m e where
@@ -189,7 +189,7 @@ encodeOperationWith ::
   => [FieldRes o m e]
   -> EncodeOperator o m e a
 encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
-  gqlObject <$> resolvingObject toResolvers (pure rootResolver) (getOperationName operationName, 
+  gqlObject <$> resolvingOperation toResolvers rootResolver (getOperationName operationName, 
       Selection { 
         selectionArguments = [] , 
         selectionRec = SelectionSet operationSelection , 
