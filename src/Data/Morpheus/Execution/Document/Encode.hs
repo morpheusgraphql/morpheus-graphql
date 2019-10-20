@@ -17,7 +17,7 @@ import           Data.Morpheus.Execution.Server.Encode (Encode (..), ObjectResol
 import           Data.Morpheus.Types.GQLType           (TRUE)
 import           Data.Morpheus.Types.Internal.Data     (DataField (..), QUERY, SUBSCRIPTION, isSubscription)
 import           Data.Morpheus.Types.Internal.DataD    (ConsD (..), GQLTypeD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.Resolver (GADTResolver, MapGraphQLT (..), PureOperation, SubResolver)
+import           Data.Morpheus.Types.Internal.Resolver (GADTResolver, MapGraphQLT (..), Resolving,PureOperation)
 import           Data.Morpheus.Types.Internal.TH       (applyT, destructRecord, instanceHeadMultiT, typeT)
 
 -- @Subscription:
@@ -41,12 +41,12 @@ deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}
     mainType = applyT (mkName tName) [mainTypeArg] -- defines  (<Type> (SubResolver m e)) or (<Type> (Resolver m))
       where
         mainTypeArg
-          | isSubscription typeKindD = typeT ''SubResolver ["m", "e"] -- (SubResolver m e)
+          | isSubscription typeKindD = applyT ''GADTResolver (conT ''SUBSCRIPTION :map (varT . mkName) ["m","e"]) -- (SubResolver m e)
           | otherwise = typeT ''GADTResolver ["fieldOKind","m","e"] -- (Resolver m)
     -----------------------------------------------------------------------------------------
     typeables
-         | isSubscription typeKindD =  [applyT ''MapGraphQLT $ map conT [''QUERY, ''SUBSCRIPTION]]
-         | otherwise = [typeT ''PureOperation ["fieldOKind"],typeT ''MapGraphQLT ["fieldOKind","o"] , typeT ''Typeable ["fieldOKind"] , typeT ''Typeable ["o"]]
+         | isSubscription typeKindD =  [applyT ''MapGraphQLT $ map conT [''QUERY, ''SUBSCRIPTION],applyT ''Resolving [conT ''QUERY, varT $ mkName "m", varT $ mkName "e"]]
+         | otherwise = [typeT ''PureOperation ["fieldOKind"],typeT ''MapGraphQLT ["fieldOKind","o"] , typeT ''Resolving ["fieldOKind","m","e"] , typeT ''Typeable ["fieldOKind"] , typeT ''Typeable ["o"]]
     -- defines Constraint: (Typeable m, Monad m)
     constrains = typeables <>[typeT ''Monad ["m"], applyT ''Encode (mainType:instanceArgs) , typeT ''Typeable ["m"],typeT ''Typeable ["e"]]
     -------------------------------------------------------------------

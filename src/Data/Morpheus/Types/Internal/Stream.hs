@@ -14,23 +14,21 @@ module Data.Morpheus.Types.Internal.Stream
   , Event(..)
   -- STREAMS
   , StreamT(..)
-  , SubscribeStream
-  , PublishStream
   , ResponseStream
   , closeStream
   , mapS
   , injectEvents
   , initExceptStream
+  , pushEvents
  -- , GQLMonad(..)
   , GQLChannel(..)
   , Channel(..)
   ) where
 
-import           Control.Monad.Trans.Except              (ExceptT (..), runExceptT)
+import           Control.Monad.Trans.Except (ExceptT (..), runExceptT)
 
 -- MORPHEUS
-import           Data.Morpheus.Types.IO                  (GQLResponse)
-
+import           Data.Morpheus.Types.IO     (GQLResponse)
 
 -- EVENTS
 data ResponseEvent m event
@@ -38,20 +36,17 @@ data ResponseEvent m event
   | Subscribe (SubEvent m event)
 
 -- STREAMS
-type SubscribeStream m e = StreamT m [Channel e]
-
-type PublishStream m event = StreamT m event
-
 type ResponseStream m event = StreamT m (ResponseEvent m event)
 
 type SubEvent m event = Event (Channel event) (event-> m GQLResponse)
 
-
---type ResponseT m e  = ResolveT (ResponseStream m e )
-
 newtype Channel event = Channel {
   unChannel :: StreamChannel event
 }
+
+instance Show (Channel e) where
+    show _ = "Channel{}"
+
 
 instance (Eq (StreamChannel event)) => Eq (Channel event) where
   Channel x == Channel y = x == y
@@ -115,6 +110,11 @@ mapS func (StreamT ma) =
   StreamT $ do
     state <- ma
     return $ state {streamEvents = map func (streamEvents state)}
+
+pushEvents :: Functor m => [event] -> ExceptT e (StreamT m event) a -> ExceptT e (StreamT m event) a
+pushEvents events = ExceptT . StreamT . fmap updateState . runStreamT . runExceptT
+    where
+        updateState x = x { streamEvents = events <> streamEvents x }
 
 injectEvents :: Functor m => [event] -> ExceptT e m a -> ExceptT e (StreamT m event) a
 injectEvents states = ExceptT . StreamT . fmap (StreamState states) . runExceptT
