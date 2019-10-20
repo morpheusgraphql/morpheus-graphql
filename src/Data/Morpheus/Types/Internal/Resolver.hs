@@ -13,14 +13,11 @@
 {-# LANGUAGE TypeOperators         #-}
 
 module Data.Morpheus.Types.Internal.Resolver
-  ( Pure
-  , Resolver
-  , MutResolver
+  ( MutResolver
   , ResolveT
   , Event(..)
   , GQLRootResolver(..)
   , UnSubResolver
-  , resolver
   , GQLFail(..)
   , ResponseT
   , failResolveT
@@ -30,8 +27,6 @@ module Data.Morpheus.Types.Internal.Resolver
   , PureOperation(..)
   , resolveObject
   , resolveFields
-  --, liftResolver
- -- , convertResolver
   , toResponseRes
   , withObject
   , Resolving(..)
@@ -63,7 +58,7 @@ class Monad m =>
   gqlFail :: Monad m => Message -> t m a
   toSuccess :: Monad m => (Message -> b) -> (a -> b) -> t m a -> t m b
 
-instance Monad m => GQLFail Resolver m where
+instance Monad m => GQLFail (ExceptT String) m where
   gqlFail = ExceptT . pure . Left . unpack
   toSuccess fFail fSuc (ExceptT value) = ExceptT $ pure . mapCases <$> value
     where
@@ -73,7 +68,6 @@ instance Monad m => GQLFail Resolver m where
 ----------------------------------------------------------------------------------------
 type MutResolver = GADTResolver MUTATION
 
-type Resolver = ExceptT String
 
 type ResolveT = ExceptT GQLErrors
 type ResponseT m e  = ResolveT (ResponseStream m e)
@@ -284,13 +278,6 @@ failResolveT :: Monad m => GQLErrors -> ResolveT m a
 failResolveT = ExceptT . pure . Left
 
 -------------------------------------------------------------------
--- | Pure Resolver without effect
-type Pure = Either String
-
--- | GraphQL Resolver
-resolver :: m (Either String a) -> Resolver m a
-resolver = ExceptT
-
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.

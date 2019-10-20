@@ -1,10 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 -- | GQL Types
 module Data.Morpheus.Types
-  ( resolver
-  -- Resolver Monad
-  , Resolver
-  , Event(..)
+  ( Event(..)
   -- Type Classes
   , GQLType(KIND, description)
   , GQLScalar(parseValue, serialize)
@@ -31,7 +28,7 @@ import           Data.Morpheus.Types.GQLType           (GQLType (KIND, descripti
 import           Data.Morpheus.Types.ID                (ID (..))
 import           Data.Morpheus.Types.Internal.Data     (MUTATION, OperationKind (..), QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Resolver (Event (..), GADTResolver (..), GQLRootResolver (..),
-                                                        GraphQLT (..), MutResolver, Resolver, resolver)
+                                                        GraphQLT (..), MutResolver)
 import           Data.Morpheus.Types.Internal.Value    (ScalarValue (..))
 import           Data.Morpheus.Types.IO                (GQLRequest (..), GQLResponse (..))
 import           Data.Morpheus.Types.Types             (Undefined (..))
