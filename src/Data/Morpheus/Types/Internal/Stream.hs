@@ -44,6 +44,10 @@ newtype Channel event = Channel {
   unChannel :: StreamChannel event
 }
 
+instance Show (Channel e) where
+    show _ = "Channel{}"
+
+
 instance (Eq (StreamChannel event)) => Eq (Channel event) where
   Channel x == Channel y = x == y
 

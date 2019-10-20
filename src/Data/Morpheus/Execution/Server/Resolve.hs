@@ -49,7 +49,7 @@ import           Data.Morpheus.Types.IO                              (GQLRequest
 import           Data.Morpheus.Validation.Internal.Utils             (VALIDATION_MODE (..))
 import           Data.Morpheus.Validation.Query.Validation           (validateRequest)
 import           Data.Typeable                                       (Typeable)
-
+import Debug.Trace
 
 type EventCon event = (Eq (StreamChannel event), GQLChannel event)
 
@@ -108,7 +108,9 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
         --TODO:  -- do  $ schemaRes <- schemaAPI schema
         toResponseRes (encodeQuery ({- TODO: schemaRes -}) queryResolver operation)
     execOperator (_, operation@Operation {operationKind = Mutation}) = toResponseRes (encodeMutation mutationResolver operation)
-    execOperator (_, operation@Operation {operationKind = Subscription}) = toResponseRes (encodeSubscription subscriptionResolver operation)
+    execOperator (_, operation@Operation {operationKind = Subscription}) = response
+        where 
+         response = toResponseRes (encodeSubscription subscriptionResolver operation)
 
 statefulResolver ::
      EventCon s
