@@ -28,7 +28,8 @@ import           Data.Proxy                                          (Proxy (..)
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                           (badRequestError)
 import           Data.Morpheus.Execution.Internal.GraphScanner       (resolveUpdates)
-import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, encodeMutation, encodeSubscription, encodeQuery)
+import           Data.Morpheus.Execution.Server.Encode               (EncodeCon, encodeMutation, encodeQuery,
+                                                                      encodeSubscription)
 import           Data.Morpheus.Execution.Server.Introspect           (IntroCon, ObjectFields (..))
 import           Data.Morpheus.Execution.Subscription.ClientRegister (GQLState, publishUpdates)
 import           Data.Morpheus.Parsing.Request.Parser                (parseGQL)
@@ -40,8 +41,7 @@ import           Data.Morpheus.Types.Internal.Data                   (DataFinger
                                                                       DataTypeLib (..), MUTATION, OperationKind (..),
                                                                       QUERY, SUBSCRIPTION, initTypeLib)
 import           Data.Morpheus.Types.Internal.Resolver               (GADTResolver (..), GQLRootResolver (..),
-                                                                      MutResolver, ResponseT,
-                                                                      toResponseRes)
+                                                                      MutResolver, ResponseT, toResponseRes)
 import           Data.Morpheus.Types.Internal.Stream                 (GQLChannel (..), ResponseEvent (..),
                                                                       ResponseStream, closeStream)
 import           Data.Morpheus.Types.Internal.Validation             (Validation)
@@ -49,9 +49,8 @@ import           Data.Morpheus.Types.IO                              (GQLRequest
 import           Data.Morpheus.Validation.Internal.Utils             (VALIDATION_MODE (..))
 import           Data.Morpheus.Validation.Query.Validation           (validateRequest)
 import           Data.Typeable                                       (Typeable)
-import Debug.Trace
 
-type EventCon event = (Eq (StreamChannel event), GQLChannel event)
+type EventCon event = (Eq (StreamChannel event), Typeable event, GQLChannel event)
 
 type IntrospectConstraint  m event query mutation subscription = (
                                   IntroCon (query (GADTResolver QUERY m event))
@@ -105,11 +104,10 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
         Right (schema, query)
     ----------------------------------------------------------
     execOperator (schema, operation@Operation {operationKind = Query}) =
-        --TODO:  -- do  $ schemaRes <- schemaAPI schema
-        toResponseRes (encodeQuery ({- TODO: schemaRes -}) queryResolver operation)
+        toResponseRes (encodeQuery (schemaAPI schema) queryResolver operation)
     execOperator (_, operation@Operation {operationKind = Mutation}) = toResponseRes (encodeMutation mutationResolver operation)
     execOperator (_, operation@Operation {operationKind = Subscription}) = response
-        where 
+        where
          response = toResponseRes (encodeSubscription subscriptionResolver operation)
 
 statefulResolver ::

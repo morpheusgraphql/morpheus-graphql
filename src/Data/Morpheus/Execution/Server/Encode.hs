@@ -169,10 +169,10 @@ instance (GResolver UNION a o m e, GResolver UNION b o m e) => GResolver UNION (
 
 ----- HELPERS ----------------------------
 encodeQuery ::
-     forall m event query schema. (Monad m, EncodeCon QUERY m event schema, EncodeCon QUERY m event query, Resolving QUERY m event)
-  => schema
+     forall m event query (schema :: (* -> *) -> *). (Monad m, EncodeCon QUERY m event (schema (GADTResolver QUERY m event)), EncodeCon QUERY m event query, Resolving QUERY m event)
+  => schema (GADTResolver QUERY m event)
   -> EncodeOperator QUERY m event query
-encodeQuery schema = encodeOperationWith (objectResolvers (Proxy :: Proxy (CUSTOM schema)) schema)
+encodeQuery schema = encodeOperationWith (objectResolvers (Proxy :: Proxy (CUSTOM (schema (GADTResolver QUERY m event)))) schema)
 
 encodeMutation ::
      forall m event mut. (Monad m, EncodeCon MUTATION m event mut, Resolving MUTATION m event)

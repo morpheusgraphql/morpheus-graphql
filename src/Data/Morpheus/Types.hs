@@ -39,5 +39,5 @@ import           Data.Morpheus.Types.Types             (Undefined (..))
 type SubResolver = GADTResolver SUBSCRIPTION
 
 -- resolves constant value on any argument
-constRes :: Monad m => b -> a -> m b
-constRes = const . return
+constRes :: Monad m => b -> a -> GADTResolver QUERY m e b
+constRes = const . pure

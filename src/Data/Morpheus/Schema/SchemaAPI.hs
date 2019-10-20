@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns   #-}
-{-# LANGUAGE TupleSections    #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators    #-}
 
@@ -21,25 +20,23 @@ import           Data.Morpheus.Schema.Schema                   (Root (..), Root_
 import           Data.Morpheus.Types                           (constRes)
 import           Data.Morpheus.Types.GQLType                   (CUSTOM)
 import           Data.Morpheus.Types.ID                        (ID)
-import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataObject, DataTypeLib (..),
+import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataObject, DataTypeLib (..), QUERY,
                                                                 allDataTypes)
-import           Data.Morpheus.Types.Internal.Resolver         (GQLFail (..), ResolveT, Resolver)
+import           Data.Morpheus.Types.Internal.Resolver         (GADTResolver (..))
 
-convertTypes :: Monad m => DataTypeLib -> (Resolver m) [S__Type (Resolver m)]
+convertTypes :: Monad m => DataTypeLib -> GADTResolver QUERY m e [S__Type (GADTResolver QUERY m e )]
 convertTypes lib = traverse (`render` lib) (allDataTypes lib)
 
-buildSchemaLinkType :: Monad m => (Text, DataObject) -> S__Type (Resolver m)
+buildSchemaLinkType :: Monad m => (Text, DataObject) -> S__Type (GADTResolver QUERY m e )
 buildSchemaLinkType (key', _) = createObjectType key' Nothing $ Just []
 
-findType :: Monad m => Text -> DataTypeLib -> Resolver m (Maybe (S__Type (Resolver m)))
-findType name lib = getType >>= renderT
+findType :: Monad m => Text -> DataTypeLib -> GADTResolver QUERY m e (Maybe (S__Type (GADTResolver QUERY m e )))
+findType name lib = renderT (lookup name (allDataTypes lib))
   where
-    getType = pure $ (name, ) <$> lookup name (allDataTypes lib)
-    ------------------------------------------------------------
-    renderT (Just datatype) = toSuccess (const Nothing) Just (render datatype lib)
+    renderT (Just datatype) = Just <$> render (name,datatype) lib
     renderT Nothing         = pure Nothing
 
-initSchema :: Monad m => DataTypeLib -> (Resolver m) (S__Schema (Resolver m))
+initSchema :: Monad m => DataTypeLib -> GADTResolver QUERY m e (S__Schema (GADTResolver QUERY m e ))
 initSchema lib =
   pure
     S__Schema
@@ -68,8 +65,8 @@ defaultTypes =
     , introspect (Proxy @(S__Schema Maybe))
     ]
 
-schemaAPI :: Monad m => DataTypeLib -> ResolveT m (Root (Resolver m))
-schemaAPI lib = pure $ Root {root__type, root__schema}
+schemaAPI :: Monad m => DataTypeLib -> Root (GADTResolver QUERY m e)
+schemaAPI lib = Root {root__type, root__schema}
   where
     root__type (Root__typeArgs name) = findType name lib
     root__schema _ = initSchema lib

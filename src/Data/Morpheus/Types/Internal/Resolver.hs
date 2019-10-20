@@ -167,6 +167,13 @@ instance (PureOperation o ,Monad m) => Applicative (GADTResolver o m e) where
     (SubscriptionResolver e1 f) <*> (SubscriptionResolver e2 res) = SubscriptionResolver (e1<>e2) $
                        \event -> f event <*>  res event
 
+instance (Monad m) => Monad (GADTResolver QUERY m e) where
+    return = pure
+    -------------------------------------
+    (FailedResolver mErrors) >>= _ = FailedResolver mErrors
+    -------------------------------------
+    (QueryResolver f) >>= nextM = QueryResolver (f >>= unQueryResolver. nextM)
+
 -- Pure Operation
 class PureOperation (o::OperationKind) where
     pureRes :: Monad m => a -> GADTResolver o m event a
