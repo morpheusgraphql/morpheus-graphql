@@ -127,18 +127,21 @@ instance (PureOperation o, Monad m) => Applicative (GraphQLT o m e) where
 data Resolver (o::OperationKind) (m :: * -> * ) event value where
     FailedResolver :: { unFailedResolver :: String } -> Resolver o m event value
     QueryResolver:: { unQueryResolver :: ExceptT String m value } -> Resolver QUERY m  event value
-    MutationResolver :: { mutationResolverEvents :: [event] , mutationResolverValue :: ExceptT String m value } -> Resolver MUTATION m event value
-    SubscriptionResolver :: {
-            subscriptionResolverChannels :: [StreamChannel event] ,
-            subscriptionResolverValue:: event -> Resolver QUERY m  event value
+    MutResolver :: {
+            mutEvents :: [event] ,
+            mutResolver :: ExceptT String m value
+        } -> Resolver MUTATION m event value
+    SubResolver :: {
+            subChannels :: [StreamChannel event] ,
+            subResolver :: event -> Resolver QUERY m  event value
         } -> Resolver SUBSCRIPTION m event value
 
 -- GADTResolver Functor
 instance Functor m => Functor (Resolver o m e) where
     fmap _ (FailedResolver mErrors) = FailedResolver mErrors
     fmap f (QueryResolver mResolver) = QueryResolver $ fmap f mResolver
-    fmap f (MutationResolver events mResolver) = MutationResolver events $ fmap f mResolver
-    fmap f (SubscriptionResolver events mResolver) = SubscriptionResolver events (eventFmap mResolver)
+    fmap f (MutResolver events mResolver) = MutResolver events $ fmap f mResolver
+    fmap f (SubResolver events mResolver) = SubResolver events (eventFmap mResolver)
             where
                 eventFmap res event = fmap f (res event)
 
@@ -151,9 +154,9 @@ instance (PureOperation o ,Monad m) => Applicative (Resolver o m e) where
     -------------------------------------
     (QueryResolver f) <*> (QueryResolver res) = QueryResolver (f <*> res)
     ---------------------------------------------------------------------
-    (MutationResolver events1 f) <*> (MutationResolver events2 res) = MutationResolver (events1 <> events2) (f <*> res)
+    (MutResolver events1 f) <*> (MutResolver events2 res) = MutResolver (events1 <> events2) (f <*> res)
     --------------------------------------------------------------
-    (SubscriptionResolver e1 f) <*> (SubscriptionResolver e2 res) = SubscriptionResolver (e1<>e2) $
+    (SubResolver e1 f) <*> (SubResolver e2 res) = SubResolver (e1<>e2) $
                        \event -> f event <*>  res event
 
 instance (Monad m) => Monad (Resolver QUERY m e) where
@@ -175,12 +178,12 @@ instance PureOperation QUERY where
    eitherGraphQLT = QueryT . ExceptT . pure
 
 instance PureOperation MUTATION where
-   pureRes = MutationResolver [] . pure
+   pureRes = MutResolver [] . pure
    pureGraphQLT = MutationT . pure
    eitherGraphQLT = MutationT . ExceptT . pure
 
 instance PureOperation SUBSCRIPTION where
-   pureRes = SubscriptionResolver []  . const . pure
+   pureRes = SubResolver []  . const . pure
    pureGraphQLT = SubscriptionT . pure . pure
    eitherGraphQLT = SubscriptionT . fmap pure  . ExceptT . pure
 
@@ -220,10 +223,10 @@ instance Resolving o m e where
           __resolving (QueryResolver res) =
             QueryT $ withExceptT (resolverError selectionPosition fieldName) res >>= unQueryT . (`encode` selection)
    ---------------------------------------------------------------------------------------------------------------------------------------
-          __resolving (MutationResolver events res)  =
+          __resolving (MutResolver events res)  =
             MutationT $ pushEvents events $ withExceptT (resolverError selectionPosition fieldName) (injectEvents [] res)  >>= unMutationT . (`encode` selection)
    --------------------------------------------------------------------------------------------------------------------------------
-          __resolving (SubscriptionResolver subChannels res) =
+          __resolving (SubResolver subChannels res) =
                SubscriptionT $ ExceptT $ StreamT $ pure $ StreamState { streamEvents , streamValue }
                               where
                                 streamValue  = pure $ RecResolver $ \event -> withExceptT (resolverError selectionPosition fieldName) ( unQueryResolver $ res event)  >>= unPub event . (`encode` selection)

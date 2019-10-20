@@ -18,7 +18,7 @@ import           Data.Morpheus          (interpreter)
 import           Data.Morpheus.Document (importGQLDocument)
 import           Data.Morpheus.Kind     (SCALAR)
 import           Data.Morpheus.Types    (Event, GQLRequest, GQLResponse, GQLRootResolver (..), GQLScalar (..),
-                                         GQLType (..), ID (..), ScalarValue (..), SubResolver (..))
+                                         GQLType (..), ID (..), ScalarValue (..), Resolver (..))
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
 

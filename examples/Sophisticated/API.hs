@@ -94,7 +94,7 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
     mutationResolver = Mutation { mutationCreateUser , mutationCreateAddress }
       where
         mutationCreateUser _ =
-          MutationResolver
+          MutResolver
             [Event [UPDATE_USER] (Update {contentID = 12, contentMessage = "some message for user"})]
             (pure User
                  { userName = constRes "George"
@@ -106,16 +106,16 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
                  })
         -------------------------
         mutationCreateAddress _ =
-          MutationResolver
+          MutResolver
             [Event [UPDATE_ADDRESS] (Update {contentID = 10, contentMessage = "message for address"})]
             (pure fetchAddressMutation)
     ----------------------------------------------------------------
     subscriptionResolver = Subscription {subscriptionNewAddress, subscriptionNewUser}
       where
-        subscriptionNewUser () = SubscriptionResolver [UPDATE_USER] subResolver
+        subscriptionNewUser () = SubResolver [UPDATE_USER] subResolver
           where
             subResolver (Event _ Update {}) = fetchQuery
-        subscriptionNewAddress () = SubscriptionResolver [UPDATE_ADDRESS] subResolver
+        subscriptionNewAddress () = SubResolver [UPDATE_ADDRESS] subResolver
           where
             subResolver (Event _ Update {contentID}) =  QueryResolver $ pure $ Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
     ----------------------------------------------------------------------------------------------
