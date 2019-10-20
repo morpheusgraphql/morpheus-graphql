@@ -26,8 +26,8 @@ import           GHC.Generics           (Generic)
 -- MORPHEUS
 import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
-import           Data.Morpheus.Types    (Event (..), GADTResolver (..), GQLRootResolver (..), GQLScalar (..),
-                                         GQLType (..), ID, MutRes, QUERY, ScalarValue (..))
+import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, MutRes,
+                                         QUERY, Resolver (..), ScalarValue (..), constMutRes ,constRes)
 
 $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
 
@@ -79,9 +79,6 @@ data Content = Update
 
 type APIEvent = (Event Channel Content)
 
-constRes :: Monad m => a -> b -> GADTResolver QUERY m e a
-constRes = const . QueryResolver . pure
-
 gqlRoot :: GQLRootResolver IO APIEvent Query Mutation Subscription
 gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
   where
@@ -93,20 +90,19 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
           , queryWrapped1 = constRes $ A (0, "")
           , queryWrapped2 = constRes $ A ""
           }
-          where
     -------------------------------------------------------------
     mutationResolver = Mutation { mutationCreateUser , mutationCreateAddress }
       where
         mutationCreateUser _ =
           MutationResolver
             [Event [UPDATE_USER] (Update {contentID = 12, contentMessage = "some message for user"})]
-            (pure $ User
-                 { userName = constResMut [] "George"
-                 , userEmail = constResMut [] "George@email.com"
-                 , userAddress = constResMut [] fetchAddressMutation
-                 , userOffice = constResMut [] Nothing
-                 , userHome = constResMut [] HH
-                 , userEntity = constResMut [] Nothing
+            (pure User
+                 { userName = constRes "George"
+                 , userEmail = constRes "George@email.com"
+                 , userAddress = constRes fetchAddressMutation
+                 , userOffice = constRes  Nothing
+                 , userHome = constRes HH
+                 , userEntity = constRes Nothing
                  })
         -------------------------
         mutationCreateAddress _ =
@@ -123,7 +119,7 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
           where
             subResolver (Event _ Update {contentID}) =  QueryResolver $ pure $ Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
     ----------------------------------------------------------------------------------------------
-    fetchQuery :: GADTResolver QUERY IO (Event Channel Content) (User (GADTResolver QUERY IO (Event Channel Content)))
+    fetchQuery :: Resolver QUERY IO (Event Channel Content) (User (Resolver QUERY IO (Event Channel Content)))
     fetchQuery = QueryResolver $ pure $  User { userName = constRes "George"
                                                 , userEmail = constRes "George@email.com"
                                                 , userAddress = const $ QueryResolver $ pure $ Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
@@ -131,13 +127,9 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
                                                 , userHome = constRes HH
                                                 , userEntity = constRes Nothing
                                            }
-                                           
+
     fetchAddressMutation = Address {
-          addressCity = constResMut [] "",
-          addressStreet = constResMut []  "",
-          addressHouseNumber = constResMut []  0
+          addressCity = constRes "",
+          addressStreet = constRes "",
+          addressHouseNumber = constRes 0
         }
-
-constResMut :: Monad m =>  [e] -> a -> args -> MutRes m e a
-constResMut list value = const $ MutationResolver list $ pure value
-

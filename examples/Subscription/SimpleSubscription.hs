@@ -7,7 +7,7 @@
 
 module Subscription.SimpleSubscription where
 
-import           Data.Morpheus.Types       (Event (..), GADTResolver (..), GQLRootResolver (..))
+import           Data.Morpheus.Types       (Event (..), Resolver (..), GQLRootResolver (..))
 import           Data.Text                 (Text)
 import           GHC.Generics              (Generic)
 import           Mythology.Character.Deity (Deity (..), dbDeity)
@@ -61,7 +61,7 @@ rootResolver =
         subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
         subResolver _                                    = fetchDeity -- Resolve Old State
     ---------------------------------------------------------
-    fetchDeity = QueryResolver $ pure $ Deity {
+    fetchDeity = pure Deity {
       fullName = ""
       , power  = Nothing
       , realm = Sky

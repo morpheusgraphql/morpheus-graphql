@@ -12,6 +12,7 @@ module Data.Morpheus.Types
   , ScalarValue(..)
   , GQLRootResolver(..)
   , constRes
+  , constMutRes
   , Undefined(..)
   , Res
   , MutRes
@@ -48,3 +49,6 @@ type IOSubRes = SubRes IO
 -- resolves constant value on any argument
 constRes :: (PureOperation o ,Monad m) => b -> a -> Resolver o m e b
 constRes = const . pure
+
+constMutRes :: Monad m =>  [e] -> a -> args -> MutRes m e a
+constMutRes list value = const $ MutationResolver list $ pure value
