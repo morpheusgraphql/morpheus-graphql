@@ -15,9 +15,7 @@ module Data.Morpheus.Types.Internal.Resolver
   ( Pure
   , Resolver
   , MutResolver
-  , SubResolver
   , ResolveT
-  , SubResolveT
   , Event(..)
   , GQLRootResolver(..)
   , UnSubResolver
@@ -72,14 +70,11 @@ instance Monad m => GQLFail Resolver m where
       mapCases (Left x)  = fFail $ pack $ show x
 
 ----------------------------------------------------------------------------------------
-type SubResolver = GADTResolver SUBSCRIPTION
-
 type MutResolver = GADTResolver MUTATION
 
 type Resolver = ExceptT String
 
 type ResolveT = ExceptT GQLErrors
-type SubResolveT = GraphQLT SUBSCRIPTION
 type ResponseT m e  = ResolveT (ResponseStream m e)
 
 --
@@ -267,7 +262,7 @@ toResponseRes (SubscriptionT resT)  =
 
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
-type instance UnSubResolver (SubResolver m e) = GADTResolver QUERY m e
+type instance UnSubResolver (GADTResolver SUBSCRIPTION m e) = GADTResolver QUERY m e
 
 -------------------------------------------------------------------
 failResolveT :: Monad m => GQLErrors -> ResolveT m a

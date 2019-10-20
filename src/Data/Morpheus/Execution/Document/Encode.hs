@@ -17,7 +17,7 @@ import           Data.Morpheus.Execution.Server.Encode (Encode (..), ObjectResol
 import           Data.Morpheus.Types.GQLType           (TRUE)
 import           Data.Morpheus.Types.Internal.Data     (DataField (..), QUERY, SUBSCRIPTION, isSubscription)
 import           Data.Morpheus.Types.Internal.DataD    (ConsD (..), GQLTypeD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.Resolver (GADTResolver, MapGraphQLT (..), Resolving,PureOperation, SubResolver)
+import           Data.Morpheus.Types.Internal.Resolver (GADTResolver, MapGraphQLT (..), Resolving,PureOperation)
 import           Data.Morpheus.Types.Internal.TH       (applyT, destructRecord, instanceHeadMultiT, typeT)
 
 -- @Subscription:
@@ -41,7 +41,7 @@ deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}
     mainType = applyT (mkName tName) [mainTypeArg] -- defines  (<Type> (SubResolver m e)) or (<Type> (Resolver m))
       where
         mainTypeArg
-          | isSubscription typeKindD = typeT ''SubResolver ["m", "e"] -- (SubResolver m e)
+          | isSubscription typeKindD = applyT ''GADTResolver (conT ''SUBSCRIPTION :map (varT . mkName) ["m","e"]) -- (SubResolver m e)
           | otherwise = typeT ''GADTResolver ["fieldOKind","m","e"] -- (Resolver m)
     -----------------------------------------------------------------------------------------
     typeables

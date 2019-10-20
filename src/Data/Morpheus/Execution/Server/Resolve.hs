@@ -40,7 +40,7 @@ import           Data.Morpheus.Types.Internal.Data                   (DataFinger
                                                                       DataTypeLib (..), MUTATION, OperationKind (..),
                                                                       QUERY, SUBSCRIPTION, initTypeLib)
 import           Data.Morpheus.Types.Internal.Resolver               (GADTResolver (..), GQLRootResolver (..),
-                                                                      MutResolver, ResponseT, SubResolver,
+                                                                      MutResolver, ResponseT,
                                                                       toResponseRes)
 import           Data.Morpheus.Types.Internal.Stream                 (GQLChannel (..), ResponseEvent (..),
                                                                       ResponseStream, closeStream)
@@ -54,9 +54,9 @@ import           Data.Typeable                                       (Typeable)
 type EventCon event = (Eq (StreamChannel event), GQLChannel event)
 
 type IntrospectConstraint  m event query mutation subscription = (
-                                  IntroCon (query (GADTResolver 'Query m event))
+                                  IntroCon (query (GADTResolver QUERY m event))
                                  , IntroCon (mutation (MutResolver m event))
-                                 , IntroCon (subscription (SubResolver m event)))
+                                 , IntroCon (subscription (GADTResolver SUBSCRIPTION m event)))
 
 type RootResCon m event query mutation subscription
    = ( EventCon event
@@ -141,7 +141,7 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
     ------------------------------
     subscriptionSchema lib = resolveUpdates (lib {subscription = maybeOperator fields "Subscription"}) types
       where
-        (fields, types) = objectFields (Proxy @(CUSTOM (subscription (SubResolver m event)))) (Proxy @(subscription (SubResolver  m event)))
+        (fields, types) = objectFields (Proxy @(CUSTOM (subscription (GADTResolver SUBSCRIPTION m event)))) (Proxy @(subscription (GADTResolver SUBSCRIPTION m event)))
      -- maybeOperator :: [a] -> Text -> Maybe (Text, DataTyCon[a])
     maybeOperator []     = const Nothing
     maybeOperator fields = Just . operatorType fields
