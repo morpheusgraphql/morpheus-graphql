@@ -47,9 +47,6 @@ type ResponseStream m event = StreamT m (ResponseEvent m event)
 
 type SubEvent m event = Event (Channel event) (event-> m GQLResponse)
 
-
---type ResponseT m e  = ResolveT (ResponseStream m e )
-
 newtype Channel event = Channel {
   unChannel :: StreamChannel event
 }
