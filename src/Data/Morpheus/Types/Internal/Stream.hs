@@ -26,6 +26,7 @@ module Data.Morpheus.Types.Internal.Stream
   ) where
 
 import           Control.Monad.Trans.Except (ExceptT (..), runExceptT)
+import           Data.Semigroup ((<>))
 
 -- MORPHEUS
 import           Data.Morpheus.Types.IO     (GQLResponse)
