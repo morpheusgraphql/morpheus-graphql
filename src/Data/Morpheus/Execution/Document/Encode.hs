@@ -31,18 +31,21 @@ import           Data.Morpheus.Types.Internal.TH       (applyT, destructRecord, 
 --          objectResolvers _ (<Object> x y) = [("field1", encode x), ("field2", encode y)]
 --
 --
+ 
+
 deriveEncode :: GQLTypeD -> Q [Dec]
 deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}]}} =
   pure <$> instanceD (cxt constrains) appHead methods
-  where
+  where 
+    subARgs = conT ''SUBSCRIPTION : map (varT . mkName) ["m","e"]
     instanceArgs
-          | isSubscription typeKindD = conT ''SUBSCRIPTION :map (varT . mkName) ["m","e"]
+          | isSubscription typeKindD = subARgs
           | otherwise =  map (varT . mkName) ["o","m","e"]
-    mainType = applyT (mkName tName) [mainTypeArg] -- defines  (<Type> (SubResolver m e)) or (<Type> (Resolver m))
+    mainType = applyT (mkName tName) [mainTypeArg]
       where
         mainTypeArg
-          | isSubscription typeKindD = applyT ''Resolver (conT ''SUBSCRIPTION :map (varT . mkName) ["m","e"]) -- (SubResolver m e)
-          | otherwise = typeT ''Resolver ["fieldOKind","m","e"] -- (Resolver m)
+          | isSubscription typeKindD = applyT ''Resolver subARgs
+          | otherwise = typeT ''Resolver ["fieldOKind","m","e"] 
     -----------------------------------------------------------------------------------------
     typeables
          | isSubscription typeKindD =  [applyT ''MapGraphQLT $ map conT [''QUERY, ''SUBSCRIPTION],applyT ''Resolving [conT ''QUERY, varT $ mkName "m", varT $ mkName "e"]]
