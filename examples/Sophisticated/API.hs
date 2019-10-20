@@ -27,7 +27,7 @@ import           GHC.Generics           (Generic)
 import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
 import           Data.Morpheus.Types    (Event (..), GADTResolver (..), GQLRootResolver (..), GQLScalar (..),
-                                         GQLType (..), ID, MutResolver, QUERY, ScalarValue (..))
+                                         GQLType (..), ID, MutRes, QUERY, ScalarValue (..))
 
 $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
 
@@ -138,6 +138,6 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
           addressHouseNumber = constResMut []  0
         }
 
-constResMut :: Monad m =>  [e] -> a -> args -> MutResolver m e a
+constResMut :: Monad m =>  [e] -> a -> args -> MutRes m e a
 constResMut list value = const $ MutationResolver list $ pure value
 

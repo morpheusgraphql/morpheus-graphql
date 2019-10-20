@@ -22,21 +22,21 @@ import           Data.Morpheus.Types.GQLType                   (CUSTOM)
 import           Data.Morpheus.Types.ID                        (ID)
 import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataObject, DataTypeLib (..), QUERY,
                                                                 allDataTypes)
-import           Data.Morpheus.Types.Internal.Resolver         (GADTResolver (..))
+import           Data.Morpheus.Types.Internal.Resolver         (Resolver (..))
 
-convertTypes :: Monad m => DataTypeLib -> GADTResolver QUERY m e [S__Type (GADTResolver QUERY m e )]
+convertTypes :: Monad m => DataTypeLib -> Resolver QUERY m e [S__Type (Resolver QUERY m e )]
 convertTypes lib = traverse (`render` lib) (allDataTypes lib)
 
-buildSchemaLinkType :: Monad m => (Text, DataObject) -> S__Type (GADTResolver QUERY m e )
+buildSchemaLinkType :: Monad m => (Text, DataObject) -> S__Type (Resolver QUERY m e )
 buildSchemaLinkType (key', _) = createObjectType key' Nothing $ Just []
 
-findType :: Monad m => Text -> DataTypeLib -> GADTResolver QUERY m e (Maybe (S__Type (GADTResolver QUERY m e )))
+findType :: Monad m => Text -> DataTypeLib -> Resolver QUERY m e (Maybe (S__Type (Resolver QUERY m e )))
 findType name lib = renderT (lookup name (allDataTypes lib))
   where
     renderT (Just datatype) = Just <$> render (name,datatype) lib
     renderT Nothing         = pure Nothing
 
-initSchema :: Monad m => DataTypeLib -> GADTResolver QUERY m e (S__Schema (GADTResolver QUERY m e ))
+initSchema :: Monad m => DataTypeLib -> Resolver QUERY m e (S__Schema (Resolver QUERY m e ))
 initSchema lib =
   pure
     S__Schema
@@ -65,7 +65,7 @@ defaultTypes =
     , introspect (Proxy @(S__Schema Maybe))
     ]
 
-schemaAPI :: Monad m => DataTypeLib -> Root (GADTResolver QUERY m e)
+schemaAPI :: Monad m => DataTypeLib -> Root (Resolver QUERY m e)
 schemaAPI lib = Root {root__type, root__schema}
   where
     root__type (Root__typeArgs name) = findType name lib
