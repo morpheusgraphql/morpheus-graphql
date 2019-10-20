@@ -34,6 +34,8 @@ module Data.Morpheus.Types.Internal.Resolver
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT, withExceptT)
 import           Data.Maybe                                 (fromMaybe)
 import           Data.Text                                  (pack, unpack)
+import           Data.Semigroup                             ((<>))
+
 -- MORPHEUS
 import           Data.Morpheus.Error.Selection              (resolverError, subfieldsNotSelected)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
