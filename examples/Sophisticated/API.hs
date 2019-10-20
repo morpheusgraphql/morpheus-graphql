@@ -86,7 +86,7 @@ gqlRoot :: GQLRootResolver IO APIEvent Query Mutation Subscription
 gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
   where
     queryResolver = Query
-          { queryUser = fetchUser
+          { queryUser = const fetchQuery
           , queryAnimal = \QueryAnimalArgs {queryAnimalArgsAnimal} -> pure (pack $ show queryAnimalArgsAnimal)
           , querySet = constRes $ S.fromList [1, 2]
           , queryMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]
@@ -94,17 +94,6 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
           , queryWrapped2 = constRes $ A ""
           }
           where
-            ------------------
-            fetchUser = constRes User
-                        { userName = constRes "George"
-                        , userEmail = constRes "George@email.com"
-                        , userAddress
-                        , userOffice = constRes Nothing
-                        , userHome = constRes HH
-                        , userEntity = constRes Nothing
-                        }
-                 where
-                    userAddress _ = QueryResolver $ pure $  Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
     -------------------------------------------------------------
     mutationResolver = Mutation { mutationCreateUser , mutationCreateAddress }
       where
