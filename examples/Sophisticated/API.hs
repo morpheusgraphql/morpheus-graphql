@@ -129,17 +129,20 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
       where
         subscriptionNewUser () = SubscriptionResolver [UPDATE_USER] subResolver
           where
-            subResolver (Event _ Update {}) = QueryResolver $ pure $  User { userName = constRes "George"
-                                            , userEmail = constRes "George@email.com"
-                                            , userAddress = const $ QueryResolver $ pure $ Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
-                                            , userOffice = constRes Nothing
-                                            , userHome = constRes HH
-                                            , userEntity = constRes Nothing
-                                       }
+            subResolver (Event _ Update {}) = fetchQuery
         subscriptionNewAddress () = SubscriptionResolver [UPDATE_ADDRESS] subResolver
           where
             subResolver (Event _ Update {contentID}) =  QueryResolver $ pure $ Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
     ----------------------------------------------------------------------------------------------
+    fetchQuery :: GADTResolver QUERY IO (Event Channel Content) (User (GADTResolver QUERY IO (Event Channel Content)))
+    fetchQuery = QueryResolver $ pure $  User { userName = constRes "George"
+                                                , userEmail = constRes "George@email.com"
+                                                , userAddress = const $ QueryResolver $ pure $ Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
+                                                , userOffice = constRes Nothing
+                                                , userHome = constRes HH
+                                                , userEntity = constRes Nothing
+                                           }
+                                           
     fetchAddressMutation = Address {
           addressCity = constResMut [] "",
           addressStreet = constResMut []  "",

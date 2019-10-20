@@ -176,20 +176,18 @@ class PureOperation (o::OperationKind) where
     eitherGraphQLT :: Monad m => Validation a -> GraphQLT o m event a
 
 instance PureOperation QUERY where
-  -- unPure = unQueryT
    pureGraphQLT = QueryT . pure
    pureGADTResolver = QueryResolver . pure
    eitherGraphQLT = QueryT . ExceptT . pure
 
 instance PureOperation MUTATION where
-  -- unPure  = (ExceptT . fmap streamValue) . runStreamT . runExceptT . unMutationT
    pureGraphQLT = MutationT . pure
    pureGADTResolver = MutationResolver [] . pure
    eitherGraphQLT = MutationT . ExceptT . pure
 
 instance PureOperation SUBSCRIPTION where
    pureGraphQLT = SubscriptionT . pure . pure
-   pureGADTResolver = SubscriptionResolver []  . const . pure
+  -- pureGADTResolver = SubscriptionResolver []  . const . pure
    eitherGraphQLT = SubscriptionT . fmap pure  . ExceptT . pure
 
 resolveObject :: (Monad m , PureOperation o ) => SelectionSet -> [FieldRes o m e] -> GraphQLT o m e Value
