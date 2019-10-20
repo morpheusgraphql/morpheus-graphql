@@ -49,13 +49,13 @@ rootResolver =
     }
   where
     -- TODO: resolver $ dbDeity "" Nothing
-    createDeity _args = MutationResolver [Event {channels = [ChannelA], content = ContentA 1}]
+    createDeity _args = MutResolver [Event {channels = [ChannelA], content = ContentA 1}]
         (pure Deity {
             fullName = ""
             , power  = Nothing
             , realm = Sky
         })
-    newDeity _args = SubscriptionResolver [ChannelA] subResolver
+    newDeity _args = SubResolver [ChannelA] subResolver
       where
         subResolver (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
         subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
