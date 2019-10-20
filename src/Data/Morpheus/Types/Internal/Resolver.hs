@@ -46,7 +46,7 @@ import           Data.Morpheus.Types.Internal.Base          (Message)
 import           Data.Morpheus.Types.Internal.Data          (Key, MUTATION, OperationKind, QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Stream        (Channel (..), Event (..), ResponseEvent (..),
                                                              ResponseStream, StreamChannel, StreamState (..),
-                                                             StreamT (..), SubscribeStream, closeStream, injectEvents,
+                                                             StreamT (..), closeStream, injectEvents,
                                                              mapS, pushEvents)
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Types.Internal.Value         (GQLValue (..), Value)
@@ -106,7 +106,7 @@ instance Monad m => Monad (RecResolver m a) where
 data GraphQLT (o::OperationKind) (m:: * -> *) event value where
     QueryT:: { unQueryT :: ResolveT m value } -> GraphQLT QUERY m event value
     MutationT :: { unMutationT :: ResolveT (StreamT m event) value } -> GraphQLT MUTATION m event value
-    SubscriptionT :: { unSubscriptionT :: ResolveT (SubscribeStream m event) (RecResolver m event value) } -> GraphQLT SUBSCRIPTION m event value
+    SubscriptionT :: { unSubscriptionT :: ResolveT (StreamT m (Channel event)) (RecResolver m event value) } -> GraphQLT SUBSCRIPTION m event value
     -- TODO: SubscriptionRecT :: RecResolver m event value -> GraphQLT SUBSCRIPTION m event value
     FailT :: GQLErrors -> GraphQLT o m event  value
 
@@ -235,7 +235,6 @@ instance Resolving o m e where
    ---------------------------------------------------------------------------------------------------------------------------------------
           __resolving (MutationResolver events res)  =
             MutationT $ pushEvents events $ withExceptT (resolverError selectionPosition fieldName) (injectEvents [] res)  >>= unMutationT . (`encode` selection)
-
 
 class MapGraphQLT (fromO :: OperationKind) (toO :: OperationKind) where
    mapGraphQLT :: Monad m => GraphQLT fromO m e a -> GraphQLT toO m e a

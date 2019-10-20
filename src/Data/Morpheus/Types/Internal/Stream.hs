@@ -14,8 +14,6 @@ module Data.Morpheus.Types.Internal.Stream
   , Event(..)
   -- STREAMS
   , StreamT(..)
-  , SubscribeStream
-  , PublishStream
   , ResponseStream
   , closeStream
   , mapS
@@ -32,17 +30,12 @@ import           Control.Monad.Trans.Except (ExceptT (..), runExceptT)
 -- MORPHEUS
 import           Data.Morpheus.Types.IO     (GQLResponse)
 
-
 -- EVENTS
 data ResponseEvent m event
   = Publish event
   | Subscribe (SubEvent m event)
 
 -- STREAMS
-type SubscribeStream m e = StreamT m (Channel e)
-
-type PublishStream m event = StreamT m event
-
 type ResponseStream m event = StreamT m (ResponseEvent m event)
 
 type SubEvent m event = Event (Channel event) (event-> m GQLResponse)
