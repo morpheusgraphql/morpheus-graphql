@@ -189,12 +189,13 @@ encodeOperationWith ::
   => [FieldRes o m e]
   -> EncodeOperator o m e a
 encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
-  gqlObject <$> resolvingOperation toResolvers rootResolver (getOperationName operationName, 
-      Selection { 
-        selectionArguments = [] , 
-        selectionRec = SelectionSet operationSelection , 
-        selectionPosition = operationPosition 
-      }
-  )
+  gqlObject <$> resolvingOperation resolvers selection
   where
-    toResolvers = objectResolvers (Proxy :: Proxy (CUSTOM a))
+    selection = (getOperationName operationName,
+                      Selection {
+                        selectionArguments = [] ,
+                        selectionRec = SelectionSet operationSelection ,
+                        selectionPosition = operationPosition
+                      }
+                  )
+    resolvers = externalRes <> objectResolvers (Proxy :: Proxy (CUSTOM a)) rootResolver

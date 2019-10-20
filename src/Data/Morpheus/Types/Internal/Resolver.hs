@@ -204,7 +204,7 @@ resolveFields selectionSet resolvers = traverse selectResolver selectionSet
         lookupRes resKey sel = (fromMaybe (const $ pure  gqlNull) $ lookup resKey resolvers) (key, sel)
 
 class Resolving o m e where
-     resolvingOperation :: (PureOperation o ,Monad m) => (object -> [FieldRes o m e]) -> object -> (Key,Selection) -> GraphQLT o m e [(Key,Value)]
+     resolvingOperation :: (PureOperation o ,Monad m) => [FieldRes o m e] -> (Key,Selection) -> GraphQLT o m e [(Key,Value)]
      getArgs :: Validation args ->  (args -> GADTResolver o m e value) -> GADTResolver o m e value
      resolving :: Monad m => (value -> (Key,Selection) -> GraphQLT o m e Value) -> GADTResolver o m e value ->  (Key,Selection) -> GraphQLT o m e Value
 
@@ -214,9 +214,9 @@ instance Resolving o m e where
    getArgs (Right x) f = f x
    getArgs (Left _) _  = FailedResolver ""
    ------------------------------------------
-   resolvingOperation toRes res = withObject resObj
+   resolvingOperation resolvers = withObject resObj
      where
-        resObj selectionSet = resolveFields selectionSet (toRes res)
+        resObj selectionSet = resolveFields selectionSet resolvers
    ---------------------------------------------------------------------------------------------------------------------------------------
    resolving encode gResolver selection@(fieldName,Selection { selectionPosition }) = __resolving gResolver
         where
