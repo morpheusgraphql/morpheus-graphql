@@ -16,7 +16,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (GADTResolver (..), GQLRootResolver (..), Undefined (..))
+import           Data.Morpheus.Types        (GQLRootResolver (..), Undefined (..))
 import           Data.Text                  (Text)
 
 importGQLDocumentWithNamespace "examples/TH/simple.gql"
@@ -30,7 +30,7 @@ rootResolver =
       subscriptionResolver = Undefined
     }
   where
-    queryDeity QueryDeityArgs {queryDeityArgsName} = QueryResolver $ pure $ Deity {deityName, deityPower}
+    queryDeity QueryDeityArgs {queryDeityArgsName} = pure $ Deity {deityName, deityPower}
       where
         deityName _ = pure "Morpheus"
         deityPower _ = pure (Just "Shapeshifting")
