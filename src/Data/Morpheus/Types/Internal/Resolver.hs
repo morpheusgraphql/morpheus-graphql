@@ -154,7 +154,7 @@ instance Functor m => Functor (GADTResolver o m e) where
                 eventFmap res event = fmap f (res event)
 
 -- GADTResolver Applicative
-instance (PureRes o ,Monad m) => Applicative (GADTResolver o m e) where
+instance (PureOperation o ,Monad m) => Applicative (GADTResolver o m e) where
     pure = pureRes
     -------------------------------------
     _ <*> (FailedResolver mErrors) = FailedResolver mErrors
@@ -169,30 +169,22 @@ instance (PureRes o ,Monad m) => Applicative (GADTResolver o m e) where
 
 -- Pure Operation
 class PureOperation (o::OperationKind) where
+    pureRes :: Monad m => a -> GADTResolver o m event a
     pureGraphQLT :: Monad m => a -> GraphQLT o m event a
     eitherGraphQLT :: Monad m => Validation a -> GraphQLT o m event a
 
-class PureRes (o::OperationKind) where
-    pureRes :: Monad m => a -> GADTResolver o m event a
-
-instance PureRes QUERY where
-   pureRes = QueryResolver . pure
-
-instance PureRes MUTATION where
-   pureRes = MutationResolver [] . pure
-
-instance PureRes SUBSCRIPTION where
-   pureRes = SubscriptionResolver []  . const . pure
-
 instance PureOperation QUERY where
+   pureRes = QueryResolver . pure
    pureGraphQLT = QueryT . pure
    eitherGraphQLT = QueryT . ExceptT . pure
 
 instance PureOperation MUTATION where
+   pureRes = MutationResolver [] . pure
    pureGraphQLT = MutationT . pure
    eitherGraphQLT = MutationT . ExceptT . pure
 
 instance PureOperation SUBSCRIPTION where
+   pureRes = SubscriptionResolver []  . const . pure
    pureGraphQLT = SubscriptionT . pure . pure
    eitherGraphQLT = SubscriptionT . fmap pure  . ExceptT . pure
 
@@ -228,7 +220,7 @@ instance Resolving o m e where
    ---------------------------------------------------------------------------------------------------------------------------------------
    resolving encode gResolver selection@(fieldName,Selection { selectionPosition }) = __resolving gResolver
         where
-          -- __resolving (FailedResolver res) = 
+          __resolving (FailedResolver message) = FailT $ resolverError selectionPosition fieldName message
           __resolving (QueryResolver res) =
             QueryT $ withExceptT (resolverError selectionPosition fieldName) res >>= unQueryT . (`encode` selection)
    ---------------------------------------------------------------------------------------------------------------------------------------
