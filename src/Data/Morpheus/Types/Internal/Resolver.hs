@@ -46,7 +46,6 @@ import           Data.Morpheus.Types.Internal.Stream        (Channel (..), Event
 import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validation)
 import           Data.Morpheus.Types.Internal.Value         (GQLValue (..), Value)
 import           Data.Morpheus.Types.IO                     (renderResponse)
-import           Debug.Trace
 
 withObject :: ( SelectionSet -> GraphQLT o m e value) -> (Key,Selection)  -> GraphQLT o m e value
 withObject f (_, Selection {selectionRec = SelectionSet selection}) = f selection
@@ -229,10 +228,7 @@ instance Resolving o m e where
             MutationT $ pushEvents events $ withExceptT (resolverError selectionPosition fieldName) (injectEvents [] res)  >>= unMutationT . (`encode` selection)
    --------------------------------------------------------------------------------------------------------------------------------
           __resolving (SubscriptionResolver subChannels res) =
-               SubscriptionT $ ExceptT $ StreamT $
-                   pure $ StreamState { streamEvents = traceShow (length subChannels) streamEvents ,
-                                        streamValue
-                                      }
+               SubscriptionT $ ExceptT $ StreamT $ pure $ StreamState { streamEvents , streamValue }
                               where
                                 streamValue  = pure $ RecResolver $ \event -> withExceptT (resolverError selectionPosition fieldName) ( unQueryResolver $ res event)  >>= unPub event . (`encode` selection)
                                 streamEvents :: [Channel e]
@@ -265,7 +261,7 @@ toResponseRes (SubscriptionT resT)  =
       where
         handleActions (_, Left gqlError) = StreamState [] (Left gqlError)
         handleActions (channels, Right subResolver) =
-          StreamState [Subscribe $ Event (traceShow channels channels) handleRes] (Right  gqlNull)
+          StreamState [Subscribe $ Event channels handleRes] (Right  gqlNull)
           where
             handleRes event = renderResponse <$> runExceptT (unRecResolver subResolver event)
 

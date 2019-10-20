@@ -44,10 +44,6 @@ newtype Channel event = Channel {
   unChannel :: StreamChannel event
 }
 
-instance Show (Channel e) where
-    show _ = "Channel{}"
-
-
 instance (Eq (StreamChannel event)) => Eq (Channel event) where
   Channel x == Channel y = x == y
 
@@ -94,9 +90,6 @@ instance Monad m => Monad (StreamT m c) where
       (StreamState e1 v1) <- m1
       (StreamState e2 v2) <- runStreamT $ mFunc v1
       return $ StreamState (e1 ++ e2) v2
-
-
-
 
 -- Helper Functions
 toTuple :: StreamState s a -> ([s], a)
