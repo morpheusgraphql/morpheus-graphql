@@ -286,6 +286,6 @@ resolver = ExceptT
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
 data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* -> *) -> * )  (sub :: (* -> *) -> * )  = GQLRootResolver
   { queryResolver        :: query (GADTResolver QUERY m  event)
-  , mutationResolver     :: mut (MutResolver m event)
-  , subscriptionResolver :: sub (SubResolver  m event)
+  , mutationResolver     :: mut (GADTResolver MUTATION m event)
+  , subscriptionResolver :: sub (GADTResolver SUBSCRIPTION  m event)
   }
