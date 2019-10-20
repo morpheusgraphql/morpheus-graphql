@@ -29,6 +29,7 @@ import           Data.Set                                        (Set)
 import qualified Data.Set                                        as S (toList)
 import           Data.Text                                       (pack)
 import           GHC.Generics
+import           Data.Semigroup                                   ((<>))
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal                    (internalUnknownTypeMessage)
