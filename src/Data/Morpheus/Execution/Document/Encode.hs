@@ -10,6 +10,7 @@ module Data.Morpheus.Execution.Document.Encode
 import           Data.Text                             (unpack)
 import           Data.Typeable                         (Typeable)
 import           Language.Haskell.TH
+import           Data.Semigroup                        ((<>))
 
 --
 -- MORPHEUS
