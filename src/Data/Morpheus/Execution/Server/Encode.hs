@@ -33,7 +33,6 @@ import           GHC.Generics
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal                    (internalUnknownTypeMessage)
-import           Data.Morpheus.Error.Selection                   (subfieldsNotSelected)
 import           Data.Morpheus.Execution.Server.Decode           (DecodeObject, decodeArguments)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
 import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, OBJECT, ResContext (..), SCALAR,
@@ -46,7 +45,8 @@ import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..)
 import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Data               (MUTATION, OperationKind, QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Resolver           (MapGraphQLT (..), PureOperation (..), Resolver (..),
-                                                                  Resolving (..), ResolvingStrategy (..), resolveObject)
+                                                                  Resolving (..), ResolvingStrategy (..), resolveObject,
+                                                                  withObject)
 import           Data.Morpheus.Types.Internal.Validation         (Validation)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
 
@@ -98,11 +98,10 @@ instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o m e where
 
 --  OBJECT
 instance (Monad m, EncodeCon o m e a, Monad m, GResolver OBJECT (Rep a) o m e) => EncodeKind OBJECT a o m e where
-  encodeKind (VContext value) (_, Selection {selectionRec = SelectionSet selection}) =
-    resolveObject selection (__typenameResolver : objectResolvers (Proxy :: Proxy (CUSTOM a)) value)
+  encodeKind (VContext value)  = withObject encodeK
     where
+      encodeK selection = resolveObject selection (__typenameResolver : objectResolvers (Proxy :: Proxy (CUSTOM a)) value)
       __typenameResolver = ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))
-  encodeKind _ (key, Selection {selectionPosition}) = Fail $ subfieldsNotSelected key "" selectionPosition
 
 -- exploreKindChannels
 -- UNION
@@ -189,7 +188,6 @@ encodeOperationWith ::
      forall o m e a . (Monad m, EncodeCon o m e a, Resolving o m e, PureOperation o)
   => [FieldRes o m e]
   -> EncodeOperator o m e a
-encodeOperationWith externalRes rootResolver Operation {operationSelection} =
-  gqlObject <$> resolvingOperation resolvers operationSelection
+encodeOperationWith externalRes rootResolver Operation {operationSelection} = resolveObject operationSelection resolvers
     where
        resolvers = externalRes <> objectResolvers (Proxy :: Proxy (CUSTOM a)) rootResolver

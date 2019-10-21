@@ -25,7 +25,6 @@ module Data.Morpheus.Types.Internal.Resolver
   , MapGraphQLT(..)
   , PureOperation(..)
   , resolveObject
-  , resolveFields
   , toResponseRes
   , withObject
   , Resolving(..)
@@ -189,11 +188,9 @@ instance PureOperation SUBSCRIPTION where
    pureGraphQLT = SubscriptionResolving . pure . pure
    eitherGraphQLT = SubscriptionResolving . fmap pure  . ExceptT . pure
 
-resolveObject :: (Monad m , PureOperation o ) => SelectionSet -> [FieldRes o m e] -> ResolvingStrategy o m e Value
-resolveObject selSet = fmap gqlObject . resolveFields selSet
 
-resolveFields :: (Monad m , PureOperation o ) => SelectionSet -> [FieldRes o m e] -> ResolvingStrategy o m e [(Key,Value)]
-resolveFields selectionSet resolvers = traverse selectResolver selectionSet
+resolveObject :: (Monad m , PureOperation o ) => SelectionSet -> [FieldRes o m e] -> ResolvingStrategy o m e Value
+resolveObject selectionSet fieldResolvers = gqlObject <$> traverse selectResolver selectionSet
   where
     selectResolver (key, selection) =
       (key, ) <$>
@@ -202,10 +199,9 @@ resolveFields selectionSet resolvers = traverse selectResolver selectionSet
         _                                -> lookupRes key selection
         -------------------------------------------------------------
       where
-        lookupRes resKey sel = (fromMaybe (const $ pure  gqlNull) $ lookup resKey resolvers) (key, sel)
+        lookupRes resKey sel = (fromMaybe (const $ pure  gqlNull) $ lookup resKey fieldResolvers) (key, sel)
 
 class Resolving o m e where
-     resolvingOperation :: (PureOperation o ,Monad m) => [FieldRes o m e] -> SelectionSet -> ResolvingStrategy o m e [(Key,Value)]
      getArgs :: Validation args ->  (args -> Resolver o m e value) -> Resolver o m e value
      resolving :: Monad m => (value -> (Key,Selection) -> ResolvingStrategy o m e Value) -> Resolver o m e value ->  (Key,Selection) -> ResolvingStrategy o m e Value
 
@@ -214,8 +210,6 @@ type FieldRes o m e = (Key, (Key, Selection) -> ResolvingStrategy o m e Value)
 instance Resolving o m e where
    getArgs (Right x) f = f x
    getArgs (Left _) _  = FailedResolver ""
-   ------------------------------------------
-   resolvingOperation = flip resolveFields
    ---------------------------------------------------------------------------------------------------------------------------------------
    resolving encode gResolver selection@(fieldName,Selection { selectionPosition }) = __resolving gResolver
         where
