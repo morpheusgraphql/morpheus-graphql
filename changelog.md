@@ -44,7 +44,7 @@
   rootResolver :: GQLRootResolver IO () Query Undefined Undefined
   ```
 - Root Operations `Query`, `Mutation`, `Subscription` are passed to root resolvers without boxing inside a monad.
-
+- there are only 3 kind of resolvers `MutResolver`, `SubResolver` , `QueryResolver` defined by  GADT `Resolver`
 ## [0.4.0] - 09.10.2019
 
 ## Changed
