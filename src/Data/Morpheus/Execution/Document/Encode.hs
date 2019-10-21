@@ -10,16 +10,16 @@ module Data.Morpheus.Execution.Document.Encode
 import           Data.Text                             (unpack)
 import           Data.Typeable                         (Typeable)
 import           Language.Haskell.TH
+import           Data.Semigroup                        ((<>))
 
 --
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Encode (Encode (..), ObjectResolvers (..))
 import           Data.Morpheus.Types.GQLType           (TRUE)
-import           Data.Morpheus.Types.Internal.Data     (DataField (..), isSubscription)
+import           Data.Morpheus.Types.Internal.Data     (DataField (..), QUERY, SUBSCRIPTION, isSubscription)
 import           Data.Morpheus.Types.Internal.DataD    (ConsD (..), GQLTypeD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.Resolver (ResolveT, Resolver, SubResolveT, SubResolver)
+import           Data.Morpheus.Types.Internal.Resolver (Resolver, MapGraphQLT (..), Resolving,PureOperation)
 import           Data.Morpheus.Types.Internal.TH       (applyT, destructRecord, instanceHeadMultiT, typeT)
-import           Data.Morpheus.Types.Internal.Value    (Value)
 
 -- @Subscription:
 --
@@ -32,26 +32,30 @@ import           Data.Morpheus.Types.Internal.Value    (Value)
 --          objectResolvers _ (<Object> x y) = [("field1", encode x), ("field2", encode y)]
 --
 --
+ 
+
 deriveEncode :: GQLTypeD -> Q [Dec]
 deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}]}} =
   pure <$> instanceD (cxt constrains) appHead methods
-  where
-    result = appT resultMonad (conT ''Value)
-      where
-        resultMonad
-          | isSubscription typeKindD = typeT ''SubResolveT ["m", "e"] -- (SubResolveT m e Value)
-          | otherwise = typeT ''ResolveT ["m"] -- (ResolveT m Value)
-    mainType = applyT (mkName tName) [mainTypeArg] -- defines  (<Type> (SubResolver m e)) or (<Type> (Resolver m))
+  where 
+    subARgs = conT ''SUBSCRIPTION : map (varT . mkName) ["m","e"]
+    instanceArgs
+          | isSubscription typeKindD = subARgs
+          | otherwise =  map (varT . mkName) ["o","m","e"]
+    mainType = applyT (mkName tName) [mainTypeArg]
       where
         mainTypeArg
-          | isSubscription typeKindD = typeT ''SubResolver ["m", "e"] -- (SubResolver m e)
-          | otherwise = typeT ''Resolver ["m"] -- (Resolver m)
+          | isSubscription typeKindD = applyT ''Resolver subARgs
+          | otherwise = typeT ''Resolver ["fieldOKind","m","e"] 
     -----------------------------------------------------------------------------------------
+    typeables
+         | isSubscription typeKindD =  [applyT ''MapGraphQLT $ map conT [''QUERY, ''SUBSCRIPTION],applyT ''Resolving [conT ''QUERY, varT $ mkName "m", varT $ mkName "e"]]
+         | otherwise = [typeT ''PureOperation ["fieldOKind"],typeT ''MapGraphQLT ["fieldOKind","o"] , typeT ''Resolving ["fieldOKind","m","e"] , typeT ''Typeable ["fieldOKind"] , typeT ''Typeable ["o"]]
     -- defines Constraint: (Typeable m, Monad m)
-    constrains = [typeT ''Monad ["m"], typeT ''Typeable ["m"]]
+    constrains = typeables <>[typeT ''Monad ["m"], applyT ''Encode (mainType:instanceArgs) , typeT ''Typeable ["m"],typeT ''Typeable ["e"]]
     -------------------------------------------------------------------
     -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where
-    appHead = instanceHeadMultiT ''ObjectResolvers (conT ''TRUE) [mainType, result]
+    appHead = instanceHeadMultiT ''ObjectResolvers (conT ''TRUE) (mainType: instanceArgs)
     ------------------------------------------------------------------
     -- defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
     methods = [funD 'objectResolvers [clause argsE (normalB body) []]]

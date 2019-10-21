@@ -5,10 +5,10 @@ module Mythology.API
   ( mythologyApi
   ) where
 
+import           Control.Monad.Except       (ExceptT (..))
 import qualified Data.ByteString.Lazy.Char8 as B
-
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Types        ( GQLRootResolver (..),Undefined(..), GQLType, IORes, resolver)
+import           Data.Morpheus.Types        (Resolver (..), IORes, GQLRootResolver (..), GQLType, Undefined (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 import           Mythology.Character.Deity  (Deity (..), dbDeity)
@@ -22,15 +22,15 @@ data DeityArgs = DeityArgs
   , mythology :: Maybe Text -- Optional Argument
   } deriving (Generic)
 
-resolveDeity :: DeityArgs -> IORes Deity
-resolveDeity args = resolver $ dbDeity (name args) (mythology args)
+resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity args = QueryResolver $ ExceptT $ dbDeity (name args) (mythology args)
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {deity = resolveDeity}
-    , mutationResolver = return Undefined
-    , subscriptionResolver = return Undefined
+    { queryResolver = Query {deity = resolveDeity}
+    , mutationResolver =  Undefined
+    , subscriptionResolver = Undefined
     }
 
 mythologyApi :: B.ByteString -> IO B.ByteString

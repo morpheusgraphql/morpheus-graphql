@@ -26,8 +26,8 @@ import           Data.Typeable                         (TyCon, TypeRep, Typeable
 -- MORPHEUS
 import           Data.Morpheus.Kind
 import           Data.Morpheus.Types.Custom            (MapKind, Pair)
-import           Data.Morpheus.Types.Internal.Data     (DataFingerprint (..))
-import           Data.Morpheus.Types.Internal.Resolver (Resolver, SubResolver)
+import           Data.Morpheus.Types.Internal.Data     (DataFingerprint (..), QUERY)
+import           Data.Morpheus.Types.Internal.Resolver (Resolver (..))
 import           Data.Morpheus.Types.Types             (Undefined (..))
 
 type TRUE = 'True
@@ -35,10 +35,7 @@ type TRUE = 'True
 type FALSE = 'False
 
 resolverCon :: TyCon
-resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver Maybe)
-
-subResCon :: TyCon
-subResCon = typeRepTyCon $ typeRep $ Proxy @(SubResolver Maybe)
+resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver QUERY Maybe)
 
 -- | replaces typeName (A,B) with Pair_A_B
 replacePairCon :: TyCon -> TyCon
@@ -52,7 +49,7 @@ replacePairCon x = x
 -- Ignores Resolver name  from typeName
 ignoreResolver :: (TyCon, [TypeRep]) -> [TyCon]
 ignoreResolver (con, _)
-  | con `elem` [resolverCon, subResCon] = []
+  | con == resolverCon = []
 ignoreResolver (con, args) = con : concatMap (ignoreResolver . splitTyConApp) args
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
@@ -116,6 +113,7 @@ instance GQLType a => GQLType (Maybe a) where
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
+
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
   __typeName _ = __typeName (Proxy @a)
@@ -146,15 +144,10 @@ instance GQLType a => GQLType (Either s a) where
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
-instance GQLType a => GQLType (Resolver m a) where
-  type KIND (Resolver m a) = WRAPPER
-  __typeName _ = __typeName (Proxy @a)
-  __typeFingerprint _ = __typeFingerprint (Proxy @a)
-
-instance GQLType a => GQLType (SubResolver m e a) where
-  type KIND (SubResolver m e a) = WRAPPER
-  __typeName _ = __typeName (Proxy @a)
-  __typeFingerprint _ = __typeFingerprint (Proxy @a)
+instance GQLType a => GQLType (Resolver o m e a) where
+      type KIND (Resolver o m e a) = WRAPPER
+      __typeName _ = __typeName (Proxy @a)
+      __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance GQLType b => GQLType (a -> b) where
   type KIND (a -> b) = WRAPPER

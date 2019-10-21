@@ -18,7 +18,7 @@ import           Data.Morpheus          (interpreter)
 import           Data.Morpheus.Document (importGQLDocument)
 import           Data.Morpheus.Kind     (SCALAR)
 import           Data.Morpheus.Types    (Event, GQLRequest, GQLResponse, GQLRootResolver (..), GQLScalar (..),
-                                         GQLType (..), ID (..), ScalarValue (..), SubResolver (..))
+                                         GQLType (..), ID (..), ScalarValue (..), Resolver (..), constRes )
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
 
@@ -26,7 +26,6 @@ data TestScalar =
   TestScalar Int
              Int
   deriving (Show, Generic)
-
 
 instance GQLType TestScalar where
   type KIND TestScalar = SCALAR
@@ -43,31 +42,27 @@ type EVENT = Event Channel ()
 
 importGQLDocument "test/Feature/Holistic/API.gql"
 
-resolveValue :: Monad m => b -> a -> m b
-resolveValue = const . return
-
 rootResolver ::
      GQLRootResolver IO EVENT Query Mutation Subscription
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {user, testUnion = const $ return Nothing}
-    , mutationResolver = return Mutation {createUser = user}
-    , subscriptionResolver =
-        return Subscription {newUser = const SubResolver {subChannels = [Channel], subResolver = user}}
+    { queryResolver = Query {user, testUnion = constRes Nothing}
+    , mutationResolver =  Mutation {createUser = user}
+    , subscriptionResolver = Subscription {newUser = const SubResolver {subChannels = [Channel], subResolver = user}}
     }
   where
     user _ =
-      return $
+      pure 
       User
-        { name = resolveValue "testName"
-        , email = resolveValue ""
+        { name = constRes "testName"
+        , email = constRes ""
         , address = resolveAddress
         , office = resolveAddress
-        , friend = resolveValue Nothing
+        , friend = constRes Nothing
         }
       where
         resolveAddress _ =
-          return Address {city = resolveValue "", houseNumber = resolveValue 0, street = resolveValue Nothing}
+          pure Address {city = constRes "", houseNumber = constRes 0, street = constRes Nothing}
 
 api :: GQLRequest -> IO GQLResponse
 api = interpreter rootResolver

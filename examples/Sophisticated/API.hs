@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -25,8 +26,8 @@ import           GHC.Generics           (Generic)
 -- MORPHEUS
 import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
-import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, Resolver,
-                                         ScalarValue (..), SubResolver (..), constRes, mutResolver, resolver)
+import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, QUERY,
+                                         Resolver (..), ScalarValue (..), constRes)
 
 $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
 
@@ -81,66 +82,53 @@ type APIEvent = (Event Channel Content)
 gqlRoot :: GQLRootResolver IO APIEvent Query Mutation Subscription
 gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
   where
-    queryResolver =
-      return
-        Query
-          { queryUser = const $ resolver fetchUser
-          , queryAnimal = \QueryAnimalArgs {queryAnimalArgsAnimal} -> return (pack $ show queryAnimalArgsAnimal)
+    queryResolver = Query
+          { queryUser = const fetchUser
+          , queryAnimal = \QueryAnimalArgs {queryAnimalArgsAnimal} -> pure (pack $ show queryAnimalArgsAnimal)
           , querySet = constRes $ S.fromList [1, 2]
           , queryMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]
           , queryWrapped1 = constRes $ A (0, "")
           , queryWrapped2 = constRes $ A ""
           }
     -------------------------------------------------------------
-    mutationResolver = return Mutation {mutationCreateAddress, mutationCreateUser}
+    mutationResolver = Mutation { mutationCreateUser , mutationCreateAddress }
       where
         mutationCreateUser _ =
-          mutResolver
+          MutResolver
             [Event [UPDATE_USER] (Update {contentID = 12, contentMessage = "some message for user"})]
-            fetchUser
-        --mutationCreateAddress :: () -> MutRes (Address MutRes)
+            (pure User
+                 { userName = constRes "George"
+                 , userEmail = constRes "George@email.com"
+                 , userAddress = constRes mutationAddress
+                 , userOffice = constRes  Nothing
+                 , userHome = constRes HH
+                 , userEntity = constRes Nothing
+                 })
+        -------------------------
         mutationCreateAddress _ =
-          mutResolver
-            [Event [UPDATE_ADDRESS] (Update {contentID = 10, contentMessage = "message for address"})]
-            (fetchAddress (Euro 1 0))
+          MutResolver
+            [Event [UPDATE_ADDRESS] (Update {contentID = 10, contentMessage = "message for address"})] (pure mutationAddress)
     ----------------------------------------------------------------
-    subscriptionResolver = return Subscription {subscriptionNewAddress, subscriptionNewUser}
+    subscriptionResolver = Subscription {subscriptionNewAddress, subscriptionNewUser}
       where
-        subscriptionNewUser () = SubResolver {subChannels = [UPDATE_USER], subResolver}
+        subscriptionNewUser () = SubResolver [UPDATE_USER] subResolver
           where
-            subResolver (Event _ Update {}) = resolver fetchUser
-        subscriptionNewAddress () = SubResolver {subChannels = [UPDATE_ADDRESS], subResolver}
+            subResolver (Event _ Update {}) = fetchUser
+        subscriptionNewAddress () = SubResolver [UPDATE_ADDRESS] subResolver
           where
-            subResolver (Event _ Update {contentID}) = resolver $ fetchAddress (Euro contentID 0)
-
-fetchAddress :: Monad m => Euro -> m (Either String (Address (Resolver m)))
-fetchAddress _ =
-  return $ Right Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
-
-fetchUser :: Monad m => m (Either String (User (Resolver m)))
-fetchUser =
-  return $
-  Right $
-  User
-    { userName = constRes "George"
-    , userEmail = constRes "George@email.com"
-    , userAddress = const resolveAddress
-    , userOffice = resolveOffice
-    , userHome = constRes HH
-    , userEntity = constRes $ MyUnionUser unionUser
-    }
-  where
-    unionAddress =
-      Address {addressCity = constRes "Hamburg", addressStreet = constRes "Street", addressHouseNumber = constRes 20}
-  -- Office
-    resolveOffice _officeArgs = resolver $ fetchAddress (Euro 1 1)
-    resolveAddress = resolver $ fetchAddress (Euro 1 0)
-    unionUser =
-      User
-        { userName = constRes "David"
-        , userEmail = constRes "David@email.com"
-        , userAddress = const resolveAddress
-        , userOffice = resolveOffice
-        , userHome = constRes BLN
-        , userEntity = const $ return $ MyUnionAddress unionAddress
+            subResolver (Event _ Update {contentID}) =  fetchAddress
+    ----------------------------------------------------------------------------------------------
+    fetchAddress = pure Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
+    fetchUser :: Resolver QUERY IO (Event Channel Content) (User (Resolver QUERY IO (Event Channel Content)))
+    fetchUser = pure User { userName = constRes "George"
+                                                , userEmail = constRes "George@email.com"
+                                                , userAddress = const fetchAddress
+                                                , userOffice = constRes Nothing
+                                                , userHome = constRes HH
+                                                , userEntity = constRes Nothing
+                                           }
+    mutationAddress = Address {
+          addressCity = constRes "",
+          addressStreet = constRes "",
+          addressHouseNumber = constRes 0
         }

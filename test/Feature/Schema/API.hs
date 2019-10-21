@@ -31,9 +31,9 @@ data Query (m :: * -> * ) = Query
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {a1 = A "" 0, a2 = A2.A 0}
-    , mutationResolver = return Undefined
-    , subscriptionResolver = return Undefined
+    { queryResolver = Query {a1 = A "" 0, a2 = A2.A 0}
+    , mutationResolver = Undefined
+    , subscriptionResolver = Undefined
     }
 
 api :: GQLRequest -> IO GQLResponse

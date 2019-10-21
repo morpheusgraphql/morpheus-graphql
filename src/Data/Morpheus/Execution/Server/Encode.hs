@@ -6,7 +6,6 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -14,145 +13,115 @@
 
 module Data.Morpheus.Execution.Server.Encode
   ( EncodeCon
-  , EncodeMutCon
-  , EncodeSubCon
   , GResolver(..)
   , Encode(..)
   , encodeQuery
-  , encodeOperation
+  , encodeSubscription
+  , encodeMutation
   , ObjectResolvers(..)
-  , OBJ_RES
   ) where
 
-import           Control.Monad                                   ((>=>))
-import           Control.Monad.Except                            (liftEither, runExceptT, withExceptT)
 import           Data.Map                                        (Map)
 import qualified Data.Map                                        as M (toList)
 import           Data.Maybe                                      (fromMaybe)
 import           Data.Proxy                                      (Proxy (..))
+import           Data.Semigroup                                  ((<>))
 import           Data.Set                                        (Set)
 import qualified Data.Set                                        as S (toList)
 import           Data.Text                                       (pack)
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal                    (internalErrorT)
-import           Data.Morpheus.Error.Selection                   (resolverError, subfieldsNotSelected)
+import           Data.Morpheus.Error.Internal                    (internalUnknownTypeMessage)
 import           Data.Morpheus.Execution.Server.Decode           (DecodeObject, decodeArguments)
 import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
-import           Data.Morpheus.Kind                              (Context (..), ENUM, GQL_KIND, OBJECT, SCALAR, UNION,
-                                                                  VContext (..))
+import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, OBJECT, ResContext (..), SCALAR,
+                                                                  UNION, VContext (..))
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair (..), mapKindFromList)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTOM, KIND, __typeName))
-import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation, getOperationName)
-import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), SelectionSet)
+import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation)
+import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Resolver           (ResolveT, Resolver, SubResolveT, SubResolver (..),
-                                                                  failResolveT)
-import           Data.Morpheus.Types.Internal.Stream             (Channel (..), PublishStream, StreamT (..),
-                                                                  SubscribeStream, initExceptStream, injectEvents)
-import           Data.Morpheus.Types.Internal.Validation         (GQLErrors)
+import           Data.Morpheus.Types.Internal.Data               (MUTATION, OperationKind, QUERY, SUBSCRIPTION)
+import           Data.Morpheus.Types.Internal.Resolver           (MapGraphQLT (..), PureOperation (..), Resolver (..),
+                                                                  Resolving (..), ResolvingStrategy (..), resolveObject,
+                                                                  withObject)
+import           Data.Morpheus.Types.Internal.Validation         (Validation)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
 
-class Encode resolver value where
-  encode :: resolver -> (Key, Selection) -> value
+class Encode resolver o m e where
+  encode :: PureOperation o => resolver -> (Key, Selection) -> ResolvingStrategy o m e Value
 
-instance {-# OVERLAPPABLE #-} EncodeKind (KIND a) a res => Encode a res where
+instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o m e , PureOperation o) => Encode a o m e where
   encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
 
 -- MAYBE
-instance (GQLValue value, Encode a value) => Encode (Maybe a) value where
-  encode Nothing      = const gqlNull
-  encode (Just value) = encode value
+instance (Monad m , Encode a o m e) => Encode (Maybe a) o m e where
+  encode = maybe (const $ pure gqlNull) encode
 
 --  Tuple  (a,b)
-instance Encode (Pair k v) value => Encode (k, v) value where
+instance Encode (Pair k v) o m e => Encode (k, v) o m e where
   encode (key, value) = encode (Pair key value)
 
 --  Set
-instance Encode [a] value => Encode (Set a) value where
+instance Encode [a] o m e => Encode (Set a) o m e where
   encode = encode . S.toList
 
 --  Map
-instance (Eq k, Monad m, Encode (MapKind k v (Resolver m)) (ResolveT m value)) =>
-         Encode (Map k v) (ResolveT m value) where
-  encode value = encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver m))
+instance (Eq k, Monad m, Encode (MapKind k v (Resolver o m e)) o m e) => Encode (Map k v)  o m e  where
+  encode value = encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver o m e))
 
 -- LIST []
-instance (Monad m, GQLValue value, Encode a (m value)) => Encode [a] (m value) where
+instance (Monad m, Encode a o m e) => Encode [a] o m e where
   encode list query = gqlList <$> traverse (`encode` query) list
 
---  GQL a -> b
-instance (DecodeObject a, Monad m, Encode b (ResolveT m value)) => Encode (a -> b) (ResolveT m value) where
-  encode resolver selection = decodeArgs selection >>= (`encode` selection) . resolver
-    where
-      decodeArgs :: (Key, Selection) -> ResolveT m a
-      decodeArgs = liftEither . decodeArguments . selectionArguments . snd
 
--- GQL Either Resolver Monad
-instance (Monad m, Encode a (ResolveT m value)) => Encode (Either String a) (ResolveT m value) where
-  encode resolver = (`encodeResolver` liftEither resolver)
-
---  GQL ExceptT Resolver Monad
-instance (Monad m, Encode b (ResolveT m value)) => Encode (Resolver m b) (ResolveT m value) where
-  encode = flip encodeResolver
-
--- GQL Mutation Resolver Monad
-instance (Monad m, Encode b (ResolveT m value)) => Encode (Resolver m b) (ResolveT (StreamT m c) value) where
-  encode resolver = injectEvents [] . encode resolver
-
--- GQL Subscription Resolver Monad
-instance (Monad m, Encode b (ResolveT m Value)) => Encode (SubResolver m event b) (SubResolveT m event Value) where
-  encode resolver selection =  handleResolver resolver
-    where
-      handleResolver SubResolver {subChannels, subResolver} =
-        initExceptStream [map Channel subChannels] (encodeResolver selection . subResolver)
+--  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
+instance (DecodeObject a, Resolving fO m e ,Monad m,PureOperation fO, MapGraphQLT fO o, Encode b fO m e ) => Encode (a -> Resolver fO m e b) o m e where
+  encode resolver selection@(_, Selection { selectionArguments }) = mapGraphQLT $ resolving encode (getArgs args resolver)  selection
+     where
+      args :: Validation a
+      args =  decodeArguments selectionArguments
 
 -- ENCODE GQL KIND
-class EncodeKind (kind :: GQL_KIND) a value where
-  encodeKind :: VContext kind a -> (Key, Selection) -> value
+class EncodeKind (kind :: GQL_KIND) a o m e  where
+  encodeKind :: PureOperation o =>  VContext kind a -> (Key, Selection) -> ResolvingStrategy o m e Value
 
 -- SCALAR
-instance (GQLScalar a, GQLValue value) => EncodeKind SCALAR a value where
-  encodeKind = pure . gqlScalar . serialize . unVContext
+instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o m e where
+  encodeKind = pure . pure . gqlScalar . serialize . unVContext
 
 -- ENUM
-instance (Generic a, EnumRep (Rep a), GQLValue value) => EncodeKind ENUM a value where
-  encodeKind = pure . gqlString . encodeRep . from . unVContext
+instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o m e where
+  encodeKind = pure . pure . gqlString . encodeRep . from . unVContext
 
 --  OBJECT
-instance (Monad m, EncodeCon m a value, GQLValue value) => EncodeKind OBJECT a (ResolveT m value) where
-  encodeKind (VContext value) (_, Selection {selectionRec = SelectionSet selection}) =
-    resolveFields selection (__typenameResolver : objectResolvers (Proxy :: Proxy (CUSTOM a)) value)
+instance (Monad m, EncodeCon o m e a, Monad m, GResolver OBJECT (Rep a) o m e) => EncodeKind OBJECT a o m e where
+  encodeKind (VContext value)  = withObject encodeK
     where
+      encodeK selection = resolveObject selection (__typenameResolver : objectResolvers (Proxy :: Proxy (CUSTOM a)) value)
       __typenameResolver = ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))
-  encodeKind _ (key, Selection {selectionPosition}) = failResolveT $ subfieldsNotSelected key "" selectionPosition
 
+-- exploreKindChannels
 -- UNION
-instance (Monad m, GQL_RES a, GResolver UNION (Rep a) (ResolveT m value)) => EncodeKind UNION a (ResolveT m value) where
+instance (Monad m, GQL_RES a, GResolver UNION (Rep a) o m e) => EncodeKind UNION a o m e where
   encodeKind (VContext value) (key, sel@Selection {selectionRec = UnionSelection selections}) =
     resolver (key, sel {selectionRec = SelectionSet lookupSelection})
       -- SPEC: if there is no any fragment that supports current object Type GQL returns {}
     where
       lookupSelection = fromMaybe [] $ lookup typeName selections
       (typeName, resolver) = unionResolver value
-  encodeKind _ _ = internalErrorT "union Resolver only should recieve UnionSelection"
+  encodeKind _ _ = Fail $ internalUnknownTypeMessage "union Resolver only should recieve UnionSelection"
 
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
 
-type EncodeOperator m a value = Resolver m a -> ValidOperation -> m (Either GQLErrors value)
+type EncodeOperator o m e a  = a -> ValidOperation -> ResolvingStrategy o m e Value
 
-type OBJ_RES m a value = ObjectResolvers (CUSTOM a) a (ResolveT m value)
+type EncodeCon o m e a = (GQL_RES a,  ObjectResolvers (CUSTOM a) a o m e)
 
-type EncodeCon m a value = (GQL_RES a, OBJ_RES m a value)
-
-type EncodeMutCon m event mut = EncodeCon (PublishStream m event) mut Value
-
-type EncodeSubCon m event sub = EncodeCon (SubscribeStream m event) sub (event -> ResolveT m Value)
-
-type FieldRes m value = (Key, (Key, Selection) -> ResolveT m value)
+type FieldRes  o m e   = (Key, (Key, Selection) -> ResolvingStrategy o m e Value)
 
 type family GRes (kind :: GQL_KIND) value :: *
 
@@ -161,76 +130,64 @@ type instance GRes OBJECT v = [(Key, (Key, Selection) -> v)]
 type instance GRes UNION v = (Key, (Key, Selection) -> v)
 
 --- GENERICS ------------------------------------------------
-class ObjectResolvers (custom :: Bool) a value where
-  objectResolvers :: Proxy custom -> a -> [(Key, (Key, Selection) -> value)]
+class ObjectResolvers (custom :: Bool) a (o :: OperationKind) (m :: * -> *) e where
+  objectResolvers :: PureOperation o =>  Proxy custom -> a -> [(Key, (Key, Selection) -> ResolvingStrategy o m e Value)]
 
-instance (Generic a, GResolver OBJECT (Rep a) value) => ObjectResolvers 'False a value where
-  objectResolvers _ = getResolvers (Context :: Context OBJECT value) . from
+instance (Generic a, GResolver OBJECT (Rep a) o m e ) => ObjectResolvers 'False a o m e where
+  objectResolvers _ = getResolvers (ResContext :: ResContext OBJECT o m e value) . from
 
-unionResolver :: (Generic a, GResolver UNION (Rep a) value) => a -> (Key, (Key, Selection) -> value)
-unionResolver = getResolvers (Context :: Context UNION value) . from
+unionResolver :: (Generic a, PureOperation o, GResolver UNION (Rep a) o m e) => a -> (Key, (Key, Selection) -> ResolvingStrategy o m e Value)
+unionResolver = getResolvers (ResContext :: ResContext UNION o m e value) . from
 
 -- | Derives resolvers for OBJECT and UNION
-class GResolver (kind :: GQL_KIND) f value where
-  getResolvers :: Context kind value -> f a -> GRes kind value
+class GResolver (kind :: GQL_KIND) f o m e where
+  getResolvers :: PureOperation o => ResContext kind o m e value -> f a -> GRes kind (ResolvingStrategy o m e Value)
 
-instance GResolver kind f value => GResolver kind (M1 D c f) value where
+instance GResolver kind f o m e => GResolver kind (M1 D c f) o m e where
   getResolvers context (M1 src) = getResolvers context src
 
-instance GResolver kind f value => GResolver kind (M1 C c f) value where
+instance GResolver kind f o m e => GResolver kind (M1 C c f) o m e where
   getResolvers context (M1 src) = getResolvers context src
 
 -- OBJECT
-instance GResolver OBJECT U1 value where
+instance GResolver OBJECT U1 o m e where
   getResolvers _ _ = []
 
-instance (Selector s, GQLType a, Encode a value) => GResolver OBJECT (M1 S s (K1 s2 a)) value where
+instance (Selector s, GQLType a, Encode a o m e) => GResolver OBJECT (M1 S s (K1 s2 a)) o m e where
   getResolvers _ m@(M1 (K1 src)) = [(pack (selName m), encode src)]
 
-instance (GResolver OBJECT f value, GResolver OBJECT g value) => GResolver OBJECT (f :*: g) value where
-  getResolvers context (a :*: b) = getResolvers context a ++ getResolvers context b
+instance (GResolver OBJECT f o m e, GResolver OBJECT g o m e) => GResolver OBJECT (f :*: g) o m e where
+  getResolvers context (a :*: b)  = getResolvers context a  ++ getResolvers context b
 
 -- UNION
-instance (Selector s, GQLType a, Encode a value) => GResolver UNION (M1 S s (K1 s2 a)) value where
+instance (Selector s, GQLType a, Encode a o m e ) => GResolver UNION (M1 S s (K1 s2 a)) o m e where
   getResolvers _ (M1 (K1 src)) = (__typeName (Proxy @a), encode src)
 
-instance (GResolver UNION a value, GResolver UNION b value) => GResolver UNION (a :+: b) value where
+instance (GResolver UNION a o m e, GResolver UNION b o m e) => GResolver UNION (a :+: b) o m e where
   getResolvers context (L1 x) = getResolvers context x
   getResolvers context (R1 x) = getResolvers context x
 
 ----- HELPERS ----------------------------
 encodeQuery ::
-     forall m a schema. (GQL_RES a, GQL_RES schema, Monad m, EncodeCon m schema Value, EncodeCon m a Value)
-  => schema
-  -> EncodeOperator m a Value
-encodeQuery schema = encodeOperationWith (objectResolvers (Proxy :: Proxy (CUSTOM schema)) schema)
+     forall m event query (schema :: (* -> *) -> *). (Monad m, EncodeCon QUERY m event (schema (Resolver QUERY m event)), EncodeCon QUERY m event query, Resolving QUERY m event)
+  => schema (Resolver QUERY m event)
+  -> EncodeOperator QUERY m event query
+encodeQuery schema = encodeOperationWith (objectResolvers (Proxy :: Proxy (CUSTOM (schema (Resolver QUERY m event)))) schema)
 
-encodeOperation :: (Monad m, GQL_RES a, EncodeCon m a value, GQLValue value) => EncodeOperator m a value
-encodeOperation = encodeOperationWith []
+encodeMutation ::
+     forall m event mut. (Monad m, EncodeCon MUTATION m event mut, Resolving MUTATION m event)
+  => EncodeOperator MUTATION m event mut
+encodeMutation = encodeOperationWith []
+
+encodeSubscription ::
+     forall m event mut. (Monad m, EncodeCon SUBSCRIPTION m event mut, Resolving SUBSCRIPTION m event)
+  => EncodeOperator SUBSCRIPTION m event mut
+encodeSubscription = encodeOperationWith []
 
 encodeOperationWith ::
-     forall m a value. (Monad m, GQL_RES a, GQLValue value, EncodeCon m a value)
-  => [FieldRes m value]
-  -> EncodeOperator m a value
-encodeOperationWith externalRes rootResolver Operation {operationSelection, operationPosition, operationName} =
-  runExceptT $
-  operationResolveT >>=
-  resolveFields operationSelection . (++) externalRes . objectResolvers (Proxy :: Proxy (CUSTOM a))
-  where
-    operationResolveT = withExceptT (resolverError operationPosition (getOperationName operationName)) rootResolver
-
-encodeResolver :: (Monad m, Encode a (ResolveT m res)) => (Key, Selection) -> Resolver m a -> ResolveT m res
-encodeResolver selection@(fieldName, Selection {selectionPosition}) =
-  withExceptT (resolverError selectionPosition fieldName) >=> (`encode` selection)
-
-resolveFields :: (Monad m, GQLValue a) => SelectionSet -> [FieldRes m a] -> ResolveT m a
-resolveFields selectionSet resolvers = gqlObject <$> traverse selectResolver selectionSet
-  where
-    selectResolver (key, selection) =
-      (key, ) <$>
-      case selectionRec selection of
-        SelectionAlias name selectionRec -> lookupRes name (selection {selectionRec})
-        _                                -> lookupRes key selection
-        -------------------------------------------------------------
-      where
-        lookupRes resKey sel = (fromMaybe (const $ return gqlNull) $ lookup resKey resolvers) (key, sel)
+     forall o m e a . (Monad m, EncodeCon o m e a, Resolving o m e, PureOperation o)
+  => [FieldRes o m e]
+  -> EncodeOperator o m e a
+encodeOperationWith externalRes rootResolver Operation {operationSelection} = resolveObject operationSelection resolvers
+    where
+       resolvers = externalRes <> objectResolvers (Proxy :: Proxy (CUSTOM a)) rootResolver

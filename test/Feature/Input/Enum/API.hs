@@ -49,8 +49,8 @@ instance GQLType ThreeCon where
   type KIND ThreeCon = ENUM
 
 -- query
-testRes :: Monad m => TestArgs a -> m a
-testRes TestArgs {level} = return level
+testRes :: Applicative m => TestArgs a -> m a
+testRes TestArgs {level} = pure level
 
 -- resolver
 data Query m = Query
@@ -62,9 +62,9 @@ data Query m = Query
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {test = testRes, test2 = testRes, test3 = testRes}
-    , mutationResolver = return Undefined
-    , subscriptionResolver = return Undefined
+    { queryResolver =  Query {test = testRes, test2 = testRes, test3 = testRes}
+    , mutationResolver =  Undefined
+    , subscriptionResolver =  Undefined
     }
 
 api :: GQLRequest -> IO GQLResponse

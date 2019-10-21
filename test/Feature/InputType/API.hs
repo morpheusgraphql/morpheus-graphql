@@ -26,8 +26,8 @@ data F2Args = F2Args
   } deriving (Generic)
 
 data A = A
-  { a1 :: F1Args -> IORes Text
-  , a2 :: F2Args -> IORes Int
+  { a1 :: F1Args -> IORes () Text
+  , a2 :: F2Args -> IORes () Int
   } deriving (Generic)
 
 instance GQLType A where
@@ -40,9 +40,9 @@ newtype Query (m :: * -> *) = Query
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {q1 = A {a1 = const $ return "a1Test", a2 = const $ return 1}}
-    , mutationResolver = return Undefined
-    , subscriptionResolver = return Undefined
+    { queryResolver = Query {q1 = A {a1 = const $ return "a1Test", a2 = const $ return 1}}
+    , mutationResolver = Undefined
+    , subscriptionResolver = Undefined
     }
 
 api :: GQLRequest -> IO GQLResponse

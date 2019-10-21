@@ -1,16 +1,7 @@
+{-# LANGUAGE DataKinds #-}
 -- | GQL Types
 module Data.Morpheus.Types
-  ( resolver
-  , mutResolver
-  , toMutResolver
-  -- Resolver Monad
-  , IORes
-  , IOMutRes
-  , IOSubRes
-  , Resolver
-  , SubRootRes
-  , SubResolver(..)
-  , Event(..)
+  ( Event(..)
   -- Type Classes
   , GQLType(KIND, description)
   , GQLScalar(parseValue, serialize)
@@ -21,25 +12,40 @@ module Data.Morpheus.Types
   , ScalarValue(..)
   , GQLRootResolver(..)
   , constRes
+  , constMutRes
   , Undefined(..)
+  , Res
+  , MutRes
+  , SubRes
+  , IORes
+  , IOMutRes
+  , IOSubRes
+  , Resolver(..)
+  , QUERY
+  , MUTATION
+  , SUBSCRIPTION
   ) where
 
 import           Data.Morpheus.Types.GQLScalar         (GQLScalar (parseValue, serialize))
 import           Data.Morpheus.Types.GQLType           (GQLType (KIND, description))
 import           Data.Morpheus.Types.ID                (ID (..))
-import           Data.Morpheus.Types.Internal.Resolver (Event (..), GQLRootResolver (..), MutResolver, Resolver,
-                                                        SubResolver (..), SubRootRes, mutResolver, resolver,
-                                                        toMutResolver)
+import           Data.Morpheus.Types.Internal.Data     (MUTATION, QUERY, SUBSCRIPTION)
+import           Data.Morpheus.Types.Internal.Resolver (Event (..), GQLRootResolver (..), PureOperation, Resolver (..))
 import           Data.Morpheus.Types.Internal.Value    (ScalarValue (..))
 import           Data.Morpheus.Types.IO                (GQLRequest (..), GQLResponse (..))
-import           Data.Morpheus.Types.Types (Undefined(..))
+import           Data.Morpheus.Types.Types             (Undefined (..))
+
+type Res = Resolver QUERY
+type MutRes = Resolver MUTATION
+type SubRes = Resolver SUBSCRIPTION
+
+type IORes = Res IO
+type IOMutRes = MutRes IO
+type IOSubRes = SubRes IO
 
 -- resolves constant value on any argument
-constRes :: Monad m => b -> a -> m b
-constRes = const . return
+constRes :: (PureOperation o ,Monad m) => b -> a -> Resolver o m e b
+constRes = const . pure
 
-type IORes = Resolver IO
-
-type IOMutRes e = MutResolver IO e
-
-type IOSubRes e = SubResolver IO e
+constMutRes :: Monad m =>  [e] -> a -> args -> MutRes m e a
+constMutRes list value = const $ MutResolver list $ pure value

@@ -7,12 +7,11 @@
 
 module Subscription.SimpleSubscription where
 
-import           Data.Morpheus.Types       (Event (..), GQLRootResolver (..), IOSubRes, SubResolver (..), resolver,
-                                            toMutResolver)
+import           Data.Morpheus.Types       (Event (..), Resolver (..), GQLRootResolver (..))
 import           Data.Text                 (Text)
 import           GHC.Generics              (Generic)
-import           Mythology.Character.Deity (Deity (..), dbDeity)
-
+import           Mythology.Character.Deity (Deity (..))
+import           Mythology.Place.Places    (Realm (..))
 
 -- TODO: importGQLDocument "examples/Subscription/api.gql"
 --
@@ -35,7 +34,7 @@ newtype Mutation m = Mutation
   } deriving (Generic)
 
 newtype Subscription (m ::  * -> * ) = Subscription
-  { newDeity :: () -> IOSubRes MyEvent Deity
+  { newDeity :: () -> m  Deity
   } deriving (Generic)
 
 type APIEvent = Event Channel Content
@@ -43,15 +42,26 @@ type APIEvent = Event Channel Content
 rootResolver :: GQLRootResolver IO APIEvent Query Mutation Subscription
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {deity = const fetchDeity}
-    , mutationResolver = return Mutation {createDeity}
-    , subscriptionResolver = return Subscription {newDeity}
+    { queryResolver = Query {deity = const fetchDeity}
+    , mutationResolver = Mutation {createDeity}
+    , subscriptionResolver = Subscription {newDeity}
     }
   where
-    fetchDeity = resolver $ dbDeity "" Nothing
-    createDeity _args = toMutResolver [Event {channels = [ChannelA], content = ContentA 1}] fetchDeity
-    newDeity _args = SubResolver {subChannels = [ChannelA], subResolver}
+    -- TODO: resolver $ dbDeity "" Nothing
+    createDeity _args = MutResolver [Event {channels = [ChannelA], content = ContentA 1}]
+        (pure Deity {
+            fullName = ""
+            , power  = Nothing
+            , realm = Sky
+        })
+    newDeity _args = SubResolver [ChannelA] subResolver
       where
-        subResolver (Event [ChannelA] (ContentA _value)) = resolver $ dbDeity "" Nothing -- resolve New State
-        subResolver (Event [ChannelA] (ContentB value))  = resolver $ dbDeity value Nothing -- resolve New State
+        subResolver (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
+        subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
         subResolver _                                    = fetchDeity -- Resolve Old State
+    ---------------------------------------------------------
+    fetchDeity = pure Deity {
+      fullName = ""
+      , power  = Nothing
+      , realm = Sky
+    }

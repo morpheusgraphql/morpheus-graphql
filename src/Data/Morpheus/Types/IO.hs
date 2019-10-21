@@ -6,6 +6,7 @@ module Data.Morpheus.Types.IO
   ( GQLRequest(..)
   , GQLResponse(..)
   , JSONResponse(..)
+  , renderResponse
   ) where
 
 import           Data.Aeson                              (FromJSON (..), ToJSON (..), pairs, withObject, (.:?), (.=))
@@ -15,8 +16,13 @@ import           GHC.Generics                            (Generic)
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Base       (Key)
-import           Data.Morpheus.Types.Internal.Validation (JSONError (..))
+import           Data.Morpheus.Types.Internal.Validation (JSONError (..),Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value)
+import           Data.Morpheus.Error.Utils               ( renderErrors)
+
+renderResponse :: Validation Value -> GQLResponse 
+renderResponse (Left errors) = Errors $ renderErrors errors
+renderResponse (Right value) = Data value
 
 instance FromJSON a => FromJSON (JSONResponse a) where
   parseJSON = withObject "JSONResponse" objectParser

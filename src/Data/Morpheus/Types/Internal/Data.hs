@@ -56,6 +56,9 @@ module Data.Morpheus.Types.Internal.Data
   , isSchemaTypeName
   , isPrimitiveTypeName
   , OperationKind(..)
+  , QUERY
+  , MUTATION
+  , SUBSCRIPTION
   ) where
 
 import           Data.Semigroup                     ((<>))
@@ -67,6 +70,11 @@ import           Language.Haskell.TH.Syntax         (Lift (..))
 import           Data.Morpheus.Types.Internal.Base  (Key)
 import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
+
+
+type QUERY = 'Query
+type MUTATION = 'Mutation
+type SUBSCRIPTION = 'Subscription
 
 isDefaultTypeName :: Key -> Bool
 isDefaultTypeName x = isSchemaTypeName x || isPrimitiveTypeName x
