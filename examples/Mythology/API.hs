@@ -8,7 +8,7 @@ module Mythology.API
 import           Control.Monad.Except       (ExceptT (..))
 import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Types        (Resolver (..), IORes, GQLRootResolver (..), GQLType, QUERY, Undefined (..))
+import           Data.Morpheus.Types        (Resolver (..), IORes, GQLRootResolver (..), GQLType, Undefined (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 import           Mythology.Character.Deity  (Deity (..), dbDeity)

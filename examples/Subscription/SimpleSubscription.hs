@@ -10,9 +10,8 @@ module Subscription.SimpleSubscription where
 import           Data.Morpheus.Types       (Event (..), Resolver (..), GQLRootResolver (..))
 import           Data.Text                 (Text)
 import           GHC.Generics              (Generic)
-import           Mythology.Character.Deity (Deity (..), dbDeity)
+import           Mythology.Character.Deity (Deity (..))
 import           Mythology.Place.Places    (Realm (..))
-
 
 -- TODO: importGQLDocument "examples/Subscription/api.gql"
 --
