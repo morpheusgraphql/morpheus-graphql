@@ -26,8 +26,8 @@ import           GHC.Generics           (Generic)
 -- MORPHEUS
 import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
-import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, MutRes,
-                                         QUERY, Resolver (..), ScalarValue (..), constMutRes ,constRes)
+import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, QUERY,
+                                         Resolver (..), ScalarValue (..), constRes)
 
 $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
 
@@ -83,7 +83,7 @@ gqlRoot :: GQLRootResolver IO APIEvent Query Mutation Subscription
 gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
   where
     queryResolver = Query
-          { queryUser = const fetchQuery
+          { queryUser = const fetchUser
           , queryAnimal = \QueryAnimalArgs {queryAnimalArgsAnimal} -> pure (pack $ show queryAnimalArgsAnimal)
           , querySet = constRes $ S.fromList [1, 2]
           , queryMap = constRes $ M.fromList [("robin", 1), ("carl", 2)]
@@ -99,7 +99,7 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
             (pure User
                  { userName = constRes "George"
                  , userEmail = constRes "George@email.com"
-                 , userAddress = constRes fetchAddressMutation
+                 , userAddress = constRes mutationAddress
                  , userOffice = constRes  Nothing
                  , userHome = constRes HH
                  , userEntity = constRes Nothing
@@ -107,28 +107,27 @@ gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver
         -------------------------
         mutationCreateAddress _ =
           MutResolver
-            [Event [UPDATE_ADDRESS] (Update {contentID = 10, contentMessage = "message for address"})]
-            (pure fetchAddressMutation)
+            [Event [UPDATE_ADDRESS] (Update {contentID = 10, contentMessage = "message for address"})] (pure mutationAddress)
     ----------------------------------------------------------------
     subscriptionResolver = Subscription {subscriptionNewAddress, subscriptionNewUser}
       where
         subscriptionNewUser () = SubResolver [UPDATE_USER] subResolver
           where
-            subResolver (Event _ Update {}) = fetchQuery
+            subResolver (Event _ Update {}) = fetchUser
         subscriptionNewAddress () = SubResolver [UPDATE_ADDRESS] subResolver
           where
-            subResolver (Event _ Update {contentID}) =  QueryResolver $ pure $ Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
+            subResolver (Event _ Update {contentID}) =  fetchAddress
     ----------------------------------------------------------------------------------------------
-    fetchQuery :: Resolver QUERY IO (Event Channel Content) (User (Resolver QUERY IO (Event Channel Content)))
-    fetchQuery = QueryResolver $ pure $  User { userName = constRes "George"
+    fetchAddress = pure Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
+    fetchUser :: Resolver QUERY IO (Event Channel Content) (User (Resolver QUERY IO (Event Channel Content)))
+    fetchUser = pure User { userName = constRes "George"
                                                 , userEmail = constRes "George@email.com"
-                                                , userAddress = const $ QueryResolver $ pure $ Address {addressCity = constRes "", addressStreet = constRes "", addressHouseNumber = constRes 0}
+                                                , userAddress = const fetchAddress
                                                 , userOffice = constRes Nothing
                                                 , userHome = constRes HH
                                                 , userEntity = constRes Nothing
                                            }
-
-    fetchAddressMutation = Address {
+    mutationAddress = Address {
           addressCity = constRes "",
           addressStreet = constRes "",
           addressHouseNumber = constRes 0
