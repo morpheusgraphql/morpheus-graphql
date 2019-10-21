@@ -39,6 +39,12 @@
     }
     ```
 
+- `()` was replaced with `Undefined` in `GQLRootResolver` for empty operations `mutation`, `subscription`
+  ```
+  rootResolver :: GQLRootResolver IO () Query Undefined Undefined
+  ```
+- Root Operations `Query`, `Mutation`, `Subscription` are passed to root resolvers without boxing inside a monad.
+
 ## [0.4.0] - 09.10.2019
 
 ## Changed
