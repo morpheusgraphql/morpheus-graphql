@@ -16,6 +16,7 @@ module Client.Client
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus.Client       (Fetch (..), defineByDocumentFile, defineByIntrospectionFile, gql)
 import           Data.Morpheus.Types        (ScalarValue (..))
+import           Data.Text                  (Text)
 
 defineByIntrospectionFile
   "./assets/introspection.json"
@@ -42,7 +43,7 @@ defineByIntrospectionFile
 defineByDocumentFile
   "./assets/simple.gql"
   [gql|
- 
+
     # Query Hero with Compile time Validation
     query GetHero ($god: Realm, $id: String!)
       {
