@@ -42,6 +42,7 @@ defineByIntrospectionFile
 defineByDocumentFile
   "./assets/simple.gql"
   [gql|
+ 
     # Query Hero with Compile time Validation
     query GetHero ($god: Realm, $id: String!)
       {
@@ -51,7 +52,8 @@ defineByDocumentFile
         }
         character(characterID: $id ) {
           ...on Creature {
-            creatureName
+            name
+            immortality
           }
           ...on Human {
             lifetime
@@ -60,7 +62,7 @@ defineByDocumentFile
         }
         char2: character(characterID: $id ) {
           ...on Creature {
-              cName: creatureName
+              cName: name
           }
           ...on Human {
               lTime: lifetime
