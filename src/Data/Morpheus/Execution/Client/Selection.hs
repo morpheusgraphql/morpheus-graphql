@@ -217,7 +217,7 @@ typeFromScalar :: Text -> Text
 typeFromScalar "Boolean" = "Bool"
 typeFromScalar "Int"     = "Int" 
 typeFromScalar "Float"   = "Float"
-typeFromScalar "String"  = "String"
+typeFromScalar "String"  = "Text"
 typeFromScalar "ID"      = "ID" 
 typeFromScalar _         = "ScalarValue"
 
