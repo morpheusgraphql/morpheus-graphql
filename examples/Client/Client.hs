@@ -21,6 +21,7 @@ import           Data.Text                  (Text)
 defineByIntrospectionFile
   "./assets/introspection.json"
   [gql|
+   
     # Query Hero with Compile time Validation
     query GetUser ($coordinates: Coordinates!)
       {
