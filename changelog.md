@@ -8,7 +8,7 @@
      name
   }
   ```
-- Morpheus client does not breaks on `Boolean` type, converts every GraphQL type `Boolean` to haskell `Bool`
+- Morpheus client does not breaks on `Boolean` type, converts every GraphQL type `Boolean` to haskell `Bool` and GQL `String` to `Text`
 
 ### Changed
 - Reduced `GQLRootResolver` signature :
