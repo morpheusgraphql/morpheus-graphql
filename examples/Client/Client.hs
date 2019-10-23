@@ -16,10 +16,12 @@ module Client.Client
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus.Client       (Fetch (..), defineByDocumentFile, defineByIntrospectionFile, gql)
 import           Data.Morpheus.Types        (ScalarValue (..))
+import           Data.Text                  (Text)
 
 defineByIntrospectionFile
   "./assets/introspection.json"
   [gql|
+   
     # Query Hero with Compile time Validation
     query GetUser ($coordinates: Coordinates!)
       {
@@ -42,6 +44,7 @@ defineByIntrospectionFile
 defineByDocumentFile
   "./assets/simple.gql"
   [gql|
+
     # Query Hero with Compile time Validation
     query GetHero ($god: Realm, $id: String!)
       {
@@ -51,7 +54,8 @@ defineByDocumentFile
         }
         character(characterID: $id ) {
           ...on Creature {
-            creatureName
+            name
+            immortality
           }
           ...on Human {
             lifetime
@@ -60,7 +64,7 @@ defineByDocumentFile
         }
         char2: character(characterID: $id ) {
           ...on Creature {
-              cName: creatureName
+              cName: name
           }
           ...on Human {
               lTime: lifetime

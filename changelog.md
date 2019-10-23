@@ -1,6 +1,6 @@
 ## [0.4.1] - *.10.2019
+### Fixed
 - Parser supports anonymous Operation: `query` , `mutation` , `subscription`
-
   for example:
 
   ```
@@ -8,7 +8,9 @@
      name
   }
   ```
+- Morpheus client does not breaks on `Boolean` type, converts every GraphQL type `Boolean` to haskell `Bool` and GQL `String` to `Text`
 
+### Changed
 - Reduced `GQLRootResolver` signature :
 
    `GQLRootResolver IO () () Query () ()` -> `GQLRootResolver IO () Query () ()`
@@ -45,6 +47,8 @@
   ```
 - Root Operations `Query`, `Mutation`, `Subscription` are passed to root resolvers without boxing inside a monad.
 - there are only 3 kind of resolvers `MutResolver`, `SubResolver` , `QueryResolver` defined by  GADT `Resolver`
+
+
 ## [0.4.0] - 09.10.2019
 
 ## Changed

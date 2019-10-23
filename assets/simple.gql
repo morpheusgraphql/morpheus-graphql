@@ -21,8 +21,9 @@ type Deity {
 }
 
 type Creature {
-  creatureName: String!
+  name: String!
   realm: City!
+  immortality: Boolean!
 }
 
 type Human {

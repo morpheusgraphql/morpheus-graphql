@@ -213,19 +213,17 @@ leafName _                               = []
 getType :: DataTypeLib -> Text -> Validation DataFullType
 getType lib typename = lookupType (compileError typename) (allDataTypes lib) typename
 
-isPrimitive :: Text -> Bool
-isPrimitive "Boolean" = True
-isPrimitive "Int"     = True
-isPrimitive "Float"   = True
-isPrimitive "String"  = True
-isPrimitive "ID"      = True
-isPrimitive _         = False
+typeFromScalar :: Text -> Text
+typeFromScalar "Boolean" = "Bool"
+typeFromScalar "Int"     = "Int" 
+typeFromScalar "Float"   = "Float"
+typeFromScalar "String"  = "Text"
+typeFromScalar "ID"      = "ID" 
+typeFromScalar _         = "ScalarValue"
 
 typeFrom :: [Key] -> DataFullType -> Text
 typeFrom _ (Leaf (BaseScalar x)) = typeName x
-typeFrom _ (Leaf (CustomScalar DataTyCon {typeName}))
-  | isPrimitive typeName = typeName
-  | otherwise = "ScalarValue"
+typeFrom _ (Leaf (CustomScalar DataTyCon {typeName})) = typeFromScalar typeName
 typeFrom _ (Leaf (LeafEnum x)) = typeName x
 typeFrom _ (InputObject x) = typeName x
 typeFrom path (OutputObject x) = pack $ nameSpaceType path $ typeName x
