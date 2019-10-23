@@ -17,7 +17,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , parseAssignment
   , parseWrappedType
   , litEquals
-  , directive
+  , parseTuple
   ) where
 
 import           Data.Functor                            (($>))
@@ -41,14 +41,6 @@ litEquals :: Parser ()
 litEquals = char '=' *> spaceAndComments
 
 
--- @directive ( arg1: "value" , .... )
--- TODO:  returns real DataType
-directive :: Parser ()
-directive = do
-    _ <- char '@'
-    name <- qualifier
-    parseTuple (parseAssignment qualifier qualifier) -- TODO: string
-    pure ()
 -- PRIMITIVE
 ------------------------------------
 token :: Parser Text
