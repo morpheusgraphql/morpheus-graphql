@@ -33,13 +33,12 @@ type UnionSelection = Collection SelectionSet
 data Selection = Selection
   { selectionArguments :: Arguments
   , selectionPosition  :: Position
+  , selectionAlias     :: Maybe Key 
   , selectionRec       :: SelectionRec
   } deriving (Show)
 
 data SelectionRec
   = SelectionSet SelectionSet
   | UnionSelection UnionSelection
-  | SelectionAlias { aliasFieldName :: Key
-                   , aliasSelection :: SelectionRec }
   | SelectionField
   deriving (Show)

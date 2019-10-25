@@ -16,7 +16,7 @@ module Data.Morpheus.Types.Internal.AST.RawSelection
 
 import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..))
 import           Data.Morpheus.Types.Internal.Base          (Collection, Key, Position)
-import           Data.Morpheus.Types.Internal.TH            (apply, liftText, liftTextMap, liftTextTuple)
+import           Data.Morpheus.Types.Internal.TH            (apply, liftMaybeText, liftText, liftTextMap, liftTextTuple)
 import           Language.Haskell.TH.Syntax                 (Lift (..))
 
 data Reference = Reference
@@ -39,11 +39,12 @@ instance Lift Fragment where
 data RawSelection' a = RawSelection'
   { rawSelectionArguments :: RawArguments
   , rawSelectionPosition  :: Position
+  , rawSelectionAlias     :: Maybe Key
   , rawSelectionRec       :: a
   } deriving (Show)
 
 instance Lift a => Lift (RawSelection' a) where
-  lift (RawSelection' t p sel) = apply 'RawSelection' [liftTextMap t, lift p, lift sel]
+  lift (RawSelection' t p alias sel) = apply 'RawSelection' [liftTextMap t, lift p, liftMaybeText alias , lift sel]
 
 type FragmentLib = [(Key, Fragment)]
 
@@ -57,8 +58,8 @@ type RawArguments = Collection RawArgument
 type RawSelectionSet = Collection RawSelection
 
 instance Lift RawSelection where
-  lift (RawSelectionSet (RawSelection' t p sel)) =
-    apply 'RawSelectionSet [apply 'RawSelection' [liftTextMap t, lift p, liftTextMap sel]]
+  lift (RawSelectionSet (RawSelection' t p alias sel)) =
+    apply 'RawSelectionSet [apply 'RawSelection' [liftTextMap t, lift p, liftMaybeText alias,liftTextMap sel]]
   lift (RawSelectionField p) = apply 'RawSelectionField [lift p]
   lift (InlineFragment f) = apply 'InlineFragment [lift f]
   lift (Spread f) = apply 'Spread [lift f]
