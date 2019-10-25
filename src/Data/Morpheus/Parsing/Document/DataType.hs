@@ -96,7 +96,7 @@ dataEnum :: Parser (Text, DataFullType)
 dataEnum =
   label "enum" $ do
     typeName <- typeDef "enum"
-    typeData <- setOf ( token <*  optional directive)
+    typeData <- setOf ( token <* optional directive)
     pure $ createEnumType typeName typeData
 
 dataUnion :: Parser (Text, DataFullType)
