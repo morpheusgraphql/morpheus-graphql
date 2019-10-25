@@ -21,7 +21,7 @@ enum CityID {
 }
 
 input Coordinates {
-  latitude: Euro!
+  latitude: Euro! @testDirective(testName:"",testName2: 123)
   longitude: [[[UniqueID!]!]]!
 }
 
