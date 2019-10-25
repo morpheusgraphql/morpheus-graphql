@@ -16,12 +16,12 @@ input Bird {
 
 enum CityID {
   Paris
-  BLN
+  BLN @testDirective(testName:"")
   HH
 }
 
 input Coordinates {
-  latitude: Euro! @testDirective(testName:"",testName2: 123)
+  latitude: Euro! @testDirective(testName:"")
   longitude: [[[UniqueID!]!]]!
 }
 
