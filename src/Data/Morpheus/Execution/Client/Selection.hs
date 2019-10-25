@@ -98,7 +98,7 @@ operationTypes lib variables = genOperation
               where
                 fieldPath = path <> [fieldName]
                 -------------------------------
-                genFieldD Selection {selectionRec = SelectionAlias {aliasFieldName}} = do
+                genFieldD Selection {selectionAlias = Just aliasFieldName} = do
                   fieldType <- snd <$> lookupFieldType lib fieldPath datatype aliasFieldName
                   pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
                 genFieldD _ = do
@@ -123,8 +123,6 @@ operationTypes lib variables = genOperation
                     --withLeaf buildLeaf dType
                     validateSelection dType Selection {selectionRec = SelectionSet selectionSet} =
                       genRecordType fieldPath (typeFrom [] dType) dType selectionSet
-                    validateSelection dType aliasSel@Selection {selectionRec = SelectionAlias {aliasSelection}} =
-                      validateSelection dType aliasSel {selectionRec = aliasSelection}
                     ---- UNION
                     validateSelection dType Selection {selectionRec = UnionSelection unionSelections} = do
                       (tCons, subTypes, requests) <- unzip3 <$> mapM getUnionType unionSelections
@@ -198,8 +196,7 @@ lookupFieldType lib path (OutputObject DataTyCon {typeData}) key =
 lookupFieldType _ _ _ key = Left (compileError key)
 
 getSelectionFieldKey :: (Key, Selection) -> (Key, Selection)
-getSelectionFieldKey (_, selection@Selection {selectionRec = SelectionAlias {aliasFieldName, aliasSelection}}) =
-  (aliasFieldName, selection {selectionRec = aliasSelection})
+getSelectionFieldKey (_, selection@Selection { selectionAlias = Just name}) = (name, selection)
 getSelectionFieldKey sel = sel
 
 withLeaf :: (DataLeaf -> Validation b) -> DataFullType -> Validation b
@@ -215,17 +212,17 @@ getType lib typename = lookupType (compileError typename) (allDataTypes lib) typ
 
 typeFromScalar :: Text -> Text
 typeFromScalar "Boolean" = "Bool"
-typeFromScalar "Int"     = "Int" 
+typeFromScalar "Int"     = "Int"
 typeFromScalar "Float"   = "Float"
 typeFromScalar "String"  = "Text"
-typeFromScalar "ID"      = "ID" 
+typeFromScalar "ID"      = "ID"
 typeFromScalar _         = "ScalarValue"
 
 typeFrom :: [Key] -> DataFullType -> Text
-typeFrom _ (Leaf (BaseScalar x)) = typeName x
+typeFrom _ (Leaf (BaseScalar x))                      = typeName x
 typeFrom _ (Leaf (CustomScalar DataTyCon {typeName})) = typeFromScalar typeName
-typeFrom _ (Leaf (LeafEnum x)) = typeName x
-typeFrom _ (InputObject x) = typeName x
-typeFrom path (OutputObject x) = pack $ nameSpaceType path $ typeName x
-typeFrom path (Union x) = pack $ nameSpaceType path $ typeName x
-typeFrom _ (InputUnion x) = typeName x
+typeFrom _ (Leaf (LeafEnum x))                        = typeName x
+typeFrom _ (InputObject x)                            = typeName x
+typeFrom path (OutputObject x)                        = pack $ nameSpaceType path $ typeName x
+typeFrom path (Union x)                               = pack $ nameSpaceType path $ typeName x
+typeFrom _ (InputUnion x)                             = typeName x
