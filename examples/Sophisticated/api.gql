@@ -31,7 +31,7 @@ input UniqueID {
 }
 
 type Address {
-  city: String!
+  city: String!  @deprecated(testName:"",testName2: 123)
   street: String!
   houseNumber: Int!
 }
