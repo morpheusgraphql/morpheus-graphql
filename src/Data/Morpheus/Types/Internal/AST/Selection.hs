@@ -33,7 +33,7 @@ type UnionSelection = Collection SelectionSet
 data Selection = Selection
   { selectionArguments :: Arguments
   , selectionPosition  :: Position
-  , selectionAlias     :: Maybe Key 
+  , selectionAlias     :: Maybe Key
   , selectionRec       :: SelectionRec
   } deriving (Show)
 

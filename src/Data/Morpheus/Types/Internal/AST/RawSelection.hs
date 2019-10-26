@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell   #-}
 
 module Data.Morpheus.Types.Internal.AST.RawSelection
-  ( Reference(..)
+  ( Reference
   , Argument(..)
   , RawArgument(..)
   , RawSelection(..)
@@ -14,18 +14,13 @@ module Data.Morpheus.Types.Internal.AST.RawSelection
   , RawSelectionSet
   ) where
 
-import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..))
-import           Data.Morpheus.Types.Internal.Base          (Collection, Key, Position)
-import           Data.Morpheus.Types.Internal.TH            (apply, liftMaybeText, liftText, liftTextMap, liftTextTuple)
+
 import           Language.Haskell.TH.Syntax                 (Lift (..))
 
-data Reference = Reference
-  { referenceName     :: Key
-  , referencePosition :: Position
-  } deriving (Show)
-
-instance Lift Reference where
-  lift (Reference name pos) = apply 'Reference [liftText name, lift pos]
+-- MORPHEUS
+import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..))
+import           Data.Morpheus.Types.Internal.Base          (Collection, Key, Position, Reference)
+import           Data.Morpheus.Types.Internal.TH            (apply, liftText, liftTextMap, liftTextTuple)
 
 data Fragment = Fragment
   { fragmentType      :: Key
@@ -39,12 +34,12 @@ instance Lift Fragment where
 data RawSelection' a = RawSelection'
   { rawSelectionArguments :: RawArguments
   , rawSelectionPosition  :: Position
-  , rawSelectionAlias     :: Maybe Key
+  , rawSelectionAlias     :: Maybe Reference
   , rawSelectionRec       :: a
   } deriving (Show)
 
 instance Lift a => Lift (RawSelection' a) where
-  lift (RawSelection' t p alias sel) = apply 'RawSelection' [liftTextMap t, lift p, liftMaybeText alias , lift sel]
+  lift (RawSelection' t p alias sel) = apply 'RawSelection' [liftTextMap t, lift p, lift alias , lift sel]
 
 type FragmentLib = [(Key, Fragment)]
 
@@ -59,7 +54,7 @@ type RawSelectionSet = Collection RawSelection
 
 instance Lift RawSelection where
   lift (RawSelectionSet (RawSelection' t p alias sel)) =
-    apply 'RawSelectionSet [apply 'RawSelection' [liftTextMap t, lift p, liftMaybeText alias,liftTextMap sel]]
+    apply 'RawSelectionSet [apply 'RawSelection' [liftTextMap t, lift p, lift alias,liftTextMap sel]]
   lift (RawSelectionField p) = apply 'RawSelectionField [lift p]
   lift (InlineFragment f) = apply 'InlineFragment [lift f]
   lift (Spread f) = apply 'Spread [lift f]
