@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell   #-}
 
 module Data.Morpheus.Types.Internal.AST.RawSelection
-  ( Reference
+  ( Reference(..)
   , Argument(..)
   , RawArgument(..)
   , RawSelection(..)
@@ -19,7 +19,7 @@ import           Language.Haskell.TH.Syntax                 (Lift (..))
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.AST.Selection (Argument (..))
-import           Data.Morpheus.Types.Internal.Base          (Collection, Key, Position, Reference)
+import           Data.Morpheus.Types.Internal.Base          (Collection, Key, Position, Reference(..))
 import           Data.Morpheus.Types.Internal.TH            (apply, liftText, liftTextMap, liftTextTuple)
 
 data Fragment = Fragment
