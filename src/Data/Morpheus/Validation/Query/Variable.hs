@@ -17,8 +17,8 @@ import           Data.Morpheus.Error.Variable                  (uninitializedVar
 import           Data.Morpheus.Types.Internal.AST.Operation    (DefaultValue, Operation (..), RawOperation,
                                                                 ValidVariables, Variable (..), getOperationName)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawArgument (..),
-                                                                RawSelection (..), RawSelection' (..), RawSelectionSet,
-                                                                Reference (..))
+                                                                RawSelection (..), RawSelectionSet, Reference (..),
+                                                                Selection (..))
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Data             (DataKind, DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
@@ -45,15 +45,14 @@ allVariableReferences fragmentLib = concatMapM (concatMapM searchReferences)
       [EnhancedKey referenceName referencePosition]
     -- | search used variables in every arguments
     searchReferences :: (Text, RawSelection) -> Validation [EnhancedKey]
-    searchReferences (_, RawSelectionSet RawSelection' {rawSelectionArguments, rawSelectionRec}) =
-      getArgs <$> concatMapM searchReferences rawSelectionRec
+    searchReferences (_, RawSelectionSet Selection {selectionArguments, selectionRec}) =
+      getArgs <$> concatMapM searchReferences selectionRec
       where
         getArgs :: [EnhancedKey] -> [EnhancedKey]
-        getArgs x = concatMap referencesFromArgument rawSelectionArguments <> x
+        getArgs x = concatMap referencesFromArgument selectionArguments <> x
     searchReferences (_, InlineFragment Fragment {fragmentSelection}) = concatMapM searchReferences fragmentSelection
-    searchReferences (_, RawAlias {rawAliasSelection}) = searchReferences rawAliasSelection
-    searchReferences (_, RawSelectionField RawSelection' {rawSelectionArguments}) =
-      return $ concatMap referencesFromArgument rawSelectionArguments
+    searchReferences (_, RawSelectionField Selection {selectionArguments}) =
+      return $ concatMap referencesFromArgument selectionArguments
     searchReferences (_, Spread reference) =
       getFragment reference fragmentLib >>= concatMapM searchReferences . fragmentSelection
 

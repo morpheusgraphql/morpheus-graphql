@@ -4,9 +4,10 @@ module Data.Morpheus.Types.Internal.AST.Selection
   ( Argument(..)
   , Arguments
   , SelectionSet
-  , Selection(..)
   , SelectionRec(..)
   , ArgumentOrigin(..)
+  , ValidSelection
+  , Selection(..)
   ) where
 
 import           Data.Morpheus.Types.Internal.Base  (Collection, Key, Position)
@@ -26,20 +27,21 @@ data Argument = Argument
 
 type Arguments = Collection Argument
 
-type SelectionSet = Collection Selection
+type SelectionSet = Collection ValidSelection
+
+type ValidSelection = Selection Arguments SelectionRec
 
 type UnionSelection = Collection SelectionSet
 
-data Selection = Selection
-  { selectionArguments :: Arguments
+data Selection args rec = Selection
+  { selectionArguments :: args
   , selectionPosition  :: Position
-  , selectionRec       :: SelectionRec
+  , selectionAlias     :: Maybe Key
+  , selectionRec       :: rec
   } deriving (Show)
 
 data SelectionRec
   = SelectionSet SelectionSet
   | UnionSelection UnionSelection
-  | SelectionAlias { aliasFieldName :: Key
-                   , aliasSelection :: SelectionRec }
   | SelectionField
   deriving (Show)

@@ -1,10 +1,12 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric  #-}
-{-# LANGUAGE DeriveLift     #-}
+{-# LANGUAGE DeriveAnyClass  #-}
+{-# LANGUAGE DeriveGeneric   #-}
+{-# LANGUAGE DeriveLift      #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Data.Morpheus.Types.Internal.Base
   ( Key
   , Collection
+  , Reference (..)
   , Position
   , EnhancedKey(..)
   , Location(..)
@@ -12,10 +14,13 @@ module Data.Morpheus.Types.Internal.Base
   , enhanceKeyWithNull
   ) where
 
-import           Data.Aeson                 (FromJSON, ToJSON)
-import           Data.Text                  (Text)
-import           GHC.Generics               (Generic)
-import           Language.Haskell.TH.Syntax (Lift)
+import           Data.Aeson                      (FromJSON, ToJSON)
+import           Data.Text                       (Text)
+import           GHC.Generics                    (Generic)
+import           Language.Haskell.TH.Syntax      (Lift (..))
+
+-- MORPHEUS
+import           Data.Morpheus.Types.Internal.TH (apply, liftText)
 
 type Position = Location
 
@@ -28,6 +33,14 @@ type Key = Text
 type Message = Text
 
 type Collection a = [(Key, a)]
+
+data Reference = Reference
+  { referenceName     :: Key
+  , referencePosition :: Position
+  } deriving (Show)
+
+instance Lift Reference where
+  lift (Reference name pos) = apply 'Reference [liftText name, lift pos]
 
 -- Text value that includes position for debugging, where EnhancedKey "a" 1 === EnhancedKey "a" 3
 data EnhancedKey = EnhancedKey

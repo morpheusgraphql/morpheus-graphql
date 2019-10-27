@@ -8,17 +8,18 @@ module Data.Morpheus.Parsing.Document.DataType
 import           Data.Morpheus.Parsing.Internal.Create   (createArgument, createEnumType, createField, createScalarType,
                                                           createType, createUnionType)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
+import           Data.Morpheus.Parsing.Internal.Pattern  (directive)
 import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parseMaybeTuple, parseNonNull,
                                                           parseWrappedType, pipeLiteral, qualifier, setOf,
                                                           spaceAndComments, token)
 import           Data.Morpheus.Parsing.Internal.Value    (parseDefaultValue)
-import           Data.Morpheus.Types.Internal.Data       (DataArgument, DataField, DataFullType (..), Key,
-                                                          RawDataType (..), toHSWrappers)
+import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullType (..), Key, RawDataType (..),
+                                                          toHSWrappers)
 import           Data.Text                               (Text)
-import           Text.Megaparsec                         (label, sepBy1, some, (<|>))
+import           Text.Megaparsec                         (label, sepBy1, some,optional, (<|>))
 import           Text.Megaparsec.Char                    (char, space1, string)
 
-dataArgument :: Parser (Text, DataArgument)
+dataArgument :: Parser (Text, DataField)
 dataArgument =
   label "Argument" $ do
     ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
@@ -40,28 +41,25 @@ dataInputObject =
     typeData <- inputObjectEntries
     pure (typeName, InputObject $ createType typeName typeData)
 
-inputObjectEntries :: Parser [(Key, DataArgument)]
-inputObjectEntries = label "inputEntries" $ setOf entry
-  where
-    entry =
-      label "entry" $ do
-        ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
-        nonNull <- parseNonNull
-        return (fieldName, createField [] fieldName (toHSWrappers $ nonNull ++ wrappers, fieldType))
+entryWith :: Parser [(Text, DataField)] -> Parser (Key, DataField)
+entryWith argsParser = label "entry" $ do
+    ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs parseWrappedType
+    nonNull <- parseNonNull
+    _ <- optional directive
+    return (fieldName, createField fieldArgs fieldName (toHSWrappers $ nonNull ++ wrappers, fieldType))
+    where
+        fieldWithArgs =
+          label "fieldWithArgs" $ do
+            (name, _) <- qualifier
+            args <- argsParser
+            return (name, args)
+
+inputObjectEntries :: Parser [(Key, DataField)]
+inputObjectEntries = label "inputEntries" $ setOf (entryWith (pure []))
 
 outputObjectEntries :: Parser [(Key, DataField)]
-outputObjectEntries = label "entries" $ setOf entry
-  where
-    fieldWithArgs =
-      label "fieldWithArgs" $ do
-        (name, _) <- qualifier
-        args <- parseMaybeTuple dataArgument
-        return (name, args)
-    entry =
-      label "entry" $ do
-        ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs parseWrappedType
-        nonNull <- parseNonNull
-        return (fieldName, createField fieldArgs fieldName (toHSWrappers $ nonNull ++ wrappers, fieldType))
+outputObjectEntries = label "entries" $ setOf (entryWith (parseMaybeTuple dataArgument))
+
 
 dataObject :: Parser (Text, RawDataType)
 dataObject =
@@ -98,7 +96,7 @@ dataEnum :: Parser (Text, DataFullType)
 dataEnum =
   label "enum" $ do
     typeName <- typeDef "enum"
-    typeData <- setOf token
+    typeData <- setOf ( token <* optional directive)
     pure $ createEnumType typeName typeData
 
 dataUnion :: Parser (Text, DataFullType)

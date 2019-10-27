@@ -16,11 +16,12 @@ import qualified Data.Text                                     as T (concat)
 import           Data.Morpheus.Error.Fragment                  (cannotBeSpreadOnType, cannotSpreadWithinItself,
                                                                 fragmentNameCollision, unknownFragment, unusedFragment)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawSelection (..),
-                                                                RawSelection' (..), Reference (..))
+                                                                Reference (..), Selection (..))
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Data             (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Validation.Internal.Utils       (checkNameCollision, existsObjectType)
+
 
 validateFragments :: DataTypeLib -> FragmentLib -> [(Text, RawSelection)] -> Validation ()
 validateFragments lib fragments operatorSel = validateNameCollision >> checkLoop >> checkUnusedFragments
@@ -61,8 +62,7 @@ usedFragments :: FragmentLib -> [(Text, RawSelection)] -> [Node]
 usedFragments fragments = concatMap findAllUses
   where
     findAllUses :: (Text, RawSelection) -> [Node]
-    findAllUses (_, RawSelectionSet RawSelection' {rawSelectionRec}) = concatMap findAllUses rawSelectionRec
-    findAllUses (_, RawAlias {rawAliasSelection}) = concatMap findAllUses [rawAliasSelection]
+    findAllUses (_, RawSelectionSet Selection {selectionRec}) = concatMap findAllUses selectionRec
     findAllUses (_, InlineFragment Fragment {fragmentSelection}) = concatMap findAllUses fragmentSelection
     findAllUses (_, RawSelectionField {}) = []
     findAllUses (_, Spread Reference {referenceName, referencePosition}) =
@@ -71,8 +71,7 @@ usedFragments fragments = concatMap findAllUses
         searchInFragment = maybe [] (concatMap findAllUses . fragmentSelection) (lookup referenceName fragments)
 
 scanForSpread :: (Text, RawSelection) -> [Node]
-scanForSpread (_, RawSelectionSet RawSelection' {rawSelectionRec = selection'}) = concatMap scanForSpread selection'
-scanForSpread (_, RawAlias {rawAliasSelection = selection'}) = concatMap scanForSpread [selection']
+scanForSpread (_, RawSelectionSet Selection {selectionRec }) = concatMap scanForSpread selectionRec
 scanForSpread (_, InlineFragment Fragment {fragmentSelection = selection'}) = concatMap scanForSpread selection'
 scanForSpread (_, RawSelectionField {}) = []
 scanForSpread (_, Spread Reference {referenceName = name', referencePosition = position'}) =

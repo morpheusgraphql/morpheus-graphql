@@ -11,11 +11,11 @@ import           Text.Megaparsec                               (label, try, (<|>
 --
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal       (Parser, getLocation)
-import           Data.Morpheus.Parsing.Internal.Terms          (onType, parseAssignment, qualifier, setOf,
-                                                                spreadLiteral, token)
+import           Data.Morpheus.Parsing.Internal.Terms          (onType, parseAlias, setOf, spreadLiteral, token)
 import           Data.Morpheus.Parsing.Request.Arguments       (maybeArguments)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
-                                                                RawSelection' (..), RawSelectionSet, Reference (..))
+                                                                RawSelectionSet, Reference (..))
+import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..))
 
 spread :: Parser (Text, RawSelection)
 spread =
@@ -39,31 +39,31 @@ inlineFragment =
   - field (...)
   - field () {...}
 -}
+
 parseSelectionField :: Parser (Text, RawSelection)
 parseSelectionField =
   label "SelectionField" $ do
-    (name, position) <- qualifier
+    position <- getLocation
+    aliasName  <- parseAlias
+    name <- token
     arguments <- maybeArguments
-    value <- body arguments <|> buildField arguments position
+    value <- selSet aliasName arguments <|> buildField aliasName arguments position
     return (name, value)
   where
-    buildField rawSelectionArguments rawSelectionPosition =
-      pure (RawSelectionField $ RawSelection' {rawSelectionArguments, rawSelectionRec = (), rawSelectionPosition})
+    ----------------------------------------
+    buildField selectionAlias selectionArguments selectionPosition =
+       pure (RawSelectionField $ Selection { selectionAlias , selectionArguments,  selectionRec = (), selectionPosition})
+    -----------------------------------------
+    selSet :: Maybe Text -> RawArguments -> Parser RawSelection
+    selSet selectionAlias selectionArguments =
+      label "body" $ do
+        selectionPosition <- getLocation
+        selectionRec <- entries
+        return (RawSelectionSet $ Selection {selectionAlias , selectionArguments, selectionRec, selectionPosition})
 
-alias :: Parser (Text, RawSelection)
-alias =
-  label "alias" $ do
-    ((name, rawAliasPosition), rawAliasSelection) <- parseAssignment qualifier parseSelectionField
-    return (name, RawAlias {rawAliasPosition, rawAliasSelection})
 
 entries :: Parser RawSelectionSet
 entries = label "entries" $ setOf entry
   where
-    entry = label "entry" $ try inlineFragment <|> try spread <|> try alias <|> parseSelectionField
+    entry = label "entry" $ try inlineFragment <|> try spread <|> parseSelectionField
 
-body :: RawArguments -> Parser RawSelection
-body rawSelectionArguments =
-  label "body" $ do
-    rawSelectionPosition <- getLocation
-    rawSelectionRec <- entries
-    return (RawSelectionSet $ RawSelection' {rawSelectionArguments, rawSelectionRec, rawSelectionPosition})

@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 
@@ -17,17 +18,22 @@ module Data.Morpheus.Parsing.Internal.Terms
   , parseAssignment
   , parseWrappedType
   , litEquals
+  , parseTuple
+  , parseAlias
   ) where
 
 import           Data.Functor                            (($>))
-import           Data.Morpheus.Parsing.Internal.Internal (Parser, Position, getLocation)
-import           Data.Morpheus.Types.Internal.Data       (DataTypeWrapper (..))
-import           Data.Morpheus.Types.Internal.Value      (convertToHaskellName)
 import           Data.Text                               (Text, pack)
-import           Text.Megaparsec                         (between, label, many, sepBy, sepEndBy, skipMany, skipManyTill,
-                                                          (<?>), (<|>))
+import           Text.Megaparsec                         (between, label, many, optional, sepBy, sepEndBy, skipMany,
+                                                          skipManyTill, try, (<?>), (<|>))
 import           Text.Megaparsec.Char                    (char, digitChar, letterChar, newline, printChar, space,
                                                           space1, string)
+
+-- MORPHEUS
+import           Data.Morpheus.Parsing.Internal.Internal (Parser, Position, getLocation)
+import           Data.Morpheus.Types.Internal.Data       (DataTypeWrapper (..), Key)
+import           Data.Morpheus.Types.Internal.Value      (convertToHaskellName)
+
 
 -- LITERALS
 setLiteral :: Parser [a] -> Parser [a]
@@ -38,6 +44,7 @@ pipeLiteral = char '|' *> spaceAndComments
 
 litEquals :: Parser ()
 litEquals = char '=' *> spaceAndComments
+
 
 -- PRIMITIVE
 ------------------------------------
@@ -133,3 +140,8 @@ parseWrappedType = (unwrapped <|> wrapped) <* spaceAndComments
         (do (wrappers, name) <- unwrapped <|> wrapped
             nonNull' <- parseNonNull
             return ((ListType : nonNull') ++ wrappers, name))
+
+parseAlias :: Parser (Maybe Key)
+parseAlias = try (optional alias) <|> pure Nothing
+    where
+        alias = label "alias" $ token <* char ':' <* spaceAndComments

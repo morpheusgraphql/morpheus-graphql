@@ -4,13 +4,15 @@ module Data.Morpheus.Parsing.Request.Arguments
   ( maybeArguments
   ) where
 
+import           Text.Megaparsec                               (label, (<|>))
+
+-- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal       (Parser, getLocation)
 import           Data.Morpheus.Parsing.Internal.Terms          (parseAssignment, parseMaybeTuple, token, variable)
 import           Data.Morpheus.Parsing.Internal.Value          (enumValue, parseValue)
-import           Data.Morpheus.Types.Internal.AST.RawSelection (Argument (..), RawArgument (..), RawArguments,
-                                                                Reference (..))
+import           Data.Morpheus.Types.Internal.AST.RawSelection (Argument (..), RawArgument (..), RawArguments)
 import           Data.Morpheus.Types.Internal.AST.Selection    (ArgumentOrigin (..))
-import           Text.Megaparsec                               (label, (<|>))
+import           Data.Morpheus.Types.Internal.Base             (Reference (..))
 
 valueArgument :: Parser RawArgument
 valueArgument =

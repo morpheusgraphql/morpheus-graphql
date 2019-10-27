@@ -8,9 +8,9 @@ module Data.Morpheus.Execution.Client.Selection
   ( operationTypes
   ) where
 
+import           Data.Maybe                                    (fromMaybe)
 import           Data.Semigroup                                ((<>))
 import           Data.Text                                     (Text, pack, unpack)
-
 --
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                     (globalErrorMessage)
@@ -18,7 +18,8 @@ import           Data.Morpheus.Execution.Internal.GraphScanner (LibUpdater, reso
 import           Data.Morpheus.Execution.Internal.Utils        (nameSpaceType)
 import           Data.Morpheus.Types.Internal.AST.Operation    (DefaultValue, Operation (..), ValidOperation,
                                                                 Variable (..), VariableDefinitions, getOperationName)
-import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionRec (..), SelectionSet)
+import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionRec (..), SelectionSet,
+                                                                ValidSelection)
 import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataFullType (..), DataLeaf (..),
                                                                 DataTyCon (..), DataTypeKind (..), DataTypeLib (..),
                                                                 Key, TypeAlias (..), allDataTypes)
@@ -93,14 +94,14 @@ operationTypes lib variables = genOperation
           pure (ConsD {cName, cFields}, concat subTypes, concat requests)
           ---------------------------------------------------------------------------------------------
           where
-            genField :: (Text, Selection) -> Validation DataField
-            genField (fieldName, sel) = genFieldD sel
+            genField :: (Text, ValidSelection) -> Validation DataField
+            genField (fieldName, sel@Selection { selectionAlias }) = genFieldD sel
               where
-                fieldPath = path <> [fieldName]
+                fieldPath = path <> [fromMaybe fieldName selectionAlias]
                 -------------------------------
-                genFieldD Selection {selectionRec = SelectionAlias {aliasFieldName}} = do
-                  fieldType <- snd <$> lookupFieldType lib fieldPath datatype aliasFieldName
-                  pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
+                genFieldD Selection {selectionAlias = Just aliasFieldName} = do
+                  fieldType <- snd <$> lookupFieldType lib fieldPath datatype fieldName
+                  pure $ DataField {fieldName = aliasFieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
                 genFieldD _ = do
                   fieldType <- snd <$> lookupFieldType lib fieldPath datatype fieldName
                   pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
@@ -108,23 +109,20 @@ operationTypes lib variables = genOperation
             newFieldTypes :: DataFullType -> SelectionSet -> Validation ([[GQLTypeD]], [[Text]])
             newFieldTypes parentType seSet = unzip <$> mapM valSelection seSet
               where
-                valSelection selection@(selKey, _) = do
-                  let (key, sel) = getSelectionFieldKey selection
+                valSelection (key, selection@Selection { selectionAlias }) = do
                   fieldDatatype <- fst <$> lookupFieldType lib fieldPath parentType key
-                  validateSelection fieldDatatype sel
+                  validateSelection fieldDatatype selection
                   --------------------------------------------------------------------
                   where
-                    fieldPath = path <> [selKey]
+                    fieldPath = path <> [fromMaybe key selectionAlias]
                     --------------------------------------------------------------------
-                    validateSelection :: DataFullType -> Selection -> Validation ([GQLTypeD], [Text])
+                    validateSelection :: DataFullType -> ValidSelection -> Validation ([GQLTypeD], [Text])
                     validateSelection dType Selection {selectionRec = SelectionField} = do
                       lName <- withLeaf (pure . leafName) dType
                       pure ([], lName)
                     --withLeaf buildLeaf dType
                     validateSelection dType Selection {selectionRec = SelectionSet selectionSet} =
                       genRecordType fieldPath (typeFrom [] dType) dType selectionSet
-                    validateSelection dType aliasSel@Selection {selectionRec = SelectionAlias {aliasSelection}} =
-                      validateSelection dType aliasSel {selectionRec = aliasSelection}
                     ---- UNION
                     validateSelection dType Selection {selectionRec = UnionSelection unionSelections} = do
                       (tCons, subTypes, requests) <- unzip3 <$> mapM getUnionType unionSelections
@@ -194,13 +192,8 @@ lookupFieldType lib path (OutputObject DataTyCon {typeData}) key =
   case lookup key typeData of
     Just DataField {fieldType = alias@TypeAlias {aliasTyCon}} -> trans <$> getType lib aliasTyCon
       where trans x = (x, alias {aliasTyCon = typeFrom path x, aliasArgs = Nothing})
-    Nothing -> Left (compileError key)
-lookupFieldType _ _ _ key = Left (compileError key)
-
-getSelectionFieldKey :: (Key, Selection) -> (Key, Selection)
-getSelectionFieldKey (_, selection@Selection {selectionRec = SelectionAlias {aliasFieldName, aliasSelection}}) =
-  (aliasFieldName, selection {selectionRec = aliasSelection})
-getSelectionFieldKey sel = sel
+    Nothing -> Left (compileError $ "cant find field \""<> key<>"\"")
+lookupFieldType _ _ dt _ = Left (compileError $ "Type should be output Object \"" <> pack (show dt))
 
 withLeaf :: (DataLeaf -> Validation b) -> DataFullType -> Validation b
 withLeaf f (Leaf x) = f x
@@ -215,17 +208,17 @@ getType lib typename = lookupType (compileError typename) (allDataTypes lib) typ
 
 typeFromScalar :: Text -> Text
 typeFromScalar "Boolean" = "Bool"
-typeFromScalar "Int"     = "Int" 
+typeFromScalar "Int"     = "Int"
 typeFromScalar "Float"   = "Float"
 typeFromScalar "String"  = "Text"
-typeFromScalar "ID"      = "ID" 
+typeFromScalar "ID"      = "ID"
 typeFromScalar _         = "ScalarValue"
 
 typeFrom :: [Key] -> DataFullType -> Text
-typeFrom _ (Leaf (BaseScalar x)) = typeName x
+typeFrom _ (Leaf (BaseScalar x))                      = typeName x
 typeFrom _ (Leaf (CustomScalar DataTyCon {typeName})) = typeFromScalar typeName
-typeFrom _ (Leaf (LeafEnum x)) = typeName x
-typeFrom _ (InputObject x) = typeName x
-typeFrom path (OutputObject x) = pack $ nameSpaceType path $ typeName x
-typeFrom path (Union x) = pack $ nameSpaceType path $ typeName x
-typeFrom _ (InputUnion x) = typeName x
+typeFrom _ (Leaf (LeafEnum x))                        = typeName x
+typeFrom _ (InputObject x)                            = typeName x
+typeFrom path (OutputObject x)                        = pack $ nameSpaceType path $ typeName x
+typeFrom path (Union x)                               = pack $ nameSpaceType path $ typeName x
+typeFrom _ (InputUnion x)                             = typeName x

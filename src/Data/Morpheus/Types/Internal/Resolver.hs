@@ -37,7 +37,8 @@ import           Data.Text                                  (pack, unpack)
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Selection              (resolverError, subfieldsNotSelected)
-import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet)
+import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet,
+                                                             ValidSelection)
 import           Data.Morpheus.Types.Internal.Base          (Message)
 import           Data.Morpheus.Types.Internal.Data          (Key, MUTATION, OperationKind, QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Stream        (Channel (..), Event (..), ResponseEvent (..),
@@ -47,7 +48,7 @@ import           Data.Morpheus.Types.Internal.Validation    (GQLErrors, Validati
 import           Data.Morpheus.Types.Internal.Value         (GQLValue (..), Value)
 import           Data.Morpheus.Types.IO                     (renderResponse)
 
-withObject :: ( SelectionSet -> ResolvingStrategy o m e value) -> (Key,Selection)  -> ResolvingStrategy o m e value
+withObject :: ( SelectionSet -> ResolvingStrategy o m e value) -> (Key,ValidSelection)  -> ResolvingStrategy o m e value
 withObject f (_, Selection {selectionRec = SelectionSet selection}) = f selection
 withObject _ (key, Selection {selectionPosition}) = Fail $ subfieldsNotSelected key "" selectionPosition
 
@@ -192,20 +193,15 @@ instance PureOperation SUBSCRIPTION where
 resolveObject :: (Monad m , PureOperation o ) => SelectionSet -> [FieldRes o m e] -> ResolvingStrategy o m e Value
 resolveObject selectionSet fieldResolvers = gqlObject <$> traverse selectResolver selectionSet
   where
-    selectResolver (key, selection) =
-      (key, ) <$>
-      case selectionRec selection of
-        SelectionAlias name selectionRec -> lookupRes name (selection {selectionRec})
-        _                                -> lookupRes key selection
-        -------------------------------------------------------------
+    selectResolver (key, selection@Selection { selectionAlias }) = (fromMaybe key selectionAlias,) <$> lookupRes selection
       where
-        lookupRes resKey sel = (fromMaybe (const $ pure  gqlNull) $ lookup resKey fieldResolvers) (key, sel)
+        lookupRes  sel =  (fromMaybe (const $ pure  gqlNull) $ lookup key fieldResolvers) (key, sel)
 
 class Resolving o m e where
      getArgs :: Validation args ->  (args -> Resolver o m e value) -> Resolver o m e value
-     resolving :: Monad m => (value -> (Key,Selection) -> ResolvingStrategy o m e Value) -> Resolver o m e value ->  (Key,Selection) -> ResolvingStrategy o m e Value
+     resolving :: Monad m => (value -> (Key,ValidSelection) -> ResolvingStrategy o m e Value) -> Resolver o m e value ->  (Key, ValidSelection) -> ResolvingStrategy o m e Value
 
-type FieldRes o m e = (Key, (Key, Selection) -> ResolvingStrategy o m e Value)
+type FieldRes o m e = (Key, (Key, ValidSelection) -> ResolvingStrategy o m e Value)
 
 instance Resolving o m e where
    getArgs (Right x) f = f x
