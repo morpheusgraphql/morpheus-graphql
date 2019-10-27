@@ -100,8 +100,8 @@ operationTypes lib variables = genOperation
                 fieldPath = path <> [fieldName]
                 -------------------------------
                 genFieldD Selection {selectionAlias = Just aliasFieldName} = do
-                  fieldType <- snd <$> lookupFieldType lib fieldPath datatype aliasFieldName
-                  pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
+                  fieldType <- snd <$> lookupFieldType lib fieldPath datatype fieldName
+                  pure $ DataField {fieldName = aliasFieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
                 genFieldD _ = do
                   fieldType <- snd <$> lookupFieldType lib fieldPath datatype fieldName
                   pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
@@ -192,8 +192,8 @@ lookupFieldType lib path (OutputObject DataTyCon {typeData}) key =
   case lookup key typeData of
     Just DataField {fieldType = alias@TypeAlias {aliasTyCon}} -> trans <$> getType lib aliasTyCon
       where trans x = (x, alias {aliasTyCon = typeFrom path x, aliasArgs = Nothing})
-    Nothing -> Left (compileError key)
-lookupFieldType _ _ _ key = Left (compileError key)
+    Nothing -> Left (compileError $ "cant find field \""<> key<>"\"")
+lookupFieldType _ _ dt _ = Left (compileError $ "Type should be output Object \"" <> pack (show dt))
 
 withLeaf :: (DataLeaf -> Validation b) -> DataFullType -> Validation b
 withLeaf f (Leaf x) = f x
