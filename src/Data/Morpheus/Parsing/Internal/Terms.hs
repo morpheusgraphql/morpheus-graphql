@@ -19,7 +19,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , parseWrappedType
   , litEquals
   , parseTuple
-  , parseNameWithAlias
+  , parseAlias
   ) where
 
 import           Data.Functor                            (($>))
@@ -141,13 +141,7 @@ parseWrappedType = (unwrapped <|> wrapped) <* spaceAndComments
             nonNull' <- parseNonNull
             return ((ListType : nonNull') ++ wrappers, name))
 
-parseNameWithAlias :: Parser (Position, Key, Maybe Key)
-parseNameWithAlias = do
-    (name , position) <- qualifier
-    nonAlias <- try (optional parseAlias) <|> pure Nothing
-    pure (position,name, nonAlias)
+parseAlias :: Parser (Maybe Key)
+parseAlias = try (optional alias) <|> pure Nothing
     where
-        parseAlias = label "alias" $ do
-            _ <- char ':'
-            spaceAndComments
-            token
+        alias = label "alias" $ token <* char ':' <* spaceAndComments
