@@ -8,9 +8,9 @@ module Data.Morpheus.Execution.Client.Selection
   ( operationTypes
   ) where
 
+import           Data.Maybe                                    (fromMaybe)
 import           Data.Semigroup                                ((<>))
 import           Data.Text                                     (Text, pack, unpack)
-
 --
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils                     (globalErrorMessage)
@@ -109,13 +109,12 @@ operationTypes lib variables = genOperation
             newFieldTypes :: DataFullType -> SelectionSet -> Validation ([[GQLTypeD]], [[Text]])
             newFieldTypes parentType seSet = unzip <$> mapM valSelection seSet
               where
-                valSelection selection@(selKey, _) = do
-                  let (key, sel) = getSelectionFieldKey selection
+                valSelection (key, selection@Selection { selectionAlias }) = do
                   fieldDatatype <- fst <$> lookupFieldType lib fieldPath parentType key
-                  validateSelection fieldDatatype sel
+                  validateSelection fieldDatatype selection
                   --------------------------------------------------------------------
                   where
-                    fieldPath = path <> [selKey]
+                    fieldPath = path <> [fromMaybe key selectionAlias]
                     --------------------------------------------------------------------
                     validateSelection :: DataFullType -> ValidSelection -> Validation ([GQLTypeD], [Text])
                     validateSelection dType Selection {selectionRec = SelectionField} = do
@@ -195,10 +194,6 @@ lookupFieldType lib path (OutputObject DataTyCon {typeData}) key =
       where trans x = (x, alias {aliasTyCon = typeFrom path x, aliasArgs = Nothing})
     Nothing -> Left (compileError key)
 lookupFieldType _ _ _ key = Left (compileError key)
-
-getSelectionFieldKey :: (Key, ValidSelection) -> (Key, ValidSelection)
-getSelectionFieldKey (_, selection@Selection { selectionAlias = Just name}) = (name, selection)
-getSelectionFieldKey sel                                                           = sel
 
 withLeaf :: (DataLeaf -> Validation b) -> DataFullType -> Validation b
 withLeaf f (Leaf x) = f x

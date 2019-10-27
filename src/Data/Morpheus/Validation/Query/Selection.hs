@@ -9,9 +9,10 @@ module Data.Morpheus.Validation.Query.Selection
   ) where
 
 
+import           Data.Maybe                                     (fromMaybe)
 import           Data.Text                                      (Text)
 
--- MOEPHEUS
+-- MORPHEUS
 import           Data.Morpheus.Error.Selection                  (cannotQueryField, duplicateQuerySelections,
                                                                  hasNoSubfields, subfieldsNotSelected)
 import           Data.Morpheus.Error.Variable                   (unknownType)
@@ -35,7 +36,7 @@ checkDuplicatesOn DataTyCon {typeName = name'} keys = checkNameCollision enhance
   where
     selError = duplicateQuerySelections name'
     enhancedKeys = map selToKey keys
-    selToKey (key', Selection {selectionPosition = position'}) = EnhancedKey key' position'
+    selToKey (key, Selection {selectionPosition = position' , selectionAlias }) = EnhancedKey (fromMaybe key selectionAlias) position'
 
 clusterUnionSelection ::
      FragmentLib -> Text -> [DataObject] -> (Text, RawSelection) -> Validation ([Fragment], SelectionSet)
