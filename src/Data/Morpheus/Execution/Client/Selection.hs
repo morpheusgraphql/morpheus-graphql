@@ -95,9 +95,9 @@ operationTypes lib variables = genOperation
           ---------------------------------------------------------------------------------------------
           where
             genField :: (Text, ValidSelection) -> Validation DataField
-            genField (fieldName, sel) = genFieldD sel
+            genField (fieldName, sel@Selection { selectionAlias }) = genFieldD sel
               where
-                fieldPath = path <> [fieldName]
+                fieldPath = path <> [fromMaybe fieldName selectionAlias]
                 -------------------------------
                 genFieldD Selection {selectionAlias = Just aliasFieldName} = do
                   fieldType <- snd <$> lookupFieldType lib fieldPath datatype fieldName
