@@ -11,8 +11,7 @@ import           Text.Megaparsec                               (label, try, (<|>
 --
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal       (Parser, getLocation)
-import           Data.Morpheus.Parsing.Internal.Terms          (onType, parseAlias, qualifier, setOf,
-                                                                spreadLiteral, token)
+import           Data.Morpheus.Parsing.Internal.Terms          (onType, parseAlias, setOf, spreadLiteral, token)
 import           Data.Morpheus.Parsing.Request.Arguments       (maybeArguments)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
                                                                 RawSelectionSet, Reference (..))
@@ -44,8 +43,9 @@ inlineFragment =
 parseSelectionField :: Parser (Text, RawSelection)
 parseSelectionField =
   label "SelectionField" $ do
+    position <- getLocation
     aliasName  <- parseAlias
-    (name , position) <- qualifier
+    name <- token
     arguments <- maybeArguments
     value <- selSet aliasName arguments <|> buildField aliasName arguments position
     return (name, value)
