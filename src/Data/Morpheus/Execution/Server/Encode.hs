@@ -41,7 +41,7 @@ import           Data.Morpheus.Types.Custom                      (MapKind, Pair 
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTOM, KIND, __typeName))
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation)
-import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..),ValidSelection, SelectionRec (..))
+import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), ValidSelection)
 import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Data               (MUTATION, OperationKind, QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Resolver           (MapGraphQLT (..), PureOperation (..), Resolver (..),
@@ -86,7 +86,7 @@ instance (DecodeObject a, Resolving fO m e ,Monad m,PureOperation fO, MapGraphQL
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o m e  where
-  encodeKind :: PureOperation o =>  VContext kind a -> (Key, Selection) -> ResolvingStrategy o m e Value
+  encodeKind :: PureOperation o =>  VContext kind a -> (Key, ValidSelection) -> ResolvingStrategy o m e Value
 
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o m e where
@@ -121,22 +121,22 @@ type EncodeOperator o m e a  = a -> ValidOperation -> ResolvingStrategy o m e Va
 
 type EncodeCon o m e a = (GQL_RES a,  ObjectResolvers (CUSTOM a) a o m e)
 
-type FieldRes  o m e   = (Key, (Key, Selection) -> ResolvingStrategy o m e Value)
+type FieldRes  o m e   = (Key, (Key, ValidSelection) -> ResolvingStrategy o m e Value)
 
 type family GRes (kind :: GQL_KIND) value :: *
 
-type instance GRes OBJECT v = [(Key, (Key, Selection) -> v)]
+type instance GRes OBJECT v = [(Key, (Key, ValidSelection) -> v)]
 
-type instance GRes UNION v = (Key, (Key, Selection) -> v)
+type instance GRes UNION v = (Key, (Key, ValidSelection) -> v)
 
 --- GENERICS ------------------------------------------------
 class ObjectResolvers (custom :: Bool) a (o :: OperationKind) (m :: * -> *) e where
-  objectResolvers :: PureOperation o =>  Proxy custom -> a -> [(Key, (Key, Selection) -> ResolvingStrategy o m e Value)]
+  objectResolvers :: PureOperation o =>  Proxy custom -> a -> [(Key, (Key, ValidSelection) -> ResolvingStrategy o m e Value)]
 
 instance (Generic a, GResolver OBJECT (Rep a) o m e ) => ObjectResolvers 'False a o m e where
   objectResolvers _ = getResolvers (ResContext :: ResContext OBJECT o m e value) . from
 
-unionResolver :: (Generic a, PureOperation o, GResolver UNION (Rep a) o m e) => a -> (Key, (Key, Selection) -> ResolvingStrategy o m e Value)
+unionResolver :: (Generic a, PureOperation o, GResolver UNION (Rep a) o m e) => a -> (Key, (Key, ValidSelection) -> ResolvingStrategy o m e Value)
 unionResolver = getResolvers (ResContext :: ResContext UNION o m e value) . from
 
 -- | Derives resolvers for OBJECT and UNION

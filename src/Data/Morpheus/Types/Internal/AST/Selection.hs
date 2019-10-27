@@ -4,10 +4,10 @@ module Data.Morpheus.Types.Internal.AST.Selection
   ( Argument(..)
   , Arguments
   , SelectionSet
-  , Selection(..)
   , SelectionRec(..)
   , ArgumentOrigin(..)
   , ValidSelection
+  , Selection(..)
   ) where
 
 import           Data.Morpheus.Types.Internal.Base  (Collection, Key, Position)

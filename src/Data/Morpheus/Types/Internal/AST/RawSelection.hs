@@ -11,7 +11,7 @@ module Data.Morpheus.Types.Internal.AST.RawSelection
   , FragmentLib
   , RawArguments
   , RawSelectionSet
-  , Selection(..)
+  , Selection (..)
   ) where
 
 import           Language.Haskell.TH.Syntax                 (Lift (..))

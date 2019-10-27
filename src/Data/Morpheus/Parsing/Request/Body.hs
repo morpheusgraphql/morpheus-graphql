@@ -11,8 +11,8 @@ import           Text.Megaparsec                               (label, try, (<|>
 --
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal       (Parser, getLocation)
-import           Data.Morpheus.Parsing.Internal.Terms          (onType, parseAlias, qualifier, setOf, spreadLiteral,
-                                                                token)
+import           Data.Morpheus.Parsing.Internal.Terms          (onType, parseNameWithAlias, qualifier, setOf,
+                                                                spreadLiteral, token)
 import           Data.Morpheus.Parsing.Request.Arguments       (maybeArguments)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
                                                                 RawSelectionSet, Reference (..))
@@ -44,17 +44,16 @@ inlineFragment =
 parseSelectionField :: Parser (Text, RawSelection)
 parseSelectionField =
   label "SelectionField" $ do
-    alias <-  parseAlias
-    (name, position) <- qualifier
+    (position , name, nonAliasName)  <- parseNameWithAlias
     arguments <- maybeArguments
-    value <- selSet alias arguments <|> buildField alias arguments position
+    value <- selSet nonAliasName arguments <|> buildField nonAliasName arguments position
     return (name, value)
   where
     ----------------------------------------
     buildField selectionNonAliasName selectionArguments selectionPosition =
        pure (RawSelectionField $ Selection { selectionNonAliasName , selectionArguments,  selectionRec = (), selectionPosition})
     -----------------------------------------
-    selSet :: Maybe Reference -> RawArguments -> Parser RawSelection
+    selSet :: Maybe Text -> RawArguments -> Parser RawSelection
     selSet selectionNonAliasName selectionArguments =
       label "body" $ do
         selectionPosition <- getLocation
