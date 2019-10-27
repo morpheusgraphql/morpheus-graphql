@@ -41,7 +41,7 @@ import           Data.Morpheus.Types.Custom                      (MapKind, Pair 
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTOM, KIND, __typeName))
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation)
-import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..))
+import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..),ValidSelection, SelectionRec (..))
 import           Data.Morpheus.Types.Internal.Base               (Key)
 import           Data.Morpheus.Types.Internal.Data               (MUTATION, OperationKind, QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Resolver           (MapGraphQLT (..), PureOperation (..), Resolver (..),
@@ -51,7 +51,7 @@ import           Data.Morpheus.Types.Internal.Validation         (Validation)
 import           Data.Morpheus.Types.Internal.Value              (GQLValue (..), Value (..))
 
 class Encode resolver o m e where
-  encode :: PureOperation o => resolver -> (Key, Selection) -> ResolvingStrategy o m e Value
+  encode :: PureOperation o => resolver -> (Key, ValidSelection) -> ResolvingStrategy o m e Value
 
 instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o m e , PureOperation o) => Encode a o m e where
   encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)

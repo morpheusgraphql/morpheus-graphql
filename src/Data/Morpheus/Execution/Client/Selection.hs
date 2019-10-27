@@ -18,7 +18,8 @@ import           Data.Morpheus.Execution.Internal.GraphScanner (LibUpdater, reso
 import           Data.Morpheus.Execution.Internal.Utils        (nameSpaceType)
 import           Data.Morpheus.Types.Internal.AST.Operation    (DefaultValue, Operation (..), ValidOperation,
                                                                 Variable (..), VariableDefinitions, getOperationName)
-import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionRec (..), SelectionSet)
+import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionRec (..), SelectionSet,
+                                                                ValidSelection)
 import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataFullType (..), DataLeaf (..),
                                                                 DataTyCon (..), DataTypeKind (..), DataTypeLib (..),
                                                                 Key, TypeAlias (..), allDataTypes)
@@ -93,12 +94,12 @@ operationTypes lib variables = genOperation
           pure (ConsD {cName, cFields}, concat subTypes, concat requests)
           ---------------------------------------------------------------------------------------------
           where
-            genField :: (Text, Selection) -> Validation DataField
+            genField :: (Text, ValidSelection) -> Validation DataField
             genField (fieldName, sel) = genFieldD sel
               where
                 fieldPath = path <> [fieldName]
                 -------------------------------
-                genFieldD Selection {selectionAlias = Just aliasFieldName} = do
+                genFieldD Selection {selectionNonAliasName = Just aliasFieldName} = do
                   fieldType <- snd <$> lookupFieldType lib fieldPath datatype aliasFieldName
                   pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
                 genFieldD _ = do
@@ -116,7 +117,7 @@ operationTypes lib variables = genOperation
                   where
                     fieldPath = path <> [selKey]
                     --------------------------------------------------------------------
-                    validateSelection :: DataFullType -> Selection -> Validation ([GQLTypeD], [Text])
+                    validateSelection :: DataFullType -> ValidSelection -> Validation ([GQLTypeD], [Text])
                     validateSelection dType Selection {selectionRec = SelectionField} = do
                       lName <- withLeaf (pure . leafName) dType
                       pure ([], lName)
@@ -195,9 +196,9 @@ lookupFieldType lib path (OutputObject DataTyCon {typeData}) key =
     Nothing -> Left (compileError key)
 lookupFieldType _ _ _ key = Left (compileError key)
 
-getSelectionFieldKey :: (Key, Selection) -> (Key, Selection)
-getSelectionFieldKey (_, selection@Selection { selectionAlias = Just name}) = (name, selection)
-getSelectionFieldKey sel = sel
+getSelectionFieldKey :: (Key, ValidSelection) -> (Key, ValidSelection)
+getSelectionFieldKey (_, selection@Selection { selectionNonAliasName = Just name}) = (name, selection)
+getSelectionFieldKey sel                                                           = sel
 
 withLeaf :: (DataLeaf -> Validation b) -> DataFullType -> Validation b
 withLeaf f (Leaf x) = f x

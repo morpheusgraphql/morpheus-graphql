@@ -16,7 +16,7 @@ import qualified Data.Text                                     as T (concat)
 import           Data.Morpheus.Error.Fragment                  (cannotBeSpreadOnType, cannotSpreadWithinItself,
                                                                 fragmentNameCollision, unknownFragment, unusedFragment)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawSelection (..),
-                                                                RawSelection' (..), Reference (..))
+                                                                Selection(..), Reference (..))
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
 import           Data.Morpheus.Types.Internal.Data             (DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
@@ -62,7 +62,6 @@ usedFragments fragments = concatMap findAllUses
   where
     findAllUses :: (Text, RawSelection) -> [Node]
     findAllUses (_, RawSelectionSet RawSelection' {rawSelectionRec}) = concatMap findAllUses rawSelectionRec
-    findAllUses (_, RawAlias {rawAliasSelection}) = concatMap findAllUses [rawAliasSelection]
     findAllUses (_, InlineFragment Fragment {fragmentSelection}) = concatMap findAllUses fragmentSelection
     findAllUses (_, RawSelectionField {}) = []
     findAllUses (_, Spread Reference {referenceName, referencePosition}) =
@@ -72,7 +71,6 @@ usedFragments fragments = concatMap findAllUses
 
 scanForSpread :: (Text, RawSelection) -> [Node]
 scanForSpread (_, RawSelectionSet RawSelection' {rawSelectionRec = selection'}) = concatMap scanForSpread selection'
-scanForSpread (_, RawAlias {rawAliasSelection = selection'}) = concatMap scanForSpread [selection']
 scanForSpread (_, InlineFragment Fragment {fragmentSelection = selection'}) = concatMap scanForSpread selection'
 scanForSpread (_, RawSelectionField {}) = []
 scanForSpread (_, Spread Reference {referenceName = name', referencePosition = position'}) =

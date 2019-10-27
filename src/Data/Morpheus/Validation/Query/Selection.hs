@@ -8,6 +8,10 @@ module Data.Morpheus.Validation.Query.Selection
   ( validateSelectionSet
   ) where
 
+
+import           Data.Text                                      (Text)
+
+-- MOEPHEUS
 import           Data.Morpheus.Error.Selection                  (cannotQueryField, duplicateQuerySelections,
                                                                  hasNoSubfields, subfieldsNotSelected)
 import           Data.Morpheus.Error.Variable                   (unknownType)
@@ -15,7 +19,7 @@ import           Data.Morpheus.Types.Internal.AST.Operation     (ValidVariables)
 import           Data.Morpheus.Types.Internal.AST.RawSelection  (Fragment (..), FragmentLib, RawSelection (..),
                                                                  RawSelection' (..), RawSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..), SelectionSet)
-import           Data.Morpheus.Types.Internal.Base              (EnhancedKey (..))
+import           Data.Morpheus.Types.Internal.Base              (EnhancedKey (..), Reference (..))
 import           Data.Morpheus.Types.Internal.Data              (DataField (..), DataFullType (..), DataObject,
                                                                  DataTyCon (..), DataTypeLib (..), TypeAlias (..),
                                                                  allDataTypes)
@@ -25,7 +29,6 @@ import           Data.Morpheus.Validation.Query.Arguments       (validateArgumen
 import           Data.Morpheus.Validation.Query.Fragment        (castFragmentType, resolveSpread)
 import           Data.Morpheus.Validation.Query.Utils.Selection (lookupFieldAsSelectionSet, lookupSelectionField,
                                                                  lookupUnionTypes)
-import           Data.Text                                      (Text)
 
 checkDuplicatesOn :: DataObject -> SelectionSet -> Validation SelectionSet
 checkDuplicatesOn DataTyCon {typeName = name'} keys = checkNameCollision enhancedKeys selError >> pure keys
@@ -42,17 +45,22 @@ clusterUnionSelection fragments type' possibleTypes' = splitFrag
     typeNames = map typeName possibleTypes'
     splitFrag :: (Text, RawSelection) -> Validation ([Fragment], SelectionSet)
     splitFrag (_, Spread ref) = resolveSpread fragments typeNames ref >>= packFragment
-    splitFrag ("__typename", RawSelectionField RawSelection' {rawSelectionPosition = position'}) =
+    splitFrag ("__typename", RawSelectionField RawSelection' {rawSelectionPosition , rawSelectionAlias}) =
       return
         ( []
         , [ ( "__typename"
-            , Selection {selectionRec = SelectionField, selectionArguments = [], selectionPosition = position'})
+            , Selection {
+                selectionRec = SelectionField,
+                selectionArguments = [],
+                selectionAlias = referenceName <$> rawSelectionAlias,
+                selectionPosition = rawSelectionPosition
+            })
           ])
     splitFrag (key, RawSelectionSet RawSelection' {rawSelectionPosition}) =
       Left $ cannotQueryField key type' rawSelectionPosition
     splitFrag (key, RawSelectionField RawSelection' {rawSelectionPosition}) =
       Left $ cannotQueryField key type' rawSelectionPosition
-    splitFrag (key', RawAlias {rawAliasPosition = position'}) = Left $ cannotQueryField key' type' position'
+  --  splitFrag (key', RawAlias {rawAliasPosition = position'}) = Left $ cannotQueryField key' type' position'
     splitFrag (_, InlineFragment fragment') =
       castFragmentType Nothing (fragmentPosition fragment') typeNames fragment' >>= packFragment
 
@@ -111,17 +119,9 @@ validateSelectionSet lib fragments' operatorName variables = __validate
         -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
         --
         validateSelection :: (Text, RawSelection) -> Validation SelectionSet
-        validateSelection (key', RawAlias {rawAliasSelection = rawSelection', rawAliasPosition = position'}) =
-          fmap processSingleSelection <$> validateSelection rawSelection'
-          where
-            processSingleSelection (selKey', selection') =
-              ( key'
-              , selection'
-                  { selectionRec = SelectionAlias {aliasFieldName = selKey', aliasSelection = selectionRec selection'}
-                  , selectionPosition = position'
-                  })
         validateSelection (key', RawSelectionSet fullRawSelection'@RawSelection' { rawSelectionRec = rawSelectors
                                                                                  , rawSelectionPosition = position'
+                                                                                 , rawSelectionAlias
                                                                                  }) = do
           (dataField, dataType, arguments) <- getValidationData key' fullRawSelection'
           case dataType of
@@ -142,25 +142,27 @@ validateSelectionSet lib fragments' operatorName variables = __validate
             OutputObject _ -> do
               fieldType' <- lookupFieldAsSelectionSet position' key' lib dataField
               __validate fieldType' rawSelectors >>= returnSelection arguments . SelectionSet
-                 -- DataFullType
-                       --   = Leaf DataLeaf
-                       --   | InputObject DataInputObject
-                       --   | InputUnion DataUnion
             _ -> Left $ hasNoSubfields key' (aliasTyCon $fieldType dataField) position'
           where
-            returnSelection arguments' selection' =
+            returnSelection selectionArguments selectionRec =
               pure
                 [ ( key'
                   , Selection
-                      {selectionArguments = arguments', selectionRec = selection', selectionPosition = position'})
+                      { selectionArguments,
+                        selectionRec,
+                        selectionAlias = referenceName <$> rawSelectionAlias,
+                        selectionPosition = position'
+                      }
+                  )
                 ]
-        validateSelection (key, RawSelectionField fullRawSelection'@RawSelection' {rawSelectionPosition}) = do
+        validateSelection (key, RawSelectionField fullRawSelection'@RawSelection' {rawSelectionPosition, rawSelectionAlias}) = do
           (dataField, datatype, arguments) <- getValidationData key fullRawSelection'
           isLeaf datatype dataField
           pure
             [ ( key
               , Selection
                   { selectionArguments = arguments
+                  , selectionAlias = referenceName <$> rawSelectionAlias
                   , selectionRec = SelectionField
                   , selectionPosition = rawSelectionPosition
                   })

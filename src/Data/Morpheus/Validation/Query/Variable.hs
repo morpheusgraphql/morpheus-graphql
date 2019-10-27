@@ -51,7 +51,6 @@ allVariableReferences fragmentLib = concatMapM (concatMapM searchReferences)
         getArgs :: [EnhancedKey] -> [EnhancedKey]
         getArgs x = concatMap referencesFromArgument rawSelectionArguments <> x
     searchReferences (_, InlineFragment Fragment {fragmentSelection}) = concatMapM searchReferences fragmentSelection
-    searchReferences (_, RawAlias {rawAliasSelection}) = searchReferences rawAliasSelection
     searchReferences (_, RawSelectionField RawSelection' {rawSelectionArguments}) =
       return $ concatMap referencesFromArgument rawSelectionArguments
     searchReferences (_, Spread reference) =
