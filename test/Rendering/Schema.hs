@@ -16,8 +16,8 @@ module Rendering.Schema
 
 import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Kind     (SCALAR)
-import           Data.Morpheus.Types    (GQLRootResolver (..), GQLScalar (..), GQLType (..), ID (..), IORes,
-                                         ScalarValue (..), Undefined (..))
+import           Data.Morpheus.Types    (GQLRootResolver (..), GQLScalar (..), GQLType (..), ID (..), ScalarValue (..),
+                                         Undefined (..))
 import           Data.Proxy             (Proxy (..))
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
