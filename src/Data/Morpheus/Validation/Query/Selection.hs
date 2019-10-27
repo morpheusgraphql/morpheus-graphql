@@ -119,19 +119,19 @@ validateSelectionSet lib fragments' operatorName variables = __validate
         -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
         --
         validateSelection :: (Text, RawSelection) -> Validation SelectionSet
-        validateSelection (key', RawSelectionSet fullRawSelection'@Selection { selectionRec = rawSelectors
-                                                                                 , selectionPosition = position'
+        validateSelection (key', RawSelectionSet fullRawSelection@Selection {   selectionRec = rawSelection
+                                                                                 , selectionPosition
                                                                                  , selectionNonAliasName
                                                                                  }) = do
-          (dataField, dataType, arguments) <- getValidationData key' fullRawSelection'
+          (dataField, dataType, arguments) <- getValidationData key' fullRawSelection
           case dataType of
             Union _ -> do
               (categories, __typename) <- clusterTypes
               mapM (validateCluster __typename) categories >>= returnSelection arguments . UnionSelection
               where clusterTypes = do
-                      unionTypes <- lookupUnionTypes position' key' lib dataField
+                      unionTypes <- lookupUnionTypes selectionPosition key' lib dataField
                       (spreads, __typename) <-
-                        flatTuple <$> mapM (clusterUnionSelection fragments' typeName' unionTypes) rawSelectors
+                        flatTuple <$> mapM (clusterUnionSelection fragments' typeName' unionTypes) rawSelection
                       return (categorizeTypes unionTypes spreads, __typename)
                     --
                     --    second arguments will be added to every selection cluster
@@ -140,9 +140,9 @@ validateSelectionSet lib fragments' operatorName variables = __validate
                       selection' <- __validate type' (concatMap fragmentSelection frags')
                       return (typeName type', sysSelection' ++ selection')
             OutputObject _ -> do
-              fieldType' <- lookupFieldAsSelectionSet position' key' lib dataField
-              __validate fieldType' rawSelectors >>= returnSelection arguments . SelectionSet
-            _ -> Left $ hasNoSubfields key' (aliasTyCon $fieldType dataField) position'
+              fieldType' <- lookupFieldAsSelectionSet selectionPosition key' lib dataField
+              __validate fieldType' rawSelection >>= returnSelection arguments . SelectionSet
+            _ -> Left $ hasNoSubfields key' (aliasTyCon $fieldType dataField) selectionPosition
           where
             returnSelection selectionArguments selectionRec =
               pure
@@ -151,7 +151,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
                       { selectionArguments,
                         selectionRec,
                         selectionNonAliasName ,
-                        selectionPosition = position'
+                        selectionPosition
                       }
                   )
                 ]
