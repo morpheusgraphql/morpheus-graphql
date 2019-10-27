@@ -1,4 +1,11 @@
-## [0.4.1] - *.10.2019
+## [0.5.0] - *.10.2019
+
+### Added
+
+- dummy support of `directives`, only in `SDL` on fields of: object, inputObject and enum.
+  
+  it is only parser support not actual implementation
+
 ### Fixed
 - Parser supports anonymous Operation: `query` , `mutation` , `subscription`
   for example:
