@@ -119,10 +119,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
         -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
         --
         validateSelection :: (Text, RawSelection) -> Validation SelectionSet
-        validateSelection (key', RawSelectionSet fullRawSelection@Selection {   selectionRec = rawSelection
-                                                                                 , selectionPosition
-                                                                                 , selectionNonAliasName
-                                                                                 }) = do
+        validateSelection (key', RawSelectionSet fullRawSelection@Selection { selectionRec = rawSelection, selectionPosition }) = do
           (dataField, dataType, arguments) <- getValidationData key' fullRawSelection
           case dataType of
             Union _ -> do
@@ -147,11 +144,9 @@ validateSelectionSet lib fragments' operatorName variables = __validate
             returnSelection selectionArguments selectionRec =
               pure
                 [ ( key'
-                  , Selection
+                  , fullRawSelection 
                       { selectionArguments,
-                        selectionRec,
-                        selectionNonAliasName ,
-                        selectionPosition
+                        selectionRec
                       }
                   )
                 ]
