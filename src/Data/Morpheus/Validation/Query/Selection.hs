@@ -45,17 +45,13 @@ clusterUnionSelection fragments type' possibleTypes' = splitFrag
     typeNames = map typeName possibleTypes'
     splitFrag :: (Text, RawSelection) -> Validation ([Fragment], SelectionSet)
     splitFrag (_, Spread ref) = resolveSpread fragments typeNames ref >>= packFragment
-    splitFrag ("__typename", RawSelectionField Selection {selectionPosition , selectionNonAliasName}) =
-      return
-        ( []
-        , [ ( "__typename"
-            , Selection {
-                selectionRec = SelectionField,
-                selectionArguments = [],
-                selectionNonAliasName,
-                selectionPosition
-            })
-          ])
+    splitFrag ("__typename", RawSelectionField selection ) = pure ([] ,[
+      ( "__typename",
+      selection {
+        selectionArguments = [] ,
+        selectionRec = SelectionField}
+        )
+      ])
     splitFrag (key, RawSelectionSet Selection {selectionPosition}) =
       Left $ cannotQueryField key type' selectionPosition
     splitFrag (key, RawSelectionField Selection {selectionPosition}) =
@@ -144,24 +140,16 @@ validateSelectionSet lib fragments' operatorName variables = __validate
             returnSelection selectionArguments selectionRec =
               pure
                 [ ( key'
-                  , fullRawSelection 
+                  , fullRawSelection
                       { selectionArguments,
                         selectionRec
                       }
                   )
                 ]
-        validateSelection (key, RawSelectionField fullRawSelection'@Selection {selectionPosition, selectionNonAliasName}) = do
-          (dataField, datatype, arguments) <- getValidationData key fullRawSelection'
+        validateSelection (key, RawSelectionField rawSelection@Selection{selectionPosition}) = do
+          (dataField, datatype, selectionArguments) <- getValidationData key rawSelection
           isLeaf datatype dataField
-          pure
-            [ ( key
-              , Selection
-                  { selectionArguments = arguments
-                  , selectionNonAliasName
-                  , selectionRec = SelectionField
-                  , selectionPosition
-                  })
-            ]
+          pure [( key , rawSelection { selectionArguments  , selectionRec = SelectionField })]
           where
             isLeaf (Leaf _) _ = Right ()
             isLeaf _ DataField {fieldType = TypeAlias {aliasTyCon}} =

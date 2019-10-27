@@ -50,15 +50,15 @@ parseSelectionField =
     return (name, value)
   where
     ----------------------------------------
-    buildField selectionNonAliasName selectionArguments selectionPosition =
-       pure (RawSelectionField $ Selection { selectionNonAliasName , selectionArguments,  selectionRec = (), selectionPosition})
+    buildField selectionAlias selectionArguments selectionPosition =
+       pure (RawSelectionField $ Selection { selectionAlias , selectionArguments,  selectionRec = (), selectionPosition})
     -----------------------------------------
     selSet :: Maybe Text -> RawArguments -> Parser RawSelection
-    selSet selectionNonAliasName selectionArguments =
+    selSet selectionAlias selectionArguments =
       label "body" $ do
         selectionPosition <- getLocation
         selectionRec <- entries
-        return (RawSelectionSet $ Selection {selectionNonAliasName , selectionArguments, selectionRec, selectionPosition})
+        return (RawSelectionSet $ Selection {selectionAlias , selectionArguments, selectionRec, selectionPosition})
 
 
 entries :: Parser RawSelectionSet

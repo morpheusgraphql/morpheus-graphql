@@ -34,10 +34,10 @@ type ValidSelection = Selection Arguments SelectionRec
 type UnionSelection = Collection SelectionSet
 
 data Selection args rec = Selection
-  { selectionArguments    :: args
-  , selectionPosition     :: Position
-  , selectionNonAliasName :: Maybe Key
-  , selectionRec          :: rec
+  { selectionArguments :: args
+  , selectionPosition  :: Position
+  , selectionAlias     :: Maybe Key
+  , selectionRec       :: rec
   } deriving (Show)
 
 data SelectionRec

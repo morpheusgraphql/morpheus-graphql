@@ -99,7 +99,7 @@ operationTypes lib variables = genOperation
               where
                 fieldPath = path <> [fieldName]
                 -------------------------------
-                genFieldD Selection {selectionNonAliasName = Just aliasFieldName} = do
+                genFieldD Selection {selectionAlias = Just aliasFieldName} = do
                   fieldType <- snd <$> lookupFieldType lib fieldPath datatype aliasFieldName
                   pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
                 genFieldD _ = do
@@ -197,7 +197,7 @@ lookupFieldType lib path (OutputObject DataTyCon {typeData}) key =
 lookupFieldType _ _ _ key = Left (compileError key)
 
 getSelectionFieldKey :: (Key, ValidSelection) -> (Key, ValidSelection)
-getSelectionFieldKey (_, selection@Selection { selectionNonAliasName = Just name}) = (name, selection)
+getSelectionFieldKey (_, selection@Selection { selectionAlias = Just name}) = (name, selection)
 getSelectionFieldKey sel                                                           = sel
 
 withLeaf :: (DataLeaf -> Validation b) -> DataFullType -> Validation b
