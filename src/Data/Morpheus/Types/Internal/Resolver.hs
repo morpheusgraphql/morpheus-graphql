@@ -193,9 +193,9 @@ instance PureOperation SUBSCRIPTION where
 resolveObject :: (Monad m , PureOperation o ) => SelectionSet -> [FieldRes o m e] -> ResolvingStrategy o m e Value
 resolveObject selectionSet fieldResolvers = gqlObject <$> traverse selectResolver selectionSet
   where
-    selectResolver (key, selection@Selection { selectionAlias }) = lookupRes (fromMaybe key selectionAlias) selection
+    selectResolver (key, selection@Selection { selectionAlias }) = (fromMaybe key selectionAlias,) <$> lookupRes selection
       where
-        lookupRes resKey sel = (key, ) <$> (fromMaybe (const $ pure  gqlNull) $ lookup resKey fieldResolvers) (key, sel)
+        lookupRes  sel =  (fromMaybe (const $ pure  gqlNull) $ lookup key fieldResolvers) (key, sel)
 
 class Resolving o m e where
      getArgs :: Validation args ->  (args -> Resolver o m e value) -> Resolver o m e value
