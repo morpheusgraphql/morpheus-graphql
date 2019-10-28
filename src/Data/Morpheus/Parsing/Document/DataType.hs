@@ -8,15 +8,15 @@ module Data.Morpheus.Parsing.Document.DataType
 import           Data.Morpheus.Parsing.Internal.Create   (createArgument, createEnumType, createField, createScalarType,
                                                           createType, createUnionType)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
-import           Data.Morpheus.Parsing.Internal.Pattern  (directive)
+import           Data.Morpheus.Parsing.Internal.Pattern  (directive, inputValueDefinition)
 import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parseMaybeTuple, parseNonNull,
-                                                          parseWrappedType, pipeLiteral, qualifier, setOf,
-                                                          spaceAndComments, token, sepByAnd)
+                                                          parseWrappedType, pipeLiteral, qualifier, sepByAnd, setOf,
+                                                          spaceAndComments, token)
 import           Data.Morpheus.Parsing.Internal.Value    (parseDefaultValue)
 import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullType (..), Key, RawDataType (..),
                                                           toHSWrappers)
 import           Data.Text                               (Text)
-import           Text.Megaparsec                         (label, sepBy1, some,optional, (<|>))
+import           Text.Megaparsec                         (label, optional, sepBy1,  (<|>))
 import           Text.Megaparsec.Char                    (char, space1, string)
 
 dataArgument :: Parser (Text, DataField)
@@ -28,18 +28,26 @@ dataArgument =
     defaultValue <- parseDefaultValue
     pure $ createArgument fieldName (toHSWrappers $ nonNull ++ wrappers, fieldType)
 
+
+--   InputObjectTypeDefinition
+--     Description(opt) input Name  Directives(Const)(opt) InputFieldsDefinition(opt)
+inputObjectTypeDefinition :: Parser (Text, DataFullType)
+inputObjectTypeDefinition =
+  label "inputObject" $ do
+    typeName <- typeDef "input"
+    typeData <- inputFieldsDefinition
+    pure (typeName, InputObject $ createType typeName typeData)
+
+--   InputFieldsDefinition:
+--     { InputValueDefinition(list) }
+inputFieldsDefinition :: Parser [(Key, DataField)]
+inputFieldsDefinition = label "inputEntries" $ setOf inputValueDefinition
+
 typeDef :: Text -> Parser Text
 typeDef kind = do
   _ <- string kind
   space1
   token
-
-dataInputObject :: Parser (Text, DataFullType)
-dataInputObject =
-  label "inputObject" $ do
-    typeName <- typeDef "input"
-    typeData <- inputObjectEntries
-    pure (typeName, InputObject $ createType typeName typeData)
 
 entryWith :: Parser [(Text, DataField)] -> Parser (Key, DataField)
 entryWith argsParser = label "entry" $ do
@@ -54,8 +62,7 @@ entryWith argsParser = label "entry" $ do
             args <- argsParser
             return (name, args)
 
-inputObjectEntries :: Parser [(Key, DataField)]
-inputObjectEntries = label "inputEntries" $ setOf (entryWith (pure []))
+
 
 outputObjectEntries :: Parser [(Key, DataField)]
 outputObjectEntries = label "entries" $ setOf (entryWith (parseMaybeTuple dataArgument))
@@ -112,7 +119,7 @@ dataUnion =
     unionsParser = token `sepBy1` pipeLiteral
 
 parseFinalDataType :: Parser (Text, DataFullType)
-parseFinalDataType = label "dataType" $ dataInputObject <|> dataUnion <|> dataEnum <|> dataScalar
+parseFinalDataType = label "dataType" $ inputObjectTypeDefinition <|> dataUnion <|> dataEnum <|> dataScalar
 
 parseDataType :: Parser (Text, RawDataType)
 parseDataType = label "dataType" $ dataInterface <|> dataObject <|> finalDataT
