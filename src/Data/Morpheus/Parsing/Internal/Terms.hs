@@ -18,6 +18,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , parseAssignment
   , parseWrappedType
   , litEquals
+  , litAssignment
   , parseTuple
   , parseAlias
   , sepByAnd
@@ -46,6 +47,8 @@ pipeLiteral = char '|' *> spaceAndComments
 litEquals :: Parser ()
 litEquals = char '=' *> spaceAndComments
 
+litAssignment :: Parser ()
+litAssignment = char ':' *> spaceAndComments
 
 -- PRIMITIVE
 ------------------------------------
@@ -113,7 +116,7 @@ parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
 parseAssignment nameParser valueParser =
   label "assignment" $ do
     name' <- nameParser
-    char ':' *> spaceAndComments
+    litAssignment
     value' <- valueParser
     pure (name', value')
 
