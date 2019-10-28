@@ -11,7 +11,7 @@ import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Pattern  (directive)
 import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parseMaybeTuple, parseNonNull,
                                                           parseWrappedType, pipeLiteral, qualifier, setOf,
-                                                          spaceAndComments, token)
+                                                          spaceAndComments, token, sepByAnd)
 import           Data.Morpheus.Parsing.Internal.Value    (parseDefaultValue)
 import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullType (..), Key, RawDataType (..),
                                                           toHSWrappers)
@@ -77,7 +77,7 @@ maybeImplements = implements <|> pure []
         _ <- string "implements"
         space1
         spaceAndComments
-        some token
+        sepByAnd token
 
 dataInterface :: Parser (Text, RawDataType)
 dataInterface =

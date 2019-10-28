@@ -20,6 +20,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , litEquals
   , parseTuple
   , parseAlias
+  , sepByAnd
   ) where
 
 import           Data.Functor                            (($>))
@@ -84,6 +85,9 @@ spaceAndComments = space *> skipMany (inlineComment <|> multilineComment) *> spa
     multilineIndicator = string "\"\"\""
 
 -- COMPLEX
+sepByAnd :: Parser a -> Parser [a]
+sepByAnd entry = entry `sepBy` (char '&' *> spaceAndComments)
+
 -----------------------------
 setOf :: Parser a -> Parser [a]
 setOf entry = setLiteral (entry `sepEndBy` many (char ',' *> spaceAndComments))
