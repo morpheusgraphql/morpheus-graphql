@@ -2,8 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Parsing.Request.Operation
-  ( parseAnonymousQuery
-  , parseOperationDefinition
+  (parseOperation
   ) where
 
 import           Data.Functor                               (($>))
@@ -18,7 +17,7 @@ import           Data.Morpheus.Parsing.Internal.Pattern     (optionalDirectives)
 import           Data.Morpheus.Parsing.Internal.Terms       (operator, parseMaybeTuple, parseName, parseType,
                                                              spaceAndComments1, variable)
 import           Data.Morpheus.Parsing.Internal.Value       (parseDefaultValue)
-import           Data.Morpheus.Parsing.Request.Selection         (parseSelectionSet)
+import           Data.Morpheus.Parsing.Request.Selection    (parseSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Operation (DefaultValue, Operation (..), RawOperation, Variable (..))
 import           Data.Morpheus.Types.Internal.Data          (OperationKind (..), isNullable)
 
@@ -86,4 +85,5 @@ parseAnonymousQuery =
          }) <?>
       "can't parse AnonymousQuery"
 
-
+parseOperation :: Parser RawOperation
+parseOperation = parseAnonymousQuery <|> parseOperationDefinition

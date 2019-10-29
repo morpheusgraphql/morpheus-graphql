@@ -9,13 +9,13 @@ import qualified Data.Aeson                              as Aeson (Value (..))
 import           Data.HashMap.Lazy                       (toList)
 import           Data.Text                               (Text)
 import           Data.Void                               (Void)
-import           Text.Megaparsec                         (ParseErrorBundle, eof, label, manyTill, runParser, (<|>))
+import           Text.Megaparsec                         (ParseErrorBundle, eof, label, manyTill, runParser)
 
 --
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal (Parser, processErrorBundle)
 import           Data.Morpheus.Parsing.Internal.Terms    (spaceAndComments)
-import           Data.Morpheus.Parsing.Request.Operation (parseAnonymousQuery, parseOperationDefinition)
+import           Data.Morpheus.Parsing.Request.Operation (parseOperation)
 import           Data.Morpheus.Parsing.Request.Selection (parseFragmentDefinition)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value (..), replaceValue)
@@ -29,7 +29,7 @@ parseGQLSyntax = runParser request "<input>"
     request =
       label "GQLQueryRoot" $ do
         spaceAndComments
-        operation <- parseAnonymousQuery <|> parseOperationDefinition
+        operation <- parseOperation
         fragments <- manyTill parseFragmentDefinition eof
         pure GQLQueryRoot {operation, fragments, inputVariables = []}
 

@@ -6,7 +6,7 @@ module Data.Morpheus.Parsing.Internal.Pattern
   ) where
 
 
-import           Text.Megaparsec                         (label, many, optional)
+import           Text.Megaparsec                         (label, many)
 
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Create   (createField)
@@ -30,7 +30,7 @@ inputValueDefinition = label "InputValueDefinition" $ do
     type_ <- parseType
     -- TODO: handle default value
     _ <- parseDefaultValue
-    _ <- optional directive
+    _ <- optionalDirectives
     pure (name, createField [] name type_)
 
 -- Field Arguments: https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
@@ -61,9 +61,9 @@ fieldDefinition  = label "FieldDefinition" $ do
     args <- argumentsDefinition
     litAssignment -- ':'
     type_ <- parseType
-    _ <- optional directive
+    -- TODO: handle directives
+    _ <- optionalDirectives
     pure (name, createField args name type_)
-
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --
@@ -73,13 +73,14 @@ fieldDefinition  = label "FieldDefinition" $ do
 -- Directive[Const](list)
 --
 optionalDirectives :: Parser [()]
-optionalDirectives = many directive
+optionalDirectives = label "Directives" $ many directive
+
+-- Directive[Const]
 --
--- DirectiveConst
 -- @ Name Arguments[Const](opt)
 -- TODO:  returns real DataType
 directive :: Parser ()
-directive = do
+directive = label "Directive" $ do
     operator '@'
     _name <- parseName
     _args <- parseMaybeTuple (parseAssignment parseName parseValue)
