@@ -2,6 +2,7 @@ module Data.Morpheus.Parsing.Internal.Pattern
   ( directive
   , inputValueDefinition
   , fieldsDefinition
+  , typDeclaration
   ) where
 
 
@@ -11,10 +12,10 @@ import           Text.Megaparsec.Char                    (char)
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Create   (createField)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms    (litAssignment, parseAssignment, parseMaybeTuple, parseName,
-                                                          parseTuple, parseType, qualifier, setOf)
+import           Data.Morpheus.Parsing.Internal.Terms    (keyword, litAssignment, parseAssignment, parseMaybeTuple,
+                                                          parseName, parseTuple, parseType, qualifier, operator, setOf)
 import           Data.Morpheus.Parsing.Internal.Value    (parseDefaultValue, parseValue)
-import           Data.Morpheus.Types.Internal.Data       (DataField, Key)
+import           Data.Morpheus.Types.Internal.Data       (DataField, Key, Name)
 
 
 -- InputValue : https://graphql.github.io/graphql-spec/June2018/#InputValueDefinition
@@ -55,7 +56,7 @@ fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
 fieldDefinition ::  Parser (Key, DataField)
-fieldDefinition  = label "fieldDefinition" $ do
+fieldDefinition  = label "FieldDefinition" $ do
     -- TODO: Description(opt)
     name <- parseName
     args <- argumentsDefinition
@@ -72,3 +73,14 @@ directive = do
     _name <- qualifier
     _boo <- parseTuple (parseAssignment qualifier parseValue) -- TODO: string
     pure ()
+
+-- typDeclaration : Not in spec ,start part of type definitions
+--
+--  typDeclaration
+--   Description(opt) scalar Name
+--
+typDeclaration :: Name -> Parser Name
+typDeclaration kind = do
+  -- TODO: Description(opt)
+  keyword kind
+  parseName

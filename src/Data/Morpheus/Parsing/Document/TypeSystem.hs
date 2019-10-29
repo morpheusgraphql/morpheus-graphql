@@ -5,15 +5,17 @@ module Data.Morpheus.Parsing.Document.TypeSystem
   ( parseDataType
   ) where
 
-import           Data.Morpheus.Parsing.Internal.Create   (createEnumType, createScalarType, createType, createUnionType)
-import           Data.Morpheus.Parsing.Internal.Internal (Parser)
-import           Data.Morpheus.Parsing.Internal.Pattern  (directive, fieldsDefinition, inputValueDefinition)
-import           Data.Morpheus.Parsing.Internal.Terms    (keyword, parseName, pipeLiteral, sepByAnd, setOf,
-                                                          spaceAndComments, token)
-import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullType (..), Key, RawDataType (..))
 import           Data.Text                               (Text)
 import           Text.Megaparsec                         (label, optional, sepBy1, (<|>))
-import           Text.Megaparsec.Char                    (char, space1, string)
+
+-- MORPHEUS
+import           Data.Morpheus.Parsing.Internal.Create   (createEnumType, createScalarType, createType, createUnionType)
+import           Data.Morpheus.Parsing.Internal.Internal (Parser)
+import           Data.Morpheus.Parsing.Internal.Pattern  (directive, fieldsDefinition, inputValueDefinition,
+                                                          typDeclaration)
+import           Data.Morpheus.Parsing.Internal.Terms    (keyword, operator, parseName, pipeLiteral, sepByAnd, setOf)
+import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullType (..), Key, RawDataType (..))
+
 
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
 --
@@ -22,8 +24,9 @@ import           Text.Megaparsec.Char                    (char, space1, string)
 --
 scalarTypeDefinition :: Parser (Text, DataFullType)
 scalarTypeDefinition =
-  label "scalar" $ do
-    name <- typeDef "scalar"
+  label "ScalarTypeDefinition" $ do
+    name <- typDeclaration "scalar"
+    -- TODO: handle directives
     _ <- optional directive
     pure $ createScalarType name
 
@@ -45,21 +48,18 @@ scalarTypeDefinition =
 --
 objectTypeDefinition :: Parser (Text, RawDataType)
 objectTypeDefinition =
-  label "object" $ do
-    typeName <- typeDef "type"
-    interfaces <- maybeImplements
-    typeData <- fieldsDefinition
-    pure (typeName, Implements interfaces $ createType typeName typeData)
+  label "ObjectTypeDefinition" $ do
+    typeName <- typDeclaration "type"
+    interfaces <- optionalImplementsInterfaces
+    -- TODO: handle directives
+    _directives <- optional directive
+    fields <- fieldsDefinition
+    pure (typeName, Implements interfaces $ createType typeName fields)
 
-maybeImplements :: Parser [Text]
-maybeImplements = implements <|> pure []
+optionalImplementsInterfaces :: Parser [Text]
+optionalImplementsInterfaces = implements <|> pure []
   where
-    implements =
-      label "implements" $ do
-        _ <- string "implements"
-        space1
-        spaceAndComments
-        sepByAnd token
+    implements = label "ImplementsInterfaces" $ keyword "implements" *> sepByAnd parseName
 
 -- Interfaces: https://graphql.github.io/graphql-spec/June2018/#sec-Interfaces
 --
@@ -68,10 +68,12 @@ maybeImplements = implements <|> pure []
 --
 interfaceTypeDefinition :: Parser (Text, RawDataType)
 interfaceTypeDefinition =
-  label "interface" $ do
-    typeName <- typeDef "interface"
-    typeData <- fieldsDefinition
-    pure (typeName, Interface $ createType typeName typeData)
+  label "InterfaceTypeDefinition" $ do
+    name <- typDeclaration "interface"
+    -- TODO: handle directives
+    _directives <- optional directive
+    fields <- fieldsDefinition
+    pure (name, Interface $ createType name fields)
 
 
 -- Unions : https://graphql.github.io/graphql-spec/June2018/#sec-Unions
@@ -85,15 +87,13 @@ interfaceTypeDefinition =
 --
 unionTypeDefinition :: Parser (Text, DataFullType)
 unionTypeDefinition =
-  label "union" $ do
-    typeName <- typeDef "union"
-    _ <- char '='
-    spaceAndComments
-    typeData <- unionsParser
-    spaceAndComments
-    pure $ createUnionType typeName typeData
+  label "UnionTypeDefinition" $ do
+    typeName <- typDeclaration "union"
+    -- TODO: handle directives
+    _directives <- optional directive
+    createUnionType typeName <$> unionMemberTypes
   where
-    unionsParser = token `sepBy1` pipeLiteral
+    unionMemberTypes = operator '=' *> parseName `sepBy1` pipeLiteral
 
 
 -- Enums : https://graphql.github.io/graphql-spec/June2018/#sec-Enums
@@ -107,12 +107,21 @@ unionTypeDefinition =
 --  EnumValueDefinition
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
-enumValueDefinition :: Parser (Text, DataFullType)
-enumValueDefinition =
-  label "enum" $ do
-    typeName <- typeDef "enum"
-    typeData <- setOf ( token <* optional directive)
-    pure $ createEnumType typeName typeData
+enumTypeDefinition :: Parser (Text, DataFullType)
+enumTypeDefinition =
+  label "EnumTypeDefinition" $ do
+    typeName <- typDeclaration "enum"
+    -- TODO: handle directives
+    _directives <- optional directive
+    enumValuesDefinition <- setOf enumValueDefinition
+    pure $ createEnumType typeName enumValuesDefinition
+    where 
+        enumValueDefinition = do 
+            -- TODO: parse Description
+            enumValueName <- parseName 
+            -- TODO: handle directives
+            _directive <- optional directive
+            return enumValueName
 
 -- Input Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Input-Objects
 --
@@ -124,23 +133,21 @@ enumValueDefinition =
 --
 inputObjectTypeDefinition :: Parser (Text, DataFullType)
 inputObjectTypeDefinition =
-  label "inputObject" $ do
-    typeName <- typeDef "input"
-    typeData <- inputFieldsDefinition
-    pure (typeName, InputObject $ createType typeName typeData)
+  label "InputObjectTypeDefinition" $ do
+    name <- typDeclaration "input"
+    -- TODO: handle directives
+    _directives <- optional directive
+    fields <- inputFieldsDefinition
+    pure (name, InputObject $ createType name fields)
     where
       inputFieldsDefinition :: Parser [(Key, DataField)]
       inputFieldsDefinition = label "inputEntries" $ setOf inputValueDefinition
 
-typeDef :: Text -> Parser Text
-typeDef kind = do
-  keyword kind
-  parseName
 
 parseFinalDataType :: Parser (Text, DataFullType)
 parseFinalDataType = label "dataType" $ inputObjectTypeDefinition
     <|> unionTypeDefinition
-    <|> enumValueDefinition
+    <|> enumTypeDefinition
     <|> scalarTypeDefinition
 
 parseDataType :: Parser (Text, RawDataType)

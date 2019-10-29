@@ -25,6 +25,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , parseName
   , parseType
   , keyword
+  , operator
   ) where
 
 import           Data.Functor                            (($>))
@@ -49,6 +50,9 @@ parseName = token
 
 keyword :: Key -> Parser ()
 keyword word = string word *> space1 *> spaceAndComments
+
+operator :: Char -> Parser ()
+operator x = char x *> spaceAndComments
 
 -- LITERALS
 setLiteral :: Parser [a] -> Parser [a]
