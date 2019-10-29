@@ -139,8 +139,6 @@ typeDef kind = do
   space1
   parseName
 
-
-
 parseFinalDataType :: Parser (Text, DataFullType)
 parseFinalDataType = label "dataType" $ inputObjectTypeDefinition
     <|> unionTypeDefinition
