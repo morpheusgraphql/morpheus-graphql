@@ -16,7 +16,7 @@ import           Text.Megaparsec                         (ParseErrorBundle, eof,
 import           Data.Morpheus.Parsing.Internal.Internal (Parser, processErrorBundle)
 import           Data.Morpheus.Parsing.Internal.Terms    (spaceAndComments)
 import           Data.Morpheus.Parsing.Request.Fragment  (fragment)
-import           Data.Morpheus.Parsing.Request.Operation (parseAnonymousQuery, parseOperation)
+import           Data.Morpheus.Parsing.Request.Operation (parseAnonymousQuery, parseOperationDefinition)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value (..), replaceValue)
 import           Data.Morpheus.Types.IO                  (GQLRequest (..))
@@ -29,7 +29,7 @@ parseGQLSyntax = runParser request "<input>"
     request =
       label "GQLQueryRoot" $ do
         spaceAndComments
-        operation <- parseAnonymousQuery <|> parseOperation
+        operation <- parseAnonymousQuery <|> parseOperationDefinition
         fragments <- manyTill fragment eof
         pure GQLQueryRoot {operation, fragments, inputVariables = []}
 

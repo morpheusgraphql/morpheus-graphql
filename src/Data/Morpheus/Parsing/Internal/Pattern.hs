@@ -3,17 +3,18 @@ module Data.Morpheus.Parsing.Internal.Pattern
   , inputValueDefinition
   , fieldsDefinition
   , typDeclaration
+  , optionalDirectives
   ) where
 
 
-import           Text.Megaparsec                         (label, optional)
+import           Text.Megaparsec                         (label, many, optional)
 import           Text.Megaparsec.Char                    (char)
 
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Create   (createField)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Terms    (keyword, litAssignment, parseAssignment, parseMaybeTuple,
-                                                          parseName, parseTuple, parseType, qualifier, operator, setOf)
+                                                          parseName, parseTuple, parseType, qualifier, setOf)
 import           Data.Morpheus.Parsing.Internal.Value    (parseDefaultValue, parseValue)
 import           Data.Morpheus.Types.Internal.Data       (DataField, Key, Name)
 
@@ -73,6 +74,9 @@ directive = do
     _name <- qualifier
     _boo <- parseTuple (parseAssignment qualifier parseValue) -- TODO: string
     pure ()
+
+optionalDirectives :: Parser [()]
+optionalDirectives = many directive
 
 -- typDeclaration : Not in spec ,start part of type definitions
 --

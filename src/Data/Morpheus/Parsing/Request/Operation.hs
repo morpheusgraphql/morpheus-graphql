@@ -3,7 +3,7 @@
 
 module Data.Morpheus.Parsing.Request.Operation
   ( parseAnonymousQuery
-  , parseOperation
+  , parseOperationDefinition
   ) where
 
 import           Data.Functor                               (($>))
@@ -14,8 +14,9 @@ import           Text.Megaparsec.Char                       (string)
 --
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal    (Parser, getLocation)
-import           Data.Morpheus.Parsing.Internal.Terms       (operator, parseMaybeTuple, parseType, spaceAndComments1,
-                                                             token, variable)
+import           Data.Morpheus.Parsing.Internal.Pattern     (optionalDirectives)
+import           Data.Morpheus.Parsing.Internal.Terms       (operator, parseMaybeTuple, parseName, parseType,
+                                                             spaceAndComments1, variable)
 import           Data.Morpheus.Parsing.Internal.Value       (parseDefaultValue)
 import           Data.Morpheus.Parsing.Request.Body         (entries)
 import           Data.Morpheus.Types.Internal.AST.Operation (DefaultValue, Operation (..), RawOperation, Variable (..))
@@ -51,16 +52,17 @@ variableDefinition =
 --
 --   OperationType: one of
 --     query, mutation,    subscription
-parseOperation :: Parser RawOperation
-parseOperation =
-  label "operator" $ do
+parseOperationDefinition :: Parser RawOperation
+parseOperationDefinition =
+  label "OperationDefinition" $ do
     operationPosition <- getLocation
     operationKind <- parseOperationType
-    operationName <- optional token
+    operationName <- optional parseName
     operationArgs <- parseMaybeTuple variableDefinition
+    -- TODO: handle directives 
+    _directives <- optionalDirectives
     operationSelection <- entries
     pure (Operation {operationName, operationKind, operationArgs, operationSelection, operationPosition})
-
 
 parseOperationType :: Parser OperationKind
 parseOperationType =
