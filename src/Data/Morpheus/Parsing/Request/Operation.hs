@@ -37,6 +37,14 @@ operationArgument =
           , variableValue = defaultValue
           })
 
+
+-- Operations : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Operations
+--
+-- OperationDefinition
+--   OperationType Name(opt) VariableDefinitions(opt) Directives(opt) SelectionSet
+-- 
+--   OperationType: one of
+--     query, mutation,	subscription
 parseOperation :: Parser RawOperation
 parseOperation =
   label "operator" $ do
