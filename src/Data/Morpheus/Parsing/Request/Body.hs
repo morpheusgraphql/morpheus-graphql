@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Parsing.Request.Body
-  ( parseSelectionSet 
+  ( parseSelectionSet
   , parseFragmentDefinition
   ) where
 
@@ -13,8 +13,8 @@ import           Text.Megaparsec                               (label, try, (<|>
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal       (Parser, getLocation)
 import           Data.Morpheus.Parsing.Internal.Pattern        (optionalDirectives)
-import           Data.Morpheus.Parsing.Internal.Terms          (keyword, onType, parseAlias, parseName, setOf,
-                                                                spreadLiteral, token)
+import           Data.Morpheus.Parsing.Internal.Terms          (keyword, parseAlias, parseName, parseTypeCondition,
+                                                                setOf, spreadLiteral, token)
 import           Data.Morpheus.Parsing.Request.Arguments       (maybeArguments)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
                                                                 RawSelectionSet, Reference (..))
@@ -79,7 +79,7 @@ parseSelectionField =
 --
 spread :: Parser (Text, RawSelection)
 spread =
-  label "spread" $ do
+  label "FragmentSpread" $ do
     referencePosition <- spreadLiteral
     referenceName <- token
     return (referenceName, Spread $ Reference {referenceName, referencePosition})
@@ -91,11 +91,13 @@ spread =
 --
 parseFragmentDefinition :: Parser (Text, Fragment)
 parseFragmentDefinition =
-  label "fragment" $ do
+  label "FragmentDefinition" $ do
     keyword "fragment"
     fragmentPosition <- getLocation
     name <- parseName
-    fragmentType <- onType
+    fragmentType <- parseTypeCondition
+    -- TODO: handle Directives
+    _directives <- optionalDirectives
     fragmentSelection <- parseSelectionSet
     pure (name, Fragment {fragmentType, fragmentSelection, fragmentPosition})
 
@@ -103,7 +105,7 @@ inlineFragment :: Parser (Text, RawSelection)
 inlineFragment =
   label "InlineFragment" $ do
     fragmentPosition <- spreadLiteral
-    fragmentType <- onType
+    fragmentType <- parseTypeCondition
     fragmentSelection <- parseSelectionSet
     pure ("INLINE_FRAGMENT", InlineFragment $ Fragment {fragmentType, fragmentSelection, fragmentPosition})
 

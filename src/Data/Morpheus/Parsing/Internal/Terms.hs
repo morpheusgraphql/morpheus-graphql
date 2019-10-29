@@ -11,7 +11,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , pipeLiteral
   -------------
   , setOf
-  , onType
+  , parseTypeCondition
   , spreadLiteral
   , parseNonNull
   , parseMaybeTuple
@@ -142,8 +142,13 @@ parseAssignment nameParser valueParser =
     value' <- valueParser
     pure (name', value')
 
-onType :: Parser Text
-onType = do
+-- Type Conditions: https://graphql.github.io/graphql-spec/June2018/#sec-Type-Conditions
+--
+--  TypeCondition:
+--    on NamedType
+--
+parseTypeCondition :: Parser Text
+parseTypeCondition = do
   _ <- string "on"
   space1
   token
