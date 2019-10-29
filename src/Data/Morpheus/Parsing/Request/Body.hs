@@ -2,7 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Parsing.Request.Body
-  ( parseSelectionSet
+  ( parseSelectionSet 
+  , parseFragmentDefinition
   ) where
 
 import           Data.Text                                     (Text)
@@ -12,8 +13,8 @@ import           Text.Megaparsec                               (label, try, (<|>
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal       (Parser, getLocation)
 import           Data.Morpheus.Parsing.Internal.Pattern        (optionalDirectives)
-import           Data.Morpheus.Parsing.Internal.Terms          (onType, parseAlias, parseName, setOf, spreadLiteral,
-                                                                token)
+import           Data.Morpheus.Parsing.Internal.Terms          (keyword, onType, parseAlias, parseName, setOf,
+                                                                spreadLiteral, token)
 import           Data.Morpheus.Parsing.Request.Arguments       (maybeArguments)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
                                                                 RawSelectionSet, Reference (..))
@@ -67,12 +68,36 @@ parseSelectionField =
         return (RawSelectionSet $ Selection {selectionAlias , selectionArguments, selectionRec, selectionPosition})
 
 
+--
+-- Fragments: https://graphql.github.io/graphql-spec/June2018/#sec-Language.Fragments
+--
+--  FragmentName : Name
+--
+
+--  FragmentSpread
+--    ...FragmentName Directives(opt)
+--
 spread :: Parser (Text, RawSelection)
 spread =
   label "spread" $ do
     referencePosition <- spreadLiteral
     referenceName <- token
     return (referenceName, Spread $ Reference {referenceName, referencePosition})
+
+-- FragmentDefinition : https://graphql.github.io/graphql-spec/June2018/#FragmentDefinition
+--
+--  FragmentDefinition:
+--   fragment FragmentName TypeCondition Directives(opt) SelectionSet
+--
+parseFragmentDefinition :: Parser (Text, Fragment)
+parseFragmentDefinition =
+  label "fragment" $ do
+    keyword "fragment"
+    fragmentPosition <- getLocation
+    name <- parseName
+    fragmentType <- onType
+    fragmentSelection <- parseSelectionSet
+    pure (name, Fragment {fragmentType, fragmentSelection, fragmentPosition})
 
 inlineFragment :: Parser (Text, RawSelection)
 inlineFragment =
@@ -81,3 +106,4 @@ inlineFragment =
     fragmentType <- onType
     fragmentSelection <- parseSelectionSet
     pure ("INLINE_FRAGMENT", InlineFragment $ Fragment {fragmentType, fragmentSelection, fragmentPosition})
+
