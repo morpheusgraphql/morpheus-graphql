@@ -11,7 +11,7 @@ import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Pattern  (directive, inputValueDefinition)
 import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parseMaybeTuple, parseNonNull,
                                                           parseWrappedType, pipeLiteral, qualifier, sepByAnd, setOf,
-                                                          spaceAndComments, token)
+                                                          spaceAndComments, token, parseName )
 import           Data.Morpheus.Parsing.Internal.Value    (parseDefaultValue)
 import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullType (..), Key, RawDataType (..),
                                                           toHSWrappers)
@@ -27,8 +27,9 @@ import           Text.Megaparsec.Char                    (char, space1, string)
 scalarTypeDefinition :: Parser (Text, DataFullType)
 scalarTypeDefinition =
   label "scalar" $ do
-    typeName <- typeDef "scalar"
-    pure $ createScalarType typeName
+    name <- typeDef "scalar"
+    _ <- optional directive
+    pure $ createScalarType name
 
 
 -- Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
@@ -150,7 +151,7 @@ typeDef :: Text -> Parser Text
 typeDef kind = do
   _ <- string kind
   space1
-  token
+  parseName
 
 maybeImplements :: Parser [Text]
 maybeImplements = implements <|> pure []

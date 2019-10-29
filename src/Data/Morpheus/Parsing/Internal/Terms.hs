@@ -22,6 +22,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , parseTuple
   , parseAlias
   , sepByAnd
+  , parseName
   ) where
 
 import           Data.Functor                            (($>))
@@ -33,9 +34,16 @@ import           Text.Megaparsec.Char                    (char, digitChar, lette
 
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal (Parser, Position, getLocation)
-import           Data.Morpheus.Types.Internal.Data       (DataTypeWrapper (..), Key)
+import           Data.Morpheus.Types.Internal.Data       (DataTypeWrapper (..), Name, Key)
 import           Data.Morpheus.Types.Internal.Value      (convertToHaskellName)
 
+
+-- Name : https://graphql.github.io/graphql-spec/June2018/#sec-Names
+--
+-- Name :: /[_A-Za-z][_0-9A-Za-z]*/
+--
+parseName :: Parser Name
+parseName = token
 
 -- LITERALS
 setLiteral :: Parser [a] -> Parser [a]

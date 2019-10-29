@@ -59,6 +59,7 @@ module Data.Morpheus.Types.Internal.Data
   , QUERY
   , MUTATION
   , SUBSCRIPTION
+  , Name
   ) where
 
 import           Data.Semigroup                     ((<>))
@@ -71,6 +72,7 @@ import           Data.Morpheus.Types.Internal.Base  (Key)
 import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
 
+type Name = Key
 
 type QUERY = 'Query
 type MUTATION = 'Mutation
