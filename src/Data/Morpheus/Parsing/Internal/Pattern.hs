@@ -8,13 +8,12 @@ module Data.Morpheus.Parsing.Internal.Pattern
 
 
 import           Text.Megaparsec                         (label, many, optional)
-import           Text.Megaparsec.Char                    (char)
 
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Create   (createField)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms    (keyword, litAssignment, parseAssignment, parseMaybeTuple,
-                                                          parseName, parseTuple, parseType, qualifier, setOf)
+import           Data.Morpheus.Parsing.Internal.Terms    (keyword, litAssignment, operator, parseAssignment,
+                                                          parseMaybeTuple, parseName, parseType, setOf)
 import           Data.Morpheus.Parsing.Internal.Value    (parseDefaultValue, parseValue)
 import           Data.Morpheus.Types.Internal.Data       (DataField, Key, Name)
 
@@ -66,17 +65,27 @@ fieldDefinition  = label "FieldDefinition" $ do
     _ <- optional directive
     pure (name, createField args name type_)
 
--- @directive ( arg1: "value" , .... )
+
+-- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
+--
+-- example: @directive ( arg1: "value" , .... )
+--
+-- Directives[Const]
+-- Directive[Const](list)
+--
+optionalDirectives :: Parser [()]
+optionalDirectives = many directive
+--
+-- DirectiveConst
+-- @ Name Arguments[Const](opt)
 -- TODO:  returns real DataType
 directive :: Parser ()
 directive = do
-    _ <- char '@'
-    _name <- qualifier
-    _boo <- parseTuple (parseAssignment qualifier parseValue) -- TODO: string
+    operator '@'
+    _name <- parseName
+    _args <- parseMaybeTuple (parseAssignment parseName parseValue)
     pure ()
 
-optionalDirectives :: Parser [()]
-optionalDirectives = many directive
 
 -- typDeclaration : Not in spec ,start part of type definitions
 --
