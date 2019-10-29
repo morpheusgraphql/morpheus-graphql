@@ -24,8 +24,8 @@ import           Text.Megaparsec.Char                    (char, space1, string)
 --  ScalarTypeDefinition:
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
-dataScalar :: Parser (Text, DataFullType)
-dataScalar =
+scalarTypeDefinition :: Parser (Text, DataFullType)
+scalarTypeDefinition =
   label "scalar" $ do
     typeName <- typeDef "scalar"
     pure $ createScalarType typeName
@@ -46,20 +46,44 @@ dataScalar =
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-dataObject :: Parser (Text, RawDataType)
-dataObject =
+objectTypeDefinition :: Parser (Text, RawDataType)
+objectTypeDefinition =
   label "object" $ do
     typeName <- typeDef "type"
     interfaces <- maybeImplements
     typeData <- outputObjectEntries
     pure (typeName, Implements interfaces $ createType typeName typeData)
 
+
+entryWith :: Parser [(Text, DataField)] -> Parser (Key, DataField)
+entryWith argsParser = label "entry" $ do
+    ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs parseWrappedType
+    nonNull <- parseNonNull
+    _ <- optional directive
+    return (fieldName, createField fieldArgs fieldName (toHSWrappers $ nonNull ++ wrappers, fieldType))
+    where
+        fieldWithArgs =
+          label "fieldWithArgs" $ do
+            (name, _) <- qualifier
+            args <- argsParser
+            return (name, args)
+
+outputObjectEntries :: Parser [(Key, DataField)]
+outputObjectEntries = label "entries" $ setOf (entryWith (parseMaybeTuple dataArgument))
+
+
+
 -- Interfaces: https://graphql.github.io/graphql-spec/June2018/#sec-Interfaces
 --
 --  InterfaceTypeDefinition
 --    Description(opt) interface Name Directives(Const)(opt) FieldsDefinition(opt)
 -- 
-
+interfaceTypeDefinition :: Parser (Text, RawDataType)
+interfaceTypeDefinition =
+  label "interface" $ do
+    typeName <- typeDef "interface"
+    typeData <- outputObjectEntries
+    pure (typeName, Interface $ createType typeName typeData)
 
 
 -- Unions : https://graphql.github.io/graphql-spec/June2018/#sec-Unions
@@ -71,6 +95,17 @@ dataObject =
 --    = |(opt) NamedType
 --      UnionMemberTypes | NamedType
 -- 
+unionTypeDefinition :: Parser (Text, DataFullType)
+unionTypeDefinition =
+  label "union" $ do
+    typeName <- typeDef "union"
+    _ <- char '='
+    spaceAndComments
+    typeData <- unionsParser
+    spaceAndComments
+    pure $ createUnionType typeName typeData
+  where
+    unionsParser = token `sepBy1` pipeLiteral
 
 
 -- Enums : https://graphql.github.io/graphql-spec/June2018/#sec-Enums
@@ -84,10 +119,16 @@ dataObject =
 --  EnumValueDefinition
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
+enumValueDefinition :: Parser (Text, DataFullType)
+enumValueDefinition =
+  label "enum" $ do
+    typeName <- typeDef "enum"
+    typeData <- setOf ( token <* optional directive)
+    pure $ createEnumType typeName typeData
 
 
 
--- Input Objects: https://graphql.github.io/graphql-spec/June2018/#sec-Input-Objects
+-- Input Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Input-Objects
 --
 --   InputObjectTypeDefinition
 --     Description(opt) input Name  Directives(Const)(opt) InputFieldsDefinition(opt)
@@ -111,26 +152,6 @@ typeDef kind = do
   space1
   token
 
-entryWith :: Parser [(Text, DataField)] -> Parser (Key, DataField)
-entryWith argsParser = label "entry" $ do
-    ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs parseWrappedType
-    nonNull <- parseNonNull
-    _ <- optional directive
-    return (fieldName, createField fieldArgs fieldName (toHSWrappers $ nonNull ++ wrappers, fieldType))
-    where
-        fieldWithArgs =
-          label "fieldWithArgs" $ do
-            (name, _) <- qualifier
-            args <- argsParser
-            return (name, args)
-
-
-
-outputObjectEntries :: Parser [(Key, DataField)]
-outputObjectEntries = label "entries" $ setOf (entryWith (parseMaybeTuple dataArgument))
-
-
-
 maybeImplements :: Parser [Text]
 maybeImplements = implements <|> pure []
   where
@@ -141,39 +162,16 @@ maybeImplements = implements <|> pure []
         spaceAndComments
         sepByAnd token
 
-dataInterface :: Parser (Text, RawDataType)
-dataInterface =
-  label "interface" $ do
-    typeName <- typeDef "interface"
-    typeData <- outputObjectEntries
-    pure (typeName, Interface $ createType typeName typeData)
 
-
-
-dataEnum :: Parser (Text, DataFullType)
-dataEnum =
-  label "enum" $ do
-    typeName <- typeDef "enum"
-    typeData <- setOf ( token <* optional directive)
-    pure $ createEnumType typeName typeData
-
-dataUnion :: Parser (Text, DataFullType)
-dataUnion =
-  label "union" $ do
-    typeName <- typeDef "union"
-    _ <- char '='
-    spaceAndComments
-    typeData <- unionsParser
-    spaceAndComments
-    pure $ createUnionType typeName typeData
-  where
-    unionsParser = token `sepBy1` pipeLiteral
 
 parseFinalDataType :: Parser (Text, DataFullType)
-parseFinalDataType = label "dataType" $ inputObjectTypeDefinition <|> dataUnion <|> dataEnum <|> dataScalar
+parseFinalDataType = label "dataType" $ inputObjectTypeDefinition 
+    <|> unionTypeDefinition 
+    <|> enumValueDefinition 
+    <|> scalarTypeDefinition
 
 parseDataType :: Parser (Text, RawDataType)
-parseDataType = label "dataType" $ dataInterface <|> dataObject <|> finalDataT
+parseDataType = label "dataType" $ interfaceTypeDefinition <|> objectTypeDefinition <|> finalDataT
   where
     finalDataT = do
       (name, datatype) <- parseFinalDataType
