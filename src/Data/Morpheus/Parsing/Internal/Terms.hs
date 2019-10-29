@@ -26,12 +26,13 @@ module Data.Morpheus.Parsing.Internal.Terms
   , parseType
   , keyword
   , operator
+  , parseDescription
   ) where
 
 import           Data.Functor                            (($>))
 import           Data.Text                               (Text, pack)
-import           Text.Megaparsec                         (between, label, many, optional, sepBy, sepEndBy, skipMany,
-                                                          skipManyTill, try, (<?>), (<|>))
+import           Text.Megaparsec                         (between, label, many, manyTill, optional, sepBy, sepEndBy,
+                                                          skipMany, skipManyTill, try, (<?>), (<|>))
 import           Text.Megaparsec.Char                    (char, digitChar, letterChar, newline, printChar, space,
                                                           space1, string)
 
@@ -100,14 +101,28 @@ variable =
 spaceAndComments1 :: Parser ()
 spaceAndComments1 = space1 *> spaceAndComments
 
+-- Descriptions: https://graphql.github.io/graphql-spec/June2018/#Description
+--
+-- Description:
+--   StringValue
+-- TODO: should support """ and "
+--
+parseDescription :: Parser Text
+parseDescription = pack <$> (blockDescription <|> singleLine)
+    where
+      blockDescription = blockQuotes *> manyTill printChar  blockQuotes <* spaceAndComments
+        where
+         blockQuotes = string "\"\"\""
+      ----------------------------
+      singleLine = stringQuote *> manyTill printChar  stringQuote <* spaceAndComments
+        where 
+            stringQuote = char '"'
+
 spaceAndComments :: Parser ()
-spaceAndComments = space *> skipMany (inlineComment <|> multilineComment) *> space
+spaceAndComments = space *> skipMany inlineComment *> space
   where
     inlineComment = char '#' *> skipManyTill printChar newline *> space
     ------------------------------------------------------------------------
-    multilineComment = multilineIndicator *> skipManyTill (printChar *> space <|> space) multilineIndicator *> space
-    --------------------
-    multilineIndicator = string "\"\"\""
 
 -- COMPLEX
 sepByAnd :: Parser a -> Parser [a]
