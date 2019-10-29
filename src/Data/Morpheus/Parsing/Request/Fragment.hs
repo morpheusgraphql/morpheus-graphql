@@ -12,7 +12,7 @@ import           Text.Megaparsec.Char                          (space, string)
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal       (Parser, getLocation)
 import           Data.Morpheus.Parsing.Internal.Terms          (onType, token)
-import           Data.Morpheus.Parsing.Request.Body            (entries)
+import           Data.Morpheus.Parsing.Request.Body            (parseSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..))
 
 fragment :: Parser (Text, Fragment)
@@ -23,5 +23,5 @@ fragment =
     fragmentPosition <- getLocation
     name <- token
     fragmentType <- onType
-    fragmentSelection <- entries
+    fragmentSelection <- parseSelectionSet
     pure (name, Fragment {fragmentType, fragmentSelection, fragmentPosition})

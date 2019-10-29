@@ -18,7 +18,7 @@ import           Data.Morpheus.Parsing.Internal.Pattern     (optionalDirectives)
 import           Data.Morpheus.Parsing.Internal.Terms       (operator, parseMaybeTuple, parseName, parseType,
                                                              spaceAndComments1, variable)
 import           Data.Morpheus.Parsing.Internal.Value       (parseDefaultValue)
-import           Data.Morpheus.Parsing.Request.Body         (entries)
+import           Data.Morpheus.Parsing.Request.Body         (parseSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Operation (DefaultValue, Operation (..), RawOperation, Variable (..))
 import           Data.Morpheus.Types.Internal.Data          (OperationKind (..), isNullable)
 
@@ -59,9 +59,9 @@ parseOperationDefinition =
     operationKind <- parseOperationType
     operationName <- optional parseName
     operationArgs <- parseMaybeTuple variableDefinition
-    -- TODO: handle directives 
+    -- TODO: handle directives
     _directives <- optionalDirectives
-    operationSelection <- entries
+    operationSelection <- parseSelectionSet
     pure (Operation {operationName, operationKind, operationArgs, operationSelection, operationPosition})
 
 parseOperationType :: Parser OperationKind
@@ -75,7 +75,7 @@ parseAnonymousQuery :: Parser RawOperation
 parseAnonymousQuery =
   label "AnonymousQuery" $ do
     operationPosition <- getLocation
-    operationSelection <- entries
+    operationSelection <- parseSelectionSet
     pure
       (Operation
          { operationName = Nothing

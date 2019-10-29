@@ -170,6 +170,9 @@ parseWrappedType = (unwrapped <|> wrapped) <* spaceAndComments
             nonNull' <- parseNonNull
             return ((ListType : nonNull') ++ wrappers, name))
 
+-- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias
+-- Alias
+--  Name:
 parseAlias :: Parser (Maybe Key)
 parseAlias = try (optional alias) <|> pure Nothing
     where
