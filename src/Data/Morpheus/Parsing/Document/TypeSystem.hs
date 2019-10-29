@@ -6,12 +6,12 @@ module Data.Morpheus.Parsing.Document.TypeSystem
   ) where
 
 import           Data.Text                               (Text)
-import           Text.Megaparsec                         (label, optional, sepBy1, (<|>))
+import           Text.Megaparsec                         (label, sepBy1, (<|>))
 
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Create   (createEnumType, createScalarType, createType, createUnionType)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
-import           Data.Morpheus.Parsing.Internal.Pattern  (directive, fieldsDefinition, inputValueDefinition,
+import           Data.Morpheus.Parsing.Internal.Pattern  (fieldsDefinition, inputValueDefinition, optionalDirectives,
                                                           typDeclaration)
 import           Data.Morpheus.Parsing.Internal.Terms    (keyword, operator, parseName, pipeLiteral, sepByAnd, setOf)
 import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullType (..), Key, RawDataType (..))
@@ -27,7 +27,7 @@ scalarTypeDefinition =
   label "ScalarTypeDefinition" $ do
     name <- typDeclaration "scalar"
     -- TODO: handle directives
-    _ <- optional directive
+    _ <- optionalDirectives
     pure $ createScalarType name
 
 
@@ -52,7 +52,7 @@ objectTypeDefinition =
     typeName <- typDeclaration "type"
     interfaces <- optionalImplementsInterfaces
     -- TODO: handle directives
-    _directives <- optional directive
+    _directives <- optionalDirectives
     fields <- fieldsDefinition
     pure (typeName, Implements interfaces $ createType typeName fields)
 
@@ -71,7 +71,7 @@ interfaceTypeDefinition =
   label "InterfaceTypeDefinition" $ do
     name <- typDeclaration "interface"
     -- TODO: handle directives
-    _directives <- optional directive
+    _directives <- optionalDirectives
     fields <- fieldsDefinition
     pure (name, Interface $ createType name fields)
 
@@ -88,10 +88,10 @@ interfaceTypeDefinition =
 unionTypeDefinition :: Parser (Text, DataFullType)
 unionTypeDefinition =
   label "UnionTypeDefinition" $ do
-    typeName <- typDeclaration "union"
+    name <- typDeclaration "union"
     -- TODO: handle directives
-    _directives <- optional directive
-    createUnionType typeName <$> unionMemberTypes
+    _directives <- optionalDirectives
+    createUnionType name <$> unionMemberTypes
   where
     unionMemberTypes = operator '=' *> parseName `sepBy1` pipeLiteral
 
@@ -112,15 +112,15 @@ enumTypeDefinition =
   label "EnumTypeDefinition" $ do
     typeName <- typDeclaration "enum"
     -- TODO: handle directives
-    _directives <- optional directive
+    _directives <- optionalDirectives
     enumValuesDefinition <- setOf enumValueDefinition
     pure $ createEnumType typeName enumValuesDefinition
-    where 
-        enumValueDefinition = do 
+    where
+        enumValueDefinition = do
             -- TODO: parse Description
-            enumValueName <- parseName 
+            enumValueName <- parseName
             -- TODO: handle directives
-            _directive <- optional directive
+            _directive <- optionalDirectives
             return enumValueName
 
 -- Input Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Input-Objects
@@ -136,7 +136,7 @@ inputObjectTypeDefinition =
   label "InputObjectTypeDefinition" $ do
     name <- typDeclaration "input"
     -- TODO: handle directives
-    _directives <- optional directive
+    _directives <- optionalDirectives
     fields <- inputFieldsDefinition
     pure (name, InputObject $ createType name fields)
     where
@@ -145,13 +145,13 @@ inputObjectTypeDefinition =
 
 
 parseFinalDataType :: Parser (Text, DataFullType)
-parseFinalDataType = label "dataType" $ inputObjectTypeDefinition
+parseFinalDataType = label "TypeDefinition" $ inputObjectTypeDefinition
     <|> unionTypeDefinition
     <|> enumTypeDefinition
     <|> scalarTypeDefinition
 
 parseDataType :: Parser (Text, RawDataType)
-parseDataType = label "dataType" $ interfaceTypeDefinition <|> objectTypeDefinition <|> finalDataT
+parseDataType = label "TypeDefinition" $ interfaceTypeDefinition <|> objectTypeDefinition <|> finalDataT
   where
     finalDataT = do
       (name, datatype) <- parseFinalDataType

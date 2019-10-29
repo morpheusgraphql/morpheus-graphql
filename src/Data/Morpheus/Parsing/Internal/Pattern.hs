@@ -1,6 +1,5 @@
 module Data.Morpheus.Parsing.Internal.Pattern
-  ( directive
-  , inputValueDefinition
+  ( inputValueDefinition
   , fieldsDefinition
   , typDeclaration
   , optionalDirectives
