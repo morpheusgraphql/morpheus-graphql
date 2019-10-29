@@ -26,7 +26,7 @@ inputValueDefinition ::  Parser (Key, DataField)
 inputValueDefinition = label "InputValueDefinition" $ do
     -- TODO: Description(opt)
     name <- parseName
-    litAssignment -- parser ':'
+    litAssignment -- ':'
     type_ <- parseType
     -- TODO: handle default value
     _ <- parseDefaultValue
@@ -59,7 +59,7 @@ fieldDefinition  = label "fieldDefinition" $ do
     -- TODO: Description(opt)
     name <- parseName
     args <- argumentsDefinition
-    litAssignment -- parser ':'
+    litAssignment -- ':'
     type_ <- parseType
     _ <- optional directive
     pure (name, createField args name type_)
