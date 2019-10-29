@@ -48,7 +48,7 @@ argumentsDefinition = label "ArgumentsDefinition" $  parseMaybeTuple inputValueD
 --    { FieldDefinition(list) }
 --
 fieldsDefinition :: Parser [(Key, DataField)]
-fieldsDefinition = label "fieldsDefinition" $ setOf fieldDefinition
+fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 
 
 --  FieldDefinition
