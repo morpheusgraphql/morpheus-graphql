@@ -18,7 +18,7 @@ import           Data.Morpheus.Parsing.Internal.Pattern     (optionalDirectives)
 import           Data.Morpheus.Parsing.Internal.Terms       (operator, parseMaybeTuple, parseName, parseType,
                                                              spaceAndComments1, variable)
 import           Data.Morpheus.Parsing.Internal.Value       (parseDefaultValue)
-import           Data.Morpheus.Parsing.Request.Body         (parseSelectionSet)
+import           Data.Morpheus.Parsing.Request.Selection         (parseSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Operation (DefaultValue, Operation (..), RawOperation, Variable (..))
 import           Data.Morpheus.Types.Internal.Data          (OperationKind (..), isNullable)
 

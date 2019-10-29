@@ -15,8 +15,8 @@ import           Text.Megaparsec                         (ParseErrorBundle, eof,
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal (Parser, processErrorBundle)
 import           Data.Morpheus.Parsing.Internal.Terms    (spaceAndComments)
-import           Data.Morpheus.Parsing.Request.Body      (parseFragmentDefinition)
 import           Data.Morpheus.Parsing.Request.Operation (parseAnonymousQuery, parseOperationDefinition)
+import           Data.Morpheus.Parsing.Request.Selection (parseFragmentDefinition)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value (..), replaceValue)
 import           Data.Morpheus.Types.IO                  (GQLRequest (..))

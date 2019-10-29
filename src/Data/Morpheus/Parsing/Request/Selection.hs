@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Parsing.Request.Body
+module Data.Morpheus.Parsing.Request.Selection
   ( parseSelectionSet
   , parseFragmentDefinition
   ) where
@@ -101,11 +101,18 @@ parseFragmentDefinition =
     fragmentSelection <- parseSelectionSet
     pure (name, Fragment {fragmentType, fragmentSelection, fragmentPosition})
 
+-- Inline Fragments : https://graphql.github.io/graphql-spec/June2018/#sec-Inline-Fragments
+--
+--  InlineFragment:
+--  ... TypeCondition(opt) Directives(opt) SelectionSet
+--
 inlineFragment :: Parser (Text, RawSelection)
 inlineFragment =
   label "InlineFragment" $ do
     fragmentPosition <- spreadLiteral
+    -- TODO: optional
     fragmentType <- parseTypeCondition
+    -- TODO: handle Directives
+    _directives <- optionalDirectives
     fragmentSelection <- parseSelectionSet
     pure ("INLINE_FRAGMENT", InlineFragment $ Fragment {fragmentType, fragmentSelection, fragmentPosition})
-
