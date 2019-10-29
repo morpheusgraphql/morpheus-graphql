@@ -23,6 +23,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , parseAlias
   , sepByAnd
   , parseName
+  , parseType
   ) where
 
 import           Data.Functor                            (($>))
@@ -34,7 +35,7 @@ import           Text.Megaparsec.Char                    (char, digitChar, lette
 
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal (Parser, Position, getLocation)
-import           Data.Morpheus.Types.Internal.Data       (DataTypeWrapper (..), Name, Key)
+import           Data.Morpheus.Types.Internal.Data       (DataTypeWrapper (..), Key, Name, WrapperD (..), toHSWrappers)
 import           Data.Morpheus.Types.Internal.Value      (convertToHaskellName)
 
 
@@ -160,3 +161,10 @@ parseAlias :: Parser (Maybe Key)
 parseAlias = try (optional alias) <|> pure Nothing
     where
         alias = label "alias" $ token <* char ':' <* spaceAndComments
+
+
+parseType :: Parser ([WrapperD],Key)
+parseType = do
+    (wrappers, fieldType) <- parseWrappedType
+    nonNull <- parseNonNull
+    pure (toHSWrappers $ nonNull ++ wrappers, fieldType)

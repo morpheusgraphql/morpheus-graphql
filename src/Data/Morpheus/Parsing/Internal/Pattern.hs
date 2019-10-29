@@ -12,16 +12,10 @@ import           Text.Megaparsec.Char                    (char)
 import           Data.Morpheus.Parsing.Internal.Create   (createField)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Terms    (litAssignment, parseAssignment, parseMaybeTuple, parseName,
-                                                          parseNonNull, parseTuple, parseWrappedType, qualifier, setOf)
+                                                          parseTuple, parseType, qualifier, setOf)
 import           Data.Morpheus.Parsing.Internal.Value    (parseDefaultValue, parseValue)
-import           Data.Morpheus.Types.Internal.Data       (DataField, Key, WrapperD, toHSWrappers)
+import           Data.Morpheus.Types.Internal.Data       (DataField, Key)
 
-
-typeDefinition :: Parser ([WrapperD],Key)
-typeDefinition = do
-    (wrappers, fieldType) <- parseWrappedType
-    nonNull <- parseNonNull
-    pure (toHSWrappers $ nonNull ++ wrappers, fieldType)
 
 -- InputValue : https://graphql.github.io/graphql-spec/June2018/#InputValueDefinition
 --
@@ -33,11 +27,11 @@ inputValueDefinition = label "InputValueDefinition" $ do
     -- TODO: Description(opt)
     name <- parseName
     litAssignment -- parser ':'
-    typeRef <- typeDefinition
+    type_ <- parseType
     -- TODO: handle default value
     _ <- parseDefaultValue
     _ <- optional directive
-    pure (name, createField [] name typeRef)
+    pure (name, createField [] name type_)
 
 -- Field Arguments: https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 --
@@ -66,9 +60,9 @@ fieldDefinition  = label "fieldDefinition" $ do
     name <- parseName
     args <- argumentsDefinition
     litAssignment -- parser ':'
-    typeDef <- typeDefinition
+    type_ <- parseType
     _ <- optional directive
-    pure (name, createField args name typeDef)
+    pure (name, createField args name type_)
 
 -- @directive ( arg1: "value" , .... )
 -- TODO:  returns real DataType
