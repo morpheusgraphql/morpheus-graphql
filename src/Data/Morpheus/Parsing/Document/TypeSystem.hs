@@ -5,16 +5,13 @@ module Data.Morpheus.Parsing.Document.TypeSystem
   ( parseDataType
   ) where
 
-import           Data.Morpheus.Parsing.Internal.Create   (createArgument, createEnumType, createField, createScalarType,
-                                                          createType, createUnionType)
+import           Data.Morpheus.Parsing.Internal.Create   (createEnumType, createScalarType, createType, createUnionType)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
-import           Data.Morpheus.Parsing.Internal.Pattern  (directive, inputValueDefinition)
-import           Data.Morpheus.Parsing.Internal.Terms    (parseAssignment, parseMaybeTuple, parseNonNull,
-                                                          parseWrappedType, pipeLiteral, qualifier, sepByAnd, setOf,
-                                                          spaceAndComments, token, parseName )
+import           Data.Morpheus.Parsing.Internal.Pattern  (directive, fieldsDefinition, inputValueDefinition)
+import           Data.Morpheus.Parsing.Internal.Terms    (parseName, pipeLiteral, sepByAnd, setOf, spaceAndComments,
+                                                          token)
 import           Data.Morpheus.Parsing.Internal.Value    (parseDefaultValue)
-import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullType (..), Key, RawDataType (..),
-                                                          toHSWrappers)
+import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullType (..), Key, RawDataType (..))
 import           Data.Text                               (Text)
 import           Text.Megaparsec                         (label, optional, sepBy1, (<|>))
 import           Text.Megaparsec.Char                    (char, space1, string)
@@ -52,38 +49,29 @@ objectTypeDefinition =
   label "object" $ do
     typeName <- typeDef "type"
     interfaces <- maybeImplements
-    typeData <- outputObjectEntries
+    typeData <- fieldsDefinition
     pure (typeName, Implements interfaces $ createType typeName typeData)
 
-
-entryWith :: Parser [(Text, DataField)] -> Parser (Key, DataField)
-entryWith argsParser = label "entry" $ do
-    ((fieldName, fieldArgs), (wrappers, fieldType)) <- parseAssignment fieldWithArgs parseWrappedType
-    nonNull <- parseNonNull
-    _ <- optional directive
-    return (fieldName, createField fieldArgs fieldName (toHSWrappers $ nonNull ++ wrappers, fieldType))
-    where
-        fieldWithArgs =
-          label "fieldWithArgs" $ do
-            (name, _) <- qualifier
-            args <- argsParser
-            return (name, args)
-
-outputObjectEntries :: Parser [(Key, DataField)]
-outputObjectEntries = label "entries" $ setOf (entryWith (parseMaybeTuple dataArgument))
-
-
+maybeImplements :: Parser [Text]
+maybeImplements = implements <|> pure []
+  where
+    implements =
+      label "implements" $ do
+        _ <- string "implements"
+        space1
+        spaceAndComments
+        sepByAnd token
 
 -- Interfaces: https://graphql.github.io/graphql-spec/June2018/#sec-Interfaces
 --
 --  InterfaceTypeDefinition
 --    Description(opt) interface Name Directives(Const)(opt) FieldsDefinition(opt)
--- 
+--
 interfaceTypeDefinition :: Parser (Text, RawDataType)
 interfaceTypeDefinition =
   label "interface" $ do
     typeName <- typeDef "interface"
-    typeData <- outputObjectEntries
+    typeData <- fieldsDefinition
     pure (typeName, Interface $ createType typeName typeData)
 
 
@@ -95,7 +83,7 @@ interfaceTypeDefinition =
 --  UnionMemberTypes:
 --    = |(opt) NamedType
 --      UnionMemberTypes | NamedType
--- 
+--
 unionTypeDefinition :: Parser (Text, DataFullType)
 unionTypeDefinition =
   label "union" $ do
@@ -127,8 +115,6 @@ enumValueDefinition =
     typeData <- setOf ( token <* optional directive)
     pure $ createEnumType typeName typeData
 
-
-
 -- Input Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Input-Objects
 --
 --   InputObjectTypeDefinition
@@ -153,22 +139,12 @@ typeDef kind = do
   space1
   parseName
 
-maybeImplements :: Parser [Text]
-maybeImplements = implements <|> pure []
-  where
-    implements =
-      label "implements" $ do
-        _ <- string "implements"
-        space1
-        spaceAndComments
-        sepByAnd token
-
 
 
 parseFinalDataType :: Parser (Text, DataFullType)
-parseFinalDataType = label "dataType" $ inputObjectTypeDefinition 
-    <|> unionTypeDefinition 
-    <|> enumValueDefinition 
+parseFinalDataType = label "dataType" $ inputObjectTypeDefinition
+    <|> unionTypeDefinition
+    <|> enumValueDefinition
     <|> scalarTypeDefinition
 
 parseDataType :: Parser (Text, RawDataType)
@@ -177,12 +153,3 @@ parseDataType = label "dataType" $ interfaceTypeDefinition <|> objectTypeDefinit
     finalDataT = do
       (name, datatype) <- parseFinalDataType
       pure (name, FinalDataType datatype)
-
-dataArgument :: Parser (Text, DataField)
-dataArgument =
-  label "Argument" $ do
-    ((fieldName, _), (wrappers, fieldType)) <- parseAssignment qualifier parseWrappedType
-    nonNull <- parseNonNull
-    -- TODO: handle default value
-    defaultValue <- parseDefaultValue
-    pure $ createArgument fieldName (toHSWrappers $ nonNull ++ wrappers, fieldType)
