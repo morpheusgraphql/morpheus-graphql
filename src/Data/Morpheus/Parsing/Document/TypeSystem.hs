@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Parsing.Document.DataType
+module Data.Morpheus.Parsing.Document.TypeSystem
   ( parseDataType
   ) where
 
