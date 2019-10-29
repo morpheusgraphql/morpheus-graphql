@@ -84,6 +84,11 @@ qualifier =
     value <- token
     return (value, position)
 
+
+-- Variable : https://graphql.github.io/graphql-spec/June2018/#Variable
+--
+-- Variable :  $Name
+--
 variable :: Parser (Text, Position)
 variable =
   label "variable" $ do
