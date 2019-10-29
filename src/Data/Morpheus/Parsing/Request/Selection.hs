@@ -82,6 +82,8 @@ spread =
   label "FragmentSpread" $ do
     referencePosition <- spreadLiteral
     referenceName <- token
+    -- TODO: handle Directives
+    _directives <- optionalDirectives
     return (referenceName, Spread $ Reference {referenceName, referencePosition})
 
 -- FragmentDefinition : https://graphql.github.io/graphql-spec/June2018/#FragmentDefinition
