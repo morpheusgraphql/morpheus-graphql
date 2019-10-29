@@ -24,6 +24,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , sepByAnd
   , parseName
   , parseType
+  , keyword
   ) where
 
 import           Data.Functor                            (($>))
@@ -45,6 +46,9 @@ import           Data.Morpheus.Types.Internal.Value      (convertToHaskellName)
 --
 parseName :: Parser Name
 parseName = token
+
+keyword :: Key -> Parser ()
+keyword word = string word *> space1 *> spaceAndComments
 
 -- LITERALS
 setLiteral :: Parser [a] -> Parser [a]

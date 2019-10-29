@@ -8,9 +8,8 @@ module Data.Morpheus.Parsing.Document.TypeSystem
 import           Data.Morpheus.Parsing.Internal.Create   (createEnumType, createScalarType, createType, createUnionType)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Pattern  (directive, fieldsDefinition, inputValueDefinition)
-import           Data.Morpheus.Parsing.Internal.Terms    (parseName, pipeLiteral, sepByAnd, setOf, spaceAndComments,
-                                                          token)
-import           Data.Morpheus.Parsing.Internal.Value    (parseDefaultValue)
+import           Data.Morpheus.Parsing.Internal.Terms    (keyword, parseName, pipeLiteral, sepByAnd, setOf,
+                                                          spaceAndComments, token)
 import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullType (..), Key, RawDataType (..))
 import           Data.Text                               (Text)
 import           Text.Megaparsec                         (label, optional, sepBy1, (<|>))
@@ -135,8 +134,7 @@ inputObjectTypeDefinition =
 
 typeDef :: Text -> Parser Text
 typeDef kind = do
-  _ <- string kind
-  space1
+  keyword kind
   parseName
 
 parseFinalDataType :: Parser (Text, DataFullType)
