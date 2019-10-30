@@ -1,36 +1,57 @@
+"""
+my interface description
+"""
 type Query {
   deity (name: [[[[[String!]]!]]], mythology: Realm): Deity!
   character (characterID: String! , age: Int ): Character!
   hero: Human!
 }
 
+"""
+my interface description
+"""
 interface MyInterface {
     name: String
 }
+
 
 type Mutation {
   createDeity (name: [[[[[String!]]!]]], mythology: String): Deity!
   createCharacter (realm: Realm! , id: String! ): Character!
 }
 
+"""
+my unon description
+"""
 union Character = Creature | Deity  | Human
 
+"my mutation description"
 type Deity {
   fullName: String!
   power: Power
 }
 
+"""
+my mutation description
+some creature
+"""
 type Creature {
   name: String!
   realm: City!
   immortality: Boolean!
 }
 
+"""
+human
+
+ewrw
+"""
 type Human {
   humanName: String!
   lifetime: Lifetime!
   profession: Profession
 }
+
 
 enum Profession {
     Priest
@@ -38,6 +59,11 @@ enum Profession {
     Artist
 }
 
+"""
+human
+ew jso
+ewrw
+"""
 input Realm {
   owner: String!
   age: Int
@@ -45,11 +71,15 @@ input Realm {
   profession: Profession
 }
 
+"ancient city"
 enum City {
     Athens
     Ithaca
     Sparta Troy
 }
 
+""" lifespan of mortal creatures """
 scalar Lifetime
+
+
 scalar Power

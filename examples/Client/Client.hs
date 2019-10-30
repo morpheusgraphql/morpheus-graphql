@@ -41,10 +41,10 @@ defineByIntrospectionFile
       }
   |]
 
+
 defineByDocumentFile
   "./assets/simple.gql"
   [gql|
-
     # Query Hero with Compile time Validation
     query GetHero ($god: Realm, $id: String!)
       {
