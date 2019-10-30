@@ -13,7 +13,7 @@ import           Data.Morpheus.Parsing.Internal.Create   (createEnumType, create
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Pattern  (fieldsDefinition, inputValueDefinition, optionalDirectives,
                                                           typDeclaration)
-import           Data.Morpheus.Parsing.Internal.Terms    (keyword, operator, parseName, pipeLiteral, sepByAnd, setOf)
+import           Data.Morpheus.Parsing.Internal.Terms    (keyword, operator, parseName, optDescription, pipeLiteral, sepByAnd, setOf)
 import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullType (..), Key, RawDataType (..))
 
 
@@ -22,8 +22,8 @@ import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullTyp
 --  ScalarTypeDefinition:
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
-scalarTypeDefinition :: Parser (Text, DataFullType)
-scalarTypeDefinition =
+scalarTypeDefinition :: Maybe Text -> Parser (Text, DataFullType)
+scalarTypeDefinition description =
   label "ScalarTypeDefinition" $ do
     name <- typDeclaration "scalar"
     -- TODO: handle directives
@@ -46,15 +46,15 @@ scalarTypeDefinition =
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-objectTypeDefinition :: Parser (Text, RawDataType)
-objectTypeDefinition =
+objectTypeDefinition :: Maybe Text -> Parser (Text, RawDataType)
+objectTypeDefinition description =
   label "ObjectTypeDefinition" $ do
-    typeName <- typDeclaration "type"
+    name <- typDeclaration "type"
     interfaces <- optionalImplementsInterfaces
     -- TODO: handle directives
     _directives <- optionalDirectives
     fields <- fieldsDefinition
-    pure (typeName, Implements interfaces $ createType typeName fields)
+    pure (name, Implements interfaces $ createType name fields)
 
 optionalImplementsInterfaces :: Parser [Text]
 optionalImplementsInterfaces = implements <|> pure []
@@ -66,8 +66,8 @@ optionalImplementsInterfaces = implements <|> pure []
 --  InterfaceTypeDefinition
 --    Description(opt) interface Name Directives(Const)(opt) FieldsDefinition(opt)
 --
-interfaceTypeDefinition :: Parser (Text, RawDataType)
-interfaceTypeDefinition =
+interfaceTypeDefinition :: Maybe Text -> Parser (Text, RawDataType)
+interfaceTypeDefinition description =
   label "InterfaceTypeDefinition" $ do
     name <- typDeclaration "interface"
     -- TODO: handle directives
@@ -85,8 +85,8 @@ interfaceTypeDefinition =
 --    = |(opt) NamedType
 --      UnionMemberTypes | NamedType
 --
-unionTypeDefinition :: Parser (Text, DataFullType)
-unionTypeDefinition =
+unionTypeDefinition :: Maybe Text ->  Parser (Text, DataFullType)
+unionTypeDefinition description =
   label "UnionTypeDefinition" $ do
     name <- typDeclaration "union"
     -- TODO: handle directives
@@ -107,14 +107,14 @@ unionTypeDefinition =
 --  EnumValueDefinition
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
-enumTypeDefinition :: Parser (Text, DataFullType)
-enumTypeDefinition =
+enumTypeDefinition :: Maybe Text -> Parser (Text, DataFullType)
+enumTypeDefinition description =
   label "EnumTypeDefinition" $ do
-    typeName <- typDeclaration "enum"
+    name <- typDeclaration "enum"
     -- TODO: handle directives
     _directives <- optionalDirectives
     enumValuesDefinition <- setOf enumValueDefinition
-    pure $ createEnumType typeName enumValuesDefinition
+    pure $ createEnumType name enumValuesDefinition
     where
         enumValueDefinition = do
             -- TODO: parse Description
@@ -131,8 +131,8 @@ enumTypeDefinition =
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }
 --
-inputObjectTypeDefinition :: Parser (Text, DataFullType)
-inputObjectTypeDefinition =
+inputObjectTypeDefinition :: Maybe Text -> Parser (Text, DataFullType)
+inputObjectTypeDefinition description =
   label "InputObjectTypeDefinition" $ do
     name <- typDeclaration "input"
     -- TODO: handle directives
@@ -144,15 +144,22 @@ inputObjectTypeDefinition =
       inputFieldsDefinition = label "inputEntries" $ setOf inputValueDefinition
 
 
-parseFinalDataType :: Parser (Text, DataFullType)
-parseFinalDataType = label "TypeDefinition" $ inputObjectTypeDefinition
-    <|> unionTypeDefinition
-    <|> enumTypeDefinition
-    <|> scalarTypeDefinition
+parseFinalDataType :: Maybe Text -> Parser (Text, DataFullType)
+parseFinalDataType description = label "TypeDefinition" $ 
+        inputObjectTypeDefinition description
+    <|> unionTypeDefinition description
+    <|> enumTypeDefinition description
+    <|> scalarTypeDefinition description
 
 parseDataType :: Parser (Text, RawDataType)
-parseDataType = label "TypeDefinition" $ interfaceTypeDefinition <|> objectTypeDefinition <|> finalDataT
-  where
-    finalDataT = do
-      (name, datatype) <- parseFinalDataType
-      pure (name, FinalDataType datatype)
+parseDataType = label "TypeDefinition" $ do 
+    description <- optDescription
+    types description
+    where
+      types description = interfaceTypeDefinition description <|> 
+              objectTypeDefinition description <|> 
+              finalDataT description
+              where
+                finalDataT description = do
+                  (name, datatype) <- parseFinalDataType description
+                  pure (name, FinalDataType datatype)
