@@ -9,7 +9,7 @@ import           Data.Text                               (Text)
 import           Text.Megaparsec                         (label, sepBy1, (<|>))
 
 -- MORPHEUS
-import           Data.Morpheus.Parsing.Internal.Create   (createEnumType, createType, createUnionType)
+import           Data.Morpheus.Parsing.Internal.Create   (createEnumType, createField)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Pattern  (fieldsDefinition, inputValueDefinition, optionalDirectives,
                                                           typDeclaration)
@@ -33,7 +33,7 @@ scalarTypeDefinition typeDescription =
     _ <- optionalDirectives
     pure (
           typeName,
-          Leaf $ CustomScalar $ DataTyCon {
+          Leaf $ CustomScalar DataTyCon {
             typeName,
             typeDescription,
             typeFingerprint = SystemFingerprint typeName,
@@ -87,16 +87,16 @@ optionalImplementsInterfaces = implements <|> pure []
 interfaceTypeDefinition :: Maybe Text -> Parser (Text, RawDataType)
 interfaceTypeDefinition typeDescription =
   label "InterfaceTypeDefinition" $ do
-    name <- typDeclaration "interface"
+    typeName <- typDeclaration "interface"
     -- TODO: handle directives
     _directives <- optionalDirectives
     fields <- fieldsDefinition
     pure (
-        name, 
-        Interface $ DataTyCon {
-           typeName = name,
+        typeName,
+        Interface DataTyCon {
+           typeName,
            typeDescription,
-           typeFingerprint = SystemFingerprint name,
+           typeFingerprint = SystemFingerprint typeName,
            typeData = fields
            }
         )
@@ -112,15 +112,24 @@ interfaceTypeDefinition typeDescription =
 --      UnionMemberTypes | NamedType
 --
 unionTypeDefinition :: Maybe Text ->  Parser (Text, DataFullType)
-unionTypeDefinition description =
+unionTypeDefinition typeDescription =
   label "UnionTypeDefinition" $ do
-    name <- typDeclaration "union"
+    typeName <- typDeclaration "union"
     -- TODO: handle directives
     _directives <- optionalDirectives
-    createUnionType name <$> unionMemberTypes
+    memberTypes <- unionMemberTypes
+    pure (
+        typeName,
+        Union DataTyCon {
+             typeName,
+             typeDescription,
+             typeFingerprint = SystemFingerprint typeName,
+             typeData = map unionField memberTypes
+           }
+        )
   where
+    unionField fieldType = createField [] "" ([], fieldType)
     unionMemberTypes = operator '=' *> parseName `sepBy1` pipeLiteral
-
 
 -- Enums : https://graphql.github.io/graphql-spec/June2018/#sec-Enums
 --
@@ -164,9 +173,9 @@ inputObjectTypeDefinition typeDescription =
     -- TODO: handle directives
     _directives <- optionalDirectives
     fields <- inputFieldsDefinition
-    pure 
+    pure
        (
-         typeName, 
+         typeName,
          InputObject DataTyCon {
            typeName,
            typeDescription,
@@ -193,7 +202,7 @@ parseDataType = label "TypeDefinition" $ do
     where
       types description = interfaceTypeDefinition description <|>
               objectTypeDefinition description <|>
-              finalDataT 
+              finalDataT
               where
                 finalDataT = do
                   (name, datatype) <- parseFinalDataType description
