@@ -94,6 +94,5 @@ directive = label "Directive" $ do
 --
 typDeclaration :: Name -> Parser Name
 typDeclaration kind = do
-  -- TODO: Description(opt)
   keyword kind
   parseName
