@@ -13,8 +13,11 @@ import           Data.Morpheus.Parsing.Internal.Create   (createEnumType, create
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Pattern  (fieldsDefinition, inputValueDefinition, optionalDirectives,
                                                           typDeclaration)
-import           Data.Morpheus.Parsing.Internal.Terms    (keyword, operator, parseName, optDescription, pipeLiteral, sepByAnd, setOf)
-import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullType (..), Key, RawDataType (..))
+import           Data.Morpheus.Parsing.Internal.Terms    (keyword, operator, optDescription, parseName, pipeLiteral,
+                                                          sepByAnd, setOf)
+import           Data.Morpheus.Types.Internal.Data       (DataField, DataFingerprint (..), DataFullType (..),
+                                                          DataLeaf (..), DataTyCon (..), DataValidator (..), Key,
+                                                          RawDataType (..))
 
 
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
@@ -23,13 +26,20 @@ import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullTyp
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
 scalarTypeDefinition :: Maybe Text -> Parser (Text, DataFullType)
-scalarTypeDefinition description =
+scalarTypeDefinition typeDescription =
   label "ScalarTypeDefinition" $ do
-    name <- typDeclaration "scalar"
+    typeName <- typDeclaration "scalar"
     -- TODO: handle directives
     _ <- optionalDirectives
-    pure $ createScalarType name
-
+    pure (
+          typeName,
+          Leaf $ CustomScalar $ DataTyCon {
+            typeName,
+            typeDescription,
+            typeFingerprint = SystemFingerprint typeName,
+            typeData = DataValidator pure
+          }
+        )
 
 -- Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 --
@@ -47,14 +57,21 @@ scalarTypeDefinition description =
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
 objectTypeDefinition :: Maybe Text -> Parser (Text, RawDataType)
-objectTypeDefinition description =
+objectTypeDefinition typeDescription =
   label "ObjectTypeDefinition" $ do
     name <- typDeclaration "type"
     interfaces <- optionalImplementsInterfaces
     -- TODO: handle directives
     _directives <- optionalDirectives
     fields <- fieldsDefinition
-    pure (name, Implements interfaces $ createType name fields)
+    pure (name,
+         Implements interfaces $ DataTyCon {
+           typeName = name,
+           typeDescription,
+           typeFingerprint = SystemFingerprint name,
+           typeData = fields
+         }
+      )
 
 optionalImplementsInterfaces :: Parser [Text]
 optionalImplementsInterfaces = implements <|> pure []
@@ -145,19 +162,19 @@ inputObjectTypeDefinition description =
 
 
 parseFinalDataType :: Maybe Text -> Parser (Text, DataFullType)
-parseFinalDataType description = label "TypeDefinition" $ 
+parseFinalDataType description = label "TypeDefinition" $
         inputObjectTypeDefinition description
     <|> unionTypeDefinition description
     <|> enumTypeDefinition description
     <|> scalarTypeDefinition description
 
 parseDataType :: Parser (Text, RawDataType)
-parseDataType = label "TypeDefinition" $ do 
+parseDataType = label "TypeDefinition" $ do
     description <- optDescription
     types description
     where
-      types description = interfaceTypeDefinition description <|> 
-              objectTypeDefinition description <|> 
+      types description = interfaceTypeDefinition description <|>
+              objectTypeDefinition description <|>
               finalDataT description
               where
                 finalDataT description = do
