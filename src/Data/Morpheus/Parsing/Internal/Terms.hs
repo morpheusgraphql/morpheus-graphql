@@ -26,19 +26,19 @@ module Data.Morpheus.Parsing.Internal.Terms
   , parseType
   , keyword
   , operator
-  , parseDescription
+  , optDescription
   ) where
 
 import           Data.Functor                            (($>))
 import           Data.Text                               (Text, pack)
-import           Text.Megaparsec                         (between, label, many, manyTill, optional, sepBy, sepEndBy,
+import           Text.Megaparsec                         (between, label,try, many, manyTill, optional, sepBy, sepEndBy,
                                                           skipMany, skipManyTill, try, (<?>), (<|>))
 import           Text.Megaparsec.Char                    (char, digitChar, letterChar, newline, printChar, space,
                                                           space1, string)
 
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal (Parser, Position, getLocation)
-import           Data.Morpheus.Types.Internal.Data       (DataTypeWrapper (..), Key, Name, WrapperD (..), toHSWrappers)
+import           Data.Morpheus.Types.Internal.Data       (DataTypeWrapper (..), Key, Description , Name, WrapperD (..), toHSWrappers)
 import           Data.Morpheus.Types.Internal.Value      (convertToHaskellName)
 
 
@@ -107,15 +107,18 @@ spaceAndComments1 = space1 *> spaceAndComments
 --   StringValue
 -- TODO: should support """ and "
 --
+optDescription :: Parser (Maybe Description)
+optDescription = optional parseDescription
+
 parseDescription :: Parser Text
-parseDescription = pack <$> (blockDescription <|> singleLine)
+parseDescription = pack <$> (blockDescription <|> singleLine) <* spaceAndComments
     where
-      blockDescription = blockQuotes *> manyTill printChar  blockQuotes <* spaceAndComments
+      blockDescription = blockQuotes *> manyTill (printChar <|> newline)   blockQuotes <* spaceAndComments
         where
          blockQuotes = string "\"\"\""
       ----------------------------
       singleLine = stringQuote *> manyTill printChar  stringQuote <* spaceAndComments
-        where 
+        where
             stringQuote = char '"'
 
 spaceAndComments :: Parser ()
