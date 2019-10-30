@@ -9,7 +9,7 @@ import           Data.Text                               (Text)
 import           Text.Megaparsec                         (label, sepBy1, (<|>))
 
 -- MORPHEUS
-import           Data.Morpheus.Parsing.Internal.Create   (createEnumType, createField)
+import           Data.Morpheus.Parsing.Internal.Create   (createField)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Pattern  (fieldsDefinition, inputValueDefinition, optionalDirectives,
                                                           typDeclaration)
@@ -143,13 +143,21 @@ unionTypeDefinition typeDescription =
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
 enumTypeDefinition :: Maybe Text -> Parser (Text, DataFullType)
-enumTypeDefinition description =
+enumTypeDefinition typeDescription =
   label "EnumTypeDefinition" $ do
-    name <- typDeclaration "enum"
+    typeName <- typDeclaration "enum"
     -- TODO: handle directives
     _directives <- optionalDirectives
     enumValuesDefinition <- setOf enumValueDefinition
-    pure $ createEnumType name enumValuesDefinition
+    pure (
+        typeName,
+        Leaf $ LeafEnum DataTyCon {
+             typeName,
+             typeDescription,
+             typeFingerprint = SystemFingerprint typeName,
+             typeData = enumValuesDefinition
+           }
+        )
     where
         enumValueDefinition = do
             -- TODO: parse Description
