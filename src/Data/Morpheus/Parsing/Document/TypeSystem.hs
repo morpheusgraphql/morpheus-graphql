@@ -9,7 +9,7 @@ import           Data.Text                               (Text)
 import           Text.Megaparsec                         (label, sepBy1, (<|>))
 
 -- MORPHEUS
-import           Data.Morpheus.Parsing.Internal.Create   (createEnumType, createScalarType, createType, createUnionType)
+import           Data.Morpheus.Parsing.Internal.Create   (createEnumType, createType, createUnionType)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Pattern  (fieldsDefinition, inputValueDefinition, optionalDirectives,
                                                           typDeclaration)
@@ -64,6 +64,7 @@ objectTypeDefinition typeDescription =
     -- TODO: handle directives
     _directives <- optionalDirectives
     fields <- fieldsDefinition
+    --------------------------
     pure (name,
          Implements interfaces $ DataTyCon {
            typeName = name,
@@ -84,13 +85,21 @@ optionalImplementsInterfaces = implements <|> pure []
 --    Description(opt) interface Name Directives(Const)(opt) FieldsDefinition(opt)
 --
 interfaceTypeDefinition :: Maybe Text -> Parser (Text, RawDataType)
-interfaceTypeDefinition description =
+interfaceTypeDefinition typeDescription =
   label "InterfaceTypeDefinition" $ do
     name <- typDeclaration "interface"
     -- TODO: handle directives
     _directives <- optionalDirectives
     fields <- fieldsDefinition
-    pure (name, Interface $ createType name fields)
+    pure (
+        name, 
+        Interface $ DataTyCon {
+           typeName = name,
+           typeDescription,
+           typeFingerprint = SystemFingerprint name,
+           typeData = fields
+           }
+        )
 
 
 -- Unions : https://graphql.github.io/graphql-spec/June2018/#sec-Unions
@@ -149,13 +158,22 @@ enumTypeDefinition description =
 --     { InputValueDefinition(list) }
 --
 inputObjectTypeDefinition :: Maybe Text -> Parser (Text, DataFullType)
-inputObjectTypeDefinition description =
+inputObjectTypeDefinition typeDescription =
   label "InputObjectTypeDefinition" $ do
-    name <- typDeclaration "input"
+    typeName <- typDeclaration "input"
     -- TODO: handle directives
     _directives <- optionalDirectives
     fields <- inputFieldsDefinition
-    pure (name, InputObject $ createType name fields)
+    pure 
+       (
+         typeName, 
+         InputObject DataTyCon {
+           typeName,
+           typeDescription,
+           typeFingerprint = SystemFingerprint typeName,
+           typeData = fields
+         }
+       )
     where
       inputFieldsDefinition :: Parser [(Key, DataField)]
       inputFieldsDefinition = label "inputEntries" $ setOf inputValueDefinition
@@ -175,8 +193,8 @@ parseDataType = label "TypeDefinition" $ do
     where
       types description = interfaceTypeDefinition description <|>
               objectTypeDefinition description <|>
-              finalDataT description
+              finalDataT 
               where
-                finalDataT description = do
+                finalDataT = do
                   (name, datatype) <- parseFinalDataType description
                   pure (name, FinalDataType datatype)
