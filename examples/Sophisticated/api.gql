@@ -36,6 +36,9 @@ type Address {
   houseNumber: Int!
 }
 
+"""
+my custom description for user
+"""
 type User {
   name: String!
   email: String!
