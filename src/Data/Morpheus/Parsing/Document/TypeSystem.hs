@@ -159,7 +159,7 @@ enumTypeDefinition typeDescription =
            }
         )
     where
-        enumValueDefinition = do
+        enumValueDefinition = label "EnumValueDefinition" $ do
             -- TODO: handle Description
             _fieldDescription <- optDescription
             enumValueName <- parseName
@@ -194,7 +194,7 @@ inputObjectTypeDefinition typeDescription =
        )
     where
       inputFieldsDefinition :: Parser [(Key, DataField)]
-      inputFieldsDefinition = label "inputEntries" $ setOf inputValueDefinition
+      inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefinition
 
 
 parseFinalDataType :: Maybe Text -> Parser (Text, DataFullType)

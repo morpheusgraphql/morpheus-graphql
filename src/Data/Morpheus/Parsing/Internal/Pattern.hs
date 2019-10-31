@@ -57,7 +57,8 @@ fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 --
 fieldDefinition ::  Parser (Key, DataField)
 fieldDefinition  = label "FieldDefinition" $ do
-    -- TODO: Description(opt)
+    -- TODO: handle Description(opt)
+    _description <- optDescription
     name <- parseName
     args <- argumentsDefinition
     litAssignment -- ':'
