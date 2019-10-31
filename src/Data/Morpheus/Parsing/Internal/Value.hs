@@ -29,7 +29,14 @@ parseDefaultValue =
 parseValue :: Parser Value
 parseValue =
   label "value" $ do
-    value <- valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue <|> objectValue <|> listValue
+    value <- 
+        valueNull 
+        <|> booleanValue 
+        <|> valueNumber 
+        <|> enumValue 
+        <|> stringValue 
+        <|> objectValue 
+        <|> listValue
     spaceAndComments
     return value
 

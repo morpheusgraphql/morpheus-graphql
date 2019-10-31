@@ -40,7 +40,7 @@ import           Data.Morpheus.Error.Selection              (resolverError, subf
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet,
                                                              ValidSelection)
 import           Data.Morpheus.Types.Internal.Base          (Message)
-import           Data.Morpheus.Types.Internal.Data          (Key, MUTATION, OperationKind, QUERY, SUBSCRIPTION)
+import           Data.Morpheus.Types.Internal.Data          (Key, MUTATION, OperationType, QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Stream        (Channel (..), Event (..), ResponseEvent (..),
                                                              ResponseStream, StreamChannel, StreamState (..),
                                                              StreamT (..), closeStream, injectEvents, mapS, pushEvents)
@@ -95,7 +95,7 @@ instance Monad m => Monad (RecResolver m a) where
 --
 --- GraphQLT
 
-data ResolvingStrategy  (o::OperationKind) (m:: * -> *) event value where
+data ResolvingStrategy  (o::OperationType) (m:: * -> *) event value where
     QueryResolving :: { unQueryT :: ResolveT m value } -> ResolvingStrategy QUERY m event value
     MutationResolving :: { unMutationT :: ResolveT (StreamT m event) value } -> ResolvingStrategy MUTATION m event value
     SubscriptionResolving :: { unSubscriptionT :: ResolveT (StreamT m (Channel event)) (RecResolver m event value) } -> ResolvingStrategy SUBSCRIPTION m event value
@@ -126,7 +126,7 @@ instance (PureOperation o, Monad m) => Applicative (ResolvingStrategy o m e) whe
                        pure (f1 <*> res1)
 
 -- GADTResolver
-data Resolver (o::OperationKind) (m :: * -> * ) event value where
+data Resolver (o::OperationType) (m :: * -> * ) event value where
     FailedResolver :: { unFailedResolver :: String } -> Resolver o m event value
     QueryResolver:: { unQueryResolver :: ExceptT String m value } -> Resolver QUERY m  event value
     MutResolver :: {
@@ -169,7 +169,7 @@ instance (Monad m) => Monad (Resolver QUERY m e) where
     (QueryResolver f) >>= nextM = QueryResolver (f >>= unQueryResolver. nextM)
 
 -- Pure Operation
-class PureOperation (o::OperationKind) where
+class PureOperation (o::OperationType) where
     pureRes :: Monad m => a -> Resolver o m event a
     pureGraphQLT :: Monad m => a -> ResolvingStrategy o m event a
     eitherGraphQLT :: Monad m => Validation a -> ResolvingStrategy o m event a
@@ -231,7 +231,7 @@ unPub event x = do
 unPureSub :: Monad m => ResolvingStrategy SUBSCRIPTION m event a -> ResolveT m (event -> ResolveT m a)
 unPureSub = ExceptT . fmap (fmap unRecResolver . streamValue) . runStreamT . runExceptT . unSubscriptionT
 
-class MapGraphQLT (fromO :: OperationKind) (toO :: OperationKind) where
+class MapGraphQLT (fromO :: OperationType) (toO :: OperationType) where
    mapGraphQLT :: Monad m => ResolvingStrategy fromO m e a -> ResolvingStrategy toO m e a
 
 instance MapGraphQLT fromO fromO where

@@ -12,7 +12,7 @@ import           Data.Morpheus.Error.Mutation               (mutationIsNotDefine
 import           Data.Morpheus.Error.Subscription           (subscriptionIsNotDefined)
 import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), RawOperation, ValidOperation,
                                                              getOperationName)
-import           Data.Morpheus.Types.Internal.Data          (DataObject, DataTypeLib (..), OperationKind (..))
+import           Data.Morpheus.Types.Internal.Data          (DataObject, DataTypeLib (..), OperationType (..))
 import           Data.Morpheus.Types.Internal.Validation    (Validation)
 import           Data.Morpheus.Types.Types                  (GQLQueryRoot (..))
 import           Data.Morpheus.Validation.Internal.Utils    (VALIDATION_MODE)
@@ -21,12 +21,12 @@ import           Data.Morpheus.Validation.Query.Selection   (validateSelectionSe
 import           Data.Morpheus.Validation.Query.Variable    (resolveOperationVariables)
 
 getOperationDataType :: RawOperation -> DataTypeLib -> Validation DataObject
-getOperationDataType Operation {operationKind = Query} lib = pure $ snd $ query lib
-getOperationDataType Operation {operationKind = Mutation, operationPosition} lib =
+getOperationDataType Operation {operationType = Query} lib = pure $ snd $ query lib
+getOperationDataType Operation {operationType = Mutation, operationPosition} lib =
   case mutation lib of
     Just (_, mutation') -> pure mutation'
     Nothing             -> Left $ mutationIsNotDefined operationPosition
-getOperationDataType Operation {operationKind = Subscription, operationPosition} lib =
+getOperationDataType Operation {operationType = Subscription, operationPosition} lib =
   case subscription lib of
     Just (_, subscription') -> pure subscription'
     Nothing                 -> Left $ subscriptionIsNotDefined operationPosition
@@ -35,7 +35,7 @@ validateRequest :: DataTypeLib -> VALIDATION_MODE -> GQLQueryRoot -> Validation 
 validateRequest lib validationMode GQLQueryRoot { fragments
                                                 , inputVariables
                                                 , operation = rawOperation@Operation { operationName
-                                                                                     , operationKind
+                                                                                     , operationType
                                                                                      , operationSelection
                                                                                      , operationPosition
                                                                                      }
@@ -45,4 +45,4 @@ validateRequest lib validationMode GQLQueryRoot { fragments
   validateFragments lib fragments operationSelection
   selection <-
     validateSelectionSet lib fragments (getOperationName operationName) variables operationDataType operationSelection
-  pure $ Operation {operationName, operationKind, operationArgs = [], operationSelection = selection, operationPosition}
+  pure $ Operation {operationName, operationType, operationArgs = [], operationSelection = selection, operationPosition}

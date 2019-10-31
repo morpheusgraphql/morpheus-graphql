@@ -2,11 +2,11 @@
 
 ### Added
 
-- dummy support of `directives`, only in `SDL` on fields of: object, inputObject and enum.
-  
-  it is only parser support not actual implementation
+- dummy support of `directives`, only parsing not actual implementation
 
 ### Fixed
+- can be parsed `implements` with multiple interfaces separated by `&` 
+- can be parsed default value on `inputobject`
 - Parser supports anonymous Operation: `query` , `mutation` , `subscription`
   for example:
 

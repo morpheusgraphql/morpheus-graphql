@@ -14,6 +14,15 @@ import           Data.Morpheus.Types.Internal.AST.RawSelection (Argument (..), R
 import           Data.Morpheus.Types.Internal.AST.Selection    (ArgumentOrigin (..))
 import           Data.Morpheus.Types.Internal.Base             (Reference (..))
 
+
+-- Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Arguments
+--
+-- Arguments[Const]
+-- ( Argument[Const](list) )
+--
+-- Argument[Const]
+--  Name : Value[Const]
+-- TODO: move variable to Value
 valueArgument :: Parser RawArgument
 valueArgument =
   label "valueArgument" $ do

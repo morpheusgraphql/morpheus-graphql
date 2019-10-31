@@ -21,7 +21,7 @@ import           Language.Haskell.TH.Syntax                    (Lift (..))
 import           Data.Morpheus.Types.Internal.AST.RawSelection (RawSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Arguments, SelectionSet)
 import           Data.Morpheus.Types.Internal.Base             (Collection, Key, Position)
-import           Data.Morpheus.Types.Internal.Data             (OperationKind, WrapperD)
+import           Data.Morpheus.Types.Internal.Data             (OperationType, WrapperD)
 import           Data.Morpheus.Types.Internal.TH               (apply, liftMaybeText, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value            (Value)
 
@@ -40,7 +40,7 @@ getOperationName = fromMaybe "AnonymousOperation"
 
 data Operation args sel = Operation
   { operationName      :: Maybe Key
-  , operationKind      :: OperationKind
+  , operationType      :: OperationType
   , operationArgs      :: args
   , operationSelection :: sel
   , operationPosition  :: Position

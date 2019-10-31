@@ -1,11 +1,11 @@
 # for Input Union
 
-input Cat {
+input Cat @testDir {
   name: String!
 }
 
 input Dog {
-  name: String!
+  name: String! @testDirective(testName:"")
 }
 
 input Bird {
@@ -14,32 +14,59 @@ input Bird {
 
 # Main APi
 
-enum CityID {
+enum CityID @enumDir {
+  """
+  temporary multiline Test for Enum field descripions
+
+  """
   Paris
   BLN @testDirective(testName:"")
-  HH
+  "temporary singleline Test for Enum field descripions"
+  HH  @enumFieldDir
 }
 
 input Coordinates {
   latitude: Euro! @testDirective(testName:"")
+  "temporary singleline Test for input object field descripions"
   longitude: [[[UniqueID!]!]]!
 }
 
 input UniqueID {
-  type: String,
+  """
+    temporary multiline Test for Enum field descripions
+
+  """
+  type: String = "test default value"
   id: String!
 }
 
-type Address {
+type Address @typeDirective(id:1) {
+  """
+    temporary multiline Test for Enum field descripions
+
+  """
   city: String!  @deprecated(testName:"",testName2: 123)
   street: String!
+  "temporary singleline Test for input object field descripions"
   houseNumber: Int!
 }
 
+"""
+my custom description for user
+"""
 type User {
   name: String!
   email: String!
-  address(coordinates: Coordinates!, comment: String): Address!
+  address(
+    """
+    temporary multiline Test for
+    arguments
+    descripions
+    """
+    coordinates: Coordinates!  @argsDirective(id:1)  ,
+    "temporary singleline Test for input object field descripions"
+    comment: String = "test default value"
+    ): Address!
   home: CityID!
   office(zipCode: [[[ID!]]!], id: CityID!): Address
   entity: MyUnion

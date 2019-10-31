@@ -55,10 +55,12 @@ module Data.Morpheus.Types.Internal.Data
   , isDefaultTypeName
   , isSchemaTypeName
   , isPrimitiveTypeName
-  , OperationKind(..)
+  , OperationType(..)
   , QUERY
   , MUTATION
   , SUBSCRIPTION
+  , Name
+  , Description
   ) where
 
 import           Data.Semigroup                     ((<>))
@@ -71,6 +73,8 @@ import           Data.Morpheus.Types.Internal.Base  (Key)
 import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
 
+type Name = Key
+type Description = Key
 
 type QUERY = 'Query
 type MUTATION = 'Mutation
@@ -89,7 +93,7 @@ sysTypes :: [Key]
 sysTypes =
   ["__Schema", "__Type", "__Directive", "__TypeKind", "__Field", "__DirectiveLocation", "__InputValue", "__EnumValue"]
 
-data OperationKind
+data OperationType
   = Query
   | Subscription
   | Mutation
@@ -114,7 +118,7 @@ isInput _               = False
 
 data DataTypeKind
   = KindScalar
-  | KindObject (Maybe OperationKind)
+  | KindObject (Maybe OperationType)
   | KindUnion
   | KindEnum
   | KindInputObject

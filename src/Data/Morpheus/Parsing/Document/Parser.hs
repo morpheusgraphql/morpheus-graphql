@@ -5,15 +5,15 @@ module Data.Morpheus.Parsing.Document.Parser
   ( parseTypes
   ) where
 
-import           Data.Text                               (Text)
-import           Text.Megaparsec                         (eof, label, manyTill, runParser)
+import           Data.Text                                 (Text)
+import           Text.Megaparsec                           (eof, label, manyTill, runParser)
 
 -- MORPHEUS
-import           Data.Morpheus.Parsing.Document.DataType (parseDataType)
-import           Data.Morpheus.Parsing.Internal.Internal (processErrorBundle)
-import           Data.Morpheus.Parsing.Internal.Terms    (spaceAndComments)
-import           Data.Morpheus.Types.Internal.Data       (RawDataType)
-import           Data.Morpheus.Types.Internal.Validation (Validation)
+import           Data.Morpheus.Parsing.Document.TypeSystem (parseDataType)
+import           Data.Morpheus.Parsing.Internal.Internal   (processErrorBundle)
+import           Data.Morpheus.Parsing.Internal.Terms      (spaceAndComments)
+import           Data.Morpheus.Types.Internal.Data         (RawDataType)
+import           Data.Morpheus.Types.Internal.Validation   (Validation)
 
 parseTypes :: Text -> Validation [(Text, RawDataType)]
 parseTypes doc =
