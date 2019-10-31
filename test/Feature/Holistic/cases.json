@@ -172,10 +172,6 @@
     "description": "parses single line comments"
   },
   {
-    "path": "parsing/multilineComments",
-    "description": "parses multiline comments"
-  },
-  {
     "path": "parsing/AnonymousOperation/query",
     "description": "parse anonymous query"
   },
