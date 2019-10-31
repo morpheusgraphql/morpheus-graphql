@@ -121,8 +121,19 @@ parseDescription = pack <$> (blockDescription <|> singleLine) <* spaceAndComment
         where
             stringQuote = char '"'
 
+-- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
+--  Ignored:
+--    UnicodeBOM
+--    WhiteSpace
+--    LineTerminator
+--    Comment
+--    Comma
+-- TODO: implement as in specification
 spaceAndComments :: Parser ()
-spaceAndComments = space *> skipMany inlineComment *> space
+spaceAndComments = ignoredTokens
+
+ignoredTokens :: Parser ()
+ignoredTokens = label "IgnoredTokens" $ space *> skipMany inlineComment *> space
   where
     inlineComment = char '#' *> skipManyTill printChar newline *> space
     ------------------------------------------------------------------------

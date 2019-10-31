@@ -160,7 +160,8 @@ enumTypeDefinition typeDescription =
         )
     where
         enumValueDefinition = do
-            -- TODO: parse Description
+            -- TODO: handle Description
+            _fieldDescription <- optDescription
             enumValueName <- parseName
             -- TODO: handle directives
             _directive <- optionalDirectives
