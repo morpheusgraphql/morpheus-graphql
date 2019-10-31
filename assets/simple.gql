@@ -11,6 +11,9 @@ type Query {
 my interface description
 """
 interface MyInterface {
+   """
+   interface field description
+   """
     name: String
 }
 
