@@ -182,5 +182,21 @@
   {
     "path": "parsing/AnonymousOperation/subscription",
     "description": "parse anonymous subscription"
+  },
+  {
+    "path": "parsing/directive/operation",
+    "description": "parse operation directives"
+  },
+  {
+    "path": "parsing/directive/selection",
+    "description": "parse directives on selection fields"
+  },
+  {
+    "path": "parsing/directive/notOnArgument",
+    "description": "fail when:  directives are used in arguments"
+  },
+  {
+    "path": "parsing/directive/notOnVariable",
+    "description": "fail when: directive is used in Variable Definition"
   }
 ]
