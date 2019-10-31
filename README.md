@@ -29,7 +29,7 @@ _stack.yml_
 resolver: lts-14.8
 
 extra-deps:
-  - morpheus-graphql-0.4.0
+  - morpheus-graphql-0.5.0
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack upgrade` and `stack update`
@@ -75,10 +75,14 @@ import           Data.Text                  (Text)
 
 importGQLDocumentWithNamespace "schema.gql"
 
-rootResolver :: GQLRootResolver IO () () (Query IORes) () ()
+rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
-    {queryResolver = return Query {queryDeity}, mutationResolver = pure (), subscriptionResolver = pure ()}
+    {
+      queryResolver = Query {queryDeity},
+      mutationResolver = Undefined, 
+      subscriptionResolver = Undefined
+    }
   where
     queryDeity QueryDeityArgs {queryDeityArgsName} = pure Deity {deityName, deityPower}
       where
@@ -99,8 +103,8 @@ To define a GraphQL API with Morpheus we start by defining the API Schema as a n
 which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> IORes b`, representing resolving a set of arguments `a` to a concrete value `b`.
 
 ```haskell
-data Query = Query
-  { deity :: DeityArgs -> IORes Deity
+data Query m = Query
+  { deity :: DeityArgs -> m Deity
   } deriving (Generic, GQLType)
 
 data Deity = Deity
@@ -117,8 +121,8 @@ data DeityArgs = DeityArgs
   } deriving (Generic)
 ```
 
-For each field in the `Query` type defined via `a -> IORes b` (like `deity`) we will define a resolver implementation that provides the values during runtime by referring to
-some data source, e.g. a database or another API. Fields that are defined without `a -> IORes b` you can just provide a value.
+For each field in the `Query` type defined via `a -> m b` (like `deity`) we will define a resolver implementation that provides the values during runtime by referring to
+some data source, e.g. a database or another API. Fields that are defined without `a -> m b` you can just provide a value.
 
 In above example, the field of `DeityArgs` could also be named using reserved identities (such as: `type`, `where`, etc), in order to avoid conflict, a prime symbol (`'`) must be attached. For example, you can have:
 
@@ -134,7 +138,7 @@ The field name in the final request will be `type` instead of `type'`. The Morph
 
 ```haskell
 resolveDeity :: DeityArgs -> IORes Deity
-resolveDeity args = gqlResolver $ askDB (name args) (mythology args)
+resolveDeity args = QueryResolver $ ExceptT $ askDB (name args) (mythology args)
 
 askDB :: Text -> Maybe Text -> IO (Either String Deity)
 askDB = ...
@@ -145,12 +149,12 @@ Note that the type `a -> IORes b` is just Synonym for `a -> ExceptT String IO b`
 To make this `Query` type available as an API, we define a `GQLRootResolver` and feed it to the Morpheus `interpreter`. A `GQLRootResolver` consists of `query`, `mutation` and `subscription` definitions, while we omit the latter for this example:
 
 ```haskell
-rootResolver :: GQLRootResolver IO () () Query () ()
+rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {deity = resolveDeity}
-    , mutationResolver = return ()
-    , subscriptionResolver = return ()
+    { queryResolver = Query {deity = resolveDeity}
+    , mutationResolver = Undefined
+    , subscriptionResolver = Undefined
     }
 
 gqlApi :: ByteString -> IO ByteString
@@ -280,21 +284,21 @@ In addition to queries, Morpheus also supports mutations. The behave just like r
 Just exchange deriving `GQLQuery` for `GQLMutation` and declare them separately at the `GQLRootResolver` definition
 
 ```haskell
-newtype Mutation = Mutation
-  { createDeity :: Form -> IOMutRes Deity
+newtype Mutation m = Mutation
+  { createDeity :: Form -> m Deity
   } deriving (Generic, GQLType)
 
-createDeityMutation :: Form -> IOMutRes Deity
+createDeityMutation :: Form -> m (Deity m)
 createDeityMutation = ...
 
-rootResolver :: GQLRootResolver IO Query Mutation ()
+rootResolver :: GQLRootResolver IO Query Mutation Undefined
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {...}
-    , mutationResolver = return Mutation {
+    { queryResolver = Query {...}
+    , mutationResolver = Mutation {
        createDeity = createDeityMutation
     }
-    , subscriptionResolver = return ()
+    , subscriptionResolver = Undefined
     }
 
 gqlApi :: ByteString -> IO ByteString
@@ -309,7 +313,6 @@ im morpheus subscription and mutation communicating with Events,
 every subscription has own Channel by which will be triggered
 
 ```haskell
-
 data Channel
   = ChannelA
   | ChannelB
@@ -318,32 +321,36 @@ data Content
   = ContentA Int
   | ContentB Text
 
-newtype Query = Query
-  { deity :: () -> IORes Deity
-  } deriving (Generic, GQLType)
+newtype Query m = Query
+  { deity :: () -> m Deity
+  } deriving (Generic)
 
-newtype Mutation = Mutation
-  { createDeity :: () -> IOMutRes Channel Content Deity
-  } deriving (Generic, GQLType)
+newtype Mutation m = Mutation
+  { createDeity :: () -> m Deity
+  } deriving (Generic)
 
-newtype Subscription = Subscription
-  { newDeity :: () -> IOSubRes Channel Content Deity
-  } deriving (Generic, GQLType)
+newtype Subscription m = Subscription
+  { newDeity :: () -> m  Deity
+  } deriving (Generic)
 
-rootResolver :: GQLRootResolver IO Channel Content Query Mutation Subscription
+type APIEvent = Event Channel Content
+
+rootResolver :: GQLRootResolver IO APIEvent Query Mutation Subscription
 rootResolver =
   GQLRootResolver
-    { queryResolver = return Query {deity = const fetchDeity}
-    , mutationResolver = return Mutation {createDeity}
-    , subscriptionResolver = return Subscription {newDeity}
+    { queryResolver = Query {deity = const fetchDeity}
+    , mutationResolver = Mutation {createDeity}
+    , subscriptionResolver = Subscription {newDeity}
     }
   where
-    fetchDeity = resolver $ dbDeity "" Nothing
-    createDeity _args = toMutResolver [Event {channels = [ChannelA], content = ContentA 1}] fetchDeity
-    newDeity _args = SubResolver {subChannels = [ChannelA], subResolver}
+    createDeity _args = MutResolver events updateDeity
+        where 
+        events = [Event {channels = [ChannelA], content = ContentA 1}]
+        updateDeity = updateDBDeity
+    newDeity _args = SubResolver [ChannelA] subResolver
       where
-        subResolver (Event [ChannelA] (ContentA _value)) = resolver $ dbDeity "" Nothing -- resolve New State
-        subResolver (Event [ChannelA] (ContentB value))  = resolver $ dbDeity value Nothing -- resolve New State
+        subResolver (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
+        subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
         subResolver _                                    = fetchDeity -- Resolve Old State
 ```
 
