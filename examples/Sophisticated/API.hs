@@ -79,6 +79,7 @@ data Content = Update
 
 type APIEvent = (Event Channel Content)
 
+
 gqlRoot :: GQLRootResolver IO APIEvent Query Mutation Subscription
 gqlRoot = GQLRootResolver {queryResolver, mutationResolver, subscriptionResolver}
   where

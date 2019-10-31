@@ -15,17 +15,27 @@ input Bird {
 # Main APi
 
 enum CityID {
+  """
+  temporary multiline Test for Enum field comments
+
+  """
   Paris
   BLN @testDirective(testName:"")
+  "temporary singleline Test for Enum field comments"
   HH
 }
 
 input Coordinates {
   latitude: Euro! @testDirective(testName:"")
+  "temporary singleline Test for input object field comments"
   longitude: [[[UniqueID!]!]]!
 }
 
 input UniqueID {
+  """
+    temporary multiline Test for Enum field comments
+
+  """
   type: String,
   id: String!
 }
