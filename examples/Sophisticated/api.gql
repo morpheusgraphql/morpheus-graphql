@@ -36,7 +36,7 @@ input UniqueID {
     temporary multiline Test for Enum field descripions
 
   """
-  type: String,
+  type: String = "test default value"
   id: String!
 }
 
@@ -57,7 +57,16 @@ my custom description for user
 type User {
   name: String!
   email: String!
-  address(coordinates: Coordinates!, comment: String): Address!
+  address(
+    """
+    temporary multiline Test for
+    arguments
+    descripions
+    """
+    coordinates: Coordinates!,
+    "temporary singleline Test for input object field descripions"
+    comment: String = "test default value"
+    ): Address!
   home: CityID!
   office(zipCode: [[[ID!]]!], id: CityID!): Address
   entity: MyUnion
