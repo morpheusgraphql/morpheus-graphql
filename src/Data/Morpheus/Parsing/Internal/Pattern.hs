@@ -11,7 +11,7 @@ import           Text.Megaparsec                         (label, many)
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Create   (createField)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms    (keyword, litAssignment, operator, parseAssignment,
+import           Data.Morpheus.Parsing.Internal.Terms    (keyword, optDescription, litAssignment, operator, parseAssignment,
                                                           parseMaybeTuple, parseName, parseType, setOf)
 import           Data.Morpheus.Parsing.Internal.Value    (parseDefaultValue, parseValue)
 import           Data.Morpheus.Types.Internal.Data       (DataField, Key, Name)
@@ -24,7 +24,8 @@ import           Data.Morpheus.Types.Internal.Data       (DataField, Key, Name)
 --
 inputValueDefinition ::  Parser (Key, DataField)
 inputValueDefinition = label "InputValueDefinition" $ do
-    -- TODO: Description(opt)
+    -- TODO: handle Description(opt)
+    _description <- optDescription
     name <- parseName
     litAssignment -- ':'
     type_ <- parseType
