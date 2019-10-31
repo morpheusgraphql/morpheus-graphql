@@ -5,6 +5,8 @@
 - dummy support of `directives`, only parsing not actual implementation
 
 ### Fixed
+- can be parsed `implements` with multiple interfaces separated by `&` 
+- can be parsed default value on `inputobject`
 - Parser supports anonymous Operation: `query` , `mutation` , `subscription`
   for example:
 
