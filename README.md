@@ -121,8 +121,8 @@ data DeityArgs = DeityArgs
   } deriving (Generic)
 ```
 
-For each field in the `Query` type defined via `a -> IORes b` (like `deity`) we will define a resolver implementation that provides the values during runtime by referring to
-some data source, e.g. a database or another API. Fields that are defined without `a -> IORes b` you can just provide a value.
+For each field in the `Query` type defined via `a -> m b` (like `deity`) we will define a resolver implementation that provides the values during runtime by referring to
+some data source, e.g. a database or another API. Fields that are defined without `a -> m b` you can just provide a value.
 
 In above example, the field of `DeityArgs` could also be named using reserved identities (such as: `type`, `where`, etc), in order to avoid conflict, a prime symbol (`'`) must be attached. For example, you can have:
 
