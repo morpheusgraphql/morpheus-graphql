@@ -38,7 +38,7 @@ import           Data.Morpheus.Schema.SchemaAPI                      (defaultTyp
 import           Data.Morpheus.Types.GQLType                         (GQLType (CUSTOM))
 import           Data.Morpheus.Types.Internal.AST.Operation          (Operation (..), ValidOperation)
 import           Data.Morpheus.Types.Internal.Data                   (DataFingerprint (..), DataTyCon (..),
-                                                                      DataTypeLib (..), MUTATION, OperationKind (..),
+                                                                      DataTypeLib (..), MUTATION, OperationType (..),
                                                                       QUERY, SUBSCRIPTION, initTypeLib)
 import           Data.Morpheus.Types.Internal.Resolver               (GQLRootResolver (..), Resolver (..), ResponseT,
                                                                       toResponseRes)

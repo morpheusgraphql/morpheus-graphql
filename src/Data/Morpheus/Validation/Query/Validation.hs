@@ -12,7 +12,7 @@ import           Data.Morpheus.Error.Mutation               (mutationIsNotDefine
 import           Data.Morpheus.Error.Subscription           (subscriptionIsNotDefined)
 import           Data.Morpheus.Types.Internal.AST.Operation (Operation (..), RawOperation, ValidOperation,
                                                              getOperationName)
-import           Data.Morpheus.Types.Internal.Data          (DataObject, DataTypeLib (..), OperationKind (..))
+import           Data.Morpheus.Types.Internal.Data          (DataObject, DataTypeLib (..), OperationType (..))
 import           Data.Morpheus.Types.Internal.Validation    (Validation)
 import           Data.Morpheus.Types.Types                  (GQLQueryRoot (..))
 import           Data.Morpheus.Validation.Internal.Utils    (VALIDATION_MODE)

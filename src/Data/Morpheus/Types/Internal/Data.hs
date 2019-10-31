@@ -55,7 +55,7 @@ module Data.Morpheus.Types.Internal.Data
   , isDefaultTypeName
   , isSchemaTypeName
   , isPrimitiveTypeName
-  , OperationKind(..)
+  , OperationType(..)
   , QUERY
   , MUTATION
   , SUBSCRIPTION
@@ -93,7 +93,7 @@ sysTypes :: [Key]
 sysTypes =
   ["__Schema", "__Type", "__Directive", "__TypeKind", "__Field", "__DirectiveLocation", "__InputValue", "__EnumValue"]
 
-data OperationKind
+data OperationType
   = Query
   | Subscription
   | Mutation
@@ -118,7 +118,7 @@ isInput _               = False
 
 data DataTypeKind
   = KindScalar
-  | KindObject (Maybe OperationKind)
+  | KindObject (Maybe OperationType)
   | KindUnion
   | KindEnum
   | KindInputObject

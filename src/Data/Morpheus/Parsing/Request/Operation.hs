@@ -19,7 +19,7 @@ import           Data.Morpheus.Parsing.Internal.Terms       (operator, parseMayb
 import           Data.Morpheus.Parsing.Internal.Value       (parseDefaultValue)
 import           Data.Morpheus.Parsing.Request.Selection    (parseSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Operation (DefaultValue, Operation (..), RawOperation, Variable (..))
-import           Data.Morpheus.Types.Internal.Data          (OperationKind (..), isNullable)
+import           Data.Morpheus.Types.Internal.Data          (OperationType (..), isNullable)
 
 
 -- Variables :  https://graphql.github.io/graphql-spec/June2018/#VariableDefinition
@@ -63,7 +63,7 @@ parseOperationDefinition =
     operationSelection <- parseSelectionSet
     pure (Operation {operationName, operationType, operationArgs, operationSelection, operationPosition})
 
-parseOperationType :: Parser OperationKind
+parseOperationType :: Parser OperationType
 parseOperationType =
   label "OperationType" $ do
     kind <- (string "query" $> Query) <|> (string "mutation" $> Mutation) <|> (string "subscription" $> Subscription)

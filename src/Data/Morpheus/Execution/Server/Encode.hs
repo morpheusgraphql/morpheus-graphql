@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.GQLType                     (GQLType (CUSTO
 import           Data.Morpheus.Types.Internal.AST.Operation      (Operation (..), ValidOperation)
 import           Data.Morpheus.Types.Internal.AST.Selection      (Selection (..), SelectionRec (..), ValidSelection)
 import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Data               (MUTATION, OperationKind, QUERY, SUBSCRIPTION)
+import           Data.Morpheus.Types.Internal.Data               (MUTATION, OperationType, QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Resolver           (MapGraphQLT (..), PureOperation (..), Resolver (..),
                                                                   Resolving (..), ResolvingStrategy (..), resolveObject,
                                                                   withObject)
@@ -130,7 +130,7 @@ type instance GRes OBJECT v = [(Key, (Key, ValidSelection) -> v)]
 type instance GRes UNION v = (Key, (Key, ValidSelection) -> v)
 
 --- GENERICS ------------------------------------------------
-class ObjectResolvers (custom :: Bool) a (o :: OperationKind) (m :: * -> *) e where
+class ObjectResolvers (custom :: Bool) a (o :: OperationType) (m :: * -> *) e where
   objectResolvers :: PureOperation o =>  Proxy custom -> a -> [(Key, (Key, ValidSelection) -> ResolvingStrategy o m e Value)]
 
 instance (Generic a, GResolver OBJECT (Rep a) o m e ) => ObjectResolvers 'False a o m e where
