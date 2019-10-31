@@ -16,24 +16,24 @@ input Bird {
 
 enum CityID {
   """
-  temporary multiline Test for Enum field comments
+  temporary multiline Test for Enum field descripions
 
   """
   Paris
   BLN @testDirective(testName:"")
-  "temporary singleline Test for Enum field comments"
+  "temporary singleline Test for Enum field descripions"
   HH
 }
 
 input Coordinates {
   latitude: Euro! @testDirective(testName:"")
-  "temporary singleline Test for input object field comments"
+  "temporary singleline Test for input object field descripions"
   longitude: [[[UniqueID!]!]]!
 }
 
 input UniqueID {
   """
-    temporary multiline Test for Enum field comments
+    temporary multiline Test for Enum field descripions
 
   """
   type: String,
@@ -41,8 +41,13 @@ input UniqueID {
 }
 
 type Address {
+  """
+    temporary multiline Test for Enum field descripions
+
+  """
   city: String!  @deprecated(testName:"",testName2: 123)
   street: String!
+  "temporary singleline Test for input object field descripions"
   houseNumber: Int!
 }
 

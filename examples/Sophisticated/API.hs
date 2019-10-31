@@ -29,6 +29,7 @@ import           Data.Morpheus.Kind     (INPUT_UNION, OBJECT, SCALAR)
 import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLScalar (..), GQLType (..), ID, QUERY,
                                          Resolver (..), ScalarValue (..), constRes)
 
+
 $(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
 
 type AIntText = A (Int, Text)
