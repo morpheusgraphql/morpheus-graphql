@@ -55,13 +55,13 @@ parseOperationDefinition :: Parser RawOperation
 parseOperationDefinition =
   label "OperationDefinition" $ do
     operationPosition <- getLocation
-    operationKind <- parseOperationType
+    operationType <- parseOperationType
     operationName <- optional parseName
     operationArgs <- parseMaybeTuple variableDefinition
     -- TODO: handle directives
     _directives <- optionalDirectives
     operationSelection <- parseSelectionSet
-    pure (Operation {operationName, operationKind, operationArgs, operationSelection, operationPosition})
+    pure (Operation {operationName, operationType, operationArgs, operationSelection, operationPosition})
 
 parseOperationType :: Parser OperationKind
 parseOperationType =
@@ -78,7 +78,7 @@ parseAnonymousQuery =
     pure
       (Operation
          { operationName = Nothing
-         , operationKind = Query
+         , operationType = Query
          , operationArgs = []
          , operationSelection
          , operationPosition

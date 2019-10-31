@@ -103,10 +103,10 @@ streamResolver root@GQLRootResolver {queryResolver, mutationResolver, subscripti
         query <- parseGQL request >>= validateRequest schema FULL_VALIDATION
         Right (schema, query)
     ----------------------------------------------------------
-    execOperator (schema, operation@Operation {operationKind = Query}) =
+    execOperator (schema, operation@Operation {operationType = Query}) =
         toResponseRes (encodeQuery (schemaAPI schema) queryResolver operation)
-    execOperator (_, operation@Operation {operationKind = Mutation}) = toResponseRes (encodeMutation mutationResolver operation)
-    execOperator (_, operation@Operation {operationKind = Subscription}) = response
+    execOperator (_, operation@Operation {operationType = Mutation}) = toResponseRes (encodeMutation mutationResolver operation)
+    execOperator (_, operation@Operation {operationType = Subscription}) = response
         where
          response = toResponseRes (encodeSubscription subscriptionResolver operation)
 

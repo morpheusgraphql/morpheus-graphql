@@ -40,7 +40,7 @@ getOperationName = fromMaybe "AnonymousOperation"
 
 data Operation args sel = Operation
   { operationName      :: Maybe Key
-  , operationKind      :: OperationKind
+  , operationType      :: OperationKind
   , operationArgs      :: args
   , operationSelection :: sel
   , operationPosition  :: Position
