@@ -17,7 +17,6 @@ module Data.Morpheus.Types.Internal.Resolver
   , Event(..)
   , GQLRootResolver(..)
   , UnSubResolver
-  , GQLFail(..)
   , ResponseT
   , Resolver(..)
   , ResolvingStrategy(..)
@@ -32,13 +31,11 @@ module Data.Morpheus.Types.Internal.Resolver
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT, withExceptT)
 import           Data.Maybe                                 (fromMaybe)
 import           Data.Semigroup                             ((<>))
-import           Data.Text                                  (pack, unpack)
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Selection              (resolverError, subfieldsNotSelected)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection (..), SelectionRec (..), SelectionSet,
                                                              ValidSelection)
-import           Data.Morpheus.Types.Internal.Base          (Message)
 import           Data.Morpheus.Types.Internal.Data          (Key, MUTATION, OperationType, QUERY, SUBSCRIPTION)
 import           Data.Morpheus.Types.Internal.Stream        (Channel (..), Event (..), ResponseEvent (..),
                                                              ResponseStream, StreamChannel, StreamState (..),
@@ -51,18 +48,6 @@ withObject :: ( SelectionSet -> ResolvingStrategy o m e value) -> (Key,ValidSele
 withObject f (_, Selection {selectionRec = SelectionSet selection}) = f selection
 withObject _ (key, Selection {selectionPosition}) = Fail $ subfieldsNotSelected key "" selectionPosition
 
-class Monad m =>
-      GQLFail (t :: (* -> *) -> * -> *) m
-  where
-  gqlFail :: Monad m => Message -> t m a
-  toSuccess :: Monad m => (Message -> b) -> (a -> b) -> t m a -> t m b
-
-instance Monad m => GQLFail (ExceptT String) m where
-  gqlFail = ExceptT . pure . Left . unpack
-  toSuccess fFail fSuc (ExceptT value) = ExceptT $ pure . mapCases <$> value
-    where
-      mapCases (Right x) = fSuc x
-      mapCases (Left x)  = fFail $ pack $ show x
 
 ----------------------------------------------------------------------------------------
 type ResolveT = ExceptT GQLErrors
@@ -70,7 +55,6 @@ type ResponseT m e  = ResolveT (ResponseStream m e)
 
 --
 -- Recursive Resolver
-
 newtype RecResolver m a b = RecResolver {
   unRecResolver :: a -> ResolveT m b
 }
