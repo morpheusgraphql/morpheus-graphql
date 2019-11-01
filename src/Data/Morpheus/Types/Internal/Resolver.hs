@@ -26,6 +26,8 @@ module Data.Morpheus.Types.Internal.Resolver
   , toResponseRes
   , withObject
   , Resolving(..)
+  , liftM
+  , liftEitherM
   ) where
 
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT, withExceptT)
@@ -48,10 +50,17 @@ withObject :: ( SelectionSet -> ResolvingStrategy o m e value) -> (Key,ValidSele
 withObject f (_, Selection {selectionRec = SelectionSet selection}) = f selection
 withObject _ (key, Selection {selectionPosition}) = Fail $ subfieldsNotSelected key "" selectionPosition
 
+liftM :: (PureOperation o, Monad m) => m a -> Resolver o m e a
+liftM = liftEither . fmap pure
 
+liftEitherM :: (PureOperation o, Monad m) => m (Either String a) -> Resolver o m e a
+liftEitherM = liftEither
 ----------------------------------------------------------------------------------------
 type ResolveT = ExceptT GQLErrors
 type ResponseT m e  = ResolveT (ResponseStream m e)
+
+--liftM :: m a -> Resolver o m e a
+--liftM =
 
 --
 -- Recursive Resolver
@@ -109,6 +118,7 @@ instance (PureOperation o, Monad m) => Applicative (ResolvingStrategy o m e) whe
                        pure (f1 <*> res1)
 
 -- GADTResolver
+---------------------------------------------------------------
 data Resolver (o::OperationType) (m :: * -> * ) event value where
     FailedResolver :: { unFailedResolver :: String } -> Resolver o m event value
     QueryResolver:: { unQueryResolver :: ExceptT String m value } -> Resolver QUERY m  event value
@@ -132,7 +142,7 @@ instance Functor m => Functor (Resolver o m e) where
 
 -- GADTResolver Applicative
 instance (PureOperation o ,Monad m) => Applicative (Resolver o m e) where
-    pure = pureRes
+    pure = liftEither . pure . pure
     -------------------------------------
     _ <*> (FailedResolver mErrors) = FailedResolver mErrors
     (FailedResolver mErrors) <*> _ = FailedResolver mErrors
@@ -153,22 +163,22 @@ instance (Monad m) => Monad (Resolver QUERY m e) where
 
 -- Pure Operation
 class PureOperation (o::OperationType) where
-    pureRes :: Monad m => a -> Resolver o m event a
+    liftEither :: Monad m => m (Either String a) -> Resolver o m event a
     pureGraphQLT :: Monad m => a -> ResolvingStrategy o m event a
     eitherGraphQLT :: Monad m => Validation a -> ResolvingStrategy o m event a
 
 instance PureOperation QUERY where
-   pureRes = QueryResolver . pure
+   liftEither = QueryResolver . ExceptT
    pureGraphQLT = QueryResolving . pure
    eitherGraphQLT = QueryResolving . ExceptT . pure
 
 instance PureOperation MUTATION where
-   pureRes = MutResolver [] . pure
+   liftEither = MutResolver [] . ExceptT
    pureGraphQLT = MutationResolving . pure
    eitherGraphQLT = MutationResolving . ExceptT . pure
 
 instance PureOperation SUBSCRIPTION where
-   pureRes = SubResolver []  . const . pure
+   liftEither = SubResolver [] . const . liftEither
    pureGraphQLT = SubscriptionResolving . pure . pure
    eitherGraphQLT = SubscriptionResolving . fmap pure  . ExceptT . pure
 
