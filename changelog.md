@@ -7,6 +7,16 @@
 
 - example `API` executable is removed from Production build
 
+## Added
+
+- helper functions: `liftEitherM` , `liftM`
+
+  ```haskell
+    liftM :: m a -> Resolver o m e a
+    liftEitherM :: m (Either String a) -> Resolver o m e a
+  ```
+
+
 ## [0.5.0] - 31.10.2019
 
 ### Added

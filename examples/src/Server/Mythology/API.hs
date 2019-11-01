@@ -1,17 +1,17 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Server.Mythology.API
   ( mythologyApi
   ) where
 
-import           Control.Monad.Except       (ExceptT (..))
-import qualified Data.ByteString.Lazy.Char8 as B
-import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Types        (Resolver (..), IORes, GQLRootResolver (..), GQLType, Undefined (..))
-import           Data.Text                  (Text)
-import           GHC.Generics               (Generic)
-import           Server.Mythology.Character.Deity  (Deity (..), dbDeity)
+import qualified Data.ByteString.Lazy.Char8       as B
+import           Data.Morpheus                    (interpreter)
+import           Data.Morpheus.Types              (GQLRootResolver (..), GQLType, IORes, Undefined (..), liftEitherM)
+import           Data.Text                        (Text)
+import           GHC.Generics                     (Generic)
+import           Server.Mythology.Character.Deity (Deity (..), dbDeity)
 
 newtype Query m = Query
   { deity :: DeityArgs -> m Deity
@@ -23,7 +23,7 @@ data DeityArgs = DeityArgs
   } deriving (Generic)
 
 resolveDeity :: DeityArgs -> IORes e Deity
-resolveDeity args = QueryResolver $ ExceptT $ dbDeity (name args) (mythology args)
+resolveDeity DeityArgs { name, mythology } = liftEitherM $ dbDeity name mythology
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
