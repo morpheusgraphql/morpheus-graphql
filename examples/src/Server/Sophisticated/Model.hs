@@ -3,7 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeOperators         #-}
 
-module Sophisticated.Model
+module Server.Sophisticated.Model
   ( jsonAddress
   , jsonUser
   , JSONUser(..)

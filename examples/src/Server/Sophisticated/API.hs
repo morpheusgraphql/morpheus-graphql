@@ -10,7 +10,7 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 
-module Sophisticated.API
+module Server.Sophisticated.API
   ( gqlRoot
   , APIEvent
   ) where

@@ -1,0 +1,7 @@
+.DS_Store
+.stack-work/
+.idea/
+examples.cabal
+examples.iml
+docs/vendor
+out/

@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 
-module Mythology.Character.Deity
+module Server.Mythology.Character.Deity
   ( Deity(..)
   , dbDeity
   ) where
@@ -12,7 +12,7 @@ import           Data.Morpheus.Kind     (OBJECT)
 import           Data.Morpheus.Types    (GQLType (..))
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
-import           Mythology.Place.Places (Realm (..))
+import           Server.Mythology.Place.Places (Realm (..))
 
 data Deity = Deity
   { fullName :: Text -- Non-Nullable Field

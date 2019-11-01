@@ -5,7 +5,7 @@
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Subscription.SimpleSubscription where
+module Server.Subscription.SimpleSubscription where
 
 import           Data.Morpheus.Types       (Event (..), Resolver (..), GQLRootResolver (..))
 import           Data.Text                 (Text)
