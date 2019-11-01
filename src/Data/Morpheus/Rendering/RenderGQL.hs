@@ -16,9 +16,9 @@ import qualified Data.Text.Lazy                     as LT (fromStrict)
 import           Data.Text.Lazy.Encoding            (encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataType (..), DataKind (..), DataTyCon (..),
-                                                     DataTypeLib, DataTypeWrapper (..), Key, TypeAlias (..),
-                                                     WrapperD (..), allDataTypes, isDefaultTypeName, toGQLWrapper)
+import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataTyCon (..), DataType (..), DataTypeLib,
+                                                     DataTypeWrapper (..), Key, TypeAlias (..), WrapperD (..),
+                                                     allDataTypes, isDefaultTypeName, toGQLWrapper)
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
 
 renderGraphQLDocument :: DataTypeLib -> ByteString
@@ -42,11 +42,13 @@ instance RenderGQL Key where
 instance RenderGQL TypeAlias where
   render TypeAlias {aliasTyCon, aliasWrappers} = renderWrapped aliasTyCon aliasWrappers
 
-instance RenderGQL DataKind where
-  render (ScalarKind x) = typeName x
-  render (EnumKind x)   = typeName x
-  render (ObjectKind x) = typeName x
-  render (UnionKind x)  = typeName x
+instance RenderGQL DataType where
+  render (DataScalar x)      = typeName x
+  render (DataEnum x)        = typeName x
+  render (DataUnion x)       = typeName x
+  render (DataInputObject x) = typeName x
+  render (DataInputUnion x)  = typeName x
+  render ( DataObject x)     = typeName x
 
 instance RenderGQL (Key, DataType) where
   render (name, DataScalar {}) = "scalar " <> name

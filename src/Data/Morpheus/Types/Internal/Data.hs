@@ -21,7 +21,6 @@ module Data.Morpheus.Types.Internal.Data
   , DataArguments
   , DataField(..)
   , DataTyCon(..)
-  , DataKind(..)
   , DataType(..)
   , DataTypeLib(..)
   , DataTypeWrapper(..)
@@ -54,7 +53,6 @@ module Data.Morpheus.Types.Internal.Data
   , isDefaultTypeName
   , isSchemaTypeName
   , isPrimitiveTypeName
-  , toDataKind
   , OperationType(..)
   , QUERY
   , MUTATION
@@ -234,24 +232,6 @@ data DataTyCon a = DataTyCon
   , typeDescription :: Maybe Key
   , typeData        :: a
   } deriving (Show)
-
-
-
--- DATA KIND
-data DataKind
-  = ScalarKind DataScalar
-  | EnumKind DataEnum
-  | ObjectKind DataObject
-  | UnionKind DataUnion
-  deriving (Show)
-
-toDataKind :: DataType -> DataKind
-toDataKind (DataScalar x)      = ScalarKind x
-toDataKind (DataEnum x)        = EnumKind x
-toDataKind (DataInputObject x) = ObjectKind x
-toDataKind (DataObject x)      = ObjectKind x
-toDataKind (DataUnion x)       = UnionKind x
-toDataKind (DataInputUnion x)  = UnionKind x
 
 data RawDataType
   = FinalDataType DataType
