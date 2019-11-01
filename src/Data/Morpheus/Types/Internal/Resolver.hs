@@ -59,9 +59,6 @@ liftEitherM = liftEither
 type ResolveT = ExceptT GQLErrors
 type ResponseT m e  = ResolveT (ResponseStream m e)
 
---liftM :: m a -> Resolver o m e a
---liftM =
-
 --
 -- Recursive Resolver
 newtype RecResolver m a b = RecResolver {
