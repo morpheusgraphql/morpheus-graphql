@@ -5,6 +5,7 @@
 - removed `morpheus` cli for code generating, if you need cli you should use 
 [morpheus-graphql-cli](https://github.com/morpheusgraphql/morpheus-graphql-cli/)
 
+- example `API` executable is removed from Production build
 
 ## [0.5.0] - 31.10.2019
 
