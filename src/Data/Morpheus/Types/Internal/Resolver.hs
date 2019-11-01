@@ -19,7 +19,6 @@ module Data.Morpheus.Types.Internal.Resolver
   , UnSubResolver
   , GQLFail(..)
   , ResponseT
-  , failResolveT
   , Resolver(..)
   , ResolvingStrategy(..)
   , MapGraphQLT(..)
@@ -257,10 +256,6 @@ toResponseRes (SubscriptionResolving resT)  =
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
 type instance UnSubResolver (Resolver SUBSCRIPTION m e) = Resolver QUERY m e
-
--------------------------------------------------------------------
-failResolveT :: Monad m => GQLErrors -> ResolveT m a
-failResolveT = ExceptT . pure . Left
 
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
