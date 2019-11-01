@@ -437,14 +437,7 @@ defineByIntrospectionFile "./introspection.json"
 
 ## Morpheus CLI for Code Generating
 
-Generating dummy Morpheus Api from `schema.gql`
-
-```
-morpheus build src/schem.gql src/GQLApi.hs
-```
-
-this command will generate Haskell API and resolvers,
-resolvers will resolve default values for every object
+you should use [morpheus-graphql-cli](https://github.com/morpheusgraphql/morpheus-graphql-cli)
 
 # About
 

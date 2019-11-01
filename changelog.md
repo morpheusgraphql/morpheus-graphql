@@ -1,5 +1,13 @@
 ## [0.5.0] - 31.10.2019
 
+### Removed
+
+- removed `morpheus` cli for code generating, if you need cli you should use 
+[morpheus-graphql-cli](https://github.com/morpheusgraphql/morpheus-graphql-cli/)
+
+
+## [0.5.0] - 31.10.2019
+
 ### Added
 
 - dummy support of `directives`, only parsing not actual implementation
