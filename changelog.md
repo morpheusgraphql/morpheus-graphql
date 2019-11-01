@@ -11,7 +11,7 @@
 
 - helper functions: `liftEitherM` , `liftM`
 
-  ```
+  ```haskell
     liftM :: m a -> Resolver o m e a
     liftEitherM :: m (Either String a) -> Resolver o m e a
   ```
