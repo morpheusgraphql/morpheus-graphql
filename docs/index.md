@@ -33,7 +33,7 @@ _stack.yml_
 resolver: lts-14.8
 
 extra-deps:
-  - morpheus-graphql-0.5.0
+  - morpheus-graphql-0.6.0
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack upgrade` and `stack update`
@@ -84,7 +84,7 @@ rootResolver =
   GQLRootResolver
     {
       queryResolver = Query {queryDeity},
-      mutationResolver = Undefined, 
+      mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }
   where
@@ -141,8 +141,8 @@ data DeityArgs = DeityArgs
 The field name in the final request will be `type` instead of `type'`. The Morpheus request parser converts each of the reserved identities in Haskell 2010 to their corresponding names internally. This also applies to selections.
 
 ```haskell
-resolveDeity :: DeityArgs -> IORes Deity
-resolveDeity args = QueryResolver $ ExceptT $ askDB (name args) (mythology args)
+resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity DeityArgs { name, mythology } = liftEitherM $ dbDeity name mythology
 
 askDB :: Text -> Maybe Text -> IO (Either String Deity)
 askDB = ...
@@ -205,7 +205,7 @@ where you can query different mythology characters with `GraphiQL`.
 
 Mythology API is deployed on : [_api.morpheusgraphql.com_](https://api.morpheusgraphql.com) where you can test it with `GraphiQL`
 
-![Mythology Api](./assets/img/mythology-api.png "mythology-api")
+![Mythology Api](https://morpheusgraphql.com/assets/img/mythology-api.png "mythology-api")
 
 ## Advanced topics
 
@@ -278,9 +278,9 @@ instance GQLType Deity where
 
 screenshots from `Insomnia`
 
-![alt text](./assets/img/introspection/spelling.png "spelling")
-![alt text](./assets/img/introspection/autocomplete.png "autocomplete")
-![alt text](./assets/img/introspection/type.png "type")
+![alt text](https://morpheusgraphql.com/assets/img/introspection/spelling.png "spelling")
+![alt text](https://morpheusgraphql.com/assets/img/introspection/autocomplete.png "autocomplete")
+![alt text](https://morpheusgraphql.com/assets/img/introspection/type.png "type")
 
 ### Mutations
 
@@ -348,7 +348,7 @@ rootResolver =
     }
   where
     createDeity _args = MutResolver events updateDeity
-        where 
+        where
         events = [Event {channels = [ChannelA], content = ContentA 1}]
         updateDeity = updateDBDeity
     newDeity _args = SubResolver [ChannelA] subResolver
@@ -441,14 +441,7 @@ defineByIntrospectionFile "./introspection.json"
 
 ## Morpheus CLI for Code Generating
 
-Generating dummy Morpheus Api from `schema.gql`
-
-```
-morpheus build src/schem.gql src/GQLApi.hs
-```
-
-this command will generate Haskell API and resolvers,
-resolvers will resolve default values for every object
+you should use [morpheus-graphql-cli](https://github.com/morpheusgraphql/morpheus-graphql-cli)
 
 # About
 
