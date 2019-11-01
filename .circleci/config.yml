@@ -64,7 +64,7 @@ jobs:
           command: STACK_YAML=stack-12.16.yaml stack build --skip-ghc-check --no-terminal --test --only-dependencies
       - save_cache:
           name: cache dependencies
-          key: stack-dependencies-{{ checksum "stack-12.16.yaml" }}-{{ checksum "package.yaml" }}
+          key: stack-dependencies-{{ checksum "stack-12.16.yaml" }}-{{ checksum "package.yaml" }}-{{ checksum "examples/package.yaml" }}
           paths:
             - ".stack-work"
             - "/root/.stack"
@@ -88,7 +88,7 @@ jobs:
       - restore_cache:
           name: restore cached dependencies
           keys:
-            - stack-dependencies-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}
+            - stack-dependencies-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}-{{ checksum "examples/package.yaml" }}
       - run:
           name: setup stack
           command: stack --no-terminal setup
@@ -102,7 +102,7 @@ jobs:
           command: stack build --skip-ghc-check --no-terminal --test --only-dependencies
       - save_cache:
           name: cache dependencies
-          key: stack-dependencies-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}
+          key: stack-dependencies-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}-{{ checksum "examples/package.yaml" }}
           paths:
             - ".stack-work"
             - "/root/.stack"
