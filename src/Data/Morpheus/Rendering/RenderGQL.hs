@@ -16,7 +16,7 @@ import qualified Data.Text.Lazy                     as LT (fromStrict)
 import           Data.Text.Lazy.Encoding            (encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataFullType (..), DataKind (..), DataTyCon (..),
+import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataType (..), DataKind (..), DataTyCon (..),
                                                      DataTypeLib, DataTypeWrapper (..), Key, TypeAlias (..),
                                                      WrapperD (..), allDataTypes, isDefaultTypeName, toGQLWrapper)
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
@@ -48,7 +48,7 @@ instance RenderGQL DataKind where
   render (ObjectKind x) = typeName x
   render (UnionKind x)  = typeName x
 
-instance RenderGQL (Key, DataFullType) where
+instance RenderGQL (Key, DataType) where
   render (name, DataScalar {}) = "scalar " <> name
   render (name, DataEnum DataTyCon {typeData}) = "enum " <> name <> renderObject id typeData
   render (name, DataUnion DataTyCon {typeData}) =

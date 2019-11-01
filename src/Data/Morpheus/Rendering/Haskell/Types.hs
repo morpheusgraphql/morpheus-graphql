@@ -14,10 +14,10 @@ import qualified Data.Text                             as T (head, tail)
 import           Data.Morpheus.Rendering.Haskell.Terms (Context (..), Scope (..), indent, renderAssignment, renderCon,
                                                         renderData, renderSet, renderTuple, renderUnionCon,
                                                         renderWrapped)
-import           Data.Morpheus.Types.Internal.Data     (DataArgument, DataField (..), DataFullType (..), DataTyCon (..),
+import           Data.Morpheus.Types.Internal.Data     (DataArgument, DataField (..), DataType (..), DataTyCon (..),
                                                         TypeAlias (..), isNullable)
 
-renderType :: Context -> (Text, DataFullType) -> Text
+renderType :: Context -> (Text, DataType) -> Text
 renderType context (name, dataType) = typeIntro <> renderData name <> renderT dataType
   where
     renderT (DataScalar _) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name

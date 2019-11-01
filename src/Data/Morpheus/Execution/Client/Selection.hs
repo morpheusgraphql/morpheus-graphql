@@ -20,7 +20,7 @@ import           Data.Morpheus.Types.Internal.AST.Operation    (DefaultValue, Op
                                                                 Variable (..), VariableDefinitions, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionRec (..), SelectionSet,
                                                                 ValidSelection)
-import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataFullType (..), DataTyCon (..),
+import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataType (..), DataTyCon (..),
                                                                 DataTypeKind (..), DataTypeLib (..), Key,
                                                                 TypeAlias (..), allDataTypes)
 import           Data.Morpheus.Types.Internal.DataD            (ConsD (..), GQLTypeD (..), TypeD (..))
@@ -74,7 +74,7 @@ operationTypes lib variables = genOperation
                 }
     ---------------------------------------------------------
     -- generates selection Object Types
-    genRecordType :: [Key] -> Key -> DataFullType -> SelectionSet -> Validation ([GQLTypeD], [Text])
+    genRecordType :: [Key] -> Key -> DataType -> SelectionSet -> Validation ([GQLTypeD], [Text])
     genRecordType path name dataType recordSelSet = do
       (con, subTypes, requests) <- genConsD (unpack name) dataType recordSelSet
       pure
@@ -87,7 +87,7 @@ operationTypes lib variables = genOperation
         , requests)
       where
         tName = unpack name
-        genConsD :: String -> DataFullType -> SelectionSet -> Validation (ConsD, [GQLTypeD], [Text])
+        genConsD :: String -> DataType -> SelectionSet -> Validation (ConsD, [GQLTypeD], [Text])
         genConsD cName datatype selSet = do
           cFields <- traverse genField selSet
           (subTypes, requests) <- newFieldTypes datatype selSet
@@ -106,7 +106,7 @@ operationTypes lib variables = genOperation
                   fieldType <- snd <$> lookupFieldType lib fieldPath datatype fieldName
                   pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
             ------------------------------------------------------------------------------------------------------------
-            newFieldTypes :: DataFullType -> SelectionSet -> Validation ([[GQLTypeD]], [[Text]])
+            newFieldTypes :: DataType -> SelectionSet -> Validation ([[GQLTypeD]], [[Text]])
             newFieldTypes parentType seSet = unzip <$> mapM valSelection seSet
               where
                 valSelection (key, selection@Selection { selectionAlias }) = do
@@ -116,7 +116,7 @@ operationTypes lib variables = genOperation
                   where
                     fieldPath = path <> [fromMaybe key selectionAlias]
                     --------------------------------------------------------------------
-                    validateSelection :: DataFullType -> ValidSelection -> Validation ([GQLTypeD], [Text])
+                    validateSelection :: DataType -> ValidSelection -> Validation ([GQLTypeD], [Text])
                     validateSelection dType Selection {selectionRec = SelectionField} = leafType dType
                     --withLeaf buildLeaf dType
                     validateSelection dType Selection {selectionRec = SelectionSet selectionSet} =
@@ -185,7 +185,7 @@ buildInputType lib name = getType lib name >>= subTypes
         enumOption eName = ConsD {cName = unpack eName, cFields = []}
     subTypes _ = pure []
 
-lookupFieldType :: DataTypeLib -> [Key] -> DataFullType -> Text -> Validation (DataFullType, TypeAlias)
+lookupFieldType :: DataTypeLib -> [Key] -> DataType -> Text -> Validation (DataType, TypeAlias)
 lookupFieldType lib path (DataObject DataTyCon {typeData}) key =
   case lookup key typeData of
     Just DataField {fieldType = alias@TypeAlias {aliasTyCon}} -> trans <$> getType lib aliasTyCon
@@ -194,12 +194,12 @@ lookupFieldType lib path (DataObject DataTyCon {typeData}) key =
 lookupFieldType _ _ dt _ = Left (compileError $ "Type should be output Object \"" <> pack (show dt))
 
 
-leafType :: DataFullType -> Validation ([GQLTypeD], [Text])
+leafType :: DataType -> Validation ([GQLTypeD], [Text])
 leafType (DataEnum DataTyCon {typeName}) = pure ([],[typeName])
 leafType DataScalar {}                   = pure ([],[])
 leafType _                               = Left $ compileError "Invalid schema Expected scalar"
 
-getType :: DataTypeLib -> Text -> Validation DataFullType
+getType :: DataTypeLib -> Text -> Validation DataType
 getType lib typename = lookupType (compileError typename) (allDataTypes lib) typename
 
 typeFromScalar :: Text -> Text
@@ -210,7 +210,7 @@ typeFromScalar "String"  = "Text"
 typeFromScalar "ID"      = "ID"
 typeFromScalar _         = "ScalarValue"
 
-typeFrom :: [Key] -> DataFullType -> Text
+typeFrom :: [Key] -> DataType -> Text
 typeFrom _ (DataScalar DataTyCon {typeName}) = typeFromScalar typeName
 typeFrom _ (DataEnum x)                      = typeName x
 typeFrom _ (DataInputObject x)               = typeName x

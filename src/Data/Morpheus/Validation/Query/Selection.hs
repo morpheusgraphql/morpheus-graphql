@@ -21,7 +21,7 @@ import           Data.Morpheus.Types.Internal.AST.RawSelection  (Fragment (..), 
                                                                  RawSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base              (EnhancedKey (..))
-import           Data.Morpheus.Types.Internal.Data              (DataField (..), DataFullType (..), DataObject,
+import           Data.Morpheus.Types.Internal.Data              (DataField (..), DataType (..), DataObject,
                                                                  DataTyCon (..), DataTypeLib (..), TypeAlias (..),
                                                                  allDataTypes, isEntNode)
 import           Data.Morpheus.Types.Internal.Validation        (Validation)

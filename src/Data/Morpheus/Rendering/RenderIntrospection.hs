@@ -15,7 +15,7 @@ import           Data.Morpheus.Schema.Schema
 
 -- Morpheus
 import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
-import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataFullType (..), DataObject, DataTyCon (..),
+import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataType (..), DataObject, DataTyCon (..),
                                                      DataTypeKind (..), DataTypeLib, DataTypeWrapper (..), DataUnion,
                                                      TypeAlias (..), kindOf, lookupDataType, toGQLWrapper)
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
@@ -28,7 +28,7 @@ type Result m a = DataTypeLib -> m a
 class RenderSchema a b where
   render :: Monad m => (Text, a) -> DataTypeLib -> m (b m)
 
-instance RenderSchema DataFullType S__Type where
+instance RenderSchema DataType S__Type where
   render (key, DataScalar DataTyCon {typeDescription})  =
     constRes $ createLeafType SCALAR key typeDescription Nothing
   render (key, DataEnum DataTyCon {typeDescription, typeData})  =

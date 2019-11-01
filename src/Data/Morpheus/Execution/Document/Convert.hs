@@ -15,16 +15,16 @@ import           Data.Text                               (Text, pack, unpack)
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Execution.Internal.Utils  (capital)
-import           Data.Morpheus.Types.Internal.Data       (ArgsType (..), DataField (..), DataFullType (..),
+import           Data.Morpheus.Types.Internal.Data       (ArgsType (..), DataField (..), DataType (..),
                                                           DataTyCon (..), DataTypeKind (..), OperationType (..),
                                                           ResolverKind (..), TypeAlias (..), sysTypes)
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 
-renderTHTypes :: Bool -> [(Text, DataFullType)] -> Validation [GQLTypeD]
+renderTHTypes :: Bool -> [(Text, DataType)] -> Validation [GQLTypeD]
 renderTHTypes namespace lib = traverse renderTHType lib
   where
-    renderTHType :: (Text, DataFullType) -> Validation GQLTypeD
+    renderTHType :: (Text, DataType) -> Validation GQLTypeD
     renderTHType (tyConName, x) = genType x
       where
         genArgsTypeName fieldName

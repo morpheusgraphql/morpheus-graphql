@@ -10,21 +10,21 @@ import           Data.Maybe
 -- Morpheus
 import           Data.Morpheus.Error.Document.Interface  (ImplementsError (..), partialImplements, unknownInterface)
 import           Data.Morpheus.Rendering.RenderGQL       (RenderGQL (..))
-import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataFullType (..), DataObject, DataTyCon (..),
+import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataType (..), DataObject, DataTyCon (..),
                                                           Key, RawDataType (..), TypeAlias (..), isWeaker, isWeaker)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 
-validatePartialDocument :: [(Key, RawDataType)] -> Validation [(Key, DataFullType)]
+validatePartialDocument :: [(Key, RawDataType)] -> Validation [(Key, DataType)]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib
   where
-    validateType :: (Key, RawDataType) -> Validation (Maybe (Key, DataFullType))
+    validateType :: (Key, RawDataType) -> Validation (Maybe (Key, DataType))
     validateType (name, FinalDataType x)              = pure $ Just (name, x)
     validateType (name, Implements interfaces object) = asTuple name <$> object `mustImplement` interfaces
     validateType _                                    = pure Nothing
     -----------------------------------
     asTuple name x = Just (name, x)
     -----------------------------------
-    mustImplement :: DataObject -> [Key] -> Validation DataFullType
+    mustImplement :: DataObject -> [Key] -> Validation DataType
     mustImplement object interfaceKey = do
       interface <- traverse getInterfaceByKey interfaceKey
       case concatMap (mustBeSubset object) interface of

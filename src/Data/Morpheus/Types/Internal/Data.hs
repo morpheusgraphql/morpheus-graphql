@@ -22,7 +22,7 @@ module Data.Morpheus.Types.Internal.Data
   , DataField(..)
   , DataTyCon(..)
   , DataKind(..)
-  , DataFullType(..)
+  , DataType(..)
   , DataTypeLib(..)
   , DataTypeWrapper(..)
   , DataValidator(..)
@@ -245,7 +245,7 @@ data DataKind
   | UnionKind DataUnion
   deriving (Show)
 
-toDataKind :: DataFullType -> DataKind
+toDataKind :: DataType -> DataKind
 toDataKind (DataScalar x)      = ScalarKind x
 toDataKind (DataEnum x)        = EnumKind x
 toDataKind (DataInputObject x) = ObjectKind x
@@ -254,18 +254,18 @@ toDataKind (DataUnion x)       = UnionKind x
 toDataKind (DataInputUnion x)  = UnionKind x
 
 data RawDataType
-  = FinalDataType DataFullType
+  = FinalDataType DataType
   | Interface DataObject
   | Implements { implementsInterfaces :: [Key]
                , unImplements         :: DataObject }
   deriving (Show)
 
-isEntNode :: DataFullType -> Bool
+isEntNode :: DataType -> Bool
 isEntNode DataScalar {} = True
 isEntNode DataEnum {}   = True
 isEntNode _             = False
 
-data DataFullType
+data DataType
   = DataScalar DataScalar
   | DataEnum DataEnum
   | DataInputObject DataObject
@@ -300,7 +300,7 @@ initTypeLib query =
     , subscription = Nothing
     }
 
-allDataTypes :: DataTypeLib -> [(Key, DataFullType)]
+allDataTypes :: DataTypeLib -> [(Key, DataType)]
 allDataTypes DataTypeLib { scalar, enum , inputObject, object, union, inputUnion, query, mutation, subscription } =
   packType DataObject query :
   fromMaybeType mutation ++
@@ -311,14 +311,14 @@ allDataTypes DataTypeLib { scalar, enum , inputObject, object, union, inputUnion
   map (packType DataInputUnion) inputUnion ++ map (packType DataObject) object ++ map (packType DataUnion) union
   where
     packType f (x, y) = (x, f y)
-    fromMaybeType :: Maybe (Key, DataObject) -> [(Key, DataFullType)]
+    fromMaybeType :: Maybe (Key, DataObject) -> [(Key, DataType)]
     fromMaybeType (Just (key', dataType')) = [(key', DataObject dataType')]
     fromMaybeType Nothing                  = []
 
-lookupDataType :: Key -> DataTypeLib -> Maybe DataFullType
+lookupDataType :: Key -> DataTypeLib -> Maybe DataType
 lookupDataType name lib = name `lookup` allDataTypes lib
 
-kindOf :: DataFullType -> DataTypeKind
+kindOf :: DataType -> DataTypeKind
 kindOf (DataScalar _)      = KindScalar
 kindOf (DataEnum _)        = KindEnum
 kindOf (DataInputObject _) = KindInputObject
@@ -326,7 +326,7 @@ kindOf (DataObject _)      = KindObject Nothing
 kindOf (DataUnion _)       = KindUnion
 kindOf (DataInputUnion _)  = KindInputUnion
 
-fromDataType :: (DataTyCon () -> v) -> DataFullType -> v
+fromDataType :: (DataTyCon () -> v) -> DataType -> v
 fromDataType f (DataScalar dt)      = f dt {typeData = ()}
 fromDataType f (DataEnum dt)        = f dt {typeData = ()}
 fromDataType f (DataUnion dt)       = f dt {typeData = ()}
@@ -337,7 +337,7 @@ fromDataType f (DataObject dt)      = f dt {typeData = ()}
 isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name lib = fromDataType typeFingerprint <$> lookupDataType name lib
 
-defineType :: (Key, DataFullType) -> DataTypeLib -> DataTypeLib
+defineType :: (Key, DataType) -> DataTypeLib -> DataTypeLib
 defineType (key', DataScalar type') lib      = lib {scalar = (key', type') : scalar lib}
 defineType (key', DataEnum type') lib        = lib {enum = (key', type') : enum lib}
 defineType (key', DataInputObject type') lib = lib {inputObject = (key', type') : inputObject lib}

@@ -12,7 +12,7 @@ module Data.Morpheus.Parsing.Internal.Create
   ) where
 
 import           Data.Morpheus.Types.Internal.Data (DataArguments, DataField (..), DataFingerprint (..),
-                                                    DataFullType (..), DataTyCon (..), DataTypeLib (..),
+                                                    DataType (..), DataTyCon (..), DataTypeLib (..),
                                                     DataValidator (..), TypeAlias (..), WrapperD, defineType,
                                                     initTypeLib)
 import           Data.Text                         (Text)
@@ -34,18 +34,18 @@ createType :: Text -> a -> DataTyCon a
 createType typeName typeData =
   DataTyCon {typeName, typeDescription = Nothing, typeFingerprint = SystemFingerprint "", typeData}
 
-createScalarType :: Text -> (Text, DataFullType)
+createScalarType :: Text -> (Text, DataType)
 createScalarType typeName = (typeName, DataScalar $ createType typeName (DataValidator pure))
 
-createEnumType :: Text -> [Text] -> (Text, DataFullType)
+createEnumType :: Text -> [Text] -> (Text, DataType)
 createEnumType typeName typeData = (typeName, DataEnum $ createType typeName typeData)
 
-createUnionType :: Text -> [Text] -> (Text, DataFullType)
+createUnionType :: Text -> [Text] -> (Text, DataType)
 createUnionType typeName typeData = (typeName, DataUnion $ createType typeName $ map unionField typeData)
   where
     unionField fieldType = createField [] "" ([], fieldType)
 
-createDataTypeLib :: Monad m => [(Text, DataFullType)] -> m DataTypeLib
+createDataTypeLib :: Monad m => [(Text, DataType)] -> m DataTypeLib
 createDataTypeLib types =
   case takeByKey "Query" types of
     (Just query, lib1) ->

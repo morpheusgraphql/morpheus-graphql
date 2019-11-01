@@ -16,7 +16,7 @@ import           Data.Morpheus.Parsing.Internal.Create   (createArgument, create
 import           Data.Morpheus.Parsing.JSONSchema.Types  (EnumValue (..), Field (..), InputValue (..),
                                                           Introspection (..), Schema (..), Type (..))
 import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
-import           Data.Morpheus.Types.Internal.Data       (DataField, DataFullType (..), DataTypeLib,
+import           Data.Morpheus.Types.Internal.Data       (DataField, DataType (..), DataTypeLib,
                                                           DataTypeWrapper (..), Key, WrapperD, toHSWrappers)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.IO                  (JSONResponse (..))
@@ -37,7 +37,7 @@ decodeIntrospection jsonDoc =
 class ParseJSONSchema a b where
   parse :: a -> Validation (Key, b)
 
-instance ParseJSONSchema Type DataFullType where
+instance ParseJSONSchema Type DataType where
   parse Type {name = Just typeName, kind = SCALAR} = pure $ createScalarType typeName
   parse Type {name = Just typeName, kind = ENUM, enumValues = Just enums} =
     pure $ createEnumType typeName (map enumName enums)

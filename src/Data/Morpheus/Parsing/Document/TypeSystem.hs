@@ -15,7 +15,7 @@ import           Data.Morpheus.Parsing.Internal.Pattern  (fieldsDefinition, inpu
                                                           typDeclaration)
 import           Data.Morpheus.Parsing.Internal.Terms    (keyword, operator, optDescription, parseName, pipeLiteral,
                                                           sepByAnd, setOf)
-import           Data.Morpheus.Types.Internal.Data       (DataField, DataFingerprint (..), DataFullType (..),
+import           Data.Morpheus.Types.Internal.Data       (DataField, DataFingerprint (..), DataType (..),
                                                           DataTyCon (..), DataValidator (..), Key, RawDataType (..))
 
 
@@ -24,7 +24,7 @@ import           Data.Morpheus.Types.Internal.Data       (DataField, DataFingerp
 --  ScalarTypeDefinition:
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
-scalarTypeDefinition :: Maybe Text -> Parser (Text, DataFullType)
+scalarTypeDefinition :: Maybe Text -> Parser (Text, DataType)
 scalarTypeDefinition typeDescription =
   label "ScalarTypeDefinition" $ do
     typeName <- typDeclaration "scalar"
@@ -110,7 +110,7 @@ interfaceTypeDefinition typeDescription =
 --    = |(opt) NamedType
 --      UnionMemberTypes | NamedType
 --
-unionTypeDefinition :: Maybe Text ->  Parser (Text, DataFullType)
+unionTypeDefinition :: Maybe Text ->  Parser (Text, DataType)
 unionTypeDefinition typeDescription =
   label "UnionTypeDefinition" $ do
     typeName <- typDeclaration "union"
@@ -141,7 +141,7 @@ unionTypeDefinition typeDescription =
 --  EnumValueDefinition
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
-enumTypeDefinition :: Maybe Text -> Parser (Text, DataFullType)
+enumTypeDefinition :: Maybe Text -> Parser (Text, DataType)
 enumTypeDefinition typeDescription =
   label "EnumTypeDefinition" $ do
     typeName <- typDeclaration "enum"
@@ -174,7 +174,7 @@ enumTypeDefinition typeDescription =
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }
 --
-inputObjectTypeDefinition :: Maybe Text -> Parser (Text, DataFullType)
+inputObjectTypeDefinition :: Maybe Text -> Parser (Text, DataType)
 inputObjectTypeDefinition typeDescription =
   label "InputObjectTypeDefinition" $ do
     typeName <- typDeclaration "input"
@@ -196,7 +196,7 @@ inputObjectTypeDefinition typeDescription =
       inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefinition
 
 
-parseFinalDataType :: Maybe Text -> Parser (Text, DataFullType)
+parseFinalDataType :: Maybe Text -> Parser (Text, DataType)
 parseFinalDataType description = label "TypeDefinition" $
         inputObjectTypeDefinition description
     <|> unionTypeDefinition description

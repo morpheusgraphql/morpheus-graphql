@@ -39,7 +39,7 @@ import           Data.Morpheus.Kind                              (Context (..), 
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (..))
-import           Data.Morpheus.Types.Internal.Data               (DataArguments, DataField (..), DataFullType (..),
+import           Data.Morpheus.Types.Internal.Data               (DataArguments, DataField (..), DataType (..),
                                                                   DataTyCon (..), DataTypeLib, TypeAlias (..),
                                                                   defineType, isTypeDefined, toListField,
                                                                   toNullableField)
@@ -227,7 +227,7 @@ buildType typeData proxy =
     , typeData
     }
 
-updateLib :: GQLType a => (Proxy a -> DataFullType) -> [TypeUpdater] -> Proxy a -> TypeUpdater
+updateLib :: GQLType a => (Proxy a -> DataType) -> [TypeUpdater] -> Proxy a -> TypeUpdater
 updateLib typeBuilder stack proxy lib' =
   case isTypeDefined (__typeName proxy) lib' of
     Nothing -> resolveUpdates (defineType (__typeName proxy, typeBuilder proxy) lib') stack

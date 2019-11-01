@@ -13,7 +13,7 @@ import           Data.Text                             (Text)
 -- MORPHEUS
 import           Data.Morpheus.Rendering.Haskell.Terms (Context (..), Scope (..), renderAssignment, renderCon,
                                                         renderEqual, renderReturn, renderSet, renderUnionCon)
-import           Data.Morpheus.Types.Internal.Data     (DataField (..), DataFullType (..), DataTyCon (..),
+import           Data.Morpheus.Types.Internal.Data     (DataField (..), DataType (..), DataTyCon (..),
                                                         DataTypeLib (..), TypeAlias (..), WrapperD (..))
 
 renderRootResolver :: Context -> DataTypeLib -> Text
@@ -37,7 +37,7 @@ renderRootResolver _ DataTypeLib {mutation, subscription} = renderSignature <> r
         maybeRes (Just (name, _)) = "resolve" <> name
         maybeRes Nothing          = "return ()"
 
-renderResolver :: Context -> (Text, DataFullType) -> Text
+renderResolver :: Context -> (Text, DataType) -> Text
 renderResolver Context {scope, pubSub = (channel, content)} (name, dataType) = renderSig dataType
   where
     renderSig DataScalar {} = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
