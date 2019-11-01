@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
 
-module Mythology.API
+module Server.Mythology.API
   ( mythologyApi
   ) where
 
@@ -11,7 +11,7 @@ import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Types        (Resolver (..), IORes, GQLRootResolver (..), GQLType, Undefined (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
-import           Mythology.Character.Deity  (Deity (..), dbDeity)
+import           Server.Mythology.Character.Deity  (Deity (..), dbDeity)
 
 newtype Query m = Query
   { deity :: DeityArgs -> m Deity

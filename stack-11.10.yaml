@@ -12,3 +12,7 @@ extra-deps:
   - scotty-0.11.2
 
 allow-newer: true
+
+packages:
+  - examples
+  - .

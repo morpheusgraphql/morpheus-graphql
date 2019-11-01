@@ -1,2 +1,6 @@
 # ghc 8.6.5
 resolver: lts-14.8
+
+packages:
+  - examples
+  - .

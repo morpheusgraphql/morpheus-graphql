@@ -1,8 +1,7 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric  #-}
 {-# LANGUAGE TypeFamilies   #-}
 
-module Mythology.Place.Places
+module Server.Mythology.Place.Places
   ( Realm(..)
   , City(..)
   ) where

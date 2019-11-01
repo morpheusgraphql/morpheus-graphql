@@ -1,0 +1,7 @@
+# TODO: add to CI
+# ghc-8.8.1
+resolver: nightly-2019-10-07
+
+packages:
+  - examples
+  - .

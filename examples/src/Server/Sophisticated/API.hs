@@ -10,7 +10,7 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 
-module Sophisticated.API
+module Server.Sophisticated.API
   ( gqlRoot
   , APIEvent
   ) where
@@ -30,7 +30,7 @@ import           Data.Morpheus.Types    (Event (..), GQLRootResolver (..), GQLSc
                                          Resolver (..), ScalarValue (..), constRes)
 
 
-$(importGQLDocumentWithNamespace "examples/Sophisticated/api.gql")
+$(importGQLDocumentWithNamespace "src/Server/Sophisticated/api.gql")
 
 type AIntText = A (Int, Text)
 

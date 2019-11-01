@@ -8,7 +8,7 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 
-module TH.Simple
+module Server.TH.Simple
   ( thSimpleApi
   ) where
 
@@ -19,7 +19,7 @@ import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Types        (GQLRootResolver (..), Undefined (..))
 import           Data.Text                  (Text)
 
-importGQLDocumentWithNamespace "examples/TH/simple.gql"
+importGQLDocumentWithNamespace "src/Server/TH/simple.gql"
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =

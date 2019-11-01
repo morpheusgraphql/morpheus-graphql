@@ -8,20 +8,23 @@ module Main
   ( main
   ) where
 
-import           Client.Client                  (fetUser, fetchHero)
+
 import           Control.Monad.IO.Class         (liftIO)
 import           Data.Functor.Identity          (Identity (..))
 import           Data.Morpheus                  (Interpreter (..))
 import           Data.Morpheus.Document         (toGraphQLDocument)
 import           Data.Morpheus.Server           (GQLState, gqlSocketApp, initGQLState)
-import           Mythology.API                  (mythologyApi)
 import qualified Network.Wai                    as Wai
 import qualified Network.Wai.Handler.Warp       as Warp
 import qualified Network.Wai.Handler.WebSockets as WaiWs
 import           Network.WebSockets             (defaultConnectionOptions)
-import           Sophisticated.API              (APIEvent, gqlRoot)
-import           TH.Simple                      (thSimpleApi)
 import           Web.Scotty                     (body, file, get, post, raw, scottyApp)
+
+-- examples
+import           Client.Client                  (fetUser, fetchHero)
+import           Server.Mythology.API           (mythologyApi)
+import           Server.TH.Simple               (thSimpleApi)
+import           Server.Sophisticated.API       (APIEvent, gqlRoot)
 
 main :: IO ()
 main = do
@@ -37,9 +40,9 @@ main = do
     httpServer state =
       scottyApp $ do
         post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
-        get "/" $ file "examples/index.html"
+        get "/" $ file "index.html"
         get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
         post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
-        get "/mythology" $ file "examples/index.html"
+        get "/mythology" $ file "index.html"
         post "/th" $ raw =<< (liftIO . thSimpleApi =<< body)
-        get "/th" $ file "examples/index.html"
+        get "/th" $ file "index.html"

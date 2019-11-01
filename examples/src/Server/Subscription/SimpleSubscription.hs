@@ -5,13 +5,13 @@
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Subscription.SimpleSubscription where
+module Server.Subscription.SimpleSubscription where
 
 import           Data.Morpheus.Types       (Event (..), Resolver (..), GQLRootResolver (..))
 import           Data.Text                 (Text)
 import           GHC.Generics              (Generic)
-import           Mythology.Character.Deity (Deity (..))
-import           Mythology.Place.Places    (Realm (..))
+import           Server.Mythology.Character.Deity (Deity (..))
+import           Server.Mythology.Place.Places    (Realm (..))
 
 -- TODO: importGQLDocument "examples/Subscription/api.gql"
 --
