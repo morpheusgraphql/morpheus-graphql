@@ -33,14 +33,14 @@ instance RenderSchema DataFullType S__Type where
     constRes $ createLeafType SCALAR key typeDescription Nothing
   render (key, DataEnum DataTyCon {typeDescription, typeData})  =
     constRes $ createLeafType ENUM key typeDescription (Just $ map createEnumValue typeData)
-  render (name, InputObject iObject) = renderInputObject (name, iObject)
-  render (name, OutputObject object') = typeFromObject (name, object')
+  render (name, DataInputObject iObject) = renderInputObject (name, iObject)
+  render (name, DataObject object') = typeFromObject (name, object')
     where
       typeFromObject (key, DataTyCon {typeData, typeDescription}) lib =
         createObjectType key typeDescription <$>
         (Just <$> traverse (`render` lib) (filter (not . fieldHidden . snd) typeData))
-  render (name, Union union') = const $ pure $ typeFromUnion (name, union')
-  render (name, InputUnion inpUnion') = renderInputUnion (name, inpUnion')
+  render (name, DataUnion union') = const $ pure $ typeFromUnion (name, union')
+  render (name, DataInputUnion inpUnion') = renderInputUnion (name, inpUnion')
 
 instance RenderSchema DataField S__Field where
   render (key, field@DataField {fieldType = TypeAlias {aliasTyCon}, fieldArgs}) lib = do

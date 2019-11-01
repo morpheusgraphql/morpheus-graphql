@@ -28,7 +28,7 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
     mustImplement object interfaceKey = do
       interface <- traverse getInterfaceByKey interfaceKey
       case concatMap (mustBeSubset object) interface of
-        []     -> pure $ OutputObject object
+        []     -> pure $ DataObject object
         errors -> Left $ partialImplements (typeName object) errors
     -------------------------------
     mustBeSubset :: DataObject -> DataObject -> [(Key, Key, ImplementsError)]

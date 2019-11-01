@@ -41,7 +41,7 @@ createEnumType :: Text -> [Text] -> (Text, DataFullType)
 createEnumType typeName typeData = (typeName, DataEnum $ createType typeName typeData)
 
 createUnionType :: Text -> [Text] -> (Text, DataFullType)
-createUnionType typeName typeData = (typeName, Union $ createType typeName $ map unionField typeData)
+createUnionType typeName typeData = (typeName, DataUnion $ createType typeName $ map unionField typeData)
   where
     unionField fieldType = createField [] "" ([], fieldType)
 
@@ -58,5 +58,5 @@ createDataTypeLib types =
   where
     takeByKey key lib =
       case lookup key lib of
-        Just (OutputObject value) -> (Just (key, value), filter ((/= key) . fst) lib)
-        _                         -> (Nothing, lib)
+        Just (DataObject value) -> (Just (key, value), filter ((/= key) . fst) lib)
+        _                       -> (Nothing, lib)

@@ -22,11 +22,11 @@ renderType context (name, dataType) = typeIntro <> renderData name <> renderT da
   where
     renderT (DataScalar _) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name
     renderT (DataEnum DataTyCon {typeData}) = unionType typeData <> defineTypeClass "ENUM"
-    renderT (Union DataTyCon {typeData}) = renderUnion name typeData <> defineTypeClass "UNION"
-    renderT (InputObject DataTyCon {typeData}) =
+    renderT (DataUnion DataTyCon {typeData}) = renderUnion name typeData <> defineTypeClass "UNION"
+    renderT (DataInputObject DataTyCon {typeData}) =
       renderCon name <> renderObject renderInputField typeData <> defineTypeClass "INPUT_OBJECT"
-    renderT (InputUnion _) = "\n -- Error: Input Union Not Supported"
-    renderT (OutputObject DataTyCon {typeData}) =
+    renderT (DataInputUnion _) = "\n -- Error: Input Union Not Supported"
+    renderT (DataObject DataTyCon {typeData}) =
       renderCon name <> renderObject (renderField context) typeData <> defineTypeClass "OBJECT"
     ----------------------------------------------------------------------------------------------------------
     typeIntro = "\n\n---- GQL " <> name <> " ------------------------------- \n"

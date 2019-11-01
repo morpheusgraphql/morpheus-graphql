@@ -110,13 +110,13 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
 
 -- INPUT_OBJECT
 instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT a where
-  introspectKind _ = updateLib (InputObject . buildType fields) types (Proxy @a)
+  introspectKind _ = updateLib (DataInputObject . buildType fields) types (Proxy @a)
     where
       (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
 
 -- OBJECTS
 instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a where
-  introspectKind _ = updateLib (OutputObject . buildType (__typename : fields)) types (Proxy @a)
+  introspectKind _ = updateLib (DataObject . buildType (__typename : fields)) types (Proxy @a)
     where
       __typename =
         ( "__typename"
@@ -131,13 +131,13 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a wher
 
 -- UNION
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind UNION a where
-  introspectKind _ = updateLib (Union . buildType fields) stack (Proxy @a)
+  introspectKind _ = updateLib (DataUnion . buildType fields) stack (Proxy @a)
     where
       (fields, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
 
 -- INPUT_UNION
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a where
-  introspectKind _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
+  introspectKind _ = updateLib (DataInputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
     where
       (inputUnions, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
       fields = map toNullableField inputUnions

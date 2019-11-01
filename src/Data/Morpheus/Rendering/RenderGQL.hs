@@ -51,11 +51,11 @@ instance RenderGQL DataKind where
 instance RenderGQL (Key, DataFullType) where
   render (name, DataScalar {}) = "scalar " <> name
   render (name, DataEnum DataTyCon {typeData}) = "enum " <> name <> renderObject id typeData
-  render (name, Union DataTyCon {typeData}) =
+  render (name, DataUnion DataTyCon {typeData}) =
     "union " <> name <> " =\n    " <> intercalate ("\n" <> renderIndent <> "| ") (map (render . fieldType) typeData)
-  render (name, InputObject DataTyCon {typeData}) = "input " <> name <> render typeData
-  render (name, InputUnion DataTyCon {typeData}) = "input " <> name <> render (mapKeys typeData)
-  render (name, OutputObject DataTyCon {typeData}) = "type " <> name <> render typeData
+  render (name, DataInputObject DataTyCon {typeData}) = "input " <> name <> render typeData
+  render (name, DataInputUnion DataTyCon {typeData}) = "input " <> name <> render (mapKeys typeData)
+  render (name, DataObject DataTyCon {typeData}) = "type " <> name <> render typeData
 
 mapKeys :: [DataField] -> [(Text, DataField)]
 mapKeys = map (\x -> (fieldName x, x))

@@ -119,7 +119,7 @@ unionTypeDefinition typeDescription =
     memberTypes <- unionMemberTypes
     pure (
         typeName,
-        Union DataTyCon {
+        DataUnion DataTyCon {
              typeName,
              typeDescription,
              typeFingerprint = SystemFingerprint typeName,
@@ -184,7 +184,7 @@ inputObjectTypeDefinition typeDescription =
     pure
        (
          typeName,
-         InputObject DataTyCon {
+         DataInputObject DataTyCon {
            typeName,
            typeDescription,
            typeFingerprint = SystemFingerprint typeName,

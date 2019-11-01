@@ -42,10 +42,10 @@ renderResolver Context {scope, pubSub = (channel, content)} (name, dataType) = r
   where
     renderSig DataScalar {} = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
     renderSig (DataEnum DataTyCon {typeData}) = defFunc <> renderReturn <> renderCon (head typeData)
-    renderSig (Union DataTyCon {typeData}) = defFunc <> renderUnionCon name typeCon <> " <$> " <> "resolve" <> typeCon
+    renderSig (DataUnion DataTyCon {typeData}) = defFunc <> renderUnionCon name typeCon <> " <$> " <> "resolve" <> typeCon
       where
         typeCon = aliasTyCon $ fieldType $ head typeData
-    renderSig (OutputObject DataTyCon {typeData}) = defFunc <> renderReturn <> renderCon name <> renderObjFields
+    renderSig (DataObject DataTyCon {typeData}) = defFunc <> renderReturn <> renderCon name <> renderObjFields
       where
         renderObjFields = renderResObject (map renderFieldRes typeData)
         renderFieldRes (key, DataField {fieldType = TypeAlias {aliasWrappers, aliasTyCon}}) =

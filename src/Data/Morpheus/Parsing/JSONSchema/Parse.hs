@@ -47,10 +47,10 @@ instance ParseJSONSchema Type DataFullType where
       Just uni -> pure $ createUnionType typeName uni
   parse Type {name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields} = do
     fields <- traverse parse iFields
-    pure (typeName, InputObject $ createType typeName fields)
+    pure (typeName, DataInputObject $ createType typeName fields)
   parse Type {name = Just typeName, kind = OBJECT, fields = Just oFields} = do
     fields <- traverse parse oFields
-    pure (typeName, OutputObject $ createType typeName fields)
+    pure (typeName, DataObject $ createType typeName fields)
   parse x = internalError $ "Unsuported type" <> pack (show x)
 
 instance ParseJSONSchema Field DataField where

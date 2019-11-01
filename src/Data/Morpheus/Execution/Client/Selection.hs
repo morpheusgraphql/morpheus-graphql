@@ -43,7 +43,7 @@ operationTypes lib variables = genOperation
       inputTypesAndEnums <- buildListedTypes (inputTypeRequests <> enums)
       pure (rootArguments (getOperationName operationName <> "Args"), queryTypes <> inputTypesAndEnums)
       where
-        queryDataType = OutputObject $ snd $ query lib
+        queryDataType = DataObject $ snd $ query lib
     -------------------------------------------------------------------------
     buildListedTypes = fmap concat . traverse (buildInputType lib) . removeDuplicates
     -------------------------------------------------------------------------
@@ -143,7 +143,7 @@ scanInputTypes lib name collected
   | name `elem` collected = pure collected
   | otherwise = getType lib name >>= scanType
   where
-    scanType (InputObject DataTyCon {typeData}) = resolveUpdates (name : collected) (map toInputTypeD typeData)
+    scanType (DataInputObject DataTyCon {typeData}) = resolveUpdates (name : collected) (map toInputTypeD typeData)
       where
         toInputTypeD :: (Text, DataField) -> LibUpdater [Key]
         toInputTypeD (_, DataField {fieldType = TypeAlias {aliasTyCon}}) = scanInputTypes lib aliasTyCon
@@ -153,7 +153,7 @@ scanInputTypes lib name collected
 buildInputType :: DataTypeLib -> Text -> Validation [GQLTypeD]
 buildInputType lib name = getType lib name >>= subTypes
   where
-    subTypes (InputObject DataTyCon {typeName, typeData}) = do
+    subTypes (DataInputObject DataTyCon {typeName, typeData}) = do
       fields <- traverse toFieldD typeData
       pure
         [ GQLTypeD
@@ -186,7 +186,7 @@ buildInputType lib name = getType lib name >>= subTypes
     subTypes _ = pure []
 
 lookupFieldType :: DataTypeLib -> [Key] -> DataFullType -> Text -> Validation (DataFullType, TypeAlias)
-lookupFieldType lib path (OutputObject DataTyCon {typeData}) key =
+lookupFieldType lib path (DataObject DataTyCon {typeData}) key =
   case lookup key typeData of
     Just DataField {fieldType = alias@TypeAlias {aliasTyCon}} -> trans <$> getType lib aliasTyCon
       where trans x = (x, alias {aliasTyCon = typeFrom path x, aliasArgs = Nothing})
@@ -213,7 +213,7 @@ typeFromScalar _         = "ScalarValue"
 typeFrom :: [Key] -> DataFullType -> Text
 typeFrom _ (DataScalar DataTyCon {typeName}) = typeFromScalar typeName
 typeFrom _ (DataEnum x)                      = typeName x
-typeFrom _ (InputObject x)                   = typeName x
-typeFrom path (OutputObject x)               = pack $ nameSpaceType path $ typeName x
-typeFrom path (Union x)                      = pack $ nameSpaceType path $ typeName x
-typeFrom _ (InputUnion x)                    = typeName x
+typeFrom _ (DataInputObject x)               = typeName x
+typeFrom path (DataObject x)                 = pack $ nameSpaceType path $ typeName x
+typeFrom path (DataUnion x)                  = pack $ nameSpaceType path $ typeName x
+typeFrom _ (DataInputUnion x)                = typeName x
