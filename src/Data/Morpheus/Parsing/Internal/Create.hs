@@ -12,7 +12,7 @@ module Data.Morpheus.Parsing.Internal.Create
   ) where
 
 import           Data.Morpheus.Types.Internal.Data (DataArguments, DataField (..), DataFingerprint (..),
-                                                    DataFullType (..), DataLeaf (..), DataTyCon (..), DataTypeLib (..),
+                                                    DataFullType (..), DataTyCon (..), DataTypeLib (..),
                                                     DataValidator (..), TypeAlias (..), WrapperD, defineType,
                                                     initTypeLib)
 import           Data.Text                         (Text)
@@ -35,10 +35,10 @@ createType typeName typeData =
   DataTyCon {typeName, typeDescription = Nothing, typeFingerprint = SystemFingerprint "", typeData}
 
 createScalarType :: Text -> (Text, DataFullType)
-createScalarType typeName = (typeName, Leaf $ DataScalar $ createType typeName (DataValidator pure))
+createScalarType typeName = (typeName, DataScalar $ createType typeName (DataValidator pure))
 
 createEnumType :: Text -> [Text] -> (Text, DataFullType)
-createEnumType typeName typeData = (typeName, Leaf $ DataEnum $ createType typeName typeData)
+createEnumType typeName typeData = (typeName, DataEnum $ createType typeName typeData)
 
 createUnionType :: Text -> [Text] -> (Text, DataFullType)
 createUnionType typeName typeData = (typeName, Union $ createType typeName $ map unionField typeData)

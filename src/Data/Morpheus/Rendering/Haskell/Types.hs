@@ -14,14 +14,14 @@ import qualified Data.Text                             as T (head, tail)
 import           Data.Morpheus.Rendering.Haskell.Terms (Context (..), Scope (..), indent, renderAssignment, renderCon,
                                                         renderData, renderSet, renderTuple, renderUnionCon,
                                                         renderWrapped)
-import           Data.Morpheus.Types.Internal.Data     (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
-                                                        DataTyCon (..), TypeAlias (..), isNullable)
+import           Data.Morpheus.Types.Internal.Data     (DataArgument, DataField (..), DataFullType (..), DataTyCon (..),
+                                                        TypeAlias (..), isNullable)
 
 renderType :: Context -> (Text, DataFullType) -> Text
 renderType context (name, dataType) = typeIntro <> renderData name <> renderT dataType
   where
-    renderT (Leaf (DataScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name
-    renderT (Leaf (DataEnum DataTyCon {typeData})) = unionType typeData <> defineTypeClass "ENUM"
+    renderT (DataScalar _) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name
+    renderT (DataEnum DataTyCon {typeData}) = unionType typeData <> defineTypeClass "ENUM"
     renderT (Union DataTyCon {typeData}) = renderUnion name typeData <> defineTypeClass "UNION"
     renderT (InputObject DataTyCon {typeData}) =
       renderCon name <> renderObject renderInputField typeData <> defineTypeClass "INPUT_OBJECT"

@@ -20,9 +20,9 @@ import           Data.Morpheus.Types.Internal.AST.Operation    (DefaultValue, Op
                                                                 Variable (..), VariableDefinitions, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionRec (..), SelectionSet,
                                                                 ValidSelection)
-import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataFullType (..), DataLeaf (..),
-                                                                DataTyCon (..), DataTypeKind (..), DataTypeLib (..),
-                                                                Key, TypeAlias (..), allDataTypes)
+import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataFullType (..), DataTyCon (..),
+                                                                DataTypeKind (..), DataTypeLib (..), Key,
+                                                                TypeAlias (..), allDataTypes)
 import           Data.Morpheus.Types.Internal.DataD            (ConsD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation       (GQLErrors, Validation)
 import           Data.Morpheus.Validation.Internal.Utils       (lookupType)
@@ -117,9 +117,7 @@ operationTypes lib variables = genOperation
                     fieldPath = path <> [fromMaybe key selectionAlias]
                     --------------------------------------------------------------------
                     validateSelection :: DataFullType -> ValidSelection -> Validation ([GQLTypeD], [Text])
-                    validateSelection dType Selection {selectionRec = SelectionField} = do
-                      lName <- withLeaf (pure . leafName) dType
-                      pure ([], lName)
+                    validateSelection dType Selection {selectionRec = SelectionField} = leafType dType
                     --withLeaf buildLeaf dType
                     validateSelection dType Selection {selectionRec = SelectionSet selectionSet} =
                       genRecordType fieldPath (typeFrom [] dType) dType selectionSet
@@ -149,7 +147,7 @@ scanInputTypes lib name collected
       where
         toInputTypeD :: (Text, DataField) -> LibUpdater [Key]
         toInputTypeD (_, DataField {fieldType = TypeAlias {aliasTyCon}}) = scanInputTypes lib aliasTyCon
-    scanType (Leaf leaf) = pure (collected <> leafName leaf)
+    scanType (DataEnum DataTyCon {typeName}) = pure (collected <> [typeName])
     scanType _ = pure collected
 
 buildInputType :: DataTypeLib -> Text -> Validation [GQLTypeD]
@@ -175,7 +173,7 @@ buildInputType lib name = getType lib name >>= subTypes
         toFieldD (_, field@DataField {fieldType}) = do
           aliasTyCon <- typeFrom [] <$> getType lib (aliasTyCon fieldType)
           pure $ field {fieldType = fieldType {aliasTyCon}}
-    subTypes (Leaf (DataEnum DataTyCon {typeName, typeData})) =
+    subTypes (DataEnum DataTyCon {typeName, typeData}) =
       pure
         [ GQLTypeD
             { typeD = TypeD {tName = unpack typeName, tNamespace = [], tCons = map enumOption typeData}
@@ -195,13 +193,11 @@ lookupFieldType lib path (OutputObject DataTyCon {typeData}) key =
     Nothing -> Left (compileError $ "cant find field \""<> key<>"\"")
 lookupFieldType _ _ dt _ = Left (compileError $ "Type should be output Object \"" <> pack (show dt))
 
-withLeaf :: (DataLeaf -> Validation b) -> DataFullType -> Validation b
-withLeaf f (Leaf x) = f x
-withLeaf _ _        = Left $ compileError "Invalid schema Expected scalar"
 
-leafName :: DataLeaf -> [Text]
-leafName (DataEnum DataTyCon {typeName}) = [typeName]
-leafName _                               = []
+leafType :: DataFullType -> Validation ([GQLTypeD], [Text])
+leafType (DataEnum DataTyCon {typeName}) = pure ([],[typeName])
+leafType DataScalar {}                   = pure ([],[])
+leafType _                               = Left $ compileError "Invalid schema Expected scalar"
 
 getType :: DataTypeLib -> Text -> Validation DataFullType
 getType lib typename = lookupType (compileError typename) (allDataTypes lib) typename
@@ -215,9 +211,9 @@ typeFromScalar "ID"      = "ID"
 typeFromScalar _         = "ScalarValue"
 
 typeFrom :: [Key] -> DataFullType -> Text
-typeFrom _ (Leaf (DataScalar DataTyCon {typeName})) = typeFromScalar typeName
-typeFrom _ (Leaf (DataEnum x))                      = typeName x
-typeFrom _ (InputObject x)                          = typeName x
-typeFrom path (OutputObject x)                      = pack $ nameSpaceType path $ typeName x
-typeFrom path (Union x)                             = pack $ nameSpaceType path $ typeName x
-typeFrom _ (InputUnion x)                           = typeName x
+typeFrom _ (DataScalar DataTyCon {typeName}) = typeFromScalar typeName
+typeFrom _ (DataEnum x)                      = typeName x
+typeFrom _ (InputObject x)                   = typeName x
+typeFrom path (OutputObject x)               = pack $ nameSpaceType path $ typeName x
+typeFrom path (Union x)                      = pack $ nameSpaceType path $ typeName x
+typeFrom _ (InputUnion x)                    = typeName x

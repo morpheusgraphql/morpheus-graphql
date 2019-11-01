@@ -21,7 +21,6 @@ module Data.Morpheus.Types.Internal.Data
   , DataArguments
   , DataField(..)
   , DataTyCon(..)
-  , DataLeaf(..)
   , DataKind(..)
   , DataFullType(..)
   , DataTypeLib(..)
@@ -55,12 +54,14 @@ module Data.Morpheus.Types.Internal.Data
   , isDefaultTypeName
   , isSchemaTypeName
   , isPrimitiveTypeName
+  , toDataKind
   , OperationType(..)
   , QUERY
   , MUTATION
   , SUBSCRIPTION
   , Name
   , Description
+  , isEntNode
   ) where
 
 import           Data.Semigroup                     ((<>))
@@ -234,10 +235,7 @@ data DataTyCon a = DataTyCon
   , typeData        :: a
   } deriving (Show)
 
-data DataLeaf
-  = DataScalar DataScalar
-  | DataEnum DataEnum
-  deriving (Show)
+
 
 -- DATA KIND
 data DataKind
@@ -247,6 +245,14 @@ data DataKind
   | UnionKind DataUnion
   deriving (Show)
 
+toDataKind :: DataFullType -> DataKind
+toDataKind (DataScalar x)   = ScalarKind x
+toDataKind (DataEnum x)     = EnumKind x
+toDataKind (InputObject x)  = ObjectKind x
+toDataKind (OutputObject x) = ObjectKind x
+toDataKind  (Union x)       = UnionKind x
+toDataKind (InputUnion x)   = UnionKind x
+
 data RawDataType
   = FinalDataType DataFullType
   | Interface DataObject
@@ -254,8 +260,14 @@ data RawDataType
                , unImplements         :: DataObject }
   deriving (Show)
 
+isEntNode :: DataFullType -> Bool
+isEntNode DataScalar {} = True
+isEntNode DataEnum {}   = True
+isEntNode _             = False
+
 data DataFullType
-  = Leaf DataLeaf
+  = DataScalar DataScalar
+  | DataEnum DataEnum
   | InputObject DataObject
   | OutputObject DataObject
   | Union DataUnion
@@ -263,12 +275,13 @@ data DataFullType
   deriving (Show)
 
 data DataTypeLib = DataTypeLib
-  { leaf         :: [(Key, DataLeaf)]
+  { scalar       :: [(Key, DataScalar)]
+  , enum         :: [(Key, DataEnum)]
   , inputObject  :: [(Key, DataObject)]
   , object       :: [(Key, DataObject)]
   , union        :: [(Key, DataUnion)]
   , inputUnion   :: [(Key, DataUnion)]
-  , query        :: (Key, DataObject)
+  , query        :: (Key,  DataObject)
   , mutation     :: Maybe (Key, DataObject)
   , subscription :: Maybe (Key, DataObject)
   } deriving (Show)
@@ -276,7 +289,8 @@ data DataTypeLib = DataTypeLib
 initTypeLib :: (Key, DataObject) -> DataTypeLib
 initTypeLib query =
   DataTypeLib
-    { leaf = []
+    { scalar = []
+    , enum = []
     , inputObject = []
     , query = query
     , object = []
@@ -287,13 +301,14 @@ initTypeLib query =
     }
 
 allDataTypes :: DataTypeLib -> [(Key, DataFullType)]
-allDataTypes (DataTypeLib leaf' inputObject' object' union' inputUnion' query' mutation' subscription') =
-  packType OutputObject query' :
-  fromMaybeType mutation' ++
-  fromMaybeType subscription' ++
-  map (packType Leaf) leaf' ++
-  map (packType InputObject) inputObject' ++
-  map (packType InputUnion) inputUnion' ++ map (packType OutputObject) object' ++ map (packType Union) union'
+allDataTypes DataTypeLib { scalar, enum , inputObject, object, union, inputUnion, query, mutation, subscription } =
+  packType OutputObject query :
+  fromMaybeType mutation ++
+  fromMaybeType subscription ++
+  map (packType DataScalar) scalar ++
+  map (packType DataEnum) enum ++
+  map (packType InputObject) inputObject ++
+  map (packType InputUnion) inputUnion ++ map (packType OutputObject) object ++ map (packType Union) union
   where
     packType f (x, y) = (x, f y)
     fromMaybeType :: Maybe (Key, DataObject) -> [(Key, DataFullType)]
@@ -304,26 +319,27 @@ lookupDataType :: Key -> DataTypeLib -> Maybe DataFullType
 lookupDataType name lib = name `lookup` allDataTypes lib
 
 kindOf :: DataFullType -> DataTypeKind
-kindOf (Leaf (DataScalar _)) = KindScalar
-kindOf (Leaf (DataEnum _))   = KindEnum
-kindOf (InputObject _)       = KindInputObject
-kindOf (OutputObject _)      = KindObject Nothing
-kindOf (Union _)             = KindUnion
-kindOf (InputUnion _)        = KindInputUnion
+kindOf (DataScalar _)   = KindScalar
+kindOf (DataEnum _)     = KindEnum
+kindOf (InputObject _)  = KindInputObject
+kindOf (OutputObject _) = KindObject Nothing
+kindOf (Union _)        = KindUnion
+kindOf (InputUnion _)   = KindInputUnion
 
 fromDataType :: (DataTyCon () -> v) -> DataFullType -> v
-fromDataType f (Leaf (DataScalar dt)) = f dt {typeData = ()}
-fromDataType f (Leaf (DataEnum dt))   = f dt {typeData = ()}
-fromDataType f (Union dt)             = f dt {typeData = ()}
-fromDataType f (InputObject dt)       = f dt {typeData = ()}
-fromDataType f (InputUnion dt)        = f dt {typeData = ()}
-fromDataType f (OutputObject dt)      = f dt {typeData = ()}
+fromDataType f (DataScalar dt)   = f dt {typeData = ()}
+fromDataType f (DataEnum dt)     = f dt {typeData = ()}
+fromDataType f (Union dt)        = f dt {typeData = ()}
+fromDataType f (InputObject dt)  = f dt {typeData = ()}
+fromDataType f (InputUnion dt)   = f dt {typeData = ()}
+fromDataType f (OutputObject dt) = f dt {typeData = ()}
 
 isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name lib = fromDataType typeFingerprint <$> lookupDataType name lib
 
 defineType :: (Key, DataFullType) -> DataTypeLib -> DataTypeLib
-defineType (key', Leaf type') lib         = lib {leaf = (key', type') : leaf lib}
+defineType (key', DataScalar type') lib   = lib {scalar = (key', type') : scalar lib}
+defineType (key', DataEnum type') lib     = lib {enum = (key', type') : enum lib}
 defineType (key', InputObject type') lib  = lib {inputObject = (key', type') : inputObject lib}
 defineType (key', OutputObject type') lib = lib {object = (key', type') : object lib}
 defineType (key', Union type') lib        = lib {union = (key', type') : union lib}

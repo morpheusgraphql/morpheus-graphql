@@ -15,10 +15,10 @@ import           Data.Text                               (Text, pack, unpack)
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Execution.Internal.Utils  (capital)
-import           Data.Morpheus.Types.Internal.Data       (ArgsType (..), DataField (..), DataField, DataFullType (..),
-                                                          DataLeaf (..), DataTyCon (..), DataTypeKind (..),
-                                                          DataTypeKind (..), OperationType (..), ResolverKind (..),
-                                                          TypeAlias (..), sysTypes)
+import           Data.Morpheus.Types.Internal.Data       (ArgsType (..), DataField (..), DataFullType (..),
+                                                          DataTyCon (..), DataTypeKind (..), DataTypeKind (..),
+                                                          OperationType (..), ResolverKind (..), TypeAlias (..),
+                                                          sysTypes)
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 
@@ -86,7 +86,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
                     Just Union {}        -> TypeVarResolver
                     Just _               -> PlainResolver
         --------------------------------------------
-        genType (Leaf (DataEnum DataTyCon {typeName, typeData})) =
+        genType (DataEnum DataTyCon {typeName, typeData}) =
           pure
             GQLTypeD
               { typeD = TypeD {tName = sysName typeName, tNamespace = [], tCons = map enumOption typeData}
@@ -95,7 +95,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
               }
           where
             enumOption name = ConsD {cName = sysName name, cFields = []}
-        genType (Leaf _) = internalError "Scalar Types should defined By Native Haskell Types"
+        genType (DataScalar _) = internalError "Scalar Types should defined By Native Haskell Types"
         genType (InputUnion _) = internalError "Input Unions not Supported"
         genType (InputObject DataTyCon {typeName, typeData}) =
           pure

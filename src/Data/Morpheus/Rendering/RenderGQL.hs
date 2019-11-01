@@ -16,10 +16,9 @@ import qualified Data.Text.Lazy                     as LT (fromStrict)
 import           Data.Text.Lazy.Encoding            (encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataFullType (..), DataKind (..), DataLeaf (..),
-                                                     DataTyCon (..), DataTypeLib, DataTypeWrapper (..), Key,
-                                                     TypeAlias (..), WrapperD (..), allDataTypes, isDefaultTypeName,
-                                                     toGQLWrapper)
+import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataFullType (..), DataKind (..), DataTyCon (..),
+                                                     DataTypeLib, DataTypeWrapper (..), Key, TypeAlias (..),
+                                                     WrapperD (..), allDataTypes, isDefaultTypeName, toGQLWrapper)
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
 
 renderGraphQLDocument :: DataTypeLib -> ByteString
@@ -50,8 +49,8 @@ instance RenderGQL DataKind where
   render (UnionKind x)  = typeName x
 
 instance RenderGQL (Key, DataFullType) where
-  render (name, Leaf (DataScalar _)) = "scalar " <> name
-  render (name, Leaf (DataEnum DataTyCon {typeData})) = "enum " <> name <> renderObject id typeData
+  render (name, DataScalar {}) = "scalar " <> name
+  render (name, DataEnum DataTyCon {typeData}) = "enum " <> name <> renderObject id typeData
   render (name, Union DataTyCon {typeData}) =
     "union " <> name <> " =\n    " <> intercalate ("\n" <> renderIndent <> "| ") (map (render . fieldType) typeData)
   render (name, InputObject DataTyCon {typeData}) = "input " <> name <> render typeData

@@ -23,7 +23,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..),
 import           Data.Morpheus.Types.Internal.Base              (EnhancedKey (..))
 import           Data.Morpheus.Types.Internal.Data              (DataField (..), DataFullType (..), DataObject,
                                                                  DataTyCon (..), DataTypeLib (..), TypeAlias (..),
-                                                                 allDataTypes)
+                                                                 allDataTypes, isEntNode)
 import           Data.Morpheus.Types.Internal.Validation        (Validation)
 import           Data.Morpheus.Validation.Internal.Utils        (checkNameCollision, lookupType)
 import           Data.Morpheus.Validation.Query.Arguments       (validateArguments)
@@ -152,9 +152,9 @@ validateSelectionSet lib fragments' operatorName variables = __validate
           isLeaf datatype dataField
           pure [( key , rawSelection { selectionArguments  , selectionRec = SelectionField })]
           where
-            isLeaf (Leaf _) _ = Right ()
-            isLeaf _ DataField {fieldType = TypeAlias {aliasTyCon}} =
-              Left $ subfieldsNotSelected key aliasTyCon selectionPosition
+            isLeaf dataType DataField {fieldType = TypeAlias {aliasTyCon}}
+                | isEntNode dataType = Right ()
+                | otherwise =  Left $ subfieldsNotSelected key aliasTyCon selectionPosition
         validateSelection (_, Spread reference') = resolveSpread fragments' [typeName'] reference' >>= validateFragment
         validateSelection (_, InlineFragment fragment') =
           castFragmentType Nothing (fragmentPosition fragment') [typeName'] fragment' >>= validateFragment

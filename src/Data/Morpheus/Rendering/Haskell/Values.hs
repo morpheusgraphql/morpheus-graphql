@@ -13,8 +13,8 @@ import           Data.Text                             (Text)
 -- MORPHEUS
 import           Data.Morpheus.Rendering.Haskell.Terms (Context (..), Scope (..), renderAssignment, renderCon,
                                                         renderEqual, renderReturn, renderSet, renderUnionCon)
-import           Data.Morpheus.Types.Internal.Data     (DataField (..), DataFullType (..), DataLeaf (..),
-                                                        DataTyCon (..), DataTypeLib (..), TypeAlias (..), WrapperD (..))
+import           Data.Morpheus.Types.Internal.Data     (DataField (..), DataFullType (..), DataTyCon (..),
+                                                        DataTypeLib (..), TypeAlias (..), WrapperD (..))
 
 renderRootResolver :: Context -> DataTypeLib -> Text
 renderRootResolver _ DataTypeLib {mutation, subscription} = renderSignature <> renderBody <> "\n\n"
@@ -40,8 +40,8 @@ renderRootResolver _ DataTypeLib {mutation, subscription} = renderSignature <> r
 renderResolver :: Context -> (Text, DataFullType) -> Text
 renderResolver Context {scope, pubSub = (channel, content)} (name, dataType) = renderSig dataType
   where
-    renderSig (Leaf DataScalar {}) = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
-    renderSig (Leaf (DataEnum DataTyCon {typeData})) = defFunc <> renderReturn <> renderCon (head typeData)
+    renderSig DataScalar {} = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
+    renderSig (DataEnum DataTyCon {typeData}) = defFunc <> renderReturn <> renderCon (head typeData)
     renderSig (Union DataTyCon {typeData}) = defFunc <> renderUnionCon name typeCon <> " <$> " <> "resolve" <> typeCon
       where
         typeCon = aliasTyCon $ fieldType $ head typeData

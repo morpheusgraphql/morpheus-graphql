@@ -12,7 +12,7 @@ module Data.Morpheus.Validation.Internal.Utils
 import           Data.List                               ((\\))
 import           Data.Morpheus.Error.Variable            (unknownType)
 import           Data.Morpheus.Types.Internal.Base       (EnhancedKey (..), Key, Position, enhanceKeyWithNull)
-import           Data.Morpheus.Types.Internal.Data       (DataKind (..), DataLeaf (..), DataObject, DataTypeLib (..))
+import           Data.Morpheus.Types.Internal.Data       (DataKind (..), DataObject, DataTypeLib (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import qualified Data.Set                                as S
 import           Data.Text                               (Text)
@@ -37,17 +37,18 @@ lookupField id' lib' error' =
     Just field -> pure field
 
 getInputType :: Text -> DataTypeLib -> GenError error DataKind
-getInputType typeName' lib error' =
-  case lookup typeName' (inputObject lib) of
+getInputType name lib error' =
+  case lookup name (inputObject lib) of
     Just x -> pure (ObjectKind x)
     Nothing ->
-      case lookup typeName' (inputUnion lib) of
+      case lookup name (inputUnion lib) of
         Just x -> pure (UnionKind x)
         Nothing ->
-          case lookup typeName' (leaf lib) of
-            Nothing               -> Left error'
-            Just (DataScalar x) -> pure (ScalarKind x)
-            Just (DataEnum x)     -> pure (EnumKind x)
+          case lookup name (scalar lib) of
+            Just x   -> pure (ScalarKind x)
+            Nothing  -> case lookup name (enum lib) of
+                    Just x  -> pure (EnumKind x)
+                    Nothing -> Left error'
 
 existsObjectType :: Position -> Text -> DataTypeLib -> Validation DataObject
 existsObjectType position' typeName' lib = lookupType error' (object lib) typeName'

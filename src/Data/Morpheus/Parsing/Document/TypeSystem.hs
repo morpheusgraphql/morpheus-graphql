@@ -16,8 +16,7 @@ import           Data.Morpheus.Parsing.Internal.Pattern  (fieldsDefinition, inpu
 import           Data.Morpheus.Parsing.Internal.Terms    (keyword, operator, optDescription, parseName, pipeLiteral,
                                                           sepByAnd, setOf)
 import           Data.Morpheus.Types.Internal.Data       (DataField, DataFingerprint (..), DataFullType (..),
-                                                          DataLeaf (..), DataTyCon (..), DataValidator (..), Key,
-                                                          RawDataType (..))
+                                                          DataTyCon (..), DataValidator (..), Key, RawDataType (..))
 
 
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
@@ -33,7 +32,7 @@ scalarTypeDefinition typeDescription =
     _ <- optionalDirectives
     pure (
           typeName,
-          Leaf $ DataScalar DataTyCon {
+          DataScalar DataTyCon {
             typeName,
             typeDescription,
             typeFingerprint = SystemFingerprint typeName,
@@ -150,8 +149,8 @@ enumTypeDefinition typeDescription =
     _directives <- optionalDirectives
     enumValuesDefinition <- setOf enumValueDefinition
     pure (
-        typeName,
-        Leaf $ DataEnum DataTyCon {
+           typeName,
+           DataEnum DataTyCon {
              typeName,
              typeDescription,
              typeFingerprint = SystemFingerprint typeName,
