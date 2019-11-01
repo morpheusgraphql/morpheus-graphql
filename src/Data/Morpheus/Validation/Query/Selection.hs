@@ -21,9 +21,9 @@ import           Data.Morpheus.Types.Internal.AST.RawSelection  (Fragment (..), 
                                                                  RawSelectionSet)
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..), SelectionSet)
 import           Data.Morpheus.Types.Internal.Base              (EnhancedKey (..))
-import           Data.Morpheus.Types.Internal.Data              (DataField (..), DataFullType (..), DataObject,
+import           Data.Morpheus.Types.Internal.Data              (DataField (..), DataType (..), DataObject,
                                                                  DataTyCon (..), DataTypeLib (..), TypeAlias (..),
-                                                                 allDataTypes)
+                                                                 allDataTypes, isEntNode)
 import           Data.Morpheus.Types.Internal.Validation        (Validation)
 import           Data.Morpheus.Validation.Internal.Utils        (checkNameCollision, lookupType)
 import           Data.Morpheus.Validation.Query.Arguments       (validateArguments)
@@ -119,7 +119,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
         validateSelection (key', RawSelectionSet fullRawSelection@Selection { selectionRec = rawSelection, selectionPosition }) = do
           (dataField, dataType, arguments) <- getValidationData key' fullRawSelection
           case dataType of
-            Union _ -> do
+            DataUnion _ -> do
               (categories, __typename) <- clusterTypes
               mapM (validateCluster __typename) categories >>= returnSelection arguments . UnionSelection
               where clusterTypes = do
@@ -133,7 +133,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
                     validateCluster sysSelection' (type', frags') = do
                       selection' <- __validate type' (concatMap fragmentSelection frags')
                       return (typeName type', sysSelection' ++ selection')
-            OutputObject _ -> do
+            DataObject _ -> do
               fieldType' <- lookupFieldAsSelectionSet selectionPosition key' lib dataField
               __validate fieldType' rawSelection >>= returnSelection arguments . SelectionSet
             _ -> Left $ hasNoSubfields key' (aliasTyCon $fieldType dataField) selectionPosition
@@ -152,9 +152,9 @@ validateSelectionSet lib fragments' operatorName variables = __validate
           isLeaf datatype dataField
           pure [( key , rawSelection { selectionArguments  , selectionRec = SelectionField })]
           where
-            isLeaf (Leaf _) _ = Right ()
-            isLeaf _ DataField {fieldType = TypeAlias {aliasTyCon}} =
-              Left $ subfieldsNotSelected key aliasTyCon selectionPosition
+            isLeaf dataType DataField {fieldType = TypeAlias {aliasTyCon}}
+                | isEntNode dataType = Right ()
+                | otherwise =  Left $ subfieldsNotSelected key aliasTyCon selectionPosition
         validateSelection (_, Spread reference') = resolveSpread fragments' [typeName'] reference' >>= validateFragment
         validateSelection (_, InlineFragment fragment') =
           castFragmentType Nothing (fragmentPosition fragment') [typeName'] fragment' >>= validateFragment

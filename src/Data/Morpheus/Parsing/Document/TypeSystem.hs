@@ -15,9 +15,8 @@ import           Data.Morpheus.Parsing.Internal.Pattern  (fieldsDefinition, inpu
                                                           typDeclaration)
 import           Data.Morpheus.Parsing.Internal.Terms    (keyword, operator, optDescription, parseName, pipeLiteral,
                                                           sepByAnd, setOf)
-import           Data.Morpheus.Types.Internal.Data       (DataField, DataFingerprint (..), DataFullType (..),
-                                                          DataLeaf (..), DataTyCon (..), DataValidator (..), Key,
-                                                          RawDataType (..))
+import           Data.Morpheus.Types.Internal.Data       (DataField, DataFingerprint (..), DataType (..),
+                                                          DataTyCon (..), DataValidator (..), Key, RawDataType (..))
 
 
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
@@ -25,7 +24,7 @@ import           Data.Morpheus.Types.Internal.Data       (DataField, DataFingerp
 --  ScalarTypeDefinition:
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
-scalarTypeDefinition :: Maybe Text -> Parser (Text, DataFullType)
+scalarTypeDefinition :: Maybe Text -> Parser (Text, DataType)
 scalarTypeDefinition typeDescription =
   label "ScalarTypeDefinition" $ do
     typeName <- typDeclaration "scalar"
@@ -33,7 +32,7 @@ scalarTypeDefinition typeDescription =
     _ <- optionalDirectives
     pure (
           typeName,
-          Leaf $ CustomScalar DataTyCon {
+          DataScalar DataTyCon {
             typeName,
             typeDescription,
             typeFingerprint = SystemFingerprint typeName,
@@ -111,7 +110,7 @@ interfaceTypeDefinition typeDescription =
 --    = |(opt) NamedType
 --      UnionMemberTypes | NamedType
 --
-unionTypeDefinition :: Maybe Text ->  Parser (Text, DataFullType)
+unionTypeDefinition :: Maybe Text ->  Parser (Text, DataType)
 unionTypeDefinition typeDescription =
   label "UnionTypeDefinition" $ do
     typeName <- typDeclaration "union"
@@ -120,7 +119,7 @@ unionTypeDefinition typeDescription =
     memberTypes <- unionMemberTypes
     pure (
         typeName,
-        Union DataTyCon {
+        DataUnion DataTyCon {
              typeName,
              typeDescription,
              typeFingerprint = SystemFingerprint typeName,
@@ -142,7 +141,7 @@ unionTypeDefinition typeDescription =
 --  EnumValueDefinition
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
-enumTypeDefinition :: Maybe Text -> Parser (Text, DataFullType)
+enumTypeDefinition :: Maybe Text -> Parser (Text, DataType)
 enumTypeDefinition typeDescription =
   label "EnumTypeDefinition" $ do
     typeName <- typDeclaration "enum"
@@ -150,8 +149,8 @@ enumTypeDefinition typeDescription =
     _directives <- optionalDirectives
     enumValuesDefinition <- setOf enumValueDefinition
     pure (
-        typeName,
-        Leaf $ LeafEnum DataTyCon {
+           typeName,
+           DataEnum DataTyCon {
              typeName,
              typeDescription,
              typeFingerprint = SystemFingerprint typeName,
@@ -175,7 +174,7 @@ enumTypeDefinition typeDescription =
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }
 --
-inputObjectTypeDefinition :: Maybe Text -> Parser (Text, DataFullType)
+inputObjectTypeDefinition :: Maybe Text -> Parser (Text, DataType)
 inputObjectTypeDefinition typeDescription =
   label "InputObjectTypeDefinition" $ do
     typeName <- typDeclaration "input"
@@ -185,7 +184,7 @@ inputObjectTypeDefinition typeDescription =
     pure
        (
          typeName,
-         InputObject DataTyCon {
+         DataInputObject DataTyCon {
            typeName,
            typeDescription,
            typeFingerprint = SystemFingerprint typeName,
@@ -197,7 +196,7 @@ inputObjectTypeDefinition typeDescription =
       inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefinition
 
 
-parseFinalDataType :: Maybe Text -> Parser (Text, DataFullType)
+parseFinalDataType :: Maybe Text -> Parser (Text, DataType)
 parseFinalDataType description = label "TypeDefinition" $
         inputObjectTypeDefinition description
     <|> unionTypeDefinition description

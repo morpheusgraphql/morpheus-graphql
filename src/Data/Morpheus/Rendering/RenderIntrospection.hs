@@ -15,10 +15,9 @@ import           Data.Morpheus.Schema.Schema
 
 -- Morpheus
 import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
-import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataField, DataFullType (..), DataLeaf (..),
-                                                     DataObject, DataTyCon (..), DataTypeKind (..), DataTypeLib,
-                                                     DataTypeWrapper (..), DataUnion, TypeAlias (..), kindOf,
-                                                     lookupDataType, toGQLWrapper)
+import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataType (..), DataObject, DataTyCon (..),
+                                                     DataTypeKind (..), DataTypeLib, DataTypeWrapper (..), DataUnion,
+                                                     TypeAlias (..), kindOf, lookupDataType, toGQLWrapper)
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
 
 constRes :: Applicative m => a -> b -> m a
@@ -29,22 +28,19 @@ type Result m a = DataTypeLib -> m a
 class RenderSchema a b where
   render :: Monad m => (Text, a) -> DataTypeLib -> m (b m)
 
-instance RenderSchema DataFullType S__Type where
-  render (name, Leaf leaf) = render (name, leaf)
-  render (name, InputObject iObject) = renderInputObject (name, iObject)
-  render (name, OutputObject object') = typeFromObject (name, object')
+instance RenderSchema DataType S__Type where
+  render (key, DataScalar DataTyCon {typeDescription})  =
+    constRes $ createLeafType SCALAR key typeDescription Nothing
+  render (key, DataEnum DataTyCon {typeDescription, typeData})  =
+    constRes $ createLeafType ENUM key typeDescription (Just $ map createEnumValue typeData)
+  render (name, DataInputObject iObject) = renderInputObject (name, iObject)
+  render (name, DataObject object') = typeFromObject (name, object')
     where
       typeFromObject (key, DataTyCon {typeData, typeDescription}) lib =
         createObjectType key typeDescription <$>
         (Just <$> traverse (`render` lib) (filter (not . fieldHidden . snd) typeData))
-  render (name, Union union') = const $ pure $ typeFromUnion (name, union')
-  render (name, InputUnion inpUnion') = renderInputUnion (name, inpUnion')
-
-instance RenderSchema DataLeaf S__Type where
-  render (key, BaseScalar DataTyCon {typeDescription}) _ = pure $ createLeafType SCALAR key typeDescription Nothing
-  render (key, CustomScalar DataTyCon {typeDescription}) _ = pure $ createLeafType SCALAR key typeDescription Nothing
-  render (key, LeafEnum DataTyCon {typeDescription, typeData}) _ =
-    pure $ createLeafType ENUM key typeDescription (Just $ map createEnumValue typeData)
+  render (name, DataUnion union') = const $ pure $ typeFromUnion (name, union')
+  render (name, DataInputUnion inpUnion') = renderInputUnion (name, inpUnion')
 
 instance RenderSchema DataField S__Field where
   render (key, field@DataField {fieldType = TypeAlias {aliasTyCon}, fieldArgs}) lib = do

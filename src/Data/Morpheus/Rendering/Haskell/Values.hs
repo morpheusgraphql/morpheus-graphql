@@ -13,8 +13,8 @@ import           Data.Text                             (Text)
 -- MORPHEUS
 import           Data.Morpheus.Rendering.Haskell.Terms (Context (..), Scope (..), renderAssignment, renderCon,
                                                         renderEqual, renderReturn, renderSet, renderUnionCon)
-import           Data.Morpheus.Types.Internal.Data     (DataField (..), DataFullType (..), DataLeaf (..),
-                                                        DataTyCon (..), DataTypeLib (..), TypeAlias (..), WrapperD (..))
+import           Data.Morpheus.Types.Internal.Data     (DataField (..), DataType (..), DataTyCon (..),
+                                                        DataTypeLib (..), TypeAlias (..), WrapperD (..))
 
 renderRootResolver :: Context -> DataTypeLib -> Text
 renderRootResolver _ DataTypeLib {mutation, subscription} = renderSignature <> renderBody <> "\n\n"
@@ -37,16 +37,15 @@ renderRootResolver _ DataTypeLib {mutation, subscription} = renderSignature <> r
         maybeRes (Just (name, _)) = "resolve" <> name
         maybeRes Nothing          = "return ()"
 
-renderResolver :: Context -> (Text, DataFullType) -> Text
+renderResolver :: Context -> (Text, DataType) -> Text
 renderResolver Context {scope, pubSub = (channel, content)} (name, dataType) = renderSig dataType
   where
-    renderSig (Leaf BaseScalar {}) = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
-    renderSig (Leaf CustomScalar {}) = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
-    renderSig (Leaf (LeafEnum DataTyCon {typeData})) = defFunc <> renderReturn <> renderCon (head typeData)
-    renderSig (Union DataTyCon {typeData}) = defFunc <> renderUnionCon name typeCon <> " <$> " <> "resolve" <> typeCon
+    renderSig DataScalar {} = defFunc <> renderReturn <> "$ " <> renderCon name <> "0 0"
+    renderSig (DataEnum DataTyCon {typeData}) = defFunc <> renderReturn <> renderCon (head typeData)
+    renderSig (DataUnion DataTyCon {typeData}) = defFunc <> renderUnionCon name typeCon <> " <$> " <> "resolve" <> typeCon
       where
         typeCon = aliasTyCon $ fieldType $ head typeData
-    renderSig (OutputObject DataTyCon {typeData}) = defFunc <> renderReturn <> renderCon name <> renderObjFields
+    renderSig (DataObject DataTyCon {typeData}) = defFunc <> renderReturn <> renderCon name <> renderObjFields
       where
         renderObjFields = renderResObject (map renderFieldRes typeData)
         renderFieldRes (key, DataField {fieldType = TypeAlias {aliasWrappers, aliasTyCon}}) =

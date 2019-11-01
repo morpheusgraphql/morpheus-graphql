@@ -14,20 +14,19 @@ import qualified Data.Text                             as T (head, tail)
 import           Data.Morpheus.Rendering.Haskell.Terms (Context (..), Scope (..), indent, renderAssignment, renderCon,
                                                         renderData, renderSet, renderTuple, renderUnionCon,
                                                         renderWrapped)
-import           Data.Morpheus.Types.Internal.Data     (DataArgument, DataField (..), DataFullType (..), DataLeaf (..),
-                                                        DataTyCon (..), TypeAlias (..), isNullable)
+import           Data.Morpheus.Types.Internal.Data     (DataArgument, DataField (..), DataType (..), DataTyCon (..),
+                                                        TypeAlias (..), isNullable)
 
-renderType :: Context -> (Text, DataFullType) -> Text
+renderType :: Context -> (Text, DataType) -> Text
 renderType context (name, dataType) = typeIntro <> renderData name <> renderT dataType
   where
-    renderT (Leaf (BaseScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name
-    renderT (Leaf (CustomScalar _)) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name
-    renderT (Leaf (LeafEnum DataTyCon {typeData})) = unionType typeData <> defineTypeClass "ENUM"
-    renderT (Union DataTyCon {typeData}) = renderUnion name typeData <> defineTypeClass "UNION"
-    renderT (InputObject DataTyCon {typeData}) =
+    renderT (DataScalar _) = renderCon name <> "Int Int" <> defineTypeClass "SCALAR" <> renderGQLScalar name
+    renderT (DataEnum DataTyCon {typeData}) = unionType typeData <> defineTypeClass "ENUM"
+    renderT (DataUnion DataTyCon {typeData}) = renderUnion name typeData <> defineTypeClass "UNION"
+    renderT (DataInputObject DataTyCon {typeData}) =
       renderCon name <> renderObject renderInputField typeData <> defineTypeClass "INPUT_OBJECT"
-    renderT (InputUnion _) = "\n -- Error: Input Union Not Supported"
-    renderT (OutputObject DataTyCon {typeData}) =
+    renderT (DataInputUnion _) = "\n -- Error: Input Union Not Supported"
+    renderT (DataObject DataTyCon {typeData}) =
       renderCon name <> renderObject (renderField context) typeData <> defineTypeClass "OBJECT"
     ----------------------------------------------------------------------------------------------------------
     typeIntro = "\n\n---- GQL " <> name <> " ------------------------------- \n"

@@ -16,10 +16,9 @@ import qualified Data.Text.Lazy                     as LT (fromStrict)
 import           Data.Text.Lazy.Encoding            (encodeUtf8)
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataFullType (..), DataKind (..), DataLeaf (..),
-                                                     DataTyCon (..), DataTypeLib, DataTypeWrapper (..), Key,
-                                                     TypeAlias (..), WrapperD (..), allDataTypes, isDefaultTypeName,
-                                                     toGQLWrapper)
+import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataTyCon (..), DataType (..), DataTypeLib,
+                                                     DataTypeWrapper (..), Key, TypeAlias (..), WrapperD (..),
+                                                     allDataTypes, isDefaultTypeName, toGQLWrapper)
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
 
 renderGraphQLDocument :: DataTypeLib -> ByteString
@@ -43,21 +42,22 @@ instance RenderGQL Key where
 instance RenderGQL TypeAlias where
   render TypeAlias {aliasTyCon, aliasWrappers} = renderWrapped aliasTyCon aliasWrappers
 
-instance RenderGQL DataKind where
-  render (ScalarKind x) = typeName x
-  render (EnumKind x)   = typeName x
-  render (ObjectKind x) = typeName x
-  render (UnionKind x)  = typeName x
+instance RenderGQL DataType where
+  render (DataScalar x)      = typeName x
+  render (DataEnum x)        = typeName x
+  render (DataUnion x)       = typeName x
+  render (DataInputObject x) = typeName x
+  render (DataInputUnion x)  = typeName x
+  render ( DataObject x)     = typeName x
 
-instance RenderGQL (Key, DataFullType) where
-  render (name, Leaf (BaseScalar _)) = "scalar " <> name
-  render (name, Leaf (CustomScalar _)) = "scalar " <> name
-  render (name, Leaf (LeafEnum DataTyCon {typeData})) = "enum " <> name <> renderObject id typeData
-  render (name, Union DataTyCon {typeData}) =
+instance RenderGQL (Key, DataType) where
+  render (name, DataScalar {}) = "scalar " <> name
+  render (name, DataEnum DataTyCon {typeData}) = "enum " <> name <> renderObject id typeData
+  render (name, DataUnion DataTyCon {typeData}) =
     "union " <> name <> " =\n    " <> intercalate ("\n" <> renderIndent <> "| ") (map (render . fieldType) typeData)
-  render (name, InputObject DataTyCon {typeData}) = "input " <> name <> render typeData
-  render (name, InputUnion DataTyCon {typeData}) = "input " <> name <> render (mapKeys typeData)
-  render (name, OutputObject DataTyCon {typeData}) = "type " <> name <> render typeData
+  render (name, DataInputObject DataTyCon {typeData}) = "input " <> name <> render typeData
+  render (name, DataInputUnion DataTyCon {typeData}) = "input " <> name <> render (mapKeys typeData)
+  render (name, DataObject DataTyCon {typeData}) = "type " <> name <> render typeData
 
 mapKeys :: [DataField] -> [(Text, DataField)]
 mapKeys = map (\x -> (fieldName x, x))

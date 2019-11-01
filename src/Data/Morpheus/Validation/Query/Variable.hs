@@ -20,7 +20,7 @@ import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), F
                                                                 RawSelection (..), RawSelectionSet, Reference (..),
                                                                 Selection (..))
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
-import           Data.Morpheus.Types.Internal.Data             (DataKind, DataTypeLib)
+import           Data.Morpheus.Types.Internal.Data             (DataType, DataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Types.Internal.Value            (Value (..))
 import           Data.Morpheus.Types.Types                     (Variables)
@@ -28,7 +28,7 @@ import           Data.Morpheus.Validation.Internal.Utils       (VALIDATION_MODE 
 import           Data.Morpheus.Validation.Internal.Value       (validateInputValue)
 import           Data.Morpheus.Validation.Query.Fragment       (getFragment)
 
-getVariableType :: Text -> Position -> DataTypeLib -> Validation DataKind
+getVariableType :: Text -> Position -> DataTypeLib -> Validation DataType
 getVariableType type' position' lib' = getInputType type' lib' error'
   where
     error' = unknownType type' position'

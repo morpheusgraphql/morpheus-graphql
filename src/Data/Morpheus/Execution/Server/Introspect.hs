@@ -39,10 +39,11 @@ import           Data.Morpheus.Kind                              (Context (..), 
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (..))
-import           Data.Morpheus.Types.Internal.Data               (DataArguments, DataField (..), DataFullType (..),
-                                                                  DataLeaf (..), DataTyCon (..), DataTypeLib,
-                                                                  TypeAlias (..), defineType, isTypeDefined,
-                                                                  toListField, toNullableField)
+import           Data.Morpheus.Types.Internal.Data               (DataArguments, DataField (..), DataType (..),
+                                                                  DataTyCon (..), DataTypeLib, TypeAlias (..),
+                                                                  defineType, isTypeDefined, toListField,
+                                                                  toNullableField)
+
 
 type IntroCon a = (GQLType a, ObjectFields (CUSTOM a) a)
 
@@ -99,23 +100,23 @@ class IntrospectKind (kind :: GQL_KIND) a where
 instance (GQLType a, GQLScalar a) => IntrospectKind SCALAR a where
   introspectKind _ = updateLib scalarType [] (Proxy @a)
     where
-      scalarType = Leaf . CustomScalar . buildType (scalarValidator (Proxy @a))
+      scalarType = DataScalar . buildType (scalarValidator (Proxy @a))
 
 -- ENUM
 instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
   introspectKind _ = updateLib enumType [] (Proxy @a)
     where
-      enumType = Leaf . LeafEnum . buildType (enumTags (Proxy @(Rep a)))
+      enumType = DataEnum . buildType (enumTags (Proxy @(Rep a)))
 
 -- INPUT_OBJECT
 instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT a where
-  introspectKind _ = updateLib (InputObject . buildType fields) types (Proxy @a)
+  introspectKind _ = updateLib (DataInputObject . buildType fields) types (Proxy @a)
     where
       (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
 
 -- OBJECTS
 instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a where
-  introspectKind _ = updateLib (OutputObject . buildType (__typename : fields)) types (Proxy @a)
+  introspectKind _ = updateLib (DataObject . buildType (__typename : fields)) types (Proxy @a)
     where
       __typename =
         ( "__typename"
@@ -130,19 +131,19 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a wher
 
 -- UNION
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind UNION a where
-  introspectKind _ = updateLib (Union . buildType fields) stack (Proxy @a)
+  introspectKind _ = updateLib (DataUnion . buildType fields) stack (Proxy @a)
     where
       (fields, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
 
 -- INPUT_UNION
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a where
-  introspectKind _ = updateLib (InputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
+  introspectKind _ = updateLib (DataInputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
     where
       (inputUnions, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
       fields = map toNullableField inputUnions
       -- for every input Union 'User' adds enum type of possible TypeNames 'UserTags'
       tagsEnumType :: TypeUpdater
-      tagsEnumType x = pure $ defineType (typeName, Leaf $ LeafEnum tagsEnum) x
+      tagsEnumType x = pure $ defineType (typeName, DataEnum tagsEnum) x
         where
           tagsEnum =
             DataTyCon
@@ -226,7 +227,7 @@ buildType typeData proxy =
     , typeData
     }
 
-updateLib :: GQLType a => (Proxy a -> DataFullType) -> [TypeUpdater] -> Proxy a -> TypeUpdater
+updateLib :: GQLType a => (Proxy a -> DataType) -> [TypeUpdater] -> Proxy a -> TypeUpdater
 updateLib typeBuilder stack proxy lib' =
   case isTypeDefined (__typeName proxy) lib' of
     Nothing -> resolveUpdates (defineType (__typeName proxy, typeBuilder proxy) lib') stack
