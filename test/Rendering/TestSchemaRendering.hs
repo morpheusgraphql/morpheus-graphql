@@ -12,8 +12,8 @@ import           Test.Tasty.HUnit           (assertEqual, testCase)
 
 -- TODO: better Test
 testSchemaRendering :: TestTree
-testSchemaRendering = testCase "Test Rendering" $ assertEqual "test schema Rendering" schema expected
+testSchemaRendering = testCase "Test Rendering" $ assertEqual "test schema Rendering" expected schema
   where
     schema = toGraphQLDocument schemaProxy
     expected =
-      "type Query { \n  user: User!\n  testUnion: TestUnion\n}\n\nenum TestEnum { \n  EnumA\n  EnumB\n  EnumC\n}\n\nscalar TestScalar\n\ninput Coordinates { \n  latitude: TestScalar!\n  longitude: Int!\n}\n\ntype Address { \n  street: [[[[String!]!]!]]\n}\n\ntype User { \n  type: String!\n  address(coordinates: Coordinates!, type: String): Int!\n  friend(id: ID!, cityID: TestEnum): User!\n}\n\nunion TestUnion =\n    User!\n  | Address!"
+        "type Query { \n  user: User!\n  testUnion: TestUnion\n}\n\nscalar TestScalar\n\nenum TestEnum { \n  EnumA\n  EnumB\n  EnumC\n}\n\ninput Coordinates { \n  latitude: TestScalar!\n  longitude: Int!\n}\n\ntype Address { \n  street: [[[[String!]!]!]]\n}\n\ntype User { \n  type: String!\n  address(coordinates: Coordinates!, type: String): Int!\n  friend(id: ID!, cityID: TestEnum): User!\n}\n\nunion TestUnion =\n    User!\n  | Address!"
