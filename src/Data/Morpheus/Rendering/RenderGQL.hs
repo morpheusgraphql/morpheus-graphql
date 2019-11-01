@@ -50,9 +50,8 @@ instance RenderGQL DataKind where
   render (UnionKind x)  = typeName x
 
 instance RenderGQL (Key, DataFullType) where
-  render (name, Leaf (BaseScalar _)) = "scalar " <> name
-  render (name, Leaf (CustomScalar _)) = "scalar " <> name
-  render (name, Leaf (LeafEnum DataTyCon {typeData})) = "enum " <> name <> renderObject id typeData
+  render (name, Leaf (DataScalar _)) = "scalar " <> name
+  render (name, Leaf (DataEnum DataTyCon {typeData})) = "enum " <> name <> renderObject id typeData
   render (name, Union DataTyCon {typeData}) =
     "union " <> name <> " =\n    " <> intercalate ("\n" <> renderIndent <> "| ") (map (render . fieldType) typeData)
   render (name, InputObject DataTyCon {typeData}) = "input " <> name <> render typeData

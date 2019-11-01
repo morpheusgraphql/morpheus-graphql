@@ -33,7 +33,7 @@ scalarTypeDefinition typeDescription =
     _ <- optionalDirectives
     pure (
           typeName,
-          Leaf $ CustomScalar DataTyCon {
+          Leaf $ DataScalar DataTyCon {
             typeName,
             typeDescription,
             typeFingerprint = SystemFingerprint typeName,
@@ -151,7 +151,7 @@ enumTypeDefinition typeDescription =
     enumValuesDefinition <- setOf enumValueDefinition
     pure (
         typeName,
-        Leaf $ LeafEnum DataTyCon {
+        Leaf $ DataEnum DataTyCon {
              typeName,
              typeDescription,
              typeFingerprint = SystemFingerprint typeName,

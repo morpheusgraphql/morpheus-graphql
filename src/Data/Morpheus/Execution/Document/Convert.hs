@@ -86,7 +86,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
                     Just Union {}        -> TypeVarResolver
                     Just _               -> PlainResolver
         --------------------------------------------
-        genType (Leaf (LeafEnum DataTyCon {typeName, typeData})) =
+        genType (Leaf (DataEnum DataTyCon {typeName, typeData})) =
           pure
             GQLTypeD
               { typeD = TypeD {tName = sysName typeName, tNamespace = [], tCons = map enumOption typeData}

@@ -44,6 +44,7 @@ import           Data.Morpheus.Types.Internal.Data               (DataArguments,
                                                                   TypeAlias (..), defineType, isTypeDefined,
                                                                   toListField, toNullableField)
 
+
 type IntroCon a = (GQLType a, ObjectFields (CUSTOM a) a)
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
@@ -99,13 +100,13 @@ class IntrospectKind (kind :: GQL_KIND) a where
 instance (GQLType a, GQLScalar a) => IntrospectKind SCALAR a where
   introspectKind _ = updateLib scalarType [] (Proxy @a)
     where
-      scalarType = Leaf . CustomScalar . buildType (scalarValidator (Proxy @a))
+      scalarType = Leaf . DataScalar . buildType (scalarValidator (Proxy @a))
 
 -- ENUM
 instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
   introspectKind _ = updateLib enumType [] (Proxy @a)
     where
-      enumType = Leaf . LeafEnum . buildType (enumTags (Proxy @(Rep a)))
+      enumType = Leaf . DataEnum . buildType (enumTags (Proxy @(Rep a)))
 
 -- INPUT_OBJECT
 instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT a where
@@ -142,7 +143,7 @@ instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a wher
       fields = map toNullableField inputUnions
       -- for every input Union 'User' adds enum type of possible TypeNames 'UserTags'
       tagsEnumType :: TypeUpdater
-      tagsEnumType x = pure $ defineType (typeName, Leaf $ LeafEnum tagsEnum) x
+      tagsEnumType x = pure $ defineType (typeName, Leaf $ DataEnum tagsEnum) x
         where
           tagsEnum =
             DataTyCon

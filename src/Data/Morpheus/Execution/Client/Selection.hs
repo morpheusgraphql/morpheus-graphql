@@ -175,7 +175,7 @@ buildInputType lib name = getType lib name >>= subTypes
         toFieldD (_, field@DataField {fieldType}) = do
           aliasTyCon <- typeFrom [] <$> getType lib (aliasTyCon fieldType)
           pure $ field {fieldType = fieldType {aliasTyCon}}
-    subTypes (Leaf (LeafEnum DataTyCon {typeName, typeData})) =
+    subTypes (Leaf (DataEnum DataTyCon {typeName, typeData})) =
       pure
         [ GQLTypeD
             { typeD = TypeD {tName = unpack typeName, tNamespace = [], tCons = map enumOption typeData}
@@ -200,7 +200,7 @@ withLeaf f (Leaf x) = f x
 withLeaf _ _        = Left $ compileError "Invalid schema Expected scalar"
 
 leafName :: DataLeaf -> [Text]
-leafName (LeafEnum DataTyCon {typeName}) = [typeName]
+leafName (DataEnum DataTyCon {typeName}) = [typeName]
 leafName _                               = []
 
 getType :: DataTypeLib -> Text -> Validation DataFullType
@@ -215,10 +215,9 @@ typeFromScalar "ID"      = "ID"
 typeFromScalar _         = "ScalarValue"
 
 typeFrom :: [Key] -> DataFullType -> Text
-typeFrom _ (Leaf (BaseScalar x))                      = typeName x
-typeFrom _ (Leaf (CustomScalar DataTyCon {typeName})) = typeFromScalar typeName
-typeFrom _ (Leaf (LeafEnum x))                        = typeName x
-typeFrom _ (InputObject x)                            = typeName x
-typeFrom path (OutputObject x)                        = pack $ nameSpaceType path $ typeName x
-typeFrom path (Union x)                               = pack $ nameSpaceType path $ typeName x
-typeFrom _ (InputUnion x)                             = typeName x
+typeFrom _ (Leaf (DataScalar DataTyCon {typeName})) = typeFromScalar typeName
+typeFrom _ (Leaf (DataEnum x))                      = typeName x
+typeFrom _ (InputObject x)                          = typeName x
+typeFrom path (OutputObject x)                      = pack $ nameSpaceType path $ typeName x
+typeFrom path (Union x)                             = pack $ nameSpaceType path $ typeName x
+typeFrom _ (InputUnion x)                           = typeName x

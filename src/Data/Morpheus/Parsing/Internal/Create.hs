@@ -35,10 +35,10 @@ createType typeName typeData =
   DataTyCon {typeName, typeDescription = Nothing, typeFingerprint = SystemFingerprint "", typeData}
 
 createScalarType :: Text -> (Text, DataFullType)
-createScalarType typeName = (typeName, Leaf $ CustomScalar $ createType typeName (DataValidator pure))
+createScalarType typeName = (typeName, Leaf $ DataScalar $ createType typeName (DataValidator pure))
 
 createEnumType :: Text -> [Text] -> (Text, DataFullType)
-createEnumType typeName typeData = (typeName, Leaf $ LeafEnum $ createType typeName typeData)
+createEnumType typeName typeData = (typeName, Leaf $ DataEnum $ createType typeName typeData)
 
 createUnionType :: Text -> [Text] -> (Text, DataFullType)
 createUnionType typeName typeData = (typeName, Union $ createType typeName $ map unionField typeData)

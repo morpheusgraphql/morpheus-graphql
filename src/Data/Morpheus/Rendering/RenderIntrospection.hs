@@ -41,9 +41,8 @@ instance RenderSchema DataFullType S__Type where
   render (name, InputUnion inpUnion') = renderInputUnion (name, inpUnion')
 
 instance RenderSchema DataLeaf S__Type where
-  render (key, BaseScalar DataTyCon {typeDescription}) _ = pure $ createLeafType SCALAR key typeDescription Nothing
-  render (key, CustomScalar DataTyCon {typeDescription}) _ = pure $ createLeafType SCALAR key typeDescription Nothing
-  render (key, LeafEnum DataTyCon {typeDescription, typeData}) _ =
+  render (key, DataScalar DataTyCon {typeDescription}) _ = pure $ createLeafType SCALAR key typeDescription Nothing
+  render (key, DataEnum DataTyCon {typeDescription, typeData}) _ =
     pure $ createLeafType ENUM key typeDescription (Just $ map createEnumValue typeData)
 
 instance RenderSchema DataField S__Field where

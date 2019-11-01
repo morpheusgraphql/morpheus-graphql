@@ -235,9 +235,8 @@ data DataTyCon a = DataTyCon
   } deriving (Show)
 
 data DataLeaf
-  = BaseScalar DataScalar
-  | CustomScalar DataScalar
-  | LeafEnum DataEnum
+  = DataScalar DataScalar
+  | DataEnum DataEnum
   deriving (Show)
 
 -- DATA KIND
@@ -305,22 +304,20 @@ lookupDataType :: Key -> DataTypeLib -> Maybe DataFullType
 lookupDataType name lib = name `lookup` allDataTypes lib
 
 kindOf :: DataFullType -> DataTypeKind
-kindOf (Leaf (BaseScalar _))   = KindScalar
-kindOf (Leaf (CustomScalar _)) = KindScalar
-kindOf (Leaf (LeafEnum _))     = KindEnum
-kindOf (InputObject _)         = KindInputObject
-kindOf (OutputObject _)        = KindObject Nothing
-kindOf (Union _)               = KindUnion
-kindOf (InputUnion _)          = KindInputUnion
+kindOf (Leaf (DataScalar _)) = KindScalar
+kindOf (Leaf (DataEnum _))   = KindEnum
+kindOf (InputObject _)       = KindInputObject
+kindOf (OutputObject _)      = KindObject Nothing
+kindOf (Union _)             = KindUnion
+kindOf (InputUnion _)        = KindInputUnion
 
 fromDataType :: (DataTyCon () -> v) -> DataFullType -> v
-fromDataType f (Leaf (BaseScalar dt))   = f dt {typeData = ()}
-fromDataType f (Leaf (CustomScalar dt)) = f dt {typeData = ()}
-fromDataType f (Leaf (LeafEnum dt))     = f dt {typeData = ()}
-fromDataType f (Union dt)               = f dt {typeData = ()}
-fromDataType f (InputObject dt)         = f dt {typeData = ()}
-fromDataType f (InputUnion dt)          = f dt {typeData = ()}
-fromDataType f (OutputObject dt)        = f dt {typeData = ()}
+fromDataType f (Leaf (DataScalar dt)) = f dt {typeData = ()}
+fromDataType f (Leaf (DataEnum dt))   = f dt {typeData = ()}
+fromDataType f (Union dt)             = f dt {typeData = ()}
+fromDataType f (InputObject dt)       = f dt {typeData = ()}
+fromDataType f (InputUnion dt)        = f dt {typeData = ()}
+fromDataType f (OutputObject dt)      = f dt {typeData = ()}
 
 isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name lib = fromDataType typeFingerprint <$> lookupDataType name lib
