@@ -46,6 +46,3 @@ main = do
         get "/mythology" $ file "index.html"
         post "/th" $ raw =<< (liftIO . thSimpleApi =<< body)
         get "/th" $ file "index.html"
-
-main :: IO ()
-main = print "Hello"
