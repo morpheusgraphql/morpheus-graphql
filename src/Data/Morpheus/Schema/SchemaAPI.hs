@@ -21,7 +21,7 @@ import           Data.Morpheus.Types                           (constRes)
 import           Data.Morpheus.Types.GQLType                   (CUSTOM)
 import           Data.Morpheus.Types.ID                        (ID)
 import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataObject, DataTypeLib (..), QUERY,
-                                                                allDataTypes)
+                                                                allDataTypes, lookupDataType)
 import           Data.Morpheus.Types.Internal.Resolver         (Resolver (..))
 
 convertTypes :: Monad m => DataTypeLib -> Resolver QUERY m e [S__Type (Resolver QUERY m e )]
@@ -31,7 +31,7 @@ buildSchemaLinkType :: Monad m => (Text, DataObject) -> S__Type (Resolver QUERY 
 buildSchemaLinkType (key', _) = createObjectType key' Nothing $ Just []
 
 findType :: Monad m => Text -> DataTypeLib -> Resolver QUERY m e (Maybe (S__Type (Resolver QUERY m e )))
-findType name lib = renderT (lookup name (allDataTypes lib))
+findType name lib = renderT (lookupDataType name lib)
   where
     renderT (Just datatype) = Just <$> render (name,datatype) lib
     renderT Nothing         = pure Nothing
