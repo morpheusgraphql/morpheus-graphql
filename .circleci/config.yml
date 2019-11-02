@@ -113,6 +113,44 @@ jobs:
           name: Install executables
           command: stack install
 
+  ## GHC 8.8.1
+  ghc_8_8_1:
+    docker:
+      - image: fpco/stack-build:lts
+    steps:
+      - checkout
+      - restore_cache:
+          name: restore cached stack
+          keys:
+            - stack-vesrion-{{ checksum "stack-nightly.yaml" }}
+      - restore_cache:
+          name: restore cached dependencies
+          keys:
+            - stack-dependencies-{{ checksum "stack-nightly.yaml" }}-{{ checksum "package.yaml" }}-{{ checksum "examples/package.yaml" }}
+      - run:
+          name: setup stack
+          command: STACK_YAML=stack-nightly.yaml stack --no-terminal setup
+      - save_cache:
+          name: cache stack
+          key: stack-vesrion-{{ checksum "stack-nightly.yaml" }}
+          paths:
+            - /root/.stack
+      - run:
+          name: install dependencies
+          command: STACK_YAML=stack-nightly.yaml stack build --skip-ghc-check --no-terminal --test --only-dependencies
+      - save_cache:
+          name: cache dependencies
+          key: stack-dependencies-{{ checksum "stack-nightly.yaml" }}-{{ checksum "package.yaml" }}-{{ checksum "examples/package.yaml" }}
+          paths:
+            - ".stack-work"
+            - "/root/.stack"
+      - run:
+          name: Run tests
+          command: STACK_YAML=stack-nightly.yaml stack test --haddock --no-haddock-deps
+      - run:
+          name: Install executables
+          command: STACK_YAML=stack-nightly.yaml stack install
+
 workflows:
   version: 2.1
   build_all:
@@ -120,3 +158,4 @@ workflows:
       - ghc_8_2_2
       - ghc_8_4_4
       - ghc_8_6_5
+      - ghc_8_8_1
