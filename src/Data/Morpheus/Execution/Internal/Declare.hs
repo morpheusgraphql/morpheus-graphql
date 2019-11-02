@@ -25,6 +25,8 @@ import           Data.Morpheus.Types.Internal.Data      (ArgsType (..), DataFiel
 import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Resolver  (UnSubResolver)
 
+type Arrow = (->)
+
 declareTypeAlias :: Bool -> TypeAlias -> Type
 declareTypeAlias isSub TypeAlias {aliasTyCon, aliasWrappers, aliasArgs} = wrappedT aliasWrappers
   where
@@ -71,7 +73,7 @@ declareType namespace kindD derivingList TypeD {tName, tCons, tNamespace} =
                 genFieldT (Just ArgsType {argsTypeName}) = AppT (AppT arrowType argType) (fType True)
                   where
                     argType = ConT $ mkName (unpack argsTypeName)
-                    arrowType = ConT ''(->)
+                    arrowType = ConT ''Arrow
                 ------------------------------------------------
                 fType isResolver
                   | maybe False isSubscription kindD = AppT monadVar result
