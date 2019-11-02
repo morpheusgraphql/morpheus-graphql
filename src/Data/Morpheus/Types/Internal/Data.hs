@@ -444,6 +444,17 @@ isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name lib = fromDataType typeFingerprint <$> lookupDataType name lib
 
 defineType :: (Key, DataType) -> DataTypeLib -> DataTypeLib
+defineType (key, datatype@(DataInputUnion DataTyCon{ typeName ,typeData , typeFingerprint })) lib = lib {
+   types = insert name unionTags (insert key datatype (types lib))
+}
+  where
+     name = typeName <> "Tags"
+     unionTags = DataEnum DataTyCon { 
+          typeName = name
+        , typeFingerprint
+        , typeDescription = Nothing
+        , typeData
+  }
 defineType (key, datatype) lib = lib {
     types =  insert key datatype (types lib)
 }
@@ -472,21 +483,6 @@ createDataTypeLib types =
         _                       -> (Nothing, lib)
 
 
-{--
-tagsEnumType :: TypeUpdater
-tagsEnumType x = pure $ defineType (typeName, DataEnum tagsEnum) x
-        where
-          tagsEnum =
-            DataTyCon
-              { typeName
-                -- has same fingerprint as object because it depends on it
-              , typeFingerprint = __typeFingerprint (Proxy @a)
-              , typeDescription = Nothing
-              , typeData = map fieldName inputUnions
-              }
-      typeName = __typeName (Proxy @a) <> "Tags"
--}
-
 createInputUnionFields :: Key -> [Key] -> [(Key,DataField)]
 createInputUnionFields name members = fieldTag : map unionField members
     where
@@ -499,17 +495,17 @@ createInputUnionFields name members = fieldTag : map unionField members
           })
         unionField memberName = (
             memberName ,
-            DataField { 
+            DataField {
               fieldArgs = []
               , fieldArgsType = Nothing
               , fieldName = memberName
               , fieldType = TypeAlias {
-                    aliasTyCon = memberName, 
-                    aliasWrappers = [MaybeD], 
+                    aliasTyCon = memberName,
+                    aliasWrappers = [MaybeD],
                     aliasArgs = Nothing
                 }
               , fieldHidden = False
-            } 
+            }
           )
 
 createAlias :: Key -> TypeAlias
