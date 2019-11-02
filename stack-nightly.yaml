@@ -1,4 +1,3 @@
-# TODO: add to CI
 # ghc-8.8.1
 resolver: nightly-2019-11-01
 
