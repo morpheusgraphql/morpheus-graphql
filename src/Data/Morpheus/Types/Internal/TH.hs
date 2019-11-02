@@ -42,4 +42,6 @@ destructRecord :: String -> [String] -> PatQ
 destructRecord conName fields = conP (mkName conName) (map (varP . mkName) fields)
 
 typeInstanceDec :: Name -> Type -> Type -> Dec
-typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT typeFamily) arg) res)
+typeInstanceDec typeFamily arg res = TySynInstD typeFamily (TySynEqn [arg] res)
+-- : TODO after th 2.15.0.0
+-- typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT typeFamily) arg) res)
