@@ -19,13 +19,15 @@ import           Data.Morpheus.Kind                       (ENUM, INPUT_OBJECT, I
 import           Data.Morpheus.Types.GQLType              (GQLType (..), TRUE)
 import           Data.Morpheus.Types.Internal.Data        (DataTypeKind (..), isObject, isSchemaTypeName)
 import           Data.Morpheus.Types.Internal.DataD       (GQLTypeD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.TH          (instanceHeadT, typeT)
+import           Data.Morpheus.Types.Internal.TH          (instanceHeadT, typeT, typeInstanceDec)
 import           Data.Typeable                            (Typeable)
 
 genTypeName :: String -> String
 genTypeName ('S':name)
   | isSchemaTypeName (pack name) = name
 genTypeName name = name
+
+
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
 deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} =
@@ -54,11 +56,11 @@ deriveGQLType GQLTypeD {typeD = TypeD {tName}, typeKindD} =
       where
         deriveCUSTOM = do
           typeN <- headSig
-          pure $ TySynInstD ''CUSTOM (TySynEqn [typeN] (ConT ''TRUE))
+          pure $ typeInstanceDec ''CUSTOM typeN (ConT ''TRUE)
         ---------------------------------------------------------------
         deriveKind = do
           typeN <- headSig
-          pure $ TySynInstD ''KIND (TySynEqn [typeN] (ConT $ toKIND typeKindD))
+          pure $ typeInstanceDec ''KIND typeN (ConT $ toKIND typeKindD)
         ---------------------------------
         toKIND KindScalar      = ''SCALAR
         toKIND KindEnum        = ''ENUM

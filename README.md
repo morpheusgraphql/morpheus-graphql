@@ -29,7 +29,7 @@ _stack.yml_
 resolver: lts-14.8
 
 extra-deps:
-  - morpheus-graphql-0.5.0
+  - morpheus-graphql-0.6.0
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack upgrade` and `stack update`
@@ -80,7 +80,7 @@ rootResolver =
   GQLRootResolver
     {
       queryResolver = Query {queryDeity},
-      mutationResolver = Undefined, 
+      mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }
   where
@@ -137,8 +137,8 @@ data DeityArgs = DeityArgs
 The field name in the final request will be `type` instead of `type'`. The Morpheus request parser converts each of the reserved identities in Haskell 2010 to their corresponding names internally. This also applies to selections.
 
 ```haskell
-resolveDeity :: DeityArgs -> IORes Deity
-resolveDeity args = QueryResolver $ ExceptT $ askDB (name args) (mythology args)
+resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity DeityArgs { name, mythology } = liftEitherM $ dbDeity name mythology
 
 askDB :: Text -> Maybe Text -> IO (Either String Deity)
 askDB = ...
@@ -344,7 +344,7 @@ rootResolver =
     }
   where
     createDeity _args = MutResolver events updateDeity
-        where 
+        where
         events = [Event {channels = [ChannelA], content = ContentA 1}]
         updateDeity = updateDBDeity
     newDeity _args = SubResolver [ChannelA] subResolver

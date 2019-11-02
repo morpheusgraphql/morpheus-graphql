@@ -1,5 +1,5 @@
 name: morpheus-graphql
-version: 0.5.0
+version: 0.6.0
 github: "nalchevanidze/morpheus-graphql"
 license: MIT
 author: "Daviti Nalchevanidze"
@@ -30,10 +30,10 @@ dependencies:
   - transformers          >= 0.3.0.0   && <  0.6
   - scientific            >= 0.3.6.2   && <  0.4
   - vector                >= 0.12.0.1  && <  0.13
-  - mtl                   >= 2.0       && <= 2.2.2
-  - websockets            >= 0.11.0    && <= 0.12.5.3
+  - mtl                   >= 2.0       && <= 2.3
+  - websockets            >= 0.11.0    && <= 0.13
   - uuid                  >= 1.0       && <= 1.4
-  - template-haskell
+  - template-haskell      >= 2.0       && <= 2.14.0.0
 
 library:
   source-dirs: src

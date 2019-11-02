@@ -8,7 +8,7 @@ import           Language.Haskell.TH.Syntax
 
 liftMaybeText :: Maybe Text -> ExpQ
 liftMaybeText (Just x) = appE  (conE 'Just) (liftText x)
-liftMaybeText Nothing = conE 'Nothing
+liftMaybeText Nothing  = conE 'Nothing
 
 liftText :: Text -> ExpQ
 liftText x = appE (varE 'pack) (lift (unpack x))
@@ -40,3 +40,8 @@ instanceHeadMultiT className iType li = applyT className (iType : li)
 -- "User" -> ["name","id"] -> (User name id)
 destructRecord :: String -> [String] -> PatQ
 destructRecord conName fields = conP (mkName conName) (map (varP . mkName) fields)
+
+typeInstanceDec :: Name -> Type -> Type -> Dec
+typeInstanceDec typeFamily arg res = TySynInstD typeFamily (TySynEqn [arg] res)
+-- : TODO after th 2.15.0.0
+-- typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT typeFamily) arg) res)

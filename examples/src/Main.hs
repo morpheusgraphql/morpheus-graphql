@@ -40,9 +40,9 @@ main = do
     httpServer state =
       scottyApp $ do
         post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
-        get "/" $ file "index.html"
+        get "/" $ file "./examples/index.html"
         get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
         post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
-        get "/mythology" $ file "index.html"
+        get "/mythology" $ file "./examples/index.html"
         post "/th" $ raw =<< (liftIO . thSimpleApi =<< body)
-        get "/th" $ file "index.html"
+        get "/th" $ file "./examples/index.html"

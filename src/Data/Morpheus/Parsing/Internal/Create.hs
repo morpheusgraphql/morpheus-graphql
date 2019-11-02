@@ -11,11 +11,16 @@ module Data.Morpheus.Parsing.Internal.Create
   , createDataTypeLib
   ) where
 
-import           Data.Morpheus.Types.Internal.Data (DataArguments, DataField (..), DataFingerprint (..),
-                                                    DataType (..), DataTyCon (..), DataTypeLib (..),
-                                                    DataValidator (..), TypeAlias (..), WrapperD, defineType,
-                                                    initTypeLib)
-import           Data.Text                         (Text)
+import           Data.Text                               (Text)
+
+-- MORPHEUS
+import           Data.Morpheus.Error.Internal            (internalError)
+import           Data.Morpheus.Types.Internal.Data       (DataArguments, DataField (..), DataFingerprint (..),
+                                                          DataTyCon (..), DataType (..), DataTypeLib (..),
+                                                          DataValidator (..), TypeAlias (..), WrapperD, defineType,
+                                                          initTypeLib)
+import           Data.Morpheus.Types.Internal.Validation (Validation)
+
 
 createField :: DataArguments -> Text -> ([WrapperD], Text) -> DataField
 createField fieldArgs fieldName (aliasWrappers, aliasTyCon) =
@@ -45,7 +50,7 @@ createUnionType typeName typeData = (typeName, DataUnion $ createType typeName $
   where
     unionField fieldType = createField [] "" ([], fieldType)
 
-createDataTypeLib :: Monad m => [(Text, DataType)] -> m DataTypeLib
+createDataTypeLib :: [(Text, DataType)] -> Validation DataTypeLib
 createDataTypeLib types =
   case takeByKey "Query" types of
     (Just query, lib1) ->
@@ -53,7 +58,7 @@ createDataTypeLib types =
         (mutation, lib2) ->
           case takeByKey "Subscription" lib2 of
             (subscription, lib3) -> pure ((foldr defineType (initTypeLib query) lib3) {mutation, subscription})
-    _ -> fail "Query Not Defined"
+    _ -> internalError "Query Not Defined"
   ----------------------------------------------------------------------------
   where
     takeByKey key lib =

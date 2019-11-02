@@ -30,6 +30,7 @@ module Data.Morpheus.Types.Internal.Resolver
   , liftEitherM
   ) where
 
+import           Control.Monad.Fail                         (MonadFail (..))
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT, withExceptT)
 import           Data.Maybe                                 (fromMaybe)
 import           Data.Semigroup                             ((<>))
@@ -58,6 +59,9 @@ liftEitherM = liftEither
 ----------------------------------------------------------------------------------------
 type ResolveT = ExceptT GQLErrors
 type ResponseT m e  = ResolveT (ResponseStream m e)
+
+instance Monad m => MonadFail (Resolver QUERY m e) where
+  fail = FailedResolver
 
 --
 -- Recursive Resolver
