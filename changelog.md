@@ -1,9 +1,15 @@
-## [0.6.0] - *.11.2019
+## [0.6.0] - 2.11.2019
+
+## Added
+
+- support of ghc 8.8.1
+
+## [0.6.0] - 1.11.2019
 
 ### Removed
 
-- removed `morpheus` cli for code generating, if you need cli you should use 
-[morpheus-graphql-cli](https://github.com/morpheusgraphql/morpheus-graphql-cli/)
+- removed `morpheus` cli for code generating, if you need cli you should use
+  [morpheus-graphql-cli](https://github.com/morpheusgraphql/morpheus-graphql-cli/)
 
 - example `API` executable is removed from Production build
 
@@ -15,7 +21,6 @@
     liftM :: m a -> Resolver o m e a
     liftEitherM :: m (Either String a) -> Resolver o m e a
   ```
-
 
 ## [0.5.0] - 31.10.2019
 
