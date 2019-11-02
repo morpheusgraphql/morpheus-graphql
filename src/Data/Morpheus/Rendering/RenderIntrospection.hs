@@ -8,6 +8,7 @@ module Data.Morpheus.Rendering.RenderIntrospection
   , createObjectType
   ) where
 
+import           Control.Monad.Fail                 (MonadFail)
 import           Data.Semigroup                     ((<>))
 import           Data.Text                          (Text, unpack)
 
@@ -15,7 +16,7 @@ import           Data.Morpheus.Schema.Schema
 
 -- Morpheus
 import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
-import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataType (..), DataObject, DataTyCon (..),
+import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataObject, DataTyCon (..), DataType (..),
                                                      DataTypeKind (..), DataTypeLib, DataTypeWrapper (..), DataUnion,
                                                      TypeAlias (..), kindOf, lookupDataType, toGQLWrapper)
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
