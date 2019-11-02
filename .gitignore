@@ -1,4 +1,5 @@
 .DS_Store
+stack.yaml.lock
 .stack-work/
 .idea/
 dist/
