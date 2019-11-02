@@ -10,7 +10,8 @@
 
 - lts-11.10 (ghc-8.2.2): ✅ (>= 0.1.0)
 - lts-12.16 (ghc-8.4.4): ✅
-- lts-13.24(ghc-8.6.5): ✅
+- lts-14.8(ghc-8.6.5): ✅
+- (ghc-8.8.1): >= 0.6.1 ✅
 
 # Feature Checklist
 
@@ -47,8 +48,8 @@
     - Fragments: ✅
     - Inline Fragments: (>= 0.1.0)
     - Aliases: ✅ (>= 0.1.0)
-    - DefaultValues:  ✅ (>= 0.3.2)
-    - AnonymousOperations: ✅  (>= 4.1)
+    - DefaultValues: ✅ (>= 0.3.2)
+    - AnonymousOperations: ✅ (>= 4.1)
     - Operations:
       - Query: ✅
       - Mutation: ✅
