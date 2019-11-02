@@ -26,7 +26,7 @@ constRes = const . pure
 type Result m a = DataTypeLib -> m a
 
 class RenderSchema a b where
-  render :: Monad m => (Text, a) -> DataTypeLib -> m (b m)
+  render :: (Monad m, MonadFail m) => (Text, a) -> DataTypeLib -> m (b m)
 
 instance RenderSchema DataType S__Type where
   render (key, DataScalar DataTyCon {typeDescription})  =
@@ -65,26 +65,26 @@ wrapByTypeWrapper :: Monad m => DataTypeWrapper -> S__Type m -> S__Type m
 wrapByTypeWrapper ListType    = wrapAs LIST
 wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 
-lookupKind :: Monad m => Text -> Result m DataTypeKind
+lookupKind :: (Monad m, MonadFail m) => Text -> Result m DataTypeKind
 lookupKind name lib =
   case lookupDataType name lib of
     Nothing    -> fail $ unpack ("Kind Not Found: " <> name)
     Just value -> pure (kindOf value)
 
-inputValueFromArg :: Monad m => (Text, DataField) -> Result m (S__InputValue m)
+inputValueFromArg :: (Monad m,MonadFail m) => (Text, DataField) -> Result m (S__InputValue m)
 inputValueFromArg (key, input) = fmap (createInputValueWith key) . createInputObjectType input
 
-createInputObjectType :: Monad m => DataField -> Result m (S__Type m)
+createInputObjectType :: (Monad m, MonadFail m) => DataField -> Result m (S__Type m)
 createInputObjectType field@DataField {fieldType = TypeAlias {aliasTyCon}} lib = do
   kind <- renderTypeKind <$> lookupKind aliasTyCon lib
   pure $ wrap field $ createType kind aliasTyCon Nothing $ Just []
 
-renderInputObject :: Monad m => (Text, DataObject) -> Result m (S__Type m)
+renderInputObject :: (Monad m, MonadFail m) => (Text, DataObject) -> Result m (S__Type m)
 renderInputObject (key, DataTyCon {typeData, typeDescription}) lib = do
   fields <- traverse (`inputValueFromArg` lib) typeData
   pure $ createInputObject key typeDescription fields
 
-renderInputUnion :: Monad m => (Text, DataUnion) -> Result m (S__Type m)
+renderInputUnion :: (Monad m, MonadFail m) => (Text, DataUnion) -> Result m (S__Type m)
 renderInputUnion (key', DataTyCon {typeData, typeDescription}) lib =
   createInputObject key' typeDescription <$> traverse createField typeData
   where
