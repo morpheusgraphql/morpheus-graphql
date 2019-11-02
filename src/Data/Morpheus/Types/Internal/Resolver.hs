@@ -30,6 +30,7 @@ module Data.Morpheus.Types.Internal.Resolver
   , liftEitherM
   ) where
 
+import           Control.Monad.Fail                         (MonadFail (..))
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT, withExceptT)
 import           Data.Maybe                                 (fromMaybe)
 import           Data.Semigroup                             ((<>))
