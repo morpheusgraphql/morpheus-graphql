@@ -44,7 +44,7 @@ renderResolver Context {scope, pubSub = (channel, content)} (name, dataType) = r
     renderSig (DataEnum DataTyCon {typeData}) = defFunc <> renderReturn <> renderCon (head typeData)
     renderSig (DataUnion DataTyCon {typeData}) = defFunc <> renderUnionCon name typeCon <> " <$> " <> "resolve" <> typeCon
       where
-        typeCon = aliasTyCon $ fieldType $ head typeData
+        typeCon = head typeData
     renderSig (DataObject DataTyCon {typeData}) = defFunc <> renderReturn <> renderCon name <> renderObjFields
       where
         renderObjFields = renderResObject (map renderFieldRes typeData)
