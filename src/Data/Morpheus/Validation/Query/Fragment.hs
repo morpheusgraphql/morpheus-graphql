@@ -15,12 +15,13 @@ import qualified Data.Text                                     as T (concat)
 -- MORPHEUS
 import           Data.Morpheus.Error.Fragment                  (cannotBeSpreadOnType, cannotSpreadWithinItself,
                                                                 fragmentNameCollision, unknownFragment, unusedFragment)
+import           Data.Morpheus.Error.Variable                  (unknownType)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawSelection (..),
                                                                 Reference (..), Selection (..))
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
-import           Data.Morpheus.Types.Internal.Data             (DataTypeLib)
+import           Data.Morpheus.Types.Internal.Data             (DataTypeLib, lookupDataObject)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
-import           Data.Morpheus.Validation.Internal.Utils       (checkNameCollision, existsObjectType)
+import           Data.Morpheus.Validation.Internal.Utils       (checkNameCollision)
 
 
 validateFragments :: DataTypeLib -> FragmentLib -> [(Text, RawSelection)] -> Validation ()
@@ -79,8 +80,10 @@ scanForSpread (_, Spread Reference {referenceName = name', referencePosition = p
 
 validateFragment :: DataTypeLib -> (Text, Fragment) -> Validation NodeEdges
 validateFragment lib (fName, Fragment {fragmentSelection, fragmentType, fragmentPosition}) =
-  existsObjectType fragmentPosition fragmentType lib >>
+  lookupDataObject validationError fragmentType lib >>
   pure (EnhancedKey fName fragmentPosition, concatMap scanForSpread fragmentSelection)
+  where
+   validationError = unknownType fragmentType fragmentPosition
 
 detectLoopOnFragments :: Graph -> Validation ()
 detectLoopOnFragments lib = mapM_ checkFragment lib

@@ -60,8 +60,14 @@ module Data.Morpheus.Types.Internal.Data
   , Name
   , Description
   , isEntNode
+  , lookupInputType
+  , coerceDataObject
+  , getDataType
+  , lookupDataObject
+  , lookupDataUnion
   ) where
 
+import           Data.HashMap.Lazy                  (HashMap, empty, insert, toList)
 import           Data.Semigroup                     ((<>))
 import qualified Data.Text                          as T (pack, unpack)
 import           GHC.Fingerprint.Type               (Fingerprint)
@@ -245,6 +251,14 @@ isEntNode DataScalar {} = True
 isEntNode DataEnum {}   = True
 isEntNode _             = False
 
+isInputDataType :: DataType -> Bool
+isInputDataType DataScalar {}      = True
+isInputDataType DataEnum {}        = True
+isInputDataType DataInputObject {} = True
+isInputDataType DataInputUnion {}  = True
+isInputDataType _                  = False
+
+-- DATA TYPE
 data DataType
   = DataScalar DataScalar
   | DataEnum DataEnum
@@ -254,13 +268,18 @@ data DataType
   | DataInputUnion DataUnion
   deriving (Show)
 
+coerceDataObject :: error -> DataType -> Either error DataObject
+coerceDataObject  _ (DataObject object) = pure object
+coerceDataObject  gqlError _            = Left gqlError
+
+coerceDataUnion :: error -> DataType -> Either error DataUnion
+coerceDataUnion  _ (DataUnion object) = pure object
+coerceDataUnion  gqlError _            = Left gqlError
+
+
+-- TypeSystem
 data DataTypeLib = DataTypeLib
-  { scalar       :: [(Key, DataScalar)]
-  , enum         :: [(Key, DataEnum)]
-  , inputObject  :: [(Key, DataObject)]
-  , object       :: [(Key, DataObject)]
-  , union        :: [(Key, DataUnion)]
-  , inputUnion   :: [(Key, DataUnion)]
+  { types        :: HashMap Key DataType
   , query        :: (Key,  DataObject)
   , mutation     :: Maybe (Key, DataObject)
   , subscription :: Maybe (Key, DataObject)
@@ -269,34 +288,49 @@ data DataTypeLib = DataTypeLib
 initTypeLib :: (Key, DataObject) -> DataTypeLib
 initTypeLib query =
   DataTypeLib
-    { scalar = []
-    , enum = []
-    , inputObject = []
+    { types = empty
     , query = query
-    , object = []
-    , union = []
-    , inputUnion = []
     , mutation = Nothing
     , subscription = Nothing
     }
 
+
 allDataTypes :: DataTypeLib -> [(Key, DataType)]
-allDataTypes DataTypeLib { scalar, enum , inputObject, object, union, inputUnion, query, mutation, subscription } =
+allDataTypes DataTypeLib { types, query, mutation, subscription } =
   packType DataObject query :
-  fromMaybeType mutation ++
-  fromMaybeType subscription ++
-  map (packType DataScalar) scalar ++
-  map (packType DataEnum) enum ++
-  map (packType DataInputObject) inputObject ++
-  map (packType DataInputUnion) inputUnion ++ map (packType DataObject) object ++ map (packType DataUnion) union
+  fromMaybeType mutation <>
+  fromMaybeType subscription <>
+  toList types
   where
     packType f (x, y) = (x, f y)
     fromMaybeType :: Maybe (Key, DataObject) -> [(Key, DataType)]
     fromMaybeType (Just (key', dataType')) = [(key', DataObject dataType')]
     fromMaybeType Nothing                  = []
 
+type GenError error a = error -> Either error a
+
 lookupDataType :: Key -> DataTypeLib -> Maybe DataType
 lookupDataType name lib = name `lookup` allDataTypes lib
+
+getDataType :: Key -> DataTypeLib -> GenError errors DataType
+getDataType name lib gqlError  = case lookupDataType name lib of
+   Just x -> Right x
+   _      -> Left gqlError
+
+lookupDataObject :: errors -> Key -> DataTypeLib -> Either errors DataObject
+lookupDataObject validationError name lib  =
+    getDataType name lib validationError >>=
+    coerceDataObject  validationError
+
+lookupDataUnion :: errors -> Key -> DataTypeLib -> Either errors DataUnion
+lookupDataUnion validationError name lib  =
+    getDataType name lib validationError >>=
+    coerceDataUnion  validationError
+
+lookupInputType :: Key -> DataTypeLib -> GenError error DataType
+lookupInputType name lib gqlError = case lookupDataType name lib of
+    Just x | isInputDataType x -> Right x
+    _                          -> Left gqlError
 
 kindOf :: DataType -> DataTypeKind
 kindOf (DataScalar _)      = KindScalar
@@ -318,12 +352,9 @@ isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name lib = fromDataType typeFingerprint <$> lookupDataType name lib
 
 defineType :: (Key, DataType) -> DataTypeLib -> DataTypeLib
-defineType (key', DataScalar type') lib      = lib {scalar = (key', type') : scalar lib}
-defineType (key', DataEnum type') lib        = lib {enum = (key', type') : enum lib}
-defineType (key', DataInputObject type') lib = lib {inputObject = (key', type') : inputObject lib}
-defineType (key', DataObject type') lib      = lib {object = (key', type') : object lib}
-defineType (key', DataUnion type') lib       = lib {union = (key', type') : union lib}
-defineType (key', DataInputUnion type') lib  = lib {inputUnion = (key', type') : inputUnion lib}
+defineType (key, datatype) lib = lib {
+    types =  insert key datatype (types lib)
+}
 
 toNullableField :: DataField -> DataField
 toNullableField dataField

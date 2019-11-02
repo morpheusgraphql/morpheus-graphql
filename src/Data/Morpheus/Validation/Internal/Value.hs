@@ -13,9 +13,9 @@ import           Data.Morpheus.Error.Input               (InputError (..), Input
 import           Data.Morpheus.Rendering.RenderGQL       (renderWrapped)
 import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataTyCon (..), DataType (..),
                                                           DataTypeLib (..), DataValidator (..), Key, TypeAlias (..),
-                                                          WrapperD (..), isNullable)
+                                                          WrapperD (..), isNullable, lookupInputType)
 import           Data.Morpheus.Types.Internal.Value      (Value (..))
-import           Data.Morpheus.Validation.Internal.Utils (getInputType, lookupField)
+import           Data.Morpheus.Validation.Internal.Utils (lookupField)
 
 -- Validate Variable Argument or all Possible input Values
 validateInputValue :: DataTypeLib -> [Prop] -> [WrapperD] -> DataType -> (Key, Value) -> InputValidation Value
@@ -48,7 +48,7 @@ validateInputValue lib prop' = validate
             validationData x = do
               fieldTypeName' <- aliasTyCon . fieldType <$> getField
               let currentProp = prop' ++ [Prop _name fieldTypeName']
-              type' <- getInputType fieldTypeName' lib (typeMismatch x fieldTypeName' currentProp)
+              type' <- lookupInputType fieldTypeName' lib (typeMismatch x fieldTypeName' currentProp)
               return (type', currentProp)
             getField = lookupField _name parentFields' (UnknownField prop' _name)
     -- VALIDATE INPUT UNION
