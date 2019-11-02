@@ -18,7 +18,8 @@ import           Data.Morpheus.Schema.Schema
 import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataObject, DataTyCon (..), DataType (..),
                                                      DataTypeKind (..), DataTypeLib, DataTypeWrapper (..), DataUnion,
-                                                     TypeAlias (..), kindOf, lookupDataType, toGQLWrapper)
+                                                     TypeAlias (..), createInputUnionFields, kindOf, lookupDataType,
+                                                     toGQLWrapper)
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
 
 constRes :: Applicative m => a -> b -> m a
@@ -86,10 +87,10 @@ renderInputObject (key, DataTyCon {typeData, typeDescription}) lib = do
   pure $ createInputObject key typeDescription fields
 
 renderInputUnion :: (Monad m, MonadFail m) => (Text, DataUnion) -> Result m (S__Type m)
-renderInputUnion (key', DataTyCon {typeData, typeDescription}) lib =
-  createInputObject key' typeDescription <$> traverse createField typeData
+renderInputUnion (key, DataTyCon {typeData, typeDescription}) lib =
+  createInputObject key typeDescription <$> traverse createField (createInputUnionFields key typeData)
   where
-    createField field = createInputValueWith (fieldName field) <$> createInputObjectType field lib
+    createField (name,field) = createInputValueWith name <$> createInputObjectType field lib
 
 createLeafType :: Monad m => TypeKind -> Text -> Maybe Text -> Maybe [S__EnumValue m] -> S__Type m
 createLeafType kind name description enums =
@@ -115,7 +116,7 @@ typeFromUnion (name, DataTyCon {typeData, typeDescription}) =
     , s__TypeOfType = constRes Nothing
     , s__TypeInterfaces = constRes Nothing
     , s__TypePossibleTypes =
-        constRes $ Just (map (\x -> createObjectType (aliasTyCon $ fieldType x) Nothing $ Just []) typeData)
+        constRes $ Just (map (\x -> createObjectType x Nothing $ Just []) typeData)
     , s__TypeEnumValues = constRes Nothing
     , s__TypeInputFields = constRes Nothing
     }

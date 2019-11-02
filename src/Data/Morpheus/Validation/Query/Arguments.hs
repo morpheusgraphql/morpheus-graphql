@@ -15,11 +15,12 @@ import           Data.Morpheus.Types.Internal.AST.Operation    (ValidVariables, 
 import           Data.Morpheus.Types.Internal.AST.RawSelection (RawArgument (..), RawArguments, Reference (..))
 import           Data.Morpheus.Types.Internal.AST.Selection    (Argument (..), ArgumentOrigin (..), Arguments)
 import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..), Position)
-import           Data.Morpheus.Types.Internal.Data             (DataArgument, DataField (..), DataField, DataTypeLib,
-                                                                TypeAlias (..), isFieldNullable, isWeaker)
+import           Data.Morpheus.Types.Internal.Data             (DataArgument, DataField (..), DataTypeLib,
+                                                                TypeAlias (..), isFieldNullable, isWeaker,
+                                                                lookupInputType)
 import           Data.Morpheus.Types.Internal.Validation       (Validation)
 import           Data.Morpheus.Types.Internal.Value            (Value (Null))
-import           Data.Morpheus.Validation.Internal.Utils       (checkForUnknownKeys, checkNameCollision, getInputType)
+import           Data.Morpheus.Validation.Internal.Utils       (checkForUnknownKeys, checkNameCollision)
 import           Data.Morpheus.Validation.Internal.Value       (validateInputValue)
 import           Data.Text                                     (Text)
 
@@ -63,7 +64,7 @@ validateArgument lib fieldPosition requestArgs (key, argType@DataField {fieldTyp
     -------------------------------------------------------------------------
     validateArgumentValue :: Argument -> Validation (Text, Argument)
     validateArgumentValue arg@Argument {argumentValue, argumentPosition} =
-      getInputType aliasTyCon lib (internalUnknownTypeMessage aliasTyCon) >>= checkType >> pure (key, arg)
+      lookupInputType aliasTyCon lib (internalUnknownTypeMessage aliasTyCon) >>= checkType >> pure (key, arg)
       where
         checkType type' = handleInputError (validateInputValue lib [] aliasWrappers type' (key, argumentValue))
         ---------

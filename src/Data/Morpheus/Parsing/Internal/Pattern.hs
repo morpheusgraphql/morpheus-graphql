@@ -9,12 +9,11 @@ module Data.Morpheus.Parsing.Internal.Pattern
 import           Text.Megaparsec                         (label, many)
 
 -- MORPHEUS
-import           Data.Morpheus.Parsing.Internal.Create   (createField)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Terms    (keyword, optDescription, litAssignment, operator, parseAssignment,
                                                           parseMaybeTuple, parseName, parseType, setOf)
 import           Data.Morpheus.Parsing.Internal.Value    (parseDefaultValue, parseValue)
-import           Data.Morpheus.Types.Internal.Data       (DataField, Key, Name)
+import           Data.Morpheus.Types.Internal.Data       (DataField, Key, Name, createField)
 
 
 -- InputValue : https://graphql.github.io/graphql-spec/June2018/#InputValueDefinition

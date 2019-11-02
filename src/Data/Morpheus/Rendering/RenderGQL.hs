@@ -18,7 +18,8 @@ import           Data.Text.Lazy.Encoding            (encodeUtf8)
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataTyCon (..), DataType (..), DataTypeLib,
                                                      DataTypeWrapper (..), Key, TypeAlias (..), WrapperD (..),
-                                                     allDataTypes, isDefaultTypeName, toGQLWrapper)
+                                                     allDataTypes, createInputUnionFields, isDefaultTypeName,
+                                                     toGQLWrapper)
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
 
 renderGraphQLDocument :: DataTypeLib -> ByteString
@@ -54,13 +55,14 @@ instance RenderGQL (Key, DataType) where
   render (name, DataScalar {}) = "scalar " <> name
   render (name, DataEnum DataTyCon {typeData}) = "enum " <> name <> renderObject id typeData
   render (name, DataUnion DataTyCon {typeData}) =
-    "union " <> name <> " =\n    " <> intercalate ("\n" <> renderIndent <> "| ") (map (render . fieldType) typeData)
+    "union " <> name <> " =\n    " <> intercalate ("\n" <> renderIndent <> "| ") typeData
   render (name, DataInputObject DataTyCon {typeData}) = "input " <> name <> render typeData
-  render (name, DataInputUnion DataTyCon {typeData}) = "input " <> name <> render (mapKeys typeData)
+  render (name, DataInputUnion DataTyCon {typeData}) = "input " <> name <> render fields
+    where
+     fields = createInputUnionFields name typeData
   render (name, DataObject DataTyCon {typeData}) = "type " <> name <> render typeData
 
-mapKeys :: [DataField] -> [(Text, DataField)]
-mapKeys = map (\x -> (fieldName x, x))
+
 
 -- OBJECT
 instance RenderGQL [(Text, DataField)] where

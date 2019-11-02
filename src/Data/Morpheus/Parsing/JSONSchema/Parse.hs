@@ -11,13 +11,13 @@ module Data.Morpheus.Parsing.JSONSchema.Parse
 import           Data.Aeson
 import           Data.ByteString.Lazy                    (ByteString)
 import           Data.Morpheus.Error.Internal            (internalError)
-import           Data.Morpheus.Parsing.Internal.Create   (createArgument, createDataTypeLib, createEnumType,
-                                                          createField, createScalarType, createType, createUnionType)
 import           Data.Morpheus.Parsing.JSONSchema.Types  (EnumValue (..), Field (..), InputValue (..),
                                                           Introspection (..), Schema (..), Type (..))
 import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
-import           Data.Morpheus.Types.Internal.Data       (DataField, DataType (..), DataTypeLib,
-                                                          DataTypeWrapper (..), Key, WrapperD, toHSWrappers)
+import           Data.Morpheus.Types.Internal.Data       (DataField, DataType (..), DataTypeLib, DataTypeWrapper (..),
+                                                          Key, WrapperD, createArgument, createDataTypeLib,
+                                                          createEnumType, createField, createScalarType, createType,
+                                                          createUnionType, toHSWrappers)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.IO                  (JSONResponse (..))
 import           Data.Semigroup                          ((<>))

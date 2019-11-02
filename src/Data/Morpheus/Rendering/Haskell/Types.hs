@@ -44,10 +44,10 @@ renderGQLScalar name = renderTypeInstanceHead "GQLScalar " name <> renderParse <
     renderParse = indent <> "parseValue _ = pure (" <> name <> " 0 0 )" <> "\n"
     renderSerialize = indent <> "serialize (" <> name <> " x y ) = Int (x + y)"
 
-renderUnion :: Text -> [DataField] -> Text
+renderUnion :: Text -> [Text] -> Text
 renderUnion typeName = unionType . map renderElem
   where
-    renderElem DataField {fieldType = TypeAlias {aliasTyCon}} = renderUnionCon typeName aliasTyCon <> aliasTyCon
+    renderElem name = renderUnionCon typeName name <> name
 
 unionType :: [Text] -> Text
 unionType ls = "\n" <> indent <> intercalate ("\n" <> indent <> "| ") ls <> " deriving (Generic)"

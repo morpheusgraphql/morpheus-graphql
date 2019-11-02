@@ -25,7 +25,6 @@ module Data.Morpheus.Execution.Server.Introspect
 
 import           Data.Map                                        (Map)
 import           Data.Proxy                                      (Proxy (..))
-import           Data.Semigroup                                  ((<>))
 import           Data.Set                                        (Set)
 import           Data.Text                                       (Text, pack)
 import           GHC.Generics
@@ -39,8 +38,8 @@ import           Data.Morpheus.Kind                              (Context (..), 
 import           Data.Morpheus.Types.Custom                      (MapKind, Pair)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (..))
-import           Data.Morpheus.Types.Internal.Data               (DataArguments, DataField (..), DataType (..),
-                                                                  DataTyCon (..), DataTypeLib, TypeAlias (..),
+import           Data.Morpheus.Types.Internal.Data               (DataArguments, DataField (..), DataTyCon (..),
+                                                                  DataType (..), DataTypeLib, Key, createAlias,
                                                                   defineType, isTypeDefined, toListField,
                                                                   toNullableField)
 
@@ -124,44 +123,22 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a wher
             { fieldName = "__typename"
             , fieldArgs = []
             , fieldArgsType = Nothing
-            , fieldType = buildAlias "String"
+            , fieldType = createAlias "String"
             , fieldHidden = True
             })
       (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
 
 -- UNION
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind UNION a where
-  introspectKind _ = updateLib (DataUnion . buildType fields) stack (Proxy @a)
+  introspectKind _ = updateLib (DataUnion . buildType  memberTypes) stack (Proxy @a)
     where
-      (fields, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
+      (memberTypes, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
 
 -- INPUT_UNION
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a where
-  introspectKind _ = updateLib (DataInputUnion . buildType (fieldTag : fields)) (tagsEnumType : stack) (Proxy @a)
+  introspectKind _ = updateLib (DataInputUnion . buildType memberTypes) stack (Proxy @a)
     where
-      (inputUnions, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
-      fields = map toNullableField inputUnions
-      -- for every input Union 'User' adds enum type of possible TypeNames 'UserTags'
-      tagsEnumType :: TypeUpdater
-      tagsEnumType x = pure $ defineType (typeName, DataEnum tagsEnum) x
-        where
-          tagsEnum =
-            DataTyCon
-              { typeName
-                -- has same fingerprint as object because it depends on it
-              , typeFingerprint = __typeFingerprint (Proxy @a)
-              , typeDescription = Nothing
-              , typeData = map fieldName inputUnions
-              }
-      typeName = __typeName (Proxy @a) <> "Tags"
-      fieldTag =
-        DataField
-          { fieldName = "tag"
-          , fieldArgs = []
-          , fieldArgsType = Nothing
-          , fieldType = buildAlias typeName
-          , fieldHidden = False
-          }
+      (memberTypes, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
 
 -- Types
 type TypeUpdater = LibUpdater DataTypeLib
@@ -179,7 +156,7 @@ type family GQLRepResult (a :: GQL_KIND) :: *
 
 type instance GQLRepResult OBJECT = (Text, DataField)
 
-type instance GQLRepResult UNION = DataField
+type instance GQLRepResult UNION = Key
 
 --  GENERIC UNION
 class GQLRep (kind :: GQL_KIND) f where
@@ -196,7 +173,7 @@ instance (GQLRep UNION a, GQLRep UNION b) => GQLRep UNION (a :+: b) where
   gqlRep _ = gqlRep (Context :: Context UNION a) ++ gqlRep (Context :: Context UNION b)
 
 instance (GQL_TYPE a, Introspect a) => GQLRep UNION (M1 S s (Rec0 a)) where
-  gqlRep _ = [(buildField (Proxy @a) [] (__typeName (Proxy @a)), introspect (Proxy @a))]
+  gqlRep _ = [(__typeName (Proxy @a), introspect (Proxy @a))]
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
 instance (GQLRep OBJECT a, GQLRep OBJECT b) => GQLRep OBJECT (a :*: b) where
@@ -210,13 +187,11 @@ instance (Selector s, Introspect a) => GQLRep OBJECT (M1 S s (Rec0 a)) where
 instance GQLRep OBJECT U1 where
   gqlRep _ = []
 
-buildAlias :: Text -> TypeAlias
-buildAlias aliasTyCon = TypeAlias {aliasTyCon, aliasWrappers = [], aliasArgs = Nothing}
 
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName =
   DataField
-    {fieldName, fieldArgs, fieldArgsType = Nothing, fieldType = buildAlias $ __typeName proxy, fieldHidden = False}
+    {fieldName, fieldArgs, fieldArgsType = Nothing, fieldType = createAlias $ __typeName proxy, fieldHidden = False}
 
 buildType :: GQLType a => t -> Proxy a -> DataTyCon t
 buildType typeData proxy =
