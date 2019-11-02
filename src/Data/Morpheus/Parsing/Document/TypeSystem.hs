@@ -15,8 +15,7 @@ import           Data.Morpheus.Parsing.Internal.Pattern  (fieldsDefinition, inpu
 import           Data.Morpheus.Parsing.Internal.Terms    (keyword, operator, optDescription, parseName, pipeLiteral,
                                                           sepByAnd, setOf)
 import           Data.Morpheus.Types.Internal.Data       (DataField, DataFingerprint (..), DataTyCon (..),
-                                                          DataType (..), DataValidator (..), Key, RawDataType (..),
-                                                          createField)
+                                                          DataType (..), DataValidator (..), Key, RawDataType (..))
 
 
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
