@@ -72,7 +72,8 @@ module Data.Morpheus.Types.Internal.Data
   , lookupFieldAsSelectionSet
   ) where
 
-import           Data.HashMap.Lazy                       (HashMap, empty, insert, toList)
+import           Data.HashMap.Lazy                       (HashMap, empty, fromList, insert, toList, union)
+import qualified Data.HashMap.Lazy                       as HM (lookup)
 import           Data.Semigroup                          ((<>))
 import qualified Data.Text                               as T (pack, unpack)
 import           GHC.Fingerprint.Type                    (Fingerprint)
@@ -342,6 +343,8 @@ data DataTypeLib = DataTypeLib
   , subscription :: Maybe (Key, DataObject)
   } deriving (Show)
 
+type TypeRegister = HashMap Key DataType
+
 initTypeLib :: (Key, DataObject) -> DataTypeLib
 initTypeLib query =
   DataTypeLib
@@ -353,18 +356,18 @@ initTypeLib query =
 
 allDataTypes :: DataTypeLib -> [(Key, DataType)]
 allDataTypes DataTypeLib { types, query, mutation, subscription } =
-  packType DataObject query :
-  fromMaybeType mutation <>
-  fromMaybeType subscription <>
-  toList types
-  where
-    packType f (x, y) = (x, f y)
-    fromMaybeType :: Maybe (Key, DataObject) -> [(Key, DataType)]
-    fromMaybeType (Just (key', dataType')) = [(key', DataObject dataType')]
-    fromMaybeType Nothing                  = []
+  concatMap fromOperation [Just query, mutation, subscription] <> toList types
+
+typeRegister :: DataTypeLib -> TypeRegister
+typeRegister DataTypeLib { types, query, mutation, subscription } =
+     types `union` fromList (concatMap fromOperation [Just query, mutation, subscription])
+
+fromOperation :: Maybe (Key, DataObject) -> [(Key, DataType)]
+fromOperation (Just (key', dataType')) = [(key', DataObject dataType')]
+fromOperation Nothing                  = []
 
 lookupDataType :: Key -> DataTypeLib -> Maybe DataType
-lookupDataType name lib = name `lookup` allDataTypes lib
+lookupDataType name lib = name `HM.lookup` typeRegister lib
 
 getDataType :: Key -> DataTypeLib -> GenError errors DataType
 getDataType name lib gqlError  = case lookupDataType name lib of
