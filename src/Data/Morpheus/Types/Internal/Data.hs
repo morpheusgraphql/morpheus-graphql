@@ -77,6 +77,8 @@ module Data.Morpheus.Types.Internal.Data
   , createScalarType
   , createType
   , createUnionType
+  , createAlias
+  , createInputUnionFields
   ) where
 
 import           Data.HashMap.Lazy                       (HashMap, empty, fromList, insert, toList, union)
@@ -468,4 +470,48 @@ createDataTypeLib types =
       case lookup key lib of
         Just (DataObject value) -> (Just (key, value), filter ((/= key) . fst) lib)
         _                       -> (Nothing, lib)
+
+
+{--
+tagsEnumType :: TypeUpdater
+tagsEnumType x = pure $ defineType (typeName, DataEnum tagsEnum) x
+        where
+          tagsEnum =
+            DataTyCon
+              { typeName
+                -- has same fingerprint as object because it depends on it
+              , typeFingerprint = __typeFingerprint (Proxy @a)
+              , typeDescription = Nothing
+              , typeData = map fieldName inputUnions
+              }
+      typeName = __typeName (Proxy @a) <> "Tags"
+-}
+
+createInputUnionFields :: Key -> [Key] -> [(Key,DataField)]
+createInputUnionFields name members = fieldTag : map unionField members
+    where
+        fieldTag = ("tag", DataField
+          { fieldName = "tag"
+          , fieldArgs = []
+          , fieldArgsType = Nothing
+          , fieldType = createAlias (name <> "Tags")
+          , fieldHidden = False
+          })
+        unionField memberName = (
+            memberName ,
+            DataField { 
+              fieldArgs = []
+              , fieldArgsType = Nothing
+              , fieldName = memberName
+              , fieldType = TypeAlias {
+                    aliasTyCon = memberName, 
+                    aliasWrappers = [MaybeD], 
+                    aliasArgs = Nothing
+                }
+              , fieldHidden = False
+            } 
+          )
+
+createAlias :: Key -> TypeAlias
+createAlias aliasTyCon = TypeAlias {aliasTyCon, aliasWrappers = [], aliasArgs = Nothing}
 
