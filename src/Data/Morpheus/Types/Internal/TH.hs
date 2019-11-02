@@ -1,4 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE CPP #-}
+
 
 module Data.Morpheus.Types.Internal.TH where
 
@@ -42,6 +44,10 @@ destructRecord :: String -> [String] -> PatQ
 destructRecord conName fields = conP (mkName conName) (map (varP . mkName) fields)
 
 typeInstanceDec :: Name -> Type -> Type -> Dec
+#if MIN_VERSION_template_haskell(2,15,0)
+-- fix breaking changes   
+typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT typeFamily) arg) res)  
+#else
+--    
 typeInstanceDec typeFamily arg res = TySynInstD typeFamily (TySynEqn [arg] res)
--- : TODO after th 2.15.0.0
--- typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT typeFamily) arg) res)
+#endif
