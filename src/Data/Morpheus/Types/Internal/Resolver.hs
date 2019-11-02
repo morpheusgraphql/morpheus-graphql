@@ -59,6 +59,9 @@ liftEitherM = liftEither
 type ResolveT = ExceptT GQLErrors
 type ResponseT m e  = ResolveT (ResponseStream m e)
 
+instance Monad m => MonadFail (Resolver QUERY m e) where
+  fail = FailedResolver
+
 --
 -- Recursive Resolver
 newtype RecResolver m a b = RecResolver {
