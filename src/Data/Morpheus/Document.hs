@@ -21,14 +21,12 @@ import           Language.Haskell.TH
 -- MORPHEUS
 import           Data.Morpheus.Execution.Document.Compile     (compileDocument, gqlDocument)
 import           Data.Morpheus.Execution.Server.Resolve       (RootResCon, fullSchema)
+import           Data.Morpheus.Parsing.Document.Parser        (parseTypes)
 import           Data.Morpheus.Rendering.Haskell.Render       (renderHaskellDocument)
 import           Data.Morpheus.Rendering.RenderGQL            (renderGraphQLDocument)
-import           Data.Morpheus.Types                          (GQLRootResolver)
-
-import           Data.Morpheus.Parsing.Document.Parser        (parseTypes)
-import           Data.Morpheus.Parsing.Internal.Create        (createDataTypeLib)
 import           Data.Morpheus.Schema.SchemaAPI               (defaultTypes)
-import           Data.Morpheus.Types.Internal.Data            (DataTypeLib)
+import           Data.Morpheus.Types                          (GQLRootResolver)
+import           Data.Morpheus.Types.Internal.Data            (DataTypeLib, createDataTypeLib)
 import           Data.Morpheus.Types.Internal.Validation      (Validation)
 import           Data.Morpheus.Validation.Document.Validation (validatePartialDocument)
 
