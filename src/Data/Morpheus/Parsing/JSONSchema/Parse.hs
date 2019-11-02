@@ -29,7 +29,7 @@ decodeIntrospection jsonDoc =
     Left errors -> internalError $ pack errors
     Right JSONResponse {responseData = Just Introspection {__schema = Schema {types}}} ->
       traverse parse types >>= createDataTypeLib
-    Right res -> fail $ show res
+    Right res -> internalError (pack $ show res)
   where
     jsonSchema :: Either String (JSONResponse Introspection)
     jsonSchema = eitherDecode jsonDoc
