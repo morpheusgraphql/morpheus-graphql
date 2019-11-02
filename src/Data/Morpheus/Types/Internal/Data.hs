@@ -85,6 +85,7 @@ import           Data.Morpheus.Types.Internal.TH         (apply, liftText, liftT
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value (..))
 
+type GenError error a = error -> Either error a
 
 type Name = Key
 type Description = Key
@@ -228,6 +229,9 @@ data ArgsType = ArgsType
 instance Lift ArgsType where
   lift (ArgsType argT kind) = apply 'ArgsType [liftText argT, lift kind]
 
+--
+-- Data FIELD
+--------------------------------------------------------------------------------------------------
 data DataField = DataField
   { fieldName     :: Key
   , fieldArgs     :: [(Key, DataArgument)]
@@ -240,6 +244,32 @@ instance Lift DataField where
   lift (DataField name args argsT ft hid) =
     apply 'DataField [liftText name, liftTextMap args, lift argsT, lift ft, lift hid]
 
+toNullableField :: DataField -> DataField
+toNullableField dataField
+  | isNullable (aliasWrappers $ fieldType dataField) = dataField
+  | otherwise = dataField {fieldType = nullable (fieldType dataField)}
+  where
+    nullable alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = MaybeD : aliasWrappers}
+
+toListField :: DataField -> DataField
+toListField dataField = dataField {fieldType = listW (fieldType dataField)}
+  where
+    listW alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = ListD : aliasWrappers}
+
+lookupField :: Key -> [(Key, field)] -> GenError error field
+lookupField key fields gqlError =
+  case lookup key fields of
+    Nothing    -> Left gqlError
+    Just field -> pure field
+
+lookupSelectionField :: Position -> Key -> DataObject -> Validation DataField
+lookupSelectionField position fieldName DataTyCon {typeData ,typeName } = lookupField fieldName typeData gqlError
+  where
+    gqlError = cannotQueryField fieldName typeName position
+
+--
+-- TYPE CONSTRUCTOR
+--------------------------------------------------------------------------------------------------
 data DataTyCon a = DataTyCon
   { typeName        :: Key
   , typeFingerprint :: DataFingerprint
@@ -254,6 +284,18 @@ data RawDataType
                , unImplements         :: DataObject }
   deriving (Show)
 
+--
+-- DATA TYPE
+--------------------------------------------------------------------------------------------------
+data DataType
+  = DataScalar DataScalar
+  | DataEnum DataEnum
+  | DataInputObject DataObject
+  | DataObject DataObject
+  | DataUnion DataUnion
+  | DataInputUnion DataUnion
+  deriving (Show)
+
 isEntNode :: DataType -> Bool
 isEntNode DataScalar {} = True
 isEntNode DataEnum {}   = True
@@ -266,16 +308,6 @@ isInputDataType DataInputObject {} = True
 isInputDataType DataInputUnion {}  = True
 isInputDataType _                  = False
 
--- DATA TYPE
-data DataType
-  = DataScalar DataScalar
-  | DataEnum DataEnum
-  | DataInputObject DataObject
-  | DataObject DataObject
-  | DataUnion DataUnion
-  | DataInputUnion DataUnion
-  deriving (Show)
-
 coerceDataObject :: error -> DataType -> Either error DataObject
 coerceDataObject  _ (DataObject object) = pure object
 coerceDataObject  gqlError _            = Left gqlError
@@ -284,8 +316,25 @@ coerceDataUnion :: error -> DataType -> Either error DataUnion
 coerceDataUnion  _ (DataUnion object) = pure object
 coerceDataUnion  gqlError _           = Left gqlError
 
+kindOf :: DataType -> DataTypeKind
+kindOf (DataScalar _)      = KindScalar
+kindOf (DataEnum _)        = KindEnum
+kindOf (DataInputObject _) = KindInputObject
+kindOf (DataObject _)      = KindObject Nothing
+kindOf (DataUnion _)       = KindUnion
+kindOf (DataInputUnion _)  = KindInputUnion
 
--- TypeSystem
+fromDataType :: (DataTyCon () -> v) -> DataType -> v
+fromDataType f (DataScalar dt)      = f dt {typeData = ()}
+fromDataType f (DataEnum dt)        = f dt {typeData = ()}
+fromDataType f (DataUnion dt)       = f dt {typeData = ()}
+fromDataType f (DataInputObject dt) = f dt {typeData = ()}
+fromDataType f (DataInputUnion dt)  = f dt {typeData = ()}
+fromDataType f (DataObject dt)      = f dt {typeData = ()}
+
+--
+-- Type Register
+--------------------------------------------------------------------------------------------------
 data DataTypeLib = DataTypeLib
   { types        :: HashMap Key DataType
   , query        :: (Key,  DataObject)
@@ -302,7 +351,6 @@ initTypeLib query =
     , subscription = Nothing
     }
 
-
 allDataTypes :: DataTypeLib -> [(Key, DataType)]
 allDataTypes DataTypeLib { types, query, mutation, subscription } =
   packType DataObject query :
@@ -314,8 +362,6 @@ allDataTypes DataTypeLib { types, query, mutation, subscription } =
     fromMaybeType :: Maybe (Key, DataObject) -> [(Key, DataType)]
     fromMaybeType (Just (key', dataType')) = [(key', DataObject dataType')]
     fromMaybeType Nothing                  = []
-
-type GenError error a = error -> Either error a
 
 lookupDataType :: Key -> DataTypeLib -> Maybe DataType
 lookupDataType name lib = name `lookup` allDataTypes lib
@@ -335,35 +381,6 @@ lookupDataUnion validationError name lib  =
     getDataType name lib validationError >>=
     coerceDataUnion  validationError
 
-lookupInputType :: Key -> DataTypeLib -> GenError error DataType
-lookupInputType name lib gqlError = case lookupDataType name lib of
-    Just x | isInputDataType x -> Right x
-    _                          -> Left gqlError
-
-kindOf :: DataType -> DataTypeKind
-kindOf (DataScalar _)      = KindScalar
-kindOf (DataEnum _)        = KindEnum
-kindOf (DataInputObject _) = KindInputObject
-kindOf (DataObject _)      = KindObject Nothing
-kindOf (DataUnion _)       = KindUnion
-kindOf (DataInputUnion _)  = KindInputUnion
-
-fromDataType :: (DataTyCon () -> v) -> DataType -> v
-fromDataType f (DataScalar dt)      = f dt {typeData = ()}
-fromDataType f (DataEnum dt)        = f dt {typeData = ()}
-fromDataType f (DataUnion dt)       = f dt {typeData = ()}
-fromDataType f (DataInputObject dt) = f dt {typeData = ()}
-fromDataType f (DataInputUnion dt)  = f dt {typeData = ()}
-fromDataType f (DataObject dt)      = f dt {typeData = ()}
-
-isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
-isTypeDefined name lib = fromDataType typeFingerprint <$> lookupDataType name lib
-
-defineType :: (Key, DataType) -> DataTypeLib -> DataTypeLib
-defineType (key, datatype) lib = lib {
-    types =  insert key datatype (types lib)
-}
-
 lookupUnionTypes :: Position -> Key -> DataTypeLib -> DataField -> Validation [DataObject]
 lookupUnionTypes position key lib DataField {fieldType = TypeAlias {aliasTyCon = typeName}} =
   lookupDataUnion gqlError typeName lib >>= mapM (flip (lookupDataObject gqlError) lib . aliasTyCon . fieldType) . typeData
@@ -376,23 +393,18 @@ lookupFieldAsSelectionSet position key lib DataField {fieldType = TypeAlias {ali
   where
     gqlError = hasNoSubfields key aliasTyCon position
 
-lookupSelectionField :: Position -> Key -> DataObject -> Validation DataField
-lookupSelectionField position' key' DataTyCon {typeData = fields', typeName = name'} = lookupField key' fields' error'
-  where
-    error' = cannotQueryField key' name' position'
+lookupInputType :: Key -> DataTypeLib -> GenError error DataType
+lookupInputType name lib gqlError = case lookupDataType name lib of
+    Just x | isInputDataType x -> Right x
+    _                          -> Left gqlError
 
-toNullableField :: DataField -> DataField
-toNullableField dataField
-  | isNullable (aliasWrappers $ fieldType dataField) = dataField
-  | otherwise = dataField {fieldType = nullable (fieldType dataField)}
-  where
-    nullable alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = MaybeD : aliasWrappers}
+isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
+isTypeDefined name lib = fromDataType typeFingerprint <$> lookupDataType name lib
 
-
-toListField :: DataField -> DataField
-toListField dataField = dataField {fieldType = listW (fieldType dataField)}
-  where
-    listW alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = ListD : aliasWrappers}
+defineType :: (Key, DataType) -> DataTypeLib -> DataTypeLib
+defineType (key, datatype) lib = lib {
+    types =  insert key datatype (types lib)
+}
 
 lookupType :: error -> [(Key, a)] -> Key -> Either error a
 lookupType error' lib' typeName' =
@@ -400,8 +412,4 @@ lookupType error' lib' typeName' =
     Nothing -> Left error'
     Just x  -> pure x
 
-lookupField :: Key -> [(Key, fType)] -> GenError error fType
-lookupField id' lib' error' =
-  case lookup id' lib' of
-    Nothing    -> Left error'
-    Just field -> pure field
+
