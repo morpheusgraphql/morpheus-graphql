@@ -39,7 +39,7 @@ import           Data.Morpheus.Types.Custom                      (MapKind, Pair)
 import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..))
 import           Data.Morpheus.Types.GQLType                     (GQLType (..))
 import           Data.Morpheus.Types.Internal.Data               (DataArguments, DataField (..), DataTyCon (..),
-                                                                  DataType (..), DataTypeLib, Key, TypeAlias (..),
+                                                                  DataType (..), DataTypeLib, Key, createAlias,
                                                                   defineType, isTypeDefined, toListField,
                                                                   toNullableField)
 
@@ -123,7 +123,7 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a wher
             { fieldName = "__typename"
             , fieldArgs = []
             , fieldArgsType = Nothing
-            , fieldType = buildAlias "String"
+            , fieldType = createAlias "String"
             , fieldHidden = True
             })
       (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
@@ -187,13 +187,11 @@ instance (Selector s, Introspect a) => GQLRep OBJECT (M1 S s (Rec0 a)) where
 instance GQLRep OBJECT U1 where
   gqlRep _ = []
 
-buildAlias :: Text -> TypeAlias
-buildAlias aliasTyCon = TypeAlias {aliasTyCon, aliasWrappers = [], aliasArgs = Nothing}
 
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName =
   DataField
-    {fieldName, fieldArgs, fieldArgsType = Nothing, fieldType = buildAlias $ __typeName proxy, fieldHidden = False}
+    {fieldName, fieldArgs, fieldArgsType = Nothing, fieldType = createAlias $ __typeName proxy, fieldHidden = False}
 
 buildType :: GQLType a => t -> Proxy a -> DataTyCon t
 buildType typeData proxy =
