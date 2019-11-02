@@ -70,6 +70,13 @@ module Data.Morpheus.Types.Internal.Data
   , lookupUnionTypes
   , lookupSelectionField
   , lookupFieldAsSelectionSet
+  , createField
+  , createArgument
+  , createDataTypeLib
+  , createEnumType
+  , createScalarType
+  , createType
+  , createUnionType
   ) where
 
 import           Data.HashMap.Lazy                       (HashMap, empty, fromList, insert, toList, union)
@@ -80,6 +87,7 @@ import           GHC.Fingerprint.Type                    (Fingerprint)
 import           Language.Haskell.TH.Syntax              (Lift (..))
 
 -- MORPHEUS
+import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Error.Selection           (cannotQueryField, hasNoSubfields)
 import           Data.Morpheus.Types.Internal.Base       (Key, Position)
 import           Data.Morpheus.Types.Internal.TH         (apply, liftText, liftTextMap)
@@ -200,7 +208,7 @@ type DataObject = DataTyCon [(Key, DataField)]
 
 type DataArgument = DataField
 
-type DataUnion = DataTyCon [DataField]
+type DataUnion = DataTyCon [Key]
 
 type DataArguments = [(Key, DataArgument)]
 
@@ -244,6 +252,21 @@ data DataField = DataField
 instance Lift DataField where
   lift (DataField name args argsT ft hid) =
     apply 'DataField [liftText name, liftTextMap args, lift argsT, lift ft, lift hid]
+
+
+createField :: DataArguments -> Key -> ([WrapperD], Key) -> DataField
+createField fieldArgs fieldName (aliasWrappers, aliasTyCon) =
+  DataField
+    { fieldArgs
+    , fieldArgsType = Nothing
+    , fieldName
+    , fieldType = TypeAlias {aliasTyCon, aliasWrappers, aliasArgs = Nothing}
+    , fieldHidden = False
+    }
+
+createArgument :: Key -> ([WrapperD], Key) -> (Key, DataField)
+createArgument fieldName x = (fieldName, createField [] fieldName x)
+
 
 toNullableField :: DataField -> DataField
 toNullableField dataField
@@ -296,6 +319,20 @@ data DataType
   | DataUnion DataUnion
   | DataInputUnion DataUnion
   deriving (Show)
+
+createType :: Key -> a -> DataTyCon a
+createType typeName typeData =
+  DataTyCon {typeName, typeDescription = Nothing, typeFingerprint = SystemFingerprint "", typeData}
+
+createScalarType :: Key -> (Key, DataType)
+createScalarType typeName = (typeName, DataScalar $ createType typeName (DataValidator pure))
+
+createEnumType :: Key -> [Key] -> (Key, DataType)
+createEnumType typeName typeData = (typeName, DataEnum $ createType typeName typeData)
+
+createUnionType :: Key -> [Key] -> (Key, DataType)
+createUnionType typeName typeData = (typeName, DataUnion $ createType typeName typeData)
+
 
 isEntNode :: DataType -> Bool
 isEntNode DataScalar {} = True
@@ -386,7 +423,7 @@ lookupDataUnion validationError name lib  =
 
 lookupUnionTypes :: Position -> Key -> DataTypeLib -> DataField -> Validation [DataObject]
 lookupUnionTypes position key lib DataField {fieldType = TypeAlias {aliasTyCon = typeName}} =
-  lookupDataUnion gqlError typeName lib >>= mapM (flip (lookupDataObject gqlError) lib . aliasTyCon . fieldType) . typeData
+  lookupDataUnion gqlError typeName lib >>= mapM (flip (lookupDataObject gqlError) lib ) . typeData
   where
     gqlError = hasNoSubfields key typeName position
 
@@ -415,4 +452,20 @@ lookupType error' lib' typeName' =
     Nothing -> Left error'
     Just x  -> pure x
 
+
+createDataTypeLib :: [(Key, DataType)] -> Validation DataTypeLib
+createDataTypeLib types =
+  case takeByKey "Query" types of
+    (Just query, lib1) ->
+      case takeByKey "Mutation" lib1 of
+        (mutation, lib2) ->
+          case takeByKey "Subscription" lib2 of
+            (subscription, lib3) -> pure ((foldr defineType (initTypeLib query) lib3) {mutation, subscription})
+    _ -> internalError "Query Not Defined"
+  ----------------------------------------------------------------------------
+  where
+    takeByKey key lib =
+      case lookup key lib of
+        Just (DataObject value) -> (Just (key, value), filter ((/= key) . fst) lib)
+        _                       -> (Nothing, lib)
 
