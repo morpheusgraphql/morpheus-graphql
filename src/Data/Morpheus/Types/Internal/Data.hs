@@ -65,18 +65,26 @@ module Data.Morpheus.Types.Internal.Data
   , getDataType
   , lookupDataObject
   , lookupDataUnion
+  , lookupType
+  , lookupField
+  , lookupUnionTypes
+  , lookupSelectionField
+  , lookupFieldAsSelectionSet
   ) where
 
-import           Data.HashMap.Lazy                  (HashMap, empty, insert, toList)
-import           Data.Semigroup                     ((<>))
-import qualified Data.Text                          as T (pack, unpack)
-import           GHC.Fingerprint.Type               (Fingerprint)
-import           Language.Haskell.TH.Syntax         (Lift (..))
+import           Data.HashMap.Lazy                       (HashMap, empty, insert, toList)
+import           Data.Semigroup                          ((<>))
+import qualified Data.Text                               as T (pack, unpack)
+import           GHC.Fingerprint.Type                    (Fingerprint)
+import           Language.Haskell.TH.Syntax              (Lift (..))
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Base  (Key)
-import           Data.Morpheus.Types.Internal.TH    (apply, liftText, liftTextMap)
-import           Data.Morpheus.Types.Internal.Value (Value (..))
+import           Data.Morpheus.Error.Selection           (cannotQueryField, hasNoSubfields)
+import           Data.Morpheus.Types.Internal.Base       (Key, Position)
+import           Data.Morpheus.Types.Internal.TH         (apply, liftText, liftTextMap)
+import           Data.Morpheus.Types.Internal.Validation (Validation)
+import           Data.Morpheus.Types.Internal.Value      (Value (..))
+
 
 type Name = Key
 type Description = Key
@@ -274,7 +282,7 @@ coerceDataObject  gqlError _            = Left gqlError
 
 coerceDataUnion :: error -> DataType -> Either error DataUnion
 coerceDataUnion  _ (DataUnion object) = pure object
-coerceDataUnion  gqlError _            = Left gqlError
+coerceDataUnion  gqlError _           = Left gqlError
 
 
 -- TypeSystem
@@ -356,6 +364,23 @@ defineType (key, datatype) lib = lib {
     types =  insert key datatype (types lib)
 }
 
+lookupUnionTypes :: Position -> Key -> DataTypeLib -> DataField -> Validation [DataObject]
+lookupUnionTypes position key lib DataField {fieldType = TypeAlias {aliasTyCon = typeName}} =
+  lookupDataUnion gqlError typeName lib >>= mapM (flip (lookupDataObject gqlError) lib . aliasTyCon . fieldType) . typeData
+  where
+    gqlError = hasNoSubfields key typeName position
+
+lookupFieldAsSelectionSet :: Position -> Key -> DataTypeLib -> DataField -> Validation DataObject
+lookupFieldAsSelectionSet position key lib DataField {fieldType = TypeAlias {aliasTyCon}} =
+  lookupDataObject gqlError aliasTyCon lib
+  where
+    gqlError = hasNoSubfields key aliasTyCon position
+
+lookupSelectionField :: Position -> Key -> DataObject -> Validation DataField
+lookupSelectionField position' key' DataTyCon {typeData = fields', typeName = name'} = lookupField key' fields' error'
+  where
+    error' = cannotQueryField key' name' position'
+
 toNullableField :: DataField -> DataField
 toNullableField dataField
   | isNullable (aliasWrappers $ fieldType dataField) = dataField
@@ -363,7 +388,20 @@ toNullableField dataField
   where
     nullable alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = MaybeD : aliasWrappers}
 
+
 toListField :: DataField -> DataField
 toListField dataField = dataField {fieldType = listW (fieldType dataField)}
   where
     listW alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = ListD : aliasWrappers}
+
+lookupType :: error -> [(Key, a)] -> Key -> Either error a
+lookupType error' lib' typeName' =
+  case lookup typeName' lib' of
+    Nothing -> Left error'
+    Just x  -> pure x
+
+lookupField :: Key -> [(Key, fType)] -> GenError error fType
+lookupField id' lib' error' =
+  case lookup id' lib' of
+    Nothing    -> Left error'
+    Just field -> pure field

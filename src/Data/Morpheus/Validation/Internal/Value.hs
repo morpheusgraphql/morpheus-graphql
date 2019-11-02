@@ -6,16 +6,15 @@ module Data.Morpheus.Validation.Internal.Value
   , validateEnum
   ) where
 
-import           Data.List                               (elem)
+import           Data.List                          (elem)
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Input               (InputError (..), InputValidation, Prop (..))
-import           Data.Morpheus.Rendering.RenderGQL       (renderWrapped)
-import           Data.Morpheus.Types.Internal.Data       (DataField (..), DataTyCon (..), DataType (..),
-                                                          DataTypeLib (..), DataValidator (..), Key, TypeAlias (..),
-                                                          WrapperD (..), isNullable, lookupInputType)
-import           Data.Morpheus.Types.Internal.Value      (Value (..))
-import           Data.Morpheus.Validation.Internal.Utils (lookupField)
+import           Data.Morpheus.Error.Input          (InputError (..), InputValidation, Prop (..))
+import           Data.Morpheus.Rendering.RenderGQL  (renderWrapped)
+import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataTyCon (..), DataType (..), DataTypeLib (..),
+                                                     DataValidator (..), Key, TypeAlias (..), WrapperD (..), isNullable,
+                                                     lookupField, lookupInputType)
+import           Data.Morpheus.Types.Internal.Value (Value (..))
 
 -- Validate Variable Argument or all Possible input Values
 validateInputValue :: DataTypeLib -> [Prop] -> [WrapperD] -> DataType -> (Key, Value) -> InputValidation Value

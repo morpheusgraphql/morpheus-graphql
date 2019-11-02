@@ -22,10 +22,9 @@ import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), 
                                                                 ValidSelection)
 import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataType (..), DataTyCon (..),
                                                                 DataTypeKind (..), DataTypeLib (..), Key,
-                                                                TypeAlias (..), allDataTypes)
+                                                                TypeAlias (..),lookupType, allDataTypes)
 import           Data.Morpheus.Types.Internal.DataD            (ConsD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation       (GQLErrors, Validation)
-import           Data.Morpheus.Validation.Internal.Utils       (lookupType)
 import           Data.Set                                      (fromList, toList)
 
 removeDuplicates :: [Text] -> [Text]

@@ -9,27 +9,26 @@ module Data.Morpheus.Validation.Query.Selection
   ) where
 
 
-import           Data.Maybe                                     (fromMaybe)
-import           Data.Text                                      (Text)
+import           Data.Maybe                                    (fromMaybe)
+import           Data.Text                                     (Text)
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Selection                  (cannotQueryField, duplicateQuerySelections,
-                                                                 hasNoSubfields, subfieldsNotSelected)
-import           Data.Morpheus.Error.Variable                   (unknownType)
-import           Data.Morpheus.Types.Internal.AST.Operation     (ValidVariables)
-import           Data.Morpheus.Types.Internal.AST.RawSelection  (Fragment (..), FragmentLib, RawSelection (..),
-                                                                 RawSelectionSet)
-import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..), SelectionRec (..), SelectionSet)
-import           Data.Morpheus.Types.Internal.Base              (EnhancedKey (..))
-import           Data.Morpheus.Types.Internal.Data              (DataField (..), DataType (..), DataObject,
-                                                                 DataTyCon (..), DataTypeLib (..), TypeAlias (..),
-                                                                 allDataTypes, isEntNode)
-import           Data.Morpheus.Types.Internal.Validation        (Validation)
-import           Data.Morpheus.Validation.Internal.Utils        (checkNameCollision, lookupType)
-import           Data.Morpheus.Validation.Query.Arguments       (validateArguments)
-import           Data.Morpheus.Validation.Query.Fragment        (castFragmentType, resolveSpread)
-import           Data.Morpheus.Validation.Query.Utils.Selection (lookupFieldAsSelectionSet, lookupSelectionField,
-                                                                 lookupUnionTypes)
+import           Data.Morpheus.Error.Selection                 (cannotQueryField, duplicateQuerySelections,
+                                                                hasNoSubfields, subfieldsNotSelected)
+import           Data.Morpheus.Error.Variable                  (unknownType)
+import           Data.Morpheus.Types.Internal.AST.Operation    (ValidVariables)
+import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), FragmentLib, RawSelection (..),
+                                                                RawSelectionSet)
+import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionRec (..), SelectionSet)
+import           Data.Morpheus.Types.Internal.Base             (EnhancedKey (..))
+import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataObject, DataTyCon (..),
+                                                                DataType (..), DataTypeLib (..), TypeAlias (..),
+                                                                allDataTypes, isEntNode, lookupFieldAsSelectionSet,
+                                                                lookupSelectionField, lookupType, lookupUnionTypes)
+import           Data.Morpheus.Types.Internal.Validation       (Validation)
+import           Data.Morpheus.Validation.Internal.Utils       (checkNameCollision)
+import           Data.Morpheus.Validation.Query.Arguments      (validateArguments)
+import           Data.Morpheus.Validation.Query.Fragment       (castFragmentType, resolveSpread)
 
 checkDuplicatesOn :: DataObject -> SelectionSet -> Validation SelectionSet
 checkDuplicatesOn DataTyCon {typeName = name'} keys = checkNameCollision enhancedKeys selError >> pure keys
