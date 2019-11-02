@@ -12,7 +12,7 @@ copyright: "(c) 2019 Daviti Nalchevanidze"
 description: examples of GraphQL APIs
 
 dependencies:
-  - base >= 4.7 && < 5
+  - base                >= 4.7   &&    < 5
   - morpheus-graphql
   - scotty
   - aeson
@@ -21,9 +21,9 @@ dependencies:
   - text
   - wai
   - warp
-  - wai-websockets >= 1.0 && <= 3.5
-  - websockets            >= 0.11.0    && <= 0.12.5.3
-  - containers            >= 0.4.2.1   && <  0.7
+  - wai-websockets        >= 1.0       &&  <= 3.5
+  - websockets            >= 0.11.0    &&  <= 0.13
+  - containers            >= 0.4.2.1   &&  <  0.7
 
 executables:
   api:
