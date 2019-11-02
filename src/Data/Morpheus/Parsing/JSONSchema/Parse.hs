@@ -43,7 +43,7 @@ instance ParseJSONSchema Type DataType where
     pure $ createEnumType typeName (map enumName enums)
   parse Type {name = Just typeName, kind = UNION, possibleTypes = Just unions} =
     case traverse name unions of
-      Nothing  -> fail "ERROR: GQL ERROR"
+      Nothing  -> internalError "ERROR: GQL ERROR"
       Just uni -> pure $ createUnionType typeName uni
   parse Type {name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields} = do
     fields <- traverse parse iFields
