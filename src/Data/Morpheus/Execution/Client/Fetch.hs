@@ -16,12 +16,13 @@ import           Data.ByteString.Lazy            (ByteString)
 import           Data.Text                       (pack)
 import           Language.Haskell.TH
 
-import qualified Data.Aeson       as A
-import qualified Data.Aeson.Types as A
+
+import qualified Data.Aeson                      as A
+import qualified Data.Aeson.Types                as A
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.TH (instanceHeadT)
+import           Data.Morpheus.Types.Internal.TH (instanceHeadT, typeInstanceDec)
 import           Data.Morpheus.Types.IO          (GQLRequest (..), JSONResponse (..))
 
 fixVars :: A.Value -> Maybe A.Value
@@ -42,15 +43,15 @@ class Fetch a where
     where
       gqlReq = GQLRequest {operationName = Just (pack opName), query = pack strQuery, variables = fixVars (toJSON vars)}
       -------------------------------------------------------------
-      processResponse JSONResponse {responseData = Just x} = pure x
-      processResponse invalidResponse                      = fail $ show invalidResponse
+      processResponse JSONResponse {responseData = Just x} =  Right  x
+      processResponse invalidResponse                      =  Left (show invalidResponse)
   fetch :: (Monad m, FromJSON a) => (ByteString -> m ByteString) -> Args a -> m (Either String a)
 
 deriveFetch :: Type -> String -> String -> Q [Dec]
-deriveFetch argDatatype typeName query = pure <$> instanceD (cxt []) iHead methods
+deriveFetch resultType typeName query = pure <$> instanceD (cxt []) iHead methods
   where
     iHead = instanceHeadT ''Fetch typeName []
     methods =
       [ funD 'fetch [clause [] (normalB [|__fetch query typeName|]) []]
-      , pure $ TySynInstD ''Args (TySynEqn [ConT $ mkName typeName] argDatatype)
+      , pure $ typeInstanceDec  ''Args  (ConT $ mkName typeName) resultType
       ]
