@@ -9,14 +9,14 @@ import           Data.Text                               (Text)
 import           Text.Megaparsec                         (label, sepBy1, (<|>))
 
 -- MORPHEUS
-import           Data.Morpheus.Parsing.Internal.Create   (createField)
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
 import           Data.Morpheus.Parsing.Internal.Pattern  (fieldsDefinition, inputValueDefinition, optionalDirectives,
                                                           typDeclaration)
 import           Data.Morpheus.Parsing.Internal.Terms    (keyword, operator, optDescription, parseName, pipeLiteral,
                                                           sepByAnd, setOf)
-import           Data.Morpheus.Types.Internal.Data       (DataField, DataFingerprint (..), DataType (..),
-                                                          DataTyCon (..), DataValidator (..), Key, RawDataType (..))
+import           Data.Morpheus.Types.Internal.Data       (DataField, DataFingerprint (..), DataTyCon (..),
+                                                          DataType (..), DataValidator (..), Key, RawDataType (..),
+                                                          createField)
 
 
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
@@ -123,11 +123,10 @@ unionTypeDefinition typeDescription =
              typeName,
              typeDescription,
              typeFingerprint = SystemFingerprint typeName,
-             typeData = map unionField memberTypes
+             typeData = memberTypes
            }
         )
   where
-    unionField fieldType = createField [] "" ([], fieldType)
     unionMemberTypes = operator '=' *> parseName `sepBy1` pipeLiteral
 
 -- Enums : https://graphql.github.io/graphql-spec/June2018/#sec-Enums
