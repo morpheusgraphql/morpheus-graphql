@@ -130,16 +130,19 @@ renderTHTypes namespace lib = traverse renderTHType lib
             GQLTypeD
               {typeD = TypeD {tName = unpack typeName, tNamespace = [], tCons}, typeKindD = KindUnion, typeArgD = []}
           where
-            unionCon field@DataField {fieldType} =
+            unionCon memberName =
               ConsD
                 { cName
                 , cFields =
-                    [ field
+                    [ DataField
                         { fieldName = pack $ "un" <> cName
-                        , fieldType = TypeAlias {aliasTyCon = pack utName, aliasArgs = Just "m", aliasWrappers = []}
+                         , fieldType = TypeAlias {aliasTyCon = pack utName, aliasArgs = Just "m", aliasWrappers = []}
+                         , fieldHidden = False
+                         , fieldArgs = []
+                         , fieldArgsType = Nothing
                         }
                     ]
                 }
               where
                 cName = sysName typeName <> utName
-                utName = sysName $ aliasTyCon fieldType
+                utName = sysName memberName
