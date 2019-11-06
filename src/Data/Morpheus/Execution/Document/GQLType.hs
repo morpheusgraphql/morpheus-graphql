@@ -9,7 +9,9 @@ module Data.Morpheus.Execution.Document.GQLType
   )
 where
 
-import           Data.Text                      ( pack )
+import           Data.Text                      ( pack
+                                                , unpack
+                                                )
 import           Language.Haskell.TH
 
 --
@@ -29,6 +31,7 @@ import           Data.Morpheus.Types.GQLType    ( GQLType(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Data
                                                 ( DataTypeKind(..)
+                                                , Meta(..)
                                                 , isObject
                                                 , isSchemaTypeName
                                                 )
@@ -44,21 +47,23 @@ import           Data.Morpheus.Types.Internal.TH
                                                 )
 import           Data.Typeable                  ( Typeable )
 
-
 genTypeName :: String -> String
 genTypeName ('S' : name) | isSchemaTypeName (pack name) = name
 genTypeName name = name
 
-
 deriveGQLType :: GQLTypeD -> Q [Dec]
-deriveGQLType GQLTypeD { typeD = TypeD { tName }, typeKindD } =
+deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
   pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
  where
   functions = map
     instanceProxyFunD
     [ ('__typeName , [|pack (genTypeName tName)|])
-    , ('description, [| Just (pack "TODO: description") |])
+    , ('description, descriptionValue)
     ]
+   where
+    descriptionValue = case tMeta >>= metaDescription of
+      Nothing -> [| Nothing  |]
+      Just x  -> [| Just (pack desc)|] where desc = unpack x
   -------------------------------------------------
   typeArgs   = tyConArgs typeKindD
   ----------------------------------------------
@@ -71,6 +76,18 @@ deriveGQLType GQLTypeD { typeD = TypeD { tName }, typeKindD } =
   typeFamilies | isObject typeKindD = [deriveCUSTOM, deriveKind]
                | otherwise          = [deriveKind]
   ---------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
