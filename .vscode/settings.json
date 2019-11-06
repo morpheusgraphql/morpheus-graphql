@@ -1,0 +1,8 @@
+{
+  "languageServerHaskell.enableHIE": true,
+  "languageServerHaskell.hieExecutablePath": "~/.local/bin/hie",
+  "editor.formatOnSave": true,
+  "[haskell]": {
+    "editor.defaultFormatter": "alanz.vscode-hie-server"
+  },
+}
