@@ -81,6 +81,7 @@ module Data.Morpheus.Types.Internal.Data
   , createAlias
   , createInputUnionFields
   , fieldVisibility
+  , Meta(..)
   ) where
 
 import           Data.HashMap.Lazy                       (HashMap, empty, fromList, insert, toList, union)
@@ -280,8 +281,14 @@ fieldVisibility ("__schema",_)   = False
 fieldVisibility _                = True
 
 instance Lift DataField where
-  lift (DataField name args argsT ft hid) =
-    apply 'DataField [liftText name, liftTextMap args, lift argsT, lift ft, lift hid]
+  lift DataField {..} =
+    apply 'DataField [
+        liftText fieldName, 
+        liftTextMap fieldArgs, 
+        lift fieldArgsType, 
+        lift fieldType, 
+        lift fieldMeta
+    ]
 
 
 createField :: DataArguments -> Key -> ([TypeWrapper], Key) -> DataField
