@@ -4,14 +4,23 @@
 
 module Server.Mythology.API
   ( mythologyApi
-  ) where
+  )
+where
 
-import qualified Data.ByteString.Lazy.Char8       as B
-import           Data.Morpheus                    (interpreter)
-import           Data.Morpheus.Types              (GQLRootResolver (..), GQLType, IORes, Undefined (..), liftEitherM)
-import           Data.Text                        (Text)
-import           GHC.Generics                     (Generic)
-import           Server.Mythology.Character.Deity (Deity (..), dbDeity)
+import qualified Data.ByteString.Lazy.Char8    as B
+import           Data.Morpheus                  ( interpreter )
+import           Data.Morpheus.Types            ( GQLRootResolver(..)
+                                                , GQLType
+                                                , IORes
+                                                , Undefined(..)
+                                                , liftEitherM
+                                                )
+import           Data.Text                      ( Text )
+import           GHC.Generics                   ( Generic )
+import           Server.Mythology.Character.Deity
+                                                ( Deity(..)
+                                                , dbDeity
+                                                )
 
 newtype Query m = Query
   { deity :: DeityArgs -> m Deity
@@ -23,15 +32,14 @@ data DeityArgs = DeityArgs
   } deriving (Generic)
 
 resolveDeity :: DeityArgs -> IORes e Deity
-resolveDeity DeityArgs { name, mythology } = liftEitherM $ dbDeity name mythology
+resolveDeity DeityArgs { name, mythology } =
+  liftEitherM $ dbDeity name mythology
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
-rootResolver =
-  GQLRootResolver
-    { queryResolver = Query {deity = resolveDeity}
-    , mutationResolver =  Undefined
-    , subscriptionResolver = Undefined
-    }
+rootResolver = GQLRootResolver { queryResolver = Query { deity = resolveDeity }
+                               , mutationResolver = Undefined
+                               , subscriptionResolver = Undefined
+                               }
 
 mythologyApi :: B.ByteString -> IO B.ByteString
 mythologyApi = interpreter rootResolver

@@ -145,12 +145,12 @@ gqlRoot = GQLRootResolver { queryResolver
     subscriptionNewUser () = SubResolver [UPDATE_USER] subResolver
       where subResolver (Event _ Update{}) = fetchUser
     subscriptionNewAddress () = SubResolver [UPDATE_ADDRESS] subResolver
-      where subResolver (Event _ Update { contentID }) = fetchAddress
+      where subResolver (Event _ Update { contentID }) = fetchAddress contentID
   ----------------------------------------------------------------------------------------------
-  fetchAddress = pure Address { addressCity        = constRes ""
-                              , addressStreet      = constRes ""
-                              , addressHouseNumber = constRes 0
-                              }
+  fetchAddress _ = pure Address { addressCity        = constRes ""
+                                , addressStreet      = constRes ""
+                                , addressHouseNumber = constRes 0
+                                }
   fetchUser
     :: Resolver
          QUERY
@@ -159,7 +159,7 @@ gqlRoot = GQLRootResolver { queryResolver
          (User (Resolver QUERY IO (Event Channel Content)))
   fetchUser = pure User { userName    = constRes "George"
                         , userEmail   = constRes "George@email.com"
-                        , userAddress = const fetchAddress
+                        , userAddress = fetchAddress
                         , userOffice  = constRes Nothing
                         , userHome    = constRes HH
                         , userEntity  = constRes Nothing

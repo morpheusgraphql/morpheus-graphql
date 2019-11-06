@@ -11,12 +11,17 @@
 module Client.Client
   ( fetchHero
   , fetUser
-  ) where
+  )
+where
 
-import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Morpheus.Client       (Fetch (..), defineByDocumentFile, defineByIntrospectionFile, gql)
-import           Data.Morpheus.Types        (ScalarValue (..))
-import           Data.Text                  (Text)
+import           Data.ByteString.Lazy.Char8     ( ByteString )
+import           Data.Morpheus.Client           ( Fetch(..)
+                                                , defineByDocumentFile
+                                                , defineByIntrospectionFile
+                                                , gql
+                                                )
+import           Data.Morpheus.Types            ( ScalarValue(..) )
+import           Data.Text                      ( Text )
 
 defineByIntrospectionFile
   "./assets/introspection.json"
@@ -82,18 +87,23 @@ ioRes req = do
     "{\"data\":{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" } ,  \"char2\":{ \"__typename\":\"Human\", \"lTime\": \"time\", \"prof\": \"Artist\" }  }}"
 
 fetchHero :: IO (Either String GetHero)
-fetchHero =
-  fetch
-    ioRes
-    GetHeroArgs
-      { getHeroArgsGod =
-          Just Realm {realmOwner = "Zeus", realmAge = Just 10, realmRealm = Nothing, realmProfession = Just Artist}
-      , getHeroArgsId = "Hercules"
-      }
+fetchHero = fetch
+  ioRes
+  GetHeroArgs
+    { getHeroArgsGod = Just Realm { realmOwner      = "Zeus"
+                                  , realmAge        = Just 10
+                                  , realmRealm      = Nothing
+                                  , realmProfession = Just Artist
+                                  }
+    , getHeroArgsId  = "Hercules"
+    }
 
 fetUser :: (ByteString -> IO ByteString) -> IO (Either String GetUser)
 fetUser api = fetch api userArgs
-  where
-    userArgs :: Args GetUser
-    userArgs =
-      GetUserArgs {getUserArgsCoordinates = Coordinates {coordinatesLongitude = [], coordinatesLatitude = String "1"}}
+ where
+  userArgs :: Args GetUser
+  userArgs = GetUserArgs
+    { getUserArgsCoordinates = Coordinates { coordinatesLongitude = []
+                                           , coordinatesLatitude  = String "1"
+                                           }
+    }

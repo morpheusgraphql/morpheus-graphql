@@ -4,11 +4,12 @@
 module Server.Mythology.Place.Places
   ( Realm(..)
   , City(..)
-  ) where
+  )
+where
 
-import           Data.Morpheus.Kind  (ENUM)
-import           Data.Morpheus.Types (GQLType (..))
-import           GHC.Generics        (Generic)
+import           Data.Morpheus.Kind             ( ENUM )
+import           Data.Morpheus.Types            ( GQLType(..) )
+import           GHC.Generics                   ( Generic )
 
 data Realm
   = MountOlympus
