@@ -256,7 +256,7 @@ data Meta = Meta {
 
 instance Lift Meta where
   lift Meta {..} =
-    apply 'DataField [
+    apply 'Meta [
         liftMaybeText metaDescription,
         liftMaybeText metaDeprecated,
         lift metaDirectives
