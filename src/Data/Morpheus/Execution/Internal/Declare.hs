@@ -20,7 +20,7 @@ import           Language.Haskell.TH
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Utils (nameSpaceType, nameSpaceWith)
 import           Data.Morpheus.Types.Internal.Data      (ArgsType (..), DataField (..), DataTypeKind (..),
-                                                         DataTypeKind (..), TypeAlias (..), WrapperD (..),
+                                                         DataTypeKind (..), TypeAlias (..), TypeWrapper (..),
                                                          isOutputObject, isSubscription)
 import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Resolver  (UnSubResolver)
@@ -30,9 +30,9 @@ type Arrow = (->)
 declareTypeAlias :: Bool -> TypeAlias -> Type
 declareTypeAlias isSub TypeAlias {aliasTyCon, aliasWrappers, aliasArgs} = wrappedT aliasWrappers
   where
-    wrappedT :: [WrapperD] -> Type
-    wrappedT (DataList:xs)  = AppT (ConT ''[]) $ wrappedT xs
-    wrappedT (DataMaybe:xs) = AppT (ConT ''Maybe) $ wrappedT xs
+    wrappedT :: [TypeWrapper] -> Type
+    wrappedT (TypeList:xs)  = AppT (ConT ''[]) $ wrappedT xs
+    wrappedT (TypeMaybe:xs) = AppT (ConT ''Maybe) $ wrappedT xs
     wrappedT []          = decType aliasArgs
     ------------------------------------------------------
     typeName = ConT (mkName $ unpack aliasTyCon)

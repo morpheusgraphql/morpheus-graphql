@@ -12,25 +12,25 @@ import           Data.List                          (elem)
 import           Data.Morpheus.Error.Input          (InputError (..), InputValidation, Prop (..))
 import           Data.Morpheus.Rendering.RenderGQL  (renderWrapped)
 import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataTyCon (..), DataType (..), DataTypeLib (..),
-                                                     DataValidator (..), Key, TypeAlias (..), WrapperD (..), isNullable,
+                                                     DataValidator (..), Key, TypeAlias (..), TypeWrapper (..), isNullable,
                                                      lookupField, lookupInputType)
 import           Data.Morpheus.Types.Internal.Value (Value (..))
 
 -- Validate Variable Argument or all Possible input Values
-validateInputValue :: DataTypeLib -> [Prop] -> [WrapperD] -> DataType -> (Key, Value) -> InputValidation Value
+validateInputValue :: DataTypeLib -> [Prop] -> [TypeWrapper] -> DataType -> (Key, Value) -> InputValidation Value
 validateInputValue lib prop' = validate
   where
-    throwError :: [WrapperD] -> DataType -> Value -> InputValidation Value
+    throwError :: [TypeWrapper] -> DataType -> Value -> InputValidation Value
     throwError wrappers datatype value = Left $ UnexpectedType prop' (renderWrapped datatype wrappers) value Nothing
     -- VALIDATION
-    validate :: [WrapperD] -> DataType -> (Key, Value) -> InputValidation Value
+    validate :: [TypeWrapper] -> DataType -> (Key, Value) -> InputValidation Value
     -- Validate Null. value = null ?
     validate wrappers tName (_, Null)
       | isNullable wrappers = return Null
       | otherwise = throwError wrappers tName Null
     -- Validate LIST
-    validate (DataMaybe:wrappers) type' value' = validateInputValue lib prop' wrappers type' value'
-    validate (DataList:wrappers) type' (key', List list') = List <$> mapM validateElement list'
+    validate (TypeMaybe:wrappers) type' value' = validateInputValue lib prop' wrappers type' value'
+    validate (TypeList:wrappers) type' (key', List list') = List <$> mapM validateElement list'
       where
         validateElement element' = validateInputValue lib prop' wrappers type' (key', element')
     {-- 2. VALIDATE TYPES, all wrappers are already Processed --}

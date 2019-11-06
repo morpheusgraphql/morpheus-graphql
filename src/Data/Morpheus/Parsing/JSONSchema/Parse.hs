@@ -15,7 +15,7 @@ import           Data.Morpheus.Parsing.JSONSchema.Types  (EnumValue (..), Field 
                                                           Introspection (..), Schema (..), Type (..))
 import           Data.Morpheus.Schema.TypeKind           (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data       (DataField, DataType (..), DataTypeLib, DataTypeWrapper (..),
-                                                          Key, WrapperD, createArgument, createDataTypeLib,
+                                                          Key, TypeWrapper, createArgument, createDataTypeLib,
                                                           createEnumType, createField, createScalarType, createType,
                                                           createUnionType, toHSWrappers)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
@@ -67,7 +67,7 @@ instance ParseJSONSchema InputValue DataField where
     fieldType <- fieldTypeFromJSON inputType
     pure (inputName, createField [] inputName fieldType)
 
-fieldTypeFromJSON :: Type -> Validation ([WrapperD], Text)
+fieldTypeFromJSON :: Type -> Validation ([TypeWrapper], Text)
 fieldTypeFromJSON = fmap toHs . fieldTypeRec []
   where
     toHs (w, t) = (toHSWrappers w, t)

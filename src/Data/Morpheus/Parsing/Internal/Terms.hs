@@ -38,7 +38,7 @@ import           Text.Megaparsec.Char                    (char, digitChar, lette
 
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal (Parser, Position, getLocation)
-import           Data.Morpheus.Types.Internal.Data       (DataTypeWrapper (..), Key, Description , Name, WrapperD (..), toHSWrappers)
+import           Data.Morpheus.Types.Internal.Data       (DataTypeWrapper (..), Key, Description , Name, TypeWrapper (..), toHSWrappers)
 import           Data.Morpheus.Types.Internal.Value      (convertToHaskellName)
 
 
@@ -213,7 +213,7 @@ parseAlias = try (optional alias) <|> pure Nothing
         alias = label "alias" $ token <* char ':' <* spaceAndComments
 
 
-parseType :: Parser ([WrapperD],Key)
+parseType :: Parser ([TypeWrapper],Key)
 parseType = do
     (wrappers, fieldType) <- parseWrappedType
     nonNull <- parseNonNull

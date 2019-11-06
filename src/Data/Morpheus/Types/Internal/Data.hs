@@ -29,7 +29,7 @@ module Data.Morpheus.Types.Internal.Data
   , DataFingerprint(..)
   , RawDataType(..)
   , ResolverKind(..)
-  , WrapperD(..)
+  , TypeWrapper(..)
   , TypeAlias(..)
   , ArgsType(..)
   , isTypeDefined
@@ -158,36 +158,36 @@ data ResolverKind
   | ExternalResolver
   deriving (Show, Eq, Lift)
 
-data WrapperD
-  = DataList
-  | DataMaybe
+data TypeWrapper
+  = TypeList
+  | TypeMaybe
   deriving (Show, Lift)
 
 isFieldNullable :: DataField -> Bool
 isFieldNullable = isNullable . aliasWrappers . fieldType
 
-isNullable :: [WrapperD] -> Bool
-isNullable (DataMaybe:_) = True
+isNullable :: [TypeWrapper] -> Bool
+isNullable (TypeMaybe:_) = True
 isNullable _          = False
 
-isWeaker :: [WrapperD] -> [WrapperD] -> Bool
-isWeaker (DataMaybe:xs1) (DataMaybe:xs2) = isWeaker xs1 xs2
-isWeaker (DataMaybe:_) _              = True
+isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
+isWeaker (TypeMaybe:xs1) (TypeMaybe:xs2) = isWeaker xs1 xs2
+isWeaker (TypeMaybe:_) _              = True
 isWeaker (_:xs1) (_:xs2)           = isWeaker xs1 xs2
 isWeaker _ _                       = False
 
-toGQLWrapper :: [WrapperD] -> [DataTypeWrapper]
-toGQLWrapper (DataMaybe:(DataMaybe:tw)) = toGQLWrapper (DataMaybe : tw)
-toGQLWrapper (DataMaybe:(DataList:tw))  = ListType : toGQLWrapper tw
-toGQLWrapper (DataList:tw)           = [NonNullType, ListType] <> toGQLWrapper tw
-toGQLWrapper [DataMaybe]             = []
+toGQLWrapper :: [TypeWrapper] -> [DataTypeWrapper]
+toGQLWrapper (TypeMaybe:(TypeMaybe:tw)) = toGQLWrapper (TypeMaybe : tw)
+toGQLWrapper (TypeMaybe:(TypeList:tw))  = ListType : toGQLWrapper tw
+toGQLWrapper (TypeList:tw)           = [NonNullType, ListType] <> toGQLWrapper tw
+toGQLWrapper [TypeMaybe]             = []
 toGQLWrapper []                   = [NonNullType]
 
-toHSWrappers :: [DataTypeWrapper] -> [WrapperD]
+toHSWrappers :: [DataTypeWrapper] -> [TypeWrapper]
 toHSWrappers (NonNullType:(NonNullType:xs)) = toHSWrappers (NonNullType : xs)
-toHSWrappers (NonNullType:(ListType:xs))    = DataList : toHSWrappers xs
-toHSWrappers (ListType:xs)                  = [DataMaybe, DataList] <> toHSWrappers xs
-toHSWrappers []                             = [DataMaybe]
+toHSWrappers (NonNullType:(ListType:xs))    = TypeList : toHSWrappers xs
+toHSWrappers (ListType:xs)                  = [TypeMaybe, TypeList] <> toHSWrappers xs
+toHSWrappers []                             = [TypeMaybe]
 toHSWrappers [NonNullType]                  = []
 
 data DataFingerprint
@@ -222,7 +222,7 @@ data DataTypeWrapper
 data TypeAlias = TypeAlias
   { aliasTyCon    :: Key
   , aliasArgs     :: Maybe Key
-  , aliasWrappers :: [WrapperD]
+  , aliasWrappers :: [TypeWrapper]
   } deriving (Show)
 
 instance Lift TypeAlias where
@@ -256,7 +256,7 @@ instance Lift DataField where
     apply 'DataField [liftText name, liftTextMap args, lift argsT, lift ft, lift hid]
 
 
-createField :: DataArguments -> Key -> ([WrapperD], Key) -> DataField
+createField :: DataArguments -> Key -> ([TypeWrapper], Key) -> DataField
 createField fieldArgs fieldName (aliasWrappers, aliasTyCon) =
   DataField
     { fieldArgs
@@ -266,7 +266,7 @@ createField fieldArgs fieldName (aliasWrappers, aliasTyCon) =
     , fieldHidden = False
     }
 
-createArgument :: Key -> ([WrapperD], Key) -> (Key, DataField)
+createArgument :: Key -> ([TypeWrapper], Key) -> (Key, DataField)
 createArgument fieldName x = (fieldName, createField [] fieldName x)
 
 
@@ -275,12 +275,12 @@ toNullableField dataField
   | isNullable (aliasWrappers $ fieldType dataField) = dataField
   | otherwise = dataField {fieldType = nullable (fieldType dataField)}
   where
-    nullable alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = DataMaybe : aliasWrappers}
+    nullable alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = TypeMaybe : aliasWrappers}
 
 toListField :: DataField -> DataField
 toListField dataField = dataField {fieldType = listW (fieldType dataField)}
   where
-    listW alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = DataList : aliasWrappers}
+    listW alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = TypeList : aliasWrappers}
 
 lookupField :: Key -> [(Key, field)] -> GenError error field
 lookupField key fields gqlError =
@@ -501,7 +501,7 @@ createInputUnionFields name members = fieldTag : map unionField members
               , fieldName = memberName
               , fieldType = TypeAlias {
                     aliasTyCon = memberName,
-                    aliasWrappers = [DataMaybe],
+                    aliasWrappers = [TypeMaybe],
                     aliasArgs = Nothing
                 }
               , fieldHidden = False

@@ -17,7 +17,7 @@ import           Data.Text.Lazy.Encoding            (encodeUtf8)
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataTyCon (..), DataType (..), DataTypeLib,
-                                                     DataTypeWrapper (..), Key, TypeAlias (..), WrapperD (..),
+                                                     DataTypeWrapper (..), Key, TypeAlias (..), TypeWrapper (..),
                                                      allDataTypes, createInputUnionFields, isDefaultTypeName,
                                                      toGQLWrapper)
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
@@ -29,8 +29,8 @@ renderGraphQLDocument lib = encodeUtf8 $ LT.fromStrict $ intercalate "\n\n" $ ma
 
 class RenderGQL a where
   render :: a -> Key
-  renderWrapped :: a -> [WrapperD] -> Key
-  default renderWrapped :: a -> [WrapperD] -> Key
+  renderWrapped :: a -> [TypeWrapper] -> Key
+  default renderWrapped :: a -> [TypeWrapper] -> Key
   renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
     where
       showGQLWrapper []               = render x
