@@ -2,33 +2,48 @@
 {-# LANGUAGE DefaultSignatures    #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 module Data.Morpheus.Types.GQLType
   ( GQLType(..)
   , TRUE
   , FALSE
-  ) where
+  )
+where
 
-import           Data.Map                              (Map)
-import           Data.Proxy                            (Proxy (..))
-import           Data.Set                              (Set)
-import           Data.Text                             (Text, intercalate, pack)
-import           Data.Typeable                         (TyCon, TypeRep, Typeable, splitTyConApp, tyConFingerprint,
-                                                        tyConName, typeRep, typeRepTyCon)
+import           Data.Map                       ( Map )
+import           Data.Proxy                     ( Proxy(..) )
+import           Data.Set                       ( Set )
+import           Data.Text                      ( Text
+                                                , intercalate
+                                                , pack
+                                                )
+import           Data.Typeable                  ( TyCon
+                                                , TypeRep
+                                                , Typeable
+                                                , splitTyConApp
+                                                , tyConFingerprint
+                                                , tyConName
+                                                , typeRep
+                                                , typeRepTyCon
+                                                )
 
 -- MORPHEUS
 import           Data.Morpheus.Kind
-import           Data.Morpheus.Types.Custom            (MapKind, Pair)
-import           Data.Morpheus.Types.Internal.Data     (DataFingerprint (..), QUERY)
-import           Data.Morpheus.Types.Internal.Resolver (Resolver (..))
-import           Data.Morpheus.Types.Types             (Undefined (..))
+import           Data.Morpheus.Types.Custom     ( MapKind
+                                                , Pair
+                                                )
+import           Data.Morpheus.Types.Internal.Data
+                                                ( DataFingerprint(..)
+                                                , QUERY
+                                                )
+import           Data.Morpheus.Types.Internal.Resolver
+                                                ( Resolver(..) )
+import           Data.Morpheus.Types.Types      ( Undefined(..) )
 
 type TRUE = 'True
 
@@ -39,18 +54,17 @@ resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver QUERY Maybe)
 
 -- | replaces typeName (A,B) with Pair_A_B
 replacePairCon :: TyCon -> TyCon
-replacePairCon x
-  | hsPair == x = gqlPair
-  where
-    hsPair = typeRepTyCon $ typeRep $ Proxy @(Int, Int)
-    gqlPair = typeRepTyCon $ typeRep $ Proxy @(Pair Int Int)
+replacePairCon x | hsPair == x = gqlPair
+ where
+  hsPair  = typeRepTyCon $ typeRep $ Proxy @(Int, Int)
+  gqlPair = typeRepTyCon $ typeRep $ Proxy @(Pair Int Int)
 replacePairCon x = x
 
 -- Ignores Resolver name  from typeName
 ignoreResolver :: (TyCon, [TypeRep]) -> [TyCon]
-ignoreResolver (con, _)
-  | con == resolverCon = []
-ignoreResolver (con, args) = con : concatMap (ignoreResolver . splitTyConApp) args
+ignoreResolver (con, _) | con == resolverCon = []
+ignoreResolver (con, args) =
+  con : concatMap (ignoreResolver . splitTyConApp) args
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
@@ -145,9 +159,9 @@ instance GQLType a => GQLType (Either s a) where
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance GQLType a => GQLType (Resolver o m e a) where
-      type KIND (Resolver o m e a) = WRAPPER
-      __typeName _ = __typeName (Proxy @a)
-      __typeFingerprint _ = __typeFingerprint (Proxy @a)
+  type KIND (Resolver o m e a) = WRAPPER
+  __typeName _ = __typeName (Proxy @a)
+  __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance GQLType b => GQLType (a -> b) where
   type KIND (a -> b) = WRAPPER
