@@ -51,8 +51,8 @@ renderResolver Context {scope, pubSub = (channel, content)} (name, dataType) = r
         renderFieldRes (key, DataField {fieldType = TypeAlias {aliasWrappers, aliasTyCon}}) =
           (key, "const " <> withScope scope (renderValue aliasWrappers aliasTyCon))
           where
-            renderValue (MaybeD:_) = const $ "$ " <> renderReturn <> "Nothing"
-            renderValue (ListD:_)  = const $ "$ " <> renderReturn <> "[]"
+            renderValue (DataMaybe:_) = const $ "$ " <> renderReturn <> "Nothing"
+            renderValue (DataList:_)  = const $ "$ " <> renderReturn <> "[]"
             renderValue []         = fieldValue
             ----------------------------------------------------------------------------
             fieldValue "String" = "$ return \"\""

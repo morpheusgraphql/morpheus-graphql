@@ -60,8 +60,8 @@ renderExtension :: Text -> Text
 renderExtension name = "{-# LANGUAGE " <> name <> " #-}\n"
 
 renderWrapped :: [WrapperD] -> Text -> Text
-renderWrapped (ListD:xs)  = renderList . renderWrapped xs
-renderWrapped (MaybeD:xs) = renderMaybe . renderWrapped xs
+renderWrapped (DataList:xs)  = renderList . renderWrapped xs
+renderWrapped (DataMaybe:xs) = renderMaybe . renderWrapped xs
 renderWrapped []          = strToText
 
 strToText :: Text -> Text

@@ -159,35 +159,35 @@ data ResolverKind
   deriving (Show, Eq, Lift)
 
 data WrapperD
-  = ListD
-  | MaybeD
+  = DataList
+  | DataMaybe
   deriving (Show, Lift)
 
 isFieldNullable :: DataField -> Bool
 isFieldNullable = isNullable . aliasWrappers . fieldType
 
 isNullable :: [WrapperD] -> Bool
-isNullable (MaybeD:_) = True
+isNullable (DataMaybe:_) = True
 isNullable _          = False
 
 isWeaker :: [WrapperD] -> [WrapperD] -> Bool
-isWeaker (MaybeD:xs1) (MaybeD:xs2) = isWeaker xs1 xs2
-isWeaker (MaybeD:_) _              = True
+isWeaker (DataMaybe:xs1) (DataMaybe:xs2) = isWeaker xs1 xs2
+isWeaker (DataMaybe:_) _              = True
 isWeaker (_:xs1) (_:xs2)           = isWeaker xs1 xs2
 isWeaker _ _                       = False
 
 toGQLWrapper :: [WrapperD] -> [DataTypeWrapper]
-toGQLWrapper (MaybeD:(MaybeD:tw)) = toGQLWrapper (MaybeD : tw)
-toGQLWrapper (MaybeD:(ListD:tw))  = ListType : toGQLWrapper tw
-toGQLWrapper (ListD:tw)           = [NonNullType, ListType] <> toGQLWrapper tw
-toGQLWrapper [MaybeD]             = []
+toGQLWrapper (DataMaybe:(DataMaybe:tw)) = toGQLWrapper (DataMaybe : tw)
+toGQLWrapper (DataMaybe:(DataList:tw))  = ListType : toGQLWrapper tw
+toGQLWrapper (DataList:tw)           = [NonNullType, ListType] <> toGQLWrapper tw
+toGQLWrapper [DataMaybe]             = []
 toGQLWrapper []                   = [NonNullType]
 
 toHSWrappers :: [DataTypeWrapper] -> [WrapperD]
 toHSWrappers (NonNullType:(NonNullType:xs)) = toHSWrappers (NonNullType : xs)
-toHSWrappers (NonNullType:(ListType:xs))    = ListD : toHSWrappers xs
-toHSWrappers (ListType:xs)                  = [MaybeD, ListD] <> toHSWrappers xs
-toHSWrappers []                             = [MaybeD]
+toHSWrappers (NonNullType:(ListType:xs))    = DataList : toHSWrappers xs
+toHSWrappers (ListType:xs)                  = [DataMaybe, DataList] <> toHSWrappers xs
+toHSWrappers []                             = [DataMaybe]
 toHSWrappers [NonNullType]                  = []
 
 data DataFingerprint
@@ -275,12 +275,12 @@ toNullableField dataField
   | isNullable (aliasWrappers $ fieldType dataField) = dataField
   | otherwise = dataField {fieldType = nullable (fieldType dataField)}
   where
-    nullable alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = MaybeD : aliasWrappers}
+    nullable alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = DataMaybe : aliasWrappers}
 
 toListField :: DataField -> DataField
 toListField dataField = dataField {fieldType = listW (fieldType dataField)}
   where
-    listW alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = ListD : aliasWrappers}
+    listW alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = DataList : aliasWrappers}
 
 lookupField :: Key -> [(Key, field)] -> GenError error field
 lookupField key fields gqlError =
@@ -501,7 +501,7 @@ createInputUnionFields name members = fieldTag : map unionField members
               , fieldName = memberName
               , fieldType = TypeAlias {
                     aliasTyCon = memberName,
-                    aliasWrappers = [MaybeD],
+                    aliasWrappers = [DataMaybe],
                     aliasArgs = Nothing
                 }
               , fieldHidden = False

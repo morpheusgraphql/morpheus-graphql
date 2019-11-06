@@ -29,8 +29,8 @@ validateInputValue lib prop' = validate
       | isNullable wrappers = return Null
       | otherwise = throwError wrappers tName Null
     -- Validate LIST
-    validate (MaybeD:wrappers) type' value' = validateInputValue lib prop' wrappers type' value'
-    validate (ListD:wrappers) type' (key', List list') = List <$> mapM validateElement list'
+    validate (DataMaybe:wrappers) type' value' = validateInputValue lib prop' wrappers type' value'
+    validate (DataList:wrappers) type' (key', List list') = List <$> mapM validateElement list'
       where
         validateElement element' = validateInputValue lib prop' wrappers type' (key', element')
     {-- 2. VALIDATE TYPES, all wrappers are already Processed --}

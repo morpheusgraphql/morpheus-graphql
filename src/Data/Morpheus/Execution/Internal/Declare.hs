@@ -31,8 +31,8 @@ declareTypeAlias :: Bool -> TypeAlias -> Type
 declareTypeAlias isSub TypeAlias {aliasTyCon, aliasWrappers, aliasArgs} = wrappedT aliasWrappers
   where
     wrappedT :: [WrapperD] -> Type
-    wrappedT (ListD:xs)  = AppT (ConT ''[]) $ wrappedT xs
-    wrappedT (MaybeD:xs) = AppT (ConT ''Maybe) $ wrappedT xs
+    wrappedT (DataList:xs)  = AppT (ConT ''[]) $ wrappedT xs
+    wrappedT (DataMaybe:xs) = AppT (ConT ''Maybe) $ wrappedT xs
     wrappedT []          = decType aliasArgs
     ------------------------------------------------------
     typeName = ConT (mkName $ unpack aliasTyCon)
