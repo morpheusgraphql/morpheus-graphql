@@ -59,7 +59,7 @@ deriveFromJSON typeD@TypeD { tName, tCons, tNamespace }
 aesonObject :: [String] -> ConsD -> ExpQ
 aesonObject tNamespace con@ConsD { cName } = appE
   [|withObject name|]
-  (lamE [varP (mkName "o")] ((aesonObjectBody tNamespace) con))
+  (lamE [varP (mkName "o")] (aesonObjectBody tNamespace con))
   where name = nameSpaceTypeString tNamespace cName
 
 aesonObjectBody :: [String] -> ConsD -> ExpQ
@@ -70,9 +70,6 @@ aesonObjectBody namespace ConsD { cName, cFields } = handleFields cFields
   handleFields []     = fail "No Empty Object"
   handleFields fields = startExp fields
   ----------------------------------------------------------------------------------
-    -- Optional Field
-
-
    where
     defField field@DataField { fieldName }
       | isFieldNullable field = [|o .:? fName|]
