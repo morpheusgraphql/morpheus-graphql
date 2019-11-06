@@ -198,11 +198,11 @@ createType
   -> Maybe Text
   -> Maybe [S__Field m]
   -> S__Type m
-createType kind name description fields' = S__Type
+createType kind name description fields = S__Type
   { s__TypeKind          = constRes kind
   , s__TypeName          = constRes $ Just name
   , s__TypeDescription   = constRes description
-  , s__TypeFields        = constRes fields'
+  , s__TypeFields        = constRes fields
   , s__TypeOfType        = constRes Nothing
   , s__TypeInterfaces    = constRes Nothing
   , s__TypePossibleTypes = constRes Nothing
