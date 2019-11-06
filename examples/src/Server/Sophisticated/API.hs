@@ -111,7 +111,7 @@ gqlRoot = GQLRootResolver { queryResolver
                         pure (pack $ show queryAnimalArgsAnimal)
     , querySet      = constRes $ S.fromList [1, 2]
     , queryMap      = constRes $ M.fromList [("robin", 1), ("carl", 2)]
-    , queryWrapped1 = constRes $ A (0, "")
+    , queryWrapped1 = constRes $ A (0, "some value")
     , queryWrapped2 = constRes $ A ""
     }
   -------------------------------------------------------------
