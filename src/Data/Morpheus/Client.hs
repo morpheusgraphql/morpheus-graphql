@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Client
@@ -10,33 +9,40 @@ module Data.Morpheus.Client
   , defineByDocumentFile
   , defineByIntrospection
   , defineByIntrospectionFile
-  ) where
+  )
+where
 
-import           Data.ByteString.Lazy                    (ByteString)
-import qualified Data.ByteString.Lazy                    as L (readFile)
+import           Data.ByteString.Lazy           ( ByteString )
+import qualified Data.ByteString.Lazy          as L
+                                                ( readFile )
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote
 
-import           Data.Morpheus.Document                  (parseFullGQLDocument)
+import           Data.Morpheus.Document         ( parseFullGQLDocument )
 -- MORPHEUS
-import           Data.Morpheus.Execution.Client.Build    (defineQuery)
-import           Data.Morpheus.Execution.Client.Compile  (compileSyntax)
-import           Data.Morpheus.Execution.Client.Fetch    (Fetch (..))
-import           Data.Morpheus.Parsing.JSONSchema.Parse  (decodeIntrospection)
-import           Data.Morpheus.Types.Internal.Data       (DataTypeLib)
-import           Data.Morpheus.Types.Internal.Validation (Validation)
-import           Data.Morpheus.Types.Types               (GQLQueryRoot)
+import           Data.Morpheus.Execution.Client.Build
+                                                ( defineQuery )
+import           Data.Morpheus.Execution.Client.Compile
+                                                ( compileSyntax )
+import           Data.Morpheus.Execution.Client.Fetch
+                                                ( Fetch(..) )
+import           Data.Morpheus.Parsing.JSONSchema.Parse
+                                                ( decodeIntrospection )
+import           Data.Morpheus.Types.Internal.Data
+                                                ( DataTypeLib )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Validation )
+import           Data.Morpheus.Types.Types      ( GQLQueryRoot )
 
 gql :: QuasiQuoter
-gql =
-  QuasiQuoter
-    { quoteExp = compileSyntax
-    , quotePat = notHandled "Patterns"
-    , quoteType = notHandled "Types"
-    , quoteDec = notHandled "Declarations"
-    }
-  where
-    notHandled things = error $ things ++ " are not supported by the GraphQL QuasiQuoter"
+gql = QuasiQuoter { quoteExp  = compileSyntax
+                  , quotePat  = notHandled "Patterns"
+                  , quoteType = notHandled "Types"
+                  , quoteDec  = notHandled "Declarations"
+                  }
+ where
+  notHandled things =
+    error $ things ++ " are not supported by the GraphQL QuasiQuoter"
 
 defineByDocumentFile :: String -> (GQLQueryRoot, String) -> Q [Dec]
 defineByDocumentFile = defineByDocument . L.readFile
