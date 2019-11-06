@@ -277,16 +277,16 @@ data DataField = DataField
 fieldVisibility :: (Key,DataField) -> Bool
 fieldVisibility ("__typename",_) = False
 fieldVisibility ("__schema",_)   = False
--- TODO: all
+fieldVisibility ("__type",_)     = False
 fieldVisibility _                = True
 
 instance Lift DataField where
   lift DataField {..} =
     apply 'DataField [
-        liftText fieldName, 
-        liftTextMap fieldArgs, 
-        lift fieldArgsType, 
-        lift fieldType, 
+        liftText fieldName,
+        liftTextMap fieldArgs,
+        lift fieldArgsType,
+        lift fieldType,
         lift fieldMeta
     ]
 
