@@ -8,7 +8,8 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE TypeSynonymInstances , FlexibleContexts  #-}
+{-# LANGUAGE FlexibleContexts      #-}
+
 
 module Data.Morpheus.Schema.Schema
   ( Root(..)
@@ -18,13 +19,15 @@ module Data.Morpheus.Schema.Schema
   , S__Field(..)
   , S__EnumValue(..)
   , S__InputValue(..)
-  ) where
+  )
+where
 
-import           Data.Text                                (Text)
+import           Data.Text                      ( Text )
 
 -- MORPHEUS
-import           Data.Morpheus.Execution.Document.Compile (gqlDocumentNamespace)
-import           Data.Morpheus.Schema.TypeKind            (TypeKind)
+import           Data.Morpheus.Execution.Document.Compile
+                                                ( gqlDocumentNamespace )
+import           Data.Morpheus.Schema.TypeKind  ( TypeKind )
 
 type S__TypeKind = TypeKind
 
