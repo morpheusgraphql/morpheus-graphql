@@ -5,13 +5,18 @@ module Data.Morpheus.Types.Internal.DataD
   , ConsD(..)
   , QueryD(..)
   , GQLTypeD(..)
-  ) where
+  )
+where
 
-import           Language.Haskell.TH.Syntax        (Lift (..))
+import           Language.Haskell.TH.Syntax     ( Lift(..) )
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data (DataField, DataTypeKind)
+import           Data.Morpheus.Types.Internal.Data
+                                                ( DataField
+                                                , DataTypeKind
+                                                , Meta
+                                                )
 
 data QueryD = QueryD
   { queryText     :: String
@@ -29,6 +34,7 @@ data TypeD = TypeD
   { tName      :: String
   , tNamespace :: [String]
   , tCons      :: [ConsD]
+  , tMeta      :: Maybe Meta
   } deriving (Show, Lift)
 
 data ConsD = ConsD
