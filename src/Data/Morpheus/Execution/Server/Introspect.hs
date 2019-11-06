@@ -124,7 +124,7 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a wher
             , fieldArgs = []
             , fieldArgsType = Nothing
             , fieldType = createAlias "String"
-            , fieldHidden = True
+            , fieldMeta = Nothing
             })
       (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
 
@@ -191,7 +191,7 @@ instance GQLRep OBJECT U1 where
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName =
   DataField
-    {fieldName, fieldArgs, fieldArgsType = Nothing, fieldType = createAlias $ __typeName proxy, fieldHidden = False}
+    {fieldName, fieldArgs, fieldArgsType = Nothing, fieldType = createAlias $ __typeName proxy, fieldMeta = Nothing}
 
 buildType :: GQLType a => t -> Proxy a -> DataTyCon t
 buildType typeData proxy =

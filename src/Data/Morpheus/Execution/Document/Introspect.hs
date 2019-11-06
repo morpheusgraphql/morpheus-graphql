@@ -61,14 +61,14 @@ proxyT TypeAlias {aliasTyCon, aliasArgs} = [|(Proxy :: Proxy $(genSig aliasArgs)
 buildFields :: [DataField] -> ExpQ
 buildFields = listE . map buildField
   where
-    buildField DataField {fieldName, fieldArgs, fieldType = alias@TypeAlias {aliasArgs, aliasWrappers}} =
+    buildField DataField {fieldName, fieldArgs, fieldType = alias@TypeAlias {aliasArgs, aliasWrappers}, fieldMeta} =
       [|( fName
         , DataField
             { fieldName = fName
             , fieldArgs = fArgs
             , fieldArgsType = Nothing
             , fieldType = TypeAlias {aliasTyCon = __typeName $(proxyT alias), aliasArgs = aArgs, aliasWrappers}
-            , fieldHidden = False
+            , fieldMeta
             })|]
       where
         fName = unpack fieldName

@@ -20,9 +20,9 @@ import           Data.Morpheus.Types.Internal.AST.Operation    (DefaultValue, Op
                                                                 Variable (..), VariableDefinitions, getOperationName)
 import           Data.Morpheus.Types.Internal.AST.Selection    (Selection (..), SelectionRec (..), SelectionSet,
                                                                 ValidSelection)
-import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataType (..), DataTyCon (..),
+import           Data.Morpheus.Types.Internal.Data             (DataField (..), DataTyCon (..), DataType (..),
                                                                 DataTypeKind (..), DataTypeLib (..), Key,
-                                                                TypeAlias (..),lookupType, allDataTypes)
+                                                                TypeAlias (..), allDataTypes, lookupType)
 import           Data.Morpheus.Types.Internal.DataD            (ConsD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation       (GQLErrors, Validation)
 import           Data.Set                                      (fromList, toList)
@@ -69,7 +69,7 @@ operationTypes lib variables = genOperation
                 , fieldArgsType = Nothing
                 , fieldType =
                     TypeAlias {aliasWrappers = variableTypeWrappers, aliasTyCon = variableType, aliasArgs = Nothing}
-                , fieldHidden = False
+                , fieldMeta = Nothing
                 }
     ---------------------------------------------------------
     -- generates selection Object Types
@@ -100,10 +100,10 @@ operationTypes lib variables = genOperation
                 -------------------------------
                 genFieldD Selection {selectionAlias = Just aliasFieldName} = do
                   fieldType <- snd <$> lookupFieldType lib fieldPath datatype fieldName
-                  pure $ DataField {fieldName = aliasFieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
+                  pure $ DataField {fieldName = aliasFieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldMeta = Nothing}
                 genFieldD _ = do
                   fieldType <- snd <$> lookupFieldType lib fieldPath datatype fieldName
-                  pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldHidden = False}
+                  pure $ DataField {fieldName, fieldArgs = [], fieldArgsType = Nothing, fieldType, fieldMeta = Nothing}
             ------------------------------------------------------------------------------------------------------------
             newFieldTypes :: DataType -> SelectionSet -> Validation ([[GQLTypeD]], [[Text]])
             newFieldTypes parentType seSet = unzip <$> mapM valSelection seSet

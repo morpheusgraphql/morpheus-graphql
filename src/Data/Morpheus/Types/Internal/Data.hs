@@ -8,6 +8,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
 
@@ -79,6 +80,7 @@ module Data.Morpheus.Types.Internal.Data
   , createUnionType
   , createAlias
   , createInputUnionFields
+  , fieldVisibility
   ) where
 
 import           Data.HashMap.Lazy                       (HashMap, empty, fromList, insert, toList, union)
@@ -92,7 +94,7 @@ import           Language.Haskell.TH.Syntax              (Lift (..))
 import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Error.Selection           (cannotQueryField, hasNoSubfields)
 import           Data.Morpheus.Types.Internal.Base       (Key, Position)
-import           Data.Morpheus.Types.Internal.TH         (apply, liftText, liftTextMap)
+import           Data.Morpheus.Types.Internal.TH         (apply, liftMaybeText, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value (..))
 
@@ -168,20 +170,20 @@ isFieldNullable = isNullable . aliasWrappers . fieldType
 
 isNullable :: [TypeWrapper] -> Bool
 isNullable (TypeMaybe:_) = True
-isNullable _          = False
+isNullable _             = False
 
 isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
 isWeaker (TypeMaybe:xs1) (TypeMaybe:xs2) = isWeaker xs1 xs2
-isWeaker (TypeMaybe:_) _              = True
-isWeaker (_:xs1) (_:xs2)           = isWeaker xs1 xs2
-isWeaker _ _                       = False
+isWeaker (TypeMaybe:_) _                 = True
+isWeaker (_:xs1) (_:xs2)                 = isWeaker xs1 xs2
+isWeaker _ _                             = False
 
 toGQLWrapper :: [TypeWrapper] -> [DataTypeWrapper]
 toGQLWrapper (TypeMaybe:(TypeMaybe:tw)) = toGQLWrapper (TypeMaybe : tw)
 toGQLWrapper (TypeMaybe:(TypeList:tw))  = ListType : toGQLWrapper tw
-toGQLWrapper (TypeList:tw)           = [NonNullType, ListType] <> toGQLWrapper tw
-toGQLWrapper [TypeMaybe]             = []
-toGQLWrapper []                   = [NonNullType]
+toGQLWrapper (TypeList:tw)              = [NonNullType, ListType] <> toGQLWrapper tw
+toGQLWrapper [TypeMaybe]                = []
+toGQLWrapper []                         = [NonNullType]
 
 toHSWrappers :: [DataTypeWrapper] -> [TypeWrapper]
 toHSWrappers (NonNullType:(NonNullType:xs)) = toHSWrappers (NonNullType : xs)
@@ -240,6 +242,26 @@ data ArgsType = ArgsType
 instance Lift ArgsType where
   lift (ArgsType argT kind) = apply 'ArgsType [liftText argT, lift kind]
 
+
+data Directive = Directive deriving (Lift,Show)
+
+-- META
+
+data Meta = Meta {
+    metaDescription:: Maybe Description,
+    metaDeprecated  :: Maybe Description,
+    metaDirectives  :: [Directive]
+} deriving (Show)
+
+instance Lift Meta where
+  lift Meta {..} =
+    apply 'DataField [
+        liftMaybeText metaDescription,
+        liftMaybeText metaDeprecated,
+        lift metaDirectives
+    ]
+
+
 --
 -- Data FIELD
 --------------------------------------------------------------------------------------------------
@@ -248,8 +270,14 @@ data DataField = DataField
   , fieldArgs     :: [(Key, DataArgument)]
   , fieldArgsType :: Maybe ArgsType
   , fieldType     :: TypeAlias
-  , fieldHidden   :: Bool
+  , fieldMeta     :: Maybe Meta
   } deriving (Show)
+
+fieldVisibility :: (Key,DataField) -> Bool
+fieldVisibility ("__typename",_) = False
+fieldVisibility ("__schema",_)   = False
+-- TODO: all
+fieldVisibility _                = True
 
 instance Lift DataField where
   lift (DataField name args argsT ft hid) =
@@ -263,7 +291,7 @@ createField fieldArgs fieldName (aliasWrappers, aliasTyCon) =
     , fieldArgsType = Nothing
     , fieldName
     , fieldType = TypeAlias {aliasTyCon, aliasWrappers, aliasArgs = Nothing}
-    , fieldHidden = False
+    , fieldMeta = Nothing
     }
 
 createArgument :: Key -> ([TypeWrapper], Key) -> (Key, DataField)
@@ -449,7 +477,7 @@ defineType (key, datatype@(DataInputUnion DataTyCon{ typeName ,typeData , typeFi
 }
   where
      name = typeName <> "Tags"
-     unionTags = DataEnum DataTyCon { 
+     unionTags = DataEnum DataTyCon {
           typeName = name
         , typeFingerprint
         , typeDescription = Nothing
@@ -491,7 +519,7 @@ createInputUnionFields name members = fieldTag : map unionField members
           , fieldArgs = []
           , fieldArgsType = Nothing
           , fieldType = createAlias (name <> "Tags")
-          , fieldHidden = False
+          , fieldMeta = Nothing
           })
         unionField memberName = (
             memberName ,
@@ -504,7 +532,7 @@ createInputUnionFields name members = fieldTag : map unionField members
                     aliasWrappers = [TypeMaybe],
                     aliasArgs = Nothing
                 }
-              , fieldHidden = False
+              , fieldMeta = Nothing
             }
           )
 

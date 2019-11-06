@@ -15,9 +15,9 @@ import           Data.Text                               (Text, pack, unpack)
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Execution.Internal.Utils  (capital)
-import           Data.Morpheus.Types.Internal.Data       (ArgsType (..), DataField (..), DataType (..),
-                                                          DataTyCon (..), DataTypeKind (..), OperationType (..),
-                                                          ResolverKind (..), TypeAlias (..), sysTypes)
+import           Data.Morpheus.Types.Internal.Data       (ArgsType (..), DataField (..), DataTyCon (..), DataType (..),
+                                                          DataTypeKind (..), OperationType (..), ResolverKind (..),
+                                                          TypeAlias (..), sysTypes)
 import           Data.Morpheus.Types.Internal.DataD      (ConsD (..), GQLTypeD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 
@@ -137,7 +137,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
                     [ DataField
                         { fieldName = pack $ "un" <> cName
                          , fieldType = TypeAlias {aliasTyCon = pack utName, aliasArgs = Just "m", aliasWrappers = []}
-                         , fieldHidden = False
+                         , fieldMeta = Nothing
                          , fieldArgs = []
                          , fieldArgsType = Nothing
                         }

@@ -18,8 +18,8 @@ import           Data.Text.Lazy.Encoding            (encodeUtf8)
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataTyCon (..), DataType (..), DataTypeLib,
                                                      DataTypeWrapper (..), Key, TypeAlias (..), TypeWrapper (..),
-                                                     allDataTypes, createInputUnionFields, isDefaultTypeName,
-                                                     toGQLWrapper)
+                                                     allDataTypes, createInputUnionFields, fieldVisibility,
+                                                     isDefaultTypeName, toGQLWrapper)
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
 
 renderGraphQLDocument :: DataTypeLib -> ByteString
@@ -76,7 +76,7 @@ instance RenderGQL [(Text, DataField)] where
           renderArgs list = "(" <> intercalate ", " (map renderField list) <> ")"
       -----------------------------------------------------------
       ignoreHidden :: [(Text, DataField)] -> [(Text, DataField)]
-      ignoreHidden = filter (not . fieldHidden . snd)
+      ignoreHidden = filter fieldVisibility
 
 renderIndent :: Text
 renderIndent = "  "

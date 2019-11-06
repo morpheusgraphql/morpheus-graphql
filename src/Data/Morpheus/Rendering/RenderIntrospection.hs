@@ -18,8 +18,8 @@ import           Data.Morpheus.Schema.Schema
 import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataObject, DataTyCon (..), DataType (..),
                                                      DataTypeKind (..), DataTypeLib, DataTypeWrapper (..), DataUnion,
-                                                     TypeAlias (..), createInputUnionFields, kindOf, lookupDataType,
-                                                     toGQLWrapper)
+                                                     TypeAlias (..), createInputUnionFields, fieldVisibility, kindOf,
+                                                     lookupDataType, toGQLWrapper)
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
 
 constRes :: Applicative m => a -> b -> m a
@@ -40,7 +40,7 @@ instance RenderSchema DataType S__Type where
     where
       typeFromObject (key, DataTyCon {typeData, typeDescription}) lib =
         createObjectType key typeDescription <$>
-        (Just <$> traverse (`render` lib) (filter (not . fieldHidden . snd) typeData))
+        (Just <$> traverse (`render` lib) (filter fieldVisibility typeData))
   render (name, DataUnion union') = const $ pure $ typeFromUnion (name, union')
   render (name, DataInputUnion inpUnion') = renderInputUnion (name, inpUnion')
 
