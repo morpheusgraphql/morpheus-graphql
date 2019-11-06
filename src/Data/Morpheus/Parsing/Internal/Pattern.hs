@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Data.Morpheus.Parsing.Internal.Pattern
   ( inputValueDefinition
   , fieldsDefinition
@@ -10,10 +12,10 @@ import           Text.Megaparsec                         (label, many)
 
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal (Parser)
-import           Data.Morpheus.Parsing.Internal.Terms    (keyword, optDescription, litAssignment, operator, parseAssignment,
-                                                          parseMaybeTuple, parseName, parseType, setOf)
+import           Data.Morpheus.Parsing.Internal.Terms    (keyword, litAssignment, operator, optDescription,
+                                                          parseAssignment, parseMaybeTuple, parseName, parseType, setOf)
 import           Data.Morpheus.Parsing.Internal.Value    (parseDefaultValue, parseValue)
-import           Data.Morpheus.Types.Internal.Data       (DataField, Key, Name, createField)
+import           Data.Morpheus.Types.Internal.Data       (DataField (..), Key, Meta (..), Name, TypeAlias (..))
 
 
 -- InputValue : https://graphql.github.io/graphql-spec/June2018/#InputValueDefinition
@@ -24,14 +26,27 @@ import           Data.Morpheus.Types.Internal.Data       (DataField, Key, Name, 
 inputValueDefinition ::  Parser (Key, DataField)
 inputValueDefinition = label "InputValueDefinition" $ do
     -- TODO: handle Description(opt)
-    _description <- optDescription
-    name <- parseName
+    metaDescription <- optDescription
+    fieldName <- parseName
     litAssignment -- ':'
-    type_ <- parseType
+    (aliasWrappers, aliasTyCon) <- parseType
     -- TODO: handle default value
     _ <- parseDefaultValue
     _ <- optionalDirectives
-    pure (name, createField [] name type_)
+    pure (fieldName,
+        DataField {
+            fieldArgs = []
+            , fieldArgsType = Nothing
+            , fieldName
+            , fieldType = TypeAlias {aliasTyCon, aliasWrappers, aliasArgs = Nothing}
+            , fieldMeta = Just 
+                Meta {
+                    metaDescription ,
+                    metaDeprecated = Nothing,
+                    metaDirectives = []
+            }
+        }
+      )
 
 -- Field Arguments: https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 --
@@ -57,14 +72,28 @@ fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 fieldDefinition ::  Parser (Key, DataField)
 fieldDefinition  = label "FieldDefinition" $ do
     -- TODO: handle Description(opt)
-    _description <- optDescription
-    name <- parseName
-    args <- argumentsDefinition
+    metaDescription <- optDescription
+    fieldName <- parseName
+    fieldArgs <- argumentsDefinition
     litAssignment -- ':'
-    type_ <- parseType
+    (aliasWrappers, aliasTyCon) <- parseType
     -- TODO: handle directives
     _ <- optionalDirectives
-    pure (name, createField args name type_)
+    pure (fieldName, 
+        DataField
+            {   
+            fieldName
+            , fieldArgs
+            , fieldArgsType = Nothing
+            , fieldType = TypeAlias {aliasTyCon, aliasWrappers, aliasArgs = Nothing}
+            , fieldMeta = 
+                Just Meta {
+                    metaDescription ,
+                    metaDeprecated = Nothing,
+                    metaDirectives = []
+                }
+            }
+        )
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --

@@ -18,8 +18,8 @@ import           Data.Morpheus.Schema.Schema
 import           Data.Morpheus.Schema.TypeKind      (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data  (DataField (..), DataObject, DataTyCon (..), DataType (..),
                                                      DataTypeKind (..), DataTypeLib, DataTypeWrapper (..), DataUnion,
-                                                     TypeAlias (..), createInputUnionFields, fieldVisibility, kindOf,
-                                                     lookupDataType, toGQLWrapper)
+                                                     Meta (..), TypeAlias (..), createInputUnionFields, fieldVisibility,
+                                                     kindOf, lookupDataType, toGQLWrapper)
 import           Data.Morpheus.Types.Internal.Value (convertToJSONName)
 
 constRes :: Applicative m => a -> b -> m a
@@ -45,10 +45,17 @@ instance RenderSchema DataType S__Type where
   render (name, DataInputUnion inpUnion') = renderInputUnion (name, inpUnion')
 
 instance RenderSchema DataField S__Field where
-  render (key, field@DataField {fieldType = TypeAlias {aliasTyCon}, fieldArgs}) lib = do
+  render (_name, field@DataField {fieldType = TypeAlias {aliasTyCon}, fieldArgs , fieldMeta}  ) lib = do
     kind <- renderTypeKind <$> lookupKind aliasTyCon lib
-    createFieldWith key (wrap field $ createType kind aliasTyCon Nothing $ Just []) <$>
-      traverse (`inputValueFromArg` lib) fieldArgs
+    args <- traverse (`inputValueFromArg` lib) fieldArgs
+    pure S__Field
+            { s__FieldName = constRes (convertToJSONName _name)
+            , s__FieldDescription = constRes (fieldMeta >>= metaDescription)
+            , s__FieldArgs = constRes args
+            , s__FieldType' = constRes (wrap field $ createType kind aliasTyCon Nothing $ Just [])
+            , s__FieldIsDeprecated = constRes False
+            , s__FieldDeprecationReason = constRes Nothing
+            }
 
 renderTypeKind :: DataTypeKind -> TypeKind
 renderTypeKind KindScalar      = SCALAR
@@ -175,17 +182,6 @@ wrapAs kind contentType =
     , s__TypePossibleTypes = constRes Nothing
     , s__TypeEnumValues = constRes Nothing
     , s__TypeInputFields = constRes Nothing
-    }
-
-createFieldWith :: Monad m => Text -> S__Type m -> [S__InputValue m] -> S__Field m
-createFieldWith _name fieldType fieldArgs =
-  S__Field
-    { s__FieldName = constRes (convertToJSONName _name)
-    , s__FieldDescription = constRes Nothing
-    , s__FieldArgs = constRes fieldArgs
-    , s__FieldType' = constRes fieldType
-    , s__FieldIsDeprecated = constRes False
-    , s__FieldDeprecationReason = constRes Nothing
     }
 
 createInputValueWith :: Monad m => Text -> S__Type m -> S__InputValue m
