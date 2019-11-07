@@ -48,23 +48,21 @@ class RenderSchema a b where
   render :: (Monad m, MonadFail m) => (Text, a) -> DataTypeLib -> m (b m)
 
 instance RenderSchema DataType S__Type where
-  render (key, DataScalar DataTyCon { typeDescription }) =
-    constRes $ createLeafType SCALAR key typeDescription Nothing
-  render (key, DataEnum DataTyCon { typeDescription, typeData }) =
-    constRes $ createLeafType ENUM
-                              key
-                              typeDescription
-                              (Just $ map createEnumValue typeData)
-  render (name, DataInputObject DataTyCon { typeData, typeDescription }) =
+  render (key, DataScalar DataTyCon { typeMeta }) =
+    constRes $ createLeafType SCALAR key typeMeta Nothing
+  render (key, DataEnum DataTyCon { typeMeta, typeData }) =
+    constRes
+      $ createLeafType ENUM key typeMeta (Just $ map createEnumValue typeData)
+  render (name, DataInputObject DataTyCon { typeData, typeMeta }) =
     renderInputObject
    where
     renderInputObject lib = do
       fields <- traverse (`renderinputValue` lib) typeData
-      pure $ createInputObject name typeDescription fields
+      pure $ createInputObject name typeMeta fields
   render (name, DataObject object') = typeFromObject (name, object')
    where
-    typeFromObject (key, DataTyCon { typeData, typeDescription }) lib =
-      createObjectType key typeDescription
+    typeFromObject (key, DataTyCon { typeData, typeMeta }) lib =
+      createObjectType key (typeMeta >>= metaDescription)
         <$> (Just <$> traverse (`render` lib) (filter fieldVisibility typeData))
   render (name, DataUnion union) = constRes $ typeFromUnion (name, union)
   render (name, DataInputUnion inpUnion') = renderInputUnion (name, inpUnion')
@@ -123,8 +121,8 @@ createInputObjectType field@DataField { fieldType = TypeAlias { aliasTyCon } } l
 
 renderInputUnion
   :: (Monad m, MonadFail m) => (Text, DataUnion) -> Result m (S__Type m)
-renderInputUnion (key, DataTyCon { typeData, typeDescription }) lib =
-  createInputObject key typeDescription
+renderInputUnion (key, DataTyCon { typeData, typeMeta }) lib =
+  createInputObject key typeMeta
     <$> traverse createField (createInputUnionFields key typeData)
  where
   createField (name, field) =
@@ -134,13 +132,13 @@ createLeafType
   :: Monad m
   => TypeKind
   -> Text
-  -> Maybe Text
+  -> Maybe Meta
   -> Maybe [S__EnumValue m]
   -> S__Type m
-createLeafType kind name description enums = S__Type
+createLeafType kind name meta enums = S__Type
   { s__TypeKind          = constRes kind
   , s__TypeName          = constRes $ Just name
-  , s__TypeDescription   = constRes description
+  , s__TypeDescription   = constRes (meta >>= metaDescription)
   , s__TypeFields        = constRes Nothing
   , s__TypeOfType        = constRes Nothing
   , s__TypeInterfaces    = constRes Nothing
@@ -150,10 +148,10 @@ createLeafType kind name description enums = S__Type
   }
 
 typeFromUnion :: Monad m => (Text, DataUnion) -> S__Type m
-typeFromUnion (name, DataTyCon { typeData, typeDescription }) = S__Type
+typeFromUnion (name, DataTyCon { typeData, typeMeta }) = S__Type
   { s__TypeKind          = constRes UNION
   , s__TypeName          = constRes $ Just name
-  , s__TypeDescription   = constRes typeDescription
+  , s__TypeDescription   = constRes (typeMeta >>= metaDescription)
   , s__TypeFields        = constRes Nothing
   , s__TypeOfType        = constRes Nothing
   , s__TypeInterfaces    = constRes Nothing
@@ -178,11 +176,11 @@ createObjectType name description fields = S__Type
   }
 
 createInputObject
-  :: Monad m => Text -> Maybe Text -> [S__InputValue m] -> S__Type m
-createInputObject name description fields = S__Type
+  :: Monad m => Text -> Maybe Meta -> [S__InputValue m] -> S__Type m
+createInputObject name meta fields = S__Type
   { s__TypeKind          = constRes INPUT_OBJECT
   , s__TypeName          = constRes $ Just name
-  , s__TypeDescription   = constRes description
+  , s__TypeDescription   = constRes (meta >>= metaDescription)
   , s__TypeFields        = constRes Nothing
   , s__TypeOfType        = constRes Nothing
   , s__TypeInterfaces    = constRes Nothing
