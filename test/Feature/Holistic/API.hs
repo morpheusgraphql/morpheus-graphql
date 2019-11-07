@@ -53,7 +53,6 @@ type EVENT = Event Channel ()
 
 importGQLDocument "test/Feature/Holistic/api.gql"
 
-
 rootResolver :: GQLRootResolver IO EVENT Query Mutation Subscription
 rootResolver = GQLRootResolver
   { queryResolver        = Query { user, testUnion = constRes Nothing }

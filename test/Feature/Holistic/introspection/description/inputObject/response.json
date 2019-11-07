@@ -1,0 +1,14 @@
+{
+  "data": {
+    "__type": {
+      "description": "type Description: Coordinates\n\nsome random text",
+      "inputFields": [
+        { "name": "latitude", "description": "field Description: latitude" },
+        {
+          "name": "longitude",
+          "description": "field Description: longitude\n  some randome field details"
+        }
+      ]
+    }
+  }
+}

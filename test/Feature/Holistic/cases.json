@@ -202,5 +202,9 @@
   {
     "path": "introspection/description/object",
     "description": "check object descriptions, type, field, args"
+  },
+  {
+    "path": "introspection/description/inputObject",
+    "description": "check inputObject descriptions, type, field"
   }
 ]

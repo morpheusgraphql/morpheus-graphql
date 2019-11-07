@@ -13,8 +13,20 @@ input TestInputObject {
   fieldNestedInputObject: [NestedInputObject]!
 }
 
+"""
+type Description: Coordinates
+
+some random text
+"""
 input Coordinates {
+  """
+  field Description: latitude
+  """
   latitude: TestScalar!
+  """
+  field Description: longitude
+  some randome field details
+  """
   longitude: Int!
 }
 
