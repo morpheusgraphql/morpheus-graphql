@@ -68,6 +68,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , toListField
                                                 , toNullableField
                                                 , createEnumValue
+                                                , TypeUpdater
                                                 )
 
 
@@ -178,7 +179,6 @@ instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a wher
     (memberTypes, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
 
 -- Types
-type TypeUpdater = LibUpdater DataTypeLib
 
 type GQL_TYPE a = (Generic a, GQLType a)
 

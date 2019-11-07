@@ -84,6 +84,9 @@ module Data.Morpheus.Types.Internal.Data
   , Meta(..)
   , Directive(..)
   , createEnumValue
+  , fromDataType 
+  , insertType
+  , TypeUpdater
   ) where
 
 import           Data.HashMap.Lazy                       (HashMap, empty, fromList, insert, toList, union)
@@ -100,6 +103,11 @@ import           Data.Morpheus.Types.Internal.Base       (Key, Position)
 import           Data.Morpheus.Types.Internal.TH         (apply, liftMaybeText, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value (..))
+import           Data.Morpheus.Execution.Internal.GraphScanner
+                                                ( LibUpdater
+                                                , resolveUpdates
+                                                )
+import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
 type GenError error a = error -> Either error a
 
@@ -572,4 +580,17 @@ createInputUnionFields name members = fieldTag : map unionField members
 
 createAlias :: Key -> TypeAlias
 createAlias aliasTyCon = TypeAlias {aliasTyCon, aliasWrappers = [], aliasArgs = Nothing}
+
+
+type TypeUpdater = LibUpdater DataTypeLib
+
+insertType :: (Key, DataType) -> TypeUpdater
+insertType nextType@(name, datatype) lib =
+  case isTypeDefined name lib of
+    Nothing -> resolveUpdates (defineType nextType lib) []
+    Just fingerprint
+      | fingerprint == fromDataType typeFingerprint datatype -> return lib
+      |
+        -- throw error if 2 different types has same name
+        otherwise -> Left $ nameCollisionError name
 
