@@ -32,6 +32,7 @@ module Data.Morpheus.Types.Internal.Data
   , TypeWrapper(..)
   , TypeAlias(..)
   , ArgsType(..)
+  , DataEnumValue(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -82,6 +83,7 @@ module Data.Morpheus.Types.Internal.Data
   , fieldVisibility
   , Meta(..)
   , Directive(..)
+  , createEnumValue
   ) where
 
 import           Data.HashMap.Lazy                       (HashMap, empty, fromList, insert, toList, union)
@@ -207,7 +209,7 @@ instance Show DataValidator where
 
 type DataScalar = DataTyCon DataValidator
 
-type DataEnum = DataTyCon [Key]
+type DataEnum = DataTyCon [DataEnumValue]
 
 type DataObject = DataTyCon [(Key, DataField)]
 
@@ -270,6 +272,18 @@ instance Lift Meta where
 
 --
 -- Data FIELD
+data DataEnumValue = DataEnumValue{
+    enumName :: Name,
+    enumMeta :: Maybe Meta
+} deriving (Show)
+
+instance Lift DataEnumValue where
+  lift DataEnumValue {..} =
+    apply 'DataEnumValue [
+        liftText enumName,
+        lift enumMeta
+    ]
+
 --------------------------------------------------------------------------------------------------
 data DataField = DataField
   { fieldName     :: Key
@@ -370,7 +384,15 @@ createScalarType :: Key -> (Key, DataType)
 createScalarType typeName = (typeName, DataScalar $ createType typeName (DataValidator pure))
 
 createEnumType :: Key -> [Key] -> (Key, DataType)
-createEnumType typeName typeData = (typeName, DataEnum $ createType typeName typeData)
+createEnumType typeName typeData = (typeName, DataEnum $ createType typeName enumValues)
+  where 
+      enumValues = map createEnumValue typeData
+
+createEnumValue :: Key -> DataEnumValue 
+createEnumValue enumName = DataEnumValue {
+  enumName,
+  enumMeta = Nothing  
+}
 
 createUnionType :: Key -> [Key] -> (Key, DataType)
 createUnionType typeName typeData = (typeName, DataUnion $ createType typeName typeData)
@@ -484,7 +506,7 @@ isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name lib = fromDataType typeFingerprint <$> lookupDataType name lib
 
 defineType :: (Key, DataType) -> DataTypeLib -> DataTypeLib
-defineType (key, datatype@(DataInputUnion DataTyCon{ typeName ,typeData , typeFingerprint })) lib = lib {
+defineType (key, datatype@(DataInputUnion DataTyCon{ typeName ,typeData = enumKeys , typeFingerprint })) lib = lib {
    types = insert name unionTags (insert key datatype (types lib))
 }
   where
@@ -493,7 +515,7 @@ defineType (key, datatype@(DataInputUnion DataTyCon{ typeName ,typeData , typeFi
           typeName = name
         , typeFingerprint
         , typeMeta = Nothing
-        , typeData
+        , typeData = map createEnumValue enumKeys
   }
 defineType (key, datatype) lib = lib {
     types =  insert key datatype (types lib)

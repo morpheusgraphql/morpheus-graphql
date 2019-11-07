@@ -20,6 +20,7 @@ import           Data.Morpheus.Parsing.Internal.Pattern
                                                 , inputValueDefinition
                                                 , optionalDirectives
                                                 , typDeclaration
+                                                , enumValueDefinition
                                                 )
 import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( keyword
@@ -158,26 +159,19 @@ unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
 --
 enumTypeDefinition :: Maybe Text -> Parser (Text, DataType)
 enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
-  typeName             <- typDeclaration "enum"
-  metaDirectives       <- optionalDirectives
-  enumValuesDefinition <- setOf enumValueDefinition
+  typeName              <- typDeclaration "enum"
+  metaDirectives        <- optionalDirectives
+  enumValuesDefinitions <- setOf enumValueDefinition
   pure
     ( typeName
     , DataEnum DataTyCon
       { typeName
       , typeMeta        = Just Meta { metaDescription, metaDirectives }
       , typeFingerprint = SystemFingerprint typeName
-      , typeData        = enumValuesDefinition
+      , typeData        = enumValuesDefinitions
       }
     )
- where
-  enumValueDefinition = label "EnumValueDefinition" $ do
-      -- TODO: handle Description
-    _fieldDescription <- optDescription
-    enumValueName     <- parseName
-    -- TODO: handle directives
-    _directive        <- optionalDirectives
-    return enumValueName
+
 
 -- Input Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Input-Objects
 --

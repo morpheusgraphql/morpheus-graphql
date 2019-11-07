@@ -34,6 +34,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , kindOf
                                                 , lookupDataType
                                                 , toGQLWrapper
+                                                , DataEnumValue(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Value
                                                 ( convertToJSONName )
@@ -66,6 +67,16 @@ instance RenderSchema DataType S__Type where
         <$> (Just <$> traverse (`render` lib) (filter fieldVisibility typeData))
   render (name, DataUnion union) = constRes $ typeFromUnion (name, union)
   render (name, DataInputUnion inpUnion') = renderInputUnion (name, inpUnion')
+
+
+createEnumValue :: Monad m => DataEnumValue -> S__EnumValue m
+createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
+  { s__EnumValueName              = constRes enumName
+  , s__EnumValueDescription       = constRes (enumMeta >>= metaDescription)
+  , s__EnumValueIsDeprecated      = constRes False
+  , s__EnumValueDeprecationReason = constRes Nothing
+  }
+
 
 instance RenderSchema DataField S__Field where
   render (name, field@DataField { fieldType = TypeAlias { aliasTyCon }, fieldArgs, fieldMeta }) lib
@@ -227,12 +238,4 @@ createInputValueWith name meta ivType = S__InputValue
   , s__InputValueDescription  = constRes (meta >>= metaDescription)
   , s__InputValueType'        = constRes ivType
   , s__InputValueDefaultValue = constRes Nothing
-  }
-
-createEnumValue :: Monad m => Text -> S__EnumValue m
-createEnumValue name = S__EnumValue
-  { s__EnumValueName              = constRes name
-  , s__EnumValueDescription       = constRes Nothing
-  , s__EnumValueIsDeprecated      = constRes False
-  , s__EnumValueDeprecationReason = constRes Nothing
   }

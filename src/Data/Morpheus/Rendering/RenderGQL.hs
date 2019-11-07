@@ -33,9 +33,11 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , fieldVisibility
                                                 , isDefaultTypeName
                                                 , toGQLWrapper
+                                                , DataEnumValue(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Value
                                                 ( convertToJSONName )
+
 
 renderGraphQLDocument :: DataTypeLib -> ByteString
 renderGraphQLDocument lib =
@@ -68,10 +70,13 @@ instance RenderGQL DataType where
   render (DataInputUnion  x) = typeName x
   render (DataObject      x) = typeName x
 
+instance RenderGQL DataEnumValue where
+  render DataEnumValue { enumName } = enumName
+
 instance RenderGQL (Key, DataType) where
   render (name, DataScalar{}) = "scalar " <> name
   render (name, DataEnum DataTyCon { typeData }) =
-    "enum " <> name <> renderObject id typeData
+    "enum " <> name <> renderObject render typeData
   render (name, DataUnion DataTyCon { typeData }) =
     "union "
       <> name

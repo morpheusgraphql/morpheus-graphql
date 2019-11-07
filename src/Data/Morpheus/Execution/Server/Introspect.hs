@@ -67,6 +67,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , isTypeDefined
                                                 , toListField
                                                 , toNullableField
+                                                , createEnumValue
                                                 )
 
 
@@ -132,7 +133,9 @@ instance (GQLType a, GQLScalar a) => IntrospectKind SCALAR a where
 -- ENUM
 instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
   introspectKind _ = updateLib enumType [] (Proxy @a)
-    where enumType = DataEnum . buildType (enumTags (Proxy @(Rep a)))
+   where
+    enumType =
+      DataEnum . buildType (map createEnumValue $ enumTags (Proxy @(Rep a)))
 
 -- INPUT_OBJECT
 instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT a where

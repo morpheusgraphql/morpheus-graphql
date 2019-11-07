@@ -46,6 +46,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , DataTypeLib(..)
                                                 , Key
                                                 , TypeAlias(..)
+                                                , DataEnumValue(..)
                                                 , allDataTypes
                                                 , lookupType
                                                 )
@@ -155,11 +156,6 @@ operationTypes lib variables = genOperation
       cFields              <- traverse genField selSet
       (subTypes, requests) <- newFieldTypes datatype selSet
       pure (ConsD { cName, cFields }, concat subTypes, concat requests)
-      ---------------------------------------------------------------------------------------------
-
-
-
-
      where
       genField :: (Text, ValidSelection) -> Validation DataField
       genField (fieldName, sel@Selection { selectionAlias }) = genFieldD sel
@@ -190,11 +186,6 @@ operationTypes lib variables = genOperation
         valSelection (key, selection@Selection { selectionAlias }) = do
           fieldDatatype <- fst <$> lookupFieldType lib fieldPath parentType key
           validateSelection fieldDatatype selection
-          --------------------------------------------------------------------
-
-
-
-
 
          where
           fieldPath = path <> [fromMaybe key selectionAlias]
@@ -261,12 +252,6 @@ buildInputType lib name = getType lib name >>= subTypes
           , typeKindD = KindInputObject
           }
       ]
-   ----------------------------------------------------------------
-
-
-
-
-
 
    where
     toFieldD :: (Text, DataField) -> Validation DataField
@@ -284,7 +269,9 @@ buildInputType lib name = getType lib name >>= subTypes
         , typeKindD = KindEnum
         }
     ]
-    where enumOption eName = ConsD { cName = unpack eName, cFields = [] }
+   where
+    enumOption DataEnumValue { enumName } =
+      ConsD { cName = unpack enumName, cFields = [] }
   subTypes _ = pure []
 
 lookupFieldType

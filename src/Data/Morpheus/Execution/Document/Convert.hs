@@ -29,6 +29,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , OperationType(..)
                                                 , ResolverKind(..)
                                                 , TypeAlias(..)
+                                                , DataEnumValue(..)
                                                 , sysTypes
                                                 )
 import           Data.Morpheus.Types.Internal.DataD
@@ -113,7 +114,9 @@ renderTHTypes namespace lib = traverse renderTHType lib
         , typeKindD = KindEnum
         , typeArgD  = []
         }
-      where enumOption name = ConsD { cName = sysName name, cFields = [] }
+     where
+      enumOption DataEnumValue { enumName } =
+        ConsD { cName = sysName enumName, cFields = [] }
     genType (DataScalar _) =
       internalError "Scalar Types should defined By Native Haskell Types"
     genType (DataInputUnion  _) = internalError "Input Unions not Supported"

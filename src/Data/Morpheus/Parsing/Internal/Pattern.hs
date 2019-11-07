@@ -5,6 +5,7 @@ module Data.Morpheus.Parsing.Internal.Pattern
     , fieldsDefinition
     , typDeclaration
     , optionalDirectives
+    , enumValueDefinition
     )
 where
 
@@ -36,10 +37,26 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , Directive(..)
                                                 , Key
                                                 , Meta(..)
+                                                , DataEnumValue(..)
                                                 , Name
                                                 , TypeAlias(..)
                                                 )
 
+
+--  EnumValueDefinition: https://graphql.github.io/graphql-spec/June2018/#EnumValueDefinition
+--
+--  EnumValueDefinition
+--    Description(opt) EnumValue Directives(Const)(opt)
+--
+enumValueDefinition :: Parser DataEnumValue
+enumValueDefinition = label "EnumValueDefinition" $ do
+    metaDescription <- optDescription
+    enumName        <- parseName
+    metaDirectives  <- optionalDirectives
+    return $ DataEnumValue
+        { enumName
+        , enumMeta = Just Meta { metaDescription, metaDirectives }
+        }
 
 -- InputValue : https://graphql.github.io/graphql-spec/June2018/#InputValueDefinition
 --
@@ -48,14 +65,12 @@ import           Data.Morpheus.Types.Internal.Data
 --
 inputValueDefinition :: Parser (Key, DataField)
 inputValueDefinition = label "InputValueDefinition" $ do
-    -- TODO: handle Description(opt)
     metaDescription <- optDescription
     fieldName       <- parseName
     litAssignment -- ':'
     (aliasWrappers, aliasTyCon) <- parseType
-    -- TODO: handle default value
     _                           <- parseDefaultValue
-    _                           <- optionalDirectives
+    metaDirectives              <- optionalDirectives
     pure
         ( fieldName
         , DataField
@@ -66,7 +81,7 @@ inputValueDefinition = label "InputValueDefinition" $ do
                                         , aliasWrappers
                                         , aliasArgs     = Nothing
                                         }
-            , fieldMeta     = Just Meta { metaDescription, metaDirectives = [] }
+            , fieldMeta     = Just Meta { metaDescription, metaDirectives }
             }
         )
 
@@ -94,14 +109,12 @@ fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 --
 fieldDefinition :: Parser (Key, DataField)
 fieldDefinition = label "FieldDefinition" $ do
-    -- TODO: handle Description(opt)
     metaDescription <- optDescription
     fieldName       <- parseName
     fieldArgs       <- argumentsDefinition
     litAssignment -- ':'
     (aliasWrappers, aliasTyCon) <- parseType
-    -- TODO: handle directives
-    _                           <- optionalDirectives
+    metaDirectives              <- optionalDirectives
     pure
         ( fieldName
         , DataField
@@ -112,7 +125,7 @@ fieldDefinition = label "FieldDefinition" $ do
                                         , aliasWrappers
                                         , aliasArgs     = Nothing
                                         }
-            , fieldMeta     = Just Meta { metaDescription, metaDirectives = [] }
+            , fieldMeta     = Just Meta { metaDescription, metaDirectives }
             }
         )
 
@@ -129,7 +142,6 @@ optionalDirectives = label "Directives" $ many directive
 -- Directive[Const]
 --
 -- @ Name Arguments[Const](opt)
--- TODO:  returns real DataType
 directive :: Parser Directive
 directive = label "Directive" $ do
     operator '@'
