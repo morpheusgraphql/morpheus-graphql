@@ -13,7 +13,7 @@ import           Data.Text                      ( pack
                                                 , unpack
                                                 )
 import           Language.Haskell.TH
-
+import           Data.Semigroup                 ( (<>) )
 --
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Declare
@@ -75,48 +75,6 @@ deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
   -----------------------------------------------
   typeFamilies | isObject typeKindD = [deriveCUSTOM, deriveKind]
                | otherwise          = [deriveKind]
-  ---------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
    where
     deriveCUSTOM = do
       typeN <- headSig
