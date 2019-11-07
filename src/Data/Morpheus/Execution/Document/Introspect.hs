@@ -10,7 +10,7 @@ module Data.Morpheus.Execution.Document.Introspect
 import           Data.Proxy                                (Proxy (..))
 import           Data.Text                                 (unpack)
 import           Data.Typeable                             (Typeable)
-import           Language.Haskell.TH
+import           Language.Haskell.TH  
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
@@ -23,9 +23,8 @@ import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instan
 -- [((Text, DataField), TypeUpdater)]
 deriveObjectRep :: (TypeD, Maybe DataTypeKind) -> Q [Dec]
 deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
-  pure <$> instanceWithOverlapD overlapping (cxt constrains) iHead methods
+  pure <$> instanceD (cxt constrains) iHead methods
   where
-    overlapping = Just Overlapping
     typeArgs =
       case tKind of
         Just typeKind -> tyConArgs typeKind
