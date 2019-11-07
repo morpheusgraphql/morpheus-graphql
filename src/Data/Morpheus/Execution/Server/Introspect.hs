@@ -35,9 +35,7 @@ import           GHC.Generics
 -- MORPHEUS
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 import           Data.Morpheus.Execution.Internal.GraphScanner
-                                                ( LibUpdater
-                                                , resolveUpdates
-                                                )
+                                                ( resolveUpdates )
 import           Data.Morpheus.Execution.Server.Generics.EnumRep
                                                 ( EnumRep(..) )
 import           Data.Morpheus.Kind             ( Context(..)
@@ -60,7 +58,6 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , DataField(..)
                                                 , DataTyCon(..)
                                                 , DataType(..)
-                                                , DataTypeLib
                                                 , Key
                                                 , createAlias
                                                 , defineType
