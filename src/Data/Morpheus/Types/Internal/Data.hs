@@ -81,6 +81,7 @@ module Data.Morpheus.Types.Internal.Data
   , createInputUnionFields
   , fieldVisibility
   , Meta(..)
+  , Directive(..)
   ) where
 
 import           Data.HashMap.Lazy                       (HashMap, empty, fromList, insert, toList, union)
@@ -243,10 +244,18 @@ instance Lift ArgsType where
   lift (ArgsType argT kind) = apply 'ArgsType [liftText argT, lift kind]
 
 
-data Directive = Directive deriving (Lift,Show)
+data Directive = Directive {
+  directiveName :: Name,
+  directiveArgs :: [(Name,Value)]
+} deriving (Show)
+
+instance Lift Directive where 
+  lift  Directive {..} = apply 'Directive [
+      liftText directiveName,
+      liftTextMap directiveArgs
+    ]
 
 -- META
-
 data Meta = Meta {
     metaDescription:: Maybe Description,
     metaDeprecated  :: Maybe Description,
