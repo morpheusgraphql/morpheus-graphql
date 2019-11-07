@@ -66,10 +66,7 @@ inputValueDefinition = label "InputValueDefinition" $ do
                                         , aliasWrappers
                                         , aliasArgs     = Nothing
                                         }
-            , fieldMeta     = Just Meta { metaDescription
-                                        , metaDeprecated  = Nothing
-                                        , metaDirectives  = []
-                                        }
+            , fieldMeta     = Just Meta { metaDescription, metaDirectives = [] }
             }
         )
 
@@ -115,10 +112,7 @@ fieldDefinition = label "FieldDefinition" $ do
                                         , aliasWrappers
                                         , aliasArgs     = Nothing
                                         }
-            , fieldMeta     = Just Meta { metaDescription
-                                        , metaDeprecated  = Nothing
-                                        , metaDirectives  = []
-                                        }
+            , fieldMeta     = Just Meta { metaDescription, metaDirectives = [] }
             }
         )
 

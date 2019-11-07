@@ -258,7 +258,6 @@ instance Lift Directive where
 -- META
 data Meta = Meta {
     metaDescription:: Maybe Description,
-    metaDeprecated  :: Maybe Description,
     metaDirectives  :: [Directive]
 } deriving (Show)
 
@@ -266,10 +265,8 @@ instance Lift Meta where
   lift Meta {..} =
     apply 'Meta [
         liftMaybeText metaDescription,
-        liftMaybeText metaDeprecated,
         lift metaDirectives
     ]
-
 
 --
 -- Data FIELD
@@ -342,7 +339,7 @@ lookupSelectionField position fieldName DataTyCon {typeData ,typeName } = lookup
 data DataTyCon a = DataTyCon
   { typeName        :: Key
   , typeFingerprint :: DataFingerprint
-  , typeDescription :: Maybe Key
+  , typeMeta :: Maybe Meta
   , typeData        :: a
   } deriving (Show)
 
@@ -367,7 +364,7 @@ data DataType
 
 createType :: Key -> a -> DataTyCon a
 createType typeName typeData =
-  DataTyCon {typeName, typeDescription = Nothing, typeFingerprint = SystemFingerprint "", typeData}
+  DataTyCon {typeName, typeMeta = Nothing, typeFingerprint = SystemFingerprint "", typeData}
 
 createScalarType :: Key -> (Key, DataType)
 createScalarType typeName = (typeName, DataScalar $ createType typeName (DataValidator pure))
@@ -495,7 +492,7 @@ defineType (key, datatype@(DataInputUnion DataTyCon{ typeName ,typeData , typeFi
      unionTags = DataEnum DataTyCon {
           typeName = name
         , typeFingerprint
-        , typeDescription = Nothing
+        , typeMeta = Nothing
         , typeData
   }
 defineType (key, datatype) lib = lib {
