@@ -11,6 +11,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 ( DataField
                                                 , DataTypeKind
                                                 , Meta
+                                                , DataType(..)
                                                 )
 
 data QueryD = QueryD
@@ -23,6 +24,7 @@ data GQLTypeD = GQLTypeD
   { typeD     :: TypeD
   , typeKindD :: DataTypeKind
   , typeArgD  :: [TypeD]
+  , typeOriginal:: DataType
   } deriving (Show)
 
 data TypeD = TypeD

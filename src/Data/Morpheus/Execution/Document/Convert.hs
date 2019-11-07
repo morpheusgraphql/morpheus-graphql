@@ -104,25 +104,26 @@ renderTHTypes namespace lib = traverse renderTHType lib
           Just DataUnion{}  -> TypeVarResolver
           Just _            -> PlainResolver
     --------------------------------------------
-    genType (DataEnum DataTyCon { typeName, typeData, typeMeta }) = pure
-      GQLTypeD
-        { typeD     = TypeD { tName      = sysName typeName
-                            , tNamespace = []
-                            , tCons      = map enumOption typeData
-                            , tMeta      = typeMeta
-                            }
-        , typeKindD = KindEnum
-        , typeArgD  = []
+    genType typeOriginal@(DataEnum DataTyCon { typeName, typeData, typeMeta })
+      = pure GQLTypeD
+        { typeD        = TypeD { tName      = sysName typeName
+                               , tNamespace = []
+                               , tCons      = map enumOption typeData
+                               , tMeta      = typeMeta
+                               }
+        , typeKindD    = KindEnum
+        , typeArgD     = []
+        , typeOriginal
         }
      where
       enumOption DataEnumValue { enumName } =
         ConsD { cName = sysName enumName, cFields = [] }
     genType (DataScalar _) =
       internalError "Scalar Types should defined By Native Haskell Types"
-    genType (DataInputUnion  _) = internalError "Input Unions not Supported"
-    genType (DataInputObject DataTyCon { typeName, typeData, typeMeta }) = pure
-      GQLTypeD
-        { typeD     =
+    genType (DataInputUnion _) = internalError "Input Unions not Supported"
+    genType typeOriginal@(DataInputObject DataTyCon { typeName, typeData, typeMeta })
+      = pure GQLTypeD
+        { typeD        =
           TypeD
             { tName      = sysName typeName
             , tNamespace = []
@@ -132,37 +133,42 @@ renderTHTypes namespace lib = traverse renderTHType lib
                            ]
             , tMeta      = typeMeta
             }
-        , typeKindD = KindInputObject
-        , typeArgD  = []
+        , typeKindD    = KindInputObject
+        , typeArgD     = []
+        , typeOriginal
         }
-    genType (DataObject DataTyCon { typeName, typeData, typeMeta }) = do
-      typeArgD <- concat <$> traverse genArgumentType typeData
-      pure GQLTypeD
-        { typeD     = TypeD
-                        { tName      = sysName typeName
-                        , tNamespace = []
-                        , tCons = [ ConsD { cName   = sysName typeName
-                                          , cFields = map genResField typeData
-                                          }
-                                  ]
-                        , tMeta      = typeMeta
-                        }
-        , typeKindD = if typeName == "Subscription"
-                        then KindObject (Just Subscription)
-                        else KindObject Nothing
-        , typeArgD
-        }
-    genType (DataUnion DataTyCon { typeName, typeData, typeMeta }) = do
-      let tCons = map unionCon typeData
-      pure GQLTypeD
-        { typeD     = TypeD { tName      = unpack typeName
-                            , tNamespace = []
-                            , tCons
-                            , tMeta      = typeMeta
-                            }
-        , typeKindD = KindUnion
-        , typeArgD  = []
-        }
+    genType typeOriginal@(DataObject DataTyCon { typeName, typeData, typeMeta })
+      = do
+        typeArgD <- concat <$> traverse genArgumentType typeData
+        pure GQLTypeD
+          { typeD        = TypeD
+                             { tName      = sysName typeName
+                             , tNamespace = []
+                             , tCons = [ ConsD { cName = sysName typeName
+                                               , cFields = map genResField typeData
+                                               }
+                                       ]
+                             , tMeta      = typeMeta
+                             }
+          , typeKindD    = if typeName == "Subscription"
+                             then KindObject (Just Subscription)
+                             else KindObject Nothing
+          , typeArgD
+          , typeOriginal
+          }
+    genType typeOriginal@(DataUnion DataTyCon { typeName, typeData, typeMeta })
+      = do
+        let tCons = map unionCon typeData
+        pure GQLTypeD
+          { typeD        = TypeD { tName      = unpack typeName
+                                 , tNamespace = []
+                                 , tCons
+                                 , tMeta      = typeMeta
+                                 }
+          , typeKindD    = KindUnion
+          , typeArgD     = []
+          , typeOriginal
+          }
      where
       unionCon memberName = ConsD
         { cName
