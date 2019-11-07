@@ -50,6 +50,11 @@ type Address {
   houseNumber: Int!
 }
 
+"""
+type Description: TestUnion
+
+some random text for union type
+"""
 union TestUnion = User | Address
 
 """

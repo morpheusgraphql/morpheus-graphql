@@ -206,5 +206,9 @@
   {
     "path": "introspection/description/inputObject",
     "description": "check inputObject descriptions, type, field"
+  },
+  {
+    "path": "introspection/description/union",
+    "description": "check union descriptions, type, field"
   }
 ]
