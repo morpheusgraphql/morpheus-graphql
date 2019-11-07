@@ -1,0 +1,5 @@
+query Get__Type {
+  __type(name: "User") {
+    description
+  }
+}

@@ -198,5 +198,9 @@
   {
     "path": "parsing/directive/notOnVariable",
     "description": "fail when: directive is used in Variable Definition"
+  },
+  {
+    "path": "introspection/description/object",
+    "description": "check object descriptions, type, field, args"
   }
 ]

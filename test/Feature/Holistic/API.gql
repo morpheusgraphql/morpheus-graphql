@@ -29,6 +29,13 @@ type Address {
 
 union TestUnion = User | Address
 
+"""
+User
+
+MultilineDescription
+
+Test
+"""
 type User {
   name: String!
   email: String!
