@@ -17,17 +17,20 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
-import           Data.Morpheus.Types.Internal.Data         (ArgsType (..),DataType(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
+import           Data.Morpheus.Types.Internal.Data         (ArgsType (..),Key, DataType(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
 import           Data.Morpheus.Types.Internal.DataD        (ConsD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
 
 
-instanceIntrospect :: (String,DataType) -> Q [Dec]
+instanceIntrospect :: (Key,DataType) -> Q [Dec]
+-- FIXME: dirty fix for introspection
+instanceIntrospect ("__DirectiveLocation",_) = pure []
+instanceIntrospect ("__TypeKind",_) = pure []
 instanceIntrospect (name, DataEnum enumType) =
   pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
     -----------------------------------------------
-    iHead = instanceHeadT ''Introspect  name []
+    iHead = instanceHeadT ''Introspect  (unpack name) []
     defineIntrospect = instanceProxyFunD ('introspect,body)
       where
         body =[| insertType (name, DataEnum enumType) |]
