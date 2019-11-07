@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveAnyClass  #-}
 {-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE DeriveLift      #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Data.Morpheus.Types.Internal.Base
   ( Key

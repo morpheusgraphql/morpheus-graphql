@@ -48,10 +48,10 @@ class Fetch a where
   fetch :: (Monad m, FromJSON a) => (ByteString -> m ByteString) -> Args a -> m (Either String a)
 
 deriveFetch :: Type -> String -> String -> Q [Dec]
-deriveFetch resultType typeName query = pure <$> instanceD (cxt []) iHead methods
+deriveFetch resultType typeName queryString = pure <$> instanceD (cxt []) iHead methods
   where
     iHead = instanceHeadT ''Fetch typeName []
     methods =
-      [ funD 'fetch [clause [] (normalB [|__fetch query typeName|]) []]
+      [ funD 'fetch [clause [] (normalB [|__fetch queryString typeName|]) []]
       , pure $ typeInstanceDec  ''Args  (ConT $ mkName typeName) resultType
       ]

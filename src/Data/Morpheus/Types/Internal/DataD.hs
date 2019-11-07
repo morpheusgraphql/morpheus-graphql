@@ -3,9 +3,9 @@ module Data.Morpheus.Types.Internal.DataD
   , ConsD(..)
   , ClientQuery(..)
   , GQLTypeD(..)
+  , ClientType(..)
   )
 where
-
 
 import           Data.Morpheus.Types.Internal.Data
                                                 ( DataField
@@ -15,13 +15,19 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , Name
                                                 )
 
+-- CLIENT                                                
 data ClientQuery = ClientQuery
   { queryText     :: String
-  , queryTypes    :: [GQLTypeD]
+  , queryTypes    :: [ClientType]
   , queryArgsType :: Maybe TypeD
   } deriving (Show)
 
+data ClientType = ClientType {
+  clientType :: TypeD,
+  clientKind :: DataTypeKind
+} deriving (Show)
 
+-- Document
 data GQLTypeD = GQLTypeD
   { typeD     :: TypeD
   , typeKindD :: DataTypeKind

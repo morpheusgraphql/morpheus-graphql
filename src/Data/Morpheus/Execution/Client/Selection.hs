@@ -52,7 +52,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 )
 import           Data.Morpheus.Types.Internal.DataD
                                                 ( ConsD(..)
-                                                , GQLTypeD(..)
+                                                , ClientType(..)
                                                 , TypeD(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
@@ -74,7 +74,7 @@ operationTypes
   :: DataTypeLib
   -> VariableDefinitions
   -> ValidOperation
-  -> Validation (Maybe TypeD, [GQLTypeD])
+  -> Validation (Maybe TypeD, [ClientType])
 operationTypes lib variables = genOperation
  where
   genOperation Operation { operationName, operationSelection } = do
@@ -129,18 +129,17 @@ operationTypes lib variables = genOperation
     -> Key
     -> DataType
     -> SelectionSet
-    -> Validation ([GQLTypeD], [Text])
+    -> Validation ([ClientType], [Text])
   genRecordType path name dataType recordSelSet = do
     (con, subTypes, requests) <- genConsD (unpack name) dataType recordSelSet
     pure
-      ( GQLTypeD
-          { typeD     = TypeD { tName
-                              , tNamespace = map unpack path
-                              , tCons      = [con]
-                              , tMeta      = Nothing
-                              }
-          , typeKindD = KindObject Nothing
-          , typeArgD  = []
+      ( ClientType
+          { clientType = TypeD { tName
+                               , tNamespace = map unpack path
+                               , tCons      = [con]
+                               , tMeta      = Nothing
+                               }
+          , clientKind = KindObject Nothing
           }
         : subTypes
       , requests
@@ -151,7 +150,7 @@ operationTypes lib variables = genOperation
       :: String
       -> DataType
       -> SelectionSet
-      -> Validation (ConsD, [GQLTypeD], [Text])
+      -> Validation (ConsD, [ClientType], [Text])
     genConsD cName datatype selSet = do
       cFields              <- traverse genField selSet
       (subTypes, requests) <- newFieldTypes datatype selSet
@@ -180,7 +179,7 @@ operationTypes lib variables = genOperation
                            }
       ------------------------------------------------------------------------------------------------------------
       newFieldTypes
-        :: DataType -> SelectionSet -> Validation ([[GQLTypeD]], [[Text]])
+        :: DataType -> SelectionSet -> Validation ([[ClientType]], [[Text]])
       newFieldTypes parentType seSet = unzip <$> mapM valSelection seSet
        where
         valSelection (key, selection@Selection { selectionAlias }) = do
@@ -191,7 +190,7 @@ operationTypes lib variables = genOperation
           fieldPath = path <> [fromMaybe key selectionAlias]
           --------------------------------------------------------------------
           validateSelection
-            :: DataType -> ValidSelection -> Validation ([GQLTypeD], [Text])
+            :: DataType -> ValidSelection -> Validation ([ClientType], [Text])
           validateSelection dType Selection { selectionRec = SelectionField } =
             leafType dType
           --withLeaf buildLeaf dType
@@ -203,14 +202,13 @@ operationTypes lib variables = genOperation
               (tCons, subTypes, requests) <-
                 unzip3 <$> mapM getUnionType unionSelections
               pure
-                ( GQLTypeD
-                    { typeD     = TypeD { tNamespace = map unpack fieldPath
-                                        , tName = unpack $ typeFrom [] dType
-                                        , tCons
-                                        , tMeta      = Nothing
-                                        }
-                    , typeKindD = KindUnion
-                    , typeArgD  = []
+                ( ClientType
+                    { clientType = TypeD { tNamespace = map unpack fieldPath
+                                         , tName = unpack $ typeFrom [] dType
+                                         , tCons
+                                         , tMeta      = Nothing
+                                         }
+                    , clientKind = KindUnion
                     }
                   : concat subTypes
                 , concat requests
@@ -234,22 +232,21 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
   scanType (DataEnum DataTyCon { typeName }) = pure (collected <> [typeName])
   scanType _ = pure collected
 
-buildInputType :: DataTypeLib -> Text -> Validation [GQLTypeD]
+buildInputType :: DataTypeLib -> Text -> Validation [ClientType]
 buildInputType lib name = getType lib name >>= subTypes
  where
   subTypes (DataInputObject DataTyCon { typeName, typeData }) = do
     fields <- traverse toFieldD typeData
     pure
-      [ GQLTypeD
-          { typeD     =
+      [ ClientType
+          { clientType =
             TypeD
               { tName      = unpack typeName
               , tNamespace = []
               , tCons = [ConsD { cName = unpack typeName, cFields = fields }]
               , tMeta      = Nothing
               }
-          , typeArgD  = []
-          , typeKindD = KindInputObject
+          , clientKind = KindInputObject
           }
       ]
 
@@ -259,14 +256,13 @@ buildInputType lib name = getType lib name >>= subTypes
       aliasTyCon <- typeFrom [] <$> getType lib (aliasTyCon fieldType)
       pure $ field { fieldType = fieldType { aliasTyCon } }
   subTypes (DataEnum DataTyCon { typeName, typeData }) = pure
-    [ GQLTypeD
-        { typeD     = TypeD { tName      = unpack typeName
-                            , tNamespace = []
-                            , tCons      = map enumOption typeData
-                            , tMeta      = Nothing
-                            }
-        , typeArgD  = []
-        , typeKindD = KindEnum
+    [ ClientType
+        { clientType = TypeD { tName      = unpack typeName
+                             , tNamespace = []
+                             , tCons      = map enumOption typeData
+                             , tMeta      = Nothing
+                             }
+        , clientKind = KindEnum
         }
     ]
    where
@@ -292,7 +288,7 @@ lookupFieldType _ _ dt _ =
   Left (compileError $ "Type should be output Object \"" <> pack (show dt))
 
 
-leafType :: DataType -> Validation ([GQLTypeD], [Text])
+leafType :: DataType -> Validation ([ClientType], [Text])
 leafType (DataEnum DataTyCon { typeName }) = pure ([], [typeName])
 leafType DataScalar{} = pure ([], [])
 leafType _ = Left $ compileError "Invalid schema Expected scalar"

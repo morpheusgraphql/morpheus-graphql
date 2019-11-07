@@ -32,7 +32,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , isOutputObject
                                                 )
 import           Data.Morpheus.Types.Internal.DataD
-                                                ( GQLTypeD(..)
+                                                ( ClientType(..)
                                                 , ClientQuery(..)
                                                 , TypeD(..)
                                                 )
@@ -56,12 +56,12 @@ defineQueryD ClientQuery { queryTypes = rootType : subTypes, queryText, queryArg
     subTypeDecs <- concat <$> traverse declareT subTypes
     return $ rootDecs ++ subTypeDecs
  where
-  declareT GQLTypeD { typeD, typeKindD }
-    | isOutputObject typeKindD || typeKindD == KindUnion = withToJSON
+  declareT ClientType { clientType, clientKind }
+    | isOutputObject clientKind || clientKind == KindUnion = withToJSON
       declareOutputType
-      typeD
-    | typeKindD == KindEnum = withToJSON declareInputType typeD
-    | otherwise = declareInputType typeD
+      clientType
+    | clientKind == KindEnum = withToJSON declareInputType clientType
+    | otherwise = declareInputType clientType
 defineQueryD ClientQuery { queryTypes = [] } = return []
 
 declareOutputType :: TypeD -> Q [Dec]
@@ -83,9 +83,9 @@ queryArgumentType Nothing = (ConT $ mkName "()", pure [])
 queryArgumentType (Just rootType@TypeD { tName }) =
   (ConT $ mkName tName, declareInputType rootType)
 
-defineOperationType :: (Type, Q [Dec]) -> String -> GQLTypeD -> Q [Dec]
-defineOperationType (argType, argumentTypes) query GQLTypeD { typeD } = do
-  rootType       <- withToJSON declareOutputType typeD
-  typeClassFetch <- deriveFetch argType (tName typeD) query
+defineOperationType :: (Type, Q [Dec]) -> String -> ClientType -> Q [Dec]
+defineOperationType (argType, argumentTypes) query ClientType { clientType } = do
+  rootType       <- withToJSON declareOutputType clientType
+  typeClassFetch <- deriveFetch argType (tName clientType) query
   argsT          <- argumentTypes
   pure $ rootType <> typeClassFetch <> argsT
