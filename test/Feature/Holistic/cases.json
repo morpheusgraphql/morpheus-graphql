@@ -209,6 +209,6 @@
   },
   {
     "path": "introspection/description/union",
-    "description": "check union descriptions, type, field"
+    "description": "check union descriptions, type"
   }
 ]

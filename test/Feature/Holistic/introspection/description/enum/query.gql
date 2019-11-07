@@ -1,0 +1,9 @@
+{
+  __type(name: "TestEnum") {
+    description
+    enumValues {
+      name
+      description
+    }
+  }
+}

@@ -1,6 +1,17 @@
+"""
+type Description: TestEnum
+
+some random enums for test
+"""
 enum TestEnum {
+  """
+  enumValue Description: EnumA
+  """
   EnumA
   EnumB
+  """
+  enumValue Description: EnumC
+  """
   EnumC
 }
 
@@ -20,12 +31,12 @@ some random text
 """
 input Coordinates {
   """
-  field Description: latitude
+  inputValue Description: latitude
   """
   latitude: TestScalar!
   """
-  field Description: longitude
-  some randome field details
+  inputValue Description: longitude
+  some random inputValue details
   """
   longitude: Int!
 }
