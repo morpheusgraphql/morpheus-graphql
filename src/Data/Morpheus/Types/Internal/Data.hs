@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE DeriveLift            #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
@@ -8,8 +7,6 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE TemplateHaskell       #-}
 
 module Data.Morpheus.Types.Internal.Data
   ( Key
@@ -92,15 +89,13 @@ module Data.Morpheus.Types.Internal.Data
 import           Data.HashMap.Lazy                       (HashMap, empty, fromList, insert, toList, union)
 import qualified Data.HashMap.Lazy                       as HM (lookup)
 import           Data.Semigroup                          ((<>))
-import qualified Data.Text                               as T (pack, unpack)
-import           GHC.Fingerprint.Type                    (Fingerprint)
-import           Language.Haskell.TH.Syntax              (Lift (..))
+import           Language.Haskell.TH.Syntax              (Lift)
+import           Instances.TH.Lift                        ()
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Error.Selection           (cannotQueryField, hasNoSubfields)
 import           Data.Morpheus.Types.Internal.Base       (Key, Position)
-import           Data.Morpheus.Types.Internal.TH         (apply, liftMaybeText, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value (..))
 import           Data.Morpheus.Execution.Internal.GraphScanner
@@ -203,10 +198,9 @@ toHSWrappers (ListType:xs)                  = [TypeMaybe, TypeList] <> toHSWrapp
 toHSWrappers []                             = [TypeMaybe]
 toHSWrappers [NonNullType]                  = []
 
-data DataFingerprint
-  = SystemFingerprint Key
-  | TypeableFingerprint [Fingerprint]
-  deriving (Show, Eq, Ord)
+data DataFingerprint = SystemFingerprint Key | TypeableFingerprint [String]
+  deriving (Show, Eq, Ord, Lift)
+
 
 newtype DataValidator = DataValidator
   { validateValue :: Value -> Either Key Value
@@ -236,61 +230,29 @@ data TypeAlias = TypeAlias
   { aliasTyCon    :: Key
   , aliasArgs     :: Maybe Key
   , aliasWrappers :: [TypeWrapper]
-  } deriving (Show)
-
-instance Lift TypeAlias where
-  lift TypeAlias {aliasTyCon = x, aliasArgs, aliasWrappers} =
-    [|TypeAlias {aliasTyCon = name, aliasArgs = T.pack <$> args, aliasWrappers}|]
-    where
-      name = T.unpack x
-      args = T.unpack <$> aliasArgs
+  } deriving (Show,Lift)
 
 data ArgsType = ArgsType
   { argsTypeName :: Key
   , resKind      :: ResolverKind
-  } deriving (Show)
-
-instance Lift ArgsType where
-  lift (ArgsType argT kind) = apply 'ArgsType [liftText argT, lift kind]
-
+  } deriving (Show,Lift)
 
 data Directive = Directive {
   directiveName :: Name,
   directiveArgs :: [(Name,Value)]
-} deriving (Show)
-
-instance Lift Directive where 
-  lift  Directive {..} = apply 'Directive [
-      liftText directiveName,
-      liftTextMap directiveArgs
-    ]
+} deriving (Show,Lift)
 
 -- META
 data Meta = Meta {
     metaDescription:: Maybe Description,
     metaDirectives  :: [Directive]
-} deriving (Show)
+} deriving (Show,Lift)
 
-instance Lift Meta where
-  lift Meta {..} =
-    apply 'Meta [
-        liftMaybeText metaDescription,
-        lift metaDirectives
-    ]
-
---
--- Data FIELD
+-- ENUM VALUE
 data DataEnumValue = DataEnumValue{
     enumName :: Name,
     enumMeta :: Maybe Meta
-} deriving (Show)
-
-instance Lift DataEnumValue where
-  lift DataEnumValue {..} =
-    apply 'DataEnumValue [
-        liftText enumName,
-        lift enumMeta
-    ]
+} deriving (Show, Lift)
 
 --------------------------------------------------------------------------------------------------
 data DataField = DataField
@@ -299,24 +261,13 @@ data DataField = DataField
   , fieldArgsType :: Maybe ArgsType
   , fieldType     :: TypeAlias
   , fieldMeta     :: Maybe Meta
-  } deriving (Show)
+  } deriving (Show,Lift)
 
 fieldVisibility :: (Key,DataField) -> Bool
 fieldVisibility ("__typename",_) = False
 fieldVisibility ("__schema",_)   = False
 fieldVisibility ("__type",_)     = False
 fieldVisibility _                = True
-
-instance Lift DataField where
-  lift DataField {..} =
-    apply 'DataField [
-        liftText fieldName,
-        liftTextMap fieldArgs,
-        lift fieldArgsType,
-        lift fieldType,
-        lift fieldMeta
-    ]
-
 
 createField :: DataArguments -> Key -> ([TypeWrapper], Key) -> DataField
 createField fieldArgs fieldName (aliasWrappers, aliasTyCon) =
@@ -363,7 +314,8 @@ data DataTyCon a = DataTyCon
   , typeFingerprint :: DataFingerprint
   , typeMeta :: Maybe Meta
   , typeData        :: a
-  } deriving (Show)
+  } deriving (Show, Lift)
+
 
 data RawDataType
   = FinalDataType DataType
