@@ -29,7 +29,7 @@ import           Data.Morpheus.Types.IO         ( GQLRequest(..) )
 --
 --  Morpheus
 import           Data.Morpheus.Types.Internal.DataD
-                                                ( QueryD(..) )
+                                                ( ClientQuery(..) )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation )
 import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
@@ -48,10 +48,10 @@ compileSyntax queryText = case parseGQL request of
                        , variables     = Nothing
                        }
 
-validateWith :: DataTypeLib -> (GQLQueryRoot, String) -> Validation QueryD
+validateWith :: DataTypeLib -> (GQLQueryRoot, String) -> Validation ClientQuery
 validateWith schema (rawRequest@GQLQueryRoot { operation }, queryText) = do
   validOperation <- validateRequest schema WITHOUT_VARIABLES rawRequest
   (queryArgsType, queryTypes) <- operationTypes schema
                                                 (O.operationArgs operation)
                                                 validOperation
-  return QueryD { queryText, queryTypes, queryArgsType }
+  return ClientQuery { queryText, queryTypes, queryArgsType }

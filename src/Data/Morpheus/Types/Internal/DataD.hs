@@ -1,7 +1,7 @@
 module Data.Morpheus.Types.Internal.DataD
   ( TypeD(..)
   , ConsD(..)
-  , QueryD(..)
+  , ClientQuery(..)
   , GQLTypeD(..)
   )
 where
@@ -15,11 +15,12 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , Name
                                                 )
 
-data QueryD = QueryD
+data ClientQuery = ClientQuery
   { queryText     :: String
   , queryTypes    :: [GQLTypeD]
   , queryArgsType :: Maybe TypeD
   } deriving (Show)
+
 
 data GQLTypeD = GQLTypeD
   { typeD     :: TypeD

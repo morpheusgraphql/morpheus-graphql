@@ -33,7 +33,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 )
 import           Data.Morpheus.Types.Internal.DataD
                                                 ( GQLTypeD(..)
-                                                , QueryD(..)
+                                                , ClientQuery(..)
                                                 , TypeD(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
@@ -47,8 +47,8 @@ defineQuery ioSchema queryRoot = do
     Left  errors -> fail (renderGQLErrors errors)
     Right queryD -> defineQueryD queryD
 
-defineQueryD :: QueryD -> Q [Dec]
-defineQueryD QueryD { queryTypes = rootType : subTypes, queryText, queryArgsType }
+defineQueryD :: ClientQuery -> Q [Dec]
+defineQueryD ClientQuery { queryTypes = rootType : subTypes, queryText, queryArgsType }
   = do
     rootDecs <- defineOperationType (queryArgumentType queryArgsType)
                                     queryText
@@ -62,7 +62,7 @@ defineQueryD QueryD { queryTypes = rootType : subTypes, queryText, queryArgsType
       typeD
     | typeKindD == KindEnum = withToJSON declareInputType typeD
     | otherwise = declareInputType typeD
-defineQueryD QueryD { queryTypes = [] } = return []
+defineQueryD ClientQuery { queryTypes = [] } = return []
 
 declareOutputType :: TypeD -> Q [Dec]
 declareOutputType typeD = pure [declareType False Nothing [''Show] typeD]
