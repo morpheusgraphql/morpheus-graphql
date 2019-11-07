@@ -1,7 +1,26 @@
 {
   "data": {
     "__type": {
-      "description": "User\n\nMultilineDescription\n\nTest"
+      "description": "type Description:\n\n  Address",
+      "fields": [
+        {
+          "name": "city",
+          "description": "field Description: city",
+          "args": []
+        },
+        {
+          "name": "street",
+          "description": null,
+          "args": [
+            {
+              "name": "argInputObject",
+              "description": "argument Description: inputObject"
+            },
+            { "name": "argMaybeString", "description": null }
+          ]
+        },
+        { "name": "houseNumber", "description": null, "args": [] }
+      ]
     }
   }
 }

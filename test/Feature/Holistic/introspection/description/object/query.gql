@@ -1,5 +1,13 @@
-query Get__Type {
-  __type(name: "User") {
+{
+  __type(name: "Address") {
     description
+    fields {
+      name
+      description
+      args {
+        name
+        description
+      }
+    }
   }
 }

@@ -18,9 +18,20 @@ input Coordinates {
   longitude: Int!
 }
 
+"""
+type Description:
+
+  Address
+"""
 type Address {
+  """
+  field Description: city
+  """
   city: String!
   street(
+    """
+    argument Description: inputObject
+    """
     argInputObject: TestInputObject!
     argMaybeString: String
   ): [[[[String!]!]!]]
@@ -37,7 +48,13 @@ MultilineDescription
 Test
 """
 type User {
+  """
+  field description: name
+  """
   name: String!
+  """
+  field description: email
+  """
   email: String!
   address(coordinates: Coordinates!, comment: String): Address!
   office(zipCode: [Int!], cityID: TestEnum!): Address!
