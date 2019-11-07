@@ -210,5 +210,9 @@
   {
     "path": "introspection/description/union",
     "description": "check union descriptions, type"
+  },
+  {
+    "path": "introspection/description/enum",
+    "description": "check enum descriptions, type, enumValue"
   }
 ]
