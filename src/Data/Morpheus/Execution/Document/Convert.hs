@@ -29,7 +29,6 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , OperationType(..)
                                                 , ResolverKind(..)
                                                 , TypeAlias(..)
-                                                , Meta(..)
                                                 , sysTypes
                                                 )
 import           Data.Morpheus.Types.Internal.DataD
@@ -104,26 +103,22 @@ renderTHTypes namespace lib = traverse renderTHType lib
           Just DataUnion{}  -> TypeVarResolver
           Just _            -> PlainResolver
     --------------------------------------------
-    genType (DataEnum DataTyCon { typeName, typeData, typeDescription }) = pure
+    genType (DataEnum DataTyCon { typeName, typeData, typeMeta }) = pure
       GQLTypeD
-        { typeD     = TypeD
-                        { tName      = sysName typeName
-                        , tNamespace = []
-                        , tCons      = map enumOption typeData
-                        , tMeta = Just Meta { metaDescription = typeDescription
-                                            , metaDeprecated  = Nothing
-                                            , metaDirectives  = []
-                                            }
-                        }
+        { typeD     = TypeD { tName      = sysName typeName
+                            , tNamespace = []
+                            , tCons      = map enumOption typeData
+                            , tMeta      = typeMeta
+                            }
         , typeKindD = KindEnum
         , typeArgD  = []
         }
       where enumOption name = ConsD { cName = sysName name, cFields = [] }
     genType (DataScalar _) =
       internalError "Scalar Types should defined By Native Haskell Types"
-    genType (DataInputUnion _) = internalError "Input Unions not Supported"
-    genType (DataInputObject DataTyCon { typeName, typeData, typeDescription })
-      = pure GQLTypeD
+    genType (DataInputUnion  _) = internalError "Input Unions not Supported"
+    genType (DataInputObject DataTyCon { typeName, typeData, typeMeta }) = pure
+      GQLTypeD
         { typeD     =
           TypeD
             { tName      = sysName typeName
@@ -132,46 +127,36 @@ renderTHTypes namespace lib = traverse renderTHType lib
                                    , cFields = map genField typeData
                                    }
                            ]
-            , tMeta      = Just Meta { metaDescription = typeDescription
-                                     , metaDeprecated  = Nothing
-                                     , metaDirectives  = []
-                                     }
+            , tMeta      = typeMeta
             }
         , typeKindD = KindInputObject
         , typeArgD  = []
         }
-    genType (DataObject DataTyCon { typeName, typeData, typeDescription }) = do
+    genType (DataObject DataTyCon { typeName, typeData, typeMeta }) = do
       typeArgD <- concat <$> traverse genArgumentType typeData
       pure GQLTypeD
         { typeD     = TypeD
-                        { tName = sysName typeName
+                        { tName      = sysName typeName
                         , tNamespace = []
                         , tCons = [ ConsD { cName   = sysName typeName
                                           , cFields = map genResField typeData
                                           }
                                   ]
-                        , tMeta = Just Meta { metaDescription = typeDescription
-                                            , metaDeprecated  = Nothing
-                                            , metaDirectives  = []
-                                            }
+                        , tMeta      = typeMeta
                         }
         , typeKindD = if typeName == "Subscription"
                         then KindObject (Just Subscription)
                         else KindObject Nothing
         , typeArgD
         }
-    genType (DataUnion DataTyCon { typeName, typeData, typeDescription }) = do
+    genType (DataUnion DataTyCon { typeName, typeData, typeMeta }) = do
       let tCons = map unionCon typeData
       pure GQLTypeD
-        { typeD     = TypeD
-                        { tName      = unpack typeName
-                        , tNamespace = []
-                        , tCons
-                        , tMeta = Just Meta { metaDescription = typeDescription
-                                            , metaDeprecated  = Nothing
-                                            , metaDirectives  = []
-                                            }
-                        }
+        { typeD     = TypeD { tName      = unpack typeName
+                            , tNamespace = []
+                            , tCons
+                            , tMeta      = typeMeta
+                            }
         , typeKindD = KindUnion
         , typeArgD  = []
         }
