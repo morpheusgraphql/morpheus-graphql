@@ -4,9 +4,10 @@
 {-# LANGUAGE TemplateHaskell   #-}
 
 module Data.Morpheus.Execution.Document.Introspect
-  ( deriveObjectRep
+  ( deriveObjectRep , instanceIntrospect
   ) where
 
+import Data.Maybe(maybeToList)
 import           Data.Proxy                                (Proxy (..))
 import           Data.Text                                 (unpack)
 import           Data.Typeable                             (Typeable)
@@ -16,19 +17,28 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
-import           Data.Morpheus.Types.Internal.Data         (ArgsType (..), DataField (..), DataTypeKind, TypeAlias (..))
+import           Data.Morpheus.Types.Internal.Data         (ArgsType (..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
 import           Data.Morpheus.Types.Internal.DataD        (ConsD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceHeadMultiT, typeT)
+import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
+
+
+instanceIntrospect :: (TypeD, Maybe DataTypeKind) -> Q [Dec]
+instanceIntrospect (TypeD {tName, tCons = enumValues },Just KindEnum) =
+  pure <$> instanceD (cxt []) iHead [defineIntrospect]
+  where
+    -----------------------------------------------
+    iHead = instanceHeadT ''Introspect  tName []
+    defineIntrospect = instanceProxyFunD ('introspect,body)
+      where
+        body =[| insertType (name,"" ) |]
+instanceIntrospect _ = pure []
 
 -- [((Text, DataField), TypeUpdater)]
 deriveObjectRep :: (TypeD, Maybe DataTypeKind) -> Q [Dec]
 deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
   pure <$> instanceD (cxt constrains) iHead methods
   where
-    typeArgs =
-      case tKind of
-        Just typeKind -> tyConArgs typeKind
-        Nothing       -> []
+    typeArgs = concatMap tyConArgs (maybeToList tKind)
     constrains = map conTypeable typeArgs
       where
         conTypeable name = typeT ''Typeable [name]
