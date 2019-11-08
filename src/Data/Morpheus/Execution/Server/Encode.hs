@@ -157,31 +157,6 @@ instance (Monad m, EncodeCon o e m a, Monad m, GResolver OBJECT (Rep a) o e m) =
 instance (Monad m, GQL_RES a, GResolver UNION (Rep a) o e m) => EncodeKind UNION a o e m where
   encodeKind (VContext value) (key, sel@Selection { selectionRec = UnionSelection selections })
     = resolver (key, sel { selectionRec = SelectionSet lookupSelection })
-      -- SPEC: if there is no any fragment that supports current object Type GQL returns {}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
    where
     lookupSelection      = fromMaybe [] $ lookup typeName selections
     (typeName, resolver) = unionResolver value
