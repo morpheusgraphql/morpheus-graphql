@@ -27,8 +27,8 @@ module Data.Morpheus.Types
   , QUERY
   , MUTATION
   , SUBSCRIPTION
-  , liftEitherM
-  , liftM
+  , liftEither
+  , lift
   )
 where
 
@@ -49,8 +49,8 @@ import           Data.Morpheus.Types.Internal.Resolver
                                                 , GQLRootResolver(..)
                                                 , PureOperation
                                                 , Resolver(..)
-                                                , liftEitherM
-                                                , liftM
+                                                , liftEither
+                                                , lift
                                                 )
 import           Data.Morpheus.Types.Internal.Value
                                                 ( ScalarValue(..) )

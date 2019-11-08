@@ -48,7 +48,6 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , constRes
                                                 , IORes
                                                 , IOMutRes
-                                                , liftM
                                                 , liftEitherM
                                                 , IOSubRes
                                                 )
@@ -147,7 +146,7 @@ resolveNewUser _args = SubResolver { subChannels = [USER], subResolver }
 
 resolveNewAdress :: () -> IOSubRes APIEvent (Address (IORes APIEvent))
 resolveNewAdress _args = SubResolver { subChannels = [ADDRESS], subResolver }
-  where subResolver (Event _ content) = liftM (getDBAddress content)
+  where subResolver (Event _ content) = lift (getDBAddress content)
 
 -- Events ----------------------------------------------------------------
 addressUpdate :: APIEvent
@@ -172,7 +171,7 @@ getDBUser _ = do
   Person { name, email } <- dbPerson
   pure $ Right User { userName    = constRes name
                     , userEmail   = constRes email
-                    , userAddress = const $ liftM (getDBAddress (Content 12))
+                    , userAddress = const $ lift (getDBAddress (Content 12))
                     , userOffice  = constRes Nothing
                     , userHome    = constRes HH
                     , userEntity  = constRes Nothing
@@ -194,7 +193,7 @@ setDBUser = do
   Person { name, email } <- dbPerson
   pure User { userName    = constRes name
             , userEmail   = constRes email
-            , userAddress = const $ liftM setDBAddress
+            , userAddress = const $ lift setDBAddress
             , userOffice  = constRes Nothing
             , userHome    = constRes HH
             , userEntity  = constRes Nothing

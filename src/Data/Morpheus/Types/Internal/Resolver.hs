@@ -26,12 +26,11 @@ module Data.Morpheus.Types.Internal.Resolver
   , toResponseRes
   , withObject
   , Resolving(..)
-  , liftM
-  , liftEitherM
+  , lift
   )
 where
 
-import           Control.Monad.Trans.Class      ( MonadTrans )
+import           Control.Monad.Trans.Class      ( MonadTrans(..) )
 import           Control.Monad.Fail             ( MonadFail(..) )
 import           Control.Monad.Trans.Except     ( ExceptT(..)
                                                 , runExceptT
@@ -89,15 +88,12 @@ withObject f (_, Selection { selectionRec = SelectionSet selection }) =
 withObject _ (key, Selection { selectionPosition }) =
   Fail $ subfieldsNotSelected key "" selectionPosition
 
-liftM :: (PureOperation o, Monad m) => m a -> Resolver o e m a
-liftM = liftEither . fmap pure
-
 instance MonadTrans (Resolver QUERY e) where
+  lift = liftEither . fmap pure
 
+instance MonadTrans (Resolver MUTATION e) where
+  lift = liftEither . fmap pure
 
-liftEitherM
-  :: (PureOperation o, Monad m) => m (Either String a) -> Resolver o e m a
-liftEitherM = liftEither
 ----------------------------------------------------------------------------------------
 type ResolveT = ExceptT GQLErrors
 type ResponseT m e = ResolveT (ResponseStream e m)
