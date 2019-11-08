@@ -50,6 +50,7 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , IOMutRes
                                                 , liftM
                                                 , liftEitherM
+                                                , IOSubRes
                                                 )
 
 
@@ -106,37 +107,47 @@ gqlRoot = GQLRootResolver { queryResolver
                           }
  where
   queryResolver = Query
-    { queryUser     = const $ liftEitherM (getDBUser (Content 2))
-    , queryAnimal   = \QueryAnimalArgs { queryAnimalArgsAnimal } ->
-                        pure (pack $ show queryAnimalArgsAnimal)
+    { queryUser     = resolveUser
+    , queryAnimal   = resolveAnimal
     , querySet      = constRes $ S.fromList [1, 2]
     , querySomeMap  = constRes $ M.fromList [("robin", 1), ("carl", 2)]
     , queryWrapped1 = constRes $ A (0, "some value")
     , queryWrapped2 = constRes $ A ""
     }
   -------------------------------------------------------------
-  mutationResolver = Mutation { mutationCreateUser, mutationCreateAddress }
-   where
-    mutationCreateUser _args =
-      MutResolver { mutEvents = [userUpdate], mutResolver = lift setDBUser }
-    -------------------------
-    mutationCreateAddress _args = MutResolver { mutEvents   = [addressUpdate]
-                                              , mutResolver = lift setDBAddress
-                                              }
-  ----------------------------------------------------------------
-  subscriptionResolver = Subscription { subscriptionNewAddress
-                                      , subscriptionNewUser
-                                      }
-   where
-    subscriptionNewUser _args = SubResolver { subChannels = [USER]
-                                            , subResolver
-                                            }
-      where subResolver (Event _ content) = liftEitherM (getDBUser content)
-    subscriptionNewAddress _args = SubResolver { subChannels = [ADDRESS]
-                                               , subResolver
-                                               }
-      where subResolver (Event _ content) = liftM (getDBAddress content)
+  mutationResolver = Mutation { mutationCreateUser    = resolveCreateUser
+                              , mutationCreateAddress = resolveCreateAdress
+                              }
+  subscriptionResolver = Subscription
+    { subscriptionNewUser    = resolveNewUser
+    , subscriptionNewAddress = resolveNewAdress
+    }
 
+-- Resolve QUERY
+resolveUser :: () -> IORes APIEvent (User (IORes APIEvent))
+resolveUser _args = liftEitherM (getDBUser (Content 2))
+
+resolveAnimal :: QueryAnimalArgs -> IORes APIEvent Text
+resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
+  pure (pack $ show queryAnimalArgsAnimal)
+
+-- Resolve MUTATION 
+resolveCreateUser :: () -> IOMutRes APIEvent (User (IOMutRes APIEvent))
+resolveCreateUser _args =
+  MutResolver { mutEvents = [userUpdate], mutResolver = lift setDBUser }
+
+resolveCreateAdress :: () -> IOMutRes APIEvent (Address (IOMutRes APIEvent))
+resolveCreateAdress _args =
+  MutResolver { mutEvents = [addressUpdate], mutResolver = lift setDBAddress }
+
+-- Resolve SUBSCRIPTION
+resolveNewUser :: () -> IOSubRes APIEvent (User (IORes APIEvent))
+resolveNewUser _args = SubResolver { subChannels = [USER], subResolver }
+  where subResolver (Event _ content) = liftEitherM (getDBUser content)
+
+resolveNewAdress :: () -> IOSubRes APIEvent (Address (IORes APIEvent))
+resolveNewAdress _args = SubResolver { subChannels = [ADDRESS], subResolver }
+  where subResolver (Event _ content) = liftM (getDBAddress content)
 
 -- Events ----------------------------------------------------------------
 addressUpdate :: APIEvent
@@ -147,33 +158,59 @@ userUpdate = Event [USER] (Content { contentID = 12 })
 
 -- DB::Getter --------------------------------------------------------------------
 getDBAddress :: Content -> IO (Address (IORes APIEvent))
-getDBAddress _id = pure Address { addressCity        = constRes ""
-                                , addressStreet      = constRes ""
-                                , addressHouseNumber = constRes 0
-                                }
+getDBAddress _id = do
+  city   <- dbText
+  street <- dbText
+  number <- dbInt
+  pure Address { addressCity        = constRes city
+               , addressStreet      = constRes street
+               , addressHouseNumber = constRes number
+               }
 
 getDBUser :: Content -> IO (Either String (User (Resolver QUERY IO APIEvent)))
-getDBUser _ = pure $ Right User
-  { userName    = constRes "George"
-  , userEmail   = constRes "George@email.com"
-  , userAddress = const $ liftM (getDBAddress (Content 12))
-  , userOffice  = constRes Nothing
-  , userHome    = constRes HH
-  , userEntity  = constRes Nothing
-  }
+getDBUser _ = do
+  Person { name, email } <- dbPerson
+  pure $ Right User { userName    = constRes name
+                    , userEmail   = constRes email
+                    , userAddress = const $ liftM (getDBAddress (Content 12))
+                    , userOffice  = constRes Nothing
+                    , userHome    = constRes HH
+                    , userEntity  = constRes Nothing
+                    }
 
 -- DB::Setter --------------------------------------------------------------------
 setDBAddress :: IO (Address (IOMutRes APIEvent))
-setDBAddress = pure Address { addressCity        = constRes ""
-                            , addressStreet      = constRes ""
-                            , addressHouseNumber = constRes 0
-                            }
+setDBAddress = do
+  city        <- dbText
+  street      <- dbText
+  houseNumber <- dbInt
+  pure Address { addressCity        = constRes city
+               , addressStreet      = constRes street
+               , addressHouseNumber = constRes houseNumber
+               }
 
 setDBUser :: IO (User (IOMutRes APIEvent))
-setDBUser = pure User { userName    = constRes "George"
-                      , userEmail   = constRes "George@email.com"
-                      , userAddress = const $ liftM setDBAddress
-                      , userOffice  = constRes Nothing
-                      , userHome    = constRes HH
-                      , userEntity  = constRes Nothing
-                      }
+setDBUser = do
+  Person { name, email } <- dbPerson
+  pure User { userName    = constRes name
+            , userEmail   = constRes email
+            , userAddress = const $ liftM setDBAddress
+            , userOffice  = constRes Nothing
+            , userHome    = constRes HH
+            , userEntity  = constRes Nothing
+            }
+
+-- DB ----------------------
+data Person = Person {
+  name :: Text,
+  email :: Text
+}
+
+dbText :: IO Text
+dbText = pure "Updated Text"
+
+dbInt :: IO Int
+dbInt = pure 11
+
+dbPerson :: IO Person
+dbPerson = pure Person { name = "George", email = "George@email.com" }
