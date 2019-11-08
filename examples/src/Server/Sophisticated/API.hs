@@ -91,22 +91,13 @@ newtype A a = A
   { wrappedA :: a
   } deriving (Generic)
 
-data Channel
-  = UPDATE_USER
-  | UPDATE_ADDRESS
+
+data Channel = USER | ADDRESS
   deriving (Show, Eq, Ord)
 
-type DB_ID = Int
-
-data Content = Update
-  { contentID      :: DB_ID
-  , contentMessage :: Text
-  }
+newtype Content = Content { contentID :: Int  }
 
 type APIEvent = (Event Channel Content)
-
-
-
 
 gqlRoot :: GQLRootResolver IO APIEvent Query Mutation Subscription
 gqlRoot = GQLRootResolver { queryResolver
@@ -115,7 +106,7 @@ gqlRoot = GQLRootResolver { queryResolver
                           }
  where
   queryResolver = Query
-    { queryUser     = const $ liftEitherM getDBUser
+    { queryUser     = const $ liftEitherM (getDBUser (ContentID 2))
     , queryAnimal   = \QueryAnimalArgs { queryAnimalArgsAnimal } ->
                         pure (pack $ show queryAnimalArgsAnimal)
     , querySet      = constRes $ S.fromList [1, 2]
@@ -137,45 +128,37 @@ gqlRoot = GQLRootResolver { queryResolver
                                       , subscriptionNewUser
                                       }
    where
-    subscriptionNewUser _ = SubResolver [UPDATE_USER] subResolver
-      where subResolver (Event _ Update{}) = resolveUser
-    subscriptionNewAddress _ = SubResolver [UPDATE_ADDRESS] subResolver
-     where
-      subResolver (Event _ Update { contentID }) =
-        liftM (getDBAddress contentID)
+    subscriptionNewUser _ = SubResolver { subChannels = [USER], subResolver }
+      where subResolver (Event _ content) = liftEitherM (getDBUser content)
+    subscriptionNewAddress _ = SubResolver { subChannels = [ADDRESS]
+                                           , subResolver
+                                           }
+      where subResolver (Event _ content) = liftM (getDBAddress content)
 
-
--- Resolvers ----------------------------------------------------------------
-resolveUser :: Resolver QUERY IO APIEvent (User (Resolver QUERY IO APIEvent))
-resolveUser = liftEitherM getDBUser
 
 -- Events ----------------------------------------------------------------
 addressUpdate :: APIEvent
-addressUpdate = Event
-  [UPDATE_ADDRESS]
-  (Update { contentID = 10, contentMessage = "message for address" })
+addressUpdate = Event [ADDRESS] (Content { contentID = 10 })
 
 userUpdate :: APIEvent
-userUpdate = Event
-  [UPDATE_USER]
-  (Update { contentID = 12, contentMessage = "some message for user" })
+userUpdate = Event [USER] (Content { contentID = 12 })
 
 -- DB::Getter --------------------------------------------------------------------
-getDBAddress :: DB_ID -> IO (Address (IORes APIEvent))
+getDBAddress :: ContentID -> IO (Address (IORes APIEvent))
 getDBAddress _unusedID = pure Address { addressCity        = constRes ""
                                       , addressStreet      = constRes ""
                                       , addressHouseNumber = constRes 0
                                       }
 
-getDBUser :: IO (Either String (User (Resolver QUERY IO APIEvent)))
-getDBUser = pure $ Right User { userName    = constRes "George"
-                              , userEmail   = constRes "George@email.com"
-                              , userAddress = const $ liftM (getDBAddress 12)
-                              , userOffice  = constRes Nothing
-                              , userHome    = constRes HH
-                              , userEntity  = constRes Nothing
-                              }
-
+getDBUser :: ContentID -> IO (Either String (User (Resolver QUERY IO APIEvent)))
+getDBUser _ = pure $ Right User
+  { userName    = constRes "George"
+  , userEmail   = constRes "George@email.com"
+  , userAddress = const $ liftM (getDBAddress (ContentID 12))
+  , userOffice  = constRes Nothing
+  , userHome    = constRes HH
+  , userEntity  = constRes Nothing
+  }
 
 -- DB::Setter --------------------------------------------------------------------
 setDBAddress :: IO (Address (IOMutRes APIEvent))
