@@ -90,7 +90,6 @@ newtype A a = A
   { wrappedA :: a
   } deriving (Generic)
 
-
 data Channel = USER | ADDRESS
   deriving (Show, Eq, Ord)
 
