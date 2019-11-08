@@ -42,13 +42,12 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , GQLScalar(..)
                                                 , GQLType(..)
                                                 , ID
-                                                , QUERY
                                                 , Resolver(..)
                                                 , ScalarValue(..)
                                                 , constRes
                                                 , IORes
                                                 , IOMutRes
-                                                , liftEitherM
+                                                , liftEither
                                                 , IOSubRes
                                                 )
 
@@ -124,7 +123,7 @@ gqlRoot = GQLRootResolver { queryResolver
 
 -- Resolve QUERY
 resolveUser :: () -> IORes APIEvent (User (IORes APIEvent))
-resolveUser _args = liftEitherM (getDBUser (Content 2))
+resolveUser _args = liftEither (getDBUser (Content 2))
 
 resolveAnimal :: QueryAnimalArgs -> IORes APIEvent Text
 resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
@@ -142,7 +141,7 @@ resolveCreateAdress _args =
 -- Resolve SUBSCRIPTION
 resolveNewUser :: () -> IOSubRes APIEvent (User (IORes APIEvent))
 resolveNewUser _args = SubResolver { subChannels = [USER], subResolver }
-  where subResolver (Event _ content) = liftEitherM (getDBUser content)
+  where subResolver (Event _ content) = liftEither (getDBUser content)
 
 resolveNewAdress :: () -> IOSubRes APIEvent (Address (IORes APIEvent))
 resolveNewAdress _args = SubResolver { subChannels = [ADDRESS], subResolver }
