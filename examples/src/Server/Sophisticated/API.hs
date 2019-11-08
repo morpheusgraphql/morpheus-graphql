@@ -167,7 +167,7 @@ getDBAddress _id = do
                , addressHouseNumber = constRes number
                }
 
-getDBUser :: Content -> IO (Either String (User (Resolver QUERY IO APIEvent)))
+getDBUser :: Content -> IO (Either String (User (IORes APIEvent)))
 getDBUser _ = do
   Person { name, email } <- dbPerson
   pure $ Right User { userName    = constRes name
