@@ -51,7 +51,7 @@ data Channel =
 
 type EVENT = Event Channel ()
 
-importGQLDocument "test/Feature/Holistic/api.gql"
+importGQLDocument "test/Feature/Holistic/schema.gql"
 
 rootResolver :: GQLRootResolver IO EVENT Query Mutation Subscription
 rootResolver = GQLRootResolver
