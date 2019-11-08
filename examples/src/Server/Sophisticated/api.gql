@@ -22,9 +22,9 @@ enum CityID @enumDir {
   temporary multiline Test for Enum field descripions
   """
   Paris
-  BLN @testDirective(testName: "")
+  BLN @deprecated(reason: "just for test")
   "temporary singleline Test for Enum field descripions"
-  HH @enumFieldDir
+  HH @deprecated(reason: "just for test")
 }
 
 input Coordinates {
