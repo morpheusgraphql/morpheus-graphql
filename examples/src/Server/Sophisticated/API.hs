@@ -18,6 +18,7 @@ module Server.Sophisticated.API
 where
 
 import           Data.Map                       ( Map )
+import           Control.Monad.Trans            ( lift )
 import qualified Data.Map                      as M
                                                 ( fromList )
 import           Data.Set                       ( Set )
@@ -48,6 +49,7 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , IORes
                                                 , IOMutRes
                                                 , liftM
+                                                , liftEitherM
                                                 )
 
 
@@ -113,7 +115,7 @@ gqlRoot = GQLRootResolver { queryResolver
                           }
  where
   queryResolver = Query
-    { queryUser     = const fetchUser
+    { queryUser     = const $ liftEitherM getDBUser
     , queryAnimal   = \QueryAnimalArgs { queryAnimalArgsAnimal } ->
                         pure (pack $ show queryAnimalArgsAnimal)
     , querySet      = constRes $ S.fromList [1, 2]
@@ -124,65 +126,69 @@ gqlRoot = GQLRootResolver { queryResolver
   -------------------------------------------------------------
   mutationResolver = Mutation { mutationCreateUser, mutationCreateAddress }
    where
-    mutationCreateUser _ = MutResolver
-      [ Event
-          [UPDATE_USER]
-          (Update { contentID = 12, contentMessage = "some message for user" })
-      ]
-      (pure User { userName    = constRes "George"
-                 , userEmail   = constRes "George@email.com"
-                 , userAddress = const $ liftM setDBAddress
-                 , userOffice  = constRes Nothing
-                 , userHome    = constRes HH
-                 , userEntity  = constRes Nothing
-                 }
-      )
+    mutationCreateUser _ =
+      MutResolver { mutEvents = [userUpdate], mutResolver = lift setDBUser }
     -------------------------
-    mutationCreateAddress _ = MutResolver
-      [ Event
-          [UPDATE_ADDRESS]
-          (Update { contentID = 10, contentMessage = "message for address" })
-      ]
-      (pure mutationAddress)
+    mutationCreateAddress _ = MutResolver { mutEvents   = [addressUpdate]
+                                          , mutResolver = lift setDBAddress
+                                          }
   ----------------------------------------------------------------
   subscriptionResolver = Subscription { subscriptionNewAddress
                                       , subscriptionNewUser
                                       }
    where
-    subscriptionNewUser () = SubResolver [UPDATE_USER] subResolver
-      where subResolver (Event _ Update{}) = fetchUser
-    subscriptionNewAddress () = SubResolver [UPDATE_ADDRESS] subResolver
+    subscriptionNewUser _ = SubResolver [UPDATE_USER] subResolver
+      where subResolver (Event _ Update{}) = resolveUser
+    subscriptionNewAddress _ = SubResolver [UPDATE_ADDRESS] subResolver
      where
       subResolver (Event _ Update { contentID }) =
         liftM (getDBAddress contentID)
-  ----------------------------------------------------------------------------------------------
-  fetchUser
-    :: Resolver
-         QUERY
-         IO
-         (Event Channel Content)
-         (User (Resolver QUERY IO (Event Channel Content)))
-  fetchUser = pure User { userName    = constRes "George"
-                        , userEmail   = constRes "George@email.com"
-                        , userAddress = const $ liftM $ getDBAddress 12
-                        , userOffice  = constRes Nothing
-                        , userHome    = constRes HH
-                        , userEntity  = constRes Nothing
-                        }
-  mutationAddress = Address { addressCity        = constRes ""
-                            , addressStreet      = constRes ""
-                            , addressHouseNumber = constRes 0
-                            }
 
--- DB --------------------------------------------------------------------
+
+-- Resolvers ----------------------------------------------------------------
+resolveUser :: Resolver QUERY IO APIEvent (User (Resolver QUERY IO APIEvent))
+resolveUser = liftEitherM getDBUser
+
+-- Events ----------------------------------------------------------------
+addressUpdate :: APIEvent
+addressUpdate = Event
+  [UPDATE_ADDRESS]
+  (Update { contentID = 10, contentMessage = "message for address" })
+
+userUpdate :: APIEvent
+userUpdate = Event
+  [UPDATE_USER]
+  (Update { contentID = 12, contentMessage = "some message for user" })
+
+-- DB::Getter --------------------------------------------------------------------
 getDBAddress :: DB_ID -> IO (Address (IORes APIEvent))
 getDBAddress _unusedID = pure Address { addressCity        = constRes ""
                                       , addressStreet      = constRes ""
                                       , addressHouseNumber = constRes 0
                                       }
 
+getDBUser :: IO (Either String (User (Resolver QUERY IO APIEvent)))
+getDBUser = pure $ Right User { userName    = constRes "George"
+                              , userEmail   = constRes "George@email.com"
+                              , userAddress = const $ liftM (getDBAddress 12)
+                              , userOffice  = constRes Nothing
+                              , userHome    = constRes HH
+                              , userEntity  = constRes Nothing
+                              }
+
+
+-- DB::Setter --------------------------------------------------------------------
 setDBAddress :: IO (Address (IOMutRes APIEvent))
 setDBAddress = pure Address { addressCity        = constRes ""
                             , addressStreet      = constRes ""
                             , addressHouseNumber = constRes 0
                             }
+
+setDBUser :: IO (User (IOMutRes APIEvent))
+setDBUser = pure User { userName    = constRes "George"
+                      , userEmail   = constRes "George@email.com"
+                      , userAddress = const $ liftM setDBAddress
+                      , userOffice  = constRes Nothing
+                      , userHome    = constRes HH
+                      , userEntity  = constRes Nothing
+                      }
