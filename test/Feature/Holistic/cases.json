@@ -198,5 +198,21 @@
   {
     "path": "parsing/directive/notOnVariable",
     "description": "fail when: directive is used in Variable Definition"
+  },
+  {
+    "path": "introspection/description/object",
+    "description": "check object descriptions, type, field, args"
+  },
+  {
+    "path": "introspection/description/inputObject",
+    "description": "check inputObject descriptions, type, field"
+  },
+  {
+    "path": "introspection/description/union",
+    "description": "check union descriptions, type"
+  },
+  {
+    "path": "introspection/description/enum",
+    "description": "check enum descriptions, type, enumValue"
   }
 ]

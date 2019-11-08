@@ -1,0 +1,13 @@
+{
+  __type(name: "Address") {
+    description
+    fields {
+      name
+      description
+      args {
+        name
+        description
+      }
+    }
+  }
+}

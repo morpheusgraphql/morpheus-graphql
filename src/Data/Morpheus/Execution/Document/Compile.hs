@@ -1,5 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
-
 module Data.Morpheus.Execution.Document.Compile
   ( compileDocument
   , gqlDocument

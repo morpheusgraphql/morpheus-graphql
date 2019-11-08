@@ -1,6 +1,17 @@
+"""
+type Description: TestEnum
+
+some random enums for test
+"""
 enum TestEnum {
+  """
+  enumValue Description: EnumA
+  """
   EnumA
   EnumB
+  """
+  enumValue Description: EnumC
+  """
   EnumC
 }
 
@@ -13,24 +24,65 @@ input TestInputObject {
   fieldNestedInputObject: [NestedInputObject]!
 }
 
+"""
+type Description: Coordinates
+
+some random text
+"""
 input Coordinates {
+  """
+  inputValue Description: latitude
+  """
   latitude: TestScalar!
+  """
+  inputValue Description: longitude
+  some random inputValue details
+  """
   longitude: Int!
 }
 
+"""
+type Description:
+
+  Address
+"""
 type Address {
+  """
+  field Description: city
+  """
   city: String!
   street(
+    """
+    argument Description: inputObject
+    """
     argInputObject: TestInputObject!
     argMaybeString: String
   ): [[[[String!]!]!]]
   houseNumber: Int!
 }
 
+"""
+type Description: TestUnion
+
+some random text for union type
+"""
 union TestUnion = User | Address
 
+"""
+User
+
+MultilineDescription
+
+Test
+"""
 type User {
+  """
+  field description: name
+  """
   name: String!
+  """
+  field description: email
+  """
   email: String!
   address(coordinates: Coordinates!, comment: String): Address!
   office(zipCode: [Int!], cityID: TestEnum!): Address!

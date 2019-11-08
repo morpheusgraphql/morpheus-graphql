@@ -4,32 +4,44 @@
 {-# LANGUAGE TemplateHaskell   #-}
 
 module Data.Morpheus.Execution.Document.Introspect
-  ( deriveObjectRep
+  ( deriveObjectRep , instanceIntrospect
   ) where
 
+import Data.Maybe(maybeToList)
 import           Data.Proxy                                (Proxy (..))
 import           Data.Text                                 (unpack)
 import           Data.Typeable                             (Typeable)
-import           Language.Haskell.TH
+import           Language.Haskell.TH  
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
-import           Data.Morpheus.Types.Internal.Data         (ArgsType (..), DataField (..), DataTypeKind, TypeAlias (..))
+import           Data.Morpheus.Types.Internal.Data         (ArgsType (..),Key, DataType(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
 import           Data.Morpheus.Types.Internal.DataD        (ConsD (..), TypeD (..))
-import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceHeadMultiT, typeT)
+import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
+
+
+instanceIntrospect :: (Key,DataType) -> Q [Dec]
+-- FIXME: dirty fix for introspection
+instanceIntrospect ("__DirectiveLocation",_) = pure []
+instanceIntrospect ("__TypeKind",_) = pure []
+instanceIntrospect (name, DataEnum enumType) =
+  pure <$> instanceD (cxt []) iHead [defineIntrospect]
+  where
+    -----------------------------------------------
+    iHead = instanceHeadT ''Introspect  (unpack name) []
+    defineIntrospect = instanceProxyFunD ('introspect,body)
+      where
+        body =[| insertType (name, DataEnum enumType) |]
+instanceIntrospect _ = pure []
 
 -- [((Text, DataField), TypeUpdater)]
 deriveObjectRep :: (TypeD, Maybe DataTypeKind) -> Q [Dec]
 deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
-  pure <$> instanceWithOverlapD overlapping (cxt constrains) iHead methods
+  pure <$> instanceD (cxt constrains) iHead methods
   where
-    overlapping = Just Overlapping
-    typeArgs =
-      case tKind of
-        Just typeKind -> tyConArgs typeKind
-        Nothing       -> []
+    typeArgs = concatMap tyConArgs (maybeToList tKind)
     constrains = map conTypeable typeArgs
       where
         conTypeable name = typeT ''Typeable [name]
@@ -61,14 +73,14 @@ proxyT TypeAlias {aliasTyCon, aliasArgs} = [|(Proxy :: Proxy $(genSig aliasArgs)
 buildFields :: [DataField] -> ExpQ
 buildFields = listE . map buildField
   where
-    buildField DataField {fieldName, fieldArgs, fieldType = alias@TypeAlias {aliasArgs, aliasWrappers}} =
+    buildField DataField {fieldName, fieldArgs, fieldType = alias@TypeAlias {aliasArgs, aliasWrappers}, fieldMeta} =
       [|( fName
         , DataField
             { fieldName = fName
             , fieldArgs = fArgs
             , fieldArgsType = Nothing
             , fieldType = TypeAlias {aliasTyCon = __typeName $(proxyT alias), aliasArgs = aArgs, aliasWrappers}
-            , fieldHidden = False
+            , fieldMeta
             })|]
       where
         fName = unpack fieldName

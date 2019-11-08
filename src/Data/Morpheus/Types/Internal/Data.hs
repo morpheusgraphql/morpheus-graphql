@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE DeriveLift            #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
@@ -8,8 +7,6 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeSynonymInstances  #-}
 
 module Data.Morpheus.Types.Internal.Data
   ( Key
@@ -29,9 +26,10 @@ module Data.Morpheus.Types.Internal.Data
   , DataFingerprint(..)
   , RawDataType(..)
   , ResolverKind(..)
-  , WrapperD(..)
+  , TypeWrapper(..)
   , TypeAlias(..)
   , ArgsType(..)
+  , DataEnumValue(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -79,22 +77,32 @@ module Data.Morpheus.Types.Internal.Data
   , createUnionType
   , createAlias
   , createInputUnionFields
+  , fieldVisibility
+  , Meta(..)
+  , Directive(..)
+  , createEnumValue
+  , fromDataType 
+  , insertType
+  , TypeUpdater
   ) where
 
 import           Data.HashMap.Lazy                       (HashMap, empty, fromList, insert, toList, union)
 import qualified Data.HashMap.Lazy                       as HM (lookup)
 import           Data.Semigroup                          ((<>))
-import qualified Data.Text                               as T (pack, unpack)
-import           GHC.Fingerprint.Type                    (Fingerprint)
-import           Language.Haskell.TH.Syntax              (Lift (..))
+import           Language.Haskell.TH.Syntax              (Lift)
+import           Instances.TH.Lift                        ()
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal            (internalError)
 import           Data.Morpheus.Error.Selection           (cannotQueryField, hasNoSubfields)
 import           Data.Morpheus.Types.Internal.Base       (Key, Position)
-import           Data.Morpheus.Types.Internal.TH         (apply, liftText, liftTextMap)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
 import           Data.Morpheus.Types.Internal.Value      (Value (..))
+import           Data.Morpheus.Execution.Internal.GraphScanner
+                                                ( LibUpdater
+                                                , resolveUpdates
+                                                )
+import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
 type GenError error a = error -> Either error a
 
@@ -158,42 +166,41 @@ data ResolverKind
   | ExternalResolver
   deriving (Show, Eq, Lift)
 
-data WrapperD
-  = ListD
-  | MaybeD
+data TypeWrapper
+  = TypeList
+  | TypeMaybe
   deriving (Show, Lift)
 
 isFieldNullable :: DataField -> Bool
 isFieldNullable = isNullable . aliasWrappers . fieldType
 
-isNullable :: [WrapperD] -> Bool
-isNullable (MaybeD:_) = True
-isNullable _          = False
+isNullable :: [TypeWrapper] -> Bool
+isNullable (TypeMaybe:_) = True
+isNullable _             = False
 
-isWeaker :: [WrapperD] -> [WrapperD] -> Bool
-isWeaker (MaybeD:xs1) (MaybeD:xs2) = isWeaker xs1 xs2
-isWeaker (MaybeD:_) _              = True
-isWeaker (_:xs1) (_:xs2)           = isWeaker xs1 xs2
-isWeaker _ _                       = False
+isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
+isWeaker (TypeMaybe:xs1) (TypeMaybe:xs2) = isWeaker xs1 xs2
+isWeaker (TypeMaybe:_) _                 = True
+isWeaker (_:xs1) (_:xs2)                 = isWeaker xs1 xs2
+isWeaker _ _                             = False
 
-toGQLWrapper :: [WrapperD] -> [DataTypeWrapper]
-toGQLWrapper (MaybeD:(MaybeD:tw)) = toGQLWrapper (MaybeD : tw)
-toGQLWrapper (MaybeD:(ListD:tw))  = ListType : toGQLWrapper tw
-toGQLWrapper (ListD:tw)           = [NonNullType, ListType] <> toGQLWrapper tw
-toGQLWrapper [MaybeD]             = []
-toGQLWrapper []                   = [NonNullType]
+toGQLWrapper :: [TypeWrapper] -> [DataTypeWrapper]
+toGQLWrapper (TypeMaybe:(TypeMaybe:tw)) = toGQLWrapper (TypeMaybe : tw)
+toGQLWrapper (TypeMaybe:(TypeList:tw))  = ListType : toGQLWrapper tw
+toGQLWrapper (TypeList:tw)              = [NonNullType, ListType] <> toGQLWrapper tw
+toGQLWrapper [TypeMaybe]                = []
+toGQLWrapper []                         = [NonNullType]
 
-toHSWrappers :: [DataTypeWrapper] -> [WrapperD]
+toHSWrappers :: [DataTypeWrapper] -> [TypeWrapper]
 toHSWrappers (NonNullType:(NonNullType:xs)) = toHSWrappers (NonNullType : xs)
-toHSWrappers (NonNullType:(ListType:xs))    = ListD : toHSWrappers xs
-toHSWrappers (ListType:xs)                  = [MaybeD, ListD] <> toHSWrappers xs
-toHSWrappers []                             = [MaybeD]
+toHSWrappers (NonNullType:(ListType:xs))    = TypeList : toHSWrappers xs
+toHSWrappers (ListType:xs)                  = [TypeMaybe, TypeList] <> toHSWrappers xs
+toHSWrappers []                             = [TypeMaybe]
 toHSWrappers [NonNullType]                  = []
 
-data DataFingerprint
-  = SystemFingerprint Key
-  | TypeableFingerprint [Fingerprint]
-  deriving (Show, Eq, Ord)
+data DataFingerprint = SystemFingerprint Key | TypeableFingerprint [String]
+  deriving (Show, Eq, Ord, Lift)
+
 
 newtype DataValidator = DataValidator
   { validateValue :: Value -> Either Key Value
@@ -204,7 +211,7 @@ instance Show DataValidator where
 
 type DataScalar = DataTyCon DataValidator
 
-type DataEnum = DataTyCon [Key]
+type DataEnum = DataTyCon [DataEnumValue]
 
 type DataObject = DataTyCon [(Key, DataField)]
 
@@ -222,51 +229,57 @@ data DataTypeWrapper
 data TypeAlias = TypeAlias
   { aliasTyCon    :: Key
   , aliasArgs     :: Maybe Key
-  , aliasWrappers :: [WrapperD]
-  } deriving (Show)
-
-instance Lift TypeAlias where
-  lift TypeAlias {aliasTyCon = x, aliasArgs, aliasWrappers} =
-    [|TypeAlias {aliasTyCon = name, aliasArgs = T.pack <$> args, aliasWrappers}|]
-    where
-      name = T.unpack x
-      args = T.unpack <$> aliasArgs
+  , aliasWrappers :: [TypeWrapper]
+  } deriving (Show,Lift)
 
 data ArgsType = ArgsType
   { argsTypeName :: Key
   , resKind      :: ResolverKind
-  } deriving (Show)
+  } deriving (Show,Lift)
 
-instance Lift ArgsType where
-  lift (ArgsType argT kind) = apply 'ArgsType [liftText argT, lift kind]
+data Directive = Directive {
+  directiveName :: Name,
+  directiveArgs :: [(Name,Value)]
+} deriving (Show,Lift)
 
---
--- Data FIELD
+-- META
+data Meta = Meta {
+    metaDescription:: Maybe Description,
+    metaDirectives  :: [Directive]
+} deriving (Show,Lift)
+
+-- ENUM VALUE
+data DataEnumValue = DataEnumValue{
+    enumName :: Name,
+    enumMeta :: Maybe Meta
+} deriving (Show, Lift)
+
 --------------------------------------------------------------------------------------------------
 data DataField = DataField
   { fieldName     :: Key
   , fieldArgs     :: [(Key, DataArgument)]
   , fieldArgsType :: Maybe ArgsType
   , fieldType     :: TypeAlias
-  , fieldHidden   :: Bool
-  } deriving (Show)
+  , fieldMeta     :: Maybe Meta
+  } deriving (Show,Lift)
 
-instance Lift DataField where
-  lift (DataField name args argsT ft hid) =
-    apply 'DataField [liftText name, liftTextMap args, lift argsT, lift ft, lift hid]
+fieldVisibility :: (Key,DataField) -> Bool
+fieldVisibility ("__typename",_) = False
+fieldVisibility ("__schema",_)   = False
+fieldVisibility ("__type",_)     = False
+fieldVisibility _                = True
 
-
-createField :: DataArguments -> Key -> ([WrapperD], Key) -> DataField
+createField :: DataArguments -> Key -> ([TypeWrapper], Key) -> DataField
 createField fieldArgs fieldName (aliasWrappers, aliasTyCon) =
   DataField
     { fieldArgs
     , fieldArgsType = Nothing
     , fieldName
     , fieldType = TypeAlias {aliasTyCon, aliasWrappers, aliasArgs = Nothing}
-    , fieldHidden = False
+    , fieldMeta = Nothing
     }
 
-createArgument :: Key -> ([WrapperD], Key) -> (Key, DataField)
+createArgument :: Key -> ([TypeWrapper], Key) -> (Key, DataField)
 createArgument fieldName x = (fieldName, createField [] fieldName x)
 
 
@@ -275,12 +288,12 @@ toNullableField dataField
   | isNullable (aliasWrappers $ fieldType dataField) = dataField
   | otherwise = dataField {fieldType = nullable (fieldType dataField)}
   where
-    nullable alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = MaybeD : aliasWrappers}
+    nullable alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = TypeMaybe : aliasWrappers}
 
 toListField :: DataField -> DataField
 toListField dataField = dataField {fieldType = listW (fieldType dataField)}
   where
-    listW alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = ListD : aliasWrappers}
+    listW alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = TypeList : aliasWrappers}
 
 lookupField :: Key -> [(Key, field)] -> GenError error field
 lookupField key fields gqlError =
@@ -299,9 +312,10 @@ lookupSelectionField position fieldName DataTyCon {typeData ,typeName } = lookup
 data DataTyCon a = DataTyCon
   { typeName        :: Key
   , typeFingerprint :: DataFingerprint
-  , typeDescription :: Maybe Key
+  , typeMeta :: Maybe Meta
   , typeData        :: a
-  } deriving (Show)
+  } deriving (Show, Lift)
+
 
 data RawDataType
   = FinalDataType DataType
@@ -324,13 +338,21 @@ data DataType
 
 createType :: Key -> a -> DataTyCon a
 createType typeName typeData =
-  DataTyCon {typeName, typeDescription = Nothing, typeFingerprint = SystemFingerprint "", typeData}
+  DataTyCon {typeName, typeMeta = Nothing, typeFingerprint = SystemFingerprint "", typeData}
 
 createScalarType :: Key -> (Key, DataType)
 createScalarType typeName = (typeName, DataScalar $ createType typeName (DataValidator pure))
 
 createEnumType :: Key -> [Key] -> (Key, DataType)
-createEnumType typeName typeData = (typeName, DataEnum $ createType typeName typeData)
+createEnumType typeName typeData = (typeName, DataEnum $ createType typeName enumValues)
+  where 
+      enumValues = map createEnumValue typeData
+
+createEnumValue :: Key -> DataEnumValue 
+createEnumValue enumName = DataEnumValue {
+  enumName,
+  enumMeta = Nothing  
+}
 
 createUnionType :: Key -> [Key] -> (Key, DataType)
 createUnionType typeName typeData = (typeName, DataUnion $ createType typeName typeData)
@@ -444,16 +466,16 @@ isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name lib = fromDataType typeFingerprint <$> lookupDataType name lib
 
 defineType :: (Key, DataType) -> DataTypeLib -> DataTypeLib
-defineType (key, datatype@(DataInputUnion DataTyCon{ typeName ,typeData , typeFingerprint })) lib = lib {
+defineType (key, datatype@(DataInputUnion DataTyCon{ typeName ,typeData = enumKeys , typeFingerprint })) lib = lib {
    types = insert name unionTags (insert key datatype (types lib))
 }
   where
      name = typeName <> "Tags"
-     unionTags = DataEnum DataTyCon { 
+     unionTags = DataEnum DataTyCon {
           typeName = name
         , typeFingerprint
-        , typeDescription = Nothing
-        , typeData
+        , typeMeta = Nothing
+        , typeData = map createEnumValue enumKeys
   }
 defineType (key, datatype) lib = lib {
     types =  insert key datatype (types lib)
@@ -491,7 +513,7 @@ createInputUnionFields name members = fieldTag : map unionField members
           , fieldArgs = []
           , fieldArgsType = Nothing
           , fieldType = createAlias (name <> "Tags")
-          , fieldHidden = False
+          , fieldMeta = Nothing
           })
         unionField memberName = (
             memberName ,
@@ -501,13 +523,26 @@ createInputUnionFields name members = fieldTag : map unionField members
               , fieldName = memberName
               , fieldType = TypeAlias {
                     aliasTyCon = memberName,
-                    aliasWrappers = [MaybeD],
+                    aliasWrappers = [TypeMaybe],
                     aliasArgs = Nothing
                 }
-              , fieldHidden = False
+              , fieldMeta = Nothing
             }
           )
 
 createAlias :: Key -> TypeAlias
 createAlias aliasTyCon = TypeAlias {aliasTyCon, aliasWrappers = [], aliasArgs = Nothing}
+
+
+type TypeUpdater = LibUpdater DataTypeLib
+
+insertType :: (Key, DataType) -> TypeUpdater
+insertType nextType@(name, datatype) lib =
+  case isTypeDefined name lib of
+    Nothing -> resolveUpdates (defineType nextType lib) []
+    Just fingerprint
+      | fingerprint == fromDataType typeFingerprint datatype -> return lib
+      |
+        -- throw error if 2 different types has same name
+        otherwise -> Left $ nameCollisionError name
 

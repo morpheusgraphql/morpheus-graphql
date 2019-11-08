@@ -6,13 +6,14 @@
 module Server.Mythology.Character.Deity
   ( Deity(..)
   , dbDeity
-  ) where
+  )
+where
 
-import           Data.Morpheus.Kind     (OBJECT)
-import           Data.Morpheus.Types    (GQLType (..))
-import           Data.Text              (Text)
-import           GHC.Generics           (Generic)
-import           Server.Mythology.Place.Places (Realm (..))
+import           Data.Morpheus.Kind             ( OBJECT )
+import           Data.Morpheus.Types            ( GQLType(..) )
+import           Data.Text                      ( Text )
+import           GHC.Generics                   ( Generic )
+import           Server.Mythology.Place.Places  ( Realm(..) )
 
 data Deity = Deity
   { fullName :: Text -- Non-Nullable Field
@@ -25,4 +26,7 @@ instance GQLType Deity where
   description _ = Just "Custom Description for Client Defined User Type"
 
 dbDeity :: Text -> Maybe Text -> IO (Either String Deity)
-dbDeity _ _ = return $ Right $ Deity {fullName = "Morpheus", power = Just "Shapeshifting", realm = Dream}
+dbDeity _ _ = return $ Right $ Deity { fullName = "Morpheus"
+                                     , power    = Just "Shapeshifting"
+                                     , realm    = Dream
+                                     }

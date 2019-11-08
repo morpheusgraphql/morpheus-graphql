@@ -1,37 +1,48 @@
-{-# LANGUAGE DeriveLift #-}
-
 module Data.Morpheus.Types.Internal.DataD
   ( TypeD(..)
   , ConsD(..)
-  , QueryD(..)
+  , ClientQuery(..)
   , GQLTypeD(..)
-  ) where
+  , ClientType(..)
+  )
+where
 
-import           Language.Haskell.TH.Syntax        (Lift (..))
+import           Data.Morpheus.Types.Internal.Data
+                                                ( DataField
+                                                , DataTypeKind
+                                                , Meta
+                                                , DataType(..)
+                                                , Name
+                                                )
 
---
--- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data (DataField, DataTypeKind)
-
-data QueryD = QueryD
+-- CLIENT                                                
+data ClientQuery = ClientQuery
   { queryText     :: String
-  , queryTypes    :: [GQLTypeD]
+  , queryTypes    :: [ClientType]
   , queryArgsType :: Maybe TypeD
-  } deriving (Show, Lift)
+  } deriving (Show)
 
+data ClientType = ClientType {
+  clientType :: TypeD,
+  clientKind :: DataTypeKind
+} deriving (Show)
+
+-- Document
 data GQLTypeD = GQLTypeD
   { typeD     :: TypeD
   , typeKindD :: DataTypeKind
   , typeArgD  :: [TypeD]
-  } deriving (Show, Lift)
+  , typeOriginal:: (Name,DataType)
+  } deriving (Show)
 
 data TypeD = TypeD
   { tName      :: String
   , tNamespace :: [String]
   , tCons      :: [ConsD]
-  } deriving (Show, Lift)
+  , tMeta      :: Maybe Meta
+  } deriving (Show)
 
 data ConsD = ConsD
   { cName   :: String
   , cFields :: [DataField]
-  } deriving (Show, Lift)
+  } deriving (Show)

@@ -1,3 +1,28 @@
+## [0.6.3] -
+
+### Added
+
+- GraphQL SDL support fully supports descriptions: onTypes, fields , args ...
+  with (enums, inputObjects , union, object)
+  for example :
+  ```gql
+  """
+  Description for Type Address
+  """
+  type Address {
+    """
+    Description for Field city
+    """
+    city: String!
+    street(
+      """
+      Description argument id
+      """
+      id: ID!
+    ): Int!
+  }
+  ```
+
 ## [0.6.2] - 2.11.2019
 
 ## Added

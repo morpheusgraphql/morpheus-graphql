@@ -22,7 +22,7 @@ import           Data.Semigroup                    ((<>))
 import           Data.Text                         (Text, intercalate, toUpper)
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data (WrapperD (..))
+import           Data.Morpheus.Types.Internal.Data (TypeWrapper (..))
 
 indent :: Text
 indent = "  "
@@ -59,9 +59,9 @@ renderAssignment key value = key <> " :: " <> value
 renderExtension :: Text -> Text
 renderExtension name = "{-# LANGUAGE " <> name <> " #-}\n"
 
-renderWrapped :: [WrapperD] -> Text -> Text
-renderWrapped (ListD:xs)  = renderList . renderWrapped xs
-renderWrapped (MaybeD:xs) = renderMaybe . renderWrapped xs
+renderWrapped :: [TypeWrapper] -> Text -> Text
+renderWrapped (TypeList:xs)  = renderList . renderWrapped xs
+renderWrapped (TypeMaybe:xs) = renderMaybe . renderWrapped xs
 renderWrapped []          = strToText
 
 strToText :: Text -> Text

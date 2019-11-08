@@ -5,7 +5,7 @@ input Cat @testDir {
 }
 
 input Dog {
-  name: String! @testDirective(testName:"")
+  name: String! @testDirective(testName: "")
 }
 
 input Bird {
@@ -14,38 +14,38 @@ input Bird {
 
 # Main APi
 
+"""
+id of city
+"""
 enum CityID @enumDir {
   """
   temporary multiline Test for Enum field descripions
-
   """
   Paris
-  BLN @testDirective(testName:"")
+  BLN @testDirective(testName: "")
   "temporary singleline Test for Enum field descripions"
-  HH  @enumFieldDir
+  HH @enumFieldDir
 }
 
 input Coordinates {
-  latitude: Euro! @testDirective(testName:"")
+  latitude: Euro! @testDirective(testName: "")
   "temporary singleline Test for input object field descripions"
   longitude: [[[UniqueID!]!]]!
 }
 
 input UniqueID {
   """
-    temporary multiline Test for Enum field descripions
-
+  temporary multiline Test for Enum field descripions
   """
   type: String = "test default value"
   id: String!
 }
 
-type Address @typeDirective(id:1) {
+type Address @typeDirective(id: 1) {
   """
-    temporary multiline Test for Enum field descripions
-
+  temporary multiline Test for Enum field descripions
   """
-  city: String!  @deprecated(testName:"",testName2: 123)
+  city: String! @deprecated(testName: "", testName2: 123)
   street: String!
   "temporary singleline Test for input object field descripions"
   houseNumber: Int!
@@ -56,6 +56,10 @@ my custom description for user
 """
 type User {
   name: String!
+  """
+  some email adress
+  name@email.com
+  """
   email: String!
   address(
     """
@@ -63,10 +67,10 @@ type User {
     arguments
     descripions
     """
-    coordinates: Coordinates!  @argsDirective(id:1)  ,
+    coordinates: Coordinates! @argsDirective(id: 1)
     "temporary singleline Test for input object field descripions"
     comment: String = "test default value"
-    ): Address!
+  ): Address!
   home: CityID!
   office(zipCode: [[[ID!]]!], id: CityID!): Address
   entity: MyUnion
@@ -80,7 +84,7 @@ type Query {
   wrapped1(type: UniqueID): AIntText!
   wrapped2: AText!
   set: SetInt!
-  map: MapTextInt!
+  someMap: MapTextInt!
 }
 
 type Mutation {

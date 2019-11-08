@@ -1,0 +1,4 @@
+{
+  "languageServerHaskell.enableHIE": true,
+  "editor.formatOnSave": true
+}

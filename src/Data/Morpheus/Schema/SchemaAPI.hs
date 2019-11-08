@@ -47,11 +47,8 @@ initSchema lib =
       , s__SchemaDirectives = constRes []
       }
 
-hideFields :: (Text, DataField) -> (Text, DataField)
-hideFields (key', field) = (key', field {fieldHidden = True})
-
 hiddenRootFields :: [(Text, DataField)]
-hiddenRootFields = map hideFields $ fst $ objectFields (Proxy :: Proxy (CUSTOM (Root Maybe))) (Proxy @(Root Maybe))
+hiddenRootFields = fst $ objectFields (Proxy :: Proxy (CUSTOM (Root Maybe))) (Proxy @(Root Maybe))
 
 defaultTypes :: TypeUpdater
 defaultTypes =

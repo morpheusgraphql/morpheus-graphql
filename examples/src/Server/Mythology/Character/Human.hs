@@ -4,13 +4,14 @@
 
 module Server.Mythology.Character.Human
   ( Human(..)
-  ) where
+  )
+where
 
-import           Data.Morpheus.Kind     (OBJECT)
-import           Data.Morpheus.Types    (GQLType (..))
-import           Data.Text              (Text)
-import           GHC.Generics           (Generic)
-import           Server.Mythology.Place.Places (City (..))
+import           Data.Morpheus.Kind             ( OBJECT )
+import           Data.Morpheus.Types            ( GQLType(..) )
+import           Data.Text                      ( Text )
+import           GHC.Generics                   ( Generic )
+import           Server.Mythology.Place.Places  ( City(..) )
 
 data Human = Human
   { name :: Text

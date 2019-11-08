@@ -1,9 +1,13 @@
 module Files
   ( getJson
-  ) where
+  )
+where
 
-import           Data.Aeson           (FromJSON, eitherDecode)
-import qualified Data.ByteString.Lazy as L (readFile)
+import           Data.Aeson                     ( FromJSON
+                                                , eitherDecode
+                                                )
+import qualified Data.ByteString.Lazy          as L
+                                                ( readFile )
 
 jsonPath :: String -> String
 jsonPath name = "examples/db/" ++ name ++ ".json"

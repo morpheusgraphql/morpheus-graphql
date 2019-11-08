@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 
@@ -27,19 +26,54 @@ module Data.Morpheus.Parsing.Internal.Terms
   , keyword
   , operator
   , optDescription
-  ) where
+  )
+where
 
-import           Data.Functor                            (($>))
-import           Data.Text                               (Text, pack)
-import           Text.Megaparsec                         (between, label,try, many, manyTill, optional, sepBy, sepEndBy,
-                                                          skipMany, skipManyTill, try, (<?>), (<|>))
-import           Text.Megaparsec.Char                    (char, digitChar, letterChar, newline, printChar, space,
-                                                          space1, string)
+import           Data.Functor                   ( ($>) )
+import           Data.Text                      ( Text
+                                                , pack
+                                                , strip
+                                                )
+import           Text.Megaparsec                ( between
+                                                , label
+                                                , try
+                                                , many
+                                                , manyTill
+                                                , optional
+                                                , sepBy
+                                                , sepEndBy
+                                                , skipMany
+                                                , skipManyTill
+                                                , try
+                                                , (<?>)
+                                                , (<|>)
+                                                )
+import           Text.Megaparsec.Char           ( char
+                                                , digitChar
+                                                , letterChar
+                                                , newline
+                                                , printChar
+                                                , space
+                                                , space1
+                                                , string
+                                                )
 
 -- MORPHEUS
-import           Data.Morpheus.Parsing.Internal.Internal (Parser, Position, getLocation)
-import           Data.Morpheus.Types.Internal.Data       (DataTypeWrapper (..), Key, Description , Name, WrapperD (..), toHSWrappers)
-import           Data.Morpheus.Types.Internal.Value      (convertToHaskellName)
+import           Data.Morpheus.Parsing.Internal.Internal
+                                                ( Parser
+                                                , Position
+                                                , getLocation
+                                                )
+import           Data.Morpheus.Types.Internal.Data
+                                                ( DataTypeWrapper(..)
+                                                , Key
+                                                , Description
+                                                , Name
+                                                , TypeWrapper(..)
+                                                , toHSWrappers
+                                                )
+import           Data.Morpheus.Types.Internal.Value
+                                                ( convertToHaskellName )
 
 
 -- Name : https://graphql.github.io/graphql-spec/June2018/#sec-Names
@@ -57,7 +91,8 @@ operator x = char x *> spaceAndComments
 
 -- LITERALS
 setLiteral :: Parser [a] -> Parser [a]
-setLiteral = between (char '{' *> spaceAndComments) (char '}' *> spaceAndComments)
+setLiteral =
+  between (char '{' *> spaceAndComments) (char '}' *> spaceAndComments)
 
 pipeLiteral :: Parser ()
 pipeLiteral = char '|' *> spaceAndComments
@@ -71,19 +106,17 @@ litAssignment = char ':' *> spaceAndComments
 -- PRIMITIVE
 ------------------------------------
 token :: Parser Text
-token =
-  label "token" $ do
-    firstChar <- letterChar <|> char '_'
-    restToken <- many $ letterChar <|> char '_' <|> digitChar
-    spaceAndComments
-    return $ convertToHaskellName $ pack $ firstChar : restToken
+token = label "token" $ do
+  firstChar <- letterChar <|> char '_'
+  restToken <- many $ letterChar <|> char '_' <|> digitChar
+  spaceAndComments
+  return $ convertToHaskellName $ pack $ firstChar : restToken
 
 qualifier :: Parser (Text, Position)
-qualifier =
-  label "qualifier" $ do
-    position <- getLocation
-    value <- token
-    return (value, position)
+qualifier = label "qualifier" $ do
+  position <- getLocation
+  value    <- token
+  return (value, position)
 
 
 -- Variable : https://graphql.github.io/graphql-spec/June2018/#Variable
@@ -91,12 +124,11 @@ qualifier =
 -- Variable :  $Name
 --
 variable :: Parser (Text, Position)
-variable =
-  label "variable" $ do
-    position' <- getLocation
-    _ <- char '$'
-    varName' <- token
-    return (varName', position')
+variable = label "variable" $ do
+  position' <- getLocation
+  _         <- char '$'
+  varName'  <- token
+  return (varName', position')
 
 spaceAndComments1 :: Parser ()
 spaceAndComments1 = space1 *> spaceAndComments
@@ -111,15 +143,18 @@ optDescription :: Parser (Maybe Description)
 optDescription = optional parseDescription
 
 parseDescription :: Parser Text
-parseDescription = pack <$> (blockDescription <|> singleLine) <* spaceAndComments
-    where
-      blockDescription = blockQuotes *> manyTill (printChar <|> newline)   blockQuotes <* spaceAndComments
-        where
-         blockQuotes = string "\"\"\""
-      ----------------------------
-      singleLine = stringQuote *> manyTill printChar  stringQuote <* spaceAndComments
-        where
-            stringQuote = char '"'
+parseDescription =
+  strip . pack <$> (blockDescription <|> singleLine) <* spaceAndComments
+ where
+  blockDescription =
+    blockQuotes
+      *> manyTill (printChar <|> newline) blockQuotes
+      <* spaceAndComments
+    where blockQuotes = string "\"\"\""
+  ----------------------------
+  singleLine =
+    stringQuote *> manyTill printChar stringQuote <* spaceAndComments
+    where stringQuote = char '"'
 
 -- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
 --  Ignored:
@@ -133,9 +168,9 @@ spaceAndComments :: Parser ()
 spaceAndComments = ignoredTokens
 
 ignoredTokens :: Parser ()
-ignoredTokens = label "IgnoredTokens" $ space *> skipMany inlineComment *> space
-  where
-    inlineComment = char '#' *> skipManyTill printChar newline *> space
+ignoredTokens =
+  label "IgnoredTokens" $ space *> skipMany inlineComment *> space
+  where inlineComment = char '#' *> skipManyTill printChar newline *> space
     ------------------------------------------------------------------------
 
 -- COMPLEX
@@ -156,20 +191,18 @@ parseMaybeTuple :: Parser a -> Parser [a]
 parseMaybeTuple parser = parseTuple parser <|> pure []
 
 parseTuple :: Parser a -> Parser [a]
-parseTuple parser =
-  label "Tuple" $
-  between
-    (char '(' *> spaceAndComments)
-    (char ')' *> spaceAndComments)
-    (parser `sepBy` (many (char ',') *> spaceAndComments) <?> "empty Tuple value!")
+parseTuple parser = label "Tuple" $ between
+  (char '(' *> spaceAndComments)
+  (char ')' *> spaceAndComments)
+  (parser `sepBy` (many (char ',') *> spaceAndComments) <?> "empty Tuple value!"
+  )
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
-parseAssignment nameParser valueParser =
-  label "assignment" $ do
-    name' <- nameParser
-    litAssignment
-    value' <- valueParser
-    pure (name', value')
+parseAssignment nameParser valueParser = label "assignment" $ do
+  name' <- nameParser
+  litAssignment
+  value' <- valueParser
+  pure (name', value')
 
 -- Type Conditions: https://graphql.github.io/graphql-spec/June2018/#sec-Type-Conditions
 --
@@ -185,36 +218,36 @@ parseTypeCondition = do
 spreadLiteral :: Parser Position
 spreadLiteral = do
   index <- getLocation
-  _ <- string "..."
+  _     <- string "..."
   space
   return index
 
 parseWrappedType :: Parser ([DataTypeWrapper], Text)
 parseWrappedType = (unwrapped <|> wrapped) <* spaceAndComments
-  where
-    unwrapped :: Parser ([DataTypeWrapper], Text)
-    unwrapped = ([], ) <$> token <* spaceAndComments
-    ----------------------------------------------
-    wrapped :: Parser ([DataTypeWrapper], Text)
-    wrapped =
-      between
-        (char '[' *> spaceAndComments)
-        (char ']' *> spaceAndComments)
-        (do (wrappers, name) <- unwrapped <|> wrapped
-            nonNull' <- parseNonNull
-            return ((ListType : nonNull') ++ wrappers, name))
+ where
+  unwrapped :: Parser ([DataTypeWrapper], Text)
+  unwrapped = ([], ) <$> token <* spaceAndComments
+  ----------------------------------------------
+  wrapped :: Parser ([DataTypeWrapper], Text)
+  wrapped = between
+    (char '[' *> spaceAndComments)
+    (char ']' *> spaceAndComments)
+    (do
+      (wrappers, name) <- unwrapped <|> wrapped
+      nonNull'         <- parseNonNull
+      return ((ListType : nonNull') ++ wrappers, name)
+    )
 
 -- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias
 -- Alias
 --  Name:
 parseAlias :: Parser (Maybe Key)
 parseAlias = try (optional alias) <|> pure Nothing
-    where
-        alias = label "alias" $ token <* char ':' <* spaceAndComments
+  where alias = label "alias" $ token <* char ':' <* spaceAndComments
 
 
-parseType :: Parser ([WrapperD],Key)
+parseType :: Parser ([TypeWrapper], Key)
 parseType = do
-    (wrappers, fieldType) <- parseWrappedType
-    nonNull <- parseNonNull
-    pure (toHSWrappers $ nonNull ++ wrappers, fieldType)
+  (wrappers, fieldType) <- parseWrappedType
+  nonNull               <- parseNonNull
+  pure (toHSWrappers $ nonNull ++ wrappers, fieldType)
