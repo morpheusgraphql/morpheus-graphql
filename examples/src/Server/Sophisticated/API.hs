@@ -45,6 +45,9 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , Resolver(..)
                                                 , ScalarValue(..)
                                                 , constRes
+                                                , IORes
+                                                , IOMutRes
+                                                , liftM
                                                 )
 
 
@@ -91,12 +94,16 @@ data Channel
   | UPDATE_ADDRESS
   deriving (Show, Eq, Ord)
 
+type DB_ID = Int
+
 data Content = Update
-  { contentID      :: Int
+  { contentID      :: DB_ID
   , contentMessage :: Text
   }
 
 type APIEvent = (Event Channel Content)
+
+
 
 
 gqlRoot :: GQLRootResolver IO APIEvent Query Mutation Subscription
@@ -124,7 +131,7 @@ gqlRoot = GQLRootResolver { queryResolver
       ]
       (pure User { userName    = constRes "George"
                  , userEmail   = constRes "George@email.com"
-                 , userAddress = constRes mutationAddress
+                 , userAddress = const $ liftM setDBAddress
                  , userOffice  = constRes Nothing
                  , userHome    = constRes HH
                  , userEntity  = constRes Nothing
@@ -145,12 +152,10 @@ gqlRoot = GQLRootResolver { queryResolver
     subscriptionNewUser () = SubResolver [UPDATE_USER] subResolver
       where subResolver (Event _ Update{}) = fetchUser
     subscriptionNewAddress () = SubResolver [UPDATE_ADDRESS] subResolver
-      where subResolver (Event _ Update { contentID }) = fetchAddress contentID
+     where
+      subResolver (Event _ Update { contentID }) =
+        liftM (getDBAddress contentID)
   ----------------------------------------------------------------------------------------------
-  fetchAddress _ = pure Address { addressCity        = constRes ""
-                                , addressStreet      = constRes ""
-                                , addressHouseNumber = constRes 0
-                                }
   fetchUser
     :: Resolver
          QUERY
@@ -159,12 +164,25 @@ gqlRoot = GQLRootResolver { queryResolver
          (User (Resolver QUERY IO (Event Channel Content)))
   fetchUser = pure User { userName    = constRes "George"
                         , userEmail   = constRes "George@email.com"
-                        , userAddress = fetchAddress
+                        , userAddress = const $ liftM $ getDBAddress 12
                         , userOffice  = constRes Nothing
                         , userHome    = constRes HH
                         , userEntity  = constRes Nothing
                         }
   mutationAddress = Address { addressCity        = constRes ""
+                            , addressStreet      = constRes ""
+                            , addressHouseNumber = constRes 0
+                            }
+
+-- DB --------------------------------------------------------------------
+getDBAddress :: DB_ID -> IO (Address (IORes APIEvent))
+getDBAddress _unusedID = pure Address { addressCity        = constRes ""
+                                      , addressStreet      = constRes ""
+                                      , addressHouseNumber = constRes 0
+                                      }
+
+setDBAddress :: IO (Address (IOMutRes APIEvent))
+setDBAddress = pure Address { addressCity        = constRes ""
                             , addressStreet      = constRes ""
                             , addressHouseNumber = constRes 0
                             }
