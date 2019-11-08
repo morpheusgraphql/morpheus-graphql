@@ -29,6 +29,9 @@ module Data.Morpheus.Types
   , SUBSCRIPTION
   , liftEither
   , lift
+  , ResolveQ
+  , ResolveM
+  , ResolveS
   )
 where
 
@@ -66,6 +69,11 @@ type SubRes = Resolver SUBSCRIPTION
 type IORes e = Res e IO
 type IOMutRes e = MutRes e IO
 type IOSubRes e = SubRes e IO
+
+-- Recursive Resolvers
+type ResolveQ e m a = Res e m (a (Res e m))
+type ResolveM e m a = MutRes e m (a (MutRes e m))
+type ResolveS e m a = SubRes e m (a (Res e m))
 
 -- resolves constant value on any argument
 constRes :: (PureOperation o, Monad m) => b -> a -> Resolver o e m b

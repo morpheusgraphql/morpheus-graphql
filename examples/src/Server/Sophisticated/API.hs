@@ -13,7 +13,7 @@
 
 module Server.Sophisticated.API
   ( gqlRoot
-  , APIEvent
+  , EVENT
   )
 where
 
@@ -48,8 +48,11 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , IORes
                                                 , IOMutRes
                                                 , liftEither
-                                                , IOSubRes
+                                                , ResolveQ
+                                                , ResolveM
+                                                , ResolveS
                                                 )
+
 
 
 $(importGQLDocumentWithNamespace "src/Server/Sophisticated/api.gql")
@@ -95,9 +98,9 @@ data Channel = USER | ADDRESS
 
 newtype Content = Content { contentID :: Int  }
 
-type APIEvent = (Event Channel Content)
+type EVENT = (Event Channel Content)
 
-gqlRoot :: GQLRootResolver IO APIEvent Query Mutation Subscription
+gqlRoot :: GQLRootResolver IO EVENT Query Mutation Subscription
 gqlRoot = GQLRootResolver { queryResolver
                           , mutationResolver
                           , subscriptionResolver
@@ -121,40 +124,40 @@ gqlRoot = GQLRootResolver { queryResolver
     }
 
 -- Resolve QUERY
-resolveUser :: () -> IORes APIEvent (User (IORes APIEvent))
+resolveUser :: () -> ResolveQ EVENT IO User
 resolveUser _args = liftEither (getDBUser (Content 2))
 
-resolveAnimal :: QueryAnimalArgs -> IORes APIEvent Text
+resolveAnimal :: QueryAnimalArgs -> IORes EVENT Text
 resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
   pure (pack $ show queryAnimalArgsAnimal)
 
 -- Resolve MUTATION 
-resolveCreateUser :: () -> IOMutRes APIEvent (User (IOMutRes APIEvent))
+resolveCreateUser :: () -> ResolveM EVENT IO User
 resolveCreateUser _args =
   MutResolver { mutEvents = [userUpdate], mutResolver = lift setDBUser }
 
-resolveCreateAdress :: () -> IOMutRes APIEvent (Address (IOMutRes APIEvent))
+resolveCreateAdress :: () -> ResolveM EVENT IO Address
 resolveCreateAdress _args =
   MutResolver { mutEvents = [addressUpdate], mutResolver = lift setDBAddress }
 
 -- Resolve SUBSCRIPTION
-resolveNewUser :: () -> IOSubRes APIEvent (User (IORes APIEvent))
+resolveNewUser :: () -> ResolveS EVENT IO User
 resolveNewUser _args = SubResolver { subChannels = [USER], subResolver }
   where subResolver (Event _ content) = liftEither (getDBUser content)
 
-resolveNewAdress :: () -> IOSubRes APIEvent (Address (IORes APIEvent))
+resolveNewAdress :: () -> ResolveS EVENT IO Address
 resolveNewAdress _args = SubResolver { subChannels = [ADDRESS], subResolver }
   where subResolver (Event _ content) = lift (getDBAddress content)
 
 -- Events ----------------------------------------------------------------
-addressUpdate :: APIEvent
+addressUpdate :: EVENT
 addressUpdate = Event [ADDRESS] (Content { contentID = 10 })
 
-userUpdate :: APIEvent
+userUpdate :: EVENT
 userUpdate = Event [USER] (Content { contentID = 12 })
 
 -- DB::Getter --------------------------------------------------------------------
-getDBAddress :: Content -> IO (Address (IORes APIEvent))
+getDBAddress :: Content -> IO (Address (IORes EVENT))
 getDBAddress _id = do
   city   <- dbText
   street <- dbText
@@ -164,7 +167,7 @@ getDBAddress _id = do
                , addressHouseNumber = constRes number
                }
 
-getDBUser :: Content -> IO (Either String (User (IORes APIEvent)))
+getDBUser :: Content -> IO (Either String (User (IORes EVENT)))
 getDBUser _ = do
   Person { name, email } <- dbPerson
   pure $ Right User { userName    = constRes name
@@ -176,7 +179,7 @@ getDBUser _ = do
                     }
 
 -- DB::Setter --------------------------------------------------------------------
-setDBAddress :: IO (Address (IOMutRes APIEvent))
+setDBAddress :: IO (Address (IOMutRes EVENT))
 setDBAddress = do
   city        <- dbText
   street      <- dbText
@@ -186,7 +189,7 @@ setDBAddress = do
                , addressHouseNumber = constRes houseNumber
                }
 
-setDBUser :: IO (User (IOMutRes APIEvent))
+setDBUser :: IO (User (IOMutRes EVENT))
 setDBUser = do
   Person { name, email } <- dbPerson
   pure User { userName    = constRes name
