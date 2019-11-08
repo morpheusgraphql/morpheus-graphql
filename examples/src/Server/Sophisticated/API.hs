@@ -106,7 +106,7 @@ gqlRoot = GQLRootResolver { queryResolver
                           }
  where
   queryResolver = Query
-    { queryUser     = const $ liftEitherM (getDBUser (ContentID 2))
+    { queryUser     = const $ liftEitherM (getDBUser (Content 2))
     , queryAnimal   = \QueryAnimalArgs { queryAnimalArgsAnimal } ->
                         pure (pack $ show queryAnimalArgsAnimal)
     , querySet      = constRes $ S.fromList [1, 2]
@@ -117,22 +117,24 @@ gqlRoot = GQLRootResolver { queryResolver
   -------------------------------------------------------------
   mutationResolver = Mutation { mutationCreateUser, mutationCreateAddress }
    where
-    mutationCreateUser _ =
+    mutationCreateUser _args =
       MutResolver { mutEvents = [userUpdate], mutResolver = lift setDBUser }
     -------------------------
-    mutationCreateAddress _ = MutResolver { mutEvents   = [addressUpdate]
-                                          , mutResolver = lift setDBAddress
-                                          }
+    mutationCreateAddress _args = MutResolver { mutEvents   = [addressUpdate]
+                                              , mutResolver = lift setDBAddress
+                                              }
   ----------------------------------------------------------------
   subscriptionResolver = Subscription { subscriptionNewAddress
                                       , subscriptionNewUser
                                       }
    where
-    subscriptionNewUser _ = SubResolver { subChannels = [USER], subResolver }
+    subscriptionNewUser _args = SubResolver { subChannels = [USER]
+                                            , subResolver
+                                            }
       where subResolver (Event _ content) = liftEitherM (getDBUser content)
-    subscriptionNewAddress _ = SubResolver { subChannels = [ADDRESS]
-                                           , subResolver
-                                           }
+    subscriptionNewAddress _args = SubResolver { subChannels = [ADDRESS]
+                                               , subResolver
+                                               }
       where subResolver (Event _ content) = liftM (getDBAddress content)
 
 
@@ -144,17 +146,17 @@ userUpdate :: APIEvent
 userUpdate = Event [USER] (Content { contentID = 12 })
 
 -- DB::Getter --------------------------------------------------------------------
-getDBAddress :: ContentID -> IO (Address (IORes APIEvent))
-getDBAddress _unusedID = pure Address { addressCity        = constRes ""
-                                      , addressStreet      = constRes ""
-                                      , addressHouseNumber = constRes 0
-                                      }
+getDBAddress :: Content -> IO (Address (IORes APIEvent))
+getDBAddress _id = pure Address { addressCity        = constRes ""
+                                , addressStreet      = constRes ""
+                                , addressHouseNumber = constRes 0
+                                }
 
-getDBUser :: ContentID -> IO (Either String (User (Resolver QUERY IO APIEvent)))
+getDBUser :: Content -> IO (Either String (User (Resolver QUERY IO APIEvent)))
 getDBUser _ = pure $ Right User
   { userName    = constRes "George"
   , userEmail   = constRes "George@email.com"
-  , userAddress = const $ liftM (getDBAddress (ContentID 12))
+  , userAddress = const $ liftM (getDBAddress (Content 12))
   , userOffice  = constRes Nothing
   , userHome    = constRes HH
   , userEntity  = constRes Nothing
