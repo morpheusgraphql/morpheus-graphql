@@ -66,7 +66,7 @@ resolver _args = lift setDBAddress
 
 ### Fixed
 
-- Mutation resolver is also monad
+- added missing Monad instance for Mutation resolver
 
 ## [0.6.2] - 2.11.2019
 
