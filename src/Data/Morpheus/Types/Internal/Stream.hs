@@ -23,13 +23,17 @@ module Data.Morpheus.Types.Internal.Stream
  -- , GQLMonad(..)
   , GQLChannel(..)
   , Channel(..)
-  ) where
+  , toStream
+  )
+where
 
-import           Control.Monad.Trans.Except (ExceptT (..), runExceptT)
-import           Data.Semigroup ((<>))
+import           Control.Monad.Trans.Except     ( ExceptT(..)
+                                                , runExceptT
+                                                )
+import           Data.Semigroup                 ( (<>) )
 
 -- MORPHEUS
-import           Data.Morpheus.Types.IO     (GQLResponse)
+import           Data.Morpheus.Types.IO         ( GQLResponse )
 
 -- EVENTS
 data ResponseEvent m event
@@ -39,7 +43,7 @@ data ResponseEvent m event
 -- STREAMS
 type ResponseStream m event = StreamT m (ResponseEvent m event)
 
-type SubEvent m event = Event (Channel event) (event-> m GQLResponse)
+type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
 
 newtype Channel event = Channel {
   unChannel :: StreamChannel event
@@ -54,12 +58,12 @@ class GQLChannel a where
     streamChannels :: a -> [Channel a]
 
 instance GQLChannel () where
-    type StreamChannel () = ()
-    streamChannels _ = []
+  type StreamChannel () = ()
+  streamChannels _ = []
 
 instance GQLChannel (Event channel content)  where
-   type StreamChannel (Event channel content)  = channel
-   streamChannels Event { channels } =  map Channel channels
+  type StreamChannel (Event channel content) = channel
+  streamChannels Event { channels } = map Channel channels
 
 data Event e c = Event
   { channels :: [e]
@@ -78,40 +82,51 @@ newtype StreamT m s a = StreamT
 
 instance Monad m => Applicative (StreamT m c) where
   pure = StreamT . return . StreamState []
-  StreamT app1 <*> StreamT app2 =
-    StreamT $ do
-      (StreamState effect1 func) <- app1
-      (StreamState effect2 val) <- app2
-      return $ StreamState (effect1 ++ effect2) (func val)
+  StreamT app1 <*> StreamT app2 = StreamT $ do
+    (StreamState effect1 func) <- app1
+    (StreamState effect2 val ) <- app2
+    return $ StreamState (effect1 ++ effect2) (func val)
 
 instance Monad m => Monad (StreamT m c) where
   return = pure
-  (StreamT m1) >>= mFunc =
-    StreamT $ do
-      (StreamState e1 v1) <- m1
-      (StreamState e2 v2) <- runStreamT $ mFunc v1
-      return $ StreamState (e1 ++ e2) v2
+  (StreamT m1) >>= mFunc = StreamT $ do
+    (StreamState e1 v1) <- m1
+    (StreamState e2 v2) <- runStreamT $ mFunc v1
+    return $ StreamState (e1 ++ e2) v2
 
 -- Helper Functions
 toTuple :: StreamState s a -> ([s], a)
-toTuple StreamState {streamEvents, streamValue} = (streamEvents, streamValue)
+toTuple StreamState { streamEvents, streamValue } = (streamEvents, streamValue)
 
-closeStream :: Monad m => (StreamT m s) v -> m ([s], v)
+closeStream :: Monad m => StreamT m s v -> m ([s], v)
 closeStream resolver = toTuple <$> runStreamT resolver
 
 mapS :: Monad m => (a -> b) -> StreamT m a value -> StreamT m b value
-mapS func (StreamT ma) =
-  StreamT $ do
-    state <- ma
-    return $ state {streamEvents = map func (streamEvents state)}
+mapS func (StreamT ma) = StreamT $ do
+  state <- ma
+  return $ state { streamEvents = map func (streamEvents state) }
 
-pushEvents :: Functor m => [event] -> ExceptT e (StreamT m event) a -> ExceptT e (StreamT m event) a
-pushEvents events = ExceptT . StreamT . fmap updateState . runStreamT . runExceptT
-    where
-        updateState x = x { streamEvents = events <> streamEvents x }
+pushEvents
+  :: Functor m
+  => [event]
+  -> ExceptT e (StreamT m event) a
+  -> ExceptT e (StreamT m event) a
+pushEvents events =
+  ExceptT . StreamT . fmap updateState . runStreamT . runExceptT
+  where updateState x = x { streamEvents = events <> streamEvents x }
 
-injectEvents :: Functor m => [event] -> ExceptT e m a -> ExceptT e (StreamT m event) a
-injectEvents states = ExceptT . StreamT . fmap (StreamState states) . runExceptT
+toStream :: Monad m => ExceptT e m ([s], a) -> ExceptT e (StreamT m s) a
+toStream mo = ExceptT $ StreamT $ do
+  eitherTuple <- runExceptT mo
+  case eitherTuple of
+    Right (x, y) -> pure $ StreamState x (Right y)
+    Left  errors -> pure $ StreamState [] $ Left errors
 
-initExceptStream :: Applicative m => [event] -> a -> ExceptT e (StreamT m event) a
+injectEvents
+  :: Functor m => [event] -> ExceptT e m a -> ExceptT e (StreamT m event) a
+injectEvents states =
+  ExceptT . StreamT . fmap (StreamState states) . runExceptT
+
+initExceptStream
+  :: Applicative m => [event] -> a -> ExceptT e (StreamT m event) a
 initExceptStream events = ExceptT . StreamT . pure . StreamState events . Right

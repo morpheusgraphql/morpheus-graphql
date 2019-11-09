@@ -13,7 +13,7 @@ import           Data.Morpheus.Types            ( GQLRootResolver(..)
                                                 , GQLType
                                                 , IORes
                                                 , Undefined(..)
-                                                , liftEitherM
+                                                , liftEither
                                                 )
 import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
@@ -33,7 +33,7 @@ data DeityArgs = DeityArgs
 
 resolveDeity :: DeityArgs -> IORes e Deity
 resolveDeity DeityArgs { name, mythology } =
-  liftEitherM $ dbDeity name mythology
+  liftEither $ dbDeity name mythology
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver = GQLRootResolver { queryResolver = Query { deity = resolveDeity }

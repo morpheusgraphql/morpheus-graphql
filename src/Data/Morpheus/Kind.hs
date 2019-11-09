@@ -16,9 +16,11 @@ module Data.Morpheus.Kind
   , Context(..)
   , VContext(..)
   , ResContext(..)
-  ) where
+  )
+where
 
-import           Data.Morpheus.Types.Internal.Data (OperationType (..))
+import           Data.Morpheus.Types.Internal.Data
+                                                ( OperationType(..) )
 
 data GQL_KIND
   = SCALAR
@@ -30,7 +32,7 @@ data GQL_KIND
   | WRAPPER
 
 
-data ResContext (kind :: GQL_KIND) (operation:: OperationType) (m :: * -> * ) event value = ResContext
+data ResContext (kind :: GQL_KIND) (operation:: OperationType) event (m :: * -> * )  value = ResContext
 
 --type ObjectConstraint a =
 -- | context , like Proxy with multiple parameters
