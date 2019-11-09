@@ -117,6 +117,7 @@ gqlRoot = GQLRootResolver { queryResolver
   -------------------------------------------------------------
   mutationResolver = Mutation { mutationCreateUser    = resolveCreateUser
                               , mutationCreateAddress = resolveCreateAdress
+                              , mutationSetAdress     = resolveSetAdress
                               }
   subscriptionResolver = Subscription
     { subscriptionNewUser    = resolveNewUser
@@ -131,14 +132,23 @@ resolveAnimal :: QueryAnimalArgs -> IORes EVENT Text
 resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
   pure (pack $ show queryAnimalArgsAnimal)
 
--- Resolve MUTATION 
+-- Resolve MUTATIONS
+-- 
+-- Mutation Wit Event Triggering : sends events to subscription  
 resolveCreateUser :: () -> ResolveM EVENT IO User
-resolveCreateUser _args =
-  MutResolver { mutEvents = [userUpdate], mutResolver = lift setDBUser }
+resolveCreateUser _args = MutResolver $ do
+  value <- lift setDBUser
+  pure ([userUpdate], value)
 
+-- Mutation Wit Event Triggering : sends events to subscription  
 resolveCreateAdress :: () -> ResolveM EVENT IO Address
-resolveCreateAdress _args =
-  MutResolver { mutEvents = [addressUpdate], mutResolver = lift setDBAddress }
+resolveCreateAdress _args = MutResolver $ do
+  value <- lift setDBAddress
+  pure ([addressUpdate], value)
+
+-- Mutation Without Event Triggering  
+resolveSetAdress :: () -> ResolveM EVENT IO Address
+resolveSetAdress _args = lift setDBAddress
 
 -- Resolve SUBSCRIPTION
 resolveNewUser :: () -> ResolveS EVENT IO User

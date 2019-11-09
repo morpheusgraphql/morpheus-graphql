@@ -65,9 +65,9 @@ import           Data.Morpheus.Types.Internal.Stream
                                                 , StreamState(..)
                                                 , StreamT(..)
                                                 , closeStream
+                                                , toStream
                                                 , injectEvents
                                                 , mapS
-                                                , pushEvents
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( GQLErrors
@@ -161,20 +161,19 @@ instance (PureOperation o, Monad m) => Applicative (ResolvingStrategy o e m) whe
 data Resolver (o::OperationType) event (m :: * -> * )  value where
     FailedResolver ::{ unFailedResolver :: String } -> Resolver o  event m value
     QueryResolver::{ unQueryResolver :: ExceptT String m value } -> Resolver QUERY   event m value
-    MutResolver ::{
-            mutEvents :: [event] ,
-            mutResolver :: ExceptT String m value
-        } -> Resolver MUTATION event m  value
+    MutResolver ::{ unMutResolver :: ExceptT String m ([event],value) } -> Resolver MUTATION event m  value
     SubResolver ::{
             subChannels :: [StreamChannel event] ,
             subResolver :: event -> Resolver QUERY event m value
         } -> Resolver SUBSCRIPTION event m  value
 
 -- GADTResolver Functor
-instance Functor m => Functor (Resolver o e m) where
-  fmap _ (FailedResolver mErrors      ) = FailedResolver mErrors
-  fmap f (QueryResolver  mResolver    ) = QueryResolver $ fmap f mResolver
-  fmap f (MutResolver events mResolver) = MutResolver events $ fmap f mResolver
+instance Monad m => Functor (Resolver o e m) where
+  fmap _ (FailedResolver mErrors) = FailedResolver mErrors
+  fmap f (QueryResolver  res    ) = QueryResolver $ fmap f res
+  fmap f (MutResolver    res    ) = MutResolver $ do
+    (e, v) <- res
+    pure (e, f v)
   fmap f (SubResolver events mResolver) = SubResolver events
                                                       (eventFmap mResolver)
     where eventFmap res event = fmap f (res event)
@@ -183,13 +182,15 @@ instance Functor m => Functor (Resolver o e m) where
 instance (PureOperation o ,Monad m) => Applicative (Resolver o e m) where
   pure = liftEither . pure . pure
   -------------------------------------
-  _ <*> (FailedResolver mErrors) = FailedResolver mErrors
-  (FailedResolver mErrors) <*> _ = FailedResolver mErrors
+  _                        <*> (FailedResolver mErrors) = FailedResolver mErrors
+  (FailedResolver mErrors) <*> _                        = FailedResolver mErrors
   -------------------------------------
   (QueryResolver f) <*> (QueryResolver res) = QueryResolver (f <*> res)
   ---------------------------------------------------------------------
-  (MutResolver events1 f) <*> (MutResolver events2 res) =
-    MutResolver (events1 <> events2) (f <*> res)
+  MutResolver res1         <*> MutResolver res2         = MutResolver $ do
+    (e1, f  ) <- res1
+    (e2, val) <- res2
+    pure (e1 ++ e2, f val)
   --------------------------------------------------------------
   (SubResolver e1 f) <*> (SubResolver e2 res) =
     SubResolver (e1 <> e2) $ \event -> f event <*> res event
@@ -200,6 +201,18 @@ instance (Monad m) => Monad (Resolver QUERY e m) where
   (FailedResolver mErrors) >>= _ = FailedResolver mErrors
   -------------------------------------
   (QueryResolver f) >>= nextM = QueryResolver (f >>= unQueryResolver . nextM)
+
+
+instance (Monad m) => Monad (Resolver MUTATION e m) where
+  return = pure
+  -------------------------------------
+  (FailedResolver mErrors) >>= _     = FailedResolver mErrors
+  -------------------------------------
+  (MutResolver    m1     ) >>= mFunc = MutResolver $ do
+    (e1, v1) <- m1
+    (e2, v2) <- unMutResolver $ mFunc v1
+    pure (e1 <> e2, v2)
+
 
 -- Pure Operation
 class PureOperation (o::OperationType) where
@@ -213,7 +226,7 @@ instance PureOperation QUERY where
   eitherGraphQLT = QueryResolving . ExceptT . pure
 
 instance PureOperation MUTATION where
-  liftEither     = MutResolver [] . ExceptT
+  liftEither     = MutResolver . fmap ([], ) . ExceptT
   pureGraphQLT   = MutationResolving . pure
   eitherGraphQLT = MutationResolving . ExceptT . pure
 
@@ -259,13 +272,11 @@ instance Resolving o e m  where
         >>= unQueryT
         .   (`encode` selection)
 ---------------------------------------------------------------------------------------------------------------------------------------
-    __resolving (MutResolver events res) =
+    __resolving (MutResolver res) =
       MutationResolving
-        $   pushEvents events
-        $   withExceptT (resolverError selectionPosition fieldName)
-                        (injectEvents [] res)
+        $ withExceptT (resolverError selectionPosition fieldName) (toStream res)
         >>= unMutationT
-        .   (`encode` selection)
+        . (`encode` selection)
 --------------------------------------------------------------------------------------------------------------------------------
     __resolving (SubResolver subChannels res) =
       SubscriptionResolving $ ExceptT $ StreamT $ pure $ StreamState

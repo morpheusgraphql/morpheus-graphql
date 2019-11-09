@@ -90,6 +90,7 @@ type Query {
 type Mutation {
   createUser: User!
   createAddress: Address!
+  setAdress: Address!
 }
 
 type Subscription {

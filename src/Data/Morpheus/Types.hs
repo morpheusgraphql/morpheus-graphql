@@ -80,4 +80,4 @@ constRes :: (PureOperation o, Monad m) => b -> a -> Resolver o e m b
 constRes = const . pure
 
 constMutRes :: Monad m => [e] -> a -> args -> MutRes e m a
-constMutRes list value = const $ MutResolver list $ pure value
+constMutRes events value = const $ MutResolver $ pure (events, value)
