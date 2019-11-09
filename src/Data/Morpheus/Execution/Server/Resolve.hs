@@ -98,9 +98,9 @@ type EventCon event
   = (Eq (StreamChannel event), Typeable event, GQLChannel event)
 
 type IntrospectConstraint m event query mutation subscription
-  = ( IntroCon (query (Resolver QUERY m event))
-    , IntroCon (mutation (Resolver MUTATION m event))
-    , IntroCon (subscription (Resolver SUBSCRIPTION m event))
+  = ( IntroCon (query (Resolver QUERY event m))
+    , IntroCon (mutation (Resolver MUTATION event m))
+    , IntroCon (subscription (Resolver SUBSCRIPTION event m))
     )
 
 type RootResCon m event query mutation subscription
@@ -109,13 +109,13 @@ type RootResCon m event query mutation subscription
     , IntrospectConstraint m event query mutation subscription
     -- , OBJ_RES m (Root (Resolver m)) Value
      -- Resolving
-    , EncodeCon QUERY m event (query (Resolver QUERY m event))
-    , EncodeCon MUTATION m event (mutation (Resolver MUTATION m event))
+    , EncodeCon QUERY event m (query (Resolver QUERY event m))
+    , EncodeCon MUTATION event m (mutation (Resolver MUTATION event m))
     , EncodeCon
         SUBSCRIPTION
-        m
         event
-        (subscription (Resolver SUBSCRIPTION m event))
+        m
+        (subscription (Resolver SUBSCRIPTION event m))
     )
 
 decodeNoDup :: L.ByteString -> Either String GQLRequest
@@ -143,11 +143,10 @@ streamResolver
   -> ResponseStream m event GQLResponse
 streamResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptionResolver } request
   = renderResponse <$> runExceptT (validRequest >>= execOperator)
-  ------------------------------------------------------------
 
  where
     ---------------------------------------------------------
-  validRequest :: Monad m => ResponseT m event (DataTypeLib, ValidOperation)
+  validRequest :: Monad m => ResponseT event m (DataTypeLib, ValidOperation)
   validRequest = liftEither $ do
     schema <- fullSchema $ Identity root
     query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
@@ -189,24 +188,24 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
     (defaultTypes : types)
    where
     (fields, types) = objectFields
-      (Proxy @(CUSTOM (query (Resolver QUERY m event))))
-      (Proxy @(query (Resolver QUERY m event)))
+      (Proxy @(CUSTOM (query (Resolver QUERY event m))))
+      (Proxy @(query (Resolver QUERY event m)))
   ------------------------------
   mutationSchema lib = resolveUpdates
     (lib { mutation = maybeOperator fields "Mutation" })
     types
    where
     (fields, types) = objectFields
-      (Proxy @(CUSTOM (mutation (Resolver MUTATION m event))))
-      (Proxy @(mutation (Resolver MUTATION m event)))
+      (Proxy @(CUSTOM (mutation (Resolver MUTATION event m))))
+      (Proxy @(mutation (Resolver MUTATION event m)))
   ------------------------------
   subscriptionSchema lib = resolveUpdates
     (lib { subscription = maybeOperator fields "Subscription" })
     types
    where
     (fields, types) = objectFields
-      (Proxy @(CUSTOM (subscription (Resolver SUBSCRIPTION m event))))
-      (Proxy @(subscription (Resolver SUBSCRIPTION m event)))
+      (Proxy @(CUSTOM (subscription (Resolver SUBSCRIPTION event m))))
+      (Proxy @(subscription (Resolver SUBSCRIPTION event m)))
    -- maybeOperator :: [a] -> Text -> Maybe (Text, DataTyCon[a])
   maybeOperator []     = const Nothing
   maybeOperator fields = Just . operatorType fields
