@@ -22,8 +22,8 @@ resolver = MutResolver  {
 -- Mutation Wit Event Triggering : sends events to subscription
 resolver :: () -> ResolveM EVENT IO Address
 resolver = MutResolver \$ do
-value <- lift setDBAddress
-pure ([someEventForSubscription], value)
+  value <- lift setDBAddress
+  pure ([someEventForSubscription], value)
 -- or
 -- Mutation Without Event Triggering
 resolver :: () -> ResolveM EVENT IO Address
