@@ -1,11 +1,7 @@
 {
   "data": {
     "__type": {
-      "enumValues": [
-        { "name": "EnumA", "description": "enumValue Description: EnumA" },
-        { "name": "EnumB", "description": null },
-        { "name": "EnumC", "description": "enumValue Description: EnumC" }
-      ]
+      "fields": []
     }
   }
 }

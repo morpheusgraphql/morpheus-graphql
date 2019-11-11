@@ -7,12 +7,12 @@ enum TestEnum {
   """
   enumValue Description: EnumA
   """
-  EnumA
+  EnumA @deprecated(reason: "just for test")
   EnumB @deprecated(reason: "test deprecation enumValue")
   """
   enumValue Description: EnumC
   """
-  EnumC @deprecated(reason: "name")
+  EnumC @deprecated
 }
 
 input NestedInputObject {
