@@ -54,7 +54,37 @@ resolver _args = lift setDBAddress
   }
   ```
 
-- types:
+- basic support of directive `@deprecated` on `enumValue` and object `field`, only on introspection
+
+###### GraphQL SDL
+
+```gql
+type User {
+  name: String! @deprecated(reason: "some reason")
+}
+```
+
+will displayed in introspection
+
+###### introspection.json
+
+```json
+{
+  "data": {
+    "__type": {
+      "fields": [
+        {
+          "name": "city",
+          "isDeprecated": true,
+          "deprecationReason": "test deprecation field with reason"
+        }
+      ]
+    }
+  }
+}
+```
+
+- new helper resolver types aliases:
 
   - ResolveQ : for Query
   - ResolveM : for Mutation

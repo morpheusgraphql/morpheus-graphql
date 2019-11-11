@@ -8,11 +8,11 @@ enum TestEnum {
   enumValue Description: EnumA
   """
   EnumA
-  EnumB
+  EnumB @deprecated(reason: "test deprecation enumValue")
   """
   enumValue Description: EnumC
   """
-  EnumC
+  EnumC @deprecated
 }
 
 input NestedInputObject {
@@ -50,14 +50,14 @@ type Address {
   """
   field Description: city
   """
-  city: String!
+  city: String! @deprecated(reason: "test deprecation field with reason")
   street(
     """
     argument Description: inputObject
     """
     argInputObject: TestInputObject!
     argMaybeString: String
-  ): [[[[String!]!]!]]
+  ): [[[[String!]!]!]] @deprecated
   houseNumber: Int!
 }
 

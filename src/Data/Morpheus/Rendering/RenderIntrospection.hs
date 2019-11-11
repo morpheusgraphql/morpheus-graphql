@@ -14,10 +14,11 @@ import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text
                                                 , unpack
                                                 )
+import           Data.Maybe                     ( isJust )
 
-import           Data.Morpheus.Schema.Schema
 
 -- Morpheus
+import           Data.Morpheus.Schema.Schema
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
 import           Data.Morpheus.Types.Internal.Data
                                                 ( DataField(..)
@@ -35,6 +36,8 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , lookupDataType
                                                 , toGQLWrapper
                                                 , DataEnumValue(..)
+                                                , lookupDeprecated
+                                                , lookupDeprecatedReason
                                                 )
 import           Data.Morpheus.Types.Internal.Value
                                                 ( convertToJSONName )
@@ -69,13 +72,17 @@ instance RenderSchema DataType S__Type where
   render (name, DataInputUnion inpUnion') = renderInputUnion (name, inpUnion')
 
 
+
 createEnumValue :: Monad m => DataEnumValue -> S__EnumValue m
 createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
   { s__EnumValueName              = constRes enumName
   , s__EnumValueDescription       = constRes (enumMeta >>= metaDescription)
-  , s__EnumValueIsDeprecated      = constRes False
-  , s__EnumValueDeprecationReason = constRes Nothing
+  , s__EnumValueIsDeprecated      = constRes (isJust deprecated)
+  , s__EnumValueDeprecationReason = constRes
+                                      (deprecated >>= lookupDeprecatedReason)
   }
+  where deprecated = enumMeta >>= lookupDeprecated
+
 
 
 instance RenderSchema DataField S__Field where
@@ -89,9 +96,11 @@ instance RenderSchema DataField S__Field where
         , s__FieldArgs              = constRes args
         , s__FieldType'             =
           constRes (wrap field $ createType kind aliasTyCon Nothing $ Just [])
-        , s__FieldIsDeprecated      = constRes False
-        , s__FieldDeprecationReason = constRes Nothing
+        , s__FieldIsDeprecated      = constRes (isJust deprecated)
+        , s__FieldDeprecationReason = constRes
+                                        (deprecated >>= lookupDeprecatedReason)
         }
+    where deprecated = fieldMeta >>= lookupDeprecated
 
 renderTypeKind :: DataTypeKind -> TypeKind
 renderTypeKind KindScalar      = SCALAR
