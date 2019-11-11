@@ -220,10 +220,6 @@
     "description": "check if deprecated works with enumValue"
   },
   {
-    "path": "introspection/deprecated/enumValue",
-    "description": "check if deprecated works with enumValue"
-  },
-  {
     "path": "introspection/deprecated/field",
     "description": "check if deprecated works with object fields"
   }
