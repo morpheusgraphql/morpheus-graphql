@@ -7,21 +7,13 @@
       "inputFields": null,
       "interfaces": null,
       "enumValues": [
-        {
-          "name": "EnumA",
-          "isDeprecated": false,
-          "deprecationReason": null
-        },
+        { "name": "EnumA", "isDeprecated": false, "deprecationReason": null },
         {
           "name": "EnumB",
-          "isDeprecated": false,
-          "deprecationReason": null
+          "isDeprecated": true,
+          "deprecationReason": "test deprecation enumValue"
         },
-        {
-          "name": "EnumC",
-          "isDeprecated": false,
-          "deprecationReason": null
-        }
+        { "name": "EnumC", "isDeprecated": true, "deprecationReason": null }
       ],
       "possibleTypes": null
     }
