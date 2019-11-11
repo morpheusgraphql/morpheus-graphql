@@ -96,9 +96,11 @@ instance RenderSchema DataField S__Field where
         , s__FieldArgs              = constRes args
         , s__FieldType'             =
           constRes (wrap field $ createType kind aliasTyCon Nothing $ Just [])
-        , s__FieldIsDeprecated      = constRes False
-        , s__FieldDeprecationReason = constRes Nothing
+        , s__FieldIsDeprecated      = constRes (isJust deprecated)
+        , s__FieldDeprecationReason = constRes
+                                        (deprecated >>= lookupDeprecatedReason)
         }
+    where deprecated = fieldMeta >>= lookupDeprecated
 
 renderTypeKind :: DataTypeKind -> TypeKind
 renderTypeKind KindScalar      = SCALAR
