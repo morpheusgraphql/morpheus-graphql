@@ -1,9 +1,9 @@
 {
-  __type(name: "TestEnum") {
-    deprecated
+  __type(name: "Address") {
     fields {
       name
-      deprecated
+      isDeprecated
+      deprecationReason
     }
   }
 }
