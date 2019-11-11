@@ -1,25 +1,15 @@
 {
   "data": {
     "__type": {
-      "kind": "ENUM",
-      "name": "TestEnum",
-      "fields": null,
-      "inputFields": null,
-      "interfaces": null,
       "enumValues": [
-        {
-          "name": "EnumA",
-          "isDeprecated": true,
-          "deprecationReason": "just for test"
-        },
+        { "name": "EnumA", "isDeprecated": false, "deprecationReason": null },
         {
           "name": "EnumB",
           "isDeprecated": true,
           "deprecationReason": "test deprecation enumValue"
         },
         { "name": "EnumC", "isDeprecated": true, "deprecationReason": null }
-      ],
-      "possibleTypes": null
+      ]
     }
   }
 }

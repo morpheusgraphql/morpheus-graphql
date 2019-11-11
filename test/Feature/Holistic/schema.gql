@@ -7,7 +7,7 @@ enum TestEnum {
   """
   enumValue Description: EnumA
   """
-  EnumA @deprecated(reason: "just for test")
+  EnumA
   EnumB @deprecated(reason: "test deprecation enumValue")
   """
   enumValue Description: EnumC
