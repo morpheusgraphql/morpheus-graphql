@@ -1,0 +1,19 @@
+{
+  "data": {
+    "__type": {
+      "fields": [
+        {
+          "name": "city",
+          "isDeprecated": true,
+          "deprecationReason": "test deprecation field with reason"
+        },
+        { "name": "street", "isDeprecated": true, "deprecationReason": null },
+        {
+          "name": "houseNumber",
+          "isDeprecated": false,
+          "deprecationReason": null
+        }
+      ]
+    }
+  }
+}

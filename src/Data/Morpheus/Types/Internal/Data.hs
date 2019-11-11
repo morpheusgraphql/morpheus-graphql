@@ -81,23 +81,41 @@ module Data.Morpheus.Types.Internal.Data
   , Meta(..)
   , Directive(..)
   , createEnumValue
-  , fromDataType 
+  , fromDataType
   , insertType
   , TypeUpdater
-  ) where
+  , lookupDeprecated
+  , lookupDeprecatedReason
+  )
+where
 
-import           Data.HashMap.Lazy                       (HashMap, empty, fromList, insert, toList, union)
-import qualified Data.HashMap.Lazy                       as HM (lookup)
-import           Data.Semigroup                          ((<>))
-import           Language.Haskell.TH.Syntax              (Lift)
-import           Instances.TH.Lift                        ()
+import           Data.HashMap.Lazy              ( HashMap
+                                                , empty
+                                                , fromList
+                                                , insert
+                                                , toList
+                                                , union
+                                                )
+import qualified Data.HashMap.Lazy             as HM
+                                                ( lookup )
+import           Data.Semigroup                 ( (<>) )
+import           Language.Haskell.TH.Syntax     ( Lift )
+import           Instances.TH.Lift              ( )
+import           Data.List                      ( find )
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal            (internalError)
-import           Data.Morpheus.Error.Selection           (cannotQueryField, hasNoSubfields)
-import           Data.Morpheus.Types.Internal.Base       (Key, Position)
-import           Data.Morpheus.Types.Internal.Validation (Validation)
-import           Data.Morpheus.Types.Internal.Value      (Value (..))
+import           Data.Morpheus.Error.Internal   ( internalError )
+import           Data.Morpheus.Error.Selection  ( cannotQueryField
+                                                , hasNoSubfields
+                                                )
+import           Data.Morpheus.Types.Internal.Base
+                                                ( Key
+                                                , Position
+                                                )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Validation )
+import           Data.Morpheus.Types.Internal.Value
+                                                ( Value(..) ,ScalarValue(..))
 import           Data.Morpheus.Execution.Internal.GraphScanner
                                                 ( LibUpdater
                                                 , resolveUpdates
@@ -124,7 +142,15 @@ isPrimitiveTypeName = (`elem` ["String", "Float", "Int", "Boolean", "ID"])
 
 sysTypes :: [Key]
 sysTypes =
-  ["__Schema", "__Type", "__Directive", "__TypeKind", "__Field", "__DirectiveLocation", "__InputValue", "__EnumValue"]
+  [ "__Schema"
+  , "__Type"
+  , "__Directive"
+  , "__TypeKind"
+  , "__Field"
+  , "__DirectiveLocation"
+  , "__InputValue"
+  , "__EnumValue"
+  ]
 
 data OperationType
   = Query
@@ -134,7 +160,7 @@ data OperationType
 
 isSubscription :: DataTypeKind -> Bool
 isSubscription (KindObject (Just Subscription)) = True
-isSubscription _                                = False
+isSubscription _ = False
 
 isOutputObject :: DataTypeKind -> Bool
 isOutputObject (KindObject _) = True
@@ -175,28 +201,29 @@ isFieldNullable :: DataField -> Bool
 isFieldNullable = isNullable . aliasWrappers . fieldType
 
 isNullable :: [TypeWrapper] -> Bool
-isNullable (TypeMaybe:_) = True
-isNullable _             = False
+isNullable (TypeMaybe : _) = True
+isNullable _               = False
 
 isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
-isWeaker (TypeMaybe:xs1) (TypeMaybe:xs2) = isWeaker xs1 xs2
-isWeaker (TypeMaybe:_) _                 = True
-isWeaker (_:xs1) (_:xs2)                 = isWeaker xs1 xs2
-isWeaker _ _                             = False
+isWeaker (TypeMaybe : xs1) (TypeMaybe : xs2) = isWeaker xs1 xs2
+isWeaker (TypeMaybe : _  ) _                 = True
+isWeaker (_         : xs1) (_ : xs2)         = isWeaker xs1 xs2
+isWeaker _                 _                 = False
 
 toGQLWrapper :: [TypeWrapper] -> [DataTypeWrapper]
-toGQLWrapper (TypeMaybe:(TypeMaybe:tw)) = toGQLWrapper (TypeMaybe : tw)
-toGQLWrapper (TypeMaybe:(TypeList:tw))  = ListType : toGQLWrapper tw
-toGQLWrapper (TypeList:tw)              = [NonNullType, ListType] <> toGQLWrapper tw
-toGQLWrapper [TypeMaybe]                = []
-toGQLWrapper []                         = [NonNullType]
+toGQLWrapper (TypeMaybe : (TypeMaybe : tw)) = toGQLWrapper (TypeMaybe : tw)
+toGQLWrapper (TypeMaybe : (TypeList  : tw)) = ListType : toGQLWrapper tw
+toGQLWrapper (TypeList : tw) = [NonNullType, ListType] <> toGQLWrapper tw
+toGQLWrapper [TypeMaybe                   ] = []
+toGQLWrapper []                             = [NonNullType]
 
 toHSWrappers :: [DataTypeWrapper] -> [TypeWrapper]
-toHSWrappers (NonNullType:(NonNullType:xs)) = toHSWrappers (NonNullType : xs)
-toHSWrappers (NonNullType:(ListType:xs))    = TypeList : toHSWrappers xs
-toHSWrappers (ListType:xs)                  = [TypeMaybe, TypeList] <> toHSWrappers xs
-toHSWrappers []                             = [TypeMaybe]
-toHSWrappers [NonNullType]                  = []
+toHSWrappers (NonNullType : (NonNullType : xs)) =
+  toHSWrappers (NonNullType : xs)
+toHSWrappers (NonNullType : (ListType : xs)) = TypeList : toHSWrappers xs
+toHSWrappers (ListType : xs) = [TypeMaybe, TypeList] <> toHSWrappers xs
+toHSWrappers []                              = [TypeMaybe]
+toHSWrappers [NonNullType]                   = []
 
 data DataFingerprint = SystemFingerprint Key | TypeableFingerprint [String]
   deriving (Show, Eq, Ord, Lift)
@@ -248,6 +275,20 @@ data Meta = Meta {
     metaDirectives  :: [Directive]
 } deriving (Show,Lift)
 
+lookupDeprecated :: Meta -> Maybe Directive
+lookupDeprecated Meta { metaDirectives } = find isDeprecation metaDirectives
+ where
+  isDeprecation Directive { directiveName = "deprecated" } = True
+  isDeprecation _ = False
+
+lookupDeprecatedReason :: Directive -> Maybe Key
+lookupDeprecatedReason Directive { directiveArgs } = maybeString . snd <$> find isReason directiveArgs 
+   where
+    maybeString (Scalar (String x)) = x
+    maybeString _ = "can't read deprecated Reason Value" 
+    isReason ("reason",_) = True
+    isReason _ = False
+
 -- ENUM VALUE
 data DataEnumValue = DataEnumValue{
     enumName :: Name,
@@ -263,21 +304,20 @@ data DataField = DataField
   , fieldMeta     :: Maybe Meta
   } deriving (Show,Lift)
 
-fieldVisibility :: (Key,DataField) -> Bool
-fieldVisibility ("__typename",_) = False
-fieldVisibility ("__schema",_)   = False
-fieldVisibility ("__type",_)     = False
-fieldVisibility _                = True
+fieldVisibility :: (Key, DataField) -> Bool
+fieldVisibility ("__typename", _) = False
+fieldVisibility ("__schema"  , _) = False
+fieldVisibility ("__type"    , _) = False
+fieldVisibility _                 = True
 
 createField :: DataArguments -> Key -> ([TypeWrapper], Key) -> DataField
-createField fieldArgs fieldName (aliasWrappers, aliasTyCon) =
-  DataField
-    { fieldArgs
-    , fieldArgsType = Nothing
-    , fieldName
-    , fieldType = TypeAlias {aliasTyCon, aliasWrappers, aliasArgs = Nothing}
-    , fieldMeta = Nothing
-    }
+createField fieldArgs fieldName (aliasWrappers, aliasTyCon) = DataField
+  { fieldArgs
+  , fieldArgsType = Nothing
+  , fieldName
+  , fieldType     = TypeAlias { aliasTyCon, aliasWrappers, aliasArgs = Nothing }
+  , fieldMeta     = Nothing
+  }
 
 createArgument :: Key -> ([TypeWrapper], Key) -> (Key, DataField)
 createArgument fieldName x = (fieldName, createField [] fieldName x)
@@ -286,25 +326,26 @@ createArgument fieldName x = (fieldName, createField [] fieldName x)
 toNullableField :: DataField -> DataField
 toNullableField dataField
   | isNullable (aliasWrappers $ fieldType dataField) = dataField
-  | otherwise = dataField {fieldType = nullable (fieldType dataField)}
-  where
-    nullable alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = TypeMaybe : aliasWrappers}
+  | otherwise = dataField { fieldType = nullable (fieldType dataField) }
+ where
+  nullable alias@TypeAlias { aliasWrappers } =
+    alias { aliasWrappers = TypeMaybe : aliasWrappers }
 
 toListField :: DataField -> DataField
-toListField dataField = dataField {fieldType = listW (fieldType dataField)}
-  where
-    listW alias@TypeAlias {aliasWrappers} = alias {aliasWrappers = TypeList : aliasWrappers}
+toListField dataField = dataField { fieldType = listW (fieldType dataField) }
+ where
+  listW alias@TypeAlias { aliasWrappers } =
+    alias { aliasWrappers = TypeList : aliasWrappers }
 
 lookupField :: Key -> [(Key, field)] -> GenError error field
-lookupField key fields gqlError =
-  case lookup key fields of
-    Nothing    -> Left gqlError
-    Just field -> pure field
+lookupField key fields gqlError = case lookup key fields of
+  Nothing    -> Left gqlError
+  Just field -> pure field
 
 lookupSelectionField :: Position -> Key -> DataObject -> Validation DataField
-lookupSelectionField position fieldName DataTyCon {typeData ,typeName } = lookupField fieldName typeData gqlError
-  where
-    gqlError = cannotQueryField fieldName typeName position
+lookupSelectionField position fieldName DataTyCon { typeData, typeName } =
+  lookupField fieldName typeData gqlError
+  where gqlError = cannotQueryField fieldName typeName position
 
 --
 -- TYPE CONSTRUCTOR
@@ -337,62 +378,65 @@ data DataType
   deriving (Show)
 
 createType :: Key -> a -> DataTyCon a
-createType typeName typeData =
-  DataTyCon {typeName, typeMeta = Nothing, typeFingerprint = SystemFingerprint "", typeData}
+createType typeName typeData = DataTyCon
+  { typeName
+  , typeMeta        = Nothing
+  , typeFingerprint = SystemFingerprint ""
+  , typeData
+  }
 
 createScalarType :: Key -> (Key, DataType)
-createScalarType typeName = (typeName, DataScalar $ createType typeName (DataValidator pure))
+createScalarType typeName =
+  (typeName, DataScalar $ createType typeName (DataValidator pure))
 
 createEnumType :: Key -> [Key] -> (Key, DataType)
-createEnumType typeName typeData = (typeName, DataEnum $ createType typeName enumValues)
-  where 
-      enumValues = map createEnumValue typeData
+createEnumType typeName typeData =
+  (typeName, DataEnum $ createType typeName enumValues)
+  where enumValues = map createEnumValue typeData
 
-createEnumValue :: Key -> DataEnumValue 
-createEnumValue enumName = DataEnumValue {
-  enumName,
-  enumMeta = Nothing  
-}
+createEnumValue :: Key -> DataEnumValue
+createEnumValue enumName = DataEnumValue { enumName, enumMeta = Nothing }
 
 createUnionType :: Key -> [Key] -> (Key, DataType)
-createUnionType typeName typeData = (typeName, DataUnion $ createType typeName typeData)
+createUnionType typeName typeData =
+  (typeName, DataUnion $ createType typeName typeData)
 
 
 isEntNode :: DataType -> Bool
-isEntNode DataScalar {} = True
-isEntNode DataEnum {}   = True
-isEntNode _             = False
+isEntNode DataScalar{} = True
+isEntNode DataEnum{}   = True
+isEntNode _            = False
 
 isInputDataType :: DataType -> Bool
-isInputDataType DataScalar {}      = True
-isInputDataType DataEnum {}        = True
-isInputDataType DataInputObject {} = True
-isInputDataType DataInputUnion {}  = True
-isInputDataType _                  = False
+isInputDataType DataScalar{}      = True
+isInputDataType DataEnum{}        = True
+isInputDataType DataInputObject{} = True
+isInputDataType DataInputUnion{}  = True
+isInputDataType _                 = False
 
 coerceDataObject :: error -> DataType -> Either error DataObject
-coerceDataObject  _ (DataObject object) = pure object
-coerceDataObject  gqlError _            = Left gqlError
+coerceDataObject _        (DataObject object) = pure object
+coerceDataObject gqlError _                   = Left gqlError
 
 coerceDataUnion :: error -> DataType -> Either error DataUnion
-coerceDataUnion  _ (DataUnion object) = pure object
-coerceDataUnion  gqlError _           = Left gqlError
+coerceDataUnion _        (DataUnion object) = pure object
+coerceDataUnion gqlError _                  = Left gqlError
 
 kindOf :: DataType -> DataTypeKind
-kindOf (DataScalar _)      = KindScalar
-kindOf (DataEnum _)        = KindEnum
+kindOf (DataScalar      _) = KindScalar
+kindOf (DataEnum        _) = KindEnum
 kindOf (DataInputObject _) = KindInputObject
-kindOf (DataObject _)      = KindObject Nothing
-kindOf (DataUnion _)       = KindUnion
-kindOf (DataInputUnion _)  = KindInputUnion
+kindOf (DataObject      _) = KindObject Nothing
+kindOf (DataUnion       _) = KindUnion
+kindOf (DataInputUnion  _) = KindInputUnion
 
 fromDataType :: (DataTyCon () -> v) -> DataType -> v
-fromDataType f (DataScalar dt)      = f dt {typeData = ()}
-fromDataType f (DataEnum dt)        = f dt {typeData = ()}
-fromDataType f (DataUnion dt)       = f dt {typeData = ()}
-fromDataType f (DataInputObject dt) = f dt {typeData = ()}
-fromDataType f (DataInputUnion dt)  = f dt {typeData = ()}
-fromDataType f (DataObject dt)      = f dt {typeData = ()}
+fromDataType f (DataScalar      dt) = f dt { typeData = () }
+fromDataType f (DataEnum        dt) = f dt { typeData = () }
+fromDataType f (DataUnion       dt) = f dt { typeData = () }
+fromDataType f (DataInputObject dt) = f dt { typeData = () }
+fromDataType f (DataInputUnion  dt) = f dt { typeData = () }
+fromDataType f (DataObject      dt) = f dt { typeData = () }
 
 --
 -- Type Register
@@ -407,13 +451,11 @@ data DataTypeLib = DataTypeLib
 type TypeRegister = HashMap Key DataType
 
 initTypeLib :: (Key, DataObject) -> DataTypeLib
-initTypeLib query =
-  DataTypeLib
-    { types = empty
-    , query = query
-    , mutation = Nothing
-    , subscription = Nothing
-    }
+initTypeLib query = DataTypeLib { types        = empty
+                                , query        = query
+                                , mutation     = Nothing
+                                , subscription = Nothing
+                                }
 
 allDataTypes :: DataTypeLib -> [(Key, DataType)]
 allDataTypes DataTypeLib { types, query, mutation, subscription } =
@@ -421,7 +463,8 @@ allDataTypes DataTypeLib { types, query, mutation, subscription } =
 
 typeRegister :: DataTypeLib -> TypeRegister
 typeRegister DataTypeLib { types, query, mutation, subscription } =
-     types `union` fromList (concatMap fromOperation [Just query, mutation, subscription])
+  types `union` fromList
+    (concatMap fromOperation [Just query, mutation, subscription])
 
 fromOperation :: Maybe (Key, DataObject) -> [(Key, DataType)]
 fromOperation (Just (key', dataType')) = [(key', DataObject dataType')]
@@ -431,118 +474,121 @@ lookupDataType :: Key -> DataTypeLib -> Maybe DataType
 lookupDataType name lib = name `HM.lookup` typeRegister lib
 
 getDataType :: Key -> DataTypeLib -> GenError errors DataType
-getDataType name lib gqlError  = case lookupDataType name lib of
-   Just x -> Right x
-   _      -> Left gqlError
+getDataType name lib gqlError = case lookupDataType name lib of
+  Just x -> Right x
+  _      -> Left gqlError
 
 lookupDataObject :: errors -> Key -> DataTypeLib -> Either errors DataObject
-lookupDataObject validationError name lib  =
-    getDataType name lib validationError >>=
-    coerceDataObject  validationError
+lookupDataObject validationError name lib =
+  getDataType name lib validationError >>= coerceDataObject validationError
 
 lookupDataUnion :: errors -> Key -> DataTypeLib -> Either errors DataUnion
-lookupDataUnion validationError name lib  =
-    getDataType name lib validationError >>=
-    coerceDataUnion  validationError
+lookupDataUnion validationError name lib =
+  getDataType name lib validationError >>= coerceDataUnion validationError
 
-lookupUnionTypes :: Position -> Key -> DataTypeLib -> DataField -> Validation [DataObject]
-lookupUnionTypes position key lib DataField {fieldType = TypeAlias {aliasTyCon = typeName}} =
-  lookupDataUnion gqlError typeName lib >>= mapM (flip (lookupDataObject gqlError) lib ) . typeData
-  where
-    gqlError = hasNoSubfields key typeName position
+lookupUnionTypes
+  :: Position -> Key -> DataTypeLib -> DataField -> Validation [DataObject]
+lookupUnionTypes position key lib DataField { fieldType = TypeAlias { aliasTyCon = typeName } }
+  = lookupDataUnion gqlError typeName lib
+    >>= mapM (flip (lookupDataObject gqlError) lib)
+    .   typeData
+  where gqlError = hasNoSubfields key typeName position
 
-lookupFieldAsSelectionSet :: Position -> Key -> DataTypeLib -> DataField -> Validation DataObject
-lookupFieldAsSelectionSet position key lib DataField {fieldType = TypeAlias {aliasTyCon}} =
-  lookupDataObject gqlError aliasTyCon lib
-  where
-    gqlError = hasNoSubfields key aliasTyCon position
+lookupFieldAsSelectionSet
+  :: Position -> Key -> DataTypeLib -> DataField -> Validation DataObject
+lookupFieldAsSelectionSet position key lib DataField { fieldType = TypeAlias { aliasTyCon } }
+  = lookupDataObject gqlError aliasTyCon lib
+  where gqlError = hasNoSubfields key aliasTyCon position
 
 lookupInputType :: Key -> DataTypeLib -> GenError error DataType
 lookupInputType name lib gqlError = case lookupDataType name lib of
-    Just x | isInputDataType x -> Right x
-    _                          -> Left gqlError
+  Just x | isInputDataType x -> Right x
+  _                          -> Left gqlError
 
 isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
-isTypeDefined name lib = fromDataType typeFingerprint <$> lookupDataType name lib
+isTypeDefined name lib =
+  fromDataType typeFingerprint <$> lookupDataType name lib
 
 defineType :: (Key, DataType) -> DataTypeLib -> DataTypeLib
-defineType (key, datatype@(DataInputUnion DataTyCon{ typeName ,typeData = enumKeys , typeFingerprint })) lib = lib {
-   types = insert name unionTags (insert key datatype (types lib))
-}
-  where
-     name = typeName <> "Tags"
-     unionTags = DataEnum DataTyCon {
-          typeName = name
-        , typeFingerprint
-        , typeMeta = Nothing
-        , typeData = map createEnumValue enumKeys
-  }
-defineType (key, datatype) lib = lib {
-    types =  insert key datatype (types lib)
-}
+defineType (key, datatype@(DataInputUnion DataTyCon { typeName, typeData = enumKeys, typeFingerprint })) lib
+  = lib { types = insert name unionTags (insert key datatype (types lib)) }
+ where
+  name      = typeName <> "Tags"
+  unionTags = DataEnum DataTyCon { typeName        = name
+                                 , typeFingerprint
+                                 , typeMeta        = Nothing
+                                 , typeData = map createEnumValue enumKeys
+                                 }
+defineType (key, datatype) lib =
+  lib { types = insert key datatype (types lib) }
 
 lookupType :: error -> [(Key, a)] -> Key -> Either error a
-lookupType error' lib' typeName' =
-  case lookup typeName' lib' of
-    Nothing -> Left error'
-    Just x  -> pure x
+lookupType error' lib' typeName' = case lookup typeName' lib' of
+  Nothing -> Left error'
+  Just x  -> pure x
 
 
 createDataTypeLib :: [(Key, DataType)] -> Validation DataTypeLib
-createDataTypeLib types =
-  case takeByKey "Query" types of
-    (Just query, lib1) ->
-      case takeByKey "Mutation" lib1 of
-        (mutation, lib2) ->
-          case takeByKey "Subscription" lib2 of
-            (subscription, lib3) -> pure ((foldr defineType (initTypeLib query) lib3) {mutation, subscription})
-    _ -> internalError "Query Not Defined"
-  ----------------------------------------------------------------------------
-  where
-    takeByKey key lib =
-      case lookup key lib of
-        Just (DataObject value) -> (Just (key, value), filter ((/= key) . fst) lib)
-        _                       -> (Nothing, lib)
-
-
-createInputUnionFields :: Key -> [Key] -> [(Key,DataField)]
-createInputUnionFields name members = fieldTag : map unionField members
-    where
-        fieldTag = ("tag", DataField
-          { fieldName = "tag"
-          , fieldArgs = []
-          , fieldArgsType = Nothing
-          , fieldType = createAlias (name <> "Tags")
-          , fieldMeta = Nothing
-          })
-        unionField memberName = (
-            memberName ,
-            DataField {
-              fieldArgs = []
-              , fieldArgsType = Nothing
-              , fieldName = memberName
-              , fieldType = TypeAlias {
-                    aliasTyCon = memberName,
-                    aliasWrappers = [TypeMaybe],
-                    aliasArgs = Nothing
-                }
-              , fieldMeta = Nothing
-            }
+createDataTypeLib types = case takeByKey "Query" types of
+  (Just query, lib1) -> case takeByKey "Mutation" lib1 of
+    (mutation, lib2) -> case takeByKey "Subscription" lib2 of
+      (subscription, lib3) ->
+        pure
+          ((foldr defineType (initTypeLib query) lib3) { mutation
+                                                       , subscription
+                                                       }
           )
+  _ -> internalError "Query Not Defined"
+  ----------------------------------------------------------------------------
+
+
+
+
+ where
+  takeByKey key lib = case lookup key lib of
+    Just (DataObject value) -> (Just (key, value), filter ((/= key) . fst) lib)
+    _                       -> (Nothing, lib)
+
+
+createInputUnionFields :: Key -> [Key] -> [(Key, DataField)]
+createInputUnionFields name members = fieldTag : map unionField members
+ where
+  fieldTag =
+    ( "tag"
+    , DataField { fieldName     = "tag"
+                , fieldArgs     = []
+                , fieldArgsType = Nothing
+                , fieldType     = createAlias (name <> "Tags")
+                , fieldMeta     = Nothing
+                }
+    )
+  unionField memberName =
+    ( memberName
+    , DataField
+      { fieldArgs     = []
+      , fieldArgsType = Nothing
+      , fieldName     = memberName
+      , fieldType     = TypeAlias { aliasTyCon    = memberName
+                                  , aliasWrappers = [TypeMaybe]
+                                  , aliasArgs     = Nothing
+                                  }
+      , fieldMeta     = Nothing
+      }
+    )
 
 createAlias :: Key -> TypeAlias
-createAlias aliasTyCon = TypeAlias {aliasTyCon, aliasWrappers = [], aliasArgs = Nothing}
+createAlias aliasTyCon =
+  TypeAlias { aliasTyCon, aliasWrappers = [], aliasArgs = Nothing }
 
 
 type TypeUpdater = LibUpdater DataTypeLib
 
 insertType :: (Key, DataType) -> TypeUpdater
-insertType nextType@(name, datatype) lib =
-  case isTypeDefined name lib of
-    Nothing -> resolveUpdates (defineType nextType lib) []
-    Just fingerprint
-      | fingerprint == fromDataType typeFingerprint datatype -> return lib
-      |
-        -- throw error if 2 different types has same name
-        otherwise -> Left $ nameCollisionError name
+insertType nextType@(name, datatype) lib = case isTypeDefined name lib of
+  Nothing -> resolveUpdates (defineType nextType lib) []
+  Just fingerprint
+    | fingerprint == fromDataType typeFingerprint datatype -> return lib
+    |
+      -- throw error if 2 different types has same name
+      otherwise -> Left $ nameCollisionError name
 
