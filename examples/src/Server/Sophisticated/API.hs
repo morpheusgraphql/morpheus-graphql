@@ -13,11 +13,12 @@
 
 module Server.Sophisticated.API
   ( gqlRoot
-  , APIEvent
+  , EVENT
   )
 where
 
 import           Data.Map                       ( Map )
+import           Control.Monad.Trans            ( lift )
 import qualified Data.Map                      as M
                                                 ( fromList )
 import           Data.Set                       ( Set )
@@ -41,11 +42,17 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , GQLScalar(..)
                                                 , GQLType(..)
                                                 , ID
-                                                , QUERY
                                                 , Resolver(..)
                                                 , ScalarValue(..)
                                                 , constRes
+                                                , IORes
+                                                , IOMutRes
+                                                , liftEither
+                                                , ResolveQ
+                                                , ResolveM
+                                                , ResolveS
                                                 )
+
 
 
 $(importGQLDocumentWithNamespace "src/Server/Sophisticated/api.gql")
@@ -86,85 +93,134 @@ newtype A a = A
   { wrappedA :: a
   } deriving (Generic)
 
-data Channel
-  = UPDATE_USER
-  | UPDATE_ADDRESS
+data Channel = USER | ADDRESS
   deriving (Show, Eq, Ord)
 
-data Content = Update
-  { contentID      :: Int
-  , contentMessage :: Text
-  }
+newtype Content = Content { contentID :: Int  }
 
-type APIEvent = (Event Channel Content)
+type EVENT = (Event Channel Content)
 
-
-gqlRoot :: GQLRootResolver IO APIEvent Query Mutation Subscription
+gqlRoot :: GQLRootResolver IO EVENT Query Mutation Subscription
 gqlRoot = GQLRootResolver { queryResolver
                           , mutationResolver
                           , subscriptionResolver
                           }
  where
   queryResolver = Query
-    { queryUser     = const fetchUser
-    , queryAnimal   = \QueryAnimalArgs { queryAnimalArgsAnimal } ->
-                        pure (pack $ show queryAnimalArgsAnimal)
+    { queryUser     = resolveUser
+    , queryAnimal   = resolveAnimal
     , querySet      = constRes $ S.fromList [1, 2]
     , querySomeMap  = constRes $ M.fromList [("robin", 1), ("carl", 2)]
     , queryWrapped1 = constRes $ A (0, "some value")
     , queryWrapped2 = constRes $ A ""
     }
   -------------------------------------------------------------
-  mutationResolver = Mutation { mutationCreateUser, mutationCreateAddress }
-   where
-    mutationCreateUser _ = MutResolver
-      [ Event
-          [UPDATE_USER]
-          (Update { contentID = 12, contentMessage = "some message for user" })
-      ]
-      (pure User { userName    = constRes "George"
-                 , userEmail   = constRes "George@email.com"
-                 , userAddress = constRes mutationAddress
-                 , userOffice  = constRes Nothing
-                 , userHome    = constRes HH
-                 , userEntity  = constRes Nothing
-                 }
-      )
-    -------------------------
-    mutationCreateAddress _ = MutResolver
-      [ Event
-          [UPDATE_ADDRESS]
-          (Update { contentID = 10, contentMessage = "message for address" })
-      ]
-      (pure mutationAddress)
-  ----------------------------------------------------------------
-  subscriptionResolver = Subscription { subscriptionNewAddress
-                                      , subscriptionNewUser
-                                      }
-   where
-    subscriptionNewUser () = SubResolver [UPDATE_USER] subResolver
-      where subResolver (Event _ Update{}) = fetchUser
-    subscriptionNewAddress () = SubResolver [UPDATE_ADDRESS] subResolver
-      where subResolver (Event _ Update { contentID }) = fetchAddress contentID
-  ----------------------------------------------------------------------------------------------
-  fetchAddress _ = pure Address { addressCity        = constRes ""
-                                , addressStreet      = constRes ""
-                                , addressHouseNumber = constRes 0
-                                }
-  fetchUser
-    :: Resolver
-         QUERY
-         IO
-         (Event Channel Content)
-         (User (Resolver QUERY IO (Event Channel Content)))
-  fetchUser = pure User { userName    = constRes "George"
-                        , userEmail   = constRes "George@email.com"
-                        , userAddress = fetchAddress
-                        , userOffice  = constRes Nothing
-                        , userHome    = constRes HH
-                        , userEntity  = constRes Nothing
-                        }
-  mutationAddress = Address { addressCity        = constRes ""
-                            , addressStreet      = constRes ""
-                            , addressHouseNumber = constRes 0
-                            }
+  mutationResolver = Mutation { mutationCreateUser    = resolveCreateUser
+                              , mutationCreateAddress = resolveCreateAdress
+                              , mutationSetAdress     = resolveSetAdress
+                              }
+  subscriptionResolver = Subscription
+    { subscriptionNewUser    = resolveNewUser
+    , subscriptionNewAddress = resolveNewAdress
+    }
+
+-- Resolve QUERY
+resolveUser :: () -> ResolveQ EVENT IO User
+resolveUser _args = liftEither (getDBUser (Content 2))
+
+resolveAnimal :: QueryAnimalArgs -> IORes EVENT Text
+resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
+  pure (pack $ show queryAnimalArgsAnimal)
+
+-- Resolve MUTATIONS
+-- 
+-- Mutation Wit Event Triggering : sends events to subscription  
+resolveCreateUser :: () -> ResolveM EVENT IO User
+resolveCreateUser _args = MutResolver $ do
+  value <- lift setDBUser
+  pure ([userUpdate], value)
+
+-- Mutation Wit Event Triggering : sends events to subscription  
+resolveCreateAdress :: () -> ResolveM EVENT IO Address
+resolveCreateAdress _args = MutResolver $ do
+  value <- lift setDBAddress
+  pure ([addressUpdate], value)
+
+-- Mutation Without Event Triggering  
+resolveSetAdress :: () -> ResolveM EVENT IO Address
+resolveSetAdress _args = lift setDBAddress
+
+-- Resolve SUBSCRIPTION
+resolveNewUser :: () -> ResolveS EVENT IO User
+resolveNewUser _args = SubResolver { subChannels = [USER], subResolver }
+  where subResolver (Event _ content) = liftEither (getDBUser content)
+
+resolveNewAdress :: () -> ResolveS EVENT IO Address
+resolveNewAdress _args = SubResolver { subChannels = [ADDRESS], subResolver }
+  where subResolver (Event _ content) = lift (getDBAddress content)
+
+-- Events ----------------------------------------------------------------
+addressUpdate :: EVENT
+addressUpdate = Event [ADDRESS] (Content { contentID = 10 })
+
+userUpdate :: EVENT
+userUpdate = Event [USER] (Content { contentID = 12 })
+
+-- DB::Getter --------------------------------------------------------------------
+getDBAddress :: Content -> IO (Address (IORes EVENT))
+getDBAddress _id = do
+  city   <- dbText
+  street <- dbText
+  number <- dbInt
+  pure Address { addressCity        = constRes city
+               , addressStreet      = constRes street
+               , addressHouseNumber = constRes number
+               }
+
+getDBUser :: Content -> IO (Either String (User (IORes EVENT)))
+getDBUser _ = do
+  Person { name, email } <- dbPerson
+  pure $ Right User { userName    = constRes name
+                    , userEmail   = constRes email
+                    , userAddress = const $ lift (getDBAddress (Content 12))
+                    , userOffice  = constRes Nothing
+                    , userHome    = constRes HH
+                    , userEntity  = constRes Nothing
+                    }
+
+-- DB::Setter --------------------------------------------------------------------
+setDBAddress :: IO (Address (IOMutRes EVENT))
+setDBAddress = do
+  city        <- dbText
+  street      <- dbText
+  houseNumber <- dbInt
+  pure Address { addressCity        = constRes city
+               , addressStreet      = constRes street
+               , addressHouseNumber = constRes houseNumber
+               }
+
+setDBUser :: IO (User (IOMutRes EVENT))
+setDBUser = do
+  Person { name, email } <- dbPerson
+  pure User { userName    = constRes name
+            , userEmail   = constRes email
+            , userAddress = const $ lift setDBAddress
+            , userOffice  = constRes Nothing
+            , userHome    = constRes HH
+            , userEntity  = constRes Nothing
+            }
+
+-- DB ----------------------
+data Person = Person {
+  name :: Text,
+  email :: Text
+}
+
+dbText :: IO Text
+dbText = pure "Updated Text"
+
+dbInt :: IO Int
+dbInt = pure 11
+
+dbPerson :: IO Person
+dbPerson = pure Person { name = "George", email = "George@email.com" }

@@ -1,10 +1,41 @@
-## [0.6.3] -
+## [0.7.0] -
+
+## Changed
+
+- `liftM` to `MonadTrans` instance method `lift`
+
+- `liftEitherM` to `liftEither`
+
+- `Resolver operation m event value` -> `Resolver operation event m value` , monad trans needs that last 2 type arguments are monad and value that why it was necessary
+
+- Mutation Resolver was changed from
+
+```
+resolver :: () -> ResolveM EVENT IO Address
+resolver = MutResolver  {
+  mutEvents = [someEventForSubscription],
+  mutResolver = lift setDBAddress
+}
+```
+
+```haskell
+-- Mutation Wit Event Triggering : sends events to subscription
+resolver :: () -> ResolveM EVENT IO Address
+resolver = MutResolver \$ do
+  value <- lift setDBAddress
+  pure ([someEventForSubscription], value)
+-- or
+-- Mutation Without Event Triggering
+resolver :: () -> ResolveM EVENT IO Address
+resolver _args = lift setDBAddress
+```
 
 ### Added
 
 - GraphQL SDL support fully supports descriptions: onTypes, fields , args ...
   with (enums, inputObjects , union, object)
   for example :
+
   ```gql
   """
   Description for Type Address
@@ -22,6 +53,20 @@
     ): Int!
   }
   ```
+
+- types:
+
+  - ResolveQ : for Query
+  - ResolveM : for Mutation
+  - ResolveS : for Subscription
+
+  `ResolveM EVENT IO Address` is same as `MutRes EVENT IO (Address (MutRes EVENT IO))`
+
+  is helpfull wenn you want to resolve GraphQL object
+
+### Fixed
+
+- added missing Monad instance for Mutation resolver
 
 ## [0.6.2] - 2.11.2019
 

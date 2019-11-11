@@ -50,7 +50,7 @@ type TRUE = 'True
 type FALSE = 'False
 
 resolverCon :: TyCon
-resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver QUERY Maybe)
+resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver QUERY () Maybe)
 
 -- | replaces typeName (A,B) with Pair_A_B
 replacePairCon :: TyCon -> TyCon
@@ -158,8 +158,8 @@ instance GQLType a => GQLType (Either s a) where
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
-instance GQLType a => GQLType (Resolver o m e a) where
-  type KIND (Resolver o m e a) = WRAPPER
+instance GQLType a => GQLType (Resolver o e m a) where
+  type KIND (Resolver o e m a) = WRAPPER
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 

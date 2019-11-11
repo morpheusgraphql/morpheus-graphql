@@ -36,7 +36,7 @@ import           Client.Client                  ( fetUser
                                                 )
 import           Server.Mythology.API           ( mythologyApi )
 import           Server.TH.Simple               ( thSimpleApi )
-import           Server.Sophisticated.API       ( APIEvent
+import           Server.Sophisticated.API       ( EVENT
                                                 , gqlRoot
                                                 )
 
@@ -51,7 +51,7 @@ main = do
  where
   settings = Warp.setPort 3000 Warp.defaultSettings
   wsApp    = gqlSocketApp gqlRoot
-  httpServer :: GQLState IO APIEvent -> IO Wai.Application
+  httpServer :: GQLState IO EVENT -> IO Wai.Application
   httpServer state = scottyApp $ do
     post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
     get "/" $ file "./examples/index.html"
