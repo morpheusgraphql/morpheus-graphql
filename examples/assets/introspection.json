@@ -1703,6 +1703,29 @@
           "possibleTypes": null
         },
         {
+          "kind": "INTERFACE",
+          "name": "Node",
+          "description": "An object with an ID.",
+          "fields": [
+            {
+              "name": "id",
+              "description": "ID of the object.",
+              "args": [],
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "ID", "ofType": null }
+              },
+              "isDeprecated": false,
+              "deprecationReason": null
+            }
+          ],
+          "inputFields": null,
+          "interfaces": null,
+          "enumValues": null,
+          "possibleTypes": []
+        },
+        {
           "kind": "OBJECT",
           "name": "__Schema",
           "description": "",

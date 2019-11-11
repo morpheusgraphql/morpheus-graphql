@@ -97,6 +97,8 @@ will displayed in introspection
 ### Fixed
 
 - added missing Monad instance for Mutation resolver
+- `defineByIntrospectionFile` does not breaks if schema contains interfaces
+- Morpheus Client supports `Subscription` and `Mutation`operations
 
 ## [0.6.2] - 2.11.2019
 
