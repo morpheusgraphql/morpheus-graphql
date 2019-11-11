@@ -23,6 +23,19 @@ import           Data.Morpheus.Client           ( Fetch(..)
 import           Data.Morpheus.Types            ( ScalarValue(..) )
 import           Data.Text                      ( Text )
 
+
+defineByDocumentFile
+  "src/Server/Sophisticated/api.gql"
+  [gql|
+    # Subscription Test Query
+    subscription MySubscription
+    {
+      newUser
+      { subEmail : email }
+    }
+  |]
+
+
 defineByIntrospectionFile
   "./assets/introspection.json"
   [gql|

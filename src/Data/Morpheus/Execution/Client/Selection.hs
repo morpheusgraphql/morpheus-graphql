@@ -31,6 +31,7 @@ import           Data.Morpheus.Types.Internal.AST.Operation
                                                 , Variable(..)
                                                 , VariableDefinitions
                                                 , getOperationName
+                                                , getOperationDataType
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( Selection(..)
@@ -77,10 +78,11 @@ operationTypes
   -> Validation (Maybe TypeD, [ClientType])
 operationTypes lib variables = genOperation
  where
-  genOperation Operation { operationName, operationSelection } = do
+  genOperation operation@Operation { operationName, operationSelection } = do
+    datatype            <- DataObject <$> getOperationDataType operation lib
     (queryTypes, enums) <- genRecordType []
                                          (getOperationName operationName)
-                                         queryDataType
+                                         datatype
                                          operationSelection
     inputTypeRequests <- resolveUpdates []
       $ map (scanInputTypes lib . variableType . snd) variables
@@ -89,7 +91,6 @@ operationTypes lib variables = genOperation
       ( rootArguments (getOperationName operationName <> "Args")
       , queryTypes <> inputTypesAndEnums
       )
-    where queryDataType = DataObject $ snd $ query lib
   -------------------------------------------------------------------------
   buildListedTypes =
     fmap concat . traverse (buildInputType lib) . removeDuplicates
@@ -283,7 +284,8 @@ lookupFieldType lib path (DataObject DataTyCon { typeData }) key =
      where
       trans x =
         (x, alias { aliasTyCon = typeFrom path x, aliasArgs = Nothing })
-    Nothing -> Left (compileError $ "cant find field \"" <> key <> "\"")
+    Nothing ->
+      Left (compileError $ "cant find field \"" <> pack (show typeData) <> "\"")
 lookupFieldType _ _ dt _ =
   Left (compileError $ "Type should be output Object \"" <> pack (show dt))
 
