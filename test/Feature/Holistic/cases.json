@@ -214,5 +214,17 @@
   {
     "path": "introspection/description/enum",
     "description": "check enum descriptions, type, enumValue"
+  },
+  {
+    "path": "introspection/deprecated/enumValue",
+    "description": "check if deprecated works with enumValue"
+  },
+  {
+    "path": "introspection/deprecated/enumValue",
+    "description": "check if deprecated works with enumValue"
+  },
+  {
+    "path": "introspection/deprecated/field",
+    "description": "check if deprecated works with object fields"
   }
 ]
