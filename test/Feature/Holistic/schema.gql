@@ -50,14 +50,14 @@ type Address {
   """
   field Description: city
   """
-  city: String! @deprecated(reason: "test deprecation field")
+  city: String! @deprecated(reason: "test deprecation field with reason")
   street(
     """
     argument Description: inputObject
     """
     argInputObject: TestInputObject!
     argMaybeString: String
-  ): [[[[String!]!]!]] @deprecated(reason: "test deprecation field")
+  ): [[[[String!]!]!]] @deprecated
   houseNumber: Int!
 }
 
