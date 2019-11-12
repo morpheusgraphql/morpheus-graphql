@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections       #-}
 
 module Data.Morpheus.Types.Internal.AST.Value
   ( Value(..)
@@ -25,7 +24,6 @@ import qualified Data.Aeson                    as A
                                                 , pairs
                                                 , (.=)
                                                 )
-import           Data.Function                  ( (&) )
 import qualified Data.HashMap.Strict           as M
                                                 ( toList )
 import           Data.Scientific                ( Scientific
@@ -156,34 +154,3 @@ instance GQLValue Value where
   gqlString  = Scalar . String
   gqlList    = List
   gqlObject  = Object
-
-instance Monad m => GQLValue (m Value) where
-  gqlNull    = pure gqlNull
-  gqlScalar  = pure . gqlScalar
-  gqlBoolean = pure . gqlBoolean
-  gqlString  = pure . gqlString
-  -----------------------------------------
-  -- listValue :: [m Value] -> m Value
-  gqlList    = fmap gqlList . sequence
-  -----------------------------------------
-  -- objectValue :: [(Text, m Value )] -> m Value
-  gqlObject  = fmap gqlObject . traverse keyVal
-   where
-    keyVal :: Monad m => (Text, m Value) -> m (Text, Value)
-    keyVal (key, valFunc) = (key, ) <$> valFunc
-
--- build GQL Values for Subscription Resolver
-instance Monad m => GQLValue (args -> m Value) where
-  gqlNull    = const gqlNull
-  gqlScalar  = const . gqlScalar
-  gqlBoolean = pure . gqlBoolean
-  gqlString  = const . gqlString
-  ----------------------------------------
-   -- listValue :: [args -> m Value] -> ( args -> m Value )
-  gqlList res args = gqlList <$> traverse (args &) res
-  ----------------------------------------
-  -- objectValue :: [(Text, args -> m Value )] -> ( args -> m Value )
-  gqlObject res args = gqlObject <$> traverse keyVal res
-   where
-    keyVal :: Monad m => (Text, args -> m Value) -> m (Text, Value)
-    keyVal (key, valFunc) = (key, ) <$> valFunc args
