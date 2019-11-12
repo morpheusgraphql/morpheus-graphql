@@ -6,7 +6,7 @@
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TupleSections       #-}
 
-module Data.Morpheus.Types.Internal.Value
+module Data.Morpheus.Types.Internal.AST.Value
   ( Value(..)
   , ScalarValue(..)
   , Object

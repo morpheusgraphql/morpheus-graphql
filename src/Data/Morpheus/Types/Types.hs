@@ -21,7 +21,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( FragmentLib )
 import           Data.Morpheus.Types.Internal.Base
                                                 ( Key )
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
 
 data Undefined (m :: * -> *) = Undefined deriving (Show, Generic)

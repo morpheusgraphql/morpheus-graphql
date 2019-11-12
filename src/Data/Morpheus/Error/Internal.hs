@@ -5,15 +5,21 @@ module Data.Morpheus.Error.Internal
   , internalArgumentError
   , internalUnknownTypeMessage
   , internalError
-  ) where
+  )
+where
 
-import           Data.Text                               (Text)
-import qualified Data.Text                               as T (concat, pack)
+import           Data.Text                      ( Text )
+import qualified Data.Text                     as T
+                                                ( concat
+                                                , pack
+                                                )
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils               (globalErrorMessage)
-import           Data.Morpheus.Types.Internal.Validation (GQLErrors)
-import           Data.Morpheus.Types.Internal.Value      (Value (..))
+import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( GQLErrors )
+import           Data.Morpheus.Types.Internal.AST.Value
+                                                ( Value(..) )
 
 
 -- GQL:: if no mutation defined -> "Schema is not configured for mutations."
@@ -23,9 +29,8 @@ internalError x = Left $ globalErrorMessage $ T.concat ["INTERNAL ERROR: ", x]
 
 -- if type did not not found, but was defined by Schema
 internalUnknownTypeMessage :: Text -> GQLErrors
-internalUnknownTypeMessage x =
-  globalErrorMessage $
-  T.concat ["type did not not found, but was defined by Schema", x]
+internalUnknownTypeMessage x = globalErrorMessage
+  $ T.concat ["type did not not found, but was defined by Schema", x]
 
 -- if arguments is already validated but has not found required argument
 internalArgumentError :: Text -> Either GQLErrors b

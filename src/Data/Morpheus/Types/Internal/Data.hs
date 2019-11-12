@@ -114,7 +114,7 @@ import           Data.Morpheus.Types.Internal.Base
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation )
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value(..) ,ScalarValue(..))
 import           Data.Morpheus.Execution.Internal.GraphScanner
                                                 ( LibUpdater

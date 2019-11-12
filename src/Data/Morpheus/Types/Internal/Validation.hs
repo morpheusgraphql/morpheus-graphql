@@ -8,14 +8,19 @@ module Data.Morpheus.Types.Internal.Validation
   , JSONError(..)
   , Validation
   , ResolveValue
-  ) where
+  )
+where
 
-import           Control.Monad.Trans.Except         (ExceptT (..))
-import           Data.Aeson                         (FromJSON, ToJSON)
-import           Data.Morpheus.Types.Internal.Base  (Location (..))
-import           Data.Morpheus.Types.Internal.Value (Value)
-import           Data.Text                          (Text)
-import           GHC.Generics                       (Generic)
+import           Control.Monad.Trans.Except     ( ExceptT(..) )
+import           Data.Aeson                     ( FromJSON
+                                                , ToJSON
+                                                )
+import           Data.Morpheus.Types.Internal.Base
+                                                ( Location(..) )
+import           Data.Morpheus.Types.Internal.AST.Value
+                                                ( Value )
+import           Data.Text                      ( Text )
+import           GHC.Generics                   ( Generic )
 
 data GQLError = GQLError
   { desc      :: Text

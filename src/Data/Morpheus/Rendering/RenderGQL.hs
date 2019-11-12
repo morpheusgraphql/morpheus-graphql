@@ -35,7 +35,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , toGQLWrapper
                                                 , DataEnumValue(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( convertToJSONName )
 
 

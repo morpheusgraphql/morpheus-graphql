@@ -30,7 +30,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , lookupField
                                                 , lookupInputType
                                                 )
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value(..) )
 
 -- Validate Variable Argument or all Possible input Values

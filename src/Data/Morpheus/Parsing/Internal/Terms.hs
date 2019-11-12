@@ -72,7 +72,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , TypeWrapper(..)
                                                 , toHSWrappers
                                                 )
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( convertToHaskellName )
 
 

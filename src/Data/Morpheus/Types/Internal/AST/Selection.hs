@@ -30,7 +30,7 @@ import           Data.Morpheus.Types.Internal.Base
                                                 , Reference(..)
                                                 )
 
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
 
 

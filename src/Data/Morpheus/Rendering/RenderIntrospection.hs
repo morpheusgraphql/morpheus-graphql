@@ -39,7 +39,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
                                                 )
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( convertToJSONName )
 
 
@@ -82,8 +82,6 @@ createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
                                       (deprecated >>= lookupDeprecatedReason)
   }
   where deprecated = enumMeta >>= lookupDeprecated
-
-
 
 instance RenderSchema DataField S__Field where
   render (name, field@DataField { fieldType = TypeAlias { aliasTyCon }, fieldArgs, fieldMeta }) lib

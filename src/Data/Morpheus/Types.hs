@@ -55,7 +55,7 @@ import           Data.Morpheus.Types.Internal.Resolver
                                                 , liftEither
                                                 , lift
                                                 )
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ScalarValue(..) )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)

@@ -73,7 +73,7 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 ( GQLErrors
                                                 , Validation
                                                 )
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
                                                 , Value
                                                 )

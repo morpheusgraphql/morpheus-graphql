@@ -42,7 +42,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , DataTypeLib(..)
                                                 , DataObject
                                                 )
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
 
 type DefaultValue = Maybe Value

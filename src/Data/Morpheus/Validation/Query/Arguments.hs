@@ -47,7 +47,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation )
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value(Null) )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( checkForUnknownKeys
