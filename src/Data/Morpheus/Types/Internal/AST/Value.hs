@@ -37,8 +37,8 @@ import qualified Data.Text                     as T
 import qualified Data.Vector                   as V
                                                 ( toList )
 import           GHC.Generics                   ( Generic )
-import           Language.Haskell.TH
-import           Language.Haskell.TH.Syntax
+import           Instances.TH.Lift              ( )
+import           Language.Haskell.TH.Syntax     ( Lift )
 
 
 isReserved :: Text -> Bool
