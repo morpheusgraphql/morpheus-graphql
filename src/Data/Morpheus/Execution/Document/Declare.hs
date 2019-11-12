@@ -27,9 +27,8 @@ import           Data.Morpheus.Execution.Internal.Declare
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( isInput
                                                 , isObject
+                                                , GQLTypeD(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.DataD
-                                                ( GQLTypeD(..) )
 
 declareTypes :: Bool -> [GQLTypeD] -> Q [Dec]
 declareTypes namespace = fmap concat . traverse (declareGQLType namespace)

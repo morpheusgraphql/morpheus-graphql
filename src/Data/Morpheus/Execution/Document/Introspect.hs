@@ -17,8 +17,7 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
-import           Data.Morpheus.Types.Internal.AST.Data         (ArgsType (..),Key, DataType(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
-import           Data.Morpheus.Types.Internal.AST.DataD        (ConsD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.AST.Data         (ConsD (..), TypeD (..), ArgsType (..),Key, DataType(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
 
 

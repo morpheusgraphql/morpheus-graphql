@@ -23,7 +23,7 @@ import           Data.Morpheus.Execution.Server.Decode
                                                 ( Decode(..)
                                                 , DecodeObject(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.DataD
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( TypeD(..) )
 import           Data.Morpheus.Types.Internal.TH
                                                 ( instanceHeadT )

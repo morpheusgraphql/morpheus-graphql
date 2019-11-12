@@ -31,9 +31,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , TypeAlias(..)
                                                 , DataEnumValue(..)
                                                 , sysTypes
-                                                )
-import           Data.Morpheus.Types.Internal.AST.DataD
-                                                ( ConsD(..)
+                                                , ConsD(..)
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
                                                 )

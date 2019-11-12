@@ -50,9 +50,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , DataEnumValue(..)
                                                 , allDataTypes
                                                 , lookupType
-                                                )
-import           Data.Morpheus.Types.Internal.AST.DataD
-                                                ( ConsD(..)
+                                                , ConsD(..)
                                                 , ClientType(..)
                                                 , TypeD(..)
                                                 )

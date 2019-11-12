@@ -30,9 +30,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataTypeKind(..)
                                                 , DataTypeLib
                                                 , isOutputObject
-                                                )
-import           Data.Morpheus.Types.Internal.AST.DataD
-                                                ( ClientType(..)
+                                                , ClientType(..)
                                                 , ClientQuery(..)
                                                 , TypeD(..)
                                                 )

@@ -34,9 +34,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , Meta(..)
                                                 , isObject
                                                 , isSchemaTypeName
-                                                )
-import           Data.Morpheus.Types.Internal.AST.DataD
-                                                ( GQLTypeD(..)
+                                                , GQLTypeD(..)
                                                 , TypeD(..)
                                                 )
 import           Data.Morpheus.Types.Internal.TH

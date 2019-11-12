@@ -29,9 +29,7 @@ import           Data.Morpheus.Error.Internal   ( internalArgumentError
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField(..)
                                                 , Key
-                                                )
-import           Data.Morpheus.Types.Internal.AST.DataD
-                                                ( ConsD(..) )
+                                                , ConsD(..) )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation )
 import           Data.Morpheus.Types.Internal.AST.Value

@@ -25,9 +25,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , isSubscription
-                                                )
-import           Data.Morpheus.Types.Internal.AST.DataD
-                                                ( ConsD(..)
+                                                , ConsD(..)
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
                                                 )

@@ -31,9 +31,7 @@ import           Data.Morpheus.Execution.Internal.Utils
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField(..)
                                                 , isFieldNullable
-                                                )
-import           Data.Morpheus.Types.Internal.AST.DataD
-                                                ( ConsD(..)
+                                                , ConsD(..)
                                                 , TypeD(..)
                                                 )
 import           Data.Morpheus.Types.Internal.TH
