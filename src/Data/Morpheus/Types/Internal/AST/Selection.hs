@@ -8,11 +8,67 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , ArgumentOrigin(..)
   , ValidSelection
   , Selection(..)
-  ) where
+  )
+where
 
-import           Data.Morpheus.Types.Internal.Base  (Collection, Key, Position)
-import           Data.Morpheus.Types.Internal.Value (Value)
-import           Language.Haskell.TH.Syntax         (Lift)
+import           Language.Haskell.TH.Syntax     ( Lift )
+
+
+-- MORPHEUS
+import           Data.Morpheus.Types.Internal.TH
+                                                ( apply
+                                                , liftMaybeText
+                                                , liftText
+                                                , liftTextMap
+                                                )
+import           Data.Morpheus.Types.Internal.Base
+                                                ( Collection
+                                                , Key
+                                                , Position
+                                                , Reference(..)
+                                                )
+
+import           Data.Morpheus.Types.Internal.Value
+                                                ( Value )
+
+
+-- RAW SELECTION
+
+type RawSelection' a = Selection RawArguments a
+
+type FragmentLib = [(Key, Fragment)]
+
+type RawArguments = Collection RawArgument
+
+type RawSelectionSet = Collection RawSelection
+
+data Fragment = Fragment
+  { fragmentType      :: Key
+  , fragmentPosition  :: Position
+  , fragmentSelection :: RawSelectionSet
+  } deriving (Show, Lift)
+
+data RawArgument
+  = VariableReference Reference
+  | RawArgument Argument
+  deriving (Show, Lift)
+
+
+data RawSelection
+  = RawSelectionSet (RawSelection' RawSelectionSet)
+  | RawSelectionField (RawSelection' ())
+  | InlineFragment Fragment
+  | Spread Reference
+  deriving (Show,Lift)
+
+-- VALID SELECTION 
+type Arguments = Collection Argument
+
+type SelectionSet = Collection ValidSelection
+
+type ValidSelection = Selection Arguments SelectionRec
+
+type UnionSelection = Collection SelectionSet
 
 data ArgumentOrigin
   = VARIABLE
@@ -24,14 +80,6 @@ data Argument = Argument
   , argumentOrigin   :: ArgumentOrigin
   , argumentPosition :: Position
   } deriving (Show, Lift)
-
-type Arguments = Collection Argument
-
-type SelectionSet = Collection ValidSelection
-
-type ValidSelection = Selection Arguments SelectionRec
-
-type UnionSelection = Collection SelectionSet
 
 data Selection args rec = Selection
   { selectionArguments :: args
