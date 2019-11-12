@@ -5,7 +5,7 @@ input Cat @testDir {
 }
 
 input Dog {
-  name: String! @testDirective(testName: "")
+  name: String! @inputDirective(testName: "")
 }
 
 input Bird {
@@ -22,13 +22,13 @@ enum CityID @enumDir {
   temporary multiline Test for Enum field descripions
   """
   Paris
-  BLN @deprecated(reason: "just for test")
+  BLN @deprecated(reason: "some reason")
   "temporary singleline Test for Enum field descripions"
   HH @deprecated(reason: "just for test")
 }
 
 input Coordinates {
-  latitude: Euro! @testDirective(testName: "")
+  latitude: Euro! @customDirective(testName: "")
   "temporary singleline Test for input object field descripions"
   longitude: [[[UniqueID!]!]]!
 }
