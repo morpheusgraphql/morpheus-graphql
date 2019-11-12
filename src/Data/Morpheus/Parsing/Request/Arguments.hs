@@ -2,17 +2,36 @@
 
 module Data.Morpheus.Parsing.Request.Arguments
   ( maybeArguments
-  ) where
+  )
+where
 
-import           Text.Megaparsec                               (label, (<|>))
+import           Text.Megaparsec                ( label
+                                                , (<|>)
+                                                )
 
 -- MORPHEUS
-import           Data.Morpheus.Parsing.Internal.Internal       (Parser, getLocation)
-import           Data.Morpheus.Parsing.Internal.Terms          (parseAssignment, parseMaybeTuple, token, variable)
-import           Data.Morpheus.Parsing.Internal.Value          (enumValue, parseValue)
-import           Data.Morpheus.Types.Internal.AST.RawSelection (Argument (..), RawArgument (..), RawArguments)
-import           Data.Morpheus.Types.Internal.AST.Selection    (ArgumentOrigin (..))
-import           Data.Morpheus.Types.Internal.Base             (Reference (..))
+import           Data.Morpheus.Parsing.Internal.Internal
+                                                ( Parser
+                                                , getLocation
+                                                )
+import           Data.Morpheus.Parsing.Internal.Terms
+                                                ( parseAssignment
+                                                , parseMaybeTuple
+                                                , token
+                                                , variable
+                                                )
+import           Data.Morpheus.Parsing.Internal.Value
+                                                ( enumValue
+                                                , parseValue
+                                                )
+import           Data.Morpheus.Types.Internal.AST.Selection
+                                                ( ArgumentOrigin(..)
+                                                , Argument(..)
+                                                , RawArgument(..)
+                                                , RawArguments
+                                                )
+import           Data.Morpheus.Types.Internal.Base
+                                                ( Reference(..) )
 
 
 -- Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Arguments
@@ -24,19 +43,19 @@ import           Data.Morpheus.Types.Internal.Base             (Reference (..))
 --  Name : Value[Const]
 -- TODO: move variable to Value
 valueArgument :: Parser RawArgument
-valueArgument =
-  label "valueArgument" $ do
-    argumentPosition <- getLocation
-    argumentValue <- parseValue <|> enumValue
-    pure $ RawArgument $ Argument {argumentValue, argumentOrigin = INLINE, argumentPosition}
+valueArgument = label "valueArgument" $ do
+  argumentPosition <- getLocation
+  argumentValue    <- parseValue <|> enumValue
+  pure $ RawArgument $ Argument { argumentValue
+                                , argumentOrigin   = INLINE
+                                , argumentPosition
+                                }
 
 variableArgument :: Parser RawArgument
-variableArgument =
-  label "variableArgument" $ do
-    (referenceName, referencePosition) <- variable
-    pure $ VariableReference $ Reference {referenceName, referencePosition}
+variableArgument = label "variableArgument" $ do
+  (referenceName, referencePosition) <- variable
+  pure $ VariableReference $ Reference { referenceName, referencePosition }
 
 maybeArguments :: Parser RawArguments
 maybeArguments = label "maybeArguments" $ parseMaybeTuple argument
-  where
-    argument = parseAssignment token (valueArgument <|> variableArgument)
+  where argument = parseAssignment token (valueArgument <|> variableArgument)

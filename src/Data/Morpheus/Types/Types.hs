@@ -17,7 +17,7 @@ import           Instances.TH.Lift              ( )
 -- Morpheus
 import           Data.Morpheus.Types.Internal.AST.Operation
                                                 ( RawOperation )
-import           Data.Morpheus.Types.Internal.AST.RawSelection
+import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( FragmentLib )
 import           Data.Morpheus.Types.Internal.Base
                                                 ( Key )

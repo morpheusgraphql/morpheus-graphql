@@ -23,11 +23,10 @@ import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import           Data.Morpheus.Error.Mutation   ( mutationIsNotDefined )
 import           Data.Morpheus.Error.Subscription
                                                 ( subscriptionIsNotDefined )
-import           Data.Morpheus.Types.Internal.AST.RawSelection
-                                                ( RawSelectionSet )
 import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( Arguments
                                                 , SelectionSet
+                                                , RawSelectionSet
                                                 )
 
 import           Data.Morpheus.Types.Internal.Validation
@@ -42,12 +41,6 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , TypeWrapper
                                                 , DataTypeLib(..)
                                                 , DataObject
-                                                )
-import           Data.Morpheus.Types.Internal.TH
-                                                ( apply
-                                                , liftMaybeText
-                                                , liftText
-                                                , liftTextMap
                                                 )
 import           Data.Morpheus.Types.Internal.Value
                                                 ( Value )

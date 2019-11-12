@@ -8,6 +8,14 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , ArgumentOrigin(..)
   , ValidSelection
   , Selection(..)
+  , RawSelection'
+  , FragmentLib
+  , RawArguments
+  , RawSelectionSet
+  , Fragment(..)
+  , RawArgument(..)
+  , RawSelection(..)
+  , Reference(..)
   )
 where
 
@@ -15,12 +23,6 @@ import           Language.Haskell.TH.Syntax     ( Lift )
 
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.TH
-                                                ( apply
-                                                , liftMaybeText
-                                                , liftText
-                                                , liftTextMap
-                                                )
 import           Data.Morpheus.Types.Internal.Base
                                                 ( Collection
                                                 , Key
@@ -86,7 +88,7 @@ data Selection args rec = Selection
   , selectionPosition  :: Position
   , selectionAlias     :: Maybe Key
   , selectionRec       :: rec
-  } deriving (Show)
+  } deriving (Show,Lift)
 
 data SelectionRec
   = SelectionSet SelectionSet
