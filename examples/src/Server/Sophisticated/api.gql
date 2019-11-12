@@ -45,10 +45,10 @@ type Address @typeDirective(id: 1) {
   """
   temporary multiline Test for Enum field descripions
   """
-  city: String! @deprecated(testName: "", testName2: 123)
+  city: String! @deprecated(reason: "some reason")
   street: String!
   "temporary singleline Test for input object field descripions"
-  houseNumber: Int!
+  houseNumber: Int! @deprecated
 }
 
 """
