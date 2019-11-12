@@ -1,4 +1,4 @@
-module Data.Morpheus.Types.Internal.DataD
+module Data.Morpheus.Types.Internal.AST.DataD
   ( TypeD(..)
   , ConsD(..)
   , ClientQuery(..)
@@ -7,7 +7,7 @@ module Data.Morpheus.Types.Internal.DataD
   )
 where
 
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField
                                                 , DataTypeKind
                                                 , Meta

@@ -20,13 +20,13 @@ import           Data.Morpheus.Execution.Server.Encode
                                                 , ObjectResolvers(..)
                                                 )
 import           Data.Morpheus.Types.GQLType    ( TRUE )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField(..)
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , isSubscription
                                                 )
-import           Data.Morpheus.Types.Internal.DataD
+import           Data.Morpheus.Types.Internal.AST.DataD
                                                 ( ConsD(..)
                                                 , GQLTypeD(..)
                                                 , TypeD(..)

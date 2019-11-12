@@ -19,10 +19,10 @@ import           Language.Haskell.TH
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Utils (nameSpaceType, nameSpaceWith)
-import           Data.Morpheus.Types.Internal.Data      (ArgsType (..), DataField (..), DataTypeKind (..),
+import           Data.Morpheus.Types.Internal.AST.Data      (ArgsType (..), DataField (..), DataTypeKind (..),
                                                          DataTypeKind (..), TypeAlias (..), TypeWrapper (..),
                                                          isOutputObject, isSubscription)
-import           Data.Morpheus.Types.Internal.DataD     (ConsD (..), TypeD (..))
+import           Data.Morpheus.Types.Internal.AST.DataD     (ConsD (..), TypeD (..))
 import           Data.Morpheus.Types.Internal.Resolver  (UnSubResolver)
 
 type Arrow = (->)

@@ -72,7 +72,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 )
 import           Data.Morpheus.Types.Internal.Base
                                                 ( Key )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( MUTATION
                                                 , OperationType
                                                 , QUERY

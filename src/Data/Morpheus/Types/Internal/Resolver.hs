@@ -49,7 +49,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , SelectionSet
                                                 , ValidSelection
                                                 )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( Key
                                                 , MUTATION
                                                 , OperationType

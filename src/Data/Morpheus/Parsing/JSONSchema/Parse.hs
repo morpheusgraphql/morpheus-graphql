@@ -21,7 +21,7 @@ import           Data.Morpheus.Parsing.JSONSchema.Types
                                                 , Type(..)
                                                 )
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField
                                                 , DataType(..)
                                                 , DataTypeLib
@@ -49,7 +49,7 @@ decodeIntrospection :: ByteString -> Validation DataTypeLib
 decodeIntrospection jsonDoc = case jsonSchema of
   Left errors -> internalError $ pack errors
   Right JSONResponse { responseData = Just Introspection { __schema = Schema { types } } }
-    ->  traverse parse types >>= createDataTypeLib . concat
+    -> traverse parse types >>= createDataTypeLib . concat
   Right res -> internalError (pack $ show res)
  where
   jsonSchema :: Either String (JSONResponse Introspection)

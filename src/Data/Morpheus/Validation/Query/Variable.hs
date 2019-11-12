@@ -40,7 +40,7 @@ import           Data.Morpheus.Types.Internal.Base
                                                 ( EnhancedKey(..)
                                                 , Position
                                                 )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataType
                                                 , DataTypeLib
                                                 , lookupInputType

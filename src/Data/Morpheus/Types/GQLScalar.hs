@@ -8,7 +8,7 @@ module Data.Morpheus.Types.GQLScalar
   )
 where
 
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataValidator(..) )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ScalarValue(..)

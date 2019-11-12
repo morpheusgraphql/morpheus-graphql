@@ -39,7 +39,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , SelectionSet
                                                 , ValidSelection
                                                 )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField(..)
                                                 , DataTyCon(..)
                                                 , DataType(..)
@@ -51,7 +51,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , allDataTypes
                                                 , lookupType
                                                 )
-import           Data.Morpheus.Types.Internal.DataD
+import           Data.Morpheus.Types.Internal.AST.DataD
                                                 ( ConsD(..)
                                                 , ClientType(..)
                                                 , TypeD(..)

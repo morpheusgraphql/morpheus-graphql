@@ -20,7 +20,7 @@ import           Data.Maybe                     ( isJust )
 -- Morpheus
 import           Data.Morpheus.Schema.Schema
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField(..)
                                                 , DataTyCon(..)
                                                 , DataType(..)

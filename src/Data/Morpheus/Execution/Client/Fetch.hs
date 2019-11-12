@@ -8,27 +8,36 @@
 module Data.Morpheus.Execution.Client.Fetch
   ( Fetch(..)
   , deriveFetch
-  ) where
+  )
+where
 
-import           Control.Monad                   ((>=>))
-import           Data.Aeson                      (FromJSON, ToJSON (..), eitherDecode, encode)
-import           Data.ByteString.Lazy            (ByteString)
-import           Data.Text                       (pack)
+import           Control.Monad                  ( (>=>) )
+import           Data.Aeson                     ( FromJSON
+                                                , ToJSON(..)
+                                                , eitherDecode
+                                                , encode
+                                                )
+import           Data.ByteString.Lazy           ( ByteString )
+import           Data.Text                      ( pack )
 import           Language.Haskell.TH
 
 
-import qualified Data.Aeson                      as A
-import qualified Data.Aeson.Types                as A
+import qualified Data.Aeson                    as A
+import qualified Data.Aeson.Types              as A
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.TH (instanceHeadT, typeInstanceDec)
-import           Data.Morpheus.Types.IO          (GQLRequest (..), JSONResponse (..))
+import           Data.Morpheus.Types.Internal.TH
+                                                ( instanceHeadT
+                                                , typeInstanceDec
+                                                )
+import           Data.Morpheus.Types.IO         ( GQLRequest(..)
+                                                , JSONResponse(..)
+                                                )
 
 fixVars :: A.Value -> Maybe A.Value
-fixVars x
-  | x == A.emptyArray = Nothing
-  | otherwise         = Just x
+fixVars x | x == A.emptyArray = Nothing
+          | otherwise         = Just x
 
 class Fetch a where
   type Args a :: *
@@ -48,10 +57,11 @@ class Fetch a where
   fetch :: (Monad m, FromJSON a) => (ByteString -> m ByteString) -> Args a -> m (Either String a)
 
 deriveFetch :: Type -> String -> String -> Q [Dec]
-deriveFetch resultType typeName queryString = pure <$> instanceD (cxt []) iHead methods
-  where
-    iHead = instanceHeadT ''Fetch typeName []
-    methods =
-      [ funD 'fetch [clause [] (normalB [|__fetch queryString typeName|]) []]
-      , pure $ typeInstanceDec  ''Args  (ConT $ mkName typeName) resultType
-      ]
+deriveFetch resultType typeName queryString =
+  pure <$> instanceD (cxt []) iHead methods
+ where
+  iHead = instanceHeadT ''Fetch typeName []
+  methods =
+    [ funD 'fetch [clause [] (normalB [|__fetch queryString typeName|]) []]
+    , pure $ typeInstanceDec ''Args (ConT $ mkName typeName) resultType
+    ]

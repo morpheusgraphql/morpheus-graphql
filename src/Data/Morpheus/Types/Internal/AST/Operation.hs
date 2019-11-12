@@ -36,7 +36,7 @@ import           Data.Morpheus.Types.Internal.Base
                                                 , Key
                                                 , Position
                                                 )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( OperationType(..)
                                                 , TypeWrapper
                                                 , DataTypeLib(..)

@@ -8,7 +8,7 @@
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
 
-module Data.Morpheus.Types.Internal.Data
+module Data.Morpheus.Types.Internal.AST.Data
   ( Key
   , DataScalar
   , DataEnum
@@ -115,7 +115,9 @@ import           Data.Morpheus.Types.Internal.Base
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation )
 import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value(..) ,ScalarValue(..))
+                                                ( Value(..)
+                                                , ScalarValue(..)
+                                                )
 import           Data.Morpheus.Execution.Internal.GraphScanner
                                                 ( LibUpdater
                                                 , resolveUpdates
@@ -282,12 +284,13 @@ lookupDeprecated Meta { metaDirectives } = find isDeprecation metaDirectives
   isDeprecation _ = False
 
 lookupDeprecatedReason :: Directive -> Maybe Key
-lookupDeprecatedReason Directive { directiveArgs } = maybeString . snd <$> find isReason directiveArgs 
-   where
-    maybeString (Scalar (String x)) = x
-    maybeString _ = "can't read deprecated Reason Value" 
-    isReason ("reason",_) = True
-    isReason _ = False
+lookupDeprecatedReason Directive { directiveArgs } =
+  maybeString . snd <$> find isReason directiveArgs
+ where
+  maybeString (Scalar (String x)) = x
+  maybeString _                   = "can't read deprecated Reason Value"
+  isReason ("reason", _) = True
+  isReason _             = False
 
 -- ENUM VALUE
 data DataEnumValue = DataEnumValue{
@@ -540,6 +543,7 @@ createDataTypeLib types = case takeByKey "Query" types of
           )
   _ -> internalError "Query Not Defined"
   ----------------------------------------------------------------------------
+
 
 
 

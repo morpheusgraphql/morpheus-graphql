@@ -24,11 +24,11 @@ import           Data.Morpheus.Execution.Document.Introspect
                                                 )
 import           Data.Morpheus.Execution.Internal.Declare
                                                 ( declareType )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( isInput
                                                 , isObject
                                                 )
-import           Data.Morpheus.Types.Internal.DataD
+import           Data.Morpheus.Types.Internal.AST.DataD
                                                 ( GQLTypeD(..) )
 
 declareTypes :: Bool -> [GQLTypeD] -> Q [Dec]

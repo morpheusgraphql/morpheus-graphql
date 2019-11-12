@@ -28,11 +28,11 @@ import           Data.Morpheus.Execution.Internal.Utils
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField(..)
                                                 , isFieldNullable
                                                 )
-import           Data.Morpheus.Types.Internal.DataD
+import           Data.Morpheus.Types.Internal.AST.DataD
                                                 ( ConsD(..)
                                                 , TypeD(..)
                                                 )

@@ -19,7 +19,7 @@ import qualified Data.Text.Lazy                as LT
 import           Data.Text.Lazy.Encoding        ( encodeUtf8 )
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField(..)
                                                 , DataTyCon(..)
                                                 , DataType(..)

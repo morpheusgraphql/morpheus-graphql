@@ -5,13 +5,21 @@ module Data.Morpheus.Error.Arguments
   , unknownArguments
   , argumentGotInvalidValue
   , argumentNameCollision
-  ) where
+  )
+where
 
-import           Data.Morpheus.Error.Utils               (errorMessage)
-import           Data.Morpheus.Types.Internal.Base       (EnhancedKey (..), Position)
-import           Data.Morpheus.Types.Internal.Validation (GQLError (..), GQLErrors)
-import           Data.Text                               (Text)
-import qualified Data.Text                               as T (concat)
+import           Data.Morpheus.Error.Utils      ( errorMessage )
+import           Data.Morpheus.Types.Internal.Base
+                                                ( EnhancedKey(..)
+                                                , Position
+                                                )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( GQLError(..)
+                                                , GQLErrors
+                                                )
+import           Data.Text                      ( Text )
+import qualified Data.Text                     as T
+                                                ( concat )
 
 {-
   ARGUMENTS:
@@ -28,29 +36,27 @@ import qualified Data.Text                               as T (concat)
   - date(name: "name") -> "Unknown argument \"name\" on field \"date\" of type \"Experience\"."
 -}
 argumentGotInvalidValue :: Text -> Text -> Position -> GQLErrors
-argumentGotInvalidValue key' inputMessage' position' =
-  errorMessage position' text
-  where
-    text = T.concat ["Argument ", key', " got invalid value ;", inputMessage']
+argumentGotInvalidValue key' inputMessage' position' = errorMessage position'
+                                                                    text
+ where
+  text = T.concat ["Argument ", key', " got invalid value ;", inputMessage']
 
 unknownArguments :: Text -> [EnhancedKey] -> GQLErrors
 unknownArguments fieldName = map keyToError
-  where
-    keyToError (EnhancedKey argName pos) =
-      GQLError {desc = toMessage argName, positions = [pos]}
-    toMessage argName =
-      T.concat
-        ["Unknown Argument \"", argName, "\" on Field \"", fieldName, "\"."]
+ where
+  keyToError (EnhancedKey argName pos) =
+    GQLError { desc = toMessage argName, positions = [pos] }
+  toMessage argName = T.concat
+    ["Unknown Argument \"", argName, "\" on Field \"", fieldName, "\"."]
 
 argumentNameCollision :: [EnhancedKey] -> GQLErrors
 argumentNameCollision = map keyToError
-  where
-    keyToError (EnhancedKey argName pos) =
-      GQLError {desc = toMessage argName, positions = [pos]}
-    toMessage argName =
-      T.concat ["There can Be only One Argument Named \"", argName, "\""]
+ where
+  keyToError (EnhancedKey argName pos) =
+    GQLError { desc = toMessage argName, positions = [pos] }
+  toMessage argName =
+    T.concat ["There can Be only One Argument Named \"", argName, "\""]
 
 undefinedArgument :: EnhancedKey -> GQLErrors
 undefinedArgument (EnhancedKey key' position') = errorMessage position' text
-  where
-    text = T.concat ["Required Argument: \"", key', "\" was not Defined"]
+  where text = T.concat ["Required Argument: \"", key', "\" was not Defined"]

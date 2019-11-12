@@ -37,7 +37,7 @@ import           Data.Morpheus.Kind
 import           Data.Morpheus.Types.Custom     ( MapKind
                                                 , Pair
                                                 )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataFingerprint(..)
                                                 , QUERY
                                                 )

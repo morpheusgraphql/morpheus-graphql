@@ -22,13 +22,13 @@ import           Data.Morpheus.Parsing.Request.Parser
 import qualified Data.Morpheus.Types.Internal.AST.Operation
                                                as O
                                                 ( Operation(..) )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataTypeLib )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..) )
 
 --
 --  Morpheus
-import           Data.Morpheus.Types.Internal.DataD
+import           Data.Morpheus.Types.Internal.AST.DataD
                                                 ( ClientQuery(..) )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation )

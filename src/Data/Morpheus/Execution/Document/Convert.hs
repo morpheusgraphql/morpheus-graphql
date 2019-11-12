@@ -20,7 +20,7 @@ import           Data.Text                      ( Text
 import           Data.Morpheus.Error.Internal   ( internalError )
 import           Data.Morpheus.Execution.Internal.Utils
                                                 ( capital )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( ArgsType(..)
                                                 , DataField(..)
                                                 , DataTyCon(..)
@@ -32,7 +32,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , DataEnumValue(..)
                                                 , sysTypes
                                                 )
-import           Data.Morpheus.Types.Internal.DataD
+import           Data.Morpheus.Types.Internal.AST.DataD
                                                 ( ConsD(..)
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
