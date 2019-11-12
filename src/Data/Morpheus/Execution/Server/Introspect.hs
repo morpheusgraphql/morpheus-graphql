@@ -52,7 +52,7 @@ import           Data.Morpheus.Types.Custom     ( MapKind
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
 import           Data.Morpheus.Types.GQLType    ( GQLType(..) )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataArguments
                                                 , Meta(..)
                                                 , DataField(..)

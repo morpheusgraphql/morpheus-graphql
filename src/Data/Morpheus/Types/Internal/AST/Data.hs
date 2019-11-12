@@ -8,7 +8,7 @@
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
 
-module Data.Morpheus.Types.Internal.Data
+module Data.Morpheus.Types.Internal.AST.Data
   ( Key
   , DataScalar
   , DataEnum
@@ -86,6 +86,11 @@ module Data.Morpheus.Types.Internal.Data
   , TypeUpdater
   , lookupDeprecated
   , lookupDeprecatedReason
+  , TypeD(..)
+  , ConsD(..)
+  , ClientQuery(..)
+  , GQLTypeD(..)
+  , ClientType(..)
   )
 where
 
@@ -114,8 +119,10 @@ import           Data.Morpheus.Types.Internal.Base
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation )
-import           Data.Morpheus.Types.Internal.Value
-                                                ( Value(..) ,ScalarValue(..))
+import           Data.Morpheus.Types.Internal.AST.Value
+                                                ( Value(..)
+                                                , ScalarValue(..)
+                                                )
 import           Data.Morpheus.Execution.Internal.GraphScanner
                                                 ( LibUpdater
                                                 , resolveUpdates
@@ -282,12 +289,13 @@ lookupDeprecated Meta { metaDirectives } = find isDeprecation metaDirectives
   isDeprecation _ = False
 
 lookupDeprecatedReason :: Directive -> Maybe Key
-lookupDeprecatedReason Directive { directiveArgs } = maybeString . snd <$> find isReason directiveArgs 
-   where
-    maybeString (Scalar (String x)) = x
-    maybeString _ = "can't read deprecated Reason Value" 
-    isReason ("reason",_) = True
-    isReason _ = False
+lookupDeprecatedReason Directive { directiveArgs } =
+  maybeString . snd <$> find isReason directiveArgs
+ where
+  maybeString (Scalar (String x)) = x
+  maybeString _                   = "can't read deprecated Reason Value"
+  isReason ("reason", _) = True
+  isReason _             = False
 
 -- ENUM VALUE
 data DataEnumValue = DataEnumValue{
@@ -544,6 +552,7 @@ createDataTypeLib types = case takeByKey "Query" types of
 
 
 
+
  where
   takeByKey key lib = case lookup key lib of
     Just (DataObject value) -> (Just (key, value), filter ((/= key) . fst) lib)
@@ -592,3 +601,37 @@ insertType nextType@(name, datatype) lib = case isTypeDefined name lib of
       -- throw error if 2 different types has same name
       otherwise -> Left $ nameCollisionError name
 
+
+-- TEMPLATE HASKELL DATA TYPES
+
+-- CLIENT                                                
+data ClientQuery = ClientQuery
+  { queryText     :: String
+  , queryTypes    :: [ClientType]
+  , queryArgsType :: Maybe TypeD
+  } deriving (Show)
+
+data ClientType = ClientType {
+  clientType :: TypeD,
+  clientKind :: DataTypeKind
+} deriving (Show)
+
+-- Document
+data GQLTypeD = GQLTypeD
+  { typeD     :: TypeD
+  , typeKindD :: DataTypeKind
+  , typeArgD  :: [TypeD]
+  , typeOriginal:: (Name,DataType)
+  } deriving (Show)
+
+data TypeD = TypeD
+  { tName      :: String
+  , tNamespace :: [String]
+  , tCons      :: [ConsD]
+  , tMeta      :: Maybe Meta
+  } deriving (Show)
+
+data ConsD = ConsD
+  { cName   :: String
+  , cFields :: [DataField]
+  } deriving (Show)

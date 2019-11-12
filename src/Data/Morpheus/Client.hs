@@ -28,7 +28,7 @@ import           Data.Morpheus.Execution.Client.Fetch
                                                 ( Fetch(..) )
 import           Data.Morpheus.Parsing.JSONSchema.Parse
                                                 ( decodeIntrospection )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataTypeLib )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation )

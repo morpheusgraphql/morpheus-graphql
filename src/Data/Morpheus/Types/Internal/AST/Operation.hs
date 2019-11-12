@@ -1,8 +1,7 @@
-{-# LANGUAGE DeriveLift        #-}
+{-# LANGUAGE DeriveLift         #-}
 {-# LANGUAGE NamedFieldPuns     #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE OverloadedStrings  #-}
 
 module Data.Morpheus.Types.Internal.AST.Operation
   ( Operation(..)
@@ -21,34 +20,29 @@ import           Data.Maybe                     ( fromMaybe )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Mutation     ( mutationIsNotDefined )
-import           Data.Morpheus.Error.Subscription ( subscriptionIsNotDefined )
-import           Data.Morpheus.Types.Internal.AST.RawSelection
-                                                ( RawSelectionSet )
+import           Data.Morpheus.Error.Mutation   ( mutationIsNotDefined )
+import           Data.Morpheus.Error.Subscription
+                                                ( subscriptionIsNotDefined )
 import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( Arguments
                                                 , SelectionSet
+                                                , RawSelectionSet
                                                 )
 
-import           Data.Morpheus.Types.Internal.Validation ( Validation)
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Validation )
 import           Data.Morpheus.Types.Internal.Base
                                                 ( Collection
                                                 , Key
                                                 , Position
                                                 )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( OperationType(..)
                                                 , TypeWrapper
                                                 , DataTypeLib(..)
                                                 , DataObject
                                                 )
-import           Data.Morpheus.Types.Internal.TH
-                                                ( apply
-                                                , liftMaybeText
-                                                , liftText
-                                                , liftTextMap
-                                                )
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
 
 type DefaultValue = Maybe Value
@@ -70,12 +64,7 @@ data Operation args sel = Operation
   , operationArgs      :: args
   , operationSelection :: sel
   , operationPosition  :: Position
-  } deriving (Show)
-
-instance Lift (Operation VariableDefinitions RawSelectionSet) where
-  lift (Operation name kind args sel pos) = apply
-    'Operation
-    [liftMaybeText name, lift kind, liftTextMap args, liftTextMap sel, lift pos]
+  } deriving (Show,Lift)
 
 data Variable a = Variable
   { variableType         :: Key
@@ -83,12 +72,7 @@ data Variable a = Variable
   , variableTypeWrappers :: [TypeWrapper]
   , variablePosition     :: Position
   , variableValue        :: a
-  } deriving (Show)
-
-instance Lift a => Lift (Variable a) where
-  lift (Variable t ir w p v) =
-    apply 'Variable [liftText t, lift ir, lift w, lift p, lift v]
-
+  } deriving (Show,Lift)
 
 getOperationDataType :: Operation a b -> DataTypeLib -> Validation DataObject
 getOperationDataType Operation { operationType = Query } lib =

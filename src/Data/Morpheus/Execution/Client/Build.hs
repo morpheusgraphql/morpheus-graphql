@@ -26,13 +26,11 @@ import           Data.Morpheus.Execution.Client.Fetch
                                                 ( deriveFetch )
 import           Data.Morpheus.Execution.Internal.Declare
                                                 ( declareType )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataTypeKind(..)
                                                 , DataTypeLib
                                                 , isOutputObject
-                                                )
-import           Data.Morpheus.Types.Internal.DataD
-                                                ( ClientType(..)
+                                                , ClientType(..)
                                                 , ClientQuery(..)
                                                 , TypeD(..)
                                                 )
@@ -84,8 +82,9 @@ queryArgumentType (Just rootType@TypeD { tName }) =
   (ConT $ mkName tName, declareInputType rootType)
 
 defineOperationType :: (Type, Q [Dec]) -> String -> ClientType -> Q [Dec]
-defineOperationType (argType, argumentTypes) query ClientType { clientType } = do
-  rootType       <- withToJSON declareOutputType clientType
-  typeClassFetch <- deriveFetch argType (tName clientType) query
-  argsT          <- argumentTypes
-  pure $ rootType <> typeClassFetch <> argsT
+defineOperationType (argType, argumentTypes) query ClientType { clientType } =
+  do
+    rootType       <- withToJSON declareOutputType clientType
+    typeClassFetch <- deriveFetch argType (tName clientType) query
+    argsT          <- argumentTypes
+    pure $ rootType <> typeClassFetch <> argsT

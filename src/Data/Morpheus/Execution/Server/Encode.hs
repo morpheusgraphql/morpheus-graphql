@@ -72,7 +72,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 )
 import           Data.Morpheus.Types.Internal.Base
                                                 ( Key )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( MUTATION
                                                 , OperationType
                                                 , QUERY
@@ -89,7 +89,7 @@ import           Data.Morpheus.Types.Internal.Resolver
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation )
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
                                                 , Value(..)
                                                 )

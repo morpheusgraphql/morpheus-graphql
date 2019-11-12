@@ -29,14 +29,12 @@ import           Data.Morpheus.Kind             ( ENUM
 import           Data.Morpheus.Types.GQLType    ( GQLType(..)
                                                 , TRUE
                                                 )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataTypeKind(..)
                                                 , Meta(..)
                                                 , isObject
                                                 , isSchemaTypeName
-                                                )
-import           Data.Morpheus.Types.Internal.DataD
-                                                ( GQLTypeD(..)
+                                                , GQLTypeD(..)
                                                 , TypeD(..)
                                                 )
 import           Data.Morpheus.Types.Internal.TH

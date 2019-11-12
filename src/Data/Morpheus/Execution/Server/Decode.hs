@@ -14,25 +14,50 @@ module Data.Morpheus.Execution.Server.Decode
   ( decodeArguments
   , Decode(..)
   , DecodeObject(..)
-  ) where
+  )
+where
 
-import           Data.Proxy                                      (Proxy (..))
-import           Data.Semigroup                                  ((<>))
-import           Data.Text                                       (pack)
+import           Data.Proxy                     ( Proxy(..) )
+import           Data.Semigroup                 ( (<>) )
+import           Data.Text                      ( pack )
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal                    (internalArgumentError, internalTypeMismatch)
-import           Data.Morpheus.Execution.Internal.Decode         (decodeFieldWith, withEnum, withList, withMaybe,
-                                                                  withObject, withUnion)
-import           Data.Morpheus.Execution.Server.Generics.EnumRep (EnumRep (..))
-import           Data.Morpheus.Kind                              (ENUM, GQL_KIND, INPUT_OBJECT, INPUT_UNION, SCALAR)
-import           Data.Morpheus.Types.GQLScalar                   (GQLScalar (..), toScalar)
-import           Data.Morpheus.Types.GQLType                     (GQLType (KIND, __typeName))
-import           Data.Morpheus.Types.Internal.AST.Selection      (Argument (..), Arguments)
-import           Data.Morpheus.Types.Internal.Base               (Key)
-import           Data.Morpheus.Types.Internal.Validation         (Validation)
-import           Data.Morpheus.Types.Internal.Value              (Object, Value (..))
+import           Data.Morpheus.Error.Internal   ( internalArgumentError
+                                                , internalTypeMismatch
+                                                )
+import           Data.Morpheus.Execution.Internal.Decode
+                                                ( decodeFieldWith
+                                                , withEnum
+                                                , withList
+                                                , withMaybe
+                                                , withObject
+                                                , withUnion
+                                                )
+import           Data.Morpheus.Execution.Server.Generics.EnumRep
+                                                ( EnumRep(..) )
+import           Data.Morpheus.Kind             ( ENUM
+                                                , GQL_KIND
+                                                , INPUT_OBJECT
+                                                , INPUT_UNION
+                                                , SCALAR
+                                                )
+import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..)
+                                                , toScalar
+                                                )
+import           Data.Morpheus.Types.GQLType    ( GQLType(KIND, __typeName) )
+import           Data.Morpheus.Types.Internal.AST.Selection
+                                                ( Argument(..)
+                                                , Arguments
+                                                )
+import           Data.Morpheus.Types.Internal.Base
+                                                ( Key )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Validation )
+import           Data.Morpheus.Types.Internal.AST.Value
+                                                ( Object
+                                                , Value(..)
+                                                )
 
 -- | Decode GraphQL query arguments and input values
 class Decode a where
@@ -53,10 +78,9 @@ class DecodeKind (kind :: GQL_KIND) a where
 
 -- SCALAR
 instance (GQLScalar a) => DecodeKind SCALAR a where
-  decodeKind _ value =
-    case toScalar value >>= parseValue of
-      Right scalar      -> return scalar
-      Left errorMessage -> internalTypeMismatch errorMessage value
+  decodeKind _ value = case toScalar value >>= parseValue of
+    Right scalar       -> return scalar
+    Left  errorMessage -> internalTypeMismatch errorMessage value
 
 -- ENUM
 instance (Generic a, EnumRep (Rep a)) => DecodeKind ENUM a where
@@ -73,8 +97,7 @@ instance (Generic a, GDecode (Rep a)) => DecodeKind INPUT_UNION a where
 -- GENERIC
 decodeArguments :: DecodeObject p => Arguments -> Validation p
 decodeArguments = decodeObject . fmap toObject
-  where
-    toObject (x, y) = (x, argumentValue y)
+  where toObject (x, y) = (x, argumentValue y)
 
 class DecodeObject a where
   decodeObject :: Object -> Validation a
@@ -98,11 +121,11 @@ instance GDecode U1 where
 -- Recursive Decoding: (Selector (Rec1 ))
 instance (Selector s, GQLType a, Decode a) => GDecode (M1 S s (K1 i a)) where
   unionTags _ = [__typeName (Proxy @a)]
-  decodeUnion = fmap (M1 . K1) . decode . Object
+  decodeUnion    = fmap (M1 . K1) . decode . Object
   __decodeObject = fmap (M1 . K1) . decodeRec
-    where
-      fieldName = pack $ selName (undefined :: M1 S s f a)
-      decodeRec = withObject (decodeFieldWith decode fieldName)
+   where
+    fieldName = pack $ selName (undefined :: M1 S s f a)
+    decodeRec = withObject (decodeFieldWith decode fieldName)
 
 instance (Datatype c, GDecode f) => GDecode (M1 D c f) where
   decodeUnion = fmap M1 . decodeUnion
@@ -119,14 +142,15 @@ instance (GDecode f, GDecode g) => GDecode (f :*: g) where
 
 instance (GDecode a, GDecode b) => GDecode (a :+: b) where
   decodeUnion = withUnion handleUnion
-    where
-      handleUnion name unions object
-        | [name] == l1Tags = L1 <$> decodeUnion object
-        | [name] == r1Tags = R1 <$> decodeUnion object
-        | name `elem` l1Tags = L1 <$> decodeUnion unions
-        | name `elem` r1Tags = R1 <$> decodeUnion unions
-        | otherwise = internalArgumentError ("type \"" <> name <> "\" could not find in union")
-        where
-          l1Tags = unionTags $ Proxy @a
-          r1Tags = unionTags $ Proxy @b
+   where
+    handleUnion name unions object
+      | [name] == l1Tags = L1 <$> decodeUnion object
+      | [name] == r1Tags = R1 <$> decodeUnion object
+      | name `elem` l1Tags = L1 <$> decodeUnion unions
+      | name `elem` r1Tags = R1 <$> decodeUnion unions
+      | otherwise = internalArgumentError
+        ("type \"" <> name <> "\" could not find in union")
+     where
+      l1Tags = unionTags $ Proxy @a
+      r1Tags = unionTags $ Proxy @b
   unionTags _ = unionTags (Proxy @a) ++ unionTags (Proxy @b)

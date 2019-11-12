@@ -31,7 +31,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , sepByAnd
                                                 , setOf
                                                 )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField
                                                 , DataFingerprint(..)
                                                 , DataTyCon(..)

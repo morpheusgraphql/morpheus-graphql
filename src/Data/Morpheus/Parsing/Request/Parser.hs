@@ -18,7 +18,7 @@ import           Data.Morpheus.Parsing.Internal.Terms    (spaceAndComments)
 import           Data.Morpheus.Parsing.Request.Operation (parseOperation)
 import           Data.Morpheus.Parsing.Request.Selection (parseFragmentDefinition)
 import           Data.Morpheus.Types.Internal.Validation (Validation)
-import           Data.Morpheus.Types.Internal.Value      (Value (..), replaceValue)
+import           Data.Morpheus.Types.Internal.AST.Value      (Value (..), replaceValue)
 import           Data.Morpheus.Types.IO                  (GQLRequest (..))
 import           Data.Morpheus.Types.Types               (GQLQueryRoot (..))
 

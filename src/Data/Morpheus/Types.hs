@@ -42,7 +42,7 @@ import           Data.Morpheus.Types.GQLScalar  ( GQLScalar
                                                 )
 import           Data.Morpheus.Types.GQLType    ( GQLType(KIND, description) )
 import           Data.Morpheus.Types.ID         ( ID(..) )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( MUTATION
                                                 , QUERY
                                                 , SUBSCRIPTION
@@ -55,7 +55,7 @@ import           Data.Morpheus.Types.Internal.Resolver
                                                 , liftEither
                                                 , lift
                                                 )
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ScalarValue(..) )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)

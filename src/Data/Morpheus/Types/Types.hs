@@ -17,11 +17,11 @@ import           Instances.TH.Lift              ( )
 -- Morpheus
 import           Data.Morpheus.Types.Internal.AST.Operation
                                                 ( RawOperation )
-import           Data.Morpheus.Types.Internal.AST.RawSelection
+import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( FragmentLib )
 import           Data.Morpheus.Types.Internal.Base
                                                 ( Key )
-import           Data.Morpheus.Types.Internal.Value
+import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
 
 data Undefined (m :: * -> *) = Undefined deriving (Show, Generic)

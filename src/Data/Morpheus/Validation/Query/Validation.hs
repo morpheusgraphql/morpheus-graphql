@@ -15,7 +15,7 @@ import           Data.Morpheus.Types.Internal.AST.Operation
                                                 , getOperationName
                                                 , getOperationDataType
                                                 )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataTypeLib(..) )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation )

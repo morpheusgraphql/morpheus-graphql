@@ -32,7 +32,7 @@ import           Data.Morpheus.Parsing.Internal.Value
                                                 ( parseDefaultValue
                                                 , parseValue
                                                 )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField(..)
                                                 , Directive(..)
                                                 , Key

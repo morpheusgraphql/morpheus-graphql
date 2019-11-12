@@ -1,6 +1,8 @@
 -- | Build GraphQL APIs with your favourite functional language!
 module Data.Morpheus
   ( Interpreter(..)
-  ) where
+  )
+where
 
-import           Data.Morpheus.Execution.Server.Interpreter (Interpreter (..))
+import           Data.Morpheus.Execution.Server.Interpreter
+                                                ( Interpreter(..) )

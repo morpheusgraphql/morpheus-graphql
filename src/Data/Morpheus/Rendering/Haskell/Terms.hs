@@ -16,13 +16,18 @@ module Data.Morpheus.Rendering.Haskell.Terms
   , renderEqual
   , Scope(..)
   , Context(..)
-  ) where
+  )
+where
 
-import           Data.Semigroup                    ((<>))
-import           Data.Text                         (Text, intercalate, toUpper)
+import           Data.Semigroup                 ( (<>) )
+import           Data.Text                      ( Text
+                                                , intercalate
+                                                , toUpper
+                                                )
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Data (TypeWrapper (..))
+import           Data.Morpheus.Types.Internal.AST.Data
+                                                ( TypeWrapper(..) )
 
 indent :: Text
 indent = "  "
@@ -49,9 +54,9 @@ renderTuple :: Text -> Text
 renderTuple typeName = "(" <> typeName <> ")"
 
 renderSet :: [Text] -> Text
-renderSet fields = bracket "{ " <> intercalate ("\n  ," <> indent) fields <> bracket "}\n"
-  where
-    bracket x = "\n    " <> x
+renderSet fields =
+  bracket "{ " <> intercalate ("\n  ," <> indent) fields <> bracket "}\n"
+  where bracket x = "\n    " <> x
 
 renderAssignment :: Text -> Text -> Text
 renderAssignment key value = key <> " :: " <> value
@@ -60,16 +65,17 @@ renderExtension :: Text -> Text
 renderExtension name = "{-# LANGUAGE " <> name <> " #-}\n"
 
 renderWrapped :: [TypeWrapper] -> Text -> Text
-renderWrapped (TypeList:xs)  = renderList . renderWrapped xs
-renderWrapped (TypeMaybe:xs) = renderMaybe . renderWrapped xs
-renderWrapped []          = strToText
+renderWrapped (TypeList  : xs) = renderList . renderWrapped xs
+renderWrapped (TypeMaybe : xs) = renderMaybe . renderWrapped xs
+renderWrapped []               = strToText
 
 strToText :: Text -> Text
 strToText "String" = "Text"
 strToText x        = x
 
 renderUnionCon :: Text -> Text -> Text
-renderUnionCon typeName conName = renderCon (typeName <> "_" <> toUpper conName)
+renderUnionCon typeName conName =
+  renderCon (typeName <> "_" <> toUpper conName)
 
 data Scope
   = Mutation

@@ -17,7 +17,7 @@ import           Data.Text.Lazy.Encoding                (encodeUtf8)
 import           Data.Morpheus.Rendering.Haskell.Terms  (Context (..), renderExtension)
 import           Data.Morpheus.Rendering.Haskell.Types  (renderType)
 import           Data.Morpheus.Rendering.Haskell.Values (Scope (..), renderResolver, renderRootResolver)
-import           Data.Morpheus.Types.Internal.Data      (DataTypeLib (..), allDataTypes)
+import           Data.Morpheus.Types.Internal.AST.Data      (DataTypeLib (..), allDataTypes)
 
 renderHaskellDocument :: String -> DataTypeLib -> ByteString
 renderHaskellDocument modName lib =
