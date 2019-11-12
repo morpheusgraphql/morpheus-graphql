@@ -55,7 +55,6 @@ data RawArgument
   | RawArgument Argument
   deriving (Show, Lift)
 
-
 data RawSelection
   = RawSelectionSet (RawSelection' RawSelectionSet)
   | RawSelectionField (RawSelection' ())
