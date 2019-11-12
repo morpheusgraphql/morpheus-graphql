@@ -25,7 +25,7 @@ import           Data.Morpheus.Parsing.Internal.Value
                                                 , parseValue
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Selection
-                                                ( ArgumentOrigin(..)
+                                                ( ValueOrigin(..)
                                                 , Argument(..)
                                                 , RawArgument(..)
                                                 , RawArguments

@@ -5,7 +5,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , Arguments
   , SelectionSet
   , SelectionRec(..)
-  , ArgumentOrigin(..)
+  , ValueOrigin(..)
   , ValidSelection
   , Selection(..)
   , RawSelection'
@@ -72,14 +72,14 @@ type ValidSelection = Selection Arguments SelectionRec
 
 type UnionSelection = Collection SelectionSet
 
-data ArgumentOrigin
+data ValueOrigin
   = VARIABLE
   | INLINE
   deriving (Show, Lift)
 
 data Argument = Argument
   { argumentValue    :: Value
-  , argumentOrigin   :: ArgumentOrigin
+  , argumentOrigin   :: ValueOrigin
   , argumentPosition :: Position
   } deriving (Show, Lift)
 

@@ -26,7 +26,7 @@ import           Data.Morpheus.Types.Internal.AST.Operation
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( Argument(..)
-                                                , ArgumentOrigin(..)
+                                                , ValueOrigin(..)
                                                 , Arguments
                                                 , RawArgument(..)
                                                 , RawArguments
