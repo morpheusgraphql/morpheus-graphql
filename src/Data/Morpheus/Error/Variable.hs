@@ -12,7 +12,7 @@ where
 
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Types.Internal.Base
-                                                ( Reference(..)
+                                                ( Ref(..)
                                                 , Position
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
@@ -39,10 +39,10 @@ incompatibleVariableType variableName variableType argType argPosition =
       <> "\"."
 
 -- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
-unusedVariables :: Text -> [Reference] -> GQLErrors
+unusedVariables :: Text -> [Ref] -> GQLErrors
 unusedVariables operator' = map keyToError
  where
-  keyToError (Reference key' position') =
+  keyToError (Ref key' position') =
     GQLError { desc = text key', positions = [position'] }
   text key' = T.concat
     ["Variable \"$", key', "\" is never used in operation \"", operator', "\"."]

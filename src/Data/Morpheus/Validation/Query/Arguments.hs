@@ -32,7 +32,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawArguments
                                                 )
 import           Data.Morpheus.Types.Internal.Base
-                                                ( Reference(..)
+                                                ( Ref(..)
                                                 , Position
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
@@ -63,7 +63,7 @@ resolveArgumentVariables operatorName variables DataField { fieldName, fieldArgs
  where
   resolveVariable :: (Text, RawArgument) -> Validation (Text, Argument)
   resolveVariable (key, RawArgument argument) = pure (key, argument)
-  resolveVariable (key, VariableReference Reference { refName, refPosition }) =
+  resolveVariable (key, VariableRef Ref { refName, refPosition }) =
     (key, ) . toArgument <$> lookupVar
    where
     toArgument argumentValue = Argument { argumentValue
@@ -74,8 +74,7 @@ resolveArgumentVariables operatorName variables DataField { fieldName, fieldArgs
       Nothing -> Left $ undefinedVariable operatorName refPosition refName
       Just Variable { variableValue, variableType, variableTypeWrappers } ->
         case lookup key fieldArgs of
-          Nothing ->
-            Left $ unknownArguments fieldName [Reference key refPosition]
+          Nothing -> Left $ unknownArguments fieldName [Ref key refPosition]
           Just DataField { fieldType = fieldT@TypeAlias { aliasTyCon, aliasWrappers } }
             -> if variableType == aliasTyCon && not
                  (isWeaker variableTypeWrappers aliasWrappers)
@@ -110,7 +109,7 @@ validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldTy
                  , argumentPosition = fieldPosition
                  }
       )
-    | otherwise = Left $ undefinedArgument (Reference key fieldPosition)
+    | otherwise = Left $ undefinedArgument (Ref key fieldPosition)
   -------------------------------------------------------------------------
   validateArgumentValue :: Argument -> Validation (Text, Argument)
   validateArgumentValue arg@Argument { argumentValue, argumentPosition } =
@@ -148,6 +147,5 @@ validateArguments typeLib operatorName variables (key, field@DataField { fieldAr
    where
     argError     = unknownArguments key
     enhancedKeys = map argToKey args
-    argToKey (key', Argument { argumentPosition }) =
-      Reference key' argumentPosition
+    argToKey (key', Argument { argumentPosition }) = Ref key' argumentPosition
     fieldKeys = map fst fieldArgs

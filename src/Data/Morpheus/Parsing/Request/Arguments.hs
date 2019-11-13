@@ -31,7 +31,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawArguments
                                                 )
 import           Data.Morpheus.Types.Internal.Base
-                                                ( Reference(..) )
+                                                ( Ref(..) )
 
 
 -- Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Arguments
@@ -54,7 +54,7 @@ valueArgument = label "valueArgument" $ do
 variableArgument :: Parser RawArgument
 variableArgument = label "variableArgument" $ do
   (refName, refPosition) <- variable
-  pure $ VariableReference $ Reference { refName, refPosition }
+  pure $ VariableRef $ Ref { refName, refPosition }
 
 maybeArguments :: Parser RawArguments
 maybeArguments = label "maybeArguments" $ parseMaybeTuple argument

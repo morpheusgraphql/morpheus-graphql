@@ -17,7 +17,7 @@ import qualified Data.Text                     as T
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Types.Internal.Base
-                                                ( Reference(..)
+                                                ( Ref(..)
                                                 , Position
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
@@ -36,23 +36,23 @@ import           Data.Morpheus.Types.Internal.Validation
     fragment H on D {...}  ->  "Unknown type \"D\"."
     {...H} -> "Unknown fragment \"H\"."
 -}
-fragmentNameCollision :: [Reference] -> GQLErrors
+fragmentNameCollision :: [Ref] -> GQLErrors
 fragmentNameCollision = map toError
  where
-  toError Reference { refName, refPosition } = GQLError
+  toError Ref { refName, refPosition } = GQLError
     { desc      = "There can be only one fragment named \"" <> refName <> "\"."
     , positions = [refPosition]
     }
 
-unusedFragment :: [Reference] -> GQLErrors
+unusedFragment :: [Ref] -> GQLErrors
 unusedFragment = map toError
  where
-  toError Reference { refName, refPosition } = GQLError
+  toError Ref { refName, refPosition } = GQLError
     { desc      = "Fragment \"" <> refName <> "\" is never used."
     , positions = [refPosition]
     }
 
-cannotSpreadWithinItself :: [Reference] -> GQLErrors
+cannotSpreadWithinItself :: [Ref] -> GQLErrors
 cannotSpreadWithinItself fragments =
   [GQLError { desc = text, positions = map refPosition fragments }]
  where

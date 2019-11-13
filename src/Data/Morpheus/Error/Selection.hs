@@ -12,7 +12,7 @@ where
 
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Types.Internal.Base
-                                                ( Reference(..)
+                                                ( Ref(..)
                                                 , Position
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
@@ -51,10 +51,10 @@ cannotQueryField key typeName position = errorMessage position text
   text =
     T.concat ["Cannot query field \"", key, "\" on type \"", typeName, "\"."]
 
-duplicateQuerySelections :: Text -> [Reference] -> GQLErrors
+duplicateQuerySelections :: Text -> [Ref] -> GQLErrors
 duplicateQuerySelections parentType = map keyToError
  where
-  keyToError (Reference key' pos) =
+  keyToError (Ref key' pos) =
     GQLError { desc = toMessage key', positions = [pos] }
   toMessage key' = T.concat
     ["duplicate selection of key \"", key', "\" on type \"", parentType, "\"."]

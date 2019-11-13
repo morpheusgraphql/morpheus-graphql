@@ -15,7 +15,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , Fragment(..)
   , RawArgument(..)
   , RawSelection(..)
-  , Reference(..)
+  , Ref(..)
   )
 where
 
@@ -27,7 +27,7 @@ import           Data.Morpheus.Types.Internal.Base
                                                 ( Collection
                                                 , Key
                                                 , Position
-                                                , Reference(..)
+                                                , Ref(..)
                                                 )
 
 import           Data.Morpheus.Types.Internal.AST.Value
@@ -51,7 +51,7 @@ data Fragment = Fragment
   } deriving (Show, Lift)
 
 data RawArgument
-  = VariableReference Reference
+  = VariableRef Ref
   | RawArgument Argument
   deriving (Show, Lift)
 
@@ -59,7 +59,7 @@ data RawSelection
   = RawSelectionSet (RawSelection' RawSelectionSet)
   | RawSelectionField (RawSelection' ())
   | InlineFragment Fragment
-  | Spread Reference
+  | Spread Ref
   deriving (Show,Lift)
 
 -- VALID SELECTION 

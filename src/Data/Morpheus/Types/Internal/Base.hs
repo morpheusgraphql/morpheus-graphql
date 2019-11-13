@@ -6,7 +6,7 @@
 module Data.Morpheus.Types.Internal.Base
   ( Key
   , Collection
-  , Reference(..)
+  , Ref(..)
   , Position
   , Location(..)
   , Message
@@ -35,18 +35,18 @@ type Message = Text
 
 type Collection a = [(Key, a)]
 
--- includes position for debugging, where Reference "a" 1 === Reference "a" 3
-data Reference = Reference
+-- includes position for debugging, where Ref "a" 1 === Ref "a" 3
+data Ref = Ref
   { refName     :: Key
   , refPosition :: Position
   } deriving (Show,Lift)
 
-instance Eq Reference where
-  (Reference id1 _) == (Reference id2 _) = id1 == id2
+instance Eq Ref where
+  (Ref id1 _) == (Ref id2 _) = id1 == id2
 
-instance Ord Reference where
-  compare (Reference x _) (Reference y _) = compare x y
+instance Ord Ref where
+  compare (Ref x _) (Ref y _) = compare x y
 
 
-enhanceKeyWithNull :: Key -> Reference
-enhanceKeyWithNull refName = Reference { refName, refPosition = Location 0 0 }
+enhanceKeyWithNull :: Key -> Ref
+enhanceKeyWithNull refName = Ref { refName, refPosition = Location 0 0 }

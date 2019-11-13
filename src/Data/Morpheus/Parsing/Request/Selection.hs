@@ -38,7 +38,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawArguments
                                                 , RawSelection(..)
                                                 , RawSelectionSet
-                                                , Reference(..)
+                                                , Ref(..)
                                                 )
 
 
@@ -115,7 +115,7 @@ spread = label "FragmentSpread" $ do
   refName     <- token
   -- TODO: handle Directives
   _directives <- optionalDirectives
-  return (refName, Spread $ Reference { refName, refPosition })
+  return (refName, Spread $ Ref { refName, refPosition })
 
 -- FragmentDefinition : https://graphql.github.io/graphql-spec/June2018/#FragmentDefinition
 --
