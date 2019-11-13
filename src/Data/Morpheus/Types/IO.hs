@@ -24,7 +24,7 @@ import qualified Data.HashMap.Lazy             as LH
 import           GHC.Generics                   ( Generic )
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( JSONError(..)

@@ -50,7 +50,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( Argument(..)
                                                 , Arguments
                                                 )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation )

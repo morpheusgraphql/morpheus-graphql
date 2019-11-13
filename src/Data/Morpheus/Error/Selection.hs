@@ -11,7 +11,7 @@ module Data.Morpheus.Error.Selection
 where
 
 import           Data.Morpheus.Error.Utils      ( errorMessage )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
                                                 , Position
                                                 )

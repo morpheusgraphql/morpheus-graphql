@@ -23,7 +23,7 @@ import           Language.Haskell.TH.Syntax     ( Lift )
 
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Collection
                                                 , Key
                                                 , Position

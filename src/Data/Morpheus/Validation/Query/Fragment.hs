@@ -28,7 +28,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawSelection(..)
                                                 , Selection(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
                                                 , Position
                                                 )

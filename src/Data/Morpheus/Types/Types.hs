@@ -19,7 +19,7 @@ import           Data.Morpheus.Types.Internal.AST.Operation
                                                 ( RawOperation )
 import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( FragmentLib )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )

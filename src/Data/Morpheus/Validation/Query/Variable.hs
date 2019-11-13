@@ -35,7 +35,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawSelectionSet
                                                 , Selection(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
                                                 , Position
                                                 )
@@ -63,14 +63,13 @@ getVariableType type' position' lib' = lookupInputType type' lib' error'
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = fmap concat . mapM f
 
-allVariableRefs
-  :: FragmentLib -> [RawSelectionSet] -> Validation [Ref]
+allVariableRefs :: FragmentLib -> [RawSelectionSet] -> Validation [Ref]
 allVariableRefs fragmentLib = concatMapM (concatMapM searchRefs)
  where
   referencesFromArgument :: (Text, RawArgument) -> [Ref]
   referencesFromArgument (_, RawArgument{}) = []
-  referencesFromArgument (_, VariableRef Ref { refName, refPosition })
-    = [Ref refName refPosition]
+  referencesFromArgument (_, VariableRef Ref { refName, refPosition }) =
+    [Ref refName refPosition]
   -- | search used variables in every arguments
   searchRefs :: (Text, RawSelection) -> Validation [Ref]
   searchRefs (_, RawSelectionSet Selection { selectionArguments, selectionRec })
@@ -101,8 +100,7 @@ resolveOperationVariables typeLib lib root validationMode Operation { operationN
          operationArgs
  where
   varToKey :: (Text, Variable a) -> Ref
-  varToKey (key', Variable { variablePosition }) =
-    Ref key' variablePosition
+  varToKey (key', Variable { variablePosition }) = Ref key' variablePosition
   --
   checkUnusedVariables :: [Ref] -> Validation ()
   checkUnusedVariables refs = case map varToKey operationArgs \\ refs of

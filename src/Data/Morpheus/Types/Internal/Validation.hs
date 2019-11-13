@@ -15,7 +15,7 @@ import           Control.Monad.Trans.Except     ( ExceptT(..) )
 import           Data.Aeson                     ( FromJSON
                                                 , ToJSON
                                                 )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Position(..) )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )

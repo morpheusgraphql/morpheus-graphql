@@ -3,7 +3,7 @@
 {-# LANGUAGE DeriveLift      #-}
 {-# LANGUAGE NamedFieldPuns  #-}
 
-module Data.Morpheus.Types.Internal.Base
+module Data.Morpheus.Types.Internal.AST.Base
   ( Key
   , Collection
   , Ref(..)

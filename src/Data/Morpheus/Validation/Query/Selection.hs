@@ -31,7 +31,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawSelection(..)
                                                 , RawSelectionSet
                                                 )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..) )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField(..)

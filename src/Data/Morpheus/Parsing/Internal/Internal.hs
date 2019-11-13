@@ -10,7 +10,7 @@ where
 
 import qualified Data.List.NonEmpty            as NonEmpty
 import           Data.Morpheus.Error.Utils      ( toLocation )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Position )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( GQLError(..)

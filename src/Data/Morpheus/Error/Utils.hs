@@ -12,7 +12,7 @@ where
 import           Data.ByteString.Lazy.Char8     ( ByteString
                                                 , pack
                                                 )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Position )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( GQLError(..)
