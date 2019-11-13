@@ -10,7 +10,7 @@ module Data.Morpheus.Types.Internal.Base
   , Position
   , Position(..)
   , Message
-  , enhanceKeyWithNull
+  , anonymousRef
   )
 where
 
@@ -46,5 +46,5 @@ instance Ord Ref where
   compare (Ref x _) (Ref y _) = compare x y
 
 
-enhanceKeyWithNull :: Key -> Ref
-enhanceKeyWithNull refName = Ref { refName, refPosition = Position 0 0 }
+anonymousRef :: Key -> Ref
+anonymousRef refName = Ref { refName, refPosition = Position 0 0 }

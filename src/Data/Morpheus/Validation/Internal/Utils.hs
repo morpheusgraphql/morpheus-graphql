@@ -13,7 +13,7 @@ import           Data.List                      ( (\\) )
 import           Data.Morpheus.Types.Internal.Base
                                                 ( Ref(..)
                                                 , Key
-                                                , enhanceKeyWithNull
+                                                , anonymousRef
                                                 )
 import qualified Data.Set                      as S
 import           Data.Text                      ( Text )
@@ -24,7 +24,7 @@ data VALIDATION_MODE
   deriving (Eq, Show)
 
 differKeys :: [Ref] -> [Key] -> [Ref]
-differKeys enhanced keys = enhanced \\ map enhanceKeyWithNull keys
+differKeys enhanced keys = enhanced \\ map anonymousRef keys
 
 removeDuplicates :: Ord a => [a] -> [a]
 removeDuplicates = S.toList . S.fromList
