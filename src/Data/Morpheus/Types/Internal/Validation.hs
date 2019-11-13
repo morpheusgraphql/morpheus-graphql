@@ -3,7 +3,7 @@
 
 module Data.Morpheus.Types.Internal.Validation
   ( GQLError(..)
-  , Location(..)
+  , Position(..)
   , GQLErrors
   , JSONError(..)
   , Validation
@@ -16,7 +16,7 @@ import           Data.Aeson                     ( FromJSON
                                                 , ToJSON
                                                 )
 import           Data.Morpheus.Types.Internal.Base
-                                                ( Location(..) )
+                                                ( Position(..) )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
 import           Data.Text                      ( Text )
@@ -24,14 +24,14 @@ import           GHC.Generics                   ( Generic )
 
 data GQLError = GQLError
   { desc      :: Text
-  , positions :: [Location]
+  , positions :: [Position]
   } deriving (Show)
 
 type GQLErrors = [GQLError]
 
 data JSONError = JSONError
   { message   :: Text
-  , locations :: [Location]
+  , locations :: [Position]
   } deriving (Show, Generic, FromJSON, ToJSON)
 
 type Validation = Either GQLErrors

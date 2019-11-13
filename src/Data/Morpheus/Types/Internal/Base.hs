@@ -8,7 +8,7 @@ module Data.Morpheus.Types.Internal.Base
   , Collection
   , Ref(..)
   , Position
-  , Location(..)
+  , Position(..)
   , Message
   , enhanceKeyWithNull
   )
@@ -23,9 +23,7 @@ import           Language.Haskell.TH.Syntax     ( Lift )
 import           Instances.TH.Lift              ( )
 
 
-type Position = Location
-
-data Location = Location
+data Position = Position
   { line   :: Int
   , column :: Int
   } deriving (Show, Generic, FromJSON, ToJSON, Lift)
@@ -49,4 +47,4 @@ instance Ord Ref where
 
 
 enhanceKeyWithNull :: Key -> Ref
-enhanceKeyWithNull refName = Ref { refName, refPosition = Location 0 0 }
+enhanceKeyWithNull refName = Ref { refName, refPosition = Position 0 0 }
