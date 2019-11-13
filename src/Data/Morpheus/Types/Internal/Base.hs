@@ -23,15 +23,15 @@ import           Language.Haskell.TH.Syntax     ( Lift )
 import           Instances.TH.Lift              ( )
 
 
-data Position = Position
-  { line   :: Int
-  , column :: Int
-  } deriving (Show, Generic, FromJSON, ToJSON, Lift)
-
 type Key = Text
 type Message = Text
 
 type Collection a = [(Key, a)]
+
+data Position = Position
+  { line   :: Int
+  , column :: Int
+  } deriving (Show, Generic, FromJSON, ToJSON, Lift)
 
 -- includes position for debugging, where Ref "a" 1 === Ref "a" 3
 data Ref = Ref
