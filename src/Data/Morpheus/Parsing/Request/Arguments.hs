@@ -53,8 +53,8 @@ valueArgument = label "valueArgument" $ do
 
 variableArgument :: Parser RawArgument
 variableArgument = label "variableArgument" $ do
-  (referenceName, referencePosition) <- variable
-  pure $ VariableReference $ Reference { referenceName, referencePosition }
+  (refName, refPosition) <- variable
+  pure $ VariableReference $ Reference { refName, refPosition }
 
 maybeArguments :: Parser RawArguments
 maybeArguments = label "maybeArguments" $ parseMaybeTuple argument

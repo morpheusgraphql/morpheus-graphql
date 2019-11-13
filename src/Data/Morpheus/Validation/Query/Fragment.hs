@@ -26,11 +26,10 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( Fragment(..)
                                                 , FragmentLib
                                                 , RawSelection(..)
-                                                , Reference(..)
                                                 , Selection(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Base
-                                                ( EnhancedKey(..)
+                                                ( Reference(..)
                                                 , Position
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
@@ -55,22 +54,21 @@ validateFragments lib fragments operatorSel =
       []     -> return ()
       unused -> Left $ unusedFragment unused
   checkLoop = mapM (validateFragment lib) fragments >>= detectLoopOnFragments
-  fragmentsKeys = map toEnhancedKey fragments
+  fragmentsKeys = map toReference fragments
    where
-    toEnhancedKey (key, Fragment { fragmentPosition }) =
-      EnhancedKey key fragmentPosition
+    toReference (key, Fragment { fragmentPosition }) =
+      Reference key fragmentPosition
 
-type Node = EnhancedKey
+type Node = Reference
 
 type NodeEdges = (Node, [Node])
 
 type Graph = [NodeEdges]
 
 getFragment :: Reference -> FragmentLib -> Validation Fragment
-getFragment Reference { referenceName, referencePosition } lib =
-  case lookup referenceName lib of
-    Nothing       -> Left $ unknownFragment referenceName referencePosition
-    Just fragment -> pure fragment
+getFragment Reference { refName, refPosition } lib = case lookup refName lib of
+  Nothing       -> Left $ unknownFragment refName refPosition
+  Just fragment -> pure fragment
 
 castFragmentType
   :: Maybe Text -> Position -> [Text] -> Fragment -> Validation Fragment
@@ -81,9 +79,9 @@ castFragmentType key' position' targets' fragment@Fragment { fragmentType } =
       $ cannotBeSpreadOnType key' fragmentType position' (T.concat targets')
 
 resolveSpread :: FragmentLib -> [Text] -> Reference -> Validation Fragment
-resolveSpread fragments allowedTargets reference@Reference { referenceName, referencePosition }
+resolveSpread fragments allowedTargets reference@Reference { refName, refPosition }
   = getFragment reference fragments
-    >>= castFragmentType (Just referenceName) referencePosition allowedTargets
+    >>= castFragmentType (Just refName) refPosition allowedTargets
 
 usedFragments :: FragmentLib -> [(Text, RawSelection)] -> [Node]
 usedFragments fragments = concatMap findAllUses
@@ -94,12 +92,12 @@ usedFragments fragments = concatMap findAllUses
   findAllUses (_, InlineFragment Fragment { fragmentSelection }) =
     concatMap findAllUses fragmentSelection
   findAllUses (_, RawSelectionField{}) = []
-  findAllUses (_, Spread Reference { referenceName, referencePosition }) =
-    [EnhancedKey referenceName referencePosition] <> searchInFragment
+  findAllUses (_, Spread Reference { refName, refPosition }) =
+    [Reference refName refPosition] <> searchInFragment
    where
     searchInFragment = maybe []
                              (concatMap findAllUses . fragmentSelection)
-                             (lookup referenceName fragments)
+                             (lookup refName fragments)
 
 scanForSpread :: (Text, RawSelection) -> [Node]
 scanForSpread (_, RawSelectionSet Selection { selectionRec }) =
@@ -107,13 +105,13 @@ scanForSpread (_, RawSelectionSet Selection { selectionRec }) =
 scanForSpread (_, InlineFragment Fragment { fragmentSelection = selection' }) =
   concatMap scanForSpread selection'
 scanForSpread (_, RawSelectionField{}) = []
-scanForSpread (_, Spread Reference { referenceName = name', referencePosition = position' })
-  = [EnhancedKey name' position']
+scanForSpread (_, Spread Reference { refName = name', refPosition = position' })
+  = [Reference name' position']
 
 validateFragment :: DataTypeLib -> (Text, Fragment) -> Validation NodeEdges
 validateFragment lib (fName, Fragment { fragmentSelection, fragmentType, fragmentPosition })
   = lookupDataObject validationError fragmentType lib >> pure
-    ( EnhancedKey fName fragmentPosition
+    ( Reference fName fragmentPosition
     , concatMap scanForSpread fragmentSelection
     )
   where validationError = unknownType fragmentType fragmentPosition

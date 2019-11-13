@@ -30,10 +30,9 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , Arguments
                                                 , RawArgument(..)
                                                 , RawArguments
-                                                , Reference(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Base
-                                                ( EnhancedKey(..)
+                                                ( Reference(..)
                                                 , Position
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
@@ -64,28 +63,27 @@ resolveArgumentVariables operatorName variables DataField { fieldName, fieldArgs
  where
   resolveVariable :: (Text, RawArgument) -> Validation (Text, Argument)
   resolveVariable (key, RawArgument argument) = pure (key, argument)
-  resolveVariable (key, VariableReference Reference { referenceName, referencePosition })
-    = (key, ) . toArgument <$> lookupVar
+  resolveVariable (key, VariableReference Reference { refName, refPosition }) =
+    (key, ) . toArgument <$> lookupVar
    where
     toArgument argumentValue = Argument { argumentValue
                                         , argumentOrigin   = VARIABLE
-                                        , argumentPosition = referencePosition
+                                        , argumentPosition = refPosition
                                         }
-    lookupVar = case lookup referenceName variables of
-      Nothing ->
-        Left $ undefinedVariable operatorName referencePosition referenceName
+    lookupVar = case lookup refName variables of
+      Nothing -> Left $ undefinedVariable operatorName refPosition refName
       Just Variable { variableValue, variableType, variableTypeWrappers } ->
         case lookup key fieldArgs of
-          Nothing -> Left
-            $ unknownArguments fieldName [EnhancedKey key referencePosition]
+          Nothing ->
+            Left $ unknownArguments fieldName [Reference key refPosition]
           Just DataField { fieldType = fieldT@TypeAlias { aliasTyCon, aliasWrappers } }
             -> if variableType == aliasTyCon && not
                  (isWeaker variableTypeWrappers aliasWrappers)
               then return variableValue
-              else Left $ incompatibleVariableType referenceName
+              else Left $ incompatibleVariableType refName
                                                    varSignature
                                                    fieldSignature
-                                                   referencePosition
+                                                   refPosition
            where
             varSignature   = renderWrapped variableType variableTypeWrappers
             fieldSignature = render fieldT
@@ -112,7 +110,7 @@ validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldTy
                  , argumentPosition = fieldPosition
                  }
       )
-    | otherwise = Left $ undefinedArgument (EnhancedKey key fieldPosition)
+    | otherwise = Left $ undefinedArgument (Reference key fieldPosition)
   -------------------------------------------------------------------------
   validateArgumentValue :: Argument -> Validation (Text, Argument)
   validateArgumentValue arg@Argument { argumentValue, argumentPosition } =
@@ -151,5 +149,5 @@ validateArguments typeLib operatorName variables (key, field@DataField { fieldAr
     argError     = unknownArguments key
     enhancedKeys = map argToKey args
     argToKey (key', Argument { argumentPosition }) =
-      EnhancedKey key' argumentPosition
+      Reference key' argumentPosition
     fieldKeys = map fst fieldArgs

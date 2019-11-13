@@ -1,13 +1,13 @@
 {-# LANGUAGE DeriveAnyClass  #-}
 {-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE DeriveLift      #-}
+{-# LANGUAGE NamedFieldPuns  #-}
 
 module Data.Morpheus.Types.Internal.Base
   ( Key
   , Collection
   , Reference(..)
   , Position
-  , EnhancedKey(..)
   , Location(..)
   , Message
   , enhanceKeyWithNull
@@ -35,22 +35,18 @@ type Message = Text
 
 type Collection a = [(Key, a)]
 
+-- includes position for debugging, where Reference "a" 1 === Reference "a" 3
 data Reference = Reference
-  { referenceName     :: Key
-  , referencePosition :: Position
+  { refName     :: Key
+  , refPosition :: Position
   } deriving (Show,Lift)
 
--- Text value that includes position for debugging, where EnhancedKey "a" 1 === EnhancedKey "a" 3
-data EnhancedKey = EnhancedKey
-  { uid      :: Text
-  , location :: Position
-  } deriving (Show)
+instance Eq Reference where
+  (Reference id1 _) == (Reference id2 _) = id1 == id2
 
-instance Eq EnhancedKey where
-  (EnhancedKey id1 _) == (EnhancedKey id2 _) = id1 == id2
+instance Ord Reference where
+  compare (Reference x _) (Reference y _) = compare x y
 
-instance Ord EnhancedKey where
-  compare (EnhancedKey x _) (EnhancedKey y _) = compare x y
 
-enhanceKeyWithNull :: Key -> EnhancedKey
-enhanceKeyWithNull text = EnhancedKey { uid = text, location = Location 0 0 }
+enhanceKeyWithNull :: Key -> Reference
+enhanceKeyWithNull refName = Reference { refName, refPosition = Location 0 0 }

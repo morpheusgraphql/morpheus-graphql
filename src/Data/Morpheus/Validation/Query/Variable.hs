@@ -33,11 +33,10 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawArgument(..)
                                                 , RawSelection(..)
                                                 , RawSelectionSet
-                                                , Reference(..)
                                                 , Selection(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Base
-                                                ( EnhancedKey(..)
+                                                ( Reference(..)
                                                 , Position
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
@@ -65,19 +64,19 @@ concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = fmap concat . mapM f
 
 allVariableReferences
-  :: FragmentLib -> [RawSelectionSet] -> Validation [EnhancedKey]
+  :: FragmentLib -> [RawSelectionSet] -> Validation [Reference]
 allVariableReferences fragmentLib = concatMapM (concatMapM searchReferences)
  where
-  referencesFromArgument :: (Text, RawArgument) -> [EnhancedKey]
+  referencesFromArgument :: (Text, RawArgument) -> [Reference]
   referencesFromArgument (_, RawArgument{}) = []
-  referencesFromArgument (_, VariableReference Reference { referenceName, referencePosition })
-    = [EnhancedKey referenceName referencePosition]
+  referencesFromArgument (_, VariableReference Reference { refName, refPosition })
+    = [Reference refName refPosition]
   -- | search used variables in every arguments
-  searchReferences :: (Text, RawSelection) -> Validation [EnhancedKey]
+  searchReferences :: (Text, RawSelection) -> Validation [Reference]
   searchReferences (_, RawSelectionSet Selection { selectionArguments, selectionRec })
     = getArgs <$> concatMapM searchReferences selectionRec
    where
-    getArgs :: [EnhancedKey] -> [EnhancedKey]
+    getArgs :: [Reference] -> [Reference]
     getArgs x = concatMap referencesFromArgument selectionArguments <> x
   searchReferences (_, InlineFragment Fragment { fragmentSelection }) =
     concatMapM searchReferences fragmentSelection
@@ -101,11 +100,11 @@ resolveOperationVariables typeLib lib root validationMode Operation { operationN
     mapM (lookupAndValidateValueOnBody typeLib root validationMode)
          operationArgs
  where
-  varToKey :: (Text, Variable a) -> EnhancedKey
+  varToKey :: (Text, Variable a) -> Reference
   varToKey (key', Variable { variablePosition }) =
-    EnhancedKey key' variablePosition
+    Reference key' variablePosition
   --
-  checkUnusedVariables :: [EnhancedKey] -> Validation ()
+  checkUnusedVariables :: [Reference] -> Validation ()
   checkUnusedVariables refs = case map varToKey operationArgs \\ refs of
     []      -> pure ()
     unused' -> Left $ unusedVariables (getOperationName operationName) unused'

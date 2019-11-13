@@ -1,3 +1,6 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
+
 module Data.Morpheus.Validation.Internal.Utils
   ( differKeys
   , checkNameCollision
@@ -8,7 +11,7 @@ where
 
 import           Data.List                      ( (\\) )
 import           Data.Morpheus.Types.Internal.Base
-                                                ( EnhancedKey(..)
+                                                ( Reference(..)
                                                 , Key
                                                 , enhanceKeyWithNull
                                                 )
@@ -20,27 +23,24 @@ data VALIDATION_MODE
   | FULL_VALIDATION
   deriving (Eq, Show)
 
-differKeys :: [EnhancedKey] -> [Key] -> [EnhancedKey]
+differKeys :: [Reference] -> [Key] -> [Reference]
 differKeys enhanced keys = enhanced \\ map enhanceKeyWithNull keys
 
 removeDuplicates :: Ord a => [a] -> [a]
 removeDuplicates = S.toList . S.fromList
 
-elementOfKeys :: [Text] -> EnhancedKey -> Bool
-elementOfKeys keys' EnhancedKey { uid = id' } = id' `elem` keys'
+elementOfKeys :: [Text] -> Reference -> Bool
+elementOfKeys keys Reference { refName } = refName `elem` keys
 
 checkNameCollision
-  :: [EnhancedKey] -> ([EnhancedKey] -> error) -> Either error [EnhancedKey]
+  :: [Reference] -> ([Reference] -> error) -> Either error [Reference]
 checkNameCollision enhancedKeys errorGenerator =
   case enhancedKeys \\ removeDuplicates enhancedKeys of
     []         -> pure enhancedKeys
     duplicates -> Left $ errorGenerator duplicates
 
 checkForUnknownKeys
-  :: [EnhancedKey]
-  -> [Text]
-  -> ([EnhancedKey] -> error)
-  -> Either error [EnhancedKey]
+  :: [Reference] -> [Text] -> ([Reference] -> error) -> Either error [Reference]
 checkForUnknownKeys enhancedKeys' keys' errorGenerator' =
   case filter (not . elementOfKeys keys') enhancedKeys' of
     []           -> pure enhancedKeys'
