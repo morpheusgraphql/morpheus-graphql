@@ -7,7 +7,6 @@ module Data.Morpheus.Types.Internal.Base
   ( Key
   , Collection
   , Ref(..)
-  , Position
   , Position(..)
   , Message
   , anonymousRef
