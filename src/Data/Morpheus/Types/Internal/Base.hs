@@ -33,7 +33,10 @@ data Position = Position
   , column :: Int
   } deriving (Show, Generic, FromJSON, ToJSON, Lift)
 
+-- Refference with Position information  
+--
 -- includes position for debugging, where Ref "a" 1 === Ref "a" 3
+--
 data Ref = Ref
   { refName     :: Key
   , refPosition :: Position
@@ -44,7 +47,6 @@ instance Eq Ref where
 
 instance Ord Ref where
   compare (Ref x _) (Ref y _) = compare x y
-
 
 anonymousRef :: Key -> Ref
 anonymousRef refName = Ref { refName, refPosition = Position 0 0 }
