@@ -12,13 +12,13 @@ where
 import           Data.ByteString.Lazy.Char8     ( ByteString
                                                 , pack
                                                 )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Position )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( GQLError(..)
                                                 , GQLErrors
                                                 , JSONError(..)
-                                                , Location(..)
+                                                , Position(..)
                                                 )
 import           Data.Text                      ( Text )
 import           Text.Megaparsec                ( SourcePos(SourcePos)
@@ -40,9 +40,9 @@ renderError :: GQLError -> JSONError
 renderError GQLError { desc, positions } =
   JSONError { message = desc, locations = positions }
 
-toLocation :: SourcePos -> Location
+toLocation :: SourcePos -> Position
 toLocation SourcePos { sourceLine, sourceColumn } =
-  Location { line = unPos sourceLine, column = unPos sourceColumn }
+  Position { line = unPos sourceLine, column = unPos sourceColumn }
 
 badRequestError :: String -> ByteString
 badRequestError aesonError' =

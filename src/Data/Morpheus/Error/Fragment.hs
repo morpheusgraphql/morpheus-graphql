@@ -16,8 +16,8 @@ import qualified Data.Text                     as T
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils      ( errorMessage )
-import           Data.Morpheus.Types.Internal.Base
-                                                ( EnhancedKey(..)
+import           Data.Morpheus.Types.Internal.AST.Base
+                                                ( Ref(..)
                                                 , Position
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
@@ -36,31 +36,31 @@ import           Data.Morpheus.Types.Internal.Validation
     fragment H on D {...}  ->  "Unknown type \"D\"."
     {...H} -> "Unknown fragment \"H\"."
 -}
-fragmentNameCollision :: [EnhancedKey] -> GQLErrors
+fragmentNameCollision :: [Ref] -> GQLErrors
 fragmentNameCollision = map toError
  where
-  toError EnhancedKey { uid, location } = GQLError
-    { desc      = "There can be only one fragment named \"" <> uid <> "\"."
-    , positions = [location]
+  toError Ref { refName, refPosition } = GQLError
+    { desc      = "There can be only one fragment named \"" <> refName <> "\"."
+    , positions = [refPosition]
     }
 
-unusedFragment :: [EnhancedKey] -> GQLErrors
+unusedFragment :: [Ref] -> GQLErrors
 unusedFragment = map toError
  where
-  toError EnhancedKey { uid, location } = GQLError
-    { desc      = "Fragment \"" <> uid <> "\" is never used."
-    , positions = [location]
+  toError Ref { refName, refPosition } = GQLError
+    { desc      = "Fragment \"" <> refName <> "\" is never used."
+    , positions = [refPosition]
     }
 
-cannotSpreadWithinItself :: [EnhancedKey] -> GQLErrors
+cannotSpreadWithinItself :: [Ref] -> GQLErrors
 cannotSpreadWithinItself fragments =
-  [GQLError { desc = text, positions = map location fragments }]
+  [GQLError { desc = text, positions = map refPosition fragments }]
  where
   text = T.concat
     [ "Cannot spread fragment \""
-    , uid $ head fragments
+    , refName $ head fragments
     , "\" within itself via "
-    , T.intercalate "," (map uid fragments)
+    , T.intercalate "," (map refName fragments)
     , "."
     ]
 

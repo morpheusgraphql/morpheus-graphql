@@ -31,7 +31,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
 
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Collection
                                                 , Key
                                                 , Position

@@ -113,7 +113,7 @@ import           Data.Morpheus.Error.Internal   ( internalError )
 import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , hasNoSubfields
                                                 )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key
                                                 , Position
                                                 )

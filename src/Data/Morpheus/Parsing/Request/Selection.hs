@@ -38,7 +38,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawArguments
                                                 , RawSelection(..)
                                                 , RawSelectionSet
-                                                , Reference(..)
+                                                , Ref(..)
                                                 )
 
 
@@ -111,12 +111,11 @@ parseSelectionField = label "SelectionField" $ do
 --
 spread :: Parser (Text, RawSelection)
 spread = label "FragmentSpread" $ do
-  referencePosition <- spreadLiteral
-  referenceName     <- token
+  refPosition <- spreadLiteral
+  refName     <- token
   -- TODO: handle Directives
-  _directives       <- optionalDirectives
-  return
-    (referenceName, Spread $ Reference { referenceName, referencePosition })
+  _directives <- optionalDirectives
+  return (refName, Spread $ Ref { refName, refPosition })
 
 -- FragmentDefinition : https://graphql.github.io/graphql-spec/June2018/#FragmentDefinition
 --

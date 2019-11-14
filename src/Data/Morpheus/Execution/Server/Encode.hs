@@ -70,7 +70,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , SelectionRec(..)
                                                 , ValidSelection
                                                 )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( MUTATION

@@ -33,11 +33,10 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawArgument(..)
                                                 , RawSelection(..)
                                                 , RawSelectionSet
-                                                , Reference(..)
                                                 , Selection(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Base
-                                                ( EnhancedKey(..)
+import           Data.Morpheus.Types.Internal.AST.Base
+                                                ( Ref(..)
                                                 , Position
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
@@ -64,28 +63,27 @@ getVariableType type' position' lib' = lookupInputType type' lib' error'
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = fmap concat . mapM f
 
-allVariableReferences
-  :: FragmentLib -> [RawSelectionSet] -> Validation [EnhancedKey]
-allVariableReferences fragmentLib = concatMapM (concatMapM searchReferences)
+allVariableRefs :: FragmentLib -> [RawSelectionSet] -> Validation [Ref]
+allVariableRefs fragmentLib = concatMapM (concatMapM searchRefs)
  where
-  referencesFromArgument :: (Text, RawArgument) -> [EnhancedKey]
+  referencesFromArgument :: (Text, RawArgument) -> [Ref]
   referencesFromArgument (_, RawArgument{}) = []
-  referencesFromArgument (_, VariableReference Reference { referenceName, referencePosition })
-    = [EnhancedKey referenceName referencePosition]
+  referencesFromArgument (_, VariableRef Ref { refName, refPosition }) =
+    [Ref refName refPosition]
   -- | search used variables in every arguments
-  searchReferences :: (Text, RawSelection) -> Validation [EnhancedKey]
-  searchReferences (_, RawSelectionSet Selection { selectionArguments, selectionRec })
-    = getArgs <$> concatMapM searchReferences selectionRec
+  searchRefs :: (Text, RawSelection) -> Validation [Ref]
+  searchRefs (_, RawSelectionSet Selection { selectionArguments, selectionRec })
+    = getArgs <$> concatMapM searchRefs selectionRec
    where
-    getArgs :: [EnhancedKey] -> [EnhancedKey]
+    getArgs :: [Ref] -> [Ref]
     getArgs x = concatMap referencesFromArgument selectionArguments <> x
-  searchReferences (_, InlineFragment Fragment { fragmentSelection }) =
-    concatMapM searchReferences fragmentSelection
-  searchReferences (_, RawSelectionField Selection { selectionArguments }) =
+  searchRefs (_, InlineFragment Fragment { fragmentSelection }) =
+    concatMapM searchRefs fragmentSelection
+  searchRefs (_, RawSelectionField Selection { selectionArguments }) =
     return $ concatMap referencesFromArgument selectionArguments
-  searchReferences (_, Spread reference) =
+  searchRefs (_, Spread reference) =
     getFragment reference fragmentLib
-      >>= concatMapM searchReferences
+      >>= concatMapM searchRefs
       .   fragmentSelection
 
 resolveOperationVariables
@@ -97,15 +95,14 @@ resolveOperationVariables
   -> Validation ValidVariables
 resolveOperationVariables typeLib lib root validationMode Operation { operationName, operationSelection, operationArgs }
   = do
-    allVariableReferences lib [operationSelection] >>= checkUnusedVariables
+    allVariableRefs lib [operationSelection] >>= checkUnusedVariables
     mapM (lookupAndValidateValueOnBody typeLib root validationMode)
          operationArgs
  where
-  varToKey :: (Text, Variable a) -> EnhancedKey
-  varToKey (key', Variable { variablePosition }) =
-    EnhancedKey key' variablePosition
+  varToKey :: (Text, Variable a) -> Ref
+  varToKey (key', Variable { variablePosition }) = Ref key' variablePosition
   --
-  checkUnusedVariables :: [EnhancedKey] -> Validation ()
+  checkUnusedVariables :: [Ref] -> Validation ()
   checkUnusedVariables refs = case map varToKey operationArgs \\ refs of
     []      -> pure ()
     unused' -> Left $ unusedVariables (getOperationName operationName) unused'

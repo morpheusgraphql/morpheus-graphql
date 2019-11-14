@@ -31,8 +31,8 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawSelection(..)
                                                 , RawSelectionSet
                                                 )
-import           Data.Morpheus.Types.Internal.Base
-                                                ( EnhancedKey(..) )
+import           Data.Morpheus.Types.Internal.AST.Base
+                                                ( Ref(..) )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField(..)
                                                 , DataObject
@@ -65,7 +65,7 @@ checkDuplicatesOn DataTyCon { typeName = name' } keys =
   selError     = duplicateQuerySelections name'
   enhancedKeys = map selToKey keys
   selToKey (key, Selection { selectionPosition = position', selectionAlias }) =
-    EnhancedKey (fromMaybe key selectionAlias) position'
+    Ref (fromMaybe key selectionAlias) position'
 
 clusterUnionSelection
   :: FragmentLib

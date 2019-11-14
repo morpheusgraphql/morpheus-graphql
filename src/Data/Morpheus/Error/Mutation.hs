@@ -6,7 +6,7 @@ module Data.Morpheus.Error.Mutation
 where
 
 import           Data.Morpheus.Error.Utils      ( errorMessage )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Position )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( GQLErrors )
