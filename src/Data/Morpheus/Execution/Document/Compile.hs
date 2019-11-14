@@ -15,6 +15,8 @@ import           Data.Morpheus.Execution.Document.Convert     (renderTHTypes)
 import           Data.Morpheus.Execution.Document.Declare     (declareTypes)
 import           Data.Morpheus.Parsing.Document.Parser        (parseTypes)
 import           Data.Morpheus.Validation.Document.Validation
+import           Data.Morpheus.Types.Internal.Validation (Validation(..))
+
 
 gqlDocumentNamespace :: QuasiQuoter
 gqlDocumentNamespace =
@@ -41,5 +43,5 @@ gqlDocument =
 compileDocument :: Bool -> String -> Q [Dec]
 compileDocument namespace documentTXT =
   case parseTypes (T.pack documentTXT) >>= validatePartialDocument >>= renderTHTypes namespace of
-    Left errors  -> fail (renderGQLErrors errors)
-    Right schema -> declareTypes namespace schema
+    Failure errors  -> fail (renderGQLErrors errors)
+    Success schema warnings -> declareTypes namespace schema

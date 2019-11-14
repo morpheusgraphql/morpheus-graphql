@@ -35,15 +35,15 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , TypeD(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
+                                                ( Validation(..) )
 import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
 
 defineQuery :: IO (Validation DataTypeLib) -> (GQLQueryRoot, String) -> Q [Dec]
 defineQuery ioSchema queryRoot = do
   schema <- runIO ioSchema
   case schema >>= (`validateWith` queryRoot) of
-    Left  errors -> fail (renderGQLErrors errors)
-    Right queryD -> defineQueryD queryD
+    Failure errors          -> fail (renderGQLErrors errors)
+    Success queryD warnings -> defineQueryD queryD
 
 defineQueryD :: ClientQuery -> Q [Dec]
 defineQueryD ClientQuery { queryTypes = rootType : subTypes, queryText, queryArgsType }

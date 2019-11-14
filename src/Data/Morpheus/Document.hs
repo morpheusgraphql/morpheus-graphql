@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , createDataTypeLib
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
+                                                ( Validation(..) )
 import           Data.Morpheus.Validation.Document.Validation
                                                 ( validatePartialDocument )
 
@@ -63,13 +63,13 @@ toGraphQLDocument
   => proxy (GQLRootResolver m event query mut sub)
   -> ByteString
 toGraphQLDocument x = case fullSchema x of
-  Left  errors -> pack (show errors)
-  Right lib    -> renderGraphQLDocument lib
+  Failure errors       -> pack (show errors)
+  Success lib warnings -> renderGraphQLDocument lib
 
 toMorpheusHaskellAPi :: String -> ByteString -> Either ByteString ByteString
 toMorpheusHaskellAPi moduleName doc = case parseGraphQLDocument doc of
-  Left  errors -> Left $ pack (show errors)
-  Right lib    -> Right $ renderHaskellDocument moduleName lib
+  Failure errors       -> Left $ pack (show errors)
+  Success lib warnings -> Right $ renderHaskellDocument moduleName lib
 
 importGQLDocument :: String -> Q [Dec]
 importGQLDocument src = runIO (readFile src) >>= compileDocument False

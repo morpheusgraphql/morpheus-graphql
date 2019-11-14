@@ -83,7 +83,9 @@ import           Data.Morpheus.Types.Internal.Stream
                                                 , closeStream
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
+                                                ( Validation
+                                                , Failure(..)
+                                                )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
                                                 , renderResponse
@@ -142,15 +144,13 @@ streamResolver
   -> GQLRequest
   -> ResponseStream m event GQLResponse
 streamResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptionResolver } request
-  = renderResponse <$> runExceptT (validRequest >>= execOperator)
-
+  = renderResponse . fromEither <$> runExceptT (validRequest >>= execOperator)
  where
-    ---------------------------------------------------------
   validRequest :: Monad m => ResponseT event m (DataTypeLib, ValidOperation)
-  validRequest = liftEither $ do
+  validRequest = liftEither $ toEither $ do
     schema <- fullSchema $ Identity root
     query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
-    Right (schema, query)
+    pure (schema, query)
   ----------------------------------------------------------
   execOperator (schema, operation@Operation { operationType = Query }) =
     toResponseRes (encodeQuery (schemaAPI schema) queryResolver operation)

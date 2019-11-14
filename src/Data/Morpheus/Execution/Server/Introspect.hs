@@ -52,6 +52,7 @@ import           Data.Morpheus.Types.Custom     ( MapKind
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
 import           Data.Morpheus.Types.GQLType    ( GQLType(..) )
+import           Data.Morpheus.Types.Internal.Validation(Failure(..))
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataArguments
                                                 , Meta(..)
@@ -255,4 +256,4 @@ updateLib typeBuilder stack proxy lib' =
       stack
     Just fingerprint' | fingerprint' == __typeFingerprint proxy -> return lib'
     -- throw error if 2 different types has same name
-    Just _ -> Left $ nameCollisionError (__typeName proxy)
+    Just _ -> failure $ nameCollisionError (__typeName proxy)

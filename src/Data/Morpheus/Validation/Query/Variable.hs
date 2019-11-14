@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Morpheus.Validation.Query.Variable
@@ -45,7 +46,9 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , lookupInputType
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
+                                                ( Validation
+                                                , Failure(..)
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value(..) )
 import           Data.Morpheus.Types.Types      ( Variables )
@@ -104,8 +107,9 @@ resolveOperationVariables typeLib lib root validationMode Operation { operationN
   --
   checkUnusedVariables :: [Ref] -> Validation ()
   checkUnusedVariables refs = case map varToKey operationArgs \\ refs of
-    []      -> pure ()
-    unused' -> Left $ unusedVariables (getOperationName operationName) unused'
+    [] -> pure ()
+    unused' ->
+      failure $ unusedVariables (getOperationName operationName) unused'
 
 lookupAndValidateValueOnBody
   :: DataTypeLib
@@ -128,7 +132,7 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
   checkType Nothing (Just defValue) varType = validator varType defValue
   checkType Nothing Nothing varType
     | validationMode /= WITHOUT_VARIABLES && isVariableRequired
-    = Left $ uninitializedVariable variablePosition variableType key
+    = failure $ uninitializedVariable variablePosition variableType key
     | otherwise
     = returnNull
    where
@@ -143,7 +147,7 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
                            varType
                            (key, varValue)
       of
-        Left message -> Left $ variableGotInvalidValue
+        Left message -> failure $ variableGotInvalidValue
           key
           (inputErrorMessage message)
           variablePosition

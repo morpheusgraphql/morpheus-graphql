@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Morpheus.Validation.Query.Fragment
@@ -37,7 +38,9 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , lookupDataObject
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
+                                                ( Validation
+                                                , Failure(..)
+                                                )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( checkNameCollision )
 
@@ -52,7 +55,7 @@ validateFragments lib fragments operatorSel =
   checkUnusedFragments =
     case fragmentsKeys \\ usedFragments fragments operatorSel of
       []     -> return ()
-      unused -> Left $ unusedFragment unused
+      unused -> failure (unusedFragment unused)
   checkLoop = mapM (validateFragment lib) fragments >>= detectLoopOnFragments
   fragmentsKeys = map toRef fragments
     where toRef (key, Fragment { fragmentPosition }) = Ref key fragmentPosition
@@ -65,7 +68,7 @@ type Graph = [NodeEdges]
 
 getFragment :: Ref -> FragmentLib -> Validation Fragment
 getFragment Ref { refName, refPosition } lib = case lookup refName lib of
-  Nothing       -> Left $ unknownFragment refName refPosition
+  Nothing       -> failure $ unknownFragment refName refPosition
   Just fragment -> pure fragment
 
 castFragmentType
@@ -73,7 +76,7 @@ castFragmentType
 castFragmentType key' position' targets' fragment@Fragment { fragmentType } =
   if fragmentType `elem` targets'
     then pure fragment
-    else Left
+    else failure
       $ cannotBeSpreadOnType key' fragmentType position' (T.concat targets')
 
 resolveSpread :: FragmentLib -> [Text] -> Ref -> Validation Fragment
@@ -124,4 +127,4 @@ checkForCycle lib parentNode history = case lookup parentNode lib of
  where
   checkNode x = if x `elem` history then cycleError x else recurse x
   recurse node = checkForCycle lib node $ history ++ [node]
-  cycleError n = Left $ cannotSpreadWithinItself $ history ++ [n]
+  cycleError n = failure $ cannotSpreadWithinItself (n : history)

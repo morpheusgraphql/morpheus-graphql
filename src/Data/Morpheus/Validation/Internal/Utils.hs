@@ -17,6 +17,8 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 )
 import qualified Data.Set                      as S
 import           Data.Text                      ( Text )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Failure(..) )
 
 data VALIDATION_MODE
   = WITHOUT_VARIABLES
@@ -32,14 +34,14 @@ removeDuplicates = S.toList . S.fromList
 elementOfKeys :: [Text] -> Ref -> Bool
 elementOfKeys keys Ref { refName } = refName `elem` keys
 
-checkNameCollision :: [Ref] -> ([Ref] -> error) -> Either error [Ref]
+checkNameCollision :: Failure e m => [Ref] -> ([Ref] -> e) -> m [Ref]
 checkNameCollision enhancedKeys errorGenerator =
   case enhancedKeys \\ removeDuplicates enhancedKeys of
     []         -> pure enhancedKeys
-    duplicates -> Left $ errorGenerator duplicates
+    duplicates -> failure $ errorGenerator duplicates
 
-checkForUnknownKeys :: [Ref] -> [Text] -> ([Ref] -> error) -> Either error [Ref]
+checkForUnknownKeys :: Failure e m => [Ref] -> [Text] -> ([Ref] -> e) -> m [Ref]
 checkForUnknownKeys enhancedKeys' keys' errorGenerator' =
   case filter (not . elementOfKeys keys') enhancedKeys' of
     []           -> pure enhancedKeys'
-    unknownKeys' -> Left $ errorGenerator' unknownKeys'
+    unknownKeys' -> failure $ errorGenerator' unknownKeys'

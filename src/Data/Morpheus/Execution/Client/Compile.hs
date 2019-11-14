@@ -32,7 +32,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , ClientQuery(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
+                                                ( Validation(..) )
 import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( VALIDATION_MODE(..) )
@@ -41,8 +41,8 @@ import           Data.Morpheus.Validation.Query.Validation
 
 compileSyntax :: String -> Q Exp
 compileSyntax queryText = case parseGQL request of
-  Left  errors -> fail (renderGQLErrors errors)
-  Right root   -> [|(root, queryText)|]
+  Failure errors        -> fail (renderGQLErrors errors)
+  Success root warnings -> [|(root, queryText)|]
  where
   request = GQLRequest { query         = T.pack queryText
                        , operationName = Nothing

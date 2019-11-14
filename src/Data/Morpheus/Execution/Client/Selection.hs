@@ -57,6 +57,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( GQLErrors
                                                 , Validation
+                                                , Failure(..)
                                                 )
 import           Data.Set                       ( fromList
                                                 , toList
@@ -283,15 +284,15 @@ lookupFieldType lib path (DataObject DataTyCon { typeData }) key =
       trans x =
         (x, alias { aliasTyCon = typeFrom path x, aliasArgs = Nothing })
     Nothing ->
-      Left (compileError $ "cant find field \"" <> pack (show typeData) <> "\"")
+      failure (compileError $ "cant find field \"" <> pack (show typeData) <> "\"")
 lookupFieldType _ _ dt _ =
-  Left (compileError $ "Type should be output Object \"" <> pack (show dt))
+  failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 
 
 leafType :: DataType -> Validation ([ClientType], [Text])
 leafType (DataEnum DataTyCon { typeName }) = pure ([], [typeName])
 leafType DataScalar{} = pure ([], [])
-leafType _ = Left $ compileError "Invalid schema Expected scalar"
+leafType _ = failure $ compileError "Invalid schema Expected scalar"
 
 getType :: DataTypeLib -> Text -> Validation DataType
 getType lib typename =

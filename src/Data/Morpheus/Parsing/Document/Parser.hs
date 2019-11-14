@@ -23,12 +23,14 @@ import           Data.Morpheus.Parsing.Internal.Terms
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( RawDataType )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
+                                                ( Validation
+                                                , Failure(..)
+                                                )
 
 parseTypes :: Text -> Validation [(Text, RawDataType)]
 parseTypes doc = case parseDoc of
-  Right root       -> Right root
-  Left  parseError -> Left $ processErrorBundle parseError
+  Right root       -> pure root
+  Left  parseError -> failure (processErrorBundle parseError)
  where
   parseDoc = runParser request "<input>" doc
   request  = label "DocumentTypes" $ do
