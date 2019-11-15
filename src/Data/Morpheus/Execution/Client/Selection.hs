@@ -165,29 +165,19 @@ operationTypes lib variables = genOperation
       pure (ConsD { cName, cFields }, concat subTypes, concat requests)
      where
       genField :: (Text, ValidSelection) -> Validation DataField
-      genField (fieldName, sel@Selection { selectionAlias, selectionPosition })
-        = genFieldD sel
+      genField (fName, Selection { selectionAlias, selectionPosition }) = do
+        fieldType <-
+          snd <$> lookupFieldType lib fieldPath datatype selectionPosition fName
+        pure $ DataField { fieldName
+                         , fieldArgs     = []
+                         , fieldArgsType = Nothing
+                         , fieldType
+                         , fieldMeta     = Nothing
+                         }
        where
-        fieldPath = path <> [fromMaybe fieldName selectionAlias]
-        fieldTypeBy =
-          fmap snd . lookupFieldType lib fieldPath datatype selectionPosition
+        fieldPath = path <> [fieldName]
         -------------------------------
-        genFieldD Selection { selectionAlias = Just aliasFieldName } = do
-          fieldType <- fieldTypeBy fieldName
-          pure $ DataField { fieldName     = aliasFieldName
-                           , fieldArgs     = []
-                           , fieldArgsType = Nothing
-                           , fieldType
-                           , fieldMeta     = Nothing
-                           }
-        genFieldD _ = do
-          fieldType <- fieldTypeBy fieldName
-          pure $ DataField { fieldName
-                           , fieldArgs     = []
-                           , fieldArgsType = Nothing
-                           , fieldType
-                           , fieldMeta     = Nothing
-                           }
+        fieldName = fromMaybe fName selectionAlias
       ------------------------------------------------------------------------------------------------------------
       newFieldTypes
         :: DataType -> SelectionSet -> Validation ([[ClientType]], [[Text]])
