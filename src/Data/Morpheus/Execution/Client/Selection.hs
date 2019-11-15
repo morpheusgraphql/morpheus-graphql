@@ -173,7 +173,7 @@ operationTypes lib variables = genOperation
                                                         datatype
                                                         selectionPosition
                                                         fName
-          (subTypes, requests) <- valSelection fieldDataType sel
+          (subTypes, requests) <- subTypesBySelection fieldDataType sel
           pure
             ( DataField { fieldName
                         , fieldArgs     = []
@@ -185,41 +185,38 @@ operationTypes lib variables = genOperation
             , requests
             )
        where
-        fieldPath    = path <> [fieldName]
+        fieldPath = path <> [fieldName]
         -------------------------------
-        fieldName    = fromMaybe fName selectionAlias
-        ------------------------------------------------------------------------------------------------------------
-        valSelection = validateSelection
-         where
-          --------------------------------------------------------------------
-          validateSelection
-            :: DataType -> ValidSelection -> Validation ([ClientType], [Text])
-          validateSelection dType Selection { selectionRec = SelectionField } =
-            leafType dType
+        fieldName = fromMaybe fName selectionAlias
+        ------------------------------------------
+        subTypesBySelection
+          :: DataType -> ValidSelection -> Validation ([ClientType], [Text])
+        subTypesBySelection dType Selection { selectionRec = SelectionField } =
+          leafType dType
           --withLeaf buildLeaf dType
-          validateSelection dType Selection { selectionRec = SelectionSet selectionSet }
-            = genRecordType fieldPath (typeFrom [] dType) dType selectionSet
+        subTypesBySelection dType Selection { selectionRec = SelectionSet selectionSet }
+          = genRecordType fieldPath (typeFrom [] dType) dType selectionSet
           ---- UNION
-          validateSelection dType Selection { selectionRec = UnionSelection unionSelections }
-            = do
-              (tCons, subTypes, requests) <-
-                unzip3 <$> mapM getUnionType unionSelections
-              pure
-                ( ClientType
-                    { clientType = TypeD { tNamespace = map unpack fieldPath
-                                         , tName = unpack $ typeFrom [] dType
-                                         , tCons
-                                         , tMeta      = Nothing
-                                         }
-                    , clientKind = KindUnion
-                    }
-                  : concat subTypes
-                , concat requests
-                )
-           where
-            getUnionType (selectedTyName, selectionVariant) = do
-              conDatatype <- getType lib selectedTyName
-              genConsD (unpack selectedTyName) conDatatype selectionVariant
+        subTypesBySelection dType Selection { selectionRec = UnionSelection unionSelections }
+          = do
+            (tCons, subTypes, requests) <-
+              unzip3 <$> mapM getUnionType unionSelections
+            pure
+              ( ClientType
+                  { clientType = TypeD { tNamespace = map unpack fieldPath
+                                       , tName      = unpack $ typeFrom [] dType
+                                       , tCons
+                                       , tMeta      = Nothing
+                                       }
+                  , clientKind = KindUnion
+                  }
+                : concat subTypes
+              , concat requests
+              )
+         where
+          getUnionType (selectedTyName, selectionVariant) = do
+            conDatatype <- getType lib selectedTyName
+            genConsD (unpack selectedTyName) conDatatype selectionVariant
 
 scanInputTypes :: DataTypeLib -> Key -> LibUpdater [Key]
 scanInputTypes lib name collected | name `elem` collected = pure collected
