@@ -28,10 +28,10 @@ import           Text.Megaparsec                ( SourcePos(SourcePos)
                                                 )
 
 errorMessage :: Position -> Text -> GQLErrors
-errorMessage position text = [GQLError { desc = text, positions = [position] }]
+errorMessage position desc = [GQLError { desc, positions = [position] }]
 
 globalErrorMessage :: Text -> GQLErrors
-globalErrorMessage text = [GQLError { desc = text, positions = [] }]
+globalErrorMessage desc = [GQLError { desc, positions = [] }]
 
 renderErrors :: [GQLError] -> [JSONError]
 renderErrors = map renderError

@@ -52,7 +52,6 @@ newtype Channel event = Channel {
 instance (Eq (StreamChannel event)) => Eq (Channel event) where
   Channel x == Channel y = x == y
 
-
 class GQLChannel a where
     type StreamChannel a :: *
     streamChannels :: a -> [Channel a]

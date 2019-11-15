@@ -117,6 +117,8 @@ import           Data.Morpheus.Error.Selection  ( cannotQueryField
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key
                                                 , Position
+                                                , Name
+                                                , Description
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
@@ -132,9 +134,6 @@ import           Data.Morpheus.Execution.Internal.GraphScanner
                                                 , resolveUpdates
                                                 )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
-
-type Name = Key
-type Description = Key
 
 type QUERY = 'Query
 type MUTATION = 'Mutation
