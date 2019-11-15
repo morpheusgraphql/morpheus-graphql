@@ -296,7 +296,8 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
   ------------------------------
   _encode = (`encode` selection)
   -------------------------------------------------------------------
-  _resolve (QueryResolver res) = ResolveQ $ convert res >>= unResolveQ . _encode
+  _resolve (QueryResolver res) =
+    ResolveQ $ convert res >>= unResolveQ . _encode
   ---------------------------------------------------------------------------------------------------------------------------------------
   _resolve (MutResolver res) =
     ResolveM $ convert (toStream res) >>= unResolveM . _encode

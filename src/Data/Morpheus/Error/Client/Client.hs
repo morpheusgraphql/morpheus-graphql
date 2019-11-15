@@ -54,4 +54,4 @@ gqlWarnings []       = pure ()
 gqlWarnings warnings = mapM_ handleWarning warnings
  where
   handleWarning warning = reportWarning
-    ("Morpheus Client Warning: " <> (unpack . encode . renderError) warning)
+    ("Morpheus GraphQL Warning: " <> (unpack . encode . renderError) warning)
