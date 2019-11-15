@@ -21,7 +21,7 @@ module Data.Morpheus.Types.Internal.Resolver
   , Resolver(..)
   , ResolvingStrategy(..)
   , MapGraphQLT(..)
-  , PureOperation(..)
+  , LiftEither(..)
   , resolveObject
   , toResponseRes
   , withObject
@@ -84,12 +84,13 @@ import           Data.Morpheus.Types.Internal.AST.Value
 import           Data.Morpheus.Types.IO         ( renderResponse )
 
 
+class LiftEither (o::OperationType) res where
+  type ResError res :: *
+  liftEither :: Monad m => m (Either (ResError res) a) -> res o event m  a
 
-----------------------------------------------------------------------------------------
 type ResolveT = ExceptT GQLErrors
 type ResponseT m e = ResolveT (ResponseStream e m)
-
-
+----------------------------------------------------------------------------------------
 -- Recursive Resolver
 newtype RecResolver m a b = RecResolver {
   unRecResolver :: a -> ResolveT m b
@@ -118,7 +119,7 @@ data ResolvingStrategy  (o::OperationType) event (m:: * -> *) value where
     -- SubscriptionRecT :: RecResolver m event value -> GraphQLT SUBSCRIPTION m event value
     Fail ::GQLErrors -> ResolvingStrategy o e mvent  value
 
--- GraphQLT Functor
+-- Functor
 instance Monad m => Functor (ResolvingStrategy o e m) where
   fmap _ (Fail              mErrors  ) = Fail mErrors
   fmap f (QueryResolving    mResolver) = QueryResolving $ f <$> mResolver
@@ -126,9 +127,9 @@ instance Monad m => Functor (ResolvingStrategy o e m) where
   fmap f (SubscriptionResolving mResolver) =
     SubscriptionResolving $ fmap f <$> mResolver
 
--- GraphQLT Applicative
-instance (PureOperation o, Monad m) => Applicative (ResolvingStrategy o e m) where
-  pure = liftEitherT . pure . pure
+-- Applicative
+instance (LiftEither o ResolvingStrategy, Monad m) => Applicative (ResolvingStrategy o e m) where
+  pure = liftEither . pure . pure
   -------------------------------------
   _                        <*> (Fail mErrors)       = Fail mErrors
   (Fail           mErrors) <*> _                    = Fail mErrors
@@ -144,9 +145,21 @@ instance (PureOperation o, Monad m) => Applicative (ResolvingStrategy o e m) whe
       res1 <- res
       pure (f1 <*> res1)
 
+-- LiftEither
+instance LiftEither QUERY ResolvingStrategy where
+  type ResError ResolvingStrategy = GQLErrors
+  liftEither = QueryResolving . ExceptT
 
+instance LiftEither MUTATION ResolvingStrategy where
+  type ResError ResolvingStrategy = GQLErrors
+  liftEither = MutationResolving . ExceptT . StreamT . fmap (StreamState [])
 
+instance LiftEither SUBSCRIPTION ResolvingStrategy where
+  type ResError ResolvingStrategy = GQLErrors
+  liftEither = SubscriptionResolving . ExceptT . StreamT . fmap
+    (StreamState [] . fmap pure)
 
+-- helper functins
 withObject
   :: (SelectionSet -> ResolvingStrategy o e m value)
   -> (Key, ValidSelection)
@@ -156,7 +169,39 @@ withObject f (_, Selection { selectionRec = SelectionSet selection }) =
 withObject _ (key, Selection { selectionPosition }) =
   Fail $ subfieldsNotSelected key "" selectionPosition
 
+resolveObject
+  :: (Monad m, LiftEither o ResolvingStrategy)
+  => SelectionSet
+  -> [FieldRes o e m]
+  -> ResolvingStrategy o e m Value
+resolveObject selectionSet fieldResolvers =
+  gqlObject <$> traverse selectResolver selectionSet
+ where
+  selectResolver (key, selection@Selection { selectionAlias }) =
+    (fromMaybe key selectionAlias, ) <$> lookupRes selection
+   where
+    lookupRes sel =
+      (fromMaybe (const $ pure gqlNull) $ lookup key fieldResolvers) (key, sel)
 
+toResponseRes
+  :: Monad m => ResolvingStrategy o event m Value -> ResponseT event m Value
+toResponseRes (Fail errors) =
+  ExceptT $ StreamT $ pure $ StreamState [] $ Left errors
+toResponseRes (QueryResolving resT) =
+  ExceptT $ StreamT $ StreamState [] <$> runExceptT resT
+toResponseRes (MutationResolving resT) =
+  ExceptT $ mapS Publish (runExceptT resT)
+toResponseRes (SubscriptionResolving resT) =
+  ExceptT $ StreamT $ handleActions <$> closeStream (runExceptT resT)
+ where
+  handleActions (_       , Left gqlError    ) = StreamState [] (Left gqlError)
+  handleActions (channels, Right subResolver) = StreamState
+    [Subscribe $ Event channels handleRes]
+    (Right gqlNull)
+    where handleRes event = renderResponse (unRecResolver subResolver event)
+
+
+--
 --     
 -- GraphQL Field Resolver
 --
@@ -181,7 +226,7 @@ instance Monad m => Functor (Resolver o e m) where
     where eventFmap res event = fmap f (res event)
 
 -- Applicative
-instance (PureOperation o ,Monad m) => Applicative (Resolver o e m) where
+instance (LiftEither o Resolver ,Monad m) => Applicative (Resolver o e m) where
   pure = liftEither . pure . pure
   -------------------------------------
   (QueryResolver f) <*> (QueryResolver res) = QueryResolver (f <*> res)
@@ -215,44 +260,32 @@ instance MonadTrans (Resolver QUERY e) where
 instance MonadTrans (Resolver MUTATION e) where
   lift = liftEither . fmap pure
 
+-- LiftEither
+instance LiftEither QUERY Resolver where
+  type ResError Resolver = String
+  liftEither = QueryResolver . ExceptT
+
+instance LiftEither MUTATION Resolver where
+  type ResError Resolver = String
+  liftEither = MutResolver . fmap ([], ) . ExceptT
+
+instance LiftEither SUBSCRIPTION Resolver where
+  type ResError Resolver = String
+  liftEither = SubResolver [] . const . liftEither
+
 -- Failure
-instance (PureOperation o, Monad m) => Failure Message (Resolver o e m) where
+instance (LiftEither o Resolver, Monad m) => Failure Message (Resolver o e m) where
   failure = liftEither . pure . Left . unpack
 
--- Pure Operation
-class PureOperation (o::OperationType) where
-    liftEither :: Monad m => m (Either String a) -> Resolver o event m  a
-    liftEitherT :: Monad m => m (Either GQLErrors a) -> ResolvingStrategy o  event m a
+-- Type Helpers  
+type family UnSubResolver (a :: * -> *) :: (* -> *)
 
-instance PureOperation QUERY where
-  liftEither  = QueryResolver . ExceptT
-  liftEitherT = QueryResolving . ExceptT
+type instance UnSubResolver (Resolver SUBSCRIPTION m e) = Resolver QUERY m e
 
-instance PureOperation MUTATION where
-  liftEither  = MutResolver . fmap ([], ) . ExceptT
-  liftEitherT = MutationResolving . ExceptT . StreamT . fmap (StreamState [])
 
-instance PureOperation SUBSCRIPTION where
-  liftEither  = SubResolver [] . const . liftEither
-  liftEitherT = SubscriptionResolving . ExceptT . StreamT . fmap
-    (StreamState [] . fmap pure)
-
-resolveObject
-  :: (Monad m, PureOperation o)
-  => SelectionSet
-  -> [FieldRes o e m]
-  -> ResolvingStrategy o e m Value
-resolveObject selectionSet fieldResolvers =
-  gqlObject <$> traverse selectResolver selectionSet
- where
-  selectResolver (key, selection@Selection { selectionAlias }) =
-    (fromMaybe key selectionAlias, ) <$> lookupRes selection
-   where
-    lookupRes sel =
-      (fromMaybe (const $ pure gqlNull) $ lookup key fieldResolvers) (key, sel)
-
+-- RESOLVING
 class Resolving o e m where
-     getArgs :: (PureOperation o ,Monad m ) => Validation args ->  (args -> Resolver o e m value) -> Resolver o e m value
+     getArgs :: (LiftEither o Resolver,Monad m ) => Validation args ->  (args -> Resolver o e m value) -> Resolver o e m value
      resolving :: Monad m => (value -> (Key,ValidSelection) -> ResolvingStrategy o  e m Value) -> Resolver o e m value ->  (Key, ValidSelection) -> ResolvingStrategy o e m Value
 
 type FieldRes o e m
@@ -279,7 +312,7 @@ instance Resolving o e m  where
 --------------------------------------------------------------------------------------------------------------------------------
     __resolving (SubResolver subChannels res) =
       SubscriptionResolving $ ExceptT $ StreamT $ pure $ StreamState
-        { streamEvents
+        { streamEvents = map Channel subChannels
         , streamValue
         }
      where
@@ -288,8 +321,6 @@ instance Resolving o e m  where
                     (unQueryResolver $ res event)
           >>= unPub event
           .   (`encode` selection)
-      streamEvents :: [Channel e]
-      streamEvents = map Channel subChannels
 
 unPub
   :: Monad m
@@ -299,17 +330,17 @@ unPub
 unPub event x = do
   func <- unPureSub x
   func event
-
-unPureSub
-  :: Monad m
-  => ResolvingStrategy SUBSCRIPTION event m a
-  -> ResolveT m (event -> ResolveT m a)
-unPureSub =
-  ExceptT
-    . fmap (fmap unRecResolver . streamValue)
-    . runStreamT
-    . runExceptT
-    . unSubscriptionT
+ where
+  unPureSub
+    :: Monad m
+    => ResolvingStrategy SUBSCRIPTION event m a
+    -> ResolveT m (event -> ResolveT m a)
+  unPureSub =
+    ExceptT
+      . fmap (fmap unRecResolver . streamValue)
+      . runStreamT
+      . runExceptT
+      . unSubscriptionT
 
 class MapGraphQLT (fromO :: OperationType) (toO :: OperationType) where
    mapGraphQLT :: Monad m => ResolvingStrategy fromO e m a -> ResolvingStrategy toO e m a
@@ -321,27 +352,6 @@ instance MapGraphQLT QUERY SUBSCRIPTION where
   mapGraphQLT (QueryResolving x) =
     SubscriptionResolving $ injectEvents [] (fmap pure x)
   mapGraphQLT (Fail x) = Fail x
-
-toResponseRes
-  :: Monad m => ResolvingStrategy o event m Value -> ResponseT event m Value
-toResponseRes (Fail errors) =
-  ExceptT $ StreamT $ pure $ StreamState [] $ Left errors
-toResponseRes (QueryResolving resT) =
-  ExceptT $ StreamT $ StreamState [] <$> runExceptT resT
-toResponseRes (MutationResolving resT) =
-  ExceptT $ mapS Publish (runExceptT resT)
-toResponseRes (SubscriptionResolving resT) =
-  ExceptT $ StreamT $ handleActions <$> closeStream (runExceptT resT)
- where
-  handleActions (_       , Left gqlError    ) = StreamState [] (Left gqlError)
-  handleActions (channels, Right subResolver) = StreamState
-    [Subscribe $ Event channels handleRes]
-    (Right gqlNull)
-    where handleRes event = renderResponse (unRecResolver subResolver event)
-
-type family UnSubResolver (a :: * -> *) :: (* -> *)
-
-type instance UnSubResolver (Resolver SUBSCRIPTION m e) = Resolver QUERY m e
 
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
