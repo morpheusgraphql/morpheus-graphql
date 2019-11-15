@@ -220,24 +220,18 @@ instance (Monad m) => Monad (Resolver MUTATION e m) where
 class PureOperation (o::OperationType) where
     liftEither :: Monad m => m (Either String a) -> Resolver o event m  a
     pureGraphQLT :: Monad m => a -> ResolvingStrategy o  event m a
-    eitherGraphQLT :: Monad m => Validation a -> ResolvingStrategy o event m a
 
 instance PureOperation QUERY where
-  liftEither     = QueryResolver . ExceptT
-  pureGraphQLT   = QueryResolving . pure
-  eitherGraphQLT = QueryResolving . ExceptT . pure . toEither
+  liftEither   = QueryResolver . ExceptT
+  pureGraphQLT = QueryResolving . pure
 
 instance PureOperation MUTATION where
-  liftEither     = MutResolver . fmap ([], ) . ExceptT
-  pureGraphQLT   = MutationResolving . pure
-  eitherGraphQLT = MutationResolving . ExceptT . pure . toEither
+  liftEither   = MutResolver . fmap ([], ) . ExceptT
+  pureGraphQLT = MutationResolving . pure
 
 instance PureOperation SUBSCRIPTION where
   liftEither   = SubResolver [] . const . liftEither
   pureGraphQLT = SubscriptionResolving . pure . pure
-  eitherGraphQLT =
-    SubscriptionResolving . fmap pure . ExceptT . pure . toEither
-
 
 resolveObject
   :: (Monad m, PureOperation o)
@@ -342,8 +336,8 @@ toResponseRes (SubscriptionResolving resT) =
     [Subscribe $ Event channels handleRes]
     (Right gqlNull)
    where
-    handleRes event =
-      renderResponse . fromEither <$> runExceptT (unRecResolver subResolver event)
+    handleRes event = renderResponse . fromEither <$> runExceptT
+      (unRecResolver subResolver event)
 
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
