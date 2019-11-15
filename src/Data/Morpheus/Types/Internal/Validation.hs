@@ -13,14 +13,13 @@ module Data.Morpheus.Types.Internal.Validation
   , JSONError(..)
   , Validation
   , Computation(..)
-  , GQLCatch(..)
   , Failure(..)
-  -- , CompT(..)
   , ExceptGQL
+  , toExceptGQL
   )
 where
 
-import           Control.Monad.Trans.Except     ( ExceptT )
+import           Control.Monad.Trans.Except     ( ExceptT(..) )
 import           Data.Aeson                     ( FromJSON
                                                 , ToJSON
                                                 )
@@ -68,18 +67,18 @@ instance Monad (Computation cocnurency error) where
 
 type Validation = Computation 'True GQLError
 
+toExceptGQL :: Monad m => Validation a -> ExceptT GQLErrors m a
+toExceptGQL (Success x _) = pure x
+toExceptGQL (Failure e  ) = ExceptT $ pure $ Left e
 
 class Applicative f =>  Failure error (f :: * -> *) where
   failure :: error -> f v
-  toEither :: f v -> Either error v
+
 
 instance Failure [error] (Computation con error) where
   failure = Failure
-  toEither (Success value _) = Right value
-  toEither (Failure errors ) = Left errors
+
+instance Failure error (Either error) where
+  failure = Left
 
 type ExceptGQL = ExceptT GQLErrors
-
-
-class GQLCatch f where
-  catch :: (GQLError -> f v) -> f v -> f v

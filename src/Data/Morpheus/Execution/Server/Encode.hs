@@ -83,7 +83,7 @@ import           Data.Morpheus.Types.Internal.Resolver
                                                 , LiftEither(..)
                                                 , Resolver(..)
                                                 , resolving
-                                                , getArgs
+                                                , toResolver
                                                 , ResolvingStrategy(..)
                                                 , resolveObject
                                                 , withObject
@@ -127,7 +127,7 @@ instance (Monad m, Encode a o e m, LiftEither o ResolvingStrategy) => Encode [a]
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance (DecodeObject a, Monad m,LiftEither fo Resolver, MapStrategy fo o, Encode b fo e m) => Encode (a -> Resolver fo e m b) o e m where
   encode resolver selection@(_, Selection { selectionArguments }) =
-    mapStrategy $ resolving encode (getArgs args resolver) selection
+    mapStrategy $ resolving encode (toResolver args resolver) selection
    where
     args :: Validation a
     args = decodeArguments selectionArguments

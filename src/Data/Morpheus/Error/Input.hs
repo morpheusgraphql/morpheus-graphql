@@ -20,19 +20,12 @@ import qualified Data.Text                     as T
                                                 , intercalate
                                                 , pack
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
-                                                ( Failure(..) )
-
 type InputValidation a = Either InputError a
 
 data InputError
   = UnexpectedType [Prop] Text Value (Maybe Text)
   | UndefinedField [Prop] Text
   | UnknownField [Prop] Text
-
-instance Failure InputError (Either InputError) where
-  failure  = Left
-  toEither = id
 
 data Prop =
   Prop

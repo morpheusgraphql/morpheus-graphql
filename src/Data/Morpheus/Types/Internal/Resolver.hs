@@ -26,7 +26,7 @@ module Data.Morpheus.Types.Internal.Resolver
   , toResponseRes
   , withObject
   , resolving
-  , getArgs
+  , toResolver
   , lift
   )
 where
@@ -280,13 +280,14 @@ type instance UnSubResolver (Resolver SUBSCRIPTION m e) = Resolver QUERY m e
 type FieldRes o e m
   = (Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)
 
-getArgs
+
+toResolver
   :: (LiftEither o Resolver, Monad m)
-  => Validation args
-  -> (args -> Resolver o e m value)
-  -> Resolver o e m value
-getArgs (Success args _) f = f args
-getArgs (Failure errors) _ = failure ("TODO: errors" :: Message)
+  => Validation a
+  -> (a -> Resolver o e m b)
+  -> Resolver o e m b
+toResolver (Success args _) f = f args
+toResolver (Failure errors) _ = failure ("TODO: errors" :: Message)
 
 resolving
   :: Monad m
