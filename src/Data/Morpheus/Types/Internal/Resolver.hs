@@ -141,7 +141,7 @@ instance Monad m => Functor (ResolvingStrategy o e m) where
 
 -- GraphQLT Applicative
 instance (PureOperation o, Monad m) => Applicative (ResolvingStrategy o e m) where
-  pure = pureGraphQLT
+  pure = pureGQL
   -------------------------------------
   _                        <*> (Fail mErrors)       = Fail mErrors
   (Fail           mErrors) <*> _                    = Fail mErrors
@@ -218,19 +218,19 @@ instance (Monad m) => Monad (Resolver MUTATION e m) where
 -- Pure Operation
 class PureOperation (o::OperationType) where
     liftEither :: Monad m => m (Either String a) -> Resolver o event m  a
-    pureGraphQLT :: Monad m => a -> ResolvingStrategy o  event m a
+    pureGQL :: Monad m => a -> ResolvingStrategy o  event m a
 
 instance PureOperation QUERY where
-  liftEither   = QueryResolver . ExceptT
-  pureGraphQLT = QueryResolving . pure
+  liftEither = QueryResolver . ExceptT
+  pureGQL    = QueryResolving . pure
 
 instance PureOperation MUTATION where
-  liftEither   = MutResolver . fmap ([], ) . ExceptT
-  pureGraphQLT = MutationResolving . pure
+  liftEither = MutResolver . fmap ([], ) . ExceptT
+  pureGQL    = MutationResolving . pure
 
 instance PureOperation SUBSCRIPTION where
-  liftEither   = SubResolver [] . const . liftEither
-  pureGraphQLT = SubscriptionResolving . pure . pure
+  liftEither = SubResolver [] . const . liftEither
+  pureGQL    = SubscriptionResolving . pure . pure
 
 resolveObject
   :: (Monad m, PureOperation o)
@@ -334,8 +334,7 @@ toResponseRes (SubscriptionResolving resT) =
   handleActions (channels, Right subResolver) = StreamState
     [Subscribe $ Event channels handleRes]
     (Right gqlNull)
-   where
-    handleRes event =renderResponse (unRecResolver subResolver event)
+    where handleRes event = renderResponse (unRecResolver subResolver event)
 
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
