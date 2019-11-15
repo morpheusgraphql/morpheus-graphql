@@ -18,7 +18,6 @@ module Data.Morpheus.Execution.Server.Resolve
 where
 
 import           Control.Monad.Except           ( liftEither )
-import           Control.Monad.Trans.Except     ( runExceptT )
 import           Data.Aeson                     ( encode )
 import           Data.Aeson.Internal            ( formatError
                                                 , ifromJSON
@@ -144,7 +143,7 @@ streamResolver
   -> GQLRequest
   -> ResponseStream m event GQLResponse
 streamResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptionResolver } request
-  = renderResponse . fromEither <$> runExceptT (validRequest >>= execOperator)
+  = renderResponse (validRequest >>= execOperator)
  where
   validRequest :: Monad m => ResponseT event m (DataTypeLib, ValidOperation)
   validRequest = liftEither $ toEither $ do

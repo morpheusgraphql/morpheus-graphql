@@ -31,9 +31,8 @@ data InputError
   | UnknownField [Prop] Text
 
 instance Failure InputError (Either InputError) where
-  failure    = Left
-  fromEither = id
-  toEither   = id
+  failure  = Left
+  toEither = id
 
 data Prop =
   Prop

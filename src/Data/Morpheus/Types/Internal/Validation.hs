@@ -15,9 +15,12 @@ module Data.Morpheus.Types.Internal.Validation
   , Computation(..)
   , GQLCatch(..)
   , Failure(..)
+  -- , CompT(..)
+  , ExceptGQL
   )
 where
 
+import           Control.Monad.Trans.Except     ( ExceptT )
 import           Data.Aeson                     ( FromJSON
                                                 , ToJSON
                                                 )
@@ -38,10 +41,16 @@ data JSONError = JSONError
   , locations :: [Position]
   } deriving (Show, Generic, FromJSON, ToJSON)
 
+{-
+newtype CompT m a = CompT { runCompT :: m (Computation 'True GQLError a )  }
+  deriving (Functor)
+
+instance Functor m => Applicative (CompT m)
+
+instance Monad m => Monad (CompT m)
+-}
 
 data Computation (concurency :: Bool) error a = Success a [error] | Failure [error] deriving (Functor)
-
-type TRUE = 'True
 
 instance Applicative (Computation cocnurency error) where
   pure x = Success x []
@@ -57,19 +66,20 @@ instance Monad (Computation cocnurency error) where
     (Failure e   ) -> Failure (e <> w1)
   Failure e >>= _ = Failure e
 
-type Validation = Computation TRUE GQLError
+type Validation = Computation 'True GQLError
+
 
 class Applicative f =>  Failure error (f :: * -> *) where
   failure :: error -> f v
   toEither :: f v -> Either error v
-  fromEither :: Either error v -> f v
 
 instance Failure [error] (Computation con error) where
   failure = Failure
   toEither (Success value _) = Right value
   toEither (Failure errors ) = Left errors
-  fromEither (Left  errors) = Failure errors
-  fromEither (Right value ) = Success value []
+
+type ExceptGQL = ExceptT GQLErrors
+
 
 class GQLCatch f where
   catch :: (GQLError -> f v) -> f v -> f v
