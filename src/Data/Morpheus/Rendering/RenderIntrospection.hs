@@ -2,6 +2,7 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE FlexibleContexts      #-}
 
 module Data.Morpheus.Rendering.RenderIntrospection
   ( render
@@ -9,7 +10,6 @@ module Data.Morpheus.Rendering.RenderIntrospection
   )
 where
 
-import           Control.Monad.Fail             ( MonadFail )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text
                                                 , unpack
@@ -41,7 +41,8 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( convertToJSONName )
-
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Failure(..) )
 
 constRes :: Applicative m => a -> b -> m a
 constRes = const . pure
@@ -49,7 +50,7 @@ constRes = const . pure
 type Result m a = DataTypeLib -> m a
 
 class RenderSchema a b where
-  render :: (Monad m, MonadFail m) => (Text, a) -> DataTypeLib -> m (b m)
+  render :: (Monad m, Failure Text m) => (Text, a) -> DataTypeLib -> m (b m)
 
 instance RenderSchema DataType S__Type where
   render (key, DataScalar DataTyCon { typeMeta }) =
@@ -70,8 +71,6 @@ instance RenderSchema DataType S__Type where
         <$> (Just <$> traverse (`render` lib) (filter fieldVisibility typeData))
   render (name, DataUnion union) = constRes $ typeFromUnion (name, union)
   render (name, DataInputUnion inpUnion') = renderInputUnion (name, inpUnion')
-
-
 
 createEnumValue :: Monad m => DataEnumValue -> S__EnumValue m
 createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
@@ -118,19 +117,21 @@ wrapByTypeWrapper :: Monad m => DataTypeWrapper -> S__Type m -> S__Type m
 wrapByTypeWrapper ListType    = wrapAs LIST
 wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 
-lookupKind :: (Monad m, MonadFail m) => Text -> Result m DataTypeKind
+lookupKind :: (Monad m, Failure Text m) => Text -> Result m DataTypeKind
 lookupKind name lib = case lookupDataType name lib of
   Nothing    -> fail $ unpack ("Kind Not Found: " <> name)
   Just value -> pure (kindOf value)
 
 renderinputValue
-  :: (Monad m, MonadFail m) => (Text, DataField) -> Result m (S__InputValue m)
+  :: (Monad m, Failure Text m)
+  => (Text, DataField)
+  -> Result m (S__InputValue m)
 renderinputValue (key, input) =
   fmap (createInputValueWith key (fieldMeta input))
     . createInputObjectType input
 
 createInputObjectType
-  :: (Monad m, MonadFail m) => DataField -> Result m (S__Type m)
+  :: (Monad m, Failure Text m) => DataField -> Result m (S__Type m)
 createInputObjectType field@DataField { fieldType = TypeAlias { aliasTyCon } } lib
   = do
     kind <- renderTypeKind <$> lookupKind aliasTyCon lib
@@ -138,7 +139,7 @@ createInputObjectType field@DataField { fieldType = TypeAlias { aliasTyCon } } l
 
 
 renderInputUnion
-  :: (Monad m, MonadFail m) => (Text, DataUnion) -> Result m (S__Type m)
+  :: (Monad m, Failure Text m) => (Text, DataUnion) -> Result m (S__Type m)
 renderInputUnion (key, DataTyCon { typeData, typeMeta }) lib =
   createInputObject key typeMeta
     <$> traverse createField (createInputUnionFields key typeData)

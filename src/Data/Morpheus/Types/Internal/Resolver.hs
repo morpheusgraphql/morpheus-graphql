@@ -31,13 +31,13 @@ module Data.Morpheus.Types.Internal.Resolver
 where
 
 import           Control.Monad.Trans.Class      ( MonadTrans(..) )
-import           Control.Monad.Fail             ( MonadFail(..) )
 import           Control.Monad.Trans.Except     ( ExceptT(..)
                                                 , runExceptT
                                                 , withExceptT
                                                 )
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Semigroup                 ( (<>) )
+import           Data.Text                      ( unpack )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Selection  ( resolverError
@@ -49,6 +49,8 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , SelectionSet
                                                 , ValidSelection
                                                 )
+import           Data.Morpheus.Types.Internal.AST.Base
+                                                ( Message )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( Key
                                                 , MUTATION
@@ -73,6 +75,7 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 ( GQLErrors
                                                 , Validation
                                                 , Computation(..)
+                                                , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
@@ -80,29 +83,13 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 )
 import           Data.Morpheus.Types.IO         ( renderResponse )
 
-withObject
-  :: (SelectionSet -> ResolvingStrategy o e m value)
-  -> (Key, ValidSelection)
-  -> ResolvingStrategy o e m value
-withObject f (_, Selection { selectionRec = SelectionSet selection }) =
-  f selection
-withObject _ (key, Selection { selectionPosition }) =
-  Fail $ subfieldsNotSelected key "" selectionPosition
 
-instance MonadTrans (Resolver QUERY e) where
-  lift = liftEither . fmap pure
-
-instance MonadTrans (Resolver MUTATION e) where
-  lift = liftEither . fmap pure
 
 ----------------------------------------------------------------------------------------
 type ResolveT = ExceptT GQLErrors
 type ResponseT m e = ResolveT (ResponseStream e m)
 
-instance Monad m => MonadFail (Resolver QUERY e m) where
-  fail = FailedResolver
 
---
 -- Recursive Resolver
 newtype RecResolver m a b = RecResolver {
   unRecResolver :: a -> ResolveT m b
@@ -121,9 +108,9 @@ instance Monad m => Monad (RecResolver m a) where
   (RecResolver x) >>= next = RecResolver recX
     where recX event = x event >>= (\v -> v event) . unRecResolver . next
 ------------------------------------------------------------
+
 --
 --- GraphQLT
-
 data ResolvingStrategy  (o::OperationType) event (m:: * -> *) value where
     QueryResolving ::{ unQueryT :: ResolveT m value } -> ResolvingStrategy QUERY event m  value
     MutationResolving ::{ unMutationT :: ResolveT (StreamT m event) value } -> ResolvingStrategy MUTATION event m  value
@@ -141,7 +128,7 @@ instance Monad m => Functor (ResolvingStrategy o e m) where
 
 -- GraphQLT Applicative
 instance (PureOperation o, Monad m) => Applicative (ResolvingStrategy o e m) where
-  pure = pureGQL
+  pure = liftEitherT . pure
   -------------------------------------
   _                        <*> (Fail mErrors)       = Fail mErrors
   (Fail           mErrors) <*> _                    = Fail mErrors
@@ -157,10 +144,25 @@ instance (PureOperation o, Monad m) => Applicative (ResolvingStrategy o e m) whe
       res1 <- res
       pure (f1 <*> res1)
 
--- GADTResolver
+
+
+
+withObject
+  :: (SelectionSet -> ResolvingStrategy o e m value)
+  -> (Key, ValidSelection)
+  -> ResolvingStrategy o e m value
+withObject f (_, Selection { selectionRec = SelectionSet selection }) =
+  f selection
+withObject _ (key, Selection { selectionPosition }) =
+  Fail $ subfieldsNotSelected key "" selectionPosition
+
+
+--     
+-- GraphQL Field Resolver
+--
+--
 ---------------------------------------------------------------
 data Resolver (o::OperationType) event (m :: * -> * )  value where
-    FailedResolver ::{ unFailedResolver :: String } -> Resolver o  event m value
     QueryResolver::{ unQueryResolver :: ExceptT String m value } -> Resolver QUERY   event m value
     MutResolver ::{ unMutResolver :: ExceptT String m ([event],value) } -> Resolver MUTATION event m  value
     SubResolver ::{
@@ -168,27 +170,23 @@ data Resolver (o::OperationType) event (m :: * -> * )  value where
             subResolver :: event -> Resolver QUERY event m value
         } -> Resolver SUBSCRIPTION event m  value
 
--- GADTResolver Functor
+-- Functor
 instance Monad m => Functor (Resolver o e m) where
-  fmap _ (FailedResolver mErrors) = FailedResolver mErrors
-  fmap f (QueryResolver  res    ) = QueryResolver $ fmap f res
-  fmap f (MutResolver    res    ) = MutResolver $ do
+  fmap f (QueryResolver res) = QueryResolver $ fmap f res
+  fmap f (MutResolver   res) = MutResolver $ do
     (e, v) <- res
     pure (e, f v)
   fmap f (SubResolver events mResolver) = SubResolver events
                                                       (eventFmap mResolver)
     where eventFmap res event = fmap f (res event)
 
--- GADTResolver Applicative
+-- Applicative
 instance (PureOperation o ,Monad m) => Applicative (Resolver o e m) where
   pure = liftEither . pure . pure
   -------------------------------------
-  _                        <*> (FailedResolver mErrors) = FailedResolver mErrors
-  (FailedResolver mErrors) <*> _                        = FailedResolver mErrors
-  -------------------------------------
   (QueryResolver f) <*> (QueryResolver res) = QueryResolver (f <*> res)
   ---------------------------------------------------------------------
-  MutResolver res1         <*> MutResolver res2         = MutResolver $ do
+  MutResolver res1  <*> MutResolver res2    = MutResolver $ do
     (e1, f  ) <- res1
     (e2, val) <- res2
     pure (e1 ++ e2, f val)
@@ -196,41 +194,54 @@ instance (PureOperation o ,Monad m) => Applicative (Resolver o e m) where
   (SubResolver e1 f) <*> (SubResolver e2 res) =
     SubResolver (e1 <> e2) $ \event -> f event <*> res event
 
+-- Monad 
 instance (Monad m) => Monad (Resolver QUERY e m) where
   return = pure
-  -------------------------------------
-  (FailedResolver mErrors) >>= _ = FailedResolver mErrors
-  -------------------------------------
+  -----------------------------------------------------
   (QueryResolver f) >>= nextM = QueryResolver (f >>= unQueryResolver . nextM)
-
 
 instance (Monad m) => Monad (Resolver MUTATION e m) where
   return = pure
-  -------------------------------------
-  (FailedResolver mErrors) >>= _     = FailedResolver mErrors
-  -------------------------------------
-  (MutResolver    m1     ) >>= mFunc = MutResolver $ do
+  -----------------------------------------------------
+  (MutResolver m1) >>= mFunc = MutResolver $ do
     (e1, v1) <- m1
     (e2, v2) <- unMutResolver $ mFunc v1
     pure (e1 <> e2, v2)
 
+-- Monad Transformers    
+instance MonadTrans (Resolver QUERY e) where
+  lift = liftEither . fmap pure
+
+instance MonadTrans (Resolver MUTATION e) where
+  lift = liftEither . fmap pure
+
+-- Failure
+instance (PureOperation o, Monad m) => Failure Message (Resolver o e m) where
+  failure = liftEither . pure . Left . unpack
 
 -- Pure Operation
 class PureOperation (o::OperationType) where
     liftEither :: Monad m => m (Either String a) -> Resolver o event m  a
-    pureGQL :: Monad m => a -> ResolvingStrategy o  event m a
+    liftEitherT :: Monad m => Either GQLErrors a -> ResolvingStrategy o  event m a
 
 instance PureOperation QUERY where
-  liftEither = QueryResolver . ExceptT
-  pureGQL    = QueryResolving . pure
+  liftEither  = QueryResolver . ExceptT
+  liftEitherT = QueryResolving . ExceptT . pure
 
 instance PureOperation MUTATION where
-  liftEither = MutResolver . fmap ([], ) . ExceptT
-  pureGQL    = MutationResolving . pure
+  liftEither  = MutResolver . fmap ([], ) . ExceptT
+  liftEitherT = MutationResolving . ExceptT . StreamT . pure . StreamState []
+
+  -- SubscriptionResolving $ ExceptT $ StreamT $ pure $ StreamState
 
 instance PureOperation SUBSCRIPTION where
   liftEither = SubResolver [] . const . liftEither
-  pureGQL    = SubscriptionResolving . pure . pure
+  liftEitherT =
+    SubscriptionResolving
+      . ExceptT
+      . StreamT
+      . pure
+      . (StreamState [] . fmap pure)
 
 resolveObject
   :: (Monad m, PureOperation o)
@@ -247,7 +258,7 @@ resolveObject selectionSet fieldResolvers =
       (fromMaybe (const $ pure gqlNull) $ lookup key fieldResolvers) (key, sel)
 
 class Resolving o e m where
-     getArgs :: Validation args ->  (args -> Resolver o e m value) -> Resolver o e m value
+     getArgs :: (PureOperation o ,Monad m ) => Validation args ->  (args -> Resolver o e m value) -> Resolver o e m value
      resolving :: Monad m => (value -> (Key,ValidSelection) -> ResolvingStrategy o  e m Value) -> Resolver o e m value ->  (Key, ValidSelection) -> ResolvingStrategy o e m Value
 
 type FieldRes o e m
@@ -255,13 +266,11 @@ type FieldRes o e m
 
 instance Resolving o e m  where
   getArgs (Success args _) f = f args
-  getArgs (Failure errors) _ = FailedResolver ""
+  getArgs (Failure errors) _ = failure ("TODO: errors" :: Message)
   ---------------------------------------------------------------------------------------------------------------------------------------
   resolving encode gResolver selection@(fieldName, Selection { selectionPosition })
     = __resolving gResolver
    where
-    __resolving (FailedResolver message) =
-      Fail $ resolverError selectionPosition fieldName message
     __resolving (QueryResolver res) =
       QueryResolving
         $   withExceptT (resolverError selectionPosition fieldName) res
