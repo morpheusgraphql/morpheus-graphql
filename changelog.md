@@ -84,7 +84,7 @@ resolver _args = lift setDBAddress
 
 - basic support of directive `@deprecated` on `enumValue` and object `field`, only on introspection
 
-- client deprecation warnins on deprecated fields.
+- GraphQL Client deprecation warnings
 
   on type
 
