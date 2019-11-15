@@ -128,7 +128,7 @@ instance Monad m => Functor (ResolvingStrategy o e m) where
 
 -- GraphQLT Applicative
 instance (PureOperation o, Monad m) => Applicative (ResolvingStrategy o e m) where
-  pure = liftEitherT . pure
+  pure = liftEitherT . pure . pure
   -------------------------------------
   _                        <*> (Fail mErrors)       = Fail mErrors
   (Fail           mErrors) <*> _                    = Fail mErrors
@@ -222,26 +222,20 @@ instance (PureOperation o, Monad m) => Failure Message (Resolver o e m) where
 -- Pure Operation
 class PureOperation (o::OperationType) where
     liftEither :: Monad m => m (Either String a) -> Resolver o event m  a
-    liftEitherT :: Monad m => Either GQLErrors a -> ResolvingStrategy o  event m a
+    liftEitherT :: Monad m => m (Either GQLErrors a) -> ResolvingStrategy o  event m a
 
 instance PureOperation QUERY where
   liftEither  = QueryResolver . ExceptT
-  liftEitherT = QueryResolving . ExceptT . pure
+  liftEitherT = QueryResolving . ExceptT
 
 instance PureOperation MUTATION where
   liftEither  = MutResolver . fmap ([], ) . ExceptT
-  liftEitherT = MutationResolving . ExceptT . StreamT . pure . StreamState []
-
-  -- SubscriptionResolving $ ExceptT $ StreamT $ pure $ StreamState
+  liftEitherT = MutationResolving . ExceptT . StreamT . fmap (StreamState [])
 
 instance PureOperation SUBSCRIPTION where
-  liftEither = SubResolver [] . const . liftEither
-  liftEitherT =
-    SubscriptionResolving
-      . ExceptT
-      . StreamT
-      . pure
-      . (StreamState [] . fmap pure)
+  liftEither  = SubResolver [] . const . liftEither
+  liftEitherT = SubscriptionResolving . ExceptT . StreamT . fmap
+    (StreamState [] . fmap pure)
 
 resolveObject
   :: (Monad m, PureOperation o)
