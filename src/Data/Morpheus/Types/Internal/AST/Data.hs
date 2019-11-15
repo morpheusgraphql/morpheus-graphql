@@ -119,7 +119,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Position
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation(..)
+                                                ( Validation
                                                 , Failure(..)
                                                 , GQLErrors
                                                 )

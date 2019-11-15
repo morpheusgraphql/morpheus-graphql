@@ -71,8 +71,9 @@ import           Data.Morpheus.Types.Internal.Stream
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( GQLErrors
-                                                , Validation(..)
+                                                , Validation
                                                 , Failure(..)
+                                                , Computation(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)

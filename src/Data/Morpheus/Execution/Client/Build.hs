@@ -35,7 +35,9 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , TypeD(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation(..) )
+                                                ( Validation
+                                                , Computation(..)
+                                                )
 import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
 
 defineQuery :: IO (Validation DataTypeLib) -> (GQLQueryRoot, String) -> Q [Dec]

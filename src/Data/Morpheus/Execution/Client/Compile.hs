@@ -32,7 +32,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , ClientQuery(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation(..) )
+                                                ( Validation, Computation(..) )
 import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( VALIDATION_MODE(..) )

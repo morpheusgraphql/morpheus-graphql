@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -29,16 +28,16 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( JSONError(..)
-                                                , Validation(..)
+                                                , Validation
+                                                , Computation(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
 import           Data.Morpheus.Error.Utils      ( renderErrors )
 
 renderResponse :: Validation Value -> GQLResponse
-renderResponse Failure { validationErrors } =
-  Errors $ renderErrors validationErrors
-renderResponse Success { validationValue } = Data validationValue
+renderResponse (Failure errors        ) = Errors $ renderErrors errors
+renderResponse (Success value warnings) = Data value
 
 instance FromJSON a => FromJSON (JSONResponse a) where
   parseJSON = withObject "JSONResponse" objectParser

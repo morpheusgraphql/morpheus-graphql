@@ -43,7 +43,9 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , createDataTypeLib
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation(..) )
+                                                ( Validation
+                                                , Computation(..)
+                                                )
 import           Data.Morpheus.Validation.Document.Validation
                                                 ( validatePartialDocument )
 
