@@ -29,13 +29,15 @@ import           Language.Haskell.TH            ( Q
 renderGQLErrors :: GQLErrors -> String
 renderGQLErrors = unpack . encode . renderErrors
 
-deprecatedEnum :: Ref -> Description -> GQLErrors
-deprecatedEnum Ref { refPosition, refName } reason =
+deprecatedEnum :: Name -> Ref -> Maybe Description -> GQLErrors
+deprecatedEnum typeName Ref { refPosition, refName } reason =
   errorMessage refPosition
     $  "the enum value "
+    <> typeName
+    <> "."
     <> refName
-    <> "is deprecated. "
-    <> reason
+    <> "\" is deprecated."
+    <> maybe "" (" " <>) reason
 
 deprecatedField :: Name -> Ref -> Maybe Description -> GQLErrors
 deprecatedField typeName Ref { refPosition, refName } reason =
