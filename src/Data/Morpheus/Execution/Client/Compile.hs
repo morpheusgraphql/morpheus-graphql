@@ -15,8 +15,11 @@ import           Language.Haskell.TH
 --
 --  Morpheus
 
+
 import           Data.Morpheus.Error.Client.Client
-                                                ( renderGQLErrors )
+                                                ( renderGQLErrors
+                                                , gqlWarnings
+                                                )
 
 import           Data.Morpheus.Execution.Client.Selection
                                                 ( operationTypes )
@@ -32,7 +35,9 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , ClientQuery(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation, Computation(..) )
+                                                ( Validation
+                                                , Computation(..)
+                                                )
 import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( VALIDATION_MODE(..) )
@@ -42,7 +47,7 @@ import           Data.Morpheus.Validation.Query.Validation
 compileSyntax :: String -> Q Exp
 compileSyntax queryText = case parseGQL request of
   Failure errors        -> fail (renderGQLErrors errors)
-  Success root warnings -> [|(root, queryText)|]
+  Success root warnings -> gqlWarnings warnings >> [|(root, queryText)|]
  where
   request = GQLRequest { query         = T.pack queryText
                        , operationName = Nothing

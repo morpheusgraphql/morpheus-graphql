@@ -17,6 +17,8 @@ import           Data.Text                      ( Text
                                                 )
 --
 -- MORPHEUS
+import           Data.Morpheus.Error.Client.Client
+                                                ( deprecatedField )
 import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
 import           Data.Morpheus.Execution.Internal.GraphScanner
                                                 ( LibUpdater
@@ -53,11 +55,14 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , ConsD(..)
                                                 , ClientType(..)
                                                 , TypeD(..)
+                                                , lookupDeprecated
+                                                , lookupDeprecatedReason
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( GQLErrors
                                                 , Validation
                                                 , Failure(..)
+                                                , Computation(..)
                                                 )
 import           Data.Set                       ( fromList
                                                 , toList
@@ -270,6 +275,8 @@ buildInputType lib name = getType lib name >>= subTypes
       ConsD { cName = unpack enumName, cFields = [] }
   subTypes _ = pure []
 
+
+
 lookupFieldType
   :: DataTypeLib
   -> [Key]
@@ -278,13 +285,20 @@ lookupFieldType
   -> Validation (DataType, TypeAlias)
 lookupFieldType lib path (DataObject DataTyCon { typeData }) key =
   case lookup key typeData of
-    Just DataField { fieldType = alias@TypeAlias { aliasTyCon } } ->
-      trans <$> getType lib aliasTyCon
+    Just DataField { fieldType = alias@TypeAlias { aliasTyCon }, fieldMeta } ->
+      checkDeprecated >> (trans <$> getType lib aliasTyCon)
      where
       trans x =
         (x, alias { aliasTyCon = typeFrom path x, aliasArgs = Nothing })
-    Nothing ->
-      failure (compileError $ "cant find field \"" <> pack (show typeData) <> "\"")
+      ------------------------------------------------------------------
+      checkDeprecated :: Validation ()
+      checkDeprecated = case fieldMeta >>= lookupDeprecated of
+        Just x  -> Success () $ globalErrorMessage $ "deprecated field" <> key
+        Nothing -> pure ()
+    ------------------
+    Nothing -> failure
+      (compileError $ "cant find field \"" <> pack (show typeData) <> "\"")
+
 lookupFieldType _ _ dt _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 

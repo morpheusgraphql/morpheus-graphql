@@ -4,6 +4,7 @@ module Data.Morpheus.Error.Utils
   ( errorMessage
   , globalErrorMessage
   , renderErrors
+  , renderError
   , badRequestError
   , toLocation
   )

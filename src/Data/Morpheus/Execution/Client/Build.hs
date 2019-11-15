@@ -15,7 +15,9 @@ import           Language.Haskell.TH
 --
 -- MORPHEUS
 import           Data.Morpheus.Error.Client.Client
-                                                ( renderGQLErrors )
+                                                ( renderGQLErrors
+                                                , gqlWarnings
+                                                )
 import           Data.Morpheus.Execution.Client.Aeson
                                                 ( deriveFromJSON
                                                 , deriveToJSON
@@ -26,8 +28,7 @@ import           Data.Morpheus.Execution.Client.Fetch
                                                 ( deriveFetch )
 import           Data.Morpheus.Execution.Internal.Declare
                                                 ( declareType )
-import           Data.Morpheus.Execution.Internal.Utils
-                                                ( gqlWarnings )
+
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataTypeKind(..)
                                                 , DataTypeLib

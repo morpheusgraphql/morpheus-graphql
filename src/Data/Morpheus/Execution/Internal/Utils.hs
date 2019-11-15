@@ -4,7 +4,6 @@ module Data.Morpheus.Execution.Internal.Utils
   , nameSpaceWith
   , nameSpaceType
   , nameSpaceTypeString
-  , gqlWarnings
   )
 where
 
@@ -15,9 +14,6 @@ import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text
                                                 , unpack
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
-                                                ( GQLErrors )
-import           Language.Haskell.TH
 
 
 nameSpaceTypeString :: [String] -> String -> String
@@ -36,7 +32,3 @@ nonCapital (x : xs) = toLower x : xs
 capital :: String -> String
 capital []       = []
 capital (x : xs) = toUpper x : xs
-
-gqlWarnings :: GQLErrors -> Q ()
-gqlWarnings []       = pure ()
-gqlWarnings warnings = reportWarning ("GQL warnings: " <> show warnings)

@@ -578,6 +578,7 @@ createDataTypeLib types = case takeByKey "Query" types of
 
 
 
+
  where
   takeByKey key lib = case lookup key lib of
     Just (DataObject value) -> (Just (key, value), filter ((/= key) . fst) lib)
