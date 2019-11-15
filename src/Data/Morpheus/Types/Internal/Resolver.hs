@@ -119,10 +119,9 @@ data ResolvingStrategy  (o::OperationType) event (m:: * -> *) value where
 
 -- Functor
 instance Monad m => Functor (ResolvingStrategy o e m) where
-  fmap f (QueryResolving    mResolver) = QueryResolving $ f <$> mResolver
-  fmap f (MutationResolving mResolver) = MutationResolving $ f <$> mResolver
-  fmap f (SubscriptionResolving mResolver) =
-    SubscriptionResolving $ fmap f <$> mResolver
+  fmap f (QueryResolving        res) = QueryResolving $ f <$> res
+  fmap f (MutationResolving     res) = MutationResolving $ f <$> res
+  fmap f (SubscriptionResolving res) = SubscriptionResolving $ (<$>) f <$> res
 
 -- Applicative
 instance (LiftEither o ResolvingStrategy, Monad m) => Applicative (ResolvingStrategy o e m) where
@@ -134,10 +133,7 @@ instance (LiftEither o ResolvingStrategy, Monad m) => Applicative (ResolvingStra
     MutationResolving (f <*> res)
   --------------------------------------------------------------
   (SubscriptionResolving f) <*> (SubscriptionResolving res) =
-    SubscriptionResolving $ do
-      f1   <- f
-      res1 <- res
-      pure (f1 <*> res1)
+    SubscriptionResolving $ (<*>) <$> f <*> res
 
 -- LiftEither
 instance LiftEither QUERY ResolvingStrategy where
