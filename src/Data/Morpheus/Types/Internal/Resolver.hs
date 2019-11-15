@@ -99,8 +99,8 @@ newtype RecResolver m a b = RecResolver {
 }
 
 instance Functor m => Functor (RecResolver m a) where
-  fmap f (RecResolver x) = RecResolver eventFmap
-    where eventFmap event = fmap f (x event)
+  fmap f (RecResolver x) = RecResolver recX
+    where recX event = f <$> x event
 
 instance Monad m => Applicative (RecResolver m a) where
   pure = RecResolver . const . pure
