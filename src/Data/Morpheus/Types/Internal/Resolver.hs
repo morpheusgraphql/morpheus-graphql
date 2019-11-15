@@ -39,6 +39,7 @@ import           Control.Monad.Trans.Except     ( ExceptT(..)
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( unpack )
+import           Control.Monad                  ( (>=>) )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Selection  ( resolverError
@@ -276,61 +277,60 @@ type instance UnSubResolver (Resolver SUBSCRIPTION m e) = Resolver QUERY m e
 
 -- RESOLVING
 
-type FieldRes o e m = (Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)
+type FieldRes o e m
+  = (Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)
 
-getArgs :: (LiftEither o Resolver,Monad m ) => Validation args ->  (args -> Resolver o e m value) -> Resolver o e m value
+getArgs
+  :: (LiftEither o Resolver, Monad m)
+  => Validation args
+  -> (args -> Resolver o e m value)
+  -> Resolver o e m value
 getArgs (Success args _) f = f args
-getArgs (Failure errors) _ = failure ("TODO: errors" :: Message) 
+getArgs (Failure errors) _ = failure ("TODO: errors" :: Message)
 
-resolving :: Monad m => (value -> (Key,ValidSelection) -> ResolvingStrategy o  e m Value) -> Resolver o e m value ->  (Key, ValidSelection) -> ResolvingStrategy o e m Value
+resolving
+  :: Monad m
+  => (value -> (Key, ValidSelection) -> ResolvingStrategy o e m Value)
+  -> Resolver o e m value
+  -> (Key, ValidSelection)
+  -> ResolvingStrategy o e m Value
 resolving encode gResolver selection@(fieldName, Selection { selectionPosition })
-    = __resolving gResolver
+  = _resolve gResolver
+ where
+  convert :: Functor m => ExceptT String m a -> ExceptT GQLErrors m a
+  convert = withExceptT (resolverError selectionPosition fieldName)
+  ------------------------------
+  _encode = (`encode` selection)
+  -------------------------------------------------------------------
+  _resolve (QueryResolver res) =
+    QueryResolving $ convert res >>= unQueryT . _encode
+  ---------------------------------------------------------------------------------------------------------------------------------------
+  _resolve (MutResolver res) =
+    MutationResolving $ convert (toStream res) >>= unMutationT . _encode
+  --------------------------------------------------------------------------------------------------------------------------------
+  _resolve (SubResolver subChannels res) =
+    SubscriptionResolving $ ExceptT $ StreamT $ pure $ StreamState
+      { streamEvents = map Channel subChannels
+      , streamValue  = pure $ RecResolver resolveSub
+      }
    where
-    withError :: Functor m => ExceptT String m a -> ExceptT GQLErrors m a
-    withError = withExceptT (resolverError selectionPosition fieldName)
-    -------------------------------------------------------------------
-    __resolving (QueryResolver res) =
-      QueryResolving
-        $   withError res
-        >>= unQueryT
-        .   (`encode` selection)
----------------------------------------------------------------------------------------------------------------------------------------
-    __resolving (MutResolver res) =
-      MutationResolving
-        $ withError (toStream res)
-        >>= unMutationT
-        . (`encode` selection)
---------------------------------------------------------------------------------------------------------------------------------
-    __resolving (SubResolver subChannels res) =
-      SubscriptionResolving $ ExceptT $ StreamT $ pure $ StreamState
-        { streamEvents = map Channel subChannels
-        , streamValue  =
-          pure $ RecResolver $ \event ->
-            withExceptT (resolverError selectionPosition fieldName)
-                        (unQueryResolver $ res event)
-              >>= unPub event
-              .   (`encode` selection)
-        }
+    resolveSub event =
+      convert (unQueryResolver $ res event) >>= toExceptT . _encode
      where
-      unPub
+      withEvent f = f event
+      ---------------------------------------------------------
+      toExceptT = unPureSub >=> withEvent
+      -----------------------------------
+      unPureSub
         :: Monad m
-        => event
-        -> ResolvingStrategy SUBSCRIPTION event m a
-        -> ResolveT m a
-      unPub event x = do
-        func <- unPureSub x
-        func event
-       where
-        unPureSub
-          :: Monad m
-          => ResolvingStrategy SUBSCRIPTION event m a
-          -> ResolveT m (event -> ResolveT m a)
-        unPureSub =
-          ExceptT
-            . fmap (fmap unRecResolver . streamValue)
-            . runStreamT
-            . runExceptT
-            . unSubscriptionT
+        => ResolvingStrategy SUBSCRIPTION event m a
+        -> ResolveT m (event -> ResolveT m a)
+      unPureSub =
+        ExceptT
+          . fmap (fmap unRecResolver . streamValue)
+          . runStreamT
+          . runExceptT
+          . unSubscriptionT
 
 class MapGraphQLT (fromO :: OperationType) (toO :: OperationType) where
    mapGraphQLT :: Monad m => ResolvingStrategy fromO e m a -> ResolvingStrategy toO e m a
