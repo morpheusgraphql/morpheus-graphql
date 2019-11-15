@@ -41,6 +41,8 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , SelectionSet
                                                 , ValidSelection
                                                 )
+import           Data.Morpheus.Types.Internal.AST.Base
+                                                ( Ref(..) )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField(..)
                                                 , DataTyCon(..)
@@ -63,6 +65,7 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 , Validation
                                                 , Failure(..)
                                                 , Computation(..)
+                                                , Position
                                                 )
 import           Data.Set                       ( fromList
                                                 , toList
@@ -162,12 +165,15 @@ operationTypes lib variables = genOperation
       pure (ConsD { cName, cFields }, concat subTypes, concat requests)
      where
       genField :: (Text, ValidSelection) -> Validation DataField
-      genField (fieldName, sel@Selection { selectionAlias }) = genFieldD sel
+      genField (fieldName, sel@Selection { selectionAlias, selectionPosition })
+        = genFieldD sel
        where
         fieldPath = path <> [fromMaybe fieldName selectionAlias]
+        fieldTypeBy =
+          fmap snd . lookupFieldType lib fieldPath datatype selectionPosition
         -------------------------------
         genFieldD Selection { selectionAlias = Just aliasFieldName } = do
-          fieldType <- snd <$> lookupFieldType lib fieldPath datatype fieldName
+          fieldType <- fieldTypeBy fieldName
           pure $ DataField { fieldName     = aliasFieldName
                            , fieldArgs     = []
                            , fieldArgsType = Nothing
@@ -175,7 +181,7 @@ operationTypes lib variables = genOperation
                            , fieldMeta     = Nothing
                            }
         genFieldD _ = do
-          fieldType <- snd <$> lookupFieldType lib fieldPath datatype fieldName
+          fieldType <- fieldTypeBy fieldName
           pure $ DataField { fieldName
                            , fieldArgs     = []
                            , fieldArgsType = Nothing
@@ -187,9 +193,16 @@ operationTypes lib variables = genOperation
         :: DataType -> SelectionSet -> Validation ([[ClientType]], [[Text]])
       newFieldTypes parentType seSet = unzip <$> mapM valSelection seSet
        where
-        valSelection (key, selection@Selection { selectionAlias }) = do
-          fieldDatatype <- fst <$> lookupFieldType lib fieldPath parentType key
-          validateSelection fieldDatatype selection
+        valSelection (key, selection@Selection { selectionAlias, selectionPosition })
+          = do
+            fieldDatatype <-
+              fst
+                <$> lookupFieldType lib
+                                    fieldPath
+                                    parentType
+                                    selectionPosition
+                                    key
+            validateSelection fieldDatatype selection
 
          where
           fieldPath = path <> [fromMaybe key selectionAlias]
@@ -281,10 +294,11 @@ lookupFieldType
   :: DataTypeLib
   -> [Key]
   -> DataType
+  -> Position
   -> Text
   -> Validation (DataType, TypeAlias)
-lookupFieldType lib path (DataObject DataTyCon { typeData }) key =
-  case lookup key typeData of
+lookupFieldType lib path (DataObject DataTyCon { typeData, typeName }) refPosition key
+  = case lookup key typeData of
     Just DataField { fieldType = alias@TypeAlias { aliasTyCon }, fieldMeta } ->
       checkDeprecated >> (trans <$> getType lib aliasTyCon)
      where
@@ -293,13 +307,15 @@ lookupFieldType lib path (DataObject DataTyCon { typeData }) key =
       ------------------------------------------------------------------
       checkDeprecated :: Validation ()
       checkDeprecated = case fieldMeta >>= lookupDeprecated of
-        Just x  -> Success () $ globalErrorMessage $ "deprecated field" <> key
+        Just x -> Success () $ deprecatedField
+          typeName
+          Ref { refName = key, refPosition }
+          (Just "deprecated field")
         Nothing -> pure ()
     ------------------
     Nothing -> failure
       (compileError $ "cant find field \"" <> pack (show typeData) <> "\"")
-
-lookupFieldType _ _ dt _ =
+lookupFieldType _ _ dt _ _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 
 

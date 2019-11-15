@@ -20,8 +20,11 @@ import           Data.Morpheus.Types.Internal.Validation
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
                                                 , Description
+                                                , Name
                                                 )
-import           Language.Haskell.TH
+import           Language.Haskell.TH            ( Q
+                                                , reportWarning
+                                                )
 
 renderGQLErrors :: GQLErrors -> String
 renderGQLErrors = unpack . encode . renderErrors
@@ -34,13 +37,15 @@ deprecatedEnum Ref { refPosition, refName } reason =
     <> "is deprecated. "
     <> reason
 
-deprecatedField :: Ref -> Description -> GQLErrors
-deprecatedField Ref { refPosition, refName } reason =
+deprecatedField :: Name -> Ref -> Maybe Description -> GQLErrors
+deprecatedField typeName Ref { refPosition, refName } reason =
   errorMessage refPosition
     $  "the field "
+    <> typeName
+    <> "."
     <> refName
-    <> "is deprecated. "
-    <> reason
+    <> " is deprecated."
+    <> maybe "" (" " <>) reason
 
 gqlWarnings :: GQLErrors -> Q ()
 gqlWarnings []       = pure ()
