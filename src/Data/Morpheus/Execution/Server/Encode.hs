@@ -79,7 +79,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , SUBSCRIPTION
                                                 )
 import           Data.Morpheus.Types.Internal.Resolver
-                                                ( MapGraphQLT(..)
+                                                ( MapStrategy(..)
                                                 , LiftEither(..)
                                                 , Resolver(..)
                                                 , resolving
@@ -125,9 +125,9 @@ instance (Monad m, Encode a o e m, LiftEither o ResolvingStrategy) => Encode [a]
   encode list query = gqlList <$> traverse (`encode` query) list
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (DecodeObject a, Monad m,LiftEither fo Resolver, MapGraphQLT fo o, Encode b fo e m) => Encode (a -> Resolver fo e m b) o e m where
+instance (DecodeObject a, Monad m,LiftEither fo Resolver, MapStrategy fo o, Encode b fo e m) => Encode (a -> Resolver fo e m b) o e m where
   encode resolver selection@(_, Selection { selectionArguments }) =
-    mapGraphQLT $ resolving encode (getArgs args resolver) selection
+    mapStrategy $ resolving encode (getArgs args resolver) selection
    where
     args :: Validation a
     args = decodeArguments selectionArguments

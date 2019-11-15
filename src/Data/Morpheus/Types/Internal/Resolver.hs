@@ -20,7 +20,7 @@ module Data.Morpheus.Types.Internal.Resolver
   , ResponseT
   , Resolver(..)
   , ResolvingStrategy(..)
-  , MapGraphQLT(..)
+  , MapStrategy(..)
   , LiftEither(..)
   , resolveObject
   , toResponseRes
@@ -332,14 +332,15 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
           . runExceptT
           . unSubscriptionT
 
-class MapGraphQLT (fromO :: OperationType) (toO :: OperationType) where
-   mapGraphQLT :: Monad m => ResolvingStrategy fromO e m a -> ResolvingStrategy toO e m a
+-- map Resolving strategies 
+class MapStrategy (from :: OperationType) (to :: OperationType) where
+   mapStrategy :: Monad m => ResolvingStrategy from e m a -> ResolvingStrategy to e m a
 
-instance MapGraphQLT fromO fromO where
-  mapGraphQLT = id
+instance MapStrategy o o where
+  mapStrategy = id
 
-instance MapGraphQLT QUERY SUBSCRIPTION where
-  mapGraphQLT (QueryResolving x) =
+instance MapStrategy QUERY SUBSCRIPTION where
+  mapStrategy (QueryResolving x) =
     SubscriptionResolving $ injectEvents [] (fmap pure x)
 
 -------------------------------------------------------------------

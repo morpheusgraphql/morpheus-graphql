@@ -31,7 +31,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 )
 import           Data.Morpheus.Types.Internal.Resolver
                                                 ( Resolver
-                                                , MapGraphQLT(..)
+                                                , MapStrategy(..)
                                                 , LiftEither
                                                 , ResolvingStrategy
                                                 )
@@ -65,11 +65,11 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
   ---------------------
   typeables
     | isSubscription typeKindD
-    = [applyT ''MapGraphQLT $ map conT [''QUERY, ''SUBSCRIPTION]]
+    = [applyT ''MapStrategy $ map conT [''QUERY, ''SUBSCRIPTION]]
     | otherwise
     = [ iLiftEither ''ResolvingStrategy
       , iLiftEither ''Resolver
-      , typeT ''MapGraphQLT [fo_, po_]
+      , typeT ''MapStrategy [fo_, po_]
       , iTypeable fo_
       , iTypeable po_
       ]
