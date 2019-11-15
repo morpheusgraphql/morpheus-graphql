@@ -116,12 +116,9 @@ data ResolvingStrategy  (o::OperationType) event (m:: * -> *) value where
     QueryResolving ::{ unQueryT :: ResolveT m value } -> ResolvingStrategy QUERY event m  value
     MutationResolving ::{ unMutationT :: ResolveT (StreamT m event) value } -> ResolvingStrategy MUTATION event m  value
     SubscriptionResolving ::{ unSubscriptionT :: ResolveT (StreamT m (Channel event)) (RecResolver m event value) } -> ResolvingStrategy SUBSCRIPTION event m value
-    -- SubscriptionRecT :: RecResolver m event value -> GraphQLT SUBSCRIPTION m event value
-    Fail ::GQLErrors -> ResolvingStrategy o e mvent  value
 
 -- Functor
 instance Monad m => Functor (ResolvingStrategy o e m) where
-  fmap _ (Fail              mErrors  ) = Fail mErrors
   fmap f (QueryResolving    mResolver) = QueryResolving $ f <$> mResolver
   fmap f (MutationResolving mResolver) = MutationResolving $ f <$> mResolver
   fmap f (SubscriptionResolving mResolver) =
@@ -131,10 +128,7 @@ instance Monad m => Functor (ResolvingStrategy o e m) where
 instance (LiftEither o ResolvingStrategy, Monad m) => Applicative (ResolvingStrategy o e m) where
   pure = liftEither . pure . pure
   -------------------------------------
-  _                        <*> (Fail mErrors)       = Fail mErrors
-  (Fail           mErrors) <*> _                    = Fail mErrors
-  -------------------------------------
-  (QueryResolving f      ) <*> (QueryResolving res) = QueryResolving (f <*> res)
+  (QueryResolving f) <*> (QueryResolving res) = QueryResolving (f <*> res)
   ------------------------------------------------------------------------
   (MutationResolving f) <*> (MutationResolving res) =
     MutationResolving (f <*> res)
@@ -159,15 +153,20 @@ instance LiftEither SUBSCRIPTION ResolvingStrategy where
   liftEither = SubscriptionResolving . ExceptT . StreamT . fmap
     (StreamState [] . fmap pure)
 
+ -- Failure
+instance (LiftEither o ResolvingStrategy, Monad m) => Failure GQLErrors (ResolvingStrategy o e m) where
+  failure = liftEither . pure . Left
+
 -- helper functins
 withObject
-  :: (SelectionSet -> ResolvingStrategy o e m value)
+  :: (LiftEither o ResolvingStrategy, Monad m)
+  => (SelectionSet -> ResolvingStrategy o e m value)
   -> (Key, ValidSelection)
   -> ResolvingStrategy o e m value
 withObject f (_, Selection { selectionRec = SelectionSet selection }) =
   f selection
 withObject _ (key, Selection { selectionPosition }) =
-  Fail $ subfieldsNotSelected key "" selectionPosition
+  failure (subfieldsNotSelected key "" selectionPosition)
 
 resolveObject
   :: (Monad m, LiftEither o ResolvingStrategy)
@@ -185,8 +184,6 @@ resolveObject selectionSet fieldResolvers =
 
 toResponseRes
   :: Monad m => ResolvingStrategy o event m Value -> ResponseT event m Value
-toResponseRes (Fail errors) =
-  ExceptT $ StreamT $ pure $ StreamState [] $ Left errors
 toResponseRes (QueryResolving resT) =
   ExceptT $ StreamT $ StreamState [] <$> runExceptT resT
 toResponseRes (MutationResolving resT) =
@@ -216,11 +213,10 @@ data Resolver (o::OperationType) event (m :: * -> * )  value where
         } -> Resolver SUBSCRIPTION event m  value
 
 -- Functor
-instance Monad m => Functor (Resolver o e m) where
+instance Functor m => Functor (Resolver o e m) where
   fmap f (QueryResolver res) = QueryResolver $ fmap f res
-  fmap f (MutResolver   res) = MutResolver $ do
-    (e, v) <- res
-    pure (e, f v)
+  fmap f (MutResolver   res) = MutResolver $ tupleMap <$> res
+    where tupleMap (e, v) = (e, f v)
   fmap f (SubResolver events mResolver) = SubResolver events
                                                       (eventFmap mResolver)
     where eventFmap res event = fmap f (res event)
@@ -231,13 +227,11 @@ instance (LiftEither o Resolver ,Monad m) => Applicative (Resolver o e m) where
   -------------------------------------
   (QueryResolver f) <*> (QueryResolver res) = QueryResolver (f <*> res)
   ---------------------------------------------------------------------
-  MutResolver res1  <*> MutResolver res2    = MutResolver $ do
-    (e1, f  ) <- res1
-    (e2, val) <- res2
-    pure (e1 ++ e2, f val)
+  MutResolver res1 <*> MutResolver res2 = MutResolver $ join <$> res1 <*> res2
+    where join (e1, f) (e2, v) = (e1 <> e2, f v)
   --------------------------------------------------------------
-  (SubResolver e1 f) <*> (SubResolver e2 res) =
-    SubResolver (e1 <> e2) $ \event -> f event <*> res event
+  (SubResolver e1 f) <*> (SubResolver e2 res) = SubResolver (e1 <> e2) subRes
+    where subRes event = f event <*> res event
 
 -- Monad 
 instance (Monad m) => Monad (Resolver QUERY e m) where
@@ -351,7 +345,6 @@ instance MapGraphQLT fromO fromO where
 instance MapGraphQLT QUERY SUBSCRIPTION where
   mapGraphQLT (QueryResolving x) =
     SubscriptionResolving $ injectEvents [] (fmap pure x)
-  mapGraphQLT (Fail x) = Fail x
 
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.

@@ -88,7 +88,9 @@ import           Data.Morpheus.Types.Internal.Resolver
                                                 , withObject
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
+                                                ( Validation
+                                                , failure
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
                                                 , Value(..)
@@ -159,7 +161,7 @@ instance (Monad m, GQL_RES a, GResolver UNION (Rep a) o e m) => EncodeKind UNION
    where
     lookupSelection      = fromMaybe [] $ lookup typeName selections
     (typeName, resolver) = unionResolver value
-  encodeKind _ _ = Fail $ internalUnknownTypeMessage
+  encodeKind _ _ = failure $ internalUnknownTypeMessage
     "union Resolver only should recieve UnionSelection"
 
 -- Types & Constrains -------------------------------------------------------
