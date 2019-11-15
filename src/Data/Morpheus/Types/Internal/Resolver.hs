@@ -271,10 +271,8 @@ type instance UnSubResolver (Resolver SUBSCRIPTION m e) = Resolver QUERY m e
 
 
 -- RESOLVING
-
 type FieldRes o e m
   = (Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)
-
 
 toResolver
   :: (LiftEither o Resolver, Monad m)
@@ -298,8 +296,7 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
   ------------------------------
   _encode = (`encode` selection)
   -------------------------------------------------------------------
-  _resolve (QueryResolver res) =
-    ResolveQ $ convert res >>= unResolveQ . _encode
+  _resolve (QueryResolver res) = ResolveQ $ convert res >>= unResolveQ . _encode
   ---------------------------------------------------------------------------------------------------------------------------------------
   _resolve (MutResolver res) =
     ResolveM $ convert (toStream res) >>= unResolveM . _encode
