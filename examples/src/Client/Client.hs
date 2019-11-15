@@ -59,6 +59,7 @@ defineByIntrospectionFile
       }
   |]
 
+
 defineByDocumentFile
   "./assets/simple.gql"
   [gql|

@@ -307,10 +307,10 @@ lookupFieldType lib path (DataObject DataTyCon { typeData, typeName }) refPositi
       ------------------------------------------------------------------
       checkDeprecated :: Validation ()
       checkDeprecated = case fieldMeta >>= lookupDeprecated of
-        Just x -> Success () $ deprecatedField
+        Just deprecation -> Success () $ deprecatedField
           typeName
           Ref { refName = key, refPosition }
-          (Just "deprecated field")
+          (lookupDeprecatedReason deprecation)
         Nothing -> pure ()
     ------------------
     Nothing -> failure

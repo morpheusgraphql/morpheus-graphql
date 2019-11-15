@@ -40,11 +40,11 @@ deprecatedEnum Ref { refPosition, refName } reason =
 deprecatedField :: Name -> Ref -> Maybe Description -> GQLErrors
 deprecatedField typeName Ref { refPosition, refName } reason =
   errorMessage refPosition
-    $  "the field "
+    $  "the field \""
     <> typeName
     <> "."
     <> refName
-    <> " is deprecated."
+    <> "\" is deprecated."
     <> maybe "" (" " <>) reason
 
 gqlWarnings :: GQLErrors -> Q ()
