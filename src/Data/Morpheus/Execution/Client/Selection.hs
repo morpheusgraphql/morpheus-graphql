@@ -160,42 +160,37 @@ operationTypes lib variables = genOperation
       -> SelectionSet
       -> Validation (ConsD, [ClientType], [Text])
     genConsD cName datatype selSet = do
-      cFields              <- traverse genField selSet
-      (subTypes, requests) <- newFieldTypes datatype selSet
+      (cFields, subTypes, requests) <- unzip3 <$> traverse genField selSet
       pure (ConsD { cName, cFields }, concat subTypes, concat requests)
      where
-      genField :: (Text, ValidSelection) -> Validation DataField
-      genField (fName, Selection { selectionAlias, selectionPosition }) = do
-        fieldType <-
-          snd <$> lookupFieldType lib fieldPath datatype selectionPosition fName
-        pure $ DataField { fieldName
-                         , fieldArgs     = []
-                         , fieldArgsType = Nothing
-                         , fieldType
-                         , fieldMeta     = Nothing
-                         }
+      genField
+        :: (Text, ValidSelection)
+        -> Validation (DataField, [ClientType], [Text])
+      genField (fName, sel@Selection { selectionAlias, selectionPosition }) =
+        do
+          (fieldDataType, fieldType) <- lookupFieldType lib
+                                                        fieldPath
+                                                        datatype
+                                                        selectionPosition
+                                                        fName
+          (subTypes, requests) <- valSelection fieldDataType sel
+          pure
+            ( DataField { fieldName
+                        , fieldArgs     = []
+                        , fieldArgsType = Nothing
+                        , fieldType
+                        , fieldMeta     = Nothing
+                        }
+            , subTypes
+            , requests
+            )
        where
-        fieldPath = path <> [fieldName]
+        fieldPath    = path <> [fieldName]
         -------------------------------
-        fieldName = fromMaybe fName selectionAlias
-      ------------------------------------------------------------------------------------------------------------
-      newFieldTypes
-        :: DataType -> SelectionSet -> Validation ([[ClientType]], [[Text]])
-      newFieldTypes parentType seSet = unzip <$> mapM valSelection seSet
-       where
-        valSelection (key, selection@Selection { selectionAlias, selectionPosition })
-          = do
-            fieldDatatype <-
-              fst
-                <$> lookupFieldType lib
-                                    fieldPath
-                                    parentType
-                                    selectionPosition
-                                    key
-            validateSelection fieldDatatype selection
-
+        fieldName    = fromMaybe fName selectionAlias
+        ------------------------------------------------------------------------------------------------------------
+        valSelection = validateSelection
          where
-          fieldPath = path <> [fromMaybe key selectionAlias]
           --------------------------------------------------------------------
           validateSelection
             :: DataType -> ValidSelection -> Validation ([ClientType], [Text])
