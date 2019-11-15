@@ -26,6 +26,8 @@ import           Data.Morpheus.Execution.Client.Fetch
                                                 ( deriveFetch )
 import           Data.Morpheus.Execution.Internal.Declare
                                                 ( declareType )
+import           Data.Morpheus.Execution.Internal.Utils
+                                                ( gqlWarnings )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataTypeKind(..)
                                                 , DataTypeLib
@@ -40,12 +42,15 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 )
 import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
 
+
+
 defineQuery :: IO (Validation DataTypeLib) -> (GQLQueryRoot, String) -> Q [Dec]
 defineQuery ioSchema queryRoot = do
   schema <- runIO ioSchema
   case schema >>= (`validateWith` queryRoot) of
-    Failure errors          -> fail (renderGQLErrors errors)
-    Success queryD warnings -> defineQueryD queryD
+    Failure errors         -> fail (renderGQLErrors errors)
+    Success query warnings -> gqlWarnings warnings >> defineQueryD query
+
 
 defineQueryD :: ClientQuery -> Q [Dec]
 defineQueryD ClientQuery { queryTypes = rootType : subTypes, queryText, queryArgsType }
