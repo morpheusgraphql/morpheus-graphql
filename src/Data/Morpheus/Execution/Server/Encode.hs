@@ -82,7 +82,8 @@ import           Data.Morpheus.Types.Internal.Resolver
                                                 ( MapGraphQLT(..)
                                                 , LiftEither(..)
                                                 , Resolver(..)
-                                                , Resolving(..)
+                                                , resolving
+                                                , getArgs
                                                 , ResolvingStrategy(..)
                                                 , resolveObject
                                                 , withObject
@@ -124,7 +125,7 @@ instance (Monad m, Encode a o e m, LiftEither o ResolvingStrategy) => Encode [a]
   encode list query = gqlList <$> traverse (`encode` query) list
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (DecodeObject a, Resolving fo e m ,Monad m,LiftEither fo Resolver, MapGraphQLT fo o, Encode b fo e m) => Encode (a -> Resolver fo e m b) o e m where
+instance (DecodeObject a, Monad m,LiftEither fo Resolver, MapGraphQLT fo o, Encode b fo e m) => Encode (a -> Resolver fo e m b) o e m where
   encode resolver selection@(_, Selection { selectionArguments }) =
     mapGraphQLT $ resolving encode (getArgs args resolver) selection
    where
@@ -231,7 +232,6 @@ encodeQuery
    . ( Monad m
      , EncodeCon QUERY event m (schema (Resolver QUERY event m))
      , EncodeCon QUERY event m query
-     , Resolving QUERY event m
      )
   => schema (Resolver QUERY event m)
   -> EncodeOperator QUERY event m query
@@ -242,26 +242,19 @@ encodeQuery schema = encodeOperationWith
 
 encodeMutation
   :: forall event m mut
-   . (Monad m, EncodeCon MUTATION event m mut, Resolving MUTATION event m)
+   . (Monad m, EncodeCon MUTATION event m mut)
   => EncodeOperator MUTATION event m mut
 encodeMutation = encodeOperationWith []
 
 encodeSubscription
   :: forall m event mut
-   . ( Monad m
-     , EncodeCon SUBSCRIPTION event m mut
-     , Resolving SUBSCRIPTION event m
-     )
+   . (Monad m, EncodeCon SUBSCRIPTION event m mut)
   => EncodeOperator SUBSCRIPTION event m mut
 encodeSubscription = encodeOperationWith []
 
 encodeOperationWith
   :: forall o e m a
-   . ( Monad m
-     , EncodeCon o e m a
-     , Resolving o e m
-     , LiftEither o ResolvingStrategy
-     )
+   . (Monad m, EncodeCon o e m a, LiftEither o ResolvingStrategy)
   => [FieldRes o e m]
   -> EncodeOperator o e m a
 encodeOperationWith externalRes rootResolver Operation { operationSelection } =
