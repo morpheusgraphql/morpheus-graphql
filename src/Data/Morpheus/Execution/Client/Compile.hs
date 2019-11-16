@@ -46,8 +46,9 @@ import           Data.Morpheus.Validation.Query.Validation
 
 compileSyntax :: String -> Q Exp
 compileSyntax queryText = case parseGQL request of
-  Failure errors        -> fail (renderGQLErrors errors)
-  Success root warnings -> gqlWarnings warnings >> [|(root, queryText)|]
+  Failure errors -> fail (renderGQLErrors errors)
+  Success { result, warnings } ->
+    gqlWarnings warnings >> [|(result, queryText)|]
  where
   request = GQLRequest { query         = T.pack queryText
                        , operationName = Nothing

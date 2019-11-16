@@ -38,7 +38,9 @@ import           Control.Monad.Trans.Except     ( ExceptT(..)
                                                 )
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( unpack )
+import           Data.Text                      ( unpack
+                                                , pack
+                                                )
 import           Control.Monad                  ( (>=>) )
 
 -- MORPHEUS
@@ -279,8 +281,9 @@ toResolver
   => Validation a
   -> (a -> Resolver o e m b)
   -> Resolver o e m b
-toResolver (Success args _) f = f args
-toResolver (Failure errors) _ = failure ("TODO: errors" :: Message)
+toResolver Success { result } f = f result
+toResolver (Failure errors) _ =
+  failure ("TODO: errors" <> pack (show errors) :: Message)
 
 resolving
   :: Monad m

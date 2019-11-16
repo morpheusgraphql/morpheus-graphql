@@ -271,7 +271,6 @@ buildInputType lib name = getType lib name >>= subTypes
   subTypes _ = pure []
 
 
-
 lookupFieldType
   :: DataTypeLib
   -> [Key]
@@ -289,10 +288,12 @@ lookupFieldType lib path (DataObject DataTyCon { typeData, typeName }) refPositi
       ------------------------------------------------------------------
       checkDeprecated :: Validation ()
       checkDeprecated = case fieldMeta >>= lookupDeprecated of
-        Just deprecation -> Success () $ deprecatedField
-          typeName
-          Ref { refName = key, refPosition }
-          (lookupDeprecatedReason deprecation)
+        Just deprecation -> Success { result = (), warnings, events = [] }
+          where 
+            warnings = deprecatedField
+              typeName
+              Ref { refName = key, refPosition }
+              (lookupDeprecatedReason deprecation)
         Nothing -> pure ()
     ------------------
     Nothing -> failure

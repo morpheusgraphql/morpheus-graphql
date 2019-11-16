@@ -1,3 +1,5 @@
+{-#LANGUAGE NamedFieldPuns #-}
+
 module Data.Morpheus.Execution.Document.Compile
   ( compileDocument
   , gqlDocument
@@ -13,7 +15,9 @@ import           Language.Haskell.TH.Quote
 --
 --  Morpheus
 import           Data.Morpheus.Error.Client.Client
-                                                ( renderGQLErrors , gqlWarnings )
+                                                ( renderGQLErrors
+                                                , gqlWarnings
+                                                )
 import           Data.Morpheus.Execution.Document.Convert
                                                 ( renderTHTypes )
 import           Data.Morpheus.Execution.Document.Declare
@@ -24,7 +28,7 @@ import           Data.Morpheus.Validation.Document.Validation
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Computation(..) )
 
-                                                
+
 gqlDocumentNamespace :: QuasiQuoter
 gqlDocumentNamespace = QuasiQuoter { quoteExp  = notHandled "Expressions"
                                    , quotePat  = notHandled "Patterns"
@@ -53,5 +57,5 @@ compileDocument namespace documentTXT =
       >>= renderTHTypes namespace
     of
       Failure errors -> fail (renderGQLErrors errors)
-      Success schema warnings ->
+      Success { result = schema, warnings } ->
         gqlWarnings warnings >> declareTypes namespace schema
