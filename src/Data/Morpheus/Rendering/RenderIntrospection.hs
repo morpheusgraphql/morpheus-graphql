@@ -11,9 +11,7 @@ module Data.Morpheus.Rendering.RenderIntrospection
 where
 
 import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( Text
-                                                , unpack
-                                                )
+import           Data.Text                      ( Text )
 import           Data.Maybe                     ( isJust )
 
 
@@ -119,7 +117,7 @@ wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 
 lookupKind :: (Monad m, Failure Text m) => Text -> Result m DataTypeKind
 lookupKind name lib = case lookupDataType name lib of
-  Nothing    -> fail $ unpack ("Kind Not Found: " <> name)
+  Nothing    -> failure $ "Kind Not Found: " <> name
   Just value -> pure (kindOf value)
 
 renderinputValue
