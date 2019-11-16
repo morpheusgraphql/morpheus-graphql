@@ -20,6 +20,7 @@ module Data.Morpheus.Types.Internal.Validation
   )
 where
 
+import           Control.Applicative            ( liftA2 )
 import           Control.Monad.Trans.Except     ( ExceptT(..) )
 import           Data.Aeson                     ( FromJSON
                                                 , ToJSON
@@ -37,13 +38,24 @@ data GQLError = GQLError
 type GQLErrors = [GQLError]
 
 
-newtype ResultT event concurency m a = CompT { runCompT :: m (Result event concurency GQLError a )  }
+newtype ResultT event concurency m a = ResultT { runResultT :: m (Result event concurency GQLError a )  }
   deriving (Functor)
 
---instance Functor m => Applicative (ResultT event concurency m)
+instance Applicative m => Applicative (ResultT event concurency m) where
+  pure = ResultT . pure . pure
+  ResultT app1 <*> ResultT app2 = ResultT $ liftA2 (<*>) app1 app2
 
---instance Monad m => Monad (ResultT event concurency m)
-
+instance Monad m => Monad (ResultT event concurency m) where
+  return = pure
+  (ResultT m1) >>= mFunc = ResultT $ do
+    result1 <- m1
+    case result1 of
+      Failure errors       -> pure $ Failure errors
+      Success value1 w1 e1 -> do
+        result2 <- runResultT (mFunc value1)
+        case result2 of
+          Failure errors   -> pure $ Failure (errors <> w1)
+          Success v2 w2 e2 -> return $ Success v2 (w1 <> w2) (e1 <> e2)
 
 data Result events (concurency :: Bool) error a =
   Success { result :: a , warnings :: [error] , events:: [events] }
