@@ -16,6 +16,7 @@ module Data.Morpheus.Types.Internal.Validation
   , Failure(..)
   , ExceptGQL
   , toExceptGQL
+  , ResultT(..)
   )
 where
 
@@ -39,9 +40,9 @@ type GQLErrors = [GQLError]
 newtype ResultT event concurency m a = CompT { runCompT :: m (Result event concurency GQLError a )  }
   deriving (Functor)
 
-instance Functor m => Applicative (ResultT event concurency m)
+--instance Functor m => Applicative (ResultT event concurency m)
 
-instance Monad m => Monad (ResultT event concurency m)
+--instance Monad m => Monad (ResultT event concurency m)
 
 
 data Result events (concurency :: Bool) error a =
