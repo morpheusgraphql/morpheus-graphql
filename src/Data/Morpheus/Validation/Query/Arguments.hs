@@ -45,7 +45,9 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , lookupInputType
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
+                                                ( Validation
+                                                , Failure(..)
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value(Null) )
 import           Data.Morpheus.Validation.Internal.Utils
@@ -71,18 +73,18 @@ resolveArgumentVariables operatorName variables DataField { fieldName, fieldArgs
                                         , argumentPosition = refPosition
                                         }
     lookupVar = case lookup refName variables of
-      Nothing -> Left $ undefinedVariable operatorName refPosition refName
+      Nothing -> failure $ undefinedVariable operatorName refPosition refName
       Just Variable { variableValue, variableType, variableTypeWrappers } ->
         case lookup key fieldArgs of
-          Nothing -> Left $ unknownArguments fieldName [Ref key refPosition]
+          Nothing -> failure $ unknownArguments fieldName [Ref key refPosition]
           Just DataField { fieldType = fieldT@TypeAlias { aliasTyCon, aliasWrappers } }
             -> if variableType == aliasTyCon && not
                  (isWeaker variableTypeWrappers aliasWrappers)
               then return variableValue
-              else Left $ incompatibleVariableType refName
-                                                   varSignature
-                                                   fieldSignature
-                                                   refPosition
+              else failure $ incompatibleVariableType refName
+                                                      varSignature
+                                                      fieldSignature
+                                                      refPosition
            where
             varSignature   = renderWrapped variableType variableTypeWrappers
             fieldSignature = render fieldT
@@ -109,7 +111,7 @@ validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldTy
                  , argumentPosition = fieldPosition
                  }
       )
-    | otherwise = Left $ undefinedArgument (Ref key fieldPosition)
+    | otherwise = failure $ undefinedArgument (Ref key fieldPosition)
   -------------------------------------------------------------------------
   validateArgumentValue :: Argument -> Validation (Text, Argument)
   validateArgumentValue arg@Argument { argumentValue, argumentPosition } =
@@ -121,7 +123,7 @@ validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldTy
       (validateInputValue lib [] aliasWrappers type' (key, argumentValue))
     ---------
     handleInputError :: InputValidation a -> Validation ()
-    handleInputError (Left err) = Left
+    handleInputError (Left err) = failure
       $ argumentGotInvalidValue key (inputErrorMessage err) argumentPosition
     handleInputError _ = pure ()
 

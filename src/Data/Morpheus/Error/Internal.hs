@@ -13,19 +13,23 @@ import qualified Data.Text                     as T
                                                 ( concat
                                                 , pack
                                                 )
+import           Data.Semigroup                 ( (<>) )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( GQLErrors )
+                                                ( Validation
+                                                , GQLErrors
+                                                , Failure(..)
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value(..) )
 
 
 -- GQL:: if no mutation defined -> "Schema is not configured for mutations."
 -- all kind internal error in development
-internalError :: Text -> Either GQLErrors b
-internalError x = Left $ globalErrorMessage $ T.concat ["INTERNAL ERROR: ", x]
+internalError :: Text -> Validation b
+internalError x = failure $ globalErrorMessage $ "INTERNAL ERROR: " <> x
 
 -- if type did not not found, but was defined by Schema
 internalUnknownTypeMessage :: Text -> GQLErrors
@@ -33,10 +37,10 @@ internalUnknownTypeMessage x = globalErrorMessage
   $ T.concat ["type did not not found, but was defined by Schema", x]
 
 -- if arguments is already validated but has not found required argument
-internalArgumentError :: Text -> Either GQLErrors b
-internalArgumentError x = internalError $ T.concat ["Argument ", x]
+internalArgumentError :: Text -> Validation b
+internalArgumentError x = internalError $ "Argument " <> x
 
 -- if value is already validated but value has different type
-internalTypeMismatch :: Text -> Value -> Either GQLErrors b
+internalTypeMismatch :: Text -> Value -> Validation b
 internalTypeMismatch text jsType =
-  internalError $ T.concat ["Type mismatch ", text, T.pack $ show jsType]
+  internalError $ "Type mismatch " <> text <> T.pack (show jsType)

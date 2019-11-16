@@ -30,7 +30,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 )
 
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
+                                                ( Validation ,Failure(..) )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Collection
                                                 , Key
@@ -80,9 +80,9 @@ getOperationDataType Operation { operationType = Query } lib =
 getOperationDataType Operation { operationType = Mutation, operationPosition } lib
   = case mutation lib of
     Just (_, mutation') -> pure mutation'
-    Nothing             -> Left $ mutationIsNotDefined operationPosition
+    Nothing             -> failure $ mutationIsNotDefined operationPosition
 getOperationDataType Operation { operationType = Subscription, operationPosition } lib
   = case subscription lib of
     Just (_, subscription') -> pure subscription'
-    Nothing                 -> Left $ subscriptionIsNotDefined operationPosition
+    Nothing                 -> failure $ subscriptionIsNotDefined operationPosition
 

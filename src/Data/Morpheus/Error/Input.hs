@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Data.Morpheus.Error.Input
   ( inputErrorMessage
@@ -18,7 +20,6 @@ import qualified Data.Text                     as T
                                                 , intercalate
                                                 , pack
                                                 )
-
 type InputValidation a = Either InputError a
 
 data InputError

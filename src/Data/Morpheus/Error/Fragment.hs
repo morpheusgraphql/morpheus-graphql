@@ -40,21 +40,21 @@ fragmentNameCollision :: [Ref] -> GQLErrors
 fragmentNameCollision = map toError
  where
   toError Ref { refName, refPosition } = GQLError
-    { desc      = "There can be only one fragment named \"" <> refName <> "\"."
-    , positions = [refPosition]
+    { message      = "There can be only one fragment named \"" <> refName <> "\"."
+    , locations = [refPosition]
     }
 
 unusedFragment :: [Ref] -> GQLErrors
 unusedFragment = map toError
  where
   toError Ref { refName, refPosition } = GQLError
-    { desc      = "Fragment \"" <> refName <> "\" is never used."
-    , positions = [refPosition]
+    { message      = "Fragment \"" <> refName <> "\" is never used."
+    , locations = [refPosition]
     }
 
 cannotSpreadWithinItself :: [Ref] -> GQLErrors
 cannotSpreadWithinItself fragments =
-  [GQLError { desc = text, positions = map refPosition fragments }]
+  [GQLError { message = text, locations = map refPosition fragments }]
  where
   text = T.concat
     [ "Cannot spread fragment \""

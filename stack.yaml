@@ -1,5 +1,5 @@
 # ghc 8.6.5
-resolver: lts-14.13
+resolver: lts-14.14
 
 packages:
   - examples

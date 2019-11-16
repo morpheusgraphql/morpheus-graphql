@@ -10,6 +10,8 @@ module Data.Morpheus.Types.Internal.AST.Base
   , Position(..)
   , Message
   , anonymousRef
+  , Name
+  , Description
   )
 where
 
@@ -24,6 +26,8 @@ import           Instances.TH.Lift              ( )
 
 type Key = Text
 type Message = Text
+type Name = Key
+type Description = Key
 
 type Collection a = [(Key, a)]
 

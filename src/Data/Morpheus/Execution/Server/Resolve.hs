@@ -17,8 +17,6 @@ module Data.Morpheus.Execution.Server.Resolve
   )
 where
 
-import           Control.Monad.Except           ( liftEither )
-import           Control.Monad.Trans.Except     ( runExceptT )
 import           Data.Aeson                     ( encode )
 import           Data.Aeson.Internal            ( formatError
                                                 , ifromJSON
@@ -83,7 +81,9 @@ import           Data.Morpheus.Types.Internal.Stream
                                                 , closeStream
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
+                                                ( Validation
+                                                , toExceptGQL
+                                                )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
                                                 , renderResponse
@@ -142,15 +142,13 @@ streamResolver
   -> GQLRequest
   -> ResponseStream m event GQLResponse
 streamResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptionResolver } request
-  = renderResponse <$> runExceptT (validRequest >>= execOperator)
-
+  = renderResponse (validRequest >>= execOperator)
  where
-    ---------------------------------------------------------
   validRequest :: Monad m => ResponseT event m (DataTypeLib, ValidOperation)
-  validRequest = liftEither $ do
+  validRequest = toExceptGQL $ do
     schema <- fullSchema $ Identity root
     query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
-    Right (schema, query)
+    pure (schema, query)
   ----------------------------------------------------------
   execOperator (schema, operation@Operation { operationType = Query }) =
     toResponseRes (encodeQuery (schemaAPI schema) queryResolver operation)

@@ -28,7 +28,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , isWeaker
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
+                                                ( Validation, Failure(..) )
 
 validatePartialDocument :: [(Key, RawDataType)] -> Validation [(Key, DataType)]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib
@@ -46,7 +46,7 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
     interface <- traverse getInterfaceByKey interfaceKey
     case concatMap (mustBeSubset object) interface of
       []     -> pure $ DataObject object
-      errors -> Left $ partialImplements (typeName object) errors
+      errors -> failure $ partialImplements (typeName object) errors
   -------------------------------
   mustBeSubset :: DataObject -> DataObject -> [(Key, Key, ImplementsError)]
   mustBeSubset DataTyCon { typeData = objFields } DataTyCon { typeName, typeData = interfaceFields }
@@ -72,4 +72,4 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
   getInterfaceByKey :: Key -> Validation DataObject
   getInterfaceByKey key = case lookup key lib of
     Just (Interface x) -> pure x
-    _                  -> Left $ unknownInterface key
+    _                  -> failure $ unknownInterface key

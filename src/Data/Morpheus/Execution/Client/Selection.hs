@@ -17,6 +17,8 @@ import           Data.Text                      ( Text
                                                 )
 --
 -- MORPHEUS
+import           Data.Morpheus.Error.Client.Client
+                                                ( deprecatedField )
 import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
 import           Data.Morpheus.Execution.Internal.GraphScanner
                                                 ( LibUpdater
@@ -39,6 +41,8 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , SelectionSet
                                                 , ValidSelection
                                                 )
+import           Data.Morpheus.Types.Internal.AST.Base
+                                                ( Ref(..) )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataField(..)
                                                 , DataTyCon(..)
@@ -53,10 +57,15 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , ConsD(..)
                                                 , ClientType(..)
                                                 , TypeD(..)
+                                                , lookupDeprecated
+                                                , lookupDeprecatedReason
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( GQLErrors
                                                 , Validation
+                                                , Failure(..)
+                                                , Result(..)
+                                                , Position
                                                 )
 import           Data.Set                       ( fromList
                                                 , toList
@@ -151,71 +160,63 @@ operationTypes lib variables = genOperation
       -> SelectionSet
       -> Validation (ConsD, [ClientType], [Text])
     genConsD cName datatype selSet = do
-      cFields              <- traverse genField selSet
-      (subTypes, requests) <- newFieldTypes datatype selSet
+      (cFields, subTypes, requests) <- unzip3 <$> traverse genField selSet
       pure (ConsD { cName, cFields }, concat subTypes, concat requests)
      where
-      genField :: (Text, ValidSelection) -> Validation DataField
-      genField (fieldName, sel@Selection { selectionAlias }) = genFieldD sel
+      genField
+        :: (Text, ValidSelection)
+        -> Validation (DataField, [ClientType], [Text])
+      genField (fName, sel@Selection { selectionAlias, selectionPosition }) =
+        do
+          (fieldDataType, fieldType) <- lookupFieldType lib
+                                                        fieldPath
+                                                        datatype
+                                                        selectionPosition
+                                                        fName
+          (subTypes, requests) <- subTypesBySelection fieldDataType sel
+          pure
+            ( DataField { fieldName
+                        , fieldArgs     = []
+                        , fieldArgsType = Nothing
+                        , fieldType
+                        , fieldMeta     = Nothing
+                        }
+            , subTypes
+            , requests
+            )
        where
-        fieldPath = path <> [fromMaybe fieldName selectionAlias]
+        fieldPath = path <> [fieldName]
         -------------------------------
-        genFieldD Selection { selectionAlias = Just aliasFieldName } = do
-          fieldType <- snd <$> lookupFieldType lib fieldPath datatype fieldName
-          pure $ DataField { fieldName     = aliasFieldName
-                           , fieldArgs     = []
-                           , fieldArgsType = Nothing
-                           , fieldType
-                           , fieldMeta     = Nothing
-                           }
-        genFieldD _ = do
-          fieldType <- snd <$> lookupFieldType lib fieldPath datatype fieldName
-          pure $ DataField { fieldName
-                           , fieldArgs     = []
-                           , fieldArgsType = Nothing
-                           , fieldType
-                           , fieldMeta     = Nothing
-                           }
-      ------------------------------------------------------------------------------------------------------------
-      newFieldTypes
-        :: DataType -> SelectionSet -> Validation ([[ClientType]], [[Text]])
-      newFieldTypes parentType seSet = unzip <$> mapM valSelection seSet
-       where
-        valSelection (key, selection@Selection { selectionAlias }) = do
-          fieldDatatype <- fst <$> lookupFieldType lib fieldPath parentType key
-          validateSelection fieldDatatype selection
-
-         where
-          fieldPath = path <> [fromMaybe key selectionAlias]
-          --------------------------------------------------------------------
-          validateSelection
-            :: DataType -> ValidSelection -> Validation ([ClientType], [Text])
-          validateSelection dType Selection { selectionRec = SelectionField } =
-            leafType dType
+        fieldName = fromMaybe fName selectionAlias
+        ------------------------------------------
+        subTypesBySelection
+          :: DataType -> ValidSelection -> Validation ([ClientType], [Text])
+        subTypesBySelection dType Selection { selectionRec = SelectionField } =
+          leafType dType
           --withLeaf buildLeaf dType
-          validateSelection dType Selection { selectionRec = SelectionSet selectionSet }
-            = genRecordType fieldPath (typeFrom [] dType) dType selectionSet
+        subTypesBySelection dType Selection { selectionRec = SelectionSet selectionSet }
+          = genRecordType fieldPath (typeFrom [] dType) dType selectionSet
           ---- UNION
-          validateSelection dType Selection { selectionRec = UnionSelection unionSelections }
-            = do
-              (tCons, subTypes, requests) <-
-                unzip3 <$> mapM getUnionType unionSelections
-              pure
-                ( ClientType
-                    { clientType = TypeD { tNamespace = map unpack fieldPath
-                                         , tName = unpack $ typeFrom [] dType
-                                         , tCons
-                                         , tMeta      = Nothing
-                                         }
-                    , clientKind = KindUnion
-                    }
-                  : concat subTypes
-                , concat requests
-                )
-           where
-            getUnionType (selectedTyName, selectionVariant) = do
-              conDatatype <- getType lib selectedTyName
-              genConsD (unpack selectedTyName) conDatatype selectionVariant
+        subTypesBySelection dType Selection { selectionRec = UnionSelection unionSelections }
+          = do
+            (tCons, subTypes, requests) <-
+              unzip3 <$> mapM getUnionType unionSelections
+            pure
+              ( ClientType
+                  { clientType = TypeD { tNamespace = map unpack fieldPath
+                                       , tName      = unpack $ typeFrom [] dType
+                                       , tCons
+                                       , tMeta      = Nothing
+                                       }
+                  , clientKind = KindUnion
+                  }
+                : concat subTypes
+              , concat requests
+              )
+         where
+          getUnionType (selectedTyName, selectionVariant) = do
+            conDatatype <- getType lib selectedTyName
+            genConsD (unpack selectedTyName) conDatatype selectionVariant
 
 scanInputTypes :: DataTypeLib -> Key -> LibUpdater [Key]
 scanInputTypes lib name collected | name `elem` collected = pure collected
@@ -269,29 +270,42 @@ buildInputType lib name = getType lib name >>= subTypes
       ConsD { cName = unpack enumName, cFields = [] }
   subTypes _ = pure []
 
+
 lookupFieldType
   :: DataTypeLib
   -> [Key]
   -> DataType
+  -> Position
   -> Text
   -> Validation (DataType, TypeAlias)
-lookupFieldType lib path (DataObject DataTyCon { typeData }) key =
-  case lookup key typeData of
-    Just DataField { fieldType = alias@TypeAlias { aliasTyCon } } ->
-      trans <$> getType lib aliasTyCon
+lookupFieldType lib path (DataObject DataTyCon { typeData, typeName }) refPosition key
+  = case lookup key typeData of
+    Just DataField { fieldType = alias@TypeAlias { aliasTyCon }, fieldMeta } ->
+      checkDeprecated >> (trans <$> getType lib aliasTyCon)
      where
       trans x =
         (x, alias { aliasTyCon = typeFrom path x, aliasArgs = Nothing })
-    Nothing ->
-      Left (compileError $ "cant find field \"" <> pack (show typeData) <> "\"")
-lookupFieldType _ _ dt _ =
-  Left (compileError $ "Type should be output Object \"" <> pack (show dt))
+      ------------------------------------------------------------------
+      checkDeprecated :: Validation ()
+      checkDeprecated = case fieldMeta >>= lookupDeprecated of
+        Just deprecation -> Success { result = (), warnings, events = [] }
+          where 
+            warnings = deprecatedField
+              typeName
+              Ref { refName = key, refPosition }
+              (lookupDeprecatedReason deprecation)
+        Nothing -> pure ()
+    ------------------
+    Nothing -> failure
+      (compileError $ "cant find field \"" <> pack (show typeData) <> "\"")
+lookupFieldType _ _ dt _ _ =
+  failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 
 
 leafType :: DataType -> Validation ([ClientType], [Text])
 leafType (DataEnum DataTyCon { typeName }) = pure ([], [typeName])
 leafType DataScalar{} = pure ([], [])
-leafType _ = Left $ compileError "Invalid schema Expected scalar"
+leafType _ = failure $ compileError "Invalid schema Expected scalar"
 
 getType :: DataTypeLib -> Text -> Validation DataType
 getType lib typename =

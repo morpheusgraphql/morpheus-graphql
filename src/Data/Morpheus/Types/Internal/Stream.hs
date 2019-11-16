@@ -52,7 +52,6 @@ newtype Channel event = Channel {
 instance (Eq (StreamChannel event)) => Eq (Channel event) where
   Channel x == Channel y = x == y
 
-
 class GQLChannel a where
     type StreamChannel a :: *
     streamChannels :: a -> [Channel a]
@@ -80,12 +79,12 @@ newtype StreamT m s a = StreamT
   { runStreamT :: m (StreamState s a)
   } deriving (Functor)
 
-instance Monad m => Applicative (StreamT m c) where
-  pure = StreamT . return . StreamState []
-  StreamT app1 <*> StreamT app2 = StreamT $ do
-    (StreamState effect1 func) <- app1
-    (StreamState effect2 val ) <- app2
-    return $ StreamState (effect1 ++ effect2) (func val)
+instance Applicative m => Applicative (StreamT m c) where
+  pure = StreamT . pure . StreamState []
+  StreamT app1 <*> StreamT app2 = StreamT $ join <$> app1 <*> app2
+   where
+    join (StreamState effect1 func) (StreamState effect2 val) =
+      StreamState (effect1 ++ effect2) (func val)
 
 instance Monad m => Monad (StreamT m c) where
   return = pure

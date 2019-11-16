@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
@@ -48,7 +49,9 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , lookupUnionTypes
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
+                                                ( Validation
+                                                , Failure(..)
+                                                )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( checkNameCollision )
 import           Data.Morpheus.Validation.Query.Arguments
@@ -88,10 +91,10 @@ clusterUnionSelection fragments type' possibleTypes' = splitFrag
       ]
     )
   splitFrag (key, RawSelectionSet Selection { selectionPosition }) =
-    Left $ cannotQueryField key type' selectionPosition
+    failure $ cannotQueryField key type' selectionPosition
   splitFrag (key, RawSelectionField Selection { selectionPosition }) =
-    Left $ cannotQueryField key type' selectionPosition
---  splitFrag (key', RawAlias {rawAliasPosition = position'}) = Left $ cannotQueryField key' type' position'
+    failure $ cannotQueryField key type' selectionPosition
+--  splitFrag (key', RawAlias {rawAliasPosition = position'}) = failure $ cannotQueryField key' type' position'
   splitFrag (_, InlineFragment fragment') =
     castFragmentType Nothing (fragmentPosition fragment') typeNames fragment'
       >>= packFragment
@@ -197,9 +200,9 @@ validateSelectionSet lib fragments' operatorName variables = __validate
             __validate fieldType' rawSelection
               >>= returnSelection arguments
               .   SelectionSet
-          _ -> Left $ hasNoSubfields key'
-                                     (aliasTyCon $fieldType dataField)
-                                     selectionPosition
+          _ -> failure $ hasNoSubfields key'
+                                        (aliasTyCon $fieldType dataField)
+                                        selectionPosition
      where
       returnSelection selectionArguments selectionRec =
         pure [(key', fullRawSelection { selectionArguments, selectionRec })]
@@ -216,8 +219,8 @@ validateSelectionSet lib fragments' operatorName variables = __validate
           ]
      where
       isLeaf dataType DataField { fieldType = TypeAlias { aliasTyCon } }
-        | isEntNode dataType = Right ()
-        | otherwise = Left
+        | isEntNode dataType = pure ()
+        | otherwise = failure
         $ subfieldsNotSelected key aliasTyCon selectionPosition
     validateSelection (_, Spread reference') =
       resolveSpread fragments' [typeName'] reference' >>= validateFragment

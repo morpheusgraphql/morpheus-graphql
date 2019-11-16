@@ -1,11 +1,13 @@
 module Data.Morpheus.Execution.Internal.GraphScanner
   ( LibUpdater
   , resolveUpdates
-  ) where
+  )
+where
 
-import           Control.Monad                           (foldM)
-import           Data.Function                           ((&))
-import           Data.Morpheus.Types.Internal.Validation (Validation)
+import           Control.Monad                  ( foldM )
+import           Data.Function                  ( (&) )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Validation )
 
 type LibUpdater lib = lib -> Validation lib
 

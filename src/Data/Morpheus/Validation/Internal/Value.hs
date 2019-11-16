@@ -33,6 +33,9 @@ import           Data.Morpheus.Types.Internal.AST.Data
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value(..) )
 
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Failure(..) )
+
 -- Validate Variable Argument or all Possible input Values
 validateInputValue
   :: DataTypeLib
@@ -93,7 +96,7 @@ validateInputValue lib prop' = validate
   validate [] (DataScalar DataTyCon { typeName = name', typeData = DataValidator { validateValue = validator' } }) (_, value')
     = case validator' value' of
       Right _  -> return value'
-      Left  "" -> Left $ UnexpectedType prop' name' value' Nothing
+      Left  "" -> failure (UnexpectedType prop' name' value' Nothing)
       Left errorMessage ->
         Left $ UnexpectedType prop' name' value' (Just errorMessage)
   {-- 3. THROW ERROR: on invalid values --}

@@ -43,7 +43,7 @@ unusedVariables :: Text -> [Ref] -> GQLErrors
 unusedVariables operator' = map keyToError
  where
   keyToError (Ref key' position') =
-    GQLError { desc = text key', positions = [position'] }
+    GQLError { message = text key', locations = [position'] }
   text key' = T.concat
     ["Variable \"$", key', "\" is never used in operation \"", operator', "\"."]
 

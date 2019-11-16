@@ -75,7 +75,7 @@ instance ParseJSONSchema Type [(Key,DataType)] where
     do
       fields <- traverse parse oFields
       pure [(typeName, DataObject $ createType typeName fields)]
-  parse x = pure []
+  parse _ = pure []
 
 instance ParseJSONSchema Field (Key,DataField) where
   parse Field { fieldName, fieldArgs, fieldType } = do
