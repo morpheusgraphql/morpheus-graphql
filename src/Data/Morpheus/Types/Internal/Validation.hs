@@ -35,14 +35,14 @@ data GQLError = GQLError
 
 type GQLErrors = [GQLError]
 
-{-
-newtype CompT m a = CompT { runCompT :: m (Result 'True GQLError a )  }
+
+newtype ResultT event concurency m a = CompT { runCompT :: m (Result event concurency GQLError a )  }
   deriving (Functor)
 
-instance Functor m => Applicative (CompT m)
+instance Functor m => Applicative (ResultT event concurency m)
 
-instance Monad m => Monad (CompT m)
--}
+instance Monad m => Monad (ResultT event concurency m)
+
 
 data Result events (concurency :: Bool) error a =
   Success { result :: a , warnings :: [error] , events:: [events] }
