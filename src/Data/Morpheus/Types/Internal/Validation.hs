@@ -29,6 +29,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Position(..) )
 import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
+import           Data.Semigroup                 ( (<>) )
 
 data GQLError = GQLError
   { message      :: Text

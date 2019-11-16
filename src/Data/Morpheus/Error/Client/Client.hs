@@ -22,6 +22,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
 import           Language.Haskell.TH            ( Q
                                                 , reportWarning
                                                 )
+import           Data.Semigroup                 ( (<>) )
 
 renderGQLErrors :: GQLErrors -> String
 renderGQLErrors = unpack . encode
