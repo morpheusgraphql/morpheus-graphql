@@ -39,7 +39,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
-                                                , Computation(..)
+                                                , Result(..)
                                                 )
 import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
 

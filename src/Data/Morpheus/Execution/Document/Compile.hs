@@ -26,7 +26,7 @@ import           Data.Morpheus.Parsing.Document.Parser
                                                 ( parseTypes )
 import           Data.Morpheus.Validation.Document.Validation
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( Computation(..) )
+                                                ( Result(..) )
 
 
 gqlDocumentNamespace :: QuasiQuoter

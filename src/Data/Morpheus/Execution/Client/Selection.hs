@@ -64,7 +64,7 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 ( GQLErrors
                                                 , Validation
                                                 , Failure(..)
-                                                , Computation(..)
+                                                , Result(..)
                                                 , Position
                                                 )
 import           Data.Set                       ( fromList
