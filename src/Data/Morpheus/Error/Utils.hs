@@ -3,8 +3,6 @@
 module Data.Morpheus.Error.Utils
   ( errorMessage
   , globalErrorMessage
-  , renderErrors
-  , renderError
   , badRequestError
   , toLocation
   )
@@ -18,7 +16,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( GQLError(..)
                                                 , GQLErrors
-                                                , JSONError(..)
+                                                , GQLError(..)
                                                 , Position(..)
                                                 )
 import           Data.Text                      ( Text )
@@ -29,17 +27,10 @@ import           Text.Megaparsec                ( SourcePos(SourcePos)
                                                 )
 
 errorMessage :: Position -> Text -> GQLErrors
-errorMessage position desc = [GQLError { desc, positions = [position] }]
+errorMessage position message = [GQLError { message, locations = [position] }]
 
 globalErrorMessage :: Text -> GQLErrors
-globalErrorMessage desc = [GQLError { desc, positions = [] }]
-
-renderErrors :: [GQLError] -> [JSONError]
-renderErrors = map renderError
-
-renderError :: GQLError -> JSONError
-renderError GQLError { desc, positions } =
-  JSONError { message = desc, locations = positions }
+globalErrorMessage message = [GQLError { message, locations = [] }]
 
 toLocation :: SourcePos -> Position
 toLocation SourcePos { sourceLine, sourceColumn } =

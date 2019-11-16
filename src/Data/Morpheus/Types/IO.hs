@@ -28,18 +28,17 @@ import           GHC.Generics                   ( Generic )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( JSONError(..)
+                                                ( GQLError(..)
                                                 , ExceptGQL
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
-import           Data.Morpheus.Error.Utils      ( renderErrors )
 
 
 renderResponse :: Functor m => ExceptGQL m Value -> m GQLResponse
 renderResponse (ExceptT monadValue) = render <$> monadValue
  where
-  render (Left  errors) = Errors $ renderErrors errors
+  render (Left  errors) = Errors errors
   render (Right value ) = Data value
 
 instance FromJSON a => FromJSON (JSONResponse a) where
@@ -48,7 +47,7 @@ instance FromJSON a => FromJSON (JSONResponse a) where
 
 data JSONResponse a = JSONResponse
   { responseData   :: Maybe a
-  , responseErrors :: Maybe [JSONError]
+  , responseErrors :: Maybe [GQLError]
   } deriving (Generic, Show, ToJSON)
 
 -- | GraphQL HTTP Request Body
@@ -61,7 +60,7 @@ data GQLRequest = GQLRequest
 -- | GraphQL Response
 data GQLResponse
   = Data Value
-  | Errors [JSONError]
+  | Errors [GQLError]
   deriving (Show, Generic)
 
 instance FromJSON GQLResponse where

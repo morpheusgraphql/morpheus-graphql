@@ -29,8 +29,8 @@ data ImplementsError
 partialImplements :: Key -> [(Key, Key, ImplementsError)] -> GQLErrors
 partialImplements name = map impError
  where
-  impError (interfaceName, key, errorType) = GQLError { desc      = message
-                                                      , positions = []
+  impError (interfaceName, key, errorType) = GQLError { message   = message
+                                                      , locations = []
                                                       }
    where
     message =

@@ -45,8 +45,8 @@ processErrorBundle = fmap parseErrorToGQLError . bundleToErrors
  where
   parseErrorToGQLError :: (ParseError Text Void, SourcePos) -> GQLError
   parseErrorToGQLError (err, position) = GQLError
-    { desc      = pack (parseErrorPretty err)
-    , positions = [toLocation position]
+    { message      = pack (parseErrorPretty err)
+    , locations = [toLocation position]
     }
   bundleToErrors
     :: ParseErrorBundle Text Void -> [(ParseError Text Void, SourcePos)]

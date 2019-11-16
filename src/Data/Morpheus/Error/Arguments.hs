@@ -45,7 +45,7 @@ unknownArguments :: Text -> [Ref] -> GQLErrors
 unknownArguments fieldName = map keyToError
  where
   keyToError (Ref argName pos) =
-    GQLError { desc = toMessage argName, positions = [pos] }
+    GQLError { message = toMessage argName, locations = [pos] }
   toMessage argName = T.concat
     ["Unknown Argument \"", argName, "\" on Field \"", fieldName, "\"."]
 
@@ -53,7 +53,7 @@ argumentNameCollision :: [Ref] -> GQLErrors
 argumentNameCollision = map keyToError
  where
   keyToError (Ref argName pos) =
-    GQLError { desc = toMessage argName, positions = [pos] }
+    GQLError { message = toMessage argName, locations = [pos] }
   toMessage argName =
     T.concat ["There can Be only One Argument Named \"", argName, "\""]
 

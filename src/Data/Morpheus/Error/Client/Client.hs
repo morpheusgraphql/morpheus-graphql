@@ -11,10 +11,7 @@ where
 
 import           Data.Aeson                     ( encode )
 import           Data.ByteString.Lazy.Char8     ( unpack )
-import           Data.Morpheus.Error.Utils      ( renderErrors
-                                                , renderError
-                                                , errorMessage
-                                                )
+import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( GQLErrors )
 import           Data.Morpheus.Types.Internal.AST.Base
@@ -27,7 +24,7 @@ import           Language.Haskell.TH            ( Q
                                                 )
 
 renderGQLErrors :: GQLErrors -> String
-renderGQLErrors = unpack . encode . renderErrors
+renderGQLErrors = unpack . encode
 
 deprecatedEnum :: Name -> Ref -> Maybe Description -> GQLErrors
 deprecatedEnum typeName Ref { refPosition, refName } reason =
@@ -53,5 +50,5 @@ gqlWarnings :: GQLErrors -> Q ()
 gqlWarnings []       = pure ()
 gqlWarnings warnings = mapM_ handleWarning warnings
  where
-  handleWarning warning = reportWarning
-    ("Morpheus GraphQL Warning: " <> (unpack . encode . renderError) warning)
+  handleWarning warning =
+    reportWarning ("Morpheus GraphQL Warning: " <> (unpack . encode) warning)

@@ -11,7 +11,6 @@ module Data.Morpheus.Types.Internal.Validation
   ( GQLError(..)
   , Position(..)
   , GQLErrors
-  , JSONError(..)
   , Validation
   , Result(..)
   , Failure(..)
@@ -30,16 +29,11 @@ import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
 
 data GQLError = GQLError
-  { desc      :: Text
-  , positions :: [Position]
-  } deriving (Show)
-
-type GQLErrors = [GQLError]
-
-data JSONError = JSONError
-  { message   :: Text
+  { message      :: Text
   , locations :: [Position]
   } deriving (Show, Generic, FromJSON, ToJSON)
+
+type GQLErrors = [GQLError]
 
 {-
 newtype CompT m a = CompT { runCompT :: m (Result 'True GQLError a )  }
