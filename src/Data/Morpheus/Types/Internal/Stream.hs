@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
@@ -8,40 +7,33 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Types.Internal.Stream
-  ( StreamState(..)
-  , ResponseEvent(..)
+  ( ResponseEvent(..)
   , SubEvent
   , Event(..)
   -- STREAMS
-  , StreamT(..)
   , ResponseStream
   , closeStream
   , mapS
-  , injectEvents
-  , initExceptStream
-  , pushEvents
- -- , GQLMonad(..)
   , GQLChannel(..)
   , Channel(..)
-  , toStream
+  , mapFailure
   )
 where
 
-import           Control.Monad.Trans.Except     ( ExceptT(..)
-                                                , runExceptT
-                                                )
-import           Data.Semigroup                 ( (<>) )
-
 -- MORPHEUS
 import           Data.Morpheus.Types.IO         ( GQLResponse )
-
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( GQLError
+                                                , Result(..)
+                                                , ResultT(..)
+                                                )
 -- EVENTS
 data ResponseEvent m event
   = Publish event
   | Subscribe (SubEvent m event)
 
 -- STREAMS
-type ResponseStream m event = StreamT m (ResponseEvent m event)
+type ResponseStream event m = ResultT (ResponseEvent m event) GQLError 'True m
 
 type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
 
@@ -69,63 +61,26 @@ data Event e c = Event
   , content  :: c
   }
 
-data StreamState c v = StreamState
-  { streamEvents :: [c]
-  , streamValue  :: v
-  } deriving (Functor)
-
--- | Monad Transformer that sums all effect Together
-newtype StreamT m s a = StreamT
-  { runStreamT :: m (StreamState s a)
-  } deriving (Functor)
-
-instance Applicative m => Applicative (StreamT m c) where
-  pure = StreamT . pure . StreamState []
-  StreamT app1 <*> StreamT app2 = StreamT $ join <$> app1 <*> app2
-   where
-    join (StreamState effect1 func) (StreamState effect2 val) =
-      StreamState (effect1 ++ effect2) (func val)
-
-instance Monad m => Monad (StreamT m c) where
-  return = pure
-  (StreamT m1) >>= mFunc = StreamT $ do
-    (StreamState e1 v1) <- m1
-    (StreamState e2 v2) <- runStreamT $ mFunc v1
-    return $ StreamState (e1 ++ e2) v2
-
 -- Helper Functions
-toTuple :: StreamState s a -> ([s], a)
-toTuple StreamState { streamEvents, streamValue } = (streamEvents, streamValue)
+closeStream :: Monad m => ResultT e er con m value -> m (Result e con er value)
+closeStream = runResultT
 
-closeStream :: Monad m => StreamT m s v -> m ([s], v)
-closeStream resolver = toTuple <$> runStreamT resolver
-
-mapS :: Monad m => (a -> b) -> StreamT m a value -> StreamT m b value
-mapS func (StreamT ma) = StreamT $ do
+mapS
+  :: Monad m
+  => (ea -> eb)
+  -> ResultT ea er con m value
+  -> ResultT eb er con m value
+mapS func (ResultT ma) = ResultT $ do
   state <- ma
-  return $ state { streamEvents = map func (streamEvents state) }
+  return $ state { events = map func (events state) }
 
-pushEvents
-  :: Functor m
-  => [event]
-  -> ExceptT e (StreamT m event) a
-  -> ExceptT e (StreamT m event) a
-pushEvents events =
-  ExceptT . StreamT . fmap updateState . runStreamT . runExceptT
-  where updateState x = x { streamEvents = events <> streamEvents x }
-
-toStream :: Monad m => ExceptT e m ([s], a) -> ExceptT e (StreamT m s) a
-toStream mo = ExceptT $ StreamT $ do
-  eitherTuple <- runExceptT mo
-  case eitherTuple of
-    Right (x, y) -> pure $ StreamState x (Right y)
-    Left  errors -> pure $ StreamState [] $ Left errors
-
-injectEvents
-  :: Functor m => [event] -> ExceptT e m a -> ExceptT e (StreamT m event) a
-injectEvents states =
-  ExceptT . StreamT . fmap (StreamState states) . runExceptT
-
-initExceptStream
-  :: Applicative m => [event] -> a -> ExceptT e (StreamT m event) a
-initExceptStream events = ExceptT . StreamT . pure . StreamState events . Right
+mapFailure
+  :: Monad m
+  => (er1 -> er2)
+  -> ResultT ev er1 con m value
+  -> ResultT ev er2 con m value
+mapFailure f (ResultT ma) = ResultT $ do
+  state <- ma
+  case state of
+    Failure x     -> pure $ Failure (map f x)
+    Success x w e -> pure $ Success x (map f w) e

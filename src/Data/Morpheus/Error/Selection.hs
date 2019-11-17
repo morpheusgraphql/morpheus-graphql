@@ -25,8 +25,8 @@ import           Data.Text                      ( Text
 import qualified Data.Text                     as T
                                                 ( concat )
 
-resolverError :: Position -> Text -> String -> GQLErrors
-resolverError pos name desc = fieldNotResolved pos name (pack desc)
+resolverError :: Position -> Text -> String -> GQLError
+resolverError pos name desc = {- TODO: -}head $ fieldNotResolved pos name (pack desc)
 
 fieldNotResolved :: Position -> Text -> Text -> GQLErrors
 fieldNotResolved position' key' message' = errorMessage position' text
