@@ -20,6 +20,7 @@ module Data.Morpheus.Types.Internal.Validation
   , fromEither
   , toEither
   , mapExceptGQL
+  , fromEitherSingle
   )
 where
 
@@ -84,6 +85,10 @@ toEither Success { result } = Right result
 fromEither :: Either [er] a -> Result ev co er a
 fromEither (Left  e) = Failure e
 fromEither (Right a) = Success a [] []
+
+fromEitherSingle :: Either er a -> Result ev co er a
+fromEitherSingle (Left  e) = Failure [e]
+fromEitherSingle (Right a) = Success a [] []
 
 mapExceptGQL :: Functor m => ResultT e error con m a -> ExceptT [error] m a
 mapExceptGQL (ResultT x) = ExceptT $ toEither <$> x

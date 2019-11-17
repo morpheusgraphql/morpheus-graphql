@@ -34,14 +34,12 @@ where
 import           Control.Monad.Trans.Class      ( MonadTrans(..) )
 import           Control.Monad.Trans.Except     ( ExceptT(..)
                                                 , runExceptT
-                                                , withExceptT
                                                 )
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( unpack
                                                 , pack
                                                 )
-import           Control.Monad                  ( (>=>) )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Selection  ( resolverError
@@ -67,10 +65,6 @@ import           Data.Morpheus.Types.Internal.Stream
                                                 , Event(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
-                                                , StreamChannel
-                                                , closeStream
-                                             --   , toStream
-                                              --  , injectEvents
                                                 , mapS
                                                 , mapFailure
                                                 )
@@ -82,9 +76,8 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 , Failure(..)
                                                 , ResultT(..)
                                                 , fromEither
-                                                , toEither
                                                 , mapExceptGQL
-                                                , toExceptGQL
+                                                , fromEitherSingle
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
@@ -259,11 +252,11 @@ instance MonadTrans (Resolver MUTATION e) where
 -- LiftEither
 instance LiftEither QUERY Resolver where
   type ResError Resolver = String
-  --liftEither = QueryResolver . ExceptT
+  liftEither = QueryResolver . ResultT . fmap fromEitherSingle
 
 instance LiftEither MUTATION Resolver where
   type ResError Resolver = String
-  --liftEither = MutResolver . fmap ([], ) . ExceptT
+  liftEither = MutResolver . ResultT . fmap (fromEitherSingle . fmap ([], ))
 
 instance LiftEither SUBSCRIPTION Resolver where
   type ResError Resolver = String
@@ -339,9 +332,10 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
       unPureSub (ResolveS (ResultT x)) = ExceptT (x >>= passEvent)
        where
         passEvent
-          :: Result (Channel e) 'True GQLError (RecResolver m e Value) -> m (Either GQLErrors Value)
+          :: Result (Channel e) 'True GQLError (RecResolver m e Value)
+          -> m (Either GQLErrors Value)
         passEvent Success { result = (RecResolver f) } = runExceptT (f event)
-        passEvent (Failure er) = pure (Left er)
+        passEvent (Failure er)                         = pure (Left er)
 
 -- map Resolving strategies 
 class MapStrategy (from :: OperationType) (to :: OperationType) where
