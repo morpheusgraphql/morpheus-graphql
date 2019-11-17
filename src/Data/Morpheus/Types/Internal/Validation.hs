@@ -15,7 +15,6 @@ module Data.Morpheus.Types.Internal.Validation
   , Result(..)
   , Failure(..)
   , ExceptGQL
-  , toExceptGQL
   , ResultT(..)
   , fromEither
   , toEither
@@ -85,9 +84,6 @@ getResultEvents :: Result event c e a -> [event]
 getResultEvents Success { events } = events
 getResultEvents _                  = []
 
-
-toExceptGQL :: Monad m => Validation a -> ExceptT GQLErrors m a
-toExceptGQL = ExceptT . pure . toEither
 
 toEither :: Result ev co er a -> Either [er] a
 toEither (Failure e)        = Left e
