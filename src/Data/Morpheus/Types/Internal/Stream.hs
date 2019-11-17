@@ -12,7 +12,6 @@ module Data.Morpheus.Types.Internal.Stream
   , Event(..)
   -- STREAMS
   , ResponseStream
-  , closeStream
   , mapS
   , GQLChannel(..)
   , Channel(..)
@@ -62,9 +61,6 @@ data Event e c = Event
   }
 
 -- Helper Functions
-closeStream :: Monad m => ResultT e er con m value -> m (Result e con er value)
-closeStream = runResultT
-
 mapS
   :: Monad m
   => (ea -> eb)

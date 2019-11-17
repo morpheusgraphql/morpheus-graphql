@@ -78,7 +78,6 @@ import           Data.Morpheus.Types.Internal.Stream
                                                 ( GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
-                                                , closeStream
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation

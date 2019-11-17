@@ -49,7 +49,6 @@ import           Data.Morpheus.Types.Internal.Stream
                                                 ( GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
-                                                , closeStream
                                                 )
 import           Data.Morpheus.Types.Internal.WebSocket
                                                 ( GQLClient(..) )
@@ -73,8 +72,9 @@ handleSubscription GQLClient { clientConnection, clientID } state sessionId stre
     response <- runResultT stream
     case response of
       Success { events } -> mapM_ execute events
-      Failure errors ->
-        sendTextData clientConnection (toApolloResponse sessionId $ Errors errors)
+      Failure errors     -> sendTextData
+        clientConnection
+        (toApolloResponse sessionId $ Errors errors)
  where
   execute (Publish   pub) = publishUpdates state pub
   execute (Subscribe sub) = addClientSubscription clientID sub sessionId state
