@@ -83,16 +83,22 @@ import           Data.Morpheus.Types.Internal.Stream
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
                                                 , toExceptGQL
+                                                , mapUnitToEvents
+                                                , ResultT(..)
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
                                                 , renderResponse
+                                                , Response(..)
                                                 )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( VALIDATION_MODE(..) )
 import           Data.Morpheus.Validation.Query.Validation
                                                 ( validateRequest )
 import           Data.Typeable                  ( Typeable )
+import           Data.Morpheus.Types.Internal.AST.Value
+                                                ( Value )
+
 
 type EventCon event
   = (Eq (StreamChannel event), Typeable event, GQLChannel event)
@@ -134,18 +140,29 @@ statelessResolver
   => GQLRootResolver m event query mut sub
   -> GQLRequest
   -> m GQLResponse
-statelessResolver root = fmap snd . closeStream . streamResolver root
+statelessResolver root req =
+  renderResponse <$> runResultT (coreResolver root req)
 
 streamResolver
-  :: (Monad m, RootResCon m event query mut sub)
+  :: forall event m query mut sub
+   . (Monad m, RootResCon m event query mut sub)
   => GQLRootResolver m event query mut sub
   -> GQLRequest
-  -> ResponseStream m event GQLResponse
-streamResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptionResolver } request
-  = renderResponse (validRequest >>= execOperator)
+  -> ResponseStream event m GQLResponse
+streamResolver root req =
+  ResultT $ pure . renderResponse <$> runResultT (coreResolver root req)
+
+coreResolver
+  :: forall event m query mut sub
+   . (Monad m, RootResCon m event query mut sub)
+  => GQLRootResolver m event query mut sub
+  -> GQLRequest
+  -> ResponseStream event m Value
+coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptionResolver } request
+  = validRequest >>= execOperator
  where
   validRequest :: Monad m => ResponseT event m (DataTypeLib, ValidOperation)
-  validRequest = toExceptGQL $ do
+  validRequest = mapUnitToEvents $ ResultT $ pure $ do
     schema <- fullSchema $ Identity root
     query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
     pure (schema, query)
@@ -161,15 +178,15 @@ streamResolver root@GQLRootResolver { queryResolver, mutationResolver, subscript
       toResponseRes (encodeSubscription subscriptionResolver operation)
 
 statefulResolver
-  :: EventCon s
-  => GQLState IO s
-  -> (L.ByteString -> ResponseStream IO s L.ByteString)
+  :: EventCon event
+  => GQLState IO event
+  -> (L.ByteString -> IO (Response (ResponseEvent IO event)))
   -> L.ByteString
   -> IO L.ByteString
 statefulResolver state streamApi request = do
-  (actions, value) <- closeStream (streamApi request)
-  mapM_ execute actions
-  pure value
+  response@Response { resActions } <- streamApi request
+  mapM_ execute resActions
+  pure $ encode response
  where
   execute (Publish updates) = publishUpdates state updates
   execute Subscribe{}       = pure ()

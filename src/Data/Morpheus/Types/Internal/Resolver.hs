@@ -78,12 +78,13 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 , fromEither
                                                 , mapExceptGQL
                                                 , fromEitherSingle
+                                                , mapUnitToEvents
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
                                                 , Value
                                                 )
-import           Data.Morpheus.Types.IO         ( renderResponse )
+import           Data.Morpheus.Types.IO         ( renderResponse2 )
 
 
 class LiftEither (o::OperationType) res where
@@ -113,7 +114,7 @@ instance Monad m => Monad (RecResolver m a) where
 
 --- GraphQLT
 data ResolvingStrategy  (o::OperationType) event (m:: * -> *) value where
-  ResolveQ ::{ unResolveQ :: ResultT event GQLError 'True m value } -> ResolvingStrategy QUERY event m  value
+  ResolveQ ::{ unResolveQ :: ResultT () GQLError 'True m value } -> ResolvingStrategy QUERY event m  value
   ResolveM ::{ unResolveM :: ResultT event GQLError 'True m value } -> ResolvingStrategy MUTATION event m  value
   ResolveS ::{ unResolveS :: ResultT (Channel event) GQLError 'True m (RecResolver m event value) } -> ResolvingStrategy SUBSCRIPTION event m value
 
@@ -177,10 +178,7 @@ resolveObject selectionSet fieldResolvers =
 
 toResponseRes
   :: Monad m => ResolvingStrategy o event m Value -> ResponseT event m Value
-toResponseRes (ResolveQ resT) = ResultT $ replace <$> runResultT resT
- where
-  replace (Success v w _) = Success v w []
-  replace (Failure e    ) = Failure e
+toResponseRes (ResolveQ resT) = mapUnitToEvents resT
 toResponseRes (ResolveM resT) = mapS Publish resT
 toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
  where
@@ -190,7 +188,7 @@ toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
     , warnings
     , events   = [Subscribe $ Event channels eventResolver]
     }
-    where eventResolver event = renderResponse (unRecResolver subRes event)
+    where eventResolver event = renderResponse2 (unRecResolver subRes event)
 
 --
 --     
@@ -200,7 +198,7 @@ toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
 --ResultT  GQLError 'True m (RecResolver m event value)
 ---------------------------------------------------------------
 data Resolver (o::OperationType) event (m :: * -> * )  value where
-    QueryResolver::{ unQueryResolver :: ResultT event String 'True m value } -> Resolver QUERY   event m value
+    QueryResolver::{ unQueryResolver :: ResultT () String 'True m value } -> Resolver QUERY   event m value
     MutResolver ::{ unMutResolver :: ResultT event String 'True m ([event],value) } -> Resolver MUTATION event m  value
     SubResolver ::{
             subChannels :: [Channel event] ,
@@ -295,7 +293,7 @@ resolving
 resolving encode gResolver selection@(fieldName, Selection { selectionPosition })
   = _resolve gResolver
  where
-  convert :: Monad m => ResultT e String con m a -> ResultT e GQLError con m a
+  convert :: Monad m => ResultT ev String con m a -> ResultT ev GQLError con m a
   convert = mapFailure (resolverError selectionPosition fieldName)
   ------------------------------
   _encode = (`encode` selection)

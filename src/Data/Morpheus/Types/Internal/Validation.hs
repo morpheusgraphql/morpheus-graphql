@@ -21,6 +21,7 @@ module Data.Morpheus.Types.Internal.Validation
   , toEither
   , mapExceptGQL
   , fromEitherSingle
+  , mapUnitToEvents
   )
 where
 
@@ -114,5 +115,12 @@ instance Monad m => Monad (ResultT event error concurency m) where
           Success v2 w2 e2 -> return $ Success v2 (w1 <> w2) (e1 <> e2)
 
 
-
+mapUnitToEvents
+  :: Functor m
+  => ResultT () error concurency m a
+  -> ResultT event error concurency m a
+mapUnitToEvents resT = ResultT $ replace <$> runResultT resT
+ where
+  replace (Success v w _) = Success v w []
+  replace (Failure e    ) = Failure e
 
