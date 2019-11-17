@@ -22,6 +22,7 @@ module Data.Morpheus.Types.Internal.Validation
   , mapExceptGQL
   , fromEitherSingle
   , mapUnitToEvents
+  , getResultEvents
   )
 where
 
@@ -32,9 +33,12 @@ import           Data.Aeson                     ( FromJSON
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Position(..) )
-import           Data.Text                      ( Text )
+import           Data.Text                      ( Text
+                                                , pack
+                                                )
 import           GHC.Generics                   ( Generic )
 import           Data.Semigroup                 ( (<>) )
+
 
 class Applicative f => Failure error (f :: * -> *) where
   failure :: error -> f v
@@ -75,6 +79,12 @@ instance Monad (Result e  cocnurency error)  where
 
 instance Failure [error] (Result ev con error) where
   failure = Failure
+
+
+getResultEvents :: Result event c e a -> [event]
+getResultEvents Success { events } = events
+getResultEvents _                  = []
+
 
 toExceptGQL :: Monad m => Validation a -> ExceptT GQLErrors m a
 toExceptGQL = ExceptT . pure . toEither
@@ -123,4 +133,9 @@ mapUnitToEvents resT = ResultT $ replace <$> runResultT resT
  where
   replace (Success v w _) = Success v w []
   replace (Failure e    ) = Failure e
+
+
+instance Applicative m => Failure String (ResultT ev GQLError con m) where
+  failure x =
+    ResultT $ pure $ Failure [GQLError { message = pack x, locations = [] }]
 

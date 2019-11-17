@@ -14,9 +14,13 @@ module Data.Morpheus.Execution.Server.Resolve
   , statefulResolver
   , RootResCon
   , fullSchema
+  , coreResolver
   )
 where
 
+import           Data.Text                      ( pack
+                                                , Text
+                                                )
 import           Data.Aeson                     ( encode )
 import           Data.Aeson.Internal            ( formatError
                                                 , ifromJSON
@@ -67,6 +71,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , initTypeLib
+                                                , Key
                                                 )
 import           Data.Morpheus.Types.Internal.Resolver
                                                 ( GQLRootResolver(..)
@@ -81,14 +86,14 @@ import           Data.Morpheus.Types.Internal.Stream
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
-                                                , toExceptGQL
                                                 , mapUnitToEvents
                                                 , ResultT(..)
+                                                , getResultEvents
+                                                , Failure(..)
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
                                                 , renderResponse
-                                                , Response(..)
                                                 )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( VALIDATION_MODE(..) )
@@ -123,10 +128,16 @@ type RootResCon m event query mutation subscription
         (subscription (Resolver SUBSCRIPTION event m))
     )
 
-decodeNoDup :: L.ByteString -> Either String GQLRequest
+--decodeNoDup :: L.ByteString -> Either String GQLRequest
+--decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
+--  Left  (path, x) -> Left $ formatError path x
+--  Right value     -> Right value
+
+decodeNoDup :: Failure String m => L.ByteString -> m GQLRequest
 decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
-  Left  (path, x) -> Left $ formatError path x
-  Right value     -> Right value
+  Left  (path, x) -> failure $ formatError path x
+  Right value     -> pure value
+
 
 byteStringIO
   :: Monad m => (GQLRequest -> m GQLResponse) -> L.ByteString -> m L.ByteString
@@ -179,16 +190,17 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
 statefulResolver
   :: EventCon event
   => GQLState IO event
-  -> (L.ByteString -> IO (Response (ResponseEvent IO event)))
+  -> (GQLRequest -> ResponseStream event IO Value)
   -> L.ByteString
   -> IO L.ByteString
-statefulResolver state streamApi request = do
-  response@Response { resActions } <- streamApi request
-  mapM_ execute resActions
-  pure $ encode response
+statefulResolver state streamApi requestText = do
+  res <- runResultT (decodeNoDup requestText >>= streamApi)
+  mapM_ execute (getResultEvents res)
+  pure $ encode $ renderResponse res
  where
   execute (Publish updates) = publishUpdates state updates
   execute Subscribe{}       = pure ()
+
 
 fullSchema
   :: forall proxy m event query mutation subscription
