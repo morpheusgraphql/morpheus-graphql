@@ -25,6 +25,7 @@ module Data.Morpheus.Types.Internal.Validation
   )
 where
 
+import           Control.Monad.Trans.Class      ( MonadTrans(..) )
 import           Control.Applicative            ( liftA2 )
 import           Control.Monad.Trans.Except     ( ExceptT(..) )
 import           Data.Aeson                     ( FromJSON
@@ -120,6 +121,8 @@ instance Monad m => Monad (ResultT event error concurency m) where
           Failure errors   -> pure $ Failure (errors <> w1)
           Success v2 w2 e2 -> return $ Success v2 (w1 <> w2) (e1 <> e2)
 
+instance MonadTrans (ResultT event error concurency) where
+  --lift = liftEither . fmap pure
 
 mapUnitToEvents
   :: Functor m
