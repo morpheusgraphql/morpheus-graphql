@@ -65,6 +65,7 @@ import           Data.Morpheus.Types.Internal.Stream
                                                 , Event(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
+                                                , StreamChannel
                                                 , mapS
                                                 , mapFailure
                                                 )
@@ -201,7 +202,7 @@ data Resolver (o::OperationType) event (m :: * -> * )  value where
     QueryResolver::{ unQueryResolver :: ResultT () String 'True m value } -> Resolver QUERY   event m value
     MutResolver ::{ unMutResolver :: ResultT event String 'True m ([event],value) } -> Resolver MUTATION event m  value
     SubResolver ::{
-            subChannels :: [Channel event] ,
+            subChannels :: [StreamChannel event] ,
             subResolver :: event -> Resolver QUERY event m value
         } -> Resolver SUBSCRIPTION event m  value
 
@@ -312,7 +313,7 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
         Failure x -> Failure x
   --------------------------------------------------------------------------------------------------------------------------------
   _resolve (SubResolver subChannels res) = ResolveS $ ResultT $ pure $ Success
-    { events   = subChannels
+    { events   = map Channel subChannels
     , result   = RecResolver eventResolver
     , warnings = []
     }
