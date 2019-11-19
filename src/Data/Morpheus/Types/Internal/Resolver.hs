@@ -258,7 +258,7 @@ instance LiftEither MUTATION Resolver where
 
 instance LiftEither SUBSCRIPTION Resolver where
   type ResError Resolver = String
-  --liftEither = SubResolver [] . const . liftEither
+  liftEither = SubResolver [] . const . liftEither
 
 -- Failure
 instance (LiftEither o Resolver, Monad m) => Failure Message (Resolver o e m) where
