@@ -122,7 +122,7 @@ instance Monad m => Monad (ResultT event error concurency m) where
           Success v2 w2 e2 -> return $ Success v2 (w1 <> w2) (e1 <> e2)
 
 instance MonadTrans (ResultT event error concurency) where
-  --lift = liftEither . fmap pure
+  lift = ResultT . fmap pure
 
 mapUnitToEvents
   :: Functor m
