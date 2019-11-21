@@ -431,7 +431,7 @@ with `fetch` you can fetch well typed response `GetHero`.
 
 in this case, `jsonRes` is resolves a request into a response in some monad `m`.
 
-A `fetch` resolver implementation against [a real API](https://countries.trevorblades.com) may look like the following:
+A `fetch` resolver implementation against [a real API](https://swapi.graph.cool) may look like the following:
 
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
@@ -443,10 +443,12 @@ import Network.HTTP.Req
 resolver :: String -> ByteString -> IO ByteString
 resolver tok b = runReq defaultHttpConfig $ do
     let headers = header "Content-Type" "application/json"
-    responseBody <$> req POST (https "countries.trevorblades.com") (ReqBodyLbs b) lbsResponse headers
+    responseBody <$> req POST (https "swapi.graph.cool") (ReqBodyLbs b) lbsResponse headers
 ```
 
-types can be generatet from `introspection` too:
+this is demonstrated in examples/src/Client/StarWarsClient.hs
+
+types can be generated from `introspection` too:
 
 ```haskell
 defineByIntrospectionFile "./introspection.json"
