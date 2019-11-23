@@ -1,9 +1,7 @@
 module Data.Morpheus.Types.Internal.Resolving
-    ( ResolveT
-    , Event(..)
+    ( Event(..)
     , GQLRootResolver(..)
     , UnSubResolver
-    , ResponseT
     , Resolver(..)
     , ResolvingStrategy(..)
     , MapStrategy(..)

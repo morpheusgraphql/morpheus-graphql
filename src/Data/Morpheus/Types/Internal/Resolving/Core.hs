@@ -14,11 +14,9 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , Validation
   , Result(..)
   , Failure(..)
-  , ExceptGQL
   , ResultT(..)
   , fromEither
   , toEither
-  , mapExceptGQL
   , fromEitherSingle
   , unpackEvents
   , LibUpdater
@@ -26,6 +24,7 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , mapEvent
   , mapFailure
   , cleanEvents
+  , StatelessResT
   )
 where
 
@@ -58,7 +57,8 @@ data GQLError = GQLError
   } deriving (Show, Generic, FromJSON, ToJSON)
 
 type GQLErrors = [GQLError]
-type ExceptGQL = ExceptT GQLErrors
+
+type StatelessResT = ResultT () GQLError 'True
 type Validation = Result () 'True GQLError
 
 --
@@ -101,9 +101,6 @@ fromEither (Right a) = Success a [] []
 fromEitherSingle :: Either er a -> Result ev co er a
 fromEitherSingle (Left  e) = Failure [e]
 fromEitherSingle (Right a) = Success a [] []
-
-mapExceptGQL :: Functor m => ResultT e error con m a -> ExceptT [error] m a
-mapExceptGQL (ResultT x) = ExceptT $ toEither <$> x
 
 -- ResultT
 newtype ResultT event error (concurency :: Bool)  (m :: * -> * ) a = ResultT { runResultT :: m (Result event concurency error a )  }

@@ -70,7 +70,6 @@ import           Data.Morpheus.Types.Internal.AST.Data
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
                                                 , Resolver(..)
-                                                , ResponseT
                                                 , toResponseRes
                                                 , GQLChannel(..)
                                                 , ResponseEvent(..)
@@ -162,7 +161,8 @@ coreResolver
 coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptionResolver } request
   = validRequest >>= execOperator
  where
-  validRequest :: Monad m => ResponseT event m (DataTypeLib, ValidOperation)
+  validRequest
+    :: Monad m => ResponseStream event m (DataTypeLib, ValidOperation)
   validRequest = cleanEvents $ ResultT $ pure $ do
     schema <- fullSchema $ Identity root
     query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION

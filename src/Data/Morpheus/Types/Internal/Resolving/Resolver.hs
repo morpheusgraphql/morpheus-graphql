@@ -14,11 +14,10 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Resolver
-  ( ResolveT
-  , Event(..)
+  ( 
+    Event(..)
   , GQLRootResolver(..)
   , UnSubResolver
-  , ResponseT
   , Resolver(..)
   , ResolvingStrategy(..)
   , MapStrategy(..)
@@ -37,9 +36,6 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
 where
 
 import           Control.Monad.Trans.Class      ( MonadTrans(..) )
-import           Control.Monad.Trans.Except     ( ExceptT(..)
-                                                , runExceptT
-                                                )
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( unpack
@@ -73,18 +69,19 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 , Failure(..)
                                                 , ResultT(..)
                                                 , fromEither
-                                                , mapExceptGQL
                                                 , fromEitherSingle
                                                 , cleanEvents
                                                 , mapFailure
                                                 , mapEvent
+                                                , StatelessResT
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
                                                 , Value
                                                 )
-import           Data.Morpheus.Types.IO         ( renderResponse2
-                                                , GQLResponse
+import           Data.Morpheus.Types.IO         ( GQLResponse
+                                                , renderResponse
+                                                , renderResponseT
                                                 )
 -- MORPHEUS
 
@@ -93,12 +90,18 @@ class LiftEither (o::OperationType) res where
   type ResError res :: *
   liftEither :: Monad m => m (Either (ResError res) a) -> res o event m  a
 
-type ResolveT = ExceptT GQLErrors
-type ResponseT m e = ResponseStream m e
+type ResponseStream event m = ResultT (ResponseEvent m event) GQLError 'True m
+
+data ResponseEvent m event
+  = Publish event
+  | Subscribe (SubEvent m event)
+
+type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
+
 ----------------------------------------------------------------------------------------
 -- Recursive Resolver
 newtype RecResolver m a b = RecResolver {
-  unRecResolver :: a -> ResolveT m b
+  unRecResolver :: a -> StatelessResT m b
 }
 
 instance Functor m => Functor (RecResolver m a) where
@@ -179,7 +182,9 @@ resolveObject selectionSet fieldResolvers =
       (fromMaybe (const $ pure gqlNull) $ lookup key fieldResolvers) (key, sel)
 
 toResponseRes
-  :: Monad m => ResolvingStrategy o event m Value -> ResponseT event m Value
+  :: Monad m
+  => ResolvingStrategy o event m Value
+  -> ResponseStream event m Value
 toResponseRes (ResolveQ resT) = cleanEvents resT
 toResponseRes (ResolveM resT) = mapEvent Publish resT
 toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
@@ -190,7 +195,8 @@ toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
     , warnings
     , events   = [Subscribe $ Event channels eventResolver]
     }
-    where eventResolver event = renderResponse2 (unRecResolver subRes event)
+   where
+    eventResolver event = renderResponse <$> runResultT  (unRecResolver subRes event) 
 
 --
 --     
@@ -320,24 +326,22 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
     , warnings = []
     }
    where
-    eventResolver :: e -> ResolveT m Value
+    eventResolver :: e -> StatelessResT m Value
     eventResolver event =
-      mapExceptGQL (convert $ unQueryResolver $ res event)
-      >>= unPureSub
-      .   _encode
+      convert (unQueryResolver $ res event) >>= unPureSub . _encode
      where
       unPureSub
         :: Monad m
         => ResolvingStrategy SUBSCRIPTION e m Value
-        -> ResolveT m Value
-      unPureSub (ResolveS (ResultT x)) = ExceptT (x >>= passEvent)
+        -> StatelessResT m Value
+      unPureSub (ResolveS (ResultT x)) = ResultT (x >>= passEvent)
        where
         passEvent
           :: Result (Channel e) 'True GQLError (RecResolver m e Value)
-          -> m (Either GQLErrors Value)
-        passEvent Success { result = (RecResolver f) } = runExceptT (f event)
-        passEvent (Failure er)                         = pure (Left er)
-
+          -> m (Validation Value)
+        passEvent (Failure er) = pure (Failure er)
+        passEvent suc@Success { result = (RecResolver f) } =
+          runResultT (f event)
 
 -- map Resolving strategies 
 class MapStrategy (from :: OperationType) (to :: OperationType) where
@@ -360,9 +364,7 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* ->
   }
 
  -- EVENTS
-data ResponseEvent m event
-  = Publish event
-  | Subscribe (SubEvent m event)
+
 
 -- Channel
 
@@ -387,9 +389,3 @@ instance GQLChannel (Event channel content)  where
 
 data Event e c = Event
   { channels :: [e], content  :: c}
-
-
-type ResponseStream event m = ResultT (ResponseEvent m event) GQLError 'True m
-
-type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
-  

@@ -8,7 +8,6 @@ module Data.Morpheus.Types.IO
   , GQLResponse(..)
   , JSONResponse(..)
   , renderResponseT
-  , renderResponse2
   , renderResponse
   , Response(..)
   )
@@ -36,7 +35,6 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( GQLError(..)
                                                 , Result(..)
                                                 , ResultT(..)
-                                                , ExceptGQL
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
@@ -53,12 +51,6 @@ instance ToJSON (Response actons) where
   toEncoding Response{}                       = toEncoding ("Panic" :: String)
   toJSON Response { resData, resErrors } =
     object ["data" .= resData, "errors" .= resErrors]
-
-renderResponse2 :: Functor m => ExceptGQL m Value -> m GQLResponse
-renderResponse2 (ExceptT monadValue) = render <$> monadValue
- where
-  render (Left  errors) = Errors errors
-  render (Right value ) = Data value
 
 renderResponse :: Result e con GQLError Value -> GQLResponse
 renderResponse (Failure errors)   = Errors errors
