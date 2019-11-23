@@ -20,16 +20,14 @@ import           Data.Morpheus.Error.Variable   ( uninitializedVariable
                                                 , unusedVariables
                                                 , variableGotInvalidValue
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Operation
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DefaultValue
                                                 , Operation(..)
                                                 , RawOperation
                                                 , ValidVariables
                                                 , Variable(..)
                                                 , getOperationName
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( Fragment(..)
+                                                , Fragment(..)
                                                 , FragmentLib
                                                 , RawArgument(..)
                                                 , RawSelection(..)

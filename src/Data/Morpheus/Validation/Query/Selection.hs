@@ -21,10 +21,9 @@ import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , subfieldsNotSelected
                                                 )
 import           Data.Morpheus.Error.Variable   ( unknownType )
-import           Data.Morpheus.Types.Internal.AST.Operation
-                                                ( ValidVariables )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( Selection(..)
+                                                ( ValidVariables 
+                                                , Selection(..)
                                                 , SelectionRec(..)
                                                 , SelectionSet
                                                 , Fragment(..)

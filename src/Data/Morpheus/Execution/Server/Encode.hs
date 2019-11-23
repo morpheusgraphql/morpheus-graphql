@@ -61,12 +61,10 @@ import           Data.Morpheus.Types.GQLType    ( GQLType
                                                   , __typeName
                                                   )
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Operation
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
                                                 , ValidOperation
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( Key,
+                                                , Key,
                                                   MUTATION
                                                 , OperationType
                                                 , QUERY

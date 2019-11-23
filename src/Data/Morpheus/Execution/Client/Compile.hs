@@ -25,7 +25,7 @@ import           Data.Morpheus.Execution.Client.Selection
                                                 ( operationTypes )
 import           Data.Morpheus.Parsing.Request.Parser
                                                 ( parseGQL )
-import qualified Data.Morpheus.Types.Internal.AST.Operation
+import qualified Data.Morpheus.Types.Internal.AST
                                                as O
                                                 ( Operation(..) )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..) )

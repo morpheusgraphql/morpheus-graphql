@@ -53,12 +53,10 @@ import           Data.Morpheus.Schema.SchemaAPI ( defaultTypes
                                                 , schemaAPI
                                                 )
 import           Data.Morpheus.Types.GQLType    ( GQLType(CUSTOM) )
-import           Data.Morpheus.Types.Internal.AST.Operation
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
                                                 , ValidOperation
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( DataFingerprint(..)
+                                                , DataFingerprint(..)
                                                 , DataTyCon(..)
                                                 , DataTypeLib(..)
                                                 , MUTATION

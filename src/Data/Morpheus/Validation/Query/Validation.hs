@@ -9,14 +9,12 @@ module Data.Morpheus.Validation.Query.Validation
 where
 
 import           Data.Map                       ( fromList )
-import           Data.Morpheus.Types.Internal.AST.Operation
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
                                                 , ValidOperation
                                                 , getOperationName
                                                 , getOperationDataType
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( DataTypeLib(..)
+                                                , DataTypeLib(..)
                                                 , GQLQuery(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving

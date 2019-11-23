@@ -20,12 +20,10 @@ import           Data.Morpheus.Error.Variable   ( incompatibleVariableType
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) )
-import           Data.Morpheus.Types.Internal.AST.Operation
+import           Data.Morpheus.Types.Internal.AST
                                                 ( ValidVariables
                                                 , Variable(..)
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( Argument(..)
+                                                , Argument(..)
                                                 , ValueOrigin(..)
                                                 , Arguments
                                                 , RawArgument(..)

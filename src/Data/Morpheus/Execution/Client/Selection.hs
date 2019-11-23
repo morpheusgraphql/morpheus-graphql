@@ -22,7 +22,7 @@ import           Data.Morpheus.Error.Client.Client
 import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
 import           Data.Morpheus.Execution.Internal.Utils
                                                 ( nameSpaceType )
-import           Data.Morpheus.Types.Internal.AST.Operation
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DefaultValue
                                                 , Operation(..)
                                                 , ValidOperation
@@ -30,9 +30,7 @@ import           Data.Morpheus.Types.Internal.AST.Operation
                                                 , VariableDefinitions
                                                 , getOperationName
                                                 , getOperationDataType
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( Selection(..)
+                                                , Selection(..)
                                                 , SelectionRec(..)
                                                 , SelectionSet
                                                 , ValidSelection
