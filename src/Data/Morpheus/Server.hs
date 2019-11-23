@@ -26,7 +26,7 @@ import           Network.WebSockets             ( ServerApp
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Resolve
                                                 ( RootResCon
-                                                , streamResolver
+                                                , coreResolver
                                                 )
 import           Data.Morpheus.Execution.Subscription.Apollo
                                                 ( SubAction(..)
@@ -43,32 +43,35 @@ import           Data.Morpheus.Execution.Subscription.ClientRegister
                                                 , publishUpdates
                                                 , removeClientSubscription
                                                 )
-import           Data.Morpheus.Types.Internal.Resolver
-                                                ( GQLRootResolver(..) )
-import           Data.Morpheus.Types.Internal.Stream
-                                                ( GQLChannel(..)
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( GQLRootResolver(..)
+                                                , GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
-                                                , closeStream
+                                                , runResultT
+                                                , Result(..)
                                                 )
 import           Data.Morpheus.Types.Internal.WebSocket
                                                 ( GQLClient(..) )
 import           Data.Morpheus.Types.IO         ( GQLResponse(..) )
+import           Data.Morpheus.Types.Internal.AST.Value
+                                                ( Value )
 
 handleSubscription
   :: (Eq (StreamChannel e), GQLChannel e)
   => GQLClient IO e
   -> GQLState IO e
   -> Text
-  -> ResponseStream IO e GQLResponse
+  -> ResponseStream e IO Value
   -> IO ()
 handleSubscription GQLClient { clientConnection, clientID } state sessionId stream
   = do
-    (actions, response) <- closeStream stream
+    response <- runResultT stream
     case response of
-      Data _ -> mapM_ execute actions
-      Errors _ ->
-        sendTextData clientConnection (toApolloResponse sessionId response)
+      Success { events } -> mapM_ execute events
+      Failure errors     -> sendTextData
+        clientConnection
+        (toApolloResponse sessionId $ Errors errors)
  where
   execute (Publish   pub) = publishUpdates state pub
   execute (Subscribe sub) = addClientSubscription clientID sub sessionId state
@@ -91,11 +94,8 @@ gqlSocketApp gqlRoot state pending = do
     handleRequest =
       receiveData (clientConnection client) >>= resolveMessage . apolloFormat
      where
-      resolveMessage (SubError x              ) = print x
-      resolveMessage (AddSub sessionId request) = handleSubscription
-        client
-        state
-        sessionId
-        (streamResolver gqlRoot request)
+      resolveMessage (SubError x) = print x
+      resolveMessage (AddSub sessionId request) =
+        handleSubscription client state sessionId (coreResolver gqlRoot request)
       resolveMessage (RemoveSub sessionId) =
         removeClientSubscription (clientID client) sessionId state

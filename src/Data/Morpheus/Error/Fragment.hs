@@ -20,7 +20,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
                                                 , Position
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( GQLError(..)
                                                 , GQLErrors
                                                 )

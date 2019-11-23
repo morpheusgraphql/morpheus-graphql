@@ -44,7 +44,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 )
-import           Data.Morpheus.Types.Internal.Resolver
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Event(..)
                                                 , GQLRootResolver(..)
                                                 , Resolver(..)

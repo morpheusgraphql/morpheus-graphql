@@ -25,7 +25,7 @@ import           Data.Morpheus.Execution.Document.Declare
 import           Data.Morpheus.Parsing.Document.Parser
                                                 ( parseTypes )
 import           Data.Morpheus.Validation.Document.Validation
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Result(..) )
 
 
