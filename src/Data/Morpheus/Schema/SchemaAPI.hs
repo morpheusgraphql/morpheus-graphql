@@ -14,8 +14,6 @@ import           Data.Proxy
 import           Data.Text                      ( Text )
 
 -- MORPHEUS
-import           Data.Morpheus.Execution.Internal.GraphScanner
-                                                ( resolveUpdates )
 import           Data.Morpheus.Execution.Server.Introspect
                                                 ( ObjectFields(..)
                                                 , TypeUpdater
@@ -42,7 +40,9 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , lookupDataType
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Resolver(..) )
+                                                ( Resolver(..)
+                                                , resolveUpdates
+                                                )
 
 
 convertTypes

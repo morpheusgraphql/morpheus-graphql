@@ -24,6 +24,11 @@ module Data.Morpheus.Types.Internal.Resolving
     , Result(..)
     , ResultT(..)
     , getResultEvents
+    , LibUpdater
+    , resolveUpdates
+    , GQLErrors
+    , GQLError(..)
+    , Position
     )
 where
 
@@ -56,4 +61,9 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 , Failure(..)
                                                 , mapUnitToEvents
                                                 , getResultEvents
+                                                , LibUpdater
+                                                , resolveUpdates
+                                                , GQLErrors
+                                                , GQLError(..)
+                                                , Position
                                                 )

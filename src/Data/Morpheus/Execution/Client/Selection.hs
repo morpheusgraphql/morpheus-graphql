@@ -56,7 +56,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
                                                 )
-import           Data.Morpheus.Types.Internal.Resolving.Core
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
                                                 , Validation
                                                 , Failure(..)
@@ -287,11 +287,10 @@ lookupFieldType lib path (DataObject DataTyCon { typeData, typeName }) refPositi
       checkDeprecated :: Validation ()
       checkDeprecated = case fieldMeta >>= lookupDeprecated of
         Just deprecation -> Success { result = (), warnings, events = [] }
-          where 
-            warnings = deprecatedField
-              typeName
-              Ref { refName = key, refPosition }
-              (lookupDeprecatedReason deprecation)
+         where
+          warnings = deprecatedField typeName
+                                     Ref { refName = key, refPosition }
+                                     (lookupDeprecatedReason deprecation)
         Nothing -> pure ()
     ------------------
     Nothing -> failure

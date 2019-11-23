@@ -22,7 +22,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( spaceAndComments )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( RawDataType )
-import           Data.Morpheus.Types.Internal.Resolving.Core
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )

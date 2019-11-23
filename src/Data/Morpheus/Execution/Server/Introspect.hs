@@ -50,7 +50,7 @@ import           Data.Morpheus.Types.Custom     ( MapKind
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
 import           Data.Morpheus.Types.GQLType    ( GQLType(..) )
-import           Data.Morpheus.Types.Internal.Resolving.Core
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..)
                                                 , resolveUpdates
                                                 )

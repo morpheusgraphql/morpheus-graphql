@@ -17,7 +17,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 )
 import qualified Data.Set                      as S
 import           Data.Text                      ( Text )
-import           Data.Morpheus.Types.Internal.Resolving.Core
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
 
 data VALIDATION_MODE

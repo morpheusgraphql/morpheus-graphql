@@ -27,8 +27,10 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , isWeaker
                                                 , isWeaker
                                                 )
-import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( Validation, Failure(..) )
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( Validation
+                                                , Failure(..)
+                                                )
 
 validatePartialDocument :: [(Key, RawDataType)] -> Validation [(Key, DataType)]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib

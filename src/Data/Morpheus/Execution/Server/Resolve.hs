@@ -18,9 +18,6 @@ module Data.Morpheus.Execution.Server.Resolve
   )
 where
 
-import           Data.Text                      ( pack
-                                                , Text
-                                                )
 import           Data.Aeson                     ( encode )
 import           Data.Aeson.Internal            ( formatError
                                                 , ifromJSON
@@ -34,8 +31,6 @@ import           Data.Proxy                     ( Proxy(..) )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils      ( badRequestError )
-import           Data.Morpheus.Execution.Internal.GraphScanner
-                                                ( resolveUpdates )
 import           Data.Morpheus.Execution.Server.Encode
                                                 ( EncodeCon
                                                 , encodeMutation
@@ -71,7 +66,6 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , initTypeLib
-                                                , Key
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -86,6 +80,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , ResultT(..)
                                                 , getResultEvents
                                                 , Failure(..)
+                                                , resolveUpdates
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
