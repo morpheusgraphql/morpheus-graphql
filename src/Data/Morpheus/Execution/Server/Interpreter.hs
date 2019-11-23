@@ -115,22 +115,22 @@ instance Interpreter (WSPub IO e  Text) IO e  where
    WebSocket Interpreter without state and side effects, mutations and subscription will return Actions
    that will be executed in WebSocket server
 -}
-type WSSub m e a = a -> ResponseStream m e a
+type WSSub m e a = a -> ResponseStream e m a
 
-instance Interpreter (GQLRequest -> ResponseStream m e  LB.ByteString) e m where
+instance Interpreter (GQLRequest -> ResponseStream e m LB.ByteString) m e where
   interpreter root request = encode <$> streamResolver root request
 
-instance Interpreter (WSSub m e  LB.ByteString)  e m where
+instance Interpreter (WSSub m e  LB.ByteString) m e where
   interpreter root = byteStringIO (streamResolver root)
 
-instance Interpreter (WSSub m e  LT.Text)  e m  where
+instance Interpreter (WSSub m e  LT.Text)  m e where
   interpreter root request =
     decodeUtf8 <$> interpreter root (encodeUtf8 request)
 
-instance Interpreter (WSSub m e ByteString) e m  where
+instance Interpreter (WSSub m e ByteString) m e where
   interpreter root request =
     LB.toStrict <$> interpreter root (LB.fromStrict request)
 
-instance Interpreter (WSSub m e Text) e m where
+instance Interpreter (WSSub m e Text)  m e where
   interpreter root request =
     LT.toStrict <$> interpreter root (LT.fromStrict request)

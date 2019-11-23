@@ -107,8 +107,6 @@ type RootResCon m event query mutation subscription
   = ( EventCon event
     , Typeable m
     , IntrospectConstraint m event query mutation subscription
-    -- , OBJ_RES m (Root (Resolver m)) Value
-     -- Resolving
     , EncodeCon QUERY event m (query (Resolver QUERY event m))
     , EncodeCon MUTATION event m (mutation (Resolver MUTATION event m))
     , EncodeCon
@@ -117,11 +115,6 @@ type RootResCon m event query mutation subscription
         m
         (subscription (Resolver SUBSCRIPTION event m))
     )
-
---decodeNoDup :: L.ByteString -> Either String GQLRequest
---decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
---  Left  (path, x) -> Left $ formatError path x
---  Right value     -> Right value
 
 decodeNoDup :: Failure String m => L.ByteString -> m GQLRequest
 decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
