@@ -7,7 +7,6 @@ module Data.Morpheus.Types.IO
   ( GQLRequest(..)
   , GQLResponse(..)
   , JSONResponse(..)
-  , renderResponseT
   , renderResponse
   , Response(..)
   )
@@ -55,16 +54,6 @@ instance ToJSON (Response actons) where
 renderResponse :: Result e con GQLError Value -> GQLResponse
 renderResponse (Failure errors)   = Errors errors
 renderResponse Success { result } = Data result
-
-renderResponseT
-  :: Functor m
-  => ResultT e GQLError con m Value
-  -> ResultT e GQLError con m GQLResponse
-renderResponseT (ResultT monadValue) =
-  ResultT $ pure <$> (render <$> monadValue)
- where
-  render (Failure errors)   = Errors errors
-  render Success { result } = Data result
 
 instance FromJSON a => FromJSON (JSONResponse a) where
   parseJSON = withObject "JSONResponse" objectParser
