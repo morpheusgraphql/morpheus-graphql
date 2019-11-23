@@ -50,14 +50,13 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( Key
                                                 , Argument(..)
                                                 , Arguments
+                                                , Object
+                                                , Value(..)
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Object
-                                                , Value(..)
-                                                )
+
 
 -- | Decode GraphQL query arguments and input values
 class Decode a where

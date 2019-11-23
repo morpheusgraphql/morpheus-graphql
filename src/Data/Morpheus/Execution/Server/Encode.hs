@@ -72,6 +72,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Selection(..)
                                                 , SelectionRec(..)
                                                 , ValidSelection
+                                                , GQLValue(..)
+                                                , Value(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( MapStrategy(..)
@@ -84,10 +86,6 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , withObject
                                                 , Validation
                                                 , failure
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( GQLValue(..)
-                                                , Value(..)
                                                 )
 
 class Encode resolver o e (m :: * -> *) where

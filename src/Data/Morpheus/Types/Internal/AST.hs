@@ -12,6 +12,16 @@ module Data.Morpheus.Types.Internal.AST
   , Name
   , Description
 
+  -- VALUE
+  , Value(..)
+  , ScalarValue(..)
+  , Object
+  , GQLValue(..)
+  , replaceValue
+  , decodeScientific
+  , convertToJSONName
+  , convertToHaskellName
+
   -- Selection
   , Argument(..)
   , Arguments

@@ -35,7 +35,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , spaceAndComments
                                                 , token
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Value
+import           Data.Morpheus.Types.Internal.AST
                                                 ( ScalarValue(..)
                                                 , Value(..)
                                                 , decodeScientific

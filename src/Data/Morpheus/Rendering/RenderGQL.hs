@@ -34,9 +34,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isDefaultTypeName
                                                 , toGQLWrapper
                                                 , DataEnumValue(..)
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( convertToJSONName )
+                                                , convertToJSONName )
 
 
 renderGraphQLDocument :: DataTypeLib -> ByteString

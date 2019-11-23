@@ -29,9 +29,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isNullable
                                                 , lookupField
                                                 , lookupInputType
+                                                , Value(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value(..) )
 
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )

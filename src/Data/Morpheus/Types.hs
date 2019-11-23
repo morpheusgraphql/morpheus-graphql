@@ -43,6 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( MUTATION
                                                 , QUERY
                                                 , SUBSCRIPTION
+                                                , ScalarValue(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Event(..)
@@ -51,8 +52,6 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , LiftEither(..)
                                                 , lift
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( ScalarValue(..) )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
                                                 )

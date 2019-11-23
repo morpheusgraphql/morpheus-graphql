@@ -36,9 +36,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataEnumValue(..)
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( convertToJSONName )
+                                                , convertToJSONName )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
 

@@ -34,13 +34,13 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Value
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Value(..)
                                                 , replaceValue
+                                                , GQLQuery(..)
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..) )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( GQLQuery(..) )
+
 
 parseGQLSyntax :: Text -> Either (ParseErrorBundle Text Void) GQLQuery
 parseGQLSyntax = runParser request "<input>"

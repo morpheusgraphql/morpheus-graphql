@@ -71,9 +71,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , TypeWrapper(..)
                                                 , toHSWrappers
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( convertToHaskellName )
+                                                , convertToHaskellName )
 
 
 -- Name : https://graphql.github.io/graphql-spec/June2018/#sec-Names

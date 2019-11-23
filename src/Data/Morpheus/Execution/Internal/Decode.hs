@@ -29,13 +29,12 @@ import           Data.Morpheus.Error.Internal   ( internalArgumentError
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , Key
-                                                , ConsD(..) )
+                                                , ConsD(..) 
+                                                , Object
+                                                , Value(..))
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Object
-                                                , Value(..)
-                                                )
+
 
 decodeObjectExpQ :: ExpQ -> ConsD -> ExpQ
 decodeObjectExpQ fieldDecoder ConsD { cName, cFields } = handleFields cFields

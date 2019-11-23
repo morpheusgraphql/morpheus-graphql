@@ -37,13 +37,12 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isFieldNullable
                                                 , isWeaker
                                                 , lookupInputType
+                                                , Value(Null)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value(Null) )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( checkForUnknownKeys
                                                 , checkNameCollision

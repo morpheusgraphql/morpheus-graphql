@@ -39,13 +39,12 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeLib
                                                 , lookupInputType
                                                 , Variables
+                                                , Value(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value(..) )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( VALIDATION_MODE(..) )
 import           Data.Morpheus.Validation.Internal.Value

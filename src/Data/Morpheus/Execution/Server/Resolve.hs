@@ -64,6 +64,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , initTypeLib
+                                                , Value
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -88,8 +89,6 @@ import           Data.Morpheus.Validation.Internal.Utils
 import           Data.Morpheus.Validation.Query.Validation
                                                 ( validateRequest )
 import           Data.Typeable                  ( Typeable )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value )
 
 
 type EventCon event

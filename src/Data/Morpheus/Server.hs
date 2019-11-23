@@ -54,7 +54,7 @@ import           Data.Morpheus.Types.Internal.Resolving
 import           Data.Morpheus.Types.Internal.WebSocket
                                                 ( GQLClient(..) )
 import           Data.Morpheus.Types.IO         ( GQLResponse(..) )
-import           Data.Morpheus.Types.Internal.AST.Value
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Value )
 
 handleSubscription
