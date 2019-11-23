@@ -32,7 +32,6 @@ import           Control.Monad                  ( foldM )
 import           Data.Function                  ( (&) )
 import           Control.Monad.Trans.Class      ( MonadTrans(..) )
 import           Control.Applicative            ( liftA2 )
-import           Control.Monad.Trans.Except     ( ExceptT(..) )
 import           Data.Aeson                     ( FromJSON
                                                 , ToJSON
                                                 )
@@ -89,10 +88,6 @@ instance Failure [error] (Result ev con error) where
 unpackEvents :: Result event c e a -> [event]
 unpackEvents Success { events } = events
 unpackEvents _                  = []
-
-toEither :: Result ev co er a -> Either [er] a
-toEither (Failure e)        = Left e
-toEither Success { result } = Right result
 
 fromEither :: Either [er] a -> Result ev co er a
 fromEither (Left  e) = Failure e
