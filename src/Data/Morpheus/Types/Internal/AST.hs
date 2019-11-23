@@ -40,7 +40,7 @@ module Data.Morpheus.Types.Internal.AST
   , getOperationDataType
 
 
-  -- DATA Types
+  -- DSL
   , DataScalar
   , DataEnum
   , DataObject
