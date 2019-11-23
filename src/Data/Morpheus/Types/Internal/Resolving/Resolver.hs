@@ -79,12 +79,8 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
                                                 , Value
                                                 )
-import           Data.Morpheus.Types.IO         ( GQLResponse
-                                                , renderResponse
-                                                , renderResponseT
-                                                )
+import           Data.Morpheus.Types.IO         (renderResponse, GQLResponse)
 -- MORPHEUS
-
 
 class LiftEither (o::OperationType) res where
   type ResError res :: *
@@ -334,14 +330,9 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
         :: Monad m
         => ResolvingStrategy SUBSCRIPTION e m Value
         -> StatelessResT m Value
-      unPureSub (ResolveS (ResultT x)) = ResultT (x >>= passEvent)
+      unPureSub (ResolveS x) = cleanEvents x >>= passEvent
        where
-        passEvent
-          :: Result (Channel e) 'True GQLError (RecResolver m e Value)
-          -> m (Validation Value)
-        passEvent (Failure er) = pure (Failure er)
-        passEvent suc@Success { result = (RecResolver f) } =
-          runResultT (f event)
+          passEvent (RecResolver f) = f event
 
 -- map Resolving strategies 
 class MapStrategy (from :: OperationType) (to :: OperationType) where
