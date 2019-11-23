@@ -13,7 +13,6 @@
 - `Resolver operation m event value` -> `Resolver operation event m value` , monad trans needs that last 2 type arguments are monad and value that why it was necessary
 
 - exposed `Data.Morpheus.Types.Internal.AST`
-- exposed `Data.Morpheus.Types.Internal.Resolving`
 
 - Mutation Resolver was changed from
 
