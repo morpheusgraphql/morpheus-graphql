@@ -42,9 +42,6 @@ _schema.gql_
 
 ```gql
 type Query {
-  """
-  Description for name
-  """
   deity(name: String!): Deity!
 }
 
@@ -52,6 +49,9 @@ type Query {
 Description for Deity
 """
 type Deity {
+  """
+  Description for name
+  """
   name: String!
   power: String String! @deprecated(reason: "some reason for")
 }
