@@ -16,7 +16,6 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , Failure(..)
   , ResultT(..)
   , fromEither
-  , toEither
   , fromEitherSingle
   , unpackEvents
   , LibUpdater
