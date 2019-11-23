@@ -45,7 +45,7 @@ import           Data.Morpheus.Kind             ( Context(..)
                                                 , SCALAR
                                                 , UNION
                                                 )
-import           Data.Morpheus.Types.Custom     ( MapKind
+import           Data.Morpheus.Types.Types     ( MapKind
                                                 , Pair
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
@@ -54,7 +54,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..)
                                                 , resolveUpdates
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataArguments
                                                 , Meta(..)
                                                 , DataField(..)

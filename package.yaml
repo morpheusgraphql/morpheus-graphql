@@ -45,6 +45,7 @@ library:
     - Data.Morpheus.Server
     - Data.Morpheus.Document
     - Data.Morpheus.Client
+    - Data.Morpheus.Types.Internal.AST
   ghc-options: -Wall
 
 tests:

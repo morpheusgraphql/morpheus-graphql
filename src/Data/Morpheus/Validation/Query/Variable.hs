@@ -20,38 +20,31 @@ import           Data.Morpheus.Error.Variable   ( uninitializedVariable
                                                 , unusedVariables
                                                 , variableGotInvalidValue
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Operation
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DefaultValue
                                                 , Operation(..)
                                                 , RawOperation
                                                 , ValidVariables
                                                 , Variable(..)
                                                 , getOperationName
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Selection
-                                                ( Fragment(..)
+                                                , Fragment(..)
                                                 , FragmentLib
                                                 , RawArgument(..)
                                                 , RawSelection(..)
                                                 , RawSelectionSet
                                                 , Selection(..)
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Ref(..)
+                                                , Ref(..)
                                                 , Position
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( DataType
+                                                , DataType
                                                 , DataTypeLib
                                                 , lookupInputType
+                                                , Variables
+                                                , Value(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value(..) )
-import           Data.Morpheus.Types.Types      ( Variables )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( VALIDATION_MODE(..) )
 import           Data.Morpheus.Validation.Internal.Value

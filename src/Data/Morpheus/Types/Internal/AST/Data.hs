@@ -10,8 +10,8 @@
 {-# LANGUAGE RankNTypes            #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
-  ( Key
-  , DataScalar
+  ( 
+    DataScalar
   , DataEnum
   , DataObject
   , DataArgument
@@ -56,8 +56,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , QUERY
   , MUTATION
   , SUBSCRIPTION
-  , Name
-  , Description
   , isEntNode
   , lookupInputType
   , coerceDataObject

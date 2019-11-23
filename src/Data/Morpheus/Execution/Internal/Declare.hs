@@ -25,7 +25,7 @@ import           Data.Morpheus.Execution.Internal.Utils
                                                 ( nameSpaceType
                                                 , nameSpaceWith
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( ArgsType(..)
                                                 , DataField(..)
                                                 , DataTypeKind(..)

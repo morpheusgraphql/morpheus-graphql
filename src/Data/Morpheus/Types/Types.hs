@@ -1,35 +1,46 @@
 {-# LANGUAGE DeriveGeneric    #-}
 {-# LANGUAGE KindSignatures   #-}
-{-# LANGUAGE DeriveLift       #-}
 
 module Data.Morpheus.Types.Types
-  ( GQLQueryRoot(..)
-  , Variables
-  , Undefined(..)
+  ( Undefined(..)
+  , Pair(..)
+  , MapKind(..)
+  , MapArgs(..)
+  , mapKindFromList
   )
 where
 
-import           Data.Map                       ( Map )
 import           GHC.Generics                   ( Generic )
-import           Language.Haskell.TH.Syntax     ( Lift )
-import           Instances.TH.Lift              ( )
-
--- Morpheus
-import           Data.Morpheus.Types.Internal.AST.Operation
-                                                ( RawOperation )
-import           Data.Morpheus.Types.Internal.AST.Selection
-                                                ( FragmentLib )
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Key )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value )
 
 data Undefined (m :: * -> *) = Undefined deriving (Show, Generic)
 
-type Variables = Map Key Value
+data Pair k v =
+  Pair
+    { key   :: k
+    , value :: v
+    }
+  deriving (Generic)
 
-data GQLQueryRoot = GQLQueryRoot
-  { fragments      :: FragmentLib
-  , operation      :: RawOperation
-  , inputVariables :: [(Key, Value)]
-  } deriving (Show,Lift)
+newtype MapArgs k =
+  MapArgs
+    { oneOf :: Maybe [k]
+    }
+  deriving (Generic)
+
+data MapKind k v m =
+  MapKind
+    { size  :: Int
+    , pairs :: MapArgs k -> m [Pair k v]
+    }
+  deriving (Generic)
+
+mapKindFromList :: (Eq k, Applicative m) => [(k, v)] -> MapKind k v m
+mapKindFromList inputPairs = MapKind { size  = length inputPairs
+                                     , pairs = resolvePairs
+                                     }
+ where
+  filterBy MapArgs { oneOf = Just list } =
+    filter ((`elem` list) . fst) inputPairs
+  filterBy _ = inputPairs
+  resolvePairs = pure . (map toGQLTuple . filterBy)
+  toGQLTuple (x, y) = Pair x y

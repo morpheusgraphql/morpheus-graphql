@@ -53,12 +53,10 @@ import           Data.Morpheus.Schema.SchemaAPI ( defaultTypes
                                                 , schemaAPI
                                                 )
 import           Data.Morpheus.Types.GQLType    ( GQLType(CUSTOM) )
-import           Data.Morpheus.Types.Internal.AST.Operation
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
                                                 , ValidOperation
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( DataFingerprint(..)
+                                                , DataFingerprint(..)
                                                 , DataTyCon(..)
                                                 , DataTypeLib(..)
                                                 , MUTATION
@@ -66,6 +64,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , initTypeLib
+                                                , Value
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -90,8 +89,6 @@ import           Data.Morpheus.Validation.Internal.Utils
 import           Data.Morpheus.Validation.Query.Validation
                                                 ( validateRequest )
 import           Data.Typeable                  ( Typeable )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value )
 
 
 type EventCon event

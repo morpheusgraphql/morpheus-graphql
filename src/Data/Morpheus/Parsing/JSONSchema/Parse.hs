@@ -21,7 +21,7 @@ import           Data.Morpheus.Parsing.JSONSchema.Types
                                                 , Type(..)
                                                 )
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField
                                                 , DataType(..)
                                                 , DataTypeLib

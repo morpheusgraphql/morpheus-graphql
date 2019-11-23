@@ -53,10 +53,10 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , ValidSelection
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Message )
+                                                ( Message , Key )
 import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( Key
-                                                , MUTATION
+                                                ( 
+                                                  MUTATION
                                                 , OperationType
                                                 , QUERY
                                                 , SUBSCRIPTION

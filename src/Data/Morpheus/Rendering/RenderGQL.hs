@@ -19,7 +19,7 @@ import qualified Data.Text.Lazy                as LT
 import           Data.Text.Lazy.Encoding        ( encodeUtf8 )
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , DataTyCon(..)
                                                 , DataType(..)
@@ -34,9 +34,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , isDefaultTypeName
                                                 , toGQLWrapper
                                                 , DataEnumValue(..)
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( convertToJSONName )
+                                                , convertToJSONName )
 
 
 renderGraphQLDocument :: DataTypeLib -> ByteString

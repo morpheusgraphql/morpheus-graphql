@@ -1,5 +1,9 @@
 ## [0.7.0] -
 
+## Removed
+
+- `toMorpheusHaskellAPi` from `Data.Morpheus.Document` functionality will be migrated in `morpheus-graphql-cli`
+
 ## Changed
 
 - `liftM` to `MonadTrans` instance method `lift`
@@ -7,6 +11,8 @@
 - `liftEitherM` to `liftEither`
 
 - `Resolver operation m event value` -> `Resolver operation event m value` , monad trans needs that last 2 type arguments are monad and value that why it was necessary
+
+- exposed `Data.Morpheus.Types.Internal.AST`
 
 - Mutation Resolver was changed from
 
@@ -31,6 +37,8 @@ resolver _args = lift setDBAddress
 ```
 
 ### Added
+
+- added `parseDSL` to `Data.Morpheus.Document`
 
 - GraphQL SDL support fully supports descriptions: onTypes, fields , args ...
   with (enums, inputObjects , union, object)

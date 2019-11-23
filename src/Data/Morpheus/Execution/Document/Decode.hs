@@ -23,14 +23,15 @@ import           Data.Morpheus.Execution.Server.Decode
                                                 ( Decode(..)
                                                 , DecodeObject(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( TypeD(..) )
+import           Data.Morpheus.Types.Internal.AST
+                                                ( TypeD(..)
+                                                , Object
+                                                )
 import           Data.Morpheus.Types.Internal.TH
                                                 ( instanceHeadT )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Object )
+
 
 (.:) :: Decode a => Object -> Text -> Validation a
 object .: selectorName = decodeFieldWith decode selectorName object

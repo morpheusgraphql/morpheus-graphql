@@ -50,7 +50,7 @@ import           Data.Morpheus.Kind             ( ENUM
                                                 , UNION
                                                 , VContext(..)
                                                 )
-import           Data.Morpheus.Types.Custom     ( MapKind
+import           Data.Morpheus.Types.Types     ( MapKind
                                                 , Pair(..)
                                                 , mapKindFromList
                                                 )
@@ -61,22 +61,19 @@ import           Data.Morpheus.Types.GQLType    ( GQLType
                                                   , __typeName
                                                   )
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Operation
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
                                                 , ValidOperation
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Selection
-                                                ( Selection(..)
-                                                , SelectionRec(..)
-                                                , ValidSelection
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Key )
-import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( MUTATION
+                                                , Key,
+                                                  MUTATION
                                                 , OperationType
                                                 , QUERY
                                                 , SUBSCRIPTION
+                                                , Selection(..)
+                                                , SelectionRec(..)
+                                                , ValidSelection
+                                                , GQLValue(..)
+                                                , Value(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( MapStrategy(..)
@@ -89,10 +86,6 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , withObject
                                                 , Validation
                                                 , failure
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( GQLValue(..)
-                                                , Value(..)
                                                 )
 
 class Encode resolver o e (m :: * -> *) where

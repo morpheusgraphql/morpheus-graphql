@@ -46,18 +46,16 @@ import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..)
                                                 , toScalar
                                                 )
 import           Data.Morpheus.Types.GQLType    ( GQLType(KIND, __typeName) )
-import           Data.Morpheus.Types.Internal.AST.Selection
-                                                ( Argument(..)
+import           Data.Morpheus.Types.Internal.AST
+                                                ( Key
+                                                , Argument(..)
                                                 , Arguments
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Key )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Object
+                                                , Object
                                                 , Value(..)
                                                 )
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( Validation )
+
 
 -- | Decode GraphQL query arguments and input values
 class Decode a where

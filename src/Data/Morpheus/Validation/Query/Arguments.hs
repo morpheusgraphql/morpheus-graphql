@@ -20,36 +20,29 @@ import           Data.Morpheus.Error.Variable   ( incompatibleVariableType
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) )
-import           Data.Morpheus.Types.Internal.AST.Operation
+import           Data.Morpheus.Types.Internal.AST
                                                 ( ValidVariables
                                                 , Variable(..)
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Selection
-                                                ( Argument(..)
+                                                , Argument(..)
                                                 , ValueOrigin(..)
                                                 , Arguments
                                                 , RawArgument(..)
                                                 , RawArguments
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Ref(..)
+                                                , Ref(..)
                                                 , Position
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( DataArgument
+                                                , DataArgument
                                                 , DataField(..)
                                                 , DataTypeLib
                                                 , TypeAlias(..)
                                                 , isFieldNullable
                                                 , isWeaker
                                                 , lookupInputType
+                                                , Value(Null)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value(Null) )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( checkForUnknownKeys
                                                 , checkNameCollision

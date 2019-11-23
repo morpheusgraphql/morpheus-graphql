@@ -15,7 +15,6 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , Fragment(..)
   , RawArgument(..)
   , RawSelection(..)
-  , Ref(..)
   )
 where
 
