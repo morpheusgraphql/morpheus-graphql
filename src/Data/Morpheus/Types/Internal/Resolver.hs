@@ -336,6 +336,7 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
         passEvent Success { result = (RecResolver f) } = runExceptT (f event)
         passEvent (Failure er)                         = pure (Left er)
 
+
 -- map Resolving strategies 
 class MapStrategy (from :: OperationType) (to :: OperationType) where
    mapStrategy :: Monad m => ResolvingStrategy from e m a -> ResolvingStrategy to e m a
@@ -344,7 +345,7 @@ instance MapStrategy o o where
   mapStrategy = id
 
 instance MapStrategy QUERY SUBSCRIPTION where
- -- mapStrategy (ResolveQ x) = ResolveS $ injectEvents [] (fmap pure x)
+  mapStrategy (ResolveQ x) = ResolveS $ pure <$> mapUnitToEvents x
 
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
