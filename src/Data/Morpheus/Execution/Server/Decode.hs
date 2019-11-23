@@ -53,7 +53,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Object
                                                 , Value(..)
                                                 )
-
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 

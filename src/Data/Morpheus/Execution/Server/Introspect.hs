@@ -45,7 +45,7 @@ import           Data.Morpheus.Kind             ( Context(..)
                                                 , SCALAR
                                                 , UNION
                                                 )
-import           Data.Morpheus.Types.Custom     ( MapKind
+import           Data.Morpheus.Types.Types     ( MapKind
                                                 , Pair
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )

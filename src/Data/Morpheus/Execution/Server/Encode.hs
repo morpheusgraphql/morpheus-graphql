@@ -50,7 +50,7 @@ import           Data.Morpheus.Kind             ( ENUM
                                                 , UNION
                                                 , VContext(..)
                                                 )
-import           Data.Morpheus.Types.Custom     ( MapKind
+import           Data.Morpheus.Types.Types     ( MapKind
                                                 , Pair(..)
                                                 , mapKindFromList
                                                 )
