@@ -20,10 +20,6 @@ import           Data.Text                      ( Text
 import           Data.Morpheus.Error.Client.Client
                                                 ( deprecatedField )
 import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
-import           Data.Morpheus.Execution.Internal.GraphScanner
-                                                ( LibUpdater
-                                                , resolveUpdates
-                                                )
 import           Data.Morpheus.Execution.Internal.Utils
                                                 ( nameSpaceType )
 import           Data.Morpheus.Types.Internal.AST.Operation
@@ -60,12 +56,14 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
                                                 , Validation
                                                 , Failure(..)
                                                 , Result(..)
                                                 , Position
+                                                , LibUpdater
+                                                , resolveUpdates
                                                 )
 import           Data.Set                       ( fromList
                                                 , toList
@@ -289,11 +287,10 @@ lookupFieldType lib path (DataObject DataTyCon { typeData, typeName }) refPositi
       checkDeprecated :: Validation ()
       checkDeprecated = case fieldMeta >>= lookupDeprecated of
         Just deprecation -> Success { result = (), warnings, events = [] }
-          where 
-            warnings = deprecatedField
-              typeName
-              Ref { refName = key, refPosition }
-              (lookupDeprecatedReason deprecation)
+         where
+          warnings = deprecatedField typeName
+                                     Ref { refName = key, refPosition }
+                                     (lookupDeprecatedReason deprecation)
         Nothing -> pure ()
     ------------------
     Nothing -> failure

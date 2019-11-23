@@ -29,7 +29,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Resolver
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Resolver
                                                 , MapStrategy(..)
                                                 , LiftEither

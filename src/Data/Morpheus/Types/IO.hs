@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -10,7 +11,6 @@ module Data.Morpheus.Types.IO
   )
 where
 
-import           Control.Monad.Trans.Except     ( ExceptT(..) )
 import           Data.Aeson                     ( FromJSON(..)
                                                 , ToJSON(..)
                                                 , pairs
@@ -27,19 +27,17 @@ import           GHC.Generics                   ( Generic )
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( GQLError(..)
-                                                , ExceptGQL
+                                                , Result(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
 
 
-renderResponse :: Functor m => ExceptGQL m Value -> m GQLResponse
-renderResponse (ExceptT monadValue) = render <$> monadValue
- where
-  render (Left  errors) = Errors errors
-  render (Right value ) = Data value
+renderResponse :: Result e GQLError con Value -> GQLResponse
+renderResponse (Failure errors)   = Errors errors
+renderResponse Success { result } = Data result
 
 instance FromJSON a => FromJSON (JSONResponse a) where
   parseJSON = withObject "JSONResponse" objectParser

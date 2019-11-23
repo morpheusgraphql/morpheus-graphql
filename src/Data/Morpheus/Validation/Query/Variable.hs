@@ -45,7 +45,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , DataTypeLib
                                                 , lookupInputType
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )

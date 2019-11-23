@@ -5,33 +5,31 @@ module Data.Morpheus.Error.Selection
   , subfieldsNotSelected
   , duplicateQuerySelections
   , hasNoSubfields
-  , fieldNotResolved
-  , resolverError
+  , resolvingFailedError
   )
 where
 
+import           Data.Semigroup                 ( (<>) )
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
                                                 , Position
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( GQLError(..)
                                                 , GQLErrors
                                                 )
-import           Data.Text                      ( Text
-                                                , pack
-                                                )
+import           Data.Text                      ( Text )
 import qualified Data.Text                     as T
                                                 ( concat )
 
-resolverError :: Position -> Text -> String -> GQLErrors
-resolverError pos name desc = fieldNotResolved pos name (pack desc)
 
-fieldNotResolved :: Position -> Text -> Text -> GQLErrors
-fieldNotResolved position' key' message' = errorMessage position' text
- where
-  text = T.concat ["Failure on Resolving Field \"", key', "\": ", message']
+resolvingFailedError :: Position -> Text -> Text -> GQLError
+resolvingFailedError position name reason = GQLError
+  { message   = "Failure on Resolving Field \"" <> name <> "\": " <> reason
+  , locations = [position]
+  }
+
 
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
 hasNoSubfields :: Text -> Text -> Position -> GQLErrors

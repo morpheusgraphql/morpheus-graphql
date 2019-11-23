@@ -41,7 +41,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataFingerprint(..)
                                                 , QUERY
                                                 )
-import           Data.Morpheus.Types.Internal.Resolver
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Resolver(..) )
 import           Data.Morpheus.Types.Types      ( Undefined(..) )
 

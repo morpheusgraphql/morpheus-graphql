@@ -14,6 +14,7 @@ module Data.Morpheus.Execution.Server.Resolve
   , statefulResolver
   , RootResCon
   , fullSchema
+  , coreResolver
   )
 where
 
@@ -30,8 +31,6 @@ import           Data.Proxy                     ( Proxy(..) )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils      ( badRequestError )
-import           Data.Morpheus.Execution.Internal.GraphScanner
-                                                ( resolveUpdates )
 import           Data.Morpheus.Execution.Server.Encode
                                                 ( EncodeCon
                                                 , encodeMutation
@@ -68,21 +67,19 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , SUBSCRIPTION
                                                 , initTypeLib
                                                 )
-import           Data.Morpheus.Types.Internal.Resolver
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
                                                 , Resolver(..)
-                                                , ResponseT
                                                 , toResponseRes
-                                                )
-import           Data.Morpheus.Types.Internal.Stream
-                                                ( GQLChannel(..)
+                                                , GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
-                                                , closeStream
-                                                )
-import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation
-                                                , toExceptGQL
+                                                , Validation
+                                                , cleanEvents
+                                                , ResultT(..)
+                                                , unpackEvents
+                                                , Failure(..)
+                                                , resolveUpdates
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
@@ -93,6 +90,9 @@ import           Data.Morpheus.Validation.Internal.Utils
 import           Data.Morpheus.Validation.Query.Validation
                                                 ( validateRequest )
 import           Data.Typeable                  ( Typeable )
+import           Data.Morpheus.Types.Internal.AST.Value
+                                                ( Value )
+
 
 type EventCon event
   = (Eq (StreamChannel event), Typeable event, GQLChannel event)
@@ -107,8 +107,6 @@ type RootResCon m event query mutation subscription
   = ( EventCon event
     , Typeable m
     , IntrospectConstraint m event query mutation subscription
-    -- , OBJ_RES m (Root (Resolver m)) Value
-     -- Resolving
     , EncodeCon QUERY event m (query (Resolver QUERY event m))
     , EncodeCon MUTATION event m (mutation (Resolver MUTATION event m))
     , EncodeCon
@@ -118,10 +116,11 @@ type RootResCon m event query mutation subscription
         (subscription (Resolver SUBSCRIPTION event m))
     )
 
-decodeNoDup :: L.ByteString -> Either String GQLRequest
+decodeNoDup :: Failure String m => L.ByteString -> m GQLRequest
 decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
-  Left  (path, x) -> Left $ formatError path x
-  Right value     -> Right value
+  Left  (path, x) -> failure $ formatError path x
+  Right value     -> pure value
+
 
 byteStringIO
   :: Monad m => (GQLRequest -> m GQLResponse) -> L.ByteString -> m L.ByteString
@@ -134,18 +133,30 @@ statelessResolver
   => GQLRootResolver m event query mut sub
   -> GQLRequest
   -> m GQLResponse
-statelessResolver root = fmap snd . closeStream . streamResolver root
+statelessResolver root req =
+  renderResponse <$> runResultT (coreResolver root req)
 
 streamResolver
-  :: (Monad m, RootResCon m event query mut sub)
+  :: forall event m query mut sub
+   . (Monad m, RootResCon m event query mut sub)
   => GQLRootResolver m event query mut sub
   -> GQLRequest
-  -> ResponseStream m event GQLResponse
-streamResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptionResolver } request
-  = renderResponse (validRequest >>= execOperator)
+  -> ResponseStream event m GQLResponse
+streamResolver root req =
+  ResultT $ pure . renderResponse <$> runResultT (coreResolver root req)
+
+coreResolver
+  :: forall event m query mut sub
+   . (Monad m, RootResCon m event query mut sub)
+  => GQLRootResolver m event query mut sub
+  -> GQLRequest
+  -> ResponseStream event m Value
+coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptionResolver } request
+  = validRequest >>= execOperator
  where
-  validRequest :: Monad m => ResponseT event m (DataTypeLib, ValidOperation)
-  validRequest = toExceptGQL $ do
+  validRequest
+    :: Monad m => ResponseStream event m (DataTypeLib, ValidOperation)
+  validRequest = cleanEvents $ ResultT $ pure $ do
     schema <- fullSchema $ Identity root
     query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
     pure (schema, query)
@@ -161,18 +172,19 @@ streamResolver root@GQLRootResolver { queryResolver, mutationResolver, subscript
       toResponseRes (encodeSubscription subscriptionResolver operation)
 
 statefulResolver
-  :: EventCon s
-  => GQLState IO s
-  -> (L.ByteString -> ResponseStream IO s L.ByteString)
+  :: EventCon event
+  => GQLState IO event
+  -> (GQLRequest -> ResponseStream event IO Value)
   -> L.ByteString
   -> IO L.ByteString
-statefulResolver state streamApi request = do
-  (actions, value) <- closeStream (streamApi request)
-  mapM_ execute actions
-  pure value
+statefulResolver state streamApi requestText = do
+  res <- runResultT (decodeNoDup requestText >>= streamApi)
+  mapM_ execute (unpackEvents res)
+  pure $ encode $ renderResponse res
  where
   execute (Publish updates) = publishUpdates state updates
   execute Subscribe{}       = pure ()
+
 
 fullSchema
   :: forall proxy m event query mutation subscription

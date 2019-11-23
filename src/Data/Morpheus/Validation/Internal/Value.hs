@@ -33,7 +33,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value(..) )
 
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
 
 -- Validate Variable Argument or all Possible input Values

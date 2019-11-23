@@ -12,7 +12,7 @@ where
 import           Data.Aeson                     ( encode )
 import           Data.ByteString.Lazy.Char8     ( unpack )
 import           Data.Morpheus.Error.Utils      ( errorMessage )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( GQLErrors )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)

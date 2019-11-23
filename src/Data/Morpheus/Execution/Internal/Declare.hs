@@ -37,7 +37,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , ConsD(..)
                                                 , TypeD(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Resolver
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( UnSubResolver )
 
 type Arrow = (->)

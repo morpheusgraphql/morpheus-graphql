@@ -35,7 +35,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 
 renderTHTypes :: Bool -> [(Text, DataType)] -> Validation [GQLTypeD]

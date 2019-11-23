@@ -44,7 +44,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , isWeaker
                                                 , lookupInputType
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )

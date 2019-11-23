@@ -29,7 +29,7 @@ import           Network.WebSockets             ( Connection
 -- MORPHEUS
 import           Data.Morpheus.Execution.Subscription.Apollo
                                                 ( toApolloResponse )
-import           Data.Morpheus.Types.Internal.Stream
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Event(..)
                                                 , GQLChannel(..)
                                                 , SubEvent

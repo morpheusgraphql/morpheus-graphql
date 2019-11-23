@@ -30,7 +30,7 @@ import           Data.Morpheus.Parsing.JSONSchema.Parse
                                                 ( decodeIntrospection )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataTypeLib )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation )
 import           Data.Morpheus.Types.Types      ( GQLQueryRoot )
 

@@ -78,7 +78,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 )
-import           Data.Morpheus.Types.Internal.Resolver
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( MapStrategy(..)
                                                 , LiftEither(..)
                                                 , Resolver(..)
@@ -87,9 +87,7 @@ import           Data.Morpheus.Types.Internal.Resolver
                                                 , ResolvingStrategy(..)
                                                 , resolveObject
                                                 , withObject
-                                                )
-import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation
+                                                , Validation
                                                 , failure
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value

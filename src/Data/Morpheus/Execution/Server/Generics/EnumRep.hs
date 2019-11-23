@@ -6,16 +6,20 @@
 
 module Data.Morpheus.Execution.Server.Generics.EnumRep
   ( EnumRep(..)
-  ) where
+  )
+where
 
-import           Data.Proxy                              (Proxy (..))
-import           Data.Semigroup                          ((<>))
-import           Data.Text                               (Text, pack)
+import           Data.Proxy                     ( Proxy(..) )
+import           Data.Semigroup                 ( (<>) )
+import           Data.Text                      ( Text
+                                                , pack
+                                                )
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal            (internalError)
-import           Data.Morpheus.Types.Internal.Validation (Validation)
+import           Data.Morpheus.Error.Internal   ( internalError )
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( Validation )
 
 class EnumRep f where
   encodeRep :: f a -> Text
@@ -38,6 +42,6 @@ instance (EnumRep a, EnumRep b) => EnumRep (a :+: b) where
   decodeEnum name
     | name `elem` enumTags (Proxy @a) = L1 <$> decodeEnum name
     | name `elem` enumTags (Proxy @b) = R1 <$> decodeEnum name
-    | otherwise =
-      internalError ("Constructor \"" <> name <> "\" could not find in Union")
+    | otherwise = internalError
+      ("Constructor \"" <> name <> "\" could not find in Union")
   enumTags _ = enumTags (Proxy @a) ++ enumTags (Proxy @b)
