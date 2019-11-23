@@ -42,7 +42,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataTypeLib
                                                 , createDataTypeLib
                                                 )
-import           Data.Morpheus.Types.Internal.Resolving.Core
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Result(..)
                                                 )

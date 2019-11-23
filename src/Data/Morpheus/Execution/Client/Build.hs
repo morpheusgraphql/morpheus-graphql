@@ -41,11 +41,12 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Result(..)
                                                 )
-import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
+import           Data.Morpheus.Types.Internal.AST
+                                                ( GQLQuery(..) )
 
 
 
-defineQuery :: IO (Validation DataTypeLib) -> (GQLQueryRoot, String) -> Q [Dec]
+defineQuery :: IO (Validation DataTypeLib) -> (GQLQuery, String) -> Q [Dec]
 defineQuery ioSchema queryRoot = do
   schema <- runIO ioSchema
   case schema >>= (`validateWith` queryRoot) of

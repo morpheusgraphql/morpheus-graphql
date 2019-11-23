@@ -19,7 +19,8 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataTypeLib(..) )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
-import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
+import           Data.Morpheus.Types.Internal.AST
+                                                ( GQLQuery(..) )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( VALIDATION_MODE )
 import           Data.Morpheus.Validation.Query.Fragment
@@ -31,8 +32,8 @@ import           Data.Morpheus.Validation.Query.Variable
 
 
 validateRequest
-  :: DataTypeLib -> VALIDATION_MODE -> GQLQueryRoot -> Validation ValidOperation
-validateRequest lib validationMode GQLQueryRoot { fragments, inputVariables, operation = rawOperation@Operation { operationName, operationType, operationSelection, operationPosition } }
+  :: DataTypeLib -> VALIDATION_MODE -> GQLQuery -> Validation ValidOperation
+validateRequest lib validationMode GQLQuery { fragments, inputVariables, operation = rawOperation@Operation { operationName, operationType, operationSelection, operationPosition } }
   = do
     operationDataType <- getOperationDataType rawOperation lib
     variables         <- resolveOperationVariables lib

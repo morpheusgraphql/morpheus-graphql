@@ -39,19 +39,20 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 , replaceValue
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..) )
-import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
+import           Data.Morpheus.Types.Internal.AST
+                                                ( GQLQuery(..) )
 
-parseGQLSyntax :: Text -> Either (ParseErrorBundle Text Void) GQLQueryRoot
+parseGQLSyntax :: Text -> Either (ParseErrorBundle Text Void) GQLQuery
 parseGQLSyntax = runParser request "<input>"
  where
-  request :: Parser GQLQueryRoot
-  request = label "GQLQueryRoot" $ do
+  request :: Parser GQLQuery
+  request = label "GQLQuery" $ do
     spaceAndComments
     operation <- parseOperation
     fragments <- manyTill parseFragmentDefinition eof
-    pure GQLQueryRoot { operation, fragments, inputVariables = [] }
+    pure GQLQuery { operation, fragments, inputVariables = [] }
 
-parseGQL :: GQLRequest -> Validation GQLQueryRoot
+parseGQL :: GQLRequest -> Validation GQLQuery
 parseGQL GQLRequest { query, variables } = case parseGQLSyntax query of
   Right root       -> pure $ root { inputVariables = toVariableMap variables }
   Left  parseError -> failure $ processErrorBundle parseError
