@@ -142,7 +142,7 @@ The field name in the final request will be `type` instead of `type'`. The Morph
 
 ```haskell
 resolveDeity :: DeityArgs -> IORes e Deity
-resolveDeity DeityArgs { name, mythology } = liftEitherM $ dbDeity name mythology
+resolveDeity DeityArgs { name, mythology } = liftEither $ dbDeity name mythology
 
 askDB :: Text -> Maybe Text -> IO (Either String Deity)
 askDB = ...
