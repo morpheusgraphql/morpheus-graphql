@@ -2,7 +2,6 @@
 
 module Data.Morpheus.Document
   ( toGraphQLDocument
-  , toMorpheusHaskellAPi
   , gqlDocument
   , parseFullGQLDocument
   , importGQLDocument
@@ -32,8 +31,7 @@ import           Data.Morpheus.Execution.Server.Resolve
                                                 )
 import           Data.Morpheus.Parsing.Document.Parser
                                                 ( parseTypes )
-import           Data.Morpheus.Rendering.Haskell.Render
-                                                ( renderHaskellDocument )
+
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( renderGraphQLDocument )
 import           Data.Morpheus.Schema.SchemaAPI ( defaultTypes )
@@ -68,10 +66,7 @@ toGraphQLDocument x = case fullSchema x of
   Failure errors           -> pack (show errors)
   Success { result = lib } -> renderGraphQLDocument lib
 
-toMorpheusHaskellAPi :: String -> ByteString -> Either ByteString ByteString
-toMorpheusHaskellAPi moduleName doc = case parseGraphQLDocument doc of
-  Failure errors           -> Left $ pack (show errors)
-  Success { result = lib } -> Right $ renderHaskellDocument moduleName lib
+
 
 importGQLDocument :: String -> Q [Dec]
 importGQLDocument src = runIO (readFile src) >>= compileDocument False
