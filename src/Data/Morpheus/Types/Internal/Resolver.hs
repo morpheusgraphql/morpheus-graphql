@@ -42,7 +42,7 @@ import           Data.Text                      ( unpack
                                                 )
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Selection  ( resolverError
+import           Data.Morpheus.Error.Selection  ( resolvingFailedError
                                                 , subfieldsNotSelected
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Selection
@@ -295,7 +295,8 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
   = _resolve gResolver
  where
   convert :: Monad m => ResultT ev String con m a -> ResultT ev GQLError con m a
-  convert = mapFailure (resolverError selectionPosition fieldName)
+  convert =
+    mapFailure (resolvingFailedError selectionPosition fieldName . pack)
   ------------------------------
   _encode = (`encode` selection)
   -------------------------------------------------------------------
