@@ -38,6 +38,8 @@ resolver _args = lift setDBAddress
 
 ### Added
 
+- added `parseDSL` to `Data.Morpheus.Document`
+
 - GraphQL SDL support fully supports descriptions: onTypes, fields , args ...
   with (enums, inputObjects , union, object)
   for example :

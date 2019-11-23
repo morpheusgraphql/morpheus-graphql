@@ -7,7 +7,7 @@ module Data.Morpheus.Document
   , parseFullGQLDocument
   , importGQLDocument
   , importGQLDocumentWithNamespace
-  , parseEitherDSL
+  , parseDSL
   )
 where
 
@@ -50,8 +50,8 @@ import           Data.Morpheus.Validation.Document.Validation
                                                 ( validatePartialDocument )
 
                                               
-parseEitherDSL :: ByteString -> Either String DataTypeLib
-parseEitherDSL doc = case parseGraphQLDocument doc of
+parseDSL :: ByteString -> Either String DataTypeLib
+parseDSL doc = case parseGraphQLDocument doc of
   Failure errors     -> Left (show errors)
   Success { result } -> Right result
 
