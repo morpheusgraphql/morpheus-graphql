@@ -35,7 +35,7 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
 
 
-renderResponse :: Result e con GQLError Value -> GQLResponse
+renderResponse :: Result e GQLError con Value -> GQLResponse
 renderResponse (Failure errors)   = Errors errors
 renderResponse Success { result } = Data result
 

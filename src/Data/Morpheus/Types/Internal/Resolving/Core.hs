@@ -57,13 +57,13 @@ data GQLError = GQLError
 type GQLErrors = [GQLError]
 
 type StatelessResT = ResultT () GQLError 'True
-type Validation = Result () 'True GQLError
+type Validation = Result () GQLError 'True
 
 --
 -- Result
 --
 --
-data Result events (concurency :: Bool) error a =
+data Result events error (concurency :: Bool)  a =
   Success { result :: a , warnings :: [error] , events:: [events] }
   | Failure [error] deriving (Functor)
 
@@ -81,23 +81,23 @@ instance Monad (Result e  cocnurency error)  where
     (Failure e      ) -> Failure (e <> w1)
   Failure e >>= _ = Failure e
 
-instance Failure [error] (Result ev con error) where
+instance Failure [error] (Result ev error con) where
   failure = Failure
 
 unpackEvents :: Result event c e a -> [event]
 unpackEvents Success { events } = events
 unpackEvents _                  = []
 
-fromEither :: Either [er] a -> Result ev co er a
+fromEither :: Either [er] a -> Result ev er co a
 fromEither (Left  e) = Failure e
 fromEither (Right a) = Success a [] []
 
-fromEitherSingle :: Either er a -> Result ev co er a
+fromEitherSingle :: Either er a -> Result ev er co a
 fromEitherSingle (Left  e) = Failure [e]
 fromEitherSingle (Right a) = Success a [] []
 
 -- ResultT
-newtype ResultT event error (concurency :: Bool)  (m :: * -> * ) a = ResultT { runResultT :: m (Result event concurency error a )  }
+newtype ResultT event error (concurency :: Bool)  (m :: * -> * ) a = ResultT { runResultT :: m (Result event error concurency a )  }
   deriving (Functor)
 
 instance Applicative m => Applicative (ResultT event error concurency m) where
