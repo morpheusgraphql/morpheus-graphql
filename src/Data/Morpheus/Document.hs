@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Data.Morpheus.Document
@@ -6,6 +7,7 @@ module Data.Morpheus.Document
   , parseFullGQLDocument
   , importGQLDocument
   , importGQLDocumentWithNamespace
+  , parseEitherDSL
   )
 where
 
@@ -46,6 +48,13 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 )
 import           Data.Morpheus.Validation.Document.Validation
                                                 ( validatePartialDocument )
+
+                                              
+parseEitherDSL :: ByteString -> Either String DataTypeLib
+parseEitherDSL doc = case parseGraphQLDocument doc of
+  Failure errors     -> Left (show errors)
+  Success { result } -> Right result
+
 
 parseDocument :: Text -> Validation DataTypeLib
 parseDocument doc =
