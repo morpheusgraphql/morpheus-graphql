@@ -76,9 +76,9 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , ResponseEvent(..)
                                                 , ResponseStream
                                                 , Validation
-                                                , mapUnitToEvents
+                                                , restartEvents
                                                 , ResultT(..)
-                                                , getResultEvents
+                                                , unpackEvents
                                                 , Failure(..)
                                                 , resolveUpdates
                                                 )
@@ -163,7 +163,7 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
   = validRequest >>= execOperator
  where
   validRequest :: Monad m => ResponseT event m (DataTypeLib, ValidOperation)
-  validRequest = mapUnitToEvents $ ResultT $ pure $ do
+  validRequest = restartEvents $ ResultT $ pure $ do
     schema <- fullSchema $ Identity root
     query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
     pure (schema, query)
@@ -186,7 +186,7 @@ statefulResolver
   -> IO L.ByteString
 statefulResolver state streamApi requestText = do
   res <- runResultT (decodeNoDup requestText >>= streamApi)
-  mapM_ execute (getResultEvents res)
+  mapM_ execute (unpackEvents res)
   pure $ encode $ renderResponse res
  where
   execute (Publish updates) = publishUpdates state updates

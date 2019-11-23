@@ -20,10 +20,12 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , toEither
   , mapExceptGQL
   , fromEitherSingle
-  , mapUnitToEvents
-  , getResultEvents
+  , unpackEvents
   , LibUpdater
   , resolveUpdates
+  , mapEvent
+  , mapFailure
+  , restartEvents
   )
 where
 
@@ -84,11 +86,9 @@ instance Monad (Result e  cocnurency error)  where
 instance Failure [error] (Result ev con error) where
   failure = Failure
 
-
-getResultEvents :: Result event c e a -> [event]
-getResultEvents Success { events } = events
-getResultEvents _                  = []
-
+unpackEvents :: Result event c e a -> [event]
+unpackEvents Success { events } = events
+unpackEvents _                  = []
 
 toEither :: Result ev co er a -> Either [er] a
 toEither (Failure e)        = Left e
@@ -128,21 +128,38 @@ instance Monad m => Monad (ResultT event error concurency m) where
 instance MonadTrans (ResultT event error concurency) where
   lift = ResultT . fmap pure
 
-mapUnitToEvents
-  :: Functor m
-  => ResultT () error concurency m a
-  -> ResultT event error concurency m a
-mapUnitToEvents resT = ResultT $ replace <$> runResultT resT
- where
-  replace (Success v w _) = Success v w []
-  replace (Failure e    ) = Failure e
-
-
 instance Applicative m => Failure String (ResultT ev GQLError con m) where
   failure x =
     ResultT $ pure $ Failure [GQLError { message = pack x, locations = [] }]
 
+restartEvents
+  :: Functor m
+  => ResultT e1 error concurency m a
+  -> ResultT e2 error concurency m a
+restartEvents resT = ResultT $ replace <$> runResultT resT
+ where
+  replace (Success v w _) = Success v w []
+  replace (Failure e    ) = Failure e
 
+mapEvent
+  :: Monad m
+  => (ea -> eb)
+  -> ResultT ea er con m value
+  -> ResultT eb er con m value
+mapEvent func (ResultT ma) = ResultT $ do
+  state <- ma
+  return $ state { events = map func (events state) }
+
+mapFailure
+  :: Monad m
+  => (er1 -> er2)
+  -> ResultT ev er1 con m value
+  -> ResultT ev er2 con m value
+mapFailure f (ResultT ma) = ResultT $ do
+  state <- ma
+  case state of
+    Failure x     -> pure $ Failure (map f x)
+    Success x w e -> pure $ Success x (map f w) e
 
 
 -- Helper Functions

@@ -20,10 +20,10 @@ module Data.Morpheus.Types.Internal.Resolving
     , GQLChannel(..)
     , ResponseEvent(..)
     , ResponseStream
-    , mapUnitToEvents
+    , restartEvents
     , Result(..)
     , ResultT(..)
-    , getResultEvents
+    , unpackEvents
     , LibUpdater
     , resolveUpdates
     , GQLErrors
@@ -33,37 +33,4 @@ module Data.Morpheus.Types.Internal.Resolving
 where
 
 import           Data.Morpheus.Types.Internal.Resolving.Resolver
-                                                ( ResolveT
-                                                , Event(..)
-                                                , GQLRootResolver(..)
-                                                , UnSubResolver
-                                                , ResponseT
-                                                , Resolver(..)
-                                                , ResolvingStrategy(..)
-                                                , MapStrategy(..)
-                                                , LiftEither(..)
-                                                , resolveObject
-                                                , toResponseRes
-                                                , withObject
-                                                , resolving
-                                                , toResolver
-                                                , lift
-                                                , SubEvent
-                                                , GQLChannel(..)
-                                                , ResponseEvent(..)
-                                                , ResponseStream
-                                                )
-
 import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( Validation
-                                                , Result(..)
-                                                , ResultT(..)
-                                                , Failure(..)
-                                                , mapUnitToEvents
-                                                , getResultEvents
-                                                , LibUpdater
-                                                , resolveUpdates
-                                                , GQLErrors
-                                                , GQLError(..)
-                                                , Position
-                                                )

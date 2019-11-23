@@ -75,7 +75,9 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 , fromEither
                                                 , mapExceptGQL
                                                 , fromEitherSingle
-                                                , mapUnitToEvents
+                                                , restartEvents
+                                                , mapFailure
+                                                , mapEvent
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
@@ -178,8 +180,8 @@ resolveObject selectionSet fieldResolvers =
 
 toResponseRes
   :: Monad m => ResolvingStrategy o event m Value -> ResponseT event m Value
-toResponseRes (ResolveQ resT) = mapUnitToEvents resT
-toResponseRes (ResolveM resT) = mapS Publish resT
+toResponseRes (ResolveQ resT) = restartEvents resT
+toResponseRes (ResolveM resT) = mapEvent Publish resT
 toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
  where
   handleActions (Failure gqlError                ) = Failure gqlError
@@ -345,7 +347,7 @@ instance MapStrategy o o where
   mapStrategy = id
 
 instance MapStrategy QUERY SUBSCRIPTION where
-  mapStrategy (ResolveQ x) = ResolveS $ pure <$> mapUnitToEvents x
+  mapStrategy (ResolveQ x) = ResolveS $ pure <$> restartEvents x
 
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
@@ -362,10 +364,7 @@ data ResponseEvent m event
   = Publish event
   | Subscribe (SubEvent m event)
 
--- STREAMS
-type ResponseStream event m = ResultT (ResponseEvent m event) GQLError 'True m
-
-type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
+-- Channel
 
 newtype Channel event = Channel {
   unChannel :: StreamChannel event
@@ -389,23 +388,8 @@ instance GQLChannel (Event channel content)  where
 data Event e c = Event
   { channels :: [e], content  :: c}
 
--- Helper Functions
-mapS
-  :: Monad m
-  => (ea -> eb)
-  -> ResultT ea er con m value
-  -> ResultT eb er con m value
-mapS func (ResultT ma) = ResultT $ do
-  state <- ma
-  return $ state { events = map func (events state) }
 
-mapFailure
-  :: Monad m
-  => (er1 -> er2)
-  -> ResultT ev er1 con m value
-  -> ResultT ev er2 con m value
-mapFailure f (ResultT ma) = ResultT $ do
-  state <- ma
-  case state of
-    Failure x     -> pure $ Failure (map f x)
-    Success x w e -> pure $ Success x (map f w) e
+type ResponseStream event m = ResultT (ResponseEvent m event) GQLError 'True m
+
+type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
+  
