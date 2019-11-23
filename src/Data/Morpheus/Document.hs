@@ -38,7 +38,7 @@ import           Data.Morpheus.Rendering.RenderGQL
                                                 ( renderGraphQLDocument )
 import           Data.Morpheus.Schema.SchemaAPI ( defaultTypes )
 import           Data.Morpheus.Types            ( GQLRootResolver )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataTypeLib
                                                 , createDataTypeLib
                                                 )

@@ -39,7 +39,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..) )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , DataTyCon(..)
                                                 , DataType(..)

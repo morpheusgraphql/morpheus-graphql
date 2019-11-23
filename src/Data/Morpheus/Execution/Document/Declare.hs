@@ -24,7 +24,7 @@ import           Data.Morpheus.Execution.Document.Introspect
                                                 )
 import           Data.Morpheus.Execution.Internal.Declare
                                                 ( declareType )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( isInput
                                                 , isObject
                                                 , GQLTypeD(..)

@@ -57,7 +57,7 @@ import           Data.Morpheus.Types.Internal.AST.Operation
                                                 ( Operation(..)
                                                 , ValidOperation
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataFingerprint(..)
                                                 , DataTyCon(..)
                                                 , DataTypeLib(..)

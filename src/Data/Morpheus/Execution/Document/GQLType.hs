@@ -29,7 +29,7 @@ import           Data.Morpheus.Kind             ( ENUM
 import           Data.Morpheus.Types.GQLType    ( GQLType(..)
                                                 , TRUE
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataTypeKind(..)
                                                 , Meta(..)
                                                 , isObject

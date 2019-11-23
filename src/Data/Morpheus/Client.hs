@@ -28,12 +28,12 @@ import           Data.Morpheus.Execution.Client.Fetch
                                                 ( Fetch(..) )
 import           Data.Morpheus.Parsing.JSONSchema.Parse
                                                 ( decodeIntrospection )
-import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( DataTypeLib )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( GQLQuery )
+                                                ( GQLQuery
+                                                , DataTypeLib
+                                                )
 
 gql :: QuasiQuoter
 gql = QuasiQuoter { quoteExp  = compileSyntax

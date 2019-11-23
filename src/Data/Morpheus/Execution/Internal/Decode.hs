@@ -26,7 +26,7 @@ import           Language.Haskell.TH            ( ExpQ
 import           Data.Morpheus.Error.Internal   ( internalArgumentError
                                                 , internalTypeMismatch
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , Key
                                                 , ConsD(..) )

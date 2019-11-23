@@ -30,16 +30,15 @@ import qualified Data.Morpheus.Types.Internal.AST.Operation
                                                 ( Operation(..) )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..) )
 
-import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( DataTypeLib
+import           Data.Morpheus.Types.Internal.AST
+                                                ( GQLQuery(..)
+                                                , DataTypeLib
                                                 , ClientQuery(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Result(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( GQLQuery(..) )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( VALIDATION_MODE(..) )
 import           Data.Morpheus.Validation.Query.Validation
