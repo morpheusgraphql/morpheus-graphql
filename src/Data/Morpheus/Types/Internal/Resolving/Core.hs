@@ -25,7 +25,7 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , resolveUpdates
   , mapEvent
   , mapFailure
-  , restartEvents
+  , cleanEvents
   )
 where
 
@@ -132,11 +132,11 @@ instance Applicative m => Failure String (ResultT ev GQLError con m) where
   failure x =
     ResultT $ pure $ Failure [GQLError { message = pack x, locations = [] }]
 
-restartEvents
+cleanEvents
   :: Functor m
   => ResultT e1 error concurency m a
   -> ResultT e2 error concurency m a
-restartEvents resT = ResultT $ replace <$> runResultT resT
+cleanEvents resT = ResultT $ replace <$> runResultT resT
  where
   replace (Success v w _) = Success v w []
   replace (Failure e    ) = Failure e

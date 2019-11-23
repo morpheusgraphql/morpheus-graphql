@@ -75,7 +75,7 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 , fromEither
                                                 , mapExceptGQL
                                                 , fromEitherSingle
-                                                , restartEvents
+                                                , cleanEvents
                                                 , mapFailure
                                                 , mapEvent
                                                 )
@@ -180,7 +180,7 @@ resolveObject selectionSet fieldResolvers =
 
 toResponseRes
   :: Monad m => ResolvingStrategy o event m Value -> ResponseT event m Value
-toResponseRes (ResolveQ resT) = restartEvents resT
+toResponseRes (ResolveQ resT) = cleanEvents resT
 toResponseRes (ResolveM resT) = mapEvent Publish resT
 toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
  where
@@ -347,7 +347,7 @@ instance MapStrategy o o where
   mapStrategy = id
 
 instance MapStrategy QUERY SUBSCRIPTION where
-  mapStrategy (ResolveQ x) = ResolveS $ pure <$> restartEvents x
+  mapStrategy (ResolveQ x) = ResolveS $ pure <$> cleanEvents x
 
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.

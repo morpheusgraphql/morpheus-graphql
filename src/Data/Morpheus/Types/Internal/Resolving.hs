@@ -20,7 +20,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , GQLChannel(..)
     , ResponseEvent(..)
     , ResponseStream
-    , restartEvents
+    , cleanEvents
     , Result(..)
     , ResultT(..)
     , unpackEvents
