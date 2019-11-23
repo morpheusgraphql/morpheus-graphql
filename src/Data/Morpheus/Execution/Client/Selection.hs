@@ -31,15 +31,13 @@ import           Data.Morpheus.Types.Internal.AST.Operation
                                                 , getOperationName
                                                 , getOperationDataType
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Selection
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Selection(..)
                                                 , SelectionRec(..)
                                                 , SelectionSet
                                                 , ValidSelection
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( Ref(..) ,
-                                                  DataField(..)
+                                                , Ref(..) 
+                                                , DataField(..)
                                                 , DataTyCon(..)
                                                 , DataType(..)
                                                 , DataTypeKind(..)

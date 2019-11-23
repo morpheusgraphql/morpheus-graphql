@@ -32,7 +32,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 )
 import           Data.Morpheus.Parsing.Request.Arguments
                                                 ( maybeArguments )
-import           Data.Morpheus.Types.Internal.AST.Selection
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Selection(..)
                                                 , Fragment(..)
                                                 , RawArguments

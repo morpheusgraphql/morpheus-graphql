@@ -24,14 +24,13 @@ import           Data.Morpheus.Parsing.Internal.Value
                                                 ( enumValue
                                                 , parseValue
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Selection
+import           Data.Morpheus.Types.Internal.AST
                                                 ( ValueOrigin(..)
                                                 , Argument(..)
                                                 , RawArgument(..)
                                                 , RawArguments
+                                                , Ref(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( Ref(..) )
 
 
 -- Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Arguments

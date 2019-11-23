@@ -65,17 +65,15 @@ import           Data.Morpheus.Types.Internal.AST.Operation
                                                 ( Operation(..)
                                                 , ValidOperation
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Selection
-                                                ( Selection(..)
-                                                , SelectionRec(..)
-                                                , ValidSelection
-                                                )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Key,
                                                   MUTATION
                                                 , OperationType
                                                 , QUERY
                                                 , SUBSCRIPTION
+                                                , Selection(..)
+                                                , SelectionRec(..)
+                                                , ValidSelection
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( MapStrategy(..)

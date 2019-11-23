@@ -24,16 +24,13 @@ import           Data.Morpheus.Types.Internal.AST.Operation
                                                 ( ValidVariables
                                                 , Variable(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Selection
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Argument(..)
                                                 , ValueOrigin(..)
                                                 , Arguments
                                                 , RawArgument(..)
                                                 , RawArguments
-                                                )
-
-import           Data.Morpheus.Types.Internal.AST
-                                                ( Ref(..)
+                                                , Ref(..)
                                                 , Position
                                                 , DataArgument
                                                 , DataField(..)

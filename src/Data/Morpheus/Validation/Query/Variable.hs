@@ -28,16 +28,14 @@ import           Data.Morpheus.Types.Internal.AST.Operation
                                                 , Variable(..)
                                                 , getOperationName
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Selection
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Fragment(..)
                                                 , FragmentLib
                                                 , RawArgument(..)
                                                 , RawSelection(..)
                                                 , RawSelectionSet
                                                 , Selection(..)
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( Ref(..)
+                                                , Ref(..)
                                                 , Position
                                                 , DataType
                                                 , DataTypeLib

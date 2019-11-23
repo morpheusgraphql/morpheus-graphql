@@ -23,14 +23,12 @@ import           Data.Morpheus.Error.Fragment   ( cannotBeSpreadOnType
                                                 , unusedFragment
                                                 )
 import           Data.Morpheus.Error.Variable   ( unknownType )
-import           Data.Morpheus.Types.Internal.AST.Selection
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Fragment(..)
                                                 , FragmentLib
                                                 , RawSelection(..)
                                                 , Selection(..)
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( Ref(..)
+                                                , Ref(..)
                                                 , Position
                                                 , DataTypeLib
                                                 , lookupDataObject

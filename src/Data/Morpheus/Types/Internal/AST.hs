@@ -12,7 +12,35 @@ module Data.Morpheus.Types.Internal.AST
   , Name
   , Description
 
-  -- DATA
+  -- Selection
+  , Argument(..)
+  , Arguments
+  , SelectionSet
+  , SelectionRec(..)
+  , ValueOrigin(..)
+  , ValidSelection
+  , Selection(..)
+  , RawSelection'
+  , FragmentLib
+  , RawArguments
+  , RawSelectionSet
+  , Fragment(..)
+  , RawArgument(..)
+  , RawSelection(..)
+
+  -- OPERATION
+  , Operation(..)
+  , Variable(..)
+  , ValidOperation
+  , RawOperation
+  , VariableDefinitions
+  , ValidVariables
+  , DefaultValue
+  , getOperationName
+  , getOperationDataType
+
+
+  -- DATA Types
   , DataScalar
   , DataEnum
   , DataObject

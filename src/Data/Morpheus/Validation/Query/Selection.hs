@@ -23,7 +23,7 @@ import           Data.Morpheus.Error.Selection  ( cannotQueryField
 import           Data.Morpheus.Error.Variable   ( unknownType )
 import           Data.Morpheus.Types.Internal.AST.Operation
                                                 ( ValidVariables )
-import           Data.Morpheus.Types.Internal.AST.Selection
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Selection(..)
                                                 , SelectionRec(..)
                                                 , SelectionSet
@@ -31,9 +31,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , FragmentLib
                                                 , RawSelection(..)
                                                 , RawSelectionSet
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                , DataField(..)
                                                 , Ref(..)
                                                 , DataObject
                                                 , DataTyCon(..)
