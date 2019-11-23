@@ -70,10 +70,9 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , SelectionRec(..)
                                                 , ValidSelection
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Key )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( MUTATION
+                                                ( Key,
+                                                  MUTATION
                                                 , OperationType
                                                 , QUERY
                                                 , SUBSCRIPTION

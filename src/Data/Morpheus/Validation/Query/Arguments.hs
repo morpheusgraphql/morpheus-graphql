@@ -31,12 +31,11 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawArgument(..)
                                                 , RawArguments
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Base
+
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Ref(..)
                                                 , Position
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( DataArgument
+                                                , DataArgument
                                                 , DataField(..)
                                                 , DataTypeLib
                                                 , TypeAlias(..)

@@ -1,9 +1,18 @@
 {-# LANGUAGE DeriveLift       #-}
 
 module Data.Morpheus.Types.Internal.AST
-  ( GQLQuery(..)
-  , Variables
-  , Key
+  (
+    -- BASE
+    Key
+  , Collection
+  , Ref(..)
+  , Position(..)
+  , Message
+  , anonymousRef
+  , Name
+  , Description
+
+  -- DATA
   , DataScalar
   , DataEnum
   , DataObject
@@ -49,8 +58,6 @@ module Data.Morpheus.Types.Internal.AST
   , QUERY
   , MUTATION
   , SUBSCRIPTION
-  , Name
-  , Description
   , isEntNode
   , lookupInputType
   , coerceDataObject
@@ -85,6 +92,9 @@ module Data.Morpheus.Types.Internal.AST
   , ClientQuery(..)
   , GQLTypeD(..)
   , ClientType(..)
+  -- LOCAL
+  , GQLQuery(..)
+  , Variables
   )
 where
 

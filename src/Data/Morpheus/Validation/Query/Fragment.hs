@@ -29,12 +29,10 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawSelection(..)
                                                 , Selection(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Base
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Ref(..)
                                                 , Position
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( DataTypeLib
+                                                , DataTypeLib
                                                 , lookupDataObject
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving

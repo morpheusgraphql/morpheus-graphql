@@ -37,10 +37,9 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , SelectionSet
                                                 , ValidSelection
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Ref(..) )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( Ref(..) ,
+                                                  DataField(..)
                                                 , DataTyCon(..)
                                                 , DataType(..)
                                                 , DataTypeKind(..)

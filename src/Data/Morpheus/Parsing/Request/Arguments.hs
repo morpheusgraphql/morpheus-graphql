@@ -30,7 +30,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawArgument(..)
                                                 , RawArguments
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Base
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Ref(..) )
 
 

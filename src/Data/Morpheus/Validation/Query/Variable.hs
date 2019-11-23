@@ -36,12 +36,10 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawSelectionSet
                                                 , Selection(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Base
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Ref(..)
                                                 , Position
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( DataType
+                                                , DataType
                                                 , DataTypeLib
                                                 , lookupInputType
                                                 , Variables
