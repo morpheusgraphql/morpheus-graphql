@@ -29,7 +29,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , RawSelectionSet
                                                 )
 
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation ,Failure(..) )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Collection

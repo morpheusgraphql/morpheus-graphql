@@ -36,10 +36,10 @@ import           Data.Morpheus.Execution.Server.Resolve
                                                 )
 import           Data.Morpheus.Execution.Subscription.ClientRegister
                                                 ( GQLState )
-import           Data.Morpheus.Types.Internal.Resolver
-                                                ( GQLRootResolver(..) )
-import           Data.Morpheus.Types.Internal.Stream
-                                                ( ResponseStream )
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( GQLRootResolver(..)
+                                                , ResponseStream
+                                                )
 import           Data.Morpheus.Types.IO         ( GQLRequest
                                                 , GQLResponse
                                                 )

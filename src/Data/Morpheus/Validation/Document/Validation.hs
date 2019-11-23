@@ -27,7 +27,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , isWeaker
                                                 , isWeaker
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation, Failure(..) )
 
 validatePartialDocument :: [(Key, RawDataType)] -> Validation [(Key, DataType)]

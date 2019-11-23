@@ -39,7 +39,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( convertToJSONName )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Failure(..) )
 
 constRes :: Applicative m => a -> b -> m a

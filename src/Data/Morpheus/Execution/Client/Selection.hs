@@ -20,10 +20,6 @@ import           Data.Text                      ( Text
 import           Data.Morpheus.Error.Client.Client
                                                 ( deprecatedField )
 import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
-import           Data.Morpheus.Execution.Internal.GraphScanner
-                                                ( LibUpdater
-                                                , resolveUpdates
-                                                )
 import           Data.Morpheus.Execution.Internal.Utils
                                                 ( nameSpaceType )
 import           Data.Morpheus.Types.Internal.AST.Operation
@@ -60,12 +56,14 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( GQLErrors
                                                 , Validation
                                                 , Failure(..)
                                                 , Result(..)
                                                 , Position
+                                                , LibUpdater
+                                                , resolveUpdates
                                                 )
 import           Data.Set                       ( fromList
                                                 , toList

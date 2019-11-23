@@ -7,7 +7,7 @@
 {-# LANGUAGE PolyKinds          #-}
 {-# LANGUAGE NamedFieldPuns     #-}
 
-module Data.Morpheus.Types.Internal.Validation
+module Data.Morpheus.Types.Internal.Resolving.Core
   ( GQLError(..)
   , Position(..)
   , GQLErrors
@@ -22,9 +22,13 @@ module Data.Morpheus.Types.Internal.Validation
   , fromEitherSingle
   , mapUnitToEvents
   , getResultEvents
+  , LibUpdater
+  , resolveUpdates
   )
 where
 
+import           Control.Monad                  ( foldM )
+import           Data.Function                  ( (&) )
 import           Control.Monad.Trans.Class      ( MonadTrans(..) )
 import           Control.Applicative            ( liftA2 )
 import           Control.Monad.Trans.Except     ( ExceptT(..) )
@@ -138,3 +142,11 @@ instance Applicative m => Failure String (ResultT ev GQLError con m) where
   failure x =
     ResultT $ pure $ Failure [GQLError { message = pack x, locations = [] }]
 
+
+
+
+-- Helper Functions
+type LibUpdater lib = lib -> Validation lib
+
+resolveUpdates :: lib -> [LibUpdater lib] -> Validation lib
+resolveUpdates = foldM (&)

@@ -7,7 +7,7 @@ module Data.Morpheus.Error.Schema
 where
 
 import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( GQLErrors )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text )

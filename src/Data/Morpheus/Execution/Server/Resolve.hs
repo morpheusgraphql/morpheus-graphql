@@ -73,19 +73,15 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , initTypeLib
                                                 , Key
                                                 )
-import           Data.Morpheus.Types.Internal.Resolver
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
                                                 , Resolver(..)
                                                 , ResponseT
                                                 , toResponseRes
-                                                )
-import           Data.Morpheus.Types.Internal.Stream
-                                                ( GQLChannel(..)
+                                                , GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
-                                                )
-import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation
+                                                , Validation
                                                 , mapUnitToEvents
                                                 , ResultT(..)
                                                 , getResultEvents

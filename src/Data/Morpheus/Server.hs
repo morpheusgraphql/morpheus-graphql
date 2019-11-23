@@ -43,22 +43,19 @@ import           Data.Morpheus.Execution.Subscription.ClientRegister
                                                 , publishUpdates
                                                 , removeClientSubscription
                                                 )
-import           Data.Morpheus.Types.Internal.Resolver
-                                                ( GQLRootResolver(..) )
-import           Data.Morpheus.Types.Internal.Stream
-                                                ( GQLChannel(..)
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( GQLRootResolver(..)
+                                                , GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
+                                                , runResultT
+                                                , Result(..)
                                                 )
 import           Data.Morpheus.Types.Internal.WebSocket
                                                 ( GQLClient(..) )
 import           Data.Morpheus.Types.IO         ( GQLResponse(..) )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
-import           Data.Morpheus.Types.Internal.Validation
-                                                ( runResultT
-                                                , Result(..)
-                                                )
 
 handleSubscription
   :: (Eq (StreamChannel e), GQLChannel e)

@@ -17,7 +17,7 @@ import           Data.Morpheus.Types.Internal.AST.Operation
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataTypeLib(..) )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation )
 import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
 import           Data.Morpheus.Validation.Internal.Utils

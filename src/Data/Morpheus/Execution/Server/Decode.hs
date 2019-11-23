@@ -52,7 +52,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Object

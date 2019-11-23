@@ -11,8 +11,9 @@
 {-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Morpheus.Types.Internal.Resolver
+module Data.Morpheus.Types.Internal.Resolving.Resolver
   ( ResolveT
   , Event(..)
   , GQLRootResolver(..)
@@ -28,6 +29,10 @@ module Data.Morpheus.Types.Internal.Resolver
   , resolving
   , toResolver
   , lift
+  , SubEvent
+  , GQLChannel(..)
+  , ResponseEvent(..)
+  , ResponseStream
   )
 where
 
@@ -60,16 +65,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 )
-import           Data.Morpheus.Types.Internal.Stream
-                                                ( Channel(..)
-                                                , Event(..)
-                                                , ResponseEvent(..)
-                                                , ResponseStream
-                                                , StreamChannel
-                                                , mapS
-                                                , mapFailure
-                                                )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( GQLErrors
                                                 , GQLError
                                                 , Validation
@@ -85,7 +81,10 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
                                                 , Value
                                                 )
-import           Data.Morpheus.Types.IO         ( renderResponse2 )
+import           Data.Morpheus.Types.IO         ( renderResponse2
+                                                , GQLResponse
+                                                )
+-- MORPHEUS
 
 
 class LiftEither (o::OperationType) res where
@@ -357,3 +356,56 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* ->
   , mutationResolver     :: mut (Resolver MUTATION event m)
   , subscriptionResolver :: sub (Resolver SUBSCRIPTION  event m)
   }
+
+ -- EVENTS
+data ResponseEvent m event
+  = Publish event
+  | Subscribe (SubEvent m event)
+
+-- STREAMS
+type ResponseStream event m = ResultT (ResponseEvent m event) GQLError 'True m
+
+type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
+
+newtype Channel event = Channel {
+  unChannel :: StreamChannel event
+}
+
+instance (Eq (StreamChannel event)) => Eq (Channel event) where
+  Channel x == Channel y = x == y
+
+class GQLChannel a where
+  type StreamChannel a :: *
+  streamChannels :: a -> [Channel a]
+
+instance GQLChannel () where
+  type StreamChannel () = ()
+  streamChannels _ = []
+
+instance GQLChannel (Event channel content)  where
+  type StreamChannel (Event channel content) = channel
+  streamChannels Event { channels } = map Channel channels
+
+data Event e c = Event
+  { channels :: [e], content  :: c}
+
+-- Helper Functions
+mapS
+  :: Monad m
+  => (ea -> eb)
+  -> ResultT ea er con m value
+  -> ResultT eb er con m value
+mapS func (ResultT ma) = ResultT $ do
+  state <- ma
+  return $ state { events = map func (events state) }
+
+mapFailure
+  :: Monad m
+  => (er1 -> er2)
+  -> ResultT ev er1 con m value
+  -> ResultT ev er2 con m value
+mapFailure f (ResultT ma) = ResultT $ do
+  state <- ma
+  case state of
+    Failure x     -> pure $ Failure (map f x)
+    Success x w e -> pure $ Success x (map f w) e

@@ -34,8 +34,6 @@ import           GHC.Generics
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
-import           Data.Morpheus.Execution.Internal.GraphScanner
-                                                ( resolveUpdates )
 import           Data.Morpheus.Execution.Server.Generics.EnumRep
                                                 ( EnumRep(..) )
 import           Data.Morpheus.Kind             ( Context(..)
@@ -52,7 +50,10 @@ import           Data.Morpheus.Types.Custom     ( MapKind
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
 import           Data.Morpheus.Types.GQLType    ( GQLType(..) )
-import           Data.Morpheus.Types.Internal.Validation(Failure(..))
+import           Data.Morpheus.Types.Internal.Resolving.Core
+                                                ( Failure(..)
+                                                , resolveUpdates
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataArguments
                                                 , Meta(..)

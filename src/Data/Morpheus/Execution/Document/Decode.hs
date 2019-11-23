@@ -27,7 +27,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( TypeD(..) )
 import           Data.Morpheus.Types.Internal.TH
                                                 ( instanceHeadT )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Object )

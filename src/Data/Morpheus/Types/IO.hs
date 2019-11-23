@@ -32,7 +32,7 @@ import           GHC.Generics                   ( Generic )
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( GQLError(..)
                                                 , Result(..)
                                                 , ResultT(..)

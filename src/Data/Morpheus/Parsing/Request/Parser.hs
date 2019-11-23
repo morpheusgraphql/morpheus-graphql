@@ -30,7 +30,7 @@ import           Data.Morpheus.Parsing.Request.Operation
                                                 ( parseOperation )
 import           Data.Morpheus.Parsing.Request.Selection
                                                 ( parseFragmentDefinition )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
                                                 , Failure(..)
                                                 )

@@ -37,7 +37,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , ClientQuery(..)
                                                 , TypeD(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Result(..)
                                                 )

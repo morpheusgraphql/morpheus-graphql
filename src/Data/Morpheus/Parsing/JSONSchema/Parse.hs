@@ -37,7 +37,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , createUnionType
                                                 , toHSWrappers
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation )
 import           Data.Morpheus.Types.IO         ( JSONResponse(..) )
 import           Data.Semigroup                 ( (<>) )
