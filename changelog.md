@@ -1,5 +1,9 @@
 ## [0.7.0] -
 
+## Removed
+
+- `toMorpheusHaskellAPi` from `Data.Morpheus.Document` functionality will be migrated in `morpheus-graphql-cli`
+
 ## Changed
 
 - `liftM` to `MonadTrans` instance method `lift`
@@ -9,6 +13,7 @@
 - `Resolver operation m event value` -> `Resolver operation event m value` , monad trans needs that last 2 type arguments are monad and value that why it was necessary
 
 - Mutation Resolver was changed from
+- exposed `Data.Morpheus.Types.Internal.AST`
 
 ```
 resolver :: () -> ResolveM EVENT IO Address
