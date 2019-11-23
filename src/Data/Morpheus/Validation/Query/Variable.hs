@@ -40,10 +40,11 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
                                                 , Position
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataType
                                                 , DataTypeLib
                                                 , lookupInputType
+                                                , Variables
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -51,8 +52,6 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value(..) )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( Variables )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( VALIDATION_MODE(..) )
 import           Data.Morpheus.Validation.Internal.Value

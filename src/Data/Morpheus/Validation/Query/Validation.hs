@@ -15,12 +15,13 @@ import           Data.Morpheus.Types.Internal.AST.Operation
                                                 , getOperationName
                                                 , getOperationDataType
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( DataTypeLib(..) )
+import           Data.Morpheus.Types.Internal.AST
+                                                ( DataTypeLib(..)
+                                                , GQLQuery(..)
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( GQLQuery(..) )
+
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( VALIDATION_MODE )
 import           Data.Morpheus.Validation.Query.Fragment

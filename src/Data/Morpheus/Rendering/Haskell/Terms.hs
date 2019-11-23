@@ -26,7 +26,7 @@ import           Data.Text                      ( Text
                                                 )
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( TypeWrapper(..) )
 
 indent :: Text

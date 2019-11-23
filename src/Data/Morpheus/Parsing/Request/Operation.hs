@@ -41,7 +41,7 @@ import           Data.Morpheus.Types.Internal.AST.Operation
                                                 , RawOperation
                                                 , Variable(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( OperationType(..)
                                                 , isNullable
                                                 )

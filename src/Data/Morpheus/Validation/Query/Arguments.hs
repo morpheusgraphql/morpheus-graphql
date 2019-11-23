@@ -35,7 +35,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
                                                 , Position
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataArgument
                                                 , DataField(..)
                                                 , DataTypeLib

@@ -22,7 +22,7 @@ import           Data.Morpheus.Rendering.Haskell.Terms
                                                 , renderSet
                                                 , renderUnionCon
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , DataType(..)
                                                 , DataTyCon(..)

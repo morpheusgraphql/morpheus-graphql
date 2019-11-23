@@ -64,7 +64,7 @@ import           Data.Morpheus.Parsing.Internal.Internal
                                                 , Position
                                                 , getLocation
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataTypeWrapper(..)
                                                 , Key
                                                 , Description

@@ -31,7 +31,7 @@ import           Data.Morpheus.Rendering.Haskell.Terms
                                                 , renderUnionCon
                                                 , renderWrapped
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataArgument
                                                 , DataField(..)
                                                 , DataType(..)

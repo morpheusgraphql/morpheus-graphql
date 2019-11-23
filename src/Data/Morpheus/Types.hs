@@ -39,7 +39,7 @@ import           Data.Morpheus.Types.GQLScalar  ( GQLScalar
                                                 )
 import           Data.Morpheus.Types.GQLType    ( GQLType(KIND, description) )
 import           Data.Morpheus.Types.ID         ( ID(..) )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( MUTATION
                                                 , QUERY
                                                 , SUBSCRIPTION
