@@ -29,8 +29,9 @@ import           Data.Morpheus.Execution.Client.Fetch
 import           Data.Morpheus.Execution.Internal.Declare
                                                 ( declareType )
 
-import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( DataTypeKind(..)
+import           Data.Morpheus.Types.Internal.AST
+                                                ( GQLQuery(..)
+                                                , DataTypeKind(..)
                                                 , DataTypeLib
                                                 , isOutputObject
                                                 , ClientType(..)
@@ -41,11 +42,10 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Result(..)
                                                 )
-import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
 
 
 
-defineQuery :: IO (Validation DataTypeLib) -> (GQLQueryRoot, String) -> Q [Dec]
+defineQuery :: IO (Validation DataTypeLib) -> (GQLQuery, String) -> Q [Dec]
 defineQuery ioSchema queryRoot = do
   schema <- runIO ioSchema
   case schema >>= (`validateWith` queryRoot) of

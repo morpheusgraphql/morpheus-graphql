@@ -25,20 +25,20 @@ import           Data.Morpheus.Execution.Client.Selection
                                                 ( operationTypes )
 import           Data.Morpheus.Parsing.Request.Parser
                                                 ( parseGQL )
-import qualified Data.Morpheus.Types.Internal.AST.Operation
+import qualified Data.Morpheus.Types.Internal.AST
                                                as O
                                                 ( Operation(..) )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..) )
 
-import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( DataTypeLib
+import           Data.Morpheus.Types.Internal.AST
+                                                ( GQLQuery(..)
+                                                , DataTypeLib
                                                 , ClientQuery(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Result(..)
                                                 )
-import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
 import           Data.Morpheus.Validation.Internal.Utils
                                                 ( VALIDATION_MODE(..) )
 import           Data.Morpheus.Validation.Query.Validation
@@ -55,8 +55,8 @@ compileSyntax queryText = case parseGQL request of
                        , variables     = Nothing
                        }
 
-validateWith :: DataTypeLib -> (GQLQueryRoot, String) -> Validation ClientQuery
-validateWith schema (rawRequest@GQLQueryRoot { operation }, queryText) = do
+validateWith :: DataTypeLib -> (GQLQuery, String) -> Validation ClientQuery
+validateWith schema (rawRequest@GQLQuery { operation }, queryText) = do
   validOperation <- validateRequest schema WITHOUT_VARIABLES rawRequest
   (queryArgsType, queryTypes) <- operationTypes schema
                                                 (O.operationArgs operation)

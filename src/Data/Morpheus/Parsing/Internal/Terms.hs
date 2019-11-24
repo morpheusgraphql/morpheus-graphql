@@ -64,16 +64,14 @@ import           Data.Morpheus.Parsing.Internal.Internal
                                                 , Position
                                                 , getLocation
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataTypeWrapper(..)
                                                 , Key
                                                 , Description
                                                 , Name
                                                 , TypeWrapper(..)
                                                 , toHSWrappers
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( convertToHaskellName )
+                                                , convertToHaskellName )
 
 
 -- Name : https://graphql.github.io/graphql-spec/June2018/#sec-Names

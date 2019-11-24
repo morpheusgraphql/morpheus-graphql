@@ -20,7 +20,7 @@ import           Data.Text                      ( Text
 import           Data.Morpheus.Error.Internal   ( internalError )
 import           Data.Morpheus.Execution.Internal.Utils
                                                 ( capital )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( ArgsType(..)
                                                 , DataField(..)
                                                 , DataTyCon(..)

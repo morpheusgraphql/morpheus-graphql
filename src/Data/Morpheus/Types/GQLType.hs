@@ -34,8 +34,9 @@ import           Data.Typeable                  ( TyCon
 
 -- MORPHEUS
 import           Data.Morpheus.Kind
-import           Data.Morpheus.Types.Custom     ( MapKind
+import           Data.Morpheus.Types.Types      ( MapKind
                                                 , Pair
+                                                , Undefined(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataFingerprint(..)
@@ -43,7 +44,6 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Resolver(..) )
-import           Data.Morpheus.Types.Types      ( Undefined(..) )
 
 type TRUE = 'True
 

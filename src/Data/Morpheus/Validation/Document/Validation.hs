@@ -16,7 +16,7 @@ import           Data.Morpheus.Error.Document.Interface
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , DataType(..)
                                                 , DataObject

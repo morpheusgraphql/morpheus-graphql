@@ -10,7 +10,7 @@ module Data.Morpheus.Validation.Internal.Utils
 where
 
 import           Data.List                      ( (\\) )
-import           Data.Morpheus.Types.Internal.AST.Base
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Ref(..)
                                                 , Key
                                                 , anonymousRef
