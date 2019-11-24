@@ -5,11 +5,12 @@
 
 module Data.Morpheus.Schema.TypeKind
   ( TypeKind(..)
-  ) where
+  )
+where
 
-import           Data.Aeson                  (FromJSON (..))
-import           Data.Morpheus.Kind          (ENUM)
-import           Data.Morpheus.Types.GQLType (GQLType (KIND, __typeName))
+import           Data.Aeson                     ( FromJSON(..) )
+import           Data.Morpheus.Kind             ( ENUM )
+import           Data.Morpheus.Types.GQLType    ( GQLType(KIND, __typeName) )
 import           GHC.Generics
 
 instance GQLType TypeKind where

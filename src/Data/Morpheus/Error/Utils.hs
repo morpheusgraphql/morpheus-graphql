@@ -3,31 +3,39 @@
 module Data.Morpheus.Error.Utils
   ( errorMessage
   , globalErrorMessage
-  , renderErrors
   , badRequestError
   , toLocation
-  ) where
+  )
+where
 
-import           Data.ByteString.Lazy.Char8              (ByteString, pack)
-import           Data.Morpheus.Types.Internal.Base       (Position)
-import           Data.Morpheus.Types.Internal.Validation (GQLError (..), GQLErrors, JSONError (..), Location (..))
-import           Data.Text                               (Text)
-import           Text.Megaparsec                         (SourcePos (SourcePos), sourceColumn, sourceLine, unPos)
+import           Data.ByteString.Lazy.Char8     ( ByteString
+                                                , pack
+                                                )
+import           Data.Morpheus.Types.Internal.AST.Base
+                                                ( Position )
+import           Data.Morpheus.Types.Internal.Resolving.Core
+                                                ( GQLError(..)
+                                                , GQLErrors
+                                                , GQLError(..)
+                                                , Position(..)
+                                                )
+import           Data.Text                      ( Text )
+import           Text.Megaparsec                ( SourcePos(SourcePos)
+                                                , sourceColumn
+                                                , sourceLine
+                                                , unPos
+                                                )
 
 errorMessage :: Position -> Text -> GQLErrors
-errorMessage position text = [GQLError {desc = text, positions = [position]}]
+errorMessage position message = [GQLError { message, locations = [position] }]
 
 globalErrorMessage :: Text -> GQLErrors
-globalErrorMessage text = [GQLError {desc = text, positions = []}]
+globalErrorMessage message = [GQLError { message, locations = [] }]
 
-renderErrors :: [GQLError] -> [JSONError]
-renderErrors = map renderError
-
-renderError :: GQLError -> JSONError
-renderError GQLError {desc, positions} = JSONError {message = desc, locations = positions}
-
-toLocation :: SourcePos -> Location
-toLocation SourcePos {sourceLine, sourceColumn} = Location {line = unPos sourceLine, column = unPos sourceColumn}
+toLocation :: SourcePos -> Position
+toLocation SourcePos { sourceLine, sourceColumn } =
+  Position { line = unPos sourceLine, column = unPos sourceColumn }
 
 badRequestError :: String -> ByteString
-badRequestError aesonError' = pack $ "Bad Request. Could not decode Request body: " ++ aesonError'
+badRequestError aesonError' =
+  pack $ "Bad Request. Could not decode Request body: " ++ aesonError'

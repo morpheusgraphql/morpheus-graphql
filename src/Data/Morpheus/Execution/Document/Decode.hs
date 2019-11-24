@@ -7,29 +7,42 @@
 
 module Data.Morpheus.Execution.Document.Decode
   ( deriveDecode
-  ) where
+  )
+where
 
-import           Data.Text                               (Text)
+import           Data.Text                      ( Text )
 import           Language.Haskell.TH
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Execution.Internal.Decode (decodeFieldWith, decodeObjectExpQ)
-import           Data.Morpheus.Execution.Server.Decode   (Decode (..), DecodeObject (..))
-import           Data.Morpheus.Types.Internal.DataD      (TypeD (..))
-import           Data.Morpheus.Types.Internal.TH         (instanceHeadT)
-import           Data.Morpheus.Types.Internal.Validation (Validation)
-import           Data.Morpheus.Types.Internal.Value      (Object)
+import           Data.Morpheus.Execution.Internal.Decode
+                                                ( decodeFieldWith
+                                                , decodeObjectExpQ
+                                                )
+import           Data.Morpheus.Execution.Server.Decode
+                                                ( Decode(..)
+                                                , DecodeObject(..)
+                                                )
+import           Data.Morpheus.Types.Internal.AST
+                                                ( TypeD(..)
+                                                , Object
+                                                )
+import           Data.Morpheus.Types.Internal.TH
+                                                ( instanceHeadT )
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( Validation )
+
 
 (.:) :: Decode a => Object -> Text -> Validation a
 object .: selectorName = decodeFieldWith decode selectorName object
 
 deriveDecode :: TypeD -> Q [Dec]
-deriveDecode TypeD {tName, tCons = [cons]} = pure <$> instanceD (cxt []) appHead methods
-  where
-    appHead = instanceHeadT ''DecodeObject tName []
-    methods = [funD 'decodeObject [clause argsE (normalB body) []]]
-      where
-        argsE = map (varP . mkName) ["o"]
-        body = decodeObjectExpQ [|(.:)|] cons
+deriveDecode TypeD { tName, tCons = [cons] } =
+  pure <$> instanceD (cxt []) appHead methods
+ where
+  appHead = instanceHeadT ''DecodeObject tName []
+  methods = [funD 'decodeObject [clause argsE (normalB body) []]]
+   where
+    argsE = map (varP . mkName) ["o"]
+    body  = decodeObjectExpQ [|(.:)|] cons
 deriveDecode _ = pure []

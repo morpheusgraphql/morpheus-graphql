@@ -1,5 +1,5 @@
 # ghc-8.8.1
-resolver: nightly-2019-11-01
+resolver: nightly-2019-11-21
 
 packages:
   - examples

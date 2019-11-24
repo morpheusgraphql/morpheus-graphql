@@ -1,14 +1,11 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DataKinds  #-}
 -- | GQL Types
 module Data.Morpheus.Types
   ( Event(..)
   -- Type Classes
   , GQLType(KIND, description)
-  , GQLScalar
-    ( parseValue
-    , serialize
-  -- Values
-    )
+  , GQLScalar(parseValue, serialize)
   , GQLRequest(..)
   , GQLResponse(..)
   , ID(..)
@@ -42,21 +39,19 @@ import           Data.Morpheus.Types.GQLScalar  ( GQLScalar
                                                 )
 import           Data.Morpheus.Types.GQLType    ( GQLType(KIND, description) )
 import           Data.Morpheus.Types.ID         ( ID(..) )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( MUTATION
                                                 , QUERY
                                                 , SUBSCRIPTION
+                                                , ScalarValue(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Resolver
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Event(..)
                                                 , GQLRootResolver(..)
-                                                , PureOperation
                                                 , Resolver(..)
-                                                , liftEither
+                                                , LiftEither(..)
                                                 , lift
                                                 )
-import           Data.Morpheus.Types.Internal.Value
-                                                ( ScalarValue(..) )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
                                                 )
@@ -76,7 +71,7 @@ type ResolveM e m a = MutRes e m (a (MutRes e m))
 type ResolveS e m a = SubRes e m (a (Res e m))
 
 -- resolves constant value on any argument
-constRes :: (PureOperation o, Monad m) => b -> a -> Resolver o e m b
+constRes :: (LiftEither o Resolver, Monad m) => b -> a -> Resolver o e m b
 constRes = const . pure
 
 constMutRes :: Monad m => [e] -> a -> args -> MutRes e m a

@@ -21,7 +21,7 @@ import           Data.Morpheus.Parsing.JSONSchema.Types
                                                 , Type(..)
                                                 )
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField
                                                 , DataType(..)
                                                 , DataTypeLib
@@ -37,7 +37,7 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , createUnionType
                                                 , toHSWrappers
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 import           Data.Morpheus.Types.IO         ( JSONResponse(..) )
 import           Data.Semigroup                 ( (<>) )
@@ -49,7 +49,7 @@ decodeIntrospection :: ByteString -> Validation DataTypeLib
 decodeIntrospection jsonDoc = case jsonSchema of
   Left errors -> internalError $ pack errors
   Right JSONResponse { responseData = Just Introspection { __schema = Schema { types } } }
-    ->  traverse parse types >>= createDataTypeLib . concat
+    -> traverse parse types >>= createDataTypeLib . concat
   Right res -> internalError (pack $ show res)
  where
   jsonSchema :: Either String (JSONResponse Introspection)
@@ -75,7 +75,7 @@ instance ParseJSONSchema Type [(Key,DataType)] where
     do
       fields <- traverse parse oFields
       pure [(typeName, DataObject $ createType typeName fields)]
-  parse x = pure []
+  parse _ = pure []
 
 instance ParseJSONSchema Field (Key,DataField) where
   parse Field { fieldName, fieldArgs, fieldType } = do

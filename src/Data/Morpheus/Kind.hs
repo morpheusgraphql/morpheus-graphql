@@ -19,7 +19,7 @@ module Data.Morpheus.Kind
   )
 where
 
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( OperationType(..) )
 
 data GQL_KIND

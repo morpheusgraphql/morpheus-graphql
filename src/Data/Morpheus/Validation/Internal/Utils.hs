@@ -1,37 +1,47 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
+
 module Data.Morpheus.Validation.Internal.Utils
   ( differKeys
   , checkNameCollision
   , checkForUnknownKeys
   , VALIDATION_MODE(..)
-  ) where
+  )
+where
 
-import           Data.List                               ((\\))
-import           Data.Morpheus.Types.Internal.Base       (EnhancedKey (..), Key, enhanceKeyWithNull)
-import qualified Data.Set                                as S
-import           Data.Text                               (Text)
+import           Data.List                      ( (\\) )
+import           Data.Morpheus.Types.Internal.AST
+                                                ( Ref(..)
+                                                , Key
+                                                , anonymousRef
+                                                )
+import qualified Data.Set                      as S
+import           Data.Text                      ( Text )
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( Failure(..) )
 
 data VALIDATION_MODE
   = WITHOUT_VARIABLES
   | FULL_VALIDATION
   deriving (Eq, Show)
 
-differKeys :: [EnhancedKey] -> [Key] -> [EnhancedKey]
-differKeys enhanced keys = enhanced \\ map enhanceKeyWithNull keys
+differKeys :: [Ref] -> [Key] -> [Ref]
+differKeys enhanced keys = enhanced \\ map anonymousRef keys
 
 removeDuplicates :: Ord a => [a] -> [a]
 removeDuplicates = S.toList . S.fromList
 
-elementOfKeys :: [Text] -> EnhancedKey -> Bool
-elementOfKeys keys' EnhancedKey {uid = id'} = id' `elem` keys'
+elementOfKeys :: [Text] -> Ref -> Bool
+elementOfKeys keys Ref { refName } = refName `elem` keys
 
-checkNameCollision :: [EnhancedKey] -> ([EnhancedKey] -> error) -> Either error [EnhancedKey]
+checkNameCollision :: Failure e m => [Ref] -> ([Ref] -> e) -> m [Ref]
 checkNameCollision enhancedKeys errorGenerator =
   case enhancedKeys \\ removeDuplicates enhancedKeys of
     []         -> pure enhancedKeys
-    duplicates -> Left $ errorGenerator duplicates
+    duplicates -> failure $ errorGenerator duplicates
 
-checkForUnknownKeys :: [EnhancedKey] -> [Text] -> ([EnhancedKey] -> error) -> Either error [EnhancedKey]
+checkForUnknownKeys :: Failure e m => [Ref] -> [Text] -> ([Ref] -> e) -> m [Ref]
 checkForUnknownKeys enhancedKeys' keys' errorGenerator' =
   case filter (not . elementOfKeys keys') enhancedKeys' of
     []           -> pure enhancedKeys'
-    unknownKeys' -> Left $ errorGenerator' unknownKeys'
+    unknownKeys' -> failure $ errorGenerator' unknownKeys'

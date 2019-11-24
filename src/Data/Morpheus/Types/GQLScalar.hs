@@ -5,12 +5,17 @@
 module Data.Morpheus.Types.GQLScalar
   ( GQLScalar(..)
   , toScalar
-  ) where
+  )
+where
 
-import           Data.Morpheus.Types.Internal.Data  (DataValidator (..))
-import           Data.Morpheus.Types.Internal.Value (ScalarValue (..), Value (..))
-import           Data.Proxy                         (Proxy (..))
-import           Data.Text                          (Text)
+import           Data.Morpheus.Types.Internal.AST.Data
+                                                ( DataValidator(..) )
+import           Data.Morpheus.Types.Internal.AST.Value
+                                                ( ScalarValue(..)
+                                                , Value(..)
+                                                )
+import           Data.Proxy                     ( Proxy(..) )
+import           Data.Text                      ( Text )
 
 toScalar :: Value -> Either Text ScalarValue
 toScalar (Scalar x) = pure x

@@ -2,8 +2,8 @@
 my interface description
 """
 type Query {
-  deity (name: [[[[[String!]]!]]], mythology: Realm): Deity!
-  character (characterID: String! , age: Int ): Character!
+  deity(name: [[[[[String!]]!]]], mythology: Realm): Deity!
+  character(characterID: String!, age: Int): Character!
   hero: Human!
 }
 
@@ -11,27 +11,26 @@ type Query {
 my interface description
 """
 interface MyInterface {
-   """
-   interface field description
-   """
-    name: String
+  """
+  interface field description
+  """
+  name: String
 }
 
-
 type Mutation {
-  createDeity (name: [[[[[String!]]!]]], mythology: String): Deity!
-  createCharacter (realm: Realm! , id: String! ): Character!
+  createDeity(name: [[[[[String!]]!]]], mythology: String): Deity!
+  createCharacter(realm: Realm!, id: String!): Character!
 }
 
 """
 my unon description
 """
-union Character = Creature | Deity  | Human
+union Character = Creature | Deity | Human
 
 "my mutation description"
 type Deity {
   fullName: String!
-  power: Power
+  power: Power @deprecated(reason: "test deprecation")
 }
 
 """
@@ -41,7 +40,7 @@ some creature
 type Creature {
   name: String!
   realm: City!
-  immortality: Boolean!
+  immortality: Boolean! @deprecated
 }
 
 """
@@ -51,15 +50,14 @@ ewrw
 """
 type Human {
   humanName: String!
-  lifetime: Lifetime!
+  lifetime: Lifetime! @deprecated(reason: "some reason")
   profession: Profession
 }
 
-
 enum Profession {
-    Priest
-    Farmer
-    Artist
+  Priest
+  Farmer
+  Artist
 }
 
 """
@@ -76,13 +74,15 @@ input Realm {
 
 "ancient city"
 enum City {
-    Athens
-    Ithaca
-    Sparta Troy
+  Athens
+  Ithaca
+  Sparta
+  Troy
 }
 
-""" lifespan of mortal creatures """
+"""
+lifespan of mortal creatures
+"""
 scalar Lifetime
-
 
 scalar Power

@@ -34,8 +34,6 @@ import           GHC.Generics
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
-import           Data.Morpheus.Execution.Internal.GraphScanner
-                                                ( resolveUpdates )
 import           Data.Morpheus.Execution.Server.Generics.EnumRep
                                                 ( EnumRep(..) )
 import           Data.Morpheus.Kind             ( Context(..)
@@ -47,12 +45,16 @@ import           Data.Morpheus.Kind             ( Context(..)
                                                 , SCALAR
                                                 , UNION
                                                 )
-import           Data.Morpheus.Types.Custom     ( MapKind
+import           Data.Morpheus.Types.Types     ( MapKind
                                                 , Pair
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
 import           Data.Morpheus.Types.GQLType    ( GQLType(..) )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( Failure(..)
+                                                , resolveUpdates
+                                                )
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataArguments
                                                 , Meta(..)
                                                 , DataField(..)
@@ -255,4 +257,4 @@ updateLib typeBuilder stack proxy lib' =
       stack
     Just fingerprint' | fingerprint' == __typeFingerprint proxy -> return lib'
     -- throw error if 2 different types has same name
-    Just _ -> Left $ nameCollisionError (__typeName proxy)
+    Just _ -> failure $ nameCollisionError (__typeName proxy)

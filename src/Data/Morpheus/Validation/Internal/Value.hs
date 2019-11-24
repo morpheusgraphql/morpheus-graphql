@@ -16,7 +16,7 @@ import           Data.Morpheus.Error.Input      ( InputError(..)
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( renderWrapped )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , DataTyCon(..)
                                                 , DataType(..)
@@ -29,9 +29,11 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , isNullable
                                                 , lookupField
                                                 , lookupInputType
+                                                , Value(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Value
-                                                ( Value(..) )
+
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( Failure(..) )
 
 -- Validate Variable Argument or all Possible input Values
 validateInputValue
@@ -93,7 +95,7 @@ validateInputValue lib prop' = validate
   validate [] (DataScalar DataTyCon { typeName = name', typeData = DataValidator { validateValue = validator' } }) (_, value')
     = case validator' value' of
       Right _  -> return value'
-      Left  "" -> Left $ UnexpectedType prop' name' value' Nothing
+      Left  "" -> failure (UnexpectedType prop' name' value' Nothing)
       Left errorMessage ->
         Left $ UnexpectedType prop' name' value' (Just errorMessage)
   {-- 3. THROW ERROR: on invalid values --}

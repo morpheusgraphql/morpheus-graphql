@@ -20,22 +20,20 @@ import           Data.Morpheus.Execution.Server.Encode
                                                 , ObjectResolvers(..)
                                                 )
 import           Data.Morpheus.Types.GQLType    ( TRUE )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , isSubscription
-                                                )
-import           Data.Morpheus.Types.Internal.DataD
-                                                ( ConsD(..)
+                                                , ConsD(..)
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Resolver
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Resolver
-                                                , MapGraphQLT(..)
-                                                , Resolving
-                                                , PureOperation
+                                                , MapStrategy(..)
+                                                , LiftEither
+                                                , ResolvingStrategy
                                                 )
 import           Data.Morpheus.Types.Internal.TH
                                                 ( applyT
@@ -44,24 +42,11 @@ import           Data.Morpheus.Types.Internal.TH
                                                 , typeT
                                                 )
 
--- @Subscription:
---
---     instance (Monad m, Typeable m) => ObjectResolvers 'True (<Subscription> (SubResolver m e c)) (SubResolveT m e c Value) where
---          objectResolvers _ (<Subscription> x y) = [("newAddress", encode x), ("newUser", encode y)]
---
--- @Object:
---
---   instance (Monad m, Typeable m) => ObjectResolvers 'True (<Object> (Resolver m)) (ResolveT m Value) where
---          objectResolvers _ (<Object> x y) = [("field1", encode x), ("field2", encode y)]
---
---
-
 encodeVars :: [String]
 encodeVars = ["e", "m"]
 
 encodeVarsT :: [TypeQ]
 encodeVarsT = map (varT . mkName) encodeVars
-
 
 deriveEncode :: GQLTypeD -> Q [Dec]
 deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFields }] } }
@@ -73,27 +58,33 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
   mainType = applyT (mkName tName) [mainTypeArg]
    where
     mainTypeArg | isSubscription typeKindD = applyT ''Resolver subARgs
-                | otherwise = typeT ''Resolver ("fieldOKind" : encodeVars)
+                | otherwise                = typeT ''Resolver (fo_ : encodeVars)
   -----------------------------------------------------------------------------------------
+  fo_ = "fieldOperationKind"
+  po_ = "o"
+  ---------------------
   typeables
     | isSubscription typeKindD
-    = [ applyT ''MapGraphQLT $ map conT [''QUERY, ''SUBSCRIPTION]
-      , applyT ''Resolving ([conT ''QUERY] <> encodeVarsT)
-      ]
+    = [applyT ''MapStrategy $ map conT [''QUERY, ''SUBSCRIPTION]]
     | otherwise
-    = [ typeT ''PureOperation ["fieldOKind"]
-      , typeT ''MapGraphQLT   ["fieldOKind", "o"]
-      , typeT ''Resolving     ("fieldOKind" : encodeVars)
-      , typeT ''Typeable      ["fieldOKind"]
-      , typeT ''Typeable      ["o"]
+    = [ iLiftEither ''ResolvingStrategy
+      , iLiftEither ''Resolver
+      , typeT ''MapStrategy [fo_, po_]
+      , iTypeable fo_
+      , iTypeable po_
       ]
+  -------------------------
+  iLiftEither name = applyT ''LiftEither [varT $ mkName fo_, conT name]
+  -------------------------
+  iTypeable name = typeT ''Typeable [name]
+  -------------------------------------------
   -- defines Constraint: (Typeable m, Monad m)
   constrains =
     typeables
       <> [ typeT ''Monad ["m"]
          , applyT ''Encode (mainType : instanceArgs)
-         , typeT ''Typeable ["e"]
-         , typeT ''Typeable ["m"]
+         , iTypeable "e"
+         , iTypeable "m"
          ]
   -------------------------------------------------------------------
   -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where

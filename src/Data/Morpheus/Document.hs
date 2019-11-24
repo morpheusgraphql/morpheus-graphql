@@ -1,12 +1,13 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Data.Morpheus.Document
   ( toGraphQLDocument
-  , toMorpheusHaskellAPi
   , gqlDocument
   , parseFullGQLDocument
   , importGQLDocument
   , importGQLDocumentWithNamespace
+  , parseDSL
   )
 where
 
@@ -32,20 +33,28 @@ import           Data.Morpheus.Execution.Server.Resolve
                                                 )
 import           Data.Morpheus.Parsing.Document.Parser
                                                 ( parseTypes )
-import           Data.Morpheus.Rendering.Haskell.Render
-                                                ( renderHaskellDocument )
+
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( renderGraphQLDocument )
 import           Data.Morpheus.Schema.SchemaAPI ( defaultTypes )
 import           Data.Morpheus.Types            ( GQLRootResolver )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataTypeLib
                                                 , createDataTypeLib
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( Validation
+                                                , Result(..)
+                                                )
 import           Data.Morpheus.Validation.Document.Validation
                                                 ( validatePartialDocument )
+
+                                              
+parseDSL :: ByteString -> Either String DataTypeLib
+parseDSL doc = case parseGraphQLDocument doc of
+  Failure errors     -> Left (show errors)
+  Success { result } -> Right result
+
 
 parseDocument :: Text -> Validation DataTypeLib
 parseDocument doc =
@@ -63,13 +72,10 @@ toGraphQLDocument
   => proxy (GQLRootResolver m event query mut sub)
   -> ByteString
 toGraphQLDocument x = case fullSchema x of
-  Left  errors -> pack (show errors)
-  Right lib    -> renderGraphQLDocument lib
+  Failure errors           -> pack (show errors)
+  Success { result = lib } -> renderGraphQLDocument lib
 
-toMorpheusHaskellAPi :: String -> ByteString -> Either ByteString ByteString
-toMorpheusHaskellAPi moduleName doc = case parseGraphQLDocument doc of
-  Left  errors -> Left $ pack (show errors)
-  Right lib    -> Right $ renderHaskellDocument moduleName lib
+
 
 importGQLDocument :: String -> Q [Dec]
 importGQLDocument src = runIO (readFile src) >>= compileDocument False

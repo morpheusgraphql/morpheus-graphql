@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveLift            #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -8,9 +9,9 @@
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
 
-module Data.Morpheus.Types.Internal.Data
-  ( Key
-  , DataScalar
+module Data.Morpheus.Types.Internal.AST.Data
+  ( 
+    DataScalar
   , DataEnum
   , DataObject
   , DataArgument
@@ -55,8 +56,6 @@ module Data.Morpheus.Types.Internal.Data
   , QUERY
   , MUTATION
   , SUBSCRIPTION
-  , Name
-  , Description
   , isEntNode
   , lookupInputType
   , coerceDataObject
@@ -86,6 +85,11 @@ module Data.Morpheus.Types.Internal.Data
   , TypeUpdater
   , lookupDeprecated
   , lookupDeprecatedReason
+  , TypeD(..)
+  , ConsD(..)
+  , ClientQuery(..)
+  , GQLTypeD(..)
+  , ClientType(..)
   )
 where
 
@@ -108,24 +112,24 @@ import           Data.Morpheus.Error.Internal   ( internalError )
 import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , hasNoSubfields
                                                 )
-import           Data.Morpheus.Types.Internal.Base
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key
                                                 , Position
+                                                , Name
+                                                , Description
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
-import           Data.Morpheus.Types.Internal.Value
-                                                ( Value(..) ,ScalarValue(..))
-import           Data.Morpheus.Execution.Internal.GraphScanner
-                                                ( LibUpdater
+import           Data.Morpheus.Types.Internal.Resolving.Core
+                                                ( Validation
+                                                , Failure(..)
+                                                , GQLErrors
+                                                , LibUpdater
                                                 , resolveUpdates
                                                 )
+import           Data.Morpheus.Types.Internal.AST.Value
+                                                ( Value(..)
+                                                , ScalarValue(..)
+                                                )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
-
-type GenError error a = error -> Either error a
-
-type Name = Key
-type Description = Key
 
 type QUERY = 'Query
 type MUTATION = 'Mutation
@@ -282,12 +286,13 @@ lookupDeprecated Meta { metaDirectives } = find isDeprecation metaDirectives
   isDeprecation _ = False
 
 lookupDeprecatedReason :: Directive -> Maybe Key
-lookupDeprecatedReason Directive { directiveArgs } = maybeString . snd <$> find isReason directiveArgs 
-   where
-    maybeString (Scalar (String x)) = x
-    maybeString _ = "can't read deprecated Reason Value" 
-    isReason ("reason",_) = True
-    isReason _ = False
+lookupDeprecatedReason Directive { directiveArgs } =
+  maybeString . snd <$> find isReason directiveArgs
+ where
+  maybeString (Scalar (String x)) = x
+  maybeString _                   = "can't read deprecated Reason Value"
+  isReason ("reason", _) = True
+  isReason _             = False
 
 -- ENUM VALUE
 data DataEnumValue = DataEnumValue{
@@ -337,12 +342,17 @@ toListField dataField = dataField { fieldType = listW (fieldType dataField) }
   listW alias@TypeAlias { aliasWrappers } =
     alias { aliasWrappers = TypeList : aliasWrappers }
 
-lookupField :: Key -> [(Key, field)] -> GenError error field
+lookupField :: Failure error m => Key -> [(Key, field)] -> error -> m field
 lookupField key fields gqlError = case lookup key fields of
-  Nothing    -> Left gqlError
+  Nothing    -> failure gqlError
   Just field -> pure field
 
-lookupSelectionField :: Position -> Key -> DataObject -> Validation DataField
+lookupSelectionField
+  :: Failure GQLErrors Validation
+  => Position
+  -> Key
+  -> DataObject
+  -> Validation DataField
 lookupSelectionField position fieldName DataTyCon { typeData, typeName } =
   lookupField fieldName typeData gqlError
   where gqlError = cannotQueryField fieldName typeName position
@@ -414,13 +424,13 @@ isInputDataType DataInputObject{} = True
 isInputDataType DataInputUnion{}  = True
 isInputDataType _                 = False
 
-coerceDataObject :: error -> DataType -> Either error DataObject
+coerceDataObject :: Failure error m => error -> DataType -> m DataObject
 coerceDataObject _        (DataObject object) = pure object
-coerceDataObject gqlError _                   = Left gqlError
+coerceDataObject gqlError _                   = failure gqlError
 
-coerceDataUnion :: error -> DataType -> Either error DataUnion
+coerceDataUnion :: Failure error m => error -> DataType -> m DataUnion
 coerceDataUnion _        (DataUnion object) = pure object
-coerceDataUnion gqlError _                  = Left gqlError
+coerceDataUnion gqlError _                  = failure gqlError
 
 kindOf :: DataType -> DataTypeKind
 kindOf (DataScalar      _) = KindScalar
@@ -473,21 +483,28 @@ fromOperation Nothing                  = []
 lookupDataType :: Key -> DataTypeLib -> Maybe DataType
 lookupDataType name lib = name `HM.lookup` typeRegister lib
 
-getDataType :: Key -> DataTypeLib -> GenError errors DataType
+getDataType :: Failure error m => Key -> DataTypeLib -> error -> m DataType
 getDataType name lib gqlError = case lookupDataType name lib of
-  Just x -> Right x
-  _      -> Left gqlError
+  Just x -> pure x
+  _      -> failure gqlError
 
-lookupDataObject :: errors -> Key -> DataTypeLib -> Either errors DataObject
+lookupDataObject
+  :: (Monad m, Failure e m) => e -> Key -> DataTypeLib -> m DataObject
 lookupDataObject validationError name lib =
   getDataType name lib validationError >>= coerceDataObject validationError
 
-lookupDataUnion :: errors -> Key -> DataTypeLib -> Either errors DataUnion
+lookupDataUnion
+  :: (Monad m, Failure e m) => e -> Key -> DataTypeLib -> m DataUnion
 lookupDataUnion validationError name lib =
   getDataType name lib validationError >>= coerceDataUnion validationError
 
 lookupUnionTypes
-  :: Position -> Key -> DataTypeLib -> DataField -> Validation [DataObject]
+  :: (Monad m, Failure GQLErrors m)
+  => Position
+  -> Key
+  -> DataTypeLib
+  -> DataField
+  -> m [DataObject]
 lookupUnionTypes position key lib DataField { fieldType = TypeAlias { aliasTyCon = typeName } }
   = lookupDataUnion gqlError typeName lib
     >>= mapM (flip (lookupDataObject gqlError) lib)
@@ -495,15 +512,20 @@ lookupUnionTypes position key lib DataField { fieldType = TypeAlias { aliasTyCon
   where gqlError = hasNoSubfields key typeName position
 
 lookupFieldAsSelectionSet
-  :: Position -> Key -> DataTypeLib -> DataField -> Validation DataObject
+  :: (Monad m, Failure GQLErrors m)
+  => Position
+  -> Key
+  -> DataTypeLib
+  -> DataField
+  -> m DataObject
 lookupFieldAsSelectionSet position key lib DataField { fieldType = TypeAlias { aliasTyCon } }
   = lookupDataObject gqlError aliasTyCon lib
   where gqlError = hasNoSubfields key aliasTyCon position
 
-lookupInputType :: Key -> DataTypeLib -> GenError error DataType
-lookupInputType name lib gqlError = case lookupDataType name lib of
-  Just x | isInputDataType x -> Right x
-  _                          -> Left gqlError
+lookupInputType :: Failure e m => Key -> DataTypeLib -> e -> m DataType
+lookupInputType name lib errors = case lookupDataType name lib of
+  Just x | isInputDataType x -> pure x
+  _                          -> failure errors
 
 isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
 isTypeDefined name lib =
@@ -522,11 +544,10 @@ defineType (key, datatype@(DataInputUnion DataTyCon { typeName, typeData = enumK
 defineType (key, datatype) lib =
   lib { types = insert key datatype (types lib) }
 
-lookupType :: error -> [(Key, a)] -> Key -> Either error a
-lookupType error' lib' typeName' = case lookup typeName' lib' of
-  Nothing -> Left error'
+lookupType :: Failure e m => e -> [(Key, a)] -> Key -> m a
+lookupType err lib typeName = case lookup typeName lib of
+  Nothing -> failure err
   Just x  -> pure x
-
 
 createDataTypeLib :: [(Key, DataType)] -> Validation DataTypeLib
 createDataTypeLib types = case takeByKey "Query" types of
@@ -540,6 +561,16 @@ createDataTypeLib types = case takeByKey "Query" types of
           )
   _ -> internalError "Query Not Defined"
   ----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -590,5 +621,39 @@ insertType nextType@(name, datatype) lib = case isTypeDefined name lib of
     | fingerprint == fromDataType typeFingerprint datatype -> return lib
     |
       -- throw error if 2 different types has same name
-      otherwise -> Left $ nameCollisionError name
+      otherwise -> failure $ nameCollisionError name
 
+
+-- TEMPLATE HASKELL DATA TYPES
+
+-- CLIENT                                                
+data ClientQuery = ClientQuery
+  { queryText     :: String
+  , queryTypes    :: [ClientType]
+  , queryArgsType :: Maybe TypeD
+  } deriving (Show)
+
+data ClientType = ClientType {
+  clientType :: TypeD,
+  clientKind :: DataTypeKind
+} deriving (Show)
+
+-- Document
+data GQLTypeD = GQLTypeD
+  { typeD     :: TypeD
+  , typeKindD :: DataTypeKind
+  , typeArgD  :: [TypeD]
+  , typeOriginal:: (Name,DataType)
+  } deriving (Show)
+
+data TypeD = TypeD
+  { tName      :: String
+  , tNamespace :: [String]
+  , tCons      :: [ConsD]
+  , tMeta      :: Maybe Meta
+  } deriving (Show)
+
+data ConsD = ConsD
+  { cName   :: String
+  , cFields :: [DataField]
+  } deriving (Show)

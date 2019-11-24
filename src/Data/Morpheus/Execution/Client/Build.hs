@@ -15,7 +15,9 @@ import           Language.Haskell.TH
 --
 -- MORPHEUS
 import           Data.Morpheus.Error.Client.Client
-                                                ( renderGQLErrors )
+                                                ( renderGQLErrors
+                                                , gqlWarnings
+                                                )
 import           Data.Morpheus.Execution.Client.Aeson
                                                 ( deriveFromJSON
                                                 , deriveToJSON
@@ -26,26 +28,30 @@ import           Data.Morpheus.Execution.Client.Fetch
                                                 ( deriveFetch )
 import           Data.Morpheus.Execution.Internal.Declare
                                                 ( declareType )
-import           Data.Morpheus.Types.Internal.Data
-                                                ( DataTypeKind(..)
+
+import           Data.Morpheus.Types.Internal.AST
+                                                ( GQLQuery(..)
+                                                , DataTypeKind(..)
                                                 , DataTypeLib
                                                 , isOutputObject
-                                                )
-import           Data.Morpheus.Types.Internal.DataD
-                                                ( ClientType(..)
+                                                , ClientType(..)
                                                 , ClientQuery(..)
                                                 , TypeD(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
-import           Data.Morpheus.Types.Types      ( GQLQueryRoot(..) )
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( Validation
+                                                , Result(..)
+                                                )
 
-defineQuery :: IO (Validation DataTypeLib) -> (GQLQueryRoot, String) -> Q [Dec]
+
+
+defineQuery :: IO (Validation DataTypeLib) -> (GQLQuery, String) -> Q [Dec]
 defineQuery ioSchema queryRoot = do
   schema <- runIO ioSchema
   case schema >>= (`validateWith` queryRoot) of
-    Left  errors -> fail (renderGQLErrors errors)
-    Right queryD -> defineQueryD queryD
+    Failure errors               -> fail (renderGQLErrors errors)
+    Success { result, warnings } -> gqlWarnings warnings >> defineQueryD result
+
 
 defineQueryD :: ClientQuery -> Q [Dec]
 defineQueryD ClientQuery { queryTypes = rootType : subTypes, queryText, queryArgsType }
@@ -84,8 +90,9 @@ queryArgumentType (Just rootType@TypeD { tName }) =
   (ConT $ mkName tName, declareInputType rootType)
 
 defineOperationType :: (Type, Q [Dec]) -> String -> ClientType -> Q [Dec]
-defineOperationType (argType, argumentTypes) query ClientType { clientType } = do
-  rootType       <- withToJSON declareOutputType clientType
-  typeClassFetch <- deriveFetch argType (tName clientType) query
-  argsT          <- argumentTypes
-  pure $ rootType <> typeClassFetch <> argsT
+defineOperationType (argType, argumentTypes) query ClientType { clientType } =
+  do
+    rootType       <- withToJSON declareOutputType clientType
+    typeClassFetch <- deriveFetch argType (tName clientType) query
+    argsT          <- argumentTypes
+    pure $ rootType <> typeClassFetch <> argsT

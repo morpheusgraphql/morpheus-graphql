@@ -2,11 +2,14 @@
 
 module Data.Morpheus.Error.Subscription
   ( subscriptionIsNotDefined
-  ) where
+  )
+where
 
-import           Data.Morpheus.Error.Utils               (errorMessage)
-import           Data.Morpheus.Types.Internal.Base       (Position)
-import           Data.Morpheus.Types.Internal.Validation (GQLErrors)
+import           Data.Morpheus.Error.Utils      ( errorMessage )
+import           Data.Morpheus.Types.Internal.AST.Base
+                                                ( Position )
+import           Data.Morpheus.Types.Internal.Resolving.Core
+                                                ( GQLErrors )
 
 subscriptionIsNotDefined :: Position -> GQLErrors
 subscriptionIsNotDefined position' =

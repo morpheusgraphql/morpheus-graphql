@@ -4,11 +4,16 @@ module Data.Morpheus.Execution.Internal.Utils
   , nameSpaceWith
   , nameSpaceType
   , nameSpaceTypeString
-  ) where
+  )
+where
 
-import           Data.Char      (toLower, toUpper)
-import           Data.Semigroup ((<>))
-import           Data.Text      (Text, unpack)
+import           Data.Char                      ( toLower
+                                                , toUpper
+                                                )
+import           Data.Semigroup                 ( (<>) )
+import           Data.Text                      ( Text
+                                                , unpack
+                                                )
 
 
 nameSpaceTypeString :: [String] -> String -> String
@@ -21,9 +26,9 @@ nameSpaceWith :: String -> String -> String
 nameSpaceWith nSpace name = nonCapital nSpace <> capital name
 
 nonCapital :: String -> String
-nonCapital []     = []
-nonCapital (x:xs) = toLower x : xs
+nonCapital []       = []
+nonCapital (x : xs) = toLower x : xs
 
 capital :: String -> String
-capital []     = []
-capital (x:xs) = toUpper x : xs
+capital []       = []
+capital (x : xs) = toUpper x : xs

@@ -1,4 +1,8 @@
-## [0.7.0] -
+## [0.7.0] - 24.11.2019
+
+## Removed
+
+- `toMorpheusHaskellAPi` from `Data.Morpheus.Document` functionality will be migrated in `morpheus-graphql-cli`
 
 ## Changed
 
@@ -7,6 +11,8 @@
 - `liftEitherM` to `liftEither`
 
 - `Resolver operation m event value` -> `Resolver operation event m value` , monad trans needs that last 2 type arguments are monad and value that why it was necessary
+
+- exposed `Data.Morpheus.Types.Internal.AST`
 
 - Mutation Resolver was changed from
 
@@ -32,6 +38,8 @@ resolver _args = lift setDBAddress
 
 ### Added
 
+- added `parseDSL` to `Data.Morpheus.Document`
+
 - GraphQL SDL support fully supports descriptions: onTypes, fields , args ...
   with (enums, inputObjects , union, object)
   for example :
@@ -54,35 +62,58 @@ resolver _args = lift setDBAddress
   }
   ```
 
-- basic support of directive `@deprecated` on `enumValue` and object `field`, only on introspection
+  ###### GraphQL SDL
 
-###### GraphQL SDL
+  ```gql
+  type User {
+    name: String! @deprecated(reason: "some reason")
+  }
+  ```
 
-```gql
-type User {
-  name: String! @deprecated(reason: "some reason")
-}
-```
+  will displayed in introspection
 
-will displayed in introspection
+  ###### introspection.json
 
-###### introspection.json
-
-```json
-{
-  "data": {
-    "__type": {
-      "fields": [
-        {
-          "name": "city",
-          "isDeprecated": true,
-          "deprecationReason": "test deprecation field with reason"
-        }
-      ]
+  ```json
+  {
+    "data": {
+      "__type": {
+        "fields": [
+          {
+            "name": "city",
+            "isDeprecated": true,
+            "deprecationReason": "test deprecation field with reason"
+          }
+        ]
+      }
     }
   }
-}
-```
+  ```
+
+- basic support of directive `@deprecated` on `enumValue` and object `field`, only on introspection
+
+- GraphQL Client deprecation warnings
+
+  on type
+
+  ```gql
+  type Human {
+    humanName: String!
+    lifetime: Lifetime! @deprecated(reason: "some reason")
+    profession: Profession
+  }
+  ```
+
+  compiler output:
+
+  ```
+  warning:
+    Morpheus Client Warning:
+    {
+      "message":"the field \"Human.lifetime\" is deprecated. some reason",
+      "locations":[{"line":24,"column":15}]
+    }
+  ```
 
 - new helper resolver types aliases:
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -7,31 +8,44 @@ module Data.Morpheus.Types.IO
   , GQLResponse(..)
   , JSONResponse(..)
   , renderResponse
-  ) where
+  )
+where
 
-import           Data.Aeson                              (FromJSON (..), ToJSON (..), pairs, withObject, (.:?), (.=))
-import qualified Data.Aeson                              as Aeson (Value (..))
-import qualified Data.HashMap.Lazy                       as LH (toList)
-import           GHC.Generics                            (Generic)
+import           Data.Aeson                     ( FromJSON(..)
+                                                , ToJSON(..)
+                                                , pairs
+                                                , withObject
+                                                , (.:?)
+                                                , (.=)
+                                                )
+import qualified Data.Aeson                    as Aeson
+                                                ( Value(..) )
+import qualified Data.HashMap.Lazy             as LH
+                                                ( toList )
+import           GHC.Generics                   ( Generic )
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Base       (Key)
-import           Data.Morpheus.Types.Internal.Validation (JSONError (..),Validation)
-import           Data.Morpheus.Types.Internal.Value      (Value)
-import           Data.Morpheus.Error.Utils               ( renderErrors)
+import           Data.Morpheus.Types.Internal.AST.Base
+                                                ( Key )
+import           Data.Morpheus.Types.Internal.Resolving.Core
+                                                ( GQLError(..)
+                                                , Result(..)
+                                                )
+import           Data.Morpheus.Types.Internal.AST.Value
+                                                ( Value )
 
-renderResponse :: Validation Value -> GQLResponse 
-renderResponse (Left errors) = Errors $ renderErrors errors
-renderResponse (Right value) = Data value
+
+renderResponse :: Result e GQLError con Value -> GQLResponse
+renderResponse (Failure errors)   = Errors errors
+renderResponse Success { result } = Data result
 
 instance FromJSON a => FromJSON (JSONResponse a) where
   parseJSON = withObject "JSONResponse" objectParser
-    where
-      objectParser o = JSONResponse <$> o .:? "data" <*> o .:? "errors"
+    where objectParser o = JSONResponse <$> o .:? "data" <*> o .:? "errors"
 
 data JSONResponse a = JSONResponse
   { responseData   :: Maybe a
-  , responseErrors :: Maybe [JSONError]
+  , responseErrors :: Maybe [GQLError]
   } deriving (Generic, Show, ToJSON)
 
 -- | GraphQL HTTP Request Body
@@ -44,17 +58,16 @@ data GQLRequest = GQLRequest
 -- | GraphQL Response
 data GQLResponse
   = Data Value
-  | Errors [JSONError]
+  | Errors [GQLError]
   deriving (Show, Generic)
 
 instance FromJSON GQLResponse where
-  parseJSON (Aeson.Object hm) =
-    case LH.toList hm of
-      [("data", value)]   -> Data <$> parseJSON value
-      [("errors", value)] -> Errors <$> parseJSON value
-      _                   -> fail "Invalid GraphQL Response"
+  parseJSON (Aeson.Object hm) = case LH.toList hm of
+    [("data"  , value)] -> Data <$> parseJSON value
+    [("errors", value)] -> Errors <$> parseJSON value
+    _                   -> fail "Invalid GraphQL Response"
   parseJSON _ = fail "Invalid GraphQL Response"
 
 instance ToJSON GQLResponse where
-  toEncoding (Data _data)     = pairs $ "data" .= _data
+  toEncoding (Data   _data  ) = pairs $ "data" .= _data
   toEncoding (Errors _errors) = pairs $ "errors" .= _errors

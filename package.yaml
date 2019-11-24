@@ -1,5 +1,5 @@
 name: morpheus-graphql
-version: 0.6.2
+version: 0.7.0
 github: "nalchevanidze/morpheus-graphql"
 license: MIT
 author: "Daviti Nalchevanidze"
@@ -34,7 +34,7 @@ dependencies:
   - websockets            >= 0.11.0    && <= 0.13
   - uuid                  >= 1.0       && <= 1.4
   - template-haskell      >= 2.0       && <= 2.16
-  - th-lift-instances
+  - th-lift-instances     >= 0.1.1     && <= 0.2.0
 
 library:
   source-dirs: src
@@ -45,6 +45,7 @@ library:
     - Data.Morpheus.Server
     - Data.Morpheus.Document
     - Data.Morpheus.Client
+    - Data.Morpheus.Types.Internal.AST
   ghc-options: -Wall
 
 tests:

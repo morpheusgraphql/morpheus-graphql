@@ -14,8 +14,6 @@ import           Data.Proxy
 import           Data.Text                      ( Text )
 
 -- MORPHEUS
-import           Data.Morpheus.Execution.Internal.GraphScanner
-                                                ( resolveUpdates )
 import           Data.Morpheus.Execution.Server.Introspect
                                                 ( ObjectFields(..)
                                                 , TypeUpdater
@@ -33,7 +31,7 @@ import           Data.Morpheus.Schema.Schema    ( Root(..)
 import           Data.Morpheus.Types            ( constRes )
 import           Data.Morpheus.Types.GQLType    ( CUSTOM )
 import           Data.Morpheus.Types.ID         ( ID )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , DataObject
                                                 , DataTypeLib(..)
@@ -41,8 +39,11 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , allDataTypes
                                                 , lookupDataType
                                                 )
-import           Data.Morpheus.Types.Internal.Resolver
-                                                ( Resolver(..) )
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( Resolver(..)
+                                                , resolveUpdates
+                                                )
+
 
 convertTypes
   :: Monad m => DataTypeLib -> Resolver QUERY e m [S__Type (Resolver QUERY e m)]

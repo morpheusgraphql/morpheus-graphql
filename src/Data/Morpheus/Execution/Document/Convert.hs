@@ -20,7 +20,7 @@ import           Data.Text                      ( Text
 import           Data.Morpheus.Error.Internal   ( internalError )
 import           Data.Morpheus.Execution.Internal.Utils
                                                 ( capital )
-import           Data.Morpheus.Types.Internal.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( ArgsType(..)
                                                 , DataField(..)
                                                 , DataTyCon(..)
@@ -31,13 +31,11 @@ import           Data.Morpheus.Types.Internal.Data
                                                 , TypeAlias(..)
                                                 , DataEnumValue(..)
                                                 , sysTypes
-                                                )
-import           Data.Morpheus.Types.Internal.DataD
-                                                ( ConsD(..)
+                                                , ConsD(..)
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 
 renderTHTypes :: Bool -> [(Text, DataType)] -> Validation [GQLTypeD]
