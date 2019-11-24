@@ -3,16 +3,16 @@ resolver: lts-11.10
 
 extra-deps:
   - bifunctors-5.5.2
-  - base-orphans-0.7
+  - base-orphans-0.8.1
   - megaparsec-7.0.5
   - parser-combinators-1.1.0
   - aeson-1.4.4.0
   - time-compat-1.9.2.2
   - th-abstraction-0.2.11.0
   - scotty-0.11.2
-  - req-3.0.0
-
-allow-newer: true
+  - req-2.1.0
+  - modern-uri-0.3.0.0
+  - retry-0.8.1.0
 
 packages:
   - examples
