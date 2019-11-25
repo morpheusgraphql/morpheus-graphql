@@ -225,7 +225,7 @@ instance (GQLRep a, GQLRep b) => GQLRep (a :*: b) where
 instance (GQLType a, Selector s, Introspect a) => GQLRep (M1 S s (Rec0 a)) where
   gqlRep _ = ISel { selType       = __typeName (Proxy @a)
                   , selField      = (name, field (Proxy @a) name)
-                  , selIntrospect = [introspect (Proxy @a)]
+                  , recTypes = [introspect (Proxy @a)]
                   }
     where name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
 
