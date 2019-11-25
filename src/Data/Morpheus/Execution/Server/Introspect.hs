@@ -68,8 +68,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , toNullableField
                                                 , createEnumValue
                                                 , TypeUpdater
-                                                , DataUnion
-                                                , DataObject
                                                 )
 
 
@@ -127,28 +125,30 @@ instance (ObjectFields 'False a, Introspect b) => Introspect (a -> m b) where
 class IntrospectKind (kind :: GQL_KIND) a where
   introspectKind :: Context kind a -> TypeUpdater -- Generates internal GraphQL Schema
 
-isEnum :: [ConsD] -> Bool  
-isEnum = all isEmpty  
-  where 
-    isEmpty ConsD { cFields = [] } = True
-    isEmpty _ = False
+isEnum :: [ConsD] -> Bool
+isEnum = all isEmpty
+ where
+  isEmpty ConsD { cFields = [] } = True
+  isEmpty _                      = False
 
 instance {-# OVERLAPPABLE #-} (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind kind a where
   introspectKind _ = builder
    where
     builder = case gqlRep (Proxy @(Rep a)) of
       [ConsD { cFields }] -> updateLib datatype types (Proxy @a)
-        where 
-          datatype = DataObject . buildType (__typename : fields)
-          fields = map fFields cFields
-          types  = map fIntro cFields
+       where
+        datatype = DataObject . buildType (__typename : fields)
+        fields   = map fFields cFields
+        types    = map fIntro cFields
       cons -> updateLib dataType types (Proxy @a)
-        where
-          flatFields = concatMap cFields cons
-          types  =  map fIntro flatFields
-          members = map fType flatFields
-          dataType | isEnum cons = (DataUnion . buildType members)
-            | otherwise = DataEnum . buildType (map createEnumValue members)
+       where
+        flatFields = concatMap cFields cons
+        types      = map fIntro flatFields
+        members    = map fType flatFields
+        dataType
+          | isEnum cons = DataEnum . buildType (map createEnumValue members)
+          | otherwise   = (DataUnion . buildType (map cName cons))
+
     -----------------------------------------------------------------------------  
     __typename =
       ( "__typename"
@@ -223,7 +223,7 @@ class ObjectFields (custom :: Bool) a where
 
 instance GQLRep (Rep a) => ObjectFields 'False a where
   objectFields _ _ = case gqlRep (Proxy @(Rep a)) of
-    [ConsD { cFields }    ] -> (map fFields cFields, map fIntro cFields)
+    [ConsD { cFields }] -> (map fFields cFields, map fIntro cFields)
     ConsD { cFields } : _ -> (map fFields cFields, map fIntro cFields)
 
 data ConsD =  ConsD {
@@ -250,7 +250,10 @@ instance (GQLRep a, GQLRep b) => GQLRep (a :+: b) where
 
 instance (ConRep f, Constructor c) => GQLRep (M1 C c f) where
   gqlRep _ =
-    [ConsD { cName = pack $ conName (undefined  :: (M1 C c f a)), cFields = conRep (Proxy @f) }]
+    [ ConsD { cName   = pack $ conName (undefined :: (M1 C c f a))
+            , cFields = conRep (Proxy @f)
+            }
+    ]
 
 
 class ConRep f where
