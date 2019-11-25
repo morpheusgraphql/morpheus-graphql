@@ -82,7 +82,7 @@ ignoreResolver (con, args) =
 --  @
 class GQLType a where
   type KIND a :: GQL_KIND
-  type KIND a = OBJECT
+  type KIND a = AUTO
   type CUSTOM a :: Bool
   type CUSTOM a = FALSE
   description :: Proxy a -> Maybe Text
