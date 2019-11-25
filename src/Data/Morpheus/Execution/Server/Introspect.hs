@@ -186,8 +186,11 @@ class ObjectFields (custom :: Bool) a where
   objectFields :: proxy1 custom -> proxy2 a -> ([(Text, DataField)], [TypeUpdater])
 
 instance GQLRep (Rep a) => ObjectFields 'False a where
-  objectFields _ _ = (fields, types)
-    where IObject fields types = gqlRep (Proxy @(Rep a))
+  objectFields _ _ = case gqlRep (Proxy @(Rep a)) of
+    IObject fields types -> (fields, types)
+    ISel { sField , sTypes} -> ([sField], sTypes)
+    INull -> ([],[])
+
 
 data GQLRepResult =
   IUnion [Key] [TypeUpdater]
@@ -232,7 +235,7 @@ instance (GQLRep  a, GQLRep  b) => GQLRep  (a :+: b) where
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
 instance (GQLRep a, GQLRep b) => GQLRep (a :*: b) where
-  gqlRep _ = gqlRep (Proxy @a) <> gqlRep (Proxy @b)
+  gqlRep _ = IObject [] [] <> gqlRep (Proxy @a) <> gqlRep (Proxy @b)
 
 instance (GQLType a, Selector s, Introspect a) => GQLRep (M1 S s (Rec0 a)) where
   gqlRep _ = ISel { sType  = __typeName (Proxy @a)
