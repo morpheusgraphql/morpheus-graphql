@@ -127,6 +127,28 @@ instance (ObjectFields 'False a, Introspect b) => Introspect (a -> m b) where
 class IntrospectKind (kind :: GQL_KIND) a where
   introspectKind :: Context kind a -> TypeUpdater -- Generates internal GraphQL Schema
 
+
+instance {-# OVERLAPPABLE #-} (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind kind a where
+  introspectKind _ = builder
+   where
+    builder = case gqlRep (Proxy @(Rep a)) of
+      IUnion members types ->
+        updateLib (DataUnion . buildType members) types (Proxy @a)
+      IObject fields types -> updateLib
+        (DataObject . buildType (__typename : fields))
+        types
+        (Proxy @a)
+    -----------------------------------------------------------------------------  
+    __typename =
+      ( "__typename"
+      , DataField { fieldName     = "__typename"
+                  , fieldArgs     = []
+                  , fieldArgsType = Nothing
+                  , fieldType     = createAlias "String"
+                  , fieldMeta     = Nothing
+                  }
+      )
+
 -- SCALAR
 instance (GQLType a, GQLScalar a) => IntrospectKind SCALAR a where
   introspectKind _ = updateLib scalarType [] (Proxy @a)
@@ -139,35 +161,34 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
     enumType =
       DataEnum . buildType (map createEnumValue $ enumTags (Proxy @(Rep a)))
 
+instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a where
+        introspectKind _ = updateLib (DataObject . buildType (__typename : fields))
+                                     types
+                                     (Proxy @a)
+         where
+          __typename =
+            ( "__typename"
+            , DataField { fieldName     = "__typename"
+                        , fieldArgs     = []
+                        , fieldArgsType = Nothing
+                        , fieldType     = createAlias "String"
+                        , fieldMeta     = Nothing
+                        }
+            )
+          (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
+-- UNION
+instance (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind UNION a where
+        introspectKind _ = updateLib (DataUnion . buildType memberTypes)
+                                     stack
+                                     (Proxy @a)
+          where IUnion memberTypes stack = gqlRep (Proxy @(Rep a))
+      
 -- INPUT_OBJECT
 instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT a where
   introspectKind _ = updateLib (DataInputObject . buildType fields)
                                types
                                (Proxy @a)
     where (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
-
--- OBJECTS
-instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a where
-  introspectKind _ = updateLib (DataObject . buildType (__typename : fields))
-                               types
-                               (Proxy @a)
-   where
-    __typename =
-      ( "__typename"
-      , DataField { fieldName     = "__typename"
-                  , fieldArgs     = []
-                  , fieldArgsType = Nothing
-                  , fieldType     = createAlias "String"
-                  , fieldMeta     = Nothing
-                  }
-      )
-    (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
--- UNION
-instance (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind UNION a where
-  introspectKind _ = updateLib (DataUnion . buildType memberTypes)
-                               stack
-                               (Proxy @a)
-    where IUnion memberTypes stack = gqlRep (Proxy @(Rep a))
 
 -- INPUT_UNION
 instance (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind INPUT_UNION a where
@@ -187,9 +208,9 @@ class ObjectFields (custom :: Bool) a where
 
 instance GQLRep (Rep a) => ObjectFields 'False a where
   objectFields _ _ = case gqlRep (Proxy @(Rep a)) of
-    IObject fields types -> (fields, types)
-    ISel { sField , sTypes} -> ([sField], sTypes)
-    INull -> ([],[])
+    IObject fields types    -> (fields, types)
+    ISel { sField, sTypes } -> ([sField], sTypes)
+    INull                   -> ([], [])
 
 
 data GQLRepResult =
@@ -205,18 +226,18 @@ data GQLRepResult =
 instance Semigroup  GQLRepResult where
   IUnion members types <> ISel { sType, sTypes } =
     IUnion (sType : members) (types <> sTypes)
-  ISel { sType, sTypes }  <> IUnion members types =
-      IUnion (sType : members) (types <> sTypes)
+  ISel { sType, sTypes } <> IUnion members types =
+    IUnion (sType : members) (types <> sTypes)
   IUnion  mem1 ty1 <> IUnion  mem2 ty2 = IUnion (mem1 <> mem2) (ty1 <> ty2)
   -------------------------------------------------
   IObject f1   ty1 <> IObject f2   ty2 = IObject (f1 <> f2) (ty1 <> ty2)
-  IObject fs ts <> ISel { sField, sTypes }  =
+  IObject fs ts <> ISel { sField, sTypes } =
     IObject (sField : fs) (ts <> sTypes)
-  ISel { sField, sTypes } <>  IObject fs ts =
-      IObject (sField : fs) (ts <> sTypes)
+  ISel { sField, sTypes } <> IObject fs ts =
+    IObject (sField : fs) (ts <> sTypes)
   ISel x1 y1 z1 <> ISel x2 y2 z2 = ISel x2 y2 (z1 <> z2)
-  someType <> INull = someType
-  INull <> someType = someType
+  someType      <> INull         = someType
+  INull         <> someType      = someType
 
 
 --  GENERIC UNION
