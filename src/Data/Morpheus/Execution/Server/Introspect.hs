@@ -45,7 +45,7 @@ import           Data.Morpheus.Kind             ( Context(..)
                                                 , SCALAR
                                                 , UNION
                                                 )
-import           Data.Morpheus.Types.Types     ( MapKind
+import           Data.Morpheus.Types.Types      ( MapKind
                                                 , Pair
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
@@ -68,6 +68,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , toNullableField
                                                 , createEnumValue
                                                 , TypeUpdater
+                                                , DataUnion
+                                                , DataObject
                                                 )
 
 
@@ -160,70 +162,76 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a wher
                   }
       )
     (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
-
 -- UNION
-instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind UNION a where
+instance (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind UNION a where
   introspectKind _ = updateLib (DataUnion . buildType memberTypes)
                                stack
                                (Proxy @a)
-   where
-    (memberTypes, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
+    where (memberTypes, stack) = unzip $ gqlRep (Proxy @(Rep a)) RepUnion
 
 -- INPUT_UNION
-instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a where
+instance (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind INPUT_UNION a where
   introspectKind _ = updateLib (DataInputUnion . buildType memberTypes)
                                stack
                                (Proxy @a)
-   where
-    (memberTypes, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
+    where (memberTypes, stack) = unzip $ gqlRep (Proxy @(Rep a)) RepUnion
 
 -- Types
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
+
 -- Object Fields
 class ObjectFields (custom :: Bool) a where
   objectFields :: proxy1 custom -> proxy2 a -> ([(Text, DataField)], [TypeUpdater])
 
-instance GQLRep OBJECT (Rep a) => ObjectFields 'False a where
-  objectFields _ _ = unzip $ gqlRep (Context :: Context OBJECT (Rep a))
+instance GQLRep (Rep a) => ObjectFields 'False a where
+  objectFields _ _ = do
+    let x = gqlRep (Proxy @(Rep a))
+    case x of
+      IObject x types -> (x, types)
 
-type family GQLRepResult (a :: GQL_KIND) :: *
+data GQLRepResult =
+  IUnion [Key] [TypeUpdater]
+  | IObject [(Text, DataField)]  [TypeUpdater]
+  | ISel{
+    selType :: Key,
+     selField :: (Text, DataField),
+     selIntrospect :: [TypeUpdater]
+  }
+  | INull
 
-type instance GQLRepResult OBJECT = (Text, DataField)
 
-type instance GQLRepResult UNION = Key
+instance Semigroup  GQLRepResult where
 
 --  GENERIC UNION
-class GQLRep (kind :: GQL_KIND) f where
-  gqlRep :: Context kind f -> [(GQLRepResult kind, TypeUpdater)]
+class GQLRep f where
+  gqlRep :: Proxy f -> GQLRepResult
 
-instance GQLRep kind f => GQLRep kind (M1 D d f) where
-  gqlRep _ = gqlRep (Context :: Context kind f)
+instance GQLRep f => GQLRep (M1 D d f) where
+  gqlRep _ = gqlRep (Proxy @f)
 
-instance GQLRep kind f => GQLRep kind (M1 C c f) where
-  gqlRep _ = gqlRep (Context :: Context kind f)
+instance GQLRep f => GQLRep (M1 C c f) where
+  gqlRep _ = gqlRep (Proxy @f)
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
-instance (GQLRep UNION a, GQLRep UNION b) => GQLRep UNION (a :+: b) where
-  gqlRep _ =
-    gqlRep (Context :: Context UNION a) ++ gqlRep (Context :: Context UNION b)
-
-instance (GQL_TYPE a, Introspect a) => GQLRep UNION (M1 S s (Rec0 a)) where
-  gqlRep _ = [(__typeName (Proxy @a), introspect (Proxy @a))]
+instance (GQLRep  a, GQLRep  b) => GQLRep  (a :+: b) where
+  gqlRep _ = IUnion [] [] <> gqlRep (Proxy @a) <> gqlRep (Proxy @b)
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
-instance (GQLRep OBJECT a, GQLRep OBJECT b) => GQLRep OBJECT (a :*: b) where
-  gqlRep _ =
-    gqlRep (Context :: Context OBJECT a) ++ gqlRep (Context :: Context OBJECT b)
+instance (GQLRep a, GQLRep b) => GQLRep (a :*: b) where
+  gqlRep _ = gqlRep (Proxy @a) <> gqlRep (Proxy @b)
 
-instance (Selector s, Introspect a) => GQLRep OBJECT (M1 S s (Rec0 a)) where
-  gqlRep _ = [((name, field (Proxy @a) name), introspect (Proxy @a))]
+instance (GQL_TYPE a, Selector s, Introspect a) => GQLRep (M1 S s (Rec0 a)) where
+  gqlRep _ = ISel { selType       = __typeName (Proxy @a)
+                  , selField      = (name, field (Proxy @a) name)
+                  , selIntrospect = [introspect (Proxy @a)]
+                  }
     where name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
 
-instance GQLRep OBJECT U1 where
-  gqlRep _ = []
 
+instance GQLRep U1 where
+  gqlRep _ = INull
 
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName = DataField
