@@ -193,16 +193,28 @@ data GQLRepResult =
   IUnion [Key] [TypeUpdater]
   | IObject [(Text, DataField)]  [TypeUpdater]
   | ISel{
-    selType :: Key,
-     selField :: (Text, DataField),
-     recTypes :: [TypeUpdater]
+     sType :: Key,
+     sField :: (Text, DataField),
+     sTypes :: [TypeUpdater]
   }
   | INull
 
-
 instance Semigroup  GQLRepResult where
-  IUnion members types <> ISel { selType, recTypes } =
-    IUnion (selType : members) (types <> recTypes)
+  IUnion members types <> ISel { sType, sTypes } =
+    IUnion (sType : members) (types <> sTypes)
+  ISel { sType, sTypes }  <> IUnion members types =
+      IUnion (sType : members) (types <> sTypes)
+  IUnion  mem1 ty1 <> IUnion  mem2 ty2 = IUnion (mem1 <> mem2) (ty1 <> ty2)
+  -------------------------------------------------
+  IObject f1   ty1 <> IObject f2   ty2 = IObject (f1 <> f2) (ty1 <> ty2)
+  IObject fs ts <> ISel { sField, sTypes }  =
+    IObject (sField : fs) (ts <> sTypes)
+  ISel { sField, sTypes } <>  IObject fs ts =
+      IObject (sField : fs) (ts <> sTypes)
+  ISel x1 y1 z1 <> ISel x2 y2 z2 = ISel x2 y2 (z1 <> z2)
+  someType <> INull = someType
+  INull <> someType = someType
+
 
 --  GENERIC UNION
 class GQLRep f where
@@ -223,9 +235,9 @@ instance (GQLRep a, GQLRep b) => GQLRep (a :*: b) where
   gqlRep _ = gqlRep (Proxy @a) <> gqlRep (Proxy @b)
 
 instance (GQLType a, Selector s, Introspect a) => GQLRep (M1 S s (Rec0 a)) where
-  gqlRep _ = ISel { selType       = __typeName (Proxy @a)
-                  , selField      = (name, field (Proxy @a) name)
-                  , recTypes = [introspect (Proxy @a)]
+  gqlRep _ = ISel { sType  = __typeName (Proxy @a)
+                  , sField = (name, field (Proxy @a) name)
+                  , sTypes = [introspect (Proxy @a)]
                   }
     where name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
 
