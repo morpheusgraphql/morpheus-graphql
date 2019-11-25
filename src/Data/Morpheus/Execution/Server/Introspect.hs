@@ -218,7 +218,7 @@ class ObjectFields (custom :: Bool) a where
 instance GQLRep (Rep a) => ObjectFields 'False a where
   objectFields _ _ = case gqlRep (Proxy @(Rep a)) of
     [ConsD { cFields }    ] -> (map fFields cFields, map fIntro cFields)
-    (ConsD { cFields } : _) -> (map fFields cFields, map fIntro cFields)
+    ConsD { cFields } : _ -> (map fFields cFields, map fIntro cFields)
 
 data ConsD =  ConsD {
   cName :: Key,
@@ -242,8 +242,9 @@ instance GQLRep f => GQLRep (M1 D d f) where
 instance (GQLRep a, GQLRep b) => GQLRep (a :+: b) where
   gqlRep _ = gqlRep (Proxy @a) <> gqlRep (Proxy @b)
 
-instance ConRep f => GQLRep (M1 C c f) where
-  gqlRep _ = [ConsD { cName = "", cFields = conRep (Proxy @f) }]
+instance (ConRep f, Constructor c) => GQLRep (M1 C c f) where
+  gqlRep _ =
+    [ConsD { cName = pack $ conName (undefined  :: (M1 C c f a)), cFields = conRep (Proxy @f) }]
 
 
 class ConRep f where
