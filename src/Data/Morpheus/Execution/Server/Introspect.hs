@@ -132,12 +132,17 @@ instance {-# OVERLAPPABLE #-} (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind kin
   introspectKind _ = builder
    where
     builder = case gqlRep (Proxy @(Rep a)) of
-      IUnion members types ->
-        updateLib (DataUnion . buildType members) types (Proxy @a)
-      IObject fields types -> updateLib
+      [ConsD { cFields }] -> updateLib
         (DataObject . buildType (__typename : fields))
         types
         (Proxy @a)
+       where
+        fields = map fFields cFields
+        types  = map fIntro cFields
+
+    --  IUnion members types ->
+    --    updateLib (DataUnion . buildType members) types (Proxy @a)
+
     -----------------------------------------------------------------------------  
     __typename =
       ( "__typename"
@@ -162,27 +167,28 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
       DataEnum . buildType (map createEnumValue $ enumTags (Proxy @(Rep a)))
 
 instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a where
-        introspectKind _ = updateLib (DataObject . buildType (__typename : fields))
-                                     types
-                                     (Proxy @a)
-         where
-          __typename =
-            ( "__typename"
-            , DataField { fieldName     = "__typename"
-                        , fieldArgs     = []
-                        , fieldArgsType = Nothing
-                        , fieldType     = createAlias "String"
-                        , fieldMeta     = Nothing
-                        }
-            )
-          (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
+  introspectKind _ = updateLib (DataObject . buildType (__typename : fields))
+                               types
+                               (Proxy @a)
+   where
+    __typename =
+      ( "__typename"
+      , DataField { fieldName     = "__typename"
+                  , fieldArgs     = []
+                  , fieldArgsType = Nothing
+                  , fieldType     = createAlias "String"
+                  , fieldMeta     = Nothing
+                  }
+      )
+    (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
 -- UNION
 instance (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind UNION a where
-        introspectKind _ = updateLib (DataUnion . buildType memberTypes)
-                                     stack
-                                     (Proxy @a)
-          where IUnion memberTypes stack = gqlRep (Proxy @(Rep a))
-      
+  introspectKind _ = updateLib (DataUnion . buildType members) stack (Proxy @a)
+   where
+    unions  = concatMap cFields $ gqlRep (Proxy @(Rep a))
+    stack   = map fIntro unions
+    members = map fType unions
+
 -- INPUT_OBJECT
 instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT a where
   introspectKind _ = updateLib (DataInputObject . buildType fields)
@@ -192,10 +198,13 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT 
 
 -- INPUT_UNION
 instance (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind INPUT_UNION a where
-  introspectKind _ = updateLib (DataInputUnion . buildType memberTypes)
+  introspectKind _ = updateLib (DataInputUnion . buildType members)
                                stack
                                (Proxy @a)
-    where IUnion memberTypes stack = gqlRep (Proxy @(Rep a))
+   where
+    unions  = concatMap cFields $ gqlRep (Proxy @(Rep a))
+    stack   = map fIntro unions
+    members = map fType unions
 
 -- Types
 
@@ -208,66 +217,53 @@ class ObjectFields (custom :: Bool) a where
 
 instance GQLRep (Rep a) => ObjectFields 'False a where
   objectFields _ _ = case gqlRep (Proxy @(Rep a)) of
-    IObject fields types    -> (fields, types)
-    ISel { sField, sTypes } -> ([sField], sTypes)
-    INull                   -> ([], [])
+    [ConsD { cFields }    ] -> (map fFields cFields, map fIntro cFields)
+    (ConsD { cFields } : _) -> (map fFields cFields, map fIntro cFields)
 
+data ConsD =  ConsD {
+  cName :: Key,
+  cFields :: [FieldD]
+}
 
-data GQLRepResult =
-  IUnion [Key] [TypeUpdater]
-  | IObject [(Text, DataField)]  [TypeUpdater]
-  | ISel{
-     sType :: Key,
-     sField :: (Text, DataField),
-     sTypes :: [TypeUpdater]
-  }
-  | INull
-
-instance Semigroup  GQLRepResult where
-  IUnion members types <> ISel { sType, sTypes } =
-    IUnion (sType : members) (types <> sTypes)
-  ISel { sType, sTypes } <> IUnion members types =
-    IUnion (sType : members) (types <> sTypes)
-  IUnion  mem1 ty1 <> IUnion  mem2 ty2 = IUnion (mem1 <> mem2) (ty1 <> ty2)
-  -------------------------------------------------
-  IObject f1   ty1 <> IObject f2   ty2 = IObject (f1 <> f2) (ty1 <> ty2)
-  IObject fs ts <> ISel { sField, sTypes } =
-    IObject (sField : fs) (ts <> sTypes)
-  ISel { sField, sTypes } <> IObject fs ts =
-    IObject (sField : fs) (ts <> sTypes)
-  ISel x1 y1 z1 <> ISel x2 y2 z2 = ISel x2 y2 (z1 <> z2)
-  someType      <> INull         = someType
-  INull         <> someType      = someType
-
+data FieldD = FieldD {
+  fType :: Key,
+  fFields :: (Text, DataField),
+  fIntro :: TypeUpdater
+}
 
 --  GENERIC UNION
 class GQLRep f where
-  gqlRep :: Proxy f -> GQLRepResult
+  gqlRep :: Proxy f -> [ConsD]
 
 instance GQLRep f => GQLRep (M1 D d f) where
   gqlRep _ = gqlRep (Proxy @f)
 
-instance GQLRep f => GQLRep (M1 C c f) where
-  gqlRep _ = gqlRep (Proxy @f)
+-- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
+instance (GQLRep a, GQLRep b) => GQLRep (a :+: b) where
+  gqlRep _ = gqlRep (Proxy @a) <> gqlRep (Proxy @b)
+
+instance ConRep f => GQLRep (M1 C c f) where
+  gqlRep _ = [ConsD { cName = "", cFields = conRep (Proxy @f) }]
+
+
+class ConRep f where
+    conRep :: Proxy f -> [FieldD]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
-instance (GQLRep  a, GQLRep  b) => GQLRep  (a :+: b) where
-  gqlRep _ = IUnion [] [] <> gqlRep (Proxy @a) <> gqlRep (Proxy @b)
+instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where
+  conRep _ = conRep (Proxy @a) <> conRep (Proxy @b)
 
--- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
-instance (GQLRep a, GQLRep b) => GQLRep (a :*: b) where
-  gqlRep _ = IObject [] [] <> gqlRep (Proxy @a) <> gqlRep (Proxy @b)
-
-instance (GQLType a, Selector s, Introspect a) => GQLRep (M1 S s (Rec0 a)) where
-  gqlRep _ = ISel { sType  = __typeName (Proxy @a)
-                  , sField = (name, field (Proxy @a) name)
-                  , sTypes = [introspect (Proxy @a)]
-                  }
+instance (GQLType a, Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
+  conRep _ =
+    [ FieldD { fType   = __typeName (Proxy @a)
+             , fFields = (name, field (Proxy @a) name)
+             , fIntro  = introspect (Proxy @a)
+             }
+    ]
     where name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
 
-
-instance GQLRep U1 where
-  gqlRep _ = INull
+instance ConRep U1 where
+  conRep _ = []
 
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName = DataField
