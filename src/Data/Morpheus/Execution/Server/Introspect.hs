@@ -127,22 +127,28 @@ instance (ObjectFields 'False a, Introspect b) => Introspect (a -> m b) where
 class IntrospectKind (kind :: GQL_KIND) a where
   introspectKind :: Context kind a -> TypeUpdater -- Generates internal GraphQL Schema
 
+isEnum :: [ConsD] -> Bool  
+isEnum = all isEmpty  
+  where 
+    isEmpty ConsD { cFields = [] } = True
+    isEmpty _ = False
 
 instance {-# OVERLAPPABLE #-} (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind kind a where
   introspectKind _ = builder
    where
     builder = case gqlRep (Proxy @(Rep a)) of
-      [ConsD { cFields }] -> updateLib
-        (DataObject . buildType (__typename : fields))
-        types
-        (Proxy @a)
-       where
-        fields = map fFields cFields
-        types  = map fIntro cFields
-
-    --  IUnion members types ->
-    --    updateLib (DataUnion . buildType members) types (Proxy @a)
-
+      [ConsD { cFields }] -> updateLib datatype types (Proxy @a)
+        where 
+          datatype = DataObject . buildType (__typename : fields)
+          fields = map fFields cFields
+          types  = map fIntro cFields
+      cons -> updateLib dataType types (Proxy @a)
+        where
+          flatFields = concatMap cFields cons
+          types  =  map fIntro flatFields
+          members = map fType flatFields
+          dataType | isEnum cons = (DataUnion . buildType members)
+            | otherwise = DataEnum . buildType (map createEnumValue members)
     -----------------------------------------------------------------------------  
     __typename =
       ( "__typename"
