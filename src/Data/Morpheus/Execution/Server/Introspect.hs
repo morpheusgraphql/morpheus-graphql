@@ -167,14 +167,14 @@ instance (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind UNION a where
   introspectKind _ = updateLib (DataUnion . buildType memberTypes)
                                stack
                                (Proxy @a)
-    where (memberTypes, stack) = unzip $ gqlRep (Proxy @(Rep a)) RepUnion
+    where IUnion memberTypes stack = gqlRep (Proxy @(Rep a))
 
 -- INPUT_UNION
 instance (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind INPUT_UNION a where
   introspectKind _ = updateLib (DataInputUnion . buildType memberTypes)
                                stack
                                (Proxy @a)
-    where (memberTypes, stack) = unzip $ gqlRep (Proxy @(Rep a)) RepUnion
+    where IUnion memberTypes stack = gqlRep (Proxy @(Rep a))
 
 -- Types
 
@@ -186,10 +186,9 @@ class ObjectFields (custom :: Bool) a where
   objectFields :: proxy1 custom -> proxy2 a -> ([(Text, DataField)], [TypeUpdater])
 
 instance GQLRep (Rep a) => ObjectFields 'False a where
-  objectFields _ _ = do
-    let x = gqlRep (Proxy @(Rep a))
-    case x of
-      IObject x types -> (x, types)
+  objectFields _ _ = (fields,types)
+    where 
+      IObject fields types = gqlRep (Proxy @(Rep a))
 
 data GQLRepResult =
   IUnion [Key] [TypeUpdater]
@@ -222,7 +221,7 @@ instance (GQLRep  a, GQLRep  b) => GQLRep  (a :+: b) where
 instance (GQLRep a, GQLRep b) => GQLRep (a :*: b) where
   gqlRep _ = gqlRep (Proxy @a) <> gqlRep (Proxy @b)
 
-instance (GQL_TYPE a, Selector s, Introspect a) => GQLRep (M1 S s (Rec0 a)) where
+instance (GQLType a, Selector s, Introspect a) => GQLRep (M1 S s (Rec0 a)) where
   gqlRep _ = ISel { selType       = __typeName (Proxy @a)
                   , selField      = (name, field (Proxy @a) name)
                   , selIntrospect = [introspect (Proxy @a)]
