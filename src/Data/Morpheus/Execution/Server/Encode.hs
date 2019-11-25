@@ -48,6 +48,7 @@ import           Data.Morpheus.Kind             ( ENUM
                                                 , ResContext(..)
                                                 , SCALAR
                                                 , UNION
+                                                , AUTO
                                                 , VContext(..)
                                                 )
 import           Data.Morpheus.Types.Types     ( MapKind
@@ -134,6 +135,15 @@ instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
 -- ENUM
 instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o e m where
   encodeKind = pure . pure . gqlString . encodeRep . from . unVContext
+
+instance (Monad m, EncodeCon o e m a, Monad m, GResolver OBJECT (Rep a) o e m) => EncodeKind AUTO a o e m where
+    encodeKind (VContext value) = withObject encodeK
+     where
+      encodeK selection = resolveObject
+        selection
+        (__typenameResolver : objectResolvers (Proxy :: Proxy (CUSTOM a)) value)
+      __typenameResolver =
+        ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))  
 
 --  OBJECT
 instance (Monad m, EncodeCon o e m a, Monad m, GResolver OBJECT (Rep a) o e m) => EncodeKind OBJECT a o e m where
