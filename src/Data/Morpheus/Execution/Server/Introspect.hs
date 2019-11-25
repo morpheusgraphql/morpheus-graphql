@@ -186,9 +186,8 @@ class ObjectFields (custom :: Bool) a where
   objectFields :: proxy1 custom -> proxy2 a -> ([(Text, DataField)], [TypeUpdater])
 
 instance GQLRep (Rep a) => ObjectFields 'False a where
-  objectFields _ _ = (fields,types)
-    where 
-      IObject fields types = gqlRep (Proxy @(Rep a))
+  objectFields _ _ = (fields, types)
+    where IObject fields types = gqlRep (Proxy @(Rep a))
 
 data GQLRepResult =
   IUnion [Key] [TypeUpdater]
@@ -196,12 +195,14 @@ data GQLRepResult =
   | ISel{
     selType :: Key,
      selField :: (Text, DataField),
-     selIntrospect :: [TypeUpdater]
+     recTypes :: [TypeUpdater]
   }
   | INull
 
 
 instance Semigroup  GQLRepResult where
+  IUnion members types <> ISel { selType, recTypes } =
+    IUnion (selType : members) (types <> recTypes)
 
 --  GENERIC UNION
 class GQLRep f where
