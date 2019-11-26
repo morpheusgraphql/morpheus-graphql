@@ -20,6 +20,7 @@ dependencies:
   - scotty
   - wai
   - warp
+  - req
   - wai-websockets        >= 1.0       &&  <= 3.5
 
 executables:
