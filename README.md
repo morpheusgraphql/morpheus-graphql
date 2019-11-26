@@ -241,7 +241,7 @@ data Character
   deriving (Generic)
 
 instance GQLType Character where
-  type KIND City = UNION
+  type KIND Character = UNION
 ```
 
 ### Scalar types
