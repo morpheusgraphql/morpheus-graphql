@@ -1,3 +1,7 @@
+## [0.7.1] - 26.11.2019
+
+- max bound icludes: support-megaparsec-8.0
+
 ## [0.7.0] - 24.11.2019
 
 ## Removed
