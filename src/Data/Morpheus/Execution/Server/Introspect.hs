@@ -70,7 +70,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeUpdater
                                                 )
 
-
 type IntroCon a = (GQLType a, ObjectFields (CUSTOM a) a)
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
@@ -144,11 +143,13 @@ instance {-# OVERLAPPABLE #-} (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind kin
        where
         flatFields = concatMap cFields cons
         types      = map fIntro flatFields
-        members    = map fType flatFields
         dataType
-          | isEnum cons = DataEnum . buildType (map createEnumValue members)
-          | otherwise   = (DataUnion . buildType (map cName cons))
-
+          | isEnum cons = DataEnum . buildType (map createEnumValue enumTags)
+          | otherwise   = (DataUnion . buildType members)
+          where
+            enumTags = map cName cons
+            members    = map fType flatFields
+              
     -----------------------------------------------------------------------------  
     __typename =
       ( "__typename"
