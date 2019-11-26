@@ -8,7 +8,6 @@ module Server.Mythology.Place.Places
   )
 where
 
-import           Data.Morpheus.Kind             ( ENUM )
 import           Data.Morpheus.Types            ( GQLType(..) )
 import           GHC.Generics                   ( Generic )
 

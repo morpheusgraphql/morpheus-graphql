@@ -21,9 +21,14 @@ import           Server.Mythology.Character.Deity
                                                 ( Deity(..)
                                                 , dbDeity
                                                 )
+import           Server.Mythology.Character.Human
+                                                ( Human )
 
-newtype Query m = Query
-  { deity :: DeityArgs -> m Deity
+data Character  = H Human | D Deity deriving (Generic, GQLType)
+
+data Query m = Query
+  { deity :: DeityArgs -> m Deity,
+    character :: Maybe Character
   } deriving (Generic, GQLType)
 
 data DeityArgs = DeityArgs
@@ -36,10 +41,11 @@ resolveDeity DeityArgs { name, mythology } =
   liftEither $ dbDeity name mythology
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
-rootResolver = GQLRootResolver { queryResolver = Query { deity = resolveDeity }
-                               , mutationResolver = Undefined
-                               , subscriptionResolver = Undefined
-                               }
+rootResolver = GQLRootResolver
+  { queryResolver        = Query { deity = resolveDeity, character = Nothing }
+  , mutationResolver     = Undefined
+  , subscriptionResolver = Undefined
+  }
 
 mythologyApi :: B.ByteString -> IO B.ByteString
 mythologyApi = interpreter rootResolver
