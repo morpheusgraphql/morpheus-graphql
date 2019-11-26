@@ -1,5 +1,5 @@
 name: morpheus-graphql
-version: 0.7.0
+version: 0.7.1
 github: "nalchevanidze/morpheus-graphql"
 license: MIT
 author: "Daviti Nalchevanidze"
@@ -21,7 +21,7 @@ data-files:
 
 dependencies:
   - base                  >= 4.7       && <  5
-  - megaparsec            >= 7.0.0     && <  8.0
+  - megaparsec            >= 7.0.0     && <  9.0.0
   - aeson                 >= 1.4.4.0   && <= 1.6
   - bytestring            >= 0.10.4    && <  0.11
   - text                  >= 1.2.3.0   && <  1.3

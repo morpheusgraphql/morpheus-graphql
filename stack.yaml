@@ -4,3 +4,6 @@ resolver: lts-14.14
 packages:
   - examples
   - .
+
+extra-deps:
+  - megaparsec-8.0.0
