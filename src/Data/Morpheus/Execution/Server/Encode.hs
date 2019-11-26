@@ -51,7 +51,7 @@ import           Data.Morpheus.Kind             ( ENUM
                                                 , AUTO
                                                 , VContext(..)
                                                 )
-import           Data.Morpheus.Types.Types     ( MapKind
+import           Data.Morpheus.Types.Types      ( MapKind
                                                 , Pair(..)
                                                 , mapKindFromList
                                                 )
@@ -63,10 +63,11 @@ import           Data.Morpheus.Types.GQLType    ( GQLType
                                                   )
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( Operation(..)
+                                                ( Name
+                                                , Operation(..)
                                                 , ValidOperation
-                                                , Key,
-                                                  MUTATION
+                                                , Key
+                                                , MUTATION
                                                 , OperationType
                                                 , QUERY
                                                 , SUBSCRIPTION
@@ -197,6 +198,27 @@ unionResolver
   -> (Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)
 unionResolver =
   getResolvers (ResContext :: ResContext UNION o e m value) . from
+
+data TypeRes o e m = 
+  ObjRes {
+      tName :: Name,
+      tFeildRes :: [(Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)]
+    } 
+  | UnionRes {
+      tName :: Name,
+      tUnionRes ::  (Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)
+    }
+
+
+class TypeRep f o e (m :: * -> *) where
+    typeResolvers :: ResContext AUTO o e m value -> f a -> TypeRes o e m 
+
+instance TypeRep  f o e m => TypeRep (M1 D c f) o e m where
+  typeResolvers context (M1 src) = typeResolvers context src
+
+instance TypeRep f o e m => TypeRep  (M1 C c f) o e m where
+  typeResolvers context (M1 src) = typeResolvers context src
+
 
 -- | Derives resolvers for OBJECT and UNION
 class GResolver (kind :: GQL_KIND) f o e (m :: * -> *) where
