@@ -194,44 +194,40 @@ instance GQLRep (Rep a) => ObjectFields 'False a where
     ConsD { cFields } : _ -> (map fFields cFields, map fIntro cFields)
 
 
---  GENERIC UNION
-class GQLRep f where
-  gqlRep :: Proxy f -> [ConsD]
+type instance GQLRepResult OBJECT = (Text, DataField)
 
-instance GQLRep f => GQLRep (M1 D d f) where
-  gqlRep _ = gqlRep (Proxy @f)
+type instance GQLRepResult UNION = Key
 
--- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
-instance (GQLRep a, GQLRep b) => GQLRep (a :+: b) where
-  gqlRep _ = gqlRep (Proxy @a) <> gqlRep (Proxy @b)
+--  GENERIC Rep
+class GQLRep (kind :: GQL_KIND) f where
+  gqlRep :: Context kind f -> [(GQLRepResult kind, TypeUpdater)]
 
-instance (ConRep f, Constructor c) => GQLRep (M1 C c f) where
-  gqlRep _ =
-    [ ConsD { cName   = pack $ conName (undefined :: (M1 C c f a))
-            , cFields = conRep (Proxy @f)
-            }
-    ]
+instance GQLRep kind f => GQLRep kind (M1 D d f) where
+  gqlRep _ = gqlRep (Context :: Context kind f)
 
-
-class ConRep f where
-    conRep :: Proxy f -> [FieldD]
+instance GQLRep kind f => GQLRep kind (M1 C c f) where
+  gqlRep _ = gqlRep (Context :: Context kind f)
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
-instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where
-  conRep _ = conRep (Proxy @a) <> conRep (Proxy @b)
+instance (GQLRep UNION a, GQLRep UNION b) => GQLRep UNION (a :+: b) where
+  gqlRep _ =
+    gqlRep (Context :: Context UNION a) ++ gqlRep (Context :: Context UNION b)
 
-instance (GQLType a, Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
-  conRep _ =
-    [ FieldD { fType   = __typeName (Proxy @a)
-             , fFields = (name, field (Proxy @a) name)
-             , fIntro  = introspect (Proxy @a)
-             }
-    ]
+instance (GQL_TYPE a, Introspect a) => GQLRep UNION (M1 S s (Rec0 a)) where
+  gqlRep _ = [(__typeName (Proxy @a), introspect (Proxy @a))]
+
+-- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
+instance (GQLRep OBJECT a, GQLRep OBJECT b) => GQLRep OBJECT (a :*: b) where
+  gqlRep _ =
+    gqlRep (Context :: Context OBJECT a) ++ gqlRep (Context :: Context OBJECT b)
+
+instance (Selector s, Introspect a) => GQLRep OBJECT (M1 S s (Rec0 a)) where
+  gqlRep _ = [((name, field (Proxy @a) name), introspect (Proxy @a))]
     where name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
 
-instance ConRep U1 where
-  conRep _ = []
-
+instance GQLRep OBJECT U1 where
+  gqlRep _ = []
+    
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName = DataField
   { fieldName
@@ -318,3 +314,40 @@ instance {-# OVERLAPPABLE #-} (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind kin
                   }
       )
 
+
+--  GENERIC UNION
+class TypeRep f where
+  typeRep :: Proxy f -> [ConsD]
+
+instance TypeRep f => TypeRep (M1 D d f) where
+  typeRep _ = typeRep (Proxy @f)
+
+-- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
+instance (TypeRep a, TypeRep b) => TypeRep (a :+: b) where
+  typeRep _ = typeRep (Proxy @a) <> typeRep (Proxy @b)
+
+instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
+  typeRep _ =
+    [ ConsD { cName   = pack $ conName (undefined :: (M1 C c f a))
+            , cFields = conRep (Proxy @f)
+            }
+    ]
+
+class ConRep f where
+    conRep :: Proxy f -> [FieldD]
+
+-- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
+instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where
+  conRep _ = conRep (Proxy @a) <> conRep (Proxy @b)
+
+instance (GQLType a, Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
+  conRep _ =
+    [ FieldD { fType   = __typeName (Proxy @a)
+             , fFields = (name, field (Proxy @a) name)
+             , fIntro  = introspect (Proxy @a)
+             }
+    ]
+    where name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
+
+instance ConRep U1 where
+  conRep _ = []
