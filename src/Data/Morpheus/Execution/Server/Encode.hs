@@ -137,15 +137,21 @@ instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
 instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o e m where
   encodeKind = pure . pure . gqlString . encodeRep . from . unVContext
 
-instance (Monad m) => EncodeKind AUTO a o e m where
-    -- encodeKind (VContext value) = withObject encodeK
-    --  where
-    --   encodeK selection = resolveObject
-    --     selection
-    --     (__typenameResolver : objectResolvers (Proxy :: Proxy (CUSTOM a)) value)
-    --   __typenameResolver =
-    --     ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))  
-
+instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO a o e m where
+    encodeKind (VContext value) = case rawRes of 
+          TypeRes {
+            cKind = D_UNION,
+            cFields  
+          } -> withObject (encodeK cFields)
+      where
+        rawRes = typeResolvers (ResContext :: ResContext AUTO o e m value) (from value)
+        encodeK resolvers selection = resolveObject
+          selection
+          (__typenameResolver : map toObjRes resolvers )
+        toObjRes ResField{ fName , fRes } = (fName,fRes)
+        __typenameResolver =
+          ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))
+    
 --  OBJECT
 instance (Monad m, EncodeCon o e m a, Monad m, GResolver OBJECT (Rep a) o e m) => EncodeKind OBJECT a o e m where
   encodeKind (VContext value) = withObject encodeK
@@ -223,9 +229,12 @@ instance (TypeRep a o e m,TypeRep b o e m) => TypeRep (a :+: b) o e m where
   typeResolvers context (L1 x) = (typeResolvers context x) { cKind = D_UNION }
   typeResolvers context (R1 x) = (typeResolvers context x) { cKind = D_UNION }
 
-instance TypeRep f o e m => TypeRep (M1 C c f) o e m where
-  typeResolvers context (M1 src) = typeResolvers context src
-  
+instance FieldRep f o e m => TypeRep (M1 C c f) o e m where
+  typeResolvers context (M1 src) =  TypeRes {
+     cKind = D_OBJECT,
+     cFields = fieldRep context src
+  }
+      
 --- FIELDS      
 class FieldRep f o e (m :: * -> *) where
   fieldRep :: ResContext AUTO o e m value -> f a -> [ResField o e m]
@@ -240,7 +249,6 @@ instance (Selector s, GQLType a, Encode a o e m) => FieldRep (M1 S s (K1 s2 a)) 
                     fRes = encode src
                   }
                 ]
-  
 
 instance FieldRep U1 o e m where
     fieldRep _ _ = []
