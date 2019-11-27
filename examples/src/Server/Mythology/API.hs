@@ -1,6 +1,7 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric  #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Server.Mythology.API
   ( mythologyApi
@@ -47,8 +48,8 @@ resolveCharacter = HUMAN H.Human { H.name = "Odysseus", H.bornAt = Ithaca }
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver = GQLRootResolver
-  { queryResolver        = Query { deity = resolveDeity, character = Nothing }
-  , mutationResolver     = Undefined
+  { queryResolver = Query { deity = resolveDeity, character = resolveCharacter }
+  , mutationResolver = Undefined
   , subscriptionResolver = Undefined
   }
 
