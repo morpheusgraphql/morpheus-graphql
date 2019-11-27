@@ -130,37 +130,6 @@ isEnum = all isEmpty
   isEmpty ConsD { cFields = [] } = True
   isEmpty _                      = False
 
-instance {-# OVERLAPPABLE #-} (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind kind a where
-  introspectKind _ = builder
-   where
-    builder = case gqlRep (Proxy @(Rep a)) of
-      [ConsD { cFields }] -> updateLib datatype types (Proxy @a)
-       where
-        datatype = DataObject . buildType (__typename : fields)
-        fields   = map fFields cFields
-        types    = map fIntro cFields
-      cons -> updateLib dataType types (Proxy @a)
-       where
-        flatFields = concatMap cFields cons
-        types      = map fIntro flatFields
-        dataType
-          | isEnum cons = DataEnum . buildType (map createEnumValue enumTags)
-          | otherwise   = (DataUnion . buildType members)
-          where
-            enumTags = map cName cons
-            members    = map fType flatFields
-              
-    -----------------------------------------------------------------------------  
-    __typename =
-      ( "__typename"
-      , DataField { fieldName     = "__typename"
-                  , fieldArgs     = []
-                  , fieldArgsType = Nothing
-                  , fieldType     = createAlias "String"
-                  , fieldMeta     = Nothing
-                  }
-      )
-
 -- SCALAR
 instance (GQLType a, GQLScalar a) => IntrospectKind SCALAR a where
   introspectKind _ = updateLib scalarType [] (Proxy @a)
@@ -188,6 +157,7 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a wher
                   }
       )
     (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
+
 -- UNION
 instance (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind UNION a where
   introspectKind _ = updateLib (DataUnion . buildType members) stack (Proxy @a)
@@ -309,3 +279,38 @@ updateLib typeBuilder stack proxy lib' =
     Just fingerprint' | fingerprint' == __typeFingerprint proxy -> return lib'
     -- throw error if 2 different types has same name
     Just _ -> failure $ nameCollisionError (__typeName proxy)
+
+
+-- NEW AUTOMATIC DERIVATION SYSTEM
+
+instance {-# OVERLAPPABLE #-} (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind kind a where
+  introspectKind _ = builder
+   where
+    builder = case gqlRep Proxy @(Rep a) of
+      [ConsD { cFields }] -> updateLib datatype types (Proxy @a)
+       where
+        datatype = DataObject . buildType (__typename : fields)
+        fields   = map fFields cFields
+        types    = map fIntro cFields
+      cons -> updateLib dataType types (Proxy @a)
+       where
+        flatFields = concatMap cFields cons
+        types      = map fIntro flatFields
+        dataType
+          | isEnum cons = DataEnum . buildType (map createEnumValue enumTags)
+          | otherwise   = (DataUnion . buildType members)
+         where
+          enumTags = map cName cons
+          members  = map fType flatFields
+
+    -----------------------------------------------------------------------------  
+    __typename =
+      ( "__typename"
+      , DataField { fieldName     = "__typename"
+                  , fieldArgs     = []
+                  , fieldArgsType = Nothing
+                  , fieldType     = createAlias "String"
+                  , fieldMeta     = Nothing
+                  }
+      )
+
