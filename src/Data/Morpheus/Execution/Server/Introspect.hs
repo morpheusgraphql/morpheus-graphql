@@ -277,11 +277,15 @@ data FieldRep = FieldRep {
   fieldTypeUpdater :: TypeUpdater
 }
 
-isEnum :: [ConsRep] -> Bool
-isEnum = all isEmpty
- where
-  isEmpty ConsRep { consFields = [] } = True
-  isEmpty _                           = False
+isEmpty :: ConsRep -> Bool
+isEmpty ConsRep { consFields = [] } = True
+isEmpty _                           = False
+
+analyseRep :: [ConsRep] -> ([Name], [Name])
+analyseRep cons =
+  ( map fieldTypeName $ concatMap consFields $ filter (not . isEmpty) cons
+  , map consName $ filter isEmpty cons
+  )
 
 instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
   introspectKind _ = builder $ typeRep $ Proxy @(Rep a)
@@ -291,15 +295,13 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
       datatype = DataObject . buildType (introspection__typename : fields)
       fields   = map fieldData consFields
       types    = map fieldTypeUpdater consFields
-    builder cons = updateLib dataType types (Proxy @a)
+    builder cons = updateLib (datatype $ analyseRep cons) types (Proxy @a)
      where
-      dataType | isEnum cons = DataEnum . buildType tags
-               | otherwise   = DataUnion . buildType members
+      datatype ([]     , tags) = DataEnum . buildType (map createEnumValue tags)
+      datatype (members, []  ) = DataUnion . buildType members
+      --TODO: mixed
       --------------------
-      fields  = concatMap consFields cons
-      types   = map fieldTypeUpdater fields
-      tags    = map (createEnumValue . consName) cons
-      members = map fieldTypeName fields
+      types   = map fieldTypeUpdater $ concatMap consFields cons
 
 --  GENERIC UNION
 class TypeRep f where
