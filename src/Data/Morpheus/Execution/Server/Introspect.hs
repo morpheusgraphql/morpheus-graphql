@@ -142,6 +142,13 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
     enumType =
       DataEnum . buildType (map createEnumValue $ enumTags (Proxy @(Rep a)))
 
+-- INPUT_OBJECT
+instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT a where
+  introspectKind _ = updateLib (DataInputObject . buildType fields)
+                               types
+                               (Proxy @a)
+    where (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
+
 instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a where
   introspectKind _ = updateLib (DataObject . buildType (__typename : fields))
                                types
@@ -166,12 +173,6 @@ instance (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind UNION a where
     stack   = map fIntro unions
     members = map fType unions
 
--- INPUT_OBJECT
-instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT a where
-  introspectKind _ = updateLib (DataInputObject . buildType fields)
-                               types
-                               (Proxy @a)
-    where (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
 
 -- INPUT_UNION
 instance (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind INPUT_UNION a where
