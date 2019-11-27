@@ -45,6 +45,7 @@ import           Data.Morpheus.Kind             ( Context(..)
                                                 , OBJECT
                                                 , SCALAR
                                                 , UNION
+                                                , AUTO
                                                 )
 import           Data.Morpheus.Types.Types      ( MapKind
                                                 , Pair
@@ -148,19 +149,10 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT 
 
 -- OBJECTS
 instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a where
-  introspectKind _ = updateLib (DataObject . buildType (__typename : fields))
+  introspectKind _ = updateLib (DataObject . buildType (introspection__typename : fields))
                                types
                                (Proxy @a)
    where
-    __typename =
-      ( "__typename"
-      , DataField { fieldName     = "__typename"
-                  , fieldArgs     = []
-                  , fieldArgsType = Nothing
-                  , fieldType     = createAlias "String"
-                  , fieldMeta     = Nothing
-                  }
-      )
     (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
 
 -- UNION
@@ -262,6 +254,16 @@ updateLib typeBuilder stack proxy lib' =
     -- throw error if 2 different types has same name
     Just _ -> failure $ nameCollisionError (__typeName proxy)
 
+introspection__typename :: (Name, DataField)
+introspection__typename =
+  ( "__typename"
+  , DataField { fieldName     = "__typename"
+              , fieldArgs     = []
+              , fieldArgsType = Nothing
+              , fieldType     = createAlias "String"
+              , fieldMeta     = Nothing
+              }
+  )
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 
@@ -281,13 +283,12 @@ isEnum = all isEmpty
   isEmpty ConsRep { consFields = [] } = True
   isEmpty _                           = False
 
-
-instance {-# OVERLAPPABLE #-} (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind kind a where
+instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
   introspectKind _ = builder $ typeRep $ Proxy @(Rep a)
    where
     builder [ConsRep { consFields }] = updateLib datatype types (Proxy @a)
      where
-      datatype = DataObject . buildType (__typename : fields)
+      datatype = DataObject . buildType (introspection__typename : fields)
       fields   = map fieldData consFields
       types    = map fieldTypeUpdater consFields
     builder cons = updateLib dataType types (Proxy @a)
@@ -299,18 +300,6 @@ instance {-# OVERLAPPABLE #-} (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind ki
        where
         tags    = map consName cons
         members = map fieldTypeName flatFields
-
-    -----------------------------------------------------------------------------  
-    __typename =
-      ( "__typename"
-      , DataField { fieldName     = "__typename"
-                  , fieldArgs     = []
-                  , fieldArgsType = Nothing
-                  , fieldType     = createAlias "String"
-                  , fieldMeta     = Nothing
-                  }
-      )
-
 
 --  GENERIC UNION
 class TypeRep f where
