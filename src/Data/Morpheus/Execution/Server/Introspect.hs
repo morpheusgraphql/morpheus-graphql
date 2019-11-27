@@ -345,7 +345,7 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
                 )
             ]
             --(DataUnion . buildType members)
-      --TODO: mixed
+      --TODO: UnionWIthInlineFIelds, ScalarsTypes
       --------------------
       types = map fieldTypeUpdater $ concatMap consFields cons
 
