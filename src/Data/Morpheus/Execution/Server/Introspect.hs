@@ -31,6 +31,7 @@ import           Data.Text                      ( Text
                                                 , pack
                                                 )
 import           GHC.Generics
+import           Data.Semigroup                 ( (<>) )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
