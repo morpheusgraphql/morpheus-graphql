@@ -283,24 +283,23 @@ isEnum = all isEmpty
 
 
 instance {-# OVERLAPPABLE #-} (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind kind a where
-  introspectKind _ = builder
+  introspectKind _ = builder $ typeRep $ Proxy @(Rep a)
    where
-    builder = case typeRep Proxy @(Rep a) of
-      [ConsD { cFields }] -> updateLib datatype types (Proxy @a)
+    builder [ConsD { cFields }] = updateLib datatype types (Proxy @a)
+     where
+      datatype = DataObject . buildType (__typename : fields)
+      fields   = map fFields cFields
+      types    = map fIntro cFields
+    builder cons = updateLib dataType types (Proxy @a)
+     where
+      flatFields = concatMap cFields cons
+      types      = map fIntro flatFields
+      dataType
+        | isEnum cons = DataEnum . buildType (map createEnumValue tags)
+        | otherwise   = DataUnion . buildType members
        where
-        datatype = DataObject . buildType (__typename : fields)
-        fields   = map fFields cFields
-        types    = map fIntro cFields
-      cons -> updateLib dataType types (Proxy @a)
-       where
-        flatFields = concatMap cFields cons
-        types      = map fIntro flatFields
-        dataType
-          | isEnum cons = DataEnum . buildType (map createEnumValue enumTags)
-          | otherwise   = (DataUnion . buildType members)
-         where
-          enumTags = map cName cons
-          members  = map fType flatFields
+        tags = map cName cons
+        members  = map fType flatFields
 
     -----------------------------------------------------------------------------  
     __typename =
