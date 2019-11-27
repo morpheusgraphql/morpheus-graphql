@@ -149,11 +149,11 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT 
 
 -- OBJECTS
 instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a where
-  introspectKind _ = updateLib (DataObject . buildType (introspection__typename : fields))
-                               types
-                               (Proxy @a)
-   where
-    (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
+  introspectKind _ = updateLib
+    (DataObject . buildType (introspection__typename : fields))
+    types
+    (Proxy @a)
+    where (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
 
 -- UNION
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind UNION a where
@@ -293,13 +293,13 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
       types    = map fieldTypeUpdater consFields
     builder cons = updateLib dataType types (Proxy @a)
      where
-      flatFields = concatMap consFields cons
-      types      = map fieldTypeUpdater flatFields
-      dataType | isEnum cons = DataEnum . buildType (map createEnumValue tags)
+      dataType | isEnum cons = DataEnum . buildType tags
                | otherwise   = DataUnion . buildType members
-       where
-        tags    = map consName cons
-        members = map fieldTypeName flatFields
+      --------------------
+      fields  = concatMap consFields cons
+      types   = map fieldTypeUpdater fields
+      tags    = map (createEnumValue . consName) cons
+      members = map fieldTypeName fields
 
 --  GENERIC UNION
 class TypeRep f where
