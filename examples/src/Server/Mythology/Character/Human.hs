@@ -15,5 +15,5 @@ import           Server.Mythology.Place.Places  ( City(..) )
 
 data Human = Human
   { name :: Text
-  , home :: City
+  , bornAt :: City
   } deriving (Generic,GQLType)

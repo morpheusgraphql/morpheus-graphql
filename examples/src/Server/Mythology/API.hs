@@ -21,14 +21,16 @@ import           Server.Mythology.Character.Deity
                                                 ( Deity(..)
                                                 , dbDeity
                                                 )
-import           Server.Mythology.Character.Human
-                                                ( Human )
+import qualified Server.Mythology.Character.Human
+                                               as H
+                                                ( Human(..) )
+import           Server.Mythology.Place.Places  ( City(..) )
 
-data Character  = H Human | D Deity deriving (Generic, GQLType)
+data Character  = HUMAN H.Human | DEITY Deity deriving (Generic, GQLType)
 
 data Query m = Query
   { deity :: DeityArgs -> m Deity,
-    character :: Maybe Character
+    character :: Character
   } deriving (Generic, GQLType)
 
 data DeityArgs = DeityArgs
@@ -39,6 +41,9 @@ data DeityArgs = DeityArgs
 resolveDeity :: DeityArgs -> IORes e Deity
 resolveDeity DeityArgs { name, mythology } =
   liftEither $ dbDeity name mythology
+
+resolveCharacter :: Character
+resolveCharacter = HUMAN H.Human { H.name = "Odysseus", H.bornAt = Ithaca }
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver = GQLRootResolver
