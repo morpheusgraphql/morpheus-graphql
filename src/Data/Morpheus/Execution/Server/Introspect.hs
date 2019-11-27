@@ -188,11 +188,10 @@ type GQL_TYPE a = (Generic a, GQLType a)
 class ObjectFields (custom :: Bool) a where
   objectFields :: proxy1 custom -> proxy2 a -> ([(Text, DataField)], [TypeUpdater])
 
-instance GQLRep (Rep a) => ObjectFields 'False a where
-  objectFields _ _ = case gqlRep (Proxy @(Rep a)) of
-    [ConsD { cFields }] -> (map fFields cFields, map fIntro cFields)
-    ConsD { cFields } : _ -> (map fFields cFields, map fIntro cFields)
+instance GQLRep OBJECT (Rep a) => ObjectFields 'False a where
+  objectFields _ _ = unzip $ gqlRep (Context :: Context OBJECT (Rep a))
 
+type family GQLRepResult (a :: GQL_KIND) :: *
 
 type instance GQLRepResult OBJECT = (Text, DataField)
 
@@ -227,7 +226,8 @@ instance (Selector s, Introspect a) => GQLRep OBJECT (M1 S s (Rec0 a)) where
 
 instance GQLRep OBJECT U1 where
   gqlRep _ = []
-    
+
+
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName = DataField
   { fieldName
