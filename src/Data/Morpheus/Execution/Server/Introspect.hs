@@ -143,6 +143,7 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT 
                                (Proxy @a)
     where (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
 
+-- OBJECTS
 instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a where
   introspectKind _ = updateLib (DataObject . buildType (__typename : fields))
                                types
