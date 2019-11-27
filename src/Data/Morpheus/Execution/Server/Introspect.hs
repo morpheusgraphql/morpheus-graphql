@@ -124,12 +124,6 @@ instance (ObjectFields 'False a, Introspect b) => Introspect (a -> m b) where
 class IntrospectKind (kind :: GQL_KIND) a where
   introspectKind :: Context kind a -> TypeUpdater -- Generates internal GraphQL Schema
 
-isEnum :: [ConsD] -> Bool
-isEnum = all isEmpty
- where
-  isEmpty ConsD { cFields = [] } = True
-  isEmpty _                      = False
-
 -- SCALAR
 instance (GQLType a, GQLScalar a) => IntrospectKind SCALAR a where
   introspectKind _ = updateLib scalarType [] (Proxy @a)
@@ -284,6 +278,13 @@ data FieldD = FieldD {
   fFields :: (Text, DataField),
   fIntro :: TypeUpdater
 }
+
+isEnum :: [ConsD] -> Bool
+isEnum = all isEmpty
+ where
+  isEmpty ConsD { cFields = [] } = True
+  isEmpty _                      = False
+
 
 instance {-# OVERLAPPABLE #-} (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind kind a where
   introspectKind _ = builder
