@@ -140,7 +140,7 @@ instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o e m where
 instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO a o e m where
     encodeKind (VContext value) = case rawRes of 
           TypeRes {
-            cKind = D_UNION,
+            cKind = D_OBJECT,
             cFields  
           } -> withObject (encodeK cFields)
       where
