@@ -261,39 +261,39 @@ encodeOperationWith externalRes rootResolver Operation { operationSelection } =
 
 instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO a o e m where
   encodeKind (VContext value) = case rawRes of
-    TypeRes { resKind = D_OBJECT, resFields } -> withObject (encodeK resFields)
-    TypeRes { resKind = D_UNION, resFields = [], resCons } ->
+    TypeRes { resKind = REP_OBJECT, resFields } -> withObject (encodeK resFields)
+    TypeRes { resKind = REP_UNION, resFields = [], resCons } ->
       pure $ pure $ gqlString resCons
-    TypeRes { resKind = D_UNION, resFields } -> encodeUnion resFields
+    TypeRes { resKind = REP_UNION, resFields } -> encodeUnion resFields
    where
     rawRes =
       typeResolvers (ResContext :: ResContext AUTO o e m value) (from value)
     -------------------------------------------------------------------------------
-    encodeUnion [ResField { fType, fRes }] (key, sel@Selection { selectionRec = UnionSelection selections })
-      = fRes (key, sel { selectionRec = SelectionSet lookupSelection })
-      where lookupSelection = fromMaybe [] $ lookup fType selections
+    encodeUnion [ResField { resFieldType, resFieldRes }] (key, sel@Selection { selectionRec = UnionSelection selections })
+      = resFieldRes (key, sel { selectionRec = SelectionSet lookupSelection })
+      where lookupSelection = fromMaybe [] $ lookup resFieldType selections
     encodeUnion _ _ = failure $ internalUnknownTypeMessage
       "union Resolver only should recieve UnionSelection"
   ---------------------------------------------------------------  
     encodeK resolvers selection =
       resolveObject selection (__typenameResolver : map toObjRes resolvers)
-    toObjRes ResField { fName, fRes } = (fName, fRes)
+    toObjRes ResField { resFieldName, resFieldRes } = (resFieldName, resFieldRes)
     __typenameResolver =
       ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))
 
-data D_KIND = D_UNION | D_OBJECT
+data REP_KIND = REP_UNION | REP_OBJECT
 
 data TypeRes o e m = TypeRes {
       resCons :: Name,
-      resKind :: D_KIND,
+      resKind :: REP_KIND,
       resFields :: [ResField o e m]
   }
 
 data ResField o e m = ResField {
-        fType :: Name,
-        fName :: Name,
-        fRes :: (Key, ValidSelection) -> ResolvingStrategy o e m Value
-      }
+    resFieldType :: Name,
+    resFieldName :: Name,
+    resFieldRes :: (Key, ValidSelection) -> ResolvingStrategy o e m Value
+  }
 
 class TypeRep f o e (m :: * -> *) where
           typeResolvers :: ResContext AUTO o e m value -> f a -> TypeRes o e m
@@ -303,13 +303,15 @@ instance TypeRep  f o e m => TypeRep (M1 D c f) o e m where
 
       --- UNION OR OBJECT 
 instance (TypeRep a o e m,TypeRep b o e m) => TypeRep (a :+: b) o e m where
-  typeResolvers context (L1 x) = (typeResolvers context x) { resKind = D_UNION }
-  typeResolvers context (R1 x) = (typeResolvers context x) { resKind = D_UNION }
+  typeResolvers context (L1 x) =
+    (typeResolvers context x) { resKind = REP_UNION }
+  typeResolvers context (R1 x) =
+    (typeResolvers context x) { resKind = REP_UNION }
 
 instance (FieldRep f o e m,Constructor c) => TypeRep (M1 C c f) o e m where
   typeResolvers context (M1 src) = TypeRes { resCons
-                                           , resKind       = D_OBJECT
-                                           , resFields     = fieldRep context src
+                                           , resKind   = REP_OBJECT
+                                           , resFields = fieldRep context src
                                            }
     where resCons = pack $ conName (undefined :: (M1 C c U1 x))
 
@@ -323,9 +325,9 @@ instance (FieldRep f o e m, FieldRep g o e m) => FieldRep  (f :*: g) o e m where
 
 instance (Selector s, GQLType a, Encode a o e m) => FieldRep (M1 S s (K1 s2 a)) o e m where
   fieldRep _ m@(M1 (K1 src)) =
-    [ ResField { fName = pack (selName m)
-               , fType = __typeName (Proxy @a)
-               , fRes  = encode src
+    [ ResField { resFieldName = pack (selName m)
+               , resFieldType = __typeName (Proxy @a)
+               , resFieldRes  = encode src
                }
     ]
 
