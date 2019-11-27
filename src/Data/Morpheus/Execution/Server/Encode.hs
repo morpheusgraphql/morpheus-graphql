@@ -199,16 +199,18 @@ unionResolver
 unionResolver =
   getResolvers (ResContext :: ResContext UNION o e m value) . from
 
-data TypeRes o e m = 
-  ObjRes {
-      tName :: Name,
-      tFeildRes :: [(Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)]
-    } 
-  | UnionRes {
-      tName :: Name,
-      tUnionRes ::  (Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)
-    }
+data D_KIND = D_UNION | D_OBJECT
 
+data TypeRes o e m = TypeRes {
+      cKind :: D_KIND,
+      cFields :: [ResField o e m]
+} 
+
+data ResField o e m = ResField {
+  fType :: Name,
+  fName :: Name,
+  fRes :: (Key, ValidSelection) -> ResolvingStrategy o e m Value
+}
 
 class TypeRep f o e (m :: * -> *) where
     typeResolvers :: ResContext AUTO o e m value -> f a -> TypeRes o e m 
@@ -216,9 +218,32 @@ class TypeRep f o e (m :: * -> *) where
 instance TypeRep  f o e m => TypeRep (M1 D c f) o e m where
   typeResolvers context (M1 src) = typeResolvers context src
 
-instance TypeRep f o e m => TypeRep  (M1 C c f) o e m where
-  typeResolvers context (M1 src) = typeResolvers context src
+--- UNION OR OBJECT 
+instance (TypeRep a o e m,TypeRep b o e m) => TypeRep (a :+: b) o e m where
+  typeResolvers context (L1 x) = (typeResolvers context x) { cKind = D_UNION }
+  typeResolvers context (R1 x) = (typeResolvers context x) { cKind = D_UNION }
 
+instance TypeRep f o e m => TypeRep (M1 C c f) o e m where
+  typeResolvers context (M1 src) = typeResolvers context src
+  
+--- FIELDS      
+class FieldRep f o e (m :: * -> *) where
+  fieldRep :: ResContext AUTO o e m value -> f a -> [ResField o e m]
+ 
+instance (FieldRep f o e m, FieldRep g o e m) => FieldRep  (f :*: g) o e m where
+  fieldRep context (a :*: b) = fieldRep context a <> fieldRep context b
+            
+instance (Selector s, GQLType a, Encode a o e m) => FieldRep (M1 S s (K1 s2 a)) o e m where
+  fieldRep _ m@(M1 (K1 src)) = [ ResField {
+                    fName = pack (selName m),
+                    fType = __typeName (Proxy @a),
+                    fRes = encode src
+                  }
+                ]
+  
+
+instance FieldRep U1 o e m where
+    fieldRep _ _ = []
 
 -- | Derives resolvers for OBJECT and UNION
 class GResolver (kind :: GQL_KIND) f o e (m :: * -> *) where
