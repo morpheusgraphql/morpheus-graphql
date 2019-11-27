@@ -56,7 +56,8 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , resolveUpdates
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataArguments
+                                                ( Name
+                                                , DataArguments
                                                 , Meta(..)
                                                 , DataField(..)
                                                 , DataTyCon(..)
@@ -264,42 +265,40 @@ updateLib typeBuilder stack proxy lib' =
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 
-data ConsD =  ConsD {
-  cName :: Key,
-  cFields :: [FieldD]
+data ConsRep =  ConsRep {
+  consName :: Key,
+  consFields :: [FieldRep]
+}
+data FieldRep = FieldRep {
+  fieldTypeName :: Name,
+  fieldData :: (Name, DataField),
+  fieldTypeUpdater :: TypeUpdater
 }
 
-data FieldD = FieldD {
-  fType :: Key,
-  fFields :: (Text, DataField),
-  fIntro :: TypeUpdater
-}
-
-isEnum :: [ConsD] -> Bool
+isEnum :: [ConsRep] -> Bool
 isEnum = all isEmpty
  where
-  isEmpty ConsD { cFields = [] } = True
-  isEmpty _                      = False
+  isEmpty ConsRep { consFields = [] } = True
+  isEmpty _                           = False
 
 
 instance {-# OVERLAPPABLE #-} (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind kind a where
   introspectKind _ = builder $ typeRep $ Proxy @(Rep a)
    where
-    builder [ConsD { cFields }] = updateLib datatype types (Proxy @a)
+    builder [ConsRep { consFields }] = updateLib datatype types (Proxy @a)
      where
       datatype = DataObject . buildType (__typename : fields)
-      fields   = map fFields cFields
-      types    = map fIntro cFields
+      fields   = map fieldData consFields
+      types    = map fieldTypeUpdater consFields
     builder cons = updateLib dataType types (Proxy @a)
      where
-      flatFields = concatMap cFields cons
-      types      = map fIntro flatFields
-      dataType
-        | isEnum cons = DataEnum . buildType (map createEnumValue tags)
-        | otherwise   = DataUnion . buildType members
+      flatFields = concatMap consFields cons
+      types      = map fieldTypeUpdater flatFields
+      dataType | isEnum cons = DataEnum . buildType (map createEnumValue tags)
+               | otherwise   = DataUnion . buildType members
        where
-        tags = map cName cons
-        members  = map fType flatFields
+        tags    = map consName cons
+        members = map fieldTypeName flatFields
 
     -----------------------------------------------------------------------------  
     __typename =
@@ -315,7 +314,7 @@ instance {-# OVERLAPPABLE #-} (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind ki
 
 --  GENERIC UNION
 class TypeRep f where
-  typeRep :: Proxy f -> [ConsD]
+  typeRep :: Proxy f -> [ConsRep]
 
 instance TypeRep f => TypeRep (M1 D d f) where
   typeRep _ = typeRep (Proxy @f)
@@ -326,13 +325,13 @@ instance (TypeRep a, TypeRep b) => TypeRep (a :+: b) where
 
 instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
   typeRep _ =
-    [ ConsD { cName   = pack $ conName (undefined :: (M1 C c f a))
-            , cFields = conRep (Proxy @f)
-            }
+    [ ConsRep { consName   = pack $ conName (undefined :: (M1 C c f a))
+              , consFields = conRep (Proxy @f)
+              }
     ]
 
 class ConRep f where
-    conRep :: Proxy f -> [FieldD]
+    conRep :: Proxy f -> [FieldRep]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
 instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where
@@ -340,10 +339,10 @@ instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where
 
 instance (GQLType a, Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
   conRep _ =
-    [ FieldD { fType   = __typeName (Proxy @a)
-             , fFields = (name, field (Proxy @a) name)
-             , fIntro  = introspect (Proxy @a)
-             }
+    [ FieldRep { fieldTypeName    = __typeName (Proxy @a)
+               , fieldData        = (name, field (Proxy @a) name)
+               , fieldTypeUpdater = introspect (Proxy @a)
+               }
     ]
     where name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
 
