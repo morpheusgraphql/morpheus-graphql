@@ -70,6 +70,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeUpdater
                                                 )
 
+
 type IntroCon a = (GQLType a, ObjectFields (CUSTOM a) a)
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
@@ -161,23 +162,14 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a wher
     (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
 
 -- UNION
-instance (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind UNION a where
-  introspectKind _ = updateLib (DataUnion . buildType members) stack (Proxy @a)
-   where
-    unions  = concatMap cFields $ gqlRep (Proxy @(Rep a))
-    stack   = map fIntro unions
-    members = map fType unions
-
+instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind UNION a where
+  introspectKind _ = updateLib (DataUnion . buildType memberTypes) stack (Proxy @a)
+  where 
+    (memberTypes, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
 
 -- INPUT_UNION
-instance (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind INPUT_UNION a where
-  introspectKind _ = updateLib (DataInputUnion . buildType members)
-                               stack
-                               (Proxy @a)
-   where
-    unions  = concatMap cFields $ gqlRep (Proxy @(Rep a))
-    stack   = map fIntro unions
-    members = map fType unions
+instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a where
+  introspectKind _ = updateLib (DataInputUnion . buildType memberTypes)
 
 -- Types
 
@@ -283,10 +275,10 @@ isEnum = all isEmpty
   isEmpty _                      = False
 
 
-instance {-# OVERLAPPABLE #-} (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind kind a where
+instance {-# OVERLAPPABLE #-} (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind kind a where
   introspectKind _ = builder
    where
-    builder = case gqlRep Proxy @(Rep a) of
+    builder = case typeRep Proxy @(Rep a) of
       [ConsD { cFields }] -> updateLib datatype types (Proxy @a)
        where
         datatype = DataObject . buildType (__typename : fields)
