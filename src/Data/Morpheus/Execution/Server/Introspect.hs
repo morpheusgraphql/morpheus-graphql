@@ -198,16 +198,6 @@ instance GQLRep (Rep a) => ObjectFields 'False a where
     [ConsD { cFields }] -> (map fFields cFields, map fIntro cFields)
     ConsD { cFields } : _ -> (map fFields cFields, map fIntro cFields)
 
-data ConsD =  ConsD {
-  cName :: Key,
-  cFields :: [FieldD]
-}
-
-data FieldD = FieldD {
-  fType :: Key,
-  fFields :: (Text, DataField),
-  fIntro :: TypeUpdater
-}
 
 --  GENERIC UNION
 class GQLRep f where
@@ -283,6 +273,17 @@ updateLib typeBuilder stack proxy lib' =
 
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
+
+data ConsD =  ConsD {
+  cName :: Key,
+  cFields :: [FieldD]
+}
+
+data FieldD = FieldD {
+  fType :: Key,
+  fFields :: (Text, DataField),
+  fIntro :: TypeUpdater
+}
 
 instance {-# OVERLAPPABLE #-} (GQL_TYPE a, GQLRep (Rep a)) => IntrospectKind kind a where
   introspectKind _ = builder
