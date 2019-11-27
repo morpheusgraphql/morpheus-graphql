@@ -137,31 +137,28 @@ instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
 instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o e m where
   encodeKind = pure . pure . gqlString . encodeRep . from . unVContext
 
+
 instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO a o e m where
-    encodeKind (VContext value) = case rawRes of 
-          TypeRes {
-            cKind = D_OBJECT,
-            cFields  
-          } -> withObject (encodeK cFields)
-          TypeRes {
-            cKind = D_OBJECT,
-            cFields  
-          } -> encodeUnion cFields
-      where
-        rawRes = typeResolvers (ResContext :: ResContext AUTO o e m value) (from value)
-        -------------------------------------------------------------------------------
-        encodeUnion [ResField { fType , fRes }] (key, sel@Selection { selectionRec = UnionSelection selections }) = fRes (key, sel { selectionRec = SelectionSet lookupSelection })
-          where
-            lookupSelection      = fromMaybe [] $ lookup fType selections
-        encodeUnion res _ = failure $ internalUnknownTypeMessage "union Resolver only should recieve UnionSelection"
-      ---------------------------------------------------------------  
-        encodeK resolvers selection = resolveObject
-          selection
-          (__typenameResolver : map toObjRes resolvers )
-        toObjRes ResField{ fName , fRes } = (fName,fRes)
-        __typenameResolver =
-          ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))
-    
+  encodeKind (VContext value) = case rawRes of
+    TypeRes { cKind = D_OBJECT, cFields }     -> withObject (encodeK cFields)
+    TypeRes { cKind = D_UNION, cFields = [] , currentCons} -> pure $ pure $ gqlString currentCons
+    TypeRes { cKind = D_UNION, cFields }      -> encodeUnion cFields
+   where
+    rawRes =
+      typeResolvers (ResContext :: ResContext AUTO o e m value) (from value)
+    -------------------------------------------------------------------------------
+    encodeUnion [ResField { fType, fRes }] (key, sel@Selection { selectionRec = UnionSelection selections })
+      = fRes (key, sel { selectionRec = SelectionSet lookupSelection })
+      where lookupSelection = fromMaybe [] $ lookup fType selections
+    encodeUnion _ _ = failure $ internalUnknownTypeMessage
+      "union Resolver only should recieve UnionSelection"
+  ---------------------------------------------------------------  
+    encodeK resolvers selection =
+      resolveObject selection (__typenameResolver : map toObjRes resolvers)
+    toObjRes ResField { fName, fRes } = (fName, fRes)
+    __typenameResolver =
+      ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))
+
 --  OBJECT
 instance (Monad m, EncodeCon o e m a, Monad m, GResolver OBJECT (Rep a) o e m) => EncodeKind OBJECT a o e m where
   encodeKind (VContext value) = withObject encodeK
@@ -218,9 +215,10 @@ unionResolver =
 data D_KIND = D_UNION | D_OBJECT
 
 data TypeRes o e m = TypeRes {
+      currentCons :: Name,
       cKind :: D_KIND,
       cFields :: [ResField o e m]
-} 
+}
 
 data ResField o e m = ResField {
   fType :: Name,
@@ -229,7 +227,7 @@ data ResField o e m = ResField {
 }
 
 class TypeRep f o e (m :: * -> *) where
-    typeResolvers :: ResContext AUTO o e m value -> f a -> TypeRes o e m 
+    typeResolvers :: ResContext AUTO o e m value -> f a -> TypeRes o e m
 
 instance TypeRep  f o e m => TypeRep (M1 D c f) o e m where
   typeResolvers context (M1 src) = typeResolvers context src
@@ -239,29 +237,30 @@ instance (TypeRep a o e m,TypeRep b o e m) => TypeRep (a :+: b) o e m where
   typeResolvers context (L1 x) = (typeResolvers context x) { cKind = D_UNION }
   typeResolvers context (R1 x) = (typeResolvers context x) { cKind = D_UNION }
 
-instance FieldRep f o e m => TypeRep (M1 C c f) o e m where
-  typeResolvers context (M1 src) =  TypeRes {
-     cKind = D_OBJECT,
-     cFields = fieldRep context src
-  }
-      
+instance (FieldRep f o e m,Constructor c) => TypeRep (M1 C c f) o e m where
+  typeResolvers context (M1 src) =
+    TypeRes { currentCons, cKind = D_OBJECT, cFields = fieldRep context src }
+      where
+        currentCons = pack $ conName (undefined :: (M1 C c U1 x))
+
+
 --- FIELDS      
 class FieldRep f o e (m :: * -> *) where
   fieldRep :: ResContext AUTO o e m value -> f a -> [ResField o e m]
- 
+
 instance (FieldRep f o e m, FieldRep g o e m) => FieldRep  (f :*: g) o e m where
   fieldRep context (a :*: b) = fieldRep context a <> fieldRep context b
-            
+
 instance (Selector s, GQLType a, Encode a o e m) => FieldRep (M1 S s (K1 s2 a)) o e m where
-  fieldRep _ m@(M1 (K1 src)) = [ ResField {
-                    fName = pack (selName m),
-                    fType = __typeName (Proxy @a),
-                    fRes = encode src
-                  }
-                ]
+  fieldRep _ m@(M1 (K1 src)) =
+    [ ResField { fName = pack (selName m)
+               , fType = __typeName (Proxy @a)
+               , fRes  = encode src
+               }
+    ]
 
 instance FieldRep U1 o e m where
-    fieldRep _ _ = []
+  fieldRep _ _ = []
 
 -- | Derives resolvers for OBJECT and UNION
 class GResolver (kind :: GQL_KIND) f o e (m :: * -> *) where
