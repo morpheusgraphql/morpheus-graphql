@@ -259,13 +259,12 @@ encodeOperationWith externalRes rootResolver Operation { operationSelection } =
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 
-
 instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO a o e m where
   encodeKind (VContext value) = case rawRes of
-    TypeRes { cKind = D_OBJECT, cFields } -> withObject (encodeK cFields)
-    TypeRes { cKind = D_UNION, cFields = [], currentCons } ->
-      pure $ pure $ gqlString currentCons
-    TypeRes { cKind = D_UNION, cFields } -> encodeUnion cFields
+    TypeRes { resKind = D_OBJECT, resFields } -> withObject (encodeK resFields)
+    TypeRes { resKind = D_UNION, resFields = [], resCons } ->
+      pure $ pure $ gqlString resCons
+    TypeRes { resKind = D_UNION, resFields } -> encodeUnion resFields
    where
     rawRes =
       typeResolvers (ResContext :: ResContext AUTO o e m value) (from value)
@@ -285,10 +284,10 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
 data D_KIND = D_UNION | D_OBJECT
 
 data TypeRes o e m = TypeRes {
-            currentCons :: Name,
-            cKind :: D_KIND,
-            cFields :: [ResField o e m]
-      }
+      resCons :: Name,
+      resKind :: D_KIND,
+      resFields :: [ResField o e m]
+  }
 
 data ResField o e m = ResField {
         fType :: Name,
@@ -304,15 +303,15 @@ instance TypeRep  f o e m => TypeRep (M1 D c f) o e m where
 
       --- UNION OR OBJECT 
 instance (TypeRep a o e m,TypeRep b o e m) => TypeRep (a :+: b) o e m where
-  typeResolvers context (L1 x) = (typeResolvers context x) { cKind = D_UNION }
-  typeResolvers context (R1 x) = (typeResolvers context x) { cKind = D_UNION }
+  typeResolvers context (L1 x) = (typeResolvers context x) { resKind = D_UNION }
+  typeResolvers context (R1 x) = (typeResolvers context x) { resKind = D_UNION }
 
 instance (FieldRep f o e m,Constructor c) => TypeRep (M1 C c f) o e m where
-  typeResolvers context (M1 src) = TypeRes { currentCons
-                                           , cKind       = D_OBJECT
-                                           , cFields     = fieldRep context src
+  typeResolvers context (M1 src) = TypeRes { resCons
+                                           , resKind       = D_OBJECT
+                                           , resFields     = fieldRep context src
                                            }
-    where currentCons = pack $ conName (undefined :: (M1 C c U1 x))
+    where resCons = pack $ conName (undefined :: (M1 C c U1 x))
 
 
       --- FIELDS      
