@@ -27,7 +27,8 @@ import qualified Server.Mythology.Character.Human
                                                 ( Human(..) )
 import           Server.Mythology.Place.Places  ( City(..) )
 
-data Character  = HUMAN H.Human | DEITY Deity deriving (Generic, GQLType)
+
+data Character  = HUMAN H.Human | DEITY Deity | AnonymousCharacter deriving (Generic, GQLType)
 
 data Query m = Query
   { deity :: DeityArgs -> m Deity,
