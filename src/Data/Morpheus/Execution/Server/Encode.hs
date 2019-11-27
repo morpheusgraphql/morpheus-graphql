@@ -143,8 +143,18 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
             cKind = D_OBJECT,
             cFields  
           } -> withObject (encodeK cFields)
+          TypeRes {
+            cKind = D_OBJECT,
+            cFields  
+          } -> encodeUnion cFields
       where
         rawRes = typeResolvers (ResContext :: ResContext AUTO o e m value) (from value)
+        -------------------------------------------------------------------------------
+        encodeUnion [ResField { fType , fRes }] (key, sel@Selection { selectionRec = UnionSelection selections }) = fRes (key, sel { selectionRec = SelectionSet lookupSelection })
+          where
+            lookupSelection      = fromMaybe [] $ lookup fType selections
+        encodeUnion res _ = failure $ internalUnknownTypeMessage "union Resolver only should recieve UnionSelection"
+      ---------------------------------------------------------------  
         encodeK resolvers selection = resolveObject
           selection
           (__typenameResolver : map toObjRes resolvers )
