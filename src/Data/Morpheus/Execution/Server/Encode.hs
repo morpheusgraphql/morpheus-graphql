@@ -266,7 +266,8 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
       resFields
      where
       encodeUnion [] (_, Selection { selectionRec = SelectionField }) = pure $ gqlString resCons
-
+      encodeUnion [] (key, Selection { selectionRec = UnionSelection selections }) 
+        = pure $ gqlString ( "enumObject: " <> resCons)
       encodeUnion [ResField { resFieldType, resFieldRes }] (key, sel@Selection { selectionRec = UnionSelection selections })
         = resFieldRes (key, sel { selectionRec = SelectionSet lookupSelection })
         where lookupSelection = fromMaybe [] $ lookup resFieldType selections
