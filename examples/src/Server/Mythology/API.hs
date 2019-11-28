@@ -30,7 +30,7 @@ import           Server.Mythology.Place.Places  ( City(..)
                                                 )
 
 
-data Character  = HUMAN H.Human | DEITY Deity | AnonymousCharacter deriving (Generic, GQLType)
+data Character  = Zeus | HUMAN H.Human | DEITY Deity | AnonymousCharacter deriving (Generic, GQLType)
 
 data Query m = Query
   { deity :: DeityArgs -> m Deity,
@@ -51,6 +51,7 @@ resolveCharacter =
   [ HUMAN H.Human { H.name = "Odysseus", H.bornAt = Ithaca }
   , DEITY Deity { fullName = "Hades", power = Nothing, realm = Underworld }
   , AnonymousCharacter
+  , Zeus
   ]
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
