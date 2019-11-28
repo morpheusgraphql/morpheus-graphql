@@ -279,7 +279,7 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
             lookupSelection = fromMaybe [] $ lookup resFieldType selections
             scalarSelection = fromMaybe [] $ lookup resCons selections
             resolvers = [
-                ("value",const $ pure $ gqlString resCons),
+                ("value",resFieldRes),
                 __typenameResolverBy resCons
               ]          
       ------------------------------------------------------------------------------
