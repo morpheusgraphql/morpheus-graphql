@@ -38,6 +38,7 @@ data Character  =
   | Zeus
   | Human' H.Human -- Only Human' should generate direct link
   | Deity' Deity -- Only Deity' should generate direct link
+  | SomeDeity Deity
   | SomeScalar Int
   | SomeScalarRecord { scalarText :: Text }
   | SomeMutli Int Text
