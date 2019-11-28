@@ -32,6 +32,7 @@ import           Data.Text                      ( Text
                                                 )
 import           GHC.Generics
 import           Data.Semigroup                 ( (<>) )
+import           Data.List                      ( partition )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
@@ -282,8 +283,8 @@ data FieldRep = FieldRep {
 }
 
 data ResRep = ResRep {
-  enumRep :: [Name],
-  unionRep :: [Name],
+  enumCons :: [Name],
+  unionRef :: [Name],
   unionRecordRep :: [ConsRep]
 }
 
@@ -292,19 +293,33 @@ isEmpty ConsRep { consFields = [] } = True
 isEmpty _                           = False
 
 isUnionRecord :: ConsRep -> Bool
-isUnionRecord ConsRep { consFields = [FieldRep{ fieldIsObject = False}] } = True
-isUnionRecord ConsRep { consFields , consIsRecord } = length consFields > 1 || consIsRecord
+isUnionRecord ConsRep { consIsRecord } = consIsRecord
 
-isUnion :: ConsRep -> Bool
-isUnion ConsRep { consFields = [FieldRep{fieldIsObject = True } ] , consIsRecord = False} = True
-isUnion _ = False
+isUnionRef :: ConsRep -> Bool
+isUnionRef ConsRep { consFields = [FieldRep { fieldIsObject = True }], consIsRecord = False }
+  = True
+isUnionRef _ = False
+
+setFieldNames :: ConsRep -> ConsRep
+setFieldNames cons@ConsRep { consFields } = cons
+  { consFields = zipWith setFieldName ([0 ..] :: [Int]) consFields
+  }
+ where
+  setFieldName i fieldR@FieldRep { fieldData = (_, fieldD) } = fieldR
+    { fieldData = (fieldName, fieldD { fieldName })
+    }
+    where fieldName = "_" <> pack (show i)
 
 analyseRep :: [ConsRep] -> ResRep
 analyseRep cons = ResRep
-  { enumRep = map consName $ filter isEmpty cons
-  , unionRep = map fieldTypeName $ concatMap consFields $ filter isUnion cons
-  , unionRecordRep = filter isUnionRecord cons
+  { enumCons       = map consName enumRep
+  , unionRef       = map fieldTypeName $ concatMap consFields unionRefRep
+  , unionRecordRep = unionRecordRep <> map setFieldNames anyonimousUnionRep
   }
+ where
+  (enumRep       , left1             ) = partition isEmpty cons
+  (unionRecordRep, left2             ) = partition isUnionRecord left1
+  (unionRefRep   , anyonimousUnionRep) = partition isUnionRef left2
 
 instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
   introspectKind _ = builder (typeRep $ Proxy @(Rep a)) (Proxy @a)
@@ -316,17 +331,17 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
       types    = map fieldTypeUpdater consFields
     builder cons = datatype (analyseRep cons)
      where
-      datatype ResRep { unionRep = [], unionRecordRep = [], enumRep } =
-        updateLib (DataEnum . buildType (map createEnumValue enumRep)) types
-      datatype ResRep { unionRep, enumRep, unionRecordRep } = updateLib
+      datatype ResRep { unionRef = [], unionRecordRep = [], enumCons } =
+        updateLib (DataEnum . buildType (map createEnumValue enumCons)) types
+      datatype ResRep { unionRef, unionRecordRep, enumCons } = updateLib
         (DataUnion . buildType typeMembers)
         (types <> enumTypes <> unionRecordTypes)
        where
-        typeMembers = unionRep <> enumMember <> unionRecMembers
+        typeMembers = unionRef <> enumMember <> unionRecMembers
          where
           unionRecMembers = map consName unionRecordRep
-          enumMember | null enumRep = []
-                     | otherwise    = [enumTypeWrapperName]
+          enumMember | null enumCons = []
+                     | otherwise     = [enumTypeWrapperName]
         ----------------------------------------------------
         baseTypeName        = __typeName (Proxy @a)
         baseFingerprint     = __typeFingerprint (Proxy @a)
@@ -335,29 +350,30 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
         enumTypeWrapperName = enumTypeName <> "Object"
         enumTypes :: [TypeUpdater]
         enumTypes
-          | null enumRep
+          | null enumCons
           = []
           | otherwise
           = [ buildEnumObject enumTypeWrapperName baseFingerprint enumTypeName
-            , buildEnum enumTypeName baseFingerprint enumRep
+            , buildEnum enumTypeName baseFingerprint enumCons
             ]
         unionRecordTypes :: [TypeUpdater]
         unionRecordTypes = map buildURecType unionRecordRep
-          where 
-            buildURecType ConsRep {consName ,consFields} =  pure . defineType  
-                  (consName
-                    , DataObject DataTyCon
-                    { typeName = consName
-                    , typeFingerprint = baseFingerprint
-                    , typeMeta        = Nothing
-                    , typeData        = genFields consFields         
-                    }
-                  )
-                where 
-                  genFields [FieldRep { fieldData=("",fData)}] = [("value",fData { fieldName = "value"})]
-                  genFields fields = map uRecField fields 
-                    where
-                      uRecField FieldRep { fieldData = (fName,fData) } = (fName, fData)
+         where
+          buildURecType ConsRep { consName, consFields } = pure . defineType
+            ( consName
+            , DataObject DataTyCon { typeName        = consName
+                                   , typeFingerprint = baseFingerprint
+                                   , typeMeta        = Nothing
+                                   , typeData        = genFields consFields
+                                   }
+            )
+           where
+            genFields [FieldRep { fieldData = ("", fData) }] =
+              [("value", fData { fieldName = "value" })]
+            genFields fields = map uRecField fields
+             where
+              uRecField FieldRep { fieldData = (fName, fData) } =
+                (fName, fData)
       --------------------
       types = map fieldTypeUpdater $ concatMap consFields cons
 
@@ -406,8 +422,8 @@ instance (TypeRep a, TypeRep b) => TypeRep (a :+: b) where
 
 instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
   typeRep _ =
-    [ ConsRep { consName   = pack $ conName (undefined :: (M1 C c f a))
-              , consFields = conRep (Proxy @f)
+    [ ConsRep { consName     = pack $ conName (undefined :: (M1 C c f a))
+              , consFields   = conRep (Proxy @f)
               , consIsRecord = conIsRecord (undefined :: (M1 C c f a))
               }
     ]
@@ -421,11 +437,10 @@ instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where
 
 instance (GQLType a, Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
   conRep _ =
-    [ FieldRep { 
-                fieldTypeName    = __typeName (Proxy @a)
-                , fieldData        = (name, field (Proxy @a) name)
-                , fieldTypeUpdater = introspect (Proxy @a)
-                , fieldIsObject = isObjectKind (Proxy @a)
+    [ FieldRep { fieldTypeName    = __typeName (Proxy @a)
+               , fieldData        = (name, field (Proxy @a) name)
+               , fieldTypeUpdater = introspect (Proxy @a)
+               , fieldIsObject    = isObjectKind (Proxy @a)
                }
     ]
     where name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
