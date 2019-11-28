@@ -358,7 +358,6 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
                   genFields fields = map uRecField fields 
                     where
                       uRecField FieldRep { fieldData = (fName,fData) } = (fName, fData)
-      --TODO: ScalarsTypes
       --------------------
       types = map fieldTypeUpdater $ concatMap consFields cons
 
