@@ -277,15 +277,29 @@ data FieldRep = FieldRep {
   fieldTypeUpdater :: TypeUpdater
 }
 
+data ResRep = ResRep {
+  enumRep :: [Name],
+  unionRep :: [Name],
+  unionRecordRep :: [ConsRep]
+}
+
 isEmpty :: ConsRep -> Bool
 isEmpty ConsRep { consFields = [] } = True
 isEmpty _                           = False
 
-analyseRep :: [ConsRep] -> ([Name], [Name])
-analyseRep cons =
-  ( map fieldTypeName $ concatMap consFields $ filter (not . isEmpty) cons
-  , map consName $ filter isEmpty cons
-  )
+isUnionRecord :: ConsRep -> Bool
+isUnionRecord ConsRep { consFields } = length consFields > 2
+
+isUnion :: ConsRep -> Bool
+isUnion ConsRep { consFields = [FieldRep { }] } = True
+isUnion _ = False
+
+analyseRep :: [ConsRep] -> ResRep
+analyseRep cons = ResRep
+  { enumRep = map consName $ filter isEmpty cons
+  , unionRep = map fieldTypeName $ concatMap consFields $ filter isUnion cons
+  , unionRecordRep = filter isUnionRecord cons
+  }
 
 instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
   introspectKind _ = builder (typeRep $ Proxy @(Rep a)) (Proxy @a)
@@ -297,52 +311,51 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
       types    = map fieldTypeUpdater consFields
     builder cons = datatype (analyseRep cons)
      where
-      datatype ([], tags) =
-        updateLib (DataEnum . buildType (map createEnumValue tags)) types
-      datatype (members, tags) = updateLib
+      datatype ResRep { unionRep = [], unionRecordRep = [], enumRep } =
+        updateLib (DataEnum . buildType (map createEnumValue enumRep)) types
+      datatype ResRep { unionRep, enumRep } = updateLib
         (DataUnion . buildType typeMembers)
         (types <> extraTypes)
        where
-        typeMembers | null tags = members
-                    | otherwise = members <> [enumTypeWrapperName]
+        typeMembers | null enumRep = unionRep
+                    | otherwise    = unionRep <> [enumTypeWrapperName]
         ----------------------------------------------------
-        baseTypeName    = __typeName (Proxy @a)
-        baseFingerprint = __typeFingerprint (Proxy @a)
+        baseTypeName        = __typeName (Proxy @a)
+        baseFingerprint     = __typeFingerprint (Proxy @a)
         ---------------------------------------------
-        enumTypeName    = baseTypeName <> "Enum"
+        enumTypeName        = baseTypeName <> "Enum"
         enumTypeWrapperName = enumTypeName <> "Object"
         extraTypes :: [TypeUpdater]
         extraTypes
-          | null tags
+          | null enumRep
           = []
           | otherwise
           = [ pure . defineType
-                ( enumTypeWrapperName
-                , DataObject DataTyCon { 
-                  typeName        = enumTypeWrapperName
-                  , typeFingerprint = baseFingerprint
-                  , typeMeta        = Nothing
-                  , typeData = [
-                        ( "enum",
-                          DataField {
-                            fieldName     = "enum"
-                            , fieldArgs     = []
-                            , fieldArgsType = Nothing
-                            , fieldType     = createAlias enumTypeName
-                            , fieldMeta     = Nothing
-                          }
-                        )
-                    ]
-                  }
-                ),
-              pure . defineType
-                ( enumTypeName
-                , DataEnum DataTyCon { typeName        = enumTypeName
-                                     , typeFingerprint = baseFingerprint
-                                     , typeMeta        = Nothing
-                                     , typeData = map createEnumValue tags
-                                     }
-                )
+              ( enumTypeWrapperName
+              , DataObject DataTyCon
+                { typeName        = enumTypeWrapperName
+                , typeFingerprint = baseFingerprint
+                , typeMeta        = Nothing
+                , typeData        = [ ( "enum"
+                                      , DataField
+                                        { fieldName     = "enum"
+                                        , fieldArgs     = []
+                                        , fieldArgsType = Nothing
+                                        , fieldType = createAlias enumTypeName
+                                        , fieldMeta     = Nothing
+                                        }
+                                      )
+                                    ]
+                }
+              )
+            , pure . defineType
+              ( enumTypeName
+              , DataEnum DataTyCon { typeName        = enumTypeName
+                                   , typeFingerprint = baseFingerprint
+                                   , typeMeta        = Nothing
+                                   , typeData        = map createEnumValue enumRep
+                                   }
+              )
             ]
             --(DataUnion . buildType members)
       --TODO: UnionWIthInlineFIelds, ScalarsTypes
