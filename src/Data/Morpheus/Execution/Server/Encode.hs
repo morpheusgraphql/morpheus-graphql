@@ -56,12 +56,7 @@ import           Data.Morpheus.Types.Types      ( MapKind
                                                 , mapKindFromList
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
-import           Data.Morpheus.Types.GQLType    ( GQLType
-                                                  ( CUSTOM
-                                                  , KIND
-                                                  , __typeName
-                                                  )
-                                                )
+import           Data.Morpheus.Types.GQLType    ( GQLType(..) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
                                                 , Operation(..)
@@ -309,7 +304,8 @@ data TypeRes o e m = TypeRes {
 data ResField o e m = ResField {
     resFieldType :: Name,
     resFieldName :: Name,
-    resFieldRes :: (Key, ValidSelection) -> ResolvingStrategy o e m Value
+    resFieldRes  :: (Key, ValidSelection) -> ResolvingStrategy o e m Value,
+    resIsObject  :: Bool
   }
 
 class TypeRep f o e (m :: * -> *) where
@@ -345,6 +341,7 @@ instance (Selector s, GQLType a, Encode a o e m) => FieldRep (M1 S s (K1 s2 a)) 
     [ ResField { resFieldName = pack (selName m)
                , resFieldType = __typeName (Proxy @a)
                , resFieldRes  = encode src
+               , resIsObject = isObjectKind (Proxy @a)
                }
     ]
 
