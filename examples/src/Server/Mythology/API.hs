@@ -39,7 +39,8 @@ data Character  =
   | Human' H.Human -- Only Human' should generate direct link
   | Deity' Deity -- Only Deity' should generate direct link
   | SomeScalar Int
-  -- TODO: SomeMutli Int Text
+  | SomeScalarRecord { scalarText :: Text }
+  | SomeMutli Int Text
   | BoxedDeity { boxedDeity :: Deity}
   | Cronus deriving (Generic, GQLType)
 
