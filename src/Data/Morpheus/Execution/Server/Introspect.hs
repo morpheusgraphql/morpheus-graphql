@@ -313,12 +313,15 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
      where
       datatype ResRep { unionRep = [], unionRecordRep = [], enumRep } =
         updateLib (DataEnum . buildType (map createEnumValue enumRep)) types
-      datatype ResRep { unionRep, enumRep } = updateLib
+      datatype ResRep { unionRep, enumRep , unionRecordRep } = updateLib
         (DataUnion . buildType typeMembers)
         (types <> extraTypes)
        where
-        typeMembers | null enumRep = unionRep
-                    | otherwise    = unionRep <> [enumTypeWrapperName]
+        typeMembers = unionRep <> enumMember <> unionRecMembers
+            where 
+            unionRecMembers  = map consName unionRecordRep
+            enumMember | null enumRep  = []
+                     | otherwise = [enumTypeWrapperName]
         ----------------------------------------------------
         baseTypeName        = __typeName (Proxy @a)
         baseFingerprint     = __typeFingerprint (Proxy @a)
