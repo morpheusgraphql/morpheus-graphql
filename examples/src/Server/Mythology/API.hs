@@ -64,7 +64,8 @@ resolveCharacter =
   , Creature {
     creatureName ="Lamia",
     creatureAge = 205
-  }
+  },
+  SomeScalar 12
   ]
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined

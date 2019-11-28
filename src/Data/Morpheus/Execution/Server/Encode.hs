@@ -272,9 +272,16 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
               ("enum",const $ pure $ gqlString resCons),
               __typenameResolverBy enumObjectTypeName
             ]
-      encodeUnion [ResField { resFieldType, resFieldRes }] (key, sel@Selection { selectionRec = UnionSelection selections })
-        = resFieldRes (key, sel { selectionRec = SelectionSet lookupSelection })
-        where lookupSelection = fromMaybe [] $ lookup resFieldType selections
+      encodeUnion [ResField { resFieldType, resFieldRes , resIsObject }] (key, sel@Selection { selectionRec = UnionSelection selections })
+        | resIsObject = resFieldRes (key, sel { selectionRec = SelectionSet lookupSelection })
+        | otherwise  = resolveObject scalarSelection resolvers
+          where 
+            lookupSelection = fromMaybe [] $ lookup resFieldType selections
+            scalarSelection = fromMaybe [] $ lookup resCons selections
+            resolvers = [
+                ("value",const $ pure $ gqlString resCons),
+                __typenameResolverBy resCons
+              ]          
       ------------------------------------------------------------------------------
       encodeUnion fields (_, Selection { selectionRec = UnionSelection selections })
         = resolveObject currentSelection resolvers
