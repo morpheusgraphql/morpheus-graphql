@@ -255,6 +255,8 @@ encodeOperationWith externalRes rootResolver Operation { operationSelection } =
   resolvers =
     externalRes <> objectResolvers (Proxy :: Proxy (CUSTOM a)) rootResolver
 
+__typenameResolverBy :: (Monad m,LiftEither o ResolvingStrategy) => Name -> (Key,(Key, ValidSelection) -> ResolvingStrategy o e m Value)
+__typenameResolverBy name = ("__typename", const $ pure $ gqlString name)    
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 
@@ -266,12 +268,15 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
       resFields
      where
       encodeUnion [] (_, Selection { selectionRec = SelectionField }) = pure $ gqlString resCons
-      encodeUnion [] (key,Selection { selectionRec = UnionSelection selections }) 
+      encodeUnion [] (_,Selection { selectionRec = UnionSelection selections }) 
         = resolveObject currentSelection resolvers
         where 
-          -- TODO: real CharacterEnumObject instead of fake one
-          currentSelection = fromMaybe [] $ lookup "CharacterEnumObject" selections
-          resolvers = [("enum",const $ pure $ gqlString resCons)]
+          enumObjectTypeName = __typeName (Proxy @a) <> "EnumObject"
+          currentSelection = fromMaybe [] $ lookup enumObjectTypeName selections
+          resolvers = [
+              ("enum",const $ pure $ gqlString resCons),
+              __typenameResolverBy enumObjectTypeName
+            ]
       encodeUnion [ResField { resFieldType, resFieldRes }] (key, sel@Selection { selectionRec = UnionSelection selections })
         = resFieldRes (key, sel { selectionRec = SelectionSet lookupSelection })
         where lookupSelection = fromMaybe [] $ lookup resFieldType selections
@@ -284,8 +289,7 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
       resolveObject selection (__typenameResolver : map toObjRes resolvers)
     toObjRes ResField { resFieldName, resFieldRes } =
       (resFieldName, resFieldRes)
-    __typenameResolver =
-      ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))
+    __typenameResolver = __typenameResolverBy $ __typeName (Proxy @a)
 
 data REP_KIND = REP_UNION | REP_OBJECT
 
