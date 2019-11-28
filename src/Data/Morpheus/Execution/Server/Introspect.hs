@@ -288,7 +288,7 @@ isEmpty ConsRep { consFields = [] } = True
 isEmpty _                           = False
 
 isUnionRecord :: ConsRep -> Bool
-isUnionRecord ConsRep { consFields } = length consFields > 2
+isUnionRecord ConsRep { consFields } = length consFields > 1
 
 isUnion :: ConsRep -> Bool
 isUnion ConsRep { consFields = [FieldRep { }] } = True
