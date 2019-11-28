@@ -30,7 +30,15 @@ import           Server.Mythology.Place.Places  ( City(..)
                                                 )
 
 
-data Character  = Zeus | HUMAN H.Human | DEITY Deity | AnonymousCharacter deriving (Generic, GQLType)
+data Character  =
+    Creature {
+      creatureName :: Text,
+      creatureAge :: Int
+    }
+  | Zeus
+  | HUMAN H.Human
+  | DEITY Deity
+  | AnonymousCharacter deriving (Generic, GQLType)
 
 data Query m = Query
   { deity :: DeityArgs -> m Deity,
