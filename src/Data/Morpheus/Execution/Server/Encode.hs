@@ -281,14 +281,11 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
         = resFieldRes (key, sel { selectionRec = SelectionSet lookupSelection })
         where lookupSelection = fromMaybe [] $ lookup resFieldType selections
       ------------------------------------------------------------------------------
-      encodeUnion resFields (key, Selection { selectionRec = UnionSelection selections })
+      encodeUnion fields (_, Selection { selectionRec = UnionSelection selections })
         = resolveObject currentSelection resolvers
           where
             currentSelection = fromMaybe [] $ lookup resCons selections
-            resolvers = [
-                ("enum",const $ pure $ gqlString resCons),
-                __typenameResolverBy resCons
-              ]
+            resolvers = __typenameResolverBy resCons: map toObjRes fields
       ------------------------------------------------------------------------------  
       encodeUnion _ _ = failure $ internalResolvingError "union Resolver should only recieve UnionSelection"
    where
@@ -297,8 +294,8 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
     ---------------------------------------------------------------  
     encodeK resolvers selection =
       resolveObject selection (__typenameResolver : map toObjRes resolvers)
-    toObjRes ResField { resFieldName, resFieldRes } =
-      (resFieldName, resFieldRes)
+    -------------------------------------------------
+    toObjRes ResField { resFieldName, resFieldRes } = (resFieldName, resFieldRes)
     __typenameResolver = __typenameResolverBy $ __typeName (Proxy @a)
 
 data REP_KIND = REP_UNION | REP_OBJECT
