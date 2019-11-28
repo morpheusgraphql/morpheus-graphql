@@ -295,9 +295,11 @@ isEmpty _                           = False
 isUnionRecord :: ConsRep -> Bool
 isUnionRecord ConsRep { consIsRecord } = consIsRecord
 
+
+
 isUnionRef :: ConsRep -> Bool
-isUnionRef ConsRep { consFields = [FieldRep { fieldIsObject = True }], consIsRecord = False }
-  = True
+isUnionRef ConsRep { consName , consFields = [FieldRep { fieldIsObject = True, fieldTypeName }], consIsRecord = False }
+  = consName == fieldTypeName <> "'"
 isUnionRef _ = False
 
 setFieldNames :: ConsRep -> ConsRep
