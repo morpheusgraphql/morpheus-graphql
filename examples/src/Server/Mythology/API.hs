@@ -39,6 +39,8 @@ data Character  =
   | Human' H.Human
   | Deity' Deity
   | SomeScalar Int
+  -- TODO: SomeMutli Int Text
+  | BoxedDeity { boxedDeity :: Deity}
   | Cronus deriving (Generic, GQLType)
 
 data Query m = Query
@@ -61,11 +63,8 @@ resolveCharacter =
   , Deity' Deity { fullName = "Hades", power = Nothing, realm = Underworld }
   , Cronus
   , Zeus
-  , Creature {
-    creatureName ="Lamia",
-    creatureAge = 205
-  },
-  SomeScalar 12
+  , Creature { creatureName = "Lamia", creatureAge = 205 }
+  , SomeScalar 12
   ]
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
