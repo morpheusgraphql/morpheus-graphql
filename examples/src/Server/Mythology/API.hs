@@ -39,7 +39,7 @@ data Character  =
   | Human' H.Human
   | Deity' Deity
   | SomeScalar Int
-  | AnonymousCharacter deriving (Generic, GQLType)
+  | Cronus deriving (Generic, GQLType)
 
 data Query m = Query
   { deity :: DeityArgs -> m Deity,
@@ -59,7 +59,7 @@ resolveCharacter :: [Character]
 resolveCharacter =
   [ Human' H.Human { H.name = "Odysseus", H.bornAt = Ithaca }
   , Deity' Deity { fullName = "Hades", power = Nothing, realm = Underworld }
-  , AnonymousCharacter
+  , Cronus
   , Zeus
   ]
 
