@@ -323,7 +323,7 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
                   , typeFingerprint = baseFingerprint
                   , typeMeta        = Nothing
                   , typeData = [
-                        ( "enums",
+                        ( "enum",
                           DataField {
                             fieldName     = "enum"
                             , fieldArgs     = []
