@@ -269,6 +269,7 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
       encodeUnion [] (key,Selection { selectionRec = UnionSelection selections }) 
         = resolveObject currentSelection resolvers
         where 
+          -- TODO: real CharacterEnumObject instead of fake one
           currentSelection = fromMaybe [] $ lookup "CharacterEnumObject" selections
           resolvers = [("enum",const $ pure $ gqlString resCons)]
       encodeUnion [ResField { resFieldType, resFieldRes }] (key, sel@Selection { selectionRec = UnionSelection selections })
