@@ -293,10 +293,10 @@ isEmpty _                           = False
 
 isUnionRecord :: ConsRep -> Bool
 isUnionRecord ConsRep { consFields = [FieldRep{ fieldIsObject = False}] } = True
-isUnionRecord ConsRep { consFields } = length consFields > 1
+isUnionRecord ConsRep { consFields , consIsRecord } = length consFields > 1 || consIsRecord
 
 isUnion :: ConsRep -> Bool
-isUnion ConsRep { consFields = [FieldRep{fieldIsObject = True }] } = True
+isUnion ConsRep { consFields = [FieldRep{fieldIsObject = True } ] , consIsRecord = False} = True
 isUnion _ = False
 
 analyseRep :: [ConsRep] -> ResRep
