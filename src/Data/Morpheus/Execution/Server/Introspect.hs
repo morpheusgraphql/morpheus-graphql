@@ -270,12 +270,15 @@ introspection__typename =
 
 data ConsRep =  ConsRep {
   consName :: Key,
+  consIsRecord :: Bool,
   consFields :: [FieldRep]
 }
+
 data FieldRep = FieldRep {
   fieldTypeName :: Name,
   fieldData :: (Name, DataField),
-  fieldTypeUpdater :: TypeUpdater
+  fieldTypeUpdater :: TypeUpdater,
+  fieldIsObject :: Bool
 }
 
 data ResRep = ResRep {
@@ -289,10 +292,11 @@ isEmpty ConsRep { consFields = [] } = True
 isEmpty _                           = False
 
 isUnionRecord :: ConsRep -> Bool
+isUnionRecord ConsRep { consFields = [FieldRep{ fieldIsObject = False}] } = True
 isUnionRecord ConsRep { consFields } = length consFields > 1
 
 isUnion :: ConsRep -> Bool
-isUnion ConsRep { consFields = [FieldRep{}] } = True
+isUnion ConsRep { consFields = [FieldRep{fieldIsObject = True }] } = True
 isUnion _ = False
 
 analyseRep :: [ConsRep] -> ResRep
@@ -346,11 +350,14 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
                     { typeName = consName
                     , typeFingerprint = baseFingerprint
                     , typeMeta        = Nothing
-                    , typeData        = map uRecField consFields                 
+                    , typeData        = genFields consFields         
                     }
                   )
                 where 
-                  uRecField FieldRep { fieldData = (fName,fData) } = (fName, fData)
+                  genFields [FieldRep { fieldData=("",fData)}] = [("value",fData { fieldName = "value"})]
+                  genFields fields = map uRecField fields 
+                    where
+                      uRecField FieldRep { fieldData = (fName,fData) } = (fName, fData)
       --TODO: ScalarsTypes
       --------------------
       types = map fieldTypeUpdater $ concatMap consFields cons
@@ -402,6 +409,7 @@ instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
   typeRep _ =
     [ ConsRep { consName   = pack $ conName (undefined :: (M1 C c f a))
               , consFields = conRep (Proxy @f)
+              , consIsRecord = conIsRecord (undefined :: (M1 C c f a))
               }
     ]
 
@@ -414,9 +422,11 @@ instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where
 
 instance (GQLType a, Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
   conRep _ =
-    [ FieldRep { fieldTypeName    = __typeName (Proxy @a)
-               , fieldData        = (name, field (Proxy @a) name)
-               , fieldTypeUpdater = introspect (Proxy @a)
+    [ FieldRep { 
+                fieldTypeName    = __typeName (Proxy @a)
+                , fieldData        = (name, field (Proxy @a) name)
+                , fieldTypeUpdater = introspect (Proxy @a)
+                , fieldIsObject = isObjectKind (Proxy @a)
                }
     ]
     where name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
