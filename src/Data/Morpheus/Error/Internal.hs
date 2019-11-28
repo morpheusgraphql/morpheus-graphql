@@ -5,6 +5,7 @@ module Data.Morpheus.Error.Internal
   , internalArgumentError
   , internalUnknownTypeMessage
   , internalError
+  , internalResolvingError
   )
 where
 
@@ -30,6 +31,11 @@ import           Data.Morpheus.Types.Internal.AST.Value
 -- all kind internal error in development
 internalError :: Text -> Validation b
 internalError x = failure $ globalErrorMessage $ "INTERNAL ERROR: " <> x
+
+-- if type did not not found, but was defined by Schema
+internalResolvingError :: Text -> GQLErrors
+internalResolvingError = globalErrorMessage . ("INTERNAL RESOLVING ERROR:" <>)
+
 
 -- if type did not not found, but was defined by Schema
 internalUnknownTypeMessage :: Text -> GQLErrors

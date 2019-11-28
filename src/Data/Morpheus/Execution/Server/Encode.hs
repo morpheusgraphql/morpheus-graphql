@@ -35,7 +35,7 @@ import           Data.Text                      ( pack )
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal   ( internalUnknownTypeMessage )
+import           Data.Morpheus.Error.Internal   ( internalResolvingError )
 import           Data.Morpheus.Execution.Server.Decode
                                                 ( DecodeObject
                                                 , decodeArguments
@@ -155,8 +155,7 @@ instance (Monad m, GQL_RES a, GResolver UNION (Rep a) o e m) => EncodeKind UNION
    where
     lookupSelection      = fromMaybe [] $ lookup typeName selections
     (typeName, resolver) = unionResolver value
-  encodeKind _ _ = failure $ internalUnknownTypeMessage
-    "union Resolver only should recieve UnionSelection"
+  encodeKind _ _ = failure $ internalResolvingError "union Resolver should only recieve UnionSelection"
 
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
@@ -266,12 +265,12 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
     TypeRes { resKind = REP_UNION, resFields, resCons } -> encodeUnion
       resFields
      where
-      encodeUnion [] _ = pure $ gqlString resCons
+      encodeUnion [] (_, Selection { selectionRec = SelectionField }) = pure $ gqlString resCons
+
       encodeUnion [ResField { resFieldType, resFieldRes }] (key, sel@Selection { selectionRec = UnionSelection selections })
         = resFieldRes (key, sel { selectionRec = SelectionSet lookupSelection })
         where lookupSelection = fromMaybe [] $ lookup resFieldType selections
-      encodeUnion _ _ = failure $ internalUnknownTypeMessage
-        "union Resolver only should recieve UnionSelection"
+      encodeUnion _ _ = failure $ internalResolvingError "union Resolver should only recieve UnionSelection"
    where
     rawRes =
       typeResolvers (ResContext :: ResContext AUTO o e m value) (from value)
