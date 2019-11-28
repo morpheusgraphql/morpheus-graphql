@@ -261,23 +261,25 @@ encodeOperationWith externalRes rootResolver Operation { operationSelection } =
 
 instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO a o e m where
   encodeKind (VContext value) = case rawRes of
-    TypeRes { resKind = REP_OBJECT, resFields } -> withObject (encodeK resFields)
-    TypeRes { resKind = REP_UNION, resFields = [], resCons } ->
-      pure $ pure $ gqlString resCons
-    TypeRes { resKind = REP_UNION, resFields } -> encodeUnion resFields
+    TypeRes { resKind = REP_OBJECT, resFields } ->
+      withObject (encodeK resFields)
+    TypeRes { resKind = REP_UNION, resFields, resCons } -> encodeUnion
+      resFields
+     where
+      encodeUnion [] _ = pure $ gqlString resCons
+      encodeUnion [ResField { resFieldType, resFieldRes }] (key, sel@Selection { selectionRec = UnionSelection selections })
+        = resFieldRes (key, sel { selectionRec = SelectionSet lookupSelection })
+        where lookupSelection = fromMaybe [] $ lookup resFieldType selections
+      encodeUnion _ _ = failure $ internalUnknownTypeMessage
+        "union Resolver only should recieve UnionSelection"
    where
     rawRes =
       typeResolvers (ResContext :: ResContext AUTO o e m value) (from value)
-    -------------------------------------------------------------------------------
-    encodeUnion [ResField { resFieldType, resFieldRes }] (key, sel@Selection { selectionRec = UnionSelection selections })
-      = resFieldRes (key, sel { selectionRec = SelectionSet lookupSelection })
-      where lookupSelection = fromMaybe [] $ lookup resFieldType selections
-    encodeUnion _ _ = failure $ internalUnknownTypeMessage
-      "union Resolver only should recieve UnionSelection"
-  ---------------------------------------------------------------  
+    ---------------------------------------------------------------  
     encodeK resolvers selection =
       resolveObject selection (__typenameResolver : map toObjRes resolvers)
-    toObjRes ResField { resFieldName, resFieldRes } = (resFieldName, resFieldRes)
+    toObjRes ResField { resFieldName, resFieldRes } =
+      (resFieldName, resFieldRes)
     __typenameResolver =
       ("__typename", const $ pure $ gqlString $ __typeName (Proxy @a))
 
