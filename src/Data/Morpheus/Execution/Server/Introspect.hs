@@ -316,7 +316,7 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
         updateLib (DataEnum . buildType (map createEnumValue enumRep)) types
       datatype ResRep { unionRep, enumRep, unionRecordRep } = updateLib
         (DataUnion . buildType typeMembers)
-        (types <> enumTypes)
+        (types <> enumTypes <> unionRecordTypes)
        where
         typeMembers = unionRep <> enumMember <> unionRecMembers
          where
@@ -337,6 +337,20 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
           = [ buildEnumObject enumTypeWrapperName baseFingerprint enumTypeName
             , buildEnum enumTypeName baseFingerprint enumRep
             ]
+        unionRecordTypes :: [TypeUpdater]
+        unionRecordTypes = map buildURecType unionRecordRep
+          where 
+            buildURecType ConsRep {consName ,consFields} =  pure . defineType  
+                  (consName
+                    , DataObject DataTyCon
+                    { typeName = consName
+                    , typeFingerprint = baseFingerprint
+                    , typeMeta        = Nothing
+                    , typeData        = map uRecField consFields                 
+                    }
+                  )
+                where 
+                  uRecField FieldRep { fieldData = (fName,fData) } = (fName, fData)
       --TODO: ScalarsTypes
       --------------------
       types = map fieldTypeUpdater $ concatMap consFields cons
