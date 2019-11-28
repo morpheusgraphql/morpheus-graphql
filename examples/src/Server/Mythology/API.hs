@@ -61,6 +61,10 @@ resolveCharacter =
   , Deity' Deity { fullName = "Hades", power = Nothing, realm = Underworld }
   , Cronus
   , Zeus
+  , Creature {
+    creatureName ="Lamia",
+    creatureAge = 205
+  }
   ]
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
