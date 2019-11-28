@@ -36,8 +36,9 @@ data Character  =
       creatureAge :: Int
     }
   | Zeus
-  | HUMAN H.Human
-  | DEITY Deity
+  | Human' H.Human
+  | Deity' Deity
+  | SomeScalar Int
   | AnonymousCharacter deriving (Generic, GQLType)
 
 data Query m = Query
@@ -56,8 +57,8 @@ resolveDeity DeityArgs { name, mythology } =
 
 resolveCharacter :: [Character]
 resolveCharacter =
-  [ HUMAN H.Human { H.name = "Odysseus", H.bornAt = Ithaca }
-  , DEITY Deity { fullName = "Hades", power = Nothing, realm = Underworld }
+  [ Human' H.Human { H.name = "Odysseus", H.bornAt = Ithaca }
+  , Deity' Deity { fullName = "Hades", power = Nothing, realm = Underworld }
   , AnonymousCharacter
   , Zeus
   ]
