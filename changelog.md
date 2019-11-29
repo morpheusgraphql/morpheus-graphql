@@ -32,7 +32,6 @@ data Character  =
 
 ```
 
-where `Deity` is an object
 will generate schema:
 
 ```gql
