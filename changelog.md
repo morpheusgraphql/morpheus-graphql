@@ -114,7 +114,7 @@ rules:
 
   - all empty constructors in union will be summed in type `<tyConName>Enum` (e.g `CharacterEnum`), this enum will be wrapped in `CharacterEnumObject` and this type will be added to union `Character`. as in example above
 
-  - there is only types left with form `TypeName Type1 2Type ..`(e.g `SomeMutli`),
+  - there is only types left with form `TypeName Type1 2Type ..`(e.g `SomeDeity Deity` ,`CharacterInt Int`, `SomeMutli Int Text`),
 
   thery will morpheus will add their name in union type members. and generate from objet type:
 
