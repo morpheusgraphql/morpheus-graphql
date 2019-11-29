@@ -86,7 +86,7 @@ enum CharacterEnum {
 rules:
 
 - haskell union type with only empty constructors (e.g `Realm`), will generate graphql `enum`
-- haskell record without union (e.g `Deitya`), will generate graphql `object`
+- haskell record without union (e.g `Deity`), will generate graphql `object`
 - namespaced Unions: `CharacterDeity` where `Character` is TypeConstructor and `Deity` refferenced object (not scalar) type: will be generate regular graphql Union
 
   ```gql
