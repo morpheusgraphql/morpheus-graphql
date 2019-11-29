@@ -263,6 +263,8 @@ __typenameResolverBy name = ("__typename", const $ pure $ gqlString name)
 pickSelection :: Name -> [(Name, SelectionSet)] -> SelectionSet
 pickSelection name = fromMaybe [] . lookup name
 
+
+
 instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO a o e m where
   encodeKind (VContext value) = case rawRes of
     TypeRes { resKind = REP_OBJECT, resFields } ->
@@ -301,7 +303,7 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
         = resolveObject selection resolvers
        where
         selection = fromMaybe [] $ lookup resCons selections
-        resolvers = __typenameResolverBy resCons : map toObjRes fields
+        resolvers = __typenameResolverBy resCons : map toObjRes (setFieldNames fields)
       ------------------------------------------------------------------------------  
       encodeUnion _ _ = failure $ internalResolvingError
         "union Resolver should only recieve UnionSelection"
@@ -331,6 +333,14 @@ data ResField o e m = ResField {
     resFieldRes  :: (Key, ValidSelection) -> ResolvingStrategy o e m Value,
     resIsObject  :: Bool
   }
+
+-- setFieldNames ::  Power Int Text -> Power { _1 :: Int, _2 :: Text }
+setFieldNames :: [ResField o e m] -> [ResField o e m]
+setFieldNames = zipWith setFieldName ([0 ..] :: [Int]) 
+   where
+    setFieldName i field = field { resFieldName }
+      where resFieldName = "_" <> pack (show i)
+  
 
 class TypeRep f o e (m :: * -> *) where
           typeResolvers :: ResContext AUTO o e m value -> f a -> TypeRes o e m
