@@ -95,7 +95,7 @@ rules:
       | ...
   ```
 
-- union recrods (`| Creature { creatureName :: Text, creatureAge :: Int }`) will be referenced in union type, plus type `Creature`will be added in schema.
+- union recrods (`Creature { creatureName :: Text, creatureAge :: Int }`) will be referenced in union type, plus type `Creature`will be added in schema.
 
   e.g
 
