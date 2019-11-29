@@ -1,5 +1,6 @@
-{-# LANGUAGE DeriveGeneric  #-}
-{-# LANGUAGE TypeFamilies   #-}
+{-# LANGUAGE DeriveGeneric   #-}
+{-# LANGUAGE DeriveAnyClass  #-}
+{-# LANGUAGE TypeFamilies    #-}
 
 module Server.Mythology.Place.Places
   ( Realm(..)
@@ -7,7 +8,6 @@ module Server.Mythology.Place.Places
   )
 where
 
-import           Data.Morpheus.Kind             ( ENUM )
 import           Data.Morpheus.Types            ( GQLType(..) )
 import           GHC.Generics                   ( Generic )
 
@@ -17,10 +17,7 @@ data Realm
   | Sea
   | Underworld
   | Dream
-  deriving (Generic)
-
-instance GQLType Realm where
-  type KIND Realm = ENUM
+  deriving (Generic, GQLType)
 
 data City
   = Athens
@@ -29,6 +26,4 @@ data City
   | Ithaca
   | Sparta
   | Troy
-
-instance GQLType City where
-  type KIND City = ENUM
+  deriving (Generic, GQLType)

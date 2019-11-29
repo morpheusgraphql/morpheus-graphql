@@ -31,6 +31,8 @@ import           Data.Text                      ( Text
                                                 , pack
                                                 )
 import           GHC.Generics
+import           Data.Semigroup                 ( (<>) )
+import           Data.List                      ( partition )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
@@ -44,8 +46,9 @@ import           Data.Morpheus.Kind             ( Context(..)
                                                 , OBJECT
                                                 , SCALAR
                                                 , UNION
+                                                , AUTO
                                                 )
-import           Data.Morpheus.Types.Types     ( MapKind
+import           Data.Morpheus.Types.Types      ( MapKind
                                                 , Pair
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
@@ -55,7 +58,8 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , resolveUpdates
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataArguments
+                                                ( Name
+                                                , DataArguments
                                                 , Meta(..)
                                                 , DataField(..)
                                                 , DataTyCon(..)
@@ -68,6 +72,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , toNullableField
                                                 , createEnumValue
                                                 , TypeUpdater
+                                                , DataFingerprint
                                                 )
 
 
@@ -146,20 +151,11 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT 
 
 -- OBJECTS
 instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a where
-  introspectKind _ = updateLib (DataObject . buildType (__typename : fields))
-                               types
-                               (Proxy @a)
-   where
-    __typename =
-      ( "__typename"
-      , DataField { fieldName     = "__typename"
-                  , fieldArgs     = []
-                  , fieldArgsType = Nothing
-                  , fieldType     = createAlias "String"
-                  , fieldMeta     = Nothing
-                  }
-      )
-    (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
+  introspectKind _ = updateLib
+    (DataObject . buildType (introspection__typename : fields))
+    types
+    (Proxy @a)
+    where (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
 
 -- UNION
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind UNION a where
@@ -181,6 +177,7 @@ instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a wher
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
+
 -- Object Fields
 class ObjectFields (custom :: Bool) a where
   objectFields :: proxy1 custom -> proxy2 a -> ([(Text, DataField)], [TypeUpdater])
@@ -194,7 +191,7 @@ type instance GQLRepResult OBJECT = (Text, DataField)
 
 type instance GQLRepResult UNION = Key
 
---  GENERIC UNION
+--  GENERIC Rep
 class GQLRep (kind :: GQL_KIND) f where
   gqlRep :: Context kind f -> [(GQLRepResult kind, TypeUpdater)]
 
@@ -258,3 +255,196 @@ updateLib typeBuilder stack proxy lib' =
     Just fingerprint' | fingerprint' == __typeFingerprint proxy -> return lib'
     -- throw error if 2 different types has same name
     Just _ -> failure $ nameCollisionError (__typeName proxy)
+
+introspection__typename :: (Name, DataField)
+introspection__typename =
+  ( "__typename"
+  , DataField { fieldName     = "__typename"
+              , fieldArgs     = []
+              , fieldArgsType = Nothing
+              , fieldType     = createAlias "String"
+              , fieldMeta     = Nothing
+              }
+  )
+
+-- NEW AUTOMATIC DERIVATION SYSTEM
+
+data ConsRep =  ConsRep {
+  consName :: Key,
+  consIsRecord :: Bool,
+  consFields :: [FieldRep]
+}
+
+data FieldRep = FieldRep {
+  fieldTypeName :: Name,
+  fieldData :: (Name, DataField),
+  fieldTypeUpdater :: TypeUpdater,
+  fieldIsObject :: Bool
+}
+
+data ResRep = ResRep {
+  enumCons :: [Name],
+  unionRef :: [Name],
+  unionRecordRep :: [ConsRep]
+}
+
+isEmpty :: ConsRep -> Bool
+isEmpty ConsRep { consFields = [] } = True
+isEmpty _                           = False
+
+isUnionRecord :: ConsRep -> Bool
+isUnionRecord ConsRep { consIsRecord } = consIsRecord
+
+isUnionRef :: Name -> ConsRep -> Bool
+isUnionRef baseName ConsRep { consName, consFields = [FieldRep { fieldIsObject = True, fieldTypeName }], consIsRecord = False }
+  = consName == baseName <> fieldTypeName
+isUnionRef _ _ = False
+
+setFieldNames :: ConsRep -> ConsRep
+setFieldNames cons@ConsRep { consFields } = cons
+  { consFields = zipWith setFieldName ([0 ..] :: [Int]) consFields
+  }
+ where
+  setFieldName i fieldR@FieldRep { fieldData = (_, fieldD) } = fieldR
+    { fieldData = (fieldName, fieldD { fieldName })
+    }
+    where fieldName = "_" <> pack (show i)
+
+analyseRep :: Name -> [ConsRep] -> ResRep
+analyseRep baseName cons = ResRep
+  { enumCons       = map consName enumRep
+  , unionRef       = map fieldTypeName $ concatMap consFields unionRefRep
+  , unionRecordRep = unionRecordRep <> map setFieldNames anyonimousUnionRep
+  }
+ where
+  (enumRep       , left1             ) = partition isEmpty cons
+  (unionRecordRep, left2             ) = partition isUnionRecord left1
+  (unionRefRep   , anyonimousUnionRep) = partition (isUnionRef baseName) left2
+
+instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
+  introspectKind _ = builder (typeRep $ Proxy @(Rep a)) (Proxy @a)
+   where
+    builder [ConsRep { consFields }] = updateLib datatype types
+     where
+      datatype = DataObject . buildType (introspection__typename : fields)
+      fields   = map fieldData consFields
+      types    = map fieldTypeUpdater consFields
+    builder cons = datatype (analyseRep baseTypeName cons)
+     where
+      baseTypeName    = __typeName (Proxy @a)
+      -------------------------------------------
+      baseFingerprint = __typeFingerprint (Proxy @a)
+      ---------------------------------------------
+      datatype ResRep { unionRef = [], unionRecordRep = [], enumCons } =
+        updateLib (DataEnum . buildType (map createEnumValue enumCons)) types
+      datatype ResRep { unionRef, unionRecordRep, enumCons } = updateLib
+        (DataUnion . buildType typeMembers)
+        (types <> enumTypes <> unionRecordTypes)
+       where
+        typeMembers = unionRef <> enumMember <> unionRecMembers
+         where
+          unionRecMembers = map consName unionRecordRep
+          enumMember | null enumCons = []
+                     | otherwise     = [enumTypeWrapperName]
+        ----------------------------------------------------
+        enumTypeName        = baseTypeName <> "Enum"
+        enumTypeWrapperName = enumTypeName <> "Object"
+        enumTypes :: [TypeUpdater]
+        enumTypes
+          | null enumCons
+          = []
+          | otherwise
+          = [ buildEnumObject enumTypeWrapperName baseFingerprint enumTypeName
+            , buildEnum enumTypeName baseFingerprint enumCons
+            ]
+        unionRecordTypes :: [TypeUpdater]
+        unionRecordTypes = map buildURecType unionRecordRep
+         where
+          buildURecType ConsRep { consName, consFields } = pure . defineType
+            ( consName
+            , DataObject DataTyCon { typeName        = consName
+                                   , typeFingerprint = baseFingerprint
+                                   , typeMeta        = Nothing
+                                   , typeData        = genFields consFields
+                                   }
+            )
+           where
+            genFields [FieldRep { fieldData = ("", fData) }] =
+              [("value", fData { fieldName = "value" })]
+            genFields fields = map uRecField fields
+             where
+              uRecField FieldRep { fieldData = (fName, fData) } =
+                (fName, fData)
+      --------------------
+      types = map fieldTypeUpdater $ concatMap consFields cons
+
+
+buildEnum :: Name -> DataFingerprint -> [Name] -> TypeUpdater
+buildEnum typeName typeFingerprint tags = pure . defineType
+  ( typeName
+  , DataEnum DataTyCon { typeName
+                       , typeFingerprint
+                       , typeMeta        = Nothing
+                       , typeData        = map createEnumValue tags
+                       }
+  )
+
+
+buildEnumObject :: Name -> DataFingerprint -> Name -> TypeUpdater
+buildEnumObject typeName typeFingerprint enumTypeName = pure . defineType
+  ( typeName
+  , DataObject DataTyCon
+    { typeName
+    , typeFingerprint
+    , typeMeta        = Nothing
+    , typeData        = [ ( "enum"
+                          , DataField { fieldName     = "enum"
+                                      , fieldArgs     = []
+                                      , fieldArgsType = Nothing
+                                      , fieldType     = createAlias enumTypeName
+                                      , fieldMeta     = Nothing
+                                      }
+                          )
+                        ]
+    }
+  )
+
+
+--  GENERIC UNION
+class TypeRep f where
+  typeRep :: Proxy f -> [ConsRep]
+
+instance TypeRep f => TypeRep (M1 D d f) where
+  typeRep _ = typeRep (Proxy @f)
+
+-- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
+instance (TypeRep a, TypeRep b) => TypeRep (a :+: b) where
+  typeRep _ = typeRep (Proxy @a) <> typeRep (Proxy @b)
+
+instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
+  typeRep _ =
+    [ ConsRep { consName     = pack $ conName (undefined :: (M1 C c f a))
+              , consFields   = conRep (Proxy @f)
+              , consIsRecord = conIsRecord (undefined :: (M1 C c f a))
+              }
+    ]
+
+class ConRep f where
+    conRep :: Proxy f -> [FieldRep]
+
+-- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
+instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where
+  conRep _ = conRep (Proxy @a) <> conRep (Proxy @b)
+
+instance (GQLType a, Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
+  conRep _ =
+    [ FieldRep { fieldTypeName    = __typeName (Proxy @a)
+               , fieldData        = (name, field (Proxy @a) name)
+               , fieldTypeUpdater = introspect (Proxy @a)
+               , fieldIsObject    = isObjectKind (Proxy @a)
+               }
+    ]
+    where name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
+
+instance ConRep U1 where
+  conRep _ = []

@@ -41,6 +41,7 @@ import           Data.Morpheus.Kind             ( ENUM
                                                 , INPUT_OBJECT
                                                 , INPUT_UNION
                                                 , SCALAR
+                                                , AUTO
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..)
                                                 , toScalar
@@ -82,6 +83,11 @@ instance (GQLScalar a) => DecodeKind SCALAR a where
 
 -- ENUM
 instance (Generic a, EnumRep (Rep a)) => DecodeKind ENUM a where
+  decodeKind _ = withEnum (fmap to . decodeEnum)
+
+-- INPUT_UNION
+-- TODO: FIXME
+instance (Generic a, EnumRep (Rep a)) => DecodeKind AUTO a where
   decodeKind _ = withEnum (fmap to . decodeEnum)
 
 -- INPUT_OBJECT

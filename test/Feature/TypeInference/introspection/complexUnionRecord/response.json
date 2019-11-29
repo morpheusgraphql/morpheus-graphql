@@ -1,0 +1,78 @@
+{
+  "data": {
+    "creature": {
+      "kind": "OBJECT",
+      "name": "Creature",
+      "fields": [
+        {
+          "name": "creatureName",
+          "args": [],
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+          },
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "creatureAge",
+          "args": [],
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": { "kind": "SCALAR", "name": "Int", "ofType": null }
+          },
+          "isDeprecated": false,
+          "deprecationReason": null
+        }
+      ],
+      "inputFields": null,
+      "interfaces": [],
+      "enumValues": null,
+      "possibleTypes": null
+    },
+    "boxedDeity": {
+      "kind": "OBJECT",
+      "name": "BoxedDeity",
+      "fields": [
+        {
+          "name": "boxedDeity",
+          "args": [],
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": { "kind": "OBJECT", "name": "Deity", "ofType": null }
+          },
+          "isDeprecated": false,
+          "deprecationReason": null
+        }
+      ],
+      "inputFields": null,
+      "interfaces": [],
+      "enumValues": null,
+      "possibleTypes": null
+    },
+    "scalarRecord": {
+      "kind": "OBJECT",
+      "name": "ScalarRecord",
+      "fields": [
+        {
+          "name": "scalarText",
+          "args": [],
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+          },
+          "isDeprecated": false,
+          "deprecationReason": null
+        }
+      ],
+      "inputFields": null,
+      "interfaces": [],
+      "enumValues": null,
+      "possibleTypes": null
+    }
+  }
+}

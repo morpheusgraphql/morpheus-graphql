@@ -35,7 +35,7 @@ import           Data.Text                      ( pack )
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal   ( internalUnknownTypeMessage )
+import           Data.Morpheus.Error.Internal   ( internalResolvingError )
 import           Data.Morpheus.Execution.Server.Decode
                                                 ( DecodeObject
                                                 , decodeArguments
@@ -48,24 +48,21 @@ import           Data.Morpheus.Kind             ( ENUM
                                                 , ResContext(..)
                                                 , SCALAR
                                                 , UNION
+                                                , AUTO
                                                 , VContext(..)
                                                 )
-import           Data.Morpheus.Types.Types     ( MapKind
+import           Data.Morpheus.Types.Types      ( MapKind
                                                 , Pair(..)
                                                 , mapKindFromList
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
-import           Data.Morpheus.Types.GQLType    ( GQLType
-                                                  ( CUSTOM
-                                                  , KIND
-                                                  , __typeName
-                                                  )
-                                                )
+import           Data.Morpheus.Types.GQLType    ( GQLType(..) )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( Operation(..)
+                                                ( Name
+                                                , Operation(..)
                                                 , ValidOperation
-                                                , Key,
-                                                  MUTATION
+                                                , Key
+                                                , MUTATION
                                                 , OperationType
                                                 , QUERY
                                                 , SUBSCRIPTION
@@ -74,6 +71,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidSelection
                                                 , GQLValue(..)
                                                 , Value(..)
+                                                , SelectionSet
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( MapStrategy(..)
@@ -153,8 +151,8 @@ instance (Monad m, GQL_RES a, GResolver UNION (Rep a) o e m) => EncodeKind UNION
    where
     lookupSelection      = fromMaybe [] $ lookup typeName selections
     (typeName, resolver) = unionResolver value
-  encodeKind _ _ = failure $ internalUnknownTypeMessage
-    "union Resolver only should recieve UnionSelection"
+  encodeKind _ _ = failure $ internalResolvingError
+    "union Resolver should only recieve UnionSelection"
 
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
@@ -253,3 +251,135 @@ encodeOperationWith externalRes rootResolver Operation { operationSelection } =
  where
   resolvers =
     externalRes <> objectResolvers (Proxy :: Proxy (CUSTOM a)) rootResolver
+
+__typenameResolverBy
+  :: (Monad m, LiftEither o ResolvingStrategy)
+  => Name
+  -> (Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)
+__typenameResolverBy name = ("__typename", const $ pure $ gqlString name)
+
+-- NEW AUTOMATIC DERIVATION SYSTEM
+
+pickSelection :: Name -> [(Name, SelectionSet)] -> SelectionSet
+pickSelection name = fromMaybe [] . lookup name
+
+
+
+instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO a o e m where
+  encodeKind (VContext value) = case rawRes of
+    TypeRes { resKind = REP_OBJECT, resFields } ->
+      withObject (encodeK resFields)
+    TypeRes { resKind = REP_UNION, resFields, resCons, isResRecord } ->
+      encodeUnion resFields
+     where
+      -- ENUM
+      encodeUnion [] (_, Selection { selectionRec = SelectionField }) =
+        pure $ gqlString resCons
+      -- BOXED ENUM
+      encodeUnion [] (_, Selection { selectionRec = UnionSelection selections })
+        = resolveObject currentSelection resolvers
+       where
+        enumObjectTypeName = __typeName (Proxy @a) <> "EnumObject"
+        currentSelection   = fromMaybe [] $ lookup enumObjectTypeName selections
+        resolvers =
+          [ ("enum", const $ pure $ gqlString resCons)
+          , __typenameResolverBy enumObjectTypeName
+          ]
+      encodeUnion [] _ = failure $ internalResolvingError "expected enum value Error"
+      -- RECORD ----------------------------------------------------------------------------
+      encodeUnion fields (_, Selection { selectionRec = UnionSelection selections })
+        | isResRecord
+        = resolveObject selection resolvers
+       where
+        selection = pickSelection resCons selections
+        resolvers = __typenameResolverBy resCons : map toObjRes fields
+      -- Type References --------------------------------------------------------------
+      encodeUnion [ResField { resFieldType, resFieldRes, resIsObject }] (key, sel@Selection { selectionRec = UnionSelection selections })
+        | resIsObject && resCons == __typeName (Proxy @a) <> resFieldType
+        = resFieldRes
+          (key, sel { selectionRec = SelectionSet currentSelection })
+        where currentSelection = pickSelection resFieldType selections
+      --- Record without fields
+      encodeUnion fields (_, Selection { selectionRec = UnionSelection selections })
+        = resolveObject selection resolvers
+       where
+        selection = fromMaybe [] $ lookup resCons selections
+        resolvers = __typenameResolverBy resCons : map toObjRes (setFieldNames fields)
+      ------------------------------------------------------------------------------  
+      encodeUnion _ _ = failure $ internalResolvingError
+        "union Resolver should only recieve UnionSelection"
+   where
+    rawRes =
+      typeResolvers (ResContext :: ResContext AUTO o e m value) (from value)
+    ---------------------------------------------------------------  
+    encodeK resolvers selection =
+      resolveObject selection (__typenameResolver : map toObjRes resolvers)
+    -------------------------------------------------
+    toObjRes ResField { resFieldName, resFieldRes } =
+      (resFieldName, resFieldRes)
+    __typenameResolver = __typenameResolverBy $ __typeName (Proxy @a)
+
+data REP_KIND = REP_UNION | REP_OBJECT
+
+data TypeRes o e m = TypeRes {
+      resCons :: Name,
+      resKind :: REP_KIND,
+      resFields :: [ResField o e m],
+      isResRecord :: Bool
+  }
+
+data ResField o e m = ResField {
+    resFieldType :: Name,
+    resFieldName :: Name,
+    resFieldRes  :: (Key, ValidSelection) -> ResolvingStrategy o e m Value,
+    resIsObject  :: Bool
+  }
+
+-- setFieldNames ::  Power Int Text -> Power { _1 :: Int, _2 :: Text }
+setFieldNames :: [ResField o e m] -> [ResField o e m]
+setFieldNames = zipWith setFieldName ([0 ..] :: [Int]) 
+   where
+    setFieldName i field = field { resFieldName }
+      where resFieldName = "_" <> pack (show i)
+  
+
+class TypeRep f o e (m :: * -> *) where
+          typeResolvers :: ResContext AUTO o e m value -> f a -> TypeRes o e m
+
+instance TypeRep  f o e m => TypeRep (M1 D c f) o e m where
+  typeResolvers context (M1 src) = typeResolvers context src
+
+      --- UNION OR OBJECT 
+instance (TypeRep a o e m,TypeRep b o e m) => TypeRep (a :+: b) o e m where
+  typeResolvers context (L1 x) =
+    (typeResolvers context x) { resKind = REP_UNION }
+  typeResolvers context (R1 x) =
+    (typeResolvers context x) { resKind = REP_UNION }
+
+instance (FieldRep f o e m,Constructor c) => TypeRep (M1 C c f) o e m where
+  typeResolvers context (M1 src) = TypeRes { resCons     = pack (conName proxy)
+                                           , resKind     = REP_OBJECT
+                                           , resFields   = fieldRep context src
+                                           , isResRecord = conIsRecord proxy
+                                           }
+    where proxy = undefined :: (M1 C c U1 x)
+
+      --- FIELDS      
+class FieldRep f o e (m :: * -> *) where
+        fieldRep :: ResContext AUTO o e m value -> f a -> [ResField o e m]
+
+instance (FieldRep f o e m, FieldRep g o e m) => FieldRep  (f :*: g) o e m where
+  fieldRep context (a :*: b) = fieldRep context a <> fieldRep context b
+
+instance (Selector s, GQLType a, Encode a o e m) => FieldRep (M1 S s (K1 s2 a)) o e m where
+  fieldRep _ m@(M1 (K1 src)) =
+    [ ResField { resFieldName = pack (selName m)
+               , resFieldType = __typeName (Proxy @a)
+               , resFieldRes  = encode src
+               , resIsObject  = isObjectKind (Proxy @a)
+               }
+    ]
+
+instance FieldRep U1 o e m where
+  fieldRep _ _ = []
+
