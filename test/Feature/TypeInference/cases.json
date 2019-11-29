@@ -22,5 +22,9 @@
   {
     "path": "introspection/complexUnionScalar",
     "description": "all scalar unions must be boxed"
+  },
+  {
+    "path": "introspection/complexUnionIndexedTypes",
+    "description": "all types without record syntax(indexed types), will be converted to gql object with fields _0,_1...."
   }
 ]
