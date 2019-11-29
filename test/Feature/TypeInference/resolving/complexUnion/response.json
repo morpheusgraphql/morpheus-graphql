@@ -1,0 +1,18 @@
+{
+  "data": {
+    "character": [
+      { "__typename": "Deity", "name": "Morpheus" },
+      { "__typename": "Creature", "creatureName": "Lamia", "creatureAge": 205 },
+      { "__typename": "BoxedDeity", "boxedDeity": { "power": "Shapeshift" } },
+      { "__typename": "ScalarRecord", "scalarText": "Some Text" },
+      {
+        "__typename": "SomeDeity",
+        "_0": { "name": "Morpheus", "power": "Shapeshift" }
+      },
+      { "__typename": "CharacterInt", "_0": 12 },
+      { "__typename": "SomeMutli", "_0": 21, "_1": "some text" },
+      { "__typename": "CharacterEnumObject", "enum": "Zeus" },
+      { "__typename": "CharacterEnumObject", "enum": "Cronus" }
+    ]
+  }
+}
