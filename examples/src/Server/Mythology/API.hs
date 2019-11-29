@@ -31,18 +31,18 @@ import           Server.Mythology.Place.Places  ( City(..)
 
 
 data Character  =
-    Creature {
-      creatureName :: Text,
-      creatureAge :: Int
-    }
-  | Zeus
-  | CharacterHuman H.Human -- Only Human' should generate direct link
+    CharacterHuman H.Human -- Only Human' should generate direct link
   | CharacterDeity Deity -- Only Deity' should generate direct link
+  -- RECORDS
+  | Creature { creatureName :: Text, creatureAge :: Int }
+  | BoxedDeity { boxedDeity :: Deity}
+  | SomeScalarRecord { scalarText :: Text }
+  --- Types 
   | SomeDeity Deity
   | SomeScalar Int
-  | SomeScalarRecord { scalarText :: Text }
   | SomeMutli Int Text
-  | BoxedDeity { boxedDeity :: Deity}
+  --- ENUMS
+  | Zeus
   | Cronus deriving (Generic, GQLType)
 
 data Query m = Query
@@ -66,10 +66,20 @@ resolveCharacter =
                          , power    = Nothing
                          , realm    = Underworld
                          }
-  , Cronus
-  , Zeus
   , Creature { creatureName = "Lamia", creatureAge = 205 }
+  , BoxedDeity
+    { boxedDeity = Deity { fullName = "Hades"
+                         , power    = Nothing
+                         , realm    = Underworld
+                         }
+    }
+  , SomeScalarRecord { scalarText = "Some Text" }
+  ---
+  , SomeDeity
+    (Deity { fullName = "Hades", power = Nothing, realm = Underworld })
   , SomeScalar 12
+  , Zeus
+  , Cronus
   ]
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined

@@ -293,12 +293,13 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
        where
         selection = pickSelection resCons selections
         resolvers = __typenameResolverBy resCons : map toObjRes fields
-      -- Types without Record fields --------------------------------------------------------------
+      -- Type References --------------------------------------------------------------
       encodeUnion [ResField { resFieldType, resFieldRes, resIsObject }] (key, sel@Selection { selectionRec = UnionSelection selections })
-        | resIsObject
+        | resIsObject && resCons == __typeName (Proxy @a) <> resFieldType
         = resFieldRes
           (key, sel { selectionRec = SelectionSet currentSelection })
         where currentSelection = pickSelection resFieldType selections
+      --- Record without fields
       encodeUnion fields (_, Selection { selectionRec = UnionSelection selections })
         = resolveObject selection resolvers
        where
