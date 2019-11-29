@@ -31,8 +31,8 @@ import           Server.Mythology.Place.Places  ( City(..)
 
 
 data Character  =
-    CharacterHuman H.Human -- Only Human' should generate direct link
-  | CharacterDeity Deity -- Only Deity' should generate direct link
+    CharacterHuman H.Human -- Only <tyconName><conName> should generate direct link
+  | CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
   -- RECORDS
   | Creature { creatureName :: Text, creatureAge :: Int }
   | BoxedDeity { boxedDeity :: Deity}

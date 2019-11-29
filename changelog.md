@@ -1,3 +1,97 @@
+## [0.7.2] -
+
+### Added
+
+- Automatic Type Inference (only for Object, Union and Enum)
+
+```hs
+
+data Realm  =
+    Sky
+  | Sea
+  | Underworld
+    deriving (Generic, GQLType)
+
+data Deity  = Deity{
+    fullName:: Text,
+    realm:: Realm
+  } deriving (Generic, GQLType)
+
+data Character  =
+    CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
+  -- RECORDS
+  | Creature { creatureName :: Text, creatureAge :: Int }
+  --- Types
+  | SomeDeity Deity
+  | CharacterInt Int
+  | SomeMutli Int Text
+  --- ENUMS
+  | Zeus
+  | Cronus deriving (Generic, GQLType)
+
+
+```
+
+where `Deity` is an object
+will generate schema:
+
+```gql
+enum Realm {
+  Sky
+  Sea
+  Underworld
+}
+
+type Deity {
+  fullName: String!
+  realm: Realm!
+}
+
+union Character =
+    Deity
+  | Creature
+  | SomeDeity
+  | CharacterInt
+  | SomeMutli
+  | CharacterEnumObject
+
+type Creature {
+  creatureName: String!
+  creatureAge: Int!
+}
+
+type SomeDeity {
+  _0: Deity!
+}
+
+type CharacterInt {
+  _0: Int!
+}
+
+type SomeMutli {
+  _0: Int!
+  _1: String!
+}
+
+# enum
+type CharacterEnumObject {
+  enum: CharacterEnum!
+}
+
+enum CharacterEnum {
+  Zeus
+  Cronus
+}
+```
+
+rules:
+
+- namespaced Unions: CharacterDeity Deity where Character is TypeConstructor will be rendered as just graphql Union (works only for objects, not for scalars)
+
+```hs
+ union Character = CharacterDeity
+```
+
 ## [0.7.1] - 26.11.2019
 
 - max bound icludes: support-megaparsec-8.0
