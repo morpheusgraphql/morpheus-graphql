@@ -95,7 +95,7 @@ rules:
       | ...
   ```
 
-- union recrods (`Creature { creatureName :: Text, creatureAge :: Int }`) will be referenced in union type, plus type `Creature`will be added in schema.
+- for union recrods (`Creature { creatureName :: Text, creatureAge :: Int }`) will be referenced in union type, plus type `Creature`will be added in schema.
 
   e.g
 
@@ -106,11 +106,15 @@ rules:
       | ...
 
     type Creature {
-      creatureName : String!,
+      creatureName : String!
       creatureAge: Int!
     }
 
   ```
+
+- all empty constructors in mixed union will be summed in type `<tyConName>Enum` (e.g `CharacterEnum`), this enum will be wrapped in `CharacterEnumObject` and this type will be added to union `Character`. as in example above
+
+-
 
 ## [0.7.1] - 26.11.2019
 
