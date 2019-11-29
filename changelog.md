@@ -95,6 +95,23 @@ rules:
       | ...
   ```
 
+- union recrods (`| Creature { creatureName :: Text, creatureAge :: Int }`) will be referenced in union type, plus type `Creature`will be added in schema.
+
+  e.g
+
+  ```gql
+    union Character =
+      ...
+      | Creature
+      | ...
+
+    type Creature {
+      creatureName : String!,
+      creatureAge: Int!
+    }
+
+  ```
+
 ## [0.7.1] - 26.11.2019
 
 - max bound icludes: support-megaparsec-8.0
