@@ -118,7 +118,7 @@ rules:
 
   thery will morpheus will add their name in union type members. and generate from objet type:
 
-  ```
+  ```gql
   type TypeName {
     _0: Type1!
     _1: Type2!
