@@ -1,0 +1,29 @@
+{
+  "data": {
+    "__type": {
+      "kind": "ENUM",
+      "name": "Power",
+      "fields": null,
+      "inputFields": null,
+      "interfaces": null,
+      "enumValues": [
+        {
+          "name": "Thunderbolts",
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "Shapeshift",
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "Hurricanes",
+          "isDeprecated": false,
+          "deprecationReason": null
+        }
+      ],
+      "possibleTypes": null
+    }
+  }
+}

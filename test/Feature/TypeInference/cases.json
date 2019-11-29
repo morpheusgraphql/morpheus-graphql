@@ -1,0 +1,14 @@
+[
+  {
+    "path": "introspection/object",
+    "description": "derives simple gql object type"
+  },
+  {
+    "path": "introspection/enum",
+    "description": "derive as gql enum, if type has only empty constructors"
+  },
+  {
+    "path": "introspection/complexUnion",
+    "description": "derive complex union"
+  }
+]
