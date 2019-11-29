@@ -85,7 +85,7 @@ enum CharacterEnum {
 
 rules:
 
-- namespaced Unions: `CharacterDeity` where `Character` is TypeConstructor and `Deity` refferenced type: will be rendered as just graphql Union (works only for objects, not for scalars)
+- namespaced Unions: `CharacterDeity` where `Character` is TypeConstructor and `Deity` refferenced object(not scalar) type: will be generate regular graphql Union
 
   ```hs
   union Character =
