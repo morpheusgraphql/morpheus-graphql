@@ -10,5 +10,9 @@
   {
     "path": "introspection/complexUnion",
     "description": "derive complex union"
+  },
+  {
+    "path": "introspection/complexUnionEnum",
+    "description": "complex union enum contains, actual enums with empty constructors and enum object wrapper"
   }
 ]
