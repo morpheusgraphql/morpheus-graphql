@@ -39,8 +39,9 @@ data Character  =
   | BoxedDeity { boxedDeity :: Deity}
   | ScalarRecord { scalarText :: Text }
   --- Types 
+  | CharacterInt Int -- all scalars mus be boxed
+  -- Types
   | SomeDeity Deity
-  | CharacterInt Int -- should bex boxed, is not Object type
   | SomeMutli Int Text
   --- ENUMS
   | Zeus

@@ -17,6 +17,10 @@
   },
   {
     "path": "introspection/complexUnionRecord",
-    "description": "complex union enum contains, actual enums with empty constructors and enum object wrapper"
+    "description": "creates object type for every union records"
+  },
+  {
+    "path": "introspection/complexUnionScalar",
+    "description": "all scalar unions must be boxed"
   }
 ]
