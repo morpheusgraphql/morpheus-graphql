@@ -1,7 +1,8 @@
-{-# LANGUAGE DeriveAnyClass    #-}
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveAnyClass        #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Server.Mythology.API
   ( mythologyApi
@@ -31,9 +32,9 @@ data Character  =
     CharacterHuman Human -- Only <tyconName><conName> should generate direct link
   | CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
   -- RECORDS
-  | Creature { creatureName :: Text, creatureAge :: Int }
+  | Creature { name :: Text, age :: Int }
   | BoxedDeity { boxedDeity :: Deity}
-  | SomeScalarRecord { scalarText :: Text }
+  | SomeScalarRecord { scalar :: Text }
   --- Types 
   | SomeDeity Deity
   | SomeScalar Int
@@ -60,9 +61,9 @@ resolveCharacter :: [Character]
 resolveCharacter =
   [ CharacterHuman someHuman
   , CharacterDeity someDeity
-  , Creature { creatureName = "Lamia", creatureAge = 205 }
+  , Creature { name = "Lamia", age = 205 }
   , BoxedDeity { boxedDeity = someDeity }
-  , SomeScalarRecord { scalarText = "Some Text" }
+  , SomeScalarRecord { scalar = "Some Text" }
   ---
   , SomeDeity someDeity
   , SomeScalar 12
