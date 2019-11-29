@@ -78,6 +78,7 @@ resolveCharacter =
   , SomeDeity
     (Deity { fullName = "Hades", power = Nothing, realm = Underworld })
   , SomeScalar 12
+  , SomeMutli 21 "some text"
   , Zeus
   , Cronus
   ]
