@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveAnyClass  #-}
 {-# LANGUAGE TypeFamilies    #-}
 
-module Server.Mythology.Place.Places
+module Server.Mythology.Place
   ( Realm(..)
   , City(..)
   )
