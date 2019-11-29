@@ -52,12 +52,11 @@ data Query m = Query
 
 data DeityArgs = DeityArgs
   { name      :: Text -- Required Argument
-  , mythology :: Maybe Text -- Optional Argument
+  , bornPlace :: Maybe City -- Optional Argument
   } deriving (Generic)
 
 resolveDeity :: DeityArgs -> IORes e Deity
-resolveDeity DeityArgs { name, mythology } =
-  liftEither $ dbDeity name mythology
+resolveDeity DeityArgs { name, bornPlace } = liftEither $ dbDeity name Nothing
 
 resolveCharacter :: [Character]
 resolveCharacter =
