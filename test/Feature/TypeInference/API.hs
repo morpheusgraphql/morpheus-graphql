@@ -37,7 +37,7 @@ data Character  =
   -- RECORDS
   | Creature { creatureName :: Text, creatureAge :: Int }
   | BoxedDeity { boxedDeity :: Deity}
-  | SomeScalarRecord { scalarText :: Text }
+  | ScalarRecord { scalarText :: Text }
   --- Types 
   | SomeDeity Deity
   | CharacterInt Int -- should bex boxed, is not Object type
@@ -63,7 +63,7 @@ rootResolver = GQLRootResolver
     [ CharacterDeity deityRes
     , Creature { creatureName = "Lamia", creatureAge = 205 }
     , BoxedDeity { boxedDeity = deityRes }
-    , SomeScalarRecord { scalarText = "Some Text" }
+    , ScalarRecord { scalarText = "Some Text" }
       ---
     , SomeDeity deityRes
     , CharacterInt 12
