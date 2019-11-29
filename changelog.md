@@ -116,15 +116,15 @@ rules:
 
   - there is only types left with form `TypeName Type1 2Type ..`(e.g `SomeDeity Deity` ,`CharacterInt Int`, `SomeMutli Int Text`),
 
-  thery will morpheus will add their name in union type members. and generate from objet type:
+    morpheus will generate objet type from it:
 
-  ```gql
-  type TypeName {
-    _0: Type1!
-    _1: Type2!
-    ...
-  }
-  ```
+    ```gql
+    type TypeName {
+      _0: Type1!
+      _1: Type2!
+      ...
+    }
+    ```
 
 ## [0.7.1] - 26.11.2019
 
