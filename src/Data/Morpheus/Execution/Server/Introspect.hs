@@ -295,10 +295,10 @@ isEmpty _                           = False
 isUnionRecord :: ConsRep -> Bool
 isUnionRecord ConsRep { consIsRecord } = consIsRecord
 
-isUnionRef :: ConsRep -> Bool
-isUnionRef ConsRep { consName , consFields = [FieldRep { fieldIsObject = True, fieldTypeName }], consIsRecord = False }
-  = consName == fieldTypeName <> "'"
-isUnionRef _ = False
+isUnionRef :: Name -> ConsRep -> Bool
+isUnionRef baseName ConsRep { consName, consFields = [FieldRep { fieldIsObject = True, fieldTypeName }], consIsRecord = False }
+  = consName == baseName <> fieldTypeName
+isUnionRef _ _ = False
 
 setFieldNames :: ConsRep -> ConsRep
 setFieldNames cons@ConsRep { consFields } = cons
@@ -310,8 +310,8 @@ setFieldNames cons@ConsRep { consFields } = cons
     }
     where fieldName = "_" <> pack (show i)
 
-analyseRep :: [ConsRep] -> ResRep
-analyseRep cons = ResRep
+analyseRep :: Name -> [ConsRep] -> ResRep
+analyseRep baseName cons = ResRep
   { enumCons       = map consName enumRep
   , unionRef       = map fieldTypeName $ concatMap consFields unionRefRep
   , unionRecordRep = unionRecordRep <> map setFieldNames anyonimousUnionRep
@@ -319,7 +319,7 @@ analyseRep cons = ResRep
  where
   (enumRep       , left1             ) = partition isEmpty cons
   (unionRecordRep, left2             ) = partition isUnionRecord left1
-  (unionRefRep   , anyonimousUnionRep) = partition isUnionRef left2
+  (unionRefRep   , anyonimousUnionRep) = partition (isUnionRef baseName) left2
 
 instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
   introspectKind _ = builder (typeRep $ Proxy @(Rep a)) (Proxy @a)
@@ -329,8 +329,12 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
       datatype = DataObject . buildType (introspection__typename : fields)
       fields   = map fieldData consFields
       types    = map fieldTypeUpdater consFields
-    builder cons = datatype (analyseRep cons)
+    builder cons = datatype (analyseRep baseTypeName cons)
      where
+      baseTypeName    = __typeName (Proxy @a)
+      -------------------------------------------
+      baseFingerprint = __typeFingerprint (Proxy @a)
+      ---------------------------------------------
       datatype ResRep { unionRef = [], unionRecordRep = [], enumCons } =
         updateLib (DataEnum . buildType (map createEnumValue enumCons)) types
       datatype ResRep { unionRef, unionRecordRep, enumCons } = updateLib
@@ -343,9 +347,6 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
           enumMember | null enumCons = []
                      | otherwise     = [enumTypeWrapperName]
         ----------------------------------------------------
-        baseTypeName        = __typeName (Proxy @a)
-        baseFingerprint     = __typeFingerprint (Proxy @a)
-        ---------------------------------------------
         enumTypeName        = baseTypeName <> "Enum"
         enumTypeWrapperName = enumTypeName <> "Object"
         enumTypes :: [TypeUpdater]

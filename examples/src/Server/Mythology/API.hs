@@ -36,8 +36,8 @@ data Character  =
       creatureAge :: Int
     }
   | Zeus
-  | Human' H.Human -- Only Human' should generate direct link
-  | Deity' Deity -- Only Deity' should generate direct link
+  | CharacterHuman H.Human -- Only Human' should generate direct link
+  | CharacterDeity Deity -- Only Deity' should generate direct link
   | SomeDeity Deity
   | SomeScalar Int
   | SomeScalarRecord { scalarText :: Text }
@@ -61,8 +61,11 @@ resolveDeity DeityArgs { name, mythology } =
 
 resolveCharacter :: [Character]
 resolveCharacter =
-  [ Human' H.Human { H.name = "Odysseus", H.bornAt = Ithaca }
-  , Deity' Deity { fullName = "Hades", power = Nothing, realm = Underworld }
+  [ CharacterHuman H.Human { H.name = "Odysseus", H.bornAt = Ithaca }
+  , CharacterDeity Deity { fullName = "Hades"
+                         , power    = Nothing
+                         , realm    = Underworld
+                         }
   , Cronus
   , Zeus
   , Creature { creatureName = "Lamia", creatureAge = 205 }
