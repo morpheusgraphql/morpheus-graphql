@@ -371,7 +371,7 @@ buildUnionDT wrapUnion wrapObject cons = datatype (analyseRep baseName cons)
    where
     typeMembers = unionRef <> enumMembers <> unionRecMembers
       where unionRecMembers = map consName unionRecordRep
-    (enumMembers, enumTypes) = buildUnionEnum baseName baseFingerprint enumCons
+    (enumMembers, enumTypes) = buildUnionEnum wrapObject baseName baseFingerprint enumCons
     ----------------------------------------------------
     unionRecordTypes :: [TypeUpdater]
     unionRecordTypes = map buildURecType unionRecordRep
@@ -398,8 +398,8 @@ buildUnionRecord typeFingerprint ConsRep { consName, consFields } = DataTyCon
   uRecField FieldRep { fieldData = (fName, fData) } = (fName, fData)
 
 
-buildUnionEnum :: Name -> DataFingerprint -> [Name] -> ([Name], [TypeUpdater])
-buildUnionEnum baseName baseFingerprint enums = (members, updates)
+buildUnionEnum ::  (DataObject -> DataType) -> Name -> DataFingerprint -> [Name] -> ([Name], [TypeUpdater])
+buildUnionEnum wrapObject baseName baseFingerprint enums = (members, updates)
  where
   members | null enums = []
           | otherwise  = [enumTypeWrapperName]
@@ -411,7 +411,7 @@ buildUnionEnum baseName baseFingerprint enums = (members, updates)
     | null enums
     = []
     | otherwise
-    = [ buildEnumObject enumTypeWrapperName baseFingerprint enumTypeName
+    = [ buildEnumObject wrapObject enumTypeWrapperName baseFingerprint enumTypeName
       , buildEnum enumTypeName baseFingerprint enums
       ]
 
@@ -425,11 +425,10 @@ buildEnum typeName typeFingerprint tags = pure . defineType
                        }
   )
 
-
-buildEnumObject :: Name -> DataFingerprint -> Name -> TypeUpdater
-buildEnumObject typeName typeFingerprint enumTypeName = pure . defineType
+buildEnumObject :: (DataObject -> DataType) -> Name -> DataFingerprint -> Name -> TypeUpdater
+buildEnumObject wrapObject typeName typeFingerprint enumTypeName = pure . defineType
   ( typeName
-  , DataObject DataTyCon
+  , wrapObject DataTyCon
     { typeName
     , typeFingerprint
     , typeMeta        = Nothing
