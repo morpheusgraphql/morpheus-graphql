@@ -114,6 +114,7 @@ instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a w
 --
 class DecodeRep f where
   tags :: Proxy f -> [Key]
+  decodeRep :: Value -> Validation (f a)‚
   decodeUnion :: Object -> Validation (f a)
   __decodeObject :: Value -> Validation (f a)
 
