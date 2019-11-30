@@ -25,6 +25,7 @@ import           GHC.Generics
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal   ( internalArgumentError
                                                 , internalTypeMismatch
+                                                , internalError
                                                 )
 import           Data.Morpheus.Execution.Internal.Decode
                                                 ( decodeFieldWith
@@ -96,7 +97,7 @@ instance DecodeObject a => DecodeKind INPUT_OBJECT a where
 
 -- INPUT_UNION
 instance (Generic a, DecodeRep (Rep a)) => DecodeKind INPUT_UNION a where
-  decodeKind _ = withObject (fmap to . decodeUnion)
+--  decodeKind _ = withObject (fmap to . decodeUnion)
 
 -- GENERIC
 decodeArguments :: DecodeObject p => Arguments -> Validation p
@@ -107,7 +108,7 @@ class DecodeObject a where
   decodeObject :: Object -> Validation a
 
 instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a where
-  decodeObject = fmap to . __decodeObject . Object
+ -- decodeObject = fmap to . __decodeObject . Object
 
 --
 -- GENERICS
@@ -115,47 +116,62 @@ instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a w
 class DecodeRep f where
   tags :: Proxy f -> [Key]
   decodeRep :: Value -> Validation (f a)
-  decodeUnion :: Object -> Validation (f a)
-  __decodeObject :: Value -> Validation (f a)
+--  decodeUnion :: Object -> Validation (f a)
+--  __decodeObject :: Value -> Validation (f a)
 
-instance DecodeRep U1 where
-  tags _ = []
-  __decodeObject _ = pure U1
-  decodeUnion _ = pure U1
+instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
+  tags _ = tags (Proxy @f)
+  decodeRep = fmap M1 . decodeRep
+--  decodeUnion = fmap M1 . decodeUnion
+--  __decodeObject = fmap M1 . __decodeObject
+
+
+instance (Constructor c, DecodeRep f) => DecodeRep (M1 C c f) where
+  tags _ = tags (Proxy @f)
+  decodeRep = fmap M1 . decodeRep
+
+instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
+  tags _ = tags (Proxy @a) ++ tags (Proxy @b)
+  decodeRep = __decode
+   where
+    __decode (Object object) = withUnion handleUnion object
+    __decode (Enum name)
+      | inLeft name
+      = L1 <$> decodeRep (Enum name)
+      | inRight name
+      = R1 <$> decodeRep (Enum name)
+      | otherwise
+      = internalError $ "Constructor \"" <> name <> "\" could not find in Union"
+    __decode _ = internalError "lists and scalars are not allowed in Union"
+    -----------------------------------------------
+    handleUnion name unions object
+      | [name] == l1Tags = L1 <$> decodeRep (Object object)
+      | [name] == r1Tags = R1 <$> decodeRep (Object object)
+      | inLeft name = L1 <$> decodeRep (Object unions)
+      | inRight name = R1 <$> decodeRep (Object unions)
+      | otherwise = internalArgumentError
+        ("type \"" <> name <> "\" could not find in union")
+    ------------------------------------------------------- 
+    l1Tags  = tags $ Proxy @a
+    r1Tags  = tags $ Proxy @b
+    inLeft  = (`elem` l1Tags)
+    inRight = (`elem` r1Tags)
 
 -- Recursive Decoding: (Selector (Rec1 ))
 instance (Selector s, GQLType a, Decode a) => DecodeRep (M1 S s (K1 i a)) where
   tags _ = [__typeName (Proxy @a)]
-  decodeUnion    = fmap (M1 . K1) . decode . Object
-  __decodeObject = fmap (M1 . K1) . decodeRec
-   where
-    fieldName = pack $ selName (undefined :: M1 S s f a)
-    decodeRec = withObject (decodeFieldWith decode fieldName)
-
-instance (Datatype c, DecodeRep f) => DecodeRep (M1 D c f) where
-  decodeUnion = fmap M1 . decodeUnion
-  tags _ = tags (Proxy @f)
-  __decodeObject = fmap M1 . __decodeObject
-
-instance (Constructor c, DecodeRep f) => DecodeRep (M1 C c f) where
-  decodeUnion = fmap M1 . decodeUnion
-  tags _ = tags (Proxy @f)
-  __decodeObject = fmap M1 . __decodeObject
+  -- decodeUnion    = fmap (M1 . K1) . decode . Object
+  -- __decodeObject = fmap (M1 . K1) . decodeRec
+  --  where
+  --   fieldName = pack $ selName (undefined :: M1 S s f a)
+  --   decodeRec = withObject (decodeFieldWith decode fieldName)
 
 instance (DecodeRep f, DecodeRep g) => DecodeRep (f :*: g) where
-  __decodeObject gql = (:*:) <$> __decodeObject gql <*> __decodeObject gql
+  tags _ = []
+  -- __decodeObject gql = (:*:) <$> __decodeObject gql <*> __decodeObject gql
 
-instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
-  decodeUnion = withUnion handleUnion
-   where
-    handleUnion name unions object
-      | [name] == l1Tags = L1 <$> decodeUnion object
-      | [name] == r1Tags = R1 <$> decodeUnion object
-      | name `elem` l1Tags = L1 <$> decodeUnion unions
-      | name `elem` r1Tags = R1 <$> decodeUnion unions
-      | otherwise = internalArgumentError
-        ("type \"" <> name <> "\" could not find in union")
-     where
-      l1Tags = tags $ Proxy @a
-      r1Tags = tags $ Proxy @b
-  tags _ = tags (Proxy @a) ++ tags (Proxy @b)
+instance DecodeRep U1 where
+  tags _ = []
+  decodeRep _ = pure U1
+--  __decodeObject _ = pure U1
+--  decodeUnion _ = pure U1
