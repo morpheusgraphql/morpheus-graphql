@@ -147,7 +147,7 @@ data Tag = D_CONS | D_UNION deriving (Eq ,Ord)
 initCont = Cont False ""
 
 data Cont = Cont {
-  isUnionRef:: Bool,
+  contKind:: Tag,
   typeName :: Name
 }
 
@@ -191,8 +191,7 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
       r1            = tagName r1t
       l1t           = tags (Proxy @a) (typeName cont)
       r1t           = tags (Proxy @b) (typeName cont)
-      ctx           = cont { isUnionRef = kind == D_UNION }
-      Info { kind } = r1t <> r1t
+      ctx           = cont { contKind = kind (r1t <> r1t) }
     __decode (Enum name, cxt) = decideUnion
       (tagName $ tags (Proxy @a) (typeName cxt), decodeRep)
       (tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
@@ -229,8 +228,8 @@ instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
 
 instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
   refType _ = Just $ __typeName (Proxy @a)
-  decodeFields (value, Cont { isUnionRef })
-    | isUnionRef = M1 . K1 <$> decode value
+  decodeFields (value, Cont { contKind })
+    | contKind == D_UNION = M1 . K1 <$> decode value
     | otherwise  = __decode value
    where
     __decode  = fmap (M1 . K1) . decodeRec
