@@ -70,6 +70,7 @@ data Animal
   | AnimalDog Dog
   | AnimalBird Bird
   | Giraffe  { giraffeName :: Text }
+  | UnidentifiedSpecie
   deriving (Show, Generic)
 
 instance GQLType Animal where
