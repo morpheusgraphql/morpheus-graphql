@@ -137,21 +137,31 @@ decideUnion (left, f1) (right, f2) name value
   | otherwise
   = failure $ "Constructor \"" <> name <> "\" could not find in Union"
 
+
+data Tag = D_CONS | D_UNION
+
+data Info = Info {
+  kind :: Tag,
+  tagName :: [Name]
+}
+
+instance Semigroup Info where
+  Info D_UNION t1 <> Info _       t2 = Info D_UNION (t1 <> t2)
+  Info _       t1 <> Info D_UNION t2 = Info D_UNION (t1 <> t2)
+  Info D_CONS  t1 <> Info D_CONS  t2 = Info D_CONS (t1 <> t2)
+
 --
 -- GENERICS
 --
 class DecodeRep f where
-  enums :: Proxy f -> [Name]
-  tags :: Proxy f -> [Name]
+  tags :: Proxy f -> Info
   decodeRep :: (Value,Bool) -> Validation (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
-  enums _ = enums (Proxy @f)
   tags _ = tags (Proxy @f)
   decodeRep = fmap M1 . decodeRep
 
 instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
-  enums _ = enums (Proxy @a) <> enums (Proxy @b)
   tags _ = tags (Proxy @a) <> tags (Proxy @b)
   decodeRep = __decode
    where
@@ -164,29 +174,38 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
                                   (r1, decodeRep)
                                   name
                                   (Object unions, True)
-      l1 = tags $ Proxy @a
-      r1 = tags $ Proxy @b
-    __decode (Enum name, cxt) = decideUnion (enums $ Proxy @a, decodeRep)
-                                            (enums $ Proxy @b, decodeRep)
-                                            name
-                                            (Enum name, cxt)
+      l1 = tagName $ tags $ Proxy @a
+      r1 = tagName $ tags $ Proxy @b
+    __decode (Enum name, cxt) = decideUnion
+      (tagName $ tags $ Proxy @a, decodeRep)
+      (tagName $ tags $ Proxy @b, decodeRep)
+      name
+      (Enum name, cxt)
     __decode _ = internalError "lists and scalars are not allowed in Union"
 
-instance (Constructor c, DecodeFields f) => DecodeRep (M1 C c f) where
-  enums _ = [pack $ conName (undefined :: (M1 C c U1 x))]
-  tags _ = fieldTags (Proxy @f)
+instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
   decodeRep = fmap M1 . decodeFields
+  tags _ = getTag (refType (Proxy @a))
+   where
+    getTag (Just memberRef)
+      | conIsRecord unsafeType = Info { kind = D_UNION, tagName = [consName] }
+      | otherwise              = Info { kind = D_CONS, tagName = [memberRef] }
+    getTag Nothing = Info { kind = D_CONS, tagName = [consName] }
+    consName = pack $ conName unsafeType
+    --------------------------
+    unsafeType :: (M1 C c U1 x)
+    unsafeType = undefined
 
 class DecodeFields f where
-  fieldTags :: Proxy f -> [Name]
+  refType :: Proxy f -> Maybe Name
   decodeFields :: (Value,Bool) -> Validation (f a)
 
 instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
-  fieldTags _ = []
+  refType _ = Nothing
   decodeFields gql = (:*:) <$> decodeFields gql <*> decodeFields gql
 
 instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
-  fieldTags _ = [__typeName (Proxy @a)]
+  refType _ = Just $ __typeName (Proxy @a)
   decodeFields (value, isUnion) | isUnion   = M1 . K1 <$> decode value
                                 | otherwise = __decode value
    where
@@ -195,5 +214,5 @@ instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) whe
     decodeRec = withObject (decodeFieldWith decode fieldName)
 
 instance DecodeFields U1 where
-  fieldTags _ = []
+  refType _ = Nothing
   decodeFields _ = pure U1
