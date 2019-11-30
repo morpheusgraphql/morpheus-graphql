@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE NamedFieldPuns      #-}
-{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -13,9 +12,9 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 )
 import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
-import           Server.Mythology.Character.Deity
-                                                ( Deity(..) )
-import           Server.Mythology.Place.Places  ( Realm(..) )
+import           Server.Mythology.Character     ( Deity
+                                                , someDeity
+                                                )
 
 -- TODO: importGQLDocument "examples/Subscription/api.gql"
 --
@@ -52,13 +51,11 @@ rootResolver = GQLRootResolver
  where
     -- TODO: resolver $ dbDeity "" Nothing
   createDeity _args = MutResolver $ pure
-    ( [Event { channels = [ChannelA], content = ContentA 1 }]
-    , Deity { fullName = "", power = Nothing, realm = Sky }
-    )
+    ([Event { channels = [ChannelA], content = ContentA 1 }], someDeity)
   newDeity _args = SubResolver [ChannelA] subResolver
    where
     subResolver (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
     subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
     subResolver _ = fetchDeity -- Resolve Old State
   ---------------------------------------------------------
-  fetchDeity = pure Deity { fullName = "", power = Nothing, realm = Sky }
+  fetchDeity = pure someDeity

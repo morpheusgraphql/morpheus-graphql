@@ -1,7 +1,8 @@
-{-# LANGUAGE DeriveAnyClass    #-}
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveAnyClass        #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Server.Mythology.API
   ( mythologyApi
@@ -18,25 +19,22 @@ import           Data.Morpheus.Types            ( GQLRootResolver(..)
                                                 )
 import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
-import           Server.Mythology.Character.Deity
-                                                ( Deity(..)
+import           Server.Mythology.Character     ( Deity
+                                                , Human
                                                 , dbDeity
+                                                , someHuman
+                                                , someDeity
                                                 )
-import qualified Server.Mythology.Character.Human
-                                               as H
-                                                ( Human(..) )
-import           Server.Mythology.Place.Places  ( City(..)
-                                                , Realm(..)
-                                                )
+import           Server.Mythology.Place         ( City )
 
 
 data Character  =
-    CharacterHuman H.Human -- Only <tyconName><conName> should generate direct link
+    CharacterHuman Human -- Only <tyconName><conName> should generate direct link
   | CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
   -- RECORDS
-  | Creature { creatureName :: Text, creatureAge :: Int }
+  | Creature { name :: Text, age :: Int }
   | BoxedDeity { boxedDeity :: Deity}
-  | SomeScalarRecord { scalarText :: Text }
+  | SomeScalarRecord { scalar :: Text }
   --- Types 
   | SomeDeity Deity
   | SomeScalar Int
@@ -56,26 +54,18 @@ data DeityArgs = DeityArgs
   } deriving (Generic)
 
 resolveDeity :: DeityArgs -> IORes e Deity
-resolveDeity DeityArgs { name, bornPlace } = liftEither $ dbDeity name Nothing
+resolveDeity DeityArgs { name, bornPlace } =
+  liftEither $ dbDeity name bornPlace
 
 resolveCharacter :: [Character]
 resolveCharacter =
-  [ CharacterHuman H.Human { H.name = "Odysseus", H.bornAt = Ithaca }
-  , CharacterDeity Deity { fullName = "Hades"
-                         , power    = Nothing
-                         , realm    = Underworld
-                         }
-  , Creature { creatureName = "Lamia", creatureAge = 205 }
-  , BoxedDeity
-    { boxedDeity = Deity { fullName = "Hades"
-                         , power    = Nothing
-                         , realm    = Underworld
-                         }
-    }
-  , SomeScalarRecord { scalarText = "Some Text" }
+  [ CharacterHuman someHuman
+  , CharacterDeity someDeity
+  , Creature { name = "Lamia", age = 205 }
+  , BoxedDeity { boxedDeity = someDeity }
+  , SomeScalarRecord { scalar = "Some Text" }
   ---
-  , SomeDeity
-    (Deity { fullName = "Hades", power = Nothing, realm = Underworld })
+  , SomeDeity someDeity
   , SomeScalar 12
   , SomeMutli 21 "some text"
   , Zeus
