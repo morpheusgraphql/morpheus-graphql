@@ -116,15 +116,10 @@ instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a w
 class DecodeRep f where
   tags :: Proxy f -> [Key]
   decodeRep :: Value -> Validation (f a)
---  decodeUnion :: Object -> Validation (f a)
---  __decodeObject :: Value -> Validation (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   tags _ = tags (Proxy @f)
   decodeRep = fmap M1 . decodeRep
---  decodeUnion = fmap M1 . decodeUnion
---  __decodeObject = fmap M1 . __decodeObject
-
 
 instance (Constructor c, DecodeRep f) => DecodeRep (M1 C c f) where
   tags _ = tags (Proxy @f)
