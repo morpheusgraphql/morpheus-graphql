@@ -23,8 +23,7 @@ import           Data.Text                      ( pack )
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal   ( internalArgumentError
-                                                , internalTypeMismatch
+import           Data.Morpheus.Error.Internal   ( internalTypeMismatch
                                                 , internalError
                                                 )
 import           Data.Morpheus.Execution.Internal.Decode
@@ -124,20 +123,18 @@ instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a w
 -- | EnumValue | 
 
 decideUnion
-  :: [Name]
-  -> [Name]
+  :: ([Name], value -> Validation (f1 a))
+  -> ([Name], value -> Validation (f2 a))
   -> Name
-  -> Validation (f1 a)
-  -> Validation (f2 a)
+  -> value
   -> Validation ((:+:) f1 f2 a)
-decideUnion left right name v1 v2
+decideUnion (left, f1) (right, f2) name value
   | name `elem` left
-  = L1 <$> v1
+  = L1 <$> f1 value
   | name `elem` right
-  = R1 <$> v2
+  = R1 <$> f2 value
   | otherwise
   = failure $ "Constructor \"" <> name <> "\" could not find in Union"
-
 
 --
 -- GENERICS
@@ -163,25 +160,23 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   decodeRep = __decode
    where
     __decode (Object object) = withUnion handleUnion object
-    __decode (Enum   name  ) = decideUnion (enums $ Proxy @a)
-                                           (enums $ Proxy @b)
+    __decode (Enum   name  ) = decideUnion (enums $ Proxy @a, decodeRep)
+                                           (enums $ Proxy @b, decodeRep)
                                            name
-                                           (decodeRep (Enum name))
-                                           (decodeRep (Enum name))
+                                           (Enum name)
     __decode _ = internalError "lists and scalars are not allowed in Union"
     -----------------------------------------------
     handleUnion name unions object
-      | [name] == l1Tags = L1 <$> decodeRep (Object object)
-      | [name] == r1Tags = R1 <$> decodeRep (Object object)
-      | inLeft name = L1 <$> decodeRep (Object unions)
-      | inRight name = R1 <$> decodeRep (Object unions)
-      | otherwise = internalArgumentError
-        ("type \"" <> name <> "\" could not find in union")
-    ------------------------------------------------------- 
-    l1Tags  = tags $ Proxy @a
-    r1Tags  = tags $ Proxy @b
-    inLeft  = (`elem` l1Tags)
-    inRight = (`elem` r1Tags)
+      | [name] == l1 = L1 <$> decodeRep (Object object)
+      | [name] == r1 = R1 <$> decodeRep (Object object)
+      | otherwise    = decideUnion
+        (l1, decodeRep)
+        (r1, decodeRep)
+        name
+        (Object unions)
+     where
+      l1 = tags $ Proxy @a
+      r1 = tags $ Proxy @b
 
 instance (DecodeRep f, DecodeRep g) => DecodeRep (f :*: g) where
   tags _ = []
