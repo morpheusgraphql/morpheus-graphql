@@ -110,6 +110,23 @@ class DecodeObject a where
 instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a where
   decodeObject = fmap to . decodeRep . Object
 
+-- data Inpuz  =
+--    InputHuman Human  -- direct link: { __typename: Human, field:"" }
+--   
+--   | InputRecord { name :: Text, age :: Int } -- { __typename: InputRecord, name:"" , age:1 }
+--    
+--   | IndexedType Int Text  -- { __typename: InputRecord, _0:2 , _1:""  }
+--   
+--   | Zeus                 -- "Zeus"
+--   | Cronus 
+--     deriving (Generic, GQLType)
+
+
+
+-- object and union: { __typename: name , field: some field }   
+-- | EnumValue | 
+
+
 --
 -- GENERICS
 --
