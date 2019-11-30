@@ -42,7 +42,6 @@ import           Data.Morpheus.Kind             ( Context(..)
                                                 , ENUM
                                                 , GQL_KIND
                                                 , INPUT_OBJECT
-                                                , INPUT_UNION
                                                 , OBJECT
                                                 , SCALAR
                                                 , UNION
@@ -163,14 +162,6 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a wher
 -- UNION
 instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind UNION a where
   introspectKind _ = updateLib (DataUnion . buildType memberTypes)
-                               stack
-                               (Proxy @a)
-   where
-    (memberTypes, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
-
--- INPUT_UNION
-instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind INPUT_UNION a where
-  introspectKind _ = updateLib (DataInputUnion . buildType memberTypes)
                                stack
                                (Proxy @a)
    where

@@ -99,9 +99,6 @@ instance IsObject OBJECT where
 instance IsObject UNION where
   isObject _ = True
 
-instance IsObject INPUT_UNION where
-  isObject _ = True
-
 instance IsObject INPUT_OBJECT where
   isObject _ = True
 

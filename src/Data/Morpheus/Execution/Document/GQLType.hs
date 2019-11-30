@@ -20,11 +20,11 @@ import           Data.Morpheus.Execution.Internal.Declare
                                                 ( tyConArgs )
 import           Data.Morpheus.Kind             ( ENUM
                                                 , INPUT_OBJECT
-                                                , INPUT_UNION
                                                 , OBJECT
                                                 , SCALAR
                                                 , UNION
                                                 , WRAPPER
+                                                , INPUT
                                                 )
 import           Data.Morpheus.Types.GQLType    ( GQLType(..)
                                                 , TRUE
@@ -89,4 +89,4 @@ deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
     toKIND KindInputObject = ''INPUT_OBJECT
     toKIND KindList        = ''WRAPPER
     toKIND KindNonNull     = ''WRAPPER
-    toKIND KindInputUnion  = ''INPUT_UNION
+    toKIND KindInputUnion  = ''INPUT

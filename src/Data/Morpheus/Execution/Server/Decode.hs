@@ -39,7 +39,6 @@ import           Data.Morpheus.Execution.Internal.Decode
 import           Data.Morpheus.Kind             ( ENUM
                                                 , GQL_KIND
                                                 , INPUT_OBJECT
-                                                , INPUT_UNION
                                                 , SCALAR
                                                 , AUTO
                                                 , INPUT
@@ -94,10 +93,6 @@ instance (Generic a, DecodeRep (Rep a)) => DecodeKind AUTO a where
 -- INPUT_OBJECT
 instance DecodeObject a => DecodeKind INPUT_OBJECT a where
   decodeKind _ = withObject decodeObject
-
--- INPUT_UNION
-instance (Generic a, DecodeRep (Rep a)) => DecodeKind INPUT_UNION a where
-  decodeKind _ = fmap to . decodeRep . (, initCont)
 
 instance (Generic a, DecodeRep (Rep a)) => DecodeKind INPUT a where
   decodeKind _ = fmap to . decodeRep . (, initCont)
@@ -185,13 +180,14 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
     __decode (Object obj, cont) = withUnion handleUnion obj
      where
       handleUnion name unions object
-        | name == typeName cont <> "EnumObject" =  getEnumTag object >>= __decode .(,ctx) . Enum 
-        | [name] == l1 = L1 <$> decodeRep (Object object, ctx)
-        | [name] == r1 = R1 <$> decodeRep (Object object, ctx)
-        | otherwise = decideUnion (l1, decodeRep)
-                                  (r1, decodeRep)
-                                  name
-                                  (Object unions, ctx)
+        | name == typeName cont <> "EnumObject"
+        = getEnumTag object >>= __decode . (, ctx) . Enum
+        | [name] == l1
+        = L1 <$> decodeRep (Object object, ctx)
+        | [name] == r1
+        = R1 <$> decodeRep (Object object, ctx)
+        | otherwise
+        = decideUnion (l1, decodeRep) (r1, decodeRep) name (Object unions, ctx)
       l1  = tagName l1t
       r1  = tagName r1t
       l1t = tags (Proxy @a) (typeName cont)
