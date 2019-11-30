@@ -158,17 +158,20 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
 
 instance (DecodeRep f, DecodeRep g) => DecodeRep (f :*: g) where
   tags _ = []
-  -- __decodeObject gql = (:*:) <$> __decodeObject gql <*> __decodeObject gql
+  enums _ = []
+  decodeRep gql = (:*:) <$> decodeRep gql <*> decodeRep gql
 
 -- Recursive Decoding: (Selector (Rec1 ))
 instance (Selector s, GQLType a, Decode a) => DecodeRep (M1 S s (K1 i a)) where
   tags _ = [__typeName (Proxy @a)]
-  -- decodeUnion    = fmap (M1 . K1) . decode . Object
-  -- __decodeObject = fmap (M1 . K1) . decodeRec
-  --  where
-  --   fieldName = pack $ selName (undefined :: M1 S s f a)
-  --   decodeRec = withObject (decodeFieldWith decode fieldName)
+  enums _ = []
+ -- decodeRep    = fmap (M1 . K1) . decode . Object
+  decodeRep = fmap (M1 . K1) . decodeRec
+   where
+    fieldName = pack $ selName (undefined :: M1 S s f a)
+    decodeRec = withObject (decodeFieldWith decode fieldName)
 
 instance DecodeRep U1 where
   tags _ = []
+  enums = const []
   decodeRep _ = pure U1
