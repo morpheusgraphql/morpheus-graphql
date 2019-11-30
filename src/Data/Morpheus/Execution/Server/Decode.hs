@@ -35,8 +35,6 @@ import           Data.Morpheus.Execution.Internal.Decode
                                                 , withObject
                                                 , withUnion
                                                 )
-import           Data.Morpheus.Execution.Server.Generics.EnumRep
-                                                ( EnumRep(..) )
 import           Data.Morpheus.Kind             ( ENUM
                                                 , GQL_KIND
                                                 , INPUT_OBJECT
@@ -85,11 +83,10 @@ instance (GQLScalar a) => DecodeKind SCALAR a where
     Left  errorMessage -> internalTypeMismatch errorMessage value
 
 -- ENUM
-instance (Generic a, EnumRep (Rep a)) => DecodeKind ENUM a where
-  decodeKind _ = withEnum (fmap to . decodeEnum)
+instance (Generic a, DecodeRep (Rep a)) => DecodeKind ENUM a where
+  decodeKind _ = withEnum (fmap to . decodeRep . Enum)
 
 -- INPUT_UNION
--- TODO: FIXME
 instance (Generic a, DecodeRep (Rep a)) => DecodeKind AUTO a where
   decodeKind _ = fmap to . decodeRep
 
@@ -123,11 +120,8 @@ instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a w
 --   | Cronus 
 --     deriving (Generic, GQLType)
 
-
-
 -- object and union: { __typename: name , field: some field }   
 -- | EnumValue | 
-
 
 decideUnion
   :: [Name]
