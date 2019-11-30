@@ -66,9 +66,9 @@ type SetInt = Set Int
 type MapTextInt = Map Text Int
 
 data Animal
-  = CAT Cat
-  | DOG Dog
-  | BIRD Bird
+  = AnimalCat Cat
+  | AnimalDog Dog
+  | AnimalBird Bird
   deriving (Show, Generic)
 
 instance GQLType Animal where

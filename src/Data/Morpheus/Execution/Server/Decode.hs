@@ -59,7 +59,6 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Failure(..)
                                                 )
 
-
 -- | Decode GraphQL query arguments and input values
 class Decode a where
   decode :: Value -> Validation a
@@ -162,12 +161,13 @@ instance Semigroup Info where
 -- GENERICS
 --
 class DecodeRep f where
-  tags :: Proxy f -> Info
+  tags :: Proxy f -> Name -> Info
   decodeRep :: (Value,Cont) -> Validation (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   tags _ = tags (Proxy @f)
-  decodeRep = fmap M1 . decodeRep
+  decodeRep (x, y) = M1 <$> decodeRep
+    (x, y { typeName = pack $ datatypeName (undefined :: (M1 D d f a)) })
 
 instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)
@@ -184,24 +184,30 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
                                   (r1, decodeRep)
                                   name
                                   (Object unions, cont { isUnion = True })
-      l1 = tagName $ tags $ Proxy @a
-      r1 = tagName $ tags $ Proxy @b
+      l1 = tagName $ tags (Proxy @a) (typeName cont)
+      r1 = tagName $ tags (Proxy @b) (typeName cont)
     __decode (Enum name, cxt) = decideUnion
-      (tagName $ tags $ Proxy @a, decodeRep)
-      (tagName $ tags $ Proxy @b, decodeRep)
+      (tagName $ tags (Proxy @a) (typeName cxt), decodeRep)
+      (tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
       name
       (Enum name, cxt)
     __decode _ = internalError "lists and scalars are not allowed in Union"
 
 instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
   decodeRep = fmap M1 . decodeFields
-  tags _ = getTag (refType (Proxy @a))
+  tags _ baseName = getTag (refType (Proxy @a))
    where
     getTag (Just memberRef)
-      | conIsRecord unsafeType = Info { kind = D_UNION, tagName = [consName] }
-      | otherwise              = Info { kind = D_CONS, tagName = [memberRef] }
+      | not (conIsRecord unsafeType) && isNamespacedConstraint memberRef = Info
+        { kind    = D_UNION
+        , tagName = [memberRef]
+        }
+      | otherwise = Info { kind = D_CONS, tagName = [consName] }
     getTag Nothing = Info { kind = D_CONS, tagName = [consName] }
+    --------
     consName = pack $ conName unsafeType
+    ----------
+    isNamespacedConstraint x = baseName <> x == consName
     --------------------------
     unsafeType :: (M1 C c U1 x)
     unsafeType = undefined
