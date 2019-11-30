@@ -695,7 +695,7 @@
           "fields": null,
           "inputFields": [
             {
-              "name": "tag",
+              "name": "__typename",
               "description": null,
               "type": {
                 "kind": "NON_NULL",

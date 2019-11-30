@@ -585,8 +585,8 @@ createInputUnionFields :: Key -> [Key] -> [(Key, DataField)]
 createInputUnionFields name members = fieldTag : map unionField members
  where
   fieldTag =
-    ( "tag"
-    , DataField { fieldName     = "tag"
+    ( "__typename"
+    , DataField { fieldName     = "__typename"
                 , fieldArgs     = []
                 , fieldArgsType = Nothing
                 , fieldType     = createAlias (name <> "Tags")
