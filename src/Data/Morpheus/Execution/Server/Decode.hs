@@ -185,8 +185,7 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
     __decode (Object obj, cont) = withUnion handleUnion obj
      where
       handleUnion name unions object
-        | name == typeName cont <> "EnumObject" = getEnumTag object
-        >>= \x -> internalError ("checkout" <> x)
+        | name == typeName cont <> "EnumObject" =  getEnumTag object >>= __decode .(,ctx) . Enum 
         | [name] == l1 = L1 <$> decodeRep (Object object, ctx)
         | [name] == r1 = R1 <$> decodeRep (Object object, ctx)
         | otherwise = decideUnion (l1, decodeRep)
