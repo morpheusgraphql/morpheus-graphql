@@ -114,19 +114,23 @@ instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a w
 -- GENERICS
 --
 class DecodeRep f where
+  enums :: Proxy f -> [Key]
   tags :: Proxy f -> [Key]
   decodeRep :: Value -> Validation (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
+  enums _ = enums (Proxy @f)
   tags _ = tags (Proxy @f)
   decodeRep = fmap M1 . decodeRep
 
 instance (Constructor c, DecodeRep f) => DecodeRep (M1 C c f) where
+  enums _ = [pack $ conName (undefined :: (M1 C c U1 x))]
   tags _ = tags (Proxy @f)
   decodeRep = fmap M1 . decodeRep
 
 instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
-  tags _ = tags (Proxy @a) ++ tags (Proxy @b)
+  enums _ = enums (Proxy @a) <> enums (Proxy @b)
+  tags _ = tags (Proxy @a) <> tags (Proxy @b)
   decodeRep = __decode
    where
     __decode (Object object) = withUnion handleUnion object
