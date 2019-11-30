@@ -56,7 +56,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Value(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation )
+                                                ( Validation
+                                                , Failure(..)
+                                                )
 
 
 -- | Decode GraphQL query arguments and input values
@@ -88,8 +90,8 @@ instance (Generic a, EnumRep (Rep a)) => DecodeKind ENUM a where
 
 -- INPUT_UNION
 -- TODO: FIXME
-instance (Generic a, EnumRep (Rep a)) => DecodeKind AUTO a where
-  decodeKind _ = withEnum (fmap to . decodeEnum)
+instance (Generic a, DecodeRep (Rep a)) => DecodeKind AUTO a where
+  decodeKind _ = fmap to . decodeRep
 
 -- INPUT_OBJECT
 instance DecodeObject a => DecodeKind INPUT_OBJECT a where
@@ -127,6 +129,22 @@ instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a w
 -- | EnumValue | 
 
 
+decideUnion
+  :: [Name]
+  -> [Name]
+  -> Name
+  -> Validation (f1 a)
+  -> Validation (f2 a)
+  -> Validation ((:+:) f1 f2 a)
+decideUnion left right name v1 v2
+  | name `elem` left
+  = L1 <$> v1
+  | name `elem` right
+  = R1 <$> v2
+  | otherwise
+  = failure $ "Constructor \"" <> name <> "\" could not find in Union"
+
+
 --
 -- GENERICS
 --
@@ -151,13 +169,11 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   decodeRep = __decode
    where
     __decode (Object object) = withUnion handleUnion object
-    __decode (Enum name)
-      | inLeft name
-      = L1 <$> decodeRep (Enum name)
-      | inRight name
-      = R1 <$> decodeRep (Enum name)
-      | otherwise
-      = internalError $ "Constructor \"" <> name <> "\" could not find in Union"
+    __decode (Enum   name  ) = decideUnion (enums $ Proxy @a)
+                                           (enums $ Proxy @b)
+                                           name
+                                           (decodeRep (Enum name))
+                                           (decodeRep (Enum name))
     __decode _ = internalError "lists and scalars are not allowed in Union"
     -----------------------------------------------
     handleUnion name unions object

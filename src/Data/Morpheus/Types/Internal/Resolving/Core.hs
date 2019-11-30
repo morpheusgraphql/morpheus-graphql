@@ -84,6 +84,9 @@ instance Monad (Result e  cocnurency error)  where
 instance Failure [error] (Result ev error con) where
   failure = Failure
 
+instance Failure Text Validation where
+  failure message = Failure [GQLError { message, locations = [] }]
+
 unpackEvents :: Result event c e a -> [event]
 unpackEvents Success { events } = events
 unpackEvents _                  = []
