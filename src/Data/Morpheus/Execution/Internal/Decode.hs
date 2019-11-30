@@ -73,8 +73,7 @@ withEnum _      isType       = internalTypeMismatch "Enum" isType
 withUnion :: (Key -> Object -> Object -> Validation a) -> Object -> Validation a
 withUnion decoder unions = case lookup "__typename" unions of
   Just (Enum key) -> case lookup key unions of
-    Nothing -> failure
-      ("type \"" <> key <> "\" was not provided on object")
+    Nothing -> withObject (decoder key unions) (Object [])
     Just value -> withObject (decoder key unions) value
   Just _  -> failure ("__typename must be Enum" :: Message)
   Nothing -> failure ("__typename not found on Input Union" :: Message)
