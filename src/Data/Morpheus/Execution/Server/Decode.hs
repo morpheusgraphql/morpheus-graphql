@@ -173,6 +173,10 @@ instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   decodeRep (x, y) = M1 <$> decodeRep
     (x, y { typeName = pack $ datatypeName (undefined :: (M1 D d f a)) })
 
+getEnumTag :: Object -> Validation Name
+getEnumTag [("enum", Enum value)] = pure value
+getEnumTag _                      = internalError "bad union enum object"
+
 instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)
   decodeRep = __decode
@@ -181,6 +185,8 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
     __decode (Object obj, cont) = withUnion handleUnion obj
      where
       handleUnion name unions object
+        | name == typeName cont <> "EnumObject" = getEnumTag object
+        >>= \x -> internalError ("checkout" <> x)
         | [name] == l1 = L1 <$> decodeRep (Object object, ctx)
         | [name] == r1 = R1 <$> decodeRep (Object object, ctx)
         | otherwise = decideUnion (l1, decodeRep)
