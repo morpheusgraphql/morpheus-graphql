@@ -331,7 +331,7 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind INPUT a where
           (DataInputUnion . buildType typeMembers)
           (types <> unionTypes)
          where
-          typeMembers = map (,True) (unionRef <> unionMembers)
+          typeMembers = map (,True) (unionRef <> unionMembers) <> map (,False) enumCons
           --(enumMembers, enumTypes) = buildUnionEnum wrapObject baseName baseFingerprint enumCons
           (unionMembers,unionTypes) = buildUnions DataInputObject baseFingerprint unionRecordRep
         types = map fieldTypeUpdater $ concatMap consFields cons
