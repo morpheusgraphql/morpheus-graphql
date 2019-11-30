@@ -9,6 +9,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE TupleSections         #-}
 
 module Data.Morpheus.Execution.Server.Decode
   ( decodeArguments
@@ -83,11 +84,11 @@ instance (GQLScalar a) => DecodeKind SCALAR a where
 
 -- ENUM
 instance (Generic a, DecodeRep (Rep a)) => DecodeKind ENUM a where
-  decodeKind _ = withEnum (fmap to . decodeRep . Enum)
+  decodeKind _ = withEnum (fmap to . decodeRep . (, False) . Enum)
 
 -- INPUT_UNION
 instance (Generic a, DecodeRep (Rep a)) => DecodeKind AUTO a where
-  decodeKind _ = fmap to . decodeRep
+  decodeKind _ = fmap to . decodeRep . (, False)
 
 -- INPUT_OBJECT
 instance DecodeObject a => DecodeKind INPUT_OBJECT a where
@@ -95,7 +96,7 @@ instance DecodeObject a => DecodeKind INPUT_OBJECT a where
 
 -- INPUT_UNION
 instance (Generic a, DecodeRep (Rep a)) => DecodeKind INPUT_UNION a where
-  decodeKind _ = fmap to . decodeRep
+  decodeKind _ = fmap to . decodeRep . (, False)
 
 -- GENERIC
 decodeArguments :: DecodeObject p => Arguments -> Validation p
@@ -106,7 +107,7 @@ class DecodeObject a where
   decodeObject :: Object -> Validation a
 
 instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a where
-  decodeObject = fmap to . decodeRep . Object
+  decodeObject = fmap to . decodeRep . (, False) . Object
 
 -- data Inpuz  =
 --    InputHuman Human  -- direct link: { __typename: Human, field:"" }
@@ -142,15 +143,10 @@ decideUnion (left, f1) (right, f2) name value
 class DecodeRep f where
   enums :: Proxy f -> [Name]
   tags :: Proxy f -> [Name]
-  decodeRep :: Value -> Validation (f a)
+  decodeRep :: (Value,Bool) -> Validation (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   enums _ = enums (Proxy @f)
-  tags _ = tags (Proxy @f)
-  decodeRep = fmap M1 . decodeRep
-
-instance (Constructor c, DecodeRep f) => DecodeRep (M1 C c f) where
-  enums _ = [pack $ conName (undefined :: (M1 C c U1 x))]
   tags _ = tags (Proxy @f)
   decodeRep = fmap M1 . decodeRep
 
@@ -159,41 +155,45 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)
   decodeRep = __decode
    where
-    __decode (Object object) = withUnion handleUnion object
-    __decode (Enum   name  ) = decideUnion (enums $ Proxy @a, decodeRep)
-                                           (enums $ Proxy @b, decodeRep)
-                                           name
-                                           (Enum name)
-    __decode _ = internalError "lists and scalars are not allowed in Union"
-    -----------------------------------------------
-    handleUnion name unions object
-      | [name] == l1 = L1 <$> decodeRep (Object object)
-      | [name] == r1 = R1 <$> decodeRep (Object object)
-      | otherwise    = decideUnion
-        (l1, decodeRep)
-        (r1, decodeRep)
-        name
-        (Object unions)
+    __decode (Object obj, _) = withUnion handleUnion obj
      where
+      handleUnion name unions object
+        | [name] == l1 = L1 <$> decodeRep (Object object, True)
+        | [name] == r1 = R1 <$> decodeRep (Object object, True)
+        | otherwise = decideUnion (l1, decodeRep)
+                                  (r1, decodeRep)
+                                  name
+                                  (Object unions, True)
       l1 = tags $ Proxy @a
       r1 = tags $ Proxy @b
+    __decode (Enum name, cxt) = decideUnion (enums $ Proxy @a, decodeRep)
+                                            (enums $ Proxy @b, decodeRep)
+                                            name
+                                            (Enum name, cxt)
+    __decode _ = internalError "lists and scalars are not allowed in Union"
 
-instance (DecodeRep f, DecodeRep g) => DecodeRep (f :*: g) where
-  tags _ = []
-  enums _ = []
-  decodeRep gql = (:*:) <$> decodeRep gql <*> decodeRep gql
+instance (Constructor c, DecodeFields f) => DecodeRep (M1 C c f) where
+  enums _ = [pack $ conName (undefined :: (M1 C c U1 x))]
+  tags _ = fieldTags (Proxy @f)
+  decodeRep = fmap M1 . decodeFields
 
--- Recursive Decoding: (Selector (Rec1 ))
-instance (Selector s, GQLType a, Decode a) => DecodeRep (M1 S s (K1 i a)) where
-  tags _ = [__typeName (Proxy @a)]
-  enums _ = []
- -- decodeRep    = fmap (M1 . K1) . decode . Object
-  decodeRep = fmap (M1 . K1) . decodeRec
+class DecodeFields f where
+  fieldTags :: Proxy f -> [Name]
+  decodeFields :: (Value,Bool) -> Validation (f a)
+
+instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
+  fieldTags _ = []
+  decodeFields gql = (:*:) <$> decodeFields gql <*> decodeFields gql
+
+instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
+  fieldTags _ = [__typeName (Proxy @a)]
+  decodeFields (value, isUnion) | isUnion   = M1 . K1 <$> decode value
+                                | otherwise = __decode value
    where
+    __decode  = fmap (M1 . K1) . decodeRec
     fieldName = pack $ selName (undefined :: M1 S s f a)
     decodeRec = withObject (decodeFieldWith decode fieldName)
 
-instance DecodeRep U1 where
-  tags _ = []
-  enums = const []
-  decodeRep _ = pure U1
+instance DecodeFields U1 where
+  fieldTags _ = []
+  decodeFields _ = pure U1
