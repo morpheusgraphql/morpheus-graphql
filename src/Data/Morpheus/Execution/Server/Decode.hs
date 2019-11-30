@@ -142,12 +142,12 @@ decideUnion (left, f1) (right, f2) name value
   = failure $ "Constructor \"" <> name <> "\" could not find in Union"
 
 
-data Tag = D_CONS | D_UNION
+data Tag = D_CONS | D_UNION deriving (Eq ,Ord)
 
 initCont = Cont False ""
 
 data Cont = Cont {
-  isUnion:: Bool,
+  isUnionRef:: Bool,
   typeName :: Name
 }
 
@@ -177,19 +177,22 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)
   decodeRep = __decode
    where
+
     __decode (Object obj, cont) = withUnion handleUnion obj
      where
       handleUnion name unions object
-        | [name] == l1 =   L1
-        <$> decodeRep (Object object, cont { isUnion = True })
-        | [name] == r1 =   R1
-        <$> decodeRep (Object object, cont { isUnion = True })
+        | [name] == l1 = L1 <$> decodeRep (Object object, ctx)
+        | [name] == r1 = R1 <$> decodeRep (Object object, ctx)
         | otherwise = decideUnion (l1, decodeRep)
                                   (r1, decodeRep)
                                   name
-                                  (Object unions, cont { isUnion = True })
-      l1 = tagName $ tags (Proxy @a) (typeName cont)
-      r1 = tagName $ tags (Proxy @b) (typeName cont)
+                                  (Object unions, ctx)
+      l1            = tagName l1t
+      r1            = tagName r1t
+      l1t           = tags (Proxy @a) (typeName cont)
+      r1t           = tags (Proxy @b) (typeName cont)
+      ctx           = cont { isUnionRef = kind == D_UNION }
+      Info { kind } = r1t <> r1t
     __decode (Enum name, cxt) = decideUnion
       (tagName $ tags (Proxy @a) (typeName cxt), decodeRep)
       (tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
@@ -226,8 +229,9 @@ instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
 
 instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
   refType _ = Just $ __typeName (Proxy @a)
-  decodeFields (value, Cont { isUnion }) | isUnion   = M1 . K1 <$> decode value
-                                         | otherwise = __decode value
+  decodeFields (value, Cont { isUnionRef })
+    | isUnionRef = M1 . K1 <$> decode value
+    | otherwise  = __decode value
    where
     __decode  = fmap (M1 . K1) . decodeRec
     fieldName = pack $ selName (undefined :: M1 S s f a)
