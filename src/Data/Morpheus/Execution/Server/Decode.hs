@@ -97,7 +97,7 @@ instance DecodeObject a => DecodeKind INPUT_OBJECT a where
 
 -- INPUT_UNION
 instance (Generic a, DecodeRep (Rep a)) => DecodeKind INPUT_UNION a where
---  decodeKind _ = withObject (fmap to . decodeUnion)
+  decodeKind _ = fmap to . decodeRep
 
 -- GENERIC
 decodeArguments :: DecodeObject p => Arguments -> Validation p
@@ -108,7 +108,7 @@ class DecodeObject a where
   decodeObject :: Object -> Validation a
 
 instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a where
- -- decodeObject = fmap to . __decodeObject . Object
+  decodeObject = fmap to . decodeRep . Object
 
 --
 -- GENERICS
