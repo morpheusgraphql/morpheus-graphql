@@ -74,6 +74,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , createEnumValue
                                                 , TypeUpdater
                                                 , DataFingerprint
+                                                , DataUnion
+                                                , DataObject
                                                 )
 
 
@@ -328,47 +330,55 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind INPUT a where
 instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
   introspectKind _ = builder (typeRep $ Proxy @(Rep a)) (Proxy @a)
    where
-    builder [ConsRep { consFields }] = updateLib datatype types
+    builder [ConsRep { consFields }] = buildObject consFields
+    builder cons                     = buildUnionDT cons
+
+
+buildObject :: GQL_TYPE a => [FieldRep] -> Proxy a -> TypeUpdater
+buildObject consFields = updateLib datatype types
+ where
+  datatype = DataObject . buildType (introspection__typename : fields)
+  fields   = map fieldData consFields
+  types    = map fieldTypeUpdater consFields
+
+buildUnionDT :: forall a. GQL_TYPE a => [ConsRep] -> Proxy a -> TypeUpdater
+buildUnionDT cons = datatype (analyseRep baseName cons)
+ where
+  baseName        = __typeName (Proxy @a)
+  baseFingerprint = __typeFingerprint (Proxy @a)
+  datatype ResRep { unionRef = [], unionRecordRep = [], enumCons } =
+    updateLib (DataEnum . buildType (map createEnumValue enumCons)) types
+  datatype ResRep { unionRef, unionRecordRep, enumCons } = updateLib
+    (DataUnion . buildType typeMembers)
+    (types <> enumTypes <> unionRecordTypes)
+   where
+    typeMembers = unionRef <> enumMembers <> unionRecMembers
+      where unionRecMembers = map consName unionRecordRep
+    (enumMembers, enumTypes) = buildUnionEnum baseName baseFingerprint enumCons
+    ----------------------------------------------------
+    unionRecordTypes :: [TypeUpdater]
+    unionRecordTypes = map buildURecType unionRecordRep
      where
-      datatype = DataObject . buildType (introspection__typename : fields)
-      fields   = map fieldData consFields
-      types    = map fieldTypeUpdater consFields
-    builder cons = datatype (analyseRep baseTypeName cons)
-     where
-      baseTypeName    = __typeName (Proxy @a)
-      -------------------------------------------
-      baseFingerprint = __typeFingerprint (Proxy @a)
-      ---------------------------------------------
-      datatype ResRep { unionRef = [], unionRecordRep = [], enumCons } =
-        updateLib (DataEnum . buildType (map createEnumValue enumCons)) types
-      datatype ResRep { unionRef, unionRecordRep, enumCons } = updateLib
-        (DataUnion . buildType typeMembers)
-        (types <> enumTypes <> unionRecordTypes)
-       where
-        typeMembers = unionRef <> enumMembers <> unionRecMembers
-          where unionRecMembers = map consName unionRecordRep
-        (enumMembers, enumTypes) = buildUnionEnum baseTypeName baseFingerprint enumCons
-        ----------------------------------------------------
-        unionRecordTypes :: [TypeUpdater]
-        unionRecordTypes = map buildURecType unionRecordRep
-         where
-          buildURecType ConsRep { consName, consFields } = pure . defineType
-            ( consName
-            , DataObject DataTyCon { typeName        = consName
-                                   , typeFingerprint = baseFingerprint
-                                   , typeMeta        = Nothing
-                                   , typeData        = genFields consFields
-                                   }
-            )
-           where
-            genFields [FieldRep { fieldData = ("", fData) }] =
-              [("value", fData { fieldName = "value" })]
-            genFields fields = map uRecField fields
-             where
-              uRecField FieldRep { fieldData = (fName, fData) } =
-                (fName, fData)
-      --------------------
-      types = map fieldTypeUpdater $ concatMap consFields cons
+      buildURecType consRep = pure . defineType
+        ( consName consRep
+        , DataObject $ buildUnionRecord baseFingerprint consRep
+        )
+  types = map fieldTypeUpdater $ concatMap consFields cons
+
+
+buildUnionRecord :: DataFingerprint -> ConsRep -> DataObject
+buildUnionRecord typeFingerprint ConsRep { consName, consFields } = DataTyCon
+  { typeName        = consName
+  , typeFingerprint
+  , typeMeta        = Nothing
+  , typeData        = genFields consFields
+  }
+
+ where
+  genFields [FieldRep { fieldData = ("", fData) }] =
+    [("value", fData { fieldName = "value" })]
+  genFields fields = map uRecField fields
+  uRecField FieldRep { fieldData = (fName, fData) } = (fName, fData)
 
 
 buildUnionEnum :: Name -> DataFingerprint -> [Name] -> ([Name], [TypeUpdater])
