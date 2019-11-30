@@ -33,7 +33,7 @@ import           GHC.Generics                   ( Generic )
 -- MORPHEUS
 import           Data.Morpheus.Document         ( importGQLDocumentWithNamespace
                                                 )
-import           Data.Morpheus.Kind             ( INPUT_UNION
+import           Data.Morpheus.Kind             ( INPUT
                                                 , OBJECT
                                                 , SCALAR
                                                 )
@@ -72,7 +72,7 @@ data Animal
   deriving (Show, Generic)
 
 instance GQLType Animal where
-  type KIND Animal = INPUT_UNION
+  type KIND Animal = INPUT
 
 data Euro =
   Euro Int

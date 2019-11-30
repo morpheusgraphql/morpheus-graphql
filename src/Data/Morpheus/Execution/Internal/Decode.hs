@@ -23,8 +23,8 @@ import           Language.Haskell.TH            ( ExpQ
                                                 )
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal   ( internalArgumentError
-                                                , internalTypeMismatch
+import           Data.Morpheus.Error.Internal   ( 
+                                                internalTypeMismatch
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)

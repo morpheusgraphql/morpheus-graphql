@@ -102,6 +102,9 @@ instance IsObject INPUT_UNION where
 instance IsObject INPUT_OBJECT where
   isObject _ = False
 
+instance IsObject INPUT where
+  isObject _ = False
+
 instance IsObject WRAPPER where
   isObject _ = False
 

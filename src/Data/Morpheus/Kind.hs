@@ -17,6 +17,7 @@ module Data.Morpheus.Kind
   , VContext(..)
   , ResContext(..)
   , AUTO
+  , INPUT
   )
 where
 
@@ -30,6 +31,7 @@ data GQL_KIND
   | INPUT_OBJECT
   | UNION
   | INPUT_UNION
+  | INPUT
   | WRAPPER
   | AUTO
 
@@ -69,3 +71,5 @@ type INPUT_UNION = 'INPUT_UNION
 type WRAPPER = 'WRAPPER
 
 type AUTO = 'AUTO
+
+type INPUT = 'INPUT

@@ -47,6 +47,7 @@ import           Data.Morpheus.Kind             ( Context(..)
                                                 , SCALAR
                                                 , UNION
                                                 , AUTO
+                                                , INPUT
                                                 )
 import           Data.Morpheus.Types.Types      ( MapKind
                                                 , Pair
@@ -321,6 +322,9 @@ analyseRep baseName cons = ResRep
   (unionRecordRep, left2             ) = partition isUnionRecord left1
   (unionRefRep   , anyonimousUnionRep) = partition (isUnionRef baseName) left2
 
+
+instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind INPUT a where
+
 instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
   introspectKind _ = builder (typeRep $ Proxy @(Rep a)) (Proxy @a)
    where
@@ -341,22 +345,10 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
         (DataUnion . buildType typeMembers)
         (types <> enumTypes <> unionRecordTypes)
        where
-        typeMembers = unionRef <> enumMember <> unionRecMembers
-         where
-          unionRecMembers = map consName unionRecordRep
-          enumMember | null enumCons = []
-                     | otherwise     = [enumTypeWrapperName]
+        typeMembers = unionRef <> enumMembers <> unionRecMembers
+          where unionRecMembers = map consName unionRecordRep
+        (enumMembers, enumTypes) = buildUnionEnum baseTypeName baseFingerprint enumCons
         ----------------------------------------------------
-        enumTypeName        = baseTypeName <> "Enum"
-        enumTypeWrapperName = enumTypeName <> "Object"
-        enumTypes :: [TypeUpdater]
-        enumTypes
-          | null enumCons
-          = []
-          | otherwise
-          = [ buildEnumObject enumTypeWrapperName baseFingerprint enumTypeName
-            , buildEnum enumTypeName baseFingerprint enumCons
-            ]
         unionRecordTypes :: [TypeUpdater]
         unionRecordTypes = map buildURecType unionRecordRep
          where
@@ -378,6 +370,23 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
       --------------------
       types = map fieldTypeUpdater $ concatMap consFields cons
 
+
+buildUnionEnum :: Name -> DataFingerprint -> [Name] -> ([Name], [TypeUpdater])
+buildUnionEnum baseName baseFingerprint enums = (members, updates)
+ where
+  members | null enums = []
+          | otherwise  = [enumTypeWrapperName]
+  enumTypeName        = baseName <> "Enum"
+  enumTypeWrapperName = enumTypeName <> "Object"
+  -------------------------
+  updates :: [TypeUpdater]
+  updates
+    | null enums
+    = []
+    | otherwise
+    = [ buildEnumObject enumTypeWrapperName baseFingerprint enumTypeName
+      , buildEnum enumTypeName baseFingerprint enums
+      ]
 
 buildEnum :: Name -> DataFingerprint -> [Name] -> TypeUpdater
 buildEnum typeName typeFingerprint tags = pure . defineType
