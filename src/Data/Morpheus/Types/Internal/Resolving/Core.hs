@@ -1,11 +1,12 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE DeriveFunctor      #-}
-{-# LANGUAGE DeriveAnyClass     #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE DataKinds          #-}
-{-# LANGUAGE PolyKinds          #-}
-{-# LANGUAGE NamedFieldPuns     #-}
+{-# LANGUAGE DeriveFunctor         #-}
+{-# LANGUAGE DeriveAnyClass        #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Core
   ( GQLError(..)
@@ -85,7 +86,8 @@ instance Failure [error] (Result ev error con) where
   failure = Failure
 
 instance Failure Text Validation where
-  failure message = Failure [GQLError { message, locations = [] }]
+  failure text =
+    Failure [GQLError { message = "INTERNAL ERROR: " <> text, locations = [] }]
 
 unpackEvents :: Result event c e a -> [event]
 unpackEvents Success { events } = events

@@ -31,9 +31,11 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Key
                                                 , ConsD(..) 
                                                 , Object
-                                                , Value(..))
+                                                , Value(..)
+                                                , Message
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation )
+                                                ( Validation, Failure(..) )
 
 
 decodeObjectExpQ :: ExpQ -> ConsD -> ExpQ
@@ -71,13 +73,13 @@ withEnum _      isType       = internalTypeMismatch "Enum" isType
 withUnion :: (Key -> Object -> Object -> Validation a) -> Object -> Validation a
 withUnion decoder unions = case lookup "tag" unions of
   Just (Enum key) -> case lookup key unions of
-    Nothing -> internalArgumentError
+    Nothing -> failure
       ("type \"" <> key <> "\" was not provided on object")
     Just value -> withObject (decoder key unions) value
-  Just _  -> internalArgumentError "tag must be Enum"
-  Nothing -> internalArgumentError "tag not found on Input Union"
+  Just _  -> failure ("tag must be Enum" :: Message)
+  Nothing -> failure ("tag not found on Input Union" :: Message)
 
 decodeFieldWith :: (Value -> Validation a) -> Key -> Object -> Validation a
 decodeFieldWith decoder name object = case lookup name object of
-  Nothing    -> internalArgumentError ("Missing Field: \"" <> name <> "\"")
+  Nothing    -> failure ("Missing Field: \"" <> name <> "\"")
   Just value -> decoder value
