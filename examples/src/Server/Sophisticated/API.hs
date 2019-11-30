@@ -69,6 +69,7 @@ data Animal
   = AnimalCat Cat
   | AnimalDog Dog
   | AnimalBird Bird
+  | Giraffe  { giraffeName :: Text }
   deriving (Show, Generic)
 
 instance GQLType Animal where
