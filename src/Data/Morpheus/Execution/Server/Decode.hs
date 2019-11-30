@@ -156,6 +156,10 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
     inLeft  = (`elem` l1Tags)
     inRight = (`elem` r1Tags)
 
+instance (DecodeRep f, DecodeRep g) => DecodeRep (f :*: g) where
+  tags _ = []
+  -- __decodeObject gql = (:*:) <$> __decodeObject gql <*> __decodeObject gql
+
 -- Recursive Decoding: (Selector (Rec1 ))
 instance (Selector s, GQLType a, Decode a) => DecodeRep (M1 S s (K1 i a)) where
   tags _ = [__typeName (Proxy @a)]
@@ -165,12 +169,6 @@ instance (Selector s, GQLType a, Decode a) => DecodeRep (M1 S s (K1 i a)) where
   --   fieldName = pack $ selName (undefined :: M1 S s f a)
   --   decodeRec = withObject (decodeFieldWith decode fieldName)
 
-instance (DecodeRep f, DecodeRep g) => DecodeRep (f :*: g) where
-  tags _ = []
-  -- __decodeObject gql = (:*:) <$> __decodeObject gql <*> __decodeObject gql
-
 instance DecodeRep U1 where
   tags _ = []
   decodeRep _ = pure U1
---  __decodeObject _ = pure U1
---  decodeUnion _ = pure U1
