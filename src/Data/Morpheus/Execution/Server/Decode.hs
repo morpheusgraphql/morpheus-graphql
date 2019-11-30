@@ -49,7 +49,7 @@ import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..)
                                                 )
 import           Data.Morpheus.Types.GQLType    ( GQLType(KIND, __typeName) )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( Key
+                                                ( Name
                                                 , Argument(..)
                                                 , Arguments
                                                 , Object
@@ -131,8 +131,8 @@ instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a w
 -- GENERICS
 --
 class DecodeRep f where
-  enums :: Proxy f -> [Key]
-  tags :: Proxy f -> [Key]
+  enums :: Proxy f -> [Name]
+  tags :: Proxy f -> [Name]
   decodeRep :: Value -> Validation (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
