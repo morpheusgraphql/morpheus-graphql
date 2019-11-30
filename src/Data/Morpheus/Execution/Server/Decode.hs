@@ -95,7 +95,7 @@ instance DecodeObject a => DecodeKind INPUT_OBJECT a where
   decodeKind _ = withObject decodeObject
 
 -- INPUT_UNION
-instance (Generic a, GDecode (Rep a)) => DecodeKind INPUT_UNION a where
+instance (Generic a, DecodeRep (Rep a)) => DecodeKind INPUT_UNION a where
   decodeKind _ = withObject (fmap to . decodeUnion)
 
 -- GENERIC
@@ -106,45 +106,45 @@ decodeArguments = decodeObject . fmap toObject
 class DecodeObject a where
   decodeObject :: Object -> Validation a
 
-instance {-# OVERLAPPABLE #-} (Generic a, GDecode (Rep a)) => DecodeObject a where
+instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a where
   decodeObject = fmap to . __decodeObject . Object
 
 --
 -- GENERICS
 --
-class GDecode f where
-  unionTags :: Proxy f -> [Key]
+class DecodeRep f where
+  tags :: Proxy f -> [Key]
   decodeUnion :: Object -> Validation (f a)
   __decodeObject :: Value -> Validation (f a)
 
-instance GDecode U1 where
-  unionTags _ = []
+instance DecodeRep U1 where
+  tags _ = []
   __decodeObject _ = pure U1
   decodeUnion _ = pure U1
 
 -- Recursive Decoding: (Selector (Rec1 ))
-instance (Selector s, GQLType a, Decode a) => GDecode (M1 S s (K1 i a)) where
-  unionTags _ = [__typeName (Proxy @a)]
+instance (Selector s, GQLType a, Decode a) => DecodeRep (M1 S s (K1 i a)) where
+  tags _ = [__typeName (Proxy @a)]
   decodeUnion    = fmap (M1 . K1) . decode . Object
   __decodeObject = fmap (M1 . K1) . decodeRec
    where
     fieldName = pack $ selName (undefined :: M1 S s f a)
     decodeRec = withObject (decodeFieldWith decode fieldName)
 
-instance (Datatype c, GDecode f) => GDecode (M1 D c f) where
+instance (Datatype c, DecodeRep f) => DecodeRep (M1 D c f) where
   decodeUnion = fmap M1 . decodeUnion
-  unionTags _ = unionTags (Proxy @f)
+  tags _ = tags (Proxy @f)
   __decodeObject = fmap M1 . __decodeObject
 
-instance (Constructor c, GDecode f) => GDecode (M1 C c f) where
+instance (Constructor c, DecodeRep f) => DecodeRep (M1 C c f) where
   decodeUnion = fmap M1 . decodeUnion
-  unionTags _ = unionTags (Proxy @f)
+  tags _ = tags (Proxy @f)
   __decodeObject = fmap M1 . __decodeObject
 
-instance (GDecode f, GDecode g) => GDecode (f :*: g) where
+instance (DecodeRep f, DecodeRep g) => DecodeRep (f :*: g) where
   __decodeObject gql = (:*:) <$> __decodeObject gql <*> __decodeObject gql
 
-instance (GDecode a, GDecode b) => GDecode (a :+: b) where
+instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   decodeUnion = withUnion handleUnion
    where
     handleUnion name unions object
@@ -155,6 +155,6 @@ instance (GDecode a, GDecode b) => GDecode (a :+: b) where
       | otherwise = internalArgumentError
         ("type \"" <> name <> "\" could not find in union")
      where
-      l1Tags = unionTags $ Proxy @a
-      r1Tags = unionTags $ Proxy @b
-  unionTags _ = unionTags (Proxy @a) ++ unionTags (Proxy @b)
+      l1Tags = tags $ Proxy @a
+      r1Tags = tags $ Proxy @b
+  tags _ = tags (Proxy @a) ++ tags (Proxy @b)
