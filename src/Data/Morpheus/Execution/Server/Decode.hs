@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -84,11 +85,11 @@ instance (GQLScalar a) => DecodeKind SCALAR a where
 
 -- ENUM
 instance (Generic a, DecodeRep (Rep a)) => DecodeKind ENUM a where
-  decodeKind _ = withEnum (fmap to . decodeRep . (, False) . Enum)
+  decodeKind _ = withEnum (fmap to . decodeRep . (, initCont) . Enum)
 
 -- INPUT_UNION
 instance (Generic a, DecodeRep (Rep a)) => DecodeKind AUTO a where
-  decodeKind _ = fmap to . decodeRep . (, False)
+  decodeKind _ = fmap to . decodeRep . (, initCont)
 
 -- INPUT_OBJECT
 instance DecodeObject a => DecodeKind INPUT_OBJECT a where
@@ -96,7 +97,7 @@ instance DecodeObject a => DecodeKind INPUT_OBJECT a where
 
 -- INPUT_UNION
 instance (Generic a, DecodeRep (Rep a)) => DecodeKind INPUT_UNION a where
-  decodeKind _ = fmap to . decodeRep . (, False)
+  decodeKind _ = fmap to . decodeRep . (, initCont)
 
 -- GENERIC
 decodeArguments :: DecodeObject p => Arguments -> Validation p
@@ -107,7 +108,7 @@ class DecodeObject a where
   decodeObject :: Object -> Validation a
 
 instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a where
-  decodeObject = fmap to . decodeRep . (, False) . Object
+  decodeObject = fmap to . decodeRep . (, initCont) . Object
 
 -- data Inpuz  =
 --    InputHuman Human  -- direct link: { __typename: Human, field:"" }
@@ -140,6 +141,13 @@ decideUnion (left, f1) (right, f2) name value
 
 data Tag = D_CONS | D_UNION
 
+initCont = Cont False ""
+
+data Cont = Cont {
+  isUnion:: Bool,
+  typeName :: Name
+}
+
 data Info = Info {
   kind :: Tag,
   tagName :: [Name]
@@ -155,7 +163,7 @@ instance Semigroup Info where
 --
 class DecodeRep f where
   tags :: Proxy f -> Info
-  decodeRep :: (Value,Bool) -> Validation (f a)
+  decodeRep :: (Value,Cont) -> Validation (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   tags _ = tags (Proxy @f)
@@ -165,15 +173,17 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)
   decodeRep = __decode
    where
-    __decode (Object obj, _) = withUnion handleUnion obj
+    __decode (Object obj, cont) = withUnion handleUnion obj
      where
       handleUnion name unions object
-        | [name] == l1 = L1 <$> decodeRep (Object object, True)
-        | [name] == r1 = R1 <$> decodeRep (Object object, True)
+        | [name] == l1 =   L1
+        <$> decodeRep (Object object, cont { isUnion = True })
+        | [name] == r1 =   R1
+        <$> decodeRep (Object object, cont { isUnion = True })
         | otherwise = decideUnion (l1, decodeRep)
                                   (r1, decodeRep)
                                   name
-                                  (Object unions, True)
+                                  (Object unions, cont { isUnion = True })
       l1 = tagName $ tags $ Proxy @a
       r1 = tagName $ tags $ Proxy @b
     __decode (Enum name, cxt) = decideUnion
@@ -198,7 +208,7 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
 
 class DecodeFields f where
   refType :: Proxy f -> Maybe Name
-  decodeFields :: (Value,Bool) -> Validation (f a)
+  decodeFields :: (Value,Cont) -> Validation (f a)
 
 instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
   refType _ = Nothing
@@ -206,8 +216,8 @@ instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
 
 instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
   refType _ = Just $ __typeName (Proxy @a)
-  decodeFields (value, isUnion) | isUnion   = M1 . K1 <$> decode value
-                                | otherwise = __decode value
+  decodeFields (value, Cont { isUnion }) | isUnion   = M1 . K1 <$> decode value
+                                         | otherwise = __decode value
    where
     __decode  = fmap (M1 . K1) . decodeRec
     fieldName = pack $ selName (undefined :: M1 S s f a)
