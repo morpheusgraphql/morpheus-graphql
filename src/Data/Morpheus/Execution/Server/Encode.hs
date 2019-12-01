@@ -37,7 +37,7 @@ import           GHC.Generics
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal   ( internalResolvingError )
 import           Data.Morpheus.Execution.Server.Decode
-                                                ( DecodeObject
+                                                ( DecodeType
                                                 , decodeArguments
                                                 )
 import           Data.Morpheus.Execution.Server.Generics.EnumRep
@@ -114,7 +114,7 @@ instance (Monad m, Encode a o e m, LiftEither o ResolvingStrategy) => Encode [a]
   encode list query = gqlList <$> traverse (`encode` query) list
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (DecodeObject a, Monad m,LiftEither fo Resolver, MapStrategy fo o, Encode b fo e m) => Encode (a -> Resolver fo e m b) o e m where
+instance (DecodeType a,Generic a, Monad m,LiftEither fo Resolver, MapStrategy fo o, Encode b fo e m) => Encode (a -> Resolver fo e m b) o e m where
   encode resolver selection@(_, Selection { selectionArguments }) =
     mapStrategy $ resolving encode (toResolver args resolver) selection
    where
@@ -285,7 +285,8 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
           [ ("enum", const $ pure $ gqlString resCons)
           , __typenameResolverBy enumObjectTypeName
           ]
-      encodeUnion [] _ = failure $ internalResolvingError "expected enum value Error"
+      encodeUnion [] _ =
+        failure $ internalResolvingError "expected enum value Error"
       -- RECORD ----------------------------------------------------------------------------
       encodeUnion fields (_, Selection { selectionRec = UnionSelection selections })
         | isResRecord
@@ -304,7 +305,8 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind AUTO
         = resolveObject selection resolvers
        where
         selection = fromMaybe [] $ lookup resCons selections
-        resolvers = __typenameResolverBy resCons : map toObjRes (setFieldNames fields)
+        resolvers =
+          __typenameResolverBy resCons : map toObjRes (setFieldNames fields)
       ------------------------------------------------------------------------------  
       encodeUnion _ _ = failure $ internalResolvingError
         "union Resolver should only recieve UnionSelection"
@@ -337,11 +339,11 @@ data ResField o e m = ResField {
 
 -- setFieldNames ::  Power Int Text -> Power { _1 :: Int, _2 :: Text }
 setFieldNames :: [ResField o e m] -> [ResField o e m]
-setFieldNames = zipWith setFieldName ([0 ..] :: [Int]) 
-   where
-    setFieldName i field = field { resFieldName }
-      where resFieldName = "_" <> pack (show i)
-  
+setFieldNames = zipWith setFieldName ([0 ..] :: [Int])
+ where
+  setFieldName i field = field { resFieldName }
+    where resFieldName = "_" <> pack (show i)
+
 
 class TypeRep f o e (m :: * -> *) where
           typeResolvers :: ResContext AUTO o e m value -> f a -> TypeRes o e m

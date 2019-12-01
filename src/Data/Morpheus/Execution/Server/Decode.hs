@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -15,7 +15,7 @@
 module Data.Morpheus.Execution.Server.Decode
   ( decodeArguments
   , Decode(..)
-  , DecodeRep(..)
+  , DecodeType(..)
   )
 where
 
@@ -58,6 +58,13 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Failure(..)
                                                 )
 
+
+-- GENERIC
+decodeArguments :: DecodeType a => Arguments -> Validation a
+decodeArguments = decodeType . Object . map toObject
+  where toObject (x, y) = (x, argumentValue y)
+
+
 -- | Decode GraphQL query arguments and input values
 class Decode a where
   decode :: Value -> Validation a
@@ -82,27 +89,26 @@ instance (GQLScalar a) => DecodeKind SCALAR a where
     Left  errorMessage -> internalTypeMismatch errorMessage value
 
 -- ENUM
-instance (Generic a, DecodeRep (Rep a)) => DecodeKind ENUM a where
+instance DecodeType a => DecodeKind ENUM a where
   decodeKind _ = decodeType
 
 -- INPUT_UNION
-instance (Generic a, DecodeRep (Rep a)) => DecodeKind AUTO a where
+instance DecodeType a => DecodeKind AUTO a where
   decodeKind _ = decodeType
 
 -- INPUT_OBJECT
-instance (Generic a, DecodeRep (Rep a)) => DecodeKind INPUT_OBJECT a where
+instance DecodeType a => DecodeKind INPUT_OBJECT a where
   decodeKind _ = decodeType
 
-instance (Generic a, DecodeRep (Rep a)) => DecodeKind INPUT a where
+instance DecodeType a => DecodeKind INPUT a where
   decodeKind _ = decodeType
 
--- GENERIC
-decodeArguments :: (Generic a, DecodeRep (Rep a)) => Arguments -> Validation a
-decodeArguments = decodeType . Object . map toObject
-  where toObject (x, y) = (x, argumentValue y)
 
-decodeType :: (Generic a, DecodeRep (Rep a)) => Value -> Validation a
-decodeType = fmap to . decodeRep . (, initCont)
+class DecodeType a where
+  decodeType :: Value -> Validation a
+
+instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a))=> DecodeType a where
+  decodeType = fmap to . decodeRep . (, Cont D_CONS "")
 
 -- data Inpuz  =
 --    InputHuman Human  -- direct link: { __typename: Human, Human: {field: ""} }
@@ -110,9 +116,6 @@ decodeType = fmap to . decodeRep . (, initCont)
 --   | IndexedType Int Text  -- { __typename: InputRecord, _0:2 , _1:""  }
 --   | Zeus                 -- { __typename: Zeus }
 --     deriving (Generic, GQLType)
-
--- object and union: { __typename: name , field: some field }   
--- | EnumValue | 
 
 decideUnion
   :: ([Name], value -> Validation (f1 a))
@@ -128,10 +131,7 @@ decideUnion (left, f1) (right, f2) name value
   | otherwise
   = failure $ "Constructor \"" <> name <> "\" could not find in Union"
 
-
 data Tag = D_CONS | D_UNION deriving (Eq ,Ord)
-
-initCont = Cont D_CONS ""
 
 data Cont = Cont {
   contKind:: Tag,
