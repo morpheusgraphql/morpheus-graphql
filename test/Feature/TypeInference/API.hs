@@ -76,17 +76,17 @@ newtype MonsterArgs = MonsterArgs {
 data Query (m :: * -> *) = Query
   { deity :: Deity,
     character :: [Character],
-    printMonster :: MonsterArgs -> m Text
+    showMonster :: MonsterArgs -> m Text
   } deriving (Generic, GQLType)
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver = GQLRootResolver
-  { queryResolver        = Query { deity = deityRes, character, printMonster }
+  { queryResolver        = Query { deity = deityRes, character, showMonster }
   , mutationResolver     = Undefined
   , subscriptionResolver = Undefined
   }
  where
-  printMonster MonsterArgs { monster } = pure (pack $ show monster)
+  showMonster MonsterArgs { monster } = pure (pack $ show monster)
   character :: [Character]
   character =
     [ CharacterDeity deityRes

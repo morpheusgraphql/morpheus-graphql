@@ -1,0 +1,9 @@
+{
+  object: showMonster(
+    monster: { __typename: Hydra, Hydra: { name: "someName", age: 12 } }
+  )
+  record: showMonster(
+    monster: { __typename: Cerberus, Cerberus: { name: "someName" } }
+  )
+  enum: showMonster(monster: { __typename: UnidentifiedMonster })
+}

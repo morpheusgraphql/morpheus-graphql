@@ -42,5 +42,9 @@
   {
     "path": "resolving/complexUnion",
     "description": "resolve regular object"
+  },
+  {
+    "path": "resolving/input",
+    "description": "resolve input"
   }
 ]
