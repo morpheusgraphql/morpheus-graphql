@@ -2,6 +2,7 @@
 
 ### Added
 
+- added kind: INPUT , OUTPUT
 - Automatic Type Inference (only for Object, Union and Enum)
 
 ```hs
@@ -125,6 +126,10 @@ rules:
       ...
     }
     ```
+
+### Removed
+
+- removed kind: INPUT_UNION
 
 ## [0.7.1] - 26.11.2019
 
