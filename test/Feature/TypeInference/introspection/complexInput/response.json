@@ -1,0 +1,37 @@
+{
+  "data": {
+    "__type": {
+      "kind": "INPUT_OBJECT",
+      "name": "Monster",
+      "fields": null,
+      "inputFields": [
+        {
+          "name": "__typename",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": { "kind": "ENUM", "name": "MonsterTags", "ofType": null }
+          },
+          "defaultValue": null
+        },
+        {
+          "name": "Hydra",
+          "type": { "kind": "INPUT_OBJECT", "name": "Hydra", "ofType": null },
+          "defaultValue": null
+        },
+        {
+          "name": "Cerberus",
+          "type": {
+            "kind": "INPUT_OBJECT",
+            "name": "Cerberus",
+            "ofType": null
+          },
+          "defaultValue": null
+        }
+      ],
+      "interfaces": null,
+      "enumValues": null,
+      "possibleTypes": null
+    }
+  }
+}

@@ -32,6 +32,10 @@
     "description": "introspect input object"
   },
   {
+    "path": "introspection/complexInput",
+    "description": "introspect complex input"
+  },
+  {
     "path": "resolving/object",
     "description": "resolve regular object"
   },

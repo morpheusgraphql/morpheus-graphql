@@ -44,7 +44,7 @@ instance GQLType Hydra where
   type KIND Hydra = INPUT
 
 data Monster =
-    AnimalHydra Hydra
+    MonsterHydra Hydra
   | Cerberus { name :: Text }
   | UnidentifiedMonster
   deriving (Show, Generic)
