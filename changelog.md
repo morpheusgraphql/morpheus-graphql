@@ -4,6 +4,8 @@
 
 - added kind: INPUT , OUTPUT
 - Automatic Type Inference (only for Object, Union and Enum)
+- More general stateful resolvers which accept instances of MonadIO (Authored by Sebastian Pulido [sebashack])
+- Utility to create web-socket applications with custom MonadIO instances (Authored by Sebastian Pulido [sebashack])
 
 ```hs
 
