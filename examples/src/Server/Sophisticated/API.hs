@@ -33,7 +33,7 @@ import           GHC.Generics                   ( Generic )
 -- MORPHEUS
 import           Data.Morpheus.Document         ( importGQLDocumentWithNamespace
                                                 )
-import           Data.Morpheus.Kind             ( INPUT_UNION
+import           Data.Morpheus.Kind             ( INPUT
                                                 , OBJECT
                                                 , SCALAR
                                                 )
@@ -66,13 +66,15 @@ type SetInt = Set Int
 type MapTextInt = Map Text Int
 
 data Animal
-  = CAT Cat
-  | DOG Dog
-  | BIRD Bird
+  = AnimalCat Cat
+  | AnimalDog Dog
+  | AnimalBird Bird
+  | Giraffe  { giraffeName :: Text }
+  | UnidentifiedSpecie
   deriving (Show, Generic)
 
 instance GQLType Animal where
-  type KIND Animal = INPUT_UNION
+  type KIND Animal = INPUT
 
 data Euro =
   Euro Int

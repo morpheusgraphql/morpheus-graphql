@@ -28,11 +28,23 @@
     "description": "all types without record syntax(indexed types), will be converted to gql object with fields _0,_1...."
   },
   {
+    "path": "introspection/inputObject",
+    "description": "introspect input object"
+  },
+  {
+    "path": "introspection/complexInput",
+    "description": "introspect complex input"
+  },
+  {
     "path": "resolving/object",
     "description": "resolve regular object"
   },
   {
     "path": "resolving/complexUnion",
     "description": "resolve regular object"
+  },
+  {
+    "path": "resolving/input",
+    "description": "resolve input"
   }
 ]

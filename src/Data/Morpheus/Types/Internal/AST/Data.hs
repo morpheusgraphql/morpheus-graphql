@@ -90,6 +90,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , ClientQuery(..)
   , GQLTypeD(..)
   , ClientType(..)
+  , DataInputUnion
   )
 where
 
@@ -249,6 +250,8 @@ type DataObject = DataTyCon [(Key, DataField)]
 type DataArgument = DataField
 
 type DataUnion = DataTyCon [Key]
+type DataInputUnion = DataTyCon [(Key,Bool)]
+
 
 type DataArguments = [(Key, DataArgument)]
 
@@ -384,7 +387,7 @@ data DataType
   | DataInputObject DataObject
   | DataObject DataObject
   | DataUnion DataUnion
-  | DataInputUnion DataUnion
+  | DataInputUnion (DataTyCon [(Key,Bool)])
   deriving (Show)
 
 createType :: Key -> a -> DataTyCon a
@@ -539,7 +542,7 @@ defineType (key, datatype@(DataInputUnion DataTyCon { typeName, typeData = enumK
   unionTags = DataEnum DataTyCon { typeName        = name
                                  , typeFingerprint
                                  , typeMeta        = Nothing
-                                 , typeData = map createEnumValue enumKeys
+                                 , typeData = map (createEnumValue . fst) enumKeys
                                  }
 defineType (key, datatype) lib =
   lib { types = insert key datatype (types lib) }
@@ -585,8 +588,8 @@ createInputUnionFields :: Key -> [Key] -> [(Key, DataField)]
 createInputUnionFields name members = fieldTag : map unionField members
  where
   fieldTag =
-    ( "tag"
-    , DataField { fieldName     = "tag"
+    ( "__typename"
+    , DataField { fieldName     = "__typename"
                 , fieldArgs     = []
                 , fieldArgsType = Nothing
                 , fieldType     = createAlias (name <> "Tags")

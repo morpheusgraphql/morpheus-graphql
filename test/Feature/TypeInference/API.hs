@@ -1,9 +1,10 @@
-{-# LANGUAGE DeriveAnyClass    #-}
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE TypeOperators     #-}
-{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE DeriveAnyClass         #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
 
 module Feature.TypeInference.API
   ( api
@@ -11,13 +12,16 @@ module Feature.TypeInference.API
 where
 
 import           Data.Morpheus                  ( interpreter )
+import           Data.Morpheus.Kind             ( INPUT )
 import           Data.Morpheus.Types            ( GQLRequest
                                                 , GQLResponse
                                                 , GQLRootResolver(..)
                                                 , GQLType(..)
                                                 , Undefined(..)
                                                 )
-import           Data.Text                      ( Text )
+import           Data.Text                      ( Text
+                                                , pack
+                                                )
 import           GHC.Generics                   ( Generic )
 
 data Power = Thunderbolts | Shapeshift | Hurricanes
@@ -31,6 +35,22 @@ data Deity = Deity {
 deityRes :: Deity
 deityRes = Deity { name = "Morpheus", power = Shapeshift }
 
+data Hydra = Hydra {
+  name :: Text,
+  age :: Int
+} deriving (Show,Generic)
+
+instance GQLType Hydra where
+  type KIND Hydra = INPUT
+
+data Monster =
+    MonsterHydra Hydra
+  | Cerberus { name :: Text }
+  | UnidentifiedMonster
+  deriving (Show, Generic)
+
+instance GQLType Monster where
+  type KIND Monster = INPUT
 
 data Character  =
   CharacterDeity Deity -- Only <tycon name><type ref name> should generate direct link
@@ -47,18 +67,26 @@ data Character  =
   | Zeus
   | Cronus deriving (Generic, GQLType)
 
+
+
+newtype MonsterArgs = MonsterArgs {
+  monster :: Monster
+} deriving (Generic)
+
 data Query (m :: * -> *) = Query
   { deity :: Deity,
-    character :: [Character]
+    character :: [Character],
+    showMonster :: MonsterArgs -> m Text
   } deriving (Generic, GQLType)
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver = GQLRootResolver
-  { queryResolver        = Query { deity = deityRes, character }
+  { queryResolver        = Query { deity = deityRes, character, showMonster }
   , mutationResolver     = Undefined
   , subscriptionResolver = Undefined
   }
  where
+  showMonster MonsterArgs { monster } = pure (pack $ show monster)
   character :: [Character]
   character =
     [ CharacterDeity deityRes

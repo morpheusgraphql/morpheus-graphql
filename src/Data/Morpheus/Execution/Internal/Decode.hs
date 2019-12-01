@@ -23,17 +23,19 @@ import           Language.Haskell.TH            ( ExpQ
                                                 )
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal   ( internalArgumentError
-                                                , internalTypeMismatch
+import           Data.Morpheus.Error.Internal   ( 
+                                                internalTypeMismatch
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , Key
                                                 , ConsD(..) 
                                                 , Object
-                                                , Value(..))
+                                                , Value(..)
+                                                , Message
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation )
+                                                ( Validation, Failure(..) )
 
 
 decodeObjectExpQ :: ExpQ -> ConsD -> ExpQ
@@ -69,15 +71,14 @@ withEnum decode (Enum value) = decode value
 withEnum _      isType       = internalTypeMismatch "Enum" isType
 
 withUnion :: (Key -> Object -> Object -> Validation a) -> Object -> Validation a
-withUnion decoder unions = case lookup "tag" unions of
+withUnion decoder unions = case lookup "__typename" unions of
   Just (Enum key) -> case lookup key unions of
-    Nothing -> internalArgumentError
-      ("type \"" <> key <> "\" was not provided on object")
+    Nothing -> withObject (decoder key unions) (Object [])
     Just value -> withObject (decoder key unions) value
-  Just _  -> internalArgumentError "tag must be Enum"
-  Nothing -> internalArgumentError "tag not found on Input Union"
+  Just _  -> failure ("__typename must be Enum" :: Message)
+  Nothing -> failure ("__typename not found on Input Union" :: Message)
 
 decodeFieldWith :: (Value -> Validation a) -> Key -> Object -> Validation a
 decodeFieldWith decoder name object = case lookup name object of
-  Nothing    -> internalArgumentError ("Missing Field: \"" <> name <> "\"")
+  Nothing    -> failure ("Missing Field: \"" <> name <> "\"")
   Just value -> decoder value

@@ -34,7 +34,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isDefaultTypeName
                                                 , toGQLWrapper
                                                 , DataEnumValue(..)
-                                                , convertToJSONName )
+                                                , convertToJSONName
+                                                )
 
 
 renderGraphQLDocument :: DataTypeLib -> ByteString
@@ -84,7 +85,7 @@ instance RenderGQL (Key, DataType) where
     "input " <> name <> render typeData
   render (name, DataInputUnion DataTyCon { typeData }) =
     "input " <> name <> render fields
-    where fields = createInputUnionFields name typeData
+    where fields = createInputUnionFields name (map fst typeData)
   render (name, DataObject DataTyCon { typeData }) =
     "type " <> name <> render typeData
 

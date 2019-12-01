@@ -11,12 +11,12 @@ module Data.Morpheus.Kind
   , WRAPPER
   , UNION
   , INPUT_OBJECT
-  , INPUT_UNION
   , GQL_KIND
   , Context(..)
   , VContext(..)
   , ResContext(..)
-  , AUTO
+  , OUTPUT
+  , INPUT
   )
 where
 
@@ -29,9 +29,9 @@ data GQL_KIND
   | ENUM
   | INPUT_OBJECT
   | UNION
-  | INPUT_UNION
+  | INPUT
   | WRAPPER
-  | AUTO
+  | OUTPUT
 
 
 data ResContext (kind :: GQL_KIND) (operation:: OperationType) event (m :: * -> * )  value = ResContext
@@ -62,10 +62,9 @@ type INPUT_OBJECT = 'INPUT_OBJECT
 -- | GraphQL Union
 type UNION = 'UNION
 
--- | extension for graphQL
-type INPUT_UNION = 'INPUT_UNION
-
 -- | GraphQL Arrays , Resolvers and NonNull fields
 type WRAPPER = 'WRAPPER
 
-type AUTO = 'AUTO
+type OUTPUT = 'OUTPUT
+
+type INPUT = 'INPUT

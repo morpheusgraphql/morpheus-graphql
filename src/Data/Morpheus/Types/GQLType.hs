@@ -84,33 +84,33 @@ ignoreResolver (con, args) =
 class IsObject (a :: GQL_KIND) where
   isObject :: Proxy a -> Bool
 
-instance IsObject OBJECT where
-  isObject _ = False
-
 instance IsObject SCALAR where
   isObject _ = False
 
 instance IsObject ENUM where
   isObject _ = False
 
-instance IsObject UNION where
-  isObject _ = True
-
-instance IsObject INPUT_UNION where
-  isObject _ = False
-
-instance IsObject INPUT_OBJECT where
-  isObject _ = False
-
 instance IsObject WRAPPER where
   isObject _ = False
 
-instance IsObject AUTO where
+instance IsObject OBJECT where
+  isObject _ = True
+
+instance IsObject UNION where
+  isObject _ = True
+
+instance IsObject INPUT_OBJECT where
+  isObject _ = True
+
+instance IsObject INPUT where
+  isObject _ = True
+
+instance IsObject OUTPUT where
   isObject _ = True
 
 class IsObject (KIND a) => GQLType a where
   type KIND a :: GQL_KIND
-  type KIND a = AUTO
+  type KIND a = OUTPUT
   type CUSTOM a :: Bool
   type CUSTOM a = FALSE
   description :: Proxy a -> Maybe Text

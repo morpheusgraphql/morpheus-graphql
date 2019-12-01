@@ -35,8 +35,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , toGQLWrapper
                                                 , DataEnumValue(..)
                                                 , lookupDeprecated
+                                                , DataInputUnion
                                                 , lookupDeprecatedReason
-                                                , convertToJSONName )
+                                                , convertToJSONName
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
 
@@ -135,10 +137,11 @@ createInputObjectType field@DataField { fieldType = TypeAlias { aliasTyCon } } l
 
 
 renderInputUnion
-  :: (Monad m, Failure Text m) => (Text, DataUnion) -> Result m (S__Type m)
+  :: (Monad m, Failure Text m) => (Text, DataInputUnion) -> Result m (S__Type m)
 renderInputUnion (key, DataTyCon { typeData, typeMeta }) lib =
-  createInputObject key typeMeta
-    <$> traverse createField (createInputUnionFields key typeData)
+  createInputObject key typeMeta <$> traverse
+    createField
+    (createInputUnionFields key $ map fst $ filter snd typeData)
  where
   createField (name, field) =
     createInputValueWith name Nothing <$> createInputObjectType field lib
