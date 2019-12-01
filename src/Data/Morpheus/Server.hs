@@ -7,7 +7,7 @@
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
   ( gqlSocketApp
-  , gqlSocketApp'
+  , gqlSocketMonadIOApp
   , initGQLState
   , GQLState
   )
@@ -79,13 +79,13 @@ handleSubscription GQLClient { clientConnection, clientID } state sessionId stre
   execute (Subscribe sub) = addClientSubscription clientID sub sessionId state
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
-gqlSocketApp'
+gqlSocketMonadIOApp
   :: (RootResCon m e que mut sub, MonadIO m)
   => GQLRootResolver m e que mut sub
   -> GQLState m e
   -> (m () -> IO ())
   -> ServerApp
-gqlSocketApp' gqlRoot state f pending = do
+gqlSocketMonadIOApp gqlRoot state f pending = do
   connection <- acceptRequestWith pending
     $ acceptApolloSubProtocol (pendingRequest pending)
   forkPingThread connection 30
@@ -104,9 +104,10 @@ gqlSocketApp' gqlRoot state f pending = do
       resolveMessage (RemoveSub sessionId) =
         removeClientSubscription (clientID client) sessionId state
 
+-- | Same as above but specific to IO
 gqlSocketApp
   :: (RootResCon IO e que mut sub)
   => GQLRootResolver IO e que mut sub
   -> GQLState IO e
   -> ServerApp
-gqlSocketApp gqlRoot state pending = gqlSocketApp' gqlRoot state id pending
+gqlSocketApp gqlRoot state pending = gqlSocketMonadIOApp gqlRoot state id pending
