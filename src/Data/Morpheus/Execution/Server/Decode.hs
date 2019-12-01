@@ -20,7 +20,7 @@ module Data.Morpheus.Execution.Server.Decode
 where
 
 import           Data.Proxy                     ( Proxy(..) )
-import           Data.Semigroup                 ( (<>) )
+import           Data.Semigroup                 ( Semigroup(..) )
 import           Data.Text                      ( pack )
 import           GHC.Generics
 
