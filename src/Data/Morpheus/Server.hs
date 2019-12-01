@@ -18,7 +18,6 @@ import           Control.Monad                  ( forever )
 import           Control.Monad.IO.Class         ( MonadIO(liftIO) )
 import           Data.Text                      ( Text )
 import           Network.WebSockets             ( ServerApp
-                                                , PendingConnection 
                                                 , acceptRequestWith
                                                 , forkPingThread
                                                 , pendingRequest
@@ -84,7 +83,7 @@ gqlSocketApp'
   :: (RootResCon m e que mut sub, MonadIO m)
   => GQLRootResolver m e que mut sub
   -> GQLState m e
-  -> (m a -> IO a)
+  -> (m () -> IO ())
   -> ServerApp
 gqlSocketApp' gqlRoot state f pending = do
   connection <- acceptRequestWith pending
@@ -92,12 +91,11 @@ gqlSocketApp' gqlRoot state f pending = do
   forkPingThread connection 30
   client <- connectClient connection state
   finally (f $ queryHandler client) (disconnectClient client state)
-  undefined
  where
   queryHandler client = forever handleRequest
    where
     handleRequest = do
-      d <- liftIO $ receiveData (clientConnection client) 
+      d <- liftIO $ receiveData (clientConnection client)
       resolveMessage (apolloFormat d)
      where
       resolveMessage (SubError x) = liftIO $ print x
