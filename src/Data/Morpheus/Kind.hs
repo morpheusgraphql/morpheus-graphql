@@ -15,7 +15,7 @@ module Data.Morpheus.Kind
   , Context(..)
   , VContext(..)
   , ResContext(..)
-  , AUTO
+  , OUTPUT
   , INPUT
   )
 where
@@ -31,7 +31,7 @@ data GQL_KIND
   | UNION
   | INPUT
   | WRAPPER
-  | AUTO
+  | OUTPUT
 
 
 data ResContext (kind :: GQL_KIND) (operation:: OperationType) event (m :: * -> * )  value = ResContext
@@ -65,6 +65,6 @@ type UNION = 'UNION
 -- | GraphQL Arrays , Resolvers and NonNull fields
 type WRAPPER = 'WRAPPER
 
-type AUTO = 'AUTO
+type OUTPUT = 'OUTPUT
 
 type INPUT = 'INPUT

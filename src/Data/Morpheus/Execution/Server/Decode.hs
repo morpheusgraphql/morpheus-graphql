@@ -39,7 +39,7 @@ import           Data.Morpheus.Kind             ( ENUM
                                                 , GQL_KIND
                                                 , INPUT_OBJECT
                                                 , SCALAR
-                                                , AUTO
+                                                , OUTPUT
                                                 , INPUT
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..)
@@ -93,7 +93,7 @@ instance DecodeType a => DecodeKind ENUM a where
   decodeKind _ = decodeType
 
 -- INPUT_UNION
-instance DecodeType a => DecodeKind AUTO a where
+instance DecodeType a => DecodeKind OUTPUT a where
   decodeKind _ = decodeType
 
 -- INPUT_OBJECT

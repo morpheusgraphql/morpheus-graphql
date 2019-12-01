@@ -105,12 +105,12 @@ instance IsObject INPUT_OBJECT where
 instance IsObject INPUT where
   isObject _ = True
 
-instance IsObject AUTO where
+instance IsObject OUTPUT where
   isObject _ = True
 
 class IsObject (KIND a) => GQLType a where
   type KIND a :: GQL_KIND
-  type KIND a = AUTO
+  type KIND a = OUTPUT
   type CUSTOM a :: Bool
   type CUSTOM a = FALSE
   description :: Proxy a -> Maybe Text

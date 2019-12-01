@@ -46,7 +46,7 @@ import           Data.Morpheus.Kind             ( Context(..)
                                                 , OBJECT
                                                 , SCALAR
                                                 , UNION
-                                                , AUTO
+                                                , OUTPUT
                                                 , INPUT
                                                 )
 import           Data.Morpheus.Types.Types      ( MapKind
@@ -339,7 +339,7 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind INPUT a where
       types = map fieldTypeUpdater $ concatMap consFields cons
 
 
-instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
+instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind OUTPUT a where
   introspectKind _ = builder (typeRep $ Proxy @(Rep a)) (Proxy @a)
    where
     builder [ConsRep { consFields }] = buildObject DataObject consFields
