@@ -13,6 +13,7 @@ module Data.Morpheus.Execution.Subscription.ClientRegister
   )
 where
 
+import           Control.Monad.IO.Class         ( MonadIO(liftIO) )
 import           Control.Concurrent             ( MVar
                                                 , modifyMVar
                                                 , modifyMVar_
@@ -50,7 +51,7 @@ type GQLState m e = MVar (ClientRegister m e) -- SharedState
 initGQLState :: IO (GQLState m e)
 initGQLState = newMVar []
 
-connectClient :: Connection -> GQLState m e -> IO (GQLClient m e)
+connectClient :: MonadIO m => Connection -> GQLState m e -> IO (GQLClient m e)
 connectClient clientConnection varState' = do
   client' <- newClient
   modifyMVar_ varState' (addClient client')
@@ -70,11 +71,12 @@ disconnectClient client state = modifyMVar state removeUser
   removeClient = filter ((/= clientID client) . fst)
 
 updateClientByID
-  :: ClientID
+  :: MonadIO m =>
+     ClientID
   -> (GQLClient m e -> GQLClient m e)
   -> MVar (ClientRegister m e)
-  -> IO ()
-updateClientByID id' updateFunc state = modifyMVar_
+  -> m ()
+updateClientByID id' updateFunc state = liftIO $ modifyMVar_
   state
   (return . map updateClient)
  where
@@ -82,9 +84,9 @@ updateClientByID id' updateFunc state = modifyMVar_
   updateClient state'                      = state'
 
 publishUpdates
-  :: (Eq (StreamChannel e), GQLChannel e) => GQLState IO e -> e -> IO ()
+  :: (Eq (StreamChannel e), GQLChannel e, MonadIO m) => GQLState m e -> e -> m ()
 publishUpdates state event = do
-  state' <- readMVar state
+  state' <- liftIO $ readMVar state
   traverse_ sendMessage state'
  where
   sendMessage (_, GQLClient { clientSessions = [] }             ) = return ()
@@ -92,10 +94,10 @@ publishUpdates state event = do
     __send
     (filterByChannels clientSessions)
    where
-    __send ClientSession { sessionId, sessionSubscription = Event { content = subscriptionRes } }
-      = subscriptionRes event
-        >>= sendTextData clientConnection
-        .   toApolloResponse sessionId
+    __send ClientSession { sessionId, sessionSubscription = Event { content = subscriptionRes } } = do
+      res <- subscriptionRes event
+      let apolloRes = toApolloResponse sessionId res
+      liftIO $ sendTextData clientConnection apolloRes
     ---------------------------
     filterByChannels = filter
       ( not
@@ -105,7 +107,7 @@ publishUpdates state event = do
       . sessionSubscription
       )
 
-removeClientSubscription :: ClientID -> Text -> GQLState m e -> IO ()
+removeClientSubscription :: MonadIO m => ClientID -> Text -> GQLState m e -> m ()
 removeClientSubscription id' sid' = updateClientByID id' stopSubscription
  where
   stopSubscription client' = client'
@@ -113,7 +115,7 @@ removeClientSubscription id' sid' = updateClientByID id' stopSubscription
     }
 
 addClientSubscription
-  :: ClientID -> SubEvent m e -> Text -> GQLState m e -> IO ()
+  :: MonadIO m => ClientID -> SubEvent m e -> Text -> GQLState m e -> m ()
 addClientSubscription id' sessionSubscription sessionId = updateClientByID
   id'
   startSubscription
