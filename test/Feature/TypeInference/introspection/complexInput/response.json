@@ -32,6 +32,27 @@
       "interfaces": null,
       "enumValues": null,
       "possibleTypes": null
+    },
+    "tags": {
+      "kind": "ENUM",
+      "name": "MonsterTags",
+      "fields": null,
+      "inputFields": null,
+      "interfaces": null,
+      "enumValues": [
+        { "name": "Hydra", "isDeprecated": false, "deprecationReason": null },
+        {
+          "name": "Cerberus",
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "UnidentifiedMonster",
+          "isDeprecated": false,
+          "deprecationReason": null
+        }
+      ],
+      "possibleTypes": null
     }
   }
 }

@@ -2,6 +2,9 @@ query Get__Type {
   __type(name: "Monster") {
     ...FullType
   }
+  tags: __type(name: "MonsterTags") {
+    ...FullType
+  }
 }
 
 fragment FullType on __Type {
