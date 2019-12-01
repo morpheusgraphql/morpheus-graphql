@@ -89,6 +89,7 @@ import           Data.Morpheus.Validation.Internal.Utils
 import           Data.Morpheus.Validation.Query.Validation
                                                 ( validateRequest )
 import           Data.Typeable                  ( Typeable )
+import           Control.Monad.IO.Class         ( MonadIO() )
 
 
 type EventCon event
@@ -169,11 +170,11 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
       toResponseRes (encodeSubscription subscriptionResolver operation)
 
 statefulResolver
-  :: EventCon event
-  => GQLState IO event
-  -> (GQLRequest -> ResponseStream event IO Value)
+  :: (EventCon event, MonadIO m)
+  => GQLState m event
+  -> (GQLRequest -> ResponseStream event m Value)
   -> L.ByteString
-  -> IO L.ByteString
+  -> m L.ByteString
 statefulResolver state streamApi requestText = do
   res <- runResultT (decodeNoDup requestText >>= streamApi)
   mapM_ execute (unpackEvents res)
@@ -181,7 +182,6 @@ statefulResolver state streamApi requestText = do
  where
   execute (Publish updates) = publishUpdates state updates
   execute Subscribe{}       = pure ()
-
 
 fullSchema
   :: forall proxy m event query mutation subscription
