@@ -7,6 +7,7 @@
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
   ( gqlSocketApp
+  , gqlSocketApp'
   , initGQLState
   , GQLState
   )
