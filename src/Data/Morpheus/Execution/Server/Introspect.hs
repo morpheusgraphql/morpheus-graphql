@@ -320,21 +320,23 @@ analyseRep baseName cons = ResRep
 instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind INPUT a where
   introspectKind _ = builder (typeRep $ Proxy @(Rep a)) (Proxy @a)
    where
-    builder [ConsRep { consFields }] = buildObject DataInputObject consFields
+    builder [ConsRep { consFields }] = buildInputObject consFields
     builder cons                     = datatype (analyseRep baseName cons)
-      where 
-        baseName        = __typeName (Proxy @a)
-        baseFingerprint = __typeFingerprint (Proxy @a)
-        datatype ResRep { unionRef = [], unionRecordRep = [], enumCons } =
-          updateLib (DataEnum . buildType (map createEnumValue enumCons)) types
-        datatype ResRep { unionRef, unionRecordRep, enumCons } = updateLib
-          (DataInputUnion . buildType typeMembers)
-          (types <> unionTypes)
-         where
-          typeMembers = map (,True) (unionRef <> unionMembers) <> map (,False) enumCons
-          --(enumMembers, enumTypes) = buildUnionEnum wrapObject baseName baseFingerprint enumCons
-          (unionMembers,unionTypes) = buildUnions DataInputObject baseFingerprint unionRecordRep
-        types = map fieldTypeUpdater $ concatMap consFields cons
+     where
+      baseName        = __typeName (Proxy @a)
+      baseFingerprint = __typeFingerprint (Proxy @a)
+      datatype ResRep { unionRef = [], unionRecordRep = [], enumCons } =
+        updateLib (DataEnum . buildType (map createEnumValue enumCons)) types
+      datatype ResRep { unionRef, unionRecordRep, enumCons } = updateLib
+        (DataInputUnion . buildType typeMembers)
+        (types <> unionTypes)
+       where
+        typeMembers =
+          map (, True) (unionRef <> unionMembers) <> map (, False) enumCons
+        --(enumMembers, enumTypes) = buildUnionEnum wrapObject baseName baseFingerprint enumCons
+        (unionMembers, unionTypes) =
+          buildUnions DataInputObject baseFingerprint unionRecordRep
+      types = map fieldTypeUpdater $ concatMap consFields cons
 
 
 instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
@@ -343,6 +345,16 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind AUTO a where
     builder [ConsRep { consFields }] = buildObject DataObject consFields
     builder cons                     = buildUnionDT DataUnion DataObject cons
 
+buildInputObject
+  :: GQL_TYPE a
+  => [FieldRep]
+  -> Proxy a
+  -> TypeUpdater
+buildInputObject  consFields = updateLib datatype types
+ where
+  datatype = DataInputObject . buildType fields
+  fields   = map fieldData consFields
+  types    = map fieldTypeUpdater consFields
 
 buildObject
   :: GQL_TYPE a
@@ -375,19 +387,23 @@ buildUnionDT wrapUnion wrapObject cons = datatype (analyseRep baseName cons)
     (types <> enumTypes <> unionTypes)
    where
     typeMembers = unionRef <> enumMembers <> unionMembers
-    (enumMembers, enumTypes) = buildUnionEnum wrapObject baseName baseFingerprint enumCons
-    (unionMembers,unionTypes) = buildUnions wrapObject baseFingerprint unionRecordRep
+    (enumMembers, enumTypes) =
+      buildUnionEnum wrapObject baseName baseFingerprint enumCons
+    (unionMembers, unionTypes) =
+      buildUnions wrapObject baseFingerprint unionRecordRep
   types = map fieldTypeUpdater $ concatMap consFields cons
 
 
-buildUnions ::  (DataObject -> DataType) -> DataFingerprint -> [ConsRep] -> ([Name],[TypeUpdater])
-buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons) 
-   where
-    buildURecType consRep = pure . defineType
-      ( consName consRep
-      , wrapObject $ buildUnionRecord baseFingerprint consRep
-      )  
-    members = map consName cons 
+buildUnions
+  :: (DataObject -> DataType)
+  -> DataFingerprint
+  -> [ConsRep]
+  -> ([Name], [TypeUpdater])
+buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
+ where
+  buildURecType consRep = pure . defineType
+    (consName consRep, wrapObject $ buildUnionRecord baseFingerprint consRep)
+  members = map consName cons
 
 
 buildUnionRecord :: DataFingerprint -> ConsRep -> DataObject
@@ -405,7 +421,12 @@ buildUnionRecord typeFingerprint ConsRep { consName, consFields } = DataTyCon
   uRecField FieldRep { fieldData = (fName, fData) } = (fName, fData)
 
 
-buildUnionEnum ::  (DataObject -> DataType) -> Name -> DataFingerprint -> [Name] -> ([Name], [TypeUpdater])
+buildUnionEnum
+  :: (DataObject -> DataType)
+  -> Name
+  -> DataFingerprint
+  -> [Name]
+  -> ([Name], [TypeUpdater])
 buildUnionEnum wrapObject baseName baseFingerprint enums = (members, updates)
  where
   members | null enums = []
@@ -418,7 +439,10 @@ buildUnionEnum wrapObject baseName baseFingerprint enums = (members, updates)
     | null enums
     = []
     | otherwise
-    = [ buildEnumObject wrapObject enumTypeWrapperName baseFingerprint enumTypeName
+    = [ buildEnumObject wrapObject
+                        enumTypeWrapperName
+                        baseFingerprint
+                        enumTypeName
       , buildEnum enumTypeName baseFingerprint enums
       ]
 
@@ -432,24 +456,26 @@ buildEnum typeName typeFingerprint tags = pure . defineType
                        }
   )
 
-buildEnumObject :: (DataObject -> DataType) -> Name -> DataFingerprint -> Name -> TypeUpdater
-buildEnumObject wrapObject typeName typeFingerprint enumTypeName = pure . defineType
-  ( typeName
-  , wrapObject DataTyCon
-    { typeName
-    , typeFingerprint
-    , typeMeta        = Nothing
-    , typeData        = [ ( "enum"
-                          , DataField { fieldName     = "enum"
-                                      , fieldArgs     = []
-                                      , fieldArgsType = Nothing
-                                      , fieldType     = createAlias enumTypeName
-                                      , fieldMeta     = Nothing
-                                      }
-                          )
-                        ]
-    }
-  )
+buildEnumObject
+  :: (DataObject -> DataType) -> Name -> DataFingerprint -> Name -> TypeUpdater
+buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
+  pure . defineType
+    ( typeName
+    , wrapObject DataTyCon
+      { typeName
+      , typeFingerprint
+      , typeMeta        = Nothing
+      , typeData        = [ ( "enum"
+                            , DataField { fieldName     = "enum"
+                                        , fieldArgs     = []
+                                        , fieldArgsType = Nothing
+                                        , fieldType = createAlias enumTypeName
+                                        , fieldMeta     = Nothing
+                                        }
+                            )
+                          ]
+      }
+    )
 
 
 --  GENERIC UNION
