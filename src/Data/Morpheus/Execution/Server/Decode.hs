@@ -184,7 +184,7 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
       r1  = tagName r1t
       l1t = tags (Proxy @a) (typeName cont)
       r1t = tags (Proxy @b) (typeName cont)
-      ctx = cont { contKind = kind (r1t <> r1t) }
+      ctx = cont { contKind = kind (l1t <> r1t) }
     __decode (Enum name, cxt) = decideUnion
       (tagName $ tags (Proxy @a) (typeName cxt), decodeRep)
       (tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
