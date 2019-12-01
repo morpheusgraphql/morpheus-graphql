@@ -15,7 +15,7 @@
 module Data.Morpheus.Execution.Server.Decode
   ( decodeArguments
   , Decode(..)
-  , DecodeObject(..)
+  , DecodeRep(..)
   )
 where
 
@@ -30,7 +30,6 @@ import           Data.Morpheus.Error.Internal   ( internalTypeMismatch
                                                 )
 import           Data.Morpheus.Execution.Internal.Decode
                                                 ( decodeFieldWith
-                                                , withEnum
                                                 , withList
                                                 , withMaybe
                                                 , withObject
@@ -84,39 +83,32 @@ instance (GQLScalar a) => DecodeKind SCALAR a where
 
 -- ENUM
 instance (Generic a, DecodeRep (Rep a)) => DecodeKind ENUM a where
-  decodeKind _ = withEnum (fmap to . decodeRep . (, initCont) . Enum)
+  decodeKind _ = decodeType
 
 -- INPUT_UNION
 instance (Generic a, DecodeRep (Rep a)) => DecodeKind AUTO a where
-  decodeKind _ = fmap to . decodeRep . (, initCont)
+  decodeKind _ = decodeType
 
 -- INPUT_OBJECT
-instance DecodeObject a => DecodeKind INPUT_OBJECT a where
-  decodeKind _ = withObject decodeObject
+instance (Generic a, DecodeRep (Rep a)) => DecodeKind INPUT_OBJECT a where
+  decodeKind _ = decodeType
 
 instance (Generic a, DecodeRep (Rep a)) => DecodeKind INPUT a where
-  decodeKind _ = fmap to . decodeRep . (, initCont)
+  decodeKind _ = decodeType
 
 -- GENERIC
-decodeArguments :: DecodeObject p => Arguments -> Validation p
-decodeArguments = decodeObject . fmap toObject
+decodeArguments :: (Generic a, DecodeRep (Rep a)) => Arguments -> Validation a
+decodeArguments = decodeType . Object . map toObject
   where toObject (x, y) = (x, argumentValue y)
 
-class DecodeObject a where
-  decodeObject :: Object -> Validation a
-
-instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeObject a where
-  decodeObject = fmap to . decodeRep . (, initCont) . Object
+decodeType :: (Generic a, DecodeRep (Rep a)) => Value -> Validation a
+decodeType = fmap to . decodeRep . (, initCont)
 
 -- data Inpuz  =
---    InputHuman Human  -- direct link: { __typename: Human, field:"" }
---   
---   | InputRecord { name :: Text, age :: Int } -- { __typename: InputRecord, name:"" , age:1 }
---    
+--    InputHuman Human  -- direct link: { __typename: Human, Human: {field: ""} }
+--   | InputRecord { name :: Text, age :: Int } -- { __typename: InputRecord, InputRecord: {field: ""} }
 --   | IndexedType Int Text  -- { __typename: InputRecord, _0:2 , _1:""  }
---   
---   | Zeus                 -- "Zeus"
---   | Cronus 
+--   | Zeus                 -- { __typename: Zeus }
 --     deriving (Generic, GQLType)
 
 -- object and union: { __typename: name , field: some field }   
