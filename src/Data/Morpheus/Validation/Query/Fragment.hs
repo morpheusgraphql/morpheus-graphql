@@ -12,8 +12,6 @@ where
 import           Data.List                      ( (\\) )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text )
-import qualified Data.Text                     as T
-                                                ( concat )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Fragment   ( cannotBeSpreadOnType
@@ -69,11 +67,10 @@ getFragment Ref { refName, refPosition } lib = case lookup refName lib of
 
 castFragmentType
   :: Maybe Text -> Position -> [Text] -> Fragment -> Validation Fragment
-castFragmentType key' position' targets' fragment@Fragment { fragmentType } =
-  if fragmentType `elem` targets'
+castFragmentType key' position' typeMembers fragment@Fragment { fragmentType }
+  = if fragmentType `elem` typeMembers
     then pure fragment
-    else failure
-      $ cannotBeSpreadOnType key' fragmentType position' (T.concat targets')
+    else failure $ cannotBeSpreadOnType key' fragmentType position' typeMembers
 
 resolveSpread :: FragmentLib -> [Text] -> Ref -> Validation Fragment
 resolveSpread fragments allowedTargets reference@Ref { refName, refPosition } =
