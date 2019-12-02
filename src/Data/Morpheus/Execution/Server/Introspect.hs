@@ -181,7 +181,7 @@ instance TypeRep (Rep a) => ObjectFields 'False a where
      where
       fields = map fieldData consFields
       types  = map fieldTypeUpdater consFields
-    builder _ = ([],[]) --TODO: FIXME: should trow error
+    builder _ = ([], []) --TODO: FIXME: should trow error
 
 
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
@@ -258,7 +258,7 @@ isUnionRecord :: ConsRep -> Bool
 isUnionRecord ConsRep { consIsRecord } = consIsRecord
 
 isUnionRef :: Name -> ConsRep -> Bool
-isUnionRef baseName ConsRep { consName, consFields = [FieldRep { fieldIsObject = True, fieldTypeName }], consIsRecord = False }
+isUnionRef baseName ConsRep { consName, consFields = [FieldRep { fieldIsObject = True, fieldTypeName }] }
   = consName == baseName <> fieldTypeName
 isUnionRef _ _ = False
 
@@ -280,8 +280,8 @@ analyseRep baseName cons = ResRep
   }
  where
   (enumRep       , left1             ) = partition isEmpty cons
-  (unionRecordRep, left2             ) = partition isUnionRecord left1
-  (unionRefRep   , anyonimousUnionRep) = partition (isUnionRef baseName) left2
+  (unionRefRep   , left2             ) = partition (isUnionRef baseName) left1
+  (unionRecordRep, anyonimousUnionRep) = partition isUnionRecord left2
 
 
 instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind INPUT a where
