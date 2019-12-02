@@ -161,12 +161,8 @@ instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a wher
     where (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
 
 -- UNION
-instance (GQL_TYPE a, GQLRep UNION (Rep a)) => IntrospectKind UNION a where
-  introspectKind _ = updateLib (DataUnion . buildType memberTypes)
-                               stack
-                               (Proxy @a)
-   where
-    (memberTypes, stack) = unzip $ gqlRep (Context :: Context UNION (Rep a))
+instance (GQL_TYPE a, IntrospectKind OUTPUT a) => IntrospectKind UNION a where
+  introspectKind _ = introspectKind (Context :: Context OUTPUT a)
 
 -- Types
 
@@ -177,44 +173,15 @@ type GQL_TYPE a = (Generic a, GQLType a)
 class ObjectFields (custom :: Bool) a where
   objectFields :: proxy1 custom -> proxy2 a -> ([(Text, DataField)], [TypeUpdater])
 
-instance GQLRep OBJECT (Rep a) => ObjectFields 'False a where
-  objectFields _ _ = unzip $ gqlRep (Context :: Context OBJECT (Rep a))
-
-type family GQLRepResult (a :: GQL_KIND) :: *
-
-type instance GQLRepResult OBJECT = (Text, DataField)
-
-type instance GQLRepResult UNION = Key
-
---  GENERIC Rep
-class GQLRep (kind :: GQL_KIND) f where
-  gqlRep :: Context kind f -> [(GQLRepResult kind, TypeUpdater)]
-
-instance GQLRep kind f => GQLRep kind (M1 D d f) where
-  gqlRep _ = gqlRep (Context :: Context kind f)
-
-instance GQLRep kind f => GQLRep kind (M1 C c f) where
-  gqlRep _ = gqlRep (Context :: Context kind f)
-
--- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
-instance (GQLRep UNION a, GQLRep UNION b) => GQLRep UNION (a :+: b) where
-  gqlRep _ =
-    gqlRep (Context :: Context UNION a) ++ gqlRep (Context :: Context UNION b)
-
-instance (GQL_TYPE a, Introspect a) => GQLRep UNION (M1 S s (Rec0 a)) where
-  gqlRep _ = [(__typeName (Proxy @a), introspect (Proxy @a))]
-
--- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
-instance (GQLRep OBJECT a, GQLRep OBJECT b) => GQLRep OBJECT (a :*: b) where
-  gqlRep _ =
-    gqlRep (Context :: Context OBJECT a) ++ gqlRep (Context :: Context OBJECT b)
-
-instance (Selector s, Introspect a) => GQLRep OBJECT (M1 S s (Rec0 a)) where
-  gqlRep _ = [((name, field (Proxy @a) name), introspect (Proxy @a))]
-    where name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
-
-instance GQLRep OBJECT U1 where
-  gqlRep _ = []
+instance TypeRep (Rep a) => ObjectFields 'False a where
+  --objectFields _ _ = unzip $ gqlRep (Context :: Context OBJECT (Rep a))
+  objectFields _ _ = builder (typeRep $ Proxy @(Rep a))
+   where
+    builder [ConsRep { consFields }] = (fields, types)
+     where
+      fields = map fieldData consFields
+      types  = map fieldTypeUpdater consFields
+    builder _ = ([],[]) --TODO: FIXME: should trow error
 
 
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
@@ -345,12 +312,8 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind OUTPUT a where
     builder [ConsRep { consFields }] = buildObject DataObject consFields
     builder cons                     = buildUnionDT DataUnion DataObject cons
 
-buildInputObject
-  :: GQL_TYPE a
-  => [FieldRep]
-  -> Proxy a
-  -> TypeUpdater
-buildInputObject  consFields = updateLib datatype types
+buildInputObject :: GQL_TYPE a => [FieldRep] -> Proxy a -> TypeUpdater
+buildInputObject consFields = updateLib datatype types
  where
   datatype = DataInputObject . buildType fields
   fields   = map fieldData consFields
