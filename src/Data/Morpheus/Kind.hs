@@ -63,7 +63,7 @@ type OUTPUT = 'OUTPUT
 -- | GraphQL input Object and input union
 type INPUT = 'INPUT
 
-{-# DEPRECATED INPUT_OBJECT "replaced with more generalised kind: INPUT" #-}
+{-# DEPRECATED INPUT_OBJECT "use more generalised kind: INPUT" #-}
 -- | GraphQL input Object
 type INPUT_OBJECT = 'INPUT_OBJECT
 
