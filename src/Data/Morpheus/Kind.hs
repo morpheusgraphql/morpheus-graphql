@@ -25,13 +25,14 @@ import           Data.Morpheus.Types.Internal.AST
 
 data GQL_KIND
   = SCALAR
-  | OBJECT
   | ENUM
-  | INPUT_OBJECT
-  | UNION
   | INPUT
-  | WRAPPER
   | OUTPUT
+  | WRAPPER
+  -- DEPRECATED CONS
+  | UNION
+  | INPUT_OBJECT
+  | OBJECT
 
 
 data ResContext (kind :: GQL_KIND) (operation:: OperationType) event (m :: * -> * )  value = ResContext
@@ -50,21 +51,27 @@ newtype VContext (kind :: GQL_KIND) a = VContext
 -- | GraphQL Scalar: Int, Float, String, Boolean or any user defined custom Scalar type
 type SCALAR = 'SCALAR
 
--- | GraphQL Object
-type OBJECT = 'OBJECT
-
 -- | GraphQL Enum
 type ENUM = 'ENUM
-
--- | GraphQL input Object
-type INPUT_OBJECT = 'INPUT_OBJECT
-
--- | GraphQL Union
-type UNION = 'UNION
 
 -- | GraphQL Arrays , Resolvers and NonNull fields
 type WRAPPER = 'WRAPPER
 
+-- | GraphQL Object and union
 type OUTPUT = 'OUTPUT
 
+-- | GraphQL input Object and input union
 type INPUT = 'INPUT
+
+{-# DEPRECATED INPUT_OBJECT "replaced with more generalised kind: INPUT" #-}
+-- | GraphQL input Object
+type INPUT_OBJECT = 'INPUT_OBJECT
+
+{-# DEPRECATED UNION "use: deriving(GQLType), will be automatically inferred" #-}
+-- | GraphQL Union
+type UNION = 'UNION
+
+{-# DEPRECATED OBJECT "use: deriving(GQLType), will be automatically inferred" #-}
+--{-# WARNING unsafePerformIO "This is unsafe; I hope you know what you're doing" #-}
+-- | GraphQL Object
+type OBJECT = 'OBJECT
