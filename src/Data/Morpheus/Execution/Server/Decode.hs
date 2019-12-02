@@ -197,16 +197,13 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
   tags _ baseName = getTag (refType (Proxy @a))
    where
     getTag (Just memberRef)
-      | not (conIsRecord unsafeType) && isNamespacedConstraint memberRef = Info
-        { kind    = D_UNION
-        , tagName = [memberRef]
-        }
-      | otherwise = Info { kind = D_CONS, tagName = [consName] }
+      | isUnionRef memberRef = Info { kind = D_UNION, tagName = [memberRef] }
+      | otherwise            = Info { kind = D_CONS, tagName = [consName] }
     getTag Nothing = Info { kind = D_CONS, tagName = [consName] }
     --------
     consName = pack $ conName unsafeType
     ----------
-    isNamespacedConstraint x = baseName <> x == consName
+    isUnionRef x = baseName <> x == consName
     --------------------------
     unsafeType :: (M1 C c U1 x)
     unsafeType = undefined
