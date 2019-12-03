@@ -22,6 +22,7 @@ module Data.Morpheus.Execution.Server.Introspect
   , IntroCon
   , updateLib
   , buildType
+  , objectFields
   )
 where
 
