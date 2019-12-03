@@ -168,12 +168,16 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind OUTPUT a where
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
+
+objectFields :: IntrospectRep custom a => proxy1 (custom :: Bool) -> proxy2 a -> ([(Name,DataField)], [TypeUpdater])
+objectFields = introspectRep 
+
 -- Object Fields
 class IntrospectRep (custom :: Bool) a where
-  objectFields :: proxy1 custom -> proxy2 a -> ([(Name,DataField)], [TypeUpdater])
+  introspectRep :: proxy1 custom -> proxy2 a -> ([(Name,DataField)], [TypeUpdater])
 
 instance TypeRep (Rep a) => IntrospectRep 'False a where
-  objectFields _ _ = builder (typeRep $ Proxy @(Rep a))
+  introspectRep _ _ = builder (typeRep $ Proxy @(Rep a))
    where
     builder [ConsRep { consFields }] = (fields, types)
      where

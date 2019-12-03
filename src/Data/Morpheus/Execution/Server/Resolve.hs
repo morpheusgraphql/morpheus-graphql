@@ -90,7 +90,7 @@ import           Data.Morpheus.Validation.Query.Validation
                                                 ( validateRequest )
 import           Data.Typeable                  ( Typeable )
 import           Control.Monad.IO.Class         ( MonadIO() )
-
+import           Debug.Trace
 
 type EventCon event
   = (Eq (StreamChannel event), Typeable event, GQLChannel event)
@@ -156,7 +156,8 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
     :: Monad m => ResponseStream event m (DataTypeLib, ValidOperation)
   validRequest = cleanEvents $ ResultT $ pure $ do
     schema <- fullSchema $ Identity root
-    query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
+    let x = traceShowId schema
+    query <- parseGQL request >>= validateRequest x FULL_VALIDATION
     pure (schema, query)
   ----------------------------------------------------------
   execOperator (schema, operation@Operation { operationType = Query }) =

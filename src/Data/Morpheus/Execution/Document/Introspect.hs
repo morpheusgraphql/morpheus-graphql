@@ -46,7 +46,7 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
         conTypeable name = typeT ''Typeable [name]
     -----------------------------------------------
     iHead = instanceHeadMultiT ''IntrospectRep (conT ''TRUE) [typeT (mkName tName) typeArgs]
-    methods = [instanceFunD 'objectFields ["_proxy1", "_proxy2"] body]
+    methods = [instanceFunD 'introspectRep ["_proxy1", "_proxy2"] body]
       where
         body = [|($(buildFields cFields), concat $(buildTypes cFields))|]
 deriveObjectRep _ = pure []
@@ -58,7 +58,7 @@ buildTypes = listE . concatMap introspectField
       [|[introspect $(proxyT fieldType)]|] : inputTypes fieldArgsType
       where
         inputTypes (Just ArgsType {argsTypeName})
-          | argsTypeName /= "()" = [[|snd $ objectFields (Proxy :: Proxy TRUE) $(proxyT tAlias)|]]
+          | argsTypeName /= "()" = [[|snd $ introspectRep (Proxy :: Proxy TRUE) $(proxyT tAlias)|]]
           where
             tAlias = TypeAlias {aliasTyCon = argsTypeName, aliasWrappers = [], aliasArgs = Nothing}
         inputTypes _ = []
