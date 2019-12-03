@@ -128,9 +128,10 @@ instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
 -- Resolver : a -> Resolver b
 instance (ObjectFields 'False a, Introspect b) => Introspect (a -> m b) where
   isObject _ = False
-  field _ name = field (Proxy @b) name
-   --  { fieldArgs = fst $ objectFields (Proxy :: Proxy 'False) (Proxy @a)
-   --  }
+  field _ name = fieldObj { fieldArgs }
+   where
+     fieldObj = field (Proxy @b) name 
+     fieldArgs = fst $ objectFields (Proxy :: Proxy 'False) (Proxy @a) 
   introspect _ typeLib = resolveUpdates typeLib
                                         (introspect (Proxy @b) : inputs)
    where
