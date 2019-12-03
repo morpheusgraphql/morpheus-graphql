@@ -9,7 +9,7 @@ module Data.Morpheus.Execution.Document.Introspect
 
 import Data.Maybe(maybeToList)
 import           Data.Proxy                                (Proxy (..))
-import           Data.Text                                 (unpack)
+import           Data.Text                                 (unpack,Text)
 import           Data.Typeable                             (Typeable)
 import           Language.Haskell.TH  
 
@@ -63,11 +63,17 @@ buildTypes = listE . concatMap introspectField
             tAlias = TypeAlias {aliasTyCon = argsTypeName, aliasWrappers = [], aliasArgs = Nothing}
         inputTypes _ = []
 
+conTX :: Text -> Q Type    
+conTX =  conT . mkName . unpack
+
+varTX :: Text -> Q Type    
+varTX =  varT . mkName . unpack
+
 proxyT :: TypeAlias -> Q Exp
 proxyT TypeAlias {aliasTyCon, aliasArgs} = [|(Proxy :: Proxy $(genSig aliasArgs))|]
   where
-    genSig (Just m) = appT (conT $ mkName $ unpack aliasTyCon) (varT $ mkName $ unpack m)
-    genSig _        = conT $ mkName $ unpack aliasTyCon
+    genSig (Just m) = appT (conTX aliasTyCon) (varTX m)
+    genSig _        = conTX aliasTyCon
 
 buildFields :: [DataField] -> ExpQ
 buildFields = listE . map buildField
