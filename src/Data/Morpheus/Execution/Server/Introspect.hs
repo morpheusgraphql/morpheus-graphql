@@ -73,13 +73,18 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataFingerprint
                                                 , DataUnion
                                                 , DataObject
+                                                , TypeAlias(..)
                                                 )
 
 
 type IntroCon a = (GQLType a, ObjectFields (CUSTOM a) a)
 
+
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class Introspect a where
+  isObject :: proxy a -> Bool
+  default isObject :: GQLType a => proxy a -> Bool
+  isObject _ = isObjectKind (Proxy @a)
   field :: proxy a -> Text -> DataField
   introspect :: proxy a -> TypeUpdater
   -----------------------------------------------
@@ -92,31 +97,37 @@ instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspe
 
 -- Maybe
 instance Introspect a => Introspect (Maybe a) where
+  isObject _ = False
   field _ = toNullableField . field (Proxy @a)
   introspect _ = introspect (Proxy @a)
 
 -- List
 instance Introspect a => Introspect [a] where
+  isObject _ = False
   field _ = toListField . field (Proxy @a)
   introspect _ = introspect (Proxy @a)
 
 -- Tuple
 instance Introspect (Pair k v) => Introspect (k, v) where
+  isObject _ = True
   field _ = field (Proxy @(Pair k v))
   introspect _ = introspect (Proxy @(Pair k v))
 
 -- Set
 instance Introspect [a] => Introspect (Set a) where
+  isObject _ = False
   field _ = field (Proxy @[a])
   introspect _ = introspect (Proxy @[a])
 
 -- Map
 instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
+  isObject _ = True
   field _ = field (Proxy @(MapKind k v Maybe))
   introspect _ = introspect (Proxy @(MapKind k v Maybe))
 
 -- Resolver : a -> Resolver b
 instance (ObjectFields 'False a, Introspect b) => Introspect (a -> m b) where
+  isObject _ = False
   field _ name = field (Proxy @b) name
    --  { fieldArgs = fst $ objectFields (Proxy :: Proxy 'False) (Proxy @a)
    --  }
@@ -440,15 +451,17 @@ class ConRep f where
 instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where
   conRep _ = conRep (Proxy @a) <> conRep (Proxy @b)
 
-instance (GQLType a, Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
+instance (Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
   conRep _ =
-    [ FieldRep { fieldTypeName    = __typeName (Proxy @a)
-               , fieldData        = (name, field (Proxy @a) name)
+    [ FieldRep { fieldTypeName    = aliasTyCon $ fieldType fieldData
+               , fieldData        = (name,fieldData)
                , fieldTypeUpdater = introspect (Proxy @a)
-               , fieldIsObject    = isObjectKind (Proxy @a)
+               , fieldIsObject    = isObject (Proxy @a)
                }
     ]
-    where name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
+    where 
+      name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
+      fieldData = field (Proxy @a) name
 
 instance ConRep U1 where
   conRep _ = []
