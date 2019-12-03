@@ -126,7 +126,7 @@ class IsObject (KIND a) => GQLType a where
   __typeFingerprint :: Proxy a -> DataFingerprint
   default __typeFingerprint :: (Typeable a) =>
     Proxy a -> DataFingerprint
-  __typeFingerprint _ = TypeableFingerprint $ map show $ conFingerprints (Proxy @a)
+  __typeFingerprint _ = DataFingerprint "Typeable" $ map show $ conFingerprints (Proxy @a)
     where
       conFingerprints = fmap (map tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 

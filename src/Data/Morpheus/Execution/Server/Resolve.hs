@@ -221,7 +221,7 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
     ( typeName
     , DataTyCon { typeData
                 , typeName
-                , typeFingerprint = SystemFingerprint typeName
+                , typeFingerprint = DataFingerprint typeName []
                 , typeMeta        = Nothing
                 }
     )

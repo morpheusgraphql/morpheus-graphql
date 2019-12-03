@@ -57,7 +57,7 @@ scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
     , DataScalar DataTyCon
       { typeName
       , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint typeName
+      , typeFingerprint = DataFingerprint typeName []
       , typeData        = DataValidator pure
       }
     )
@@ -79,17 +79,17 @@ scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
 --
 objectTypeDefinition :: Maybe Text -> Parser (Text, RawDataType)
 objectTypeDefinition metaDescription = label "ObjectTypeDefinition" $ do
-  name           <- typDeclaration "type"
+  typeName       <- typDeclaration "type"
   interfaces     <- optionalImplementsInterfaces
   metaDirectives <- optionalDirectives
   fields         <- fieldsDefinition
   --------------------------
   pure
-    ( name
+    ( typeName
     , Implements interfaces $ DataTyCon
-      { typeName        = name
+      { typeName
       , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint name
+      , typeFingerprint = DataFingerprint typeName []
       , typeData        = fields
       }
     )
@@ -115,7 +115,7 @@ interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
     , Interface DataTyCon
       { typeName
       , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint typeName
+      , typeFingerprint = DataFingerprint typeName []
       , typeData        = fields
       }
     )
@@ -140,7 +140,7 @@ unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
     , DataUnion DataTyCon
       { typeName
       , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint typeName
+      , typeFingerprint = DataFingerprint typeName []
       , typeData        = memberTypes
       }
     )
@@ -167,7 +167,7 @@ enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
     , DataEnum DataTyCon
       { typeName
       , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint typeName
+      , typeFingerprint = DataFingerprint typeName []
       , typeData        = enumValuesDefinitions
       }
     )
@@ -192,7 +192,7 @@ inputObjectTypeDefinition metaDescription =
       , DataInputObject DataTyCon
         { typeName
         , typeMeta        = Just Meta { metaDescription, metaDirectives }
-        , typeFingerprint = SystemFingerprint typeName
+        , typeFingerprint = DataFingerprint typeName []
         , typeData        = fields
         }
       )

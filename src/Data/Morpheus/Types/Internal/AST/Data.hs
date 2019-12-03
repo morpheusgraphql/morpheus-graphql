@@ -230,9 +230,7 @@ toHSWrappers (ListType : xs) = [TypeMaybe, TypeList] <> toHSWrappers xs
 toHSWrappers []                              = [TypeMaybe]
 toHSWrappers [NonNullType]                   = []
 
-data DataFingerprint = SystemFingerprint Key | TypeableFingerprint [String]
-  deriving (Show, Eq, Ord, Lift)
-
+data DataFingerprint = DataFingerprint Name [String] deriving (Show, Eq, Ord, Lift)
 
 newtype DataValidator = DataValidator
   { validateValue :: Value -> Either Key Value
@@ -394,7 +392,7 @@ createType :: Key -> a -> DataTyCon a
 createType typeName typeData = DataTyCon
   { typeName
   , typeMeta        = Nothing
-  , typeFingerprint = SystemFingerprint ""
+  , typeFingerprint = DataFingerprint typeName []
   , typeData
   }
 
@@ -563,21 +561,6 @@ createDataTypeLib types = case takeByKey "Query" types of
                                                        }
           )
   _ -> internalError "Query Not Defined"
-  ----------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
  where
   takeByKey key lib = case lookup key lib of
     Just (DataObject value) -> (Just (key, value), filter ((/= key) . fst) lib)
