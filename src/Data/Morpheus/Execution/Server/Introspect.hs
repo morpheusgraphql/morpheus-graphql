@@ -131,8 +131,8 @@ instance (IntrospectRep 'False a, Introspect b) => Introspect (a -> m b) where
   isObject _ = False
   field _ name = fieldObj { fieldArgs }
    where
-     fieldObj = field (Proxy @b) name 
-     fieldArgs = fst $ objectFields (Proxy :: Proxy 'False) (Proxy @a) 
+    fieldObj  = field (Proxy @b) name
+    fieldArgs = fst $ objectFields (Proxy :: Proxy 'False) (Proxy @a)
   introspect _ typeLib = resolveUpdates typeLib
                                         (introspect (Proxy @b) : inputs)
    where
@@ -170,22 +170,22 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind OUTPUT a where
 type GQL_TYPE a = (Generic a, GQLType a)
 
 
-objectFields :: IntrospectRep custom a => proxy1 (custom :: Bool) -> proxy2 a -> ([(Name,DataField)], [TypeUpdater])
-objectFields = introspectRep 
+objectFields
+  :: IntrospectRep custom a
+  => proxy1 (custom :: Bool)
+  -> proxy2 a
+  -> ([(Name, DataField)], [TypeUpdater])
+objectFields p1 p2 = withObject (introspectRep p1 p2)
+ where
+  withObject (DataObject      DataTyCon { typeData }, ts) = (typeData, ts)
+  withObject (DataInputObject DataTyCon { typeData }, ts) = (typeData, ts)
 
 -- Object Fields
 class IntrospectRep (custom :: Bool) a where
-  introspectRep :: proxy1 custom -> proxy2 a -> ([(Name,DataField)], [TypeUpdater])
+  introspectRep :: proxy1 custom -> proxy2 a -> (DataType, [TypeUpdater])
 
 instance TypeRep (Rep a) => IntrospectRep 'False a where
-  introspectRep _ _ = builder (typeRep $ Proxy @(Rep a))
-   where
-    builder [ConsRep { consFields }] = (fields, types)
-     where
-      fields = map fieldData consFields
-      types  = map fieldTypeUpdater consFields
-      builder _ = ([], []) --TODO: FIXME: should trow error
-
+-- TODO: generates Rep according type
 
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName = DataField
@@ -460,14 +460,14 @@ instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where
 instance (Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
   conRep _ =
     [ FieldRep { fieldTypeName    = aliasTyCon $ fieldType fieldData
-               , fieldData        = (name,fieldData)
+               , fieldData        = (name, fieldData)
                , fieldTypeUpdater = introspect (Proxy @a)
                , fieldIsObject    = isObject (Proxy @a)
                }
     ]
-    where 
-      name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
-      fieldData = field (Proxy @a) name
+   where
+    name      = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
+    fieldData = field (Proxy @a) name
 
 instance ConRep U1 where
   conRep _ = []
