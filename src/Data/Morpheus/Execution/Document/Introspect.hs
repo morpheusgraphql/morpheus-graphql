@@ -15,7 +15,7 @@ import           Language.Haskell.TH
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
-import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..))
+import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), IntrospectRep (..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
 import           Data.Morpheus.Types.Internal.AST          (ConsD (..), TypeD (..), ArgsType (..),Key, DataType(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
@@ -45,7 +45,7 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
       where
         conTypeable name = typeT ''Typeable [name]
     -----------------------------------------------
-    iHead = instanceHeadMultiT ''ObjectFields (conT ''TRUE) [typeT (mkName tName) typeArgs]
+    iHead = instanceHeadMultiT ''IntrospectRep (conT ''TRUE) [typeT (mkName tName) typeArgs]
     methods = [instanceFunD 'objectFields ["_proxy1", "_proxy2"] body]
       where
         body = [|($(buildFields cFields), concat $(buildTypes cFields))|]

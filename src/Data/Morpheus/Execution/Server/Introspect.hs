@@ -18,7 +18,7 @@
 module Data.Morpheus.Execution.Server.Introspect
   ( TypeUpdater
   , Introspect(..)
-  , ObjectFields(..)
+  , IntrospectRep(..)
   , IntroCon
   , updateLib
   , buildType
@@ -77,7 +77,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 )
 
 
-type IntroCon a = (GQLType a, ObjectFields (CUSTOM a) a)
+type IntroCon a = (GQLType a, IntrospectRep (CUSTOM a) a)
 
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
@@ -126,7 +126,7 @@ instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
   introspect _ = introspect (Proxy @(MapKind k v Maybe))
 
 -- Resolver : a -> Resolver b
-instance (ObjectFields 'False a, Introspect b) => Introspect (a -> m b) where
+instance (IntrospectRep 'False a, Introspect b) => Introspect (a -> m b) where
   isObject _ = False
   field _ name = fieldObj { fieldArgs }
    where
@@ -169,10 +169,10 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind OUTPUT a where
 type GQL_TYPE a = (Generic a, GQLType a)
 
 -- Object Fields
-class ObjectFields (custom :: Bool) a where
+class IntrospectRep (custom :: Bool) a where
   objectFields :: proxy1 custom -> proxy2 a -> ([(Name,DataField)], [TypeUpdater])
 
-instance TypeRep (Rep a) => ObjectFields 'False a where
+instance TypeRep (Rep a) => IntrospectRep 'False a where
   objectFields _ _ = builder (typeRep $ Proxy @(Rep a))
    where
     builder [ConsRep { consFields }] = (fields, types)

@@ -39,7 +39,7 @@ import           Data.Morpheus.Execution.Server.Encode
                                                 )
 import           Data.Morpheus.Execution.Server.Introspect
                                                 ( IntroCon
-                                                , ObjectFields(..)
+                                                , objectFields
                                                 )
 import           Data.Morpheus.Execution.Subscription.ClientRegister
                                                 ( GQLState

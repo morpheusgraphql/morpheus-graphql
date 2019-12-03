@@ -15,7 +15,7 @@ import           Data.Text                      ( Text )
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Introspect
-                                                ( ObjectFields(..)
+                                                ( objectFields
                                                 , TypeUpdater
                                                 , introspect
                                                 )
