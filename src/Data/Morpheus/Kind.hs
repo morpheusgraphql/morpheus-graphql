@@ -29,11 +29,6 @@ data GQL_KIND
   | INPUT
   | OUTPUT
   | WRAPPER
-  -- DEPRECATED CONS
-  | UNION
-  | INPUT_OBJECT
-  | OBJECT
-
 
 data ResContext (kind :: GQL_KIND) (operation:: OperationType) event (m :: * -> * )  value = ResContext
 
@@ -65,13 +60,13 @@ type INPUT = 'INPUT
 
 {-# DEPRECATED INPUT_OBJECT "use more generalised kind: INPUT" #-}
 -- | GraphQL input Object
-type INPUT_OBJECT = 'INPUT_OBJECT
+type INPUT_OBJECT = 'INPUT
 
 {-# DEPRECATED UNION "use: deriving(GQLType), will be automatically inferred" #-}
 -- | GraphQL Union
-type UNION = 'UNION
+type UNION = 'OUTPUT
 
 {-# DEPRECATED OBJECT "use: deriving(GQLType), will be automatically inferred" #-}
 --{-# WARNING unsafePerformIO "This is unsafe; I hope you know what you're doing" #-}
 -- | GraphQL Object
-type OBJECT = 'OBJECT
+type OBJECT = 'OUTPUT

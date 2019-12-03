@@ -93,15 +93,6 @@ instance IsObject ENUM where
 instance IsObject WRAPPER where
   isObject _ = False
 
-instance IsObject OBJECT where
-  isObject _ = True
-
-instance IsObject UNION where
-  isObject _ = True
-
-instance IsObject INPUT_OBJECT where
-  isObject _ = True
-
 instance IsObject INPUT where
   isObject _ = True
 

@@ -37,7 +37,6 @@ import           Data.Morpheus.Execution.Internal.Decode
                                                 )
 import           Data.Morpheus.Kind             ( ENUM
                                                 , GQL_KIND
-                                                , INPUT_OBJECT
                                                 , SCALAR
                                                 , OUTPUT
                                                 , INPUT
@@ -92,14 +91,11 @@ instance (GQLScalar a) => DecodeKind SCALAR a where
 instance DecodeType a => DecodeKind ENUM a where
   decodeKind _ = decodeType
 
--- INPUT_UNION
+-- TODO: remove  
 instance DecodeType a => DecodeKind OUTPUT a where
   decodeKind _ = decodeType
 
--- INPUT_OBJECT
-instance DecodeType a => DecodeKind INPUT_OBJECT a where
-  decodeKind _ = decodeType
-
+-- INPUT_OBJECT and  INPUT_UNION
 instance DecodeType a => DecodeKind INPUT a where
   decodeKind _ = decodeType
 

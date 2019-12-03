@@ -42,10 +42,7 @@ import           Data.Morpheus.Execution.Server.Generics.EnumRep
 import           Data.Morpheus.Kind             ( Context(..)
                                                 , ENUM
                                                 , GQL_KIND
-                                                , INPUT_OBJECT
-                                                , OBJECT
                                                 , SCALAR
-                                                , UNION
                                                 , OUTPUT
                                                 , INPUT
                                                 )
@@ -145,29 +142,7 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
     enumType =
       DataEnum . buildType (map createEnumValue $ enumTags (Proxy @(Rep a)))
 
--- INPUT_OBJECT
-instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind INPUT_OBJECT a where
-  introspectKind _ = updateLib (DataInputObject . buildType fields)
-                               types
-                               (Proxy @a)
-    where (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
-
--- OBJECTS
-instance (GQL_TYPE a, ObjectFields (CUSTOM a) a) => IntrospectKind OBJECT a where
-  introspectKind _ = updateLib
-    (DataObject . buildType (introspection__typename : fields))
-    types
-    (Proxy @a)
-    where (fields, types) = objectFields (Proxy @(CUSTOM a)) (Proxy @a)
-
--- UNION
-instance (GQL_TYPE a, IntrospectKind OUTPUT a) => IntrospectKind UNION a where
-  introspectKind _ = introspectKind (Context :: Context OUTPUT a)
-
--- Types
-
 type GQL_TYPE a = (Generic a, GQLType a)
-
 
 -- Object Fields
 class ObjectFields (custom :: Bool) a where

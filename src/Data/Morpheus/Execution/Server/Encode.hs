@@ -43,10 +43,8 @@ import           Data.Morpheus.Execution.Server.Generics.EnumRep
                                                 ( EnumRep(..) )
 import           Data.Morpheus.Kind             ( ENUM
                                                 , GQL_KIND
-                                                , OBJECT
                                                 , ResContext(..)
                                                 , SCALAR
-                                                , UNION
                                                 , OUTPUT
                                                 , VContext(..)
                                                 )
@@ -131,15 +129,6 @@ instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
 -- ENUM
 instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o e m where
   encodeKind = pure . pure . gqlString . encodeRep . from . unVContext
-
---  OBJECT
-instance (Monad m, EncodeCon o e m a, Monad m, TypeRep (Rep a) o e m) => EncodeKind OBJECT a o e m where
-  encodeKind (VContext res) = encodeKind (VContext res :: VContext OUTPUT a)
-
--- UNION
-instance (Monad m, GQL_RES a, TypeRep (Rep a) o e m) => EncodeKind UNION a o e m where
-  encodeKind (VContext res) = encodeKind (VContext res :: VContext OUTPUT a)
-
 
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
