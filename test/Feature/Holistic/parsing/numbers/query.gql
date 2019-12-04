@@ -1,0 +1,7 @@
+{
+  u1: user(num: -1)
+  u2: user(num: +1)
+  u3: user(num: +1.0)
+  u3: user(num: -5.0)
+  expotential: user(num: 6.0221413e23)
+}
