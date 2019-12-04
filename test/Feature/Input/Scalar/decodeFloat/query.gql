@@ -1,0 +1,3 @@
+query ValidDecoding {
+  testFloat(value: 1)
+}

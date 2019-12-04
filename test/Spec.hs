@@ -9,6 +9,8 @@ import qualified Feature.Holistic.API          as Holistic
                                                 ( api )
 import qualified Feature.Input.Enum.API        as InputEnum
                                                 ( api )
+import qualified Feature.Input.Scalar.API      as InputScalar
+                                                ( api )
 import qualified Feature.InputType.API         as InputType
                                                 ( api )
 import qualified Feature.Schema.API            as Schema
@@ -27,13 +29,14 @@ import           TestFeature                    ( testFeature )
 
 main :: IO ()
 main = do
-  ioTests    <- testFeature Holistic.api "Feature/Holistic"
-  unionTest  <- testFeature UnionType.api "Feature/UnionType"
-  inputTest  <- testFeature InputType.api "Feature/InputType"
-  schemaTest <- testFeature Schema.api "Feature/Schema"
-  typeName   <- testFeature TypeName.api "Feature/WrappedTypeName"
-  inputEnum  <- testFeature InputEnum.api "Feature/Input/Enum"
-  inference  <- testFeature Inference.api "Feature/TypeInference"
+  ioTests     <- testFeature Holistic.api "Feature/Holistic"
+  unionTest   <- testFeature UnionType.api "Feature/UnionType"
+  inputTest   <- testFeature InputType.api "Feature/InputType"
+  schemaTest  <- testFeature Schema.api "Feature/Schema"
+  typeName    <- testFeature TypeName.api "Feature/WrappedTypeName"
+  inputEnum   <- testFeature InputEnum.api "Feature/Input/Enum"
+  inputScalar <- testFeature InputScalar.api "Feature/Input/Scalar"
+  inference   <- testFeature Inference.api "Feature/TypeInference"
   defaultMain
     (testGroup
       "Morpheus Graphql Tests"
@@ -43,6 +46,7 @@ main = do
       , schemaTest
       , typeName
       , inputEnum
+      , inputScalar
       , testSchemaRendering
       , inference
       ]
