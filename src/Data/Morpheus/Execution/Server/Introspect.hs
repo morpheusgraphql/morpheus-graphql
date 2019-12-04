@@ -159,14 +159,19 @@ instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind INPUT a where
   introspectKind _ = builder (typeRep $ Proxy @(Rep a)) (Proxy @a)
    where
     builder [ConsRep { consFields }] = buildObject False consFields
-    builder cons                     = buildInputUnion cons
+    builder cons                     = updateLib datatype updates
+      where 
+        (datatype,updates) = buildInputUnion cons
 
 instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind OUTPUT a where
   introspectKind _ = builder (typeRep $ Proxy @(Rep a)) (Proxy @a)
    where
     builder [ConsRep { consFields }] = buildObject True consFields
-    builder cons                     = buildUnionDT DataUnion DataObject cons
+    builder cons                     = updateLib datatype updates
+      where 
+        (datatype,updates) = buildUnionType DataUnion DataObject cons
 
+    
 type GQL_TYPE a = (Generic a, GQLType a)
 
 
@@ -186,6 +191,7 @@ class IntrospectRep (custom :: Bool) a where
 
 instance TypeRep (Rep a) => IntrospectRep 'False a where
 -- TODO: generates Rep according type
+
 
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName = DataField
@@ -289,16 +295,16 @@ analyseRep baseName cons = ResRep
   (unionRefRep   , left2             ) = partition (isUnionRef baseName) left1
   (unionRecordRep, anyonimousUnionRep) = partition isUnionRecord left2
 
-buildInputUnion :: forall  a . GQL_TYPE a => [ConsRep] -> Proxy a -> TypeUpdater
+buildInputUnion
+  :: forall  a . GQL_TYPE a => [ConsRep] -> (Proxy a -> DataType, [TypeUpdater])
 buildInputUnion cons = datatype (analyseRep baseName cons)
  where
   baseName        = __typeName (Proxy @a)
   baseFingerprint = __typeFingerprint (Proxy @a)
   datatype ResRep { unionRef = [], unionRecordRep = [], enumCons } =
-    updateLib (DataEnum . buildType (map createEnumValue enumCons)) types
-  datatype ResRep { unionRef, unionRecordRep, enumCons } = updateLib
-    (DataInputUnion . buildType typeMembers)
-    (types <> unionTypes)
+    (DataEnum . buildType (map createEnumValue enumCons), types)
+  datatype ResRep { unionRef, unionRecordRep, enumCons } =
+    (DataInputUnion . buildType typeMembers, types <> unionTypes)
    where
     typeMembers =
       map (, True) (unionRef <> unionMembers) <> map (, False) enumCons
@@ -306,23 +312,21 @@ buildInputUnion cons = datatype (analyseRep baseName cons)
       buildUnions DataInputObject baseFingerprint unionRecordRep
   types = map fieldTypeUpdater $ concatMap consFields cons
 
-buildUnionDT
+buildUnionType
   :: forall a
    . GQL_TYPE a
   => (DataUnion -> DataType)
   -> (DataObject -> DataType)
   -> [ConsRep]
-  -> Proxy a
-  -> TypeUpdater
-buildUnionDT wrapUnion wrapObject cons = datatype (analyseRep baseName cons)
+  -> (Proxy a -> DataType, [TypeUpdater])
+buildUnionType wrapUnion wrapObject cons = datatype (analyseRep baseName cons)
  where
   baseName        = __typeName (Proxy @a)
   baseFingerprint = __typeFingerprint (Proxy @a)
   datatype ResRep { unionRef = [], unionRecordRep = [], enumCons } =
-    updateLib (DataEnum . buildType (map createEnumValue enumCons)) types
-  datatype ResRep { unionRef, unionRecordRep, enumCons } = updateLib
-    (wrapUnion . buildType typeMembers)
-    (types <> enumTypes <> unionTypes)
+    (DataEnum . buildType (map createEnumValue enumCons), types)
+  datatype ResRep { unionRef, unionRecordRep, enumCons } =
+    (wrapUnion . buildType typeMembers, types <> enumTypes <> unionTypes)
    where
     typeMembers = unionRef <> enumMembers <> unionMembers
     (enumMembers, enumTypes) =
@@ -330,7 +334,6 @@ buildUnionDT wrapUnion wrapObject cons = datatype (analyseRep baseName cons)
     (unionMembers, unionTypes) =
       buildUnions wrapObject baseFingerprint unionRecordRep
   types = map fieldTypeUpdater $ concatMap consFields cons
-
 
 buildObject :: GQL_TYPE a => Bool -> [FieldRep] -> Proxy a -> TypeUpdater
 buildObject isOutput consFields = updateLib (wrap . fields) types
