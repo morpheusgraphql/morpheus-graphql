@@ -131,13 +131,14 @@ instance (IntrospectRep 'False a, Introspect b) => Introspect (a -> m b) where
   isObject _ = False
   field _ name = fieldObj { fieldArgs }
    where
-    fieldObj  = field (Proxy @b) name
-    fieldArgs = fst $ objectFields (Proxy :: Proxy 'False) (Proxy @a)
+    fieldObj = field (Proxy @b) name
+    fieldArgs =
+      fst $ objectFields (Proxy :: Proxy 'False) (OutputType, Proxy @a)
   introspect _ typeLib = resolveUpdates typeLib
                                         (introspect (Proxy @b) : inputs)
    where
     inputs :: [TypeUpdater]
-    inputs = snd $ objectFields (Proxy :: Proxy 'False) (Proxy @a)
+    inputs = snd $ objectFields (Proxy :: Proxy 'False) (InputType, Proxy @a)
 
 -- | Introspect With specific Kind: 'kind': object, scalar, enum ...
 class IntrospectKind (kind :: GQL_KIND) a where
@@ -156,29 +157,20 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
       DataEnum . buildType (map createEnumValue $ enumTags (Proxy @(Rep a)))
 
 instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind INPUT a where
-  introspectKind _ = builder (typeRep $ Proxy @(Rep a)) (Proxy @a)
-   where
-    builder [ConsRep { consFields }] = buildObject False consFields
-    builder cons                     = updateLib datatype updates
-      where 
-        (datatype,updates) = buildInputUnion cons
+  introspectKind _ = updateLib datatype updates (Proxy @a)
+    where (datatype, updates) = derivingData InputType
 
 instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind OUTPUT a where
-  introspectKind _ = builder (typeRep $ Proxy @(Rep a)) (Proxy @a)
-   where
-    builder [ConsRep { consFields }] = buildObject True consFields
-    builder cons                     = updateLib datatype updates
-      where 
-        (datatype,updates) = buildUnionType DataUnion DataObject cons
+  introspectKind _ = updateLib datatype updates (Proxy @a)
+    where (datatype, updates) = derivingData OutputType
 
-    
 type GQL_TYPE a = (Generic a, GQLType a)
 
 
 objectFields
   :: IntrospectRep custom a
   => proxy1 (custom :: Bool)
-  -> proxy2 a
+  -> (TypeScope, proxy2 a)
   -> ([(Name, DataField)], [TypeUpdater])
 objectFields p1 p2 = withObject (introspectRep p1 p2)
  where
@@ -187,7 +179,7 @@ objectFields p1 p2 = withObject (introspectRep p1 p2)
 
 -- Object Fields
 class IntrospectRep (custom :: Bool) a where
-  introspectRep :: proxy1 custom -> proxy2 a -> (DataType, [TypeUpdater])
+  introspectRep :: proxy1 custom -> (TypeScope , proxy2 a) -> (DataType, [TypeUpdater])
 
 instance TypeRep (Rep a) => IntrospectRep 'False a where
 -- TODO: generates Rep according type
@@ -295,6 +287,19 @@ analyseRep baseName cons = ResRep
   (unionRefRep   , left2             ) = partition (isUnionRef baseName) left1
   (unionRecordRep, anyonimousUnionRep) = partition isUnionRecord left2
 
+derivingData
+  :: forall a
+   . (GQLType a, Generic a, TypeRep (Rep a))
+  => TypeScope
+  -> (Proxy a -> DataType, [TypeUpdater])
+derivingData scope = builder $ typeRep $ Proxy @(Rep a)
+ where
+  builder [ConsRep { consFields }] = buildObject scope consFields
+  builder cons                     = genericUnion scope cons
+   where
+    genericUnion InputType  = buildInputUnion
+    genericUnion OutputType = buildUnionType DataUnion DataObject
+
 buildInputUnion
   :: forall  a . GQL_TYPE a => [ConsRep] -> (Proxy a -> DataType, [TypeUpdater])
 buildInputUnion cons = datatype (analyseRep baseName cons)
@@ -335,12 +340,17 @@ buildUnionType wrapUnion wrapObject cons = datatype (analyseRep baseName cons)
       buildUnions wrapObject baseFingerprint unionRecordRep
   types = map fieldTypeUpdater $ concatMap consFields cons
 
-buildObject :: GQL_TYPE a => Bool -> [FieldRep] -> Proxy a -> TypeUpdater
-buildObject isOutput consFields = updateLib (wrap . fields) types
+
+buildObject
+  :: GQL_TYPE a
+  => TypeScope
+  -> [FieldRep]
+  -> (Proxy a -> DataType, [TypeUpdater])
+buildObject isOutput consFields = (wrap . fields, types)
  where
   (fields, types) = buildDataObject consFields
-  wrap | isOutput  = DataObject . with__typename
-       | otherwise = DataInputObject
+  wrap | isOutput == OutputType = DataObject . with__typename
+       | otherwise              = DataInputObject
 
 buildDataObject
   :: GQLType a => [FieldRep] -> (Proxy a -> DataObject, [TypeUpdater])
@@ -433,6 +443,7 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
       }
     )
 
+data TypeScope = InputType | OutputType deriving (Show,Eq,Ord)
 
 --  GENERIC UNION
 class TypeRep f where
