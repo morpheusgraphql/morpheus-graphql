@@ -1,7 +1,7 @@
 {
-  u1: user(num: -1)
-  u2: user(num: -20232)
-  u3: user(num: 1.01e4)
-  u3: user(num: -5.0)
-  expotential: user(num: 6.0221413e23)
+  negative1(num: -1)
+  negative2(num: -20232)
+  negative3(num: -5.0)
+  exp1(num: 1.01e4)
+  exp2(num: 6.0221413e23)
 }

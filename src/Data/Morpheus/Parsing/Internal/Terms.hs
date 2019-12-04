@@ -26,6 +26,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , keyword
   , operator
   , optDescription
+  , parseNegativeSign
   )
 where
 
@@ -71,13 +72,18 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , TypeWrapper(..)
                                                 , toHSWrappers
-                                                , convertToHaskellName )
+                                                , convertToHaskellName
+                                                )
 
 
 -- Name : https://graphql.github.io/graphql-spec/June2018/#sec-Names
 --
 -- Name :: /[_A-Za-z][_0-9A-Za-z]*/
 --
+
+parseNegativeSign :: Parser Bool
+parseNegativeSign = (char '-' $> True <* spaceAndComments) <|> pure False
+
 parseName :: Parser Name
 parseName = token
 
