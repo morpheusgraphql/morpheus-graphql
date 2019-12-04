@@ -1,3 +1,7 @@
 query ValidDecoding {
-  testFloat(value: 1)
+  one: testInt(value: 1.00)
+  negOne: testInt(value: -1)
+  negNummber: testInt(value: -1.235)
+  expNumber: testInt(value: 1.23e5)
+  negExpNumber: testInt(value: - 0.123e5)
 }
