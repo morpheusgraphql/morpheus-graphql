@@ -133,17 +133,22 @@ rules:
 
 - removed kind: INPUT_UNION
 
+### Fixed 
+
+- support of signed numbers (e.g `-4`)
+- support of numbers with expotential (e.g `1.04e5`)
+
 ## [0.7.1] - 26.11.2019
 
 - max bound icludes: support-megaparsec-8.0
 
 ## [0.7.0] - 24.11.2019
 
-## Removed
+### Removed
 
 - `toMorpheusHaskellAPi` from `Data.Morpheus.Document` functionality will be migrated in `morpheus-graphql-cli`
 
-## Changed
+### Changed
 
 - `liftM` to `MonadTrans` instance method `lift`
 
