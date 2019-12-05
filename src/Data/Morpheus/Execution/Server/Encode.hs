@@ -130,6 +130,62 @@ instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
 instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o e m where
   encodeKind = pure . pure . gqlString . encodeRep . from . unVContext
 
+instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind OUTPUT a o e m where
+  encodeKind (VContext value) = case rawRes of
+    ResNode { resKind = REP_OBJECT, resFields } ->
+      withObject (encodeK resFields)
+    ResNode { resKind = REP_UNION, resFields, resTypeName, isResRecord } ->
+      encodeUnion resFields
+     where
+        -- ENUM
+      encodeUnion [] (_, Selection { selectionRec = SelectionField }) =
+        pure $ gqlString resTypeName
+      -- BOXED ENUM
+      encodeUnion [] (_, Selection { selectionRec = UnionSelection selections })
+        = resolveObject currentSelection resolvers
+       where
+        enumObjectTypeName = __typeName (Proxy @a) <> "EnumObject"
+        currentSelection   = fromMaybe [] $ lookup enumObjectTypeName selections
+        resolvers =
+          [ ("enum", const $ pure $ gqlString resTypeName)
+          , __typenameResolverBy enumObjectTypeName
+          ]
+      encodeUnion [] _ =
+        failure $ internalResolvingError "expected enum value Error"
+      -- Type References --------------------------------------------------------------
+      encodeUnion [ResField { resFieldType, resFieldRes, resIsObject }] (key, sel@Selection { selectionRec = UnionSelection selections })
+        | resIsObject && resTypeName == __typeName (Proxy @a) <> resFieldType
+        = resFieldRes
+          (key, sel { selectionRec = SelectionSet currentSelection })
+        where currentSelection = pickSelection resFieldType selections
+      -- RECORDS ----------------------------------------------------------------------------
+      encodeUnion fields (_, Selection { selectionRec = UnionSelection selections })
+        | isResRecord
+        = resolveObject selection resolvers
+       where
+        selection = pickSelection resTypeName selections
+        resolvers = __typenameResolverBy resTypeName : map toObjRes fields
+      --- Types without Record fields
+      encodeUnion fields (_, Selection { selectionRec = UnionSelection selections })
+        = resolveObject selection resolvers
+       where
+        selection = fromMaybe [] $ lookup resTypeName selections
+        resolvers =
+          __typenameResolverBy resTypeName : map toObjRes (setFieldNames fields)
+      ------------------------------------------------------------------------------  
+      encodeUnion _ _ = failure $ internalResolvingError
+        "union Resolver should only recieve UnionSelection"
+   where
+    rawRes =
+      typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
+    ---------------------------------------------------------------  
+    encodeK resolvers selection =
+      resolveObject selection (__typenameResolver : map toObjRes resolvers)
+    -------------------------------------------------
+    toObjRes ResField { resFieldName, resFieldRes } =
+      (resFieldName, resFieldRes)
+    __typenameResolver = __typenameResolverBy $ __typeName (Proxy @a)
+
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
 
@@ -147,16 +203,16 @@ class ObjectResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) wh
   objectResolvers :: Proxy custom -> a -> [(Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)]
 
 instance (Generic a, TypeRep (Rep a) o e m ) => ObjectResolvers 'False a o e m where
-   objectResolvers _ value = case rawRes of
-      TypeRes { resKind = REP_OBJECT, resFields } -> map toObjRes resFields
-      -- TODO: FIXME:
-      _ -> []
-    where
-        rawRes =
-          typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
-        -------------------------------------------------
-        toObjRes ResField { resFieldName, resFieldRes } =
-          (resFieldName, resFieldRes)
+  objectResolvers _ value = case rawRes of
+    ResNode { resKind = REP_OBJECT, resFields } -> map toObjRes resFields
+    -- TODO: FIXME:
+    _ -> []
+   where
+    rawRes =
+      typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
+    -------------------------------------------------
+    toObjRes ResField { resFieldName, resFieldRes } =
+      (resFieldName, resFieldRes)
 
 ----- HELPERS ----------------------------
 encodeQuery
@@ -206,71 +262,13 @@ __typenameResolverBy name = ("__typename", const $ pure $ gqlString name)
 pickSelection :: Name -> [(Name, SelectionSet)] -> SelectionSet
 pickSelection name = fromMaybe [] . lookup name
 
-
-
-instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind OUTPUT a o e m where
-  encodeKind (VContext value) = case rawRes of
-    TypeRes { resKind = REP_OBJECT, resFields } ->
-      withObject (encodeK resFields)
-    TypeRes { resKind = REP_UNION, resFields, resCons, isResRecord } ->
-      encodeUnion resFields
-     where
-      -- ENUM
-      encodeUnion [] (_, Selection { selectionRec = SelectionField }) =
-        pure $ gqlString resCons
-      -- BOXED ENUM
-      encodeUnion [] (_, Selection { selectionRec = UnionSelection selections })
-        = resolveObject currentSelection resolvers
-       where
-        enumObjectTypeName = __typeName (Proxy @a) <> "EnumObject"
-        currentSelection   = fromMaybe [] $ lookup enumObjectTypeName selections
-        resolvers =
-          [ ("enum", const $ pure $ gqlString resCons)
-          , __typenameResolverBy enumObjectTypeName
-          ]
-      encodeUnion [] _ =
-        failure $ internalResolvingError "expected enum value Error"
-      -- Type References --------------------------------------------------------------
-      encodeUnion [ResField { resFieldType, resFieldRes, resIsObject }] (key, sel@Selection { selectionRec = UnionSelection selections })
-        | resIsObject && resCons == __typeName (Proxy @a) <> resFieldType
-        = resFieldRes
-          (key, sel { selectionRec = SelectionSet currentSelection })
-        where currentSelection = pickSelection resFieldType selections
-      -- RECORDS ----------------------------------------------------------------------------
-      encodeUnion fields (_, Selection { selectionRec = UnionSelection selections })
-        | isResRecord
-        = resolveObject selection resolvers
-       where
-        selection = pickSelection resCons selections
-        resolvers = __typenameResolverBy resCons : map toObjRes fields
-      --- Types without Record fields
-      encodeUnion fields (_, Selection { selectionRec = UnionSelection selections })
-        = resolveObject selection resolvers
-       where
-        selection = fromMaybe [] $ lookup resCons selections
-        resolvers =
-          __typenameResolverBy resCons : map toObjRes (setFieldNames fields)
-      ------------------------------------------------------------------------------  
-      encodeUnion _ _ = failure $ internalResolvingError
-        "union Resolver should only recieve UnionSelection"
-   where
-    rawRes =
-      typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
-    ---------------------------------------------------------------  
-    encodeK resolvers selection =
-      resolveObject selection (__typenameResolver : map toObjRes resolvers)
-    -------------------------------------------------
-    toObjRes ResField { resFieldName, resFieldRes } =
-      (resFieldName, resFieldRes)
-    __typenameResolver = __typenameResolverBy $ __typeName (Proxy @a)
-
 data REP_KIND = REP_UNION | REP_OBJECT
 
-data TypeRes o e m = TypeRes {
-      resCons :: Name,
-      resKind :: REP_KIND,
-      resFields :: [ResField o e m],
-      isResRecord :: Bool
+data ResNode o e m = ResNode {
+    resTypeName :: Name,
+    resKind :: REP_KIND,
+    resFields :: [ResField o e m],
+    isResRecord :: Bool
   }
 
 data ResField o e m = ResField {
@@ -289,7 +287,7 @@ setFieldNames = zipWith setFieldName ([0 ..] :: [Int])
 
 
 class TypeRep f o e (m :: * -> *) where
-          typeResolvers :: ResContext OUTPUT o e m value -> f a -> TypeRes o e m
+          typeResolvers :: ResContext OUTPUT o e m value -> f a -> ResNode o e m
 
 instance TypeRep  f o e m => TypeRep (M1 D c f) o e m where
   typeResolvers context (M1 src) = typeResolvers context src
@@ -302,7 +300,7 @@ instance (TypeRep a o e m,TypeRep b o e m) => TypeRep (a :+: b) o e m where
     (typeResolvers context x) { resKind = REP_UNION }
 
 instance (FieldRep f o e m,Constructor c) => TypeRep (M1 C c f) o e m where
-  typeResolvers context (M1 src) = TypeRes { resCons     = pack (conName proxy)
+  typeResolvers context (M1 src) = ResNode { resTypeName = pack (conName proxy)
                                            , resKind     = REP_OBJECT
                                            , resFields   = fieldRep context src
                                            , isResRecord = conIsRecord proxy
