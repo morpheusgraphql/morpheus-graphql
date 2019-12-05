@@ -15,7 +15,7 @@ import           Language.Haskell.TH
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
-import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), IntrospectRep (..),TypeScope(..))
+import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), objectFields, IntrospectRep (..),TypeScope(..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
 import           Data.Morpheus.Types.Internal.AST          (ConsD (..), TypeD (..), ArgsType (..),Key, DataType(..), Meta(..), DataTypeContent(..),DataFingerprint(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
@@ -59,7 +59,7 @@ buildTypes = listE . concatMap introspectField
       [|[introspect $(proxyT fieldType)]|] : inputTypes fieldArgsType
       where
         inputTypes (Just ArgsType {argsTypeName})
-          | argsTypeName /= "()" = [[|snd $ introspectRep (Proxy :: Proxy TRUE) (InputType,$(proxyT tAlias))|]]
+          | argsTypeName /= "()" = [[|snd $ objectFields (Proxy :: Proxy TRUE) (InputType,$(proxyT tAlias))|]]
           where
             tAlias = TypeAlias {aliasTyCon = argsTypeName, aliasWrappers = [], aliasArgs = Nothing}
         inputTypes _ = []
