@@ -148,14 +148,13 @@ class IntrospectKind (kind :: GQL_KIND) a where
 -- SCALAR
 instance (GQLType a, GQLScalar a) => IntrospectKind SCALAR a where
   introspectKind _ = updateLib scalarType [] (Proxy @a)
-    where scalarType = DataScalar . buildType (scalarValidator (Proxy @a))
+    where scalarType = buildType $ DataScalar $ scalarValidator (Proxy @a)
 
 -- ENUM
 instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
   introspectKind _ = updateLib enumType [] (Proxy @a)
    where
-    enumType =
-      DataEnum . buildType (map createEnumValue $ enumTags (Proxy @(Rep a)))
+    enumType = buildType $ DataEnum $ map createEnumValue $ enumTags (Proxy @(Rep a))
 
 instance (GQL_TYPE a, IntrospectRep (CUSTOM a) a) => IntrospectKind INPUT a where
   introspectKind _ = updateLib (const datatype) updates (Proxy @a)
