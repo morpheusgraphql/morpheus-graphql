@@ -34,6 +34,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , setOf
                                                 , spaceAndComments
                                                 , token
+                                                , parseNegativeSign
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ScalarValue(..)
@@ -68,8 +69,17 @@ booleanValue = boolTrue <|> boolFalse
   boolTrue  = string "true" $> Scalar (Boolean True)
   boolFalse = string "false" $> Scalar (Boolean False)
 
+
+
+
+
 valueNumber :: Parser Value
-valueNumber = Scalar . decodeScientific <$> scientific
+valueNumber = do
+  isNegative <- parseNegativeSign
+  Scalar . decodeScientific . signedNumber isNegative <$> scientific
+ where
+  signedNumber isNegative number | isNegative = -number
+                                 | otherwise  = number
 
 enumValue :: Parser Value
 enumValue = do

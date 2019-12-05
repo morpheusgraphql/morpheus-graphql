@@ -1,0 +1,7 @@
+query ValidDecoding {
+  one: testFloat(value: 1.00)
+  negOne: testFloat(value: -1)
+  negNummber: testFloat(value: -1.235)
+  expNumber: testFloat(value: 0.3e5)
+  negExpNumber: testFloat(value: - 0.12e-35)
+}
