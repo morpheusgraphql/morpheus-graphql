@@ -17,7 +17,7 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), IntrospectRep (..),TypeScope(..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
-import           Data.Morpheus.Types.Internal.AST          (ConsD (..), TypeD (..), ArgsType (..),Key, DataType(..), Meta(..), DataTyCon(..),DataFingerprint(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
+import           Data.Morpheus.Types.Internal.AST          (ConsD (..), TypeD (..), ArgsType (..),Key, DataType(..), Meta(..), DataTypeContent(..),DataFingerprint(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
 
 
@@ -25,7 +25,7 @@ instanceIntrospect :: (Key,DataType) -> Q [Dec]
 -- FIXME: dirty fix for introspection
 instanceIntrospect ("__DirectiveLocation",_) = pure []
 instanceIntrospect ("__TypeKind",_) = pure []
-instanceIntrospect (name, DataEnum enumType) =
+instanceIntrospect (name, DataType {typeContent = DataEnum enumType}) =
   pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
     -----------------------------------------------
@@ -50,15 +50,14 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
     methods = [instanceFunD 'introspectRep ["_proxy1", "_proxy2"] body]
       where
         body = [|
-          (DataObject $ DataTyCon
-          { 
+          ( DataType{ 
             typeName  = tName
             ,typeFingerprint = DataFingerprint tName []
             , typeMeta        = Just Meta { 
               metaDescription = Just "TODO"
               , metaDirectives  = []
           }
-          , typeData = $(buildFields cFields)
+          , typeContent = DataObject  $(buildFields cFields)
         } , concat $(buildTypes cFields))|]
 
 deriveObjectRep _ = pure []

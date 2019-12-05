@@ -18,7 +18,7 @@ import           Data.Morpheus.Rendering.RenderGQL
                                                 ( renderWrapped )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
-                                                , DataTyCon(..)
+                                                , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeLib(..)
                                                 , DataValidator(..)
@@ -63,7 +63,7 @@ validateInputValue lib prop' = validate
       validateInputValue lib prop' wrappers type' (key', element')
   {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
   {-- VALIDATE OBJECT--}
-  validate [] (DataInputObject DataTyCon { typeData = parentFields' }) (_, Object fields)
+  validate [] (DataInputObject DataType { typeData = parentFields' }) (_, Object fields)
     = Object <$> mapM validateField fields
    where
     validateField (_name, value) = do
@@ -86,13 +86,13 @@ validateInputValue lib prop' = validate
       getField = lookupField _name parentFields' (UnknownField prop' _name)
   -- VALIDATE INPUT UNION
   -- TODO: Validate Union
-  validate [] (DataInputUnion DataTyCon { typeData }) (_, Object fields) =
+  validate [] (DataInputUnion DataType { typeData }) (_, Object fields) =
     return (Object fields)
   {-- VALIDATE SCALAR --}
-  validate [] (DataEnum DataTyCon { typeData = tags, typeName = name' }) (_, value')
+  validate [] (DataEnum DataType { typeData = tags, typeName = name' }) (_, value')
     = validateEnum (UnexpectedType prop' name' value' Nothing) tags value'
   {-- VALIDATE ENUM --}
-  validate [] (DataScalar DataTyCon { typeName = name', typeData = DataValidator { validateValue = validator' } }) (_, value')
+  validate [] (DataScalar DataType { typeName = name', typeData = DataValidator { validateValue = validator' } }) (_, value')
     = case validator' value' of
       Right _  -> return value'
       Left  "" -> failure (UnexpectedType prop' name' value' Nothing)

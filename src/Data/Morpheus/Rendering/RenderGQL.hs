@@ -71,17 +71,17 @@ instance RenderGQL (Key, DataType) where
   render (name, DataType { typeContent }) = __render typeContent
    where
     __render DataScalar{} = "scalar " <> name
-    __render (DataEnum typeData) =
-      "enum " <> name <> renderObject render typeData
-    __render (DataUnion typeData) =
+    __render (DataEnum tags) =
+      "enum " <> name <> renderObject render tags
+    __render (DataUnion members) =
       "union "
         <> name
         <> " =\n    "
-        <> intercalate ("\n" <> renderIndent <> "| ") typeData
-    __render (DataInputObject typeData) = "input " <> name <> render typeData
-    __render (DataInputUnion  typeData) = "input " <> name <> render fields
-      where fields = createInputUnionFields name (map fst typeData)
-    __render (DataObject typeData) = "type " <> name <> render typeData
+        <> intercalate ("\n" <> renderIndent <> "| ") members
+    __render (DataInputObject fields) = "input " <> name <> render fields
+    __render (DataInputUnion  members) = "input " <> name <> render fields
+      where fields = createInputUnionFields name (map fst members)
+    __render (DataObject fields) = "type " <> name <> render fields
 
 -- OBJECT
 instance RenderGQL [(Text, DataField)] where

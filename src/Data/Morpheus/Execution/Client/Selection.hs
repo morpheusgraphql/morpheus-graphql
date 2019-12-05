@@ -232,8 +232,8 @@ buildInputType lib name = getType lib name >>= generateTypes
  where
   generateTypes DataType { typeName, typeContent } = subTypes typeContent
    where
-    subTypes (DataInputObject typeData) = do
-      fields <- traverse toFieldD typeData
+    subTypes (DataInputObject typeContent) = do
+      fields <- traverse toFieldD typeContent
       pure
         [ ClientType
             { clientType =
@@ -251,11 +251,11 @@ buildInputType lib name = getType lib name >>= generateTypes
       toFieldD (_, field@DataField { fieldType }) = do
         aliasTyCon <- typeFrom [] <$> getType lib (aliasTyCon fieldType)
         pure $ field { fieldType = fieldType { aliasTyCon } }
-    subTypes (DataEnum typeData) = pure
+    subTypes (DataEnum typeContent) = pure
       [ ClientType
           { clientType = TypeD { tName      = unpack typeName
                                , tNamespace = []
-                               , tCons      = map enumOption typeData
+                               , tCons      = map enumOption typeContent
                                , tMeta      = Nothing
                                }
           , clientKind = KindEnum
@@ -274,8 +274,8 @@ lookupFieldType
   -> Position
   -> Text
   -> Validation (DataType, TypeAlias)
-lookupFieldType lib path DataType { typeContent = DataObject typeData, typeName } refPosition key
-  = case lookup key typeData of
+lookupFieldType lib path DataType { typeContent = DataObject typeContent, typeName } refPosition key
+  = case lookup key typeContent of
     Just DataField { fieldType = alias@TypeAlias { aliasTyCon }, fieldMeta } ->
       checkDeprecated >> (trans <$> getType lib aliasTyCon)
      where
@@ -292,7 +292,7 @@ lookupFieldType lib path DataType { typeContent = DataObject typeData, typeName 
         Nothing -> pure ()
     ------------------
     Nothing -> failure
-      (compileError $ "cant find field \"" <> pack (show typeData) <> "\"")
+      (compileError $ "cant find field \"" <> pack (show typeContent) <> "\"")
 lookupFieldType _ _ dt _ _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 

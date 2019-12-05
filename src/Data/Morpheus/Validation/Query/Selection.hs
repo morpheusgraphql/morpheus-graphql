@@ -33,7 +33,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataField(..)
                                                 , Ref(..)
                                                 , DataObject
-                                                , DataTyCon(..)
+                                                , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeLib(..)
                                                 , TypeAlias(..)
@@ -58,7 +58,7 @@ import           Data.Morpheus.Validation.Query.Fragment
                                                 )
 
 checkDuplicatesOn :: DataObject -> SelectionSet -> Validation SelectionSet
-checkDuplicatesOn DataTyCon { typeName = name' } keys =
+checkDuplicatesOn DataType { typeName = name' } keys =
   checkNameCollision enhancedKeys selError >> pure keys
  where
   selError     = duplicateQuerySelections name'
@@ -127,7 +127,7 @@ validateSelectionSet
   -> Validation SelectionSet
 validateSelectionSet lib fragments' operatorName variables = __validate
  where
-  __validate dataType'@DataTyCon { typeName = typeName' } selectionSet' =
+  __validate dataType'@DataType { typeName = typeName' } selectionSet' =
     concat
       <$> mapM validateSelection selectionSet'
       >>= checkDuplicatesOn dataType'

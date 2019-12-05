@@ -20,10 +20,13 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , DataType(..)
                                                 , DataObject
-                                                , DataTyCon(..)
+                                                , DataTypeContent(..)
+                                                , Name
                                                 , Key
                                                 , RawDataType(..)
                                                 , TypeAlias(..)
+                                                , DataFingerprint(..)
+                                                , Meta
                                                 , isWeaker
                                                 , isWeaker
                                                 )
@@ -37,22 +40,30 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
  where
   validateType :: (Key, RawDataType) -> Validation (Maybe (Key, DataType))
   validateType (name, FinalDataType x) = pure $ Just (name, x)
-  validateType (name, Implements interfaces object) =
-    asTuple name <$> object `mustImplement` interfaces
+  validateType (name, Implements { implementsName, implementsInterfaces, implementsMeta, implementsContent })
+    = asTuple name
+      <$>             (implementsName, implementsMeta, implementsContent)
+      `mustImplement` implementsInterfaces
   validateType _ = pure Nothing
   -----------------------------------
   asTuple name x = Just (name, x)
   -----------------------------------
-  mustImplement :: DataObject -> [Key] -> Validation DataType
-  mustImplement object interfaceKey = do
+  mustImplement :: (Name, Maybe Meta, DataObject) -> [Key] -> Validation DataType
+  mustImplement (typeName, typeMeta, object) interfaceKey = do
     interface <- traverse getInterfaceByKey interfaceKey
     case concatMap (mustBeSubset object) interface of
-      []     -> pure $ DataObject object
-      errors -> failure $ partialImplements (typeName object) errors
+      [] -> pure $ DataType { typeName
+                            , typeFingerprint = DataFingerprint typeName []
+                            , typeMeta
+                            , typeContent     = DataObject object
+                            }
+      errors -> failure $ partialImplements typeName errors
   -------------------------------
-  mustBeSubset :: DataObject -> DataObject -> [(Key, Key, ImplementsError)]
-  mustBeSubset DataTyCon { typeData = objFields } DataTyCon { typeName, typeData = interfaceFields }
-    = concatMap checkField interfaceFields
+  mustBeSubset
+    :: DataObject -> (Name, DataObject) -> [(Key, Key, ImplementsError)]
+  mustBeSubset objFields (typeName, interfaceFields) = concatMap
+    checkField
+    interfaceFields
    where
     checkField :: (Key, DataField) -> [(Key, Key, ImplementsError)]
     checkField (key, DataField { fieldType = interfaceT@TypeAlias { aliasTyCon = interfaceTypeName, aliasWrappers = interfaceWrappers } })
@@ -71,7 +82,7 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
              ]
         Nothing -> [(typeName, key, UndefinedField)]
   -------------------------------
-  getInterfaceByKey :: Key -> Validation DataObject
+  getInterfaceByKey :: Key -> Validation (Name,DataObject)
   getInterfaceByKey key = case lookup key lib of
-    Just (Interface x) -> pure x
-    _                  -> failure $ unknownInterface key
+    Just Interface { interfaceContent } -> pure (key,interfaceContent)
+    _ -> failure $ unknownInterface key
