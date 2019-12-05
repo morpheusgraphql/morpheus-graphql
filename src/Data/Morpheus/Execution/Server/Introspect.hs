@@ -23,6 +23,7 @@ module Data.Morpheus.Execution.Server.Introspect
   , updateLib
   , buildType
   , objectFields
+  , TypeScope(..)
   )
 where
 
@@ -158,11 +159,15 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
 
 instance (GQL_TYPE a, IntrospectRep (CUSTOM a) a) => IntrospectKind INPUT a where
   introspectKind _ = updateLib (const datatype) updates (Proxy @a)
-    where (datatype, updates) = introspectRep (Proxy @(CUSTOM a)) (InputType, Proxy @a) 
+   where
+    (datatype, updates) =
+      introspectRep (Proxy @(CUSTOM a)) (InputType, Proxy @a)
 
 instance (GQL_TYPE a, IntrospectRep (CUSTOM a) a) => IntrospectKind OUTPUT a where
   introspectKind _ = updateLib (const datatype) updates (Proxy @a)
-    where (datatype, updates) = introspectRep (Proxy @(CUSTOM a)) (OutputType, Proxy @a) 
+   where
+    (datatype, updates) =
+      introspectRep (Proxy @(CUSTOM a)) (OutputType, Proxy @a)
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
@@ -183,8 +188,7 @@ class IntrospectRep (custom :: Bool) a where
 
 instance (TypeRep (Rep a) ,GQLType a , Generic a) => IntrospectRep 'False a where
   introspectRep _ (scope, _) = unpackDeriving $ derivingData scope
-    where 
-       unpackDeriving (x,y)=  (x $ Proxy @a, y)
+    where unpackDeriving (x, y) = (x $ Proxy @a, y)
 
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName = DataField

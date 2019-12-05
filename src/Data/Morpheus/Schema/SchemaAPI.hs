@@ -18,6 +18,7 @@ import           Data.Morpheus.Execution.Server.Introspect
                                                 ( objectFields
                                                 , TypeUpdater
                                                 , introspect
+                                                , TypeScope(..)
                                                 )
 import           Data.Morpheus.Rendering.RenderIntrospection
                                                 ( createObjectType
@@ -78,8 +79,8 @@ initSchema lib = pure S__Schema
   }
 
 hiddenRootFields :: [(Text, DataField)]
-hiddenRootFields = fst
-  $ objectFields (Proxy :: Proxy (CUSTOM (Root Maybe))) (Proxy @(Root Maybe))
+hiddenRootFields = fst $ objectFields (Proxy :: Proxy (CUSTOM (Root Maybe)))
+                                      (OutputType, Proxy @(Root Maybe))
 
 defaultTypes :: TypeUpdater
 defaultTypes = flip

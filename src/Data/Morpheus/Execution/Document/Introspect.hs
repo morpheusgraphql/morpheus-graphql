@@ -15,9 +15,9 @@ import           Language.Haskell.TH
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
-import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), IntrospectRep (..))
+import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), IntrospectRep (..),TypeScope(..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
-import           Data.Morpheus.Types.Internal.AST          (ConsD (..), TypeD (..), ArgsType (..),Key, DataType(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
+import           Data.Morpheus.Types.Internal.AST          (ConsD (..), TypeD (..), ArgsType (..),Key, DataType(..), Meta(..), DataTyCon(..),DataFingerprint(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
 
 
@@ -40,15 +40,27 @@ deriveObjectRep :: (TypeD, Maybe DataTypeKind) -> Q [Dec]
 deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
   pure <$> instanceD (cxt constrains) iHead methods
   where
+    mainTypeName = typeT (mkName tName) typeArgs
     typeArgs = concatMap tyConArgs (maybeToList tKind)
     constrains = map conTypeable typeArgs
       where
         conTypeable name = typeT ''Typeable [name]
     -----------------------------------------------
-    iHead = instanceHeadMultiT ''IntrospectRep (conT ''TRUE) [typeT (mkName tName) typeArgs]
+    iHead = instanceHeadMultiT ''IntrospectRep (conT ''TRUE) [mainTypeName]
     methods = [instanceFunD 'introspectRep ["_proxy1", "_proxy2"] body]
       where
-        body = [|($(buildFields cFields), concat $(buildTypes cFields))|]
+        body = [|
+          (DataObject $ DataTyCon
+          { 
+            typeName  = tName
+            ,typeFingerprint = DataFingerprint tName []
+            , typeMeta        = Just Meta { 
+              metaDescription = Just "TODO"
+              , metaDirectives  = []
+          }
+          , typeData = $(buildFields cFields)
+        } , concat $(buildTypes cFields))|]
+
 deriveObjectRep _ = pure []
 
 buildTypes :: [DataField] -> ExpQ
@@ -58,7 +70,7 @@ buildTypes = listE . concatMap introspectField
       [|[introspect $(proxyT fieldType)]|] : inputTypes fieldArgsType
       where
         inputTypes (Just ArgsType {argsTypeName})
-          | argsTypeName /= "()" = [[|snd $ introspectRep (Proxy :: Proxy TRUE) $(proxyT tAlias)|]]
+          | argsTypeName /= "()" = [[|snd $ introspectRep (Proxy :: Proxy TRUE) (InputType,$(proxyT tAlias))|]]
           where
             tAlias = TypeAlias {aliasTyCon = argsTypeName, aliasWrappers = [], aliasArgs = Nothing}
         inputTypes _ = []
@@ -79,15 +91,14 @@ buildFields :: [DataField] -> ExpQ
 buildFields = listE . map buildField
   where
     buildField DataField {fieldName, fieldArgs, fieldType = alias@TypeAlias {aliasArgs, aliasWrappers}, fieldMeta} =
-      [|( fName
+      [|( fieldName
         , DataField
-            { fieldName = fName
+            { fieldName
             , fieldArgs = fArgs
             , fieldArgsType = Nothing
             , fieldType = TypeAlias {aliasTyCon = __typeName $(proxyT alias), aliasArgs = aArgs, aliasWrappers}
             , fieldMeta
             })|]
       where
-        fName = unpack fieldName
         fArgs = map (\(k, v) -> (unpack k, v)) fieldArgs
         aArgs = unpack <$> aliasArgs
