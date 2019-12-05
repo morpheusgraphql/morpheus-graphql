@@ -60,6 +60,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataFingerprint(..)
                                                 , DataTypeContent(..)
                                                 , DataTypeLib(..)
+                                                , DataType(..)
                                                 , MUTATION
                                                 , OperationType(..)
                                                 , QUERY
