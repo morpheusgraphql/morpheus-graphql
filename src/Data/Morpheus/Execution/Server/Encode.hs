@@ -17,7 +17,7 @@ module Data.Morpheus.Execution.Server.Encode
   , encodeQuery
   , encodeSubscription
   , encodeMutation
-  , ObjectResolvers(..)
+  , ResolveNode(..)
   )
 where
 
@@ -164,14 +164,14 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind OUTP
         = resolveObject selection resolvers
        where
         selection = pickSelection resTypeName selections
-        resolvers = __typenameResolverBy resTypeName : map toObjRes fields
+        resolvers = __typenameResolverBy resTypeName : map toFieldRes fields
       --- Types without Record fields
       encodeUnion fields (_, Selection { selectionRec = UnionSelection selections })
         = resolveObject selection resolvers
        where
         selection = fromMaybe [] $ lookup resTypeName selections
-        resolvers =
-          __typenameResolverBy resTypeName : map toObjRes (setFieldNames fields)
+        resolvers = __typenameResolverBy resTypeName
+          : map toFieldRes (setFieldNames fields)
       ------------------------------------------------------------------------------  
       encodeUnion _ _ = failure $ internalResolvingError
         "union Resolver should only recieve UnionSelection"
@@ -180,10 +180,7 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind OUTP
       typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
     ---------------------------------------------------------------  
     encodeK resolvers selection =
-      resolveObject selection (__typenameResolver : map toObjRes resolvers)
-    -------------------------------------------------
-    toObjRes ResField { resFieldName, resFieldRes } =
-      (resFieldName, resFieldRes)
+      resolveObject selection (__typenameResolver : map toFieldRes resolvers)
     __typenameResolver = __typenameResolverBy $ __typeName (Proxy @a)
 
 -- Types & Constrains -------------------------------------------------------
@@ -203,14 +200,11 @@ objectResolvers
   => Proxy custom
   -> a
   -> [(Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)]
-objectResolvers isCustom value = case resolveNode (Proxy @custom) value of
-  ResNode { resKind = REP_OBJECT, resFields } -> map toObjRes resFields
+objectResolvers isCustom value = case resolveNode isCustom value of
+  ResNode { resKind = REP_OBJECT, resFields } -> map toFieldRes resFields
   -- TODO: FIXME:
   _ -> []
- where
 
-  -------------------------------------------------
-  toObjRes ResField { resFieldName, resFieldRes } = (resFieldName, resFieldRes)
 
 --- GENERICS ------------------------------------------------
 class ResolveNode (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
@@ -283,6 +277,9 @@ data ResField o e m = ResField {
     resFieldRes  :: (Key, ValidSelection) -> ResolvingStrategy o e m Value,
     resIsObject  :: Bool
   }
+
+toFieldRes :: ResField o e m -> FieldRes o e m
+toFieldRes ResField { resFieldName, resFieldRes } = (resFieldName, resFieldRes)
 
 -- setFieldNames ::  Power Int Text -> Power { _1 :: Int, _2 :: Text }
 setFieldNames :: [ResField o e m] -> [ResField o e m]
