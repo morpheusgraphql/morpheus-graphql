@@ -181,10 +181,10 @@ instance (Monad m,Generic a, GQLType a,ResolveNode (CUSTOM a) a o e m) => Encode
       resolveObject selection (__typenameResolver : map toFieldRes resolvers)
     __typenameResolver = __typenameResolverBy $ __typeName (Proxy @a)
 
-data NodeResolver =
-    EnumRes { enumResolver :: FieldRes}
-  | UnionRes { unionResolvers :: [(Name,FieldRes)] }
-  | ObjectRes { objectResolvers :: [FieldRes] }
+data NodeResolver o e m a =
+    EnumRes { enumRes :: FieldRes o e m  }
+  | UnionRes { unionRes :: [(Name,FieldRes o e m )] }
+  | ObjectRes { objectRes :: [FieldRes o e m ] }
 
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
