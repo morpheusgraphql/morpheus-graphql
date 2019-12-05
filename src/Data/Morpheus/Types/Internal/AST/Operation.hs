@@ -13,6 +13,7 @@ module Data.Morpheus.Types.Internal.AST.Operation
   , DefaultValue
   , getOperationName
   , getOperationDataType
+  , getOperationObject
   )
 where
 
@@ -37,12 +38,17 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Collection
                                                 , Key
                                                 , Position
+                                                , Name
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( OperationType(..)
                                                 , TypeWrapper
                                                 , DataTypeLib(..)
-                                                , DataType
+                                                , DataType(..)
+                                                , DataTypeContent(..)
+                                                , coerceDataObject
+                              
+                                                , DataObject
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
@@ -75,6 +81,15 @@ data Variable a = Variable
   , variablePosition     :: Position
   , variableValue        :: a
   } deriving (Show,Lift)
+
+
+getOperationObject
+  :: Operation a b -> DataTypeLib -> Validation (Name, DataObject)
+getOperationObject op lib = do 
+  dt <- getOperationDataType op lib
+  case dt of
+    DataType { typeContent = DataObject x , typeName } -> pure (typeName,x)
+    _ -> failure ("invalid operation" :: Name)
 
 getOperationDataType :: Operation a b -> DataTypeLib -> Validation DataType
 getOperationDataType Operation { operationType = Query } lib =

@@ -48,6 +48,7 @@ module Data.Morpheus.Types.Internal.AST
   , DefaultValue
   , getOperationName
   , getOperationDataType
+  , getOperationObject
 
 
   -- DSL
