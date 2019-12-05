@@ -154,11 +154,11 @@ instance (Monad m,Generic a, GQLType a,ResolveNode (CUSTOM a) a o e m) => Encode
       encodeUnion [] _ =
         failure $ internalResolvingError "expected enum value Error"
       -- Type References --------------------------------------------------------------
-      encodeUnion [ResField { resFieldType, resFieldRes, resIsObject }] (key, sel@Selection { selectionRec = UnionSelection selections })
-        | resIsObject && resTypeName == __typeName (Proxy @a) <> resFieldType
-        = resFieldRes
+      encodeUnion [FieldNode { fieldTypeName, fieldResolver, isFieldObject }] (key, sel@Selection { selectionRec = UnionSelection selections })
+        | isFieldObject && resTypeName == __typeName (Proxy @a) <> fieldTypeName
+        = fieldResolver
           (key, sel { selectionRec = SelectionSet currentSelection })
-        where currentSelection = pickSelection resFieldType selections
+        where currentSelection = pickSelection fieldTypeName selections
       -- RECORDS ----------------------------------------------------------------------------
       encodeUnion fields (_, Selection { selectionRec = UnionSelection selections })
         | isResRecord
