@@ -49,17 +49,7 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
     iHead = instanceHeadMultiT ''IntrospectRep (conT ''TRUE) [mainTypeName]
     methods = [instanceFunD 'introspectRep ["_proxy1", "_proxy2"] body]
       where
-        body = [|
-          ( DataType{ 
-            typeName  = tName
-            ,typeFingerprint = DataFingerprint tName []
-            , typeMeta        = Just Meta { 
-              metaDescription = Just "TODO"
-              , metaDirectives  = []
-          }
-          , typeContent = DataObject  $(buildFields cFields)
-        } , concat $(buildTypes cFields))|]
-
+        body = [| ( DataObject  $(buildFields cFields), concat $(buildTypes cFields))|]
 deriveObjectRep _ = pure []
 
 buildTypes :: [DataField] -> ExpQ
