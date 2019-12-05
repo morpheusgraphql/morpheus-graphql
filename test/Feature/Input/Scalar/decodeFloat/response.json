@@ -1,5 +1,9 @@
 {
   "data": {
-    "test2": "LA"
+    "one": 1,
+    "negOne": -1,
+    "negNummber": -1.235,
+    "expNumber": 30000,
+    "negExpNumber": -1.2e-36
   }
 }
