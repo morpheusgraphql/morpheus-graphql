@@ -192,27 +192,33 @@ type GQL_RES a = (Generic a, GQLType a)
 type EncodeOperator o e m a
   = a -> ValidOperation -> ResolvingStrategy o e m Value
 
-type EncodeCon o e m a = (GQL_RES a, ObjectResolvers (CUSTOM a) a o e m)
+type EncodeCon o e m a = (GQL_RES a, ResolveNode (CUSTOM a) a o e m)
 
 type FieldRes o e m
   = (Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)
 
+objectResolvers
+  :: forall custom a o e m
+   . ResolveNode custom a o e m
+  => Proxy custom
+  -> a
+  -> [(Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)]
+objectResolvers isCustom value = case resolveNode (Proxy @custom) value of
+  ResNode { resKind = REP_OBJECT, resFields } -> map toObjRes resFields
+  -- TODO: FIXME:
+  _ -> []
+ where
+
+  -------------------------------------------------
+  toObjRes ResField { resFieldName, resFieldRes } = (resFieldName, resFieldRes)
 
 --- GENERICS ------------------------------------------------
-class ObjectResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
-  objectResolvers :: Proxy custom -> a -> [(Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)]
+class ResolveNode (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
+  resolveNode :: Proxy custom -> a -> ResNode o e m
 
-instance (Generic a, TypeRep (Rep a) o e m ) => ObjectResolvers 'False a o e m where
-  objectResolvers _ value = case rawRes of
-    ResNode { resKind = REP_OBJECT, resFields } -> map toObjRes resFields
-    -- TODO: FIXME:
-    _ -> []
-   where
-    rawRes =
-      typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
-    -------------------------------------------------
-    toObjRes ResField { resFieldName, resFieldRes } =
-      (resFieldName, resFieldRes)
+instance (Generic a, TypeRep (Rep a) o e m ) => ResolveNode 'False a o e m where
+  resolveNode _ value =
+    typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
 
 ----- HELPERS ----------------------------
 encodeQuery
