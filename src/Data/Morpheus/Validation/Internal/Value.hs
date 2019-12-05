@@ -43,27 +43,27 @@ validateInputValue
   -> DataType
   -> (Key, Value)
   -> InputValidation Value
-validateInputValue lib prop' = validate
+validateInputValue lib prop' rw datatype@DataType { typeContent , typeName } = validate rw typeContent
  where
-  throwError :: [TypeWrapper] -> DataType -> Value -> InputValidation Value
-  throwError wrappers datatype value =
+  throwError :: [TypeWrapper]  -> Value -> InputValidation Value
+  throwError wrappers  value =
     Left $ UnexpectedType prop' (renderWrapped datatype wrappers) value Nothing
   -- VALIDATION
-  validate :: [TypeWrapper] -> DataType -> (Key, Value) -> InputValidation Value
+  validate :: [TypeWrapper] -> DataTypeContent -> (Key, Value) -> InputValidation Value
   -- Validate Null. value = null ?
-  validate wrappers tName (_, Null) | isNullable wrappers = return Null
-                                    | otherwise = throwError wrappers tName Null
+  validate wrappers _ (_, Null) | isNullable wrappers = return Null
+                                    | otherwise = throwError wrappers  Null
   -- Validate LIST
-  validate (TypeMaybe : wrappers) type' value' =
-    validateInputValue lib prop' wrappers type' value'
-  validate (TypeList : wrappers) type' (key', List list') =
+  validate (TypeMaybe : wrappers) _ value' =
+    validateInputValue lib prop' wrappers datatype value'
+  validate (TypeList : wrappers) _ (key', List list') =
     List <$> mapM validateElement list'
    where
     validateElement element' =
-      validateInputValue lib prop' wrappers type' (key', element')
+      validateInputValue lib prop' wrappers datatype (key', element')
   {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
   {-- VALIDATE OBJECT--}
-  validate [] (DataInputObject DataType { typeData = parentFields' }) (_, Object fields)
+  validate [] (DataInputObject parentFields) (_, Object fields)
     = Object <$> mapM validateField fields
    where
     validateField (_name, value) = do
@@ -83,23 +83,23 @@ validateInputValue lib prop' = validate
                                  lib
                                  (typeMismatch x fieldTypeName' currentProp)
         return (type', currentProp)
-      getField = lookupField _name parentFields' (UnknownField prop' _name)
+      getField = lookupField _name parentFields (UnknownField prop' _name)
   -- VALIDATE INPUT UNION
   -- TODO: Validate Union
-  validate [] (DataInputUnion DataType { typeData }) (_, Object fields) =
+  validate [] (DataInputUnion _) (_, Object fields) =
     return (Object fields)
   {-- VALIDATE SCALAR --}
-  validate [] (DataEnum DataType { typeData = tags, typeName = name' }) (_, value')
-    = validateEnum (UnexpectedType prop' name' value' Nothing) tags value'
+  validate [] (DataEnum tags) (_, value)
+    = validateEnum (UnexpectedType prop' typeName value Nothing) tags value
   {-- VALIDATE ENUM --}
-  validate [] (DataScalar DataType { typeName = name', typeData = DataValidator { validateValue = validator' } }) (_, value')
-    = case validator' value' of
+  validate [] (DataScalar DataValidator { validateValue } ) (_, value')
+    = case validateValue value' of
       Right _  -> return value'
-      Left  "" -> failure (UnexpectedType prop' name' value' Nothing)
+      Left  "" -> failure (UnexpectedType prop' typeName value' Nothing)
       Left errorMessage ->
-        Left $ UnexpectedType prop' name' value' (Just errorMessage)
+        Left $ UnexpectedType prop' typeName value' (Just errorMessage)
   {-- 3. THROW ERROR: on invalid values --}
-  validate wrappers datatype (_, value) = throwError wrappers datatype value
+  validate wrappers _ (_, value) = throwError wrappers value
 
 validateEnum :: error -> [DataEnumValue] -> Value -> Either error Value
 validateEnum gqlError enumValues (Enum enumValue)
