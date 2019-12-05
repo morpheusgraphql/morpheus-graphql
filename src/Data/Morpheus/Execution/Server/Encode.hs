@@ -177,12 +177,14 @@ instance (Monad m,Generic a, GQLType a,ResolveNode (CUSTOM a) a o e m) => Encode
       encodeUnion _ _ = failure $ internalResolvingError
         "union Resolver should only recieve UnionSelection"
    where
-
-
-    ---------------------------------------------------------------  
     encodeK resolvers selection =
       resolveObject selection (__typenameResolver : map toFieldRes resolvers)
     __typenameResolver = __typenameResolverBy $ __typeName (Proxy @a)
+
+data NodeResolver =
+    EnumRes { enumResolver :: FieldRes}
+  | UnionRes { unionResolvers :: [(Name,FieldRes)] }
+  | ObjectRes { objectResolvers :: [FieldRes] }
 
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
