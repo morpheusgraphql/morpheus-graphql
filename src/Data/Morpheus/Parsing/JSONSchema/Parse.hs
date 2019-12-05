@@ -24,6 +24,7 @@ import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField
                                                 , DataType(..)
+                                                , DataTypeContent(..)
                                                 , DataTypeLib
                                                 , DataTypeWrapper(..)
                                                 , Key
@@ -70,11 +71,11 @@ instance ParseJSONSchema Type [(Key,DataType)] where
   parse Type { name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields }
     = do
       fields <- traverse parse iFields
-      pure [(typeName, DataInputObject $ createType typeName fields)]
+      pure [(typeName, createType typeName $ DataInputObject fields)]
   parse Type { name = Just typeName, kind = OBJECT, fields = Just oFields } =
     do
       fields <- traverse parse oFields
-      pure [(typeName, DataObject $ createType typeName fields)]
+      pure [(typeName, createType typeName $ DataObject  fields)]
   parse _ = pure []
 
 instance ParseJSONSchema Field (Key,DataField) where

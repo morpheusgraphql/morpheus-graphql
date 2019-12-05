@@ -454,14 +454,14 @@ kindOf DataType { typeContent } = __kind typeContent
 --------------------------------------------------------------------------------------------------
 data DataTypeLib = DataTypeLib
   { types        :: HashMap Key DataType
-  , query        :: (Key,  DataObject)
-  , mutation     :: Maybe (Key, DataObject)
-  , subscription :: Maybe (Key, DataObject)
+  , query        :: (Name,DataType)
+  , mutation     :: Maybe (Name, DataType)
+  , subscription :: Maybe (Name, DataType)
   } deriving (Show)
 
 type TypeRegister = HashMap Key DataType
 
-initTypeLib :: (Key, DataObject) -> DataTypeLib
+initTypeLib :: (Key, DataType) -> DataTypeLib
 initTypeLib query = DataTypeLib { types        = empty
                                 , query        = query
                                 , mutation     = Nothing
@@ -477,8 +477,8 @@ typeRegister DataTypeLib { types, query, mutation, subscription } =
   types `union` fromList
     (concatMap fromOperation [Just query, mutation, subscription])
 
-fromOperation :: Maybe (Key, DataObject) -> [(Key, DataType)]
---fromOperation (Just (key, datatype)) = [(key, DataObject datatype)]
+fromOperation :: Maybe (Key, DataType) -> [(Key, DataType)]
+fromOperation (Just (key, datatype)) = [(key, datatype)]
 fromOperation Nothing = []
 
 lookupDataType :: Key -> DataTypeLib -> Maybe DataType
@@ -562,8 +562,8 @@ createDataTypeLib types = case takeByKey "Query" types of
   _ -> internalError "Query Not Defined"
  where
   takeByKey key lib = case lookup key lib of
-    Just DataType { typeContent = (DataObject value) } ->
-      (Just (key, value), filter ((/= key) . fst) lib)
+    Just dt@DataType { typeContent = DataObject {} } ->
+      (Just (key, dt), filter ((/= key) . fst) lib)
     _ -> (Nothing, lib)
 
 

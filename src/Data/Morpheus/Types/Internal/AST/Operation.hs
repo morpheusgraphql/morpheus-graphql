@@ -30,7 +30,9 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( Validation ,Failure(..) )
+                                                ( Validation
+                                                , Failure(..)
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Collection
                                                 , Key
@@ -40,7 +42,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( OperationType(..)
                                                 , TypeWrapper
                                                 , DataTypeLib(..)
-                                                , DataObject
+                                                , DataType
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
@@ -74,7 +76,7 @@ data Variable a = Variable
   , variableValue        :: a
   } deriving (Show,Lift)
 
-getOperationDataType :: Operation a b -> DataTypeLib -> Validation DataObject
+getOperationDataType :: Operation a b -> DataTypeLib -> Validation DataType
 getOperationDataType Operation { operationType = Query } lib =
   pure $ snd $ query lib
 getOperationDataType Operation { operationType = Mutation, operationPosition } lib
@@ -84,5 +86,5 @@ getOperationDataType Operation { operationType = Mutation, operationPosition } l
 getOperationDataType Operation { operationType = Subscription, operationPosition } lib
   = case subscription lib of
     Just (_, subscription') -> pure subscription'
-    Nothing                 -> failure $ subscriptionIsNotDefined operationPosition
+    Nothing -> failure $ subscriptionIsNotDefined operationPosition
 
