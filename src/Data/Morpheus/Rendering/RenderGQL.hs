@@ -21,7 +21,7 @@ import           Data.Text.Lazy.Encoding        ( encodeUtf8 )
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
-                                                , DataTyCon(..)
+                                                , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeLib
                                                 , DataTypeWrapper(..)
@@ -62,34 +62,26 @@ instance RenderGQL TypeAlias where
     renderWrapped aliasTyCon aliasWrappers
 
 instance RenderGQL DataType where
-  render (DataScalar      x) = typeName x
-  render (DataEnum        x) = typeName x
-  render (DataUnion       x) = typeName x
-  render (DataInputObject x) = typeName x
-  render (DataInputUnion  x) = typeName x
-  render (DataObject      x) = typeName x
+  render = typeName
 
 instance RenderGQL DataEnumValue where
   render DataEnumValue { enumName } = enumName
 
 instance RenderGQL (Key, DataType) where
-  render (name, DataScalar{}) = "scalar " <> name
-  render (name, DataEnum DataTyCon { typeData }) =
-    "enum " <> name <> renderObject render typeData
-  render (name, DataUnion DataTyCon { typeData }) =
-    "union "
-      <> name
-      <> " =\n    "
-      <> intercalate ("\n" <> renderIndent <> "| ") typeData
-  render (name, DataInputObject DataTyCon { typeData }) =
-    "input " <> name <> render typeData
-  render (name, DataInputUnion DataTyCon { typeData }) =
-    "input " <> name <> render fields
-    where fields = createInputUnionFields name (map fst typeData)
-  render (name, DataObject DataTyCon { typeData }) =
-    "type " <> name <> render typeData
-
-
+  render (name, DataType { typeContent }) = __render typeContent
+   where
+    __render DataScalar{} = "scalar " <> name
+    __render (DataEnum typeData) =
+      "enum " <> name <> renderObject render typeData
+    __render (DataUnion typeData) =
+      "union "
+        <> name
+        <> " =\n    "
+        <> intercalate ("\n" <> renderIndent <> "| ") typeData
+    __render (DataInputObject typeData) = "input " <> name <> render typeData
+    __render (DataInputUnion  typeData) = "input " <> name <> render fields
+      where fields = createInputUnionFields name (map fst typeData)
+    __render (DataObject typeData) = "type " <> name <> render typeData
 
 -- OBJECT
 instance RenderGQL [(Text, DataField)] where
