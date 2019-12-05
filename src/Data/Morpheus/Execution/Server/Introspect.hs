@@ -361,7 +361,7 @@ buildObject :: TypeScope -> [FieldRep] -> (DataTypeContent, [TypeUpdater])
 buildObject isOutput consFields = (wrap fields, types)
  where
   (fields, types) = buildDataObject consFields
-  wrap | isOutput == OutputType = DataObject . with__typename
+  wrap | isOutput == OutputType = DataObject 
        | otherwise              = DataInputObject
 
 buildDataObject :: [FieldRep] -> (DataObject, [TypeUpdater])
