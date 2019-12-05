@@ -1,0 +1,7 @@
+{
+  negative1(num: -1)
+  negative2(num: -20232)
+  negative3(num: -5.0)
+  exp1(num: 1.01e4)
+  exp2(num: 6.0221413e23)
+}
