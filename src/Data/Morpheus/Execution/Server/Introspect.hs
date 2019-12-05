@@ -303,10 +303,10 @@ derivingData scope = builder $ typeRep $ Proxy @(Rep a)
   builder cons                     = genericUnion scope cons
    where
     genericUnion InputType  = buildInputUnion
-    genericUnion OutputType = buildUnionType DataUnion DataObject
+    genericUnion OutputType = buildUnionType (baseName,baseFingerprint) DataUnion DataObject
 
 buildInputUnion
-  :: forall  a . GQL_TYPE a => [ConsRep] -> (Proxy a -> DataType, [TypeUpdater])
+  :: [ConsRep] -> (DataTypeContent, [TypeUpdater])
 buildInputUnion cons = datatype (analyseRep baseName cons)
  where
   baseName        = __typeName (Proxy @a)
@@ -323,16 +323,14 @@ buildInputUnion cons = datatype (analyseRep baseName cons)
   types = map fieldTypeUpdater $ concatMap consFields cons
 
 buildUnionType
-  :: forall a
-   . GQL_TYPE a
-  => (DataUnion -> DataTypeContent)
+  :: 
+  (Name,DataFingerprint)
+  -> (DataUnion -> DataTypeContent)
   -> (DataObject -> DataTypeContent)
   -> [ConsRep]
-  -> (Proxy a -> DataType, [TypeUpdater])
-buildUnionType wrapUnion wrapObject cons = datatype (analyseRep baseName cons)
+  -> (DataTypeContent, [TypeUpdater])
+buildUnionType (baseName,baseFingerprint) wrapUnion wrapObject cons = datatype (analyseRep baseName cons)
  where
-  baseName        = __typeName (Proxy @a)
-  baseFingerprint = __typeFingerprint (Proxy @a)
   datatype ResRep { unionRef = [], unionRecordRep = [], enumCons } =
     (buildType $ DataEnum (map createEnumValue enumCons), types)
   datatype ResRep { unionRef, unionRecordRep, enumCons } =
