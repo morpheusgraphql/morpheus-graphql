@@ -67,6 +67,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , SUBSCRIPTION
                                                 , initTypeLib
                                                 , Value
+                                                , Name
+                                                , DataField
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -216,15 +218,16 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
     (fields, types) = objectFields
       (Proxy @(CUSTOM (subscription (Resolver SUBSCRIPTION event m))))
       (OutputType, Proxy @(subscription (Resolver SUBSCRIPTION event m)))
-   -- maybeOperator :: [a] -> Text -> Maybe (Text, DataType[a])
+  maybeOperator :: [(Name, DataField)] -> Name -> Maybe (Name, DataType)
   maybeOperator []     = const Nothing
   maybeOperator fields = Just . operatorType fields
-  -- operatorType :: [a] -> Text -> (Text, DataType[a])
-  operatorType typeContent typeName =
+  -------------------------------------------------
+  operatorType :: [(Name, DataField)] -> Name -> (Name, DataType)
+  operatorType fields typeName =
     ( typeName
-    , DataType { typeContent
-                , typeName
-                , typeFingerprint = DataFingerprint typeName []
-                , typeMeta        = Nothing
-                }
+    , DataType { typeContent     = DataObject fields
+               , typeName
+               , typeFingerprint = DataFingerprint typeName []
+               , typeMeta        = Nothing
+               }
     )
