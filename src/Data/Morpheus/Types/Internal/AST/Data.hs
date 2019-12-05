@@ -415,10 +415,9 @@ createUnionType :: Key -> [Key] -> (Key, DataType)
 createUnionType typeName typeData =
   (typeName, createType typeName $ DataUnion typeData)
 
-
-isEntNode :: DataType -> Bool
-isEntNode DataType { typeContent = DataScalar{} } = True
-isEntNode DataType { typeContent = DataEnum{} } = True
+isEntNode :: DataTypeContent -> Bool
+isEntNode DataScalar{}  = True
+isEntNode DataEnum{} = True
 isEntNode _ = False
 
 isInputDataType :: DataType -> Bool
@@ -430,8 +429,8 @@ isInputDataType DataType { typeContent } = isInput typeContent
   isInput DataInputUnion{}  = True
   isInput _                 = False
 
-coerceDataObject :: Failure error m => error -> DataType -> m DataObject
-coerceDataObject _ DataType { typeContent = DataObject object } = pure object
+coerceDataObject :: Failure error m => error -> DataType -> m (Name,DataObject)
+coerceDataObject _ DataType { typeContent = DataObject object , typeName } = pure (typeName,object)
 coerceDataObject gqlError _ = failure gqlError
 
 coerceDataUnion :: Failure error m => error -> DataType -> m DataUnion
@@ -490,7 +489,7 @@ getDataType name lib gqlError = case lookupDataType name lib of
   _      -> failure gqlError
 
 lookupDataObject
-  :: (Monad m, Failure e m) => e -> Key -> DataTypeLib -> m DataObject
+  :: (Monad m, Failure e m) => e -> Key -> DataTypeLib -> m (Name,DataObject)
 lookupDataObject validationError name lib =
   getDataType name lib validationError >>= coerceDataObject validationError
 
@@ -505,7 +504,7 @@ lookupUnionTypes
   -> Key
   -> DataTypeLib
   -> DataField
-  -> m [DataObject]
+  -> m [(Name,DataObject)]
 lookupUnionTypes position key lib DataField { fieldType = TypeAlias { aliasTyCon = typeName } }
   = lookupDataUnion gqlError typeName lib
     >>= mapM (flip (lookupDataObject gqlError) lib)
@@ -517,7 +516,7 @@ lookupFieldAsSelectionSet
   -> Key
   -> DataTypeLib
   -> DataField
-  -> m DataObject
+  -> m (Name,DataObject)
 lookupFieldAsSelectionSet position key lib DataField { fieldType = TypeAlias { aliasTyCon } }
   = lookupDataObject gqlError aliasTyCon lib
   where gqlError = hasNoSubfields key aliasTyCon position
