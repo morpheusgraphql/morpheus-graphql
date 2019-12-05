@@ -233,19 +233,6 @@ updateLib typeBuilder stack proxy lib' =
     -- throw error if 2 different types has same name
     Just _ -> failure $ nameCollisionError (__typeName proxy)
 
-with__typename :: DataObject -> DataObject
-with__typename x = introspection__typename : x
- where
-  introspection__typename :: (Name, DataField)
-  introspection__typename =
-    ( "__typename"
-    , DataField { fieldName     = "__typename"
-                , fieldArgs     = []
-                , fieldArgsType = Nothing
-                , fieldType     = createAlias "String"
-                , fieldMeta     = Nothing
-                }
-    )
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 
@@ -361,13 +348,12 @@ buildObject :: TypeScope -> [FieldRep] -> (DataTypeContent, [TypeUpdater])
 buildObject isOutput consFields = (wrap fields, types)
  where
   (fields, types) = buildDataObject consFields
-  wrap | isOutput == OutputType = DataObject 
+  wrap | isOutput == OutputType = DataObject
        | otherwise              = DataInputObject
 
 buildDataObject :: [FieldRep] -> (DataObject, [TypeUpdater])
 buildDataObject consFields = (fields, types)
  where
-  datatype = fields
   fields   = map fieldData consFields
   types    = map fieldTypeUpdater consFields
 
