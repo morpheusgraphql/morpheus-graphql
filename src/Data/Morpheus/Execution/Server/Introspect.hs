@@ -347,22 +347,17 @@ buildUnionType wrapUnion wrapObject cons = datatype (analyseRep baseName cons)
   types = map fieldTypeUpdater $ concatMap consFields cons
 
 
-buildObject
-  :: GQL_TYPE a
-  => TypeScope
-  -> [FieldRep]
-  -> (Proxy a -> DataType, [TypeUpdater])
-buildObject isOutput consFields = (wrap . fields, types)
+buildObject :: TypeScope -> [FieldRep] -> (DataTypeContent, [TypeUpdater])
+buildObject isOutput consFields = (wrap fields, types)
  where
   (fields, types) = buildDataObject consFields
   wrap | isOutput == OutputType = DataObject . with__typename
        | otherwise              = DataInputObject
 
-buildDataObject
-  :: GQLType a => [FieldRep] -> (Proxy a -> DataObject, [TypeUpdater])
-buildDataObject consFields = (datatype, types)
+buildDataObject :: [FieldRep] -> (DataObject, [TypeUpdater])
+buildDataObject consFields = (fields, types)
  where
-  datatype = buildType fields
+  datatype = fields
   fields   = map fieldData consFields
   types    = map fieldTypeUpdater consFields
 
