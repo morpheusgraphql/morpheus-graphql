@@ -18,6 +18,7 @@ module Data.Morpheus.Execution.Server.Encode
   , encodeSubscription
   , encodeMutation
   , ResolveNode(..)
+  , ResNode
   )
 where
 
@@ -130,8 +131,8 @@ instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
 instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o e m where
   encodeKind = pure . pure . gqlString . encodeRep . from . unVContext
 
-instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind OUTPUT a o e m where
-  encodeKind (VContext value) = case rawRes of
+instance (Monad m,Generic a, GQLType a,ResolveNode (CUSTOM a) a o e m) => EncodeKind OUTPUT a o e m where
+  encodeKind (VContext value) = case resolveNode (Proxy @(CUSTOM a)) value of
     ResNode { resKind = REP_OBJECT, resFields } ->
       withObject (encodeK resFields)
     ResNode { resKind = REP_UNION, resFields, resTypeName, isResRecord } ->
@@ -176,8 +177,8 @@ instance (Monad m,Generic a, GQLType a,TypeRep (Rep a) o e m) => EncodeKind OUTP
       encodeUnion _ _ = failure $ internalResolvingError
         "union Resolver should only recieve UnionSelection"
    where
-    rawRes =
-      typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
+
+
     ---------------------------------------------------------------  
     encodeK resolvers selection =
       resolveObject selection (__typenameResolver : map toFieldRes resolvers)
@@ -267,27 +268,25 @@ data REP_KIND = REP_UNION | REP_OBJECT
 data ResNode o e m = ResNode {
     resTypeName :: Name,
     resKind :: REP_KIND,
-    resFields :: [ResField o e m],
+    resFields :: [FieldNode o e m],
     isResRecord :: Bool
   }
 
-data ResField o e m = ResField {
-    resFieldType :: Name,
-    resFieldName :: Name,
-    resFieldRes  :: (Key, ValidSelection) -> ResolvingStrategy o e m Value,
-    resIsObject  :: Bool
+data FieldNode o e m = FieldNode {
+    fieldTypeName :: Name,
+    fieldSelName :: Name,
+    fieldResolver  :: (Key, ValidSelection) -> ResolvingStrategy o e m Value,
+    isFieldObject  :: Bool
   }
 
-toFieldRes :: ResField o e m -> FieldRes o e m
-toFieldRes ResField { resFieldName, resFieldRes } = (resFieldName, resFieldRes)
+toFieldRes :: FieldNode o e m -> FieldRes o e m
+toFieldRes FieldNode { fieldSelName, fieldResolver } =
+  (fieldSelName, fieldResolver)
 
 -- setFieldNames ::  Power Int Text -> Power { _1 :: Int, _2 :: Text }
-setFieldNames :: [ResField o e m] -> [ResField o e m]
+setFieldNames :: [FieldNode o e m] -> [FieldNode o e m]
 setFieldNames = zipWith setFieldName ([0 ..] :: [Int])
- where
-  setFieldName i field = field { resFieldName }
-    where resFieldName = "_" <> pack (show i)
-
+  where setFieldName i field = field { fieldSelName = "_" <> pack (show i) }
 
 class TypeRep f o e (m :: * -> *) where
           typeResolvers :: ResContext OUTPUT o e m value -> f a -> ResNode o e m
@@ -312,18 +311,18 @@ instance (FieldRep f o e m,Constructor c) => TypeRep (M1 C c f) o e m where
 
       --- FIELDS      
 class FieldRep f o e (m :: * -> *) where
-        fieldRep :: ResContext OUTPUT o e m value -> f a -> [ResField o e m]
+        fieldRep :: ResContext OUTPUT o e m value -> f a -> [FieldNode o e m]
 
 instance (FieldRep f o e m, FieldRep g o e m) => FieldRep  (f :*: g) o e m where
   fieldRep context (a :*: b) = fieldRep context a <> fieldRep context b
 
 instance (Selector s, GQLType a, Encode a o e m) => FieldRep (M1 S s (K1 s2 a)) o e m where
   fieldRep _ m@(M1 (K1 src)) =
-    [ ResField { resFieldName = pack (selName m)
-               , resFieldType = __typeName (Proxy @a)
-               , resFieldRes  = encode src
-               , resIsObject  = isObjectKind (Proxy @a)
-               }
+    [ FieldNode { fieldSelName  = pack (selName m)
+                , fieldTypeName = __typeName (Proxy @a)
+                , fieldResolver = encode src
+                , isFieldObject = isObjectKind (Proxy @a)
+                }
     ]
 
 instance FieldRep U1 o e m where
