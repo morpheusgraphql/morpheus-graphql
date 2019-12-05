@@ -156,13 +156,13 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
     enumType =
       DataEnum . buildType (map createEnumValue $ enumTags (Proxy @(Rep a)))
 
-instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind INPUT a where
-  introspectKind _ = updateLib datatype updates (Proxy @a)
-    where (datatype, updates) = derivingData InputType
+instance (GQL_TYPE a, IntrospectRep (CUSTOM a) a) => IntrospectKind INPUT a where
+  introspectKind _ = updateLib (const datatype) updates (Proxy @a)
+    where (datatype, updates) = introspectRep (Proxy @(CUSTOM a)) (InputType, Proxy @a) 
 
-instance (GQL_TYPE a, TypeRep (Rep a)) => IntrospectKind OUTPUT a where
-  introspectKind _ = updateLib datatype updates (Proxy @a)
-    where (datatype, updates) = derivingData OutputType
+instance (GQL_TYPE a, IntrospectRep (CUSTOM a) a) => IntrospectKind OUTPUT a where
+  introspectKind _ = updateLib (const datatype) updates (Proxy @a)
+    where (datatype, updates) = introspectRep (Proxy @(CUSTOM a)) (OutputType, Proxy @a) 
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
@@ -181,9 +181,10 @@ objectFields p1 p2 = withObject (introspectRep p1 p2)
 class IntrospectRep (custom :: Bool) a where
   introspectRep :: proxy1 custom -> (TypeScope , proxy2 a) -> (DataType, [TypeUpdater])
 
-instance TypeRep (Rep a) => IntrospectRep 'False a where
--- TODO: generates Rep according type
-
+instance (TypeRep (Rep a) ,GQLType a , Generic a) => IntrospectRep 'False a where
+  introspectRep _ (scope, _) = unpackDeriving $ derivingData scope
+    where 
+       unpackDeriving (x,y)=  (x $ Proxy @a, y)
 
 buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName = DataField
