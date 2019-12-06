@@ -46,8 +46,6 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , DataTypeLib(..)
                                                 , DataType(..)
                                                 , DataTypeContent(..)
-                                                , coerceDataObject
-                              
                                                 , DataObject
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
@@ -85,10 +83,10 @@ data Variable a = Variable
 
 getOperationObject
   :: Operation a b -> DataTypeLib -> Validation (Name, DataObject)
-getOperationObject op lib = do 
+getOperationObject op lib = do
   dt <- getOperationDataType op lib
   case dt of
-    DataType { typeContent = DataObject x , typeName } -> pure (typeName,x)
+    DataType { typeContent = DataObject x, typeName } -> pure (typeName, x)
     _ -> failure ("invalid operation" :: Name)
 
 getOperationDataType :: Operation a b -> DataTypeLib -> Validation DataType

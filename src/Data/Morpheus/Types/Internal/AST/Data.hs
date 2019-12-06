@@ -423,18 +423,18 @@ isEntNode _ = False
 isInputDataType :: DataType -> Bool
 isInputDataType DataType { typeContent } = isInput typeContent
  where
-  isInput DataScalar{}      = True
-  isInput DataEnum{}        = True
-  isInput DataInputObject{} = True
-  isInput DataInputUnion{}  = True
-  isInput _                 = False
+  __isInput DataScalar{}      = True
+  __isInput DataEnum{}        = True
+  __isInput DataInputObject{} = True
+  __isInput DataInputUnion{}  = True
+  __isInput _                 = False
 
 coerceDataObject :: Failure error m => error -> DataType -> m (Name,DataObject)
 coerceDataObject _ DataType { typeContent = DataObject object , typeName } = pure (typeName,object)
 coerceDataObject gqlError _ = failure gqlError
 
 coerceDataUnion :: Failure error m => error -> DataType -> m DataUnion
-coerceDataUnion _ DataType { typeContent = DataUnion union } = pure union
+coerceDataUnion _ DataType { typeContent = DataUnion members } = pure members
 coerceDataUnion gqlError _ = failure gqlError
 
 kindOf :: DataType -> DataTypeKind

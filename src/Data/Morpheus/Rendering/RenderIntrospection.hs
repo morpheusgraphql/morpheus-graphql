@@ -19,8 +19,7 @@ import           Data.Maybe                     ( isJust )
 import           Data.Morpheus.Schema.Schema
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( 
-                                                  DataInputUnion
+                                                ( DataInputUnion
                                                 , DataField(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
@@ -59,13 +58,14 @@ instance RenderSchema DataType S__Type where
       constRes $ createLeafType SCALAR name typeMeta Nothing
     __render (DataEnum enums) = constRes
       $ createLeafType ENUM name typeMeta (Just $ map createEnumValue enums)
-    __render (DataInputObject fields) = \lib -> do
-      fields <- traverse (`renderinputValue` lib) fields
-      pure $ createInputObject name typeMeta fields
+    __render (DataInputObject fields) = \lib ->
+      createInputObject name typeMeta
+        <$> traverse (`renderinputValue` lib) fields
     __render (DataObject fields) = \lib ->
       createObjectType name (typeMeta >>= metaDescription)
         <$> (Just <$> traverse (`render` lib) (filter fieldVisibility fields))
-    __render (DataUnion union) = constRes $ typeFromUnion (name,typeMeta, union)
+    __render (DataUnion union) =
+      constRes $ typeFromUnion (name, typeMeta, union)
     __render (DataInputUnion members) =
       renderInputUnion (name, typeMeta, members)
 
@@ -167,7 +167,7 @@ createLeafType kind name meta enums = S__Type
   }
 
 typeFromUnion :: Monad m => (Text, Maybe Meta, DataUnion) -> S__Type m
-typeFromUnion (name,  typeMeta , typeContent) = S__Type
+typeFromUnion (name, typeMeta, typeContent) = S__Type
   { s__TypeKind          = constRes UNION
   , s__TypeName          = constRes $ Just name
   , s__TypeDescription   = constRes (typeMeta >>= metaDescription)

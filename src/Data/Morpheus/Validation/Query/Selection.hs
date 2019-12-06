@@ -165,9 +165,9 @@ validateSelectionSet lib fragments' operatorName variables = __validate
     validateSelection :: (Text, RawSelection) -> Validation SelectionSet
     validateSelection (key', RawSelectionSet fullRawSelection@Selection { selectionRec = rawSelection, selectionPosition })
       = do
-        (dataField, dataType, arguments) <- getValidationData key'
+        (dataField, datatype, arguments) <- getValidationData key'
                                                               fullRawSelection
-        case typeContent dataType of
+        case typeContent datatype of
           DataUnion _ -> do
             (categories, __typename) <- clusterTypes
             mapM (validateCluster __typename) categories
@@ -224,8 +224,8 @@ validateSelectionSet lib fragments' operatorName variables = __validate
             )
           ]
      where
-      isLeaf dataType DataField { fieldType = TypeAlias { aliasTyCon } }
-        | isEntNode dataType = pure ()
+      isLeaf datatype DataField { fieldType = TypeAlias { aliasTyCon } }
+        | isEntNode datatype = pure ()
         | otherwise = failure
         $ subfieldsNotSelected key aliasTyCon selectionPosition
     validateSelection (_, Spread reference') =

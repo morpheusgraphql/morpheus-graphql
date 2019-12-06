@@ -360,7 +360,7 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* ->
 -- Channel
 
 newtype Channel event = Channel {
-  unChannel :: StreamChannel event
+  _unChannel :: StreamChannel event
 }
 
 instance (Eq (StreamChannel event)) => Eq (Channel event) where
