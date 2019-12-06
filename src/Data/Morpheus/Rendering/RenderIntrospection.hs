@@ -19,8 +19,8 @@ import           Data.Maybe                     ( isJust )
 import           Data.Morpheus.Schema.Schema
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataObject
-                                                , DataInputUnion
+                                                ( 
+                                                  DataInputUnion
                                                 , DataField(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)

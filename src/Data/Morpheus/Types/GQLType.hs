@@ -164,10 +164,10 @@ instance GQLType a => GQLType (Set a) where
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) where
-  type KIND (Pair a b) = OBJECT
+  type KIND (Pair a b) = OUTPUT
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (MapKind a b m) where
-  type KIND (MapKind a b m) = OBJECT
+  type KIND (MapKind a b m) = OUTPUT
   __typeName _ = __typeName (Proxy @(Map a b))
   __typeFingerprint _ = __typeFingerprint (Proxy @(Map a b))
 
