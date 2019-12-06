@@ -421,7 +421,7 @@ isEntNode DataEnum{} = True
 isEntNode _ = False
 
 isInputDataType :: DataType -> Bool
-isInputDataType DataType { typeContent } = isInput typeContent
+isInputDataType DataType { typeContent } = __isInput typeContent
  where
   __isInput DataScalar{}      = True
   __isInput DataEnum{}        = True
