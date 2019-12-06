@@ -18,7 +18,7 @@ module Data.Morpheus.Execution.Server.Encode
   , encodeSubscription
   , encodeMutation
   , ResolveNode(..)
-  , ResNode
+  , NodeResolver(..)
   )
 where
 

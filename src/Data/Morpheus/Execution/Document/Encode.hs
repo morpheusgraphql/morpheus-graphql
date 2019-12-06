@@ -17,7 +17,8 @@ import           Data.Semigroup                 ( (<>) )
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Encode
                                                 ( Encode(..)
-                                                , ObjectResolvers(..)
+                                                , ResolveNode(..)
+                                                , NodeResolver(..)
                                                 )
 import           Data.Morpheus.Types.GQLType    ( TRUE )
 import           Data.Morpheus.Types.Internal.AST
@@ -89,14 +90,14 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
   -------------------------------------------------------------------
   -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where
   appHead =
-    instanceHeadMultiT ''ObjectResolvers (conT ''TRUE) (mainType : instanceArgs)
+    instanceHeadMultiT ''ResolveNode (conT ''TRUE) (mainType : instanceArgs)
   ------------------------------------------------------------------
   -- defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
-  methods = [funD 'objectResolvers [clause argsE (normalB body) []]]
+  methods = [funD 'resolveNode [clause argsE (normalB body) []]]
    where
     argsE = [varP (mkName "_"), destructRecord tName varNames]
-    body  = listE $ map decodeVar varNames
-    decodeVar name = [|(name, encode $(varName))|]
+    body  = appE (conE 'ObjectRes) (listE $ map decodeVar varNames)
+    decodeVar name = [| (name, encode $(varName))|]
       where varName = varE $ mkName name
     varNames = map (unpack . fieldName) cFields
 deriveEncode _ = pure []
