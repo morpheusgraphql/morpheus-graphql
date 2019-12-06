@@ -133,7 +133,7 @@ instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o e m where
 
 instance (Monad m,Generic a, GQLType a,ResolveNode (CUSTOM a) a o e m) => EncodeKind OUTPUT a o e m where
   encodeKind (VContext value) = encodeNode
-    $ convertNode (resolveNode (Proxy @(CUSTOM a)) value)
+    $ resolveNode (Proxy @(CUSTOM a)) value
    where
     encodeNode (ObjectRes fields) sel = withObject encodeObject sel
      where
@@ -215,18 +215,18 @@ objectResolvers
   -> a
   -> [(Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)]
 objectResolvers isCustom value = case resolveNode isCustom value of
-  ResNode { resKind = REP_OBJECT, resFields } -> map toFieldRes resFields
+  ObjectRes resFields -> resFields
   -- TODO: FIXME:
-  _ -> []
+  _                   -> []
 
 
 --- GENERICS ------------------------------------------------
 class ResolveNode (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
-  resolveNode :: Proxy custom -> a -> ResNode o e m
+  resolveNode :: Proxy custom -> a -> NodeResolver o e m
 
-instance (Generic a, TypeRep (Rep a) o e m ) => ResolveNode 'False a o e m where
-  resolveNode _ value =
-    typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
+instance (Generic a,Monad m,LiftEither o ResolvingStrategy,TypeRep (Rep a) o e m ) => ResolveNode 'False a o e m where
+  resolveNode _ value = convertNode
+    $ typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
 
 ----- HELPERS ----------------------------
 encodeQuery
