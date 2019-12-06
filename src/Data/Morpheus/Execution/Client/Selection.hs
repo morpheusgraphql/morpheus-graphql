@@ -232,8 +232,8 @@ buildInputType lib name = getType lib name >>= generateTypes
  where
   generateTypes DataType { typeName, typeContent } = subTypes typeContent
    where
-    subTypes (DataInputObject typeContent) = do
-      fields <- traverse toFieldD typeContent
+    subTypes (DataInputObject inputFields) = do
+      fields <- traverse toFieldD inputFields
       pure
         [ ClientType
             { clientType =
@@ -251,11 +251,11 @@ buildInputType lib name = getType lib name >>= generateTypes
       toFieldD (_, field@DataField { fieldType }) = do
         aliasTyCon <- typeFrom [] <$> getType lib (aliasTyCon fieldType)
         pure $ field { fieldType = fieldType { aliasTyCon } }
-    subTypes (DataEnum typeContent) = pure
+    subTypes (DataEnum enumTags) = pure
       [ ClientType
           { clientType = TypeD { tName      = unpack typeName
                                , tNamespace = []
-                               , tCons      = map enumOption typeContent
+                               , tCons      = map enumOption enumTags
                                , tMeta      = Nothing
                                }
           , clientKind = KindEnum

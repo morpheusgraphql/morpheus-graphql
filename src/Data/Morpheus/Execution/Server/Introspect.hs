@@ -190,6 +190,7 @@ objectFields p1 (scope, proxy) = withObject
  where
   withObject (DataObject      x, ts) = (x, ts)
   withObject (DataInputObject x, ts) = (x, ts)
+  --TODO: FIXME:
 
 -- Object Fields
 class IntrospectRep (custom :: Bool) a where
