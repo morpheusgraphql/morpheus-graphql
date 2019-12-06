@@ -38,7 +38,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeLib(..)
                                                 , TypeAlias(..)
                                                 , Name
-                                                , Arguments
                                                 , allDataTypes
                                                 , isEntNode
                                                 , lookupFieldAsSelectionSet
