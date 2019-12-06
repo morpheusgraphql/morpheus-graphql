@@ -17,7 +17,7 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), objectFields, IntrospectRep (..),TypeScope(..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
-import           Data.Morpheus.Types.Internal.AST          (ConsD (..),createType, TypeD (..), ArgsType (..),Key, DataType(..), Meta(..), DataTypeContent(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
+import           Data.Morpheus.Types.Internal.AST          (ConsD (..), TypeD (..), ArgsType (..),Key, DataType(..), DataTypeContent(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
 
 
@@ -25,14 +25,23 @@ instanceIntrospect :: (Key,DataType) -> Q [Dec]
 -- FIXME: dirty fix for introspection
 instanceIntrospect ("__DirectiveLocation",_) = pure []
 instanceIntrospect ("__TypeKind",_) = pure []
-instanceIntrospect (name, DataType {typeContent = DataEnum enumType}) =
-  pure <$> instanceD (cxt []) iHead [defineIntrospect]
+instanceIntrospect (name, DataType {
+      typeContent = DataEnum enumType,
+      typeName
+      , typeMeta
+      , typeFingerprint
+    }) = pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
     -----------------------------------------------
     iHead = instanceHeadT ''Introspect  (unpack name) []
     defineIntrospect = instanceProxyFunD ('introspect,body)
       where
-        body =[| insertType (name,createType name $ DataEnum enumType) |]
+        body =[| insertType (name,DataType {
+          typeName
+          ,typeMeta
+          , typeFingerprint
+          ,typeContent = DataEnum enumType
+        }) |]
 instanceIntrospect _ = pure []
 
 -- [((Text, DataField), TypeUpdater)]
