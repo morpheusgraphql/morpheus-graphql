@@ -49,8 +49,11 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
     iHead = instanceHeadMultiT ''IntrospectRep (conT ''TRUE) [mainTypeName]
     methods = [instanceFunD 'introspectRep ["_proxy1", "_proxy2"] body]
       where
-        body = [| ( DataObject  $(buildFields cFields), concat $(buildTypes cFields))|]
+        body 
+          | tKind == Just KindInputObject || null tKind  = [| (DataInputObject  $(buildFields cFields), concat $(buildTypes cFields))|]
+          | otherwise  =  [| (DataObject $(buildFields cFields), concat $(buildTypes cFields))|]
 deriveObjectRep _ = pure []
+    
 
 buildTypes :: [DataField] -> ExpQ
 buildTypes = listE . concatMap introspectField
