@@ -34,7 +34,6 @@ import           Data.Morpheus.Types.GQLType    ( CUSTOM )
 import           Data.Morpheus.Types.ID         ( ID )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
-                                                , DataObject
                                                 , DataTypeLib(..)
                                                 , QUERY
                                                 , DataType
