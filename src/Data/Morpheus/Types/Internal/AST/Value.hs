@@ -6,6 +6,7 @@
 
 module Data.Morpheus.Types.Internal.AST.Value
   ( Value(..)
+  , VariableValue(..)
   , ScalarValue(..)
   , Object
   , GQLValue(..)
