@@ -34,9 +34,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , SelectionRec(..)
                                                 , SelectionSet
                                                 , ValidSelection
-                                                , Ref(..) 
+                                                , Ref(..)
                                                 , DataField(..)
-                                                , DataTyCon(..)
+                                                , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeKind(..)
                                                 , DataTypeLib(..)
@@ -79,7 +79,7 @@ operationTypes
 operationTypes lib variables = genOperation
  where
   genOperation operation@Operation { operationName, operationSelection } = do
-    datatype            <- DataObject <$> getOperationDataType operation lib
+    datatype            <- getOperationDataType operation lib
     (queryTypes, enums) <- genRecordType []
                                          (getOperationName operationName)
                                          datatype
@@ -213,55 +213,58 @@ operationTypes lib variables = genOperation
 
 scanInputTypes :: DataTypeLib -> Key -> LibUpdater [Key]
 scanInputTypes lib name collected | name `elem` collected = pure collected
-                                  | otherwise = getType lib name >>= scanType
+                                  | otherwise = getType lib name >>= scanInpType
  where
-  scanType (DataInputObject DataTyCon { typeData }) = resolveUpdates
-    (name : collected)
-    (map toInputTypeD typeData)
+  scanInpType DataType { typeContent, typeName } = scanType typeContent
    where
-    toInputTypeD :: (Text, DataField) -> LibUpdater [Key]
-    toInputTypeD (_, DataField { fieldType = TypeAlias { aliasTyCon } }) =
-      scanInputTypes lib aliasTyCon
-  scanType (DataEnum DataTyCon { typeName }) = pure (collected <> [typeName])
-  scanType _ = pure collected
+    scanType (DataInputObject fields) = resolveUpdates
+      (name : collected)
+      (map toInputTypeD fields)
+     where
+      toInputTypeD :: (Text, DataField) -> LibUpdater [Key]
+      toInputTypeD (_, DataField { fieldType = TypeAlias { aliasTyCon } }) =
+        scanInputTypes lib aliasTyCon
+    scanType (DataEnum _) = pure (collected <> [typeName])
+    scanType _            = pure collected
 
 buildInputType :: DataTypeLib -> Text -> Validation [ClientType]
-buildInputType lib name = getType lib name >>= subTypes
+buildInputType lib name = getType lib name >>= generateTypes
  where
-  subTypes (DataInputObject DataTyCon { typeName, typeData }) = do
-    fields <- traverse toFieldD typeData
-    pure
+  generateTypes DataType { typeName, typeContent } = subTypes typeContent
+   where
+    subTypes (DataInputObject inputFields) = do
+      fields <- traverse toFieldD inputFields
+      pure
+        [ ClientType
+            { clientType =
+              TypeD
+                { tName      = unpack typeName
+                , tNamespace = []
+                , tCons = [ConsD { cName = unpack typeName, cFields = fields }]
+                , tMeta      = Nothing
+                }
+            , clientKind = KindInputObject
+            }
+        ]
+     where
+      toFieldD :: (Text, DataField) -> Validation DataField
+      toFieldD (_, field@DataField { fieldType }) = do
+        aliasTyCon <- typeFrom [] <$> getType lib (aliasTyCon fieldType)
+        pure $ field { fieldType = fieldType { aliasTyCon } }
+    subTypes (DataEnum enumTags) = pure
       [ ClientType
-          { clientType =
-            TypeD
-              { tName      = unpack typeName
-              , tNamespace = []
-              , tCons = [ConsD { cName = unpack typeName, cFields = fields }]
-              , tMeta      = Nothing
-              }
-          , clientKind = KindInputObject
+          { clientType = TypeD { tName      = unpack typeName
+                               , tNamespace = []
+                               , tCons      = map enumOption enumTags
+                               , tMeta      = Nothing
+                               }
+          , clientKind = KindEnum
           }
       ]
-
-   where
-    toFieldD :: (Text, DataField) -> Validation DataField
-    toFieldD (_, field@DataField { fieldType }) = do
-      aliasTyCon <- typeFrom [] <$> getType lib (aliasTyCon fieldType)
-      pure $ field { fieldType = fieldType { aliasTyCon } }
-  subTypes (DataEnum DataTyCon { typeName, typeData }) = pure
-    [ ClientType
-        { clientType = TypeD { tName      = unpack typeName
-                             , tNamespace = []
-                             , tCons      = map enumOption typeData
-                             , tMeta      = Nothing
-                             }
-        , clientKind = KindEnum
-        }
-    ]
-   where
-    enumOption DataEnumValue { enumName } =
-      ConsD { cName = unpack enumName, cFields = [] }
-  subTypes _ = pure []
+     where
+      enumOption DataEnumValue { enumName } =
+        ConsD { cName = unpack enumName, cFields = [] }
+    subTypes _ = pure []
 
 
 lookupFieldType
@@ -271,8 +274,8 @@ lookupFieldType
   -> Position
   -> Text
   -> Validation (DataType, TypeAlias)
-lookupFieldType lib path (DataObject DataTyCon { typeData, typeName }) refPosition key
-  = case lookup key typeData of
+lookupFieldType lib path DataType { typeContent = DataObject typeContent, typeName } refPosition key
+  = case lookup key typeContent of
     Just DataField { fieldType = alias@TypeAlias { aliasTyCon }, fieldMeta } ->
       checkDeprecated >> (trans <$> getType lib aliasTyCon)
      where
@@ -289,15 +292,18 @@ lookupFieldType lib path (DataObject DataTyCon { typeData, typeName }) refPositi
         Nothing -> pure ()
     ------------------
     Nothing -> failure
-      (compileError $ "cant find field \"" <> pack (show typeData) <> "\"")
+      (compileError $ "cant find field \"" <> pack (show typeContent) <> "\"")
 lookupFieldType _ _ dt _ _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 
 
 leafType :: DataType -> Validation ([ClientType], [Text])
-leafType (DataEnum DataTyCon { typeName }) = pure ([], [typeName])
-leafType DataScalar{} = pure ([], [])
-leafType _ = failure $ compileError "Invalid schema Expected scalar"
+leafType DataType { typeName, typeContent } = fromKind typeContent
+ where
+  fromKind :: DataTypeContent -> Validation ([ClientType], [Text])
+  fromKind DataEnum{} = pure ([], [typeName])
+  fromKind DataScalar{} = pure ([], [])
+  fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
 getType :: DataTypeLib -> Text -> Validation DataType
 getType lib typename =
@@ -312,9 +318,9 @@ typeFromScalar "ID"      = "ID"
 typeFromScalar _         = "ScalarValue"
 
 typeFrom :: [Key] -> DataType -> Text
-typeFrom _ (DataScalar DataTyCon { typeName }) = typeFromScalar typeName
-typeFrom _ (DataEnum x) = typeName x
-typeFrom _ (DataInputObject x) = typeName x
-typeFrom path (DataObject x) = pack $ nameSpaceType path $ typeName x
-typeFrom path (DataUnion x) = pack $ nameSpaceType path $ typeName x
-typeFrom _ (DataInputUnion x) = typeName x
+typeFrom path DataType { typeName, typeContent } = __typeFrom typeContent
+ where
+  __typeFrom DataScalar{} = typeFromScalar typeName
+  __typeFrom DataObject{} = pack $ nameSpaceType path typeName
+  __typeFrom DataUnion{}  = pack $ nameSpaceType path typeName
+  __typeFrom _            = typeName

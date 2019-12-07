@@ -48,6 +48,7 @@ module Data.Morpheus.Types.Internal.AST
   , DefaultValue
   , getOperationName
   , getOperationDataType
+  , getOperationObject
 
 
   -- DSL
@@ -58,7 +59,7 @@ module Data.Morpheus.Types.Internal.AST
   , DataUnion
   , DataArguments
   , DataField(..)
-  , DataTyCon(..)
+  , DataTypeContent(..)
   , DataType(..)
   , DataTypeLib(..)
   , DataTypeWrapper(..)
@@ -120,7 +121,6 @@ module Data.Morpheus.Types.Internal.AST
   , Meta(..)
   , Directive(..)
   , createEnumValue
-  , fromDataType
   , insertType
   , TypeUpdater
   , lookupDeprecated

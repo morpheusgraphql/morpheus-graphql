@@ -37,7 +37,6 @@ import           Data.Morpheus.Execution.Internal.Decode
                                                 )
 import           Data.Morpheus.Kind             ( ENUM
                                                 , GQL_KIND
-                                                , INPUT_OBJECT
                                                 , SCALAR
                                                 , OUTPUT
                                                 , INPUT
@@ -92,14 +91,11 @@ instance (GQLScalar a) => DecodeKind SCALAR a where
 instance DecodeType a => DecodeKind ENUM a where
   decodeKind _ = decodeType
 
--- INPUT_UNION
+-- TODO: remove  
 instance DecodeType a => DecodeKind OUTPUT a where
   decodeKind _ = decodeType
 
--- INPUT_OBJECT
-instance DecodeType a => DecodeKind INPUT_OBJECT a where
-  decodeKind _ = decodeType
-
+-- INPUT_OBJECT and  INPUT_UNION
 instance DecodeType a => DecodeKind INPUT a where
   decodeKind _ = decodeType
 
@@ -197,16 +193,13 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
   tags _ baseName = getTag (refType (Proxy @a))
    where
     getTag (Just memberRef)
-      | not (conIsRecord unsafeType) && isNamespacedConstraint memberRef = Info
-        { kind    = D_UNION
-        , tagName = [memberRef]
-        }
-      | otherwise = Info { kind = D_CONS, tagName = [consName] }
+      | isUnionRef memberRef = Info { kind = D_UNION, tagName = [memberRef] }
+      | otherwise            = Info { kind = D_CONS, tagName = [consName] }
     getTag Nothing = Info { kind = D_CONS, tagName = [consName] }
     --------
     consName = pack $ conName unsafeType
     ----------
-    isNamespacedConstraint x = baseName <> x == consName
+    isUnionRef x = baseName <> x == consName
     --------------------------
     unsafeType :: (M1 C c U1 x)
     unsafeType = undefined

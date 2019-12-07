@@ -13,7 +13,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
                                                 , ValidOperation
                                                 , getOperationName
-                                                , getOperationDataType
+                                                , getOperationObject
                                                 , DataTypeLib(..)
                                                 , GQLQuery(..)
                                                 )
@@ -34,7 +34,7 @@ validateRequest
   :: DataTypeLib -> VALIDATION_MODE -> GQLQuery -> Validation ValidOperation
 validateRequest lib validationMode GQLQuery { fragments, inputVariables, operation = rawOperation@Operation { operationName, operationType, operationSelection, operationPosition } }
   = do
-    operationDataType <- getOperationDataType rawOperation lib
+    operationDataType <-  getOperationObject rawOperation lib
     variables         <- resolveOperationVariables lib
                                                    fragments
                                                    (fromList inputVariables)

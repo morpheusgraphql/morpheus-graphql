@@ -14,8 +14,7 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Resolver
-  ( 
-    Event(..)
+  ( Event(..)
   , GQLRootResolver(..)
   , UnSubResolver
   , Resolver(..)
@@ -23,6 +22,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , MapStrategy(..)
   , LiftEither(..)
   , resolveObject
+  , resolveEnum
   , toResponseRes
   , withObject
   , resolving
@@ -32,17 +32,21 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , GQLChannel(..)
   , ResponseEvent(..)
   , ResponseStream
+  , resolve__typename
+  , DataResolver(..)
+  , FieldRes 
   )
 where
 
 import           Control.Monad.Trans.Class      ( MonadTrans(..) )
 import           Data.Maybe                     ( fromMaybe )
-import           Data.Semigroup                 ( (<>) )
+import           Data.Semigroup                 ( (<>), Semigroup(..) )
 import           Data.Text                      ( unpack
                                                 , pack
                                                 )
 
 -- MORPHEUS
+import           Data.Morpheus.Error.Internal   ( internalResolvingError )
 import           Data.Morpheus.Error.Selection  ( resolvingFailedError
                                                 , subfieldsNotSelected
                                                 )
@@ -53,10 +57,12 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , ValidSelection
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Message , Key )
+                                                ( Message
+                                                , Key
+                                                , Name
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( 
-                                                  MUTATION
+                                                ( MUTATION
                                                 , OperationType
                                                 , QUERY
                                                 , SUBSCRIPTION
@@ -79,7 +85,9 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
                                                 , Value
                                                 )
-import           Data.Morpheus.Types.IO         (renderResponse, GQLResponse)
+import           Data.Morpheus.Types.IO         ( renderResponse
+                                                , GQLResponse
+                                                )
 -- MORPHEUS
 
 class LiftEither (o::OperationType) res where
@@ -152,7 +160,18 @@ instance LiftEither SUBSCRIPTION ResolvingStrategy where
 instance (LiftEither o ResolvingStrategy, Monad m) => Failure GQLErrors (ResolvingStrategy o e m) where
   failure = liftEither . pure . Left
 
--- helper functins
+-- DataResolver
+data DataResolver o e m =
+    EnumRes  Name
+  | UnionRes  (Name,[FieldRes o e m])
+  | ObjectRes  [FieldRes o e m ]
+  | UnionRef (FieldRes o e m)
+  | InvalidRes Name
+
+instance Semigroup (DataResolver o e m) where 
+  ObjectRes x <> ObjectRes y = ObjectRes (x <> y)
+  _ <> _ = InvalidRes "can't merge: incompatible resolvers"
+
 withObject
   :: (LiftEither o ResolvingStrategy, Monad m)
   => (SelectionSet -> ResolvingStrategy o e m value)
@@ -166,16 +185,43 @@ withObject _ (key, Selection { selectionPosition }) =
 resolveObject
   :: (Monad m, LiftEither o ResolvingStrategy)
   => SelectionSet
-  -> [FieldRes o e m]
+  -> DataResolver o e m
   -> ResolvingStrategy o e m Value
-resolveObject selectionSet fieldResolvers =
+resolveObject selectionSet (ObjectRes resolvers) =
   gqlObject <$> traverse selectResolver selectionSet
  where
   selectResolver (key, selection@Selection { selectionAlias }) =
     (fromMaybe key selectionAlias, ) <$> lookupRes selection
    where
     lookupRes sel =
-      (fromMaybe (const $ pure gqlNull) $ lookup key fieldResolvers) (key, sel)
+      (fromMaybe (const $ pure gqlNull) $ lookup key resolvers) (key, sel)
+resolveObject _ _ = failure $ internalResolvingError "expected object as resolver"
+
+resolveEnum
+  :: (Monad m, LiftEither o ResolvingStrategy)
+  => Name
+  -> Name
+  -> SelectionRec
+  -> ResolvingStrategy o e m Value
+resolveEnum _        enum SelectionField              = pure $ gqlString enum
+resolveEnum typeName enum (UnionSelection selections) = resolveObject
+  currentSelection
+  resolvers
+ where
+  enumObjectTypeName = typeName <> "EnumObject"
+  currentSelection   = fromMaybe [] $ lookup enumObjectTypeName selections
+  resolvers = ObjectRes [ ("enum", const $ pure $ gqlString enum)
+    , resolve__typename enumObjectTypeName
+    ]
+resolveEnum _ _ _ =
+  failure $ internalResolvingError "wrong selection on enum value"
+
+
+resolve__typename
+  :: (Monad m, LiftEither o ResolvingStrategy)
+  => Name
+  -> (Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)
+resolve__typename name = ("__typename", const $ pure $ gqlString name)
 
 toResponseRes
   :: Monad m
@@ -192,7 +238,8 @@ toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
     , events   = [Subscribe $ Event channels eventResolver]
     }
    where
-    eventResolver event = renderResponse <$> runResultT  (unRecResolver subRes event) 
+    eventResolver event =
+      renderResponse <$> runResultT (unRecResolver subRes event)
 
 --
 --     
@@ -331,8 +378,7 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
         => ResolvingStrategy SUBSCRIPTION e m Value
         -> StatelessResT m Value
       unPureSub (ResolveS x) = cleanEvents x >>= passEvent
-       where
-          passEvent (RecResolver f) = f event
+        where passEvent (RecResolver f) = f event
 
 -- map Resolving strategies 
 class MapStrategy (from :: OperationType) (to :: OperationType) where
@@ -360,7 +406,7 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* ->
 -- Channel
 
 newtype Channel event = Channel {
-  unChannel :: StreamChannel event
+  _unChannel :: StreamChannel event
 }
 
 instance (Eq (StreamChannel event)) => Eq (Channel event) where

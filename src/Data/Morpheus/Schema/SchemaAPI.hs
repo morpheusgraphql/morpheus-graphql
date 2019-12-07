@@ -1,7 +1,8 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns   #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE TypeApplications  #-}
+{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Schema.SchemaAPI
   ( hiddenRootFields
@@ -15,9 +16,10 @@ import           Data.Text                      ( Text )
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Introspect
-                                                ( ObjectFields(..)
+                                                ( objectFields
                                                 , TypeUpdater
                                                 , introspect
+                                                , TypeScope(..)
                                                 )
 import           Data.Morpheus.Rendering.RenderIntrospection
                                                 ( createObjectType
@@ -33,9 +35,9 @@ import           Data.Morpheus.Types.GQLType    ( CUSTOM )
 import           Data.Morpheus.Types.ID         ( ID )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
-                                                , DataObject
                                                 , DataTypeLib(..)
                                                 , QUERY
+                                                , DataType
                                                 , allDataTypes
                                                 , lookupDataType
                                                 )
@@ -50,7 +52,7 @@ convertTypes
 convertTypes lib = traverse (`render` lib) (allDataTypes lib)
 
 buildSchemaLinkType
-  :: Monad m => (Text, DataObject) -> S__Type (Resolver QUERY e m)
+  :: Monad m => (Text, DataType) -> S__Type (Resolver QUERY e m)
 buildSchemaLinkType (key', _) = createObjectType key' Nothing $ Just []
 
 findType
@@ -78,8 +80,9 @@ initSchema lib = pure S__Schema
   }
 
 hiddenRootFields :: [(Text, DataField)]
-hiddenRootFields = fst
-  $ objectFields (Proxy :: Proxy (CUSTOM (Root Maybe))) (Proxy @(Root Maybe))
+hiddenRootFields = fst $ objectFields
+  (Proxy :: Proxy (CUSTOM (Root Maybe)))
+  ("Root", OutputType, Proxy @(Root Maybe))
 
 defaultTypes :: TypeUpdater
 defaultTypes = flip

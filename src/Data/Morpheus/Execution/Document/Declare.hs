@@ -47,7 +47,7 @@ declareGQLType namespace gqlType@GQLTypeD { typeD, typeKindD, typeArgD, typeOrig
    where
     gqlInstances
       | isObject typeKindD && isInput typeKindD
-      = [deriveObjectRep (typeD, Just typeKindD), deriveDecode typeD]
+      = [deriveObjectRep (typeD, Nothing), deriveDecode typeD]
       | isObject typeKindD
       = [deriveObjectRep (typeD, Just typeKindD), deriveEncode gqlType]
       | otherwise

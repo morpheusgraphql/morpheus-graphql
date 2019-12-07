@@ -27,6 +27,10 @@ module Data.Morpheus.Types.Internal.Resolving
     , GQLErrors
     , GQLError(..)
     , Position
+    , resolveEnum
+    , resolve__typename
+    , DataResolver(..)
+    , FieldRes
     )
 where
 

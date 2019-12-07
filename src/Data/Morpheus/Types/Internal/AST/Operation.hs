@@ -13,11 +13,13 @@ module Data.Morpheus.Types.Internal.AST.Operation
   , DefaultValue
   , getOperationName
   , getOperationDataType
+  , getOperationObject
   )
 where
 
 import           Data.Maybe                     ( fromMaybe )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
+import           Data.Semigroup                 ( (<>) )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Mutation   ( mutationIsNotDefined )
@@ -28,18 +30,22 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , SelectionSet
                                                 , RawSelectionSet
                                                 )
-
 import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( Validation ,Failure(..) )
+                                                ( Validation
+                                                , Failure(..)
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Collection
                                                 , Key
                                                 , Position
+                                                , Name
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( OperationType(..)
                                                 , TypeWrapper
                                                 , DataTypeLib(..)
+                                                , DataType(..)
+                                                , DataTypeContent(..)
                                                 , DataObject
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
@@ -74,7 +80,20 @@ data Variable a = Variable
   , variableValue        :: a
   } deriving (Show,Lift)
 
-getOperationDataType :: Operation a b -> DataTypeLib -> Validation DataObject
+
+getOperationObject
+  :: Operation a b -> DataTypeLib -> Validation (Name, DataObject)
+getOperationObject op lib = do
+  dt <- getOperationDataType op lib
+  case dt of
+    DataType { typeContent = DataObject x, typeName } -> pure (typeName, x)
+    DataType { typeName } ->
+      failure
+        $  "Type Mismatch: operation \""
+        <> typeName
+        <> "\" must be an Object"
+
+getOperationDataType :: Operation a b -> DataTypeLib -> Validation DataType
 getOperationDataType Operation { operationType = Query } lib =
   pure $ snd $ query lib
 getOperationDataType Operation { operationType = Mutation, operationPosition } lib
@@ -84,5 +103,5 @@ getOperationDataType Operation { operationType = Mutation, operationPosition } l
 getOperationDataType Operation { operationType = Subscription, operationPosition } lib
   = case subscription lib of
     Just (_, subscription') -> pure subscription'
-    Nothing                 -> failure $ subscriptionIsNotDefined operationPosition
+    Nothing -> failure $ subscriptionIsNotDefined operationPosition
 

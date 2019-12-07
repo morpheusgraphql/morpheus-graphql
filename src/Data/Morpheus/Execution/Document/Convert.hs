@@ -23,7 +23,7 @@ import           Data.Morpheus.Execution.Internal.Utils
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ArgsType(..)
                                                 , DataField(..)
-                                                , DataTyCon(..)
+                                                , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeKind(..)
                                                 , OperationType(..)
@@ -42,7 +42,7 @@ renderTHTypes :: Bool -> [(Text, DataType)] -> Validation [GQLTypeD]
 renderTHTypes namespace lib = traverse renderTHType lib
  where
   renderTHType :: (Text, DataType) -> Validation GQLTypeD
-  renderTHType (tyConName, x) = genType x
+  renderTHType (tyConName, x) = generateType x
    where
     genArgsTypeName fieldName | namespace = sysName tyConName <> argTName
                               | otherwise = argTName
@@ -85,7 +85,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
      where
       ftName    = genFieldTypeName aliasTyCon
       ---------------------------------------
-      aliasArgs = case lookup aliasTyCon lib of
+      aliasArgs = case typeContent <$> lookup aliasTyCon lib of
         Just DataObject{} -> Just "m"
         Just DataUnion{}  -> Just "m"
         _                 -> Nothing
@@ -96,37 +96,38 @@ renderTHTypes namespace lib = traverse renderTHType lib
         argsTypeName | null fieldArgs = "()"
                      | otherwise = pack $ genArgsTypeName $ unpack fieldName
         --------------------------------------
-        getFieldType key = case lookup key lib of
+        getFieldType key = case typeContent <$> lookup key lib of
           Nothing           -> ExternalResolver
           Just DataObject{} -> TypeVarResolver
           Just DataUnion{}  -> TypeVarResolver
           Just _            -> PlainResolver
     --------------------------------------------
-    genType dt@(DataEnum DataTyCon { typeName, typeData, typeMeta }) = pure
-      GQLTypeD
+    generateType dt@DataType { typeName, typeContent, typeMeta } = genType
+      typeContent
+     where
+      genType (DataEnum tags) = pure GQLTypeD
         { typeD        = TypeD { tName      = sysName typeName
                                , tNamespace = []
-                               , tCons      = map enumOption typeData
+                               , tCons      = map enumOption tags
                                , tMeta      = typeMeta
                                }
         , typeKindD    = KindEnum
         , typeArgD     = []
         , typeOriginal = (typeName, dt)
         }
-     where
-      enumOption DataEnumValue { enumName } =
-        ConsD { cName = sysName enumName, cFields = [] }
-    genType (DataScalar _) =
-      internalError "Scalar Types should defined By Native Haskell Types"
-    genType (DataInputUnion _) = internalError "Input Unions not Supported"
-    genType dt@(DataInputObject DataTyCon { typeName, typeData, typeMeta }) =
-      pure GQLTypeD
+       where
+        enumOption DataEnumValue { enumName } =
+          ConsD { cName = sysName enumName, cFields = [] }
+      genType (DataScalar _) =
+        internalError "Scalar Types should defined By Native Haskell Types"
+      genType (DataInputUnion _) = internalError "Input Unions not Supported"
+      genType (DataInputObject fields) = pure GQLTypeD
         { typeD        =
           TypeD
             { tName      = sysName typeName
             , tNamespace = []
             , tCons      = [ ConsD { cName   = sysName typeName
-                                   , cFields = map genField typeData
+                                   , cFields = map genField fields
                                    }
                            ]
             , tMeta      = typeMeta
@@ -135,51 +136,52 @@ renderTHTypes namespace lib = traverse renderTHType lib
         , typeArgD     = []
         , typeOriginal = (typeName, dt)
         }
-    genType dt@(DataObject DataTyCon { typeName, typeData, typeMeta }) = do
-      typeArgD <- concat <$> traverse genArgumentType typeData
-      pure GQLTypeD
-        { typeD        = TypeD
-                           { tName      = sysName typeName
-                           , tNamespace = []
-                           , tCons = [ ConsD { cName = sysName typeName
-                                             , cFields = map genResField typeData
-                                             }
-                                     ]
-                           , tMeta      = typeMeta
-                           }
-        , typeKindD    = if typeName == "Subscription"
-                           then KindObject (Just Subscription)
-                           else KindObject Nothing
-        , typeArgD
-        , typeOriginal = (typeName, dt)
-        }
-    genType dt@(DataUnion DataTyCon { typeName, typeData, typeMeta }) = do
-      let tCons = map unionCon typeData
-      pure GQLTypeD
-        { typeD        = TypeD { tName      = unpack typeName
-                               , tNamespace = []
-                               , tCons
-                               , tMeta      = typeMeta
-                               }
-        , typeKindD    = KindUnion
-        , typeArgD     = []
-        , typeOriginal = (typeName, dt)
-        }
-     where
-      unionCon memberName = ConsD
-        { cName
-        , cFields = [ DataField
-                        { fieldName     = pack $ "un" <> cName
-                        , fieldType     = TypeAlias { aliasTyCon = pack utName
-                                                    , aliasArgs = Just "m"
-                                                    , aliasWrappers = []
-                                                    }
-                        , fieldMeta     = Nothing
-                        , fieldArgs     = []
-                        , fieldArgsType = Nothing
-                        }
-                    ]
-        }
+      genType (DataObject fields) = do
+        typeArgD <- concat <$> traverse genArgumentType fields
+        pure GQLTypeD
+          { typeD        =
+            TypeD
+              { tName      = sysName typeName
+              , tNamespace = []
+              , tCons      = [ ConsD { cName   = sysName typeName
+                                     , cFields = map genResField fields
+                                     }
+                             ]
+              , tMeta      = typeMeta
+              }
+          , typeKindD    = if typeName == "Subscription"
+                             then KindObject (Just Subscription)
+                             else KindObject Nothing
+          , typeArgD
+          , typeOriginal = (typeName, dt)
+          }
+      genType (DataUnion members) = do
+        let tCons = map unionCon members
+        pure GQLTypeD
+          { typeD        = TypeD { tName      = unpack typeName
+                                 , tNamespace = []
+                                 , tCons
+                                 , tMeta      = typeMeta
+                                 }
+          , typeKindD    = KindUnion
+          , typeArgD     = []
+          , typeOriginal = (typeName, dt)
+          }
        where
-        cName  = sysName typeName <> utName
-        utName = sysName memberName
+        unionCon memberName = ConsD
+          { cName
+          , cFields = [ DataField
+                          { fieldName     = pack $ "un" <> cName
+                          , fieldType     = TypeAlias { aliasTyCon = pack utName
+                                                      , aliasArgs = Just "m"
+                                                      , aliasWrappers = []
+                                                      }
+                          , fieldMeta     = Nothing
+                          , fieldArgs     = []
+                          , fieldArgsType = Nothing
+                          }
+                      ]
+          }
+         where
+          cName  = sysName typeName <> utName
+          utName = sysName memberName

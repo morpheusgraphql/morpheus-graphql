@@ -1,4 +1,33 @@
-## [0.7.2] -
+## [0.8.0] -
+
+### Changed
+
+- deprecated: `INPUT_OBJECT`, `OBJECT`, `UNION`,
+
+  - use `INPUT` instead of `INPUT_OBJECT`
+  - use `deriving(GQLType)` insead of `OBJECT` or `UNION`
+
+- only namespaced Unions  generate regular graphql Union, other attempts will be wrapped inside an object with constructor name :
+
+  e.g:
+  
+  ```hs
+  data Character = 
+    CharacterDeity Deity
+    SomeDeity Deity
+    deriving (GQLType)
+  ```
+
+  where `Deity` is Object.
+  will generate
+
+  ```gql
+    union CHaracter = Deity | SomeDeity
+
+    type SomeDeity {
+      _0: Deity
+    }
+  ```
 
 ### Added
 

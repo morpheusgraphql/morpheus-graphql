@@ -19,8 +19,9 @@ import           Data.Maybe                     ( isJust )
 import           Data.Morpheus.Schema.Schema
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
-                                                , DataTyCon(..)
+                                                ( DataInputUnion
+                                                , DataField(..)
+                                                , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeKind(..)
                                                 , DataTypeLib
@@ -51,24 +52,22 @@ class RenderSchema a b where
   render :: (Monad m, Failure Text m) => (Text, a) -> DataTypeLib -> m (b m)
 
 instance RenderSchema DataType S__Type where
-  render (key, DataScalar DataTyCon { typeMeta }) =
-    constRes $ createLeafType SCALAR key typeMeta Nothing
-  render (key, DataEnum DataTyCon { typeMeta, typeData }) =
-    constRes
-      $ createLeafType ENUM key typeMeta (Just $ map createEnumValue typeData)
-  render (name, DataInputObject DataTyCon { typeData, typeMeta }) =
-    renderInputObject
+  render (name, DataType { typeMeta, typeContent }) = __render typeContent
    where
-    renderInputObject lib = do
-      fields <- traverse (`renderinputValue` lib) typeData
-      pure $ createInputObject name typeMeta fields
-  render (name, DataObject object') = typeFromObject (name, object')
-   where
-    typeFromObject (key, DataTyCon { typeData, typeMeta }) lib =
-      createObjectType key (typeMeta >>= metaDescription)
-        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility typeData))
-  render (name, DataUnion union) = constRes $ typeFromUnion (name, union)
-  render (name, DataInputUnion inpUnion') = renderInputUnion (name, inpUnion')
+    __render DataScalar{} =
+      constRes $ createLeafType SCALAR name typeMeta Nothing
+    __render (DataEnum enums) = constRes
+      $ createLeafType ENUM name typeMeta (Just $ map createEnumValue enums)
+    __render (DataInputObject fields) = \lib ->
+      createInputObject name typeMeta
+        <$> traverse (`renderinputValue` lib) fields
+    __render (DataObject fields) = \lib ->
+      createObjectType name (typeMeta >>= metaDescription)
+        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility fields))
+    __render (DataUnion union) =
+      constRes $ typeFromUnion (name, typeMeta, union)
+    __render (DataInputUnion members) =
+      renderInputUnion (name, typeMeta, members)
 
 createEnumValue :: Monad m => DataEnumValue -> S__EnumValue m
 createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
@@ -137,11 +136,13 @@ createInputObjectType field@DataField { fieldType = TypeAlias { aliasTyCon } } l
 
 
 renderInputUnion
-  :: (Monad m, Failure Text m) => (Text, DataInputUnion) -> Result m (S__Type m)
-renderInputUnion (key, DataTyCon { typeData, typeMeta }) lib =
-  createInputObject key typeMeta <$> traverse
+  :: (Monad m, Failure Text m)
+  => (Text, Maybe Meta, DataInputUnion)
+  -> Result m (S__Type m)
+renderInputUnion (key, meta, fields) lib =
+  createInputObject key meta <$> traverse
     createField
-    (createInputUnionFields key $ map fst $ filter snd typeData)
+    (createInputUnionFields key $ map fst $ filter snd fields)
  where
   createField (name, field) =
     createInputValueWith name Nothing <$> createInputObjectType field lib
@@ -165,8 +166,8 @@ createLeafType kind name meta enums = S__Type
   , s__TypeInputFields   = constRes Nothing
   }
 
-typeFromUnion :: Monad m => (Text, DataUnion) -> S__Type m
-typeFromUnion (name, DataTyCon { typeData, typeMeta }) = S__Type
+typeFromUnion :: Monad m => (Text, Maybe Meta, DataUnion) -> S__Type m
+typeFromUnion (name, typeMeta, typeContent) = S__Type
   { s__TypeKind          = constRes UNION
   , s__TypeName          = constRes $ Just name
   , s__TypeDescription   = constRes (typeMeta >>= metaDescription)
@@ -174,7 +175,8 @@ typeFromUnion (name, DataTyCon { typeData, typeMeta }) = S__Type
   , s__TypeOfType        = constRes Nothing
   , s__TypeInterfaces    = constRes Nothing
   , s__TypePossibleTypes =
-    constRes $ Just (map (\x -> createObjectType x Nothing $ Just []) typeData)
+    constRes
+      $ Just (map (\x -> createObjectType x Nothing $ Just []) typeContent)
   , s__TypeEnumValues    = constRes Nothing
   , s__TypeInputFields   = constRes Nothing
   }

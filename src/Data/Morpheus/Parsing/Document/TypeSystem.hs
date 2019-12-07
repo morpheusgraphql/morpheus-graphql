@@ -34,7 +34,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField
                                                 , DataFingerprint(..)
-                                                , DataTyCon(..)
+                                                , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataValidator(..)
                                                 , Key
@@ -54,12 +54,11 @@ scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
   metaDirectives <- optionalDirectives
   pure
     ( typeName
-    , DataScalar DataTyCon
-      { typeName
-      , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint typeName
-      , typeData        = DataValidator pure
-      }
+    , DataType { typeName
+               , typeMeta        = Just Meta { metaDescription, metaDirectives }
+               , typeFingerprint = DataFingerprint typeName []
+               , typeContent     = DataScalar $ DataValidator pure
+               }
     )
 
 -- Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
@@ -79,18 +78,18 @@ scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
 --
 objectTypeDefinition :: Maybe Text -> Parser (Text, RawDataType)
 objectTypeDefinition metaDescription = label "ObjectTypeDefinition" $ do
-  name           <- typDeclaration "type"
-  interfaces     <- optionalImplementsInterfaces
-  metaDirectives <- optionalDirectives
-  fields         <- fieldsDefinition
+  implementsName       <- typDeclaration "type"
+  implementsInterfaces <- optionalImplementsInterfaces
+  metaDirectives       <- optionalDirectives
+  fields               <- fieldsDefinition
   --------------------------
   pure
-    ( name
-    , Implements interfaces $ DataTyCon
-      { typeName        = name
-      , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint name
-      , typeData        = fields
+    ( implementsName
+    , Implements
+      { implementsName
+      , implementsInterfaces
+      , implementsMeta       = Just Meta { metaDescription, metaDirectives }
+      , implementsContent    = fields
       }
     )
 
@@ -107,19 +106,16 @@ optionalImplementsInterfaces = implements <|> pure []
 --
 interfaceTypeDefinition :: Maybe Text -> Parser (Text, RawDataType)
 interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
-  typeName       <- typDeclaration "interface"
+  interfaceName  <- typDeclaration "interface"
   metaDirectives <- optionalDirectives
   fields         <- fieldsDefinition
   pure
-    ( typeName
-    , Interface DataTyCon
-      { typeName
-      , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint typeName
-      , typeData        = fields
-      }
+    ( interfaceName
+    , Interface { interfaceName
+                , interfaceMeta = Just Meta { metaDescription, metaDirectives }
+                , interfaceContent = fields
+                }
     )
-
 
 -- Unions : https://graphql.github.io/graphql-spec/June2018/#sec-Unions
 --
@@ -137,12 +133,11 @@ unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
   memberTypes    <- unionMemberTypes
   pure
     ( typeName
-    , DataUnion DataTyCon
-      { typeName
-      , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint typeName
-      , typeData        = memberTypes
-      }
+    , DataType { typeName
+               , typeMeta        = Just Meta { metaDescription, metaDirectives }
+               , typeFingerprint = DataFingerprint typeName []
+               , typeContent     = DataUnion memberTypes
+               }
     )
   where unionMemberTypes = operator '=' *> parseName `sepBy1` pipeLiteral
 
@@ -164,12 +159,11 @@ enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
   enumValuesDefinitions <- setOf enumValueDefinition
   pure
     ( typeName
-    , DataEnum DataTyCon
-      { typeName
-      , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint typeName
-      , typeData        = enumValuesDefinitions
-      }
+    , DataType { typeName
+               , typeMeta        = Just Meta { metaDescription, metaDirectives }
+               , typeFingerprint = DataFingerprint typeName []
+               , typeContent     = DataEnum enumValuesDefinitions
+               }
     )
 
 
@@ -189,12 +183,11 @@ inputObjectTypeDefinition metaDescription =
     fields         <- inputFieldsDefinition
     pure
       ( typeName
-      , DataInputObject DataTyCon
-        { typeName
-        , typeMeta        = Just Meta { metaDescription, metaDirectives }
-        , typeFingerprint = SystemFingerprint typeName
-        , typeData        = fields
-        }
+      , DataType { typeName
+                 , typeMeta = Just Meta { metaDescription, metaDirectives }
+                 , typeFingerprint = DataFingerprint typeName []
+                 , typeContent     = DataInputObject fields
+                 }
       )
  where
   inputFieldsDefinition :: Parser [(Key, DataField)]
