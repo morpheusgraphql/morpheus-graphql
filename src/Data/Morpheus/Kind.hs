@@ -67,6 +67,5 @@ type INPUT_OBJECT = 'INPUT
 type UNION = 'OUTPUT
 
 {-# DEPRECATED OBJECT "use: deriving(GQLType), will be automatically inferred" #-}
---{-# WARNING unsafePerformIO "This is unsafe; I hope you know what you're doing" #-}
 -- | GraphQL Object
 type OBJECT = 'OUTPUT
