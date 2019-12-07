@@ -1,4 +1,10 @@
-{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DeriveLift        #-}
+{-# LANGUAGE KindSignatures    #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE GADTs             #-}
+{-# LANGUAGE FlexibleInstances #-}
+
+
 
 module Data.Morpheus.Types.Internal.AST.Selection
   ( Argument(..)
@@ -35,61 +41,71 @@ import           Data.Morpheus.Types.Internal.AST.Value
 
 -- RAW SELECTION
 
-type RawSelection' a = Selection RawArguments a
+type RawSelection = Selection 'Raw 
+
+type Arguments = Collection Argument
+
+
+type ValidSelection = Selection 'Valid
+
+type SelectionSet a = Collection (Selection a)
+
+type UnionSelection = Collection (SelectionSet 'Valid)
 
 type FragmentLib = [(Key, Fragment)]
 
-type RawArguments = Collection RawArgument
+type RawArguments = Collection (GenArgument 'Raw)
 
 type RawSelectionSet = Collection RawSelection
-
-data Fragment = Fragment
-  { fragmentType      :: Key
-  , fragmentPosition  :: Position
-  , fragmentSelection :: RawSelectionSet
-  } deriving (Show, Lift)
-
-data RawArgument
-  = VariableRef Ref
-  | RawArgument Argument
-  deriving (Show, Lift)
-
-data RawSelection
-  = RawSelectionSet (RawSelection' RawSelectionSet)
-  | RawSelectionField (RawSelection' ())
-  | InlineFragment Fragment
-  | Spread Ref
-  deriving (Show,Lift)
-
--- VALID SELECTION 
-type Arguments = Collection Argument
-
-type SelectionSet = Collection ValidSelection
-
-type ValidSelection = Selection Arguments SelectionRec
-
-type UnionSelection = Collection SelectionSet
 
 data ValueOrigin
   = VARIABLE
   | INLINE
   deriving (Show, Lift)
 
+data Fragment = Fragment
+  { fragmentType      :: Key
+  , fragmentPosition  :: Position
+  , fragmentSelection :: RawSelectionSet
+  } deriving (Show)
+
 data Argument = Argument
   { argumentValue    :: Value
   , argumentOrigin   :: ValueOrigin
   , argumentPosition :: Position
-  } deriving (Show, Lift)
+  } 
+  deriving (Show, Lift)
 
-data Selection args rec = Selection
-  { selectionArguments :: args
+data Process = Raw | Valid 
+  deriving (Lift)
+
+data GenArgument (a :: Process) where 
+  VariableRef :: Ref -> GenArgument 'Raw
+  ArgumentValue :: Argument -> GenArgument a
+
+instance Show (GenArgument a) where 
+
+instance Lift (GenArgument 'Valid) where 
+
+data Selection (process:: Process) where 
+  Selection :: { 
+    selectionArguments :: GenArgument process
   , selectionPosition  :: Position
   , selectionAlias     :: Maybe Key
   , selectionRec       :: rec
-  } deriving (Show,Lift)
+  } -> Selection process
+  InlineFragment :: Fragment -> Selection 'Raw
+  Spread :: Ref -> Selection 'Raw
 
-data SelectionRec
-  = SelectionSet SelectionSet
-  | UnionSelection UnionSelection
-  | SelectionField
-  deriving (Show)
+instance Show (Selection a) where 
+
+instance Lift (Selection 'Valid) where 
+
+data SelectionRec (a :: Process) where  
+    SelectionSet :: SelectionSet a -> SelectionRec a
+    UnionSelection :: UnionSelection -> SelectionRec 'Valid
+    SelectionField :: SelectionRec a
+
+instance Show (SelectionRec a) where 
+
+instance Lift (SelectionRec 'Valid) where 
