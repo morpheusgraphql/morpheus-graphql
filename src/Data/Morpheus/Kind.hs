@@ -62,7 +62,7 @@ type INPUT = 'INPUT
 -- | GraphQL input Object
 type INPUT_OBJECT = 'INPUT
 
-{-# DEPRECATED UNION "use: deriving(GQLType), will be automatically inferred" #-}
+{-# DEPRECATED UNION "use: deriving(GQLType), INPORTANT: only types with <type constructor name><constructor name> will sustain their form, other union constructors will be wrapped inside an new object" #-}
 -- | GraphQL Union
 type UNION = 'OUTPUT
 
