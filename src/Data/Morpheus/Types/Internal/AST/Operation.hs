@@ -19,6 +19,7 @@ where
 
 import           Data.Maybe                     ( fromMaybe )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
+import           Data.Semigroup                 ( (<>) )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Mutation   ( mutationIsNotDefined )
@@ -29,7 +30,6 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , SelectionSet
                                                 , RawSelectionSet
                                                 )
-
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
                                                 , Failure(..)
