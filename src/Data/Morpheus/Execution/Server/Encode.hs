@@ -78,10 +78,14 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , resolving
                                                 , toResolver
                                                 , ResolvingStrategy(..)
-                                                , resolveObject
                                                 , withObject
                                                 , Validation
                                                 , failure
+                                                , DataResolver(..)
+                                                , resolveObject
+                                                , resolve__typename
+                                                , resolveEnum
+                                                , FieldRes
                                                 )
 
 class Encode resolver o e (m :: * -> *) where
@@ -135,49 +139,32 @@ instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o e m where
   encodeKind = pure . pure . gqlString . encodeRep . from . unVContext
 
 instance (Monad m,Generic a, GQLType a,ExploreResolvers (CUSTOM a) a o e m) => EncodeKind OUTPUT a o e m where
-  encodeKind (VContext value) = encodeNode
-    $ exploreResolvers (Proxy @(CUSTOM a)) value
+  encodeKind (VContext value) (key, sel@Selection { selectionRec }) =
+    encodeNode (exploreResolvers (Proxy @(CUSTOM a)) value) selectionRec
    where
-    encodeNode (ObjectRes fields) sel = withObject encodeObject sel
+    encodeNode (ObjectRes fields) _ = withObject encodeObject (key, sel)
      where
       encodeObject selection =
         resolveObject selection
-          $ __typenameResolverBy (__typeName (Proxy @a))
+          $ ObjectRes
+          $ resolve__typename (__typeName (Proxy @a))
           : fields
-    encodeNode (EnumRes name) (_, Selection { selectionRec }) = encodeEnum
-      selectionRec
-     where
-      encodeEnum SelectionField              = pure $ gqlString name
-      -- BOXED ENUM
-      encodeEnum (UnionSelection selections) = resolveObject currentSelection
-                                                             resolvers
-       where
-        enumObjectTypeName = __typeName (Proxy @a) <> "EnumObject"
-        currentSelection   = fromMaybe [] $ lookup enumObjectTypeName selections
-        resolvers =
-          [ ("enum", const $ pure $ gqlString name)
-          , __typenameResolverBy enumObjectTypeName
-          ]
-      encodeEnum _ = failure $ internalResolvingError "expected enum value"
+    encodeNode (EnumRes enum) _ =
+      resolveEnum (__typeName (Proxy @a)) enum selectionRec
     -- Type References --------------------------------------------------------------
-    encodeNode (UnionRef (fieldTypeName, fieldResolver)) (key, sel@Selection { selectionRec = UnionSelection selections })
+    encodeNode (UnionRef (fieldTypeName, fieldResolver)) (UnionSelection selections)
       = fieldResolver
         (key, sel { selectionRec = SelectionSet currentSelection })
       where currentSelection = pickSelection fieldTypeName selections
     -- RECORDS ----------------------------------------------------------------------------
-    encodeNode (UnionRes (name, fields)) (_, Selection { selectionRec = UnionSelection selections })
-      = resolveObject selection resolvers
+    encodeNode (UnionRes (name, fields)) (UnionSelection selections) =
+      resolveObject selection resolvers
      where
       selection = pickSelection name selections
-      resolvers = __typenameResolverBy name : fields
+      resolvers = ObjectRes (resolve__typename name : fields)
     encodeNode _ _ = failure $ internalResolvingError
       "union Resolver should only recieve UnionSelection"
 
-data DataResolver o e m =
-    EnumRes  Name
-  | UnionRes  (Name,[FieldRes o e m])
-  | ObjectRes  [FieldRes o e m ]
-  | UnionRef (FieldRes o e m)
 
 convertNode
   :: (Monad m, LiftEither o ResolvingStrategy)
@@ -196,7 +183,7 @@ convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeNa
     = UnionRef (fieldTypeName, fieldResolver)
   -- RECORDS ----------------------------------------------------------------------------
   encodeUnion fields = UnionRes
-    (resTypeName, __typenameResolverBy resTypeName : map toFieldRes resolvers)
+    (resTypeName, resolve__typename resTypeName : map toFieldRes resolvers)
    where
     resolvers | isResRecord = fields
               | otherwise   = setFieldNames fields
@@ -209,19 +196,16 @@ type EncodeOperator o e m a
 
 type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
 
-type FieldRes o e m
-  = (Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)
 
 objectResolvers
   :: forall custom a o e m
    . ExploreResolvers custom a o e m
   => Proxy custom
   -> a
-  -> [(Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)]
+  -> DataResolver o e m
 objectResolvers isCustom value = case exploreResolvers isCustom value of
-  ObjectRes resFields -> resFields
-  -- TODO: FIXME:
-  _                   -> []
+  ObjectRes resFields -> ObjectRes resFields
+  _                   -> InvalidRes "resolver must be an object"
 
 
 --- GENERICS ------------------------------------------------
@@ -242,38 +226,38 @@ encodeQuery
   => schema (Resolver QUERY event m)
   -> EncodeOperator QUERY event m query
 encodeQuery schema = encodeOperationWith
-  (objectResolvers (Proxy :: Proxy (CUSTOM (schema (Resolver QUERY event m))))
-                   schema
+  (Just $ objectResolvers
+    (Proxy :: Proxy (CUSTOM (schema (Resolver QUERY event m))))
+    schema
   )
 
 encodeMutation
   :: forall event m mut
    . (Monad m, EncodeCon MUTATION event m mut)
   => EncodeOperator MUTATION event m mut
-encodeMutation = encodeOperationWith []
+encodeMutation = encodeOperationWith Nothing
 
 encodeSubscription
   :: forall m event mut
    . (Monad m, EncodeCon SUBSCRIPTION event m mut)
   => EncodeOperator SUBSCRIPTION event m mut
-encodeSubscription = encodeOperationWith []
+encodeSubscription = encodeOperationWith Nothing
 
 encodeOperationWith
   :: forall o e m a
    . (Monad m, EncodeCon o e m a, LiftEither o ResolvingStrategy)
-  => [FieldRes o e m]
+  => Maybe (DataResolver o e m)
   -> EncodeOperator o e m a
 encodeOperationWith externalRes rootResolver Operation { operationSelection } =
-  resolveObject operationSelection resolvers
+  resolveObject operationSelection (rootDataRes <> extDataRes)
  where
-  resolvers =
-    externalRes <> objectResolvers (Proxy :: Proxy (CUSTOM a)) rootResolver
+  rootDataRes = objectResolvers (Proxy :: Proxy (CUSTOM a)) rootResolver
+  extDataRes  = fromMaybe (ObjectRes []) externalRes
 
-__typenameResolverBy
-  :: (Monad m, LiftEither o ResolvingStrategy)
-  => Name
-  -> (Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)
-__typenameResolverBy name = ("__typename", const $ pure $ gqlString name)
+toFieldRes :: FieldNode o e m -> FieldRes o e m
+toFieldRes FieldNode { fieldSelName, fieldResolver } =
+  (fieldSelName, fieldResolver)
+
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 
@@ -296,10 +280,6 @@ data FieldNode o e m = FieldNode {
     fieldResolver  :: (Key, ValidSelection) -> ResolvingStrategy o e m Value,
     isFieldObject  :: Bool
   }
-
-toFieldRes :: FieldNode o e m -> FieldRes o e m
-toFieldRes FieldNode { fieldSelName, fieldResolver } =
-  (fieldSelName, fieldResolver)
 
 -- setFieldNames ::  Power Int Text -> Power { _1 :: Int, _2 :: Text }
 setFieldNames :: [FieldNode o e m] -> [FieldNode o e m]
