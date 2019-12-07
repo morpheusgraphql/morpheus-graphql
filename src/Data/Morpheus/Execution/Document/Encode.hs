@@ -18,7 +18,6 @@ import           Data.Semigroup                 ( (<>) )
 import           Data.Morpheus.Execution.Server.Encode
                                                 ( Encode(..)
                                                 , ExploreResolvers(..)
-                                                , DataResolver(..)
                                                 )
 import           Data.Morpheus.Types.GQLType    ( TRUE )
 import           Data.Morpheus.Types.Internal.AST
@@ -35,6 +34,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , MapStrategy(..)
                                                 , LiftEither
                                                 , ResolvingStrategy
+                                                , DataResolver(..)
                                                 )
 import           Data.Morpheus.Types.Internal.TH
                                                 ( applyT
