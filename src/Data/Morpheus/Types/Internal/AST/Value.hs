@@ -101,6 +101,14 @@ instance A.FromJSON ScalarValue where
 
 type Object = [(Text, Value)]
 
+type VarObject = [(Text, VariableValue)]
+
+data VariableValue = 
+    VarObject [VarObject]
+  | VarList [VariableValue]
+  | Variable Value
+  | ConstValue Value
+
 data Value
   = Object Object
   | List [Value]
