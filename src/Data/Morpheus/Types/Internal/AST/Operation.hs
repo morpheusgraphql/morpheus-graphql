@@ -87,7 +87,11 @@ getOperationObject op lib = do
   dt <- getOperationDataType op lib
   case dt of
     DataType { typeContent = DataObject x, typeName } -> pure (typeName, x)
-    _ -> failure ("invalid operation" :: Name)
+    DataType { typeName } ->
+      failure
+        $  "Type Mismatch: operation \""
+        <> typeName
+        <> "\" must be an Object"
 
 getOperationDataType :: Operation a b -> DataTypeLib -> Validation DataType
 getOperationDataType Operation { operationType = Query } lib =
