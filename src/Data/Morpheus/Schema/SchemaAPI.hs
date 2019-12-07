@@ -1,7 +1,8 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns   #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE TypeApplications  #-}
+{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Schema.SchemaAPI
   ( hiddenRootFields
@@ -79,8 +80,9 @@ initSchema lib = pure S__Schema
   }
 
 hiddenRootFields :: [(Text, DataField)]
-hiddenRootFields = fst $ objectFields (Proxy :: Proxy (CUSTOM (Root Maybe)))
-                                      (OutputType, Proxy @(Root Maybe))
+hiddenRootFields = fst $ objectFields
+  (Proxy :: Proxy (CUSTOM (Root Maybe)))
+  ("Root", OutputType, Proxy @(Root Maybe))
 
 defaultTypes :: TypeUpdater
 defaultTypes = flip

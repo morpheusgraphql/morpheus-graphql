@@ -199,7 +199,7 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
    where
     (fields, types) = objectFields
       (Proxy @(CUSTOM (query (Resolver QUERY event m))))
-      (OutputType, Proxy @(query (Resolver QUERY event m)))
+      ("type for query", OutputType, Proxy @(query (Resolver QUERY event m)))
   ------------------------------
   mutationSchema lib = resolveUpdates
     (lib { mutation = maybeOperator fields "Mutation" })
@@ -207,7 +207,7 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
    where
     (fields, types) = objectFields
       (Proxy @(CUSTOM (mutation (Resolver MUTATION event m))))
-      (OutputType, Proxy @(mutation (Resolver MUTATION event m)))
+      ("type for mutation",OutputType, Proxy @(mutation (Resolver MUTATION event m)))
   ------------------------------
   subscriptionSchema lib = resolveUpdates
     (lib { subscription = maybeOperator fields "Subscription" })
@@ -215,7 +215,7 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
    where
     (fields, types) = objectFields
       (Proxy @(CUSTOM (subscription (Resolver SUBSCRIPTION event m))))
-      (OutputType, Proxy @(subscription (Resolver SUBSCRIPTION event m)))
+      ("type for subscription",OutputType, Proxy @(subscription (Resolver SUBSCRIPTION event m)))
   maybeOperator :: [(Name, DataField)] -> Name -> Maybe (Name, DataType)
   maybeOperator []     = const Nothing
   maybeOperator fields = Just . operatorType fields

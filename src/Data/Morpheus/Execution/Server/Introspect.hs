@@ -129,18 +129,21 @@ instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
   introspect _ = introspect (Proxy @(MapKind k v Maybe))
 
 -- Resolver : a -> Resolver b
-instance (IntrospectRep 'False a, Introspect b) => Introspect (a -> m b) where
+instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m b) where
   isObject _ = False
   field _ name = fieldObj { fieldArgs }
    where
-    fieldObj = field (Proxy @b) name
-    fieldArgs =
-      fst $ objectFields (Proxy :: Proxy 'False) (OutputType, Proxy @a)
+    fieldObj  = field (Proxy @b) name
+    fieldArgs = fst $ objectFields
+      (Proxy :: Proxy 'False)
+      (__typeName (Proxy @b), OutputType, Proxy @a)
   introspect _ typeLib = resolveUpdates typeLib
                                         (introspect (Proxy @b) : inputs)
    where
+    name = "Arguments for " <> __typeName (Proxy @b)
     inputs :: [TypeUpdater]
-    inputs = snd $ objectFields (Proxy :: Proxy 'False) (InputType, Proxy @a)
+    inputs =
+      snd $ objectFields (Proxy :: Proxy 'False) (name, InputType, Proxy @a)
 
 -- | Introspect With specific Kind: 'kind': object, scalar, enum ...
 class IntrospectKind (kind :: GQL_KIND) a where
@@ -184,14 +187,23 @@ type GQL_TYPE a = (Generic a, GQLType a)
 objectFields
   :: IntrospectRep custom a
   => proxy1 (custom :: Bool)
-  -> (TypeScope, proxy2 a)
+  -> (Name, TypeScope, proxy2 a)
   -> ([(Name, DataField)], [TypeUpdater])
-objectFields p1 (scope, proxy) = withObject
+objectFields p1 (name, scope, proxy) = withObject
   (introspectRep p1 (proxy, scope, "", DataFingerprint "" []))
  where
   withObject (DataObject      x, ts) = (x, ts)
   withObject (DataInputObject x, ts) = (x, ts)
-  withObject _ = ([],[const $ failure $ globalErrorMessage "invalid schema expected object fields"])
+  withObject _ =
+    ( []
+    , [ const
+          $  failure
+          $  globalErrorMessage
+          $  "invalid schema: "
+          <> name
+          <> " should have only one nonempty constructor"
+      ]
+    )
 
 -- Object Fields
 class IntrospectRep (custom :: Bool) a where
@@ -356,8 +368,8 @@ buildObject isOutput consFields = (wrap fields, types)
 buildDataObject :: [FieldRep] -> (DataObject, [TypeUpdater])
 buildDataObject consFields = (fields, types)
  where
-  fields   = map fieldData consFields
-  types    = map fieldTypeUpdater consFields
+  fields = map fieldData consFields
+  types  = map fieldTypeUpdater consFields
 
 buildUnions
   :: (DataObject -> DataTypeContent)

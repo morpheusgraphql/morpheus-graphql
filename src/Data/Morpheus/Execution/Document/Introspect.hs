@@ -71,7 +71,7 @@ buildTypes = listE . concatMap introspectField
       [|[introspect $(proxyT fieldType)]|] : inputTypes fieldArgsType
       where
         inputTypes (Just ArgsType {argsTypeName})
-          | argsTypeName /= "()" = [[|snd $ objectFields (Proxy :: Proxy TRUE) (InputType,$(proxyT tAlias))|]]
+          | argsTypeName /= "()" = [[|snd $ objectFields (Proxy :: Proxy TRUE) (argsTypeName, InputType,$(proxyT tAlias))|]]
           where
             tAlias = TypeAlias {aliasTyCon = argsTypeName, aliasWrappers = [], aliasArgs = Nothing}
         inputTypes _ = []

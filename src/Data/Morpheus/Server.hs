@@ -110,4 +110,4 @@ gqlSocketApp
   => GQLRootResolver IO e que mut sub
   -> GQLState IO e
   -> ServerApp
-gqlSocketApp gqlRoot state pending = gqlSocketMonadIOApp gqlRoot state id pending
+gqlSocketApp gqlRoot state = gqlSocketMonadIOApp gqlRoot state id
