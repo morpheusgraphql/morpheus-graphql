@@ -38,6 +38,7 @@ import           Data.Semigroup                 ( (<>) )
 import           Data.List                      ( partition )
 
 -- MORPHEUS
+import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 import           Data.Morpheus.Execution.Server.Generics.EnumRep
                                                 ( EnumRep(..) )
@@ -190,7 +191,7 @@ objectFields p1 (scope, proxy) = withObject
  where
   withObject (DataObject      x, ts) = (x, ts)
   withObject (DataInputObject x, ts) = (x, ts)
-  --TODO: FIXME:
+  withObject _ = ([],[const $ failure $ globalErrorMessage "invalid schema expected object fields"])
 
 -- Object Fields
 class IntrospectRep (custom :: Bool) a where
