@@ -39,10 +39,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
 
-
--- RAW SELECTION
-
-
 type RawSelection = Selection RAW
 type ValidSelection = Selection VALID
 
