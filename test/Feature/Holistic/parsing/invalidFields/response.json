@@ -1,13 +1,8 @@
 {
   "errors": [
     {
-      "message": "offset=26:\nunexpected '<'\nexpecting '#', ',', '_', '}', Directives, IgnoredTokens, Selection, body, digit, letter, maybeArguments, or white space\n",
-      "locations": [
-        {
-          "line": 1,
-          "column": 27
-        }
-      ]
+      "message": "offset=26:\nunexpected '<'\nexpecting '#', ',', '_', '}', Arguments, Directives, IgnoredTokens, Selection, body, digit, letter, or white space\n",
+      "locations": [{ "line": 1, "column": 27 }]
     }
   ]
 }

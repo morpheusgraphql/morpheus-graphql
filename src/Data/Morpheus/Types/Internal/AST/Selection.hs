@@ -89,18 +89,11 @@ data Fragment = Fragment
 
 type FragmentLib = [(Key, Fragment)]
 
-
-data Argument (valid :: Bool) where
-  VariableRef ::Ref -> Argument RAW
-  Argument ::{
+data Argument valid = Argument {
     argumentValue    :: Value valid
   , argumentOrigin   :: ValueOrigin
   , argumentPosition :: Position
-  } -> Argument valid
-
-instance Lift (Argument a) where
-  lift (Argument v o p) = [| Argument v o p |]
-  lift (VariableRef x ) = [| VariableRef x |]
+  } deriving (Show,Lift)
 
 type RawArgument = Argument RAW
 type ValidArgument = Argument VALID
@@ -109,8 +102,6 @@ type Arguments a = Collection (Argument a)
 
 type RawArguments = Collection RawArgument
 type ValidArguments = Collection ValidArgument
-
-instance Show (Argument a) where
 
 data SelectionRec (valid :: Bool) where
   SelectionField ::SelectionRec valid

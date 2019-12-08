@@ -18,7 +18,6 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( parseAssignment
                                                 , parseMaybeTuple
                                                 , token
-                                                , variable
                                                 )
 import           Data.Morpheus.Parsing.Internal.Value
                                                 ( parseRawValue )
@@ -39,14 +38,11 @@ import           Data.Morpheus.Types.Internal.AST
 --  Name : Value[Const]
 -- TODO: move variable to Value
 valueArgument :: Parser RawArgument
-valueArgument = label "valueArgument" $ do
+valueArgument = label "Argument" $ do
   argumentPosition <- getLocation
   argumentValue    <- parseRawValue
   pure $ Argument { argumentValue, argumentOrigin = INLINE, argumentPosition }
 
-variableArgument :: Parser RawArgument
-variableArgument = label "variableArgument" $ VariableRef <$> variable
-
 maybeArguments :: Parser RawArguments
-maybeArguments = label "maybeArguments" $ parseMaybeTuple argument
-  where argument = parseAssignment token (valueArgument <|> variableArgument)
+maybeArguments =
+  label "Arguments" $ parseMaybeTuple (parseAssignment token valueArgument)

@@ -77,7 +77,6 @@ instance ExploreRefs RawValue where
 
 instance ExploreRefs (Text, RawArgument) where
   exploreRefs (_, Argument { argumentValue }) = exploreRefs argumentValue
-  exploreRefs (_, VariableRef ref           ) = [ref]
 
 allVariableRefs :: FragmentLib -> [RawSelectionSet] -> Validation [Ref]
 allVariableRefs fragmentLib = concatMapM (concatMapM searchRefs)

@@ -1,6 +1,6 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE TupleSections  #-}
 
 module Data.Morpheus.Validation.Query.Arguments
   ( validateArguments
@@ -43,7 +43,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , RawValue
                                                 , ValidValue
-                                                , ScalarValue(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -55,56 +54,55 @@ import           Data.Morpheus.Validation.Internal.Utils
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInputValue )
-import           Data.Text                      ( Text
-                                                , pack
-                                                )
+import           Data.Text                      ( Text )
 
-resolveObject :: RawValue -> ValidValue
-resolveObject Null         = Null
-resolveObject (Scalar x  ) = Scalar x
-resolveObject (Enum   x  ) = Enum x
-resolveObject (List   x  ) = List $ map resolveObject x
-resolveObject (Object obj) = Object $ map mapSecond obj
-  where mapSecond (x, y) = (x, resolveObject y)
-resolveObject (VariableValue x) = Scalar $ String $ pack $ show x
+resolveObject
+  :: Name -> ValidVariables -> TypeAlias -> RawValue -> Validation ValidValue
+resolveObject operationName variables fieldType@TypeAlias { aliasWrappers, aliasTyCon }
+  = resolve
+ where
+  resolve :: RawValue -> Validation ValidValue
+  resolve Null         = pure Null
+  resolve (Scalar x  ) = pure $ Scalar x
+  resolve (Enum   x  ) = pure $ Enum x
+  resolve (List   x  ) = List <$> traverse resolve x
+  resolve (Object obj) = Object <$> traverse mapSecond obj
+    where mapSecond (x, y) = (x, ) <$> resolve y
+  resolve (VariableValue Ref { refName, refPosition }) = lookupVar
+   where
+    lookupVar = case lookup refName variables of
+      Nothing -> failure $ undefinedVariable operationName refPosition refName
+      Just Variable { variableValue, variableType, variableTypeWrappers }
+        | variableType == aliasTyCon && not
+          (isWeaker variableTypeWrappers aliasWrappers)
+        -> pure variableValue
+        | otherwise
+        -> failure $ incompatibleVariableType refName
+                                              varSignature
+                                              fieldSignature
+                                              refPosition
+       where
+        varSignature   = renderWrapped variableType variableTypeWrappers
+        fieldSignature = render fieldType
+
+
 
 resolveArgumentVariables
-  :: Text
+  :: Name
   -> ValidVariables
   -> DataField
   -> RawArguments
   -> Validation ValidArguments
-resolveArgumentVariables operatorName variables DataField { fieldName, fieldArgs }
+resolveArgumentVariables operationName variables DataField { fieldName, fieldArgs }
   = mapM resolveVariable
  where
-
   resolveVariable :: (Text, RawArgument) -> Validation (Text, ValidArgument)
-  resolveVariable (key, Argument val origin pos) = do
-    let xy = resolveObject val
-    pure (key, Argument xy origin pos)
-  resolveVariable (key, VariableRef Ref { refName, refPosition }) =
-    (key, ) . toArgument <$> lookupVar
-   where
-    toArgument argumentValue = Argument { argumentValue
-                                        , argumentOrigin   = VARIABLE
-                                        , argumentPosition = refPosition
-                                        }
-    lookupVar = case lookup refName variables of
-      Nothing -> failure $ undefinedVariable operatorName refPosition refName
-      Just Variable { variableValue, variableType, variableTypeWrappers } ->
-        case lookup key fieldArgs of
-          Nothing -> failure $ unknownArguments fieldName [Ref key refPosition]
-          Just DataField { fieldType = fieldT@TypeAlias { aliasTyCon, aliasWrappers } }
-            -> if variableType == aliasTyCon && not
-                 (isWeaker variableTypeWrappers aliasWrappers)
-              then return variableValue
-              else failure $ incompatibleVariableType refName
-                                                      varSignature
-                                                      fieldSignature
-                                                      refPosition
-           where
-            varSignature   = renderWrapped variableType variableTypeWrappers
-            fieldSignature = render fieldT
+  resolveVariable (key, Argument val origin position) =
+    case lookup key fieldArgs of
+      Nothing -> failure $ unknownArguments fieldName [Ref key position]
+      Just DataField { fieldType } -> do
+        constValue <- resolveObject operationName variables fieldType val
+        pure (key, Argument constValue origin position)
 
 validateArgument
   :: DataTypeLib
