@@ -34,13 +34,15 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , ResponseStream
   , resolve__typename
   , DataResolver(..)
-  , FieldRes 
+  , FieldRes
   )
 where
 
 import           Control.Monad.Trans.Class      ( MonadTrans(..) )
 import           Data.Maybe                     ( fromMaybe )
-import           Data.Semigroup                 ( (<>), Semigroup(..) )
+import           Data.Semigroup                 ( (<>)
+                                                , Semigroup(..)
+                                                )
 import           Data.Text                      ( unpack
                                                 , pack
                                                 )
@@ -53,7 +55,9 @@ import           Data.Morpheus.Error.Selection  ( resolvingFailedError
 import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( Selection(..)
                                                 , SelectionRec(..)
-                                                , SelectionSet
+                                                , ValidSelection
+                                                , ValidSelectionRec
+                                                , ValidSelectionSet
                                                 , ValidSelection
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
@@ -168,13 +172,13 @@ data DataResolver o e m =
   | UnionRef (FieldRes o e m)
   | InvalidRes Name
 
-instance Semigroup (DataResolver o e m) where 
+instance Semigroup (DataResolver o e m) where
   ObjectRes x <> ObjectRes y = ObjectRes (x <> y)
-  _ <> _ = InvalidRes "can't merge: incompatible resolvers"
+  _           <> _           = InvalidRes "can't merge: incompatible resolvers"
 
 withObject
   :: (LiftEither o ResolvingStrategy, Monad m)
-  => (SelectionSet -> ResolvingStrategy o e m value)
+  => (ValidSelectionSet -> ResolvingStrategy o e m value)
   -> (Key, ValidSelection)
   -> ResolvingStrategy o e m value
 withObject f (_, Selection { selectionRec = SelectionSet selection }) =
@@ -184,7 +188,7 @@ withObject _ (key, Selection { selectionPosition }) =
 
 resolveObject
   :: (Monad m, LiftEither o ResolvingStrategy)
-  => SelectionSet
+  => ValidSelectionSet
   -> DataResolver o e m
   -> ResolvingStrategy o e m Value
 resolveObject selectionSet (ObjectRes resolvers) =
@@ -195,13 +199,14 @@ resolveObject selectionSet (ObjectRes resolvers) =
    where
     lookupRes sel =
       (fromMaybe (const $ pure gqlNull) $ lookup key resolvers) (key, sel)
-resolveObject _ _ = failure $ internalResolvingError "expected object as resolver"
+resolveObject _ _ =
+  failure $ internalResolvingError "expected object as resolver"
 
 resolveEnum
   :: (Monad m, LiftEither o ResolvingStrategy)
   => Name
   -> Name
-  -> SelectionRec
+  -> ValidSelectionRec
   -> ResolvingStrategy o e m Value
 resolveEnum _        enum SelectionField              = pure $ gqlString enum
 resolveEnum typeName enum (UnionSelection selections) = resolveObject
@@ -210,7 +215,8 @@ resolveEnum typeName enum (UnionSelection selections) = resolveObject
  where
   enumObjectTypeName = typeName <> "EnumObject"
   currentSelection   = fromMaybe [] $ lookup enumObjectTypeName selections
-  resolvers = ObjectRes [ ("enum", const $ pure $ gqlString enum)
+  resolvers          = ObjectRes
+    [ ("enum", const $ pure $ gqlString enum)
     , resolve__typename enumObjectTypeName
     ]
 resolveEnum _ _ _ =

@@ -23,6 +23,8 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , ValidSelectionSet
   , ValidArgument
   , ValidArguments
+  , RawSelectionRec
+  , ValidSelectionRec
   )
 where
 
@@ -39,15 +41,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
 
-type RawSelection = Selection RAW
-type ValidSelection = Selection VALID
-
-type SelectionSet a = Collection (Selection a)
-type RawSelectionSet = Collection RawSelection
-type ValidSelectionSet = Collection ValidSelection
-
-
-type UnionSelection = Collection (SelectionSet 'Valid)
 
 data Process = Raw | Valid
   deriving (Lift)
@@ -90,21 +83,6 @@ type ValidArguments = Collection ValidArgument
 
 instance Show (Argument a) where
 
-data Selection (process:: Process) where
-  Selection ::{
-    selectionArguments :: Argument process
-  , selectionPosition  :: Position
-  , selectionAlias     :: Maybe Key
-  , selectionRec       :: SelectionRec process
-  } -> Selection process
-  InlineFragment ::Fragment -> Selection RAW
-  Spread ::Ref -> Selection RAW
-
-instance Show (Selection a) where
-
-instance Lift ValidSelection where
-  lift (Selection args pos alias cont) = [| Selection args pos alias cont |]
-
 data SelectionRec (a :: Process) where
   SelectionField ::SelectionRec a
   SelectionSet   ::SelectionSet a -> SelectionRec a
@@ -112,7 +90,37 @@ data SelectionRec (a :: Process) where
 
 instance Show (SelectionRec a) where
 
+type RawSelectionRec = SelectionRec RAW
+type ValidSelectionRec = SelectionRec VALID
+
 instance Lift (SelectionRec VALID) where
   lift (SelectionSet   s) = [| SelectionSet s |]
   lift (UnionSelection s) = [| UnionSelection s |]
   lift SelectionField     = [| SelectionField |]
+
+type UnionSelection = Collection (SelectionSet 'Valid)
+type SelectionSet a = Collection (Selection a)
+type RawSelectionSet = Collection RawSelection
+type ValidSelectionSet = Collection ValidSelection
+
+
+data Selection (process:: Process) where
+    Selection ::{
+      selectionArguments :: Argument process
+    , selectionPosition  :: Position
+    , selectionAlias     :: Maybe Key
+    , selectionRec       :: SelectionRec process
+    } -> Selection process
+    InlineFragment ::Fragment -> Selection RAW
+    Spread ::Ref -> Selection RAW
+
+instance Show (Selection a) where
+
+instance Lift ValidSelection where
+  lift (Selection args pos alias cont) = [| Selection args pos alias cont |]
+
+type RawSelection = Selection RAW
+type ValidSelection = Selection VALID
+  
+
+  

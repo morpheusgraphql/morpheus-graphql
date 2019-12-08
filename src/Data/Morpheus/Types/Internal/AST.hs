@@ -38,6 +38,8 @@ module Data.Morpheus.Types.Internal.AST
   , ValidSelectionSet
   , ValidArgument
   , ValidArguments
+  , RawSelectionRec
+  , ValidSelectionRec
 
   -- OPERATION
   , Operation(..)
@@ -139,8 +141,6 @@ module Data.Morpheus.Types.Internal.AST
 where
 
 import           Data.Map                       ( Map )
-import           Language.Haskell.TH.Syntax     ( Lift )
-import           Instances.TH.Lift              ( )
 
 -- Morpheus
 import           Data.Morpheus.Types.Internal.AST.Data
