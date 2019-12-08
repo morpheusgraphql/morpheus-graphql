@@ -26,8 +26,8 @@ import           Data.Morpheus.Error.Mutation   ( mutationIsNotDefined )
 import           Data.Morpheus.Error.Subscription
                                                 ( subscriptionIsNotDefined )
 import           Data.Morpheus.Types.Internal.AST.Selection
-                                                ( Arguments
-                                                , SelectionSet
+                                                ( ValidArguments
+                                                , ValidSelectionSet
                                                 , RawSelectionSet
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
@@ -57,7 +57,7 @@ type VariableDefinitions = Collection (Variable DefaultValue)
 
 type ValidVariables = Collection (Variable Value)
 
-type ValidOperation = Operation Arguments SelectionSet
+type ValidOperation = Operation ValidArguments ValidSelectionSet
 
 type RawOperation = Operation VariableDefinitions RawSelectionSet
 
