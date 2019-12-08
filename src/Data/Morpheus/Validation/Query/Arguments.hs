@@ -43,6 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , RawValue
                                                 , ValidValue
+                                                , ScalarValue(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -54,9 +55,9 @@ import           Data.Morpheus.Validation.Internal.Utils
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInputValue )
-import           Data.Text                      ( Text )
-
-
+import           Data.Text                      ( Text
+                                                , pack
+                                                )
 
 resolveObject :: RawValue -> ValidValue
 resolveObject Null         = Null
@@ -65,8 +66,7 @@ resolveObject (Enum   x  ) = Enum x
 resolveObject (List   x  ) = List $ map resolveObject x
 resolveObject (Object obj) = Object $ map mapSecond obj
   where mapSecond (x, y) = (x, resolveObject y)
--- TODO: Resolve variables
-resolveObject (VariableValue x) = Null
+resolveObject (VariableValue x) = Scalar $ String $ pack $ show x
 
 resolveArgumentVariables
   :: Text
@@ -79,8 +79,9 @@ resolveArgumentVariables operatorName variables DataField { fieldName, fieldArgs
  where
 
   resolveVariable :: (Text, RawArgument) -> Validation (Text, ValidArgument)
-  resolveVariable (key, Argument val origin pos) =
-    pure (key, Argument (resolveObject val) origin pos)
+  resolveVariable (key, Argument val origin pos) = do
+    let xy = resolveObject val
+    pure (key, Argument xy origin pos)
   resolveVariable (key, VariableRef Ref { refName, refPosition }) =
     (key, ) . toArgument <$> lookupVar
    where

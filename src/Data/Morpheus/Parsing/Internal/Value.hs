@@ -36,6 +36,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , spaceAndComments
                                                 , token
                                                 , parseNegativeSign
+                                                , variable
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ScalarValue(..)
@@ -118,4 +119,4 @@ parseValue :: Parser ValidValue
 parseValue = structValue parseValue
 
 parseRawValue :: Parser RawValue
-parseRawValue = structValue parseRawValue
+parseRawValue = (VariableValue <$> variable) <|> structValue parseRawValue
