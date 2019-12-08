@@ -26,14 +26,14 @@ import           Data.Morpheus.Execution.Server.Decode
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( TypeD(..)
-                                                , Value
+                                                , ValidValue
                                                 )
 import           Data.Morpheus.Types.Internal.TH
                                                 ( instanceHeadT )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 
-(.:) :: Decode a => Value -> Text -> Validation a
+(.:) :: Decode a => ValidValue -> Text -> Validation a
 value .: selectorName = withObject (decodeFieldWith decode selectorName) value
 
 deriveDecode :: TypeD -> Q [Dec]

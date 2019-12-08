@@ -68,6 +68,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidSelection
                                                 , GQLValue(..)
                                                 , Value(..)
+                                                , ValidValue
                                                 , ValidSelectionSet
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
@@ -88,7 +89,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 )
 
 class Encode resolver o e (m :: * -> *) where
-  encode :: resolver -> (Key, ValidSelection) -> ResolvingStrategy o e m Value
+  encode :: resolver -> (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue
 
 instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m , LiftEither o ResolvingStrategy) => Encode a o e m where
   encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
@@ -127,7 +128,7 @@ instance (DecodeType a,Generic a, Monad m,LiftEither fo Resolver, MapStrategy fo
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
-  encodeKind :: LiftEither o ResolvingStrategy =>  VContext kind a -> (Key, ValidSelection) -> ResolvingStrategy o e m Value
+  encodeKind :: LiftEither o ResolvingStrategy =>  VContext kind a -> (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue
 
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
@@ -191,7 +192,7 @@ convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeNa
 type GQL_RES a = (Generic a, GQLType a)
 
 type EncodeOperator o e m a
-  = a -> ValidOperation -> ResolvingStrategy o e m Value
+  = a -> ValidOperation -> ResolvingStrategy o e m ValidValue
 
 type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
 
@@ -276,7 +277,7 @@ data ResNode o e m = ResNode {
 data FieldNode o e m = FieldNode {
     fieldTypeName :: Name,
     fieldSelName :: Name,
-    fieldResolver  :: (Key, ValidSelection) -> ResolvingStrategy o e m Value,
+    fieldResolver  :: (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue,
     isFieldObject  :: Bool
   }
 

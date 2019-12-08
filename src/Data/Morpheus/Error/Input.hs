@@ -13,7 +13,7 @@ where
 import           Data.Aeson                     ( encode )
 import           Data.ByteString.Lazy.Char8     ( unpack )
 import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value )
+                                                ( ValidValue )
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as T
                                                 ( concat
@@ -23,7 +23,7 @@ import qualified Data.Text                     as T
 type InputValidation a = Either InputError a
 
 data InputError
-  = UnexpectedType [Prop] Text Value (Maybe Text)
+  = UnexpectedType [Prop] Text ValidValue (Maybe Text)
   | UndefinedField [Prop] Text
   | UnknownField [Prop] Text
 
@@ -43,7 +43,7 @@ pathToText :: [Prop] -> Text
 pathToText []    = ""
 pathToText path' = T.concat ["on ", T.intercalate "." $ fmap propKey path']
 
-expectedTypeAFoundB :: [Prop] -> Text -> Value -> Maybe Text -> Text
+expectedTypeAFoundB :: [Prop] -> Text -> ValidValue -> Maybe Text -> Text
 expectedTypeAFoundB path' expected found Nothing = T.concat
   [ pathToText path'
   , " Expected type \""

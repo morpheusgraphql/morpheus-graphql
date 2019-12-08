@@ -30,8 +30,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , Key
                                                 , ConsD(..) 
-                                                , Object
+                                                , ValidObject
                                                 , Value(..)
+                                                , ValidValue
                                                 , Message
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
@@ -54,23 +55,23 @@ decodeObjectExpQ fieldDecoder ConsD { cName, cFields } = handleFields cFields
                                                [|fName|]
       where fName = unpack fieldName
 
-withObject :: (Object -> Validation a) -> Value -> Validation a
+withObject :: (ValidObject -> Validation a) -> ValidValue -> Validation a
 withObject f (Object object) = f object
 withObject _ isType          = internalTypeMismatch "Object" isType
 
-withMaybe :: Monad m => (Value -> m a) -> Value -> m (Maybe a)
+withMaybe :: Monad m => (ValidValue -> m a) -> ValidValue -> m (Maybe a)
 withMaybe _      Null = pure Nothing
 withMaybe decode x    = Just <$> decode x
 
-withList :: (Value -> Validation a) -> Value -> Validation [a]
+withList :: (ValidValue -> Validation a) -> ValidValue -> Validation [a]
 withList decode (List li) = mapM decode li
 withList _      isType    = internalTypeMismatch "List" isType
 
-withEnum :: (Key -> Validation a) -> Value -> Validation a
+withEnum :: (Key -> Validation a) -> ValidValue -> Validation a
 withEnum decode (Enum value) = decode value
 withEnum _      isType       = internalTypeMismatch "Enum" isType
 
-withUnion :: (Key -> Object -> Object -> Validation a) -> Object -> Validation a
+withUnion :: (Key -> ValidObject -> ValidObject -> Validation a) -> ValidObject -> Validation a
 withUnion decoder unions = case lookup "__typename" unions of
   Just (Enum key) -> case lookup key unions of
     Nothing -> withObject (decoder key unions) (Object [])
@@ -78,7 +79,7 @@ withUnion decoder unions = case lookup "__typename" unions of
   Just _  -> failure ("__typename must be Enum" :: Message)
   Nothing -> failure ("__typename not found on Input Union" :: Message)
 
-decodeFieldWith :: (Value -> Validation a) -> Key -> Object -> Validation a
+decodeFieldWith :: (ValidValue -> Validation a) -> Key -> ValidObject -> Validation a
 decodeFieldWith decoder name object = case lookup name object of
   Nothing    -> failure ("Missing Field: \"" <> name <> "\"")
   Just value -> decoder value

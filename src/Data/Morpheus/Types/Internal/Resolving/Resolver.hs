@@ -87,7 +87,7 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
-                                                , Value
+                                                , ValidValue
                                                 )
 import           Data.Morpheus.Types.IO         ( renderResponse
                                                 , GQLResponse
@@ -190,7 +190,7 @@ resolveObject
   :: (Monad m, LiftEither o ResolvingStrategy)
   => ValidSelectionSet
   -> DataResolver o e m
-  -> ResolvingStrategy o e m Value
+  -> ResolvingStrategy o e m ValidValue
 resolveObject selectionSet (ObjectRes resolvers) =
   gqlObject <$> traverse selectResolver selectionSet
  where
@@ -207,7 +207,7 @@ resolveEnum
   => Name
   -> Name
   -> ValidSelectionRec
-  -> ResolvingStrategy o e m Value
+  -> ResolvingStrategy o e m ValidValue
 resolveEnum _        enum SelectionField              = pure $ gqlString enum
 resolveEnum typeName enum (UnionSelection selections) = resolveObject
   currentSelection
@@ -226,13 +226,13 @@ resolveEnum _ _ _ =
 resolve__typename
   :: (Monad m, LiftEither o ResolvingStrategy)
   => Name
-  -> (Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)
+  -> (Key, (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue)
 resolve__typename name = ("__typename", const $ pure $ gqlString name)
 
 toResponseRes
   :: Monad m
-  => ResolvingStrategy o event m Value
-  -> ResponseStream event m Value
+  => ResolvingStrategy o event m ValidValue
+  -> ResponseStream event m ValidValue
 toResponseRes (ResolveQ resT) = cleanEvents resT
 toResponseRes (ResolveM resT) = mapEvent Publish resT
 toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
@@ -329,7 +329,7 @@ type instance UnSubResolver (Resolver SUBSCRIPTION m e) = Resolver QUERY m e
 
 -- RESOLVING
 type FieldRes o e m
-  = (Key, (Key, ValidSelection) -> ResolvingStrategy o e m Value)
+  = (Key, (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue)
 
 toResolver
   :: (LiftEither o Resolver, Monad m)
@@ -343,10 +343,10 @@ toResolver (Failure errors) _ =
 resolving
   :: forall o e m value
    . Monad m
-  => (value -> (Key, ValidSelection) -> ResolvingStrategy o e m Value)
+  => (value -> (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue)
   -> Resolver o e m value
   -> (Key, ValidSelection)
-  -> ResolvingStrategy o e m Value
+  -> ResolvingStrategy o e m ValidValue
 resolving encode gResolver selection@(fieldName, Selection { selectionPosition })
   = _resolve gResolver
  where
@@ -375,14 +375,14 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
     , warnings = []
     }
    where
-    eventResolver :: e -> StatelessResT m Value
+    eventResolver :: e -> StatelessResT m ValidValue
     eventResolver event =
       convert (unQueryResolver $ res event) >>= unPureSub . _encode
      where
       unPureSub
         :: Monad m
-        => ResolvingStrategy SUBSCRIPTION e m Value
-        -> StatelessResT m Value
+        => ResolvingStrategy SUBSCRIPTION e m ValidValue
+        -> StatelessResT m ValidValue
       unPureSub (ResolveS x) = cleanEvents x >>= passEvent
         where passEvent (RecResolver f) = f event
 

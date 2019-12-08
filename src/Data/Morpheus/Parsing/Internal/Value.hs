@@ -40,28 +40,23 @@ import           Data.Morpheus.Parsing.Internal.Terms
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ScalarValue(..)
                                                 , Value(..)
-                                                , VariableValue(..)
                                                 , RawValue
+                                                , ValidValue
                                                 , decodeScientific
                                                 , Name
+                                                , Value(..)
                                                 )
 
-
-
-valueNull :: Parser Value
+valueNull :: Parser (Value a)
 valueNull = string "null" $> Null
 
-booleanValue :: Parser Value
+booleanValue :: Parser (Value a)
 booleanValue = boolTrue <|> boolFalse
  where
   boolTrue  = string "true" $> Scalar (Boolean True)
   boolFalse = string "false" $> Scalar (Boolean False)
 
-
-
-
-
-valueNumber :: Parser Value
+valueNumber :: Parser (Value a)
 valueNumber = do
   isNegative <- parseNegativeSign
   Scalar . decodeScientific . signedNumber isNegative <$> scientific
@@ -69,7 +64,7 @@ valueNumber = do
   signedNumber isNegative number | isNegative = -number
                                  | otherwise  = number
 
-enumValue :: Parser Value
+enumValue :: Parser (Value a)
 enumValue = do
   enum <- Enum <$> token
   spaceAndComments
@@ -84,7 +79,7 @@ escaped = label "escaped" $ do
   codes        = ['b', 'n', 'f', 'r', 't', '\\', '\"', '/']
   escapeChar code replacement = char code >> return replacement
 
-stringValue :: Parser Value
+stringValue :: Parser (Value a)
 stringValue = label "stringValue" $ Scalar . String . pack <$> between
   (char '"')
   (char '"')
@@ -101,29 +96,27 @@ objectValue :: Show a => Parser a -> Parser [(Name, a)]
 objectValue parser = label "objectValue" $ setOf entry
   where entry = parseAssignment token parser
 
-parseDefaultValue :: Parser (Maybe Value)
+parsePrimitives :: Parser (Value a)
+parsePrimitives =
+  valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue
+
+
+parseDefaultValue :: Parser (Maybe ValidValue)
 parseDefaultValue = optional $ do
   litEquals
   parseValue
 
-parsePrimitives :: Parser Value
-parsePrimitives =
-  valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue
-
-parseRawValue :: Parser RawValue
-parseRawValue = label "value" $ do
-  value <-
-    (ConstantValue <$> parsePrimitives)
-    <|> (VariableObject <$> objectValue parseRawValue)
-    <|> (VariableList <$> listValue parseRawValue)
-  spaceAndComments
-  return value
-
-parseValue :: Parser Value
-parseValue = label "value" $ do
+parseGenValue :: Parser (Value a)
+parseGenValue = label "value" $ do
   value <-
     parsePrimitives
-    <|> (Object <$> objectValue parseValue)
-    <|> (List <$> listValue parseValue)
+    <|> (Object <$> objectValue parseGenValue)
+    <|> (List <$> listValue parseGenValue)
   spaceAndComments
   return value
+
+parseValue :: Parser ValidValue
+parseValue = parseGenValue
+
+parseRawValue :: Parser RawValue
+parseRawValue = parseGenValue

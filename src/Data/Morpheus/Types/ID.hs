@@ -10,7 +10,7 @@ where
 import           Data.Morpheus.Kind             ( SCALAR )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
 import           Data.Morpheus.Types.GQLType    ( GQLType(KIND) )
-import           Data.Morpheus.Types.Internal.AST.Value
+import           Data.Morpheus.Types.Internal.AST
                                                 ( ScalarValue(..) )
 import           Data.Text                      ( Text
                                                 , pack

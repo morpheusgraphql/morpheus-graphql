@@ -40,7 +40,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isWeaker
                                                 , lookupInputType
                                                 , Value(..)
-                                                , VariableValue(..)
                                                 , Name
                                                 , RawValue
                                                 , ValidValue
@@ -60,14 +59,14 @@ import           Data.Text                      ( Text )
 
 
 resolveObject :: RawValue -> ValidValue
-resolveObject (ConstantValue  x  ) = ConstantValue x
-resolveObject (VariableObject obj) = ConstantValue $ Object $ map mapSecond obj
-  where mapSecond (x, y) = (x, constantValue $ resolveObject y)
-resolveObject (VariableList x) =
-  ConstantValue $ List $ map (constantValue . resolveObject) x
+resolveObject Null         = Null
+resolveObject (Scalar x  ) = Scalar x
+resolveObject (Enum   x  ) = Enum x
+resolveObject (List   x  ) = List $ map resolveObject x
+resolveObject (Object obj) = Object $ map mapSecond obj
+  where mapSecond (x, y) = (x, resolveObject y)
 -- TODO: Resolve variables
-resolveObject (VariableValue x) = ConstantValue Null
-
+resolveObject (VariableValue x) = Null
 
 resolveArgumentVariables
   :: Text
@@ -83,7 +82,7 @@ resolveArgumentVariables operatorName variables DataField { fieldName, fieldArgs
   resolveVariable (key, Argument val origin pos) =
     pure (key, Argument (resolveObject val) origin pos)
   resolveVariable (key, VariableRef Ref { refName, refPosition }) =
-    (key, ) . toArgument . ConstantValue <$> lookupVar
+    (key, ) . toArgument <$> lookupVar
    where
     toArgument argumentValue = Argument { argumentValue
                                         , argumentOrigin   = VARIABLE
@@ -117,13 +116,13 @@ validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldTy
     Nothing -> handleNullable
     Just argument@Argument { argumentOrigin = VARIABLE } ->
       pure (key, argument) -- Variables are already checked in Variable Validation
-    Just Argument { argumentValue = ConstantValue Null } -> handleNullable
-    Just argument -> validateArgumentValue argument
+    Just Argument { argumentValue = Null } -> handleNullable
+    Just argument                          -> validateArgumentValue argument
  where
   handleNullable
     | isFieldNullable argType = pure
       ( key
-      , Argument { argumentValue    = ConstantValue Null
+      , Argument { argumentValue    = Null
                  , argumentOrigin   = INLINE
                  , argumentPosition = fieldPosition
                  }
@@ -131,7 +130,7 @@ validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldTy
     | otherwise = failure $ undefinedArgument (Ref key fieldPosition)
   -------------------------------------------------------------------------
   validateArgumentValue :: ValidArgument -> Validation (Text, ValidArgument)
-  validateArgumentValue arg@Argument { argumentValue = ConstantValue value, argumentPosition }
+  validateArgumentValue arg@Argument { argumentValue = value, argumentPosition }
     = lookupInputType aliasTyCon lib (internalUnknownTypeMessage aliasTyCon)
       >>= checkType
       >>  pure (key, arg)

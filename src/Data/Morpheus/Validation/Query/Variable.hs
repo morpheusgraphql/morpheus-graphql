@@ -43,6 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupInputType
                                                 , Variables
                                                 , Value(..)
+                                                , ValidValue
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -112,7 +113,7 @@ lookupAndValidateValueOnBody
   -> Variables
   -> VALIDATION_MODE
   -> (Text, Variable DefaultValue)
-  -> Validation (Text, Variable Value)
+  -> Validation (Text, Variable ValidValue)
 lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType, variablePosition, isVariableRequired, variableTypeWrappers, variableValue = defaultValue })
   = toVariable
     <$> (   getVariableType variableType variablePosition typeLib

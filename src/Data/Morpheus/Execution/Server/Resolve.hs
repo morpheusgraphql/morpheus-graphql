@@ -66,7 +66,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , initTypeLib
-                                                , Value
+                                                , ValidValue
                                                 , Name
                                                 , DataField
                                                 )
@@ -151,7 +151,7 @@ coreResolver
    . (Monad m, RootResCon m event query mut sub)
   => GQLRootResolver m event query mut sub
   -> GQLRequest
-  -> ResponseStream event m Value
+  -> ResponseStream event m ValidValue
 coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptionResolver } request
   = validRequest >>= execOperator
  where
@@ -159,7 +159,7 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
     :: Monad m => ResponseStream event m (DataTypeLib, ValidOperation)
   validRequest = cleanEvents $ ResultT $ pure $ do
     schema <- fullSchema $ Identity root
-    query <- parseGQL request >>= validateRequest schema FULL_VALIDATION
+    query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
     pure (schema, query)
   ----------------------------------------------------------
   execOperator (schema, operation@Operation { operationType = Query }) =
@@ -175,7 +175,7 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
 statefulResolver
   :: (EventCon event, MonadIO m)
   => GQLState m event
-  -> (GQLRequest -> ResponseStream event m Value)
+  -> (GQLRequest -> ResponseStream event m ValidValue)
   -> L.ByteString
   -> m L.ByteString
 statefulResolver state streamApi requestText = do
@@ -207,7 +207,10 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
    where
     (fields, types) = objectFields
       (Proxy @(CUSTOM (mutation (Resolver MUTATION event m))))
-      ("type for mutation",OutputType, Proxy @(mutation (Resolver MUTATION event m)))
+      ( "type for mutation"
+      , OutputType
+      , Proxy @(mutation (Resolver MUTATION event m))
+      )
   ------------------------------
   subscriptionSchema lib = resolveUpdates
     (lib { subscription = maybeOperator fields "Subscription" })
@@ -215,7 +218,10 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
    where
     (fields, types) = objectFields
       (Proxy @(CUSTOM (subscription (Resolver SUBSCRIPTION event m))))
-      ("type for subscription",OutputType, Proxy @(subscription (Resolver SUBSCRIPTION event m)))
+      ( "type for subscription"
+      , OutputType
+      , Proxy @(subscription (Resolver SUBSCRIPTION event m))
+      )
   maybeOperator :: [(Name, DataField)] -> Name -> Maybe (Name, DataType)
   maybeOperator []     = const Nothing
   maybeOperator fields = Just . operatorType fields

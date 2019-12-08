@@ -21,9 +21,10 @@ module Data.Morpheus.Types.Internal.AST
   , decodeScientific
   , convertToJSONName
   , convertToHaskellName
-  , VariableValue(..)
   , RawValue
   , ValidValue
+  , RawObject
+  , ValidObject
 
   -- Selection
   , Argument(..)
@@ -157,10 +158,10 @@ import           Data.Morpheus.Types.Internal.AST.Base
 import           Data.Morpheus.Types.Internal.AST.Value
 
 
-type Variables = Map Key Value
+type Variables = Map Key ValidValue
 
 data GQLQuery = GQLQuery
   { fragments      :: FragmentLib
   , operation      :: RawOperation
-  , inputVariables :: [(Key, Value)]
+  , inputVariables :: [(Key, ValidValue)]
   } deriving (Show,Lift)

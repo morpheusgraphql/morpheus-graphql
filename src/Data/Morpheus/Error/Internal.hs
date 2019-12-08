@@ -24,7 +24,7 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value(..) )
+                                                ( ValidValue )
 
 
 -- GQL:: if no mutation defined -> "Schema is not configured for mutations."
@@ -47,6 +47,6 @@ internalArgumentError :: Text -> Validation b
 internalArgumentError x = internalError $ "Argument " <> x
 
 -- if value is already validated but value has different type
-internalTypeMismatch :: Text -> Value -> Validation b
+internalTypeMismatch :: Text -> ValidValue -> Validation b
 internalTypeMismatch text jsType =
   internalError $ "Type mismatch " <> text <> T.pack (show jsType)

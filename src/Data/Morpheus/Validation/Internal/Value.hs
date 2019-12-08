@@ -30,6 +30,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupField
                                                 , lookupInputType
                                                 , Value(..)
+                                                , ValidValue
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving
@@ -41,18 +42,20 @@ validateInputValue
   -> [Prop]
   -> [TypeWrapper]
   -> DataType
-  -> (Key, Value)
-  -> InputValidation Value
-validateInputValue lib prop' rw datatype@DataType { typeContent , typeName } = validate rw typeContent
+  -> (Key, ValidValue)
+  -> InputValidation ValidValue
+validateInputValue lib prop' rw datatype@DataType { typeContent, typeName } =
+  validate rw typeContent
  where
-  throwError :: [TypeWrapper]  -> Value -> InputValidation Value
-  throwError wrappers  value =
+  throwError :: [TypeWrapper] -> ValidValue -> InputValidation ValidValue
+  throwError wrappers value =
     Left $ UnexpectedType prop' (renderWrapped datatype wrappers) value Nothing
   -- VALIDATION
-  validate :: [TypeWrapper] -> DataTypeContent -> (Key, Value) -> InputValidation Value
+  validate
+    :: [TypeWrapper] -> DataTypeContent -> (Key, ValidValue) -> InputValidation ValidValue
   -- Validate Null. value = null ?
   validate wrappers _ (_, Null) | isNullable wrappers = return Null
-                                    | otherwise = throwError wrappers  Null
+                                | otherwise           = throwError wrappers Null
   -- Validate LIST
   validate (TypeMaybe : wrappers) _ value' =
     validateInputValue lib prop' wrappers datatype value'
@@ -63,8 +66,8 @@ validateInputValue lib prop' rw datatype@DataType { typeContent , typeName } = v
       validateInputValue lib prop' wrappers datatype (key', element')
   {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
   {-- VALIDATE OBJECT--}
-  validate [] (DataInputObject parentFields) (_, Object fields)
-    = Object <$> mapM validateField fields
+  validate [] (DataInputObject parentFields) (_, Object fields) =
+    Object <$> mapM validateField fields
    where
     validateField (_name, value) = do
       (type', currentProp') <- validationData value
@@ -86,14 +89,13 @@ validateInputValue lib prop' rw datatype@DataType { typeContent , typeName } = v
       getField = lookupField _name parentFields (UnknownField prop' _name)
   -- VALIDATE INPUT UNION
   -- TODO: Validate Union
-  validate [] (DataInputUnion _) (_, Object fields) =
-    return (Object fields)
+  validate [] (DataInputUnion _) (_, Object fields) = return (Object fields)
   {-- VALIDATE SCALAR --}
-  validate [] (DataEnum tags) (_, value)
-    = validateEnum (UnexpectedType prop' typeName value Nothing) tags value
+  validate [] (DataEnum tags) (_, value) =
+    validateEnum (UnexpectedType prop' typeName value Nothing) tags value
   {-- VALIDATE ENUM --}
-  validate [] (DataScalar DataValidator { validateValue } ) (_, value')
-    = case validateValue value' of
+  validate [] (DataScalar DataValidator { validateValue }) (_, value') =
+    case validateValue value' of
       Right _  -> return value'
       Left  "" -> failure (UnexpectedType prop' typeName value' Nothing)
       Left errorMessage ->
@@ -101,13 +103,13 @@ validateInputValue lib prop' rw datatype@DataType { typeContent , typeName } = v
   {-- 3. THROW ERROR: on invalid values --}
   validate wrappers _ (_, value) = throwError wrappers value
 
-validateEnum :: error -> [DataEnumValue] -> Value -> Either error Value
+validateEnum :: error -> [DataEnumValue] -> ValidValue -> Either error ValidValue
 validateEnum gqlError enumValues (Enum enumValue)
   | enumValue `elem` tags = pure (Enum enumValue)
   | otherwise             = Left gqlError
   where tags = map enumName enumValues
 validateEnum gqlError _ _ = Left gqlError
 
-typeMismatch :: Value -> Key -> [Prop] -> InputError
+typeMismatch :: ValidValue -> Key -> [Prop] -> InputError
 typeMismatch jsType expected' path' =
   UnexpectedType path' expected' jsType Nothing

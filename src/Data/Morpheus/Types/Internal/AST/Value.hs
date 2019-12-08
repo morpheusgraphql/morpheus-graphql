@@ -10,7 +10,6 @@
 
 module Data.Morpheus.Types.Internal.AST.Value
   ( Value(..)
-  , VariableValue(..)
   , ScalarValue(..)
   , Object
   , GQLValue(..)
@@ -20,6 +19,8 @@ module Data.Morpheus.Types.Internal.AST.Value
   , convertToHaskellName
   , RawValue
   , ValidValue
+  , RawObject
+  , ValidObject
   )
 where
 
@@ -115,22 +116,42 @@ instance A.FromJSON ScalarValue where
   parseJSON notScalar    = fail $ "Expected Scalar got :" <> show notScalar
 
 
-type Object = Collection Value
+data Value (valid :: Bool) where
+  VariableValue ::Ref -> Value RAW
+  Object  ::Object a -> Value a
+  List ::[Value a] -> Value a
+  Enum ::Name -> Value a
+  Scalar ::ScalarValue -> Value a
+  Null ::Value a
 
+instance Lift (Value a) where
+  lift (VariableValue x) = [| VariableValue x |]
+  lift (Object        x) = [| VariableObject x |]
+  lift (List          x) = [| VariableList x |]
+  lift (Enum          x) = [| Enum x |]
+  lift (Scalar        x) = [| Scalar x |]
+  lift Null              = [| Null |]
 
-data Value
-  = Object Object
-  | List [Value]
-  | Enum Text
-  | Scalar ScalarValue
-  | Null
-  deriving (Show, Generic,Lift)
+type Object a = Collection (Value a)
+type ValidObject = Object VALID
+type RawObject = Object RAW
+type RawValue = Value RAW
+type ValidValue = Value VALID
 
-instance A.ToJSON Value where
+instance Show (Value a) where
+
+instance A.ToJSON ValidValue where
+  toJSON Null            = A.Null
+  toJSON (Enum   x     ) = A.String x
+  toJSON (Scalar x     ) = A.toJSON x
+  toJSON (List   x     ) = A.toJSON x
+  toJSON (Object fields) = A.object $ map toEntry fields
+    where toEntry (name, value) = name A..= A.toJSON value
+  -------------------------------------------
   toEncoding Null        = A.toEncoding A.Null
   toEncoding (Enum   x ) = A.toEncoding x
-  toEncoding (List   x ) = A.toEncoding x
   toEncoding (Scalar x ) = A.toEncoding x
+  toEncoding (List   x ) = A.toEncoding x
   toEncoding (Object []) = A.toEncoding $ A.object []
   toEncoding (Object x ) = A.pairs $ foldl1 (<>) $ map encodeField x
     where encodeField (key, value) = convertToJSONName key A..= value
@@ -140,18 +161,18 @@ decodeScientific v = case floatingOrInteger v of
   Left  float -> Float float
   Right int   -> Int int
 
-replaceValue :: A.Value -> Value
+replaceValue :: A.Value -> ValidValue
 replaceValue (A.Bool   v) = gqlBoolean v
 replaceValue (A.Number v) = Scalar $ decodeScientific v
 replaceValue (A.String v) = gqlString v
 replaceValue (A.Object v) = gqlObject $ map replace (M.toList v)
  where
-  replace :: (a, A.Value) -> (a, Value)
+  replace :: (a, A.Value) -> (a, ValidValue)
   replace (key, val) = (key, replaceValue val)
 replaceValue (A.Array li) = gqlList (map replaceValue (V.toList li))
 replaceValue A.Null       = gqlNull
 
-instance A.FromJSON Value where
+instance A.FromJSON ValidValue where
   parseJSON = pure . replaceValue
 
 -- DEFAULT VALUES
@@ -164,7 +185,7 @@ class GQLValue a where
   gqlObject :: [(Name, a)] -> a
 
 -- build GQL Values for Subscription Resolver
-instance GQLValue Value where
+instance GQLValue ValidValue where
   gqlNull    = Null
   gqlScalar  = Scalar
   gqlBoolean = Scalar . Boolean
@@ -174,20 +195,10 @@ instance GQLValue Value where
 
 
 
-data VariableValue (valid :: Bool) where
-    VariableObject ::VariableObject -> VariableValue RAW
-    VariableList ::[VariableValue 'False] -> VariableValue RAW
-    VariableValue ::Ref -> VariableValue RAW
-    ConstantValue ::{ constantValue :: Value } -> VariableValue valid
+-- data VariableValue (valid :: Bool) where
+--     VariableObject ::VariableObject -> VariableValue RAW
+--     VariableList ::[VariableValue 'False] -> VariableValue RAW
+--     VariableValue ::Ref -> VariableValue RAW
+--     ConstantValue ::{ constantValue :: Value } -> VariableValue valid
 
-type VariableObject = Collection RawValue
-type RawValue = VariableValue RAW
-type ValidValue = VariableValue VALID
 
-instance Show (VariableValue a) where
-
-instance Lift (VariableValue a) where
-  lift (VariableObject x) = [| VariableObject x |]
-  lift (VariableList   x) = [| VariableList x |]
-  lift (VariableValue  x) = [| VariableValue x |]
-  lift (ConstantValue  x) = [| ConstantValue x |]
