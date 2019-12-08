@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections  #-}
 
@@ -25,9 +26,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Variable(..)
                                                 , Argument(..)
                                                 , ValueOrigin(..)
-                                                , Arguments
-                                                , RawArgument(..)
+                                                , RawArgument
                                                 , RawArguments
+                                                , ValidArgument
+                                                , ValidArguments
                                                 , Ref(..)
                                                 , Position
                                                 , DataArgument
@@ -38,6 +40,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isWeaker
                                                 , lookupInputType
                                                 , Value(Null)
+                                                , Name 
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -52,12 +55,16 @@ import           Data.Morpheus.Validation.Internal.Value
 import           Data.Text                      ( Text )
 
 resolveArgumentVariables
-  :: Text -> ValidVariables -> DataField -> RawArguments -> Validation Arguments
+  :: Text
+  -> ValidVariables
+  -> DataField
+  -> RawArguments
+  -> Validation ValidArguments
 resolveArgumentVariables operatorName variables DataField { fieldName, fieldArgs }
   = mapM resolveVariable
  where
-  resolveVariable :: (Text, RawArgument) -> Validation (Text, Argument)
-  resolveVariable (key, RawArgument argument) = pure (key, argument)
+  resolveVariable :: (Text, RawArgument) -> Validation (Text, ValidArgument)
+  resolveVariable (key, Argument val origin pos) = pure (key, Argument val origin pos)
   resolveVariable (key, VariableRef Ref { refName, refPosition }) =
     (key, ) . toArgument <$> lookupVar
    where
@@ -85,9 +92,9 @@ resolveArgumentVariables operatorName variables DataField { fieldName, fieldArgs
 validateArgument
   :: DataTypeLib
   -> Position
-  -> Arguments
+  -> ValidArguments
   -> (Text, DataArgument)
-  -> Validation (Text, Argument)
+  -> Validation (Text, ValidArgument)
 validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldType = TypeAlias { aliasTyCon, aliasWrappers } })
   = case lookup key requestArgs of
     Nothing -> handleNullable
@@ -106,7 +113,7 @@ validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldTy
       )
     | otherwise = failure $ undefinedArgument (Ref key fieldPosition)
   -------------------------------------------------------------------------
-  validateArgumentValue :: Argument -> Validation (Text, Argument)
+  validateArgumentValue :: ValidArgument -> Validation (Text, ValidArgument)
   validateArgumentValue arg@Argument { argumentValue, argumentPosition } =
     lookupInputType aliasTyCon lib (internalUnknownTypeMessage aliasTyCon)
       >>= checkType
@@ -127,14 +134,14 @@ validateArguments
   -> (Text, DataField)
   -> Position
   -> RawArguments
-  -> Validation Arguments
+  -> Validation ValidArguments
 validateArguments typeLib operatorName variables (key, field@DataField { fieldArgs }) pos rawArgs
   = do
     args     <- resolveArgumentVariables operatorName variables field rawArgs
     dataArgs <- checkForUnknownArguments args
     mapM (validateArgument typeLib pos args) dataArgs
  where
-  checkForUnknownArguments :: Arguments -> Validation [(Text, DataField)]
+  checkForUnknownArguments :: ValidArguments -> Validation [(Text, DataField)]
   checkForUnknownArguments args =
     checkForUnknownKeys enhancedKeys fieldKeys argError
       >> checkNameCollision enhancedKeys argumentNameCollision
@@ -142,5 +149,6 @@ validateArguments typeLib operatorName variables (key, field@DataField { fieldAr
    where
     argError     = unknownArguments key
     enhancedKeys = map argToKey args
+    argToKey :: (Name, ValidArgument) -> Ref 
     argToKey (key', Argument { argumentPosition }) = Ref key' argumentPosition
     fieldKeys = map fst fieldArgs

@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs               #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
