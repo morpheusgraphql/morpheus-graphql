@@ -148,9 +148,6 @@ import           Language.Haskell.TH.Syntax     ( Lift )
 -- Morpheus
 import           Data.Morpheus.Types.Internal.AST.Data
 
-
-import           Data.Morpheus.Types.Internal.AST.Operation
-
 import           Data.Morpheus.Types.Internal.AST.Selection
 
 import           Data.Morpheus.Types.Internal.AST.Base
