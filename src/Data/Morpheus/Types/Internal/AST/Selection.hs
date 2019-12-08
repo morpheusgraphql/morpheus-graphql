@@ -110,9 +110,9 @@ instance Lift ValidSelection where
   lift (Selection args pos alias cont) = [| Selection args pos alias cont |]
 
 data SelectionRec (a :: Process) where
-    SelectionSet ::SelectionSet a -> SelectionRec a
-    UnionSelection ::UnionSelection -> SelectionRec VALID
-    SelectionField ::SelectionRec a
+  SelectionField ::SelectionRec a
+  SelectionSet   ::SelectionSet a -> SelectionRec a
+  UnionSelection ::UnionSelection -> SelectionRec VALID
 
 instance Show (SelectionRec a) where
 
