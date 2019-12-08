@@ -32,7 +32,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , getOperationDataType
                                                 , Selection(..)
                                                 , SelectionRec(..)
-                                                , SelectionSet
+                                                , ValidSelectionSet
                                                 , ValidSelection
                                                 , Ref(..)
                                                 , DataField(..)
@@ -129,7 +129,7 @@ operationTypes lib variables = genOperation
     :: [Key]
     -> Key
     -> DataType
-    -> SelectionSet
+    -> ValidSelectionSet
     -> Validation ([ClientType], [Text])
   genRecordType path name dataType recordSelSet = do
     (con, subTypes, requests) <- genConsD (unpack name) dataType recordSelSet
@@ -150,7 +150,7 @@ operationTypes lib variables = genOperation
     genConsD
       :: String
       -> DataType
-      -> SelectionSet
+      -> ValidSelectionSet
       -> Validation (ConsD, [ClientType], [Text])
     genConsD cName datatype selSet = do
       (cFields, subTypes, requests) <- unzip3 <$> traverse genField selSet
@@ -291,8 +291,9 @@ lookupFieldType lib path DataType { typeContent = DataObject typeContent, typeNa
                                      (lookupDeprecatedReason deprecation)
         Nothing -> pure ()
     ------------------
-    Nothing -> failure
-      (compileError $ "cant find field \"" <> pack (show typeContent) <> "\"")
+    Nothing ->
+      failure
+        (compileError $ "cant find field \"" <> pack (show typeContent) <> "\"")
 lookupFieldType _ _ dt _ _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 

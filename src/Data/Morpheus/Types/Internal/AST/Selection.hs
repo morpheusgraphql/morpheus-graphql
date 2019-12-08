@@ -106,7 +106,7 @@ type ValidSelectionSet = Collection ValidSelection
 
 data Selection (process:: Process) where
     Selection ::{
-      selectionArguments :: Argument process
+      selectionArguments :: Arguments process
     , selectionPosition  :: Position
     , selectionAlias     :: Maybe Key
     , selectionRec       :: SelectionRec process

@@ -48,7 +48,7 @@ import           Data.Morpheus.Types.GQLType    ( GQLType(KIND, __typeName) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
                                                 , Argument(..)
-                                                , Arguments
+                                                , ValidArguments
                                                 , Object
                                                 , Value(..)
                                                 )
@@ -59,7 +59,7 @@ import           Data.Morpheus.Types.Internal.Resolving
 
 
 -- GENERIC
-decodeArguments :: DecodeType a => Arguments -> Validation a
+decodeArguments :: DecodeType a => ValidArguments -> Validation a
 decodeArguments = decodeType . Object . map toObject
   where toObject (x, y) = (x, argumentValue y)
 
