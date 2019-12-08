@@ -30,7 +30,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidSelectionSet
                                                 , Fragment(..)
                                                 , FragmentLib
-                                                , RawSelection(..)
+                                                , RawSelection
                                                 , RawSelectionSet
                                                 , DataField(..)
                                                 , Ref(..)
@@ -40,7 +40,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeLib(..)
                                                 , TypeAlias(..)
                                                 , Name
-                                                , ValidArguments
                                                 , allDataTypes
                                                 , isEntNode
                                                 , lookupFieldAsSelectionSet
@@ -145,31 +144,32 @@ validateSelectionSet lib fragments' operatorName variables = __validate
             get dataField and validated arguments for RawSelection
         -}
     -- getValidationData :: Name -> ValidSelection -> (DataField, DataTypeContent, ValidArguments)
-    getValidationData key (selectionArguments,selectionPosition) =
-      do
-        selectionField <- lookupSelectionField selectionPosition
-                                               key
-                                               typeName
-                                               objectFields
-        -- validate field Argument -----
-        arguments <- validateArguments lib
-                                       operatorName
-                                       variables
-                                       (key, selectionField)
-                                       selectionPosition
-                                       selectionArguments
-        -- check field Type existence  -----
-        fieldDataType <- lookupType
-          (unknownType (aliasTyCon $fieldType selectionField) selectionPosition)
-          (allDataTypes lib)
-          (aliasTyCon $ fieldType selectionField)
-        return (selectionField, fieldDataType, arguments)
+    getValidationData key (selectionArguments, selectionPosition) = do
+      selectionField <- lookupSelectionField selectionPosition
+                                             key
+                                             typeName
+                                             objectFields
+      -- validate field Argument -----
+      arguments <- validateArguments lib
+                                     operatorName
+                                     variables
+                                     (key, selectionField)
+                                     selectionPosition
+                                     selectionArguments
+      -- check field Type existence  -----
+      fieldDataType <- lookupType
+        (unknownType (aliasTyCon $fieldType selectionField) selectionPosition)
+        (allDataTypes lib)
+        (aliasTyCon $ fieldType selectionField)
+      return (selectionField, fieldDataType, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     --
     validateSelection :: (Text, RawSelection) -> Validation ValidSelectionSet
-    validateSelection (key', fullRawSelection@Selection { selectionArguments= selArgs , selectionRec = SelectionSet rawSelection, selectionPosition })
+    validateSelection (key', fullRawSelection@Selection { selectionArguments = selArgs, selectionRec = SelectionSet rawSelection, selectionPosition })
       = do
-        (dataField, datatype, arguments) <- getValidationData key' (selArgs,selectionPosition)
+        (dataField, datatype, arguments) <- getValidationData
+          key'
+          (selArgs, selectionPosition)
         case typeContent datatype of
           DataUnion _ -> do
             (categories, __typename) <- clusterTypes
@@ -215,9 +215,11 @@ validateSelectionSet lib fragments' operatorName variables = __validate
      where
       returnSelection selectionArguments selectionRec =
         pure [(key', fullRawSelection { selectionArguments, selectionRec })]
-    validateSelection (key, rawSelection@Selection { selectionArguments=selArgs, selectionPosition, selectionRec = SelectionField })
+    validateSelection (key, rawSelection@Selection { selectionArguments = selArgs, selectionPosition, selectionRec = SelectionField })
       = do
-        (dataField, datatype, selectionArguments) <- getValidationData key (selArgs,selectionPosition)
+        (dataField, datatype, selectionArguments) <- getValidationData
+          key
+          (selArgs, selectionPosition)
         isLeaf (typeContent datatype) dataField
         pure
           [ ( key

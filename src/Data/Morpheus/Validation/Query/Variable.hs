@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
@@ -29,10 +30,12 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , getOperationName
                                                 , Fragment(..)
                                                 , FragmentLib
-                                                , RawArgument(..)
-                                                , RawSelection(..)
-                                                , RawSelectionSet
+                                                , Argument(..)
+                                                , RawArgument
                                                 , Selection(..)
+                                                , SelectionRec(..)
+                                                , RawSelection
+                                                , RawSelectionSet
                                                 , Ref(..)
                                                 , Position
                                                 , DataType
@@ -63,20 +66,20 @@ allVariableRefs :: FragmentLib -> [RawSelectionSet] -> Validation [Ref]
 allVariableRefs fragmentLib = concatMapM (concatMapM searchRefs)
  where
   referencesFromArgument :: (Text, RawArgument) -> [Ref]
-  referencesFromArgument (_, RawArgument{}) = []
+  referencesFromArgument (_, Argument{}) = []
   referencesFromArgument (_, VariableRef Ref { refName, refPosition }) =
     [Ref refName refPosition]
   -- | search used variables in every arguments
   searchRefs :: (Text, RawSelection) -> Validation [Ref]
-  searchRefs (_, RawSelectionSet Selection { selectionArguments, selectionRec })
-    = getArgs <$> concatMapM searchRefs selectionRec
+  searchRefs (_, Selection { selectionArguments, selectionRec = SelectionField })
+    = return $ concatMap referencesFromArgument selectionArguments
+  searchRefs (_, Selection { selectionArguments, selectionRec = SelectionSet selSet })
+    = getArgs <$> concatMapM searchRefs selSet
    where
     getArgs :: [Ref] -> [Ref]
     getArgs x = concatMap referencesFromArgument selectionArguments <> x
   searchRefs (_, InlineFragment Fragment { fragmentSelection }) =
     concatMapM searchRefs fragmentSelection
-  searchRefs (_, RawSelectionField Selection { selectionArguments }) =
-    return $ concatMap referencesFromArgument selectionArguments
   searchRefs (_, Spread reference) =
     getFragment reference fragmentLib
       >>= concatMapM searchRefs
