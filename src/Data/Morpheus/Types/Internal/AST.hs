@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveLift       #-}
-
 module Data.Morpheus.Types.Internal.AST
   (
     -- BASE
@@ -31,13 +29,15 @@ module Data.Morpheus.Types.Internal.AST
   , ValueOrigin(..)
   , ValidSelection
   , Selection(..)
-  , RawSelection'
+  , RawSelection
   , FragmentLib
   , RawArguments
   , RawSelectionSet
   , Fragment(..)
-  , RawArgument(..)
-  , RawSelection(..)
+  , RawArgument
+  , ValidSelectionSet
+  , ValidArgument
+  , ValidArguments
 
   -- OPERATION
   , Operation(..)
@@ -161,4 +161,4 @@ data GQLQuery = GQLQuery
   { fragments      :: FragmentLib
   , operation      :: RawOperation
   , inputVariables :: [(Key, Value)]
-  } deriving (Show,Lift)
+  } deriving (Show)

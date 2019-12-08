@@ -104,10 +104,10 @@ type Object = [(Text, Value)]
 
 type VarObject = [(Text, VariableValue)]
 
-data VariableValue = 
+data VariableValue =
     VarObject [VarObject]
   | VarList [VariableValue]
-  | Variable Value
+  | VariableValue Value
   | ConstValue Value
 
 data Value
