@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE DeriveLift      #-}
 {-# LANGUAGE NamedFieldPuns  #-}
+{-# LANGUAGE DataKinds       #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Key
@@ -12,6 +13,8 @@ module Data.Morpheus.Types.Internal.AST.Base
   , anonymousRef
   , Name
   , Description
+  , VALID
+  , RAW
   )
 where
 
@@ -30,6 +33,9 @@ type Name = Key
 type Description = Key
 
 type Collection a = [(Key, a)]
+
+type VALID = 'True
+type RAW = 'False
 
 data Position = Position
   { line   :: Int

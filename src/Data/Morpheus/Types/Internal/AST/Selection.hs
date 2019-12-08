@@ -55,6 +55,8 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Position
                                                 , Ref(..)
                                                 , Name
+                                                , VALID
+                                                , RAW
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -72,8 +74,7 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
 
 
-type VALID = 'True
-type RAW = 'False
+
 
 
 data ValueOrigin

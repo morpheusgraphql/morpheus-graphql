@@ -3,6 +3,9 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE GADTs               #-}
 
 module Data.Morpheus.Types.Internal.AST.Value
   ( Value(..)
@@ -14,6 +17,8 @@ module Data.Morpheus.Types.Internal.AST.Value
   , decodeScientific
   , convertToJSONName
   , convertToHaskellName
+  , RawValue
+  , ValidValue
   )
 where
 
@@ -39,8 +44,17 @@ import           GHC.Generics                   ( Generic )
 import           Instances.TH.Lift              ( )
 import           Language.Haskell.TH.Syntax     ( Lift )
 
+-- MORPHEUS
+import           Data.Morpheus.Types.Internal.AST.Base
+                                                ( Collection
+                                                , Ref(..)
+                                                , Name
+                                                , RAW
+                                                , VALID
+                                                )
 
-isReserved :: Text -> Bool
+
+isReserved :: Name -> Bool
 isReserved "case"     = True
 isReserved "class"    = True
 isReserved "data"     = True
@@ -100,15 +114,8 @@ instance A.FromJSON ScalarValue where
   parseJSON notScalar    = fail $ "Expected Scalar got :" <> show notScalar
 
 
-type Object = [(Text, Value)]
+type Object = Collection Value
 
-type VarObject = [(Text, VariableValue)]
-
-data VariableValue =
-    VarObject [VarObject]
-  | VarList [VariableValue]
-  | VariableValue Value
-  | ConstValue Value
 
 data Value
   = Object Object
@@ -153,7 +160,7 @@ class GQLValue a where
   gqlBoolean :: Bool -> a
   gqlString :: Text -> a
   gqlList :: [a] -> a
-  gqlObject :: [(Text, a)] -> a
+  gqlObject :: [(Name, a)] -> a
 
 -- build GQL Values for Subscription Resolver
 instance GQLValue Value where
@@ -163,3 +170,15 @@ instance GQLValue Value where
   gqlString  = Scalar . String
   gqlList    = List
   gqlObject  = Object
+
+
+
+data VariableValue (valid :: Bool) where
+    VariableObject ::VariableObject -> VariableValue RAW
+    VariableList ::[VariableValue 'False] -> VariableValue RAW
+    VariableValue ::Ref -> VariableValue RAW
+    ConstantValue ::Value -> VariableValue valid
+
+type VariableObject = Collection RawValue
+type RawValue = VariableValue RAW
+type ValidValue = VariableValue VALID
