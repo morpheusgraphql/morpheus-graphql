@@ -27,7 +27,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Argument(..)
                                                 , RawArgument
                                                 , RawArguments
-                                                , Ref(..)
                                                 )
 
 
@@ -46,9 +45,7 @@ valueArgument = label "valueArgument" $ do
   pure $ Argument { argumentValue, argumentOrigin = INLINE, argumentPosition }
 
 variableArgument :: Parser RawArgument
-variableArgument = label "variableArgument" $ do
-  (refName, refPosition) <- variable
-  pure $ VariableRef $ Ref { refName, refPosition }
+variableArgument = label "variableArgument" $ VariableRef <$> variable
 
 maybeArguments :: Parser RawArguments
 maybeArguments = label "maybeArguments" $ parseMaybeTuple argument

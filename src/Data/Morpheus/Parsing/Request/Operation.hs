@@ -42,6 +42,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Variable(..)
                                                 , OperationType(..)
                                                 , isNullable
+                                                , Ref(..)
                                                 )
 
 
@@ -52,7 +53,7 @@ import           Data.Morpheus.Types.Internal.AST
 --
 variableDefinition :: Parser (Text, Variable DefaultValue)
 variableDefinition = label "VariableDefinition" $ do
-  (name, variablePosition) <- variable
+  (Ref name variablePosition) <- variable
   operator ':'
   (variableTypeWrappers, variableType) <- parseType
   defaultValue                         <- parseDefaultValue
