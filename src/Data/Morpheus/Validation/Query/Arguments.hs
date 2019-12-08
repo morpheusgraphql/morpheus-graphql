@@ -60,15 +60,13 @@ import           Data.Text                      ( Text )
 
 
 resolveObject :: RawValue -> ValidValue
-resolveObject (ConstantValue x) = ConstantValue x
+resolveObject (ConstantValue  x  ) = ConstantValue x
 resolveObject (VariableObject obj) = ConstantValue $ Object $ map mapSecond obj
-  where
-     mapSecond (x,y) = (x, constantValue $ resolveObject y)
-resolveObject (VariableList x) = ConstantValue $ List $ map (constantValue . resolveObject ) x
+  where mapSecond (x, y) = (x, constantValue $ resolveObject y)
+resolveObject (VariableList x) =
+  ConstantValue $ List $ map (constantValue . resolveObject) x
 -- TODO: Resolve variables
 resolveObject (VariableValue x) = ConstantValue Null
-
-
 
 
 resolveArgumentVariables
