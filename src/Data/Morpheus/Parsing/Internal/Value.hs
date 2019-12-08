@@ -96,27 +96,26 @@ objectValue :: Show a => Parser a -> Parser [(Name, a)]
 objectValue parser = label "objectValue" $ setOf entry
   where entry = parseAssignment token parser
 
+structValue :: Parser (Value a) -> Parser (Value a)
+structValue parser =
+  label "Value"
+    $  (   parsePrimitives
+       <|> (Object <$> objectValue parser)
+       <|> (List <$> listValue parser)
+       )
+    <* spaceAndComments
+
 parsePrimitives :: Parser (Value a)
 parsePrimitives =
   valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue
-
 
 parseDefaultValue :: Parser (Maybe ValidValue)
 parseDefaultValue = optional $ do
   litEquals
   parseValue
 
-parseGenValue :: Parser (Value a)
-parseGenValue = label "value" $ do
-  value <-
-    parsePrimitives
-    <|> (Object <$> objectValue parseGenValue)
-    <|> (List <$> listValue parseGenValue)
-  spaceAndComments
-  return value
-
 parseValue :: Parser ValidValue
-parseValue = parseGenValue
+parseValue = structValue parseValue
 
 parseRawValue :: Parser RawValue
-parseRawValue = parseGenValue
+parseRawValue = structValue parseRawValue
