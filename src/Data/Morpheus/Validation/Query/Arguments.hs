@@ -69,8 +69,9 @@ resolveObject operationName variables = resolve
   resolve (Object obj) = Object <$> traverse mapSecond obj
     where mapSecond (fName, y) = (fName, ) <$> resolve y
   resolve (VariableValue ref) =
-      -- ResolvedValue ref .   
-    variableValue <$> variableByRef operationName variables ref
+    ResolvedValue ref
+      .   variableValue
+      <$> variableByRef operationName variables ref
     --  >>= checkTypeEquality ref fieldType
   -- RAW | RESOLVED | Valid 
 

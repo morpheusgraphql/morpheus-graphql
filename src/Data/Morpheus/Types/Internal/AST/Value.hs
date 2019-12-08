@@ -117,7 +117,7 @@ instance A.FromJSON ScalarValue where
 
 
 data Value (valid :: Bool) where
-  -- ResolvedValue ::Ref -> Value VALID -> Value VALID
+  ResolvedValue ::Ref -> Value VALID -> Value VALID
   VariableValue ::Ref -> Value RAW
   Object  ::Object a -> Value a
   List ::[Value a] -> Value a
@@ -126,13 +126,13 @@ data Value (valid :: Bool) where
   Null ::Value a
 
 instance Lift (Value a) where
- -- lift (ResolvedValue x y) = [| ResolvedValue x y |]
-  lift (VariableValue x) = [| VariableValue x |]
-  lift (Object        x) = [| VariableObject x |]
-  lift (List          x) = [| VariableList x |]
-  lift (Enum          x) = [| Enum x |]
-  lift (Scalar        x) = [| Scalar x |]
-  lift Null              = [| Null |]
+  lift (ResolvedValue x y) = [| ResolvedValue x y |]
+  lift (VariableValue x  ) = [| VariableValue x |]
+  lift (Object        x  ) = [| VariableObject x |]
+  lift (List          x  ) = [| VariableList x |]
+  lift (Enum          x  ) = [| Enum x |]
+  lift (Scalar        x  ) = [| Scalar x |]
+  lift Null                = [| Null |]
 
 type Object a = Collection (Value a)
 type ValidObject = Object VALID
@@ -143,21 +143,21 @@ type ValidValue = Value VALID
 instance Show (Value a) where
 
 instance A.ToJSON ValidValue where
-  --toJSON (ResolvedValue _ x) = A.toJSON x
-  toJSON Null            = A.Null
-  toJSON (Enum   x     ) = A.String x
-  toJSON (Scalar x     ) = A.toJSON x
-  toJSON (List   x     ) = A.toJSON x
-  toJSON (Object fields) = A.object $ map toEntry fields
+  toJSON (ResolvedValue _ x) = A.toJSON x
+  toJSON Null                = A.Null
+  toJSON (Enum   x     )     = A.String x
+  toJSON (Scalar x     )     = A.toJSON x
+  toJSON (List   x     )     = A.toJSON x
+  toJSON (Object fields)     = A.object $ map toEntry fields
     where toEntry (name, value) = name A..= A.toJSON value
   -------------------------------------------
-  --toEncoding (ResolvedValue _ x) = A.toEncoding x
-  toEncoding Null        = A.toEncoding A.Null
-  toEncoding (Enum   x ) = A.toEncoding x
-  toEncoding (Scalar x ) = A.toEncoding x
-  toEncoding (List   x ) = A.toEncoding x
-  toEncoding (Object []) = A.toEncoding $ A.object []
-  toEncoding (Object x ) = A.pairs $ foldl1 (<>) $ map encodeField x
+  toEncoding (ResolvedValue _ x) = A.toEncoding x
+  toEncoding Null                = A.toEncoding A.Null
+  toEncoding (Enum   x )         = A.toEncoding x
+  toEncoding (Scalar x )         = A.toEncoding x
+  toEncoding (List   x )         = A.toEncoding x
+  toEncoding (Object [])         = A.toEncoding $ A.object []
+  toEncoding (Object x )         = A.pairs $ foldl1 (<>) $ map encodeField x
     where encodeField (key, value) = convertToJSONName key A..= value
 
 decodeScientific :: Scientific -> ScalarValue
