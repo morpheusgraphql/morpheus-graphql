@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveLift       #-}
+
 module Data.Morpheus.Types.Internal.AST
   (
     -- BASE
@@ -141,6 +143,8 @@ module Data.Morpheus.Types.Internal.AST
 where
 
 import           Data.Map                       ( Map )
+import           Language.Haskell.TH.Syntax     ( Lift )
+import           Instances.TH.Lift              ( )
 
 -- Morpheus
 import           Data.Morpheus.Types.Internal.AST.Data
@@ -161,4 +165,4 @@ data GQLQuery = GQLQuery
   { fragments      :: FragmentLib
   , operation      :: RawOperation
   , inputVariables :: [(Key, Value)]
-  } deriving (Show)
+  } deriving (Show,Lift)

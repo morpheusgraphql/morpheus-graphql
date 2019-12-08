@@ -57,7 +57,7 @@ data Fragment = Fragment
   { fragmentType      :: Key
   , fragmentPosition  :: Position
   , fragmentSelection :: RawSelectionSet
-  } deriving (Show)
+  } deriving (Show,Lift)
 
 type FragmentLib = [(Key, Fragment)]
 
@@ -70,8 +70,9 @@ data Argument (a :: Process) where
   , argumentPosition :: Position
   } -> Argument a
 
-instance Lift ValidArgument where
+instance Lift (Argument a) where
   lift (Argument v o p) = [| Argument v o p |]
+  lift (VariableRef x ) = [| VariableRef x |]
 
 type RawArgument = Argument RAW
 type ValidArgument = Argument VALID
@@ -90,14 +91,13 @@ data SelectionRec (a :: Process) where
 
 instance Show (SelectionRec a) where
 
-type RawSelectionRec = SelectionRec RAW
-type ValidSelectionRec = SelectionRec VALID
-
-instance Lift (SelectionRec VALID) where
+instance Lift (SelectionRec a) where
   lift (SelectionSet   s) = [| SelectionSet s |]
   lift (UnionSelection s) = [| UnionSelection s |]
   lift SelectionField     = [| SelectionField |]
 
+type RawSelectionRec = SelectionRec RAW
+type ValidSelectionRec = SelectionRec VALID
 type UnionSelection = Collection (SelectionSet 'Valid)
 type SelectionSet a = Collection (Selection a)
 type RawSelectionSet = Collection RawSelection
@@ -116,11 +116,13 @@ data Selection (process:: Process) where
 
 instance Show (Selection a) where
 
-instance Lift ValidSelection where
+instance Lift (Selection a) where
   lift (Selection args pos alias cont) = [| Selection args pos alias cont |]
+  lift (InlineFragment x             ) = [| InlineFragment x |]
+  lift (Spread         x             ) = [| Spread x |]
 
 type RawSelection = Selection RAW
 type ValidSelection = Selection VALID
-  
 
-  
+
+
