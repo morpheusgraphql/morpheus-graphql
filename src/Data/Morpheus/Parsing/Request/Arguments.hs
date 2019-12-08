@@ -21,9 +21,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , variable
                                                 )
 import           Data.Morpheus.Parsing.Internal.Value
-                                                ( enumValue
-                                                , parseRawValue
-                                                )
+                                                ( parseRawValue )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ValueOrigin(..)
                                                 , Argument(..)

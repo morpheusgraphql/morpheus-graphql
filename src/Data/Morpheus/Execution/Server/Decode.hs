@@ -49,8 +49,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
                                                 , Argument(..)
                                                 , ValidArguments
+                                                , ValidArgument
                                                 , Object
                                                 , Value(..)
+                                                , VariableValue(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -62,6 +64,7 @@ import           Data.Morpheus.Types.Internal.Resolving
 decodeArguments :: DecodeType a => ValidArguments -> Validation a
 decodeArguments = decodeType . Object . map toObject
   where 
+    toObject :: (Name,ValidArgument) -> (Name,Value)
     toObject (x, Argument { argumentValue = (ConstantValue y) }) = (x, y)
 
 
