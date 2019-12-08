@@ -42,11 +42,9 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value )
 
 
-data Process = Raw | Valid
-  deriving (Lift)
+type VALID = 'True
+type RAW = 'False
 
-type VALID = 'Valid
-type RAW = 'Raw
 
 data ValueOrigin
   = VARIABLE
@@ -62,13 +60,13 @@ data Fragment = Fragment
 type FragmentLib = [(Key, Fragment)]
 
 
-data Argument (a :: Process) where
+data Argument (valid :: Bool) where
   VariableRef ::Ref -> Argument RAW
   Argument ::{
     argumentValue    :: Value
   , argumentOrigin   :: ValueOrigin
   , argumentPosition :: Position
-  } -> Argument a
+  } -> Argument valid
 
 instance Lift (Argument a) where
   lift (Argument v o p) = [| Argument v o p |]
@@ -84,9 +82,9 @@ type ValidArguments = Collection ValidArgument
 
 instance Show (Argument a) where
 
-data SelectionRec (a :: Process) where
-  SelectionField ::SelectionRec a
-  SelectionSet   ::SelectionSet a -> SelectionRec a
+data SelectionRec (valid :: Bool) where
+  SelectionField ::SelectionRec valid
+  SelectionSet   ::SelectionSet valid -> SelectionRec valid
   UnionSelection ::UnionSelection -> SelectionRec VALID
 
 instance Show (SelectionRec a) where
@@ -98,19 +96,19 @@ instance Lift (SelectionRec a) where
 
 type RawSelectionRec = SelectionRec RAW
 type ValidSelectionRec = SelectionRec VALID
-type UnionSelection = Collection (SelectionSet 'Valid)
+type UnionSelection = Collection (SelectionSet VALID)
 type SelectionSet a = Collection (Selection a)
 type RawSelectionSet = Collection RawSelection
 type ValidSelectionSet = Collection ValidSelection
 
 
-data Selection (process:: Process) where
+data Selection (valid:: Bool) where
     Selection ::{
-      selectionArguments :: Arguments process
+      selectionArguments :: Arguments valid
     , selectionPosition  :: Position
     , selectionAlias     :: Maybe Key
-    , selectionRec       :: SelectionRec process
-    } -> Selection process
+    , selectionRec       :: SelectionRec valid
+    } -> Selection valid
     InlineFragment ::Fragment -> Selection RAW
     Spread ::Ref -> Selection RAW
 

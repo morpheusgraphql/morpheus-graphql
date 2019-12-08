@@ -144,7 +144,6 @@ where
 
 import           Data.Map                       ( Map )
 import           Language.Haskell.TH.Syntax     ( Lift )
-import           Instances.TH.Lift              ( )
 
 -- Morpheus
 import           Data.Morpheus.Types.Internal.AST.Data
