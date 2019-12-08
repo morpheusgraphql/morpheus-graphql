@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
@@ -24,7 +25,8 @@ import           Data.Morpheus.Error.Variable   ( unknownType )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Fragment(..)
                                                 , FragmentLib
-                                                , RawSelection(..)
+                                                , RawSelection
+                                                , SelectionRec(..)
                                                 , Selection(..)
                                                 , Ref(..)
                                                 , Position
@@ -78,27 +80,28 @@ resolveSpread fragments allowedTargets reference@Ref { refName, refPosition } =
     >>= castFragmentType (Just refName) refPosition allowedTargets
 
 usedFragments :: FragmentLib -> [(Text, RawSelection)] -> [Node]
-usedFragments fragments = concatMap findAllUses
+usedFragments fragments = concatMap (findAllUses . snd)
  where
-  findAllUses :: (Text, RawSelection) -> [Node]
-  findAllUses (_, RawSelectionSet Selection { selectionRec }) =
-    concatMap findAllUses selectionRec
-  findAllUses (_, InlineFragment Fragment { fragmentSelection }) =
-    concatMap findAllUses fragmentSelection
-  findAllUses (_, RawSelectionField{}) = []
-  findAllUses (_, Spread Ref { refName, refPosition }) =
+  findAllUses :: RawSelection -> [Node]
+  findAllUses Selection { selectionRec = SelectionField } = []
+  findAllUses Selection { selectionRec = SelectionSet selectionSet } =
+    concatMap (findAllUses . snd) selectionSet
+  findAllUses (InlineFragment Fragment { fragmentSelection }) =
+    concatMap (findAllUses . snd) fragmentSelection
+  findAllUses (Spread Ref { refName, refPosition }) =
     [Ref refName refPosition] <> searchInFragment
    where
-    searchInFragment = maybe []
-                             (concatMap findAllUses . fragmentSelection)
-                             (lookup refName fragments)
+    searchInFragment = maybe
+      []
+      (concatMap (findAllUses . snd) . fragmentSelection)
+      (lookup refName fragments)
 
 scanForSpread :: (Text, RawSelection) -> [Node]
-scanForSpread (_, RawSelectionSet Selection { selectionRec }) =
-  concatMap scanForSpread selectionRec
+scanForSpread (_, Selection { selectionRec = SelectionField }) = []
+scanForSpread (_, Selection { selectionRec = SelectionSet selectionSet }) =
+  concatMap scanForSpread selectionSet
 scanForSpread (_, InlineFragment Fragment { fragmentSelection = selection' }) =
   concatMap scanForSpread selection'
-scanForSpread (_, RawSelectionField{}) = []
 scanForSpread (_, Spread Ref { refName = name', refPosition = position' }) =
   [Ref name' position']
 

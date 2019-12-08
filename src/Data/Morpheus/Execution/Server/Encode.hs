@@ -68,7 +68,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidSelection
                                                 , GQLValue(..)
                                                 , Value(..)
-                                                , SelectionSet
+                                                , ValidSelectionSet
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( MapStrategy(..)
@@ -260,7 +260,7 @@ toFieldRes FieldNode { fieldSelName, fieldResolver } =
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 
-pickSelection :: Name -> [(Name, SelectionSet)] -> SelectionSet
+pickSelection :: Name -> [(Name, ValidSelectionSet)] -> ValidSelectionSet
 pickSelection name = fromMaybe [] . lookup name
 
 data REP_KIND = REP_UNION | REP_OBJECT
