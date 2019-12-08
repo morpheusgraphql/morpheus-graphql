@@ -7,6 +7,7 @@ module Data.Morpheus.Validation.Query.Arguments
   )
 where
 
+import           Data.Maybe                     ( maybe )
 import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue
                                                 , argumentNameCollision
                                                 , undefinedArgument
@@ -56,10 +57,9 @@ import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInputValue )
 import           Data.Text                      ( Text )
 
-resolveObject
-  :: Name -> ValidVariables -> TypeAlias -> RawValue -> Validation ValidValue
-resolveObject operationName variables fieldType@TypeAlias { aliasWrappers, aliasTyCon }
-  = resolve
+-- only Resolves , doesnot checks the types
+resolveObject :: Name -> ValidVariables -> RawValue -> Validation ValidValue
+resolveObject operationName variables = resolve
  where
   resolve :: RawValue -> Validation ValidValue
   resolve Null         = pure Null
@@ -67,25 +67,33 @@ resolveObject operationName variables fieldType@TypeAlias { aliasWrappers, alias
   resolve (Enum   x  ) = pure $ Enum x
   resolve (List   x  ) = List <$> traverse resolve x
   resolve (Object obj) = Object <$> traverse mapSecond obj
-    where mapSecond (x, y) = (x, ) <$> resolve y
-  resolve (VariableValue Ref { refName, refPosition }) = lookupVar
-   where
-    lookupVar = case lookup refName variables of
-      Nothing -> failure $ undefinedVariable operationName refPosition refName
-      Just Variable { variableValue, variableType, variableTypeWrappers }
-        | variableType == aliasTyCon && not
-          (isWeaker variableTypeWrappers aliasWrappers)
-        -> pure variableValue
-        | otherwise
-        -> failure $ incompatibleVariableType refName
-                                              varSignature
-                                              fieldSignature
-                                              refPosition
-       where
-        varSignature   = renderWrapped variableType variableTypeWrappers
-        fieldSignature = render fieldType
+    where mapSecond (fName, y) = (fName, ) <$> resolve y
+  resolve (VariableValue ref) =
+      -- ResolvedValue ref .   
+    variableValue <$> variableByRef operationName variables ref
+    --  >>= checkTypeEquality ref fieldType
+  -- RAW | RESOLVED | Valid 
 
+variableByRef
+  :: Name -> ValidVariables -> Ref -> Validation (Variable ValidValue)
+variableByRef operationName variables Ref { refName, refPosition } = maybe
+  variableError
+  pure
+  (lookup refName variables)
+ where
+  variableError = failure $ undefinedVariable operationName refPosition refName
 
+checkTypeEquality :: Ref -> TypeAlias -> Variable a -> Validation a
+checkTypeEquality Ref { refName, refPosition } fieldType@TypeAlias { aliasWrappers, aliasTyCon } Variable { variableValue, variableType, variableTypeWrappers }
+  | variableType == aliasTyCon && not
+    (isWeaker variableTypeWrappers aliasWrappers)
+  = pure variableValue
+  | otherwise
+  = failure
+    $ incompatibleVariableType refName varSignature fieldSignature refPosition
+ where
+  varSignature   = renderWrapped variableType variableTypeWrappers
+  fieldSignature = render fieldType
 
 resolveArgumentVariables
   :: Name
@@ -100,8 +108,8 @@ resolveArgumentVariables operationName variables DataField { fieldName, fieldArg
   resolveVariable (key, Argument val origin position) =
     case lookup key fieldArgs of
       Nothing -> failure $ unknownArguments fieldName [Ref key position]
-      Just DataField { fieldType } -> do
-        constValue <- resolveObject operationName variables fieldType val
+      Just _  -> do
+        constValue <- resolveObject operationName variables val
         pure (key, Argument constValue origin position)
 
 validateArgument
