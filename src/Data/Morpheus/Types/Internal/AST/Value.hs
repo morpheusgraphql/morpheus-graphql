@@ -117,6 +117,7 @@ instance A.FromJSON ScalarValue where
 
 
 data Value (valid :: Bool) where
+  -- ResolvedValue ::Ref -> Value VALID -> Value VALID
   VariableValue ::Ref -> Value RAW
   Object  ::Object a -> Value a
   List ::[Value a] -> Value a
@@ -125,6 +126,7 @@ data Value (valid :: Bool) where
   Null ::Value a
 
 instance Lift (Value a) where
+ -- lift (ResolvedValue x y) = [| ResolvedValue x y |]
   lift (VariableValue x) = [| VariableValue x |]
   lift (Object        x) = [| VariableObject x |]
   lift (List          x) = [| VariableList x |]
@@ -141,6 +143,7 @@ type ValidValue = Value VALID
 instance Show (Value a) where
 
 instance A.ToJSON ValidValue where
+  --toJSON (ResolvedValue _ x) = A.toJSON x
   toJSON Null            = A.Null
   toJSON (Enum   x     ) = A.String x
   toJSON (Scalar x     ) = A.toJSON x
@@ -148,6 +151,7 @@ instance A.ToJSON ValidValue where
   toJSON (Object fields) = A.object $ map toEntry fields
     where toEntry (name, value) = name A..= A.toJSON value
   -------------------------------------------
+  --toEncoding (ResolvedValue _ x) = A.toEncoding x
   toEncoding Null        = A.toEncoding A.Null
   toEncoding (Enum   x ) = A.toEncoding x
   toEncoding (Scalar x ) = A.toEncoding x
