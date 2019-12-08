@@ -6,6 +6,7 @@
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE GADTs               #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 module Data.Morpheus.Types.Internal.AST.Value
   ( Value(..)
@@ -42,7 +43,7 @@ import qualified Data.Vector                   as V
                                                 ( toList )
 import           GHC.Generics                   ( Generic )
 import           Instances.TH.Lift              ( )
-import           Language.Haskell.TH.Syntax     ( Lift )
+import           Language.Haskell.TH.Syntax     ( Lift(..) )
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.AST.Base
@@ -177,8 +178,16 @@ data VariableValue (valid :: Bool) where
     VariableObject ::VariableObject -> VariableValue RAW
     VariableList ::[VariableValue 'False] -> VariableValue RAW
     VariableValue ::Ref -> VariableValue RAW
-    ConstantValue ::Value -> VariableValue valid
+    ConstantValue ::{ constantValue :: Value } -> VariableValue valid
 
 type VariableObject = Collection RawValue
 type RawValue = VariableValue RAW
 type ValidValue = VariableValue VALID
+
+instance Show (VariableValue a) where
+
+instance Lift (VariableValue a) where
+  lift (VariableObject x) = [| VariableObject x |]
+  lift (VariableList   x) = [| VariableList x |]
+  lift (VariableValue  x) = [| VariableValue x |]
+  lift (ConstantValue  x) = [| ConstantValue x |]

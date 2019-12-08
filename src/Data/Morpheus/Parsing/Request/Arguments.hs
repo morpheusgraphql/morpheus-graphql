@@ -22,7 +22,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 )
 import           Data.Morpheus.Parsing.Internal.Value
                                                 ( enumValue
-                                                , parseValue
+                                                , parseRawValue
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ValueOrigin(..)
@@ -44,7 +44,7 @@ import           Data.Morpheus.Types.Internal.AST
 valueArgument :: Parser RawArgument
 valueArgument = label "valueArgument" $ do
   argumentPosition <- getLocation
-  argumentValue    <- parseValue <|> enumValue
+  argumentValue    <- parseRawValue
   pure $ Argument { argumentValue, argumentOrigin = INLINE, argumentPosition }
 
 variableArgument :: Parser RawArgument

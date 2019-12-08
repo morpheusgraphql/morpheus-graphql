@@ -22,6 +22,8 @@ module Data.Morpheus.Types.Internal.AST
   , convertToJSONName
   , convertToHaskellName
   , VariableValue(..)
+  , RawValue
+  , ValidValue
 
   -- Selection
   , Argument(..)

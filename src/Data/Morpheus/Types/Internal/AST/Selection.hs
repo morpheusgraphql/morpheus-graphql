@@ -71,10 +71,9 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , DataObject
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value )
-
-
-
+                                                ( Value
+                                                , VariableValue
+                                                )
 
 
 data ValueOrigin
@@ -94,7 +93,7 @@ type FragmentLib = [(Key, Fragment)]
 data Argument (valid :: Bool) where
   VariableRef ::Ref -> Argument RAW
   Argument ::{
-    argumentValue    :: Value
+    argumentValue    :: VariableValue valid
   , argumentOrigin   :: ValueOrigin
   , argumentPosition :: Position
   } -> Argument valid

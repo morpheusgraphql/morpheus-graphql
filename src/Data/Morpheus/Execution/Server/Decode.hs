@@ -61,7 +61,8 @@ import           Data.Morpheus.Types.Internal.Resolving
 -- GENERIC
 decodeArguments :: DecodeType a => ValidArguments -> Validation a
 decodeArguments = decodeType . Object . map toObject
-  where toObject (x, y) = (x, argumentValue y)
+  where 
+    toObject (x, Argument { argumentValue = (ConstantValue y) }) = (x, y)
 
 
 -- | Decode GraphQL query arguments and input values

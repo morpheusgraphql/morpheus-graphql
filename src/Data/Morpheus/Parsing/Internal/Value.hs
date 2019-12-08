@@ -5,6 +5,7 @@ module Data.Morpheus.Parsing.Internal.Value
   ( parseValue
   , enumValue
   , parseDefaultValue
+  , parseRawValue
   )
 where
 
@@ -39,26 +40,13 @@ import           Data.Morpheus.Parsing.Internal.Terms
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ScalarValue(..)
                                                 , Value(..)
+                                                , VariableValue(..)
+                                                , RawValue
                                                 , decodeScientific
+                                                , Name
                                                 )
 
-parseDefaultValue :: Parser (Maybe Value)
-parseDefaultValue = optional $ do
-  litEquals
-  parseValue
 
-parseValue :: Parser Value
-parseValue = label "value" $ do
-  value <-
-    valueNull
-    <|> booleanValue
-    <|> valueNumber
-    <|> enumValue
-    <|> stringValue
-    <|> objectValue
-    <|> listValue
-  spaceAndComments
-  return value
 
 valueNull :: Parser Value
 valueNull = string "null" $> Null
@@ -102,12 +90,40 @@ stringValue = label "stringValue" $ Scalar . String . pack <$> between
   (char '"')
   (many escaped)
 
-listValue :: Parser Value
-listValue = label "listValue" $ List <$> between
+
+listValue :: Parser a -> Parser [a]
+listValue parser = label "listValue" $ between
   (char '[' *> spaceAndComments)
   (char ']' *> spaceAndComments)
-  (parseValue `sepBy` (char ',' *> spaceAndComments))
+  (parser `sepBy` (char ',' *> spaceAndComments))
 
-objectValue :: Parser Value
-objectValue = label "objectValue" $ Object <$> setOf entry
-  where entry = parseAssignment token parseValue
+objectValue :: Show a => Parser a -> Parser [(Name, a)]
+objectValue parser = label "objectValue" $ setOf entry
+  where entry = parseAssignment token parser
+
+parseDefaultValue :: Parser (Maybe Value)
+parseDefaultValue = optional $ do
+  litEquals
+  parseValue
+
+parsePrimitives :: Parser Value
+parsePrimitives =
+  valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue
+
+parseRawValue :: Parser RawValue
+parseRawValue = label "value" $ do
+  value <-
+    (ConstantValue <$> parsePrimitives)
+    <|> (VariableObject <$> objectValue parseRawValue)
+    <|> (VariableList <$> listValue parseRawValue)
+  spaceAndComments
+  return value
+
+parseValue :: Parser Value
+parseValue = label "value" $ do
+  value <-
+    parsePrimitives
+    <|> (Object <$> objectValue parseValue)
+    <|> (List <$> listValue parseValue)
+  spaceAndComments
+  return value
