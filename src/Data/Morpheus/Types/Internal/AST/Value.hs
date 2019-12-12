@@ -39,7 +39,9 @@ import           Data.Scientific                ( Scientific
                                                 , floatingOrInteger
                                                 )
 import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( Text )
+import           Data.Text                      ( Text
+                                                , unpack
+                                                )
 import qualified Data.Text                     as T
 import qualified Data.Vector                   as V
                                                 ( toList )
@@ -152,6 +154,20 @@ type RawValue = Value RAW
 type ValidValue = Value VALID
 
 instance Show (Value a) where
+  show Null       = "null"
+  show (Enum   x) = "Enum." <> unpack x
+  show (Scalar x) = show x
+  show (ResolvedVariable ref value) =
+    "resolved var: " <> show ref <> " = " <> show value
+  show (VariableValue ref ) = "variable ref: " <> show ref
+  show (Object        keys) = "{" <> foldl toEntry "" keys <> "}"
+   where
+    toEntry :: String -> (Name, Value a) -> String
+    toEntry txt (key, value) = txt <> ", " <> unpack key <> ":" <> show value
+  show (List list) = "[" <> foldl toEntry "" list <> "]"
+   where
+    toEntry :: String -> Value a -> String
+    toEntry txt value = txt <> ", " <> show value
 
 instance A.ToJSON ValidValue where
   toJSON (ResolvedVariable _ x) = A.toJSON (variableValue x)
