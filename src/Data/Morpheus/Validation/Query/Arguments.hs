@@ -41,6 +41,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidValue
                                                 , ResolvedValue
                                                 , RESOLVED
+                                                , VALID
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -70,8 +71,7 @@ resolveObject operationName variables = resolve
     --  >>= checkTypeEquality ref fieldType
   -- RAW | RESOLVED | Valid 
 
-variableByRef
-  :: Name -> ValidVariables -> Ref -> Validation (Variable ValidValue)
+variableByRef :: Name -> ValidVariables -> Ref -> Validation (Variable VALID)
 variableByRef operationName variables Ref { refName, refPosition } = maybe
   variableError
   pure

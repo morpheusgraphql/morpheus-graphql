@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE DeriveLift          #-}
@@ -25,6 +26,7 @@ module Data.Morpheus.Types.Internal.AST.Value
   , Variable(..)
   , ResolvedValue
   , ResolvedObject
+  , VariableContent(..)
   )
 where
 
@@ -125,17 +127,32 @@ instance A.FromJSON ScalarValue where
   parseJSON (A.String v) = pure $ String v
   parseJSON notScalar    = fail $ "Expected Scalar got :" <> show notScalar
 
+type family VAR (a:: Stage) :: Stage
+type instance VAR RAW = RESOLVED
+type instance VAR RESOLVED = RESOLVED
+type instance VAR VALID = VALID
 
-data Variable a = Variable
+data VariableContent (stage:: Stage) where
+  DefaultValue ::Maybe ResolvedValue -> VariableContent RESOLVED
+  ValidVariableValue ::{ validVarContent::ValidValue }-> VariableContent VALID
+
+instance Lift (VariableContent a) where
+  lift (DefaultValue       x) = [| DefaultValue x |]
+  lift (ValidVariableValue x) = [| ValidVariableValue x |]
+
+instance Show (VariableContent a) where
+
+
+data Variable (stage :: Stage) = Variable
   { variableType         :: Name
   , isVariableRequired   :: Bool
   , variableTypeWrappers :: [TypeWrapper]
   , variablePosition     :: Position
-  , variableValue        :: a
+  , variableValue        :: VariableContent (VAR stage)
   } deriving (Show,Lift)
 
 data Value (valid :: Stage) where
-  ResolvedVariable ::Ref -> Variable ValidValue -> Value RESOLVED
+  ResolvedVariable ::Ref -> Variable VALID -> Value RESOLVED
   VariableValue ::Ref -> Value RAW
   Object  ::Object a -> Value a
   List ::[Value a] -> Value a
@@ -204,9 +221,9 @@ replaceValue (A.Bool   v) = gqlBoolean v
 replaceValue (A.Number v) = Scalar $ decodeScientific v
 replaceValue (A.String v) = gqlString v
 replaceValue (A.Object v) = gqlObject $ map replace (M.toList v)
- where
+  where
   --replace :: (a, A.Value) -> (a, Value a)
-  replace (key, val) = (key, replaceValue val)
+        replace (key, val) = (key, replaceValue val)
 replaceValue (A.Array li) = gqlList (map replaceValue (V.toList li))
 replaceValue A.Null       = gqlNull
 

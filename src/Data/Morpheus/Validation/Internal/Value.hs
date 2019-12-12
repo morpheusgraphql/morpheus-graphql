@@ -39,6 +39,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Message
                                                 , Name
                                                 , ResolvedValue
+                                                , VALID
+                                                , VariableContent(..)
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving
@@ -49,12 +51,12 @@ import           Data.Morpheus.Rendering.RenderGQL
 checkTypeEquality
   :: (Name, [TypeWrapper])
   -> Ref
-  -> Variable ValidValue
+  -> Variable VALID
   -> InputValidation ValidValue
-checkTypeEquality (aliasTyCon, aliasWrappers) Ref { refName, refPosition } Variable { variableValue, variableType, variableTypeWrappers }
+checkTypeEquality (aliasTyCon, aliasWrappers) Ref { refName, refPosition } Variable { variableValue = ValidVariableValue value, variableType, variableTypeWrappers }
   | variableType == aliasTyCon && not
     (isWeaker variableTypeWrappers aliasWrappers)
-  = pure variableValue
+  = pure value
   | otherwise
   = failure $ GlobalInputError $ incompatibleVariableType refName
                                                           varSignature

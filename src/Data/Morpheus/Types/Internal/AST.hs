@@ -144,6 +144,7 @@ module Data.Morpheus.Types.Internal.AST
   , GQLTypeD(..)
   , ClientType(..)
   , DataInputUnion
+  , VariableContent(..)
   -- LOCAL
   , GQLQuery(..)
   , Variables

@@ -43,6 +43,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , OperationType(..)
                                                 , isNullable
                                                 , Ref(..)
+                                                , VariableContent(..)
+                                                , RAW
                                                 )
 
 
@@ -51,7 +53,7 @@ import           Data.Morpheus.Types.Internal.AST
 --  VariableDefinition
 --    Variable : Type DefaultValue(opt)
 --
-variableDefinition :: Parser (Text, Variable DefaultValue)
+variableDefinition :: Parser (Text, Variable RAW)
 variableDefinition = label "VariableDefinition" $ do
   (Ref name variablePosition) <- variable
   operator ':'
@@ -63,7 +65,7 @@ variableDefinition = label "VariableDefinition" $ do
                , isVariableRequired   = not (isNullable variableTypeWrappers)
                , variableTypeWrappers
                , variablePosition
-               , variableValue        = defaultValue
+               , variableValue        = DefaultValue defaultValue
                }
     )
 

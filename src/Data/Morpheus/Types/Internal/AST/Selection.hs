@@ -143,28 +143,28 @@ type ValidSelection = Selection VALID
 
 type DefaultValue = Maybe ResolvedValue
 
-type VariableDefinitions = Collection (Variable DefaultValue)
+type VariableDefinitions = Collection (Variable RAW)
 
-type ValidVariables = Collection (Variable ValidValue)
+type ValidVariables = Collection (Variable VALID)
 
-data Operation args (valid:: Stage) = Operation
+data Operation (stage:: Stage) = Operation
   { operationName      :: Maybe Key
   , operationType      :: OperationType
-  , operationArgs      :: args
-  , operationSelection :: SelectionSet valid
+  , operationArgs      :: Collection (Variable stage)
+  , operationSelection :: SelectionSet stage
   , operationPosition  :: Position
   } deriving (Show,Lift)
 
-type RawOperation = Operation VariableDefinitions RAW
+type RawOperation = Operation RAW
 
-type ValidOperation = Operation ValidArguments VALID
+type ValidOperation = Operation VALID
 
 
 getOperationName :: Maybe Key -> Key
 getOperationName = fromMaybe "AnonymousOperation"
 
 getOperationObject
-  :: Operation a b -> DataTypeLib -> Validation (Name, DataObject)
+  :: Operation a -> DataTypeLib -> Validation (Name, DataObject)
 getOperationObject op lib = do
   dt <- getOperationDataType op lib
   case dt of
@@ -175,7 +175,7 @@ getOperationObject op lib = do
         <> typeName
         <> "\" must be an Object"
 
-getOperationDataType :: Operation a b -> DataTypeLib -> Validation DataType
+getOperationDataType :: Operation a -> DataTypeLib -> Validation DataType
 getOperationDataType Operation { operationType = Query } lib =
   pure $ snd $ query lib
 getOperationDataType Operation { operationType = Mutation, operationPosition } lib

@@ -48,6 +48,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RawValue
                                                 , ResolvedValue
                                                 , Name
+                                                , RESOLVED
+                                                , VALID
+                                                , RAW
+                                                , VariableContent(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -126,15 +130,16 @@ lookupAndValidateValueOnBody
   :: DataTypeLib
   -> Variables
   -> VALIDATION_MODE
-  -> (Text, Variable DefaultValue)
-  -> Validation (Text, Variable ValidValue)
-lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType, variablePosition, isVariableRequired, variableTypeWrappers, variableValue = defaultValue })
+  -> (Text, Variable RAW)
+  -> Validation (Text, Variable VALID)
+lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType, variablePosition, isVariableRequired, variableTypeWrappers, variableValue = DefaultValue defaultValue })
   = toVariable
     <$> (   getVariableType variableType variablePosition typeLib
         >>= checkType getVariable defaultValue
         )
  where
-  toVariable (varKey, variableValue) = (varKey, var { variableValue })
+  toVariable (varKey, x) =
+    (varKey, var { variableValue = ValidVariableValue x })
   getVariable :: Maybe ResolvedValue
   getVariable = M.lookup key bodyVariables
   ------------------------------------------------------------------

@@ -51,6 +51,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeD(..)
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
+                                                , VALID
+                                                , VariableContent(..)
+                                                , RESOLVED
+                                                , RAW
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
@@ -113,7 +117,7 @@ operationTypes lib variables = genOperation
       , tMeta      = Nothing
       }
      where
-      fieldD :: (Text, Variable DefaultValue) -> DataField
+      fieldD :: (Text, Variable RAW) -> DataField
       fieldD (key, Variable { variableType, variableTypeWrappers }) = DataField
         { fieldName     = key
         , fieldArgs     = []
