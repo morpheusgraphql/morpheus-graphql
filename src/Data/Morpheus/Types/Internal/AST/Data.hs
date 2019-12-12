@@ -116,6 +116,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Position
                                                 , Name
                                                 , Description
+                                                , TypeWrapper(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -196,10 +197,7 @@ data ResolverKind
   | ExternalResolver
   deriving (Show, Eq, Lift)
 
-data TypeWrapper
-  = TypeList
-  | TypeMaybe
-  deriving (Show, Lift)
+
 
 isFieldNullable :: DataField -> Bool
 isFieldNullable = isNullable . aliasWrappers . fieldType

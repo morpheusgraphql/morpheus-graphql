@@ -12,6 +12,10 @@ where
 
 import           Data.Aeson                     ( encode )
 import           Data.ByteString.Lazy.Char8     ( unpack )
+import           Data.Morpheus.Types.Internal.AST.Base
+                                                ( Name
+                                                , Position
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ValidValue )
 import           Data.Text                      ( Text )
@@ -26,6 +30,7 @@ data InputError
   = UnexpectedType [Prop] Text ValidValue (Maybe Text)
   | UndefinedField [Prop] Text
   | UnknownField [Prop] Text
+  | IncompatibleVariable Name Name Name Position
 
 data Prop =
   Prop

@@ -15,6 +15,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   , Description
   , VALID
   , RAW
+  , TypeWrapper(..)
   )
 where
 
@@ -59,3 +60,8 @@ instance Ord Ref where
 
 anonymousRef :: Key -> Ref
 anonymousRef refName = Ref { refName, refPosition = Position 0 0 }
+
+data TypeWrapper
+  = TypeList
+  | TypeMaybe
+  deriving (Show, Lift)

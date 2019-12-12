@@ -21,6 +21,7 @@ module Data.Morpheus.Types.Internal.AST.Value
   , ValidValue
   , RawObject
   , ValidObject
+  , Variable(..)
   )
 where
 
@@ -53,6 +54,8 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Name
                                                 , RAW
                                                 , VALID
+                                                , Position
+                                                , TypeWrapper
                                                 )
 
 
@@ -115,6 +118,14 @@ instance A.FromJSON ScalarValue where
   parseJSON (A.String v) = pure $ String v
   parseJSON notScalar    = fail $ "Expected Scalar got :" <> show notScalar
 
+
+data Variable a = Variable
+  { variableType         :: Name
+  , isVariableRequired   :: Bool
+  , variableTypeWrappers :: [TypeWrapper]
+  , variablePosition     :: Position
+  , variableValue        :: a
+  } deriving (Show,Lift)
 
 data Value (valid :: Bool) where
   ResolvedValue ::Ref -> Value VALID -> Value VALID

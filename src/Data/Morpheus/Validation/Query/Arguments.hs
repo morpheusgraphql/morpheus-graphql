@@ -17,11 +17,7 @@ import           Data.Morpheus.Error.Input      ( InputValidation
                                                 , inputErrorMessage
                                                 )
 import           Data.Morpheus.Error.Internal   ( internalUnknownTypeMessage )
-import           Data.Morpheus.Error.Variable   ( incompatibleVariableType
-                                                , undefinedVariable
-                                                )
-import           Data.Morpheus.Rendering.RenderGQL
-                                                ( RenderGQL(..) )
+import           Data.Morpheus.Error.Variable   ( undefinedVariable )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ValidVariables
                                                 , Variable(..)
@@ -38,7 +34,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeLib
                                                 , TypeAlias(..)
                                                 , isFieldNullable
-                                                , isWeaker
                                                 , lookupInputType
                                                 , Value(..)
                                                 , Name
@@ -84,17 +79,7 @@ variableByRef operationName variables Ref { refName, refPosition } = maybe
  where
   variableError = failure $ undefinedVariable operationName refPosition refName
 
-checkTypeEquality :: Ref -> TypeAlias -> Variable a -> Validation a
-checkTypeEquality Ref { refName, refPosition } fieldType@TypeAlias { aliasWrappers, aliasTyCon } Variable { variableValue, variableType, variableTypeWrappers }
-  | variableType == aliasTyCon && not
-    (isWeaker variableTypeWrappers aliasWrappers)
-  = pure variableValue
-  | otherwise
-  = failure
-    $ incompatibleVariableType refName varSignature fieldSignature refPosition
- where
-  varSignature   = renderWrapped variableType variableTypeWrappers
-  fieldSignature = render fieldType
+
 
 resolveArgumentVariables
   :: Name

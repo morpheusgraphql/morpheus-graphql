@@ -10,6 +10,9 @@ where
 import           Data.List                      ( elem )
 
 -- MORPHEUS
+import           Data.Morpheus.Error.Variable   ( incompatibleVariableType
+                                                , undefinedVariable
+                                                )
 import           Data.Morpheus.Error.Input      ( InputError(..)
                                                 , InputValidation
                                                 , Prop(..)
@@ -31,10 +34,31 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupInputType
                                                 , Value(..)
                                                 , ValidValue
+                                                , Variable(..)
+                                                , Ref(..)
+                                                , isWeaker
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Failure(..) )
+                                                ( Failure(..)
+                                                , Validation
+                                                )
+import           Data.Morpheus.Rendering.RenderGQL
+                                                ( RenderGQL(..) )
+
+checkTypeEquality :: Ref -> TypeAlias -> Variable a -> Validation a
+checkTypeEquality Ref { refName, refPosition } fieldType@TypeAlias { aliasWrappers, aliasTyCon } Variable { variableValue, variableType, variableTypeWrappers }
+  | variableType == aliasTyCon && not
+    (isWeaker variableTypeWrappers aliasWrappers)
+  = pure variableValue
+  | otherwise
+  = failure
+    $ incompatibleVariableType refName varSignature fieldSignature refPosition
+ where
+  varSignature   = renderWrapped variableType variableTypeWrappers
+  fieldSignature = render fieldType
+
+
 
 -- Validate Variable Argument or all Possible input Values
 validateInputValue
@@ -52,7 +76,10 @@ validateInputValue lib prop' rw datatype@DataType { typeContent, typeName } =
     Left $ UnexpectedType prop' (renderWrapped datatype wrappers) value Nothing
   -- VALIDATION
   validate
-    :: [TypeWrapper] -> DataTypeContent -> (Key, ValidValue) -> InputValidation ValidValue
+    :: [TypeWrapper]
+    -> DataTypeContent
+    -> (Key, ValidValue)
+    -> InputValidation ValidValue
   -- Validate Null. value = null ?
   validate wrappers _ (_, Null) | isNullable wrappers = return Null
                                 | otherwise           = throwError wrappers Null
@@ -103,7 +130,8 @@ validateInputValue lib prop' rw datatype@DataType { typeContent, typeName } =
   {-- 3. THROW ERROR: on invalid values --}
   validate wrappers _ (_, value) = throwError wrappers value
 
-validateEnum :: error -> [DataEnumValue] -> ValidValue -> Either error ValidValue
+validateEnum
+  :: error -> [DataEnumValue] -> ValidValue -> Either error ValidValue
 validateEnum gqlError enumValues (Enum enumValue)
   | enumValue `elem` tags = pure (Enum enumValue)
   | otherwise             = Left gqlError

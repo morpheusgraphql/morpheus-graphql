@@ -73,6 +73,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ValidValue
                                                 , Value
+                                                , Variable(..)
                                                 )
 
 
@@ -144,13 +145,7 @@ type RawSelection = Selection RAW
 type ValidSelection = Selection VALID
 
 
-data Variable a = Variable
-  { variableType         :: Key
-  , isVariableRequired   :: Bool
-  , variableTypeWrappers :: [TypeWrapper]
-  , variablePosition     :: Position
-  , variableValue        :: a
-  } deriving (Show,Lift)
+
 
 type DefaultValue = Maybe ValidValue
 
