@@ -22,8 +22,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
 import           Data.Morpheus.Parsing.Internal.Value
                                                 ( parseRawValue )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( ValueOrigin(..)
-                                                , Argument(..)
+                                                ( Argument(..)
                                                 , RawArgument
                                                 , RawArguments
                                                 )
@@ -41,7 +40,7 @@ valueArgument :: Parser RawArgument
 valueArgument = label "Argument" $ do
   argumentPosition <- getLocation
   argumentValue    <- parseRawValue
-  pure $ Argument { argumentValue, argumentOrigin = INLINE, argumentPosition }
+  pure $ Argument { argumentValue, argumentPosition }
 
 maybeArguments :: Parser RawArguments
 maybeArguments =

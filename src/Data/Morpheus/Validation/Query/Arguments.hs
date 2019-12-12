@@ -22,7 +22,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( ValidVariables
                                                 , Variable(..)
                                                 , Argument(..)
-                                                , ValueOrigin(..)
                                                 , RawArgument
                                                 , RawArguments
                                                 , ValidArgument
@@ -64,9 +63,7 @@ resolveObject operationName variables = resolve
   resolve (Object obj) = Object <$> traverse mapSecond obj
     where mapSecond (fName, y) = (fName, ) <$> resolve y
   resolve (VariableValue ref) =
-    ResolvedValue ref
-      .   variableValue
-      <$> variableByRef operationName variables ref
+    ResolvedVariable ref <$> variableByRef operationName variables ref
     --  >>= checkTypeEquality ref fieldType
   -- RAW | RESOLVED | Valid 
 
@@ -91,12 +88,12 @@ resolveArgumentVariables operationName variables DataField { fieldName, fieldArg
   = mapM resolveVariable
  where
   resolveVariable :: (Text, RawArgument) -> Validation (Text, ValidArgument)
-  resolveVariable (key, Argument val origin position) =
+  resolveVariable (key, Argument val position) =
     case lookup key fieldArgs of
       Nothing -> failure $ unknownArguments fieldName [Ref key position]
       Just _  -> do
         constValue <- resolveObject operationName variables val
-        pure (key, Argument constValue origin position)
+        pure (key, Argument constValue position)
 
 validateArgument
   :: DataTypeLib
@@ -107,20 +104,18 @@ validateArgument
 validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldType = TypeAlias { aliasTyCon, aliasWrappers } })
   = case lookup key requestArgs of
     Nothing -> handleNullable
-    Just argument@Argument { argumentOrigin = VARIABLE } ->
-      pure (key, argument) -- Variables are already checked in Variable Validation
+    -- TODO: move it in value validation
+   -- Just argument@Argument { argumentOrigin = VARIABLE } ->
+   --   pure (key, argument) -- Variables are already checked in Variable Validation
     Just Argument { argumentValue = Null } -> handleNullable
-    Just argument                          -> validateArgumentValue argument
+    Just argument -> validateArgumentValue argument
  where
   handleNullable
-    | isFieldNullable argType = pure
-      ( key
-      , Argument { argumentValue    = Null
-                 , argumentOrigin   = INLINE
-                 , argumentPosition = fieldPosition
-                 }
-      )
-    | otherwise = failure $ undefinedArgument (Ref key fieldPosition)
+    | isFieldNullable argType
+    = pure
+      (key, Argument { argumentValue = Null, argumentPosition = fieldPosition })
+    | otherwise
+    = failure $ undefinedArgument (Ref key fieldPosition)
   -------------------------------------------------------------------------
   validateArgumentValue :: ValidArgument -> Validation (Text, ValidArgument)
   validateArgumentValue arg@Argument { argumentValue = value, argumentPosition }

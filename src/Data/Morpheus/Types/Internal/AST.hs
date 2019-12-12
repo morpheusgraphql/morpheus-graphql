@@ -31,7 +31,6 @@ module Data.Morpheus.Types.Internal.AST
   , Arguments
   , SelectionSet
   , SelectionRec(..)
-  , ValueOrigin(..)
   , ValidSelection
   , Selection(..)
   , RawSelection

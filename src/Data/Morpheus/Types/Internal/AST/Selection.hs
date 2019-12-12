@@ -13,7 +13,6 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , Arguments
   , SelectionSet
   , SelectionRec(..)
-  , ValueOrigin(..)
   , ValidSelection
   , Selection(..)
   , RawSelection
@@ -64,7 +63,6 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( OperationType(..)
-                                                , TypeWrapper
                                                 , DataTypeLib(..)
                                                 , DataType(..)
                                                 , DataTypeContent(..)
@@ -77,11 +75,6 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 )
 
 
-data ValueOrigin
-  = VARIABLE
-  | INLINE
-  deriving (Show, Lift)
-
 data Fragment = Fragment
   { fragmentType      :: Key
   , fragmentPosition  :: Position
@@ -92,7 +85,6 @@ type FragmentLib = [(Key, Fragment)]
 
 data Argument valid = Argument {
     argumentValue    :: Value valid
-  , argumentOrigin   :: ValueOrigin
   , argumentPosition :: Position
   } deriving (Show,Lift)
 
@@ -143,9 +135,6 @@ instance Lift (Selection a) where
 
 type RawSelection = Selection RAW
 type ValidSelection = Selection VALID
-
-
-
 
 type DefaultValue = Maybe ValidValue
 
