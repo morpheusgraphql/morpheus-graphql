@@ -31,6 +31,9 @@ import           Web.Scotty                     ( body
                                                 )
 
 -- examples
+import           Client.Client                  ( fetUser
+                                                , fetchHero
+                                                )
 import           Server.Mythology.API           ( mythologyApi )
 import           Server.TH.Simple               ( thSimpleApi )
 import           Server.Sophisticated.API       ( EVENT
@@ -41,6 +44,8 @@ main :: IO ()
 main = do
   state   <- initGQLState
   httpApp <- httpServer state
+  fetchHero >>= print
+  fetUser (interpreter gqlRoot state) >>= print
   Warp.runSettings settings
     $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
  where
