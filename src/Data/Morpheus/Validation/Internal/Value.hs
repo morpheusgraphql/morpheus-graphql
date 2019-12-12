@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -86,8 +87,10 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
     -> (Key, ValidValue)
     -> InputValidation ValidValue
   -- Validate Null. value = null ?
-  validateWrapped wrappers _ (_, ResolvedVariable ref variable) =
+  validateWrapped wrappers dt (name, ResolvedVariable ref variable) =
     checkTypeEquality (typeName, wrappers) ref variable
+      >>= validateWrapped wrappers dt
+      .   (name, )
   validateWrapped wrappers _ (_, Null) | isNullable wrappers = return Null
                                        | otherwise = throwError wrappers Null
   -- Validate LIST
