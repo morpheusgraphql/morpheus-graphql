@@ -13,7 +13,9 @@ where
 import           Data.Aeson                     ( encode )
 import           Data.ByteString.Lazy.Char8     ( unpack )
 import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( ValidValue )
+                                                ( ValidValue
+                                                , ResolvedValue
+                                                )
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as T
                                                 ( concat
@@ -23,14 +25,12 @@ import qualified Data.Text                     as T
 
 
 import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                (
-                                                 GQLErrors
-                                                )
+                                                ( GQLErrors )
 
 type InputValidation a = Either InputError a
 
 data InputError
-  = UnexpectedType [Prop] Text ValidValue (Maybe Text)
+  = UnexpectedType [Prop] Text ResolvedValue (Maybe Text)
   | UndefinedField [Prop] Text
   | UnknownField [Prop] Text
   | GlobalInputError GQLErrors
@@ -54,7 +54,7 @@ pathToText :: [Prop] -> Text
 pathToText []    = ""
 pathToText path' = T.concat ["on ", T.intercalate "." $ fmap propKey path']
 
-expectedTypeAFoundB :: [Prop] -> Text -> ValidValue -> Maybe Text -> Text
+expectedTypeAFoundB :: [Prop] -> Text -> ResolvedValue -> Maybe Text -> Text
 expectedTypeAFoundB path' expected found Nothing = T.concat
   [ pathToText path'
   , " Expected type \""

@@ -16,6 +16,8 @@ module Data.Morpheus.Types.Internal.AST.Base
   , VALID
   , RAW
   , TypeWrapper(..)
+  , Stage(..)
+  , RESOLVED
   )
 where
 
@@ -35,8 +37,14 @@ type Description = Key
 
 type Collection a = [(Key, a)]
 
-type VALID = 'True
-type RAW = 'False
+
+data Stage = RAW | RESOLVED | VALID
+
+type VALID = 'RAW
+
+type RESOLVED = 'RESOLVED
+
+type RAW = 'VALID
 
 data Position = Position
   { line   :: Int

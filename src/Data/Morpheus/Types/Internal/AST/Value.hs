@@ -23,6 +23,8 @@ module Data.Morpheus.Types.Internal.AST.Value
   , RawObject
   , ValidObject
   , Variable(..)
+  , ResolvedValue
+  , ResolvedObject
   )
 where
 
@@ -59,6 +61,8 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , VALID
                                                 , Position
                                                 , TypeWrapper
+                                                , Stage
+                                                , RESOLVED
                                                 )
 
 
@@ -130,8 +134,8 @@ data Variable a = Variable
   , variableValue        :: a
   } deriving (Show,Lift)
 
-data Value (valid :: Bool) where
-  ResolvedVariable ::Ref -> Variable ValidValue -> Value VALID
+data Value (valid :: Stage) where
+  ResolvedVariable ::Ref -> Variable ValidValue -> Value RESOLVED
   VariableValue ::Ref -> Value RAW
   Object  ::Object a -> Value a
   List ::[Value a] -> Value a
@@ -151,8 +155,10 @@ instance Lift (Value a) where
 type Object a = Collection (Value a)
 type ValidObject = Object VALID
 type RawObject = Object RAW
+type ResolvedObject = Object RESOLVED
 type RawValue = Value RAW
 type ValidValue = Value VALID
+type ResolvedValue = Value RESOLVED
 
 instance Show (Value a) where
   show Null       = "null"
@@ -172,22 +178,20 @@ instance Show (Value a) where
     toEntry ""  value = show value
     toEntry txt value = txt <> ", " <> show value
 
-instance A.ToJSON ValidValue where
-  toJSON (ResolvedVariable _ x) = A.toJSON (variableValue x)
-  toJSON Null                   = A.Null
-  toJSON (Enum   x     )        = A.String x
-  toJSON (Scalar x     )        = A.toJSON x
-  toJSON (List   x     )        = A.toJSON x
-  toJSON (Object fields)        = A.object $ map toEntry fields
+instance A.ToJSON (Value a) where
+  toJSON Null            = A.Null
+  toJSON (Enum   x     ) = A.String x
+  toJSON (Scalar x     ) = A.toJSON x
+  toJSON (List   x     ) = A.toJSON x
+  toJSON (Object fields) = A.object $ map toEntry fields
     where toEntry (name, value) = name A..= A.toJSON value
   -------------------------------------------
-  toEncoding (ResolvedVariable _ x) = A.toEncoding (variableValue x)
-  toEncoding Null                   = A.toEncoding A.Null
-  toEncoding (Enum   x )            = A.toEncoding x
-  toEncoding (Scalar x )            = A.toEncoding x
-  toEncoding (List   x )            = A.toEncoding x
-  toEncoding (Object [])            = A.toEncoding $ A.object []
-  toEncoding (Object x )            = A.pairs $ foldl1 (<>) $ map encodeField x
+  toEncoding Null        = A.toEncoding A.Null
+  toEncoding (Enum   x ) = A.toEncoding x
+  toEncoding (Scalar x ) = A.toEncoding x
+  toEncoding (List   x ) = A.toEncoding x
+  toEncoding (Object []) = A.toEncoding $ A.object []
+  toEncoding (Object x ) = A.pairs $ foldl1 (<>) $ map encodeField x
     where encodeField (key, value) = convertToJSONName key A..= value
 
 decodeScientific :: Scientific -> ScalarValue
@@ -195,18 +199,18 @@ decodeScientific v = case floatingOrInteger v of
   Left  float -> Float float
   Right int   -> Int int
 
-replaceValue :: A.Value -> ValidValue
+replaceValue :: A.Value -> Value a
 replaceValue (A.Bool   v) = gqlBoolean v
 replaceValue (A.Number v) = Scalar $ decodeScientific v
 replaceValue (A.String v) = gqlString v
 replaceValue (A.Object v) = gqlObject $ map replace (M.toList v)
  where
-  replace :: (a, A.Value) -> (a, ValidValue)
+  --replace :: (a, A.Value) -> (a, Value a)
   replace (key, val) = (key, replaceValue val)
 replaceValue (A.Array li) = gqlList (map replaceValue (V.toList li))
 replaceValue A.Null       = gqlNull
 
-instance A.FromJSON ValidValue where
+instance A.FromJSON (Value a) where
   parseJSON = pure . replaceValue
 
 -- DEFAULT VALUES
@@ -219,7 +223,7 @@ class GQLValue a where
   gqlObject :: [(Name, a)] -> a
 
 -- build GQL Values for Subscription Resolver
-instance GQLValue ValidValue where
+instance GQLValue (Value a) where
   gqlNull    = Null
   gqlScalar  = Scalar
   gqlBoolean = Scalar . Boolean

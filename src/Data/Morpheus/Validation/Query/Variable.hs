@@ -46,6 +46,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Value(..)
                                                 , ValidValue
                                                 , RawValue
+                                                , ResolvedValue
+                                                , Name
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -133,8 +135,15 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
         )
  where
   toVariable (varKey, variableValue) = (varKey, var { variableValue })
+  getVariable :: Maybe ResolvedValue
   getVariable = M.lookup key bodyVariables
   ------------------------------------------------------------------
+  -- checkType :: 
+  checkType
+    :: Maybe ResolvedValue
+    -> DefaultValue
+    -> DataType
+    -> Validation (Name, ValidValue)
   checkType (Just variable) Nothing varType = validator varType variable
   checkType (Just variable) (Just defValue) varType =
     validator varType defValue >> validator varType variable
@@ -148,6 +157,7 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
     returnNull =
       maybe (pure (key, Null)) (validator varType) (M.lookup key bodyVariables)
   -----------------------------------------------------------------------------------------------
+  validator :: DataType -> ResolvedValue -> Validation (Name, ValidValue)
   validator varType varValue =
     case
         validateInputValue typeLib

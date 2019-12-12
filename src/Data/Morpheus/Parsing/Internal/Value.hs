@@ -46,6 +46,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , decodeScientific
                                                 , Name
                                                 , Value(..)
+                                                , ResolvedValue
                                                 )
 
 valueNull :: Parser (Value a)
@@ -110,10 +111,14 @@ parsePrimitives :: Parser (Value a)
 parsePrimitives =
   valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue
 
-parseDefaultValue :: Parser (Maybe ValidValue)
+parseDefaultValue :: Parser (Maybe ResolvedValue)
 parseDefaultValue = optional $ do
   litEquals
-  parseValue
+  parseV
+ where
+  parseV :: Parser ResolvedValue
+  parseV = structValue parseV
+
 
 parseValue :: Parser ValidValue
 parseValue = structValue parseValue

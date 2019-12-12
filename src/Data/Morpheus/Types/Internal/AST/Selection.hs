@@ -56,6 +56,8 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Name
                                                 , VALID
                                                 , RAW
+                                                , Stage
+                                                , RESOLVED
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -72,6 +74,7 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ValidValue
                                                 , Value
                                                 , Variable(..)
+                                                , ResolvedValue
                                                 )
 
 
@@ -83,20 +86,22 @@ data Fragment = Fragment
 
 type FragmentLib = [(Key, Fragment)]
 
-data Argument valid = Argument {
+data Argument (valid :: Stage) = Argument {
     argumentValue    :: Value valid
   , argumentPosition :: Position
   } deriving (Show,Lift)
 
 type RawArgument = Argument RAW
+
 type ValidArgument = Argument VALID
 
 type Arguments a = Collection (Argument a)
 
-type RawArguments = Collection RawArgument
+type RawArguments = Arguments RAW
+
 type ValidArguments = Collection ValidArgument
 
-data SelectionRec (valid :: Bool) where
+data SelectionRec (valid :: Stage) where
   SelectionField ::SelectionRec valid
   SelectionSet   ::SelectionSet valid -> SelectionRec valid
   UnionSelection ::UnionSelection -> SelectionRec VALID
@@ -116,7 +121,7 @@ type RawSelectionSet = Collection RawSelection
 type ValidSelectionSet = Collection ValidSelection
 
 
-data Selection (valid:: Bool) where
+data Selection (valid:: Stage) where
     Selection ::{
       selectionArguments :: Arguments valid
     , selectionPosition  :: Position
@@ -136,13 +141,13 @@ instance Lift (Selection a) where
 type RawSelection = Selection RAW
 type ValidSelection = Selection VALID
 
-type DefaultValue = Maybe ValidValue
+type DefaultValue = Maybe ResolvedValue
 
 type VariableDefinitions = Collection (Variable DefaultValue)
 
 type ValidVariables = Collection (Variable ValidValue)
 
-data Operation args (valid:: Bool) = Operation
+data Operation args (valid:: Stage) = Operation
   { operationName      :: Maybe Key
   , operationType      :: OperationType
   , operationArgs      :: args

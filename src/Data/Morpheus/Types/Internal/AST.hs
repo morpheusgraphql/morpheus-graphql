@@ -11,6 +11,10 @@ module Data.Morpheus.Types.Internal.AST
   , anonymousRef
   , Name
   , Description
+  , Stage
+  , RESOLVED
+  , VALID
+  , RAW
 
   -- VALUE
   , Value(..)
@@ -25,6 +29,8 @@ module Data.Morpheus.Types.Internal.AST
   , ValidValue
   , RawObject
   , ValidObject
+  , ResolvedObject
+  , ResolvedValue
 
   -- Selection
   , Argument(..)
@@ -157,10 +163,10 @@ import           Data.Morpheus.Types.Internal.AST.Base
 import           Data.Morpheus.Types.Internal.AST.Value
 
 
-type Variables = Map Key ValidValue
+type Variables = Map Key ResolvedValue
 
 data GQLQuery = GQLQuery
   { fragments      :: FragmentLib
   , operation      :: RawOperation
-  , inputVariables :: [(Key, ValidValue)]
+  , inputVariables :: [(Key, ResolvedValue)]
   } deriving (Show,Lift)

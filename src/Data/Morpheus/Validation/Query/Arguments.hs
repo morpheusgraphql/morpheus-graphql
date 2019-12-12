@@ -26,6 +26,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RawArguments
                                                 , ValidArgument
                                                 , ValidArguments
+                                                , Arguments
                                                 , Ref(..)
                                                 , Position
                                                 , DataArgument
@@ -38,6 +39,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , RawValue
                                                 , ValidValue
+                                                , ResolvedValue
+                                                , RESOLVED
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -52,10 +55,10 @@ import           Data.Morpheus.Validation.Internal.Value
 import           Data.Text                      ( Text )
 
 -- only Resolves , doesnot checks the types
-resolveObject :: Name -> ValidVariables -> RawValue -> Validation ValidValue
+resolveObject :: Name -> ValidVariables -> RawValue -> Validation ResolvedValue
 resolveObject operationName variables = resolve
  where
-  resolve :: RawValue -> Validation ValidValue
+  resolve :: RawValue -> Validation ResolvedValue
   resolve Null         = pure Null
   resolve (Scalar x  ) = pure $ Scalar x
   resolve (Enum   x  ) = pure $ Enum x
@@ -83,11 +86,11 @@ resolveArgumentVariables
   -> ValidVariables
   -> DataField
   -> RawArguments
-  -> Validation ValidArguments
+  -> Validation (Arguments RESOLVED)
 resolveArgumentVariables operationName variables DataField { fieldName, fieldArgs }
   = mapM resolveVariable
  where
-  resolveVariable :: (Text, RawArgument) -> Validation (Text, ValidArgument)
+  resolveVariable :: (Text, RawArgument) -> Validation (Text, Argument RESOLVED)
   resolveVariable (key, Argument val position) = case lookup key fieldArgs of
     Nothing -> failure $ unknownArguments fieldName [Ref key position]
     Just _  -> do
@@ -97,7 +100,7 @@ resolveArgumentVariables operationName variables DataField { fieldName, fieldArg
 validateArgument
   :: DataTypeLib
   -> Position
-  -> ValidArguments
+  -> Arguments RESOLVED
   -> (Text, DataArgument)
   -> Validation (Text, ValidArgument)
 validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldType = TypeAlias { aliasTyCon, aliasWrappers } })
@@ -116,20 +119,22 @@ validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldTy
     | otherwise
     = failure $ undefinedArgument (Ref key fieldPosition)
   -------------------------------------------------------------------------
-  validateArgumentValue :: ValidArgument -> Validation (Text, ValidArgument)
-  validateArgumentValue arg@Argument { argumentValue = value, argumentPosition }
-    = lookupInputType aliasTyCon lib (internalUnknownTypeMessage aliasTyCon)
-      >>= checkType
-      >>  pure (key, arg)
+  validateArgumentValue :: Argument RESOLVED -> Validation (Text, ValidArgument)
+  validateArgumentValue Argument { argumentValue = value, argumentPosition } =
+    do
+      datatype <- lookupInputType aliasTyCon
+                                  lib
+                                  (internalUnknownTypeMessage aliasTyCon)
+      argumentValue <- handleInputError
+        $ validateInputValue lib [] aliasWrappers datatype (key, value)
+      pure (key, Argument { argumentValue, argumentPosition })
    where
-    checkType type' = handleInputError
-      (validateInputValue lib [] aliasWrappers type' (key, value))
     ---------
-    handleInputError :: InputValidation a -> Validation ()
+    handleInputError :: InputValidation a -> Validation a
     handleInputError (Left err) = failure $ case inputErrorMessage err of
       Left  errors  -> errors
       Right message -> argumentGotInvalidValue key message argumentPosition
-    handleInputError _ = pure ()
+    handleInputError (Right x) = pure x
 
 validateArguments
   :: DataTypeLib
@@ -145,7 +150,8 @@ validateArguments typeLib operatorName variables (key, field@DataField { fieldAr
     dataArgs <- checkForUnknownArguments args
     mapM (validateArgument typeLib pos args) dataArgs
  where
-  checkForUnknownArguments :: ValidArguments -> Validation [(Text, DataField)]
+  checkForUnknownArguments
+    :: Arguments RESOLVED -> Validation [(Text, DataField)]
   checkForUnknownArguments args =
     checkForUnknownKeys enhancedKeys fieldKeys argError
       >> checkNameCollision enhancedKeys argumentNameCollision
@@ -153,6 +159,6 @@ validateArguments typeLib operatorName variables (key, field@DataField { fieldAr
    where
     argError     = unknownArguments key
     enhancedKeys = map argToKey args
-    argToKey :: (Name, ValidArgument) -> Ref
+    argToKey :: (Name, Argument RESOLVED) -> Ref
     argToKey (key', Argument { argumentPosition }) = Ref key' argumentPosition
     fieldKeys = map fst fieldArgs

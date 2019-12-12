@@ -38,6 +38,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataScalar
                                                 , Message
                                                 , Name
+                                                , ResolvedValue
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving
@@ -72,25 +73,23 @@ validateInputValue
   -> [Prop]
   -> [TypeWrapper]
   -> DataType
-  -> (Key, ValidValue)
+  -> (Key, ResolvedValue)
   -> InputValidation ValidValue
 validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
   validateWrapped rw typeContent
  where
-  throwError :: [TypeWrapper] -> ValidValue -> InputValidation ValidValue
+  throwError :: [TypeWrapper] -> ResolvedValue -> InputValidation ValidValue
   throwError wrappers value =
     Left $ UnexpectedType props (renderWrapped datatype wrappers) value Nothing
   -- VALIDATION
   validateWrapped
     :: [TypeWrapper]
     -> DataTypeContent
-    -> (Key, ValidValue)
+    -> (Key, ResolvedValue)
     -> InputValidation ValidValue
   -- Validate Null. value = null ?
-  validateWrapped wrappers dt (name, ResolvedVariable ref variable) =
+  validateWrapped wrappers _ (_, ResolvedVariable ref variable) =
     checkTypeEquality (typeName, wrappers) ref variable
-      >>= validateWrapped wrappers dt
-      .   (name, )
   validateWrapped wrappers _ (_, Null) | isNullable wrappers = return Null
                                        | otherwise = throwError wrappers Null
   -- Validate LIST
@@ -106,10 +105,12 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
   validateWrapped [] dt v = validate dt v
    where
     validate
-      :: DataTypeContent -> (Key, ValidValue) -> InputValidation ValidValue
+      :: DataTypeContent -> (Key, ResolvedValue) -> InputValidation ValidValue
     validate (DataInputObject parentFields) (_, Object fields) =
       Object <$> mapM validateField fields
      where
+      validateField
+        :: (Name, ResolvedValue) -> InputValidation (Name, ValidValue)
       validateField (_name, value) = do
         (type', currentProp') <- validationData value
         wrappers'             <- aliasWrappers . fieldType <$> getField
@@ -120,6 +121,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
                                                     (_name, value)
         return (_name, value'')
        where
+        validationData :: ResolvedValue -> InputValidation (DataType, [Prop])
         validationData x = do
           fieldTypeName' <- aliasTyCon . fieldType <$> getField
           let currentProp = props ++ [Prop _name fieldTypeName']
@@ -130,7 +132,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
         getField = lookupField _name parentFields (UnknownField props _name)
     -- VALIDATE INPUT UNION
     -- TODO: Validate Union
-    validate (DataInputUnion _) (_, Object fields) = return (Object fields)
+    --validate (DataInputUnion _) (_, Object fields) = return (Object fields)
     {-- VALIDATE ENUM --}
     validate (DataEnum tags) (_, value) =
       validateEnum (UnexpectedType props typeName value Nothing) tags value
@@ -144,23 +146,28 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
 
 validateScalar
   :: DataScalar
-  -> ValidValue
-  -> (ValidValue -> Maybe Message -> error)
-  -> Either error ValidValue
-validateScalar DataValidator { validateValue } value err =
-  case validateValue value of
-    Right _            -> return value
+  -> ResolvedValue
+  -> (ResolvedValue -> Maybe Message -> InputError)
+  -> InputValidation ValidValue
+validateScalar DataValidator { validateValue } value err = do
+  scalarValue <- toScalar value
+  case validateValue scalarValue of
+    Right _            -> return scalarValue
     Left  ""           -> failure (err value Nothing)
     Left  errorMessage -> failure $ err value (Just errorMessage)
+ where
+  toScalar :: ResolvedValue -> InputValidation ValidValue
+  toScalar (Scalar x) = pure (Scalar x)
+  toScalar value      = Left (err value Nothing)
 
 validateEnum
-  :: error -> [DataEnumValue] -> ValidValue -> Either error ValidValue
+  :: error -> [DataEnumValue] -> ResolvedValue -> Either error ValidValue
 validateEnum gqlError enumValues (Enum enumValue)
   | enumValue `elem` tags = pure (Enum enumValue)
   | otherwise             = Left gqlError
   where tags = map enumName enumValues
 validateEnum gqlError _ _ = Left gqlError
 
-typeMismatch :: ValidValue -> Key -> [Prop] -> InputError
+typeMismatch :: ResolvedValue -> Key -> [Prop] -> InputError
 typeMismatch jsType expected' path' =
   UnexpectedType path' expected' jsType Nothing

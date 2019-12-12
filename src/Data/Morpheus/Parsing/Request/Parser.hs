@@ -38,6 +38,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( ValidValue
                                                 , replaceValue
                                                 , GQLQuery(..)
+                                                , ResolvedValue
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..) )
 
@@ -57,7 +58,7 @@ parseGQL GQLRequest { query, variables } = case parseGQLSyntax query of
   Right root       -> pure $ root { inputVariables = toVariableMap variables }
   Left  parseError -> failure $ processErrorBundle parseError
  where
-  toVariableMap :: Maybe Aeson.Value -> [(Text, ValidValue)]
+  toVariableMap :: Maybe Aeson.Value -> [(Text, ResolvedValue)]
   toVariableMap (Just (Aeson.Object x)) = map toMorpheusValue (toList x)
     where toMorpheusValue (key, value) = (key, replaceValue value)
   toVariableMap _ = []
