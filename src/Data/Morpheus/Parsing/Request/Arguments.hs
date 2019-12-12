@@ -5,9 +5,7 @@ module Data.Morpheus.Parsing.Request.Arguments
   )
 where
 
-import           Text.Megaparsec                ( label
-                                                , (<|>)
-                                                )
+import           Text.Megaparsec                ( label)
 
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal
