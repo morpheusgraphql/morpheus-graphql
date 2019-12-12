@@ -12,10 +12,6 @@ where
 
 import           Data.Aeson                     ( encode )
 import           Data.ByteString.Lazy.Char8     ( unpack )
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Name
-                                                , Position
-                                                )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ValidValue )
 import           Data.Text                      ( Text )
@@ -24,13 +20,20 @@ import qualified Data.Text                     as T
                                                 , intercalate
                                                 , pack
                                                 )
+
+
+import           Data.Morpheus.Types.Internal.Resolving.Core
+                                                (
+                                                 GQLErrors
+                                                )
+
 type InputValidation a = Either InputError a
 
 data InputError
   = UnexpectedType [Prop] Text ValidValue (Maybe Text)
   | UndefinedField [Prop] Text
   | UnknownField [Prop] Text
-  | IncompatibleVariable Name Name Name Position
+  | GlobalInputError GQLErrors
 
 data Prop =
   Prop
@@ -38,11 +41,14 @@ data Prop =
     , propType :: Text
     }
 
-inputErrorMessage :: InputError -> Text
+inputErrorMessage :: InputError -> Either GQLErrors Text
 inputErrorMessage (UnexpectedType path type' value errorMessage) =
-  expectedTypeAFoundB path type' value errorMessage
-inputErrorMessage (UndefinedField path' field') = undefinedField path' field'
-inputErrorMessage (UnknownField   path' field') = unknownField path' field'
+  Right $ expectedTypeAFoundB path type' value errorMessage
+inputErrorMessage (UndefinedField path' field') =
+  Right $ undefinedField path' field'
+inputErrorMessage (UnknownField path' field') =
+  Right $ unknownField path' field'
+inputErrorMessage (GlobalInputError err) = Left err
 
 pathToText :: [Prop] -> Text
 pathToText []    = ""

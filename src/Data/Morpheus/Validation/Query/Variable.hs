@@ -156,8 +156,8 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
                            varType
                            (key, varValue)
       of
-        Left message -> failure $ variableGotInvalidValue
-          key
-          (inputErrorMessage message)
-          variablePosition
+        Left message -> failure $ case inputErrorMessage message of
+          Left errors -> errors
+          Right errMessage ->
+            variableGotInvalidValue key errMessage variablePosition
         Right value -> pure (key, value)

@@ -88,12 +88,11 @@ resolveArgumentVariables operationName variables DataField { fieldName, fieldArg
   = mapM resolveVariable
  where
   resolveVariable :: (Text, RawArgument) -> Validation (Text, ValidArgument)
-  resolveVariable (key, Argument val position) =
-    case lookup key fieldArgs of
-      Nothing -> failure $ unknownArguments fieldName [Ref key position]
-      Just _  -> do
-        constValue <- resolveObject operationName variables val
-        pure (key, Argument constValue position)
+  resolveVariable (key, Argument val position) = case lookup key fieldArgs of
+    Nothing -> failure $ unknownArguments fieldName [Ref key position]
+    Just _  -> do
+      constValue <- resolveObject operationName variables val
+      pure (key, Argument constValue position)
 
 validateArgument
   :: DataTypeLib
@@ -127,8 +126,9 @@ validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldTy
       (validateInputValue lib [] aliasWrappers type' (key, value))
     ---------
     handleInputError :: InputValidation a -> Validation ()
-    handleInputError (Left err) = failure
-      $ argumentGotInvalidValue key (inputErrorMessage err) argumentPosition
+    handleInputError (Left err) = failure $ case inputErrorMessage err of
+      Left  errors  -> errors
+      Right message -> argumentGotInvalidValue key message argumentPosition
     handleInputError _ = pure ()
 
 validateArguments

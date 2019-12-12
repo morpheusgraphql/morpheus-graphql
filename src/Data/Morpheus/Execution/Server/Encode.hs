@@ -67,7 +67,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , SelectionRec(..)
                                                 , ValidSelection
                                                 , GQLValue(..)
-                                                , Value(..)
                                                 , ValidValue
                                                 , ValidSelectionSet
                                                 )

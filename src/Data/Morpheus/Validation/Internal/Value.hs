@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -35,26 +36,29 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isWeaker
                                                 , DataScalar
                                                 , Message
+                                                , Name
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Failure(..)
-                                                , Validation
-                                                )
+                                                ( Failure(..) )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) )
 
-checkTypeEquality :: Ref -> TypeAlias -> Variable a -> Validation a
-checkTypeEquality Ref { refName, refPosition } fieldType@TypeAlias { aliasWrappers, aliasTyCon } Variable { variableValue, variableType, variableTypeWrappers }
+checkTypeEquality
+  :: (Name, [TypeWrapper]) -> Ref -> Variable a -> InputValidation a
+checkTypeEquality (aliasTyCon, aliasWrappers) Ref { refName, refPosition } Variable { variableValue, variableType, variableTypeWrappers }
   | variableType == aliasTyCon && not
     (isWeaker variableTypeWrappers aliasWrappers)
   = pure variableValue
   | otherwise
-  = failure
-    $ incompatibleVariableType refName varSignature fieldSignature refPosition
+  = failure $ GlobalInputError $ incompatibleVariableType refName
+                                                          varSignature
+                                                          fieldSignature
+                                                          refPosition
  where
-  varSignature   = renderWrapped variableType variableTypeWrappers
-  fieldSignature = render fieldType
+  varSignature = renderWrapped variableType variableTypeWrappers
+  fieldSignature =
+    render TypeAlias { aliasTyCon, aliasWrappers, aliasArgs = Nothing }
 
 
 
@@ -79,6 +83,8 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
     -> (Key, ValidValue)
     -> InputValidation ValidValue
   -- Validate Null. value = null ?
+  -- validateWrapped wrappers _ (_, ResolvedVariable ref variable) =
+  --  checkTypeEquality (typeName, wrappers) ref variable
   validateWrapped wrappers _ (_, Null) | isNullable wrappers = return Null
                                        | otherwise = throwError wrappers Null
   -- Validate LIST
