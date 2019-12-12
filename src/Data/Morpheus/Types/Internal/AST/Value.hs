@@ -159,9 +159,9 @@ instance Show (Value a) where
   show (Enum   x) = "" <> unpack x
   show (Scalar x) = show x
   show (ResolvedVariable Ref { refName } Variable { variableValue }) =
-    " resolved $" <> unpack refName <> " = " <> show variableValue
-  show (VariableValue Ref { refName }) = "variable $" <> unpack refName <> ""
-  show (Object        keys           ) = "{" <> foldl toEntry "" keys <> "}"
+    "$" <> unpack refName <> "#" <> show variableValue <> " "
+  show (VariableValue Ref { refName }) = "$" <> unpack refName <> " "
+  show (Object        keys           ) = "{ " <> foldl toEntry "" keys <> " } "
    where
     toEntry :: String -> (Name, Value a) -> String
     toEntry ""  (key, value) = unpack key <> ":" <> show value
