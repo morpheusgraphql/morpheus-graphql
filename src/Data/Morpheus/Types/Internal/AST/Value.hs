@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE DeriveLift          #-}
 {-# LANGUAGE FlexibleInstances   #-}
@@ -155,18 +156,20 @@ type ValidValue = Value VALID
 
 instance Show (Value a) where
   show Null       = "null"
-  show (Enum   x) = "Enum." <> unpack x
+  show (Enum   x) = "" <> unpack x
   show (Scalar x) = show x
-  show (ResolvedVariable ref value) =
-    "resolved var: " <> show ref <> " = " <> show value
-  show (VariableValue ref ) = "variable ref: " <> show ref
-  show (Object        keys) = "{" <> foldl toEntry "" keys <> "}"
+  show (ResolvedVariable Ref { refName } Variable { variableValue }) =
+    " resolved $" <> unpack refName <> " = " <> show variableValue
+  show (VariableValue Ref { refName }) = "variable $" <> unpack refName <> ""
+  show (Object        keys           ) = "{" <> foldl toEntry "" keys <> "}"
    where
     toEntry :: String -> (Name, Value a) -> String
+    toEntry ""  (key, value) = unpack key <> ":" <> show value
     toEntry txt (key, value) = txt <> ", " <> unpack key <> ":" <> show value
   show (List list) = "[" <> foldl toEntry "" list <> "]"
    where
     toEntry :: String -> Value a -> String
+    toEntry ""  value = show value
     toEntry txt value = txt <> ", " <> show value
 
 instance A.ToJSON ValidValue where

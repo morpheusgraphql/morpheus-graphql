@@ -45,7 +45,10 @@ import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) )
 
 checkTypeEquality
-  :: (Name, [TypeWrapper]) -> Ref -> Variable a -> InputValidation a
+  :: (Name, [TypeWrapper])
+  -> Ref
+  -> Variable ValidValue
+  -> InputValidation ValidValue
 checkTypeEquality (aliasTyCon, aliasWrappers) Ref { refName, refPosition } Variable { variableValue, variableType, variableTypeWrappers }
   | variableType == aliasTyCon && not
     (isWeaker variableTypeWrappers aliasWrappers)
