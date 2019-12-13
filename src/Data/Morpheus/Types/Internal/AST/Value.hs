@@ -114,7 +114,6 @@ data ScalarValue
   | Boolean Bool
   deriving (Show, Generic,Lift)
 
-
 instance A.ToJSON ScalarValue where
   toJSON (Float   x) = A.toJSON x
   toJSON (Int     x) = A.toJSON x
@@ -151,7 +150,7 @@ data Variable (stage :: Stage) = Variable
   } deriving (Show,Lift)
 
 data Value (valid :: Stage) where
-  ResolvedVariable ::Ref -> Variable VALID -> Value RESOLVED
+  ResolvedVariable::Ref -> Variable VALID -> Value RESOLVED
   VariableValue ::Ref -> Value RAW
   Object  ::Object a -> Value a
   List ::[Value a] -> Value a
