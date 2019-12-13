@@ -48,7 +48,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RawValue
                                                 , ResolvedValue
                                                 , Name
-                                                , RESOLVED
                                                 , VALID
                                                 , RAW
                                                 , VariableContent(..)
