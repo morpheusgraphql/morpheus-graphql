@@ -1,4 +1,6 @@
-{-# LANGUAGE DeriveLift       #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveLift           #-}
+{-# LANGUAGE OverloadedStrings    #-}
 
 module Data.Morpheus.Types.Internal.AST
   (
@@ -31,6 +33,7 @@ module Data.Morpheus.Types.Internal.AST
   , ValidObject
   , ResolvedObject
   , ResolvedValue
+  , getInputTypeName
 
   -- Selection
   , Argument(..)
@@ -163,6 +166,8 @@ import           Data.Morpheus.Types.Internal.AST.Base
 
 import           Data.Morpheus.Types.Internal.AST.Value
 
+import           Data.Morpheus.Types.Internal.Resolving.Core
+                                                ( Failure(..) )
 
 type Variables = Map Key ResolvedValue
 
@@ -171,3 +176,18 @@ data GQLQuery = GQLQuery
   , operation      :: RawOperation
   , inputVariables :: [(Key, ResolvedValue)]
   } deriving (Show,Lift)
+
+getInputTypeName :: Object stage -> Either Message (Name, Value stage)
+getInputTypeName = inputtype
+ where
+  inputtype [("__typename", tName), (name, value)] =
+    inputtypeName tName name value
+  inputtype [(name, value), ("__typename", tName)] =
+    inputtypeName tName name value
+  inputtype [_, _] = failure ("__typename not found on Input Union" :: Message)
+  inputtype _      = failure ("only one field can be provided" :: Message)
+  --------------------------
+  inputtypeName (Enum name) fieldName fieldValue
+    | fieldName == name = pure (name, fieldValue)
+    | otherwise = failure ("field " <> name <> "was not providedm" :: Message)
+  inputtypeName _ _ _ = failure ("__typename must be Enum" :: Message)
