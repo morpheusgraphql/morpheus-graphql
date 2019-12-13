@@ -195,6 +195,10 @@ instance Show (Value a) where
     toEntry txt value = txt <> ", " <> show value
 
 instance A.ToJSON (Value a) where
+  toJSON (ResolvedVariable _ Variable { variableValue = ValidVariableValue x })
+    = A.toJSON x
+  toJSON (VariableValue Ref { refName }) =
+    A.String $ "($ref:" <> refName <> ")"
   toJSON Null            = A.Null
   toJSON (Enum   x     ) = A.String x
   toJSON (Scalar x     ) = A.toJSON x
@@ -202,6 +206,10 @@ instance A.ToJSON (Value a) where
   toJSON (Object fields) = A.object $ map toEntry fields
     where toEntry (name, value) = name A..= A.toJSON value
   -------------------------------------------
+  toEncoding (ResolvedVariable _ Variable { variableValue = ValidVariableValue x })
+    = A.toEncoding x
+  toEncoding (VariableValue Ref { refName }) =
+    A.toEncoding $ "($ref:" <> refName <> ")"
   toEncoding Null        = A.toEncoding A.Null
   toEncoding (Enum   x ) = A.toEncoding x
   toEncoding (Scalar x ) = A.toEncoding x
