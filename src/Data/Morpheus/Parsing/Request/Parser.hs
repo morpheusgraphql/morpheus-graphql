@@ -35,8 +35,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( ValidValue
-                                                , replaceValue
+                                                ( replaceValue
                                                 , GQLQuery(..)
                                                 , ResolvedValue
                                                 )

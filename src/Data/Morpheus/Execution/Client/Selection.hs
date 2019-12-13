@@ -24,8 +24,7 @@ import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
 import           Data.Morpheus.Execution.Internal.Utils
                                                 ( nameSpaceType )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DefaultValue
-                                                , Operation(..)
+                                                ( Operation(..)
                                                 , ValidOperation
                                                 , Variable(..)
                                                 , VariableDefinitions
@@ -51,9 +50,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeD(..)
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
-                                                , VALID
-                                                , VariableContent(..)
-                                                , RESOLVED
                                                 , RAW
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving

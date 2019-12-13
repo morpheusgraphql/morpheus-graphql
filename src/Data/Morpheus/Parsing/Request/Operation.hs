@@ -36,8 +36,7 @@ import           Data.Morpheus.Parsing.Internal.Value
 import           Data.Morpheus.Parsing.Request.Selection
                                                 ( parseSelectionSet )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DefaultValue
-                                                , Operation(..)
+                                                ( Operation(..)
                                                 , RawOperation
                                                 , Variable(..)
                                                 , OperationType(..)

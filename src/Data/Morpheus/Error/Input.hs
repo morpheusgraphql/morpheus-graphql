@@ -13,9 +13,7 @@ where
 import           Data.Aeson                     ( encode )
 import           Data.ByteString.Lazy.Char8     ( unpack )
 import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( ValidValue
-                                                , ResolvedValue
-                                                )
+                                                ( ResolvedValue )
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as T
                                                 ( concat

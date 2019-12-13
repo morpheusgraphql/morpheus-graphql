@@ -160,7 +160,7 @@ validateScalar DataValidator { validateValue } value err = do
  where
   toScalar :: ResolvedValue -> InputValidation ValidValue
   toScalar (Scalar x) = pure (Scalar x)
-  toScalar value      = Left (err value Nothing)
+  toScalar scValue    = Left (err scValue Nothing)
 
 validateEnum
   :: error -> [DataEnumValue] -> ResolvedValue -> Either error ValidValue

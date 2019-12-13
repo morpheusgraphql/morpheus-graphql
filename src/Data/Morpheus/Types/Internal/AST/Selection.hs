@@ -57,7 +57,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , VALID
                                                 , RAW
                                                 , Stage
-                                                , RESOLVED
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -71,8 +70,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , DataObject
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( ValidValue
-                                                , Value
+                                                ( Value
                                                 , Variable(..)
                                                 , ResolvedValue
                                                 )

@@ -5,7 +5,6 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE TemplateHaskell     #-}
@@ -142,7 +141,6 @@ instance Lift (VariableContent a) where
 
 instance Show (VariableContent a) where
 
-
 data Variable (stage :: Stage) = Variable
   { variableType         :: Name
   , isVariableRequired   :: Bool
@@ -184,7 +182,7 @@ instance Show (Value a) where
   show (ResolvedVariable Ref { refName } Variable { variableValue }) =
     "($" <> unpack refName <> ": " <> show variableValue <> ") "
   show (VariableValue Ref { refName }) = "$" <> unpack refName <> " "
-  show (Object        keys           ) = "{ " <> foldl toEntry "" keys <> " } "
+  show (Object        keys           ) = "{" <> foldl toEntry "" keys <> "}"
    where
     toEntry :: String -> (Name, Value a) -> String
     toEntry ""  (key, value) = unpack key <> ":" <> show value
@@ -247,13 +245,3 @@ instance GQLValue (Value a) where
   gqlString  = Scalar . String
   gqlList    = List
   gqlObject  = Object
-
-
-
--- data VariableValue (valid :: Bool) where
---     VariableObject ::VariableObject -> VariableValue RAW
---     VariableList ::[VariableValue 'False] -> VariableValue RAW
---     VariableValue ::Ref -> VariableValue RAW
---     ConstantValue ::{ constantValue :: Value } -> VariableValue valid
-
-
