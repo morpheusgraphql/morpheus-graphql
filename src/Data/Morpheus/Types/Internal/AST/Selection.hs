@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DeriveLift        #-}
 {-# LANGUAGE KindSignatures    #-}
@@ -104,7 +105,7 @@ data SelectionRec (valid :: Stage) where
   SelectionSet   ::SelectionSet valid -> SelectionRec valid
   UnionSelection ::UnionSelection -> SelectionRec VALID
 
-instance Show (SelectionRec a) where
+deriving instance Show (SelectionRec a)
 
 instance Lift (SelectionRec a) where
   lift (SelectionSet   s) = [| SelectionSet s |]
@@ -129,7 +130,7 @@ data Selection (valid:: Stage) where
     InlineFragment ::Fragment -> Selection RAW
     Spread ::Ref -> Selection RAW
 
-instance Show (Selection a) where
+deriving instance Show (Selection a)
 
 instance Lift (Selection a) where
   lift (Selection args pos alias cont) = [| Selection args pos alias cont |]
