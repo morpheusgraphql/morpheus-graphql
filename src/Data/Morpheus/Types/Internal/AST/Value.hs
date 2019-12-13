@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE DeriveGeneric       #-}
@@ -139,7 +140,7 @@ instance Lift (VariableContent a) where
   lift (DefaultValue       x) = [| DefaultValue x |]
   lift (ValidVariableValue x) = [| ValidVariableValue x |]
 
-instance Show (VariableContent a) where
+deriving instance Show (VariableContent a)
 
 data Variable (stage :: Stage) = Variable
   { variableType         :: Name
