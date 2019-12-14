@@ -1,30 +1,30 @@
 [
   {
     "path": "undefinedField",
-    "description": "test signed float and float with expotential"
+    "description": "fail when field was not provided"
   },
   {
     "path": "nullableUndefinedField",
-    "description": "test signed float and float with expotential"
+    "description": "dont fail when nullable field was not provided"
   },
   {
     "path": "unknownField",
-    "description": "test signed int and int with expotential"
+    "description": "fail on unknown field"
   },
   {
     "path": "unexpectedValue",
-    "description": "test signed int and int with expotential"
+    "description": "fail on value with unexpected type"
   },
   {
     "path": "unexpectedVariable",
-    "description": "test signed int and int with expotential"
+    "description": "fail on use of variable with unexpected type"
   },
   {
     "path": "resolveVariable",
-    "description": "test signed int and int with expotential"
+    "description": "resolve by variable"
   },
   {
-    "path": "resolveVariable",
-    "description": "test signed int and int with expotential"
+    "path": "resolveObject",
+    "description": "resolve object"
   }
 ]
