@@ -177,22 +177,31 @@ data GQLQuery = GQLQuery
   , inputVariables :: [(Key, ResolvedValue)]
   } deriving (Show,Lift)
 
-unpackInputUnion :: Object stage -> Either Message (Name, Maybe (Value stage))
-unpackInputUnion [("__typename", Enum tyName)] = pure (tyName, Nothing)
-unpackInputUnion [("__typename", tyName), (name, value)] =
+unpackInputUnion
+  :: [(Name, Bool)]
+  -> Object stage
+  -> Either Message (Name, Maybe (Value stage))
+unpackInputUnion tags [("__typename", enum)] = do
+  tyName <- isPosibeUnion tags enum
+  pure (tyName, Nothing)
+unpackInputUnion tags [("__typename", enum), (name, value)] = do
+  tyName <- isPosibeUnion tags enum
   inputtypeName tyName name value
-unpackInputUnion [(name, value), ("__typename", tyName)] =
+unpackInputUnion tags [(name, value), ("__typename", enum)] = do
+  tyName <- isPosibeUnion tags enum
   inputtypeName tyName name value
-unpackInputUnion _ = failure
+unpackInputUnion _ _ = failure
   ("valid input union should contain __typename and actual value" :: Message)
-  --------------------------
+
+isPosibeUnion :: [(Name, Bool)] -> Value stage -> Either Message Name
+isPosibeUnion tags (Enum name) = case lookup name tags of
+  Nothing -> failure (name <> " is not posible union type" :: Message)
+  _       -> pure name
+isPosibeUnion _ _ = failure ("__typename must be Enum" :: Message)
+
 
 inputtypeName
-  :: Value stage
-  -> Name
-  -> Value stage
-  -> Either Message (Name, Maybe (Value stage))
-inputtypeName (Enum name) fName fieldValue
+  :: Name -> Name -> Value stage -> Either Message (Name, Maybe (Value stage))
+inputtypeName name fName fieldValue
   | fName == name = pure (name, Just fieldValue)
   | otherwise     = failure ("field " <> name <> "was not providedm" :: Message)
-inputtypeName _ _ _ = failure ("__typename must be Enum" :: Message)

@@ -134,8 +134,8 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
         getField = lookupField _name parentFields (UnknownField props _name)
     -- VALIDATE INPUT UNION
     -- TODO: Validate Union
-    validate (DataInputUnion _) (_, Object rawFields) =
-      case unpackInputUnion rawFields of
+    validate (DataInputUnion inputUnion) (_, Object rawFields) =
+      case unpackInputUnion inputUnion rawFields of
         Left message -> failure
           $ UnexpectedType props typeName (Object rawFields) (Just message)
         Right (name, Nothing   ) -> return (Object [("__typename", Enum name)])
