@@ -1,3 +1,20 @@
 {
-  "data": {}
+  "errors": [
+    {
+      "message": "Argument value got invalid value ; Expected type \"InputObject!\" found \"some text\".",
+      "locations": [{ "line": 2, "column": 20 }]
+    },
+    {
+      "message": "Argument value got invalid value ; Expected type \"InputObject!\" found 1.",
+      "locations": [{ "line": 3, "column": 20 }]
+    },
+    {
+      "message": "Argument value got invalid value ;on field Expected type \"String\" found {}.",
+      "locations": [{ "line": 4, "column": 20 }]
+    },
+    {
+      "message": "Argument value got invalid value ;on field Expected type \"String\" found 3.",
+      "locations": [{ "line": 5, "column": 20 }]
+    }
+  ]
 }
