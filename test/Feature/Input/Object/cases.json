@@ -18,5 +18,13 @@
   {
     "path": "unexpectedVariable",
     "description": "test signed int and int with expotential"
+  },
+  {
+    "path": "resolveVariable",
+    "description": "test signed int and int with expotential"
+  },
+  {
+    "path": "resolveVariable",
+    "description": "test signed int and int with expotential"
   }
 ]
