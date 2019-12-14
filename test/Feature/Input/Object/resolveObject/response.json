@@ -1,3 +1,6 @@
 {
-  "data": {}
+  "data": {
+    "i1": "InputObject {field = \"v1\", nullableField = Just 123}",
+    "i2": "InputObject {field = \"v2\", nullableField = Nothing}"
+  }
 }
