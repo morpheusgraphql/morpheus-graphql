@@ -116,6 +116,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Position
                                                 , Name
                                                 , Description
+                                                , TypeWrapper(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -125,7 +126,8 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 , resolveUpdates
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value(..)
+                                                ( Value(..) 
+                                                , ValidValue
                                                 , ScalarValue(..)
                                                 )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
@@ -195,10 +197,7 @@ data ResolverKind
   | ExternalResolver
   deriving (Show, Eq, Lift)
 
-data TypeWrapper
-  = TypeList
-  | TypeMaybe
-  deriving (Show, Lift)
+
 
 isFieldNullable :: DataField -> Bool
 isFieldNullable = isNullable . aliasWrappers . fieldType
@@ -231,7 +230,7 @@ toHSWrappers [NonNullType]                   = []
 data DataFingerprint = DataFingerprint Name [String] deriving (Show, Eq, Ord, Lift)
 
 newtype DataValidator = DataValidator
-  { validateValue :: Value -> Either Key Value
+  { validateValue :: ValidValue -> Either Key ValidValue
   }
 
 instance Show DataValidator where
@@ -263,7 +262,7 @@ data ArgsType = ArgsType
 
 data Directive = Directive {
   directiveName :: Name,
-  directiveArgs :: [(Name,Value)]
+  directiveArgs :: [(Name, ValidValue)]
 } deriving (Show,Lift)
 
 -- META
@@ -282,6 +281,7 @@ lookupDeprecatedReason :: Directive -> Maybe Key
 lookupDeprecatedReason Directive { directiveArgs } =
   maybeString . snd <$> find isReason directiveArgs
  where
+  maybeString :: ValidValue -> Name
   maybeString (Scalar (String x)) = x
   maybeString _                   = "can't read deprecated Reason Value"
   isReason ("reason", _) = True

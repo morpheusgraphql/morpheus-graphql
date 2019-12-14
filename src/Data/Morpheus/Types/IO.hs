@@ -32,10 +32,10 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 , Result(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value )
+                                                ( ValidValue )
 
 
-renderResponse :: Result e GQLError con Value -> GQLResponse
+renderResponse :: Result e GQLError con ValidValue -> GQLResponse
 renderResponse (Failure errors)   = Errors errors
 renderResponse Success { result } = Data result
 
@@ -57,7 +57,7 @@ data GQLRequest = GQLRequest
 
 -- | GraphQL Response
 data GQLResponse
-  = Data Value
+  = Data ValidValue
   | Errors [GQLError]
   deriving (Show, Generic)
 

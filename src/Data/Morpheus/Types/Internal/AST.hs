@@ -1,4 +1,6 @@
-{-# LANGUAGE DeriveLift       #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveLift           #-}
+{-# LANGUAGE OverloadedStrings    #-}
 
 module Data.Morpheus.Types.Internal.AST
   (
@@ -11,6 +13,10 @@ module Data.Morpheus.Types.Internal.AST
   , anonymousRef
   , Name
   , Description
+  , Stage
+  , RESOLVED
+  , VALID
+  , RAW
 
   -- VALUE
   , Value(..)
@@ -21,22 +27,32 @@ module Data.Morpheus.Types.Internal.AST
   , decodeScientific
   , convertToJSONName
   , convertToHaskellName
+  , RawValue
+  , ValidValue
+  , RawObject
+  , ValidObject
+  , ResolvedObject
+  , ResolvedValue
+  , unpackInputUnion
 
   -- Selection
   , Argument(..)
   , Arguments
   , SelectionSet
   , SelectionRec(..)
-  , ValueOrigin(..)
   , ValidSelection
   , Selection(..)
-  , RawSelection'
+  , RawSelection
   , FragmentLib
   , RawArguments
   , RawSelectionSet
   , Fragment(..)
-  , RawArgument(..)
-  , RawSelection(..)
+  , RawArgument
+  , ValidSelectionSet
+  , ValidArgument
+  , ValidArguments
+  , RawSelectionRec
+  , ValidSelectionRec
 
   -- OPERATION
   , Operation(..)
@@ -131,6 +147,7 @@ module Data.Morpheus.Types.Internal.AST
   , GQLTypeD(..)
   , ClientType(..)
   , DataInputUnion
+  , VariableContent(..)
   -- LOCAL
   , GQLQuery(..)
   , Variables
@@ -139,13 +156,10 @@ where
 
 import           Data.Map                       ( Map )
 import           Language.Haskell.TH.Syntax     ( Lift )
-import           Instances.TH.Lift              ( )
+import           Data.Semigroup                 ( (<>) )
 
 -- Morpheus
 import           Data.Morpheus.Types.Internal.AST.Data
-
-
-import           Data.Morpheus.Types.Internal.AST.Operation
 
 import           Data.Morpheus.Types.Internal.AST.Selection
 
@@ -153,11 +167,42 @@ import           Data.Morpheus.Types.Internal.AST.Base
 
 import           Data.Morpheus.Types.Internal.AST.Value
 
+import           Data.Morpheus.Types.Internal.Resolving.Core
+                                                ( Failure(..) )
 
-type Variables = Map Key Value
+type Variables = Map Key ResolvedValue
 
 data GQLQuery = GQLQuery
   { fragments      :: FragmentLib
   , operation      :: RawOperation
-  , inputVariables :: [(Key, Value)]
+  , inputVariables :: [(Key, ResolvedValue)]
   } deriving (Show,Lift)
+
+unpackInputUnion
+  :: [(Name, Bool)]
+  -> Object stage
+  -> Either Message (Name, Maybe (Value stage))
+unpackInputUnion tags [("__typename", enum)] = do
+  tyName <- isPosibeUnion tags enum
+  pure (tyName, Nothing)
+unpackInputUnion tags [("__typename", enum), (name, value)] = do
+  tyName <- isPosibeUnion tags enum
+  inputtypeName tyName name value
+unpackInputUnion tags [(name, value), ("__typename", enum)] = do
+  tyName <- isPosibeUnion tags enum
+  inputtypeName tyName name value
+unpackInputUnion _ _ = failure
+  ("valid input union should contain __typename and actual value" :: Message)
+
+isPosibeUnion :: [(Name, Bool)] -> Value stage -> Either Message Name
+isPosibeUnion tags (Enum name) = case lookup name tags of
+  Nothing -> failure (name <> " is not posible union type" :: Message)
+  _       -> pure name
+isPosibeUnion _ _ = failure ("__typename must be Enum" :: Message)
+
+
+inputtypeName
+  :: Name -> Name -> Value stage -> Either Message (Name, Maybe (Value stage))
+inputtypeName name fName fieldValue
+  | fName == name = pure (name, Just fieldValue)
+  | otherwise = failure ("field \"" <> name <> "\" was not provided" :: Message)

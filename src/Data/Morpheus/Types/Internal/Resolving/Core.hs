@@ -142,20 +142,21 @@ mapEvent
   => (ea -> eb)
   -> ResultT ea er con m value
   -> ResultT eb er con m value
-mapEvent func (ResultT ma) = ResultT $ do
-  state <- ma
-  return $ state { events = map func (events state) }
+mapEvent func (ResultT ma) = ResultT $ mapEv <$> ma
+ where
+  mapEv Success { result, warnings, events } =
+    Success { result, warnings, events = map func events }
+  mapEv (Failure err) = Failure err
 
 mapFailure
   :: Monad m
   => (er1 -> er2)
   -> ResultT ev er1 con m value
   -> ResultT ev er2 con m value
-mapFailure f (ResultT ma) = ResultT $ do
-  state <- ma
-  case state of
-    Failure x     -> pure $ Failure (map f x)
-    Success x w e -> pure $ Success x (map f w) e
+mapFailure f (ResultT ma) = ResultT $ mapF <$> ma
+ where
+  mapF (Failure x    ) = Failure (map f x)
+  mapF (Success x w e) = Success x (map f w) e
 
 
 -- Helper Functions

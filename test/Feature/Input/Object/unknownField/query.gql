@@ -1,0 +1,3 @@
+query UndefinedField {
+  input(value: { moo: 1, field: "some field" })
+}

@@ -9,7 +9,7 @@ input Dog {
 }
 
 input Bird {
-  name: String!
+  name: String
 }
 
 # Main APi

@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
@@ -29,10 +31,12 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , getOperationName
                                                 , Fragment(..)
                                                 , FragmentLib
-                                                , RawArgument(..)
-                                                , RawSelection(..)
-                                                , RawSelectionSet
+                                                , Argument(..)
+                                                , RawArgument
                                                 , Selection(..)
+                                                , SelectionRec(..)
+                                                , RawSelection
+                                                , RawSelectionSet
                                                 , Ref(..)
                                                 , Position
                                                 , DataType
@@ -40,6 +44,13 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupInputType
                                                 , Variables
                                                 , Value(..)
+                                                , ValidValue
+                                                , RawValue
+                                                , ResolvedValue
+                                                , Name
+                                                , VALID
+                                                , RAW
+                                                , VariableContent(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -59,24 +70,34 @@ getVariableType type' position' lib' = lookupInputType type' lib' error'
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = fmap concat . mapM f
 
+
+class ExploreRefs a where
+  exploreRefs :: a -> [Ref]
+
+instance ExploreRefs RawValue where
+  exploreRefs (VariableValue ref   ) = [ref]
+  exploreRefs (Object        fields) = concatMap (exploreRefs . snd) fields
+  exploreRefs (List          ls    ) = concatMap exploreRefs ls
+  exploreRefs _                      = []
+
+instance ExploreRefs (Text, RawArgument) where
+  exploreRefs (_, Argument { argumentValue }) = exploreRefs argumentValue
+
 allVariableRefs :: FragmentLib -> [RawSelectionSet] -> Validation [Ref]
 allVariableRefs fragmentLib = concatMapM (concatMapM searchRefs)
  where
-  referencesFromArgument :: (Text, RawArgument) -> [Ref]
-  referencesFromArgument (_, RawArgument{}) = []
-  referencesFromArgument (_, VariableRef Ref { refName, refPosition }) =
-    [Ref refName refPosition]
+
   -- | search used variables in every arguments
   searchRefs :: (Text, RawSelection) -> Validation [Ref]
-  searchRefs (_, RawSelectionSet Selection { selectionArguments, selectionRec })
-    = getArgs <$> concatMapM searchRefs selectionRec
+  searchRefs (_, Selection { selectionArguments, selectionRec = SelectionField })
+    = return $ concatMap exploreRefs selectionArguments
+  searchRefs (_, Selection { selectionArguments, selectionRec = SelectionSet selSet })
+    = getArgs <$> concatMapM searchRefs selSet
    where
     getArgs :: [Ref] -> [Ref]
-    getArgs x = concatMap referencesFromArgument selectionArguments <> x
+    getArgs x = concatMap exploreRefs selectionArguments <> x
   searchRefs (_, InlineFragment Fragment { fragmentSelection }) =
     concatMapM searchRefs fragmentSelection
-  searchRefs (_, RawSelectionField Selection { selectionArguments }) =
-    return $ concatMap referencesFromArgument selectionArguments
   searchRefs (_, Spread reference) =
     getFragment reference fragmentLib
       >>= concatMapM searchRefs
@@ -108,17 +129,25 @@ lookupAndValidateValueOnBody
   :: DataTypeLib
   -> Variables
   -> VALIDATION_MODE
-  -> (Text, Variable DefaultValue)
-  -> Validation (Text, Variable Value)
-lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType, variablePosition, isVariableRequired, variableTypeWrappers, variableValue = defaultValue })
+  -> (Text, Variable RAW)
+  -> Validation (Text, Variable VALID)
+lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType, variablePosition, isVariableRequired, variableTypeWrappers, variableValue = DefaultValue defaultValue })
   = toVariable
     <$> (   getVariableType variableType variablePosition typeLib
         >>= checkType getVariable defaultValue
         )
  where
-  toVariable (varKey, variableValue) = (varKey, var { variableValue })
+  toVariable (varKey, x) =
+    (varKey, var { variableValue = ValidVariableValue x })
+  getVariable :: Maybe ResolvedValue
   getVariable = M.lookup key bodyVariables
   ------------------------------------------------------------------
+  -- checkType :: 
+  checkType
+    :: Maybe ResolvedValue
+    -> DefaultValue
+    -> DataType
+    -> Validation (Name, ValidValue)
   checkType (Just variable) Nothing varType = validator varType variable
   checkType (Just variable) (Just defValue) varType =
     validator varType defValue >> validator varType variable
@@ -132,6 +161,7 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
     returnNull =
       maybe (pure (key, Null)) (validator varType) (M.lookup key bodyVariables)
   -----------------------------------------------------------------------------------------------
+  validator :: DataType -> ResolvedValue -> Validation (Name, ValidValue)
   validator varType varValue =
     case
         validateInputValue typeLib
@@ -140,8 +170,8 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
                            varType
                            (key, varValue)
       of
-        Left message -> failure $ variableGotInvalidValue
-          key
-          (inputErrorMessage message)
-          variablePosition
+        Left message -> failure $ case inputErrorMessage message of
+          Left errors -> errors
+          Right errMessage ->
+            variableGotInvalidValue key errMessage variablePosition
         Right value -> pure (key, value)

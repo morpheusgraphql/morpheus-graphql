@@ -57,14 +57,14 @@ import           Data.Morpheus.Types.Internal.WebSocket
                                                 ( GQLClient(..) )
 import           Data.Morpheus.Types.IO         ( GQLResponse(..) )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( Value )
+                                                ( ValidValue )
 
 handleSubscription
   :: (Eq (StreamChannel e), GQLChannel e, MonadIO m)
   => GQLClient m e
   -> GQLState m e
   -> Text
-  -> ResponseStream e m Value
+  -> ResponseStream e m ValidValue
   -> m ()
 handleSubscription GQLClient { clientConnection, clientID } state sessionId stream
   = do

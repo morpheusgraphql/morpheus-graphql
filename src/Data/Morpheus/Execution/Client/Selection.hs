@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs               #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
@@ -23,8 +24,7 @@ import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
 import           Data.Morpheus.Execution.Internal.Utils
                                                 ( nameSpaceType )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DefaultValue
-                                                , Operation(..)
+                                                ( Operation(..)
                                                 , ValidOperation
                                                 , Variable(..)
                                                 , VariableDefinitions
@@ -32,7 +32,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , getOperationDataType
                                                 , Selection(..)
                                                 , SelectionRec(..)
-                                                , SelectionSet
+                                                , ValidSelectionSet
                                                 , ValidSelection
                                                 , Ref(..)
                                                 , DataField(..)
@@ -50,6 +50,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeD(..)
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
+                                                , RAW
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
@@ -112,7 +113,7 @@ operationTypes lib variables = genOperation
       , tMeta      = Nothing
       }
      where
-      fieldD :: (Text, Variable DefaultValue) -> DataField
+      fieldD :: (Text, Variable RAW) -> DataField
       fieldD (key, Variable { variableType, variableTypeWrappers }) = DataField
         { fieldName     = key
         , fieldArgs     = []
@@ -129,7 +130,7 @@ operationTypes lib variables = genOperation
     :: [Key]
     -> Key
     -> DataType
-    -> SelectionSet
+    -> ValidSelectionSet
     -> Validation ([ClientType], [Text])
   genRecordType path name dataType recordSelSet = do
     (con, subTypes, requests) <- genConsD (unpack name) dataType recordSelSet
@@ -150,7 +151,7 @@ operationTypes lib variables = genOperation
     genConsD
       :: String
       -> DataType
-      -> SelectionSet
+      -> ValidSelectionSet
       -> Validation (ConsD, [ClientType], [Text])
     genConsD cName datatype selSet = do
       (cFields, subTypes, requests) <- unzip3 <$> traverse genField selSet
@@ -291,8 +292,9 @@ lookupFieldType lib path DataType { typeContent = DataObject typeContent, typeNa
                                      (lookupDeprecatedReason deprecation)
         Nothing -> pure ()
     ------------------
-    Nothing -> failure
-      (compileError $ "cant find field \"" <> pack (show typeContent) <> "\"")
+    Nothing ->
+      failure
+        (compileError $ "cant find field \"" <> pack (show typeContent) <> "\"")
 lookupFieldType _ _ dt _ _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 

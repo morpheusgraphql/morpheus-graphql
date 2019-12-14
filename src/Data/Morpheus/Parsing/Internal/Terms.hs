@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 
@@ -73,6 +74,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeWrapper(..)
                                                 , toHSWrappers
                                                 , convertToHaskellName
+                                                , Ref(..)
                                                 )
 
 
@@ -127,12 +129,13 @@ qualifier = label "qualifier" $ do
 --
 -- Variable :  $Name
 --
-variable :: Parser (Text, Position)
+variable :: Parser Ref
 variable = label "variable" $ do
-  position' <- getLocation
-  _         <- char '$'
-  varName'  <- token
-  return (varName', position')
+  refPosition <- getLocation
+  _           <- char '$'
+  refName     <- token
+  spaceAndComments
+  pure $ Ref { refName, refPosition }
 
 spaceAndComments1 :: Parser ()
 spaceAndComments1 = space1 *> spaceAndComments

@@ -48,9 +48,11 @@ import           Data.Morpheus.Types.GQLType    ( GQLType(KIND, __typeName) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
                                                 , Argument(..)
-                                                , Arguments
-                                                , Object
+                                                , ValidArguments
+                                                , ValidArgument
+                                                , ValidObject
                                                 , Value(..)
+                                                , ValidValue
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -59,14 +61,16 @@ import           Data.Morpheus.Types.Internal.Resolving
 
 
 -- GENERIC
-decodeArguments :: DecodeType a => Arguments -> Validation a
+decodeArguments :: DecodeType a => ValidArguments -> Validation a
 decodeArguments = decodeType . Object . map toObject
-  where toObject (x, y) = (x, argumentValue y)
+ where
+  toObject :: (Name, ValidArgument) -> (Name, ValidValue)
+  toObject (x, Argument { argumentValue }) = (x, argumentValue)
 
 
 -- | Decode GraphQL query arguments and input values
 class Decode a where
-  decode :: Value -> Validation a
+  decode :: ValidValue -> Validation a
 
 instance {-# OVERLAPPABLE #-} DecodeKind (KIND a) a => Decode a where
   decode = decodeKind (Proxy @(KIND a))
@@ -79,7 +83,7 @@ instance Decode a => Decode [a] where
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: GQL_KIND) a where
-  decodeKind :: Proxy kind -> Value -> Validation a
+  decodeKind :: Proxy kind -> ValidValue -> Validation a
 
 -- SCALAR
 instance (GQLScalar a) => DecodeKind SCALAR a where
@@ -101,7 +105,7 @@ instance DecodeType a => DecodeKind INPUT a where
 
 
 class DecodeType a where
-  decodeType :: Value -> Validation a
+  decodeType :: ValidValue -> Validation a
 
 instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a))=> DecodeType a where
   decodeType = fmap to . decodeRep . (, Cont D_CONS "")
@@ -149,14 +153,14 @@ instance Semigroup Info where
 --
 class DecodeRep f where
   tags :: Proxy f -> Name -> Info
-  decodeRep :: (Value,Cont) -> Validation (f a)
+  decodeRep :: (ValidValue,Cont) -> Validation (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   tags _ = tags (Proxy @f)
   decodeRep (x, y) = M1 <$> decodeRep
     (x, y { typeName = pack $ datatypeName (undefined :: (M1 D d f a)) })
 
-getEnumTag :: Object -> Validation Name
+getEnumTag :: ValidObject -> Validation Name
 getEnumTag [("enum", Enum value)] = pure value
 getEnumTag _                      = internalError "bad union enum object"
 
@@ -206,7 +210,7 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
 
 class DecodeFields f where
   refType :: Proxy f -> Maybe Name
-  decodeFields :: (Value,Cont) -> Validation (f a)
+  decodeFields :: (ValidValue,Cont) -> Validation (f a)
 
 instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
   refType _ = Nothing

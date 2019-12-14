@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE DeriveLift      #-}
 {-# LANGUAGE NamedFieldPuns  #-}
+{-# LANGUAGE DataKinds       #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Key
@@ -12,6 +13,11 @@ module Data.Morpheus.Types.Internal.AST.Base
   , anonymousRef
   , Name
   , Description
+  , VALID
+  , RAW
+  , TypeWrapper(..)
+  , Stage(..)
+  , RESOLVED
   )
 where
 
@@ -30,6 +36,15 @@ type Name = Key
 type Description = Key
 
 type Collection a = [(Key, a)]
+
+
+data Stage = RAW | RESOLVED | VALID
+
+type VALID = 'RAW
+
+type RESOLVED = 'RESOLVED
+
+type RAW = 'VALID
 
 data Position = Position
   { line   :: Int
@@ -53,3 +68,8 @@ instance Ord Ref where
 
 anonymousRef :: Key -> Ref
 anonymousRef refName = Ref { refName, refPosition = Position 0 0 }
+
+data TypeWrapper
+  = TypeList
+  | TypeMaybe
+  deriving (Show, Lift)
