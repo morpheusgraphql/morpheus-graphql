@@ -26,7 +26,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , TypeWrapper(..)
                                                 , DataEnumValue(..)
-                                                , isNullable
                                                 , lookupField
                                                 , lookupInputType
                                                 , Value(..)

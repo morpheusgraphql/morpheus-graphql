@@ -39,7 +39,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Meta(..)
                                                 , DataEnumValue(..)
                                                 , Name
-                                                , TypeRef(..)
                                                 )
 
 

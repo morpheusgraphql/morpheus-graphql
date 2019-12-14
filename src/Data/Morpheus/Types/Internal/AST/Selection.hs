@@ -1,10 +1,9 @@
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE DeriveLift        #-}
-{-# LANGUAGE KindSignatures    #-}
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE GADTs             #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE NamedFieldPuns     #-}
+{-# LANGUAGE DeriveLift         #-}
+{-# LANGUAGE KindSignatures     #-}
+{-# LANGUAGE DataKinds          #-}
+{-# LANGUAGE GADTs              #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE FlexibleInstances  #-}
 
