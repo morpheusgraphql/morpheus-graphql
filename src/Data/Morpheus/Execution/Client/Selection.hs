@@ -86,7 +86,7 @@ operationTypes lib variables = genOperation
                                          datatype
                                          operationSelection
     inputTypeRequests <- resolveUpdates []
-      $ map (scanInputTypes lib . variableType . snd) variables
+      $ map (scanInputTypes lib . typeConName . variableType . snd) variables
     inputTypesAndEnums <- buildListedTypes (inputTypeRequests <> enums)
     pure
       ( rootArguments (getOperationName operationName <> "Args")
@@ -114,14 +114,11 @@ operationTypes lib variables = genOperation
       }
      where
       fieldD :: (Text, Variable RAW) -> DataField
-      fieldD (key, Variable { variableType, variableTypeWrappers }) = DataField
+      fieldD (key, Variable { variableType }) = DataField
         { fieldName     = key
         , fieldArgs     = []
         , fieldArgsType = Nothing
-        , fieldType     = TypeRef { typeWrappers = variableTypeWrappers
-                                  , typeConName    = variableType
-                                  , typeArgs      = Nothing
-                                  }
+        , fieldType     = variableType
         , fieldMeta     = Nothing
         }
   ---------------------------------------------------------
@@ -280,7 +277,8 @@ lookupFieldType lib path DataType { typeContent = DataObject typeContent, typeNa
     Just DataField { fieldType = alias@TypeRef { typeConName }, fieldMeta } ->
       checkDeprecated >> (trans <$> getType lib typeConName)
      where
-      trans x = (x, alias { typeConName = typeFrom path x, typeArgs = Nothing })
+      trans x =
+        (x, alias { typeConName = typeFrom path x, typeArgs = Nothing })
       ------------------------------------------------------------------
       checkDeprecated :: Validation ()
       checkDeprecated = case fieldMeta >>= lookupDeprecated of

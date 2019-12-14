@@ -151,6 +151,7 @@ module Data.Morpheus.Types.Internal.AST
   -- LOCAL
   , GQLQuery(..)
   , Variables
+  , isNullableWrapper
   )
 where
 

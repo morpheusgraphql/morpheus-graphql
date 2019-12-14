@@ -62,9 +62,9 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , RAW
                                                 , VALID
                                                 , Position
-                                                , TypeWrapper
                                                 , Stage
                                                 , RESOLVED
+                                                , TypeRef
                                                 )
 
 
@@ -142,8 +142,7 @@ instance Lift (VariableContent a) where
 deriving instance Show (VariableContent a)
 
 data Variable (stage :: Stage) = Variable
-  { variableType         :: Name
-  , variableTypeWrappers :: [TypeWrapper]
+  { variableType         :: TypeRef
   , variablePosition     :: Position
   , variableValue        :: VariableContent (VAR stage)
   } deriving (Show,Lift)

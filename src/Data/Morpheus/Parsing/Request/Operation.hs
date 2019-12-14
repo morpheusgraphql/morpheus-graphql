@@ -55,14 +55,13 @@ variableDefinition :: Parser (Text, Variable RAW)
 variableDefinition = label "VariableDefinition" $ do
   (Ref name variablePosition) <- variable
   operator ':'
-  (variableTypeWrappers, variableType) <- parseType
-  defaultValue                         <- parseDefaultValue
+  variableType <- parseType
+  defaultValue <- parseDefaultValue
   pure
     ( name
     , Variable { variableType
-               , variableTypeWrappers
                , variablePosition
-               , variableValue        = DefaultValue defaultValue
+               , variableValue    = DefaultValue defaultValue
                }
     )
 

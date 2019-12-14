@@ -42,6 +42,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VariableContent(..)
                                                 , unpackInputUnion
                                                 , isFieldNullable
+                                                , TypeRef(..)
+                                                , isNullableWrapper
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving
@@ -54,9 +56,9 @@ checkTypeEquality
   -> Ref
   -> Variable VALID
   -> InputValidation ValidValue
-checkTypeEquality (typeConName, typeWrappers) Ref { refName, refPosition } Variable { variableValue = ValidVariableValue value, variableType, variableTypeWrappers }
-  | variableType == typeConName && not
-    (isWeaker variableTypeWrappers typeWrappers)
+checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable { variableValue = ValidVariableValue value, variableType }
+  | typeConName variableType == tyConName && not
+    (isWeaker (typeWrappers variableType) tyWrappers)
   = pure value
   | otherwise
   = failure $ GlobalInputError $ incompatibleVariableType refName
@@ -64,9 +66,11 @@ checkTypeEquality (typeConName, typeWrappers) Ref { refName, refPosition } Varia
                                                           fieldSignature
                                                           refPosition
  where
-  varSignature = renderWrapped variableType variableTypeWrappers
-  fieldSignature =
-    render TypeRef { typeConName, typeWrappers, typeArgs = Nothing }
+  varSignature   = render variableType
+  fieldSignature = render TypeRef { typeConName  = tyConName
+                                  , typeWrappers = tyWrappers
+                                  , typeArgs     = Nothing
+                                  }
 
 
 
@@ -93,8 +97,9 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
   -- Validate Null. value = null ?
   validateWrapped wrappers _ (_, ResolvedVariable ref variable) =
     checkTypeEquality (typeName, wrappers) ref variable
-  validateWrapped wrappers _ (_, Null) | isNullable wrappers = return Null
-                                       | otherwise = throwError wrappers Null
+  validateWrapped wrappers _ (_, Null)
+    | isNullableWrapper wrappers = return Null
+    | otherwise                  = throwError wrappers Null
   -- Validate LIST
   validateWrapped (TypeMaybe : wrappers) _ value =
     validateInputValue lib props wrappers datatype value
@@ -114,7 +119,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
         >>  Object
         <$> traverse validateField fields
      where
-      requiredFieldsDefined (fName, datafield) 
+      requiredFieldsDefined (fName, datafield)
         | fName `elem` map fst fields || isFieldNullable datafield = pure ()
         | otherwise = failure (UndefinedField props fName)
       validateField
@@ -139,7 +144,6 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
           return (type', currentProp)
         getField = lookupField _name parentFields (UnknownField props _name)
     -- VALIDATE INPUT UNION
-    -- TODO: Validate Union
     validate (DataInputUnion inputUnion) (_, Object rawFields) =
       case unpackInputUnion inputUnion rawFields of
         Left message -> failure

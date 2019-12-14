@@ -54,6 +54,7 @@ class RenderGQL a where
       showGQLWrapper (ListType:xs)    = "[" <> showGQLWrapper xs <> "]"
       showGQLWrapper (NonNullType:xs) = showGQLWrapper xs <> "!"
 
+
 instance RenderGQL Key where
   render = id
 
@@ -70,15 +71,14 @@ instance RenderGQL DataEnumValue where
 instance RenderGQL (Key, DataType) where
   render (name, DataType { typeContent }) = __render typeContent
    where
-    __render DataScalar{} = "scalar " <> name
-    __render (DataEnum tags) =
-      "enum " <> name <> renderObject render tags
+    __render DataScalar{}    = "scalar " <> name
+    __render (DataEnum tags) = "enum " <> name <> renderObject render tags
     __render (DataUnion members) =
       "union "
         <> name
         <> " =\n    "
         <> intercalate ("\n" <> renderIndent <> "| ") members
-    __render (DataInputObject fields) = "input " <> name <> render fields
+    __render (DataInputObject fields ) = "input " <> name <> render fields
     __render (DataInputUnion  members) = "input " <> name <> render fields
       where fields = createInputUnionFields name (map fst members)
     __render (DataObject fields) = "type " <> name <> render fields

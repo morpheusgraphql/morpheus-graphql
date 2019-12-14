@@ -89,6 +89,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , GQLTypeD(..)
   , ClientType(..)
   , DataInputUnion
+  , isNullableWrapper
   )
 where
 
@@ -201,11 +202,15 @@ data ResolverKind
 
 
 isFieldNullable :: DataField -> Bool
-isFieldNullable = isNullable . typeWrappers . fieldType
+isFieldNullable = isNullable . fieldType
 
-isNullable :: [TypeWrapper] -> Bool
-isNullable (TypeMaybe : _) = True
-isNullable _               = False
+isNullable :: TypeRef -> Bool
+isNullable TypeRef { typeWrappers = typeWrappers } = isNullableWrapper typeWrappers
+
+isNullableWrapper :: [TypeWrapper] -> Bool
+isNullableWrapper (TypeMaybe : _ ) = True
+isNullableWrapper _               = False
+
 
 isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
 isWeaker (TypeMaybe : xs1) (TypeMaybe : xs2) = isWeaker xs1 xs2
@@ -318,7 +323,7 @@ createArgument fieldName x = (fieldName, createField [] fieldName x)
 
 toNullableField :: DataField -> DataField
 toNullableField dataField
-  | isNullable (typeWrappers $ fieldType dataField) = dataField
+  | isNullable (fieldType dataField) = dataField
   | otherwise = dataField { fieldType = nullable (fieldType dataField) }
  where
   nullable alias@TypeRef { typeWrappers } =

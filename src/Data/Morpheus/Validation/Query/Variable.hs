@@ -52,6 +52,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RAW
                                                 , VariableContent(..)
                                                 , isNullable
+                                                , TypeRef(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -132,9 +133,9 @@ lookupAndValidateValueOnBody
   -> VALIDATION_MODE
   -> (Text, Variable RAW)
   -> Validation (Text, Variable VALID)
-lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType, variablePosition, variableTypeWrappers, variableValue = DefaultValue defaultValue })
+lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType, variablePosition, variableValue = DefaultValue defaultValue })
   = toVariable
-    <$> (   getVariableType variableType variablePosition typeLib
+    <$> (   getVariableType (typeConName variableType) variablePosition typeLib
         >>= checkType getVariable defaultValue
         )
  where
@@ -154,9 +155,9 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
     validator varType defValue >> validator varType variable
   checkType Nothing (Just defValue) varType = validator varType defValue
   checkType Nothing Nothing varType
-    | validationMode /= WITHOUT_VARIABLES && not
-      (isNullable variableTypeWrappers)
-    = failure $ uninitializedVariable variablePosition variableType key
+    | validationMode /= WITHOUT_VARIABLES && not (isNullable variableType)
+    = failure
+      $ uninitializedVariable variablePosition (typeConName variableType) key
     | otherwise
     = returnNull
    where
@@ -168,7 +169,7 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
     case
         validateInputValue typeLib
                            []
-                           variableTypeWrappers
+                           (typeWrappers variableType)
                            varType
                            (key, varValue)
       of
