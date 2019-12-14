@@ -116,7 +116,7 @@ gqlRoot = GQLRootResolver { queryResolver
     , querySomeMap  = constRes $ M.fromList [("robin", 1), ("carl", 2)]
     , queryWrapped1 = constRes $ A (0, "some value")
     , queryWrapped2 = constRes $ A ""
-    , queryFail1    = const $ failRes "fail example with failure"
+    , queryFail1    = const $ failRes "fail example"
     , queryFail2    = const $ liftEither alwaysFail
     }
   -------------------------------------------------------------
@@ -132,7 +132,7 @@ gqlRoot = GQLRootResolver { queryResolver
 -- Resolve QUERY
 
 alwaysFail :: IO (Either String a)
-alwaysFail = pure $ Left "fail example with failure"
+alwaysFail = pure $ Left "fail example"
 
 resolveUser :: () -> ResolveQ EVENT IO User
 resolveUser _args = liftEither (getDBUser (Content 2))
