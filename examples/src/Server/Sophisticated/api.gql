@@ -85,6 +85,8 @@ type Query {
   wrapped2: AText!
   set: SetInt!
   someMap: MapTextInt!
+  fail1: Int!
+  fail2: Int!
 }
 
 type Mutation {

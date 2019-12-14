@@ -31,6 +31,7 @@
 
 ### Added
 
+- `failRes` for resolver failures
 - added kind: INPUT , OUTPUT
 - Automatic Type Inference (only for Object, Union and Enum)
 - More general stateful resolvers which accept instances of MonadIO (Authored by Sebastian Pulido [sebashack])
@@ -162,8 +163,9 @@ rules:
 
 - removed kind: INPUT_UNION
 
-### Fixed 
+### Fixed
 
+- on filed resolver was displayed. unexhausted case exception of graphql error
 - support of signed numbers (e.g `-4`)
 - support of round floats (e.g `1.000`) 
 - validation checks undefined fields on inputObject
