@@ -34,7 +34,7 @@ import           Data.Morpheus.Parsing.Request.Arguments
                                                 ( maybeArguments )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Selection(..)
-                                                , SelectionRec(..)
+                                                , SelectionContent(..)
                                                 , Ref(..)
                                                 , Fragment(..)
                                                 , RawArguments

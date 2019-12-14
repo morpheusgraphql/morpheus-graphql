@@ -34,7 +34,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Argument(..)
                                                 , RawArgument
                                                 , Selection(..)
-                                                , SelectionRec(..)
+                                                , SelectionContent(..)
                                                 , RawSelection
                                                 , RawSelectionSet
                                                 , Ref(..)

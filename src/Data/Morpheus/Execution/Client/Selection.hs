@@ -31,7 +31,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , getOperationName
                                                 , getOperationDataType
                                                 , Selection(..)
-                                                , SelectionRec(..)
+                                                , SelectionContent(..)
                                                 , ValidSelectionSet
                                                 , ValidSelection
                                                 , Ref(..)

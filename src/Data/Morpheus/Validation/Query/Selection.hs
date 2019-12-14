@@ -25,7 +25,7 @@ import           Data.Morpheus.Error.Variable   ( unknownType )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ValidVariables
                                                 , Selection(..)
-                                                , SelectionRec(..)
+                                                , SelectionContent(..)
                                                 , ValidSelection
                                                 , ValidSelectionSet
                                                 , Fragment(..)

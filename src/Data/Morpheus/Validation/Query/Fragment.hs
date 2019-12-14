@@ -26,7 +26,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( Fragment(..)
                                                 , FragmentLib
                                                 , RawSelection
-                                                , SelectionRec(..)
+                                                , SelectionContent(..)
                                                 , Selection(..)
                                                 , Ref(..)
                                                 , Position

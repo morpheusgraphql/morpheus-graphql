@@ -13,7 +13,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
   ( Argument(..)
   , Arguments
   , SelectionSet
-  , SelectionRec(..)
+  , SelectionContent(..)
   , ValidSelection
   , Selection(..)
   , RawSelection
@@ -100,20 +100,20 @@ type RawArguments = Arguments RAW
 
 type ValidArguments = Collection ValidArgument
 
-data SelectionRec (valid :: Stage) where
-  SelectionField ::SelectionRec valid
-  SelectionSet   ::SelectionSet valid -> SelectionRec valid
-  UnionSelection ::UnionSelection -> SelectionRec VALID
+data SelectionContent (valid :: Stage) where
+  SelectionField ::SelectionContent valid
+  SelectionSet   ::SelectionSet valid -> SelectionContent valid
+  UnionSelection ::UnionSelection -> SelectionContent VALID
 
-deriving instance Show (SelectionRec a)
+deriving instance Show (SelectionContent a)
 
-instance Lift (SelectionRec a) where
+instance Lift (SelectionContent a) where
   lift (SelectionSet   s) = [| SelectionSet s |]
   lift (UnionSelection s) = [| UnionSelection s |]
   lift SelectionField     = [| SelectionField |]
 
-type RawSelectionRec = SelectionRec RAW
-type ValidSelectionRec = SelectionRec VALID
+type RawSelectionRec = SelectionContent RAW
+type ValidSelectionRec = SelectionContent VALID
 type UnionSelection = Collection (SelectionSet VALID)
 type SelectionSet a = Collection (Selection a)
 type RawSelectionSet = Collection RawSelection
@@ -125,7 +125,7 @@ data Selection (valid:: Stage) where
       selectionArguments :: Arguments valid
     , selectionPosition  :: Position
     , selectionAlias     :: Maybe Key
-    , selectionRec       :: SelectionRec valid
+    , selectionRec       :: SelectionContent valid
     } -> Selection valid
     InlineFragment ::Fragment -> Selection RAW
     Spread ::Ref -> Selection RAW

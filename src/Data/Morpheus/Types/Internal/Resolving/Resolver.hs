@@ -54,7 +54,7 @@ import           Data.Morpheus.Error.Selection  ( resolvingFailedError
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( Selection(..)
-                                                , SelectionRec(..)
+                                                , SelectionContent(..)
                                                 , ValidSelection
                                                 , ValidSelectionRec
                                                 , ValidSelectionSet
