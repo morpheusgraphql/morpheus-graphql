@@ -167,7 +167,7 @@ rules:
 - support of signed numbers (e.g `-4`)
 - support of round floats (e.g `1.000`) 
 - validation checks undefined fields on inputObject
-- variables are supported on input objects
+- variables are supported inside input values
 
 ## [0.7.1] - 26.11.2019
 
