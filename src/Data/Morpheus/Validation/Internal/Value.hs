@@ -41,6 +41,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , VariableContent(..)
                                                 , unpackInputUnion
+                                                , isFieldNullable
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving
@@ -113,8 +114,8 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
         >>  Object
         <$> traverse validateField fields
      where
-      requiredFieldsDefined (fName, DataField{}) 
-        | fName `elem` map fst fields = pure ()
+      requiredFieldsDefined (fName, datafield) 
+        | fName `elem` map fst fields || isFieldNullable datafield = pure ()
         | otherwise = failure (UndefinedField props fName)
       validateField
         :: (Name, ResolvedValue) -> InputValidation (Name, ValidValue)
