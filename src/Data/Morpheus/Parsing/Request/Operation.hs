@@ -40,7 +40,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RawOperation
                                                 , Variable(..)
                                                 , OperationType(..)
-                                                , isNullable
                                                 , Ref(..)
                                                 , VariableContent(..)
                                                 , RAW
@@ -61,7 +60,6 @@ variableDefinition = label "VariableDefinition" $ do
   pure
     ( name
     , Variable { variableType
-               , isVariableRequired   = not (isNullable variableTypeWrappers)
                , variableTypeWrappers
                , variablePosition
                , variableValue        = DefaultValue defaultValue

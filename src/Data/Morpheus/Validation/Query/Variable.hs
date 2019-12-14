@@ -51,6 +51,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , RAW
                                                 , VariableContent(..)
+                                                , isNullable
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -131,7 +132,7 @@ lookupAndValidateValueOnBody
   -> VALIDATION_MODE
   -> (Text, Variable RAW)
   -> Validation (Text, Variable VALID)
-lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType, variablePosition, isVariableRequired, variableTypeWrappers, variableValue = DefaultValue defaultValue })
+lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType, variablePosition, variableTypeWrappers, variableValue = DefaultValue defaultValue })
   = toVariable
     <$> (   getVariableType variableType variablePosition typeLib
         >>= checkType getVariable defaultValue
@@ -153,7 +154,8 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
     validator varType defValue >> validator varType variable
   checkType Nothing (Just defValue) varType = validator varType defValue
   checkType Nothing Nothing varType
-    | validationMode /= WITHOUT_VARIABLES && isVariableRequired
+    | validationMode /= WITHOUT_VARIABLES && not
+      (isNullable variableTypeWrappers)
     = failure $ uninitializedVariable variablePosition variableType key
     | otherwise
     = returnNull
