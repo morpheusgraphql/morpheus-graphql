@@ -204,4 +204,4 @@ inputtypeName
   :: Name -> Name -> Value stage -> Either Message (Name, Maybe (Value stage))
 inputtypeName name fName fieldValue
   | fName == name = pure (name, Just fieldValue)
-  | otherwise     = failure ("field " <> name <> "was not providedm" :: Message)
+  | otherwise     = failure ("field " <> name <> "was not provided" :: Message)
