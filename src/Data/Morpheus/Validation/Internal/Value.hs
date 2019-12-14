@@ -40,7 +40,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ResolvedValue
                                                 , VALID
                                                 , VariableContent(..)
-                                                , getInputTypeName
+                                                , unpackInputUnion
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving
@@ -134,10 +134,23 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
         getField = lookupField _name parentFields (UnknownField props _name)
     -- VALIDATE INPUT UNION
     -- TODO: Validate Union
-    validate (DataInputUnion _) (_, Object rawFields) = do
-      case getInputTypeName rawFields of
-       --  Left message -> 
-        Right name -> return (Object [("__typename", Enum name)])
+    validate (DataInputUnion _) (_, Object rawFields) =
+      case unpackInputUnion rawFields of
+        Left message -> failure
+          $ UnexpectedType props typeName (Object rawFields) (Just message)
+        Right (name, Nothing   ) -> return (Object [("__typename", Enum name)])
+        Right (name, Just value) -> do
+          currentUnionDatatype <- lookupInputType
+            name
+            lib
+            (typeMismatch value name props)
+          validValue <- validateInputValue lib
+                                           props
+                                           []
+                                           currentUnionDatatype
+                                           (name, value)
+          return (Object [("__typename", Enum name), (name, validValue)])
+
     {-- VALIDATE ENUM --}
     validate (DataEnum tags) (_, value) =
       validateEnum (UnexpectedType props typeName value Nothing) tags value

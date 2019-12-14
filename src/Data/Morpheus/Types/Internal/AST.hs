@@ -33,7 +33,7 @@ module Data.Morpheus.Types.Internal.AST
   , ValidObject
   , ResolvedObject
   , ResolvedValue
-  , getInputTypeName
+  , unpackInputUnion
 
   -- Selection
   , Argument(..)
@@ -177,17 +177,22 @@ data GQLQuery = GQLQuery
   , inputVariables :: [(Key, ResolvedValue)]
   } deriving (Show,Lift)
 
-getInputTypeName :: Object stage -> Either Message (Name, Value stage)
-getInputTypeName = inputtype
- where
-  inputtype [("__typename", tName), (name, value)] =
-    inputtypeName tName name value
-  inputtype [(name, value), ("__typename", tName)] =
-    inputtypeName tName name value
-  inputtype [_, _] = failure ("__typename not found on Input Union" :: Message)
-  inputtype _      = failure ("only one field can be provided" :: Message)
+unpackInputUnion :: Object stage -> Either Message (Name, Maybe (Value stage))
+unpackInputUnion [("__typename", Enum tyName)] = pure (tyName, Nothing)
+unpackInputUnion [("__typename", tyName), (name, value)] =
+  inputtypeName tyName name value
+unpackInputUnion [(name, value), ("__typename", tyName)] =
+  inputtypeName tyName name value
+unpackInputUnion _ = failure
+  ("valid input union should contain __typename and actual value" :: Message)
   --------------------------
-  inputtypeName (Enum name) fieldName fieldValue
-    | fieldName == name = pure (name, fieldValue)
-    | otherwise = failure ("field " <> name <> "was not providedm" :: Message)
-  inputtypeName _ _ _ = failure ("__typename must be Enum" :: Message)
+
+inputtypeName
+  :: Value stage
+  -> Name
+  -> Value stage
+  -> Either Message (Name, Maybe (Value stage))
+inputtypeName (Enum name) fName fieldValue
+  | fName == name = pure (name, Just fieldValue)
+  | otherwise     = failure ("field " <> name <> "was not providedm" :: Message)
+inputtypeName _ _ _ = failure ("__typename must be Enum" :: Message)
