@@ -76,6 +76,7 @@ data Animal
 instance GQLType Animal where
   type KIND Animal = INPUT
 
+
 data Euro =
   Euro Int
        Int
