@@ -76,7 +76,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataFingerprint(..)
                                                 , DataUnion
                                                 , DataObject
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 )
 
 
@@ -489,7 +489,7 @@ instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where
 
 instance (Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
   conRep _ =
-    [ FieldRep { fieldTypeName    = aliasTyCon $ fieldType fieldData
+    [ FieldRep { fieldTypeName    = typeConName $ fieldType fieldData
                , fieldData        = (name, fieldData)
                , fieldTypeUpdater = introspect (Proxy @a)
                , fieldIsObject    = isObject (Proxy @a)

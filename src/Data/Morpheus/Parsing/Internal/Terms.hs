@@ -71,10 +71,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Key
                                                 , Description
                                                 , Name
-                                                , TypeWrapper(..)
                                                 , toHSWrappers
                                                 , convertToHaskellName
                                                 , Ref(..)
+                                                , TypeRef(..)
                                                 )
 
 
@@ -253,8 +253,11 @@ parseAlias = try (optional alias) <|> pure Nothing
   where alias = label "alias" $ token <* char ':' <* spaceAndComments
 
 
-parseType :: Parser ([TypeWrapper], Key)
+parseType :: Parser TypeRef
 parseType = do
-  (wrappers, fieldType) <- parseWrappedType
-  nonNull               <- parseNonNull
-  pure (toHSWrappers $ nonNull ++ wrappers, fieldType)
+  (wrappers, typeConName) <- parseWrappedType
+  nonNull                 <- parseNonNull
+  pure TypeRef { typeConName
+               , typeArgs     = Nothing
+               , typeWrappers = toHSWrappers $ nonNull ++ wrappers
+               }

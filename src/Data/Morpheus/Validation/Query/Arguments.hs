@@ -32,7 +32,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataArgument
                                                 , DataField(..)
                                                 , DataTypeLib
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , isFieldNullable
                                                 , lookupInputType
                                                 , Value(..)
@@ -102,7 +102,7 @@ validateArgument
   -> Arguments RESOLVED
   -> (Text, DataArgument)
   -> Validation (Text, ValidArgument)
-validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldType = TypeAlias { aliasTyCon, aliasWrappers } })
+validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldType = TypeRef { typeConName, typeWrappers } })
   = case lookup key requestArgs of
     Nothing -> handleNullable
     -- TODO: move it in value validation
@@ -121,11 +121,11 @@ validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldTy
   validateArgumentValue :: Argument RESOLVED -> Validation (Text, ValidArgument)
   validateArgumentValue Argument { argumentValue = value, argumentPosition } =
     do
-      datatype <- lookupInputType aliasTyCon
+      datatype <- lookupInputType typeConName
                                   lib
-                                  (internalUnknownTypeMessage aliasTyCon)
+                                  (internalUnknownTypeMessage typeConName)
       argumentValue <- handleInputError
-        $ validateInputValue lib [] aliasWrappers datatype (key, value)
+        $ validateInputValue lib [] typeWrappers datatype (key, value)
       pure (key, Argument { argumentValue, argumentPosition })
    where
     ---------

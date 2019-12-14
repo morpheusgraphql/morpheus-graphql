@@ -24,7 +24,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , Key
                                                 , RawDataType(..)
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , DataFingerprint(..)
                                                 , Meta
                                                 , isWeaker
@@ -66,11 +66,11 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
     interfaceFields
    where
     checkField :: (Key, DataField) -> [(Key, Key, ImplementsError)]
-    checkField (key, DataField { fieldType = interfaceT@TypeAlias { aliasTyCon = interfaceTypeName, aliasWrappers = interfaceWrappers } })
+    checkField (key, DataField { fieldType = interfaceT@TypeRef { typeConName = interfaceTypeName, typeWrappers = interfaceWrappers } })
       = case lookup key objFields of
-        Just DataField { fieldType = objT@TypeAlias { aliasTyCon, aliasWrappers } }
-          | aliasTyCon == interfaceTypeName && not
-            (isWeaker aliasWrappers interfaceWrappers)
+        Just DataField { fieldType = objT@TypeRef { typeConName, typeWrappers } }
+          | typeConName == interfaceTypeName && not
+            (isWeaker typeWrappers interfaceWrappers)
           -> []
           | otherwise
           -> [ ( typeName

@@ -39,7 +39,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Meta(..)
                                                 , DataEnumValue(..)
                                                 , Name
-                                                , TypeAlias(..)
                                                 )
 
 
@@ -68,21 +67,17 @@ inputValueDefinition = label "InputValueDefinition" $ do
     metaDescription <- optDescription
     fieldName       <- parseName
     litAssignment -- ':'
-    (aliasWrappers, aliasTyCon) <- parseType
-    _                           <- parseDefaultValue
-    metaDirectives              <- optionalDirectives
+    fieldType      <- parseType
+    _              <- parseDefaultValue
+    metaDirectives <- optionalDirectives
     pure
         ( fieldName
-        , DataField
-            { fieldArgs     = []
-            , fieldArgsType = Nothing
-            , fieldName
-            , fieldType     = TypeAlias { aliasTyCon
-                                        , aliasWrappers
-                                        , aliasArgs     = Nothing
-                                        }
-            , fieldMeta     = Just Meta { metaDescription, metaDirectives }
-            }
+        , DataField { fieldArgs     = []
+                    , fieldArgsType = Nothing
+                    , fieldName
+                    , fieldType
+                    , fieldMeta = Just Meta { metaDescription, metaDirectives }
+                    }
         )
 
 -- Field Arguments: https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
@@ -113,20 +108,16 @@ fieldDefinition = label "FieldDefinition" $ do
     fieldName       <- parseName
     fieldArgs       <- argumentsDefinition
     litAssignment -- ':'
-    (aliasWrappers, aliasTyCon) <- parseType
-    metaDirectives              <- optionalDirectives
+    fieldType      <- parseType
+    metaDirectives <- optionalDirectives
     pure
         ( fieldName
-        , DataField
-            { fieldName
-            , fieldArgs
-            , fieldArgsType = Nothing
-            , fieldType     = TypeAlias { aliasTyCon
-                                        , aliasWrappers
-                                        , aliasArgs     = Nothing
-                                        }
-            , fieldMeta     = Just Meta { metaDescription, metaDirectives }
-            }
+        , DataField { fieldName
+                    , fieldArgs
+                    , fieldArgsType = Nothing
+                    , fieldType
+                    , fieldMeta = Just Meta { metaDescription, metaDirectives }
+                    }
         )
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives

@@ -31,7 +31,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , getOperationName
                                                 , getOperationDataType
                                                 , Selection(..)
-                                                , SelectionRec(..)
+                                                , SelectionContent(..)
                                                 , ValidSelectionSet
                                                 , ValidSelection
                                                 , Ref(..)
@@ -41,7 +41,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeKind(..)
                                                 , DataTypeLib(..)
                                                 , Key
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , DataEnumValue(..)
                                                 , allDataTypes
                                                 , lookupType
@@ -86,7 +86,7 @@ operationTypes lib variables = genOperation
                                          datatype
                                          operationSelection
     inputTypeRequests <- resolveUpdates []
-      $ map (scanInputTypes lib . variableType . snd) variables
+      $ map (scanInputTypes lib . typeConName . variableType . snd) variables
     inputTypesAndEnums <- buildListedTypes (inputTypeRequests <> enums)
     pure
       ( rootArguments (getOperationName operationName <> "Args")
@@ -114,14 +114,11 @@ operationTypes lib variables = genOperation
       }
      where
       fieldD :: (Text, Variable RAW) -> DataField
-      fieldD (key, Variable { variableType, variableTypeWrappers }) = DataField
+      fieldD (key, Variable { variableType }) = DataField
         { fieldName     = key
         , fieldArgs     = []
         , fieldArgsType = Nothing
-        , fieldType     = TypeAlias { aliasWrappers = variableTypeWrappers
-                                    , aliasTyCon    = variableType
-                                    , aliasArgs     = Nothing
-                                    }
+        , fieldType     = variableType
         , fieldMeta     = Nothing
         }
   ---------------------------------------------------------
@@ -185,13 +182,13 @@ operationTypes lib variables = genOperation
         ------------------------------------------
         subTypesBySelection
           :: DataType -> ValidSelection -> Validation ([ClientType], [Text])
-        subTypesBySelection dType Selection { selectionRec = SelectionField } =
-          leafType dType
+        subTypesBySelection dType Selection { selectionContent = SelectionField }
+          = leafType dType
           --withLeaf buildLeaf dType
-        subTypesBySelection dType Selection { selectionRec = SelectionSet selectionSet }
+        subTypesBySelection dType Selection { selectionContent = SelectionSet selectionSet }
           = genRecordType fieldPath (typeFrom [] dType) dType selectionSet
           ---- UNION
-        subTypesBySelection dType Selection { selectionRec = UnionSelection unionSelections }
+        subTypesBySelection dType Selection { selectionContent = UnionSelection unionSelections }
           = do
             (tCons, subTypes, requests) <-
               unzip3 <$> mapM getUnionType unionSelections
@@ -223,8 +220,8 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
       (map toInputTypeD fields)
      where
       toInputTypeD :: (Text, DataField) -> LibUpdater [Key]
-      toInputTypeD (_, DataField { fieldType = TypeAlias { aliasTyCon } }) =
-        scanInputTypes lib aliasTyCon
+      toInputTypeD (_, DataField { fieldType = TypeRef { typeConName } }) =
+        scanInputTypes lib typeConName
     scanType (DataEnum _) = pure (collected <> [typeName])
     scanType _            = pure collected
 
@@ -250,8 +247,8 @@ buildInputType lib name = getType lib name >>= generateTypes
      where
       toFieldD :: (Text, DataField) -> Validation DataField
       toFieldD (_, field@DataField { fieldType }) = do
-        aliasTyCon <- typeFrom [] <$> getType lib (aliasTyCon fieldType)
-        pure $ field { fieldType = fieldType { aliasTyCon } }
+        typeConName <- typeFrom [] <$> getType lib (typeConName fieldType)
+        pure $ field { fieldType = fieldType { typeConName } }
     subTypes (DataEnum enumTags) = pure
       [ ClientType
           { clientType = TypeD { tName      = unpack typeName
@@ -274,14 +271,14 @@ lookupFieldType
   -> DataType
   -> Position
   -> Text
-  -> Validation (DataType, TypeAlias)
+  -> Validation (DataType, TypeRef)
 lookupFieldType lib path DataType { typeContent = DataObject typeContent, typeName } refPosition key
   = case lookup key typeContent of
-    Just DataField { fieldType = alias@TypeAlias { aliasTyCon }, fieldMeta } ->
-      checkDeprecated >> (trans <$> getType lib aliasTyCon)
+    Just DataField { fieldType = alias@TypeRef { typeConName }, fieldMeta } ->
+      checkDeprecated >> (trans <$> getType lib typeConName)
      where
       trans x =
-        (x, alias { aliasTyCon = typeFrom path x, aliasArgs = Nothing })
+        (x, alias { typeConName = typeFrom path x, typeArgs = Nothing })
       ------------------------------------------------------------------
       checkDeprecated :: Validation ()
       checkDeprecated = case fieldMeta >>= lookupDeprecated of

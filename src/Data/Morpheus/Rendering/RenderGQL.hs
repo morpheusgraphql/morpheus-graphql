@@ -26,7 +26,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeLib
                                                 , DataTypeWrapper(..)
                                                 , Key
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , TypeWrapper(..)
                                                 , allDataTypes
                                                 , createInputUnionFields
@@ -54,12 +54,13 @@ class RenderGQL a where
       showGQLWrapper (ListType:xs)    = "[" <> showGQLWrapper xs <> "]"
       showGQLWrapper (NonNullType:xs) = showGQLWrapper xs <> "!"
 
+
 instance RenderGQL Key where
   render = id
 
-instance RenderGQL TypeAlias where
-  render TypeAlias { aliasTyCon, aliasWrappers } =
-    renderWrapped aliasTyCon aliasWrappers
+instance RenderGQL TypeRef where
+  render TypeRef { typeConName, typeWrappers } =
+    renderWrapped typeConName typeWrappers
 
 instance RenderGQL DataType where
   render = typeName
@@ -70,15 +71,14 @@ instance RenderGQL DataEnumValue where
 instance RenderGQL (Key, DataType) where
   render (name, DataType { typeContent }) = __render typeContent
    where
-    __render DataScalar{} = "scalar " <> name
-    __render (DataEnum tags) =
-      "enum " <> name <> renderObject render tags
+    __render DataScalar{}    = "scalar " <> name
+    __render (DataEnum tags) = "enum " <> name <> renderObject render tags
     __render (DataUnion members) =
       "union "
         <> name
         <> " =\n    "
         <> intercalate ("\n" <> renderIndent <> "| ") members
-    __render (DataInputObject fields) = "input " <> name <> render fields
+    __render (DataInputObject fields ) = "input " <> name <> render fields
     __render (DataInputUnion  members) = "input " <> name <> render fields
       where fields = createInputUnionFields name (map fst members)
     __render (DataObject fields) = "type " <> name <> render fields

@@ -25,7 +25,7 @@ import           Data.Morpheus.Error.Variable   ( unknownType )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ValidVariables
                                                 , Selection(..)
-                                                , SelectionRec(..)
+                                                , SelectionContent(..)
                                                 , ValidSelection
                                                 , ValidSelectionSet
                                                 , Fragment(..)
@@ -38,7 +38,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeLib(..)
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , Name
                                                 , allDataTypes
                                                 , isEntNode
@@ -83,11 +83,11 @@ clusterUnionSelection fragments type' typeNames = splitFrag
     :: (Text, RawSelection) -> Validation ([Fragment], ValidSelectionSet)
   splitFrag (_, Spread ref) =
     resolveSpread fragments typeNames ref >>= packFragment
-  splitFrag ("__typename", selection@Selection { selectionRec = SelectionField })
+  splitFrag ("__typename", selection@Selection { selectionContent = SelectionField })
     = pure
       ( []
       , [ ( "__typename"
-          , selection { selectionArguments = [], selectionRec = SelectionField }
+          , selection { selectionArguments = [], selectionContent = SelectionField }
           )
         ]
       )
@@ -158,14 +158,14 @@ validateSelectionSet lib fragments' operatorName variables = __validate
                                      selectionArguments
       -- check field Type existence  -----
       fieldDataType <- lookupType
-        (unknownType (aliasTyCon $fieldType selectionField) selectionPosition)
+        (unknownType (typeConName $fieldType selectionField) selectionPosition)
         (allDataTypes lib)
-        (aliasTyCon $ fieldType selectionField)
+        (typeConName $ fieldType selectionField)
       return (selectionField, fieldDataType, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     --
     validateSelection :: (Text, RawSelection) -> Validation ValidSelectionSet
-    validateSelection (key', fullRawSelection@Selection { selectionArguments = selArgs, selectionRec = SelectionSet rawSelection, selectionPosition })
+    validateSelection (key', fullRawSelection@Selection { selectionArguments = selArgs, selectionContent = SelectionSet rawSelection, selectionPosition })
       = do
         (dataField, datatype, arguments) <- getValidationData
           key'
@@ -210,12 +210,12 @@ validateSelectionSet lib fragments' operatorName variables = __validate
               >>= returnSelection arguments
               .   SelectionSet
           _ -> failure $ hasNoSubfields key'
-                                        (aliasTyCon $fieldType dataField)
+                                        (typeConName $fieldType dataField)
                                         selectionPosition
      where
-      returnSelection selectionArguments selectionRec =
-        pure [(key', fullRawSelection { selectionArguments, selectionRec })]
-    validateSelection (key, rawSelection@Selection { selectionArguments = selArgs, selectionPosition, selectionRec = SelectionField })
+      returnSelection selectionArguments selectionContent =
+        pure [(key', fullRawSelection { selectionArguments, selectionContent })]
+    validateSelection (key, rawSelection@Selection { selectionArguments = selArgs, selectionPosition, selectionContent = SelectionField })
       = do
         (dataField, datatype, selectionArguments) <- getValidationData
           key
@@ -223,14 +223,14 @@ validateSelectionSet lib fragments' operatorName variables = __validate
         isLeaf (typeContent datatype) dataField
         pure
           [ ( key
-            , rawSelection { selectionArguments, selectionRec = SelectionField }
+            , rawSelection { selectionArguments, selectionContent = SelectionField }
             )
           ]
      where
-      isLeaf datatype DataField { fieldType = TypeAlias { aliasTyCon } }
+      isLeaf datatype DataField { fieldType = TypeRef { typeConName } }
         | isEntNode datatype = pure ()
         | otherwise = failure
-        $ subfieldsNotSelected key aliasTyCon selectionPosition
+        $ subfieldsNotSelected key typeConName selectionPosition
     validateSelection (_, Spread reference') =
       resolveSpread fragments' [typeName] reference' >>= validateFragment
     validateSelection (_, InlineFragment fragment') =

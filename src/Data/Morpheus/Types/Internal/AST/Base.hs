@@ -18,6 +18,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   , TypeWrapper(..)
   , Stage(..)
   , RESOLVED
+  , TypeRef(..)
   )
 where
 
@@ -73,3 +74,9 @@ data TypeWrapper
   = TypeList
   | TypeMaybe
   deriving (Show, Lift)
+
+data TypeRef = TypeRef
+  { typeConName    :: Name
+  , typeArgs     :: Maybe Name
+  , typeWrappers :: [TypeWrapper]
+  } deriving (Show,Lift)

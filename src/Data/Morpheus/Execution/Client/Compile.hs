@@ -58,7 +58,8 @@ compileSyntax queryText = case parseGQL request of
 validateWith :: DataTypeLib -> (GQLQuery, String) -> Validation ClientQuery
 validateWith schema (rawRequest@GQLQuery { operation }, queryText) = do
   validOperation <- validateRequest schema WITHOUT_VARIABLES rawRequest
-  (queryArgsType, queryTypes) <- operationTypes schema
-                                                (O.operationArgs operation)
-                                                validOperation
+  (queryArgsType, queryTypes) <- operationTypes
+    schema
+    (O.operationArguments operation)
+    validOperation
   return ClientQuery { queryText, queryTypes, queryArgsType }

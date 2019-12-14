@@ -34,7 +34,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Argument(..)
                                                 , RawArgument
                                                 , Selection(..)
-                                                , SelectionRec(..)
+                                                , SelectionContent(..)
                                                 , RawSelection
                                                 , RawSelectionSet
                                                 , Ref(..)
@@ -51,6 +51,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , RAW
                                                 , VariableContent(..)
+                                                , isNullable
+                                                , TypeRef(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -89,9 +91,9 @@ allVariableRefs fragmentLib = concatMapM (concatMapM searchRefs)
 
   -- | search used variables in every arguments
   searchRefs :: (Text, RawSelection) -> Validation [Ref]
-  searchRefs (_, Selection { selectionArguments, selectionRec = SelectionField })
+  searchRefs (_, Selection { selectionArguments, selectionContent = SelectionField })
     = return $ concatMap exploreRefs selectionArguments
-  searchRefs (_, Selection { selectionArguments, selectionRec = SelectionSet selSet })
+  searchRefs (_, Selection { selectionArguments, selectionContent = SelectionSet selSet })
     = getArgs <$> concatMapM searchRefs selSet
    where
     getArgs :: [Ref] -> [Ref]
@@ -110,17 +112,17 @@ resolveOperationVariables
   -> VALIDATION_MODE
   -> RawOperation
   -> Validation ValidVariables
-resolveOperationVariables typeLib lib root validationMode Operation { operationName, operationSelection, operationArgs }
+resolveOperationVariables typeLib lib root validationMode Operation { operationName, operationSelection, operationArguments }
   = do
     allVariableRefs lib [operationSelection] >>= checkUnusedVariables
     mapM (lookupAndValidateValueOnBody typeLib root validationMode)
-         operationArgs
+         operationArguments
  where
   varToKey :: (Text, Variable a) -> Ref
   varToKey (key', Variable { variablePosition }) = Ref key' variablePosition
   --
   checkUnusedVariables :: [Ref] -> Validation ()
-  checkUnusedVariables refs = case map varToKey operationArgs \\ refs of
+  checkUnusedVariables refs = case map varToKey operationArguments \\ refs of
     [] -> pure ()
     unused' ->
       failure $ unusedVariables (getOperationName operationName) unused'
@@ -131,9 +133,9 @@ lookupAndValidateValueOnBody
   -> VALIDATION_MODE
   -> (Text, Variable RAW)
   -> Validation (Text, Variable VALID)
-lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType, variablePosition, isVariableRequired, variableTypeWrappers, variableValue = DefaultValue defaultValue })
+lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType, variablePosition, variableValue = DefaultValue defaultValue })
   = toVariable
-    <$> (   getVariableType variableType variablePosition typeLib
+    <$> (   getVariableType (typeConName variableType) variablePosition typeLib
         >>= checkType getVariable defaultValue
         )
  where
@@ -153,8 +155,9 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
     validator varType defValue >> validator varType variable
   checkType Nothing (Just defValue) varType = validator varType defValue
   checkType Nothing Nothing varType
-    | validationMode /= WITHOUT_VARIABLES && isVariableRequired
-    = failure $ uninitializedVariable variablePosition variableType key
+    | validationMode /= WITHOUT_VARIABLES && not (isNullable variableType)
+    = failure
+      $ uninitializedVariable variablePosition (typeConName variableType) key
     | otherwise
     = returnNull
    where
@@ -166,7 +169,7 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
     case
         validateInputValue typeLib
                            []
-                           variableTypeWrappers
+                           (typeWrappers variableType)
                            varType
                            (key, varValue)
       of

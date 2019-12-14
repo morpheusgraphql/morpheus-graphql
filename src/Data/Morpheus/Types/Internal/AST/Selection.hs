@@ -1,10 +1,9 @@
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE DeriveLift        #-}
-{-# LANGUAGE KindSignatures    #-}
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE GADTs             #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE NamedFieldPuns     #-}
+{-# LANGUAGE DeriveLift         #-}
+{-# LANGUAGE KindSignatures     #-}
+{-# LANGUAGE DataKinds          #-}
+{-# LANGUAGE GADTs              #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE FlexibleInstances  #-}
 
@@ -13,7 +12,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
   ( Argument(..)
   , Arguments
   , SelectionSet
-  , SelectionRec(..)
+  , SelectionContent(..)
   , ValidSelection
   , Selection(..)
   , RawSelection
@@ -100,20 +99,16 @@ type RawArguments = Arguments RAW
 
 type ValidArguments = Collection ValidArgument
 
-data SelectionRec (valid :: Stage) where
-  SelectionField ::SelectionRec valid
-  SelectionSet   ::SelectionSet valid -> SelectionRec valid
-  UnionSelection ::UnionSelection -> SelectionRec VALID
+data SelectionContent (valid :: Stage) where
+  SelectionField ::SelectionContent valid
+  SelectionSet   ::SelectionSet valid -> SelectionContent valid
+  UnionSelection ::UnionSelection -> SelectionContent VALID
 
-deriving instance Show (SelectionRec a)
+deriving instance Show (SelectionContent a)
+deriving instance Lift (SelectionContent a)
 
-instance Lift (SelectionRec a) where
-  lift (SelectionSet   s) = [| SelectionSet s |]
-  lift (UnionSelection s) = [| UnionSelection s |]
-  lift SelectionField     = [| SelectionField |]
-
-type RawSelectionRec = SelectionRec RAW
-type ValidSelectionRec = SelectionRec VALID
+type RawSelectionRec = SelectionContent RAW
+type ValidSelectionRec = SelectionContent VALID
 type UnionSelection = Collection (SelectionSet VALID)
 type SelectionSet a = Collection (Selection a)
 type RawSelectionSet = Collection RawSelection
@@ -125,17 +120,13 @@ data Selection (valid:: Stage) where
       selectionArguments :: Arguments valid
     , selectionPosition  :: Position
     , selectionAlias     :: Maybe Key
-    , selectionRec       :: SelectionRec valid
+    , selectionContent   :: SelectionContent valid
     } -> Selection valid
     InlineFragment ::Fragment -> Selection RAW
     Spread ::Ref -> Selection RAW
 
 deriving instance Show (Selection a)
-
-instance Lift (Selection a) where
-  lift (Selection args pos alias cont) = [| Selection args pos alias cont |]
-  lift (InlineFragment x             ) = [| InlineFragment x |]
-  lift (Spread         x             ) = [| Spread x |]
+deriving instance Lift (Selection a)
 
 type RawSelection = Selection RAW
 type ValidSelection = Selection VALID
@@ -149,7 +140,7 @@ type ValidVariables = Collection (Variable VALID)
 data Operation (stage:: Stage) = Operation
   { operationName      :: Maybe Key
   , operationType      :: OperationType
-  , operationArgs      :: Collection (Variable stage)
+  , operationArguments :: Collection (Variable stage)
   , operationSelection :: SelectionSet stage
   , operationPosition  :: Position
   } deriving (Show,Lift)

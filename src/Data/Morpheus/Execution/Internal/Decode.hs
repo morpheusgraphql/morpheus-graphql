@@ -13,7 +13,6 @@ module Data.Morpheus.Execution.Internal.Decode
   )
 where
 
-import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( unpack )
 import           Language.Haskell.TH            ( ExpQ
                                                 , conE

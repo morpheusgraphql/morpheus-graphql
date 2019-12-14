@@ -40,7 +40,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RawOperation
                                                 , Variable(..)
                                                 , OperationType(..)
-                                                , isNullable
                                                 , Ref(..)
                                                 , VariableContent(..)
                                                 , RAW
@@ -56,15 +55,13 @@ variableDefinition :: Parser (Text, Variable RAW)
 variableDefinition = label "VariableDefinition" $ do
   (Ref name variablePosition) <- variable
   operator ':'
-  (variableTypeWrappers, variableType) <- parseType
-  defaultValue                         <- parseDefaultValue
+  variableType <- parseType
+  defaultValue <- parseDefaultValue
   pure
     ( name
     , Variable { variableType
-               , isVariableRequired   = not (isNullable variableTypeWrappers)
-               , variableTypeWrappers
                , variablePosition
-               , variableValue        = DefaultValue defaultValue
+               , variableValue    = DefaultValue defaultValue
                }
     )
 
@@ -80,14 +77,14 @@ parseOperationDefinition = label "OperationDefinition" $ do
   operationPosition  <- getLocation
   operationType      <- parseOperationType
   operationName      <- optional parseName
-  operationArgs      <- parseMaybeTuple variableDefinition
+  operationArguments <- parseMaybeTuple variableDefinition
   -- TODO: handle directives
   _directives        <- optionalDirectives
   operationSelection <- parseSelectionSet
   pure
     (Operation { operationName
                , operationType
-               , operationArgs
+               , operationArguments
                , operationSelection
                , operationPosition
                }
@@ -109,7 +106,7 @@ parseAnonymousQuery = label "AnonymousQuery" $ do
   pure
       (Operation { operationName      = Nothing
                  , operationType      = Query
-                 , operationArgs      = []
+                 , operationArguments = []
                  , operationSelection
                  , operationPosition
                  }

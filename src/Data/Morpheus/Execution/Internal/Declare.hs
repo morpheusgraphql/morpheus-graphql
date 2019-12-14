@@ -30,7 +30,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataField(..)
                                                 , DataTypeKind(..)
                                                 , DataTypeKind(..)
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , TypeWrapper(..)
                                                 , isOutputObject
                                                 , isSubscription
@@ -42,16 +42,16 @@ import           Data.Morpheus.Types.Internal.Resolving
 
 type Arrow = (->)
 
-declareTypeAlias :: Bool -> TypeAlias -> Type
-declareTypeAlias isSub TypeAlias { aliasTyCon, aliasWrappers, aliasArgs } =
-  wrappedT aliasWrappers
+declareTypeRef :: Bool -> TypeRef -> Type
+declareTypeRef isSub TypeRef { typeConName, typeWrappers, typeArgs } =
+  wrappedT typeWrappers
  where
   wrappedT :: [TypeWrapper] -> Type
   wrappedT (TypeList  : xs) = AppT (ConT ''[]) $ wrappedT xs
   wrappedT (TypeMaybe : xs) = AppT (ConT ''Maybe) $ wrappedT xs
-  wrappedT []               = decType aliasArgs
+  wrappedT []               = decType typeArgs
   ------------------------------------------------------
-  typeName = ConT (mkName $ unpack aliasTyCon)
+  typeName = ConT (mkName $ unpack typeConName)
   --------------------------------------------
   decType _ | isSub =
     AppT typeName (AppT (ConT ''UnSubResolver) (VarT $ mkName "m"))
@@ -98,4 +98,4 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
           | isResolver                       = AppT monadVar result
           | otherwise                        = result
         ------------------------------------------------
-        result = declareTypeAlias (maybe False isSubscription kindD) fieldType
+        result = declareTypeRef (maybe False isSubscription kindD) fieldType

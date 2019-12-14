@@ -23,10 +23,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeLib(..)
                                                 , DataValidator(..)
                                                 , Key
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , TypeWrapper(..)
                                                 , DataEnumValue(..)
-                                                , isNullable
                                                 , lookupField
                                                 , lookupInputType
                                                 , Value(..)
@@ -42,6 +41,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VariableContent(..)
                                                 , unpackInputUnion
                                                 , isFieldNullable
+                                                , TypeRef(..)
+                                                , isNullableWrapper
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving
@@ -54,9 +55,9 @@ checkTypeEquality
   -> Ref
   -> Variable VALID
   -> InputValidation ValidValue
-checkTypeEquality (aliasTyCon, aliasWrappers) Ref { refName, refPosition } Variable { variableValue = ValidVariableValue value, variableType, variableTypeWrappers }
-  | variableType == aliasTyCon && not
-    (isWeaker variableTypeWrappers aliasWrappers)
+checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable { variableValue = ValidVariableValue value, variableType }
+  | typeConName variableType == tyConName && not
+    (isWeaker (typeWrappers variableType) tyWrappers)
   = pure value
   | otherwise
   = failure $ GlobalInputError $ incompatibleVariableType refName
@@ -64,9 +65,11 @@ checkTypeEquality (aliasTyCon, aliasWrappers) Ref { refName, refPosition } Varia
                                                           fieldSignature
                                                           refPosition
  where
-  varSignature = renderWrapped variableType variableTypeWrappers
-  fieldSignature =
-    render TypeAlias { aliasTyCon, aliasWrappers, aliasArgs = Nothing }
+  varSignature   = render variableType
+  fieldSignature = render TypeRef { typeConName  = tyConName
+                                  , typeWrappers = tyWrappers
+                                  , typeArgs     = Nothing
+                                  }
 
 
 
@@ -93,8 +96,9 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
   -- Validate Null. value = null ?
   validateWrapped wrappers _ (_, ResolvedVariable ref variable) =
     checkTypeEquality (typeName, wrappers) ref variable
-  validateWrapped wrappers _ (_, Null) | isNullable wrappers = return Null
-                                       | otherwise = throwError wrappers Null
+  validateWrapped wrappers _ (_, Null)
+    | isNullableWrapper wrappers = return Null
+    | otherwise                  = throwError wrappers Null
   -- Validate LIST
   validateWrapped (TypeMaybe : wrappers) _ value =
     validateInputValue lib props wrappers datatype value
@@ -114,14 +118,14 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
         >>  Object
         <$> traverse validateField fields
      where
-      requiredFieldsDefined (fName, datafield) 
+      requiredFieldsDefined (fName, datafield)
         | fName `elem` map fst fields || isFieldNullable datafield = pure ()
         | otherwise = failure (UndefinedField props fName)
       validateField
         :: (Name, ResolvedValue) -> InputValidation (Name, ValidValue)
       validateField (_name, value) = do
         (type', currentProp') <- validationData value
-        wrappers'             <- aliasWrappers . fieldType <$> getField
+        wrappers'             <- typeWrappers . fieldType <$> getField
         value''               <- validateInputValue lib
                                                     currentProp'
                                                     wrappers'
@@ -131,7 +135,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
        where
         validationData :: ResolvedValue -> InputValidation (DataType, [Prop])
         validationData x = do
-          fieldTypeName' <- aliasTyCon . fieldType <$> getField
+          fieldTypeName' <- typeConName . fieldType <$> getField
           let currentProp = props ++ [Prop _name fieldTypeName']
           type' <- lookupInputType fieldTypeName'
                                    lib
@@ -139,7 +143,6 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
           return (type', currentProp)
         getField = lookupField _name parentFields (UnknownField props _name)
     -- VALIDATE INPUT UNION
-    -- TODO: Validate Union
     validate (DataInputUnion inputUnion) (_, Object rawFields) =
       case unpackInputUnion inputUnion rawFields of
         Left message -> failure

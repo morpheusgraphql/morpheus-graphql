@@ -27,7 +27,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , RawDataType(..)
   , ResolverKind(..)
   , TypeWrapper(..)
-  , TypeAlias(..)
+  , TypeRef(..)
   , ArgsType(..)
   , DataEnumValue(..)
   , isTypeDefined
@@ -89,6 +89,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , GQLTypeD(..)
   , ClientType(..)
   , DataInputUnion
+  , isNullableWrapper
   )
 where
 
@@ -117,6 +118,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Name
                                                 , Description
                                                 , TypeWrapper(..)
+                                                , TypeRef(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -200,11 +202,15 @@ data ResolverKind
 
 
 isFieldNullable :: DataField -> Bool
-isFieldNullable = isNullable . aliasWrappers . fieldType
+isFieldNullable = isNullable . fieldType
 
-isNullable :: [TypeWrapper] -> Bool
-isNullable (TypeMaybe : _) = True
-isNullable _               = False
+isNullable :: TypeRef -> Bool
+isNullable TypeRef { typeWrappers = typeWrappers } = isNullableWrapper typeWrappers
+
+isNullableWrapper :: [TypeWrapper] -> Bool
+isNullableWrapper (TypeMaybe : _ ) = True
+isNullableWrapper _               = False
+
 
 isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
 isWeaker (TypeMaybe : xs1) (TypeMaybe : xs2) = isWeaker xs1 xs2
@@ -249,12 +255,6 @@ data DataTypeWrapper
   | NonNullType
   deriving (Show, Lift)
 
-data TypeAlias = TypeAlias
-  { aliasTyCon    :: Key
-  , aliasArgs     :: Maybe Key
-  , aliasWrappers :: [TypeWrapper]
-  } deriving (Show,Lift)
-
 data ArgsType = ArgsType
   { argsTypeName :: Key
   , resKind      :: ResolverKind
@@ -298,7 +298,7 @@ data DataField = DataField
   { fieldName     :: Key
   , fieldArgs     :: [(Key, DataArgument)]
   , fieldArgsType :: Maybe ArgsType
-  , fieldType     :: TypeAlias
+  , fieldType     :: TypeRef
   , fieldMeta     :: Maybe Meta
   } deriving (Show,Lift)
 
@@ -309,11 +309,11 @@ fieldVisibility ("__type"    , _) = False
 fieldVisibility _                 = True
 
 createField :: DataArguments -> Key -> ([TypeWrapper], Key) -> DataField
-createField fieldArgs fieldName (aliasWrappers, aliasTyCon) = DataField
+createField fieldArgs fieldName (typeWrappers, typeConName) = DataField
   { fieldArgs
   , fieldArgsType = Nothing
   , fieldName
-  , fieldType     = TypeAlias { aliasTyCon, aliasWrappers, aliasArgs = Nothing }
+  , fieldType     = TypeRef { typeConName, typeWrappers, typeArgs = Nothing }
   , fieldMeta     = Nothing
   }
 
@@ -323,17 +323,17 @@ createArgument fieldName x = (fieldName, createField [] fieldName x)
 
 toNullableField :: DataField -> DataField
 toNullableField dataField
-  | isNullable (aliasWrappers $ fieldType dataField) = dataField
+  | isNullable (fieldType dataField) = dataField
   | otherwise = dataField { fieldType = nullable (fieldType dataField) }
  where
-  nullable alias@TypeAlias { aliasWrappers } =
-    alias { aliasWrappers = TypeMaybe : aliasWrappers }
+  nullable alias@TypeRef { typeWrappers } =
+    alias { typeWrappers = TypeMaybe : typeWrappers }
 
 toListField :: DataField -> DataField
 toListField dataField = dataField { fieldType = listW (fieldType dataField) }
  where
-  listW alias@TypeAlias { aliasWrappers } =
-    alias { aliasWrappers = TypeList : aliasWrappers }
+  listW alias@TypeRef { typeWrappers } =
+    alias { typeWrappers = TypeList : typeWrappers }
 
 lookupField :: Failure error m => Key -> [(Key, field)] -> error -> m field
 lookupField key fields gqlError = case lookup key fields of
@@ -505,7 +505,7 @@ lookupUnionTypes
   -> DataTypeLib
   -> DataField
   -> m [(Name,DataObject)]
-lookupUnionTypes position key lib DataField { fieldType = TypeAlias { aliasTyCon = typeName } }
+lookupUnionTypes position key lib DataField { fieldType = TypeRef { typeConName = typeName } }
   = lookupDataUnion gqlError typeName lib
     >>= mapM (flip (lookupDataObject gqlError) lib)
   where gqlError = hasNoSubfields key typeName position
@@ -517,9 +517,9 @@ lookupFieldAsSelectionSet
   -> DataTypeLib
   -> DataField
   -> m (Name,DataObject)
-lookupFieldAsSelectionSet position key lib DataField { fieldType = TypeAlias { aliasTyCon } }
-  = lookupDataObject gqlError aliasTyCon lib
-  where gqlError = hasNoSubfields key aliasTyCon position
+lookupFieldAsSelectionSet position key lib DataField { fieldType = TypeRef { typeConName } }
+  = lookupDataObject gqlError typeConName lib
+  where gqlError = hasNoSubfields key typeConName position
 
 lookupInputType :: Failure e m => Key -> DataTypeLib -> e -> m DataType
 lookupInputType name lib errors = case lookupDataType name lib of
@@ -584,17 +584,17 @@ createInputUnionFields name members = fieldTag : map unionField members
       { fieldArgs     = []
       , fieldArgsType = Nothing
       , fieldName     = memberName
-      , fieldType     = TypeAlias { aliasTyCon    = memberName
-                                  , aliasWrappers = [TypeMaybe]
-                                  , aliasArgs     = Nothing
+      , fieldType     = TypeRef { typeConName    = memberName
+                                  , typeWrappers = [TypeMaybe]
+                                  , typeArgs     = Nothing
                                   }
       , fieldMeta     = Nothing
       }
     )
 
-createAlias :: Key -> TypeAlias
-createAlias aliasTyCon =
-  TypeAlias { aliasTyCon, aliasWrappers = [], aliasArgs = Nothing }
+createAlias :: Key -> TypeRef
+createAlias typeConName =
+  TypeRef { typeConName, typeWrappers = [], typeArgs = Nothing }
 
 
 type TypeUpdater = LibUpdater DataTypeLib

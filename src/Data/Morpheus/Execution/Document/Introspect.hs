@@ -17,7 +17,7 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), objectFields, IntrospectRep (..),TypeScope(..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
-import           Data.Morpheus.Types.Internal.AST          (ConsD (..), TypeD (..), ArgsType (..),Key, DataType(..), DataTypeContent(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
+import           Data.Morpheus.Types.Internal.AST          (ConsD (..), TypeD (..), ArgsType (..),Key, DataType(..), DataTypeContent(..), DataField (..),insertType,DataTypeKind(..), TypeRef (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
 
 
@@ -73,7 +73,7 @@ buildTypes = listE . concatMap introspectField
         inputTypes (Just ArgsType {argsTypeName})
           | argsTypeName /= "()" = [[|snd $ objectFields (Proxy :: Proxy TRUE) (argsTypeName, InputType,$(proxyT tAlias))|]]
           where
-            tAlias = TypeAlias {aliasTyCon = argsTypeName, aliasWrappers = [], aliasArgs = Nothing}
+            tAlias = TypeRef {typeConName = argsTypeName, typeWrappers = [], typeArgs = Nothing}
         inputTypes _ = []
 
 conTX :: Text -> Q Type    
@@ -82,24 +82,24 @@ conTX =  conT . mkName . unpack
 varTX :: Text -> Q Type    
 varTX =  varT . mkName . unpack
 
-proxyT :: TypeAlias -> Q Exp
-proxyT TypeAlias {aliasTyCon, aliasArgs} = [|(Proxy :: Proxy $(genSig aliasArgs))|]
+proxyT :: TypeRef -> Q Exp
+proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
   where
-    genSig (Just m) = appT (conTX aliasTyCon) (varTX m)
-    genSig _        = conTX aliasTyCon
+    genSig (Just m) = appT (conTX typeConName) (varTX m)
+    genSig _        = conTX typeConName
 
 buildFields :: [DataField] -> ExpQ
 buildFields = listE . map buildField
   where
-    buildField DataField {fieldName, fieldArgs, fieldType = alias@TypeAlias {aliasArgs, aliasWrappers}, fieldMeta} =
+    buildField DataField {fieldName, fieldArgs, fieldType = alias@TypeRef {typeArgs, typeWrappers}, fieldMeta} =
       [|( fieldName
         , DataField
             { fieldName
             , fieldArgs = fArgs
             , fieldArgsType = Nothing
-            , fieldType = TypeAlias {aliasTyCon = __typeName $(proxyT alias), aliasArgs = aArgs, aliasWrappers}
+            , fieldType = TypeRef {typeConName = __typeName $(proxyT alias), typeArgs = aArgs, typeWrappers}
             , fieldMeta
             })|]
       where
         fArgs = map (\(k, v) -> (unpack k, v)) fieldArgs
-        aArgs = unpack <$> aliasArgs
+        aArgs = unpack <$> typeArgs

@@ -34,7 +34,7 @@ import           Data.Morpheus.Parsing.Request.Arguments
                                                 ( maybeArguments )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Selection(..)
-                                                , SelectionRec(..)
+                                                , SelectionContent(..)
                                                 , Ref(..)
                                                 , Fragment(..)
                                                 , RawArguments
@@ -83,7 +83,7 @@ parseSelectionField = label "SelectionField" $ do
   buildField selectionAlias selectionArguments selectionPosition = pure
     (Selection { selectionAlias
                , selectionArguments
-               , selectionRec       = SelectionField
+               , selectionContent   = SelectionField
                , selectionPosition
                }
     )
@@ -95,7 +95,7 @@ parseSelectionField = label "SelectionField" $ do
     return
       (Selection { selectionAlias
                  , selectionArguments
-                 , selectionRec       = SelectionSet selectionSet
+                 , selectionContent   = SelectionSet selectionSet
                  , selectionPosition
                  }
       )

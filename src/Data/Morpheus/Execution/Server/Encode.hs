@@ -64,7 +64,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , Selection(..)
-                                                , SelectionRec(..)
+                                                , SelectionContent(..)
                                                 , ValidSelection
                                                 , GQLValue(..)
                                                 , ValidValue
@@ -138,8 +138,8 @@ instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o e m where
   encodeKind = pure . pure . gqlString . encodeRep . from . unVContext
 
 instance (Monad m,Generic a, GQLType a,ExploreResolvers (CUSTOM a) a o e m) => EncodeKind OUTPUT a o e m where
-  encodeKind (VContext value) (key, sel@Selection { selectionRec }) =
-    encodeNode (exploreResolvers (Proxy @(CUSTOM a)) value) selectionRec
+  encodeKind (VContext value) (key, sel@Selection { selectionContent }) =
+    encodeNode (exploreResolvers (Proxy @(CUSTOM a)) value) selectionContent
    where
     encodeNode (ObjectRes fields) _ = withObject encodeObject (key, sel)
      where
@@ -149,11 +149,11 @@ instance (Monad m,Generic a, GQLType a,ExploreResolvers (CUSTOM a) a o e m) => E
           $ resolve__typename (__typeName (Proxy @a))
           : fields
     encodeNode (EnumRes enum) _ =
-      resolveEnum (__typeName (Proxy @a)) enum selectionRec
+      resolveEnum (__typeName (Proxy @a)) enum selectionContent
     -- Type References --------------------------------------------------------------
     encodeNode (UnionRef (fieldTypeName, fieldResolver)) (UnionSelection selections)
       = fieldResolver
-        (key, sel { selectionRec = SelectionSet currentSelection })
+        (key, sel { selectionContent = SelectionSet currentSelection })
       where currentSelection = pickSelection fieldTypeName selections
     -- RECORDS ----------------------------------------------------------------------------
     encodeNode (UnionRes (name, fields)) (UnionSelection selections) =

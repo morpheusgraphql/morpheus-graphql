@@ -62,9 +62,9 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , RAW
                                                 , VALID
                                                 , Position
-                                                , TypeWrapper
                                                 , Stage
                                                 , RESOLVED
+                                                , TypeRef
                                                 )
 
 
@@ -142,9 +142,7 @@ instance Lift (VariableContent a) where
 deriving instance Show (VariableContent a)
 
 data Variable (stage :: Stage) = Variable
-  { variableType         :: Name
-  , isVariableRequired   :: Bool
-  , variableTypeWrappers :: [TypeWrapper]
+  { variableType         :: TypeRef
   , variablePosition     :: Position
   , variableValue        :: VariableContent (VAR stage)
   } deriving (Show,Lift)
@@ -158,14 +156,6 @@ data Value (valid :: Stage) where
   Scalar ::ScalarValue -> Value a
   Null ::Value a
 
-instance Lift (Value a) where
-  lift (ResolvedVariable x y) = [| ResolvedVariable x y |]
-  lift (VariableValue x     ) = [| VariableValue x |]
-  lift (Object        x     ) = [| VariableObject x |]
-  lift (List          x     ) = [| VariableList x |]
-  lift (Enum          x     ) = [| Enum x |]
-  lift (Scalar        x     ) = [| Scalar x |]
-  lift Null                   = [| Null |]
 
 type Object a = Collection (Value a)
 type ValidObject = Object VALID
@@ -174,6 +164,8 @@ type ResolvedObject = Object RESOLVED
 type RawValue = Value RAW
 type ValidValue = Value VALID
 type ResolvedValue = Value RESOLVED
+
+deriving instance Lift (Value a)
 
 instance Show (Value a) where
   show Null       = "null"

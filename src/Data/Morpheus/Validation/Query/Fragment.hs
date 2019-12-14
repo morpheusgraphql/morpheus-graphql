@@ -26,7 +26,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( Fragment(..)
                                                 , FragmentLib
                                                 , RawSelection
-                                                , SelectionRec(..)
+                                                , SelectionContent(..)
                                                 , Selection(..)
                                                 , Ref(..)
                                                 , Position
@@ -83,8 +83,8 @@ usedFragments :: FragmentLib -> [(Text, RawSelection)] -> [Node]
 usedFragments fragments = concatMap (findAllUses . snd)
  where
   findAllUses :: RawSelection -> [Node]
-  findAllUses Selection { selectionRec = SelectionField } = []
-  findAllUses Selection { selectionRec = SelectionSet selectionSet } =
+  findAllUses Selection { selectionContent = SelectionField } = []
+  findAllUses Selection { selectionContent = SelectionSet selectionSet } =
     concatMap (findAllUses . snd) selectionSet
   findAllUses (InlineFragment Fragment { fragmentSelection }) =
     concatMap (findAllUses . snd) fragmentSelection
@@ -97,8 +97,8 @@ usedFragments fragments = concatMap (findAllUses . snd)
       (lookup refName fragments)
 
 scanForSpread :: (Text, RawSelection) -> [Node]
-scanForSpread (_, Selection { selectionRec = SelectionField }) = []
-scanForSpread (_, Selection { selectionRec = SelectionSet selectionSet }) =
+scanForSpread (_, Selection { selectionContent = SelectionField }) = []
+scanForSpread (_, Selection { selectionContent = SelectionSet selectionSet }) =
   concatMap scanForSpread selectionSet
 scanForSpread (_, InlineFragment Fragment { fragmentSelection = selection' }) =
   concatMap scanForSpread selection'
