@@ -25,7 +25,7 @@ import           Data.Text                      ( Text
 
 data InputObject = InputObject {
   field :: Text,
-  nullableField :: Int
+  nullableField :: Maybe Int
 } deriving (Generic, Show)
 
 instance GQLType InputObject where
