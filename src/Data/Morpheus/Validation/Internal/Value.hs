@@ -146,7 +146,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
             (typeMismatch value name props)
           validValue <- validateInputValue lib
                                            props
-                                           []
+                                           [TypeMaybe]
                                            currentUnionDatatype
                                            (name, value)
           return (Object [("__typename", Enum name), (name, validValue)])
