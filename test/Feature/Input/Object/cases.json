@@ -1,0 +1,22 @@
+[
+  {
+    "path": "undefinedField",
+    "description": "test signed float and float with expotential"
+  },
+  {
+    "path": "nullableUndefinedField",
+    "description": "test signed float and float with expotential"
+  },
+  {
+    "path": "unknownField",
+    "description": "test signed int and int with expotential"
+  },
+  {
+    "path": "unexpectedValue",
+    "description": "test signed int and int with expotential"
+  },
+  {
+    "path": "unexpectedVariable",
+    "description": "test signed int and int with expotential"
+  }
+]
