@@ -90,9 +90,9 @@ allVariableRefs fragmentLib = concatMapM (concatMapM searchRefs)
 
   -- | search used variables in every arguments
   searchRefs :: (Text, RawSelection) -> Validation [Ref]
-  searchRefs (_, Selection { selectionArguments, selectionRec = SelectionField })
+  searchRefs (_, Selection { selectionArguments, selectionContent = SelectionField })
     = return $ concatMap exploreRefs selectionArguments
-  searchRefs (_, Selection { selectionArguments, selectionRec = SelectionSet selSet })
+  searchRefs (_, Selection { selectionArguments, selectionContent = SelectionSet selSet })
     = getArgs <$> concatMapM searchRefs selSet
    where
     getArgs :: [Ref] -> [Ref]

@@ -181,7 +181,7 @@ withObject
   => (ValidSelectionSet -> ResolvingStrategy o e m value)
   -> (Key, ValidSelection)
   -> ResolvingStrategy o e m value
-withObject f (_, Selection { selectionRec = SelectionSet selection }) =
+withObject f (_, Selection { selectionContent = SelectionSet selection }) =
   f selection
 withObject _ (key, Selection { selectionPosition }) =
   failure (subfieldsNotSelected key "" selectionPosition)

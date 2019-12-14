@@ -106,11 +106,7 @@ data SelectionContent (valid :: Stage) where
   UnionSelection ::UnionSelection -> SelectionContent VALID
 
 deriving instance Show (SelectionContent a)
-
-instance Lift (SelectionContent a) where
-  lift (SelectionSet   s) = [| SelectionSet s |]
-  lift (UnionSelection s) = [| UnionSelection s |]
-  lift SelectionField     = [| SelectionField |]
+deriving instance Lift (SelectionContent a)
 
 type RawSelectionRec = SelectionContent RAW
 type ValidSelectionRec = SelectionContent VALID
@@ -125,17 +121,13 @@ data Selection (valid:: Stage) where
       selectionArguments :: Arguments valid
     , selectionPosition  :: Position
     , selectionAlias     :: Maybe Key
-    , selectionRec       :: SelectionContent valid
+    , selectionContent   :: SelectionContent valid
     } -> Selection valid
     InlineFragment ::Fragment -> Selection RAW
     Spread ::Ref -> Selection RAW
 
 deriving instance Show (Selection a)
-
-instance Lift (Selection a) where
-  lift (Selection args pos alias cont) = [| Selection args pos alias cont |]
-  lift (InlineFragment x             ) = [| InlineFragment x |]
-  lift (Spread         x             ) = [| Spread x |]
+deriving instance Lift (Selection a)
 
 type RawSelection = Selection RAW
 type ValidSelection = Selection VALID

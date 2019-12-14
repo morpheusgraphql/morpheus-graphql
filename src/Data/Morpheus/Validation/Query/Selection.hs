@@ -83,11 +83,11 @@ clusterUnionSelection fragments type' typeNames = splitFrag
     :: (Text, RawSelection) -> Validation ([Fragment], ValidSelectionSet)
   splitFrag (_, Spread ref) =
     resolveSpread fragments typeNames ref >>= packFragment
-  splitFrag ("__typename", selection@Selection { selectionRec = SelectionField })
+  splitFrag ("__typename", selection@Selection { selectionContent = SelectionField })
     = pure
       ( []
       , [ ( "__typename"
-          , selection { selectionArguments = [], selectionRec = SelectionField }
+          , selection { selectionArguments = [], selectionContent = SelectionField }
           )
         ]
       )
@@ -165,7 +165,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     --
     validateSelection :: (Text, RawSelection) -> Validation ValidSelectionSet
-    validateSelection (key', fullRawSelection@Selection { selectionArguments = selArgs, selectionRec = SelectionSet rawSelection, selectionPosition })
+    validateSelection (key', fullRawSelection@Selection { selectionArguments = selArgs, selectionContent = SelectionSet rawSelection, selectionPosition })
       = do
         (dataField, datatype, arguments) <- getValidationData
           key'
@@ -213,9 +213,9 @@ validateSelectionSet lib fragments' operatorName variables = __validate
                                         (aliasTyCon $fieldType dataField)
                                         selectionPosition
      where
-      returnSelection selectionArguments selectionRec =
-        pure [(key', fullRawSelection { selectionArguments, selectionRec })]
-    validateSelection (key, rawSelection@Selection { selectionArguments = selArgs, selectionPosition, selectionRec = SelectionField })
+      returnSelection selectionArguments selectionContent =
+        pure [(key', fullRawSelection { selectionArguments, selectionContent })]
+    validateSelection (key, rawSelection@Selection { selectionArguments = selArgs, selectionPosition, selectionContent = SelectionField })
       = do
         (dataField, datatype, selectionArguments) <- getValidationData
           key
@@ -223,7 +223,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
         isLeaf (typeContent datatype) dataField
         pure
           [ ( key
-            , rawSelection { selectionArguments, selectionRec = SelectionField }
+            , rawSelection { selectionArguments, selectionContent = SelectionField }
             )
           ]
      where

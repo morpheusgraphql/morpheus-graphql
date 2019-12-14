@@ -119,9 +119,9 @@ operationTypes lib variables = genOperation
         , fieldArgs     = []
         , fieldArgsType = Nothing
         , fieldType     = TypeRef { aliasWrappers = variableTypeWrappers
-                                    , aliasTyCon    = variableType
-                                    , aliasArgs     = Nothing
-                                    }
+                                  , aliasTyCon    = variableType
+                                  , aliasArgs     = Nothing
+                                  }
         , fieldMeta     = Nothing
         }
   ---------------------------------------------------------
@@ -185,13 +185,13 @@ operationTypes lib variables = genOperation
         ------------------------------------------
         subTypesBySelection
           :: DataType -> ValidSelection -> Validation ([ClientType], [Text])
-        subTypesBySelection dType Selection { selectionRec = SelectionField } =
-          leafType dType
+        subTypesBySelection dType Selection { selectionContent = SelectionField }
+          = leafType dType
           --withLeaf buildLeaf dType
-        subTypesBySelection dType Selection { selectionRec = SelectionSet selectionSet }
+        subTypesBySelection dType Selection { selectionContent = SelectionSet selectionSet }
           = genRecordType fieldPath (typeFrom [] dType) dType selectionSet
           ---- UNION
-        subTypesBySelection dType Selection { selectionRec = UnionSelection unionSelections }
+        subTypesBySelection dType Selection { selectionContent = UnionSelection unionSelections }
           = do
             (tCons, subTypes, requests) <-
               unzip3 <$> mapM getUnionType unionSelections
