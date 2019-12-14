@@ -156,6 +156,7 @@ where
 
 import           Data.Map                       ( Map )
 import           Language.Haskell.TH.Syntax     ( Lift )
+import           Data.Semigroup                 ( (<>) )
 
 -- Morpheus
 import           Data.Morpheus.Types.Internal.AST.Data
