@@ -49,7 +49,7 @@ validateRequest lib validationMode GQLQuery { fragments, inputVariables, operati
                                       operationSelection
     pure $ Operation { operationName
                      , operationType
-                     , operationArgs      = []
+                     , operationArguments      = []
                      , operationSelection = selection
                      , operationPosition
                      }

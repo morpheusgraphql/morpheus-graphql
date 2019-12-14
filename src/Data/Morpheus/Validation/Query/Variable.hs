@@ -111,17 +111,17 @@ resolveOperationVariables
   -> VALIDATION_MODE
   -> RawOperation
   -> Validation ValidVariables
-resolveOperationVariables typeLib lib root validationMode Operation { operationName, operationSelection, operationArgs }
+resolveOperationVariables typeLib lib root validationMode Operation { operationName, operationSelection, operationArguments }
   = do
     allVariableRefs lib [operationSelection] >>= checkUnusedVariables
     mapM (lookupAndValidateValueOnBody typeLib root validationMode)
-         operationArgs
+         operationArguments
  where
   varToKey :: (Text, Variable a) -> Ref
   varToKey (key', Variable { variablePosition }) = Ref key' variablePosition
   --
   checkUnusedVariables :: [Ref] -> Validation ()
-  checkUnusedVariables refs = case map varToKey operationArgs \\ refs of
+  checkUnusedVariables refs = case map varToKey operationArguments \\ refs of
     [] -> pure ()
     unused' ->
       failure $ unusedVariables (getOperationName operationName) unused'

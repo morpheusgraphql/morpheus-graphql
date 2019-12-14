@@ -141,7 +141,7 @@ type ValidVariables = Collection (Variable VALID)
 data Operation (stage:: Stage) = Operation
   { operationName      :: Maybe Key
   , operationType      :: OperationType
-  , operationArgs      :: Collection (Variable stage)
+  , operationArguments :: Collection (Variable stage)
   , operationSelection :: SelectionSet stage
   , operationPosition  :: Position
   } deriving (Show,Lift)

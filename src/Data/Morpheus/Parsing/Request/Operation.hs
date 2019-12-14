@@ -78,14 +78,14 @@ parseOperationDefinition = label "OperationDefinition" $ do
   operationPosition  <- getLocation
   operationType      <- parseOperationType
   operationName      <- optional parseName
-  operationArgs      <- parseMaybeTuple variableDefinition
+  operationArguments <- parseMaybeTuple variableDefinition
   -- TODO: handle directives
   _directives        <- optionalDirectives
   operationSelection <- parseSelectionSet
   pure
     (Operation { operationName
                , operationType
-               , operationArgs
+               , operationArguments
                , operationSelection
                , operationPosition
                }
@@ -107,7 +107,7 @@ parseAnonymousQuery = label "AnonymousQuery" $ do
   pure
       (Operation { operationName      = Nothing
                  , operationType      = Query
-                 , operationArgs      = []
+                 , operationArguments = []
                  , operationSelection
                  , operationPosition
                  }
