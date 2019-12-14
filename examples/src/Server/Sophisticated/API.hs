@@ -51,8 +51,8 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , ResolveQ
                                                 , ResolveM
                                                 , ResolveS
+                                                , failRes
                                                 )
-
 
 
 $(importGQLDocumentWithNamespace "src/Server/Sophisticated/api.gql")
@@ -116,6 +116,8 @@ gqlRoot = GQLRootResolver { queryResolver
     , querySomeMap  = constRes $ M.fromList [("robin", 1), ("carl", 2)]
     , queryWrapped1 = constRes $ A (0, "some value")
     , queryWrapped2 = constRes $ A ""
+    , queryFail1    = const $ failRes "fail example with failure"
+    , queryFail2    = const $ liftEither alwaysFail
     }
   -------------------------------------------------------------
   mutationResolver = Mutation { mutationCreateUser    = resolveCreateUser
@@ -128,6 +130,10 @@ gqlRoot = GQLRootResolver { queryResolver
     }
 
 -- Resolve QUERY
+
+alwaysFail :: IO (Either String a)
+alwaysFail = pure $ Left "fail example with failure"
+
 resolveUser :: () -> ResolveQ EVENT IO User
 resolveUser _args = liftEither (getDBUser (Content 2))
 

@@ -29,9 +29,11 @@ module Data.Morpheus.Types
   , ResolveQ
   , ResolveM
   , ResolveS
+  , failRes
   )
 where
 
+import           Data.Text                      ( pack )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar
                                                   ( parseValue
                                                   , serialize
@@ -51,6 +53,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Resolver(..)
                                                 , LiftEither(..)
                                                 , lift
+                                                , failure
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
@@ -76,3 +79,6 @@ constRes = const . pure
 
 constMutRes :: Monad m => [e] -> a -> args -> MutRes e m a
 constMutRes events value = const $ MutResolver $ pure (events, value)
+
+failRes :: (LiftEither o Resolver, Monad m) => String -> Resolver o e m a
+failRes = failure . pack

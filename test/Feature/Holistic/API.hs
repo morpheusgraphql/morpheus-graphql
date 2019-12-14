@@ -28,6 +28,8 @@ import           Data.Morpheus.Types            ( Event
                                                 , ScalarValue(..)
                                                 , Resolver(..)
                                                 , constRes
+                                                , failRes
+                                                , liftEither
                                                 )
 import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
@@ -53,9 +55,19 @@ type EVENT = Event Channel ()
 
 importGQLDocument "test/Feature/Holistic/schema.gql"
 
+
+
+alwaysFail :: IO (Either String a)
+alwaysFail = pure $ Left "fail with Either"
+
+
 rootResolver :: GQLRootResolver IO EVENT Query Mutation Subscription
 rootResolver = GQLRootResolver
-  { queryResolver        = Query { user, testUnion = constRes Nothing }
+  { queryResolver        = Query { user
+                                 , testUnion = constRes Nothing
+                                 , fail1     = const $ liftEither alwaysFail
+                                 , fail2 = const $ failRes "fail with failRes"
+                                 }
   , mutationResolver     = Mutation { createUser = user }
   , subscriptionResolver = Subscription
                              { newUser = const SubResolver
