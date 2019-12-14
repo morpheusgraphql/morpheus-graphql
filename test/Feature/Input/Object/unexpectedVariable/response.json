@@ -5,7 +5,7 @@
       "locations": [{ "line": 2, "column": 29 }]
     },
     {
-      "message": "Variable \"$v2\" of type \"String\" used in position expecting type \"Int!\".",
+      "message": "Variable \"$v2\" of type \"String\" used in position expecting type \"Int\".",
       "locations": [{ "line": 3, "column": 48 }]
     }
   ]
