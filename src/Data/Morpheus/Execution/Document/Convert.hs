@@ -73,19 +73,19 @@ renderTHTypes namespace lib = traverse renderTHType lib
     sysName = unpack . genTypeName
     ---------------------------------------------------------------------------------------------
     genField :: (Text, DataField) -> DataField
-    genField (_, field@DataField { fieldType = alias@TypeRef { aliasTyCon } })
-      = field { fieldType = alias { aliasTyCon = genFieldTypeName aliasTyCon }
+    genField (_, field@DataField { fieldType = alias@TypeRef { typeConName } })
+      = field { fieldType = alias { typeConName = genFieldTypeName typeConName }
               }
     ---------------------------------------------------------------------------------------------
     genResField :: (Text, DataField) -> DataField
-    genResField (_, field@DataField { fieldName, fieldArgs, fieldType = alias@TypeRef { aliasTyCon } })
-      = field { fieldType     = alias { aliasTyCon = ftName, aliasArgs }
+    genResField (_, field@DataField { fieldName, fieldArgs, fieldType = alias@TypeRef { typeConName } })
+      = field { fieldType     = alias { typeConName = ftName, typeArgs }
               , fieldArgsType
               }
      where
-      ftName    = genFieldTypeName aliasTyCon
+      ftName   = genFieldTypeName typeConName
       ---------------------------------------
-      aliasArgs = case typeContent <$> lookup aliasTyCon lib of
+      typeArgs = case typeContent <$> lookup typeConName lib of
         Just DataObject{} -> Just "m"
         Just DataUnion{}  -> Just "m"
         _                 -> Nothing
@@ -172,10 +172,10 @@ renderTHTypes namespace lib = traverse renderTHType lib
           { cName
           , cFields = [ DataField
                           { fieldName     = pack $ "un" <> cName
-                          , fieldType     = TypeRef { aliasTyCon = pack utName
-                                                      , aliasArgs = Just "m"
-                                                      , aliasWrappers = []
-                                                      }
+                          , fieldType     = TypeRef { typeConName = pack utName
+                                                    , typeArgs = Just "m"
+                                                    , typeWrappers = []
+                                                    }
                           , fieldMeta     = Nothing
                           , fieldArgs     = []
                           , fieldArgsType = Nothing

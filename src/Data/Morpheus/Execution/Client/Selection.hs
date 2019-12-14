@@ -118,9 +118,9 @@ operationTypes lib variables = genOperation
         { fieldName     = key
         , fieldArgs     = []
         , fieldArgsType = Nothing
-        , fieldType     = TypeRef { aliasWrappers = variableTypeWrappers
-                                  , aliasTyCon    = variableType
-                                  , aliasArgs     = Nothing
+        , fieldType     = TypeRef { typeWrappers = variableTypeWrappers
+                                  , typeConName    = variableType
+                                  , typeArgs      = Nothing
                                   }
         , fieldMeta     = Nothing
         }
@@ -223,8 +223,8 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
       (map toInputTypeD fields)
      where
       toInputTypeD :: (Text, DataField) -> LibUpdater [Key]
-      toInputTypeD (_, DataField { fieldType = TypeRef { aliasTyCon } }) =
-        scanInputTypes lib aliasTyCon
+      toInputTypeD (_, DataField { fieldType = TypeRef { typeConName } }) =
+        scanInputTypes lib typeConName
     scanType (DataEnum _) = pure (collected <> [typeName])
     scanType _            = pure collected
 
@@ -250,8 +250,8 @@ buildInputType lib name = getType lib name >>= generateTypes
      where
       toFieldD :: (Text, DataField) -> Validation DataField
       toFieldD (_, field@DataField { fieldType }) = do
-        aliasTyCon <- typeFrom [] <$> getType lib (aliasTyCon fieldType)
-        pure $ field { fieldType = fieldType { aliasTyCon } }
+        typeConName <- typeFrom [] <$> getType lib (typeConName fieldType)
+        pure $ field { fieldType = fieldType { typeConName } }
     subTypes (DataEnum enumTags) = pure
       [ ClientType
           { clientType = TypeD { tName      = unpack typeName
@@ -277,11 +277,10 @@ lookupFieldType
   -> Validation (DataType, TypeRef)
 lookupFieldType lib path DataType { typeContent = DataObject typeContent, typeName } refPosition key
   = case lookup key typeContent of
-    Just DataField { fieldType = alias@TypeRef { aliasTyCon }, fieldMeta } ->
-      checkDeprecated >> (trans <$> getType lib aliasTyCon)
+    Just DataField { fieldType = alias@TypeRef { typeConName }, fieldMeta } ->
+      checkDeprecated >> (trans <$> getType lib typeConName)
      where
-      trans x =
-        (x, alias { aliasTyCon = typeFrom path x, aliasArgs = Nothing })
+      trans x = (x, alias { typeConName = typeFrom path x, typeArgs = Nothing })
       ------------------------------------------------------------------
       checkDeprecated :: Validation ()
       checkDeprecated = case fieldMeta >>= lookupDeprecated of

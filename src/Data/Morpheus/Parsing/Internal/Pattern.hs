@@ -68,7 +68,7 @@ inputValueDefinition = label "InputValueDefinition" $ do
     metaDescription <- optDescription
     fieldName       <- parseName
     litAssignment -- ':'
-    (aliasWrappers, aliasTyCon) <- parseType
+    (typeWrappers, typeConName) <- parseType
     _                           <- parseDefaultValue
     metaDirectives              <- optionalDirectives
     pure
@@ -77,9 +77,9 @@ inputValueDefinition = label "InputValueDefinition" $ do
             { fieldArgs     = []
             , fieldArgsType = Nothing
             , fieldName
-            , fieldType     = TypeRef { aliasTyCon
-                                        , aliasWrappers
-                                        , aliasArgs     = Nothing
+            , fieldType     = TypeRef { typeConName
+                                        , typeWrappers
+                                        , typeArgs     = Nothing
                                         }
             , fieldMeta     = Just Meta { metaDescription, metaDirectives }
             }
@@ -113,7 +113,7 @@ fieldDefinition = label "FieldDefinition" $ do
     fieldName       <- parseName
     fieldArgs       <- argumentsDefinition
     litAssignment -- ':'
-    (aliasWrappers, aliasTyCon) <- parseType
+    (typeWrappers, typeConName) <- parseType
     metaDirectives              <- optionalDirectives
     pure
         ( fieldName
@@ -121,9 +121,9 @@ fieldDefinition = label "FieldDefinition" $ do
             { fieldName
             , fieldArgs
             , fieldArgsType = Nothing
-            , fieldType     = TypeRef { aliasTyCon
-                                        , aliasWrappers
-                                        , aliasArgs     = Nothing
+            , fieldType     = TypeRef { typeConName
+                                        , typeWrappers
+                                        , typeArgs     = Nothing
                                         }
             , fieldMeta     = Just Meta { metaDescription, metaDirectives }
             }

@@ -54,9 +54,9 @@ checkTypeEquality
   -> Ref
   -> Variable VALID
   -> InputValidation ValidValue
-checkTypeEquality (aliasTyCon, aliasWrappers) Ref { refName, refPosition } Variable { variableValue = ValidVariableValue value, variableType, variableTypeWrappers }
-  | variableType == aliasTyCon && not
-    (isWeaker variableTypeWrappers aliasWrappers)
+checkTypeEquality (typeConName, typeWrappers) Ref { refName, refPosition } Variable { variableValue = ValidVariableValue value, variableType, variableTypeWrappers }
+  | variableType == typeConName && not
+    (isWeaker variableTypeWrappers typeWrappers)
   = pure value
   | otherwise
   = failure $ GlobalInputError $ incompatibleVariableType refName
@@ -66,7 +66,7 @@ checkTypeEquality (aliasTyCon, aliasWrappers) Ref { refName, refPosition } Varia
  where
   varSignature = renderWrapped variableType variableTypeWrappers
   fieldSignature =
-    render TypeRef { aliasTyCon, aliasWrappers, aliasArgs = Nothing }
+    render TypeRef { typeConName, typeWrappers, typeArgs = Nothing }
 
 
 
@@ -121,7 +121,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
         :: (Name, ResolvedValue) -> InputValidation (Name, ValidValue)
       validateField (_name, value) = do
         (type', currentProp') <- validationData value
-        wrappers'             <- aliasWrappers . fieldType <$> getField
+        wrappers'             <- typeWrappers . fieldType <$> getField
         value''               <- validateInputValue lib
                                                     currentProp'
                                                     wrappers'
@@ -131,7 +131,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
        where
         validationData :: ResolvedValue -> InputValidation (DataType, [Prop])
         validationData x = do
-          fieldTypeName' <- aliasTyCon . fieldType <$> getField
+          fieldTypeName' <- typeConName . fieldType <$> getField
           let currentProp = props ++ [Prop _name fieldTypeName']
           type' <- lookupInputType fieldTypeName'
                                    lib

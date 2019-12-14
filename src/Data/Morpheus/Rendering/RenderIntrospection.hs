@@ -80,16 +80,16 @@ createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
   where deprecated = enumMeta >>= lookupDeprecated
 
 instance RenderSchema DataField S__Field where
-  render (name, field@DataField { fieldType = TypeRef { aliasTyCon }, fieldArgs, fieldMeta }) lib
+  render (name, field@DataField { fieldType = TypeRef { typeConName }, fieldArgs, fieldMeta }) lib
     = do
-      kind <- renderTypeKind <$> lookupKind aliasTyCon lib
+      kind <- renderTypeKind <$> lookupKind typeConName lib
       args <- traverse (`renderinputValue` lib) fieldArgs
       pure S__Field
         { s__FieldName              = constRes (convertToJSONName name)
         , s__FieldDescription       = constRes (fieldMeta >>= metaDescription)
         , s__FieldArgs              = constRes args
         , s__FieldType'             =
-          constRes (wrap field $ createType kind aliasTyCon Nothing $ Just [])
+          constRes (wrap field $ createType kind typeConName Nothing $ Just [])
         , s__FieldIsDeprecated      = constRes (isJust deprecated)
         , s__FieldDeprecationReason = constRes
                                         (deprecated >>= lookupDeprecatedReason)
@@ -107,8 +107,8 @@ renderTypeKind KindList        = LIST
 renderTypeKind KindNonNull     = NON_NULL
 
 wrap :: Monad m => DataField -> S__Type m -> S__Type m
-wrap DataField { fieldType = TypeRef { aliasWrappers } } typ =
-  foldr wrapByTypeWrapper typ (toGQLWrapper aliasWrappers)
+wrap DataField { fieldType = TypeRef { typeWrappers } } typ =
+  foldr wrapByTypeWrapper typ (toGQLWrapper typeWrappers)
 
 wrapByTypeWrapper :: Monad m => DataTypeWrapper -> S__Type m -> S__Type m
 wrapByTypeWrapper ListType    = wrapAs LIST
@@ -129,10 +129,10 @@ renderinputValue (key, input) =
 
 createInputObjectType
   :: (Monad m, Failure Text m) => DataField -> Result m (S__Type m)
-createInputObjectType field@DataField { fieldType = TypeRef { aliasTyCon } } lib
+createInputObjectType field@DataField { fieldType = TypeRef { typeConName } } lib
   = do
-    kind <- renderTypeKind <$> lookupKind aliasTyCon lib
-    pure $ wrap field $ createType kind aliasTyCon Nothing $ Just []
+    kind <- renderTypeKind <$> lookupKind typeConName lib
+    pure $ wrap field $ createType kind typeConName Nothing $ Just []
 
 
 renderInputUnion

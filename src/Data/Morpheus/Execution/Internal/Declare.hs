@@ -43,15 +43,15 @@ import           Data.Morpheus.Types.Internal.Resolving
 type Arrow = (->)
 
 declareTypeRef :: Bool -> TypeRef -> Type
-declareTypeRef isSub TypeRef { aliasTyCon, aliasWrappers, aliasArgs } =
-  wrappedT aliasWrappers
+declareTypeRef isSub TypeRef { typeConName, typeWrappers, typeArgs } =
+  wrappedT typeWrappers
  where
   wrappedT :: [TypeWrapper] -> Type
   wrappedT (TypeList  : xs) = AppT (ConT ''[]) $ wrappedT xs
   wrappedT (TypeMaybe : xs) = AppT (ConT ''Maybe) $ wrappedT xs
-  wrappedT []               = decType aliasArgs
+  wrappedT []               = decType typeArgs
   ------------------------------------------------------
-  typeName = ConT (mkName $ unpack aliasTyCon)
+  typeName = ConT (mkName $ unpack typeConName)
   --------------------------------------------
   decType _ | isSub =
     AppT typeName (AppT (ConT ''UnSubResolver) (VarT $ mkName "m"))

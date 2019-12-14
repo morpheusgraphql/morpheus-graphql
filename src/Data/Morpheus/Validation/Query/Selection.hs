@@ -158,9 +158,9 @@ validateSelectionSet lib fragments' operatorName variables = __validate
                                      selectionArguments
       -- check field Type existence  -----
       fieldDataType <- lookupType
-        (unknownType (aliasTyCon $fieldType selectionField) selectionPosition)
+        (unknownType (typeConName $fieldType selectionField) selectionPosition)
         (allDataTypes lib)
-        (aliasTyCon $ fieldType selectionField)
+        (typeConName $ fieldType selectionField)
       return (selectionField, fieldDataType, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     --
@@ -210,7 +210,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
               >>= returnSelection arguments
               .   SelectionSet
           _ -> failure $ hasNoSubfields key'
-                                        (aliasTyCon $fieldType dataField)
+                                        (typeConName $fieldType dataField)
                                         selectionPosition
      where
       returnSelection selectionArguments selectionContent =
@@ -227,10 +227,10 @@ validateSelectionSet lib fragments' operatorName variables = __validate
             )
           ]
      where
-      isLeaf datatype DataField { fieldType = TypeRef { aliasTyCon } }
+      isLeaf datatype DataField { fieldType = TypeRef { typeConName } }
         | isEntNode datatype = pure ()
         | otherwise = failure
-        $ subfieldsNotSelected key aliasTyCon selectionPosition
+        $ subfieldsNotSelected key typeConName selectionPosition
     validateSelection (_, Spread reference') =
       resolveSpread fragments' [typeName] reference' >>= validateFragment
     validateSelection (_, InlineFragment fragment') =

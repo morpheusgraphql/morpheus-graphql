@@ -66,11 +66,11 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
     interfaceFields
    where
     checkField :: (Key, DataField) -> [(Key, Key, ImplementsError)]
-    checkField (key, DataField { fieldType = interfaceT@TypeRef { aliasTyCon = interfaceTypeName, aliasWrappers = interfaceWrappers } })
+    checkField (key, DataField { fieldType = interfaceT@TypeRef { typeConName = interfaceTypeName, typeWrappers = interfaceWrappers } })
       = case lookup key objFields of
-        Just DataField { fieldType = objT@TypeRef { aliasTyCon, aliasWrappers } }
-          | aliasTyCon == interfaceTypeName && not
-            (isWeaker aliasWrappers interfaceWrappers)
+        Just DataField { fieldType = objT@TypeRef { typeConName, typeWrappers } }
+          | typeConName == interfaceTypeName && not
+            (isWeaker typeWrappers interfaceWrappers)
           -> []
           | otherwise
           -> [ ( typeName

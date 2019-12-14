@@ -58,8 +58,8 @@ instance RenderGQL Key where
   render = id
 
 instance RenderGQL TypeRef where
-  render TypeRef { aliasTyCon, aliasWrappers } =
-    renderWrapped aliasTyCon aliasWrappers
+  render TypeRef { typeConName, typeWrappers } =
+    renderWrapped typeConName typeWrappers
 
 instance RenderGQL DataType where
   render = typeName
