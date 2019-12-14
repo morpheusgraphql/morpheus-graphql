@@ -1,3 +1,4 @@
 query UndefinedField {
-  input(value: 1)
+  i1: input(value: { nullableField: 1 })
+  i2: input(value: {})
 }

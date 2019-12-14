@@ -1,4 +1,4 @@
-query UndefinedField {
+query UnexpectedValue {
   i1: input(value: "some text")
   i2: input(value: 1)
   i3: input(value: { field: {} })
