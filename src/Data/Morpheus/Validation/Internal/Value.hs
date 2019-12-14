@@ -23,7 +23,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeLib(..)
                                                 , DataValidator(..)
                                                 , Key
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , TypeWrapper(..)
                                                 , DataEnumValue(..)
                                                 , isNullable
@@ -66,7 +66,7 @@ checkTypeEquality (aliasTyCon, aliasWrappers) Ref { refName, refPosition } Varia
  where
   varSignature = renderWrapped variableType variableTypeWrappers
   fieldSignature =
-    render TypeAlias { aliasTyCon, aliasWrappers, aliasArgs = Nothing }
+    render TypeRef { aliasTyCon, aliasWrappers, aliasArgs = Nothing }
 
 
 

@@ -143,7 +143,6 @@ deriving instance Show (VariableContent a)
 
 data Variable (stage :: Stage) = Variable
   { variableType         :: Name
-  , isVariableRequired   :: Bool
   , variableTypeWrappers :: [TypeWrapper]
   , variablePosition     :: Position
   , variableValue        :: VariableContent (VAR stage)

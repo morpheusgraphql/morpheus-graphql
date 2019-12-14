@@ -28,7 +28,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeKind(..)
                                                 , OperationType(..)
                                                 , ResolverKind(..)
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , DataEnumValue(..)
                                                 , sysTypes
                                                 , ConsD(..)
@@ -73,12 +73,12 @@ renderTHTypes namespace lib = traverse renderTHType lib
     sysName = unpack . genTypeName
     ---------------------------------------------------------------------------------------------
     genField :: (Text, DataField) -> DataField
-    genField (_, field@DataField { fieldType = alias@TypeAlias { aliasTyCon } })
+    genField (_, field@DataField { fieldType = alias@TypeRef { aliasTyCon } })
       = field { fieldType = alias { aliasTyCon = genFieldTypeName aliasTyCon }
               }
     ---------------------------------------------------------------------------------------------
     genResField :: (Text, DataField) -> DataField
-    genResField (_, field@DataField { fieldName, fieldArgs, fieldType = alias@TypeAlias { aliasTyCon } })
+    genResField (_, field@DataField { fieldName, fieldArgs, fieldType = alias@TypeRef { aliasTyCon } })
       = field { fieldType     = alias { aliasTyCon = ftName, aliasArgs }
               , fieldArgsType
               }
@@ -172,7 +172,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
           { cName
           , cFields = [ DataField
                           { fieldName     = pack $ "un" <> cName
-                          , fieldType     = TypeAlias { aliasTyCon = pack utName
+                          , fieldType     = TypeRef { aliasTyCon = pack utName
                                                       , aliasArgs = Just "m"
                                                       , aliasWrappers = []
                                                       }

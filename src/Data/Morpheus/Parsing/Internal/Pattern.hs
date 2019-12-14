@@ -39,7 +39,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Meta(..)
                                                 , DataEnumValue(..)
                                                 , Name
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 )
 
 
@@ -77,7 +77,7 @@ inputValueDefinition = label "InputValueDefinition" $ do
             { fieldArgs     = []
             , fieldArgsType = Nothing
             , fieldName
-            , fieldType     = TypeAlias { aliasTyCon
+            , fieldType     = TypeRef { aliasTyCon
                                         , aliasWrappers
                                         , aliasArgs     = Nothing
                                         }
@@ -121,7 +121,7 @@ fieldDefinition = label "FieldDefinition" $ do
             { fieldName
             , fieldArgs
             , fieldArgsType = Nothing
-            , fieldType     = TypeAlias { aliasTyCon
+            , fieldType     = TypeRef { aliasTyCon
                                         , aliasWrappers
                                         , aliasArgs     = Nothing
                                         }

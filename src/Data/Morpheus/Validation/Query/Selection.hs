@@ -38,7 +38,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeLib(..)
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , Name
                                                 , allDataTypes
                                                 , isEntNode
@@ -227,7 +227,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
             )
           ]
      where
-      isLeaf datatype DataField { fieldType = TypeAlias { aliasTyCon } }
+      isLeaf datatype DataField { fieldType = TypeRef { aliasTyCon } }
         | isEntNode datatype = pure ()
         | otherwise = failure
         $ subfieldsNotSelected key aliasTyCon selectionPosition

@@ -76,7 +76,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataFingerprint(..)
                                                 , DataUnion
                                                 , DataObject
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 )
 
 

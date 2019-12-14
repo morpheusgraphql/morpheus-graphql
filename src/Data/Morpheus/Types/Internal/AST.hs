@@ -85,7 +85,7 @@ module Data.Morpheus.Types.Internal.AST
   , RawDataType(..)
   , ResolverKind(..)
   , TypeWrapper(..)
-  , TypeAlias(..)
+  , TypeRef(..)
   , ArgsType(..)
   , DataEnumValue(..)
   , isTypeDefined

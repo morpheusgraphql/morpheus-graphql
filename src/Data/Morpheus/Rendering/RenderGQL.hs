@@ -26,7 +26,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeLib
                                                 , DataTypeWrapper(..)
                                                 , Key
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , TypeWrapper(..)
                                                 , allDataTypes
                                                 , createInputUnionFields
@@ -57,8 +57,8 @@ class RenderGQL a where
 instance RenderGQL Key where
   render = id
 
-instance RenderGQL TypeAlias where
-  render TypeAlias { aliasTyCon, aliasWrappers } =
+instance RenderGQL TypeRef where
+  render TypeRef { aliasTyCon, aliasWrappers } =
     renderWrapped aliasTyCon aliasWrappers
 
 instance RenderGQL DataType where

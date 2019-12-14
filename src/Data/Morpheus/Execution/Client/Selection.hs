@@ -41,7 +41,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeKind(..)
                                                 , DataTypeLib(..)
                                                 , Key
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , DataEnumValue(..)
                                                 , allDataTypes
                                                 , lookupType
@@ -118,7 +118,7 @@ operationTypes lib variables = genOperation
         { fieldName     = key
         , fieldArgs     = []
         , fieldArgsType = Nothing
-        , fieldType     = TypeAlias { aliasWrappers = variableTypeWrappers
+        , fieldType     = TypeRef { aliasWrappers = variableTypeWrappers
                                     , aliasTyCon    = variableType
                                     , aliasArgs     = Nothing
                                     }
@@ -223,7 +223,7 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
       (map toInputTypeD fields)
      where
       toInputTypeD :: (Text, DataField) -> LibUpdater [Key]
-      toInputTypeD (_, DataField { fieldType = TypeAlias { aliasTyCon } }) =
+      toInputTypeD (_, DataField { fieldType = TypeRef { aliasTyCon } }) =
         scanInputTypes lib aliasTyCon
     scanType (DataEnum _) = pure (collected <> [typeName])
     scanType _            = pure collected
@@ -274,10 +274,10 @@ lookupFieldType
   -> DataType
   -> Position
   -> Text
-  -> Validation (DataType, TypeAlias)
+  -> Validation (DataType, TypeRef)
 lookupFieldType lib path DataType { typeContent = DataObject typeContent, typeName } refPosition key
   = case lookup key typeContent of
-    Just DataField { fieldType = alias@TypeAlias { aliasTyCon }, fieldMeta } ->
+    Just DataField { fieldType = alias@TypeRef { aliasTyCon }, fieldMeta } ->
       checkDeprecated >> (trans <$> getType lib aliasTyCon)
      where
       trans x =
