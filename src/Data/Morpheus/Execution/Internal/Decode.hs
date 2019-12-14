@@ -81,5 +81,5 @@ withUnion decoder unions = case lookup "__typename" unions of
 
 decodeFieldWith :: (ValidValue -> Validation a) -> Key -> ValidObject -> Validation a
 decodeFieldWith decoder name object = case lookup name object of
-  Nothing    -> failure ("Missing Field: \"" <> name <> "\"")
+  Nothing    -> decoder Null
   Just value -> decoder value
