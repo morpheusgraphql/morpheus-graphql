@@ -109,8 +109,13 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
     validate
       :: DataTypeContent -> (Key, ResolvedValue) -> InputValidation ValidValue
     validate (DataInputObject parentFields) (_, Object fields) =
-      Object <$> mapM validateField fields
+      traverse requiredFieldsDefined parentFields
+        >>  Object
+        <$> traverse validateField fields
      where
+      requiredFieldsDefined (fName, DataField{}) 
+        | fName `elem` map fst fields = pure ()
+        | otherwise = failure (UndefinedField props fName)
       validateField
         :: (Name, ResolvedValue) -> InputValidation (Name, ValidValue)
       validateField (_name, value) = do
