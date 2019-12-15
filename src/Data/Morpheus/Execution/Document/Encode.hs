@@ -28,6 +28,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ConsD(..)
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
+                                                , Key
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Resolver
@@ -43,11 +44,18 @@ import           Data.Morpheus.Types.Internal.TH
                                                 , typeT
                                                 )
 
-encodeVars :: [String]
+
+encodeVars :: [Key]
 encodeVars = ["e", "m"]
 
+fo_ :: Key
+fo_ = "fieldOperationKind"
+
+po_ :: Key
+po_ = "o"
+
 encodeVarsT :: [TypeQ]
-encodeVarsT = map (varT . mkName) encodeVars
+encodeVarsT = map (varT . mkName . unpack) encodeVars
 
 deriveEncode :: GQLTypeD -> Q [Dec]
 deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFields }] } }
@@ -55,14 +63,13 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
  where
   subARgs = conT ''SUBSCRIPTION : encodeVarsT
   instanceArgs | isSubscription typeKindD = subARgs
-               | otherwise = map (varT . mkName) ("o" : encodeVars)
-  mainType = applyT (mkName tName) [mainTypeArg]
+               | otherwise = map (varT . mkName . unpack) ("o" : encodeVars)
+  mainType = applyT (mkName $ unpack tName) [mainTypeArg]
    where
     mainTypeArg | isSubscription typeKindD = applyT ''Resolver subARgs
                 | otherwise                = typeT ''Resolver (fo_ : encodeVars)
   -----------------------------------------------------------------------------------------
-  fo_ = "fieldOperationKind"
-  po_ = "o"
+
   ---------------------
   typeables
     | isSubscription typeKindD
@@ -75,7 +82,8 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
       , iTypeable po_
       ]
   -------------------------
-  iLiftEither name = applyT ''LiftEither [varT $ mkName fo_, conT name]
+  iLiftEither name =
+    applyT ''LiftEither [varT $ mkName $ unpack fo_, conT name]
   -------------------------
   iTypeable name = typeT ''Typeable [name]
   -------------------------------------------
@@ -97,8 +105,8 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
   methods = [funD 'exploreResolvers [clause argsE (normalB body) []]]
    where
     argsE = [varP (mkName "_"), destructRecord tName varNames]
-    body  = appE (conE 'ObjectRes) (listE $ map decodeVar varNames)
+    body  = appE (conE 'ObjectRes) (listE $ map (decodeVar . unpack) varNames)
     decodeVar name = [| (name, encode $(varName))|]
       where varName = varE $ mkName name
-    varNames = map (unpack . fieldName) cFields
+    varNames = map fieldName cFields
 deriveEncode _ = pure []

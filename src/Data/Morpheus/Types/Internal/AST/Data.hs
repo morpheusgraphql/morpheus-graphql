@@ -631,13 +631,13 @@ data GQLTypeD = GQLTypeD
   } deriving (Show)
 
 data TypeD = TypeD
-  { tName      :: String
-  , tNamespace :: [String]
+  { tName      :: Name
+  , tNamespace :: [Name]
   , tCons      :: [ConsD]
   , tMeta      :: Maybe Meta
   } deriving (Show)
 
 data ConsD = ConsD
-  { cName   :: String
+  { cName   :: Name
   , cFields :: [DataField]
   } deriving (Show)

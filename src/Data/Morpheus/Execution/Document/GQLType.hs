@@ -34,6 +34,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isSchemaTypeName
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
+                                                , Key
                                                 )
 import           Data.Morpheus.Types.Internal.TH
                                                 ( instanceHeadT
@@ -43,9 +44,11 @@ import           Data.Morpheus.Types.Internal.TH
                                                 )
 import           Data.Typeable                  ( Typeable )
 
-genTypeName :: String -> String
-genTypeName ('S' : name) | isSchemaTypeName (pack name) = name
-genTypeName name = name
+genTypeName :: Key -> Key
+genTypeName = pack . __genTypeName . unpack
+ where
+  __genTypeName ('S' : name) | isSchemaTypeName (pack name) = name
+  __genTypeName name = name
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
 deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
@@ -53,18 +56,16 @@ deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
  where
   functions = map
     instanceProxyFunD
-    [ ('__typeName , [|pack (genTypeName tName)|])
-    , ('description, descriptionValue)
-    ]
+    [('__typeName, [|genTypeName tName|]), ('description, descriptionValue)]
    where
     descriptionValue = case tMeta >>= metaDescription of
-      Nothing -> [| Nothing  |]
-      Just x  -> [| Just (pack desc)|] where desc = unpack x
+      Nothing   -> [| Nothing   |]
+      Just desc -> [| Just desc |]
   -------------------------------------------------
   typeArgs   = tyConArgs typeKindD
   ----------------------------------------------
   iHead      = instanceHeadT ''GQLType tName typeArgs
-  headSig    = typeT (mkName tName) typeArgs
+  headSig    = typeT (mkName $ unpack tName) typeArgs
   -----------------------------------------------
   constrains = map conTypeable typeArgs
     where conTypeable name = typeT ''Typeable [name]

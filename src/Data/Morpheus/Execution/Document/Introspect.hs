@@ -33,7 +33,7 @@ instanceIntrospect (name, DataType {
     }) = pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
     -----------------------------------------------
-    iHead = instanceHeadT ''Introspect  (unpack name) []
+    iHead = instanceHeadT ''Introspect name []
     defineIntrospect = instanceProxyFunD ('introspect,body)
       where
         body =[| insertType (name,DataType {
@@ -49,7 +49,7 @@ deriveObjectRep :: (TypeD, Maybe DataTypeKind) -> Q [Dec]
 deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
   pure <$> instanceD (cxt constrains) iHead methods
   where
-    mainTypeName = typeT (mkName tName) typeArgs
+    mainTypeName = typeT (mkName $ unpack tName) typeArgs
     typeArgs = concatMap tyConArgs (maybeToList tKind)
     constrains = map conTypeable typeArgs
       where

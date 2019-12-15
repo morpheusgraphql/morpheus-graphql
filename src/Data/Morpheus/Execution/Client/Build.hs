@@ -11,6 +11,7 @@ where
 
 import           Data.Semigroup                 ( (<>) )
 import           Language.Haskell.TH
+import           Data.Text                      ( unpack )
 
 --
 -- MORPHEUS
@@ -87,7 +88,7 @@ withToJSON f datatype = do
 queryArgumentType :: Maybe TypeD -> (Type, Q [Dec])
 queryArgumentType Nothing = (ConT $ mkName "()", pure [])
 queryArgumentType (Just rootType@TypeD { tName }) =
-  (ConT $ mkName tName, declareInputType rootType)
+  (ConT $ mkName $ unpack tName, declareInputType rootType)
 
 defineOperationType :: (Type, Q [Dec]) -> String -> ClientType -> Q [Dec]
 defineOperationType (argType, argumentTypes) query ClientType { clientType } =

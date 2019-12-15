@@ -10,10 +10,6 @@ module Data.Morpheus.Execution.Document.Convert
 where
 
 import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( Text
-                                                , pack
-                                                , unpack
-                                                )
 
 --
 -- MORPHEUS
@@ -34,56 +30,30 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ConsD(..)
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
+                                                , Name
+                                                , DataObject
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 
-renderTHTypes :: Bool -> [(Text, DataType)] -> Validation [GQLTypeD]
+renderTHTypes :: Bool -> [(Name, DataType)] -> Validation [GQLTypeD]
 renderTHTypes namespace lib = traverse renderTHType lib
  where
-  renderTHType :: (Text, DataType) -> Validation GQLTypeD
+  renderTHType :: (Name, DataType) -> Validation GQLTypeD
   renderTHType (tyConName, x) = generateType x
    where
-    genArgsTypeName fieldName | namespace = sysName tyConName <> argTName
+    genArgsTypeName :: Name -> Name
+    genArgsTypeName fieldName | namespace = hsTypeName tyConName <> argTName
                               | otherwise = argTName
       where argTName = capital fieldName <> "Args"
-    genArgumentType :: (Text, DataField) -> Validation [TypeD]
-    genArgumentType (_        , DataField { fieldArgs = [] }) = pure []
-    genArgumentType (fieldName, DataField { fieldArgs }     ) = pure
-      [ TypeD
-          { tName
-          , tNamespace = []
-          , tCons      = [ ConsD { cName   = sysName $ pack tName
-                                 , cFields = map genField fieldArgs
-                                 }
-                         ]
-          , tMeta      = Nothing
-          }
-      ]
-      where tName = genArgsTypeName $ sysName fieldName
-    -------------------------------------------
-    genFieldTypeName = genTypeName
-    ------------------------------
-    --genTypeName :: Text -> Text
-    genTypeName "String"                    = "Text"
-    genTypeName "Boolean"                   = "Bool"
-    genTypeName name | name `elem` sysTypes = "S" <> name
-    genTypeName name                        = name
-    ----------------------------------------
-    sysName = unpack . genTypeName
     ---------------------------------------------------------------------------------------------
-    genField :: (Text, DataField) -> DataField
-    genField (_, field@DataField { fieldType = alias@TypeRef { typeConName } })
-      = field { fieldType = alias { typeConName = genFieldTypeName typeConName }
-              }
-    ---------------------------------------------------------------------------------------------
-    genResField :: (Text, DataField) -> DataField
-    genResField (_, field@DataField { fieldName, fieldArgs, fieldType = alias@TypeRef { typeConName } })
-      = field { fieldType     = alias { typeConName = ftName, typeArgs }
+    genResField :: (Name, DataField) -> DataField
+    genResField (_, field@DataField { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } })
+      = field { fieldType     = typeRef { typeConName = ftName, typeArgs }
               , fieldArgsType
               }
      where
-      ftName   = genFieldTypeName typeConName
+      ftName   = hsTypeName typeConName
       ---------------------------------------
       typeArgs = case typeContent <$> lookup typeConName lib of
         Just DataObject{} -> Just "m"
@@ -94,7 +64,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
         $ ArgsType { argsTypeName, resKind = getFieldType ftName }
        where
         argsTypeName | null fieldArgs = "()"
-                     | otherwise = pack $ genArgsTypeName $ unpack fieldName
+                     | otherwise      = genArgsTypeName fieldName
         --------------------------------------
         getFieldType key = case typeContent <$> lookup key lib of
           Nothing           -> ExternalResolver
@@ -106,7 +76,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
       typeContent
      where
       genType (DataEnum tags) = pure GQLTypeD
-        { typeD        = TypeD { tName      = sysName typeName
+        { typeD        = TypeD { tName      = hsTypeName typeName
                                , tNamespace = []
                                , tCons      = map enumOption tags
                                , tMeta      = typeMeta
@@ -117,17 +87,17 @@ renderTHTypes namespace lib = traverse renderTHType lib
         }
        where
         enumOption DataEnumValue { enumName } =
-          ConsD { cName = sysName enumName, cFields = [] }
+          ConsD { cName = hsTypeName enumName, cFields = [] }
       genType (DataScalar _) =
         internalError "Scalar Types should defined By Native Haskell Types"
       genType (DataInputUnion _) = internalError "Input Unions not Supported"
       genType (DataInputObject fields) = pure GQLTypeD
         { typeD        =
           TypeD
-            { tName      = sysName typeName
+            { tName      = hsTypeName typeName
             , tNamespace = []
-            , tCons      = [ ConsD { cName   = sysName typeName
-                                   , cFields = map genField fields
+            , tCons      = [ ConsD { cName   = hsTypeName typeName
+                                   , cFields = genFields fields
                                    }
                            ]
             , tMeta      = typeMeta
@@ -137,18 +107,17 @@ renderTHTypes namespace lib = traverse renderTHType lib
         , typeOriginal = (typeName, dt)
         }
       genType (DataObject fields) = do
-        typeArgD <- concat <$> traverse genArgumentType fields
+        typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) fields
         pure GQLTypeD
-          { typeD        =
-            TypeD
-              { tName      = sysName typeName
-              , tNamespace = []
-              , tCons      = [ ConsD { cName   = sysName typeName
-                                     , cFields = map genResField fields
-                                     }
-                             ]
-              , tMeta      = typeMeta
-              }
+          { typeD        = TypeD
+                             { tName      = hsTypeName typeName
+                             , tNamespace = []
+                             , tCons = [ ConsD { cName = hsTypeName typeName
+                                               , cFields = map genResField fields
+                                               }
+                                       ]
+                             , tMeta      = typeMeta
+                             }
           , typeKindD    = if typeName == "Subscription"
                              then KindObject (Just Subscription)
                              else KindObject Nothing
@@ -158,7 +127,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
       genType (DataUnion members) = do
         let tCons = map unionCon members
         pure GQLTypeD
-          { typeD        = TypeD { tName      = unpack typeName
+          { typeD        = TypeD { tName      = typeName
                                  , tNamespace = []
                                  , tCons
                                  , tMeta      = typeMeta
@@ -171,9 +140,9 @@ renderTHTypes namespace lib = traverse renderTHType lib
         unionCon memberName = ConsD
           { cName
           , cFields = [ DataField
-                          { fieldName     = pack $ "un" <> cName
-                          , fieldType     = TypeRef { typeConName = pack utName
-                                                    , typeArgs = Just "m"
+                          { fieldName     = "un" <> cName
+                          , fieldType     = TypeRef { typeConName  = utName
+                                                    , typeArgs     = Just "m"
                                                     , typeWrappers = []
                                                     }
                           , fieldMeta     = Nothing
@@ -183,5 +152,36 @@ renderTHTypes namespace lib = traverse renderTHType lib
                       ]
           }
          where
-          cName  = sysName typeName <> utName
-          utName = sysName memberName
+          cName  = hsTypeName typeName <> utName
+          utName = hsTypeName memberName
+
+
+
+hsTypeName :: Name -> Name
+hsTypeName "String"                    = "Text"
+hsTypeName "Boolean"                   = "Bool"
+hsTypeName name | name `elem` sysTypes = "S" <> name
+hsTypeName name                        = name
+
+genArgumentType :: (Name -> Name) -> (Name, DataField) -> Validation [TypeD]
+genArgumentType _ (_, DataField { fieldArgs = [] }) = pure []
+genArgumentType namespaceWith (fieldName, DataField { fieldArgs }) = pure
+  [ TypeD
+      { tName
+      , tNamespace = []
+      , tCons      = [ ConsD { cName   = hsTypeName tName
+                             , cFields = genFields fieldArgs
+                             }
+                     ]
+      , tMeta      = Nothing
+      }
+  ]
+  where tName = namespaceWith (hsTypeName fieldName)
+
+
+genFields :: DataObject -> [DataField]
+genFields = map (genField . snd)
+ where
+  genField :: DataField -> DataField
+  genField field@DataField { fieldType = tyRef@TypeRef { typeConName } } =
+    field { fieldType = tyRef { typeConName = hsTypeName typeConName } }

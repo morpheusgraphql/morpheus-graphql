@@ -14,9 +14,7 @@ module Data.Morpheus.Execution.Internal.Declare
 where
 
 import           Data.Maybe                     ( maybe )
-import           Data.Text                      ( pack
-                                                , unpack
-                                                )
+import           Data.Text                      ( unpack )
 import           GHC.Generics                   ( Generic )
 import           Language.Haskell.TH
 
@@ -36,6 +34,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isSubscription
                                                 , ConsD(..)
                                                 , TypeD(..)
+                                                , Key
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( UnSubResolver )
@@ -43,8 +42,8 @@ import           Data.Morpheus.Types.Internal.Resolving
 type Arrow = (->)
 
 declareTypeRef :: Bool -> TypeRef -> Type
-declareTypeRef isSub TypeRef { typeConName, typeWrappers, typeArgs } =
-  wrappedT typeWrappers
+declareTypeRef isSub TypeRef { typeConName, typeWrappers, typeArgs } = wrappedT
+  typeWrappers
  where
   wrappedT :: [TypeWrapper] -> Type
   wrappedT (TypeList  : xs) = AppT (ConT ''[]) $ wrappedT xs
@@ -58,7 +57,7 @@ declareTypeRef isSub TypeRef { typeConName, typeWrappers, typeArgs } =
   decType (Just par) = AppT typeName (VarT $ mkName $ unpack par)
   decType _          = typeName
 
-tyConArgs :: DataTypeKind -> [String]
+tyConArgs :: DataTypeKind -> [Key]
 tyConArgs kindD | isOutputObject kindD || kindD == KindUnion = ["m"]
                 | otherwise = []
 
@@ -68,9 +67,9 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
   DataD [] (genName tName) tVars Nothing (map cons tCons)
     $ map derive (''Generic : derivingList)
  where
-  genName = mkName . nameSpaceType (map pack tNamespace) . pack
+  genName = mkName . unpack . nameSpaceType tNamespace
   tVars   = maybe [] (declareTyVar . tyConArgs) kindD
-    where declareTyVar = map (PlainTV . mkName)
+    where declareTyVar = map (PlainTV . mkName . unpack)
   defBang = Bang NoSourceUnpackedness NoSourceStrictness
   derive className = DerivClause Nothing [ConT className]
   cons ConsD { cName, cFields } = RecC (genName cName)
@@ -79,7 +78,7 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
     declareField DataField { fieldName, fieldArgsType, fieldType } =
       (fName, defBang, fiType)
      where
-      fName | namespace = mkName (nameSpaceWith tName (unpack fieldName))
+      fName | namespace = mkName $ unpack (nameSpaceWith tName fieldName)
             | otherwise = mkName (unpack fieldName)
       fiType = genFieldT fieldArgsType
        where

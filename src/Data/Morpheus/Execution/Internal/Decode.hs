@@ -41,7 +41,7 @@ import           Data.Morpheus.Types.Internal.Resolving
 decodeObjectExpQ :: ExpQ -> ConsD -> ExpQ
 decodeObjectExpQ fieldDecoder ConsD { cName, cFields } = handleFields cFields
  where
-  consName = conE (mkName cName)
+  consName = conE (mkName $ unpack cName)
   ----------------------------------------------------------------------------------
   handleFields fNames = uInfixE consName (varE '(<$>)) (applyFields fNames)
    where
