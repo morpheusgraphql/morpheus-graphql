@@ -13,7 +13,9 @@ module Data.Morpheus.Execution.Internal.Declare
   )
 where
 
-import           Data.Maybe                     ( maybe )
+import           Data.Maybe                     ( maybe
+                                                , isJust
+                                                )
 import           Data.Text                      ( unpack )
 import           GHC.Generics                   ( Generic )
 import           Language.Haskell.TH
@@ -84,17 +86,13 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
        where
         monadVar = VarT $ mkName "m"
         ---------------------------
-        genFieldT Nothing                          = fType False
+        genFieldT Nothing | isJust kindD = AppT monadVar result
+                          | otherwise    = result
         genFieldT (Just ArgsType { argsTypeName }) = AppT
           (AppT arrowType argType)
-          (fType True)
+          (AppT monadVar result)
          where
           argType   = ConT $ mkName (unpack argsTypeName)
           arrowType = ConT ''Arrow
-        ------------------------------------------------
-        fType isResolver
-          | maybe False isSubscription kindD = AppT monadVar result
-          | isResolver                       = AppT monadVar result
-          | otherwise                        = result
         ------------------------------------------------
         result = declareTypeRef (maybe False isSubscription kindD) fieldType

@@ -69,8 +69,6 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
     mainTypeArg | isSubscription typeKindD = applyT ''Resolver subARgs
                 | otherwise                = typeT ''Resolver (fo_ : encodeVars)
   -----------------------------------------------------------------------------------------
-
-  ---------------------
   typeables
     | isSubscription typeKindD
     = [applyT ''MapStrategy $ map conT [''QUERY, ''SUBSCRIPTION]]

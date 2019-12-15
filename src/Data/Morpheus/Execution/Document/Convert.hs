@@ -60,12 +60,12 @@ renderTHTypes namespace lib = traverse renderTHType lib
         Just DataUnion{}  -> Just "m"
         _                 -> Nothing
       -----------------------------------
-      fieldArgsType = Just
-        $ ArgsType { argsTypeName, resKind = getFieldType ftName }
+      fieldArgsType
+        | null fieldArgs = Nothing
+        | otherwise = Just ArgsType { argsTypeName = genArgsTypeName fieldName
+                                    , resKind      = getFieldType ftName
+                                    }
        where
-        argsTypeName | null fieldArgs = "()"
-                     | otherwise      = genArgsTypeName fieldName
-        --------------------------------------
         getFieldType key = case typeContent <$> lookup key lib of
           Nothing           -> ExternalResolver
           Just DataObject{} -> TypeVarResolver
