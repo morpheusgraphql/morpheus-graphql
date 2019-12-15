@@ -47,7 +47,7 @@ import           Data.Morpheus.Types.Internal.TH
 
 
 m_ :: Key
-m_ = "encodeMonad"
+m_ = "m"
 
 fo_ :: Key
 fo_ = "fieldOperationKind"

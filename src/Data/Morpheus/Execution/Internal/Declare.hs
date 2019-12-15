@@ -37,11 +37,16 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ConsD(..)
                                                 , TypeD(..)
                                                 , Key
+                                                , isOutputType
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( UnSubResolver )
 
 type Arrow = (->)
+
+
+m_ :: Key
+m_ = "m"
 
 declareTypeRef :: Bool -> TypeRef -> Type
 declareTypeRef isSub TypeRef { typeConName, typeWrappers, typeArgs } = wrappedT
@@ -55,12 +60,12 @@ declareTypeRef isSub TypeRef { typeConName, typeWrappers, typeArgs } = wrappedT
   typeName = ConT (mkName $ unpack typeConName)
   --------------------------------------------
   decType _ | isSub =
-    AppT typeName (AppT (ConT ''UnSubResolver) (VarT $ mkName "m"))
+    AppT typeName (AppT (ConT ''UnSubResolver) (VarT $ mkName $ unpack m_))
   decType (Just par) = AppT typeName (VarT $ mkName $ unpack par)
   decType _          = typeName
 
 tyConArgs :: DataTypeKind -> [Key]
-tyConArgs kindD | isOutputObject kindD || kindD == KindUnion = ["m"]
+tyConArgs kindD | isOutputObject kindD || kindD == KindUnion = [m_]
                 | otherwise = []
 
 -- declareType
@@ -84,10 +89,11 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
             | otherwise = mkName (unpack fieldName)
       fiType = genFieldT fieldArgsType
        where
-        monadVar = VarT $ mkName "m"
+        monadVar = VarT $ mkName $ unpack m_
         ---------------------------
-        genFieldT Nothing | isJust kindD = AppT monadVar result
-                          | otherwise    = result
+        genFieldT Nothing
+          | (isOutputType <$> kindD) == Just True = AppT monadVar result
+          | otherwise                             = result
         genFieldT (Just ArgsType { argsTypeName }) = AppT
           (AppT arrowType argType)
           (AppT monadVar result)

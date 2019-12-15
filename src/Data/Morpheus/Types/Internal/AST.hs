@@ -53,7 +53,7 @@ module Data.Morpheus.Types.Internal.AST
   , ValidArguments
   , RawSelectionRec
   , ValidSelectionRec
-
+  , isOutputType
   -- OPERATION
   , Operation(..)
   , Variable(..)

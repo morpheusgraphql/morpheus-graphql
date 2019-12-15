@@ -36,6 +36,11 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 
+
+m_ :: Name
+m_ = "m"
+
+
 renderTHTypes :: Bool -> [(Name, DataType)] -> Validation [GQLTypeD]
 renderTHTypes namespace lib = traverse renderTHType lib
  where
@@ -56,8 +61,8 @@ renderTHTypes namespace lib = traverse renderTHType lib
       ftName   = hsTypeName typeConName
       ---------------------------------------
       typeArgs = case typeContent <$> lookup typeConName lib of
-        Just DataObject{} -> Just "m"
-        Just DataUnion{}  -> Just "m"
+        Just DataObject{} -> Just m_
+        Just DataUnion{}  -> Just m_
         _                 -> Nothing
       -----------------------------------
       fieldArgsType
@@ -142,7 +147,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
           , cFields = [ DataField
                           { fieldName     = "un" <> cName
                           , fieldType     = TypeRef { typeConName  = utName
-                                                    , typeArgs     = Just "m"
+                                                    , typeArgs     = Just m_
                                                     , typeWrappers = []
                                                     }
                           , fieldMeta     = Nothing
