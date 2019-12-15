@@ -73,15 +73,16 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
     | isSubscription typeKindD
     = [applyT ''MapStrategy $ map conT [''QUERY, ''SUBSCRIPTION]]
     | otherwise
-    = [ iLiftEither ''ResolvingStrategy
-      , iLiftEither ''Resolver
+    = [ iLiftEither fo_ ''ResolvingStrategy
+      , iLiftEither fo_ ''Resolver
+      , iLiftEither po_ ''ResolvingStrategy
       , typeT ''MapStrategy [fo_, po_]
       , iTypeable fo_
       , iTypeable po_
       ]
   -------------------------
-  iLiftEither name =
-    applyT ''LiftEither [varT $ mkName $ unpack fo_, conT name]
+  iLiftEither op name =
+    applyT ''LiftEither [varT $ mkName $ unpack op, conT name]
   -------------------------
   iTypeable name = typeT ''Typeable [name]
   -------------------------------------------
