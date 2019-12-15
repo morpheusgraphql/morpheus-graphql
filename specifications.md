@@ -129,6 +129,6 @@ because there will be no unused fragment we will validate all sub fields.
 
 ### InputValue Errors:
 
-- **expectedAFoundB**: input value does matches to schema type ✅
-- **undefinedField**: required field not found on input value ✅
-- **unknownField**: field does not exists on inputObject ✅
+- **expectedAFoundB**: input value does matches to schema type ✅ + 🧪
+- **undefinedField**: required field not found on input value ✅ + 🧪
+- **unknownField**: field does not exists on inputObject ✅ + 🧪
