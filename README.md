@@ -244,6 +244,7 @@ data Character
   | Cronus
   deriving (Generic, GQLType)
 ```
+
 where deity is and object
 
 as you see there ar different kinds of unions. `morpheus` handles them all.
@@ -335,6 +336,28 @@ screenshots from `Insomnia`
 ![alt text](https://morpheusgraphql.com/assets/img/introspection/spelling.png "spelling")
 ![alt text](https://morpheusgraphql.com/assets/img/introspection/autocomplete.png "autocomplete")
 ![alt text](https://morpheusgraphql.com/assets/img/introspection/type.png "type")
+
+## Handling Errors
+
+for errors you can use use either `liftEither` or `failRes`:
+at the and they have same result.
+
+with `liftEither`
+
+```haskell
+resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity DeityArgs {} = liftEither $ dbDeity
+
+dbDeity ::  IO Either Deity
+dbDeity = pure $ Left "db error"
+```
+
+with `failRes`
+
+```haskell
+resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity DeityArgs { } = failRes "db error"
+```
 
 ### Mutations
 
