@@ -293,7 +293,7 @@ enum CharacterEnum {
   
 - for for all other unions will be generated new object type. for types without record syntaxt, fields will be automatally indexed.
 
-- all empty constructors in union will be summed in type `<tyConName>Enum` (e.g `CharacterEnum`), this enum will be wrapped in `CharacterEnumObject` and this type will be added to union member.
+- all empty constructors in union will be summed in type `<tyConName>Enum` (e.g `CharacterEnum`), this enum will be wrapped in `CharacterEnumObject` and added to union members.
 
 ### Scalar types
 
