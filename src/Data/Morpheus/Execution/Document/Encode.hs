@@ -45,14 +45,21 @@ import           Data.Morpheus.Types.Internal.TH
                                                 )
 
 
-encodeVars :: [Key]
-encodeVars = ["e", "m"]
+
+m_ :: Key
+m_ = "encodeMonad"
 
 fo_ :: Key
 fo_ = "fieldOperationKind"
 
 po_ :: Key
-po_ = "o"
+po_ = "parentOparation"
+
+e_ :: Key
+e_ = "encodeEvent"
+
+encodeVars :: [Key]
+encodeVars = [e_, m_]
 
 encodeVarsT :: [TypeQ]
 encodeVarsT = map (varT . mkName . unpack) encodeVars
@@ -63,7 +70,7 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
  where
   subARgs = conT ''SUBSCRIPTION : encodeVarsT
   instanceArgs | isSubscription typeKindD = subARgs
-               | otherwise = map (varT . mkName . unpack) ("o" : encodeVars)
+               | otherwise = map (varT . mkName . unpack) (po_ : encodeVars)
   mainType = applyT (mkName $ unpack tName) [mainTypeArg]
    where
     mainTypeArg | isSubscription typeKindD = applyT ''Resolver subARgs
@@ -89,10 +96,10 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
   -- defines Constraint: (Typeable m, Monad m)
   constrains =
     typeables
-      <> [ typeT ''Monad ["m"]
+      <> [ typeT ''Monad [m_]
          , applyT ''Encode (mainType : instanceArgs)
-         , iTypeable "e"
-         , iTypeable "m"
+         , iTypeable e_
+         , iTypeable m_
          ]
   -------------------------------------------------------------------
   -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where
