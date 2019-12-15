@@ -118,10 +118,7 @@ data Query m = Query
 data Deity = Deity
   { fullName :: Text         -- Non-Nullable Field
   , power    :: Maybe Text   -- Nullable Field
-  } deriving (Generic)
-
-instance GQLType Deity where
-  type  KIND Deity = OBJECT
+  } deriving (Generic,GQLType)
 
 data DeityArgs = DeityArgs
   { name      :: Text        -- Required Argument
@@ -151,8 +148,6 @@ resolveDeity DeityArgs { name, mythology } = liftEither $ dbDeity name mythology
 askDB :: Text -> Maybe Text -> IO (Either String Deity)
 askDB = ...
 ```
-
-Note that the type `a -> IORes b` is just Synonym for `a -> ExceptT String IO b`
 
 To make this `Query` type available as an API, we define a `GQLRootResolver` and feed it to the Morpheus `interpreter`. A `GQLRootResolver` consists of `query`, `mutation` and `subscription` definitions, while we omit the latter for this example:
 
@@ -236,13 +231,68 @@ To use union type, all you have to do is derive the `GQLType` class. Using Graph
 
 ```haskell
 data Character
-  = DEITY Deity
-  | HUMAN Human
-  deriving (Generic)
-
-instance GQLType Character where
-  type KIND Character = UNION
+  = data Character  =
+    CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
+  -- RECORDS
+  | Creature { creatureName :: Text, creatureAge :: Int }
+  --- Types
+  | SomeDeity Deity
+  | CharacterInt Int
+  | SomeMutli Int Text
+  --- ENUMS
+  | Zeus
+  | Cronus
+  deriving (Generic, GQLType)
 ```
+where deity is and object
+
+as you see there ar different kinds of unions. `morpheus` handles them all.
+
+this type will be represented as
+
+```gql
+union Character =
+    Deity # unwrapped union: becouse Character + Deity = CharacterDeity
+  | Creature
+  | SomeDeity # wrapped union: becouse Character + Deity != SomeDeity
+  | CharacterInt
+  | SomeMutli
+  | CharacterEnumObject # object wrapped for enums
+
+type Creature {
+  creatureName: String!
+  creatureAge: Int!
+}
+
+type SomeDeity {
+  _0: Deity!
+}
+
+type CharacterInt {
+  _0: Int!
+}
+
+type SomeMutli {
+  _0: Int!
+  _1: String!
+}
+
+# enum
+type CharacterEnumObject {
+  enum: CharacterEnum!
+}
+
+enum CharacterEnum {
+  Zeus
+  Cronus
+}
+```
+
+- namespaced Unions: `CharacterDeity` where `Character` is TypeConstructor and `Deity` referenced object (not scalar) type: will be generate regular graphql Union
+  
+- for for all other unions will be generated new object type. for types without record syntaxt, fields will be automatally indexed.
+
+- all empty constructors in union will be summed in type `<tyConName>Enum` (e.g `CharacterEnum`), this enum will be wrapped in `CharacterEnumObject` and this type will be added to union member.
 
 ### Scalar types
 
