@@ -122,8 +122,9 @@ instance (DecodeType a,Generic a, Monad m,LiftEither fo Resolver, MapStrategy fo
     args :: Validation a
     args = decodeArguments selectionArguments
 
-
-
+--  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
+instance (Monad m,LiftEither fo Resolver, MapStrategy fo o, Encode b fo e m) => Encode (Resolver fo e m b) o e m where
+  encode resolver = mapStrategy . resolving encode resolver
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
