@@ -20,7 +20,7 @@
   e.g:
   
   ```hs
-  data Character = 
+  data Character =
     CharacterDeity Deity
     SomeDeity Deity
     deriving (GQLType)
@@ -291,7 +291,7 @@ resolver _args = lift setDBAddress
 
   compiler output:
 
-  ```
+  ```json
   warning:
     Morpheus Client Warning:
     {
@@ -318,7 +318,7 @@ resolver _args = lift setDBAddress
 
 ## [0.6.2] - 2.11.2019
 
-## Added
+### Added
 
 - support of ghc 8.8.1
 
@@ -331,7 +331,7 @@ resolver _args = lift setDBAddress
 
 - example `API` executable is removed from Production build
 
-## Added
+### Added
 
 - helper functions: `liftEitherM` , `liftM`
 
@@ -353,7 +353,7 @@ resolver _args = lift setDBAddress
 - Parser supports anonymous Operation: `query` , `mutation` , `subscription`
   for example:
 
-  ```
+  ```gql
   mutation {
      name
   }
