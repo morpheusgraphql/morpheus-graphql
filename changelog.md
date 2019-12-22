@@ -1,3 +1,11 @@
+# Changelog
+
+## [0.8.1] - *
+
+### Fixed
+
+- selection of `__typename` on object und union objects (#337)
+
 ## [0.8.0] - 15.12.2019
 
 ### Changed
