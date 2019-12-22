@@ -194,7 +194,21 @@ getDBUser _ = do
                     , userAddress = const $ lift (getDBAddress (Content 12))
                     , userOffice  = constRes Nothing
                     , userHome    = constRes HH
-                    , userEntity  = constRes Nothing
+                    , userEntity  = constRes [
+                          MyUnionAddress Address{
+                            addressCity        = constRes "city"
+                            , addressStreet      = constRes "street"
+                            , addressHouseNumber = constRes 1
+                          },
+                          MyUnionUser User {
+                              userName    = constRes name
+                            , userEmail   = constRes email
+                            , userAddress = const $ lift (getDBAddress (Content 12))
+                            , userOffice  = constRes Nothing
+                            , userHome    = constRes HH
+                            , userEntity = constRes []
+                          }
+                        ]
                     }
 
 -- DB::Setter --------------------------------------------------------------------
@@ -216,7 +230,7 @@ setDBUser = do
             , userAddress = const $ lift setDBAddress
             , userOffice  = constRes Nothing
             , userHome    = constRes HH
-            , userEntity  = constRes Nothing
+            , userEntity  = constRes []
             }
 
 -- DB ----------------------

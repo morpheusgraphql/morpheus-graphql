@@ -138,11 +138,6 @@ validateSelectionSet lib fragments' operatorName variables = __validate
     <$> mapM validateSelection selectionSet
     >>= checkDuplicatesOn typeName
    where
-    validateFragment Fragment { fragmentSelection = selection' } =
-      __validate dataType selection'
-    {-
-            get dataField and validated arguments for RawSelection
-        -}
     -- getValidationData :: Name -> ValidSelection -> (DataField, DataTypeContent, ValidArguments)
     getValidationData key (selectionArguments, selectionPosition) = do
       selectionField <- lookupSelectionField selectionPosition
@@ -165,6 +160,8 @@ validateSelectionSet lib fragments' operatorName variables = __validate
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     --
     validateSelection :: (Text, RawSelection) -> Validation ValidSelectionSet
+    validateSelection ("__typename", sel@Selection { selectionArguments = [], selectionContent = SelectionField}) = 
+      pure [("__typename", sel { selectionArguments = [], selectionContent = SelectionField })]
     validateSelection (key', fullRawSelection@Selection { selectionArguments = selArgs, selectionContent = SelectionSet rawSelection, selectionPosition })
       = do
         (dataField, datatype, arguments) <- getValidationData
@@ -236,3 +233,4 @@ validateSelectionSet lib fragments' operatorName variables = __validate
     validateSelection (_, InlineFragment fragment') =
       castFragmentType Nothing (fragmentPosition fragment') [typeName] fragment'
         >>= validateFragment
+    validateFragment Fragment { fragmentSelection } = __validate dataType fragmentSelection
