@@ -193,20 +193,20 @@ getDBUser _ = do
                     , userEmail   = pure email
                     , userAddress = const $ lift (getDBAddress (Content 12))
                     , userOffice  = constRes Nothing
-                    , userHome    = constRes HH
-                    , userEntity  = constRes [
+                    , userHome    = pure HH
+                    , userEntity  = pure [
                           MyUnionAddress Address{
-                            addressCity        = constRes "city"
-                            , addressStreet      = constRes "street"
-                            , addressHouseNumber = constRes 1
+                            addressCity        = pure "city"
+                            , addressStreet      = pure "street"
+                            , addressHouseNumber = pure 1
                           },
                           MyUnionUser User {
-                              userName    = constRes name
-                            , userEmail   = constRes email
+                              userName    = pure name
+                            , userEmail   = pure email
                             , userAddress = const $ lift (getDBAddress (Content 12))
                             , userOffice  = constRes Nothing
-                            , userHome    = constRes HH
-                            , userEntity = constRes []
+                            , userHome    = pure HH
+                            , userEntity = pure []
                           }
                         ]
                     }
@@ -229,8 +229,8 @@ setDBUser = do
             , userEmail   = pure email
             , userAddress = const $ lift setDBAddress
             , userOffice  = constRes Nothing
-            , userHome    = constRes HH
-            , userEntity  = constRes []
+            , userHome    = pure HH
+            , userEntity  = pure []
             }
 
 -- DB ----------------------
