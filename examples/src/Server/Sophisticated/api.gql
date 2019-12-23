@@ -73,7 +73,7 @@ type User {
   ): Address!
   home: CityID!
   office(zipCode: [[[ID!]]!], id: CityID!): Address
-  entity: MyUnion
+  entity: [MyUnion!]!
 }
 
 union MyUnion = User | Address
