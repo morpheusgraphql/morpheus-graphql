@@ -64,29 +64,32 @@ alwaysFail = pure $ Left "fail with Either"
 rootResolver :: GQLRootResolver IO EVENT Query Mutation Subscription
 rootResolver = GQLRootResolver
   { queryResolver        = Query { user
-                                 , testUnion = constRes Nothing
-                                 , fail1     = const $ liftEither alwaysFail
-                                 , fail2 = const $ failRes "fail with failRes"
+                                 , testUnion = pure Nothing
+                                 , fail1     = liftEither alwaysFail
+                                 , fail2 =  failRes "fail with failRes"
                                  }
-  , mutationResolver     = Mutation { createUser = user }
+  , mutationResolver     = Mutation { createUser = const user }
   , subscriptionResolver = Subscription
-                             { newUser = const SubResolver
+
+                             { newUser = SubResolver
                                            { subChannels = [Channel]
-                                           , subResolver = user
+                                           , subResolver = const user
                                            }
                              }
   }
  where
-  user _ = pure User { name    = constRes "testName"
-                     , email   = constRes ""
+  user :: Applicative m => m (User m)
+  user = pure User {   name    = pure "testName"
+                     , email   = pure ""
                      , address = resolveAddress
                      , office  = resolveAddress
-                     , friend  = constRes Nothing
+                     , friend  = pure Nothing
                      }
    where
-    resolveAddress _ = pure Address { city        = constRes ""
-                                    , houseNumber = constRes 0
-                                    , street      = constRes Nothing
+    resolveAddress :: Applicative m => a -> m (Address m)
+    resolveAddress _ = pure Address { city        = pure ""
+                                    , houseNumber = pure 0
+                                    , street      = const $ pure Nothing
                                     }
 
 api :: GQLRequest -> IO GQLResponse
