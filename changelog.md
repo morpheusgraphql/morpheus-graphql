@@ -6,6 +6,22 @@
 
 - selection of `__typename` on object und union objects (#337)
 
+### Changed
+
+- template haskell generates `m type`  insead of `() -> m type` for fields without argument (#334)
+
+  ```hs
+  data Diety m = Deity {
+      name :: (Arrow () (m Text)),
+      power :: (Arrow () (m (Maybe Text)))
+  }
+  -- changed to
+  data Diety m = Deity {
+      name :: m Text,
+      power :: m (Maybe Text)
+  }
+  ```
+
 ## [0.8.0] - 15.12.2019
 
 ### Changed
