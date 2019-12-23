@@ -13,9 +13,7 @@ module Data.Morpheus.Execution.Internal.Declare
   )
 where
 
-import           Data.Maybe                     ( maybe
-                                                , isJust
-                                                )
+import           Data.Maybe                     ( maybe )
 import           Data.Text                      ( unpack )
 import           GHC.Generics                   ( Generic )
 import           Language.Haskell.TH

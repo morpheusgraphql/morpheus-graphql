@@ -27,7 +27,6 @@ import           Data.Morpheus.Types            ( Event
                                                 , ID(..)
                                                 , ScalarValue(..)
                                                 , Resolver(..)
-                                                , constRes
                                                 , failRes
                                                 , liftEither
                                                 )
