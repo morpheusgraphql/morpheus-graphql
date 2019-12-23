@@ -112,12 +112,12 @@ gqlRoot = GQLRootResolver { queryResolver
   queryResolver = Query
     { queryUser     = resolveUser
     , queryAnimal   = resolveAnimal
-    , querySet      = constRes $ S.fromList [1, 2]
-    , querySomeMap  = constRes $ M.fromList [("robin", 1), ("carl", 2)]
+    , querySet      = pure $ S.fromList [1, 2]
+    , querySomeMap  = pure $ M.fromList [("robin", 1), ("carl", 2)]
     , queryWrapped1 = constRes $ A (0, "some value")
-    , queryWrapped2 = constRes $ A ""
-    , queryFail1    = const $ failRes "fail example"
-    , queryFail2    = const $ liftEither alwaysFail
+    , queryWrapped2 = pure $ A ""
+    , queryFail1    = failRes "fail example"
+    , queryFail2    = liftEither alwaysFail
     }
   -------------------------------------------------------------
   mutationResolver = Mutation { mutationCreateUser    = resolveCreateUser
@@ -134,8 +134,8 @@ gqlRoot = GQLRootResolver { queryResolver
 alwaysFail :: IO (Either String a)
 alwaysFail = pure $ Left "fail example"
 
-resolveUser :: () -> ResolveQ EVENT IO User
-resolveUser _args = liftEither (getDBUser (Content 2))
+resolveUser :: ResolveQ EVENT IO User
+resolveUser = liftEither (getDBUser (Content 2))
 
 resolveAnimal :: QueryAnimalArgs -> IORes EVENT Text
 resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
@@ -144,28 +144,28 @@ resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
 -- Resolve MUTATIONS
 -- 
 -- Mutation Wit Event Triggering : sends events to subscription  
-resolveCreateUser :: () -> ResolveM EVENT IO User
-resolveCreateUser _args = MutResolver $ do
+resolveCreateUser :: ResolveM EVENT IO User
+resolveCreateUser = MutResolver $ do
   value <- lift setDBUser
   pure ([userUpdate], value)
 
 -- Mutation Wit Event Triggering : sends events to subscription  
-resolveCreateAdress :: () -> ResolveM EVENT IO Address
-resolveCreateAdress _args = MutResolver $ do
+resolveCreateAdress :: ResolveM EVENT IO Address
+resolveCreateAdress = MutResolver $ do
   value <- lift setDBAddress
   pure ([addressUpdate], value)
 
 -- Mutation Without Event Triggering  
-resolveSetAdress :: () -> ResolveM EVENT IO Address
-resolveSetAdress _args = lift setDBAddress
+resolveSetAdress :: ResolveM EVENT IO Address
+resolveSetAdress = lift setDBAddress
 
 -- Resolve SUBSCRIPTION
-resolveNewUser :: () -> ResolveS EVENT IO User
-resolveNewUser _args = SubResolver { subChannels = [USER], subResolver }
+resolveNewUser :: ResolveS EVENT IO User
+resolveNewUser = SubResolver { subChannels = [USER], subResolver }
   where subResolver (Event _ content) = liftEither (getDBUser content)
 
-resolveNewAdress :: () -> ResolveS EVENT IO Address
-resolveNewAdress _args = SubResolver { subChannels = [ADDRESS], subResolver }
+resolveNewAdress :: ResolveS EVENT IO Address
+resolveNewAdress = SubResolver { subChannels = [ADDRESS], subResolver }
   where subResolver (Event _ content) = lift (getDBAddress content)
 
 -- Events ----------------------------------------------------------------
@@ -181,32 +181,32 @@ getDBAddress _id = do
   city   <- dbText
   street <- dbText
   number <- dbInt
-  pure Address { addressCity        = constRes city
-               , addressStreet      = constRes street
-               , addressHouseNumber = constRes number
+  pure Address { addressCity        = pure city
+               , addressStreet      = pure street
+               , addressHouseNumber = pure number
                }
 
 getDBUser :: Content -> IO (Either String (User (IORes EVENT)))
 getDBUser _ = do
   Person { name, email } <- dbPerson
-  pure $ Right User { userName    = constRes name
-                    , userEmail   = constRes email
+  pure $ Right User { userName    = pure name
+                    , userEmail   = pure email
                     , userAddress = const $ lift (getDBAddress (Content 12))
                     , userOffice  = constRes Nothing
-                    , userHome    = constRes HH
-                    , userEntity  = constRes [
+                    , userHome    = pure HH
+                    , userEntity  = pure [
                           MyUnionAddress Address{
-                            addressCity        = constRes "city"
-                            , addressStreet      = constRes "street"
-                            , addressHouseNumber = constRes 1
+                            addressCity        = pure "city"
+                            , addressStreet      = pure "street"
+                            , addressHouseNumber = pure 1
                           },
                           MyUnionUser User {
-                              userName    = constRes name
-                            , userEmail   = constRes email
+                              userName    = pure name
+                            , userEmail   = pure email
                             , userAddress = const $ lift (getDBAddress (Content 12))
                             , userOffice  = constRes Nothing
-                            , userHome    = constRes HH
-                            , userEntity = constRes []
+                            , userHome    = pure HH
+                            , userEntity = pure []
                           }
                         ]
                     }
@@ -217,20 +217,20 @@ setDBAddress = do
   city        <- dbText
   street      <- dbText
   houseNumber <- dbInt
-  pure Address { addressCity        = constRes city
-               , addressStreet      = constRes street
-               , addressHouseNumber = constRes houseNumber
+  pure Address { addressCity        = pure city
+               , addressStreet      = pure street
+               , addressHouseNumber = pure houseNumber
                }
 
 setDBUser :: IO (User (IOMutRes EVENT))
 setDBUser = do
   Person { name, email } <- dbPerson
-  pure User { userName    = constRes name
-            , userEmail   = constRes email
+  pure User { userName    = pure name
+            , userEmail   = pure email
             , userAddress = const $ lift setDBAddress
             , userOffice  = constRes Nothing
-            , userHome    = constRes HH
-            , userEntity  = constRes []
+            , userHome    = pure HH
+            , userEntity  = pure []
             }
 
 -- DB ----------------------

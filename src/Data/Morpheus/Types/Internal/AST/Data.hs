@@ -90,6 +90,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , ClientType(..)
   , DataInputUnion
   , isNullableWrapper
+  , isOutputType
   )
 where
 
@@ -168,6 +169,11 @@ data OperationType
 isSubscription :: DataTypeKind -> Bool
 isSubscription (KindObject (Just Subscription)) = True
 isSubscription _ = False
+
+isOutputType :: DataTypeKind -> Bool
+isOutputType (KindObject _) = True
+isOutputType KindUnion      = True
+isOutputType _              = False
 
 isOutputObject :: DataTypeKind -> Bool
 isOutputObject (KindObject _) = True
@@ -631,13 +637,13 @@ data GQLTypeD = GQLTypeD
   } deriving (Show)
 
 data TypeD = TypeD
-  { tName      :: String
-  , tNamespace :: [String]
+  { tName      :: Name
+  , tNamespace :: [Name]
   , tCons      :: [ConsD]
   , tMeta      :: Maybe Meta
   } deriving (Show)
 
 data ConsD = ConsD
-  { cName   :: String
+  { cName   :: Name
   , cFields :: [DataField]
   } deriving (Show)

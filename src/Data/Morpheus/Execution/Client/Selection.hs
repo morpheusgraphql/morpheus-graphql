@@ -14,7 +14,6 @@ import           Data.Maybe                     ( fromMaybe )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text
                                                 , pack
-                                                , unpack
                                                 )
 --
 -- MORPHEUS
@@ -51,6 +50,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
                                                 , RAW
+                                                , Name
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
@@ -104,12 +104,9 @@ operationTypes lib variables = genOperation
    where
     rootArgumentsType :: TypeD
     rootArgumentsType = TypeD
-      { tName      = unpack argsName
+      { tName      = argsName
       , tNamespace = []
-      , tCons      = [ ConsD { cName   = unpack argsName
-                             , cFields = map fieldD variables
-                             }
-                     ]
+      , tCons = [ConsD { cName = argsName, cFields = map fieldD variables }]
       , tMeta      = Nothing
       }
      where
@@ -124,17 +121,17 @@ operationTypes lib variables = genOperation
   ---------------------------------------------------------
   -- generates selection Object Types
   genRecordType
-    :: [Key]
-    -> Key
+    :: [Name]
+    -> Name
     -> DataType
     -> ValidSelectionSet
-    -> Validation ([ClientType], [Text])
-  genRecordType path name dataType recordSelSet = do
-    (con, subTypes, requests) <- genConsD (unpack name) dataType recordSelSet
+    -> Validation ([ClientType], [Name])
+  genRecordType path tName dataType recordSelSet = do
+    (con, subTypes, requests) <- genConsD tName dataType recordSelSet
     pure
       ( ClientType
           { clientType = TypeD { tName
-                               , tNamespace = map unpack path
+                               , tNamespace = path
                                , tCons      = [con]
                                , tMeta      = Nothing
                                }
@@ -144,9 +141,8 @@ operationTypes lib variables = genOperation
       , requests
       )
    where
-    tName = unpack name
     genConsD
-      :: String
+      :: Name
       -> DataType
       -> ValidSelectionSet
       -> Validation (ConsD, [ClientType], [Text])
@@ -194,8 +190,8 @@ operationTypes lib variables = genOperation
               unzip3 <$> mapM getUnionType unionSelections
             pure
               ( ClientType
-                  { clientType = TypeD { tNamespace = map unpack fieldPath
-                                       , tName      = unpack $ typeFrom [] dType
+                  { clientType = TypeD { tNamespace = fieldPath
+                                       , tName      = typeFrom [] dType
                                        , tCons
                                        , tMeta      = Nothing
                                        }
@@ -207,7 +203,7 @@ operationTypes lib variables = genOperation
          where
           getUnionType (selectedTyName, selectionVariant) = do
             conDatatype <- getType lib selectedTyName
-            genConsD (unpack selectedTyName) conDatatype selectionVariant
+            genConsD selectedTyName conDatatype selectionVariant
 
 scanInputTypes :: DataTypeLib -> Key -> LibUpdater [Key]
 scanInputTypes lib name collected | name `elem` collected = pure collected
@@ -234,13 +230,15 @@ buildInputType lib name = getType lib name >>= generateTypes
       fields <- traverse toFieldD inputFields
       pure
         [ ClientType
-            { clientType =
-              TypeD
-                { tName      = unpack typeName
-                , tNamespace = []
-                , tCons = [ConsD { cName = unpack typeName, cFields = fields }]
-                , tMeta      = Nothing
-                }
+            { clientType = TypeD
+                             { tName      = typeName
+                             , tNamespace = []
+                             , tCons      = [ ConsD { cName   = typeName
+                                                    , cFields = fields
+                                                    }
+                                            ]
+                             , tMeta      = Nothing
+                             }
             , clientKind = KindInputObject
             }
         ]
@@ -251,7 +249,7 @@ buildInputType lib name = getType lib name >>= generateTypes
         pure $ field { fieldType = fieldType { typeConName } }
     subTypes (DataEnum enumTags) = pure
       [ ClientType
-          { clientType = TypeD { tName      = unpack typeName
+          { clientType = TypeD { tName      = typeName
                                , tNamespace = []
                                , tCons      = map enumOption enumTags
                                , tMeta      = Nothing
@@ -261,7 +259,7 @@ buildInputType lib name = getType lib name >>= generateTypes
       ]
      where
       enumOption DataEnumValue { enumName } =
-        ConsD { cName = unpack enumName, cFields = [] }
+        ConsD { cName = enumName, cFields = [] }
     subTypes _ = pure []
 
 
@@ -308,7 +306,7 @@ getType :: DataTypeLib -> Text -> Validation DataType
 getType lib typename =
   lookupType (compileError typename) (allDataTypes lib) typename
 
-typeFromScalar :: Text -> Text
+typeFromScalar :: Name -> Name
 typeFromScalar "Boolean" = "Bool"
 typeFromScalar "Int"     = "Int"
 typeFromScalar "Float"   = "Float"
@@ -316,10 +314,10 @@ typeFromScalar "String"  = "Text"
 typeFromScalar "ID"      = "ID"
 typeFromScalar _         = "ScalarValue"
 
-typeFrom :: [Key] -> DataType -> Text
+typeFrom :: [Name] -> DataType -> Name
 typeFrom path DataType { typeName, typeContent } = __typeFrom typeContent
  where
   __typeFrom DataScalar{} = typeFromScalar typeName
-  __typeFrom DataObject{} = pack $ nameSpaceType path typeName
-  __typeFrom DataUnion{}  = pack $ nameSpaceType path typeName
+  __typeFrom DataObject{} = nameSpaceType path typeName
+  __typeFrom DataUnion{}  = nameSpaceType path typeName
   __typeFrom _            = typeName

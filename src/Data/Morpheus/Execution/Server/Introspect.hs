@@ -57,6 +57,7 @@ import           Data.Morpheus.Types.GQLType    ( GQLType(..) )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..)
                                                 , resolveUpdates
+                                                , Resolver
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
@@ -144,6 +145,13 @@ instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m
     inputs :: [TypeUpdater]
     inputs =
       snd $ objectFields (Proxy :: Proxy 'False) (name, InputType, Proxy @a)
+
+--  GQL Resolver b, MUTATION, SUBSCRIPTION, QUERY
+instance (GQLType b, Introspect b) => Introspect (Resolver fo e m b) where
+  isObject _ = False
+  field _ = field (Proxy @b)
+  introspect _ = introspect (Proxy @b)
+
 
 -- | Introspect With specific Kind: 'kind': object, scalar, enum ...
 class IntrospectKind (kind :: GQL_KIND) a where

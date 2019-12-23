@@ -54,6 +54,8 @@ class RenderSchema a b where
 instance RenderSchema DataType S__Type where
   render (name, DataType { typeMeta, typeContent }) = __render typeContent
    where
+    __render
+      :: (Monad m, Failure Text m) => DataTypeContent -> DataTypeLib -> m (S__Type m)
     __render DataScalar{} =
       constRes $ createLeafType SCALAR name typeMeta Nothing
     __render (DataEnum enums) = constRes
@@ -71,11 +73,10 @@ instance RenderSchema DataType S__Type where
 
 createEnumValue :: Monad m => DataEnumValue -> S__EnumValue m
 createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
-  { s__EnumValueName              = constRes enumName
-  , s__EnumValueDescription       = constRes (enumMeta >>= metaDescription)
-  , s__EnumValueIsDeprecated      = constRes (isJust deprecated)
-  , s__EnumValueDeprecationReason = constRes
-                                      (deprecated >>= lookupDeprecatedReason)
+  { s__EnumValueName              = pure enumName
+  , s__EnumValueDescription       = pure (enumMeta >>= metaDescription)
+  , s__EnumValueIsDeprecated      = pure (isJust deprecated)
+  , s__EnumValueDeprecationReason = pure (deprecated >>= lookupDeprecatedReason)
   }
   where deprecated = enumMeta >>= lookupDeprecated
 
@@ -85,13 +86,13 @@ instance RenderSchema DataField S__Field where
       kind <- renderTypeKind <$> lookupKind typeConName lib
       args <- traverse (`renderinputValue` lib) fieldArgs
       pure S__Field
-        { s__FieldName              = constRes (convertToJSONName name)
-        , s__FieldDescription       = constRes (fieldMeta >>= metaDescription)
-        , s__FieldArgs              = constRes args
+        { s__FieldName              = pure (convertToJSONName name)
+        , s__FieldDescription       = pure (fieldMeta >>= metaDescription)
+        , s__FieldArgs              = pure args
         , s__FieldType'             =
-          constRes (wrap field $ createType kind typeConName Nothing $ Just [])
-        , s__FieldIsDeprecated      = constRes (isJust deprecated)
-        , s__FieldDeprecationReason = constRes
+          pure (wrap field $ createType kind typeConName Nothing $ Just [])
+        , s__FieldIsDeprecated      = pure (isJust deprecated)
+        , s__FieldDeprecationReason = pure
                                         (deprecated >>= lookupDeprecatedReason)
         }
     where deprecated = fieldMeta >>= lookupDeprecated
@@ -155,58 +156,57 @@ createLeafType
   -> Maybe [S__EnumValue m]
   -> S__Type m
 createLeafType kind name meta enums = S__Type
-  { s__TypeKind          = constRes kind
-  , s__TypeName          = constRes $ Just name
-  , s__TypeDescription   = constRes (meta >>= metaDescription)
+  { s__TypeKind          = pure kind
+  , s__TypeName          = pure $ Just name
+  , s__TypeDescription   = pure (meta >>= metaDescription)
   , s__TypeFields        = constRes Nothing
-  , s__TypeOfType        = constRes Nothing
-  , s__TypeInterfaces    = constRes Nothing
-  , s__TypePossibleTypes = constRes Nothing
+  , s__TypeOfType        = pure Nothing
+  , s__TypeInterfaces    = pure Nothing
+  , s__TypePossibleTypes = pure Nothing
   , s__TypeEnumValues    = constRes enums
-  , s__TypeInputFields   = constRes Nothing
+  , s__TypeInputFields   = pure Nothing
   }
 
 typeFromUnion :: Monad m => (Text, Maybe Meta, DataUnion) -> S__Type m
 typeFromUnion (name, typeMeta, typeContent) = S__Type
-  { s__TypeKind          = constRes UNION
-  , s__TypeName          = constRes $ Just name
-  , s__TypeDescription   = constRes (typeMeta >>= metaDescription)
+  { s__TypeKind          = pure UNION
+  , s__TypeName          = pure $ Just name
+  , s__TypeDescription   = pure (typeMeta >>= metaDescription)
   , s__TypeFields        = constRes Nothing
-  , s__TypeOfType        = constRes Nothing
-  , s__TypeInterfaces    = constRes Nothing
+  , s__TypeOfType        = pure Nothing
+  , s__TypeInterfaces    = pure Nothing
   , s__TypePossibleTypes =
-    constRes
-      $ Just (map (\x -> createObjectType x Nothing $ Just []) typeContent)
+    pure $ Just (map (\x -> createObjectType x Nothing $ Just []) typeContent)
   , s__TypeEnumValues    = constRes Nothing
-  , s__TypeInputFields   = constRes Nothing
+  , s__TypeInputFields   = pure Nothing
   }
 
 createObjectType
   :: Monad m => Text -> Maybe Text -> Maybe [S__Field m] -> S__Type m
 createObjectType name description fields = S__Type
-  { s__TypeKind          = constRes OBJECT
-  , s__TypeName          = constRes $ Just name
-  , s__TypeDescription   = constRes description
+  { s__TypeKind          = pure OBJECT
+  , s__TypeName          = pure $ Just name
+  , s__TypeDescription   = pure description
   , s__TypeFields        = constRes fields
-  , s__TypeOfType        = constRes Nothing
-  , s__TypeInterfaces    = constRes $ Just []
-  , s__TypePossibleTypes = constRes Nothing
+  , s__TypeOfType        = pure Nothing
+  , s__TypeInterfaces    = pure $ Just []
+  , s__TypePossibleTypes = pure Nothing
   , s__TypeEnumValues    = constRes Nothing
-  , s__TypeInputFields   = constRes Nothing
+  , s__TypeInputFields   = pure Nothing
   }
 
 createInputObject
   :: Monad m => Text -> Maybe Meta -> [S__InputValue m] -> S__Type m
 createInputObject name meta fields = S__Type
-  { s__TypeKind          = constRes INPUT_OBJECT
-  , s__TypeName          = constRes $ Just name
-  , s__TypeDescription   = constRes (meta >>= metaDescription)
+  { s__TypeKind          = pure INPUT_OBJECT
+  , s__TypeName          = pure $ Just name
+  , s__TypeDescription   = pure (meta >>= metaDescription)
   , s__TypeFields        = constRes Nothing
-  , s__TypeOfType        = constRes Nothing
-  , s__TypeInterfaces    = constRes Nothing
-  , s__TypePossibleTypes = constRes Nothing
+  , s__TypeOfType        = pure Nothing
+  , s__TypeInterfaces    = pure Nothing
+  , s__TypePossibleTypes = pure Nothing
   , s__TypeEnumValues    = constRes Nothing
-  , s__TypeInputFields   = constRes $ Just fields
+  , s__TypeInputFields   = pure $ Just fields
   }
 
 createType
@@ -217,34 +217,34 @@ createType
   -> Maybe [S__Field m]
   -> S__Type m
 createType kind name description fields = S__Type
-  { s__TypeKind          = constRes kind
-  , s__TypeName          = constRes $ Just name
-  , s__TypeDescription   = constRes description
+  { s__TypeKind          = pure kind
+  , s__TypeName          = pure $ Just name
+  , s__TypeDescription   = pure description
   , s__TypeFields        = constRes fields
-  , s__TypeOfType        = constRes Nothing
-  , s__TypeInterfaces    = constRes Nothing
-  , s__TypePossibleTypes = constRes Nothing
+  , s__TypeOfType        = pure Nothing
+  , s__TypeInterfaces    = pure Nothing
+  , s__TypePossibleTypes = pure Nothing
   , s__TypeEnumValues    = constRes $ Just []
-  , s__TypeInputFields   = constRes Nothing
+  , s__TypeInputFields   = pure Nothing
   }
 
 wrapAs :: Monad m => TypeKind -> S__Type m -> S__Type m
-wrapAs kind contentType = S__Type { s__TypeKind          = constRes kind
-                                  , s__TypeName          = constRes Nothing
-                                  , s__TypeDescription   = constRes Nothing
+wrapAs kind contentType = S__Type { s__TypeKind          = pure kind
+                                  , s__TypeName          = pure Nothing
+                                  , s__TypeDescription   = pure Nothing
                                   , s__TypeFields        = constRes Nothing
-                                  , s__TypeOfType = constRes $ Just contentType
-                                  , s__TypeInterfaces    = constRes Nothing
-                                  , s__TypePossibleTypes = constRes Nothing
+                                  , s__TypeOfType = pure $ Just contentType
+                                  , s__TypeInterfaces    = pure Nothing
+                                  , s__TypePossibleTypes = pure Nothing
                                   , s__TypeEnumValues    = constRes Nothing
-                                  , s__TypeInputFields   = constRes Nothing
+                                  , s__TypeInputFields   = pure Nothing
                                   }
 
 createInputValueWith
   :: Monad m => Text -> Maybe Meta -> S__Type m -> S__InputValue m
 createInputValueWith name meta ivType = S__InputValue
-  { s__InputValueName         = constRes (convertToJSONName name)
-  , s__InputValueDescription  = constRes (meta >>= metaDescription)
-  , s__InputValueType'        = constRes ivType
-  , s__InputValueDefaultValue = constRes Nothing
+  { s__InputValueName         = pure (convertToJSONName name)
+  , s__InputValueDescription  = pure (meta >>= metaDescription)
+  , s__InputValueType'        = pure ivType
+  , s__InputValueDefaultValue = pure Nothing
   }
