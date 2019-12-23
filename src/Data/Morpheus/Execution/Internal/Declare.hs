@@ -37,7 +37,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ConsD(..)
                                                 , TypeD(..)
                                                 , Key
-                                                , isOutputType
+                                                , isOutputObject
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( UnSubResolver )
@@ -92,7 +92,7 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
         monadVar = VarT $ mkName $ unpack m_
         ---------------------------
         genFieldT Nothing
-          | (isOutputType <$> kindD) == Just True = AppT monadVar result
+          | (isOutputObject <$> kindD) == Just True = AppT monadVar result
           | otherwise                             = result
         genFieldT (Just ArgsType { argsTypeName }) = AppT
           (AppT arrowType argType)
