@@ -399,7 +399,7 @@ instance MapStrategy QUERY SUBSCRIPTION where
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
---  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
+--  if your schema does not supports __mutation__ or __subscription__ , you can use __()__ for it.
 data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* -> *) -> * )  (sub :: (* -> *) -> * )  = GQLRootResolver
   { queryResolver        :: query (Resolver QUERY event m)
   , mutationResolver     :: mut (Resolver MUTATION event m)
