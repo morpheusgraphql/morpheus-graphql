@@ -2,8 +2,8 @@
 
 Build GraphQL APIs with your favourite functional language!
 
-Morpheus GraphQL (Server & Client) helps you to build GraphQL APIs in Haskell with native haskell types.
-Morpheus will convert your haskell types to a GraphQL schema and all your resolvers are just native Haskell functions. Mopheus GraphQL can also convert your GraphQL Schema or Query to Haskell types and validate them in compile time.
+Morpheus GraphQL (Server & Client) helps you to build GraphQL APIs in Haskell with native Haskell types.
+Morpheus will convert your Haskell types to a GraphQL schema and all your resolvers are just native Haskell functions. Mopheus GraphQL can also convert your GraphQL Schema or Query to Haskell types and validate them in compile time.
 
 Morpheus is still in an early stage of development, so any feedback is more than welcome, and we appreciate any contribution!
 Just open an issue here on GitHub, or join [our Slack channel](https://morpheus-graphql-slack-invite.herokuapp.com/) to get in touch.
@@ -101,9 +101,9 @@ api = interpreter rootResolver
 
 Template Haskell Generates types: `Query` , `Deity`, `DeityArgs`, that can be used by `rootResolver`
 
-`descriptions` and `deprecations` will be displayed in intropsection.
+`descriptions` and `deprecations` will be displayed in introspection.
 
-`importGQLDocumentWithNamespace` will generate Types with namespaced fields. if you don't need napespacing use `importGQLDocument`
+`importGQLDocumentWithNamespace` will generate Types with namespaced fields. If you don't need napespacing use `importGQLDocument`
 
 ### with Native Haskell Types
 
@@ -231,8 +231,7 @@ To use union type, all you have to do is derive the `GQLType` class. Using Graph
 
 ```haskell
 data Character
-  = data Character  =
-    CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
+  = CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
   -- RECORDS
   | Creature { creatureName :: Text, creatureAge :: Int }
   --- Types
@@ -245,11 +244,11 @@ data Character
   deriving (Generic, GQLType)
 ```
 
-where deity is and object
+where `Deity` is an object.
 
-as you see there ar different kinds of unions. `morpheus` handles them all.
+As you see there are different kinds of unions. `morpheus` handles them all.
 
-this type will be represented as
+This type will be represented as
 
 ```gql
 union Character =
@@ -291,7 +290,7 @@ enum CharacterEnum {
 
 - namespaced Unions: `CharacterDeity` where `Character` is TypeConstructor and `Deity` referenced object (not scalar) type: will be generate regular graphql Union
   
-- for for all other unions will be generated new object type. for types without record syntaxt, fields will be automatally indexed.
+- for all other unions will be generated new object type. for types without record syntaxt, fields will be automatally indexed.
 
 - all empty constructors in union will be summed in type `<tyConName>Enum` (e.g `CharacterEnum`), this enum will be wrapped in `CharacterEnumObject` and added to union members.
 
@@ -389,7 +388,7 @@ gqlApi = interpreter rootResolver
 im morpheus subscription and mutation communicating with Events,
 `Event` consists with user defined `Channel` and `Content`.
 
-every subscription has own Channel by which will be triggered
+Every subscription has its own Channel by which it will be triggered
 
 ```haskell
 data Channel

@@ -256,9 +256,9 @@ this type will be represented as
 
 ```gql
 union Character =
-    Deity # unwrapped union: becouse Character + Deity = CharacterDeity
+    Deity # unwrapped union: because Character + Deity = CharacterDeity
   | Creature
-  | SomeDeity # wrapped union: becouse Character + Deity != SomeDeity
+  | SomeDeity # wrapped union: because Character + Deity != SomeDeity
   | CharacterInt
   | SomeMutli
   | CharacterEnumObject # object wrapped for enums
