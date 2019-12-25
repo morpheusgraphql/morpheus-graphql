@@ -8,6 +8,18 @@
 
 ### Changed
 
+- support of resolver fields `m type` for the fields without arguments
+
+  ```hs
+  data Diety m = Deity {
+      name :: m Text
+  }
+  -- is equal to
+  data Diety m = Deity {
+      name :: () -> m Text
+  }
+  ```
+
 - template haskell generates `m type`  insead of `() -> m type` for fields without argument (#334)
 
   ```hs
