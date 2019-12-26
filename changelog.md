@@ -5,8 +5,9 @@
 ### Fixed
 
 - selection of `__typename` on object und union objects (#337)
-- auto inferece of external types graphQL document (#343)
-  th will generate field `m (Type m)` if type has argument
+- auto inferece of external types in gql document (#343)
+
+  th will generate field `m (Type m)` if type has an argument
   
   e.g for this types and DSL
   
