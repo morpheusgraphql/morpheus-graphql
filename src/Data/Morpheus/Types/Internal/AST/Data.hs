@@ -25,7 +25,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , DataTypeKind(..)
   , DataFingerprint(..)
   , RawDataType(..)
-  , ResolverKind(..)
   , TypeWrapper(..)
   , TypeRef(..)
   , DataEnumValue(..)
@@ -197,14 +196,6 @@ data DataTypeKind
   | KindNonNull
   | KindInputUnion
   deriving (Eq, Show, Lift)
-
-data ResolverKind
-  = PlainResolver
-  | TypeVarResolver
-  | ExternalResolver
-  deriving (Show, Eq, Lift)
-
-
 
 isFieldNullable :: DataField -> Bool
 isFieldNullable = isNullable . fieldType

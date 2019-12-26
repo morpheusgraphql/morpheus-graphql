@@ -22,7 +22,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataType(..)
                                                 , DataTypeKind(..)
                                                 , OperationType(..)
-                                                , ResolverKind(..)
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
                                                 , sysTypes
@@ -31,6 +30,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeD(..)
                                                 , Name
                                                 , DataObject
+                                                , kindOf
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
@@ -38,6 +38,11 @@ import           Data.Morpheus.Types.Internal.Resolving
 
 m_ :: Name
 m_ = "m"
+
+getFieldKind :: Name -> [(Name, DataType)] -> Validation DataTypeKind
+getFieldKind key lib = pure $ case lookup key lib of
+  Just x  -> kindOf x
+  -- Nothing           -> ExternalResolver
 
 
 renderTHTypes :: Bool -> [(Name, DataType)] -> Validation [GQLTypeD]
@@ -67,12 +72,6 @@ renderTHTypes namespace lib = traverse renderTHType lib
       fieldArgsType
         | null fieldArgs = Nothing
         | otherwise = Just (genArgsTypeName fieldName)
-       where
-        getFieldType key = case typeContent <$> lookup key lib of
-          Nothing           -> ExternalResolver
-          Just DataObject{} -> TypeVarResolver
-          Just DataUnion{}  -> TypeVarResolver
-          Just _            -> PlainResolver
     --------------------------------------------
     generateType dt@DataType { typeName, typeContent, typeMeta } = genType
       typeContent
