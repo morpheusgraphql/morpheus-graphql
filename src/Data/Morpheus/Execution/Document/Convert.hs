@@ -11,12 +11,11 @@ module Data.Morpheus.Execution.Document.Convert
 where
 
 import           Data.Semigroup                 ( (<>) )
-import           Data.Text(unpack)
-import           Language.Haskell.TH  --(appT,conT, Q,mkName,reify)
-import           Language.Haskell.TH.Quote    
---
+import           Data.Text                      (unpack)
+import           Language.Haskell.TH  
+
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal   ( internalError )
+import           Data.Morpheus.Types.Internal.TH (infoTyVars)
 import           Data.Morpheus.Execution.Internal.Utils
                                                 ( capital )
 import           Data.Morpheus.Types.Internal.AST
@@ -33,21 +32,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeD(..)
                                                 , Key
                                                 , DataObject
-                                                , kindOf
                                                 )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation )
-import           Data.Morpheus.Types.GQLType    ( GQLType(..)
-                                                , TRUE
-                                                )
-import           Debug.Trace (traceShow)
-import           Data.Morpheus.Kind             ( ENUM
-                                                , SCALAR
-                                                , WRAPPER
-                                                , INPUT
-                                                , OUTPUT
-                                                , OBJECT
-                                                )
+
+
 m_ :: Key
 m_ = "m"
 
@@ -59,16 +46,13 @@ getTypeArgs "Int" _ = pure Nothing
 getTypeArgs "Float" _ = pure Nothing
 getTypeArgs key lib = case typeContent <$> lookup key lib of
   Just x  -> pure (kindToTyArgs x)
-  Nothing -> do 
-    x <- reifyInstances ''KIND  [ConT (mkName $ unpack key)]
-    case x of 
-      [TySynInstD _ (TySynEqn _ k)] -> 
-          case k of 
-            ConT x | x == ''OBJECT || x == ''OUTPUT -> pure $ Just m_
-            ConT _ -> pure Nothing
-            other -> fail $ "error: on " <> unpack key <> " " <> show other
-      x -> fail $ (show x)<> "mailformed GQLType declaration for"<> unpack key 
- 
+  Nothing -> getTyArgs <$> reify (mkName $ unpack key)
+
+getTyArgs :: Info -> Maybe Key
+getTyArgs x 
+          | length (infoTyVars x) > 0 = Just m_ 
+          | otherwise = Nothing
+
 
 kindToTyArgs :: DataTypeContent -> Maybe Key
 kindToTyArgs DataObject{} = Just m_

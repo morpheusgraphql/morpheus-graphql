@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DerivingStrategies    #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveAnyClass        #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -28,14 +28,12 @@ import qualified Data.Set                      as S
 import           Data.Text                      ( Text
                                                 , pack
                                                 )
-import           Data.Typeable                  ( Typeable )
 import           GHC.Generics                   ( Generic )
 
 -- MORPHEUS
 import           Data.Morpheus.Document         ( importGQLDocumentWithNamespace
                                                 )
 import           Data.Morpheus.Kind             ( INPUT
-                                                , OBJECT
                                                 , SCALAR
                                                 )
 import           Data.Morpheus.Types            ( Event(..)
@@ -56,10 +54,7 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 )
 
 newtype A a = A { wrappedA :: a } 
-  deriving (Generic)
-
-instance GQLType (A a) where 
-  type KIND (A a) = OBJECT
+  deriving (Generic, GQLType)
 
 type AIntText = A (Int, Text)
 
@@ -82,7 +77,6 @@ data Animal
 
 instance GQLType Animal where
   type KIND Animal = INPUT
-
 
 data Euro =
   Euro Int
