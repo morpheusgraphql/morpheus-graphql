@@ -19,7 +19,7 @@ import           Data.Morpheus.Error.Client.Client
                                                 , gqlWarnings
                                                 )
 import           Data.Morpheus.Execution.Document.Convert
-                                                ( renderTHTypes )
+                                                ( toTHDefinitions )
 import           Data.Morpheus.Execution.Document.Declare
                                                 ( declareTypes )
 import           Data.Morpheus.Parsing.Document.Parser
@@ -54,8 +54,7 @@ compileDocument namespace documentTXT =
   case
       parseTypes (T.pack documentTXT)
       >>= validatePartialDocument
-      >>= renderTHTypes namespace
     of
       Failure errors -> fail (renderGQLErrors errors)
       Success { result = schema, warnings } ->
-        gqlWarnings warnings >> declareTypes namespace schema
+        gqlWarnings warnings >> toTHDefinitions namespace schema >>= declareTypes namespace

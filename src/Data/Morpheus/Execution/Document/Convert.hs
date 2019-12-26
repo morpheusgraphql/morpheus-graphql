@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeOperators       #-}
 
 module Data.Morpheus.Execution.Document.Convert
-  ( renderTHTypes
+  ( toTHDefinitions
   )
 where
 
@@ -28,35 +28,38 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ConsD(..)
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
-                                                , Name
+                                                , Key
                                                 , DataObject
                                                 , kindOf
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 
+import           Language.Haskell.TH  (Q,reify)
+import           Language.Haskell.TH.Quote                                                
 
-m_ :: Name
+m_ :: Key
 m_ = "m"
 
-getFieldKind :: Name -> [(Name, DataType)] -> Validation DataTypeKind
+getFieldKind :: Key -> [(Key, DataType)] -> Q DataTypeKind
 getFieldKind key lib = pure $ case lookup key lib of
   Just x  -> kindOf x
+  -- reify :: Key -> Q Info
   -- Nothing           -> ExternalResolver
 
 
-renderTHTypes :: Bool -> [(Name, DataType)] -> Validation [GQLTypeD]
-renderTHTypes namespace lib = traverse renderTHType lib
+toTHDefinitions :: Bool -> [(Key, DataType)] -> Q [GQLTypeD]
+toTHDefinitions namespace lib = traverse renderTHType lib
  where
-  renderTHType :: (Name, DataType) -> Validation GQLTypeD
+  renderTHType :: (Key, DataType) -> Q GQLTypeD
   renderTHType (tyConName, x) = generateType x
    where
-    genArgsTypeName :: Name -> Name
+    genArgsTypeName :: Key -> Key
     genArgsTypeName fieldName | namespace = hsTypeName tyConName <> argTName
                               | otherwise = argTName
       where argTName = capital fieldName <> "Args"
     ---------------------------------------------------------------------------------------------
-    genResField :: (Name, DataField) -> DataField
+    genResField :: (Key, DataField) -> DataField
     genResField (_, field@DataField { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } })
       = field { fieldType     = typeRef { typeConName = ftName, typeArgs }
               , fieldArgsType
@@ -73,9 +76,11 @@ renderTHTypes namespace lib = traverse renderTHType lib
         | null fieldArgs = Nothing
         | otherwise = Just (genArgsTypeName fieldName)
     --------------------------------------------
+    generateType :: DataType -> Q GQLTypeD
     generateType dt@DataType { typeName, typeContent, typeMeta } = genType
       typeContent
      where
+      genType :: DataTypeContent -> Q GQLTypeD
       genType (DataEnum tags) = pure GQLTypeD
         { typeD        = TypeD { tName      = hsTypeName typeName
                                , tNamespace = []
@@ -89,9 +94,8 @@ renderTHTypes namespace lib = traverse renderTHType lib
        where
         enumOption DataEnumValue { enumName } =
           ConsD { cName = hsTypeName enumName, cFields = [] }
-      genType (DataScalar _) =
-        internalError "Scalar Types should defined By Native Haskell Types"
-      genType (DataInputUnion _) = internalError "Input Unions not Supported"
+      genType (DataScalar _) = fail "Scalar Types should defined By Native Haskell Types"
+      genType (DataInputUnion _) = fail "Input Unions not Supported"
       genType (DataInputObject fields) = pure GQLTypeD
         { typeD        =
           TypeD
@@ -158,13 +162,13 @@ renderTHTypes namespace lib = traverse renderTHType lib
 
 
 
-hsTypeName :: Name -> Name
+hsTypeName :: Key -> Key
 hsTypeName "String"                    = "Text"
 hsTypeName "Boolean"                   = "Bool"
 hsTypeName name | name `elem` sysTypes = "S" <> name
 hsTypeName name                        = name
 
-genArgumentType :: (Name -> Name) -> (Name, DataField) -> Validation [TypeD]
+genArgumentType :: (Key -> Key) -> (Key, DataField) -> Q [TypeD]
 genArgumentType _ (_, DataField { fieldArgs = [] }) = pure []
 genArgumentType namespaceWith (fieldName, DataField { fieldArgs }) = pure
   [ TypeD
