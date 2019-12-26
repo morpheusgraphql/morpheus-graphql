@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 module Data.Morpheus.Execution.Document.Convert
   ( toTHDefinitions
@@ -10,7 +11,9 @@ module Data.Morpheus.Execution.Document.Convert
 where
 
 import           Data.Semigroup                 ( (<>) )
-import Data.Text(unpack)
+import           Data.Text(unpack)
+import           Language.Haskell.TH  --(appT,conT, Q,mkName,reify)
+import           Language.Haskell.TH.Quote    
 --
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal   ( internalError )
@@ -34,19 +37,28 @@ import           Data.Morpheus.Types.Internal.AST
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
-
-import           Language.Haskell.TH  (Q,mkName,reify)
-import           Language.Haskell.TH.Quote                                                
+import           Data.Morpheus.Types.GQLType    ( GQLType(..)
+                                                , TRUE
+                                                )
+import           Debug.Trace (traceShow)
 
 m_ :: Key
 m_ = "m"
 
 getFieldKind :: Key -> [(Key, DataType)] -> Q DataTypeKind
+getFieldKind "__TypeKind" _ = pure KindEnum
+getFieldKind "Boolean" _ = pure KindScalar
+getFieldKind "String" _ = pure KindScalar
+getFieldKind "Int" _ = pure KindScalar
+getFieldKind "Float" _ = pure KindScalar
 getFieldKind key lib = case lookup key lib of
   Just x  -> pure (kindOf x)
   Nothing -> do 
-    inf  <- reify (mkName $ unpack key)
-    pure KindEnum
+    x <- reifyInstances ''KIND  [ConT (mkName $ unpack key)]
+    case x of 
+      [TySynInstD _ (TySynEqn _ kind)] -> fail $ "error: on " <> unpack key <> " "<> (show kind)
+      x -> fail $ (show x)<> "mailformed GQLType declaration for"<> unpack key 
+ 
 
 kindToTyArgs :: DataTypeContent -> Maybe Key
 kindToTyArgs DataObject{} = Just m_
@@ -64,17 +76,24 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                               | otherwise = argTName
       where argTName = capital fieldName <> "Args"
     ---------------------------------------------------------------------------------------------
-    genResField :: (Key, DataField) -> DataField
+    genResField :: (Key, DataField) -> Q DataField
     genResField (_, field@DataField { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } })
-      = field { fieldType     = typeRef { typeConName = ftName, typeArgs }
+      = do 
+        typeArgs <- getTypeArgs
+        pure (field { fieldType = typeRef { typeConName = ftName, typeArgs }
               , fieldArgsType
-              }
+              })
      where
       ftName   = hsTypeName typeConName
       ---------------------------------------
-      typeArgs = case typeContent <$> lookup typeConName lib of
-        Just x -> kindToTyArgs x
-        _                 -> Nothing
+      getTypeArgs = case typeContent <$> lookup typeConName lib of
+        Just x -> pure (kindToTyArgs x)
+        _      -> do
+          x <- getFieldKind typeConName lib
+          case x  of 
+            KindObject _ -> pure $ Just m_
+            KindUnion  -> pure $ Just m_ 
+            _ -> pure Nothing
       -----------------------------------
       fieldArgsType
         | null fieldArgs = Nothing
@@ -117,12 +136,13 @@ toTHDefinitions namespace lib = traverse renderTHType lib
         }
       genType (DataObject fields) = do
         typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) fields
+        cFields  <- traverse genResField fields
         pure GQLTypeD
           { typeD        = TypeD
                              { tName      = hsTypeName typeName
                              , tNamespace = []
                              , tCons = [ ConsD { cName = hsTypeName typeName
-                                               , cFields = map genResField fields
+                                               , cFields 
                                                }
                                        ]
                              , tMeta      = typeMeta

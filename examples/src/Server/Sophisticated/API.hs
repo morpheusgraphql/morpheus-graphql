@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DerivingStrategies    #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -54,8 +55,11 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , failRes
                                                 )
 
+newtype A a = A { wrappedA :: a } 
+  deriving (Generic)
 
-$(importGQLDocumentWithNamespace "src/Server/Sophisticated/api.gql")
+instance GQLType (A a) where 
+  type KIND (A a) = OBJECT
 
 type AIntText = A (Int, Text)
 
@@ -64,6 +68,9 @@ type AText = A Text
 type SetInt = Set Int
 
 type MapTextInt = Map Text Int
+
+$(importGQLDocumentWithNamespace "src/Server/Sophisticated/api.gql")
+
 
 data Animal
   = AnimalCat Cat
@@ -88,13 +95,6 @@ instance GQLType Euro where
 instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
   serialize (Euro x y) = Int (x * 100 + y)
-
-instance Typeable a => GQLType (A a) where
-  type KIND (A a) = OBJECT
-
-newtype A a = A
-  { wrappedA :: a
-  } deriving (Generic)
 
 data Channel = USER | ADDRESS
   deriving (Show, Eq, Ord)
