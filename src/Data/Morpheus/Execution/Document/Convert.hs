@@ -10,7 +10,7 @@ module Data.Morpheus.Execution.Document.Convert
 where
 
 import           Data.Semigroup                 ( (<>) )
-
+import Data.Text(unpack)
 --
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal   ( internalError )
@@ -35,18 +35,23 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 
-import           Language.Haskell.TH  (Q,reify)
+import           Language.Haskell.TH  (Q,mkName,reify)
 import           Language.Haskell.TH.Quote                                                
 
 m_ :: Key
 m_ = "m"
 
 getFieldKind :: Key -> [(Key, DataType)] -> Q DataTypeKind
-getFieldKind key lib = pure $ case lookup key lib of
-  Just x  -> kindOf x
-  -- reify :: Key -> Q Info
-  -- Nothing           -> ExternalResolver
+getFieldKind key lib = case lookup key lib of
+  Just x  -> pure (kindOf x)
+  Nothing -> do 
+    inf  <- reify (mkName $ unpack key)
+    pure KindEnum
 
+kindToTyArgs :: DataTypeContent -> Maybe Key
+kindToTyArgs DataObject{} = Just m_
+kindToTyArgs DataUnion{}  = Just m_
+kindToTyArgs _             = Nothing
 
 toTHDefinitions :: Bool -> [(Key, DataType)] -> Q [GQLTypeD]
 toTHDefinitions namespace lib = traverse renderTHType lib
@@ -68,8 +73,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
       ftName   = hsTypeName typeConName
       ---------------------------------------
       typeArgs = case typeContent <$> lookup typeConName lib of
-        Just DataObject{} -> Just m_
-        Just DataUnion{}  -> Just m_
+        Just x -> kindToTyArgs x
         _                 -> Nothing
       -----------------------------------
       fieldArgsType
@@ -102,7 +106,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
             { tName      = hsTypeName typeName
             , tNamespace = []
             , tCons      = [ ConsD { cName   = hsTypeName typeName
-                                   , cFields = genFields fields
+                                   , cFields = genInputFields fields
                                    }
                            ]
             , tMeta      = typeMeta
@@ -175,7 +179,7 @@ genArgumentType namespaceWith (fieldName, DataField { fieldArgs }) = pure
       { tName
       , tNamespace = []
       , tCons      = [ ConsD { cName   = hsTypeName tName
-                             , cFields = genFields fieldArgs
+                             , cFields = genInputFields fieldArgs
                              }
                      ]
       , tMeta      = Nothing
@@ -184,8 +188,8 @@ genArgumentType namespaceWith (fieldName, DataField { fieldArgs }) = pure
   where tName = namespaceWith (hsTypeName fieldName)
 
 
-genFields :: DataObject -> [DataField]
-genFields = map (genField . snd)
+genInputFields :: DataObject -> [DataField]
+genInputFields = map (genField . snd)
  where
   genField :: DataField -> DataField
   genField field@DataField { fieldType = tyRef@TypeRef { typeConName } } =
