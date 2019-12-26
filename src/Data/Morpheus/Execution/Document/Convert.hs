@@ -41,22 +41,32 @@ import           Data.Morpheus.Types.GQLType    ( GQLType(..)
                                                 , TRUE
                                                 )
 import           Debug.Trace (traceShow)
-
+import           Data.Morpheus.Kind             ( ENUM
+                                                , SCALAR
+                                                , WRAPPER
+                                                , INPUT
+                                                , OUTPUT
+                                                , OBJECT
+                                                )
 m_ :: Key
 m_ = "m"
 
-getFieldKind :: Key -> [(Key, DataType)] -> Q DataTypeKind
-getFieldKind "__TypeKind" _ = pure KindEnum
-getFieldKind "Boolean" _ = pure KindScalar
-getFieldKind "String" _ = pure KindScalar
-getFieldKind "Int" _ = pure KindScalar
-getFieldKind "Float" _ = pure KindScalar
-getFieldKind key lib = case lookup key lib of
-  Just x  -> pure (kindOf x)
+getTypeArgs :: Key -> [(Key, DataType)] -> Q (Maybe Key)
+getTypeArgs "__TypeKind" _ = pure Nothing
+getTypeArgs "Boolean" _ = pure Nothing
+getTypeArgs "String" _ = pure Nothing
+getTypeArgs "Int" _ = pure Nothing
+getTypeArgs "Float" _ = pure Nothing
+getTypeArgs key lib = case typeContent <$> lookup key lib of
+  Just x  -> pure (kindToTyArgs x)
   Nothing -> do 
     x <- reifyInstances ''KIND  [ConT (mkName $ unpack key)]
     case x of 
-      [TySynInstD _ (TySynEqn _ kind)] -> fail $ "error: on " <> unpack key <> " "<> (show kind)
+      [TySynInstD _ (TySynEqn _ k)] -> 
+          case k of 
+            ConT x | x == ''OBJECT || x == ''OUTPUT -> pure $ Just m_
+            ConT _ -> pure Nothing
+            other -> fail $ "error: on " <> unpack key <> " " <> show other
       x -> fail $ (show x)<> "mailformed GQLType declaration for"<> unpack key 
  
 
@@ -79,21 +89,12 @@ toTHDefinitions namespace lib = traverse renderTHType lib
     genResField :: (Key, DataField) -> Q DataField
     genResField (_, field@DataField { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } })
       = do 
-        typeArgs <- getTypeArgs
+        typeArgs <- getTypeArgs typeConName lib 
         pure (field { fieldType = typeRef { typeConName = ftName, typeArgs }
               , fieldArgsType
               })
      where
       ftName   = hsTypeName typeConName
-      ---------------------------------------
-      getTypeArgs = case typeContent <$> lookup typeConName lib of
-        Just x -> pure (kindToTyArgs x)
-        _      -> do
-          x <- getFieldKind typeConName lib
-          case x  of 
-            KindObject _ -> pure $ Just m_
-            KindUnion  -> pure $ Just m_ 
-            _ -> pure Nothing
       -----------------------------------
       fieldArgsType
         | null fieldArgs = Nothing
