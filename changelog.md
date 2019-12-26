@@ -34,7 +34,7 @@
   } deriving ...
   ```
 
-  couse of inference now you can combine multiple gql documents:
+  now you can combine multiple gql documents:
   
   ```hs
   importDocumentWithNamespace `coreTypes.gql`
