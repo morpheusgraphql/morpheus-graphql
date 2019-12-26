@@ -74,12 +74,11 @@ toTHDefinitions namespace lib = traverse renderTHType lib
     genResField (_, field@DataField { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } })
       = do 
         typeArgs <- getTypeArgs typeConName lib 
-        pure (field { fieldType = typeRef { typeConName = ftName, typeArgs }
-              , fieldArgsType
-              })
+        pure $ field { 
+                fieldType = typeRef { typeConName = hsTypeName typeConName, typeArgs }
+                , fieldArgsType
+              }
      where
-      ftName   = hsTypeName typeConName
-      -----------------------------------
       fieldArgsType
         | null fieldArgs = Nothing
         | otherwise = Just (genArgsTypeName fieldName)
