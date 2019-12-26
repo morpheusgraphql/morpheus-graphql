@@ -5,6 +5,41 @@
 ### Fixed
 
 - selection of `__typename` on object und union objects (#337)
+- auto inferece of external types graphQL document (#343)
+  th will generate field `m (Type m)` if type has argument
+  
+  e.g for this types and DSL
+  
+  ```hs
+  data Type1 = Type1 { ... }
+  type Type2 m = SomeType m
+  data Type3 m = Type2 { bla :: m Text } deriving ...
+  ```
+
+  ```gql
+  type Query {
+    field1 : Type1!
+    field2 : Type2!
+    field3 : Type3!
+  }
+  ```  
+
+  morpheus generates
+
+  ```hs
+  data Query m = Query {
+    field1 :: m Type1
+    field2 :: m (Type2 m)
+    field3 :: m (Type3 m)
+  } deriving ...
+  ```
+
+  couse of inference now you can combine multiple gql documents:
+  
+  ```hs
+  importDocumentWithNamespace `coreTypes.gql`
+  importDocumentWithNamespace `operations.gql`
+  ```
 
 ### Changed
 
