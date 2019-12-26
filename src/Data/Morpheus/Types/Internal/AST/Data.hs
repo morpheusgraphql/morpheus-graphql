@@ -28,7 +28,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , ResolverKind(..)
   , TypeWrapper(..)
   , TypeRef(..)
-  , ArgsType(..)
   , DataEnumValue(..)
   , isTypeDefined
   , initTypeLib
@@ -261,11 +260,6 @@ data DataTypeWrapper
   | NonNullType
   deriving (Show, Lift)
 
-data ArgsType = ArgsType
-  { argsTypeName :: Key
-  , resKind      :: ResolverKind
-  } deriving (Show,Lift)
-
 data Directive = Directive {
   directiveName :: Name,
   directiveArgs :: [(Name, ValidValue)]
@@ -303,7 +297,7 @@ data DataEnumValue = DataEnumValue{
 data DataField = DataField
   { fieldName     :: Key
   , fieldArgs     :: [(Key, DataArgument)]
-  , fieldArgsType :: Maybe ArgsType
+  , fieldArgsType :: Maybe Name
   , fieldType     :: TypeRef
   , fieldMeta     :: Maybe Meta
   } deriving (Show,Lift)

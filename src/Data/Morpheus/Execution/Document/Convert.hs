@@ -17,8 +17,7 @@ import           Data.Morpheus.Error.Internal   ( internalError )
 import           Data.Morpheus.Execution.Internal.Utils
                                                 ( capital )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( ArgsType(..)
-                                                , DataField(..)
+                                                ( DataField(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeKind(..)
@@ -67,9 +66,7 @@ renderTHTypes namespace lib = traverse renderTHType lib
       -----------------------------------
       fieldArgsType
         | null fieldArgs = Nothing
-        | otherwise = Just ArgsType { argsTypeName = genArgsTypeName fieldName
-                                    , resKind      = getFieldType ftName
-                                    }
+        | otherwise = Just (genArgsTypeName fieldName)
        where
         getFieldType key = case typeContent <$> lookup key lib of
           Nothing           -> ExternalResolver

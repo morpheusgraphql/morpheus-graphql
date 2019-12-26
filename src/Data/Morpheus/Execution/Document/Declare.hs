@@ -10,7 +10,7 @@ where
 import           Data.Semigroup                 ( (<>) )
 import           Language.Haskell.TH
 
---
+
 -- MORPHEUS
 import           Data.Morpheus.Execution.Document.Decode
                                                 ( deriveDecode )
