@@ -83,10 +83,8 @@ module Data.Morpheus.Types.Internal.AST
   , DataTypeKind(..)
   , DataFingerprint(..)
   , RawDataType(..)
-  , ResolverKind(..)
   , TypeWrapper(..)
   , TypeRef(..)
-  , ArgsType(..)
   , DataEnumValue(..)
   , isTypeDefined
   , initTypeLib

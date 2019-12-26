@@ -41,3 +41,14 @@ typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT ty
 --    
 typeInstanceDec typeFamily arg res = TySynInstD typeFamily (TySynEqn [arg] res)
 #endif
+
+
+infoTyVars :: Info -> [TyVarBndr]
+infoTyVars (TyConI x) =  decArgs x
+infoTyVars _ = []
+     
+decArgs :: Dec -> [TyVarBndr]
+decArgs (DataD _ _ args _ _ _) = args 
+decArgs (NewtypeD _ _ args _ _ _) = args 
+decArgs (TySynD _ args _) = args
+decArgs _ = []

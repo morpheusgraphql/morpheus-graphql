@@ -24,8 +24,7 @@ import           Data.Morpheus.Execution.Internal.Utils
                                                 , nameSpaceWith
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( ArgsType(..)
-                                                , DataField(..)
+                                                ( DataField(..)
                                                 , DataTypeKind(..)
                                                 , DataTypeKind(..)
                                                 , TypeRef(..)
@@ -92,7 +91,7 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
         genFieldT Nothing
           | (isOutputObject <$> kindD) == Just True = AppT monadVar result
           | otherwise                             = result
-        genFieldT (Just ArgsType { argsTypeName }) = AppT
+        genFieldT (Just argsTypeName) = AppT
           (AppT arrowType argType)
           (AppT monadVar result)
          where

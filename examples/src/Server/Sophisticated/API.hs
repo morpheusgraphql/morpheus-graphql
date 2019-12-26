@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DerivingStrategies    #-}
+{-# LANGUAGE DeriveAnyClass        #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -27,14 +28,12 @@ import qualified Data.Set                      as S
 import           Data.Text                      ( Text
                                                 , pack
                                                 )
-import           Data.Typeable                  ( Typeable )
 import           GHC.Generics                   ( Generic )
 
 -- MORPHEUS
 import           Data.Morpheus.Document         ( importGQLDocumentWithNamespace
                                                 )
 import           Data.Morpheus.Kind             ( INPUT
-                                                , OBJECT
                                                 , SCALAR
                                                 )
 import           Data.Morpheus.Types            ( Event(..)
@@ -54,8 +53,8 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , failRes
                                                 )
 
-
-$(importGQLDocumentWithNamespace "src/Server/Sophisticated/api.gql")
+newtype A a = A { wrappedA :: a } 
+  deriving (Generic, GQLType)
 
 type AIntText = A (Int, Text)
 
@@ -64,6 +63,13 @@ type AText = A Text
 type SetInt = Set Int
 
 type MapTextInt = Map Text Int
+
+
+$(importGQLDocumentWithNamespace "src/Server/Sophisticated/shared.gql")
+
+
+$(importGQLDocumentWithNamespace "src/Server/Sophisticated/api.gql")
+
 
 data Animal
   = AnimalCat Cat
@@ -76,7 +82,6 @@ data Animal
 instance GQLType Animal where
   type KIND Animal = INPUT
 
-
 data Euro =
   Euro Int
        Int
@@ -88,13 +93,6 @@ instance GQLType Euro where
 instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
   serialize (Euro x y) = Int (x * 100 + y)
-
-instance Typeable a => GQLType (A a) where
-  type KIND (A a) = OBJECT
-
-newtype A a = A
-  { wrappedA :: a
-  } deriving (Generic)
 
 data Channel = USER | ADDRESS
   deriving (Show, Eq, Ord)
@@ -118,6 +116,7 @@ gqlRoot = GQLRootResolver { queryResolver
     , queryWrapped2 = pure $ A ""
     , queryFail1    = failRes "fail example"
     , queryFail2    = liftEither alwaysFail
+    , queryShared = pure SharedType { sharedTypeName = pure "some name" }
     }
   -------------------------------------------------------------
   mutationResolver = Mutation { mutationCreateUser    = resolveCreateUser

@@ -87,6 +87,7 @@ type Query {
   someMap: MapTextInt!
   fail1: Int!
   fail2: Int!
+  shared: SharedType!
 }
 
 type Mutation {
