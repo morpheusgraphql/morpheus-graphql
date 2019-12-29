@@ -32,13 +32,12 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Position
                                                 , DataTypeLib
                                                 , lookupDataObject
+                                                , checkNameCollision
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Validation.Internal.Utils
-                                                ( checkNameCollision )
 
 
 validateFragments

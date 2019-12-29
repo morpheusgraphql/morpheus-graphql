@@ -46,13 +46,12 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupSelectionField
                                                 , lookupType
                                                 , lookupUnionTypes
+                                                , checkNameCollision
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Validation.Internal.Utils
-                                                ( checkNameCollision )
 import           Data.Morpheus.Validation.Query.Arguments
                                                 ( validateArguments )
 import           Data.Morpheus.Validation.Query.Fragment

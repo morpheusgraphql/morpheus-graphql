@@ -89,6 +89,8 @@ module Data.Morpheus.Types.Internal.AST.Data
   , DataInputUnion
   , isNullableWrapper
   , isOutputType
+  , checkForUnknownKeys
+  , checkNameCollision
   )
 where
 
@@ -100,11 +102,11 @@ import           Data.HashMap.Lazy              ( HashMap
                                                 , union
                                                 )
 import qualified Data.HashMap.Lazy             as HM
-                                                ( lookup )
+                                                ( lookup, delete )
 import           Data.Semigroup                 ( (<>) )
 import           Language.Haskell.TH.Syntax     ( Lift )
 import           Instances.TH.Lift              ( )
-import           Data.List                      ( find )
+import           Data.List                      ( find , (\\))
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal   ( internalError )
@@ -118,6 +120,9 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Description
                                                 , TypeWrapper(..)
                                                 , TypeRef(..)
+                                                , Ref(..)
+                                                , elementOfKeys
+                                                , removeDuplicates
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -145,6 +150,20 @@ isSchemaTypeName = (`elem` sysTypes)
 
 isPrimitiveTypeName :: Key -> Bool
 isPrimitiveTypeName = (`elem` ["String", "Float", "Int", "Boolean", "ID"])
+
+
+checkNameCollision :: (Failure e m, Ord a) => [a] -> ([a] -> e) -> m [a]
+checkNameCollision enhancedKeys errorGenerator =
+  case enhancedKeys \\ removeDuplicates enhancedKeys of
+    []         -> pure enhancedKeys
+    duplicates -> failure $ errorGenerator duplicates
+
+checkForUnknownKeys :: Failure e m => [Ref] -> [Name] -> ([Ref] -> e) -> m [Ref]
+checkForUnknownKeys enhancedKeys' keys' errorGenerator' =
+  case filter (not . elementOfKeys keys') enhancedKeys' of
+    []           -> pure enhancedKeys'
+    unknownKeys' -> failure $ errorGenerator' unknownKeys'  
+
 
 sysTypes :: [Key]
 sysTypes =
@@ -474,6 +493,12 @@ fromOperation Nothing = []
 lookupDataType :: Key -> DataTypeLib -> Maybe DataType
 lookupDataType name lib = name `HM.lookup` typeRegister lib
 
+-- TODO: throw errors here
+lookupType :: Failure e m => e -> DataTypeLib -> Key -> m DataType
+lookupType err lib name = case lookupDataType name lib of
+  Nothing -> failure err
+  Just x  -> pure x
+
 getDataType :: Failure error m => Key -> DataTypeLib -> error -> m DataType
 getDataType name lib gqlError = case lookupDataType name lib of
   Just x -> pure x
@@ -534,28 +559,22 @@ defineType (key, datatype@DataType { typeName, typeContent = DataInputUnion enum
 defineType (key, datatype) lib =
   lib { types = insert key datatype (types lib) }
 
--- TODO: throw errors here
-lookupType :: Failure e m => e -> DataTypeLib -> Key -> m DataType
-lookupType err lib typeName = case HM.lookup typeName (typeRegister lib) of
-  Nothing -> failure err
-  Just x  -> pure x
+
+-- lookups and removes DataType from hashmap 
+popByKey :: Name -> HashMap Name DataType -> (Maybe (Name,DataType), HashMap Name DataType)
+popByKey key lib = case HM.lookup key lib of
+    Just dt@DataType { typeContent = DataObject {} } ->
+      (Just (key, dt), HM.delete key lib)
+    _ -> (Nothing, lib)  
+
 
 createDataTypeLib :: [(Key, DataType)] -> Validation DataTypeLib
-createDataTypeLib types = case takeByKey "Query" types of
-  (Just query, lib1) -> case takeByKey "Mutation" lib1 of
-    (mutation, lib2) -> case takeByKey "Subscription" lib2 of
-      (subscription, lib3) ->
-        pure
-          ((foldr defineType (initTypeLib query) lib3) { mutation
-                                                       , subscription
-                                                       }
-          )
-  _ -> internalError "Query Not Defined"
- where
-  takeByKey key lib = case lookup key lib of
-    Just dt@DataType { typeContent = DataObject {} } ->
-      (Just (key, dt), filter ((/= key) . fst) lib)
-    _ -> (Nothing, lib)
+createDataTypeLib types = case popByKey "Query" (fromList types) of
+  (Nothing   ,_    ) -> internalError "Query Not Defined"
+  (Just query, lib1) -> do
+    let (mutation, lib2) = popByKey "Mutation" lib1
+    let (subscription, lib3) = popByKey "Subscription" lib2
+    pure $ (foldr defineType (initTypeLib query) (toList lib3)) {mutation, subscription}
 
 
 createInputUnionFields :: Key -> [Key] -> [(Key, DataField)]

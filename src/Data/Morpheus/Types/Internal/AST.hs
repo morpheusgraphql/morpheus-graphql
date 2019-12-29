@@ -17,6 +17,7 @@ module Data.Morpheus.Types.Internal.AST
   , RESOLVED
   , VALID
   , RAW
+  , VALIDATION_MODE(..)
 
   -- VALUE
   , Value(..)
@@ -146,6 +147,8 @@ module Data.Morpheus.Types.Internal.AST
   , ClientType(..)
   , DataInputUnion
   , VariableContent(..)
+  , checkForUnknownKeys
+  , checkNameCollision
   -- LOCAL
   , GQLQuery(..)
   , Variables

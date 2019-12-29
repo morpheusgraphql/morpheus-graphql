@@ -34,13 +34,12 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( GQLQuery(..)
                                                 , DataTypeLib
                                                 , ClientQuery(..)
+                                                , VALIDATION_MODE(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Result(..)
                                                 )
-import           Data.Morpheus.Validation.Internal.Utils
-                                                ( VALIDATION_MODE(..) )
 import           Data.Morpheus.Validation.Query.Validation
                                                 ( validateRequest )
 

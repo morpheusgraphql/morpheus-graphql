@@ -69,6 +69,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidValue
                                                 , Name
                                                 , DataField
+                                                , VALIDATION_MODE(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -88,8 +89,6 @@ import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
                                                 , renderResponse
                                                 )
-import           Data.Morpheus.Validation.Internal.Utils
-                                                ( VALIDATION_MODE(..) )
 import           Data.Morpheus.Validation.Query.Validation
                                                 ( validateRequest )
 import           Data.Typeable                  ( Typeable )

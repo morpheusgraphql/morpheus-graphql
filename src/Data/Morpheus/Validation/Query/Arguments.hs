@@ -41,14 +41,12 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ResolvedValue
                                                 , RESOLVED
                                                 , VALID
+                                                , checkForUnknownKeys
+                                                , checkNameCollision
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
-                                                )
-import           Data.Morpheus.Validation.Internal.Utils
-                                                ( checkForUnknownKeys
-                                                , checkNameCollision
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInputValue )

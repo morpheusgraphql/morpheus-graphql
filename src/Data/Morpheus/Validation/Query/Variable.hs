@@ -53,13 +53,12 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VariableContent(..)
                                                 , isNullable
                                                 , TypeRef(..)
+                                                , VALIDATION_MODE(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Validation.Internal.Utils
-                                                ( VALIDATION_MODE(..) )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInputValue )
 import           Data.Morpheus.Validation.Query.Fragment
