@@ -102,7 +102,7 @@ import           Data.HashMap.Lazy              ( HashMap
                                                 , union
                                                 )
 import qualified Data.HashMap.Lazy             as HM
-                                                ( lookup, delete )
+                                                ( lookup )
 import           Data.Semigroup                 ( (<>) )
 import           Language.Haskell.TH.Syntax     ( Lift )
 import           Instances.TH.Lift              ( )
@@ -561,20 +561,20 @@ defineType (key, datatype) lib =
 
 
 -- lookups and removes DataType from hashmap 
-popByKey :: Name -> HashMap Name DataType -> (Maybe (Name,DataType), HashMap Name DataType)
-popByKey key lib = case HM.lookup key lib of
+popByKey :: Name -> [(Key, DataType)] -> (Maybe (Name,DataType), [(Key, DataType)])
+popByKey key lib = case lookup key lib of
     Just dt@DataType { typeContent = DataObject {} } ->
-      (Just (key, dt), HM.delete key lib)
+      (Just (key, dt), filter ((/= key) . fst) lib)
     _ -> (Nothing, lib)  
 
 
 createDataTypeLib :: [(Key, DataType)] -> Validation DataTypeLib
-createDataTypeLib types = case popByKey "Query" (fromList types) of
+createDataTypeLib types = case popByKey "Query" types of
   (Nothing   ,_    ) -> internalError "Query Not Defined"
   (Just query, lib1) -> do
     let (mutation, lib2) = popByKey "Mutation" lib1
     let (subscription, lib3) = popByKey "Subscription" lib2
-    pure $ (foldr defineType (initTypeLib query) (toList lib3)) {mutation, subscription}
+    pure $ (foldr defineType (initTypeLib query) lib3) {mutation, subscription}
 
 
 createInputUnionFields :: Key -> [Key] -> [(Key, DataField)]
