@@ -534,8 +534,9 @@ defineType (key, datatype@DataType { typeName, typeContent = DataInputUnion enum
 defineType (key, datatype) lib =
   lib { types = insert key datatype (types lib) }
 
-lookupType :: Failure e m => e -> [(Key, a)] -> Key -> m a
-lookupType err lib typeName = case lookup typeName lib of
+-- TODO: throw errors here
+lookupType :: Failure e m => e -> DataTypeLib -> Key -> m DataType
+lookupType err lib typeName = case HM.lookup typeName (typeRegister lib) of
   Nothing -> failure err
   Just x  -> pure x
 

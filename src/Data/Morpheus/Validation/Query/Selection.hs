@@ -153,8 +153,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
                                      selectionArguments
       -- check field Type existence  -----
       fieldDataType <- lookupType
-        (unknownType (typeConName $fieldType selectionField) selectionPosition)
-        (allDataTypes lib)
+        (unknownType (typeConName $fieldType selectionField) selectionPosition) lib
         (typeConName $ fieldType selectionField)
       return (selectionField, fieldDataType, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet

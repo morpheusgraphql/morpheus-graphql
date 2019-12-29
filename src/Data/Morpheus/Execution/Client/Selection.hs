@@ -303,8 +303,7 @@ leafType DataType { typeName, typeContent } = fromKind typeContent
   fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
 getType :: DataTypeLib -> Text -> Validation DataType
-getType lib typename =
-  lookupType (compileError typename) (allDataTypes lib) typename
+getType lib typename = lookupType (compileError typename) lib typename
 
 typeFromScalar :: Name -> Name
 typeFromScalar "Boolean" = "Bool"
