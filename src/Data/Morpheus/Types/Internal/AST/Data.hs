@@ -493,7 +493,6 @@ fromOperation Nothing = []
 lookupDataType :: Key -> DataTypeLib -> Maybe DataType
 lookupDataType name lib = name `HM.lookup` typeRegister lib
 
--- TODO: throw errors here
 lookupType :: Failure e m => e -> DataTypeLib -> Key -> m DataType
 lookupType err lib name = case lookupDataType name lib of
   Nothing -> failure err
