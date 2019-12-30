@@ -56,7 +56,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , isEntNode
   , lookupInputType
   , coerceDataObject
-  , lookupDataObject
   , lookupDataUnion
   , lookupField
   , lookupUnionTypes
@@ -498,18 +497,22 @@ instance DataLookup Schema DataType where
       Nothing -> failure err
       Just x  -> pure x
 
-lookupDataType :: Key -> Schema -> Maybe DataType
-lookupDataType name lib = name `HM.lookup` typeRegister lib
 
-lookupDataObject
-  :: (Monad m, Failure e m) => e -> Key -> Schema -> m (Name,DataObject)
-lookupDataObject validationError name lib =
-  lookupResult validationError name lib >>= coerceDataObject validationError
+instance DataLookup Schema (Name,DataObject) where 
+  lookupResult validationError name lib =
+     lookupResult validationError name lib >>= coerceDataObject validationError
 
 lookupDataUnion
   :: (Monad m, Failure e m) => e -> Key -> Schema -> m DataUnion
 lookupDataUnion validationError name lib =
   lookupResult validationError name lib >>= coerceDataUnion validationError
+
+
+
+
+lookupDataType :: Key -> Schema -> Maybe DataType
+lookupDataType name lib = name `HM.lookup` typeRegister lib
+
 
 lookupUnionTypes
   :: (Monad m, Failure GQLErrors m)
@@ -520,7 +523,7 @@ lookupUnionTypes
   -> m [(Name,DataObject)]
 lookupUnionTypes position key lib DataField { fieldType = TypeRef { typeConName = typeName } }
   = lookupDataUnion gqlError typeName lib
-    >>= mapM (flip (lookupDataObject gqlError) lib)
+    >>= mapM (flip (lookupResult gqlError) lib)
   where gqlError = hasNoSubfields key typeName position
 
 lookupFieldAsSelectionSet
@@ -531,7 +534,7 @@ lookupFieldAsSelectionSet
   -> DataField
   -> m (Name,DataObject)
 lookupFieldAsSelectionSet position key lib DataField { fieldType = TypeRef { typeConName } }
-  = lookupDataObject gqlError typeConName lib
+  = lookupResult gqlError typeConName lib
   where gqlError = hasNoSubfields key typeConName position
 
 lookupInputType :: Failure e m => Key -> Schema -> e -> m DataType

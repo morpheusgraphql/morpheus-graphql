@@ -115,7 +115,6 @@ module Data.Morpheus.Types.Internal.AST
   , isEntNode
   , lookupInputType
   , coerceDataObject
-  , lookupDataObject
   , lookupDataUnion
   , lookupField
   , lookupUnionTypes
