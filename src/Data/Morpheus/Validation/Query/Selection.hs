@@ -196,7 +196,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
               selection' <- __validate type'
                                        (concatMap fragmentSelection frags')
               return (fst type', sysSelection' ++ selection')
-          DataObject _ -> do
+          DataObject {} -> do
             fieldType' <- lookupFieldAsSelectionSet selectionPosition
                                                     key'
                                                     lib

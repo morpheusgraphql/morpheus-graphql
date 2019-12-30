@@ -372,12 +372,6 @@ data RawDataType
       , interfaceMeta    :: Maybe Meta
       , interfaceContent :: DataObject
     }
-  | Implements {
-        implementsName    :: Key
-      , implementsInterfaces :: [Key]
-      , implementsMeta    :: Maybe Meta
-      , implementsContent         :: DataObject
-    }
   deriving (Show)
 
 --
@@ -387,7 +381,10 @@ data DataTypeContent
   = DataScalar DataScalar
   | DataEnum DataEnum
   | DataInputObject DataObject
-  | DataObject DataObject
+  | DataObject {
+      objectImplements :: [Name],
+      objectFields :: DataObject
+    }
   | DataUnion DataUnion
   | DataInputUnion [(Key,Bool)]
   deriving (Show)
@@ -438,7 +435,7 @@ isInputDataType DataType { typeContent } = __isInput typeContent
   __isInput _                 = False
 
 coerceDataObject :: Failure error m => error -> DataType -> m (Name,DataObject)
-coerceDataObject _ DataType { typeContent = DataObject object , typeName } = pure (typeName,object)
+coerceDataObject _ DataType { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
 coerceDataObject gqlError _ = failure gqlError
 
 coerceDataUnion :: Failure error m => error -> DataType -> m DataUnion
@@ -448,13 +445,12 @@ coerceDataUnion gqlError _ = failure gqlError
 kindOf :: DataType -> DataTypeKind
 kindOf DataType { typeContent } = __kind typeContent
  where
-  __kind (DataScalar      _) = KindScalar
-  __kind (DataEnum        _) = KindEnum
-  __kind (DataInputObject _) = KindInputObject
-  __kind (DataObject      _) = KindObject Nothing
-  __kind (DataUnion       _) = KindUnion
-  __kind (DataInputUnion  _) = KindInputUnion
-
+  __kind DataScalar      {} = KindScalar
+  __kind DataEnum        {} = KindEnum
+  __kind DataInputObject {} = KindInputObject
+  __kind DataObject      {} = KindObject Nothing
+  __kind DataUnion       {} = KindUnion
+  __kind DataInputUnion  {} = KindInputUnion
 
 --
 -- Type Register

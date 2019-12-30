@@ -63,9 +63,9 @@ instance RenderSchema DataType S__Type where
     __render (DataInputObject fields) = \lib ->
       createInputObject name typeMeta
         <$> traverse (`renderinputValue` lib) fields
-    __render (DataObject fields) = \lib ->
+    __render (DataObject {objectFields}) = \lib ->
       createObjectType name (typeMeta >>= metaDescription)
-        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility fields))
+        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility objectFields))
     __render (DataUnion union) =
       constRes $ typeFromUnion (name, typeMeta, union)
     __render (DataInputUnion members) =

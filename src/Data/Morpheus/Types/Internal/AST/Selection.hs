@@ -158,7 +158,7 @@ getOperationObject
 getOperationObject op lib = do
   dt <- getOperationDataType op lib
   case dt of
-    DataType { typeContent = DataObject x, typeName } -> pure (typeName, x)
+    DataType { typeContent = DataObject { objectFields }, typeName } -> pure (typeName, objectFields)
     DataType { typeName } ->
       failure
         $  "Type Mismatch: operation \""

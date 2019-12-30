@@ -81,7 +81,7 @@ instance RenderGQL (Key, DataType) where
     __render (DataInputObject fields ) = "input " <> name <> render fields
     __render (DataInputUnion  members) = "input " <> name <> render fields
       where fields = createInputUnionFields name (map fst members)
-    __render (DataObject fields) = "type " <> name <> render fields
+    __render (DataObject {objectFields}) = "type " <> name <> render objectFields
 
 -- OBJECT
 instance RenderGQL [(Text, DataField)] where

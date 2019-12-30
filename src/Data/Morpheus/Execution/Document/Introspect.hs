@@ -15,7 +15,7 @@ import           Language.Haskell.TH
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
-import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), objectFields, IntrospectRep (..),TypeScope(..))
+import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), introspectObjectFields, IntrospectRep (..),TypeScope(..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
 import           Data.Morpheus.Types.Internal.AST          (ConsD (..), TypeD (..), Key, DataType(..), DataTypeContent(..), DataField (..),insertType,DataTypeKind(..), TypeRef (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
@@ -60,10 +60,9 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
       where
         body 
           | tKind == Just KindInputObject || null tKind  = [| (DataInputObject  $(buildFields cFields), concat $(buildTypes cFields))|]
-          | otherwise  =  [| (DataObject $(buildFields cFields), concat $(buildTypes cFields))|]
+          | otherwise  =  [| (DataObject [] $(buildFields cFields), concat $(buildTypes cFields))|]
 deriveObjectRep _ = pure []
     
-
 buildTypes :: [DataField] -> ExpQ
 buildTypes = listE . concatMap introspectField
   where
@@ -71,7 +70,7 @@ buildTypes = listE . concatMap introspectField
       [|[introspect $(proxyT fieldType)]|] : inputTypes fieldArgsType
       where
         inputTypes (Just argsTypeName)
-          | argsTypeName /= "()" = [[|snd $ objectFields (Proxy :: Proxy TRUE) (argsTypeName, InputType,$(proxyT tAlias))|]]
+          | argsTypeName /= "()" = [[|snd $ introspectObjectFields (Proxy :: Proxy TRUE) (argsTypeName, InputType,$(proxyT tAlias))|]]
           where
             tAlias = TypeRef {typeConName = argsTypeName, typeWrappers = [], typeArgs = Nothing}
         inputTypes _ = []
