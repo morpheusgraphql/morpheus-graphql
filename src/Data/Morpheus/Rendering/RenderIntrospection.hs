@@ -24,7 +24,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeKind(..)
-                                                , DataTypeLib
+                                                , Schema
                                                 , DataTypeWrapper(..)
                                                 , DataUnion
                                                 , Meta(..)
@@ -46,16 +46,16 @@ import           Data.Morpheus.Types.Internal.Resolving
 constRes :: Applicative m => a -> b -> m a
 constRes = const . pure
 
-type Result m a = DataTypeLib -> m a
+type Result m a = Schema -> m a
 
 class RenderSchema a b where
-  render :: (Monad m, Failure Text m) => (Text, a) -> DataTypeLib -> m (b m)
+  render :: (Monad m, Failure Text m) => (Text, a) -> Schema -> m (b m)
 
 instance RenderSchema DataType S__Type where
   render (name, DataType { typeMeta, typeContent }) = __render typeContent
    where
     __render
-      :: (Monad m, Failure Text m) => DataTypeContent -> DataTypeLib -> m (S__Type m)
+      :: (Monad m, Failure Text m) => DataTypeContent -> Schema -> m (S__Type m)
     __render DataScalar{} =
       constRes $ createLeafType SCALAR name typeMeta Nothing
     __render (DataEnum enums) = constRes

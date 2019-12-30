@@ -37,7 +37,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataObject
                                                 , DataTypeContent(..)
                                                 , DataType(..)
-                                                , DataTypeLib(..)
+                                                , Schema(..)
                                                 , TypeRef(..)
                                                 , Name
                                                 , allDataTypes
@@ -121,7 +121,7 @@ flatTuple list' = (concatMap fst list', concatMap snd list')
  -}
 
 validateSelectionSet
-  :: DataTypeLib
+  :: Schema
   -> FragmentLib
   -> Text
   -> ValidVariables

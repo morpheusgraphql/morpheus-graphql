@@ -38,7 +38,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeKind(..)
-                                                , DataTypeLib(..)
+                                                , Schema(..)
                                                 , Key
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
@@ -73,7 +73,7 @@ compileError x =
   globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
 operationTypes
-  :: DataTypeLib
+  :: Schema
   -> VariableDefinitions
   -> ValidOperation
   -> Validation (Maybe TypeD, [ClientType])
@@ -205,7 +205,7 @@ operationTypes lib variables = genOperation
             conDatatype <- getType lib selectedTyName
             genConsD selectedTyName conDatatype selectionVariant
 
-scanInputTypes :: DataTypeLib -> Key -> LibUpdater [Key]
+scanInputTypes :: Schema -> Key -> LibUpdater [Key]
 scanInputTypes lib name collected | name `elem` collected = pure collected
                                   | otherwise = getType lib name >>= scanInpType
  where
@@ -221,7 +221,7 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
     scanType (DataEnum _) = pure (collected <> [typeName])
     scanType _            = pure collected
 
-buildInputType :: DataTypeLib -> Text -> Validation [ClientType]
+buildInputType :: Schema -> Text -> Validation [ClientType]
 buildInputType lib name = getType lib name >>= generateTypes
  where
   generateTypes DataType { typeName, typeContent } = subTypes typeContent
@@ -264,7 +264,7 @@ buildInputType lib name = getType lib name >>= generateTypes
 
 
 lookupFieldType
-  :: DataTypeLib
+  :: Schema
   -> [Key]
   -> DataType
   -> Position
@@ -302,7 +302,7 @@ leafType DataType { typeName, typeContent } = fromKind typeContent
   fromKind DataScalar{} = pure ([], [])
   fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
-getType :: DataTypeLib -> Text -> Validation DataType
+getType :: Schema -> Text -> Validation DataType
 getType lib typename = lookupType (compileError typename) lib typename
 
 typeFromScalar :: Name -> Name

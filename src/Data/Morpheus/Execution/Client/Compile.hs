@@ -32,7 +32,7 @@ import           Data.Morpheus.Types.IO         ( GQLRequest(..) )
 
 import           Data.Morpheus.Types.Internal.AST
                                                 ( GQLQuery(..)
-                                                , DataTypeLib
+                                                , Schema
                                                 , ClientQuery(..)
                                                 , VALIDATION_MODE(..)
                                                 )
@@ -54,7 +54,7 @@ compileSyntax queryText = case parseGQL request of
                        , variables     = Nothing
                        }
 
-validateWith :: DataTypeLib -> (GQLQuery, String) -> Validation ClientQuery
+validateWith :: Schema -> (GQLQuery, String) -> Validation ClientQuery
 validateWith schema (rawRequest@GQLQuery { operation }, queryText) = do
   validOperation <- validateRequest schema WITHOUT_VARIABLES rawRequest
   (queryArgsType, queryTypes) <- operationTypes

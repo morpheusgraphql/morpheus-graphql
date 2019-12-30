@@ -59,7 +59,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidOperation
                                                 , DataFingerprint(..)
                                                 , DataTypeContent(..)
-                                                , DataTypeLib(..)
+                                                , Schema(..)
                                                 , DataType(..)
                                                 , MUTATION
                                                 , OperationType(..)
@@ -155,7 +155,7 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
   = validRequest >>= execOperator
  where
   validRequest
-    :: Monad m => ResponseStream event m (DataTypeLib, ValidOperation)
+    :: Monad m => ResponseStream event m (Schema, ValidOperation)
   validRequest = cleanEvents $ ResultT $ pure $ do
     schema <- fullSchema $ Identity root
     query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
@@ -189,7 +189,7 @@ fullSchema
   :: forall proxy m event query mutation subscription
    . (IntrospectConstraint m event query mutation subscription)
   => proxy (GQLRootResolver m event query mutation subscription)
-  -> Validation DataTypeLib
+  -> Validation Schema
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
  where
   querySchema = resolveUpdates

@@ -30,7 +30,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Selection(..)
                                                 , Ref(..)
                                                 , Position
-                                                , DataTypeLib
+                                                , Schema
                                                 , lookupDataObject
                                                 , checkNameCollision
                                                 )
@@ -41,7 +41,7 @@ import           Data.Morpheus.Types.Internal.Resolving
 
 
 validateFragments
-  :: DataTypeLib -> FragmentLib -> [(Text, RawSelection)] -> Validation ()
+  :: Schema -> FragmentLib -> [(Text, RawSelection)] -> Validation ()
 validateFragments lib fragments operatorSel =
   validateNameCollision >> checkLoop >> checkUnusedFragments
  where
@@ -104,7 +104,7 @@ scanForSpread (_, InlineFragment Fragment { fragmentSelection = selection' }) =
 scanForSpread (_, Spread Ref { refName = name', refPosition = position' }) =
   [Ref name' position']
 
-validateFragment :: DataTypeLib -> (Text, Fragment) -> Validation NodeEdges
+validateFragment :: Schema -> (Text, Fragment) -> Validation NodeEdges
 validateFragment lib (fName, Fragment { fragmentSelection, fragmentType, fragmentPosition })
   = lookupDataObject validationError fragmentType lib >> pure
     (Ref fName fragmentPosition, concatMap scanForSpread fragmentSelection)

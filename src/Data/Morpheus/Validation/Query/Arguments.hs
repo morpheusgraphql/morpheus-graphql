@@ -31,7 +31,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Position
                                                 , DataArgument
                                                 , DataField(..)
-                                                , DataTypeLib
+                                                , Schema
                                                 , TypeRef(..)
                                                 , isFieldNullable
                                                 , lookupInputType
@@ -95,7 +95,7 @@ resolveArgumentVariables operationName variables DataField { fieldName, fieldArg
       pure (key, Argument constValue position)
 
 validateArgument
-  :: DataTypeLib
+  :: Schema
   -> Position
   -> Arguments RESOLVED
   -> (Text, DataArgument)
@@ -134,7 +134,7 @@ validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldTy
     handleInputError (Right x) = pure x
 
 validateArguments
-  :: DataTypeLib
+  :: Schema
   -> Text
   -> ValidVariables
   -> (Text, DataField)

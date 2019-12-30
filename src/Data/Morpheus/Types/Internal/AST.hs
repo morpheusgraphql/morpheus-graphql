@@ -78,7 +78,7 @@ module Data.Morpheus.Types.Internal.AST
   , DataField(..)
   , DataTypeContent(..)
   , DataType(..)
-  , DataTypeLib(..)
+  , Schema(..)
   , DataTypeWrapper(..)
   , DataValidator(..)
   , DataTypeKind(..)

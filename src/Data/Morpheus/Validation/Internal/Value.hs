@@ -20,7 +20,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
-                                                , DataTypeLib(..)
+                                                , Schema(..)
                                                 , DataValidator(..)
                                                 , Key
                                                 , TypeRef(..)
@@ -75,7 +75,7 @@ checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable 
 
 -- Validate Variable Argument or all Possible input Values
 validateInputValue
-  :: DataTypeLib
+  :: Schema
   -> [Prop]
   -> [TypeWrapper]
   -> DataType

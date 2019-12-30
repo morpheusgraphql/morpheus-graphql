@@ -21,11 +21,12 @@ import           Data.Morpheus.Parsing.JSONSchema.Types
                                                 , Type(..)
                                                 )
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
+import qualified Data.Morpheus.Types.Internal.AST as AST
+                                                ( Schema)
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField
                                                 , DataType(..)
                                                 , DataTypeContent(..)
-                                                , DataTypeLib
                                                 , DataTypeWrapper(..)
                                                 , Key
                                                 , TypeWrapper
@@ -46,7 +47,7 @@ import           Data.Text                      ( Text
                                                 , pack
                                                 )
 
-decodeIntrospection :: ByteString -> Validation DataTypeLib
+decodeIntrospection :: ByteString -> Validation AST.Schema
 decodeIntrospection jsonDoc = case jsonSchema of
   Left errors -> internalError $ pack errors
   Right JSONResponse { responseData = Just Introspection { __schema = Schema { types } } }
