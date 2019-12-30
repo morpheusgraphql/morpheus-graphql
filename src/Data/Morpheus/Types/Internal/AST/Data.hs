@@ -56,10 +56,8 @@ module Data.Morpheus.Types.Internal.AST.Data
   , isEntNode
   , lookupInputType
   , coerceDataObject
-  , getDataType
   , lookupDataObject
   , lookupDataUnion
-  , lookupType
   , lookupField
   , lookupUnionTypes
   , lookupSelectionField
@@ -91,6 +89,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , isOutputType
   , checkForUnknownKeys
   , checkNameCollision
+  , DataLookup(..)
   )
 where
 
@@ -472,10 +471,10 @@ type TypeRegister = HashMap Key DataType
 
 initTypeLib :: (Key, DataType) -> Schema
 initTypeLib query = Schema { types        = empty
-                                , query        = query
-                                , mutation     = Nothing
-                                , subscription = Nothing
-                                }
+                             , query        = query
+                             , mutation     = Nothing
+                             , subscription = Nothing
+                            }
 
 allDataTypes :: Schema -> [(Key, DataType)]
 allDataTypes Schema { types, query, mutation, subscription } =
@@ -490,28 +489,27 @@ fromOperation :: Maybe (Key, DataType) -> [(Key, DataType)]
 fromOperation (Just (key, datatype)) = [(key, datatype)]
 fromOperation Nothing = []
 
+
+class DataLookup l a where 
+  lookupResult :: (Failure e m, Monad m) => e -> Name -> l -> m a 
+
+instance DataLookup Schema DataType where 
+  lookupResult err name lib = case lookupDataType name lib of
+      Nothing -> failure err
+      Just x  -> pure x
+
 lookupDataType :: Key -> Schema -> Maybe DataType
 lookupDataType name lib = name `HM.lookup` typeRegister lib
-
-lookupType :: Failure e m => e -> Schema -> Key -> m DataType
-lookupType err lib name = case lookupDataType name lib of
-  Nothing -> failure err
-  Just x  -> pure x
-
-getDataType :: Failure error m => Key -> Schema -> error -> m DataType
-getDataType name lib gqlError = case lookupDataType name lib of
-  Just x -> pure x
-  _      -> failure gqlError
 
 lookupDataObject
   :: (Monad m, Failure e m) => e -> Key -> Schema -> m (Name,DataObject)
 lookupDataObject validationError name lib =
-  getDataType name lib validationError >>= coerceDataObject validationError
+  lookupResult validationError name lib >>= coerceDataObject validationError
 
 lookupDataUnion
   :: (Monad m, Failure e m) => e -> Key -> Schema -> m DataUnion
 lookupDataUnion validationError name lib =
-  getDataType name lib validationError >>= coerceDataUnion validationError
+  lookupResult validationError name lib >>= coerceDataUnion validationError
 
 lookupUnionTypes
   :: (Monad m, Failure GQLErrors m)

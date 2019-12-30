@@ -44,7 +44,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isEntNode
                                                 , lookupFieldAsSelectionSet
                                                 , lookupSelectionField
-                                                , lookupType
+                                                , DataLookup(..)
                                                 , lookupUnionTypes
                                                 , checkNameCollision
                                                 )
@@ -151,9 +151,10 @@ validateSelectionSet lib fragments' operatorName variables = __validate
                                      selectionPosition
                                      selectionArguments
       -- check field Type existence  -----
-      fieldDataType <- lookupType
-        (unknownType (typeConName $fieldType selectionField) selectionPosition) lib
+      fieldDataType <- lookupResult
+        (unknownType (typeConName $fieldType selectionField) selectionPosition) 
         (typeConName $ fieldType selectionField)
+        lib
       return (selectionField, fieldDataType, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     --

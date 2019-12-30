@@ -42,8 +42,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Key
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
-                                                , allDataTypes
-                                                , lookupType
+                                                , DataLookup(..)
                                                 , ConsD(..)
                                                 , ClientType(..)
                                                 , TypeD(..)
@@ -303,7 +302,7 @@ leafType DataType { typeName, typeContent } = fromKind typeContent
   fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
 getType :: Schema -> Text -> Validation DataType
-getType lib typename = lookupType (compileError typename) lib typename
+getType lib typename = lookupResult (compileError typename) typename lib 
 
 typeFromScalar :: Name -> Name
 typeFromScalar "Boolean" = "Bool"

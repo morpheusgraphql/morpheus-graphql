@@ -115,10 +115,8 @@ module Data.Morpheus.Types.Internal.AST
   , isEntNode
   , lookupInputType
   , coerceDataObject
-  , getDataType
   , lookupDataObject
   , lookupDataUnion
-  , lookupType
   , lookupField
   , lookupUnionTypes
   , lookupSelectionField
@@ -149,6 +147,7 @@ module Data.Morpheus.Types.Internal.AST
   , VariableContent(..)
   , checkForUnknownKeys
   , checkNameCollision
+  , DataLookup(..)
   -- LOCAL
   , GQLQuery(..)
   , Variables
