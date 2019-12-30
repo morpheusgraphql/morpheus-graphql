@@ -506,12 +506,8 @@ lookupDataUnion
 lookupDataUnion validationError name lib =
   lookupResult validationError name lib >>= coerceDataUnion validationError
 
-
-
-
 lookupDataType :: Key -> Schema -> Maybe DataType
-lookupDataType name lib = name `HM.lookup` typeRegister lib
-
+lookupDataType name  = HM.lookup name . typeRegister
 
 lookupUnionTypes
   :: (Monad m, Failure GQLErrors m)
