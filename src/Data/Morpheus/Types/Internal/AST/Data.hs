@@ -496,7 +496,6 @@ instance DataLookup Schema DataType where
       Nothing -> failure err
       Just x  -> pure x
 
-
 instance DataLookup Schema (Name,DataObject) where 
   lookupResult validationError name lib =
      lookupResult validationError name lib >>= coerceDataObject validationError
