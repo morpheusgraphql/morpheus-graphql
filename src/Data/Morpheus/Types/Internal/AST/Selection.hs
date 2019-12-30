@@ -64,7 +64,7 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( OperationType(..)
-                                                , DataTypeLib(..)
+                                                , Schema(..)
                                                 , DataType(..)
                                                 , DataTypeContent(..)
                                                 , DataObject
@@ -154,7 +154,7 @@ getOperationName :: Maybe Key -> Key
 getOperationName = fromMaybe "AnonymousOperation"
 
 getOperationObject
-  :: Operation a -> DataTypeLib -> Validation (Name, DataObject)
+  :: Operation a -> Schema -> Validation (Name, DataObject)
 getOperationObject op lib = do
   dt <- getOperationDataType op lib
   case dt of
@@ -165,7 +165,7 @@ getOperationObject op lib = do
         <> typeName
         <> "\" must be an Object"
 
-getOperationDataType :: Operation a -> DataTypeLib -> Validation DataType
+getOperationDataType :: Operation a -> Schema -> Validation DataType
 getOperationDataType Operation { operationType = Query } lib =
   pure $ snd $ query lib
 getOperationDataType Operation { operationType = Mutation, operationPosition } lib

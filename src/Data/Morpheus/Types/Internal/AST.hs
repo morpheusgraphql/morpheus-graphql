@@ -17,6 +17,7 @@ module Data.Morpheus.Types.Internal.AST
   , RESOLVED
   , VALID
   , RAW
+  , VALIDATION_MODE(..)
 
   -- VALUE
   , Value(..)
@@ -77,7 +78,7 @@ module Data.Morpheus.Types.Internal.AST
   , DataField(..)
   , DataTypeContent(..)
   , DataType(..)
-  , DataTypeLib(..)
+  , Schema(..)
   , DataTypeWrapper(..)
   , DataValidator(..)
   , DataTypeKind(..)
@@ -114,10 +115,7 @@ module Data.Morpheus.Types.Internal.AST
   , isEntNode
   , lookupInputType
   , coerceDataObject
-  , getDataType
-  , lookupDataObject
   , lookupDataUnion
-  , lookupType
   , lookupField
   , lookupUnionTypes
   , lookupSelectionField
@@ -146,6 +144,9 @@ module Data.Morpheus.Types.Internal.AST
   , ClientType(..)
   , DataInputUnion
   , VariableContent(..)
+  , checkForUnknownKeys
+  , checkNameCollision
+  , DataLookup(..)
   -- LOCAL
   , GQLQuery(..)
   , Variables

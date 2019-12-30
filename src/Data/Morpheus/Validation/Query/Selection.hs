@@ -37,22 +37,20 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataObject
                                                 , DataTypeContent(..)
                                                 , DataType(..)
-                                                , DataTypeLib(..)
+                                                , Schema(..)
                                                 , TypeRef(..)
                                                 , Name
-                                                , allDataTypes
                                                 , isEntNode
                                                 , lookupFieldAsSelectionSet
                                                 , lookupSelectionField
-                                                , lookupType
+                                                , DataLookup(..)
                                                 , lookupUnionTypes
+                                                , checkNameCollision
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Validation.Internal.Utils
-                                                ( checkNameCollision )
 import           Data.Morpheus.Validation.Query.Arguments
                                                 ( validateArguments )
 import           Data.Morpheus.Validation.Query.Fragment
@@ -122,7 +120,7 @@ flatTuple list' = (concatMap fst list', concatMap snd list')
  -}
 
 validateSelectionSet
-  :: DataTypeLib
+  :: Schema
   -> FragmentLib
   -> Text
   -> ValidVariables
@@ -152,10 +150,10 @@ validateSelectionSet lib fragments' operatorName variables = __validate
                                      selectionPosition
                                      selectionArguments
       -- check field Type existence  -----
-      fieldDataType <- lookupType
-        (unknownType (typeConName $fieldType selectionField) selectionPosition)
-        (allDataTypes lib)
+      fieldDataType <- lookupResult
+        (unknownType (typeConName $fieldType selectionField) selectionPosition) 
         (typeConName $ fieldType selectionField)
+        lib
       return (selectionField, fieldDataType, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     --

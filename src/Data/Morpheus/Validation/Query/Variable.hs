@@ -40,7 +40,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Ref(..)
                                                 , Position
                                                 , DataType
-                                                , DataTypeLib
+                                                , Schema
                                                 , lookupInputType
                                                 , Variables
                                                 , Value(..)
@@ -53,19 +53,18 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VariableContent(..)
                                                 , isNullable
                                                 , TypeRef(..)
+                                                , VALIDATION_MODE(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Validation.Internal.Utils
-                                                ( VALIDATION_MODE(..) )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInputValue )
 import           Data.Morpheus.Validation.Query.Fragment
                                                 ( getFragment )
 
-getVariableType :: Text -> Position -> DataTypeLib -> Validation DataType
+getVariableType :: Text -> Position -> Schema -> Validation DataType
 getVariableType type' position' lib' = lookupInputType type' lib' error'
   where error' = unknownType type' position'
 
@@ -106,7 +105,7 @@ allVariableRefs fragmentLib = concatMapM (concatMapM searchRefs)
       .   fragmentSelection
 
 resolveOperationVariables
-  :: DataTypeLib
+  :: Schema
   -> FragmentLib
   -> Variables
   -> VALIDATION_MODE
@@ -128,7 +127,7 @@ resolveOperationVariables typeLib lib root validationMode Operation { operationN
       failure $ unusedVariables (getOperationName operationName) unused'
 
 lookupAndValidateValueOnBody
-  :: DataTypeLib
+  :: Schema
   -> Variables
   -> VALIDATION_MODE
   -> (Text, Variable RAW)

@@ -30,19 +30,20 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Selection(..)
                                                 , Ref(..)
                                                 , Position
-                                                , DataTypeLib
-                                                , lookupDataObject
+                                                , Schema
+                                                , DataLookup(..)
+                                                , checkNameCollision
+                                                , DataObject
+                                                , Name
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Validation.Internal.Utils
-                                                ( checkNameCollision )
 
 
 validateFragments
-  :: DataTypeLib -> FragmentLib -> [(Text, RawSelection)] -> Validation ()
+  :: Schema -> FragmentLib -> [(Text, RawSelection)] -> Validation ()
 validateFragments lib fragments operatorSel =
   validateNameCollision >> checkLoop >> checkUnusedFragments
  where
@@ -105,9 +106,9 @@ scanForSpread (_, InlineFragment Fragment { fragmentSelection = selection' }) =
 scanForSpread (_, Spread Ref { refName = name', refPosition = position' }) =
   [Ref name' position']
 
-validateFragment :: DataTypeLib -> (Text, Fragment) -> Validation NodeEdges
+validateFragment :: Schema -> (Text, Fragment) -> Validation NodeEdges
 validateFragment lib (fName, Fragment { fragmentSelection, fragmentType, fragmentPosition })
-  = lookupDataObject validationError fragmentType lib >> pure
+  = (lookupResult validationError fragmentType lib :: Validation ( Name, DataObject) )>> pure
     (Ref fName fragmentPosition, concatMap scanForSpread fragmentSelection)
   where validationError = unknownType fragmentType fragmentPosition
 

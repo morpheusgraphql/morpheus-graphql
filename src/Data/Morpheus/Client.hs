@@ -32,7 +32,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( GQLQuery
-                                                , DataTypeLib
+                                                , Schema
                                                 )
 
 gql :: QuasiQuoter
@@ -59,7 +59,7 @@ defineByIntrospectionFile = defineByIntrospection . L.readFile
 defineByDocument :: IO ByteString -> (GQLQuery, String) -> Q [Dec]
 defineByDocument doc = defineQuery (schemaByDocument doc)
 
-schemaByDocument :: IO ByteString -> IO (Validation DataTypeLib)
+schemaByDocument :: IO ByteString -> IO (Validation Schema)
 schemaByDocument documentGQL = parseFullGQLDocument <$> documentGQL
 
 defineByIntrospection :: IO ByteString -> (GQLQuery, String) -> Q [Dec]

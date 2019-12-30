@@ -19,7 +19,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , DataField(..)
   , DataTypeContent(..)
   , DataType(..)
-  , DataTypeLib(..)
+  , Schema(..)
   , DataTypeWrapper(..)
   , DataValidator(..)
   , DataTypeKind(..)
@@ -56,10 +56,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , isEntNode
   , lookupInputType
   , coerceDataObject
-  , getDataType
-  , lookupDataObject
   , lookupDataUnion
-  , lookupType
   , lookupField
   , lookupUnionTypes
   , lookupSelectionField
@@ -89,6 +86,9 @@ module Data.Morpheus.Types.Internal.AST.Data
   , DataInputUnion
   , isNullableWrapper
   , isOutputType
+  , checkForUnknownKeys
+  , checkNameCollision
+  , DataLookup(..)
   )
 where
 
@@ -104,7 +104,7 @@ import qualified Data.HashMap.Lazy             as HM
 import           Data.Semigroup                 ( (<>) )
 import           Language.Haskell.TH.Syntax     ( Lift )
 import           Instances.TH.Lift              ( )
-import           Data.List                      ( find )
+import           Data.List                      ( find , (\\))
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal   ( internalError )
@@ -118,6 +118,9 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Description
                                                 , TypeWrapper(..)
                                                 , TypeRef(..)
+                                                , Ref(..)
+                                                , elementOfKeys
+                                                , removeDuplicates
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -145,6 +148,20 @@ isSchemaTypeName = (`elem` sysTypes)
 
 isPrimitiveTypeName :: Key -> Bool
 isPrimitiveTypeName = (`elem` ["String", "Float", "Int", "Boolean", "ID"])
+
+
+checkNameCollision :: (Failure e m, Ord a) => [a] -> ([a] -> e) -> m [a]
+checkNameCollision enhancedKeys errorGenerator =
+  case enhancedKeys \\ removeDuplicates enhancedKeys of
+    []         -> pure enhancedKeys
+    duplicates -> failure $ errorGenerator duplicates
+
+checkForUnknownKeys :: Failure e m => [Ref] -> [Name] -> ([Ref] -> e) -> m [Ref]
+checkForUnknownKeys enhancedKeys' keys' errorGenerator' =
+  case filter (not . elementOfKeys keys') enhancedKeys' of
+    []           -> pure enhancedKeys'
+    unknownKeys' -> failure $ errorGenerator' unknownKeys'  
+
 
 sysTypes :: [Key]
 sysTypes =
@@ -442,28 +459,27 @@ kindOf DataType { typeContent } = __kind typeContent
 --
 -- Type Register
 --------------------------------------------------------------------------------------------------
-data DataTypeLib = DataTypeLib
-  { types        :: HashMap Key DataType
+data Schema = Schema
+  { types        :: HashMap Name DataType
   , query        :: (Name,DataType)
-  , mutation     :: Maybe (Name, DataType)
-  , subscription :: Maybe (Name, DataType)
+  , mutation     :: Maybe (Name,DataType)
+  , subscription :: Maybe (Name,DataType)
   } deriving (Show)
 
 type TypeRegister = HashMap Key DataType
 
-initTypeLib :: (Key, DataType) -> DataTypeLib
-initTypeLib query = DataTypeLib { types        = empty
-                                , query        = query
-                                , mutation     = Nothing
-                                , subscription = Nothing
-                                }
+initTypeLib :: (Key, DataType) -> Schema
+initTypeLib query = Schema { types        = empty
+                             , query        = query
+                             , mutation     = Nothing
+                             , subscription = Nothing
+                            }
 
-allDataTypes :: DataTypeLib -> [(Key, DataType)]
-allDataTypes DataTypeLib { types, query, mutation, subscription } =
-  concatMap fromOperation [Just query, mutation, subscription] <> toList types
+allDataTypes :: Schema -> [(Key, DataType)]
+allDataTypes  = toList . typeRegister
 
-typeRegister :: DataTypeLib -> TypeRegister
-typeRegister DataTypeLib { types, query, mutation, subscription } =
+typeRegister :: Schema -> TypeRegister
+typeRegister Schema { types, query, mutation, subscription } =
   types `union` fromList
     (concatMap fromOperation [Just query, mutation, subscription])
 
@@ -471,56 +487,59 @@ fromOperation :: Maybe (Key, DataType) -> [(Key, DataType)]
 fromOperation (Just (key, datatype)) = [(key, datatype)]
 fromOperation Nothing = []
 
-lookupDataType :: Key -> DataTypeLib -> Maybe DataType
-lookupDataType name lib = name `HM.lookup` typeRegister lib
 
-getDataType :: Failure error m => Key -> DataTypeLib -> error -> m DataType
-getDataType name lib gqlError = case lookupDataType name lib of
-  Just x -> pure x
-  _      -> failure gqlError
+class DataLookup l a where 
+  lookupResult :: (Failure e m, Monad m) => e -> Name -> l -> m a 
 
-lookupDataObject
-  :: (Monad m, Failure e m) => e -> Key -> DataTypeLib -> m (Name,DataObject)
-lookupDataObject validationError name lib =
-  getDataType name lib validationError >>= coerceDataObject validationError
+instance DataLookup Schema DataType where 
+  lookupResult err name lib = case lookupDataType name lib of
+      Nothing -> failure err
+      Just x  -> pure x
+
+instance DataLookup Schema (Name,DataObject) where 
+  lookupResult validationError name lib =
+     lookupResult validationError name lib >>= coerceDataObject validationError
 
 lookupDataUnion
-  :: (Monad m, Failure e m) => e -> Key -> DataTypeLib -> m DataUnion
+  :: (Monad m, Failure e m) => e -> Key -> Schema -> m DataUnion
 lookupDataUnion validationError name lib =
-  getDataType name lib validationError >>= coerceDataUnion validationError
+  lookupResult validationError name lib >>= coerceDataUnion validationError
+
+lookupDataType :: Key -> Schema -> Maybe DataType
+lookupDataType name  = HM.lookup name . typeRegister
 
 lookupUnionTypes
   :: (Monad m, Failure GQLErrors m)
   => Position
   -> Key
-  -> DataTypeLib
+  -> Schema
   -> DataField
   -> m [(Name,DataObject)]
 lookupUnionTypes position key lib DataField { fieldType = TypeRef { typeConName = typeName } }
   = lookupDataUnion gqlError typeName lib
-    >>= mapM (flip (lookupDataObject gqlError) lib)
+    >>= mapM (flip (lookupResult gqlError) lib)
   where gqlError = hasNoSubfields key typeName position
 
 lookupFieldAsSelectionSet
   :: (Monad m, Failure GQLErrors m)
   => Position
   -> Key
-  -> DataTypeLib
+  -> Schema
   -> DataField
   -> m (Name,DataObject)
 lookupFieldAsSelectionSet position key lib DataField { fieldType = TypeRef { typeConName } }
-  = lookupDataObject gqlError typeConName lib
+  = lookupResult gqlError typeConName lib
   where gqlError = hasNoSubfields key typeConName position
 
-lookupInputType :: Failure e m => Key -> DataTypeLib -> e -> m DataType
+lookupInputType :: Failure e m => Key -> Schema -> e -> m DataType
 lookupInputType name lib errors = case lookupDataType name lib of
   Just x | isInputDataType x -> pure x
   _                          -> failure errors
 
-isTypeDefined :: Key -> DataTypeLib -> Maybe DataFingerprint
+isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
-defineType :: (Key, DataType) -> DataTypeLib -> DataTypeLib
+defineType :: (Key, DataType) -> Schema -> Schema
 defineType (key, datatype@DataType { typeName, typeContent = DataInputUnion enumKeys, typeFingerprint }) lib
   = lib { types = insert name unionTags (insert key datatype (types lib)) }
  where
@@ -534,27 +553,22 @@ defineType (key, datatype@DataType { typeName, typeContent = DataInputUnion enum
 defineType (key, datatype) lib =
   lib { types = insert key datatype (types lib) }
 
-lookupType :: Failure e m => e -> [(Key, a)] -> Key -> m a
-lookupType err lib typeName = case lookup typeName lib of
-  Nothing -> failure err
-  Just x  -> pure x
 
-createDataTypeLib :: [(Key, DataType)] -> Validation DataTypeLib
-createDataTypeLib types = case takeByKey "Query" types of
-  (Just query, lib1) -> case takeByKey "Mutation" lib1 of
-    (mutation, lib2) -> case takeByKey "Subscription" lib2 of
-      (subscription, lib3) ->
-        pure
-          ((foldr defineType (initTypeLib query) lib3) { mutation
-                                                       , subscription
-                                                       }
-          )
-  _ -> internalError "Query Not Defined"
- where
-  takeByKey key lib = case lookup key lib of
+-- lookups and removes DataType from hashmap 
+popByKey :: Name -> [(Key, DataType)] -> (Maybe (Name,DataType), [(Key, DataType)])
+popByKey key lib = case lookup key lib of
     Just dt@DataType { typeContent = DataObject {} } ->
       (Just (key, dt), filter ((/= key) . fst) lib)
-    _ -> (Nothing, lib)
+    _ -> (Nothing, lib)  
+
+
+createDataTypeLib :: [(Key, DataType)] -> Validation Schema
+createDataTypeLib types = case popByKey "Query" types of
+  (Nothing   ,_    ) -> internalError "Query Not Defined"
+  (Just query, lib1) -> do
+    let (mutation, lib2) = popByKey "Mutation" lib1
+    let (subscription, lib3) = popByKey "Subscription" lib2
+    pure $ (foldr defineType (initTypeLib query) lib3) {mutation, subscription}
 
 
 createInputUnionFields :: Key -> [Key] -> [(Key, DataField)]
@@ -588,7 +602,7 @@ createAlias typeConName =
   TypeRef { typeConName, typeWrappers = [], typeArgs = Nothing }
 
 
-type TypeUpdater = LibUpdater DataTypeLib
+type TypeUpdater = LibUpdater Schema
 
 insertType :: (Key, DataType) -> TypeUpdater
 insertType nextType@(name, datatype) lib = case isTypeDefined name lib of

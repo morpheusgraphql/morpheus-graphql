@@ -19,6 +19,9 @@ module Data.Morpheus.Types.Internal.AST.Base
   , Stage(..)
   , RESOLVED
   , TypeRef(..)
+  , removeDuplicates
+  , elementOfKeys
+  , VALIDATION_MODE(..)
   )
 where
 
@@ -29,6 +32,7 @@ import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
 import           Language.Haskell.TH.Syntax     ( Lift )
 import           Instances.TH.Lift              ( )
+import qualified Data.Set                      as S
 
 
 type Key = Text
@@ -80,3 +84,17 @@ data TypeRef = TypeRef
   , typeArgs     :: Maybe Name
   , typeWrappers :: [TypeWrapper]
   } deriving (Show,Lift)
+
+
+data VALIDATION_MODE
+  = WITHOUT_VARIABLES
+  | FULL_VALIDATION
+  deriving (Eq, Show)
+
+removeDuplicates :: Ord a => [a] -> [a]
+removeDuplicates = S.toList . S.fromList
+
+elementOfKeys :: [Name] -> Ref -> Bool
+elementOfKeys keys Ref { refName } = refName `elem` keys
+
+

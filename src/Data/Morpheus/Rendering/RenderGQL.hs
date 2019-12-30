@@ -23,7 +23,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
-                                                , DataTypeLib
+                                                , Schema
                                                 , DataTypeWrapper(..)
                                                 , Key
                                                 , TypeRef(..)
@@ -38,7 +38,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 )
 
 
-renderGraphQLDocument :: DataTypeLib -> ByteString
+renderGraphQLDocument :: Schema -> ByteString
 renderGraphQLDocument lib =
   encodeUtf8 $ LT.fromStrict $ intercalate "\n\n" $ map render visibleTypes
  where

@@ -59,7 +59,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidOperation
                                                 , DataFingerprint(..)
                                                 , DataTypeContent(..)
-                                                , DataTypeLib(..)
+                                                , Schema(..)
                                                 , DataType(..)
                                                 , MUTATION
                                                 , OperationType(..)
@@ -69,6 +69,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidValue
                                                 , Name
                                                 , DataField
+                                                , VALIDATION_MODE(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -88,8 +89,6 @@ import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
                                                 , renderResponse
                                                 )
-import           Data.Morpheus.Validation.Internal.Utils
-                                                ( VALIDATION_MODE(..) )
 import           Data.Morpheus.Validation.Query.Validation
                                                 ( validateRequest )
 import           Data.Typeable                  ( Typeable )
@@ -156,7 +155,7 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
   = validRequest >>= execOperator
  where
   validRequest
-    :: Monad m => ResponseStream event m (DataTypeLib, ValidOperation)
+    :: Monad m => ResponseStream event m (Schema, ValidOperation)
   validRequest = cleanEvents $ ResultT $ pure $ do
     schema <- fullSchema $ Identity root
     query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
@@ -190,7 +189,7 @@ fullSchema
   :: forall proxy m event query mutation subscription
    . (IntrospectConstraint m event query mutation subscription)
   => proxy (GQLRootResolver m event query mutation subscription)
-  -> Validation DataTypeLib
+  -> Validation Schema
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
  where
   querySchema = resolveUpdates
