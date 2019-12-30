@@ -1,4 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TupleSections  #-}
+
 
 module Data.Morpheus.Validation.Document.Validation
   ( validatePartialDocument
@@ -39,26 +41,14 @@ validatePartialDocument :: [(Key, RawDataType)] -> Validation [(Key, DataType)]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib
  where
   validateType :: (Key, RawDataType) -> Validation (Maybe (Key, DataType))
+  validateType (name, FinalDataType( dt@DataType { typeName , typeMeta, typeContent = DataObject { objectImplements , objectFields}  })) = do         
+      interface <- traverse getInterfaceByKey objectImplements
+      case concatMap (mustBeSubset objectFields) interface of
+        [] -> pure $ Just (name, dt) 
+        errors -> failure $ partialImplements typeName errors
+  
   validateType (name, FinalDataType x) = pure $ Just (name, x)
-  validateType (name, Implements { implementsName, implementsInterfaces, implementsMeta, implementsContent })
-    = asTuple name
-      <$>             (implementsName, implementsMeta, implementsContent)
-      `mustImplement` implementsInterfaces
   validateType _ = pure Nothing
-  -----------------------------------
-  asTuple name x = Just (name, x)
-  -----------------------------------
-  mustImplement :: (Name, Maybe Meta, DataObject) -> [Key] -> Validation DataType
-  mustImplement (typeName, typeMeta, object) interfaceKey = do
-    interface <- traverse getInterfaceByKey interfaceKey
-    case concatMap (mustBeSubset object) interface of
-      [] -> pure $ DataType { typeName
-                            , typeFingerprint = DataFingerprint typeName []
-                            , typeMeta
-                            , typeContent     = DataObject object
-                            }
-      errors -> failure $ partialImplements typeName errors
-  -------------------------------
   mustBeSubset
     :: DataObject -> (Name, DataObject) -> [(Key, Key, ImplementsError)]
   mustBeSubset objFields (typeName, interfaceFields) = concatMap

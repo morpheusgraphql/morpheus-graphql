@@ -76,20 +76,20 @@ scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-objectTypeDefinition :: Maybe Text -> Parser (Text, RawDataType)
+objectTypeDefinition :: Maybe Text -> Parser (Text, DataType)
 objectTypeDefinition metaDescription = label "ObjectTypeDefinition" $ do
-  implementsName       <- typDeclaration "type"
-  implementsInterfaces <- optionalImplementsInterfaces
-  metaDirectives       <- optionalDirectives
-  fields               <- fieldsDefinition
+  typeName         <- typDeclaration "type"
+  objectImplements <- optionalImplementsInterfaces
+  metaDirectives   <- optionalDirectives
+  objectFields     <- fieldsDefinition
   --------------------------
   pure
-    ( implementsName
-    , Implements
-      { implementsName
-      , implementsInterfaces
-      , implementsMeta       = Just Meta { metaDescription, metaDirectives }
-      , implementsContent    = fields
+    ( typeName
+    , DataType
+      { typeName
+      , typeMeta          = Just Meta { metaDescription, metaDirectives }
+      , typeFingerprint   = DataFingerprint typeName []
+      , typeContent       = DataObject { objectImplements, objectFields }
       }
     )
 
@@ -202,6 +202,7 @@ parseFinalDataType description =
     <|> unionTypeDefinition description
     <|> enumTypeDefinition description
     <|> scalarTypeDefinition description
+    <|> objectTypeDefinition description
 
 parseDataType :: Parser (Text, RawDataType)
 parseDataType = label "TypeDefinition" $ do
@@ -210,7 +211,6 @@ parseDataType = label "TypeDefinition" $ do
  where
   types description =
     interfaceTypeDefinition description
-      <|> objectTypeDefinition description
       <|> finalDataT
    where
     finalDataT = do

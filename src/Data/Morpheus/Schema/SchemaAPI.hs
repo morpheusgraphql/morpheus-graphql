@@ -16,7 +16,7 @@ import           Data.Text                      ( Text )
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Introspect
-                                                ( objectFields
+                                                ( introspectObjectFields
                                                 , TypeUpdater
                                                 , introspect
                                                 , TypeScope(..)
@@ -77,7 +77,7 @@ initSchema lib = pure S__Schema
   }
 
 hiddenRootFields :: [(Text, DataField)]
-hiddenRootFields = fst $ objectFields
+hiddenRootFields = fst $ introspectObjectFields
   (Proxy :: Proxy (CUSTOM (Root Maybe)))
   ("Root", OutputType, Proxy @(Root Maybe))
 

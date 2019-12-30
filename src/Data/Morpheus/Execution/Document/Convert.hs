@@ -118,9 +118,9 @@ toTHDefinitions namespace lib = traverse renderTHType lib
         , typeArgD     = []
         , typeOriginal = (typeName, dt)
         }
-      genType (DataObject fields) = do
-        typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) fields
-        cFields  <- traverse genResField fields
+      genType (DataObject {objectFields}) = do
+        typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) objectFields
+        cFields  <- traverse genResField objectFields
         pure GQLTypeD
           { typeD        = TypeD
                              { tName      = hsTypeName typeName

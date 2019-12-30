@@ -22,7 +22,7 @@ module Data.Morpheus.Execution.Server.Introspect
   , IntroCon
   , updateLib
   , buildType
-  , objectFields
+  , introspectObjectFields
   , TypeScope(..)
   )
 where
@@ -135,7 +135,7 @@ instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m
   field _ name = fieldObj { fieldArgs }
    where
     fieldObj  = field (Proxy @b) name
-    fieldArgs = fst $ objectFields
+    fieldArgs = fst $ introspectObjectFields
       (Proxy :: Proxy 'False)
       (__typeName (Proxy @b), OutputType, Proxy @a)
   introspect _ typeLib = resolveUpdates typeLib
@@ -144,7 +144,7 @@ instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m
     name = "Arguments for " <> __typeName (Proxy @b)
     inputs :: [TypeUpdater]
     inputs =
-      snd $ objectFields (Proxy :: Proxy 'False) (name, InputType, Proxy @a)
+      snd $ introspectObjectFields (Proxy :: Proxy 'False) (name, InputType, Proxy @a)
 
 --  GQL Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance (GQLType b, Introspect b) => Introspect (Resolver fo e m b) where
@@ -191,16 +191,15 @@ derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
-
-objectFields
+introspectObjectFields
   :: IntrospectRep custom a
   => proxy1 (custom :: Bool)
   -> (Name, TypeScope, proxy2 a)
   -> ([(Name, DataField)], [TypeUpdater])
-objectFields p1 (name, scope, proxy) = withObject
+introspectObjectFields p1 (name, scope, proxy) = withObject
   (introspectRep p1 (proxy, scope, "", DataFingerprint "" []))
  where
-  withObject (DataObject      x, ts) = (x, ts)
+  withObject (DataObject     {objectFields}, ts) = (objectFields, ts)
   withObject (DataInputObject x, ts) = (x, ts)
   withObject _ =
     ( []
@@ -325,7 +324,7 @@ derivingDataContent _ (baseName, baseFingerprint) scope =
    where
     genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
     genericUnion OutputType =
-      buildUnionType (baseName, baseFingerprint) DataUnion DataObject
+      buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
 
 buildInputUnion
@@ -370,7 +369,7 @@ buildObject :: TypeScope -> [FieldRep] -> (DataTypeContent, [TypeUpdater])
 buildObject isOutput consFields = (wrap fields, types)
  where
   (fields, types) = buildDataObject consFields
-  wrap | isOutput == OutputType = DataObject
+  wrap | isOutput == OutputType = DataObject []
        | otherwise              = DataInputObject
 
 buildDataObject :: [FieldRep] -> (DataObject, [TypeUpdater])

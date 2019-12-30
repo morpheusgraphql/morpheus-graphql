@@ -269,8 +269,8 @@ lookupFieldType
   -> Position
   -> Text
   -> Validation (DataType, TypeRef)
-lookupFieldType lib path DataType { typeContent = DataObject typeContent, typeName } refPosition key
-  = case lookup key typeContent of
+lookupFieldType lib path DataType { typeContent = DataObject { objectFields }, typeName } refPosition key
+  = case lookup key objectFields of
     Just DataField { fieldType = alias@TypeRef { typeConName }, fieldMeta } ->
       checkDeprecated >> (trans <$> getType lib typeConName)
      where
@@ -288,7 +288,7 @@ lookupFieldType lib path DataType { typeContent = DataObject typeContent, typeNa
     ------------------
     Nothing ->
       failure
-        (compileError $ "cant find field \"" <> pack (show typeContent) <> "\"")
+        (compileError $ "cant find field \"" <> pack (show objectFields) <> "\"")
 lookupFieldType _ _ dt _ _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 

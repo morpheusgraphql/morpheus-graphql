@@ -39,7 +39,7 @@ import           Data.Morpheus.Execution.Server.Encode
                                                 )
 import           Data.Morpheus.Execution.Server.Introspect
                                                 ( IntroCon
-                                                , objectFields
+                                                , introspectObjectFields
                                                 , TypeScope(..)
                                                 )
 import           Data.Morpheus.Execution.Subscription.ClientRegister
@@ -196,7 +196,7 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
     (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query"))
     (defaultTypes : types)
    where
-    (fields, types) = objectFields
+    (fields, types) = introspectObjectFields
       (Proxy @(CUSTOM (query (Resolver QUERY event m))))
       ("type for query", OutputType, Proxy @(query (Resolver QUERY event m)))
   ------------------------------
@@ -204,7 +204,7 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
     (lib { mutation = maybeOperator fields "Mutation" })
     types
    where
-    (fields, types) = objectFields
+    (fields, types) = introspectObjectFields
       (Proxy @(CUSTOM (mutation (Resolver MUTATION event m))))
       ( "type for mutation"
       , OutputType
@@ -215,7 +215,7 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
     (lib { subscription = maybeOperator fields "Subscription" })
     types
    where
-    (fields, types) = objectFields
+    (fields, types) = introspectObjectFields
       (Proxy @(CUSTOM (subscription (Resolver SUBSCRIPTION event m))))
       ( "type for subscription"
       , OutputType
@@ -228,7 +228,7 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   operatorType :: [(Name, DataField)] -> Name -> (Name, DataType)
   operatorType fields typeName =
     ( typeName
-    , DataType { typeContent     = DataObject fields
+    , DataType { typeContent     = DataObject [] fields
                , typeName
                , typeFingerprint = DataFingerprint typeName []
                , typeMeta        = Nothing
