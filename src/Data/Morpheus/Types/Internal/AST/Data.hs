@@ -476,8 +476,7 @@ initTypeLib query = Schema { types        = empty
                             }
 
 allDataTypes :: Schema -> [(Key, DataType)]
-allDataTypes Schema { types, query, mutation, subscription } =
-  concatMap fromOperation [Just query, mutation, subscription] <> toList types
+allDataTypes  = toList . typeRegister
 
 typeRegister :: Schema -> TypeRegister
 typeRegister Schema { types, query, mutation, subscription } =
