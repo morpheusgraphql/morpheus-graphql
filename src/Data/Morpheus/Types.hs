@@ -31,7 +31,7 @@ module Data.Morpheus.Types
   , ResolveM
   , ResolveS
   , failRes
-  , ActionGraphQL
+  , WithOperation
   )
 where
 
@@ -54,7 +54,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , GQLRootResolver(..)
                                                 , Resolver(..)
                                                 , LiftEither(..)
-                                                , ActionGraphQL
+                                                , WithOperation
                                                 , lift
                                                 , failure
                                                 )

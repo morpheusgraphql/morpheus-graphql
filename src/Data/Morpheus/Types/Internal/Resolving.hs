@@ -31,7 +31,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , resolve__typename
     , DataResolver(..)
     , FieldRes
-    , ActionGraphQL
+    , WithOperation
     )
 where
 
