@@ -45,11 +45,11 @@ type Collection a = [(Key, a)]
 
 data Stage = RAW | RESOLVED | VALID
 
-type VALID = 'RAW
+type RAW = 'RAW
 
 type RESOLVED = 'RESOLVED
 
-type RAW = 'VALID
+type VALID = 'VALID
 
 data Position = Position
   { line   :: Int
