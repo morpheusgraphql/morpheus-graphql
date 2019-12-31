@@ -2,6 +2,10 @@
 
 ## [0.8.1] - *
 
+### Added
+
+- `WithOperation` constraint for Generic Resolvers (#347) thanks @dandoh
+
 ### Fixed
 
 - liftEither support in MutResolver (#351)
@@ -109,7 +113,6 @@
 - Automatic Type Inference (only for Object, Union and Enum)
 - More general stateful resolvers which accept instances of MonadIO (Authored by Sebastian Pulido [sebashack])
 - Utility to create web-socket applications with custom MonadIO instances (Authored by Sebastian Pulido [sebashack])
-- `WithOperation` constraint for Generic Resolvers (#347) thanks @dandoh
 
 ```hs
 
