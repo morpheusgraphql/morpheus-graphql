@@ -96,12 +96,12 @@ import           Data.Morpheus.Types.IO         ( renderResponse
                                                 )
 -- MORPHEUS
 
-type WithOperation (o :: OperationType) = LiftOperation o Resolver
 
 class LiftOperation (o::OperationType) res where
   type ResError res :: *
   liftOperation :: Monad m => m (Either (ResError res) a) -> res o event m  a
 
+type WithOperation (o :: OperationType) = LiftOperation o Resolver
 
 type ResponseStream event m = ResultT (ResponseEvent m event) GQLError 'True m
 
