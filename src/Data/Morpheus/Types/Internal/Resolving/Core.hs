@@ -36,9 +36,14 @@ import           Data.Aeson                     ( FromJSON
                                                 , ToJSON
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Position(..) )
+                                                ( 
+                                                  Position(..)
+                                                  , Message 
+                                                  , Name
+                                                )
 import           Data.Text                      ( Text
                                                 , pack
+                                                , unpack
                                                 )
 import           GHC.Generics                   ( Generic )
 import           Data.Semigroup                 ( (<>) )
@@ -123,6 +128,9 @@ instance Monad m => Monad (ResultT event error concurency m) where
 
 instance MonadTrans (ResultT event error concurency) where
   lift = ResultT . fmap pure
+
+instance Monad m => Failure Message (ResultT event String concurency m) where
+  failure message = ResultT $ pure $ Failure [unpack message]
 
 instance Applicative m => Failure String (ResultT ev GQLError con m) where
   failure x =

@@ -1,9 +1,14 @@
 # Changelog
 
-## [0.8.1] - *
+## [0.9.0] - *
+
+### Added
+
+- `WithOperation` constraint for Generic Resolvers (#347) thanks @dandoh
 
 ### Fixed
 
+- liftEither support in MutResolver (#351)
 - selection of `__typename` on object und union objects (#337)
 - auto inferece of external types in gql document (#343)
 

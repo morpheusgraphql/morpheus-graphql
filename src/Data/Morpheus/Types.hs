@@ -25,8 +25,8 @@ module Data.Morpheus.Types
   , QUERY
   , MUTATION
   , SUBSCRIPTION
-  , liftEither
   , lift
+  , liftEither
   , ResolveQ
   , ResolveM
   , ResolveS
@@ -36,6 +36,10 @@ module Data.Morpheus.Types
 where
 
 import           Data.Text                      ( pack )
+import           Data.Either                    (either)
+import           Control.Monad.Trans.Class      ( MonadTrans(..) )
+
+-- MORPHEUS
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar
                                                   ( parseValue
                                                   , serialize
@@ -48,15 +52,16 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , ScalarValue(..)
+                                                , Message
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Event(..)
                                                 , GQLRootResolver(..)
                                                 , Resolver(..)
-                                                , LiftEither(..)
                                                 , WithOperation
                                                 , lift
                                                 , failure
+                                                , Failure
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
@@ -77,11 +82,14 @@ type ResolveM e m a = MutRes e m (a (MutRes e m))
 type ResolveS e m a = SubRes e m (a (Res e m))
 
 -- resolves constant value on any argument
-constRes :: (LiftEither o Resolver, Monad m) => b -> a -> Resolver o e m b
+constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
 constRes = const . pure
 
 constMutRes :: Monad m => [e] -> a -> args -> MutRes e m a
 constMutRes events value = const $ MutResolver $ pure (events, value)
 
-failRes :: (LiftEither o Resolver, Monad m) => String -> Resolver o e m a
+failRes :: (WithOperation o, Monad m) => String -> Resolver o e m a
 failRes = failure . pack
+
+liftEither :: (MonadTrans t, Monad (t m), Failure Message (t m)) => Monad m => m (Either String a) -> t m a
+liftEither x = lift x >>= either (failure . pack) pure

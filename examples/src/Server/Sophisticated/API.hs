@@ -145,7 +145,7 @@ resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
 -- Mutation Wit Event Triggering : sends events to subscription  
 resolveCreateUser :: ResolveM EVENT IO User
 resolveCreateUser = MutResolver $ do
-  value <- lift setDBUser
+  value <- liftEither setDBUser
   pure ([userUpdate], value)
 
 -- Mutation Wit Event Triggering : sends events to subscription  
@@ -221,10 +221,11 @@ setDBAddress = do
                , addressHouseNumber = pure houseNumber
                }
 
-setDBUser :: IO (User (IOMutRes EVENT))
+setDBUser :: IO (Either String (User (IOMutRes EVENT)))
 setDBUser = do
   Person { name, email } <- dbPerson
-  pure User { userName    = pure name
+  pure $ Right $ 
+       User { userName    = pure name
             , userEmail   = pure email
             , userAddress = const $ lift setDBAddress
             , userOffice  = constRes Nothing
