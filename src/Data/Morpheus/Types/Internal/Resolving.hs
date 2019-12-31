@@ -5,7 +5,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , Resolver(..)
     , ResolvingStrategy(..)
     , MapStrategy(..)
-    , LiftOperation(..)
+    , LiftOperation
     , resolveObject
     , toResponseRes
     , withObject

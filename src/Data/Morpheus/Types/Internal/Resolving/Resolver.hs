@@ -21,7 +21,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , Resolver(..)
   , ResolvingStrategy(..)
   , MapStrategy(..)
-  , LiftOperation(..)
+  , LiftOperation
   , resolveObject
   , resolveEnum
   , toResponseRes

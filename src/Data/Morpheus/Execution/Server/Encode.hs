@@ -72,7 +72,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( MapStrategy(..)
-                                                , LiftOperation(..)
+                                                , LiftOperation
                                                 , Resolver(..)
                                                 , resolving
                                                 , toResolver
