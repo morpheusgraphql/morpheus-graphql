@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- liftEither support in MutResolver (#351)
 - selection of `__typename` on object und union objects (#337)
 - auto inferece of external types in gql document (#343)
 
@@ -108,6 +109,7 @@
 - Automatic Type Inference (only for Object, Union and Enum)
 - More general stateful resolvers which accept instances of MonadIO (Authored by Sebastian Pulido [sebashack])
 - Utility to create web-socket applications with custom MonadIO instances (Authored by Sebastian Pulido [sebashack])
+- `WithOperation` constraint for Generic Resolvers (#347) thanks @dandoh
 
 ```hs
 
