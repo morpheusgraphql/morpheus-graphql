@@ -64,8 +64,8 @@ type Validation = Result () GQLError 'True
 -- Result
 --
 --
-data Result events error (concurency :: Bool)  a =
-  Success { result :: a , warnings :: [error] , events:: [events] }
+data Result events error (concurency :: Bool) a 
+  = Success { result :: a , warnings :: [error] , events:: [events] }
   | Failure [error] deriving (Functor)
 
 instance Applicative (Result e cocnurency  error) where
