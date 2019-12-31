@@ -12,6 +12,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Resolver
   ( Event(..)
@@ -35,6 +36,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , resolve__typename
   , DataResolver(..)
   , FieldRes
+  , ActionGraphQL
   )
 where
 
@@ -97,6 +99,8 @@ import           Data.Morpheus.Types.IO         ( renderResponse
 class LiftEither (o::OperationType) res where
   type ResError res :: *
   liftEither :: Monad m => m (Either (ResError res) a) -> res o event m  a
+
+type ActionGraphQL (o :: OperationType) = LiftEither o Resolver
 
 type ResponseStream event m = ResultT (ResponseEvent m event) GQLError 'True m
 

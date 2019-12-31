@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DataKinds  #-}
+{-# LANGUAGE ConstraintKinds #-}
 -- | GQL Types
 module Data.Morpheus.Types
   ( Event(..)
@@ -30,6 +31,7 @@ module Data.Morpheus.Types
   , ResolveM
   , ResolveS
   , failRes
+  , ActionGraphQL
   )
 where
 
@@ -52,6 +54,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , GQLRootResolver(..)
                                                 , Resolver(..)
                                                 , LiftEither(..)
+                                                , ActionGraphQL
                                                 , lift
                                                 , failure
                                                 )
