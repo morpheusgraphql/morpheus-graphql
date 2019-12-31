@@ -71,6 +71,7 @@ instance RenderGQL DataEnumValue where
 instance RenderGQL (Key, DataType) where
   render (name, DataType { typeContent }) = __render typeContent
    where
+    __render DataInterface { interfaceFields } = "interface " <> name <> render interfaceFields
     __render DataScalar{}    = "scalar " <> name
     __render (DataEnum tags) = "enum " <> name <> renderObject render tags
     __render (DataUnion members) =

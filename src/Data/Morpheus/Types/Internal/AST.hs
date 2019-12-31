@@ -83,7 +83,6 @@ module Data.Morpheus.Types.Internal.AST
   , DataValidator(..)
   , DataTypeKind(..)
   , DataFingerprint(..)
-  , RawDataType(..)
   , TypeWrapper(..)
   , TypeRef(..)
   , DataEnumValue(..)

@@ -101,8 +101,9 @@ toTHDefinitions namespace lib = traverse renderTHType lib
        where
         enumOption DataEnumValue { enumName } =
           ConsD { cName = hsTypeName enumName, cFields = [] }
-      genType (DataScalar _) = fail "Scalar Types should defined By Native Haskell Types"
-      genType (DataInputUnion _) = fail "Input Unions not Supported"
+      genType DataScalar {} = fail "Scalar Types should defined By Native Haskell Types"
+      genType DataInputUnion {} = fail "Input Unions not Supported"
+      genType DataInterface {} = fail "interfaces must be eliminated in Validation"
       genType (DataInputObject fields) = pure GQLTypeD
         { typeD        =
           TypeD
@@ -118,7 +119,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
         , typeArgD     = []
         , typeOriginal = (typeName, dt)
         }
-      genType (DataObject {objectFields}) = do
+      genType DataObject {objectFields} = do
         typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) objectFields
         cFields  <- traverse genResField objectFields
         pure GQLTypeD
