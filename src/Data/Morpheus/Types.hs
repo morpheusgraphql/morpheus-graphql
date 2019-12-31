@@ -25,8 +25,8 @@ module Data.Morpheus.Types
   , QUERY
   , MUTATION
   , SUBSCRIPTION
-  , liftEither
   , lift
+  , liftEither
   , ResolveQ
   , ResolveM
   , ResolveS
@@ -35,8 +35,11 @@ module Data.Morpheus.Types
   )
 where
 
-import           Control.Monad.Trans.Class      ( MonadTrans(..) )
 import           Data.Text                      ( pack )
+import           Data.Either                    (either)
+import           Control.Monad.Trans.Class      ( MonadTrans(..) )
+
+-- MORPHEUS
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar
                                                   ( parseValue
                                                   , serialize
@@ -89,8 +92,4 @@ failRes :: (WithOperation o, Monad m) => String -> Resolver o e m a
 failRes = failure . pack
 
 liftEither :: (MonadTrans t, Monad (t m), Failure Message (t m)) => Monad m => m (Either String a) -> t m a
-liftEither x = do 
-   value  <- lift x
-   case value of
-      Left message -> failure (pack message)
-      Right x -> pure x
+liftEither x = lift x >>= either (failure . pack) pure
