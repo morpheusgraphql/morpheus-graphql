@@ -113,7 +113,7 @@ interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
     , DataType { typeName
                , typeMeta        = Just Meta { metaDescription, metaDirectives }
                , typeFingerprint = DataFingerprint typeName []
-               , typeContent     = Interface fields
+               , typeContent     = DataInterface fields
                }
     )
 

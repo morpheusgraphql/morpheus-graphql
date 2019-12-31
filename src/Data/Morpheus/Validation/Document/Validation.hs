@@ -26,9 +26,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , Key
                                                 , TypeRef(..)
-                                                , DataFingerprint(..)
-                                                , Meta
-                                                , isWeaker
                                                 , isWeaker
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
@@ -40,12 +37,12 @@ validatePartialDocument :: [(Key, DataType)] -> Validation [(Key, DataType)]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib
  where
   validateType :: (Key, DataType) -> Validation (Maybe (Key, DataType))
-  validateType (name, dt@DataType { typeName , typeMeta, typeContent = DataObject { objectImplements , objectFields}  }) = do         
+  validateType (name, dt@DataType { typeName , typeContent = DataObject { objectImplements , objectFields}  }) = do         
       interface <- traverse getInterfaceByKey objectImplements
       case concatMap (mustBeSubset objectFields) interface of
         [] -> pure $ Just (name, dt) 
         errors -> failure $ partialImplements typeName errors
-  validateType (_,DataType { typeContent = Interface {}}) = pure Nothing
+  validateType (_,DataType { typeContent = DataInterface {}}) = pure Nothing
   validateType (name, x) = pure $ Just (name, x)
   mustBeSubset
     :: DataObject -> (Name, DataObject) -> [(Key, Key, ImplementsError)]
@@ -72,5 +69,5 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
   -------------------------------
   getInterfaceByKey :: Key -> Validation (Name,DataObject)
   getInterfaceByKey key = case lookup key lib of
-    Just DataType { typeContent = Interface { interfaceFields } } -> pure (key,interfaceFields)
+    Just DataType { typeContent = DataInterface { interfaceFields } } -> pure (key,interfaceFields)
     _ -> failure $ unknownInterface key

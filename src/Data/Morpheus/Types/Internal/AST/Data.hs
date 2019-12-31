@@ -378,7 +378,7 @@ data DataTypeContent
                       objectFields      :: DataObject   }
   | DataUnion       { unionMembers      :: DataUnion    }
   | DataInputUnion  { inputUnionMembers :: [(Key,Bool)] }
-  | Interface       { interfaceFields   :: DataObject   }
+  | DataInterface   { interfaceFields   :: DataObject   }
   deriving (Show)
 
 createType :: Key -> DataTypeContent -> DataType
