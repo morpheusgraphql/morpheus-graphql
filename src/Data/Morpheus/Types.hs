@@ -35,6 +35,7 @@ module Data.Morpheus.Types
   )
 where
 
+import           Control.Monad.Trans.Class      ( MonadTrans(..) )
 import           Data.Text                      ( pack )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar
                                                   ( parseValue
@@ -48,6 +49,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , ScalarValue(..)
+                                                , Message
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Event(..)
@@ -55,8 +57,8 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Resolver(..)
                                                 , WithOperation
                                                 , lift
-                                                , liftEither
                                                 , failure
+                                                , Failure
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
@@ -85,3 +87,10 @@ constMutRes events value = const $ MutResolver $ pure (events, value)
 
 failRes :: (WithOperation o, Monad m) => String -> Resolver o e m a
 failRes = failure . pack
+
+liftEither :: (MonadTrans t, Monad (t m), Failure Message (t m)) => Monad m => m (Either String a) -> t m a
+liftEither x = do 
+   value  <- lift x
+   case value of
+      Left message -> failure (pack message)
+      Right x -> pure x

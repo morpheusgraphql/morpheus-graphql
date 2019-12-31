@@ -100,7 +100,7 @@ type WithOperation (o :: OperationType) = LiftOperation o Resolver
 
 class LiftOperation (o::OperationType) res where
   type ResError res :: *
-  liftEither :: Monad m => m (Either (ResError res) a) -> res o event m  a
+  liftOperation :: Monad m => m (Either (ResError res) a) -> res o event m  a
 
 
 type ResponseStream event m = ResultT (ResponseEvent m event) GQLError 'True m
@@ -144,7 +144,7 @@ instance Monad m => Functor (ResolvingStrategy o e m) where
 
 -- Applicative
 instance (LiftOperation o ResolvingStrategy, Monad m) => Applicative (ResolvingStrategy o e m) where
-  pure = liftEither . pure . pure
+  pure = liftOperation . pure . pure
   -------------------------------------
   (ResolveQ f) <*> (ResolveQ res) = ResolveQ (f <*> res)
   ------------------------------------------------------------------------
@@ -155,19 +155,19 @@ instance (LiftOperation o ResolvingStrategy, Monad m) => Applicative (ResolvingS
 -- LiftOperation
 instance LiftOperation QUERY ResolvingStrategy where
   type ResError ResolvingStrategy = GQLErrors
-  liftEither = ResolveQ . ResultT . fmap fromEither
+  liftOperation = ResolveQ . ResultT . fmap fromEither
 
 instance LiftOperation MUTATION ResolvingStrategy where
   type ResError ResolvingStrategy = GQLErrors
-  liftEither = ResolveM . ResultT . fmap fromEither
+  liftOperation = ResolveM . ResultT . fmap fromEither
 
 instance LiftOperation SUBSCRIPTION ResolvingStrategy where
   type ResError ResolvingStrategy = GQLErrors
-  liftEither = ResolveS . ResultT . fmap (fromEither . fmap pure)
+  liftOperation = ResolveS . ResultT . fmap (fromEither . fmap pure)
 
  -- Failure
 instance (LiftOperation o ResolvingStrategy, Monad m) => Failure GQLErrors (ResolvingStrategy o e m) where
-  failure = liftEither . pure . Left
+  failure = liftOperation . pure . Left
 
 -- DataResolver
 data DataResolver o e m =
@@ -278,7 +278,7 @@ instance Functor m => Functor (Resolver o e m) where
 
 -- Applicative
 instance (LiftOperation o Resolver ,Monad m) => Applicative (Resolver o e m) where
-  pure = liftEither . pure . pure
+  pure = liftOperation . pure . pure
   -------------------------------------
   (QueryResolver f) <*> (QueryResolver res) = QueryResolver (f <*> res)
   ---------------------------------------------------------------------
@@ -304,27 +304,27 @@ instance (Monad m) => Monad (Resolver MUTATION e m) where
 
 -- Monad Transformers    
 instance MonadTrans (Resolver QUERY e) where
-  lift = liftEither . fmap pure
+  lift = liftOperation . fmap pure
 
 instance MonadTrans (Resolver MUTATION e) where
-  lift = liftEither . fmap pure
+  lift = liftOperation . fmap pure
 
 -- LiftOperation
 instance LiftOperation QUERY Resolver where
   type ResError Resolver = String
-  liftEither = QueryResolver . ResultT . fmap fromEitherSingle
+  liftOperation = QueryResolver . ResultT . fmap fromEitherSingle
 
 instance LiftOperation MUTATION Resolver where
   type ResError Resolver = String
-  liftEither = MutResolver . ResultT . fmap (fromEitherSingle . fmap ([], ))
+  liftOperation = MutResolver . ResultT . fmap (fromEitherSingle . fmap ([], ))
 
 instance LiftOperation SUBSCRIPTION Resolver where
   type ResError Resolver = String
-  liftEither = SubResolver [] . const . liftEither
+  liftOperation = SubResolver [] . const . liftOperation
 
 -- Failure
 instance (LiftOperation o Resolver, Monad m) => Failure Message (Resolver o e m) where
-  failure = liftEither . pure . Left . unpack
+  failure = liftOperation . pure . Left . unpack
 
 -- Type Helpers  
 type family UnSubResolver (a :: * -> *) :: (* -> *)
