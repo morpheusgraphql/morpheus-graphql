@@ -33,7 +33,7 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Resolver
                                                 , MapStrategy(..)
-                                                , LiftEither
+                                                , LiftOperation
                                                 , ResolvingStrategy
                                                 , DataResolver(..)
                                                 )
@@ -80,16 +80,16 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
     | isSubscription typeKindD
     = [applyT ''MapStrategy $ map conT [''QUERY, ''SUBSCRIPTION]]
     | otherwise
-    = [ iLiftEither fo_ ''ResolvingStrategy
-      , iLiftEither fo_ ''Resolver
-      , iLiftEither po_ ''ResolvingStrategy
+    = [ iLiftOp fo_ ''ResolvingStrategy
+      , iLiftOp fo_ ''Resolver
+      , iLiftOp po_ ''ResolvingStrategy
       , typeT ''MapStrategy [fo_, po_]
       , iTypeable fo_
       , iTypeable po_
       ]
   -------------------------
-  iLiftEither op name =
-    applyT ''LiftEither [varT $ mkName $ unpack op, conT name]
+  iLiftOp op name =
+    applyT ''LiftOperation [varT $ mkName $ unpack op, conT name]
   -------------------------
   iTypeable name = typeT ''Typeable [name]
   -------------------------------------------

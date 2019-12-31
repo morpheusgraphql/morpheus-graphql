@@ -21,7 +21,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , Resolver(..)
   , ResolvingStrategy(..)
   , MapStrategy(..)
-  , LiftEither(..)
+  , LiftOperation(..)
   , resolveObject
   , resolveEnum
   , toResponseRes
@@ -96,11 +96,12 @@ import           Data.Morpheus.Types.IO         ( renderResponse
                                                 )
 -- MORPHEUS
 
-class LiftEither (o::OperationType) res where
+type WithOperation (o :: OperationType) = LiftOperation o Resolver
+
+class LiftOperation (o::OperationType) res where
   type ResError res :: *
   liftEither :: Monad m => m (Either (ResError res) a) -> res o event m  a
 
-type WithOperation (o :: OperationType) = LiftEither o Resolver
 
 type ResponseStream event m = ResultT (ResponseEvent m event) GQLError 'True m
 
@@ -142,7 +143,7 @@ instance Monad m => Functor (ResolvingStrategy o e m) where
   fmap f (ResolveS res) = ResolveS $ (<$>) f <$> res
 
 -- Applicative
-instance (LiftEither o ResolvingStrategy, Monad m) => Applicative (ResolvingStrategy o e m) where
+instance (LiftOperation o ResolvingStrategy, Monad m) => Applicative (ResolvingStrategy o e m) where
   pure = liftEither . pure . pure
   -------------------------------------
   (ResolveQ f) <*> (ResolveQ res) = ResolveQ (f <*> res)
@@ -151,21 +152,21 @@ instance (LiftEither o ResolvingStrategy, Monad m) => Applicative (ResolvingStra
   --------------------------------------------------------------
   (ResolveS f) <*> (ResolveS res) = ResolveS $ (<*>) <$> f <*> res
 
--- LiftEither
-instance LiftEither QUERY ResolvingStrategy where
+-- LiftOperation
+instance LiftOperation QUERY ResolvingStrategy where
   type ResError ResolvingStrategy = GQLErrors
   liftEither = ResolveQ . ResultT . fmap fromEither
 
-instance LiftEither MUTATION ResolvingStrategy where
+instance LiftOperation MUTATION ResolvingStrategy where
   type ResError ResolvingStrategy = GQLErrors
   liftEither = ResolveM . ResultT . fmap fromEither
 
-instance LiftEither SUBSCRIPTION ResolvingStrategy where
+instance LiftOperation SUBSCRIPTION ResolvingStrategy where
   type ResError ResolvingStrategy = GQLErrors
   liftEither = ResolveS . ResultT . fmap (fromEither . fmap pure)
 
  -- Failure
-instance (LiftEither o ResolvingStrategy, Monad m) => Failure GQLErrors (ResolvingStrategy o e m) where
+instance (LiftOperation o ResolvingStrategy, Monad m) => Failure GQLErrors (ResolvingStrategy o e m) where
   failure = liftEither . pure . Left
 
 -- DataResolver
@@ -181,7 +182,7 @@ instance Semigroup (DataResolver o e m) where
   _           <> _           = InvalidRes "can't merge: incompatible resolvers"
 
 withObject
-  :: (LiftEither o ResolvingStrategy, Monad m)
+  :: (LiftOperation o ResolvingStrategy, Monad m)
   => (ValidSelectionSet -> ResolvingStrategy o e m value)
   -> (Key, ValidSelection)
   -> ResolvingStrategy o e m value
@@ -191,7 +192,7 @@ withObject _ (key, Selection { selectionPosition }) =
   failure (subfieldsNotSelected key "" selectionPosition)
 
 resolveObject
-  :: (Monad m, LiftEither o ResolvingStrategy)
+  :: (Monad m, LiftOperation o ResolvingStrategy)
   => ValidSelectionSet
   -> DataResolver o e m
   -> ResolvingStrategy o e m ValidValue
@@ -207,7 +208,7 @@ resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 
 resolveEnum
-  :: (Monad m, LiftEither o ResolvingStrategy)
+  :: (Monad m, LiftOperation o ResolvingStrategy)
   => Name
   -> Name
   -> ValidSelectionRec
@@ -228,7 +229,7 @@ resolveEnum _ _ _ =
 
 
 resolve__typename
-  :: (Monad m, LiftEither o ResolvingStrategy)
+  :: (Monad m, LiftOperation o ResolvingStrategy)
   => Name
   -> (Key, (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue)
 resolve__typename name = ("__typename", const $ pure $ gqlString name)
@@ -276,7 +277,7 @@ instance Functor m => Functor (Resolver o e m) where
     where eventFmap res event = fmap f (res event)
 
 -- Applicative
-instance (LiftEither o Resolver ,Monad m) => Applicative (Resolver o e m) where
+instance (LiftOperation o Resolver ,Monad m) => Applicative (Resolver o e m) where
   pure = liftEither . pure . pure
   -------------------------------------
   (QueryResolver f) <*> (QueryResolver res) = QueryResolver (f <*> res)
@@ -308,21 +309,21 @@ instance MonadTrans (Resolver QUERY e) where
 instance MonadTrans (Resolver MUTATION e) where
   lift = liftEither . fmap pure
 
--- LiftEither
-instance LiftEither QUERY Resolver where
+-- LiftOperation
+instance LiftOperation QUERY Resolver where
   type ResError Resolver = String
   liftEither = QueryResolver . ResultT . fmap fromEitherSingle
 
-instance LiftEither MUTATION Resolver where
+instance LiftOperation MUTATION Resolver where
   type ResError Resolver = String
   liftEither = MutResolver . ResultT . fmap (fromEitherSingle . fmap ([], ))
 
-instance LiftEither SUBSCRIPTION Resolver where
+instance LiftOperation SUBSCRIPTION Resolver where
   type ResError Resolver = String
   liftEither = SubResolver [] . const . liftEither
 
 -- Failure
-instance (LiftEither o Resolver, Monad m) => Failure Message (Resolver o e m) where
+instance (LiftOperation o Resolver, Monad m) => Failure Message (Resolver o e m) where
   failure = liftEither . pure . Left . unpack
 
 -- Type Helpers  
@@ -336,7 +337,7 @@ type FieldRes o e m
   = (Key, (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue)
 
 toResolver
-  :: (LiftEither o Resolver, Monad m)
+  :: (LiftOperation o Resolver, Monad m)
   => Validation a
   -> (a -> Resolver o e m b)
   -> Resolver o e m b

@@ -53,9 +53,9 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Event(..)
                                                 , GQLRootResolver(..)
                                                 , Resolver(..)
-                                                , LiftEither(..)
                                                 , WithOperation
                                                 , lift
+                                                , liftEither
                                                 , failure
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
@@ -77,11 +77,11 @@ type ResolveM e m a = MutRes e m (a (MutRes e m))
 type ResolveS e m a = SubRes e m (a (Res e m))
 
 -- resolves constant value on any argument
-constRes :: (LiftEither o Resolver, Monad m) => b -> a -> Resolver o e m b
+constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
 constRes = const . pure
 
 constMutRes :: Monad m => [e] -> a -> args -> MutRes e m a
 constMutRes events value = const $ MutResolver $ pure (events, value)
 
-failRes :: (LiftEither o Resolver, Monad m) => String -> Resolver o e m a
+failRes :: (WithOperation o, Monad m) => String -> Resolver o e m a
 failRes = failure . pack
