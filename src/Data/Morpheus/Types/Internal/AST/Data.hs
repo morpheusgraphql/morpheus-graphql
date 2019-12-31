@@ -24,7 +24,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , DataValidator(..)
   , DataTypeKind(..)
   , DataFingerprint(..)
-  , RawDataType(..)
   , TypeWrapper(..)
   , TypeRef(..)
   , DataEnumValue(..)
@@ -361,40 +360,26 @@ lookupSelectionField position fieldName typeName fields = lookupField
   gqlError
   where gqlError = cannotQueryField fieldName typeName position
 
---
--- TYPE CONSTRUCTOR
---------------------------------------------------------------------------------------------------
 
-data RawDataType
-  = FinalDataType DataType
-  | Interface {
-      interfaceName    :: Key
-      , interfaceMeta    :: Maybe Meta
-      , interfaceContent :: DataObject
-    }
-  deriving (Show)
-
---
 -- DATA TYPE
 --------------------------------------------------------------------------------------------------
-data DataTypeContent
-  = DataScalar DataScalar
-  | DataEnum DataEnum
-  | DataInputObject DataObject
-  | DataObject {
-      objectImplements :: [Name],
-      objectFields :: DataObject
-    }
-  | DataUnion DataUnion
-  | DataInputUnion [(Key,Bool)]
-  deriving (Show)
-
 data DataType = DataType
   { typeName        :: Key
   , typeFingerprint :: DataFingerprint
   , typeMeta :: Maybe Meta
   , typeContent       :: DataTypeContent
   } deriving (Show)
+
+data DataTypeContent
+  = DataScalar      { dataScalar   :: DataScalar   }
+  | DataEnum        { enumMembers       :: DataEnum     }
+  | DataInputObject { inputObjectFields :: DataObject   }
+  | DataObject      { objectImplements  :: [Name],
+                      objectFields      :: DataObject   }
+  | DataUnion       { unionMembers      :: DataUnion    }
+  | DataInputUnion  { inputUnionMembers :: [(Key,Bool)] }
+  | Interface       { interfaceFields   :: DataObject   }
+  deriving (Show)
 
 createType :: Key -> DataTypeContent -> DataType
 createType typeName typeContent = DataType

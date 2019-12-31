@@ -20,13 +20,13 @@ import           Data.Morpheus.Parsing.Internal.Internal
 import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( spaceAndComments )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( RawDataType )
+                                                ( DataType )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
 
-parseTypes :: Text -> Validation [(Text, RawDataType)]
+parseTypes :: Text -> Validation [(Text, DataType)]
 parseTypes doc = case parseDoc of
   Right root       -> pure root
   Left  parseError -> failure (processErrorBundle parseError)

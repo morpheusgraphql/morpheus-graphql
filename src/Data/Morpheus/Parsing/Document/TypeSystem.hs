@@ -38,7 +38,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataType(..)
                                                 , DataValidator(..)
                                                 , Key
-                                                , RawDataType(..)
                                                 , Meta(..)
                                                 )
 
@@ -104,18 +103,20 @@ optionalImplementsInterfaces = implements <|> pure []
 --  InterfaceTypeDefinition
 --    Description(opt) interface Name Directives(Const)(opt) FieldsDefinition(opt)
 --
-interfaceTypeDefinition :: Maybe Text -> Parser (Text, RawDataType)
+interfaceTypeDefinition :: Maybe Text -> Parser (Text, DataType)
 interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
-  interfaceName  <- typDeclaration "interface"
+  typeName  <- typDeclaration "interface"
   metaDirectives <- optionalDirectives
   fields         <- fieldsDefinition
   pure
-    ( interfaceName
-    , Interface { interfaceName
-                , interfaceMeta = Just Meta { metaDescription, metaDirectives }
-                , interfaceContent = fields
-                }
+    ( typeName
+    , DataType { typeName
+               , typeMeta        = Just Meta { metaDescription, metaDirectives }
+               , typeFingerprint = DataFingerprint typeName []
+               , typeContent     = Interface fields
+               }
     )
+
 
 -- Unions : https://graphql.github.io/graphql-spec/June2018/#sec-Unions
 --
@@ -198,21 +199,14 @@ inputObjectTypeDefinition metaDescription =
 parseFinalDataType :: Maybe Text -> Parser (Text, DataType)
 parseFinalDataType description =
   label "TypeDefinition"
-    $   inputObjectTypeDefinition description
+     $  inputObjectTypeDefinition description
     <|> unionTypeDefinition description
     <|> enumTypeDefinition description
     <|> scalarTypeDefinition description
     <|> objectTypeDefinition description
+    <|> interfaceTypeDefinition description
 
-parseDataType :: Parser (Text, RawDataType)
+parseDataType :: Parser (Text, DataType)
 parseDataType = label "TypeDefinition" $ do
   description <- optDescription
-  types description
- where
-  types description =
-    interfaceTypeDefinition description
-      <|> finalDataT
-   where
-    finalDataT = do
-      (name, datatype) <- parseFinalDataType description
-      pure (name, FinalDataType datatype)
+  parseFinalDataType description

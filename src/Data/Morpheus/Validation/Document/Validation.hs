@@ -25,7 +25,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeContent(..)
                                                 , Name
                                                 , Key
-                                                , RawDataType(..)
                                                 , TypeRef(..)
                                                 , DataFingerprint(..)
                                                 , Meta
@@ -37,21 +36,20 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Failure(..)
                                                 )
 
-validatePartialDocument :: [(Key, RawDataType)] -> Validation [(Key, DataType)]
+validatePartialDocument :: [(Key, DataType)] -> Validation [(Key, DataType)]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib
  where
-  validateType :: (Key, RawDataType) -> Validation (Maybe (Key, DataType))
-  validateType (name, FinalDataType( dt@DataType { typeName , typeMeta, typeContent = DataObject { objectImplements , objectFields}  })) = do         
+  validateType :: (Key, DataType) -> Validation (Maybe (Key, DataType))
+  validateType (name, dt@DataType { typeName , typeMeta, typeContent = DataObject { objectImplements , objectFields}  }) = do         
       interface <- traverse getInterfaceByKey objectImplements
       case concatMap (mustBeSubset objectFields) interface of
         [] -> pure $ Just (name, dt) 
         errors -> failure $ partialImplements typeName errors
-  
-  validateType (name, FinalDataType x) = pure $ Just (name, x)
-  validateType _ = pure Nothing
+  validateType (_,DataType { typeContent = Interface {}}) = pure Nothing
+  validateType (name, x) = pure $ Just (name, x)
   mustBeSubset
     :: DataObject -> (Name, DataObject) -> [(Key, Key, ImplementsError)]
-  mustBeSubset objFields (typeName, interfaceFields) = concatMap
+  mustBeSubset objFields (typeName, interfaceFields ) = concatMap
     checkField
     interfaceFields
    where
@@ -74,5 +72,5 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
   -------------------------------
   getInterfaceByKey :: Key -> Validation (Name,DataObject)
   getInterfaceByKey key = case lookup key lib of
-    Just Interface { interfaceContent } -> pure (key,interfaceContent)
+    Just DataType { typeContent = Interface { interfaceFields } } -> pure (key,interfaceFields)
     _ -> failure $ unknownInterface key
