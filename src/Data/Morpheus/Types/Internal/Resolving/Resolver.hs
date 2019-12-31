@@ -96,7 +96,6 @@ import           Data.Morpheus.Types.IO         ( renderResponse
                                                 )
 -- MORPHEUS
 
-
 class LiftOperation (o::OperationType) res where
   type ResError res :: *
   liftOperation :: Monad m => m (Either (ResError res) a) -> res o event m  a
