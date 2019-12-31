@@ -371,7 +371,7 @@ data DataType = DataType
   } deriving (Show)
 
 data DataTypeContent
-  = DataScalar      { dataScalar   :: DataScalar   }
+  = DataScalar      { dataScalar        :: DataScalar   }
   | DataEnum        { enumMembers       :: DataEnum     }
   | DataInputObject { inputObjectFields :: DataObject   }
   | DataObject      { objectImplements  :: [Name],
