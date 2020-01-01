@@ -162,10 +162,10 @@ jobs:
           command: bash release.sh
       - run:
           name: build prod
-          command: cabal build
+          command: stack build
       - run:
           name: tests prod
-          command: cabal test
+          command: stack test
 
 workflows:
   version: 2.1
