@@ -16,7 +16,7 @@ jobs:
     - name: Install dependencies
       run: |
         cabal update
-        cabal install --only-dependencies
+        cabal build --only-dependencies
     - name: Build
       run: |
         cabal configure --enable-tests
