@@ -90,10 +90,11 @@ rootResolver =
       subscriptionResolver = Undefined
     }
   where
-    queryDeity QueryDeityArgs {queryDeityArgsName} = pure Deity {deityName, deityPower}
-      where
-        deityName _ = pure "Morpheus"
-        deityPower _ = pure (Just "Shapeshifting")
+    queryDeity QueryDeityArgs {queryDeityArgsName} = pure Deity
+      {
+        deityName = pure "Morpheus"
+      , deityPower = pure (Just "Shapeshifting")
+      }
 
 api :: ByteString -> IO ByteString
 api = interpreter rootResolver
