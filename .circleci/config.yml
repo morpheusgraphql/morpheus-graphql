@@ -112,6 +112,7 @@ jobs:
       - run:
           name: Install executables
           command: stack install
+  
 
   ## GHC 8.8.1
   ghc_8_8_1:
@@ -150,6 +151,23 @@ jobs:
       - run:
           name: Install executables
           command: STACK_YAML=stack-nightly.yaml stack install
+
+
+  ## GHC 8.6.5
+  check-release:
+    docker:
+      - image: fpco/stack-build:lts
+    steps:
+      - checkout
+      - run:
+          name: generate sdist
+          command: stack sdist . --tar-dir ./prod
+      - run:
+          name: build prod
+          command: cabal build --test
+      - run:
+          name: tests prod
+          command: stack test --haddock
 
 workflows:
   version: 2.1
