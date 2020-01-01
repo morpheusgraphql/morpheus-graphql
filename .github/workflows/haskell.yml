@@ -15,7 +15,7 @@ jobs:
         cabal-version: '3.0'
     - name: Install dependencies
       run: |
-        cabal install --only-dependencies --enable-tests
+        cabal install --only-dependencies
     - name: Build
       run: |
         cabal configure --enable-tests
