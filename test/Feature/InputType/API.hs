@@ -10,7 +10,6 @@ module Feature.InputType.API
 where
 
 import           Data.Morpheus                  ( interpreter )
-import           Data.Morpheus.Kind             ( OBJECT )
 import           Data.Morpheus.Types            ( GQLRequest
                                                 , GQLResponse
                                                 , GQLRootResolver(..)
@@ -34,10 +33,7 @@ data F2Args = F2Args
 data A = A
   { a1 :: F1Args -> IORes () Text
   , a2 :: F2Args -> IORes () Int
-  } deriving (Generic)
-
-instance GQLType A where
-  type KIND A = OBJECT
+  } deriving (Generic, GQLType)
 
 newtype Query (m :: * -> *) = Query
   { q1 :: A
