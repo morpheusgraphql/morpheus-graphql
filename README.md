@@ -403,36 +403,35 @@ data Content
 type MyEvent = Event Channel Content
 
 newtype Query m = Query
-  { deity :: () -> m Deity
+  { deity :: m Deity
   } deriving (Generic)
 
 newtype Mutation m = Mutation
-  { createDeity :: () -> m Deity
+  { createDeity :: m Deity
   } deriving (Generic)
 
 newtype Subscription (m ::  * -> * ) = Subscription
-  { newDeity :: () -> m  Deity
+  { newDeity :: m  Deity
   } deriving (Generic)
 
 type APIEvent = Event Channel Content
 
 rootResolver :: GQLRootResolver IO APIEvent Query Mutation Subscription
 rootResolver = GQLRootResolver
-  { queryResolver        = Query { deity }
+  { queryResolver        = Query { deity = fetchDeity }
   , mutationResolver     = Mutation { createDeity }
   , subscriptionResolver = Subscription { newDeity }
   }
  where
-  deity _args = fetchDeity
   -- Mutation Without Event Triggering
-  createDeity :: () -> ResolveM EVENT IO Address
-  createDeity _args = MutResolver \$ do
+  createDeity :: ResolveM EVENT IO Address
+  createDeity = MutResolver \$ do
       value <- lift dbCreateDeity
       pure (
         [Event { channels = [ChannelA], content = ContentA 1 }],
         value
       )
-  newDeity _args = SubResolver [ChannelA] subResolver
+  newDeity = SubResolver [ChannelA] subResolver
    where
     subResolver (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
     subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
