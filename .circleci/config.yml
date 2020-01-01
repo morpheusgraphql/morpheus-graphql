@@ -168,7 +168,7 @@ jobs:
           command: cabal build
       - run:
           name: tests prod
-          command: stack test
+          command: cabal test
 
 workflows:
   version: 2.1
