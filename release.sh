@@ -13,4 +13,4 @@ tar -zxvf $MORPHEUS_RELEASE_TAR
 mv $MORPHEUS_RELEASE_NAME release
 rm $MORPHEUS_RELEASE_TAR
 cd release
-cd ../..
+# cd ../..
