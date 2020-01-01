@@ -112,6 +112,7 @@ jobs:
       - run:
           name: Install executables
           command: stack install
+  
 
   ## GHC 8.8.1
   ghc_8_8_1:
@@ -146,10 +147,28 @@ jobs:
             - "/root/.stack"
       - run:
           name: Run tests
-          command: STACK_YAML=stack-nightly.yaml stack test --haddock --no-haddock-deps
+          command: STACK_YAML=stack-nightly.yaml stack test --haddock --no-haddock-deps --fast
       - run:
           name: Install executables
           command: STACK_YAML=stack-nightly.yaml stack install
+
+  # check-release:
+  #   docker:
+  #     - image: fpco/stack-build:lts
+  #   steps:
+  #     - checkout
+  #     - run:
+  #         name: generate sdist
+  #         command: bash release.sh
+  #     - run:
+  #         name: build prod
+  #         command: stack build --skip-ghc-check --no-terminal --test --only-dependencies --fast 
+  #     - run:
+  #         name: build prod
+  #         command: stack build --fast 
+  #     - run:
+  #         name: tests prod
+  #         command: stack test --fast
 
 workflows:
   version: 2.1
@@ -159,3 +178,4 @@ workflows:
       - ghc_8_4_4
       - ghc_8_6_5
       - ghc_8_8_1
+   #   - check-release
