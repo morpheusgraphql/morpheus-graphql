@@ -39,7 +39,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( 
                                                   Position(..)
                                                   , Message 
-                                                  , Name
                                                 )
 import           Data.Text                      ( Text
                                                 , pack

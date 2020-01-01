@@ -9,28 +9,20 @@ module Feature.WrappedTypeName.API
   ) where
 
 import           Data.Morpheus       (interpreter)
-import           Data.Morpheus.Kind  (OBJECT)
 import           Data.Morpheus.Types (Event, GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), IORes,
                                       Resolver (..), constRes)
 import           Data.Text           (Text)
-import           Data.Typeable       (Typeable)
 import           GHC.Generics        (Generic)
-
-instance Typeable a => GQLType (WA a) where
-  type KIND (WA a) = OBJECT
-
-instance (Typeable a, Typeable b) => GQLType (Wrapped a b) where
-  type KIND (Wrapped a b) = OBJECT
 
 data Wrapped a b = Wrapped
   { fieldA :: a
   , fieldB :: b
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 
 data WA m = WA
   { aText :: () -> m Text
   , aInt  :: Int
-  } deriving (Generic)
+  } deriving (Generic,GQLType)
 
 data Query m = Query
   { a1 :: WA m

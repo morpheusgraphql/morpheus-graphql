@@ -82,7 +82,6 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
     | otherwise
     = [ iLiftOp fo_ ''ResolvingStrategy
       , iLiftOp fo_ ''Resolver
-      , iLiftOp po_ ''ResolvingStrategy
       , typeT ''MapStrategy [fo_, po_]
       , iTypeable fo_
       , iTypeable po_
