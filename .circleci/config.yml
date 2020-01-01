@@ -159,10 +159,7 @@ jobs:
       - checkout
       - run:
           name: generate sdist
-          command: stack sdist . --tar-dir ./prod ; cd ./prod
-      - run:
-          name: unpack
-          command: tar -zxvf morpheus-graphql-0.9.0.tar.gz ; cd morpheus-graphql-0.9.0
+          command: bash release.sh
       - run:
           name: build prod
           command: cabal build
