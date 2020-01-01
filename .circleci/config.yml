@@ -147,7 +147,7 @@ jobs:
             - "/root/.stack"
       - run:
           name: Run tests
-          command: STACK_YAML=stack-nightly.yaml stack test --haddock --no-haddock-deps
+          command: STACK_YAML=stack-nightly.yaml stack test --haddock --no-haddock-deps --fast
       - run:
           name: Install executables
           command: STACK_YAML=stack-nightly.yaml stack install
@@ -162,10 +162,13 @@ jobs:
           command: bash release.sh
       - run:
           name: build prod
-          command: stack build
+          command: stack build --skip-ghc-check --no-terminal --test --only-dependencies --fast 
+      - run:
+          name: build prod
+          command: stack build --fast 
       - run:
           name: tests prod
-          command: stack test
+          command: stack test --fast
 
 workflows:
   version: 2.1
