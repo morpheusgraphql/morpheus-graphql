@@ -3,7 +3,7 @@ stack.yaml.lock
 .stack-work/
 .idea/
 dist/
-morpheus-graphql.cabal
+# morpheus-graphql.cabal
 morpheus-graphql.iml
 docs/vendor
 out/
