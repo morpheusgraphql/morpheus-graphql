@@ -84,9 +84,7 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 , Failure(..)
                                                 , ResultT(..)
                                                 , fromEither
-                                                , fromEitherSingle
                                                 , cleanEvents
-                                                , mapFailure
                                                 , mapEvent
                                                 , StatelessResT
                                                 )
@@ -329,14 +327,18 @@ instance MonadTrans (Resolver QUERY e) where
 instance MonadTrans (Resolver MUTATION e) where
   lift = liftOperation . fmap pure
 
+fromEitherSingle :: (Name,ValidSelection) ->  (Either String a) ->  Result ev GQLError co a
+fromEitherSingle (fieldName, Selection { selectionPosition }) (Left  e)  = Failure [resolvingFailedError selectionPosition fieldName (pack e)]
+fromEitherSingle _ (Right a) = Success a [] []
+
 -- LiftOperation
 instance LiftOperation QUERY Resolver where
   type ResError Resolver = String
-  liftOperation = QueryResolver . ContextRes . const  . ResultT  . fmap fromEitherSingle
+  liftOperation res = QueryResolver $ ContextRes $ \selection -> ResultT $ fmap (fromEitherSingle selection) res
 
 instance LiftOperation MUTATION Resolver where
   type ResError Resolver = String
-  liftOperation = MutResolver . ContextRes . const  . ResultT . fmap (fromEitherSingle . fmap ([], ))
+  liftOperation res = MutResolver $ ContextRes $ \selection -> ResultT $ (fromEitherSingle selection) <$> (fmap (fmap ([], )) res)
 
 instance LiftOperation SUBSCRIPTION Resolver where
   type ResError Resolver = String
@@ -375,10 +377,6 @@ resolving
 resolving encode gResolver selection@(fieldName, Selection { selectionPosition })
   = _resolve gResolver
  where
-  convert :: Monad m => ResultT ev String con m a -> ResultT ev GQLError con m a
-  convert =
-    mapFailure (resolvingFailedError selectionPosition fieldName . pack)
-  ------------------------------
   _encode = (`encode` selection)
   -------------------------------------------------------------------
   _resolve (QueryResolver res) =

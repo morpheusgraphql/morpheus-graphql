@@ -17,7 +17,6 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , Failure(..)
   , ResultT(..)
   , fromEither
-  , fromEitherSingle
   , unpackEvents
   , LibUpdater
   , resolveUpdates
@@ -101,9 +100,6 @@ fromEither :: Either [er] a -> Result ev er co a
 fromEither (Left  e) = Failure e
 fromEither (Right a) = Success a [] []
 
-fromEitherSingle :: Either er a -> Result ev er co a
-fromEitherSingle (Left  e) = Failure [e]
-fromEitherSingle (Right a) = Success a [] []
 
 -- ResultT
 newtype ResultT event error (concurency :: Bool)  (m :: * -> * ) a = ResultT { runResultT :: m (Result event error concurency a )  }
