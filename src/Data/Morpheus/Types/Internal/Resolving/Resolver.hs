@@ -258,7 +258,7 @@ toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
 --ResultT  GQLError 'True m (RecResolver m event value)
 ---------------------------------------------------------------
 data Resolver (o::OperationType) event (m :: * -> * )  value where
-    QueryResolver::{ unQueryResolver :: ResultT () String 'True m value } -> Resolver QUERY   event m value
+    QueryResolver::{ unQueryResolver :: (Name,ValidSelection) -> ResultT () String 'True m value } -> Resolver QUERY   event m value
     MutResolver ::{ unMutResolver :: ResultT event String 'True m ([event],value) } -> Resolver MUTATION event m  value
     SubResolver ::{
             subChannels :: [StreamChannel event] ,
@@ -271,7 +271,7 @@ deriving instance (Functor m) => Functor (Resolver o e m)
 instance (LiftOperation o Resolver ,Monad m) => Applicative (Resolver o e m) where
   pure = liftOperation . pure . pure
   -------------------------------------
-  (QueryResolver f) <*> (QueryResolver res) = QueryResolver (f <*> res)
+  (QueryResolver f) <*> (QueryResolver res) = QueryResolver (\x -> (f x <*> res x))
   ---------------------------------------------------------------------
   MutResolver res1 <*> MutResolver res2 = MutResolver $ join <$> res1 <*> res2
     where join (e1, f) (e2, v) = (e1 <> e2, f v)
@@ -283,7 +283,7 @@ instance (LiftOperation o Resolver ,Monad m) => Applicative (Resolver o e m) whe
 instance (Monad m) => Monad (Resolver QUERY e m) where
   return = pure
   -----------------------------------------------------
-  (QueryResolver f) >>= nextM = QueryResolver (f >>= unQueryResolver . nextM)
+  (QueryResolver f) >>= nextM = QueryResolver $ \x -> (f x >>= (\f -> f x) . unQueryResolver . nextM )
 
 instance (Monad m) => Monad (Resolver MUTATION e m) where
   return = pure
@@ -309,7 +309,7 @@ instance MonadTrans (Resolver MUTATION e) where
 -- LiftOperation
 instance LiftOperation QUERY Resolver where
   type ResError Resolver = String
-  liftOperation = QueryResolver . ResultT . fmap fromEitherSingle
+  liftOperation = QueryResolver . const . ResultT . fmap fromEitherSingle
 
 instance LiftOperation MUTATION Resolver where
   type ResError Resolver = String
@@ -359,7 +359,7 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
   _encode = (`encode` selection)
   -------------------------------------------------------------------
   _resolve (QueryResolver res) =
-    ResolveQ $ convert res >>= unResolveQ . _encode
+    ResolveQ $ convert (res selection) >>= unResolveQ . _encode
   ---------------------------------------------------------------------------------------------------------------------------------------
   _resolve (MutResolver res) =
     ResolveM $ replace (convert res) >>= unResolveM . _encode
@@ -379,7 +379,7 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
    where
     eventResolver :: e -> StatelessResT m ValidValue
     eventResolver event =
-      convert (unQueryResolver $ res event) >>= unPureSub . _encode
+      convert ((unQueryResolver $ res event) selection)>>= unPureSub . _encode
      where
       unPureSub
         :: Monad m
