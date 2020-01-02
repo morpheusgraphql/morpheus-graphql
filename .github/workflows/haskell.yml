@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   env:
-      DIST_PATH: "/home/runner/work/morpheus-graphql-release"
+    DIST_PATH: "/home/runner/work/morpheus-graphql-release"
   build:
     runs-on: ubuntu-latest
     steps:
