@@ -12,7 +12,9 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE DeriveFunctor         #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Resolver
   ( Event(..)
@@ -267,14 +269,7 @@ data Resolver (o::OperationType) event (m :: * -> * )  value where
             subResolver :: event -> Resolver QUERY event m value
         } -> Resolver SUBSCRIPTION event m  value
 
--- Functor
-instance Functor m => Functor (Resolver o e m) where
-  fmap f (QueryResolver res) = QueryResolver $ fmap f res
-  fmap f (MutResolver   res) = MutResolver $ tupleMap <$> res
-    where tupleMap (e, v) = (e, f v)
-  fmap f (SubResolver events mResolver) = SubResolver events
-                                                      (eventFmap mResolver)
-    where eventFmap res event = fmap f (res event)
+deriving instance (Functor m) => Functor (Resolver o e m)
 
 -- Applicative
 instance (LiftOperation o Resolver ,Monad m) => Applicative (Resolver o e m) where
