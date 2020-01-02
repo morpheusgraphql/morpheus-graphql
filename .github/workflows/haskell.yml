@@ -20,6 +20,7 @@ jobs:
       run: |
         cd $DIST_PATH
         echo $PWD
+        ls
         cabal configure --enable-tests
         cabal build
     - name: Run tests
