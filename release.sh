@@ -15,7 +15,8 @@ mv $MORPHEUS_RELEASE_NAME release
 rm $MORPHEUS_RELEASE_TAR
 cd release
 echo $PWD
+ls
 # cd ../..
 
-# cabal update
-# cabal build --only-dependencies
+cabal update
+cabal build --only-dependencies
