@@ -15,6 +15,10 @@ jobs:
     - name: install stack
       run: | 
         stack upgrade
+    - uses: actions/setup-haskell@v1
+      with:
+        ghc-version: '8.6.5'
+        cabal-version: '3.0'
     - name: upload release
       run: | 
         stack upload . -u nalchevanidze -p ${{ secrets.GITHUB_TOKEN }}
