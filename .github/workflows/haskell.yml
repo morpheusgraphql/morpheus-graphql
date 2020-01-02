@@ -3,7 +3,7 @@ name: Moepheus Haskell CI
 on: [push]
 
 env:
-  DIST_PATH: "/home/runner/morpheus-graphql-release"
+  DIST_PATH: "/home/runner/morpheus-graphql-dist"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,6 +19,7 @@ jobs:
     - name: Build
       run: |
         cd $DIST_PATH
+        cd release
         echo $PWD
         ls
         cabal configure --enable-tests
@@ -26,5 +27,7 @@ jobs:
     - name: Run tests
       run: |
         cd $DIST_PATH
+        cd release
         echo $PWD
+        ls
         cabal test
