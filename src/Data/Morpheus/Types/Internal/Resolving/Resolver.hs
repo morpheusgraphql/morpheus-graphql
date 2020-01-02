@@ -96,6 +96,7 @@ import           Data.Morpheus.Types.IO         ( renderResponse
                                                 , GQLResponse
                                                 )
 -- MORPHEUS
+import Control.Monad.Trans.Reader (ReaderT(..))
 
 class LiftOperation (o::OperationType) res where
   type ResError res :: *
@@ -111,24 +112,10 @@ data ResponseEvent m event
 
 type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
 
+
 ----------------------------------------------------------------------------------------
 -- Recursive Resolver
-newtype RecResolver m a b = RecResolver {
-  unRecResolver :: a -> StatelessResT m b
-}
-
-instance Functor m => Functor (RecResolver m a) where
-  fmap f (RecResolver x) = RecResolver recX where recX event = f <$> x event
-
-instance Monad m => Applicative (RecResolver m a) where
-  pure = RecResolver . const . pure
-  (RecResolver f) <*> (RecResolver res) = RecResolver recX
-    where recX event = f event <*> res event
-
-instance Monad m => Monad (RecResolver m a) where
-  (RecResolver x) >>= next = RecResolver recX
-    where recX event = x event >>= (\v -> v event) . unRecResolver . next
-------------------------------------------------------------
+type RecResolver m a b = ReaderT a (StatelessResT m) b
 
 --- GraphQLT
 data ResolvingStrategy  (o::OperationType) event (m:: * -> *) value where
@@ -246,7 +233,7 @@ toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
     }
    where
     eventResolver event =
-      renderResponse <$> runResultT (unRecResolver subRes event)
+      renderResponse <$> runResultT (runReaderT subRes event)
 
 
 newtype ContextRes event m a = ContextRes {
@@ -283,7 +270,6 @@ fromEitherSingle _ (Right a) = Success a [] []
 -- GraphQL Field Resolver
 --
 --  
---ResultT  GQLError 'True m (RecResolver m event value)
 ---------------------------------------------------------------
 data Resolver (o::OperationType) event (m :: * -> * )  value where
     QueryResolver::{ unQueryResolver :: ContextRes () m value } -> Resolver QUERY   event m value
@@ -396,7 +382,7 @@ resolving encode gResolver selection = _resolve gResolver
   --------------------------------------------------------------------------------------------------------------------------------
   _resolve (SubResolver subChannels res) = ResolveS $ ResultT $ pure $ Success
     { events   = map Channel subChannels
-    , result   = RecResolver eventResolver
+    , result   = ReaderT eventResolver
     , warnings = []
     }
    where
@@ -409,7 +395,7 @@ resolving encode gResolver selection = _resolve gResolver
         => ResolvingStrategy SUBSCRIPTION e m ValidValue
         -> StatelessResT m ValidValue
       unPureSub (ResolveS x) = cleanEvents x >>= passEvent
-        where passEvent (RecResolver f) = f event
+        where passEvent (ReaderT f) = f event
 
 -- map Resolving strategies 
 class MapStrategy (from :: OperationType) (to :: OperationType) where
