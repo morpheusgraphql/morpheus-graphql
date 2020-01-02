@@ -15,9 +15,6 @@ extra-source-files:
   - changelog.md
   - README.md
 
-data-files:
-  - test/**/*.gql
-
 dependencies:
   - base                  >= 4.7       && <  5
   - megaparsec            >= 7.0.0     && <  9.0.0
