@@ -3,12 +3,12 @@ name: Moepheus Haskell CI
 on: [push]
 
 jobs:
+  env:
+      DIST_PATH: "/home/runner/work/morpheus-graphql-release"
   build:
-
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-
     - uses: actions/setup-haskell@v1
       with:
         ghc-version: '8.6.5'
