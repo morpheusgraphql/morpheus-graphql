@@ -1,6 +1,6 @@
 # vesrion
 export MORPHEUS_VESRION="0.9.0"
-export DIST_PATH="./dist"
+export DIST_PATH="/home/runner/work/morpheus-graphql-release"
 export MORPHEUS_RELEASE_NAME="morpheus-graphql-$MORPHEUS_VESRION"
 export MORPHEUS_RELEASE_TAR="$MORPHEUS_RELEASE_NAME.tar.gz" 
 
