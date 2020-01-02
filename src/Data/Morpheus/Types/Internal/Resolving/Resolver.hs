@@ -259,7 +259,7 @@ toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
 ---------------------------------------------------------------
 data Resolver (o::OperationType) event (m :: * -> * )  value where
     QueryResolver::{ unQueryResolver :: (Name,ValidSelection) -> ResultT () String 'True m value } -> Resolver QUERY   event m value
-    MutResolver ::{ unMutResolver :: ResultT event String 'True m ([event],value) } -> Resolver MUTATION event m  value
+    MutResolver ::{ unMutResolver :: (Name,ValidSelection) -> ResultT event String 'True m ([event],value) } -> Resolver MUTATION event m  value
     SubResolver ::{
             subChannels :: [StreamChannel event] ,
             subResolver :: event -> Resolver QUERY event m value
@@ -271,9 +271,9 @@ deriving instance (Functor m) => Functor (Resolver o e m)
 instance (LiftOperation o Resolver ,Monad m) => Applicative (Resolver o e m) where
   pure = liftOperation . pure . pure
   -------------------------------------
-  (QueryResolver f) <*> (QueryResolver res) = QueryResolver (\x -> (f x <*> res x))
+  (QueryResolver f) <*> (QueryResolver res) = QueryResolver $ \x -> (f x <*> res x)
   ---------------------------------------------------------------------
-  MutResolver res1 <*> MutResolver res2 = MutResolver $ join <$> res1 <*> res2
+  MutResolver res1 <*> MutResolver res2 = MutResolver $ \x -> join <$> res1 x <*> res2 x
     where join (e1, f) (e2, v) = (e1 <> e2, f v)
   --------------------------------------------------------------
   (SubResolver e1 f) <*> (SubResolver e2 res) = SubResolver (e1 <> e2) subRes
@@ -288,9 +288,9 @@ instance (Monad m) => Monad (Resolver QUERY e m) where
 instance (Monad m) => Monad (Resolver MUTATION e m) where
   return = pure
   -----------------------------------------------------
-  (MutResolver m1) >>= mFunc = MutResolver $ do
-    (e1, v1) <- m1
-    (e2, v2) <- unMutResolver $ mFunc v1
+  (MutResolver m1) >>= mFunc = MutResolver $ \x -> do
+    (e1, v1) <- (m1 x)
+    (e2, v2) <- (unMutResolver $ mFunc v1) x
     pure (e1 <> e2, v2)
 
 instance (MonadIO m) => MonadIO (Resolver QUERY e m) where
@@ -313,7 +313,7 @@ instance LiftOperation QUERY Resolver where
 
 instance LiftOperation MUTATION Resolver where
   type ResError Resolver = String
-  liftOperation = MutResolver . ResultT . fmap (fromEitherSingle . fmap ([], ))
+  liftOperation = MutResolver . const . ResultT . fmap (fromEitherSingle . fmap ([], ))
 
 instance LiftOperation SUBSCRIPTION Resolver where
   type ResError Resolver = String
@@ -362,7 +362,7 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
     ResolveQ $ convert (res selection) >>= unResolveQ . _encode
   ---------------------------------------------------------------------------------------------------------------------------------------
   _resolve (MutResolver res) =
-    ResolveM $ replace (convert res) >>= unResolveM . _encode
+    ResolveM $ replace (convert (res selection)) >>= unResolveM . _encode
    where
     replace (ResultT mx) = ResultT $ do
       value <- mx
