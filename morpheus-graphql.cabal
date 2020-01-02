@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 50be182d7daaf6184ee0790cdf56271075ac7d60353994e18e8dc45ef1b4aa67
+-- hash: 143ccedec8c07a55aae79174144c51e28eee7d33c10e8d33778e4f917496604d
 
 name:           morpheus-graphql
 version:        0.9.0
@@ -19,6 +19,9 @@ copyright:      (c) 2019 Daviti Nalchevanidze
 license:        MIT
 license-file:   LICENSE
 build-type:     Simple
+extra-source-files:
+    changelog.md
+    README.md
 
 source-repository head
   type: git
