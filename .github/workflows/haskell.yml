@@ -18,8 +18,12 @@ jobs:
         bash release.sh
     - name: Build
       run: |
+        cd ./dist/release
         echo $PWD
         cabal configure --enable-tests
         cabal build
     - name: Run tests
-      run: cabal test
+      run: |
+        cd ./dist/release
+        echo $PWD
+        cabal test
