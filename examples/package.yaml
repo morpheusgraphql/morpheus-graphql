@@ -22,6 +22,10 @@ dependencies:
   - warp
   - req
   - wai-websockets        >= 1.0       &&  <= 3.5
+  - transformers
+  - extra
+  - http-types
+  - stm
 
 executables:
   api:
