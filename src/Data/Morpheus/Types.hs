@@ -86,7 +86,7 @@ constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
 constRes = const . pure
 
 constMutRes :: Monad m => [e] -> a -> args -> MutRes e m a
-constMutRes events value = const $ MutResolver $ const $ pure (events, value)
+constMutRes events value = const $ MutResolver $ pure (events, value)
 
 failRes :: (WithOperation o, Monad m) => String -> Resolver o e m a
 failRes = failure . pack

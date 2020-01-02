@@ -250,6 +250,29 @@ toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
     eventResolver event =
       renderResponse <$> runResultT (unRecResolver subRes event)
 
+
+newtype ContextRes event m a = ContextRes {
+  unContextRes :: (Name,ValidSelection) -> ResultT event String 'True m a
+}
+
+instance Functor m => Functor (ContextRes e m) where
+  fmap f (ContextRes x) = ContextRes recX where recX event = f <$> x event
+
+instance Monad m => Applicative (ContextRes e m) where
+  pure = ContextRes . const . pure
+  (ContextRes f) <*> (ContextRes res) = ContextRes recX
+    where recX event = f event <*> res event
+
+instance Monad m => Monad (ContextRes e m) where
+  (ContextRes x) >>= next = ContextRes recX
+    where recX event = x event >>= (\v -> v event) . unContextRes . next
+
+instance MonadTrans (ContextRes e) where
+  lift = ContextRes . const . lift
+
+instance (Failure err (ResultT e String 'True m), Monad m) => Failure err (ContextRes e m) where
+  failure = ContextRes . const . failure
+
 --
 --     
 -- GraphQL Field Resolver
@@ -259,7 +282,7 @@ toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
 ---------------------------------------------------------------
 data Resolver (o::OperationType) event (m :: * -> * )  value where
     QueryResolver::{ unQueryResolver :: (Name,ValidSelection) -> ResultT () String 'True m value } -> Resolver QUERY   event m value
-    MutResolver ::{ unMutResolver :: (Name,ValidSelection) -> ResultT event String 'True m ([event],value) } -> Resolver MUTATION event m  value
+    MutResolver ::{ unMutResolver :: ContextRes event m ([event],value) } -> Resolver MUTATION event m  value
     SubResolver ::{
             subChannels :: [StreamChannel event] ,
             subResolver :: event -> Resolver QUERY event m value
@@ -273,7 +296,7 @@ instance (LiftOperation o Resolver ,Monad m) => Applicative (Resolver o e m) whe
   -------------------------------------
   (QueryResolver f) <*> (QueryResolver res) = QueryResolver $ \x -> (f x <*> res x)
   ---------------------------------------------------------------------
-  MutResolver res1 <*> MutResolver res2 = MutResolver $ \x -> join <$> res1 x <*> res2 x
+  MutResolver res1 <*> MutResolver res2 = MutResolver $ join <$> res1 <*> res2
     where join (e1, f) (e2, v) = (e1 <> e2, f v)
   --------------------------------------------------------------
   (SubResolver e1 f) <*> (SubResolver e2 res) = SubResolver (e1 <> e2) subRes
@@ -288,9 +311,9 @@ instance (Monad m) => Monad (Resolver QUERY e m) where
 instance (Monad m) => Monad (Resolver MUTATION e m) where
   return = pure
   -----------------------------------------------------
-  (MutResolver m1) >>= mFunc = MutResolver $ \x -> do
-    (e1, v1) <- (m1 x)
-    (e2, v2) <- (unMutResolver $ mFunc v1) x
+  (MutResolver m1) >>= mFunc = MutResolver $ do
+    (e1, v1) <- m1
+    (e2, v2) <- unMutResolver $ mFunc v1
     pure (e1 <> e2, v2)
 
 instance (MonadIO m) => MonadIO (Resolver QUERY e m) where
@@ -313,7 +336,7 @@ instance LiftOperation QUERY Resolver where
 
 instance LiftOperation MUTATION Resolver where
   type ResError Resolver = String
-  liftOperation = MutResolver . const . ResultT . fmap (fromEitherSingle . fmap ([], ))
+  liftOperation = MutResolver . ContextRes . const  . ResultT . fmap (fromEitherSingle . fmap ([], ))
 
 instance LiftOperation SUBSCRIPTION Resolver where
   type ResError Resolver = String
@@ -362,7 +385,7 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
     ResolveQ $ convert (res selection) >>= unResolveQ . _encode
   ---------------------------------------------------------------------------------------------------------------------------------------
   _resolve (MutResolver res) =
-    ResolveM $ replace (convert (res selection)) >>= unResolveM . _encode
+    ResolveM $ replace (convert (unContextRes res $ selection)) >>= unResolveM . _encode
    where
     replace (ResultT mx) = ResultT $ do
       value <- mx
