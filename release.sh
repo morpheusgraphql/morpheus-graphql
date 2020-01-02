@@ -1,5 +1,5 @@
 # vesrion
-export MORPHEUS_VESRION="0.9.0"
+export MORPHEUS_VESRION="0.9.1"
 export MORPHEUS_RELEASE_NAME="morpheus-graphql-$MORPHEUS_VESRION"
 export MORPHEUS_RELEASE_TAR="$MORPHEUS_RELEASE_NAME.tar.gz" 
 
