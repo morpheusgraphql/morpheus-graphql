@@ -252,7 +252,7 @@ toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
 
 
 newtype ContextRes event m a = ContextRes {
-  unContextRes :: (Name,ValidSelection) -> ResultT event String 'True m a
+  unContextRes :: (Name,ValidSelection) -> ResultT event GQLError 'True m a
 }
 
 instance Functor m => Functor (ContextRes e m) where
@@ -270,14 +270,14 @@ instance Monad m => Monad (ContextRes e m) where
 instance MonadTrans (ContextRes e) where
   lift = ContextRes . const . lift
 
-instance (Failure err (ResultT e String 'True m), Monad m) => Failure err (ContextRes e m) where
+instance (Failure err (ResultT e GQLError 'True m), Monad m) => Failure err (ContextRes e m) where
   failure = ContextRes . const . failure
 
 --
 --     
 -- GraphQL Field Resolver
 --
---
+--  
 --ResultT  GQLError 'True m (RecResolver m event value)
 ---------------------------------------------------------------
 data Resolver (o::OperationType) event (m :: * -> * )  value where
@@ -382,10 +382,10 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
   _encode = (`encode` selection)
   -------------------------------------------------------------------
   _resolve (QueryResolver res) =
-    ResolveQ $ convert (unContextRes res $ selection) >>= unResolveQ . _encode
+    ResolveQ $ unContextRes res selection >>= unResolveQ . _encode
   ---------------------------------------------------------------------------------------------------------------------------------------
   _resolve (MutResolver res) =
-    ResolveM $ replace (convert (unContextRes res $ selection)) >>= unResolveM . _encode
+    ResolveM $ replace (unContextRes res selection) >>= unResolveM . _encode
    where
     replace (ResultT mx) = ResultT $ do
       value <- mx
@@ -402,7 +402,7 @@ resolving encode gResolver selection@(fieldName, Selection { selectionPosition }
    where
     eventResolver :: e -> StatelessResT m ValidValue
     eventResolver event =
-      convert (unContextRes (unQueryResolver $ res event) $ selection)>>= unPureSub . _encode
+       unContextRes (unQueryResolver $ res event) selection >>= unPureSub . _encode
      where
       unPureSub
         :: Monad m
