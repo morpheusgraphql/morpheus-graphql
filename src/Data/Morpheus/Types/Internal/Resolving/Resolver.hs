@@ -268,8 +268,15 @@ instance Monad m => Monad (ContextRes e m) where
 instance MonadTrans (ContextRes e) where
   lift = ContextRes . const . lift
 
-instance (Failure err (ResultT e GQLError 'True m), Monad m) => Failure err (ContextRes e m) where
-  failure = ContextRes . const . failure
+instance (Monad m) => Failure Message (ContextRes e m) where
+  failure message = ContextRes $ \sel -> ResultT $ pure $ failure [errorFromSelection sel message]
+
+errorFromSelection :: (Name,ValidSelection) -> Message -> GQLError
+errorFromSelection (fieldName, Selection { selectionPosition })  = resolvingFailedError selectionPosition fieldName 
+
+fromEitherSingle :: (Name,ValidSelection) ->  (Either String a) ->  Result ev GQLError co a
+fromEitherSingle sel (Left  e)  = Failure [errorFromSelection sel (pack e)]
+fromEitherSingle _ (Right a) = Success a [] []
 
 --
 --     
@@ -326,10 +333,6 @@ instance MonadTrans (Resolver QUERY e) where
 
 instance MonadTrans (Resolver MUTATION e) where
   lift = liftOperation . fmap pure
-
-fromEitherSingle :: (Name,ValidSelection) ->  (Either String a) ->  Result ev GQLError co a
-fromEitherSingle (fieldName, Selection { selectionPosition }) (Left  e)  = Failure [resolvingFailedError selectionPosition fieldName (pack e)]
-fromEitherSingle _ (Right a) = Success a [] []
 
 -- LiftOperation
 instance LiftOperation QUERY Resolver where
