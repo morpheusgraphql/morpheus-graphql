@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.9.1] - 02.01.2020
+
+- removed dependency `mtl`
+
 ## [0.9.0] - 02.01.2020
 
 ### Added
