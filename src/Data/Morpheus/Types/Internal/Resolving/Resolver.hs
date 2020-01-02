@@ -40,7 +40,8 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   )
 where
 
-import           Control.Monad.Trans.Class      ( MonadTrans(..) )
+import           Control.Monad.Trans.Class      ( MonadTrans(..))
+import           Control.Monad.IO.Class         ( MonadIO(..) )
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Semigroup                 ( (<>)
                                                 , Semigroup(..)
@@ -300,6 +301,12 @@ instance (Monad m) => Monad (Resolver MUTATION e m) where
     (e1, v1) <- m1
     (e2, v2) <- unMutResolver $ mFunc v1
     pure (e1 <> e2, v2)
+
+instance (MonadIO m) => MonadIO (Resolver QUERY e m) where
+    liftIO = lift . liftIO
+    
+instance (MonadIO m) => MonadIO (Resolver MUTATION e m) where
+    liftIO = lift . liftIO
 
 -- Monad Transformers    
 instance MonadTrans (Resolver QUERY e) where
