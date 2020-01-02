@@ -3,8 +3,7 @@ name: Moepheus Haskell CI
 on: [push]
 
 env:
-  DIST_PATH: "/home/runner/work/morpheus-graphql-release"
-
+  DIST_PATH: "$HOME/morpheus-graphql-release"
 jobs:
   build:
     runs-on: ubuntu-latest
