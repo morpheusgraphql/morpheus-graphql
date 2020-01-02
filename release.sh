@@ -18,5 +18,5 @@ cd release
 echo $PWD
 # cd ../..
 
-cabal update
-cabal build --only-dependencies
+# cabal update
+# cabal build --only-dependencies
