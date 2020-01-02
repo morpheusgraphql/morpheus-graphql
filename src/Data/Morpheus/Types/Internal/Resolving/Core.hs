@@ -21,7 +21,7 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , LibUpdater
   , resolveUpdates
   , mapEvent
-  , mapFailure
+ -- , mapFailure
   , cleanEvents
   , StatelessResT
   )
@@ -151,15 +151,15 @@ mapEvent func (ResultT ma) = ResultT $ mapEv <$> ma
     Success { result, warnings, events = map func events }
   mapEv (Failure err) = Failure err
 
-mapFailure
-  :: Monad m
-  => (er1 -> er2)
-  -> ResultT ev er1 con m value
-  -> ResultT ev er2 con m value
-mapFailure f (ResultT ma) = ResultT $ mapF <$> ma
- where
-  mapF (Failure x    ) = Failure (map f x)
-  mapF (Success x w e) = Success x (map f w) e
+-- mapFailure
+--   :: Monad m
+--   => (er1 -> er2)
+--   -> ResultT ev er1 con m value
+--   -> ResultT ev er2 con m value
+-- mapFailure f (ResultT ma) = ResultT $ mapF <$> ma
+--  where
+--   mapF (Failure x    ) = Failure (map f x)
+--   mapF (Success x w e) = Success x (map f w) e
 
 
 -- Helper Functions

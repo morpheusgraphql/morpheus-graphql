@@ -374,8 +374,7 @@ resolving
   -> Resolver o e m value
   -> (Key, ValidSelection)
   -> ResolvingStrategy o e m ValidValue
-resolving encode gResolver selection@(fieldName, Selection { selectionPosition })
-  = _resolve gResolver
+resolving encode gResolver selection = _resolve gResolver
  where
   _encode = (`encode` selection)
   -------------------------------------------------------------------
