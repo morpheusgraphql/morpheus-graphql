@@ -1,4 +1,4 @@
-name: Moepheus Haskell CI
+name: ci for cabal sdist
 
 on: [push]
 
