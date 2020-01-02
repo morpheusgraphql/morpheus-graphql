@@ -7,3 +7,5 @@ packages:
 
 extra-deps:
   - megaparsec-8.0.0
+
+save-hackage-creds: false
