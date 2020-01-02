@@ -138,11 +138,7 @@ data ResolvingStrategy  (o::OperationType) event (m:: * -> *) value where
   ResolveM ::{ unResolveM :: ResultT event GQLError 'True m value } -> ResolvingStrategy MUTATION event m  value
   ResolveS ::{ unResolveS :: ResultT (Channel event) GQLError 'True m (RecResolver m event value) } -> ResolvingStrategy SUBSCRIPTION event m value
 
--- Functor
-instance Monad m => Functor (ResolvingStrategy o e m) where
-  fmap f (ResolveQ res) = ResolveQ $ f <$> res
-  fmap f (ResolveM res) = ResolveM $ f <$> res
-  fmap f (ResolveS res) = ResolveS $ (<$>) f <$> res
+deriving instance (Functor m) => Functor (ResolvingStrategy o e m)
 
 -- Applicative
 instance (LiftOperation o ResolvingStrategy, Monad m) => Applicative (ResolvingStrategy o e m) where
