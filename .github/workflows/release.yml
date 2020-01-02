@@ -17,4 +17,4 @@ jobs:
         stack upgrade
     - name: upload release
       run: | 
-        cabal upload -u nalchevanidze -p ${{ secrets.GITHUB_TOKEN }}
+        stack upload . -u nalchevanidze -p ${{ secrets.GITHUB_TOKEN }}
