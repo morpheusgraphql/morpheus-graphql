@@ -91,11 +91,11 @@ import           Data.Morpheus.Types.Internal.Resolving
 class Encode resolver o e (m :: * -> *) where
   encode :: resolver -> (Key, ValidSelection) -> Resolver o e m ValidValue
 
-instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m , LiftOperation o Resolver) => Encode a o e m where
+instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m , LiftOperation o) => Encode a o e m where
   encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
 
 -- MAYBE
-instance (Monad m , LiftOperation o Resolver,Encode a o e m) => Encode (Maybe a) o e m where
+instance (Monad m , LiftOperation o,Encode a o e m) => Encode (Maybe a) o e m where
   encode = maybe (const $ pure gqlNull) encode
 
 --  Tuple  (a,b)
@@ -107,16 +107,16 @@ instance Encode [a] o e m => Encode (Set a) o e m where
   encode = encode . S.toList
 
 --  Map
-instance (Eq k, Monad m,LiftOperation o Resolver, Encode (MapKind k v (Resolver o e m)) o e m) => Encode (Map k v)  o e m where
+instance (Eq k, Monad m,LiftOperation o, Encode (MapKind k v (Resolver o e m)) o e m) => Encode (Map k v)  o e m where
   encode value =
     encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver o e m))
 
 -- LIST []
-instance (Monad m, Encode a o e m, LiftOperation o Resolver) => Encode [a] o e m where
+instance (Monad m, Encode a o e m, LiftOperation o) => Encode [a] o e m where
   encode list query = gqlList <$> traverse (`encode` query) list
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (DecodeType a,Generic a, Monad m,LiftOperation fo Resolver, MapStrategy fo o, Encode b fo e m) => Encode (a -> Resolver fo e m b) o e m where
+instance (DecodeType a,Generic a, Monad m,LiftOperation fo, MapStrategy fo o, Encode b fo e m) => Encode (a -> Resolver fo e m b) o e m where
   encode resolver selection@(_, Selection { selectionArguments }) =
     mapStrategy $ resolving encode (toResolver args resolver) selection
    where
@@ -124,12 +124,12 @@ instance (DecodeType a,Generic a, Monad m,LiftOperation fo Resolver, MapStrategy
     args = decodeArguments selectionArguments
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (Monad m,LiftOperation fo Resolver, MapStrategy fo o, Encode b fo e m) => Encode (Resolver fo e m b) o e m where
+instance (Monad m,LiftOperation fo, MapStrategy fo o, Encode b fo e m) => Encode (Resolver fo e m b) o e m where
   encode resolver = mapStrategy . resolving encode resolver
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
-  encodeKind :: LiftOperation o Resolver =>  VContext kind a -> (Key, ValidSelection) -> Resolver o e m ValidValue
+  encodeKind :: LiftOperation o =>  VContext kind a -> (Key, ValidSelection) -> Resolver o e m ValidValue
 
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
@@ -168,7 +168,7 @@ instance (Monad m,Generic a, GQLType a,ExploreResolvers (CUSTOM a) a o e m) => E
 
 
 convertNode
-  :: (Monad m, LiftOperation o Resolver)
+  :: (Monad m, LiftOperation o)
   => ResNode o e m
   -> DataResolver o e m
 convertNode ResNode { resKind = REP_OBJECT, resFields } =
@@ -212,7 +212,7 @@ objectResolvers isCustom value = case exploreResolvers isCustom value of
 class ExploreResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
   exploreResolvers :: Proxy custom -> a -> DataResolver o e m
 
-instance (Generic a,Monad m,LiftOperation o Resolver,TypeRep (Rep a) o e m ) => ExploreResolvers 'False a o e m where
+instance (Generic a,Monad m,LiftOperation o,TypeRep (Rep a) o e m ) => ExploreResolvers 'False a o e m where
   exploreResolvers _ value = convertNode
     $ typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
 
@@ -246,7 +246,7 @@ encodeSubscription = encodeOperationWith (Proxy @SUBSCRIPTION) Nothing
 
 encodeOperationWith
   :: forall (o :: OperationType) e m a
-   . (Monad m, EncodeCon o e m a, LiftOperation o Resolver)
+   . (Monad m, EncodeCon o e m a, LiftOperation o)
   => 
      Proxy o
   -> Maybe (DataResolver o e m)

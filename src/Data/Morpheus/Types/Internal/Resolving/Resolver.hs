@@ -48,9 +48,6 @@ import           Data.Maybe                     ( fromMaybe )
 import           Data.Semigroup                 ( (<>)
                                                 , Semigroup(..)
                                                 )
-import           Data.Text                      ( unpack
-                                                , pack
-                                                )
 import           Control.Monad.Trans.Reader     (ReaderT(..), ask)
 
 -- MORPHEUS
@@ -100,11 +97,7 @@ import           Data.Morpheus.Types.IO         ( renderResponse
                                                 , GQLResponse
                                                 )
 
-class LiftOperation (o::OperationType) res where
-  type ResError res :: *
-  liftOperation :: Monad m => m (Either (ResError res) a) -> res o event m  a
-
-type WithOperation (o :: OperationType) = LiftOperation o Resolver
+type WithOperation (o :: OperationType) = LiftOperation o
 
 type ResponseStream event m = ResultT (ResponseEvent m event) GQLError 'True m
 
@@ -127,7 +120,7 @@ instance Semigroup (DataResolver o e m) where
   _           <> _           = InvalidRes "can't merge: incompatible resolvers"
 
 withObject
-  :: (LiftOperation o Resolver, Monad m)
+  :: (LiftOperation o, Monad m)
   => (ValidSelectionSet -> Resolver o e m value)
   -> (Key, ValidSelection)
   -> Resolver o e m value
@@ -137,7 +130,7 @@ withObject _ (key, Selection { selectionPosition }) =
   failure (subfieldsNotSelected key "" selectionPosition)
 
 resolveObject
-  :: (Monad m, LiftOperation o Resolver)
+  :: (LiftOperation o , Monad m)
   => ValidSelectionSet
   -> DataResolver o e m
   -> Resolver o e m ValidValue
@@ -153,7 +146,7 @@ resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 
 resolveEnum
-  :: (Monad m, LiftOperation o Resolver)
+  :: (Monad m, LiftOperation o)
   => Name
   -> Name
   -> ValidSelectionRec
@@ -173,7 +166,7 @@ resolveEnum _ _ _ =
   failure $ internalResolvingError "wrong selection on enum value"
 
 resolve__typename
-  :: (Monad m, LiftOperation o Resolver)
+  :: (Monad m, LiftOperation o)
   => Name
   -> (Key, (Key, ValidSelection) -> Resolver o e m ValidValue)
 resolve__typename name = ("__typename", const $ pure $ gqlString name)
@@ -213,15 +206,14 @@ instance (Monad m) => Failure Message (ContextRes e m) where
     selection <- ask
     lift $ failure [errorFromSelection selection message]
 
+instance (Monad m) => Failure GQLErrors (ContextRes e m) where
+  failure = ContextRes . lift . failure 
+
 instance (Monad m) => PushEvents e (ContextRes e m) where
     pushEvents = ContextRes . lift . pushEvents 
 
 errorFromSelection :: (Name,ValidSelection) -> Message -> GQLError
 errorFromSelection (fieldName, Selection { selectionPosition })  = resolvingFailedError selectionPosition fieldName 
-
-fromEitherSingle :: (Name,ValidSelection) ->  (Either String a) ->  Result ev GQLError co a
-fromEitherSingle sel (Left  e)  = Failure [errorFromSelection sel (pack e)]
-fromEitherSingle _ (Right a) = Success a [] []
 
 --     
 -- GraphQL Field Resolver
@@ -238,8 +230,8 @@ data Resolver (o::OperationType) event (m :: * -> * )  value where
 deriving instance (Functor m) => Functor (Resolver o e m)
 
 -- Applicative
-instance (LiftOperation o Resolver ,Monad m) => Applicative (Resolver o e m) where
-  pure = liftOperation . pure . pure
+instance (LiftOperation o ,Monad m) => Applicative (Resolver o e m) where
+  pure = liftOperation . pure
   -------------------------------------
   (QueryResolver f) <*> (QueryResolver res) = QueryResolver $ f <*> res
   ---------------------------------------------------------------------
@@ -271,34 +263,32 @@ instance (MonadIO m) => MonadIO (Resolver MUTATION e m) where
 
 -- Monad Transformers    
 instance MonadTrans (Resolver QUERY e) where
-  lift = liftOperation . fmap pure
+  lift = liftOperation . lift
 
 instance MonadTrans (Resolver MUTATION e) where
-  lift = liftOperation . fmap pure
-
--- LiftOperation
-instance LiftOperation QUERY Resolver where
-  type ResError Resolver = String
-  liftOperation res = QueryResolver $ ContextRes $ do 
-    selection <- ask
-    lift $ ResultT $ fmap (fromEitherSingle selection) res
-
-instance LiftOperation MUTATION Resolver where
-  type ResError Resolver = String
-  liftOperation res = MutResolver $ ContextRes $ do 
-    selection <- ask
-    lift $ ResultT $ (fromEitherSingle selection) <$> (fmap (fmap ([], )) res)
-
-instance LiftOperation SUBSCRIPTION Resolver where
-  type ResError Resolver = String
-  liftOperation = SubResolver [] . const . liftOperation
+  lift = liftOperation . lift
 
 -- Failure
-instance (LiftOperation o Resolver, Monad m) => Failure Message (Resolver o e m) where
-  failure = liftOperation . pure . Left . unpack
+instance (LiftOperation o, Monad m) => Failure Message (Resolver o e m) where
+   failure = liftOperation .failure
 
-instance (LiftOperation o Resolver, Monad m) => Failure GQLErrors (Resolver o e m) where
--- failure = liftOperation . pure . Left . unpack
+instance (LiftOperation o, Monad m) => Failure GQLErrors (Resolver o e m) where
+  failure = liftOperation . failure 
+
+class LiftOperation (o::OperationType) where
+  liftOperation :: Monad m => ContextRes e m a -> Resolver o e m a
+
+-- LiftOperation
+instance LiftOperation QUERY where
+  liftOperation (ContextRes (ReaderT x))= QueryResolver $ ContextRes $ ReaderT $ \sel -> cleanEvents (x sel)
+
+instance LiftOperation MUTATION where
+  liftOperation res = MutResolver $ do 
+    value  <- res
+    pure ([],value )
+
+instance LiftOperation SUBSCRIPTION where
+  liftOperation = SubResolver [] . const . liftOperation
 
 -- Type Helpers  
 type family UnSubResolver (a :: * -> *) :: (* -> *)
@@ -310,7 +300,7 @@ type FieldRes o e m
   = (Key, (Key, ValidSelection) -> Resolver o e m ValidValue)
 
 toResolver
-  :: (LiftOperation o Resolver, Monad m)
+  :: (LiftOperation o, Monad m)
   => Validation a
   -> (a -> Resolver o e m b)
   -> Resolver o e m b
