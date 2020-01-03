@@ -51,6 +51,7 @@ import           Data.Semigroup                 ( (<>)
 import           Data.Text                      ( unpack
                                                 , pack
                                                 )
+import           Control.Monad.Trans.Reader     (ReaderT(..))
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal   ( internalResolvingError )
@@ -95,8 +96,6 @@ import           Data.Morpheus.Types.Internal.AST.Value
 import           Data.Morpheus.Types.IO         ( renderResponse
                                                 , GQLResponse
                                                 )
--- MORPHEUS
-import Control.Monad.Trans.Reader (ReaderT(..))
 
 class LiftOperation (o::OperationType) res where
   type ResError res :: *
