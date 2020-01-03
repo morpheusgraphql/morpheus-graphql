@@ -17,12 +17,10 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , Failure(..)
   , ResultT(..)
   , fromEither
-  , fromEitherSingle
   , unpackEvents
   , LibUpdater
   , resolveUpdates
   , mapEvent
-  , mapFailure
   , cleanEvents
   , StatelessResT
   )
@@ -101,9 +99,6 @@ fromEither :: Either [er] a -> Result ev er co a
 fromEither (Left  e) = Failure e
 fromEither (Right a) = Success a [] []
 
-fromEitherSingle :: Either er a -> Result ev er co a
-fromEitherSingle (Left  e) = Failure [e]
-fromEitherSingle (Right a) = Success a [] []
 
 -- ResultT
 newtype ResultT event error (concurency :: Bool)  (m :: * -> * ) a = ResultT { runResultT :: m (Result event error concurency a )  }
@@ -135,6 +130,10 @@ instance Applicative m => Failure String (ResultT ev GQLError con m) where
   failure x =
     ResultT $ pure $ Failure [GQLError { message = pack x, locations = [] }]
 
+instance Monad m => Failure GQLErrors (ResultT event GQLError concurency m) where
+  failure = ResultT . pure . failure
+
+
 cleanEvents
   :: Functor m
   => ResultT e1 error concurency m a
@@ -154,17 +153,6 @@ mapEvent func (ResultT ma) = ResultT $ mapEv <$> ma
   mapEv Success { result, warnings, events } =
     Success { result, warnings, events = map func events }
   mapEv (Failure err) = Failure err
-
-mapFailure
-  :: Monad m
-  => (er1 -> er2)
-  -> ResultT ev er1 con m value
-  -> ResultT ev er2 con m value
-mapFailure f (ResultT ma) = ResultT $ mapF <$> ma
- where
-  mapF (Failure x    ) = Failure (map f x)
-  mapF (Success x w e) = Success x (map f w) e
-
 
 -- Helper Functions
 type LibUpdater lib = lib -> Validation lib

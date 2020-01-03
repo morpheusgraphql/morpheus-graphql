@@ -34,6 +34,7 @@ dependencies:
   - uuid                  >= 1.0       && <= 1.4
   - template-haskell      >= 2.0       && <= 2.16
   - th-lift-instances     >= 0.1.1     && <= 0.2.0
+  - mtl                   >= 2.0       && <= 2.3
 
 library:
   source-dirs: src
