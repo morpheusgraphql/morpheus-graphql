@@ -238,10 +238,7 @@ toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
 
 newtype ContextRes event m a = ContextRes {
   unContextRes :: (Name,ValidSelection) -> ResultT event GQLError 'True m a
-}
-
-instance Functor m => Functor (ContextRes e m) where
-  fmap f (ContextRes x) = ContextRes recX where recX event = f <$> x event
+} deriving (Functor)
 
 instance Monad m => Applicative (ContextRes e m) where
   pure = ContextRes . const . pure
