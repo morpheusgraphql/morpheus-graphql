@@ -22,7 +22,6 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , GQLRootResolver(..)
   , UnSubResolver
   , Resolver(..)
-  , ResolvingStrategy(..)
   , MapStrategy(..)
   , LiftOperation
   , resolveObject
@@ -48,9 +47,6 @@ import           Control.Monad.IO.Class         ( MonadIO(..) )
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Semigroup                 ( (<>)
                                                 , Semigroup(..)
-                                                )
-import           Data.Text                      ( unpack
-                                                , pack
                                                 )
 import           Control.Monad.Trans.Reader     (ReaderT(..), ask)
 
@@ -85,10 +81,13 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 , Result(..)
                                                 , Failure(..)
                                                 , ResultT(..)
-                                                , fromEither
                                                 , cleanEvents
                                                 , mapEvent
-                                                , StatelessResT
+                                                , Event(..)
+                                                , Channel(..)
+                                                , StreamChannel
+                                                , GQLChannel(..)
+                                                , PushEvents(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
@@ -98,11 +97,7 @@ import           Data.Morpheus.Types.IO         ( renderResponse
                                                 , GQLResponse
                                                 )
 
-class LiftOperation (o::OperationType) res where
-  type ResError res :: *
-  liftOperation :: Monad m => m (Either (ResError res) a) -> res o event m  a
-
-type WithOperation (o :: OperationType) = LiftOperation o Resolver
+type WithOperation (o :: OperationType) = LiftOperation o
 
 type ResponseStream event m = ResultT (ResponseEvent m event) GQLError 'True m
 
@@ -111,46 +106,6 @@ data ResponseEvent m event
   | Subscribe (SubEvent m event)
 
 type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
-
-
-----------------------------------------------------------------------------------------
--- Recursive Resolver
-type RecResolver m a b = ReaderT a (StatelessResT m) b
-
---- GraphQLT
-data ResolvingStrategy  (o::OperationType) event (m:: * -> *) value where
-  ResolveQ ::{ unResolveQ :: ResultT () GQLError 'True m value } -> ResolvingStrategy QUERY event m  value
-  ResolveM ::{ unResolveM :: ResultT event GQLError 'True m value } -> ResolvingStrategy MUTATION event m  value
-  ResolveS ::{ unResolveS :: ResultT (Channel event) GQLError 'True m (RecResolver m event value) } -> ResolvingStrategy SUBSCRIPTION event m value
-
-deriving instance (Functor m) => Functor (ResolvingStrategy o e m)
-
--- Applicative
-instance (LiftOperation o ResolvingStrategy, Monad m) => Applicative (ResolvingStrategy o e m) where
-  pure = liftOperation . pure . pure
-  -------------------------------------
-  (ResolveQ f) <*> (ResolveQ res) = ResolveQ (f <*> res)
-  ------------------------------------------------------------------------
-  (ResolveM f) <*> (ResolveM res) = ResolveM (f <*> res)
-  --------------------------------------------------------------
-  (ResolveS f) <*> (ResolveS res) = ResolveS $ (<*>) <$> f <*> res
-
--- LiftOperation
-instance LiftOperation QUERY ResolvingStrategy where
-  type ResError ResolvingStrategy = GQLErrors
-  liftOperation = ResolveQ . ResultT . fmap fromEither
-
-instance LiftOperation MUTATION ResolvingStrategy where
-  type ResError ResolvingStrategy = GQLErrors
-  liftOperation = ResolveM . ResultT . fmap fromEither
-
-instance LiftOperation SUBSCRIPTION ResolvingStrategy where
-  type ResError ResolvingStrategy = GQLErrors
-  liftOperation = ResolveS . ResultT . fmap (fromEither . fmap pure)
-
- -- Failure
-instance (LiftOperation o ResolvingStrategy, Monad m) => Failure GQLErrors (ResolvingStrategy o e m) where
-  failure = liftOperation . pure . Left
 
 -- DataResolver
 data DataResolver o e m =
@@ -165,20 +120,20 @@ instance Semigroup (DataResolver o e m) where
   _           <> _           = InvalidRes "can't merge: incompatible resolvers"
 
 withObject
-  :: (LiftOperation o ResolvingStrategy, Monad m)
-  => (ValidSelectionSet -> ResolvingStrategy o e m value)
+  :: (LiftOperation o, Monad m)
+  => (ValidSelectionSet -> Resolver o e m value)
   -> (Key, ValidSelection)
-  -> ResolvingStrategy o e m value
+  -> Resolver o e m value
 withObject f (_, Selection { selectionContent = SelectionSet selection }) =
   f selection
 withObject _ (key, Selection { selectionPosition }) =
   failure (subfieldsNotSelected key "" selectionPosition)
 
 resolveObject
-  :: (Monad m, LiftOperation o ResolvingStrategy)
+  :: (LiftOperation o , Monad m)
   => ValidSelectionSet
   -> DataResolver o e m
-  -> ResolvingStrategy o e m ValidValue
+  -> Resolver o e m ValidValue
 resolveObject selectionSet (ObjectRes resolvers) =
   gqlObject <$> traverse selectResolver selectionSet
  where
@@ -191,11 +146,11 @@ resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 
 resolveEnum
-  :: (Monad m, LiftOperation o ResolvingStrategy)
+  :: (Monad m, LiftOperation o)
   => Name
   -> Name
   -> ValidSelectionRec
-  -> ResolvingStrategy o e m ValidValue
+  -> Resolver o e m ValidValue
 resolveEnum _        enum SelectionField              = pure $ gqlString enum
 resolveEnum typeName enum (UnionSelection selections) = resolveObject
   currentSelection
@@ -210,34 +165,37 @@ resolveEnum typeName enum (UnionSelection selections) = resolveObject
 resolveEnum _ _ _ =
   failure $ internalResolvingError "wrong selection on enum value"
 
-
 resolve__typename
-  :: (Monad m, LiftOperation o ResolvingStrategy)
+  :: (Monad m, LiftOperation o)
   => Name
-  -> (Key, (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue)
+  -> (Key, (Key, ValidSelection) -> Resolver o e m ValidValue)
 resolve__typename name = ("__typename", const $ pure $ gqlString name)
 
 toResponseRes
   :: Monad m
-  => ResolvingStrategy o event m ValidValue
+  => Resolver o event m ValidValue
+  -> (Key, ValidSelection)
   -> ResponseStream event m ValidValue
-toResponseRes (ResolveQ resT) = cleanEvents resT
-toResponseRes (ResolveM resT) = mapEvent Publish resT
-toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
- where
-  handleActions (Failure gqlError                ) = Failure gqlError
-  handleActions (Success subRes warnings channels) = Success
+toResponseRes (QueryResolver resT) sel = cleanEvents $ (runReaderT $ runContextRes resT) sel
+toResponseRes (MutResolver resT) sel = mapEvent Publish $ runReaderT ctx sel 
+  where
+    ctx = runContextRes $ do
+      (events, value) <- resT
+      pushEvents events
+      return value
+toResponseRes (SubResolver channels subRes) sel = ResultT $ pure $ Success
     { result   = gqlNull
-    , warnings
-    , events   = [Subscribe $ Event channels eventResolver]
+    , warnings = []
+    , events   = [Subscribe $ Event (map Channel channels) eventResolver]
     }
    where
-    eventResolver event =
-      renderResponse <$> runResultT (runReaderT subRes event)
-
+    -- eventResolver :: event -> ResultT event m ValidValue
+    eventResolver event = do 
+      value <- runResultT $ runReaderT (runContextRes $ unQueryResolver (subRes event)) sel
+      pure $ renderResponse value
 
 newtype ContextRes event m a = ContextRes {
-  unContextRes :: ReaderT (Name,ValidSelection) (ResultT event GQLError 'True m) a
+  runContextRes :: ReaderT (Name,ValidSelection) (ResultT event GQLError 'True m) a
 } deriving (Functor, Applicative, Monad)
 
 instance MonadTrans (ContextRes e) where
@@ -245,21 +203,21 @@ instance MonadTrans (ContextRes e) where
 
 instance (Monad m) => Failure Message (ContextRes e m) where
   failure message = ContextRes $ do 
-    sel <- ask
-    lift $ failure [errorFromSelection sel message]
+    selection <- ask
+    lift $ failure [errorFromSelection selection message]
+
+instance (Monad m) => Failure GQLErrors (ContextRes e m) where
+  failure = ContextRes . lift . failure 
+
+instance (Monad m) => PushEvents e (ContextRes e m) where
+    pushEvents = ContextRes . lift . pushEvents 
 
 errorFromSelection :: (Name,ValidSelection) -> Message -> GQLError
 errorFromSelection (fieldName, Selection { selectionPosition })  = resolvingFailedError selectionPosition fieldName 
 
-fromEitherSingle :: (Name,ValidSelection) ->  (Either String a) ->  Result ev GQLError co a
-fromEitherSingle sel (Left  e)  = Failure [errorFromSelection sel (pack e)]
-fromEitherSingle _ (Right a) = Success a [] []
-
---
 --     
 -- GraphQL Field Resolver
 --
---  
 ---------------------------------------------------------------
 data Resolver (o::OperationType) event (m :: * -> * )  value where
     QueryResolver::{ unQueryResolver :: ContextRes () m value } -> Resolver QUERY   event m value
@@ -272,8 +230,8 @@ data Resolver (o::OperationType) event (m :: * -> * )  value where
 deriving instance (Functor m) => Functor (Resolver o e m)
 
 -- Applicative
-instance (LiftOperation o Resolver ,Monad m) => Applicative (Resolver o e m) where
-  pure = liftOperation . pure . pure
+instance (LiftOperation o ,Monad m) => Applicative (Resolver o e m) where
+  pure = liftOperation . pure
   -------------------------------------
   (QueryResolver f) <*> (QueryResolver res) = QueryResolver $ f <*> res
   ---------------------------------------------------------------------
@@ -305,101 +263,84 @@ instance (MonadIO m) => MonadIO (Resolver MUTATION e m) where
 
 -- Monad Transformers    
 instance MonadTrans (Resolver QUERY e) where
-  lift = liftOperation . fmap pure
+  lift = liftOperation . lift
 
 instance MonadTrans (Resolver MUTATION e) where
-  lift = liftOperation . fmap pure
-
--- LiftOperation
-instance LiftOperation QUERY Resolver where
-  type ResError Resolver = String
-  liftOperation res = QueryResolver $ ContextRes $ do 
-    selection <- ask
-    lift $ ResultT $ fmap (fromEitherSingle selection) res
-
-instance LiftOperation MUTATION Resolver where
-  type ResError Resolver = String
-  liftOperation res = MutResolver $ ContextRes $ do 
-    selection <- ask
-    lift $ ResultT $ (fromEitherSingle selection) <$> (fmap (fmap ([], )) res)
-
-instance LiftOperation SUBSCRIPTION Resolver where
-  type ResError Resolver = String
-  liftOperation = SubResolver [] . const . liftOperation
+  lift = liftOperation . lift
 
 -- Failure
-instance (LiftOperation o Resolver, Monad m) => Failure Message (Resolver o e m) where
-  failure = liftOperation . pure . Left . unpack
+instance (LiftOperation o, Monad m) => Failure Message (Resolver o e m) where
+   failure = liftOperation .failure
+
+instance (LiftOperation o, Monad m) => Failure GQLErrors (Resolver o e m) where
+  failure = liftOperation . failure 
+
+class LiftOperation (o::OperationType) where
+  liftOperation :: Monad m => ContextRes e m a -> Resolver o e m a
+
+-- LiftOperation
+instance LiftOperation QUERY where
+  liftOperation (ContextRes (ReaderT x))= QueryResolver $ ContextRes $ ReaderT $ \sel -> cleanEvents (x sel)
+
+instance LiftOperation MUTATION where
+  liftOperation res = MutResolver $ do 
+    value  <- res
+    pure ([],value )
+
+instance LiftOperation SUBSCRIPTION where
+  liftOperation = SubResolver [] . const . liftOperation
 
 -- Type Helpers  
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
 type instance UnSubResolver (Resolver SUBSCRIPTION m e) = Resolver QUERY m e
 
-
 -- RESOLVING
 type FieldRes o e m
-  = (Key, (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue)
+  = (Key, (Key, ValidSelection) -> Resolver o e m ValidValue)
 
 toResolver
-  :: (LiftOperation o Resolver, Monad m)
+  :: (LiftOperation o, Monad m)
   => Validation a
   -> (a -> Resolver o e m b)
   -> Resolver o e m b
 toResolver Success { result } f = f result
-toResolver (Failure errors) _ =
-  failure ("TODO: errors" <> pack (show errors) :: Message)
+toResolver (Failure errors) _ = failure errors
+
+updateContext :: ContextRes e m a -> (Name,ValidSelection) ->  ContextRes e m a
+updateContext res = ContextRes . ReaderT . const . (runReaderT $ runContextRes res)
 
 resolving
   :: forall o e m value
    . Monad m
-  => (value -> (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue)
+  => (value -> (Key, ValidSelection) -> Resolver o e m ValidValue)
   -> Resolver o e m value
   -> (Key, ValidSelection)
-  -> ResolvingStrategy o e m ValidValue
-resolving encode gResolver selection = _resolve gResolver
- where
-  _encode = (`encode` selection)
-  -------------------------------------------------------------------
-  _resolve (QueryResolver res) =
-    ResolveQ $ (runReaderT $ unContextRes res) selection >>= unResolveQ . _encode
-  ---------------------------------------------------------------------------------------------------------------------------------------
-  _resolve (MutResolver res) =
-    ResolveM $ replace ( (runReaderT $ unContextRes res) selection) >>= unResolveM . _encode
-   where
-    replace (ResultT mx) = ResultT $ do
-      value <- mx
-      pure $ case value of
-        Success { warnings, events, result = (events2, result) } ->
-          Success { result, warnings, events = events <> events2 }
-        Failure x -> Failure x
-  --------------------------------------------------------------------------------------------------------------------------------
-  _resolve (SubResolver subChannels res) = ResolveS $ ResultT $ pure $ Success
-    { events   = map Channel subChannels
-    , result   = ReaderT eventResolver
-    , warnings = []
+  -> Resolver o e m ValidValue 
+resolving encode (QueryResolver res) selection = QueryResolver $ do 
+    value <- updateContext res selection
+    unQueryResolver $ encode value selection
+resolving encode (MutResolver res) selection = MutResolver $ do
+    (events, value) <- updateContext res selection
+    pushEvents events
+    unMutResolver $ encode value selection
+resolving encode (SubResolver subChannels res) selection = do 
+    SubResolver {
+      subChannels,
+      subResolver = \events -> do
+        value <- QueryResolver $ updateContext (unQueryResolver $ res events) selection
+        (subResolver $ encode value selection)  events
     }
-   where
-    eventResolver :: e -> StatelessResT m ValidValue
-    eventResolver event =
-       (runReaderT . unContextRes) (unQueryResolver $ res event) selection >>= unPureSub . _encode
-     where
-      unPureSub
-        :: Monad m
-        => ResolvingStrategy SUBSCRIPTION e m ValidValue
-        -> StatelessResT m ValidValue
-      unPureSub (ResolveS x) = cleanEvents x >>= passEvent
-        where passEvent (ReaderT f) = f event
 
 -- map Resolving strategies 
 class MapStrategy (from :: OperationType) (to :: OperationType) where
-   mapStrategy :: Monad m => ResolvingStrategy from e m a -> ResolvingStrategy to e m a
+   mapStrategy :: Monad m => Resolver from e m a -> Resolver to e m a
 
 instance MapStrategy o o where
   mapStrategy = id
 
 instance MapStrategy QUERY SUBSCRIPTION where
-  mapStrategy (ResolveQ x) = ResolveS $ pure <$> cleanEvents x
+  mapStrategy res = SubResolver [] (const res)
 
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
@@ -410,30 +351,3 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* ->
   , mutationResolver     :: mut (Resolver MUTATION event m)
   , subscriptionResolver :: sub (Resolver SUBSCRIPTION  event m)
   }
-
- -- EVENTS
-
-
--- Channel
-
-newtype Channel event = Channel {
-  _unChannel :: StreamChannel event
-}
-
-instance (Eq (StreamChannel event)) => Eq (Channel event) where
-  Channel x == Channel y = x == y
-
-class GQLChannel a where
-  type StreamChannel a :: *
-  streamChannels :: a -> [Channel a]
-
-instance GQLChannel () where
-  type StreamChannel () = ()
-  streamChannels _ = []
-
-instance GQLChannel (Event channel content)  where
-  type StreamChannel (Event channel content) = channel
-  streamChannels Event { channels } = map Channel channels
-
-data Event e c = Event
-  { channels :: [e], content  :: c}

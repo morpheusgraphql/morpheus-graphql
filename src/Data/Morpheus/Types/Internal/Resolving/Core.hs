@@ -1,12 +1,15 @@
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE DeriveFunctor         #-}
-{-# LANGUAGE DeriveAnyClass        #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE PolyKinds             #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE DeriveAnyClass             #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE PolyKinds                  #-}
+{-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Core
   ( GQLError(..)
@@ -16,13 +19,16 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , Result(..)
   , Failure(..)
   , ResultT(..)
-  , fromEither
   , unpackEvents
   , LibUpdater
   , resolveUpdates
   , mapEvent
   , cleanEvents
   , StatelessResT
+  , Event(..)
+  , Channel(..)
+  , GQLChannel(..)
+  , PushEvents(..)
   )
 where
 
@@ -62,6 +68,39 @@ type GQLErrors = [GQLError]
 type StatelessResT = ResultT () GQLError 'True
 type Validation = Result () GQLError 'True
 
+
+-- EVENTS
+class PushEvents e m where 
+  pushEvents :: [e] -> m () 
+
+-- Channel
+newtype Channel event = Channel {
+  _unChannel :: StreamChannel event
+}
+
+instance (Eq (StreamChannel event)) => Eq (Channel event) where
+  Channel x == Channel y = x == y
+
+class GQLChannel a where
+  type StreamChannel a :: *
+  streamChannels :: a -> [Channel a]
+
+instance GQLChannel () where
+  type StreamChannel () = ()
+  streamChannels _ = []
+
+instance GQLChannel (Event channel content)  where
+  type StreamChannel (Event channel content) = channel
+  streamChannels Event { channels } = map Channel channels
+
+data Event e c = Event
+  { channels :: [e], content  :: c}
+
+
+unpackEvents :: Result event c e a -> [event]
+unpackEvents Success { events } = events
+unpackEvents _                  = []
+
 --
 -- Result
 --
@@ -91,13 +130,8 @@ instance Failure Text Validation where
   failure text =
     Failure [GQLError { message = "INTERNAL ERROR: " <> text, locations = [] }]
 
-unpackEvents :: Result event c e a -> [event]
-unpackEvents Success { events } = events
-unpackEvents _                  = []
-
-fromEither :: Either [er] a -> Result ev er co a
-fromEither (Left  e) = Failure e
-fromEither (Right a) = Success a [] []
+instance PushEvents events (Result events err con) where
+  pushEvents events = Success { result = (), warnings = [], events } 
 
 
 -- ResultT
@@ -132,6 +166,9 @@ instance Applicative m => Failure String (ResultT ev GQLError con m) where
 
 instance Monad m => Failure GQLErrors (ResultT event GQLError concurency m) where
   failure = ResultT . pure . failure
+
+instance Applicative m => PushEvents events (ResultT events err con m) where
+  pushEvents = ResultT . pure . pushEvents
 
 
 cleanEvents

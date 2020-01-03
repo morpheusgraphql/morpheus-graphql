@@ -74,7 +74,6 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
                                                 , Resolver(..)
-                                                , toResponseRes
                                                 , GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
@@ -161,16 +160,12 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
     query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
     pure (schema, query)
   ----------------------------------------------------------
-  execOperator (schema, operation@Operation { operationType = Query }) =
-    toResponseRes (encodeQuery (schemaAPI schema) queryResolver operation)
-  execOperator (_, operation@Operation { operationType = Mutation }) =
-    toResponseRes (encodeMutation mutationResolver operation)
-  execOperator (_, operation@Operation { operationType = Subscription }) =
-    response
-   where
-    response =
-      toResponseRes (encodeSubscription subscriptionResolver operation)
-
+  execOperator (schema, operation) = execOperationBy (operationType operation) operation
+    where
+      execOperationBy Query = encodeQuery (schemaAPI schema) queryResolver
+      execOperationBy Mutation = encodeMutation mutationResolver
+      execOperationBy Subscription = encodeSubscription subscriptionResolver
+    
 statefulResolver
   :: (EventCon event, MonadIO m)
   => GQLState m event
