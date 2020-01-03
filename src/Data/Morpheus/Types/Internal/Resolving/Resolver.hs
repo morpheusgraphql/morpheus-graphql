@@ -86,6 +86,11 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 , ResultT(..)
                                                 , cleanEvents
                                                 , mapEvent
+                                                , Event(..)
+                                                , Channel(..)
+                                                , StreamChannel
+                                                , GQLChannel(..)
+                                                , PushEvents(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
@@ -208,6 +213,9 @@ instance (Monad m) => Failure Message (ContextRes e m) where
     selection <- ask
     lift $ failure [errorFromSelection selection message]
 
+instance (Monad m) => PushEvents e (ContextRes e m) where
+    pushEvents = ContextRes . lift . pushEvents 
+
 errorFromSelection :: (Name,ValidSelection) -> Message -> GQLError
 errorFromSelection (fieldName, Selection { selectionPosition })  = resolvingFailedError selectionPosition fieldName 
 
@@ -312,9 +320,6 @@ toResolver (Failure errors) _ = failure errors
 updateContext :: ContextRes e m a -> (Name,ValidSelection) ->  ContextRes e m a
 updateContext res = ContextRes . ReaderT . const . (runReaderT $ runContextRes res)
 
-pushEvents :: Monad m => [e] -> ContextRes e m ()
-pushEvents events = ContextRes $ lift $ ResultT $ pure $ Success { result = (), warnings = [], events } 
-
 resolving
   :: forall o e m value
    . Monad m
@@ -356,28 +361,3 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* ->
   , mutationResolver     :: mut (Resolver MUTATION event m)
   , subscriptionResolver :: sub (Resolver SUBSCRIPTION  event m)
   }
-
--- EVENTS
-
--- Channel
-newtype Channel event = Channel {
-  _unChannel :: StreamChannel event
-}
-
-instance (Eq (StreamChannel event)) => Eq (Channel event) where
-  Channel x == Channel y = x == y
-
-class GQLChannel a where
-  type StreamChannel a :: *
-  streamChannels :: a -> [Channel a]
-
-instance GQLChannel () where
-  type StreamChannel () = ()
-  streamChannels _ = []
-
-instance GQLChannel (Event channel content)  where
-  type StreamChannel (Event channel content) = channel
-  streamChannels Event { channels } = map Channel channels
-
-data Event e c = Event
-  { channels :: [e], content  :: c}
