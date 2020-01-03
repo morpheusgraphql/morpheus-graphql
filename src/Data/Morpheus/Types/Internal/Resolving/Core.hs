@@ -21,7 +21,6 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , LibUpdater
   , resolveUpdates
   , mapEvent
- -- , mapFailure
   , cleanEvents
   , StatelessResT
   )
