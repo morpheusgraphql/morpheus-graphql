@@ -19,7 +19,6 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , Result(..)
   , Failure(..)
   , ResultT(..)
-  , fromEither
   , unpackEvents
   , LibUpdater
   , resolveUpdates
@@ -133,10 +132,6 @@ instance Failure Text Validation where
 
 instance PushEvents events (Result events err con) where
   pushEvents events = Success { result = (), warnings = [], events } 
-
-fromEither :: Either [er] a -> Result ev er co a
-fromEither (Left  e) = Failure e
-fromEither (Right a) = Success a [] []
 
 
 -- ResultT
