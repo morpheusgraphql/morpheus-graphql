@@ -85,6 +85,8 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , resolve__typename
                                                 , resolveEnum
                                                 , FieldRes
+                                                , ResponseStream
+                                                , toResponseRes
                                                 )
 
 class Encode resolver o e (m :: * -> *) where
@@ -191,8 +193,10 @@ convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeNa
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
 
-type EncodeOperator o e m a
+type EncodeGenOperation o e m a
   = a -> ValidOperation -> ResolvingStrategy o e m ValidValue
+
+type EncodeOperation e m a = a -> ValidOperation -> ResponseStream e m ValidValue
 
 type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
 
@@ -224,8 +228,9 @@ encodeQuery
      , EncodeCon QUERY event m query
      )
   => schema (Resolver QUERY event m)
-  -> EncodeOperator QUERY event m query
+  -> EncodeOperation event m query
 encodeQuery schema = encodeOperationWith
+  (Proxy @QUERY)
   (Just $ objectResolvers
     (Proxy :: Proxy (CUSTOM (schema (Resolver QUERY event m))))
     schema
@@ -234,22 +239,28 @@ encodeQuery schema = encodeOperationWith
 encodeMutation
   :: forall event m mut
    . (Monad m, EncodeCon MUTATION event m mut)
-  => EncodeOperator MUTATION event m mut
-encodeMutation = encodeOperationWith Nothing
+  => EncodeOperation event m mut
+encodeMutation = encodeOperationWith (Proxy @MUTATION) Nothing
 
 encodeSubscription
   :: forall m event mut
    . (Monad m, EncodeCon SUBSCRIPTION event m mut)
-  => EncodeOperator SUBSCRIPTION event m mut
-encodeSubscription = encodeOperationWith Nothing
+  => EncodeOperation event m mut
+encodeSubscription = encodeOperationWith (Proxy @SUBSCRIPTION) Nothing
 
 encodeOperationWith
-  :: forall o e m a
+  :: forall (o :: OperationType) e m a
    . (Monad m, EncodeCon o e m a, LiftOperation o ResolvingStrategy)
-  => Maybe (DataResolver o e m)
-  -> EncodeOperator o e m a
-encodeOperationWith externalRes rootResolver Operation { operationSelection } =
-  resolveObject operationSelection (rootDataRes <> extDataRes)
+  => 
+     Proxy o
+  -> Maybe (DataResolver o e m)
+  -> EncodeOperation e m a
+encodeOperationWith _ externalRes rootResolver Operation { operationSelection ,operationName } =
+  toResponseRes (resolveObject operationSelection (rootDataRes <> extDataRes)) (
+    "root", Selection {
+      selectionContent = SelectionSet operationSelection
+    } 
+  )
  where
   rootDataRes = objectResolvers (Proxy :: Proxy (CUSTOM a)) rootResolver
   extDataRes  = fromMaybe (ObjectRes []) externalRes
