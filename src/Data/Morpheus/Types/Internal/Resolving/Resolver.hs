@@ -1,20 +1,21 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE InstanceSigs          #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE PolyKinds             #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TupleSections         #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE StandaloneDeriving    #-}
-{-# LANGUAGE DeriveFunctor         #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE InstanceSigs               #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE PolyKinds                  #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TupleSections              #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE ConstraintKinds            #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Resolver
   ( Event(..)
@@ -236,23 +237,14 @@ toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
 
 
 newtype ContextRes event m a = ContextRes {
-  unContextRes :: (Name,ValidSelection) -> ResultT event GQLError 'True m a
-} deriving (Functor)
-
-instance Monad m => Applicative (ContextRes e m) where
-  pure = ContextRes . const . pure
-  (ContextRes f) <*> (ContextRes res) = ContextRes recX
-    where recX event = f event <*> res event
-
-instance Monad m => Monad (ContextRes e m) where
-  (ContextRes x) >>= next = ContextRes recX
-    where recX event = x event >>= (\v -> v event) . unContextRes . next
+  unContextRes :: ReaderT (Name,ValidSelection) (ResultT event GQLError 'True m) a
+} deriving (Functor, Applicative, Monad)
 
 instance MonadTrans (ContextRes e) where
-  lift = ContextRes . const . lift
+  lift = ContextRes . lift . lift
 
 instance (Monad m) => Failure Message (ContextRes e m) where
-  failure message = ContextRes $ \sel -> ResultT $ pure $ failure [errorFromSelection sel message]
+  failure message = ContextRes $ ReaderT $ \sel -> ResultT $ pure $ failure [errorFromSelection sel message]
 
 errorFromSelection :: (Name,ValidSelection) -> Message -> GQLError
 errorFromSelection (fieldName, Selection { selectionPosition })  = resolvingFailedError selectionPosition fieldName 
@@ -319,11 +311,11 @@ instance MonadTrans (Resolver MUTATION e) where
 -- LiftOperation
 instance LiftOperation QUERY Resolver where
   type ResError Resolver = String
-  liftOperation res = QueryResolver $ ContextRes $ \selection -> ResultT $ fmap (fromEitherSingle selection) res
+  liftOperation res = QueryResolver $ ContextRes $ ReaderT $ \selection -> ResultT $ fmap (fromEitherSingle selection) res
 
 instance LiftOperation MUTATION Resolver where
   type ResError Resolver = String
-  liftOperation res = MutResolver $ ContextRes $ \selection -> ResultT $ (fromEitherSingle selection) <$> (fmap (fmap ([], )) res)
+  liftOperation res = MutResolver $ ContextRes $ ReaderT $ \selection -> ResultT $ (fromEitherSingle selection) <$> (fmap (fmap ([], )) res)
 
 instance LiftOperation SUBSCRIPTION Resolver where
   type ResError Resolver = String
@@ -364,10 +356,10 @@ resolving encode gResolver selection = _resolve gResolver
   _encode = (`encode` selection)
   -------------------------------------------------------------------
   _resolve (QueryResolver res) =
-    ResolveQ $ unContextRes res selection >>= unResolveQ . _encode
+    ResolveQ $ (runReaderT $ unContextRes res) selection >>= unResolveQ . _encode
   ---------------------------------------------------------------------------------------------------------------------------------------
   _resolve (MutResolver res) =
-    ResolveM $ replace (unContextRes res selection) >>= unResolveM . _encode
+    ResolveM $ replace ( (runReaderT $ unContextRes res) selection) >>= unResolveM . _encode
    where
     replace (ResultT mx) = ResultT $ do
       value <- mx
@@ -384,7 +376,7 @@ resolving encode gResolver selection = _resolve gResolver
    where
     eventResolver :: e -> StatelessResT m ValidValue
     eventResolver event =
-       unContextRes (unQueryResolver $ res event) selection >>= unPureSub . _encode
+       (runReaderT . unContextRes) (unQueryResolver $ res event) selection >>= unPureSub . _encode
      where
       unPureSub
         :: Monad m
