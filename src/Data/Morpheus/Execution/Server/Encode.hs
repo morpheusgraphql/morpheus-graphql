@@ -251,10 +251,14 @@ encodeOperationWith
      Proxy o
   -> Maybe (DataResolver o e m)
   -> EncodeOperation e m a
-encodeOperationWith _ externalRes rootResolver Operation { operationSelection ,operationName } =
+encodeOperationWith _ externalRes rootResolver Operation { operationSelection ,operationPosition } =
   toResponseRes (resolveObject operationSelection (rootDataRes <> extDataRes)) (
-    "root", Selection {
-      selectionContent = SelectionSet operationSelection
+    "Root"
+    , Selection {
+        selectionArguments = []
+        , selectionPosition = operationPosition
+        , selectionAlias = Nothing
+        , selectionContent = SelectionSet operationSelection
     } 
   )
  where
