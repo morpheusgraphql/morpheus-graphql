@@ -22,7 +22,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , GQLRootResolver(..)
   , UnSubResolver
   , Resolver(..)
-  , ResolvingStrategy(..)
+  , ResolvingStrategy
   , MapStrategy(..)
   , LiftOperation
   , resolveObject
@@ -126,33 +126,6 @@ data ResolvingStrategy  (o::OperationType) event (m:: * -> *) value where
   ResolveM ::{ unResolveM :: ResultT event GQLError 'True m value } -> ResolvingStrategy MUTATION event m  value
   ResolveS ::{ unResolveS :: ResultT (Channel event) GQLError 'True m (RecResolver m event value) } -> ResolvingStrategy SUBSCRIPTION event m value
 
-
-
-deriving instance (Functor m) => Functor (ResolvingStrategy o e m)
-
--- Applicative
-instance (LiftOperation o ResolvingStrategy, Monad m) => Applicative (ResolvingStrategy o e m) where
-  pure = liftOperation . pure . pure
-  -------------------------------------
-  (ResolveQ f) <*> (ResolveQ res) = ResolveQ (f <*> res)
-  ------------------------------------------------------------------------
-  (ResolveM f) <*> (ResolveM res) = ResolveM (f <*> res)
-  --------------------------------------------------------------
-  (ResolveS f) <*> (ResolveS res) = ResolveS $ (<*>) <$> f <*> res
-
--- LiftOperation
-instance LiftOperation QUERY ResolvingStrategy where
-  type ResError ResolvingStrategy = GQLErrors
-  liftOperation = ResolveQ . ResultT . fmap fromEither
-
-instance LiftOperation MUTATION ResolvingStrategy where
-  type ResError ResolvingStrategy = GQLErrors
-  liftOperation = ResolveM . ResultT . fmap fromEither
-
-instance LiftOperation SUBSCRIPTION ResolvingStrategy where
-  type ResError ResolvingStrategy = GQLErrors
-  liftOperation = ResolveS . ResultT . fmap (fromEither . fmap pure)
-
  -- Failure
 instance (LiftOperation o ResolvingStrategy, Monad m) => Failure GQLErrors (ResolvingStrategy o e m) where
   failure = liftOperation . pure . Left
@@ -226,8 +199,13 @@ toResponseRes
   => ResolvingStrategy o event m ValidValue
   -> (Key, ValidSelection)
   -> ResponseStream event m ValidValue
-toResponseRes (QueryResolver resT) sel = cleanEvents $ (runReaderT $ unContextRes resT) sel
--- toResponseRes (ResolveM resT) = mapEvent Publish resT
+toResponseRes (QueryResolver resT) sel = cleanEvents $ (runReaderT $ runContextRes resT) sel
+toResponseRes (MutResolver resT) sel = mapEvent Publish $ runReaderT ctx sel 
+  where
+    ctx = runContextRes $ do
+      (events, value) <- resT
+      pushEvents events
+      return value
 -- toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
 --  where
 --   handleActions (Failure gqlError                ) = Failure gqlError
@@ -241,7 +219,7 @@ toResponseRes (QueryResolver resT) sel = cleanEvents $ (runReaderT $ unContextRe
 --       renderResponse <$> runResultT (runReaderT subRes event)
 
 newtype ContextRes event m a = ContextRes {
-  unContextRes :: ReaderT (Name,ValidSelection) (ResultT event GQLError 'True m) a
+  runContextRes :: ReaderT (Name,ValidSelection) (ResultT event GQLError 'True m) a
 } deriving (Functor, Applicative, Monad)
 
 instance MonadTrans (ContextRes e) where
@@ -354,7 +332,10 @@ toResolver Success { result } f = f result
 toResolver (Failure errors) _ = failure errors
 
 updateContext :: ContextRes e m a -> (Name,ValidSelection) ->  ContextRes e m a
-updateContext res = ContextRes . ReaderT . const . (runReaderT $ unContextRes res)
+updateContext res = ContextRes . ReaderT . const . (runReaderT $ runContextRes res)
+
+pushEvents :: Monad m => [e] -> ContextRes e m ()
+pushEvents events = ContextRes $ lift $ ResultT $ pure $ Success { result = (), warnings = [], events } 
 
 resolving
   :: forall o e m value
@@ -369,18 +350,12 @@ resolving encode gResolver selection = _resolve gResolver
   -------------------------------------------------------------------
   _resolve (QueryResolver res) = QueryResolver $ do 
     value <- updateContext res selection 
-    unQueryResolver $ encode value selection
- 
+    unQueryResolver $ encode value selection 
   ---------------------------------------------------------------------------------------------------------------------------------------
-  -- _resolve (MutResolver res) =
-  --   ResolveM $ replace ( (runReaderT $ unContextRes res) selection) >>= unResolveM . _encode
-  --  where
-  --   replace (ResultT mx) = ResultT $ do
-  --     value <- mx
-  --     pure $ case value of
-  --       Success { warnings, events, result = (events2, result) } ->
-  --         Success { result, warnings, events = events <> events2 }
-  --       Failure x -> Failure x
+  _resolve (MutResolver res) = MutResolver $ do
+       (events, value) <- updateContext res selection
+       pushEvents events
+       unMutResolver $ encode value selection 
   -- --------------------------------------------------------------------------------------------------------------------------------
   -- _resolve (SubResolver subChannels res) = ResolveS $ ResultT $ pure $ Success
   --   { events   = map Channel subChannels
