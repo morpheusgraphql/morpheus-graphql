@@ -227,8 +227,8 @@ instance MonadTrans (ContextRes e) where
 
 instance (Monad m) => Failure Message (ContextRes e m) where
   failure message = ContextRes $ do 
-    sel <- ask
-    lift $ failure [errorFromSelection sel message]
+    selection <- ask
+    lift $ failure [errorFromSelection selection message]
 
 errorFromSelection :: (Name,ValidSelection) -> Message -> GQLError
 errorFromSelection (fieldName, Selection { selectionPosition })  = resolvingFailedError selectionPosition fieldName 
@@ -343,36 +343,26 @@ resolving
   => (value -> (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue)
   -> Resolver o e m value
   -> (Key, ValidSelection)
-  -> ResolvingStrategy o e m ValidValue
+  -> Resolver o e m ValidValue
 resolving encode gResolver selection = _resolve gResolver
  where
-  _encode = (`encode` selection)
   -------------------------------------------------------------------
   _resolve (QueryResolver res) = QueryResolver $ do 
     value <- updateContext res selection 
     unQueryResolver $ encode value selection 
-  ---------------------------------------------------------------------------------------------------------------------------------------
+  ---------------------------------------------------------------------
   _resolve (MutResolver res) = MutResolver $ do
        (events, value) <- updateContext res selection
        pushEvents events
-       unMutResolver $ encode value selection 
-  -- --------------------------------------------------------------------------------------------------------------------------------
-  -- _resolve (SubResolver subChannels res) = ResolveS $ ResultT $ pure $ Success
-  --   { events   = map Channel subChannels
-  --   , result   = ReaderT eventResolver
-  --   , warnings = []
-  --   }
-  --  where
-  --   eventResolver :: e -> StatelessResT m ValidValue
-  --   eventResolver event =
-  --      (runReaderT . unContextRes) (unQueryResolver $ res event) selection >>= unPureSub . _encode
-  --    where
-  --     unPureSub
-  --       :: Monad m
-  --       => ResolvingStrategy SUBSCRIPTION e m ValidValue
-  --       -> StatelessResT m ValidValue
-  --     unPureSub (ResolveS x) = cleanEvents x >>= passEvent
-  --       where passEvent (ReaderT f) = f event
+       unMutResolver $ encode value selection
+  --------------------------------------------------------------------
+  _resolve (SubResolver subChannels res) = do 
+    SubResolver {
+      subChannels,
+      subResolver = \events -> do
+          value <- QueryResolver $ updateContext (unQueryResolver $ res events) selection
+          (subResolver $ encode value selection)  events
+      }
 
 -- map Resolving strategies 
 class MapStrategy (from :: OperationType) (to :: OperationType) where
