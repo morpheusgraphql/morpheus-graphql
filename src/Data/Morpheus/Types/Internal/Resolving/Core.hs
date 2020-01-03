@@ -130,6 +130,10 @@ instance Applicative m => Failure String (ResultT ev GQLError con m) where
   failure x =
     ResultT $ pure $ Failure [GQLError { message = pack x, locations = [] }]
 
+instance Monad m => Failure GQLErrors (ResultT event GQLError concurency m) where
+  failure = ResultT . pure . failure
+
+
 cleanEvents
   :: Functor m
   => ResultT e1 error concurency m a

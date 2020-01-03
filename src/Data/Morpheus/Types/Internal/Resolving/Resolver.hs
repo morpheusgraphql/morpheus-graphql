@@ -52,7 +52,7 @@ import           Data.Semigroup                 ( (<>)
 import           Data.Text                      ( unpack
                                                 , pack
                                                 )
-import           Control.Monad.Trans.Reader     (ReaderT(..))
+import           Control.Monad.Trans.Reader     (ReaderT(..), ask)
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal   ( internalResolvingError )
@@ -244,7 +244,9 @@ instance MonadTrans (ContextRes e) where
   lift = ContextRes . lift . lift
 
 instance (Monad m) => Failure Message (ContextRes e m) where
-  failure message = ContextRes $ ReaderT $ \sel -> ResultT $ pure $ failure [errorFromSelection sel message]
+  failure message = ContextRes $ do 
+    sel <- ask
+    lift $ failure [errorFromSelection sel message]
 
 errorFromSelection :: (Name,ValidSelection) -> Message -> GQLError
 errorFromSelection (fieldName, Selection { selectionPosition })  = resolvingFailedError selectionPosition fieldName 
@@ -311,11 +313,15 @@ instance MonadTrans (Resolver MUTATION e) where
 -- LiftOperation
 instance LiftOperation QUERY Resolver where
   type ResError Resolver = String
-  liftOperation res = QueryResolver $ ContextRes $ ReaderT $ \selection -> ResultT $ fmap (fromEitherSingle selection) res
+  liftOperation res = QueryResolver $ ContextRes $ do 
+    selection <- ask
+    lift $ ResultT $ fmap (fromEitherSingle selection) res
 
 instance LiftOperation MUTATION Resolver where
   type ResError Resolver = String
-  liftOperation res = MutResolver $ ContextRes $ ReaderT $ \selection -> ResultT $ (fromEitherSingle selection) <$> (fmap (fmap ([], )) res)
+  liftOperation res = MutResolver $ ContextRes $ do 
+    selection <- ask
+    lift $ ResultT $ (fromEitherSingle selection) <$> (fmap (fmap ([], )) res)
 
 instance LiftOperation SUBSCRIPTION Resolver where
   type ResError Resolver = String
