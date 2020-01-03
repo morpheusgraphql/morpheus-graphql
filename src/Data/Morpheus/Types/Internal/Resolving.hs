@@ -3,7 +3,6 @@ module Data.Morpheus.Types.Internal.Resolving
     , GQLRootResolver(..)
     , UnSubResolver
     , Resolver(..)
-    , ResolvingStrategy(..)
     , MapStrategy(..)
     , LiftOperation
     , resolveObject

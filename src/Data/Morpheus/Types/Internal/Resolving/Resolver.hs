@@ -22,7 +22,6 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , GQLRootResolver(..)
   , UnSubResolver
   , Resolver(..)
-  , ResolvingStrategy
   , MapStrategy(..)
   , LiftOperation
   , resolveObject
@@ -110,8 +109,6 @@ data ResponseEvent m event
 
 type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
 
-type ResolvingStrategy = Resolver
-
 -- DataResolver
 data DataResolver o e m =
     EnumRes  Name
@@ -125,20 +122,20 @@ instance Semigroup (DataResolver o e m) where
   _           <> _           = InvalidRes "can't merge: incompatible resolvers"
 
 withObject
-  :: (LiftOperation o ResolvingStrategy, Monad m)
-  => (ValidSelectionSet -> ResolvingStrategy o e m value)
+  :: (LiftOperation o Resolver, Monad m)
+  => (ValidSelectionSet -> Resolver o e m value)
   -> (Key, ValidSelection)
-  -> ResolvingStrategy o e m value
+  -> Resolver o e m value
 withObject f (_, Selection { selectionContent = SelectionSet selection }) =
   f selection
 withObject _ (key, Selection { selectionPosition }) =
   failure (subfieldsNotSelected key "" selectionPosition)
 
 resolveObject
-  :: (Monad m, LiftOperation o ResolvingStrategy)
+  :: (Monad m, LiftOperation o Resolver)
   => ValidSelectionSet
   -> DataResolver o e m
-  -> ResolvingStrategy o e m ValidValue
+  -> Resolver o e m ValidValue
 resolveObject selectionSet (ObjectRes resolvers) =
   gqlObject <$> traverse selectResolver selectionSet
  where
@@ -151,11 +148,11 @@ resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 
 resolveEnum
-  :: (Monad m, LiftOperation o ResolvingStrategy)
+  :: (Monad m, LiftOperation o Resolver)
   => Name
   -> Name
   -> ValidSelectionRec
-  -> ResolvingStrategy o e m ValidValue
+  -> Resolver o e m ValidValue
 resolveEnum _        enum SelectionField              = pure $ gqlString enum
 resolveEnum typeName enum (UnionSelection selections) = resolveObject
   currentSelection
@@ -171,14 +168,14 @@ resolveEnum _ _ _ =
   failure $ internalResolvingError "wrong selection on enum value"
 
 resolve__typename
-  :: (Monad m, LiftOperation o ResolvingStrategy)
+  :: (Monad m, LiftOperation o Resolver)
   => Name
-  -> (Key, (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue)
+  -> (Key, (Key, ValidSelection) -> Resolver o e m ValidValue)
 resolve__typename name = ("__typename", const $ pure $ gqlString name)
 
 toResponseRes
   :: Monad m
-  => ResolvingStrategy o event m ValidValue
+  => Resolver o event m ValidValue
   -> (Key, ValidSelection)
   -> ResponseStream event m ValidValue
 toResponseRes (QueryResolver resT) sel = cleanEvents $ (runReaderT $ runContextRes resT) sel
@@ -302,7 +299,7 @@ type instance UnSubResolver (Resolver SUBSCRIPTION m e) = Resolver QUERY m e
 
 -- RESOLVING
 type FieldRes o e m
-  = (Key, (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue)
+  = (Key, (Key, ValidSelection) -> Resolver o e m ValidValue)
 
 toResolver
   :: (LiftOperation o Resolver, Monad m)
@@ -321,7 +318,7 @@ pushEvents events = ContextRes $ lift $ ResultT $ pure $ Success { result = (), 
 resolving
   :: forall o e m value
    . Monad m
-  => (value -> (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue)
+  => (value -> (Key, ValidSelection) -> Resolver o e m ValidValue)
   -> Resolver o e m value
   -> (Key, ValidSelection)
   -> Resolver o e m ValidValue 
@@ -342,7 +339,7 @@ resolving encode (SubResolver subChannels res) selection = do
 
 -- map Resolving strategies 
 class MapStrategy (from :: OperationType) (to :: OperationType) where
-   mapStrategy :: Monad m => ResolvingStrategy from e m a -> ResolvingStrategy to e m a
+   mapStrategy :: Monad m => Resolver from e m a -> Resolver to e m a
 
 instance MapStrategy o o where
   mapStrategy = id

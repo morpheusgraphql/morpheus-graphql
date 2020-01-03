@@ -76,7 +76,6 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Resolver(..)
                                                 , resolving
                                                 , toResolver
-                                                , ResolvingStrategy(..)
                                                 , withObject
                                                 , Validation
                                                 , failure
@@ -90,13 +89,13 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 )
 
 class Encode resolver o e (m :: * -> *) where
-  encode :: resolver -> (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue
+  encode :: resolver -> (Key, ValidSelection) -> Resolver o e m ValidValue
 
-instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m , LiftOperation o ResolvingStrategy) => Encode a o e m where
+instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m , LiftOperation o Resolver) => Encode a o e m where
   encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
 
 -- MAYBE
-instance (Monad m , LiftOperation o ResolvingStrategy,Encode a o e m) => Encode (Maybe a) o e m where
+instance (Monad m , LiftOperation o Resolver,Encode a o e m) => Encode (Maybe a) o e m where
   encode = maybe (const $ pure gqlNull) encode
 
 --  Tuple  (a,b)
@@ -113,7 +112,7 @@ instance (Eq k, Monad m,LiftOperation o Resolver, Encode (MapKind k v (Resolver 
     encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver o e m))
 
 -- LIST []
-instance (Monad m, Encode a o e m, LiftOperation o ResolvingStrategy) => Encode [a] o e m where
+instance (Monad m, Encode a o e m, LiftOperation o Resolver) => Encode [a] o e m where
   encode list query = gqlList <$> traverse (`encode` query) list
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
@@ -130,7 +129,7 @@ instance (Monad m,LiftOperation fo Resolver, MapStrategy fo o, Encode b fo e m) 
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
-  encodeKind :: LiftOperation o ResolvingStrategy =>  VContext kind a -> (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue
+  encodeKind :: LiftOperation o Resolver =>  VContext kind a -> (Key, ValidSelection) -> Resolver o e m ValidValue
 
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
@@ -169,7 +168,7 @@ instance (Monad m,Generic a, GQLType a,ExploreResolvers (CUSTOM a) a o e m) => E
 
 
 convertNode
-  :: (Monad m, LiftOperation o ResolvingStrategy)
+  :: (Monad m, LiftOperation o Resolver)
   => ResNode o e m
   -> DataResolver o e m
 convertNode ResNode { resKind = REP_OBJECT, resFields } =
@@ -193,9 +192,6 @@ convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeNa
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
 
-type EncodeGenOperation o e m a
-  = a -> ValidOperation -> ResolvingStrategy o e m ValidValue
-
 type EncodeOperation e m a = a -> ValidOperation -> ResponseStream e m ValidValue
 
 type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
@@ -216,7 +212,7 @@ objectResolvers isCustom value = case exploreResolvers isCustom value of
 class ExploreResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
   exploreResolvers :: Proxy custom -> a -> DataResolver o e m
 
-instance (Generic a,Monad m,LiftOperation o ResolvingStrategy,TypeRep (Rep a) o e m ) => ExploreResolvers 'False a o e m where
+instance (Generic a,Monad m,LiftOperation o Resolver,TypeRep (Rep a) o e m ) => ExploreResolvers 'False a o e m where
   exploreResolvers _ value = convertNode
     $ typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
 
@@ -250,7 +246,7 @@ encodeSubscription = encodeOperationWith (Proxy @SUBSCRIPTION) Nothing
 
 encodeOperationWith
   :: forall (o :: OperationType) e m a
-   . (Monad m, EncodeCon o e m a, LiftOperation o ResolvingStrategy)
+   . (Monad m, EncodeCon o e m a, LiftOperation o Resolver)
   => 
      Proxy o
   -> Maybe (DataResolver o e m)
@@ -288,7 +284,7 @@ data ResNode o e m = ResNode {
 data FieldNode o e m = FieldNode {
     fieldTypeName :: Name,
     fieldSelName :: Name,
-    fieldResolver  :: (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue,
+    fieldResolver  :: (Key, ValidSelection) -> Resolver o e m ValidValue,
     isFieldObject  :: Bool
   }
 
