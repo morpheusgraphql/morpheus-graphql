@@ -85,10 +85,8 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 , Result(..)
                                                 , Failure(..)
                                                 , ResultT(..)
-                                                , fromEither
                                                 , cleanEvents
                                                 , mapEvent
-                                                , StatelessResT
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
@@ -112,24 +110,8 @@ data ResponseEvent m event
 
 type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
 
-
-----------------------------------------------------------------------------------------
--- Recursive Resolver
-type RecResolver m a b = ReaderT a (StatelessResT m) b
-
 type ResolvingStrategy = Resolver
 
-{-
---- GraphQLT
-data ResolvingStrategy  (o::OperationType) event (m:: * -> *) value where
-  ResolveQ ::{ unResolveQ :: ResultT () GQLError 'True m value } -> ResolvingStrategy QUERY event m  value
-  ResolveM ::{ unResolveM :: ResultT event GQLError 'True m value } -> ResolvingStrategy MUTATION event m  value
-  ResolveS ::{ unResolveS :: ResultT (Channel event) GQLError 'True m (RecResolver m event value) } -> ResolvingStrategy SUBSCRIPTION event m value
-
- -- Failure
-instance (LiftOperation o ResolvingStrategy, Monad m) => Failure GQLErrors (ResolvingStrategy o e m) where
-  failure = liftOperation . pure . Left
--}
 -- DataResolver
 data DataResolver o e m =
     EnumRes  Name
@@ -206,17 +188,16 @@ toResponseRes (MutResolver resT) sel = mapEvent Publish $ runReaderT ctx sel
       (events, value) <- resT
       pushEvents events
       return value
--- toResponseRes (ResolveS resT) = ResultT $ handleActions <$> runResultT resT
---  where
---   handleActions (Failure gqlError                ) = Failure gqlError
---   handleActions (Success subRes warnings channels) = Success
---     { result   = gqlNull
---     , warnings
---     , events   = [Subscribe $ Event channels eventResolver]
---     }
---    where
---     eventResolver event =
---       renderResponse <$> runResultT (runReaderT subRes event)
+toResponseRes (SubResolver channels subRes) sel = ResultT $ pure $ Success
+    { result   = gqlNull
+    , warnings = []
+    , events   = [Subscribe $ Event (map Channel channels) eventResolver]
+    }
+   where
+    -- eventResolver :: event -> ResultT event m ValidValue
+    eventResolver event = do 
+      value <- runResultT $ runReaderT (runContextRes $ unQueryResolver (subRes event)) sel
+      pure $ renderResponse value
 
 newtype ContextRes event m a = ContextRes {
   runContextRes :: ReaderT (Name,ValidSelection) (ResultT event GQLError 'True m) a
@@ -343,26 +324,21 @@ resolving
   => (value -> (Key, ValidSelection) -> ResolvingStrategy o e m ValidValue)
   -> Resolver o e m value
   -> (Key, ValidSelection)
-  -> Resolver o e m ValidValue
-resolving encode gResolver selection = _resolve gResolver
- where
-  -------------------------------------------------------------------
-  _resolve (QueryResolver res) = QueryResolver $ do 
-    value <- updateContext res selection 
-    unQueryResolver $ encode value selection 
-  ---------------------------------------------------------------------
-  _resolve (MutResolver res) = MutResolver $ do
-       (events, value) <- updateContext res selection
-       pushEvents events
-       unMutResolver $ encode value selection
-  --------------------------------------------------------------------
-  _resolve (SubResolver subChannels res) = do 
+  -> Resolver o e m ValidValue 
+resolving encode (QueryResolver res) selection = QueryResolver $ do 
+    value <- updateContext res selection
+    unQueryResolver $ encode value selection
+resolving encode (MutResolver res) selection = MutResolver $ do
+    (events, value) <- updateContext res selection
+    pushEvents events
+    unMutResolver $ encode value selection
+resolving encode (SubResolver subChannels res) selection = do 
     SubResolver {
       subChannels,
       subResolver = \events -> do
-          value <- QueryResolver $ updateContext (unQueryResolver $ res events) selection
-          (subResolver $ encode value selection)  events
-      }
+        value <- QueryResolver $ updateContext (unQueryResolver $ res events) selection
+        (subResolver $ encode value selection)  events
+    }
 
 -- map Resolving strategies 
 class MapStrategy (from :: OperationType) (to :: OperationType) where
@@ -372,7 +348,7 @@ instance MapStrategy o o where
   mapStrategy = id
 
 instance MapStrategy QUERY SUBSCRIPTION where
---  mapStrategy (ResolveQ x) = ResolveS $ pure <$> cleanEvents x
+  mapStrategy res = SubResolver [] (const res)
 
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
