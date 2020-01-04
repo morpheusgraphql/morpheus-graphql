@@ -92,8 +92,10 @@ publish = pushEvents
 
 subscribe :: Monad m => [StreamChannel e] -> Resolver QUERY e m (e -> Resolver QUERY e m a) -> Resolver SUBSCRIPTION e m a
 subscribe ch res = SubResolver ch $ \event -> do 
-          subRes <- res   
-          subRes event
+  -- TODO: failing `res` must terminate subscription immediately,
+  -- so SubResolver must change signature to : SubResolver { runSubResolver :: ( [StreamChannel e] , Resolver QUERY e m (e -> Resolver QUERY e m a)) }
+  subRes <- res
+  subRes event
 
 -- resolves constant value on any argument
 constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
