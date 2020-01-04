@@ -33,6 +33,7 @@ module Data.Morpheus.Types
   , failRes
   , WithOperation
   , publish
+  , subscribe
   )
 where
 
@@ -89,8 +90,10 @@ type ResolveS e m a = SubRes e m (a (Res e m))
 publish :: Monad m => [e] -> Resolver MUTATION e m ()
 publish = pushEvents
 
-subscribe :: [StreamChannel e] -> (e -> Resolver QUERY e m a) -> Resolver SUBSCRIPTION e m a
-subscribe ch res = SubResolver ch res
+subscribe :: Monad m => [StreamChannel e] -> Resolver QUERY e m (e -> Resolver QUERY e m a) -> Resolver SUBSCRIPTION e m a
+subscribe ch res = SubResolver ch $ \event -> do 
+          subRes <- res   
+          subRes event
 
 -- resolves constant value on any argument
 constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
