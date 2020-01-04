@@ -41,7 +41,7 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , GQLScalar(..)
                                                 , GQLType(..)
                                                 , ID
-                                                , Resolver(..)
+                                                , Resolver
                                                 , ScalarValue(..)
                                                 , constRes
                                                 , IORes
@@ -51,6 +51,9 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , ResolveM
                                                 , ResolveS
                                                 , failRes
+                                                , publish
+                                                , subscribe
+                                                , WithOperation
                                                 )
 
 newtype A a = A { wrappedA :: a } 
@@ -142,29 +145,36 @@ resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
 
 -- Resolve MUTATIONS
 -- 
--- Mutation Wit Event Triggering : sends events to subscription  
+-- Mutation With Event Triggering : sends events to subscription  
 resolveCreateUser :: ResolveM EVENT IO User
-resolveCreateUser = MutResolver $ do
-  value <- liftEither setDBUser
-  pure ([userUpdate], value)
+resolveCreateUser = do
+  requireAuthorized
+  publish [userUpdate]
+  liftEither setDBUser
 
--- Mutation Wit Event Triggering : sends events to subscription  
+-- Mutation With Event Triggering : sends events to subscription  
 resolveCreateAdress :: ResolveM EVENT IO Address
-resolveCreateAdress = MutResolver $ do
-  value <- lift setDBAddress
-  pure ([addressUpdate], value)
+resolveCreateAdress = do
+  requireAuthorized
+  publish [addressUpdate]
+  lift setDBAddress
 
 -- Mutation Without Event Triggering  
 resolveSetAdress :: ResolveM EVENT IO Address
 resolveSetAdress = lift setDBAddress
 
+
 -- Resolve SUBSCRIPTION
 resolveNewUser :: ResolveS EVENT IO User
-resolveNewUser = SubResolver { subChannels = [USER], subResolver }
+resolveNewUser = subscribe [USER] $ do 
+    requireAuthorized 
+    pure subResolver 
   where subResolver (Event _ content) = liftEither (getDBUser content)
 
 resolveNewAdress :: ResolveS EVENT IO Address
-resolveNewAdress = SubResolver { subChannels = [ADDRESS], subResolver }
+resolveNewAdress = subscribe [ADDRESS] $ do
+    requireAuthorized
+    pure subResolver
   where subResolver (Event _ content) = lift (getDBAddress content)
 
 -- Events ----------------------------------------------------------------
@@ -247,3 +257,7 @@ dbInt = pure 11
 
 dbPerson :: IO Person
 dbPerson = pure Person { name = "George", email = "George@email.com" }
+
+
+requireAuthorized :: WithOperation o => Resolver o e IO ()
+requireAuthorized = pure ()
