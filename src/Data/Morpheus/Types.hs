@@ -65,6 +65,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Failure
                                                 , pushEvents
                                                 , PushEvents(..)
+                                                , StreamChannel
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
@@ -85,8 +86,11 @@ type ResolveM e m a = MutRes e m (a (MutRes e m))
 type ResolveS e m a = SubRes e m (a (Res e m))
 
 
-publish :: PushEvents e m => [e] -> m ()
+publish :: Monad m => [e] -> Resolver MUTATION e m ()
 publish = pushEvents
+
+subscribe :: [StreamChannel e] -> (e -> Resolver QUERY e m a) -> Resolver SUBSCRIPTION e m a
+subscribe ch res = SubResolver ch res
 
 -- resolves constant value on any argument
 constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
