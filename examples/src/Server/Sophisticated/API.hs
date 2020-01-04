@@ -51,6 +51,7 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , ResolveM
                                                 , ResolveS
                                                 , failRes
+                                                , publish
                                                 )
 
 newtype A a = A { wrappedA :: a } 
@@ -146,7 +147,8 @@ resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
 resolveCreateUser :: ResolveM EVENT IO User
 resolveCreateUser = MutResolver $ do
   value <- liftEither setDBUser
-  pure ([userUpdate], value)
+  publish [userUpdate]
+  pure ([], value)
 
 -- Mutation Wit Event Triggering : sends events to subscription  
 resolveCreateAdress :: ResolveM EVENT IO Address

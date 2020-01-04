@@ -32,6 +32,7 @@ module Data.Morpheus.Types
   , ResolveS
   , failRes
   , WithOperation
+  , publish
   )
 where
 
@@ -62,6 +63,8 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , lift
                                                 , failure
                                                 , Failure
+                                                , pushEvents
+                                                , PushEvents(..)
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
@@ -80,6 +83,10 @@ type IOSubRes e = SubRes e IO
 type ResolveQ e m a = Res e m (a (Res e m))
 type ResolveM e m a = MutRes e m (a (MutRes e m))
 type ResolveS e m a = SubRes e m (a (Res e m))
+
+
+publish :: PushEvents e m => [e] -> m ()
+publish = pushEvents
 
 -- resolves constant value on any argument
 constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b

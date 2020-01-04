@@ -31,6 +31,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , DataResolver(..)
     , FieldRes
     , WithOperation
+    , PushEvents(..)
     )
 where
 
