@@ -41,7 +41,7 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , GQLScalar(..)
                                                 , GQLType(..)
                                                 , ID
-                                                , Resolver(..)
+                                                , Resolver(SubResolver,subResolver,subChannels)
                                                 , ScalarValue(..)
                                                 , constRes
                                                 , IORes

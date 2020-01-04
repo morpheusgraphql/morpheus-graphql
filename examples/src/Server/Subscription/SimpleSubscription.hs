@@ -7,8 +7,9 @@
 module Server.Subscription.SimpleSubscription where
 
 import           Data.Morpheus.Types            ( Event(..)
-                                                , Resolver(..)
+                                                , Resolver(SubResolver)
                                                 , GQLRootResolver(..)
+                                                , publish
                                                 )
 import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
@@ -50,8 +51,9 @@ rootResolver = GQLRootResolver
   }
  where
     -- TODO: resolver $ dbDeity "" Nothing
-  createDeity = MutResolver $ pure
-    ([Event { channels = [ChannelA], content = ContentA 1 }], someDeity)
+  createDeity = do
+    publish [Event { channels = [ChannelA], content = ContentA 1 }]
+    pure someDeity
   newDeity = SubResolver [ChannelA] subResolver
    where
     subResolver (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
