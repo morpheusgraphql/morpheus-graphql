@@ -135,7 +135,7 @@ alwaysFail :: IO (Either String a)
 alwaysFail = pure $ Left "fail example"
 
 resolveUser :: ResolveQ EVENT IO User
-resolveUser = QueryResolver $ liftEither (getDBUser (Content 2))
+resolveUser = liftEither (getDBUser (Content 2))
 
 resolveAnimal :: QueryAnimalArgs -> IORes EVENT Text
 resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
