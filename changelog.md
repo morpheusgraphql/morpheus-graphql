@@ -1,10 +1,38 @@
 # Changelog
 
+## 0.9.2 - *.*.2020
+
+### New features
+
+- exposed `publish` for mutation resolvers, now you can write
+
+  ```hs
+  resolveCreateUser :: ResolveM EVENT IO User
+  resolveCreateUser = do
+      requireAuthorized
+      publish [userUpdate]
+      liftEither setDBUser
+  ```
+
+- exposed `subscribe` for subscription resolvers, now you can write
+
+  ```hs
+  resolveNewUser :: ResolveS EVENT IO User
+  resolveNewUser = subscribe [USER] $ do
+      requireAuthorized
+      pure userByEvent
+    where userByEvent (Event _ content) = liftEither (getDBUser content)
+  ```
+
+### Minor
+
+- MonadIO instance for resolvers. Thanks @dandoh
+- Example using STM, authentication, monad transformers. Thanks @dandoh
+- added dependency `mtl`
+
 ## [0.9.1] - 02.01.2020
 
 - removed dependency `mtl`
-- MonadIO instance for resolvers. Thanks @dandoh
-- Example using STM, authentication, monad transformers. Thanks @dandoh
 
 ## [0.9.0] - 02.01.2020
 
