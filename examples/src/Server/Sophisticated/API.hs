@@ -135,7 +135,7 @@ alwaysFail :: IO (Either String a)
 alwaysFail = pure $ Left "fail example"
 
 resolveUser :: ResolveQ EVENT IO User
-resolveUser = liftEither (getDBUser (Content 2))
+resolveUser = QueryResolver $ liftEither (getDBUser (Content 2))
 
 resolveAnimal :: QueryAnimalArgs -> IORes EVENT Text
 resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
@@ -145,16 +145,15 @@ resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
 -- 
 -- Mutation Wit Event Triggering : sends events to subscription  
 resolveCreateUser :: ResolveM EVENT IO User
-resolveCreateUser = MutResolver $ do
-  value <- liftEither setDBUser
+resolveCreateUser = do
   publish [userUpdate]
-  pure ([], value)
+  liftEither setDBUser
 
 -- Mutation Wit Event Triggering : sends events to subscription  
 resolveCreateAdress :: ResolveM EVENT IO Address
-resolveCreateAdress = MutResolver $ do
-  value <- lift setDBAddress
-  pure ([addressUpdate], value)
+resolveCreateAdress = do
+  publish [addressUpdate]
+  lift setDBAddress
 
 -- Mutation Without Event Triggering  
 resolveSetAdress :: ResolveM EVENT IO Address

@@ -290,6 +290,9 @@ instance LiftOperation MUTATION where
 instance LiftOperation SUBSCRIPTION where
   liftOperation = SubResolver [] . const . liftOperation
 
+instance (Monad m) => PushEvents e (Resolver MUTATION e m)  where
+    pushEvents = liftOperation . pushEvents 
+
 -- Type Helpers  
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
