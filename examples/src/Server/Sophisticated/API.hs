@@ -41,7 +41,7 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , GQLScalar(..)
                                                 , GQLType(..)
                                                 , ID
-                                                , Resolver(SubResolver,subResolver,subChannels)
+                                                , Resolver
                                                 , ScalarValue(..)
                                                 , constRes
                                                 , IORes
@@ -52,6 +52,8 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , ResolveS
                                                 , failRes
                                                 , publish
+                                                , subscribe
+                                                , WithOperation
                                                 )
 
 newtype A a = A { wrappedA :: a } 
@@ -159,13 +161,18 @@ resolveCreateAdress = do
 resolveSetAdress :: ResolveM EVENT IO Address
 resolveSetAdress = lift setDBAddress
 
+
 -- Resolve SUBSCRIPTION
 resolveNewUser :: ResolveS EVENT IO User
-resolveNewUser = SubResolver { subChannels = [USER], subResolver }
+resolveNewUser = subscribe [USER] $ do 
+    requireAuthorized 
+    pure subResolver 
   where subResolver (Event _ content) = liftEither (getDBUser content)
 
 resolveNewAdress :: ResolveS EVENT IO Address
-resolveNewAdress = SubResolver { subChannels = [ADDRESS], subResolver }
+resolveNewAdress = subscribe [ADDRESS] $ do
+    requireAuthorized
+    pure subResolver
   where subResolver (Event _ content) = lift (getDBAddress content)
 
 -- Events ----------------------------------------------------------------
@@ -248,3 +255,7 @@ dbInt = pure 11
 
 dbPerson :: IO Person
 dbPerson = pure Person { name = "George", email = "George@email.com" }
+
+
+requireAuthorized :: WithOperation o => Resolver o e IO ()
+requireAuthorized = pure ()
