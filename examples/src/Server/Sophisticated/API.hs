@@ -148,12 +148,14 @@ resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
 -- Mutation With Event Triggering : sends events to subscription  
 resolveCreateUser :: ResolveM EVENT IO User
 resolveCreateUser = do
+  requireAuthorized
   publish [userUpdate]
   liftEither setDBUser
 
 -- Mutation With Event Triggering : sends events to subscription  
 resolveCreateAdress :: ResolveM EVENT IO Address
 resolveCreateAdress = do
+  requireAuthorized
   publish [addressUpdate]
   lift setDBAddress
 

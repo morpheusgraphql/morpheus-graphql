@@ -7,9 +7,11 @@
 module Server.Subscription.SimpleSubscription where
 
 import           Data.Morpheus.Types            ( Event(..)
-                                                , Resolver(SubResolver)
                                                 , GQLRootResolver(..)
+                                                , Resolver
                                                 , publish
+                                                , subscribe
+                                                , WithOperation
                                                 )
 import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
@@ -50,14 +52,20 @@ rootResolver = GQLRootResolver
   , subscriptionResolver = Subscription { newDeity }
   }
  where
-    -- TODO: resolver $ dbDeity "" Nothing
   createDeity = do
+    requireAuthorized
     publish [Event { channels = [ChannelA], content = ContentA 1 }]
     pure someDeity
-  newDeity = SubResolver [ChannelA] subResolver
+  newDeity = subscribe [ChannelA] $ do
+    requireAuthorized
+    pure subResolver
    where
     subResolver (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
     subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
     subResolver _ = fetchDeity -- Resolve Old State
   ---------------------------------------------------------
   fetchDeity = pure someDeity
+
+
+requireAuthorized :: WithOperation o => Resolver o e IO ()
+requireAuthorized = pure ()
