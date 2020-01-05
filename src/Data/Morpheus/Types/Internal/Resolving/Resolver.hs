@@ -385,10 +385,9 @@ runDataResolver typename resolver = withResolver getContext (__encode resolver)
       encodeNode (EnumRes enum) _ =
         resolveEnum typename enum selectionContent
       -- Type References --------------------------------------------------------------
-    --  encodeNode (UnionRef (fieldTypeName, fieldResolver)) (UnionSelection selections)
-    --    = fieldResolver
-    --      (key, sel { selectionContent = SelectionSet currentSelection })
-    --    where currentSelection = pickSelection fieldTypeName selections
+      encodeNode (UnionRef (fieldTypeName, fieldResolver)) (UnionSelection selections)
+        = setSelection (key, sel { selectionContent = SelectionSet currentSelection }) fieldResolver
+          where currentSelection = pickSelection fieldTypeName selections
       -- RECORDS ----------------------------------------------------------------------------
       encodeNode (UnionRes (name, fields)) (UnionSelection selections) =
         resolveObject selection resolvers
