@@ -271,6 +271,7 @@ unsafeBind (SubResolver subChannels res) m2 = do
        subChannels,
        subResolver = \events -> do
          value <- res events
+         -- this Channels will be ignored
          (subResolver $ m2 value) events
      }
 
