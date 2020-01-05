@@ -26,11 +26,13 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , LiftOperation
   , resolveObject
   , resolveEnum
+  , runDataResolver
   , toResponseRes
   , withObject
   , resolving
   , toResolver
   , lift
+  , getContext
   , SubEvent
   , GQLChannel(..)
   , ResponseEvent(..)
@@ -42,6 +44,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   )
 where
 
+import           Control.Monad.Fail             (MonadFail(..))
 import           Control.Monad.Trans.Class      ( MonadTrans(..))
 import           Control.Monad.IO.Class         ( MonadIO(..) )
 import           Data.Maybe                     ( fromMaybe )
@@ -49,6 +52,7 @@ import           Data.Semigroup                 ( (<>)
                                                 , Semigroup(..)
                                                 )
 import           Control.Monad.Trans.Reader     (ReaderT(..), ask)
+import           Data.Text                      (pack)
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal   ( internalResolvingError )
@@ -62,6 +66,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , ValidSelectionRec
                                                 , ValidSelectionSet
                                                 , ValidSelection
+                                                , ValidArguments
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Message
@@ -138,10 +143,9 @@ resolveObject selectionSet (ObjectRes resolvers) =
   gqlObject <$> traverse selectResolver selectionSet
  where
   selectResolver (key, selection@Selection { selectionAlias }) =
-    (fromMaybe key selectionAlias, ) <$> lookupRes selection
+    (fromMaybe key selectionAlias, ) <$> lookupRes
    where
-    lookupRes sel =
-      (fromMaybe (const $ pure gqlNull) $ lookup key resolvers) (key, sel)
+    lookupRes = (fromMaybe (pure gqlNull) $ lookup key resolvers)
 resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 
@@ -159,7 +163,7 @@ resolveEnum typeName enum (UnionSelection selections) = resolveObject
   enumObjectTypeName = typeName <> "EnumObject"
   currentSelection   = fromMaybe [] $ lookup enumObjectTypeName selections
   resolvers          = ObjectRes
-    [ ("enum", const $ pure $ gqlString enum)
+    [ ("enum", pure $ gqlString enum)
     , resolve__typename enumObjectTypeName
     ]
 resolveEnum _ _ _ =
@@ -168,8 +172,8 @@ resolveEnum _ _ _ =
 resolve__typename
   :: (Monad m, LiftOperation o)
   => Name
-  -> (Key, (Key, ValidSelection) -> Resolver o e m ValidValue)
-resolve__typename name = ("__typename", const $ pure $ gqlString name)
+  -> (Key, Resolver o e m ValidValue)
+resolve__typename name = ("__typename", pure $ gqlString name)
 
 toResponseRes
   :: Monad m
@@ -194,9 +198,16 @@ toResponseRes (SubResolver channels subRes) sel = ResultT $ pure $ Success
       value <- runResultT $ runReaderT (runContextRes $ unQueryResolver (subRes event)) sel
       pure $ renderResponse value
 
+
+getContext :: (Monad m) => ContextRes e m (Name,ValidSelection)
+getContext = ContextRes $ ask 
+
 newtype ContextRes event m a = ContextRes {
   runContextRes :: ReaderT (Name,ValidSelection) (ResultT event GQLError 'True m) a
 } deriving (Functor, Applicative, Monad)
+
+instance Monad m => MonadFail (ContextRes event m) where 
+  fail = failure . pack
 
 instance MonadTrans (ContextRes e) where
   lift = ContextRes . lift . lift
@@ -231,7 +242,7 @@ deriving instance (Functor m) => Functor (Resolver o e m)
 
 -- Applicative
 instance (LiftOperation o ,Monad m) => Applicative (Resolver o e m) where
-  pure = liftOperation . pure
+  pure = packResolver . pure
   -------------------------------------
   (QueryResolver f) <*> (QueryResolver res) = QueryResolver $ f <*> res
   ---------------------------------------------------------------------
@@ -263,35 +274,46 @@ instance (MonadIO m) => MonadIO (Resolver MUTATION e m) where
 
 -- Monad Transformers    
 instance MonadTrans (Resolver QUERY e) where
-  lift = liftOperation . lift
+  lift = packResolver . lift
 
 instance MonadTrans (Resolver MUTATION e) where
-  lift = liftOperation . lift
+  lift = packResolver . lift
 
 -- Failure
 instance (LiftOperation o, Monad m) => Failure Message (Resolver o e m) where
-   failure = liftOperation .failure
+   failure = packResolver .failure
 
 instance (LiftOperation o, Monad m) => Failure GQLErrors (Resolver o e m) where
-  failure = liftOperation . failure 
+  failure = packResolver . failure 
 
 class LiftOperation (o::OperationType) where
-  liftOperation :: Monad m => ContextRes e m a -> Resolver o e m a
+  packResolver :: Monad m => ContextRes e m a -> Resolver o e m a
+  withResolver :: Monad m => ContextRes e m a -> (a -> Resolver o e m b) -> Resolver o e m b
 
--- LiftOperation
+
+clearCTXEvents :: (Functor m) => ContextRes e1 m a -> ContextRes e2 m a
+clearCTXEvents (ContextRes (ReaderT x)) = ContextRes $ ReaderT $ \sel -> cleanEvents (x sel)
+
+-- packResolver
 instance LiftOperation QUERY where
-  liftOperation (ContextRes (ReaderT x))= QueryResolver $ ContextRes $ ReaderT $ \sel -> cleanEvents (x sel)
+  packResolver = QueryResolver . clearCTXEvents
+  withResolver ctxRes toRes = QueryResolver $ do 
+     v <- clearCTXEvents ctxRes 
+     unQueryResolver $ toRes v
 
 instance LiftOperation MUTATION where
-  liftOperation res = MutResolver $ do 
+  packResolver res = MutResolver $ do 
     value  <- res
     pure ([],value )
+  withResolver ctxRes toRes = MutResolver $ do 
+     v <- clearCTXEvents ctxRes 
+     unMutResolver $ toRes v
 
 instance LiftOperation SUBSCRIPTION where
-  liftOperation = SubResolver [] . const . liftOperation
+  packResolver = SubResolver [] . const . packResolver
 
 instance (Monad m) => PushEvents e (Resolver MUTATION e m)  where
-    pushEvents = liftOperation . pushEvents 
+    pushEvents = packResolver . pushEvents 
 
 -- Type Helpers  
 type family UnSubResolver (a :: * -> *) :: (* -> *)
@@ -300,15 +322,20 @@ type instance UnSubResolver (Resolver SUBSCRIPTION m e) = Resolver QUERY m e
 
 -- RESOLVING
 type FieldRes o e m
-  = (Key, (Key, ValidSelection) -> Resolver o e m ValidValue)
+  = (Key, Resolver o e m ValidValue)
 
 toResolver
-  :: (LiftOperation o, Monad m)
-  => Validation a
+  :: forall o e m a b. (LiftOperation o, Monad m)
+  => (ValidArguments -> Validation a)
   -> (a -> Resolver o e m b)
   -> Resolver o e m b
-toResolver Success { result } f = f result
-toResolver (Failure errors) _ = failure errors
+toResolver toArgs  = withResolver args 
+ where 
+  args :: ContextRes e m a
+  args = do
+    (_,Selection { selectionArguments }) <- getContext
+    let resT = ResultT $ pure $ toArgs selectionArguments
+    ContextRes $ lift $ cleanEvents resT
 
 updateContext :: ContextRes e m a -> (Name,ValidSelection) ->  ContextRes e m a
 updateContext res = ContextRes . ReaderT . const . (runReaderT $ runContextRes res)
@@ -316,24 +343,57 @@ updateContext res = ContextRes . ReaderT . const . (runReaderT $ runContextRes r
 resolving
   :: forall o e m value
    . Monad m
-  => (value -> (Key, ValidSelection) -> Resolver o e m ValidValue)
+  => (value -> Resolver o e m ValidValue)
   -> Resolver o e m value
-  -> (Key, ValidSelection)
   -> Resolver o e m ValidValue 
-resolving encode (QueryResolver res) selection = QueryResolver $ do 
-    value <- updateContext res selection
-    unQueryResolver $ encode value selection
-resolving encode (MutResolver res) selection = MutResolver $ do
-    (events, value) <- updateContext res selection
-    pushEvents events
-    unMutResolver $ encode value selection
-resolving encode (SubResolver subChannels res) selection = do 
-    SubResolver {
-      subChannels,
-      subResolver = \events -> do
-        value <- QueryResolver $ updateContext (unQueryResolver $ res events) selection
-        (subResolver $ encode value selection)  events
-    }
+resolving encode (QueryResolver res) = QueryResolver (res >>= unQueryResolver . encode)
+
+-- resolving encode (QueryResolver res) selection = QueryResolver $ do 
+--     value <- updateContext res selection
+--     unQueryResolver $ encode value selection
+-- resolving encode (MutResolver res) selection = MutResolver $ do
+--     (events, value) <- updateContext res selection
+--     pushEvents events
+--     unMutResolver $ encode value selection
+-- resolving encode (SubResolver subChannels res) selection = do 
+--     SubResolver {
+--       subChannels,
+--       subResolver = \events -> do
+--         value <- QueryResolver $ updateContext (unQueryResolver $ res events) selection
+--         (subResolver $ encode value selection)  events
+--     }
+
+pickSelection :: Name -> [(Name, ValidSelectionSet)] -> ValidSelectionSet
+pickSelection name = fromMaybe [] . lookup name
+
+runDataResolver :: (Monad m, LiftOperation o) => Name -> DataResolver o e m -> Resolver o e m ValidValue
+runDataResolver typename resolver = withResolver getContext (__encode resolver)
+   where
+    __encode obj (key, sel@Selection { selectionContent })  = encodeNode obj selectionContent 
+      where 
+      encodeNode (ObjectRes fields) _ = withObject encodeObject (key, sel)
+        where
+        encodeObject selection =
+          resolveObject selection
+            $ ObjectRes
+            $ resolve__typename typename
+            : fields
+      encodeNode (EnumRes enum) _ =
+        resolveEnum typename enum selectionContent
+      -- Type References --------------------------------------------------------------
+    --  encodeNode (UnionRef (fieldTypeName, fieldResolver)) (UnionSelection selections)
+    --    = fieldResolver
+    --      (key, sel { selectionContent = SelectionSet currentSelection })
+    --    where currentSelection = pickSelection fieldTypeName selections
+      -- RECORDS ----------------------------------------------------------------------------
+      encodeNode (UnionRes (name, fields)) (UnionSelection selections) =
+        resolveObject selection resolvers
+        where
+          selection = pickSelection name selections
+          resolvers = ObjectRes (resolve__typename name : fields)
+      encodeNode _ _ = failure $ internalResolvingError
+        "union Resolver should only recieve UnionSelection"
+
 
 -- map Resolving strategies 
 class MapStrategy (from :: OperationType) (to :: OperationType) where
