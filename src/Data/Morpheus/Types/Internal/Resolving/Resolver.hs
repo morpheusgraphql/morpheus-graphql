@@ -342,21 +342,13 @@ resolving
   -> Resolver o e m ValidValue 
 resolving encode (QueryResolver res) = QueryResolver (res >>= unQueryResolver . encode)
 resolving encode (MutResolver res)   = MutResolver (res >>= unMutResolver . encode)
-
--- resolving encode (QueryResolver res) selection = QueryResolver $ do 
---     value <- updateContext res selection
---     unQueryResolver $ encode value selection
--- resolving encode (MutResolver res) selection = MutResolver $ do
---     (events, value) <- updateContext res selection
---     pushEvents events
---     unMutResolver $ encode value selection
--- resolving encode (SubResolver subChannels res) selection = do 
---     SubResolver {
---       subChannels,
---       subResolver = \events -> do
---         value <- QueryResolver $ updateContext (unQueryResolver $ res events) selection
---         (subResolver $ encode value selection)  events
---     }
+resolving encode (SubResolver subChannels res) = do 
+     SubResolver {
+       subChannels,
+       subResolver = \events -> do
+         value <- res events
+         (subResolver $ encode value) events
+     }
 
 pickSelection :: Name -> [(Name, ValidSelectionSet)] -> ValidSelectionSet
 pickSelection name = fromMaybe [] . lookup name
@@ -378,7 +370,6 @@ runDataResolver typename resolver = withResolver getContext (__encode resolver)
       -- Type References --------------------------------------------------------------
       encodeNode (UnionRef (fieldTypeName, fieldResolver)) (UnionSelection selections)
         = setSelection (key, sel { selectionContent = SelectionSet currentSelection }) fieldResolver
-
           where currentSelection = pickSelection fieldTypeName selections
       -- RECORDS ----------------------------------------------------------------------------
       encodeNode (UnionRes (name, fields)) (UnionSelection selections) =
