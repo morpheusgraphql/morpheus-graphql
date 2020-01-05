@@ -29,7 +29,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , runDataResolver
   , toResponseRes
   , withObject
-  , resolving
+  , unsafeBind
   , toResolver
   , lift
   , getContext
@@ -240,24 +240,35 @@ deriving instance (Functor m) => Functor (Resolver o e m)
 -- Applicative
 instance (LiftOperation o ,Monad m) => Applicative (Resolver o e m) where
   pure = packResolver . pure
-  -------------------------------------
-  (QueryResolver f) <*> (QueryResolver res) = QueryResolver $ f <*> res
-  ---------------------------------------------------------------------
+  QueryResolver res1 <*> QueryResolver res2 = QueryResolver $ res1 <*> res2
   MutResolver res1 <*> MutResolver res2 = MutResolver $ res1 <*> res2
-  --------------------------------------------------------------
-  (SubResolver e1 f) <*> (SubResolver e2 res) = SubResolver (e1 <> e2) subRes
+  SubResolver e1 f <*> SubResolver e2 res = SubResolver (e1 <> e2) subRes
     where subRes event = f event <*> res event
 
 -- Monad 
 instance (Monad m) => Monad (Resolver QUERY e m) where
   return = pure
-  -----------------------------------------------------
-  (QueryResolver f) >>= nextM = QueryResolver (f >>= unQueryResolver . nextM )
+  (>>=) = unsafeBind
 
 instance (Monad m) => Monad (Resolver MUTATION e m) where
   return = pure
-  -----------------------------------------------------
-  (MutResolver m1) >>= nextM = MutResolver (m1 >>= unMutResolver . nextM)
+  (>>=) = unsafeBind
+
+unsafeBind
+  :: forall o e m a b
+   . Monad m
+  =>  Resolver o e m a
+  -> (a -> Resolver o e m b)
+  -> Resolver o e m b 
+unsafeBind (QueryResolver x) m2 = QueryResolver (x >>= unQueryResolver . m2)
+unsafeBind (MutResolver x) m2 = MutResolver (x >>= unMutResolver . m2)
+unsafeBind (SubResolver subChannels res) m2 = do 
+     SubResolver {
+       subChannels,
+       subResolver = \events -> do
+         value <- res events
+         (subResolver $ m2 value) events
+     }
 
 instance (MonadIO m) => MonadIO (Resolver QUERY e m) where
     liftIO = lift . liftIO
@@ -339,21 +350,6 @@ toResolver toArgs  = withResolver args
     let resT = ResultT $ pure $ toArgs selectionArguments
     ContextRes $ lift $ cleanEvents resT
 
-resolving
-  :: forall o e m value
-   . Monad m
-  => (value -> Resolver o e m ValidValue)
-  -> Resolver o e m value
-  -> Resolver o e m ValidValue 
-resolving encode (QueryResolver res) = QueryResolver (res >>= unQueryResolver . encode)
-resolving encode (MutResolver res)   = MutResolver (res >>= unMutResolver . encode)
-resolving encode (SubResolver subChannels res) = do 
-     SubResolver {
-       subChannels,
-       subResolver = \events -> do
-         value <- res events
-         (subResolver $ encode value) events
-     }
 
 pickSelection :: Name -> [(Name, ValidSelectionSet)] -> ValidSelectionSet
 pickSelection name = fromMaybe [] . lookup name

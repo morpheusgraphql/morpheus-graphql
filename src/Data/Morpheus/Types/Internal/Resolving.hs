@@ -8,7 +8,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , resolveObject
     , toResponseRes
     , withObject
-    , resolving
+    , unsafeBind
     , toResolver
     , lift
     , SubEvent
