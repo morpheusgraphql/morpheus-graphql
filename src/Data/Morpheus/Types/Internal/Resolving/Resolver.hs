@@ -140,6 +140,9 @@ updateContext res = ContextRes . ReaderT . const . (runReaderT $ runContextRes r
 -- setContext :: (Name,ValidSelection) ->  ContextRes e m ()
 -- setContext res = ContextRes . ReaderT . const . (pure ())
 
+lookupRes :: (LiftOperation o, Monad m) => Name -> [(Name,Resolver o e m ValidValue)] -> Resolver o e m ValidValue
+lookupRes key = fromMaybe (pure gqlNull) . lookup key 
+
 resolveObject
   :: forall o e m. (LiftOperation o , Monad m)
   => ValidSelectionSet
@@ -149,9 +152,9 @@ resolveObject selectionSet (ObjectRes resolvers) =
   gqlObject <$> traverse selectResolver selectionSet
  where
   selectResolver :: (Name,ValidSelection) -> Resolver o e m (Name,ValidValue)
-  selectResolver (key, selection@Selection { selectionAlias }) = setSelection (key,selection) $ (fromMaybe key selectionAlias, ) <$> lookupRes
-   where
-    lookupRes = (fromMaybe (pure gqlNull) $ lookup key resolvers)
+  selectResolver sel@(key,Selection { selectionAlias }) = setSelection sel $ do 
+    let selName = fromMaybe key selectionAlias
+    (selName, ) <$> lookupRes key resolvers
 resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 
