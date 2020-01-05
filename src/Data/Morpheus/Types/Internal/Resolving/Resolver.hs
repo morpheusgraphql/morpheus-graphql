@@ -134,12 +134,6 @@ withObject f (_, Selection { selectionContent = SelectionSet selection }) =
 withObject _ (key, Selection { selectionPosition }) =
   failure (subfieldsNotSelected key "" selectionPosition)
 
-updateContext :: ContextRes e m a -> (Name,ValidSelection) ->  ContextRes e m a
-updateContext res = ContextRes . ReaderT . const . (runReaderT $ runContextRes res)
-
--- setContext :: (Name,ValidSelection) ->  ContextRes e m ()
--- setContext res = ContextRes . ReaderT . const . (pure ())
-
 lookupRes :: (LiftOperation o, Monad m) => Name -> [(Name,Resolver o e m ValidValue)] -> Resolver o e m ValidValue
 lookupRes key = fromMaybe (pure gqlNull) . lookup key 
 
@@ -310,6 +304,9 @@ instance LiftOperation QUERY where
      v <- clearCTXEvents ctxRes 
      unQueryResolver $ toRes v
   setSelection sel (QueryResolver res)  = QueryResolver (updateContext res sel) 
+
+updateContext :: ContextRes e m a -> (Name,ValidSelection) ->  ContextRes e m a
+updateContext res = ContextRes . ReaderT . const . (runReaderT $ runContextRes res)
 
 instance LiftOperation MUTATION where
   packResolver res = MutResolver $ do 
