@@ -196,7 +196,6 @@ toResponseRes (SubResolver channels subRes) sel = ResultT $ pure $ Success
       value <- runResultT $ runReaderT (runContextRes $ unQueryResolver (subRes event)) sel
       pure $ renderResponse value
 
-
 getContext :: (Monad m) => ContextRes e m (Name,ValidSelection)
 getContext = ContextRes $ ask 
 
