@@ -254,6 +254,10 @@ instance (Monad m) => Monad (Resolver MUTATION e m) where
   return = pure
   (>>=) = unsafeBind
 
+-- unsafe variant of >>= , not for public api. user can be confused: 
+--  ignores `channels` on second Subsciption, only returns events from first Subscription monad.
+--    reason: second monad is waiting for `event` until he does not have some event can't tell which 
+--            channel does it want to listen
 unsafeBind
   :: forall o e m a b
    . Monad m
