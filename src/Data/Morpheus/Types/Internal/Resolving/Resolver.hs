@@ -184,12 +184,7 @@ toResponseRes
   -> (Key, ValidSelection)
   -> ResponseStream event m ValidValue
 toResponseRes (QueryResolver resT) sel = cleanEvents $ (runReaderT $ runContextRes resT) sel
-toResponseRes (MutResolver resT) sel = mapEvent Publish $ runReaderT ctx sel 
-  where
-    ctx = runContextRes $ do
-      (events, value) <- resT
-      pushEvents events
-      return value
+toResponseRes (MutResolver resT) sel = mapEvent Publish $ (runReaderT $ runContextRes $ resT) sel 
 toResponseRes (SubResolver channels subRes) sel = ResultT $ pure $ Success
     { result   = gqlNull
     , warnings = []
@@ -235,7 +230,7 @@ errorFromSelection (fieldName, Selection { selectionPosition })  = resolvingFail
 ---------------------------------------------------------------
 data Resolver (o::OperationType) event (m :: * -> * )  value where
     QueryResolver::{ unQueryResolver :: ContextRes () m value } -> Resolver QUERY   event m value
-    MutResolver ::{ unMutResolver :: ContextRes event m ([event],value) } -> Resolver MUTATION event m  value
+    MutResolver ::{ unMutResolver :: ContextRes event m value } -> Resolver MUTATION event m  value
     SubResolver ::{
             subChannels :: [StreamChannel event] ,
             subResolver :: event -> Resolver QUERY event m value
@@ -249,8 +244,7 @@ instance (LiftOperation o ,Monad m) => Applicative (Resolver o e m) where
   -------------------------------------
   (QueryResolver f) <*> (QueryResolver res) = QueryResolver $ f <*> res
   ---------------------------------------------------------------------
-  MutResolver res1 <*> MutResolver res2 = MutResolver $ join <$> res1 <*> res2
-    where join (e1, f) (e2, v) = (e1 <> e2, f v)
+  MutResolver res1 <*> MutResolver res2 = MutResolver $ res1 <*> res2
   --------------------------------------------------------------
   (SubResolver e1 f) <*> (SubResolver e2 res) = SubResolver (e1 <> e2) subRes
     where subRes event = f event <*> res event
@@ -264,10 +258,7 @@ instance (Monad m) => Monad (Resolver QUERY e m) where
 instance (Monad m) => Monad (Resolver MUTATION e m) where
   return = pure
   -----------------------------------------------------
-  (MutResolver m1) >>= mFunc = MutResolver $ do
-    (e1, v1) <- m1
-    (e2, v2) <- unMutResolver $ mFunc v1
-    pure (e1 <> e2, v2)
+  (MutResolver m1) >>= nextM = MutResolver (m1 >>= unMutResolver . nextM)
 
 instance (MonadIO m) => MonadIO (Resolver QUERY e m) where
     liftIO = lift . liftIO
@@ -309,9 +300,7 @@ updateContext :: ContextRes e m a -> (Name,ValidSelection) ->  ContextRes e m a
 updateContext res = ContextRes . ReaderT . const . (runReaderT $ runContextRes res)
 
 instance LiftOperation MUTATION where
-  packResolver res = MutResolver $ do 
-    value  <- res
-    pure ([],value )
+  packResolver = MutResolver
   withResolver ctxRes toRes = MutResolver $ do 
      v <- clearCTXEvents ctxRes 
      unMutResolver $ toRes v
@@ -351,6 +340,7 @@ resolving
   -> Resolver o e m value
   -> Resolver o e m ValidValue 
 resolving encode (QueryResolver res) = QueryResolver (res >>= unQueryResolver . encode)
+resolving encode (MutResolver res)   = MutResolver (res >>= unMutResolver . encode)
 
 -- resolving encode (QueryResolver res) selection = QueryResolver $ do 
 --     value <- updateContext res selection
@@ -387,6 +377,7 @@ runDataResolver typename resolver = withResolver getContext (__encode resolver)
       -- Type References --------------------------------------------------------------
       encodeNode (UnionRef (fieldTypeName, fieldResolver)) (UnionSelection selections)
         = setSelection (key, sel { selectionContent = SelectionSet currentSelection }) fieldResolver
+
           where currentSelection = pickSelection fieldTypeName selections
       -- RECORDS ----------------------------------------------------------------------------
       encodeNode (UnionRes (name, fields)) (UnionSelection selections) =
