@@ -134,16 +134,22 @@ withObject f (_, Selection { selectionContent = SelectionSet selection }) =
 withObject _ (key, Selection { selectionPosition }) =
   failure (subfieldsNotSelected key "" selectionPosition)
 
+updateContext :: ContextRes e m a -> (Name,ValidSelection) ->  ContextRes e m a
+updateContext res = ContextRes . ReaderT . const . (runReaderT $ runContextRes res)
+
+-- setContext :: (Name,ValidSelection) ->  ContextRes e m ()
+-- setContext res = ContextRes . ReaderT . const . (pure ())
+
 resolveObject
-  :: (LiftOperation o , Monad m)
+  :: forall o e m. (LiftOperation o , Monad m)
   => ValidSelectionSet
   -> DataResolver o e m
   -> Resolver o e m ValidValue
 resolveObject selectionSet (ObjectRes resolvers) =
   gqlObject <$> traverse selectResolver selectionSet
  where
-  selectResolver (key, selection@Selection { selectionAlias }) =
-    (fromMaybe key selectionAlias, ) <$> lookupRes
+  selectResolver :: (Name,ValidSelection) -> Resolver o e m (Name,ValidValue)
+  selectResolver (key, selection@Selection { selectionAlias }) = setSelection (key,selection) $ (fromMaybe key selectionAlias, ) <$> lookupRes
    where
     lookupRes = (fromMaybe (pure gqlNull) $ lookup key resolvers)
 resolveObject _ _ =
@@ -289,7 +295,7 @@ instance (LiftOperation o, Monad m) => Failure GQLErrors (Resolver o e m) where
 class LiftOperation (o::OperationType) where
   packResolver :: Monad m => ContextRes e m a -> Resolver o e m a
   withResolver :: Monad m => ContextRes e m a -> (a -> Resolver o e m b) -> Resolver o e m b
-
+  setSelection :: (Name, ValidSelection) -> Resolver o e m a -> Resolver o e m a 
 
 clearCTXEvents :: (Functor m) => ContextRes e1 m a -> ContextRes e2 m a
 clearCTXEvents (ContextRes (ReaderT x)) = ContextRes $ ReaderT $ \sel -> cleanEvents (x sel)
@@ -300,6 +306,7 @@ instance LiftOperation QUERY where
   withResolver ctxRes toRes = QueryResolver $ do 
      v <- clearCTXEvents ctxRes 
      unQueryResolver $ toRes v
+  setSelection sel (QueryResolver res)  = QueryResolver (updateContext res sel) 
 
 instance LiftOperation MUTATION where
   packResolver res = MutResolver $ do 
@@ -336,9 +343,6 @@ toResolver toArgs  = withResolver args
     (_,Selection { selectionArguments }) <- getContext
     let resT = ResultT $ pure $ toArgs selectionArguments
     ContextRes $ lift $ cleanEvents resT
-
-updateContext :: ContextRes e m a -> (Name,ValidSelection) ->  ContextRes e m a
-updateContext res = ContextRes . ReaderT . const . (runReaderT $ runContextRes res)
 
 resolving
   :: forall o e m value
