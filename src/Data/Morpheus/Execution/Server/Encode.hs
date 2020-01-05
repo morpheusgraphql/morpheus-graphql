@@ -91,6 +91,10 @@ instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m , LiftOperation o) =>
 instance (Monad m , LiftOperation o,Encode a o e m) => Encode (Maybe a) o e m where
   encode = maybe (pure gqlNull) encode
 
+-- LIST []
+instance (Monad m, Encode a o e m, LiftOperation o) => Encode [a] o e m where
+  encode = fmap gqlList . (traverse encode)
+
 --  Tuple  (a,b)
 instance Encode (Pair k v) o e m => Encode (k, v) o e m where
   encode (key, value) = encode (Pair key value)
@@ -103,10 +107,6 @@ instance Encode [a] o e m => Encode (Set a) o e m where
 instance (Eq k, Monad m,LiftOperation o, Encode (MapKind k v (Resolver o e m)) o e m) => Encode (Map k v)  o e m where
   encode value =
     encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver o e m))
-
--- LIST []
-instance (Monad m, Encode a o e m, LiftOperation o) => Encode [a] o e m where
-  encode list = gqlList <$> traverse encode  list
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance (DecodeType a,Generic a, Monad m,LiftOperation fo, MapStrategy fo o, Encode b fo e m) => Encode (a -> Resolver fo e m b) o e m where
@@ -300,4 +300,3 @@ instance (Selector s, GQLType a, Encode a o e m) => FieldRep (M1 S s (K1 s2 a)) 
 
 instance FieldRep U1 o e m where
   fieldRep _ _ = []
-
