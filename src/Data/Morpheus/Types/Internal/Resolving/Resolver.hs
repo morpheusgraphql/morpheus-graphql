@@ -301,13 +301,17 @@ updateContext res = ContextRes . ReaderT . const . (runReaderT $ runContextRes r
 
 instance LiftOperation MUTATION where
   packResolver = MutResolver
-  withResolver ctxRes toRes = MutResolver $ do 
-     v <- clearCTXEvents ctxRes 
-     unMutResolver $ toRes v
+  withResolver ctxRes toRes = MutResolver $ ctxRes >>= unMutResolver . toRes 
   setSelection sel (MutResolver res)  = MutResolver (updateContext res sel) 
 
 instance LiftOperation SUBSCRIPTION where
   packResolver = SubResolver [] . const . packResolver
+  --withResolver ctxRes toRes = SubResolver $ do 
+  --   v <- clearCTXEvents ctxRes 
+  --   unMutResolver $ toRes v
+  setSelection sel (SubResolver events res)  = SubResolver events $ \e -> QueryResolver $ do 
+      updateContext (unQueryResolver (res e)) sel
+
 
 instance (Monad m) => PushEvents e (Resolver MUTATION e m)  where
     pushEvents = packResolver . pushEvents 
