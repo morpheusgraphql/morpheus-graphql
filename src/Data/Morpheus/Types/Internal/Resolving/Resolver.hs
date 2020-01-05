@@ -304,6 +304,7 @@ instance LiftOperation MUTATION where
   withResolver ctxRes toRes = MutResolver $ do 
      v <- clearCTXEvents ctxRes 
      unMutResolver $ toRes v
+  setSelection sel (MutResolver res)  = MutResolver (updateContext res sel) 
 
 instance LiftOperation SUBSCRIPTION where
   packResolver = SubResolver [] . const . packResolver
