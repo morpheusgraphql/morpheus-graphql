@@ -77,7 +77,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , resolve__typename
                                                 , FieldRes
                                                 , ResponseStream
-                                                , toResponseRes
+                                                , runResolver
                                                 , runDataResolver
                                                 )
 
@@ -216,7 +216,7 @@ encodeOperationWith
   -> Maybe (DataResolver o e m)
   -> EncodeOperation e m a
 encodeOperationWith _ externalRes rootResolver Operation { operationSelection ,operationPosition } =
-  toResponseRes (resolveObject operationSelection (rootDataRes <> extDataRes)) (
+  runResolver (resolveObject operationSelection (rootDataRes <> extDataRes)) (
     "Root"
     , Selection {
         selectionArguments = []

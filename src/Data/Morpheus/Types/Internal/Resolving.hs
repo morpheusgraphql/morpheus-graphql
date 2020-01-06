@@ -6,8 +6,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , MapStrategy(..)
     , LiftOperation
     , resolveObject
-    , toResponseRes
-    , withObject
+    , runResolver
     , unsafeBind
     , toResolver
     , lift
@@ -26,7 +25,6 @@ module Data.Morpheus.Types.Internal.Resolving
     , GQLErrors
     , GQLError(..)
     , Position
-    , resolveEnum
     , resolve__typename
     , DataResolver(..)
     , FieldRes
