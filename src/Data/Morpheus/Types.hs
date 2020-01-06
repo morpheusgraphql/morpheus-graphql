@@ -59,7 +59,7 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Event(..)
                                                 , GQLRootResolver(..)
-                                                , Resolver(..)
+                                                , Resolver
                                                 , WithOperation
                                                 , lift
                                                 , failure

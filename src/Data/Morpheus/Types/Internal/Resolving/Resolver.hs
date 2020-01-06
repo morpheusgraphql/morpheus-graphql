@@ -21,7 +21,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   ( Event(..)
   , GQLRootResolver(..)
   , UnSubResolver
-  , Resolver(..)
+  , Resolver
   , MapStrategy(..)
   , LiftOperation
   , resolveObject
