@@ -66,7 +66,6 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Failure
                                                 , pushEvents
                                                 , PushEvents(..)
-                                                , StreamChannel
                                                 , subscribe
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)

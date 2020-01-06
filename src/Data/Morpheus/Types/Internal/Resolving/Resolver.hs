@@ -108,9 +108,9 @@ type WithOperation (o :: OperationType) = LiftOperation o
 type ResponseStream event m = ResultT (ResponseEvent m event) GQLError 'True m
 
 
-subscribe :: Monad m => [StreamChannel e] -> Resolver QUERY e m (e -> Resolver QUERY e m a) -> Resolver SUBSCRIPTION e m a
+subscribe :: forall e m a . (PushEvents (Channel e) (ContextRes (Channel e) m), Monad m) => [StreamChannel e] -> Resolver QUERY e m (e -> Resolver QUERY e m a) -> Resolver SUBSCRIPTION e m a
 subscribe ch res = SubResolver $ do 
-  pushEvents (map Channel ch) 
+  pushEvents (map Channel ch :: [Channel e])
   (eventRes :: e -> Resolver QUERY e m a) <- clearCTXEvents (unQueryResolver res)
   pure $ ReaderT eventRes
 
