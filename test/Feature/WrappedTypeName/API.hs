@@ -10,7 +10,7 @@ module Feature.WrappedTypeName.API
 
 import           Data.Morpheus       (interpreter)
 import           Data.Morpheus.Types (Event, GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), IORes,
-                                      Resolver (..), constRes)
+                                      constRes, subscribe)
 import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
 
@@ -43,9 +43,9 @@ data Channel =
 type EVENT =  Event Channel ()
 
 data Subscription (m :: * -> *) = Subscription
-  { sub1 :: () -> m (Maybe (WA (IORes EVENT)))
-  , sub2 :: () -> m (Maybe (Wrapped Int Int))
-  , sub3 :: () -> m (Maybe (Wrapped (Wrapped Text Int) Text))
+  { sub1 :: m (Maybe (WA (IORes EVENT)))
+  , sub2 :: m (Maybe (Wrapped Int Int))
+  , sub3 :: m (Maybe (Wrapped (Wrapped Text Int) Text))
   } deriving (Generic, GQLType)
 
 rootResolver :: GQLRootResolver IO EVENT Query Mutation Subscription
@@ -54,9 +54,9 @@ rootResolver =
     { queryResolver = Query {a1 = WA {aText = const $ pure "test1", aInt = 0}, a2 = Nothing, a3 = Nothing}
     , mutationResolver = Mutation {mut1 = Nothing, mut2 = Nothing, mut3 = Nothing}
     , subscriptionResolver = Subscription
-            { sub1 = const SubResolver {subChannels = [Channel], subResolver = constRes Nothing}
-            , sub2 = const SubResolver {subChannels = [Channel], subResolver = constRes  Nothing}
-            , sub3 = const SubResolver {subChannels = [Channel], subResolver = constRes Nothing}
+            { sub1 = subscribe [Channel] (pure $ constRes Nothing)
+            , sub2 = subscribe [Channel] (pure $ constRes Nothing)
+            , sub3 = subscribe [Channel] (pure $ constRes Nothing)
             }
     }
 
