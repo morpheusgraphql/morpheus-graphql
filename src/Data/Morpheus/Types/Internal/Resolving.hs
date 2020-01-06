@@ -33,6 +33,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , runDataResolver
     , subscribe
     , Context(..)
+    , unsafeInternalContext
     )
 where
 

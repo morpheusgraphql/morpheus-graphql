@@ -56,13 +56,10 @@ import           Data.Morpheus.Types.GQLType    ( GQLType(..) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
                                                 , Operation(..)
-                                                , ValidOperation
                                                 , MUTATION
                                                 , OperationType
                                                 , QUERY
                                                 , SUBSCRIPTION
-                                                , Selection(..)
-                                                , SelectionContent(..)
                                                 , GQLValue(..)
                                                 , ValidValue
                                                 )

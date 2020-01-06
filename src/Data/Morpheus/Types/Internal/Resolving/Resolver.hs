@@ -40,6 +40,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , WithOperation
   , subscribe
   , Context(..)
+  , unsafeInternalContext
   )
 where
 
@@ -270,6 +271,9 @@ subscribe ch res = ResolverS $ do
   pushEvents (map Channel ch :: [Channel e])
   (eventRes :: e -> Resolver QUERY e m a) <- clearStateResolverEvents (runResolverQ res)
   pure $ ReaderT eventRes
+
+unsafeInternalContext :: (Monad m, LiftOperation o) => Resolver o e m Context
+unsafeInternalContext = packResolver $ ResolverState ask 
 
 -- Type Helpers  
 type family UnSubResolver (a :: * -> *) :: (* -> *)

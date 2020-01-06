@@ -34,6 +34,7 @@ module Data.Morpheus.Types
   , WithOperation
   , publish
   , subscribe
+  , unsafeInternalContext
   )
 where
 
@@ -67,6 +68,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , pushEvents
                                                 , PushEvents(..)
                                                 , subscribe
+                                                , unsafeInternalContext
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
