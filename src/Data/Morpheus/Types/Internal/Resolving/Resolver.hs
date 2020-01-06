@@ -41,6 +41,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , DataResolver(..)
   , FieldRes
   , WithOperation
+  , subscribe
   )
 where
 
@@ -105,6 +106,13 @@ import           Data.Morpheus.Types.IO         ( renderResponse
 type WithOperation (o :: OperationType) = LiftOperation o
 
 type ResponseStream event m = ResultT (ResponseEvent m event) GQLError 'True m
+
+
+subscribe :: Monad m => [StreamChannel e] -> Resolver QUERY e m (e -> Resolver QUERY e m a) -> Resolver SUBSCRIPTION e m a
+subscribe ch res = SubResolver $ do 
+  pushEvents (map Channel ch) 
+  (eventRes :: e -> Resolver QUERY e m a) <- clearCTXEvents (unQueryResolver res)
+  pure $ ReaderT eventRes
 
 data ResponseEvent m event
   = Publish event

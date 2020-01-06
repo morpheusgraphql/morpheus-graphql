@@ -67,6 +67,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , pushEvents
                                                 , PushEvents(..)
                                                 , StreamChannel
+                                                , subscribe
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
@@ -89,13 +90,6 @@ type ResolveS e m a = SubRes e m (a (Res e m))
 
 publish :: Monad m => [e] -> Resolver MUTATION e m ()
 publish = pushEvents
-
-subscribe :: Monad m => [StreamChannel e] -> Resolver QUERY e m (e -> Resolver QUERY e m a) -> Resolver SUBSCRIPTION e m a
-subscribe ch res = SubResolver ch $ \event -> do 
-  -- TODO: failing `res` must terminate subscription immediately,
-  -- so SubResolver must change signature to : SubResolver { runSubResolver :: ( [StreamChannel e] , Resolver QUERY e m (e -> Resolver QUERY e m a)) }
-  subRes <- res
-  subRes event
 
 -- resolves constant value on any argument
 constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
