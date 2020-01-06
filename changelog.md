@@ -15,8 +15,8 @@
   -- Mutation Resolver
   resolveCreateUser :: ResolveM EVENT IO User
   resolveCreateUser = do
-  publish [userUpdate] -- publishes event inside mutation
-  lift setDBUser
+    publish [userUpdate] -- publishes event inside mutation
+    lift setDBUser
 
   -- Subscription Resolver
   resolveNewUser :: ResolveS EVENT IO User
