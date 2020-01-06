@@ -39,6 +39,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , FieldRes
   , WithOperation
   , subscribe
+  , Context(..)
   )
 where
 
@@ -108,9 +109,13 @@ data ResponseEvent m event
 
 type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
 
+data Context = Context {
+  ctxSelection :: (Name,ValidSelection)
+}
+
 -- Resolver Internal State
 newtype ResolverState event m a = ResolverState {
-  runResolverState :: ReaderT (Name,ValidSelection) (ResultT event GQLError 'True m) a
+  runResolverState :: ReaderT Context (ResultT event GQLError 'True m) a
 } deriving (Functor, Applicative, Monad)
 
 instance Monad m => MonadFail (ResolverState event m) where 
@@ -121,7 +126,7 @@ instance MonadTrans (ResolverState e) where
 
 instance (Monad m) => Failure Message (ResolverState e m) where
   failure message = ResolverState $ do 
-    selection <- ask
+    selection <- ctxSelection <$> ask 
     lift $ failure [resolverFailureMessage selection message]
 
 instance (Monad m) => Failure GQLErrors (ResolverState e m) where
@@ -132,18 +137,18 @@ instance (Monad m) => PushEvents e (ResolverState e m) where
 
 
 mapResolverState :: 
-  ( ReaderT (Name,ValidSelection) (ResultT e1 GQLError 'True m1) a1 
-    -> ReaderT (Name,ValidSelection) (ResultT e2 GQLError 'True m2) a2 
+  ( ReaderT Context (ResultT e1 GQLError 'True m1) a1 
+    -> ReaderT Context (ResultT e2 GQLError 'True m2) a2 
   ) -> ResolverState e1 m1 a1 
     -> ResolverState e2 m2 a2
 mapResolverState f (ResolverState x) = ResolverState (f x)
 
 
 getState :: (Monad m) => ResolverState e m (Name,ValidSelection)
-getState = ResolverState $ ask 
+getState = ResolverState $ ctxSelection <$> ask 
 
 setState :: (Name,ValidSelection) -> ResolverState e m a -> ResolverState e m a
-setState selection = mapResolverState (withReaderT (const selection))
+setState ctxSelection = mapResolverState (withReaderT (\ctx -> ctx { ctxSelection } ))
 
 -- clear evets and starts new resolver with diferenct type of events but with same value
 -- use properly. only if you know what you are doing
@@ -366,7 +371,7 @@ resolveObject selectionSet (ObjectRes resolvers) =
 resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 
-toEventResolver :: Monad m => (ReaderT event (Resolver QUERY event m) ValidValue) -> (Name,ValidSelection) -> event -> m GQLResponse
+toEventResolver :: Monad m => (ReaderT event (Resolver QUERY event m) ValidValue) -> Context -> event -> m GQLResponse
 toEventResolver (ReaderT subRes) sel event = do 
   value <- runResultT $ runReaderT (runResolverState $ runResolverQ (subRes event)) sel
   pure $ renderResponse value
@@ -402,7 +407,7 @@ runDataResolver typename  = withResolver getState . __encode
 runResolver
   :: Monad m
   => Resolver o event m ValidValue
-  -> (Key, ValidSelection)
+  -> Context
   -> ResponseStream event m ValidValue
 runResolver (ResolverQ resT) sel = cleanEvents $ (runReaderT $ runResolverState resT) sel
 runResolver (ResolverM resT) sel = mapEvent Publish $ (runReaderT $ runResolverState $ resT) sel 

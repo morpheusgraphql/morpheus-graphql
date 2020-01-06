@@ -32,6 +32,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , PushEvents(..)
     , runDataResolver
     , subscribe
+    , Context(..)
     )
 where
 

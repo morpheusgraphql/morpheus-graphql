@@ -79,6 +79,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , ResponseStream
                                                 , runResolver
                                                 , runDataResolver
+                                                , Context(..)
                                                 )
 
 class Encode resolver o e (m :: * -> *) where
@@ -216,15 +217,18 @@ encodeOperationWith
   -> Maybe (DataResolver o e m)
   -> EncodeOperation e m a
 encodeOperationWith _ externalRes rootResolver Operation { operationSelection ,operationPosition } =
-  runResolver (resolveObject operationSelection (rootDataRes <> extDataRes)) (
-    "Root"
-    , Selection {
+  runResolver (resolveObject operationSelection (rootDataRes <> extDataRes)) 
+  Context {
+    ctxSelection = (
+      "Root"
+      , Selection {
         selectionArguments = []
         , selectionPosition = operationPosition
         , selectionAlias = Nothing
         , selectionContent = SelectionSet operationSelection
-    } 
-  )
+      } 
+    )
+  }
  where
   rootDataRes = objectResolvers (Proxy :: Proxy (CUSTOM a)) rootResolver
   extDataRes  = fromMaybe (ObjectRes []) externalRes
