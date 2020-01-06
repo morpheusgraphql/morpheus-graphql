@@ -313,7 +313,7 @@ instance (LiftOperation o, Monad m) => Failure GQLErrors (Resolver o e m) where
 class LiftOperation (o::OperationType) where
   packResolver :: Monad m => ContextRes e m a -> Resolver o e m a
   withResolver :: Monad m => ContextRes e m a -> (a -> Resolver o e m b) -> Resolver o e m b
-  setSelection :: (Name, ValidSelection) -> Resolver o e m a -> Resolver o e m a 
+  setSelection :: Monad m =>  (Name, ValidSelection) -> Resolver o e m a -> Resolver o e m a 
 
 clearCTXEvents :: (Functor m) => ContextRes e1 m a -> ContextRes e2 m a
 clearCTXEvents (ContextRes (ReaderT x)) = ContextRes $ ReaderT $ \sel -> cleanEvents (x sel)
@@ -343,9 +343,9 @@ instance LiftOperation SUBSCRIPTION where
   withResolver ctxRes toRes = SubResolver $ do 
     value <- clearCTXEvents ctxRes
     runSubResolver $ toRes value
-
-  -- setSelection sel (SubResolver res)  = SubResolver $ pure $ ReaderT $ \e -> QueryResolver $ do 
-  --    updateContext (unQueryResolver (res e)) sel
+  setSelection sel (SubResolver resM)  = SubResolver $ do 
+    res <- resM
+    pure $ ReaderT $ \e -> QueryResolver $ updateContext (unQueryResolver (runReaderT res e)) sel
 
 
 instance (Monad m) => PushEvents e (Resolver MUTATION e m)  where
