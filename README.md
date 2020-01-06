@@ -542,6 +542,15 @@ defineByIntrospectionFile "./introspection.json"
 
 you should use [morpheus-graphql-cli](https://github.com/morpheusgraphql/morpheus-graphql-cli)
 
+## Showcase
+Below are the list of projects using Morpheus GraphQL. If you want to start using Morpheus GraphQL, they are
+good templates to begin with.
+- https://github.com/morpheusgraphql/mythology-api
+  - Serverless Mythology API
+- https://github.com/dandoh/web-haskell
+  - Modern webserver boilerplate in Haskell: Morpheus Graphql + Postgresql + Authentication + DB migration + Dotenv and more
+
+*Edit this section and send PR if you want to share your project*.
 # About
 
 ## The name
