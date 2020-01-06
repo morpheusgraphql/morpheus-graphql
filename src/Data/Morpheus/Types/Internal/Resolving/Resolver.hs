@@ -339,12 +339,11 @@ instance LiftOperation MUTATION where
   setSelection sel (MutResolver res)  = MutResolver (updateContext res sel) 
 
 instance LiftOperation SUBSCRIPTION where
- -- packResolver = SubResolver . packResolver
-  -- TODO: FIXME: this real events instead of []
-  -- withResolver ctxRes toRes = SubResolver [] $ \ev -> QueryResolver $ do 
-  --    v <- clearCTXEvents ctxRes
-  --    unQueryResolver $ (subResolver $ toRes v) ev 
-  
+  packResolver = SubResolver . pure . lift . packResolver
+  withResolver ctxRes toRes = SubResolver $ do 
+    value <- clearCTXEvents ctxRes
+    runSubResolver $ toRes value
+
   -- setSelection sel (SubResolver res)  = SubResolver $ pure $ ReaderT $ \e -> QueryResolver $ do 
   --    updateContext (unQueryResolver (res e)) sel
 
