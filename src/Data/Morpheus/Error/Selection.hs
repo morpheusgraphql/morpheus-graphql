@@ -5,7 +5,6 @@ module Data.Morpheus.Error.Selection
   , subfieldsNotSelected
   , duplicateQuerySelections
   , hasNoSubfields
-  , resolvingFailedError
   )
 where
 
@@ -22,13 +21,6 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as T
                                                 ( concat )
-
-
-resolvingFailedError :: Position -> Text -> Text -> GQLError
-resolvingFailedError position name reason = GQLError
-  { message   = "Failure on Resolving Field \"" <> name <> "\": " <> reason
-  , locations = [position]
-  }
 
 
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."

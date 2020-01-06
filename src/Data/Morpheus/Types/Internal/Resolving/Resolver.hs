@@ -49,14 +49,12 @@ import           Data.Maybe                     ( fromMaybe )
 import           Data.Semigroup                 ( (<>)
                                                 , Semigroup(..)
                                                 )
-import           Control.Monad.Trans.Reader     (ReaderT(..), ask)
+import           Control.Monad.Trans.Reader     (ReaderT(..), ask,mapReaderT, withReaderT)
 import           Data.Text                      (pack)
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal   ( internalResolvingError )
-import           Data.Morpheus.Error.Selection  ( resolvingFailedError
-                                                , subfieldsNotSelected
-                                                )
+import           Data.Morpheus.Error.Selection  ( subfieldsNotSelected )
 import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( Selection(..)
                                                 , SelectionContent(..)
@@ -79,7 +77,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( GQLErrors
-                                                , GQLError
+                                                , GQLError(..)
                                                 , Validation
                                                 , Result(..)
                                                 , Failure(..)
@@ -124,7 +122,7 @@ instance MonadTrans (ResolverState e) where
 instance (Monad m) => Failure Message (ResolverState e m) where
   failure message = ResolverState $ do 
     selection <- ask
-    lift $ failure [errorFromSelection selection message]
+    lift $ failure [resolverFailureMessage selection message]
 
 instance (Monad m) => Failure GQLErrors (ResolverState e m) where
   failure = ResolverState . lift . failure 
@@ -132,18 +130,31 @@ instance (Monad m) => Failure GQLErrors (ResolverState e m) where
 instance (Monad m) => PushEvents e (ResolverState e m) where
     pushEvents = ResolverState . lift . pushEvents 
 
-errorFromSelection :: (Name,ValidSelection) -> Message -> GQLError
-errorFromSelection (fieldName, Selection { selectionPosition })  = resolvingFailedError selectionPosition fieldName 
+
+mapResolverState :: 
+  ( ReaderT (Name,ValidSelection) (ResultT e1 GQLError 'True m1) a1 
+    -> ReaderT (Name,ValidSelection) (ResultT e2 GQLError 'True m2) a2 
+  ) -> ResolverState e1 m1 a1 
+    -> ResolverState e2 m2 a2
+mapResolverState f (ResolverState x) = ResolverState (f x)
+
 
 getState :: (Monad m) => ResolverState e m (Name,ValidSelection)
 getState = ResolverState $ ask 
 
-setState :: ResolverState e m a -> (Name,ValidSelection) ->  ResolverState e m a
-setState res = ResolverState . ReaderT . const . (runReaderT $ runResolverState res)
+setState :: (Name,ValidSelection) -> ResolverState e m a -> ResolverState e m a
+setState selection = mapResolverState (withReaderT (const selection))
 
-clearCTXEvents :: (Functor m) => ResolverState e1 m a -> ResolverState e2 m a
-clearCTXEvents (ResolverState (ReaderT x)) = ResolverState $ ReaderT $ \sel -> cleanEvents (x sel)
+-- clear evets and starts new resolver with diferenct type of events but with same value
+-- use properly. only if you know what you are doing
+clearStateResolverEvents :: (Functor m) => ResolverState e1 m a -> ResolverState e2 m a
+clearStateResolverEvents = mapResolverState (mapReaderT cleanEvents)
 
+resolverFailureMessage :: (Name,ValidSelection) -> Message -> GQLError
+resolverFailureMessage (name, Selection { selectionPosition }) message = GQLError
+  { message   = "Failure on Resolving Field \"" <> name <> "\": " <> message
+  , locations = [selectionPosition]
+  }
 
 --     
 -- GraphQL Field Resolver
@@ -204,25 +215,25 @@ class LiftOperation (o::OperationType) where
 
 -- packResolver
 instance LiftOperation QUERY where
-  packResolver = ResolverQ . clearCTXEvents
+  packResolver = ResolverQ . clearStateResolverEvents
   withResolver ctxRes toRes = ResolverQ $ do 
-     v <- clearCTXEvents ctxRes 
+     v <- clearStateResolverEvents ctxRes 
      runResolverQ $ toRes v
-  setSelection sel (ResolverQ res)  = ResolverQ (setState res sel) 
+  setSelection sel (ResolverQ res)  = ResolverQ (setState sel res) 
 
 instance LiftOperation MUTATION where
   packResolver = ResolverM
   withResolver ctxRes toRes = ResolverM $ ctxRes >>= runResolverM . toRes 
-  setSelection sel (ResolverM res)  = ResolverM (setState res sel) 
+  setSelection sel (ResolverM res)  = ResolverM (setState sel res) 
 
 instance LiftOperation SUBSCRIPTION where
   packResolver = ResolverS . pure . lift . packResolver
   withResolver ctxRes toRes = ResolverS $ do 
-    value <- clearCTXEvents ctxRes
+    value <- clearStateResolverEvents ctxRes
     runResolverS $ toRes value
   setSelection sel (ResolverS resM)  = ResolverS $ do 
     res <- resM
-    pure $ ReaderT $ \e -> ResolverQ $ setState (runResolverQ (runReaderT res e)) sel
+    pure $ ReaderT $ \e -> ResolverQ $ setState sel (runResolverQ (runReaderT res e)) 
 
 -- unsafe variant of >>= , not for public api. user can be confused: 
 --  ignores `channels` on second Subsciption, only returns events from first Subscription monad.
@@ -241,13 +252,13 @@ unsafeBind (ResolverS res) m2 = ResolverS $ do
     pure $ ReaderT $ \e -> ResolverQ $ do 
          let (resA :: Resolver QUERY e m a) = (runReaderT $ readResA) e
          (valA :: a) <- runResolverQ resA
-         (readResB :: ReaderT e (Resolver QUERY e m) b) <- clearCTXEvents $ runResolverS (m2 valA) 
+         (readResB :: ReaderT e (Resolver QUERY e m) b) <- clearStateResolverEvents $ runResolverS (m2 valA) 
          runResolverQ $ runReaderT readResB e
 
 subscribe :: forall e m a . (PushEvents (Channel e) (ResolverState (Channel e) m), Monad m) => [StreamChannel e] -> Resolver QUERY e m (e -> Resolver QUERY e m a) -> Resolver SUBSCRIPTION e m a
 subscribe ch res = ResolverS $ do 
   pushEvents (map Channel ch :: [Channel e])
-  (eventRes :: e -> Resolver QUERY e m a) <- clearCTXEvents (runResolverQ res)
+  (eventRes :: e -> Resolver QUERY e m a) <- clearStateResolverEvents (runResolverQ res)
   pure $ ReaderT eventRes
 
 -- Type Helpers  
