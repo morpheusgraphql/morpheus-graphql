@@ -151,18 +151,18 @@ clearCTXEvents (ContextRes (ReaderT x)) = ContextRes $ ReaderT $ \sel -> cleanEv
 --
 ---------------------------------------------------------------
 data Resolver (o::OperationType) event (m :: * -> * )  value where
-    QueryResolver :: { unQueryResolver :: ContextRes () m value } -> Resolver QUERY   event m value
-    MutResolver   :: { unMutResolver   :: ContextRes event m value } -> Resolver MUTATION event m  value
-    SubResolver   :: { runSubResolver  :: ContextRes (Channel event) m (ReaderT event (Resolver QUERY event m) value) } -> Resolver SUBSCRIPTION event m  value
+    ResolverQ :: { runResolverQ :: ContextRes () m value } -> Resolver QUERY event m value
+    ResolverM :: { runResolverM :: ContextRes event m value } -> Resolver MUTATION event m  value
+    ResolverS :: { runResolverS :: ContextRes (Channel event) m (ReaderT event (Resolver QUERY event m) value) } -> Resolver SUBSCRIPTION event m  value
 
 deriving instance (Functor m) => Functor (Resolver o e m)
 
 -- Applicative
 instance (LiftOperation o ,Monad m) => Applicative (Resolver o e m) where
   pure = packResolver . pure
-  QueryResolver r1 <*> QueryResolver r2 = QueryResolver $ r1 <*> r2
-  MutResolver r1 <*> MutResolver r2 = MutResolver $ r1 <*> r2
-  SubResolver r1   <*> SubResolver r2 = SubResolver $ (<*>) <$> r1 <*> r2
+  ResolverQ r1 <*> ResolverQ r2 = ResolverQ $ r1 <*> r2
+  ResolverM r1 <*> ResolverM r2 = ResolverM $ r1 <*> r2
+  ResolverS r1 <*> ResolverS r2 = ResolverS $ (<*>) <$> r1 <*> r2
 
 -- Monad 
 instance (Monad m) => Monad (Resolver QUERY e m) where
@@ -199,29 +199,29 @@ instance (Monad m) => PushEvents e (Resolver MUTATION e m)  where
 class LiftOperation (o::OperationType) where
   packResolver :: Monad m => ContextRes e m a -> Resolver o e m a
   withResolver :: Monad m => ContextRes e m a -> (a -> Resolver o e m b) -> Resolver o e m b
-  setSelection :: Monad m =>  (Name, ValidSelection) -> Resolver o e m a -> Resolver o e m a 
+  setSelection :: Monad m => (Name, ValidSelection) -> Resolver o e m a -> Resolver o e m a 
 
 -- packResolver
 instance LiftOperation QUERY where
-  packResolver = QueryResolver . clearCTXEvents
-  withResolver ctxRes toRes = QueryResolver $ do 
+  packResolver = ResolverQ . clearCTXEvents
+  withResolver ctxRes toRes = ResolverQ $ do 
      v <- clearCTXEvents ctxRes 
-     unQueryResolver $ toRes v
-  setSelection sel (QueryResolver res)  = QueryResolver (updateContext res sel) 
+     runResolverQ $ toRes v
+  setSelection sel (ResolverQ res)  = ResolverQ (updateContext res sel) 
 
 instance LiftOperation MUTATION where
-  packResolver = MutResolver
-  withResolver ctxRes toRes = MutResolver $ ctxRes >>= unMutResolver . toRes 
-  setSelection sel (MutResolver res)  = MutResolver (updateContext res sel) 
+  packResolver = ResolverM
+  withResolver ctxRes toRes = ResolverM $ ctxRes >>= runResolverM . toRes 
+  setSelection sel (ResolverM res)  = ResolverM (updateContext res sel) 
 
 instance LiftOperation SUBSCRIPTION where
-  packResolver = SubResolver . pure . lift . packResolver
-  withResolver ctxRes toRes = SubResolver $ do 
+  packResolver = ResolverS . pure . lift . packResolver
+  withResolver ctxRes toRes = ResolverS $ do 
     value <- clearCTXEvents ctxRes
-    runSubResolver $ toRes value
-  setSelection sel (SubResolver resM)  = SubResolver $ do 
+    runResolverS $ toRes value
+  setSelection sel (ResolverS resM)  = ResolverS $ do 
     res <- resM
-    pure $ ReaderT $ \e -> QueryResolver $ updateContext (unQueryResolver (runReaderT res e)) sel
+    pure $ ReaderT $ \e -> ResolverQ $ updateContext (runResolverQ (runReaderT res e)) sel
 
 -- unsafe variant of >>= , not for public api. user can be confused: 
 --  ignores `channels` on second Subsciption, only returns events from first Subscription monad.
@@ -233,20 +233,20 @@ unsafeBind
   =>  Resolver o e m a
   -> (a -> Resolver o e m b)
   -> Resolver o e m b 
-unsafeBind (QueryResolver x) m2 = QueryResolver (x >>= unQueryResolver . m2)
-unsafeBind (MutResolver x) m2 = MutResolver (x >>= unMutResolver . m2)
-unsafeBind (SubResolver res) m2 = SubResolver $ do 
+unsafeBind (ResolverQ x) m2 = ResolverQ (x >>= runResolverQ . m2)
+unsafeBind (ResolverM x) m2 = ResolverM (x >>= runResolverM . m2)
+unsafeBind (ResolverS res) m2 = ResolverS $ do 
     (readResA :: ReaderT e (Resolver QUERY e m) a ) <- res 
-    pure $ ReaderT $ \e -> QueryResolver $ do 
+    pure $ ReaderT $ \e -> ResolverQ $ do 
          let (resA :: Resolver QUERY e m a) = (runReaderT $ readResA) e
-         (valA :: a) <- unQueryResolver resA
-         (readResB :: ReaderT e (Resolver QUERY e m) b) <- clearCTXEvents $ runSubResolver (m2 valA) 
-         unQueryResolver $ runReaderT readResB e
+         (valA :: a) <- runResolverQ resA
+         (readResB :: ReaderT e (Resolver QUERY e m) b) <- clearCTXEvents $ runResolverS (m2 valA) 
+         runResolverQ $ runReaderT readResB e
 
 subscribe :: forall e m a . (PushEvents (Channel e) (ContextRes (Channel e) m), Monad m) => [StreamChannel e] -> Resolver QUERY e m (e -> Resolver QUERY e m a) -> Resolver SUBSCRIPTION e m a
-subscribe ch res = SubResolver $ do 
+subscribe ch res = ResolverS $ do 
   pushEvents (map Channel ch :: [Channel e])
-  (eventRes :: e -> Resolver QUERY e m a) <- clearCTXEvents (unQueryResolver res)
+  (eventRes :: e -> Resolver QUERY e m a) <- clearCTXEvents (runResolverQ res)
   pure $ ReaderT eventRes
 
 -- Type Helpers  
@@ -262,7 +262,7 @@ instance MapStrategy o o where
   mapStrategy = id
 
 instance MapStrategy QUERY SUBSCRIPTION where
-  mapStrategy  = SubResolver . pure . lift
+  mapStrategy  = ResolverS . pure . lift
 
 --
 -- Selection Processing
@@ -356,7 +356,7 @@ resolveObject _ _ =
 
 toEventResolver :: Monad m => (ReaderT event (Resolver QUERY event m) ValidValue) -> (Name,ValidSelection) -> event -> m GQLResponse
 toEventResolver (ReaderT subRes) sel event = do 
-  value <- runResultT $ runReaderT (runContextRes $ unQueryResolver (subRes event)) sel
+  value <- runResultT $ runReaderT (runContextRes $ runResolverQ (subRes event)) sel
   pure $ renderResponse value
 
 runDataResolver :: (Monad m, LiftOperation o) => Name -> DataResolver o e m -> Resolver o e m ValidValue
@@ -391,9 +391,9 @@ runResolver
   => Resolver o event m ValidValue
   -> (Key, ValidSelection)
   -> ResponseStream event m ValidValue
-runResolver (QueryResolver resT) sel = cleanEvents $ (runReaderT $ runContextRes resT) sel
-runResolver (MutResolver resT) sel = mapEvent Publish $ (runReaderT $ runContextRes $ resT) sel 
-runResolver (SubResolver resT) sel = ResultT $ do 
+runResolver (ResolverQ resT) sel = cleanEvents $ (runReaderT $ runContextRes resT) sel
+runResolver (ResolverM resT) sel = mapEvent Publish $ (runReaderT $ runContextRes $ resT) sel 
+runResolver (ResolverS resT) sel = ResultT $ do 
     (readResValue :: Result (Channel event1) GQLError 'True (ReaderT event (Resolver QUERY event m) ValidValue))  <- runResultT $ (runReaderT $ runContextRes $ resT) sel
     pure $ case readResValue of 
       Failure x -> Failure x
