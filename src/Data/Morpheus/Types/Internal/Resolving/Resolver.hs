@@ -211,7 +211,6 @@ instance (Monad m) => PushEvents e (Resolver MUTATION e m)  where
 class LiftOperation (o::OperationType) where
   packResolver :: Monad m => ResolverState e m a -> Resolver o e m a
   withResolver :: Monad m => ResolverState e m a -> (a -> Resolver o e m b) -> Resolver o e m b
-  setSelection :: Monad m => (Name, ValidSelection) -> Resolver o e m a -> Resolver o e m a 
 
 -- packResolver
 instance LiftOperation QUERY where
@@ -219,19 +218,21 @@ instance LiftOperation QUERY where
   withResolver ctxRes toRes = ResolverQ $ do 
      v <- clearStateResolverEvents ctxRes 
      runResolverQ $ toRes v
-  setSelection sel (ResolverQ res)  = ResolverQ (setState sel res) 
 
 instance LiftOperation MUTATION where
   packResolver = ResolverM
   withResolver ctxRes toRes = ResolverM $ ctxRes >>= runResolverM . toRes 
-  setSelection sel (ResolverM res)  = ResolverM (setState sel res) 
 
 instance LiftOperation SUBSCRIPTION where
   packResolver = ResolverS . pure . lift . packResolver
   withResolver ctxRes toRes = ResolverS $ do 
     value <- clearStateResolverEvents ctxRes
     runResolverS $ toRes value
-  setSelection sel (ResolverS resM)  = ResolverS $ do 
+
+setSelection :: Monad m => (Name, ValidSelection) -> Resolver o e m a -> Resolver o e m a 
+setSelection sel (ResolverQ res)  = ResolverQ (setState sel res)
+setSelection sel (ResolverM res)  = ResolverM (setState sel res) 
+setSelection sel (ResolverS resM)  = ResolverS $ do
     res <- resM
     pure $ ReaderT $ \e -> ResolverQ $ setState sel (runResolverQ (runReaderT res e)) 
 
