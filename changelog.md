@@ -2,6 +2,28 @@
 
 ## 0.9.2 - *.*.2020
 
+### Breaking Changes
+
+- all constructors of `Resolver`: `QueryResolver`,`MutResolver`,`SubResolver` are unexposed. you can use `lift` , `publish` and `subscribe` instead.
+  e.g
+
+  ```hs
+  -- Query Resolver
+  resolveUser :: ResolveQ EVENT IO User
+  resolveUser = lift getDBUser
+
+  -- Mutation Resolver
+  resolveCreateUser :: ResolveM EVENT IO User
+  resolveCreateUser = do
+  publish [userUpdate] -- publishes event inside mutation
+  lift setDBUser
+
+  -- Subscription Resolver
+  resolveNewUser :: ResolveS EVENT IO User
+  resolveNewUser = subscribe [USER] $ do
+    pure $ \(Event _ content) -> lift (getDBUserByContent content)
+  ```
+  
 ### New features
 
 - exposed `publish` for mutation resolvers, now you can write

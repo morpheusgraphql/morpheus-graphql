@@ -21,7 +21,7 @@ module Data.Morpheus.Types
   , IORes
   , IOMutRes
   , IOSubRes
-  , Resolver(..)
+  , Resolver
   , QUERY
   , MUTATION
   , SUBSCRIPTION
