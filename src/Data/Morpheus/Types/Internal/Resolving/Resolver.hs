@@ -413,7 +413,7 @@ instance MapStrategy o o where
   mapStrategy = id
 
 instance MapStrategy QUERY SUBSCRIPTION where
---  mapStrategy res = SubResolver [] (const res)
+  mapStrategy  = SubResolver . pure . lift
 
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
