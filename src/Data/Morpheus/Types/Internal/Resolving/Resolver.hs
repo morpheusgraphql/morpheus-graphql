@@ -173,6 +173,7 @@ instance (Monad m) => Monad (Resolver MUTATION e m) where
   return = pure
   (>>=) = unsafeBind
 
+-- MonadIO
 instance (MonadIO m) => MonadIO (Resolver QUERY e m) where
     liftIO = lift . liftIO
     
@@ -193,6 +194,7 @@ instance (LiftOperation o, Monad m) => Failure Message (Resolver o e m) where
 instance (LiftOperation o, Monad m) => Failure GQLErrors (Resolver o e m) where
   failure = packResolver . failure 
 
+-- PushEvents
 instance (Monad m) => PushEvents e (Resolver MUTATION e m)  where
     pushEvents = packResolver . pushEvents 
 
@@ -333,7 +335,6 @@ withObject f (key, Selection { selectionContent , selectionPosition }) = checkCo
  where
   checkContent (SelectionSet selection) = f selection
   checkContent _ = failure (subfieldsNotSelected key "" selectionPosition)
-
 
 lookupRes :: (LiftOperation o, Monad m) => Name -> [(Name,Resolver o e m ValidValue)] -> Resolver o e m ValidValue
 lookupRes key = fromMaybe (pure gqlNull) . lookup key 
