@@ -4,7 +4,7 @@
 
 ### Breaking Changes
 
-- all constructors of `Resolver`: `QueryResolver`,`MutResolver`,`SubResolver` are unexposed. you can use `lift` , `publish` and `subscribe` instead.
+- all constructors of `Resolver`: `QueryResolver`,`MutResolver`,`SubResolver` are unexposed. use `lift` , `publish` or `subscribe`.
   e.g
 
   ```hs
