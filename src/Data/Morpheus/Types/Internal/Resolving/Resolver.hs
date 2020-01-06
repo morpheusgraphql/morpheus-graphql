@@ -111,39 +111,39 @@ data ResponseEvent m event
 
 type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
 
-
-newtype ContextRes event m a = ContextRes {
-  runContextRes :: ReaderT (Name,ValidSelection) (ResultT event GQLError 'True m) a
+-- Resolver Internal State
+newtype ResolverState event m a = ResolverState {
+  runResolverState :: ReaderT (Name,ValidSelection) (ResultT event GQLError 'True m) a
 } deriving (Functor, Applicative, Monad)
 
-instance Monad m => MonadFail (ContextRes event m) where 
+instance Monad m => MonadFail (ResolverState event m) where 
   fail = failure . pack
 
-instance MonadTrans (ContextRes e) where
-  lift = ContextRes . lift . lift
+instance MonadTrans (ResolverState e) where
+  lift = ResolverState . lift . lift
 
-instance (Monad m) => Failure Message (ContextRes e m) where
-  failure message = ContextRes $ do 
+instance (Monad m) => Failure Message (ResolverState e m) where
+  failure message = ResolverState $ do 
     selection <- ask
     lift $ failure [errorFromSelection selection message]
 
-instance (Monad m) => Failure GQLErrors (ContextRes e m) where
-  failure = ContextRes . lift . failure 
+instance (Monad m) => Failure GQLErrors (ResolverState e m) where
+  failure = ResolverState . lift . failure 
 
-instance (Monad m) => PushEvents e (ContextRes e m) where
-    pushEvents = ContextRes . lift . pushEvents 
+instance (Monad m) => PushEvents e (ResolverState e m) where
+    pushEvents = ResolverState . lift . pushEvents 
 
 errorFromSelection :: (Name,ValidSelection) -> Message -> GQLError
 errorFromSelection (fieldName, Selection { selectionPosition })  = resolvingFailedError selectionPosition fieldName 
 
-getContext :: (Monad m) => ContextRes e m (Name,ValidSelection)
-getContext = ContextRes $ ask 
+getContext :: (Monad m) => ResolverState e m (Name,ValidSelection)
+getContext = ResolverState $ ask 
 
-updateContext :: ContextRes e m a -> (Name,ValidSelection) ->  ContextRes e m a
-updateContext res = ContextRes . ReaderT . const . (runReaderT $ runContextRes res)
+updateContext :: ResolverState e m a -> (Name,ValidSelection) ->  ResolverState e m a
+updateContext res = ResolverState . ReaderT . const . (runReaderT $ runResolverState res)
 
-clearCTXEvents :: (Functor m) => ContextRes e1 m a -> ContextRes e2 m a
-clearCTXEvents (ContextRes (ReaderT x)) = ContextRes $ ReaderT $ \sel -> cleanEvents (x sel)
+clearCTXEvents :: (Functor m) => ResolverState e1 m a -> ResolverState e2 m a
+clearCTXEvents (ResolverState (ReaderT x)) = ResolverState $ ReaderT $ \sel -> cleanEvents (x sel)
 
 
 --     
@@ -151,9 +151,9 @@ clearCTXEvents (ContextRes (ReaderT x)) = ContextRes $ ReaderT $ \sel -> cleanEv
 --
 ---------------------------------------------------------------
 data Resolver (o::OperationType) event (m :: * -> * )  value where
-    ResolverQ :: { runResolverQ :: ContextRes () m value } -> Resolver QUERY event m value
-    ResolverM :: { runResolverM :: ContextRes event m value } -> Resolver MUTATION event m  value
-    ResolverS :: { runResolverS :: ContextRes (Channel event) m (ReaderT event (Resolver QUERY event m) value) } -> Resolver SUBSCRIPTION event m  value
+    ResolverQ :: { runResolverQ :: ResolverState () m value } -> Resolver QUERY event m value
+    ResolverM :: { runResolverM :: ResolverState event m value } -> Resolver MUTATION event m  value
+    ResolverS :: { runResolverS :: ResolverState (Channel event) m (ReaderT event (Resolver QUERY event m) value) } -> Resolver SUBSCRIPTION event m  value
 
 deriving instance (Functor m) => Functor (Resolver o e m)
 
@@ -197,8 +197,8 @@ instance (Monad m) => PushEvents e (Resolver MUTATION e m)  where
     pushEvents = packResolver . pushEvents 
 
 class LiftOperation (o::OperationType) where
-  packResolver :: Monad m => ContextRes e m a -> Resolver o e m a
-  withResolver :: Monad m => ContextRes e m a -> (a -> Resolver o e m b) -> Resolver o e m b
+  packResolver :: Monad m => ResolverState e m a -> Resolver o e m a
+  withResolver :: Monad m => ResolverState e m a -> (a -> Resolver o e m b) -> Resolver o e m b
   setSelection :: Monad m => (Name, ValidSelection) -> Resolver o e m a -> Resolver o e m a 
 
 -- packResolver
@@ -243,7 +243,7 @@ unsafeBind (ResolverS res) m2 = ResolverS $ do
          (readResB :: ReaderT e (Resolver QUERY e m) b) <- clearCTXEvents $ runResolverS (m2 valA) 
          runResolverQ $ runReaderT readResB e
 
-subscribe :: forall e m a . (PushEvents (Channel e) (ContextRes (Channel e) m), Monad m) => [StreamChannel e] -> Resolver QUERY e m (e -> Resolver QUERY e m a) -> Resolver SUBSCRIPTION e m a
+subscribe :: forall e m a . (PushEvents (Channel e) (ResolverState (Channel e) m), Monad m) => [StreamChannel e] -> Resolver QUERY e m (e -> Resolver QUERY e m a) -> Resolver SUBSCRIPTION e m a
 subscribe ch res = ResolverS $ do 
   pushEvents (map Channel ch :: [Channel e])
   (eventRes :: e -> Resolver QUERY e m a) <- clearCTXEvents (runResolverQ res)
@@ -277,11 +277,11 @@ toResolver
   -> Resolver o e m b
 toResolver toArgs  = withResolver args 
  where 
-  args :: ContextRes e m a
+  args :: ResolverState e m a
   args = do
     (_,Selection { selectionArguments }) <- getContext
     let resT = ResultT $ pure $ toArgs selectionArguments
-    ContextRes $ lift $ cleanEvents resT
+    ResolverState $ lift $ cleanEvents resT
 
 -- DataResolver
 data DataResolver o e m =
@@ -298,13 +298,11 @@ instance Semigroup (DataResolver o e m) where
 pickSelection :: Name -> [(Name, ValidSelectionSet)] -> ValidSelectionSet
 pickSelection name = fromMaybe [] . lookup name
 
-
 resolve__typename
   :: (Monad m, LiftOperation o)
   => Name
   -> (Key, Resolver o e m ValidValue)
 resolve__typename name = ("__typename", pure $ gqlString name)
-
 
 resolveEnum
   :: (Monad m, LiftOperation o)
@@ -331,10 +329,11 @@ withObject
   => (ValidSelectionSet -> Resolver o e m value)
   -> (Key, ValidSelection)
   -> Resolver o e m value
-withObject f (_, Selection { selectionContent = SelectionSet selection }) =
-  f selection
-withObject _ (key, Selection { selectionPosition }) =
-  failure (subfieldsNotSelected key "" selectionPosition)
+withObject f (key, Selection { selectionContent , selectionPosition }) = checkContent selectionContent
+ where
+  checkContent (SelectionSet selection) = f selection
+  checkContent _ = failure (subfieldsNotSelected key "" selectionPosition)
+
 
 lookupRes :: (LiftOperation o, Monad m) => Name -> [(Name,Resolver o e m ValidValue)] -> Resolver o e m ValidValue
 lookupRes key = fromMaybe (pure gqlNull) . lookup key 
@@ -356,7 +355,7 @@ resolveObject _ _ =
 
 toEventResolver :: Monad m => (ReaderT event (Resolver QUERY event m) ValidValue) -> (Name,ValidSelection) -> event -> m GQLResponse
 toEventResolver (ReaderT subRes) sel event = do 
-  value <- runResultT $ runReaderT (runContextRes $ runResolverQ (subRes event)) sel
+  value <- runResultT $ runReaderT (runResolverState $ runResolverQ (subRes event)) sel
   pure $ renderResponse value
 
 runDataResolver :: (Monad m, LiftOperation o) => Name -> DataResolver o e m -> Resolver o e m ValidValue
@@ -391,10 +390,10 @@ runResolver
   => Resolver o event m ValidValue
   -> (Key, ValidSelection)
   -> ResponseStream event m ValidValue
-runResolver (ResolverQ resT) sel = cleanEvents $ (runReaderT $ runContextRes resT) sel
-runResolver (ResolverM resT) sel = mapEvent Publish $ (runReaderT $ runContextRes $ resT) sel 
+runResolver (ResolverQ resT) sel = cleanEvents $ (runReaderT $ runResolverState resT) sel
+runResolver (ResolverM resT) sel = mapEvent Publish $ (runReaderT $ runResolverState $ resT) sel 
 runResolver (ResolverS resT) sel = ResultT $ do 
-    (readResValue :: Result (Channel event1) GQLError 'True (ReaderT event (Resolver QUERY event m) ValidValue))  <- runResultT $ (runReaderT $ runContextRes $ resT) sel
+    (readResValue :: Result (Channel event1) GQLError 'True (ReaderT event (Resolver QUERY event m) ValidValue))  <- runResultT $ (runReaderT $ runResolverState $ resT) sel
     pure $ case readResValue of 
       Failure x -> Failure x
       Success { warnings ,result , events = channels } -> do
