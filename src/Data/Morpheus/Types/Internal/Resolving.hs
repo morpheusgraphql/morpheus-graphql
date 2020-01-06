@@ -30,7 +30,6 @@ module Data.Morpheus.Types.Internal.Resolving
     , FieldRes
     , WithOperation
     , PushEvents(..)
-    , getContext
     , runDataResolver
     , subscribe
     )

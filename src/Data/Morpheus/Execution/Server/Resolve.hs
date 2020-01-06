@@ -73,7 +73,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
-                                                , Resolver(..)
+                                                , Resolver
                                                 , GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream

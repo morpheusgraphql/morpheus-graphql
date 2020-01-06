@@ -41,7 +41,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupDataType
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Resolver(..)
+                                                ( Resolver
                                                 , resolveUpdates
                                                 )
 

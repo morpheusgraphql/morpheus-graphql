@@ -30,7 +30,6 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , unsafeBind
   , toResolver
   , lift
-  , getContext
   , SubEvent
   , GQLChannel(..)
   , ResponseEvent(..)
@@ -136,11 +135,11 @@ instance (Monad m) => PushEvents e (ResolverState e m) where
 errorFromSelection :: (Name,ValidSelection) -> Message -> GQLError
 errorFromSelection (fieldName, Selection { selectionPosition })  = resolvingFailedError selectionPosition fieldName 
 
-getContext :: (Monad m) => ResolverState e m (Name,ValidSelection)
-getContext = ResolverState $ ask 
+getState :: (Monad m) => ResolverState e m (Name,ValidSelection)
+getState = ResolverState $ ask 
 
-updateContext :: ResolverState e m a -> (Name,ValidSelection) ->  ResolverState e m a
-updateContext res = ResolverState . ReaderT . const . (runReaderT $ runResolverState res)
+setState :: ResolverState e m a -> (Name,ValidSelection) ->  ResolverState e m a
+setState res = ResolverState . ReaderT . const . (runReaderT $ runResolverState res)
 
 clearCTXEvents :: (Functor m) => ResolverState e1 m a -> ResolverState e2 m a
 clearCTXEvents (ResolverState (ReaderT x)) = ResolverState $ ReaderT $ \sel -> cleanEvents (x sel)
@@ -209,12 +208,12 @@ instance LiftOperation QUERY where
   withResolver ctxRes toRes = ResolverQ $ do 
      v <- clearCTXEvents ctxRes 
      runResolverQ $ toRes v
-  setSelection sel (ResolverQ res)  = ResolverQ (updateContext res sel) 
+  setSelection sel (ResolverQ res)  = ResolverQ (setState res sel) 
 
 instance LiftOperation MUTATION where
   packResolver = ResolverM
   withResolver ctxRes toRes = ResolverM $ ctxRes >>= runResolverM . toRes 
-  setSelection sel (ResolverM res)  = ResolverM (updateContext res sel) 
+  setSelection sel (ResolverM res)  = ResolverM (setState res sel) 
 
 instance LiftOperation SUBSCRIPTION where
   packResolver = ResolverS . pure . lift . packResolver
@@ -223,7 +222,7 @@ instance LiftOperation SUBSCRIPTION where
     runResolverS $ toRes value
   setSelection sel (ResolverS resM)  = ResolverS $ do 
     res <- resM
-    pure $ ReaderT $ \e -> ResolverQ $ updateContext (runResolverQ (runReaderT res e)) sel
+    pure $ ReaderT $ \e -> ResolverQ $ setState (runResolverQ (runReaderT res e)) sel
 
 -- unsafe variant of >>= , not for public api. user can be confused: 
 --  ignores `channels` on second Subsciption, only returns events from first Subscription monad.
@@ -281,7 +280,7 @@ toResolver toArgs  = withResolver args
  where 
   args :: ResolverState e m a
   args = do
-    (_,Selection { selectionArguments }) <- getContext
+    (_,Selection { selectionArguments }) <- getState
     let resT = ResultT $ pure $ toArgs selectionArguments
     ResolverState $ lift $ cleanEvents resT
 
@@ -339,18 +338,19 @@ withObject f (key, Selection { selectionContent , selectionPosition }) = checkCo
 lookupRes :: (LiftOperation o, Monad m) => Name -> [(Name,Resolver o e m ValidValue)] -> Resolver o e m ValidValue
 lookupRes key = fromMaybe (pure gqlNull) . lookup key 
 
+outputSelectionName :: (Name,ValidSelection) -> Name
+outputSelectionName (name,Selection { selectionAlias }) = fromMaybe name selectionAlias
+
 resolveObject
   :: forall o e m. (LiftOperation o , Monad m)
   => ValidSelectionSet
   -> DataResolver o e m
   -> Resolver o e m ValidValue
 resolveObject selectionSet (ObjectRes resolvers) =
-  gqlObject <$> traverse selectResolver selectionSet
+  gqlObject <$> traverse resolver selectionSet
  where
-  selectResolver :: (Name,ValidSelection) -> Resolver o e m (Name,ValidValue)
-  selectResolver sel@(key,Selection { selectionAlias }) = setSelection sel $ do 
-    let selName = fromMaybe key selectionAlias
-    (selName, ) <$> lookupRes key resolvers
+  resolver :: (Name,ValidSelection) -> Resolver o e m (Name,ValidValue)
+  resolver sel@(name,_) = setSelection sel $ (outputSelectionName sel, ) <$> lookupRes name resolvers
 resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 
@@ -360,10 +360,11 @@ toEventResolver (ReaderT subRes) sel event = do
   pure $ renderResponse value
 
 runDataResolver :: (Monad m, LiftOperation o) => Name -> DataResolver o e m -> Resolver o e m ValidValue
-runDataResolver typename resolver = withResolver getContext (__encode resolver)
+runDataResolver typename  = withResolver getState . __encode
    where
     __encode obj (key, sel@Selection { selectionContent })  = encodeNode obj selectionContent 
       where 
+      -- Object -----------------
       encodeNode (ObjectRes fields) _ = withObject encodeObject (key, sel)
         where
         encodeObject selection =
@@ -373,16 +374,16 @@ runDataResolver typename resolver = withResolver getContext (__encode resolver)
             : fields
       encodeNode (EnumRes enum) _ =
         resolveEnum typename enum selectionContent
-      -- Type References --------------------------------------------------------------
+      -- Type Reference --------
       encodeNode (UnionRef (fieldTypeName, fieldResolver)) (UnionSelection selections)
         = setSelection (key, sel { selectionContent = SelectionSet currentSelection }) fieldResolver
           where currentSelection = pickSelection fieldTypeName selections
-      -- RECORDS ----------------------------------------------------------------------------
+      -- Union Record ----------------
       encodeNode (UnionRes (name, fields)) (UnionSelection selections) =
-        resolveObject selection resolvers
+        resolveObject selection resolver
         where
           selection = pickSelection name selections
-          resolvers = ObjectRes (resolve__typename name : fields)
+          resolver = ObjectRes (resolve__typename name : fields)
       encodeNode _ _ = failure $ internalResolvingError
         "union Resolver should only recieve UnionSelection"
 
