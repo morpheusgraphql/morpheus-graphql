@@ -112,7 +112,7 @@ data ResponseEvent m event
 type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
 
 data Context = Context {
-  ctxSelection :: (Name,ValidSelection),
+  currentSelection :: (Name,ValidSelection),
   schema :: Schema,
   operation :: ValidOperation
 }
@@ -130,7 +130,7 @@ instance MonadTrans (ResolverState e) where
 
 instance (Monad m) => Failure Message (ResolverState e m) where
   failure message = ResolverState $ do 
-    selection <- ctxSelection <$> ask 
+    selection <- currentSelection <$> ask 
     lift $ failure [resolverFailureMessage selection message]
 
 instance (Monad m) => Failure GQLErrors (ResolverState e m) where
@@ -149,10 +149,10 @@ mapResolverState f (ResolverState x) = ResolverState (f x)
 
 
 getState :: (Monad m) => ResolverState e m (Name,ValidSelection)
-getState = ResolverState $ ctxSelection <$> ask 
+getState = ResolverState $ currentSelection <$> ask 
 
 setState :: (Name,ValidSelection) -> ResolverState e m a -> ResolverState e m a
-setState ctxSelection = mapResolverState (withReaderT (\ctx -> ctx { ctxSelection } ))
+setState currentSelection = mapResolverState (withReaderT (\ctx -> ctx { currentSelection } ))
 
 -- clear evets and starts new resolver with diferenct type of events but with same value
 -- use properly. only if you know what you are doing

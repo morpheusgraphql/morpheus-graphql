@@ -164,7 +164,7 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
     pure $ Context {
         schema
       , operation
-      , ctxSelection = (
+      , currentSelection = (
         "Root"
         , Selection {
           selectionArguments = []
