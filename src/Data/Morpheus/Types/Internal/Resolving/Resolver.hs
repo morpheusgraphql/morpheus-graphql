@@ -116,7 +116,7 @@ data Context = Context {
   currentSelection :: (Name,ValidSelection),
   schema :: Schema,
   operation :: ValidOperation
-}
+} deriving (Show)
 
 -- Resolver Internal State
 newtype ResolverState event m a = ResolverState {
