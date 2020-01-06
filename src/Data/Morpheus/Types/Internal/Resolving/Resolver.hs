@@ -64,6 +64,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , ValidSelectionSet
                                                 , ValidSelection
                                                 , ValidArguments
+                                                , ValidOperation
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Message
@@ -75,6 +76,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , OperationType
                                                 , QUERY
                                                 , SUBSCRIPTION
+                                                , Schema
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( GQLErrors
@@ -110,7 +112,9 @@ data ResponseEvent m event
 type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
 
 data Context = Context {
-  ctxSelection :: (Name,ValidSelection)
+  ctxSelection :: (Name,ValidSelection),
+  schema :: Schema,
+  operation :: ValidOperation
 }
 
 -- Resolver Internal State

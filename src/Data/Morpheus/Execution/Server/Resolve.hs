@@ -56,7 +56,6 @@ import           Data.Morpheus.Schema.SchemaAPI ( defaultTypes
 import           Data.Morpheus.Types.GQLType    ( GQLType(CUSTOM) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
-                                                , ValidOperation
                                                 , DataFingerprint(..)
                                                 , DataTypeContent(..)
                                                 , Schema(..)
@@ -70,6 +69,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , DataField
                                                 , VALIDATION_MODE(..)
+                                                , Selection(..)
+                                                , SelectionContent(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -83,6 +84,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , unpackEvents
                                                 , Failure(..)
                                                 , resolveUpdates
+                                                , Context(..)
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
@@ -144,6 +146,7 @@ streamResolver
 streamResolver root req =
   ResultT $ pure . renderResponse <$> runResultT (coreResolver root req)
 
+
 coreResolver
   :: forall event m query mut sub
    . (Monad m, RootResCon m event query mut sub)
@@ -154,13 +157,25 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
   = validRequest >>= execOperator
  where
   validRequest
-    :: Monad m => ResponseStream event m (Schema, ValidOperation)
+    :: Monad m => ResponseStream event m Context
   validRequest = cleanEvents $ ResultT $ pure $ do
-    schema <- fullSchema $ Identity root
-    query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
-    pure (schema, query)
+    schema     <- fullSchema $ Identity root
+    operation  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
+    pure $ Context {
+        schema
+      , operation
+      , ctxSelection = (
+        "Root"
+        , Selection {
+          selectionArguments = []
+          , selectionPosition = (operationPosition operation)
+          , selectionAlias = Nothing
+          , selectionContent = SelectionSet (operationSelection operation)
+        } 
+    )
+  }
   ----------------------------------------------------------
-  execOperator (schema, operation) = execOperationBy (operationType operation) operation
+  execOperator ctx@Context {schema ,operation = Operation{ operationType} } = execOperationBy operationType ctx
     where
       execOperationBy Query = encodeQuery (schemaAPI schema) queryResolver
       execOperationBy Mutation = encodeMutation mutationResolver
