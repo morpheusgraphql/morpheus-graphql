@@ -59,7 +59,7 @@
   ```
 
 - `unsafeInternalContext` to get resolver context, use only if it really necessary.
-  the code depend on it may break even on minor version changing, therefore is called `unsafe`.
+  the code depending on it may break even on minor version changes, therefore is called `unsafe`.
   
   ```hs
   resolveUser :: ResolveQ EVENT IO User
