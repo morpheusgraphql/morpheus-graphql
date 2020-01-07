@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , QUERY
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Resolver(..) )
+                                                ( Resolver )
 
 type TRUE = 'True
 

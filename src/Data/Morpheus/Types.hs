@@ -34,6 +34,8 @@ module Data.Morpheus.Types
   , WithOperation
   , publish
   , subscribe
+  , unsafeInternalContext
+  , SubField
   )
 where
 
@@ -67,6 +69,8 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , pushEvents
                                                 , PushEvents(..)
                                                 , subscribe
+                                                , unsafeInternalContext
+                                                , UnSubResolver
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
@@ -86,6 +90,8 @@ type ResolveQ e m a = Res e m (a (Res e m))
 type ResolveM e m a = MutRes e m (a (MutRes e m))
 type ResolveS e m a = SubRes e m (a (Res e m))
 
+-- Subsciption Object Resolver Fields
+type SubField m a = (m (a (UnSubResolver m))) 
 
 publish :: Monad m => [e] -> Resolver MUTATION e m ()
 publish = pushEvents

@@ -46,6 +46,28 @@
     where userByEvent (Event _ content) = liftEither (getDBUser content)
   ```
 
+- `type SubField` will convert your subscription monad to query monad.
+  `SubField (Resolver Subscription Event IO) User` will generate same as
+  `Resolver Subscription Event IO (User ((Resolver QUERY Event IO)))`
+  
+  now if you want define subscription as follows
+  
+  ```hs
+  data Subscription m = Subscription {
+    newUser :: SubField m User
+  }
+  ```
+
+- `unsafeInternalContext` to get resolver context, use only if it really necessary.
+  the code depending on it may break even on minor version changes.
+  
+  ```hs
+  resolveUser :: ResolveQ EVENT IO User
+  resolveUser = do
+    Context { currentSelection, schema, operation } <- unsafeInternalContext
+    lift (getDBUser currentSelection)
+  ```
+
 ### Minor
 
 - MonadIO instance for resolvers. Thanks @dandoh

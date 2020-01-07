@@ -56,20 +56,17 @@ import           Data.Morpheus.Types.GQLType    ( GQLType(..) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
                                                 , Operation(..)
-                                                , ValidOperation
                                                 , MUTATION
                                                 , OperationType
                                                 , QUERY
                                                 , SUBSCRIPTION
-                                                , Selection(..)
-                                                , SelectionContent(..)
                                                 , GQLValue(..)
                                                 , ValidValue
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( MapStrategy(..)
                                                 , LiftOperation
-                                                , Resolver(..)
+                                                , Resolver
                                                 , unsafeBind
                                                 , toResolver
                                                 , DataResolver(..)
@@ -79,6 +76,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , ResponseStream
                                                 , runResolver
                                                 , runDataResolver
+                                                , Context(..)
                                                 )
 
 class Encode resolver o e (m :: * -> *) where
@@ -156,7 +154,7 @@ convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeNa
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
 
-type EncodeOperation e m a = a -> ValidOperation -> ResponseStream e m ValidValue
+type EncodeOperation e m a = a -> Context -> ResponseStream e m ValidValue
 
 type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
 
@@ -211,20 +209,11 @@ encodeSubscription = encodeOperationWith (Proxy @SUBSCRIPTION) Nothing
 encodeOperationWith
   :: forall (o :: OperationType) e m a
    . (Monad m, EncodeCon o e m a, LiftOperation o)
-  => 
-     Proxy o
+  => Proxy o
   -> Maybe (DataResolver o e m)
   -> EncodeOperation e m a
-encodeOperationWith _ externalRes rootResolver Operation { operationSelection ,operationPosition } =
-  runResolver (resolveObject operationSelection (rootDataRes <> extDataRes)) (
-    "Root"
-    , Selection {
-        selectionArguments = []
-        , selectionPosition = operationPosition
-        , selectionAlias = Nothing
-        , selectionContent = SelectionSet operationSelection
-    } 
-  )
+encodeOperationWith _ externalRes rootResolver ctx@Context { operation = Operation { operationSelection } } =
+  runResolver (resolveObject operationSelection (rootDataRes <> extDataRes)) ctx
  where
   rootDataRes = objectResolvers (Proxy :: Proxy (CUSTOM a)) rootResolver
   extDataRes  = fromMaybe (ObjectRes []) externalRes

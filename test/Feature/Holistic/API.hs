@@ -26,7 +26,6 @@ import           Data.Morpheus.Types            ( Event
                                                 , GQLType(..)
                                                 , ID(..)
                                                 , ScalarValue(..)
-                                                , Resolver
                                                 , failRes
                                                 , liftEither
                                                 , subscribe
