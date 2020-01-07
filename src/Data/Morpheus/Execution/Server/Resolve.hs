@@ -42,7 +42,7 @@ import           Data.Morpheus.Execution.Server.Introspect
                                                 , introspectObjectFields
                                                 , TypeScope(..)
                                                 )
-import           Data.Morpheus.Execution.Subscription.ClientRegister
+import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState
                                                 , publishUpdates
                                                 )

@@ -1,6 +1,6 @@
 {-# LANGUAGE NamedFieldPuns , FlexibleContexts #-}
 
-module Data.Morpheus.Execution.Subscription.ClientRegister
+module Data.Morpheus.Execution.Server.Subscription
   ( ClientDB
   , GQLState
   , initGQLState

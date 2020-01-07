@@ -36,7 +36,7 @@ import           Data.Morpheus.Types.Internal.Apollo
                                                 , apolloFormat
                                                 , toApolloResponse
                                                 )
-import           Data.Morpheus.Execution.Subscription.ClientRegister
+import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState
                                                 , addClientSubscription
                                                 , connectClient
