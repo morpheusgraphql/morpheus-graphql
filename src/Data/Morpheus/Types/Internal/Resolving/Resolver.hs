@@ -275,10 +275,9 @@ subscribe ch res = ResolverS $ do
 unsafeInternalContext :: (Monad m, LiftOperation o) => Resolver o e m Context
 unsafeInternalContext = packResolver $ ResolverState ask 
 
--- Type Helpers  
-type family UnSubResolver (a :: * -> *) :: (* -> *)
-
-type instance UnSubResolver (Resolver SUBSCRIPTION m e) = Resolver QUERY m e
+-- Converts Subscription Resolver Type to Query Resolver
+type family UnSubResolver (a :: * -> * ) :: (* -> *)
+type instance UnSubResolver (Resolver SUBSCRIPTION e m) = Resolver QUERY e m
 
 -- map Resolving strategies 
 class MapStrategy (from :: OperationType) (to :: OperationType) where

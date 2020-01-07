@@ -46,6 +46,18 @@
     where userByEvent (Event _ content) = liftEither (getDBUser content)
   ```
 
+- `type SubField` will convert your subscription monad to query monad.
+  `SubField (Resolver Subscription Event IO) User` will generate same as
+  `Resolver Subscription Event IO (User ((Resolver QUERY Event IO)))`
+  
+  now if you want define subscription with default types as follows
+  
+  ```hs
+  data Subscription m = Subscription {
+    newUser :: SubField m User
+  }
+  ```
+
 ### Minor
 
 - MonadIO instance for resolvers. Thanks @dandoh
