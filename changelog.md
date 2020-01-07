@@ -58,6 +58,16 @@
   }
   ```
 
+- `unsafeInternalContext` to get resolver context, use only if it real necessary.
+  the code depend on it may break even on minor version changing, therefore is called `unsafe`.
+  
+  ```hs
+  resolveUser :: ResolveQ EVENT IO User
+  resolveUser = do
+    Context { currentSelection, schema, operation } <- unsafeInternalContext
+    lift (getDBUser currentSelection)
+  ```
+
 ### Minor
 
 - MonadIO instance for resolvers. Thanks @dandoh
