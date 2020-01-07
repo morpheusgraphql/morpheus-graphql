@@ -50,7 +50,7 @@
   `SubField (Resolver Subscription Event IO) User` will generate same as
   `Resolver Subscription Event IO (User ((Resolver QUERY Event IO)))`
   
-  now if you want define subscription with default types as follows
+  now if you want define subscription as follows
   
   ```hs
   data Subscription m = Subscription {
