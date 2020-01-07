@@ -6,10 +6,9 @@ module Data.Morpheus.Execution.Server.Subscription
   , initGQLState
   , connectClient
   , disconnectClient
-  , updateClientByID
-  , publishUpdates
-  , addClientSubscription
-  , removeClientSubscription
+  , startSubscription
+  , endSubscription
+  , publishEvent
   )
 where
 
@@ -73,10 +72,9 @@ updateClientByID
   -> m ()
 updateClientByID key f state = liftIO $ modifyMVar_ state (return . adjust f key)
 
-
-publishUpdates
+publishEvent
   :: (Eq (StreamChannel e), GQLChannel e, MonadIO m) => GQLState m e -> e -> m ()
-publishUpdates gqlState event = liftIO (readMVar gqlState) >>= traverse_ sendMessage 
+publishEvent gqlState event = liftIO (readMVar gqlState) >>= traverse_ sendMessage 
  where
   sendMessage GQLClient { clientSessions, clientConnection } 
     | null clientSessions  = return ()
@@ -95,14 +93,13 @@ publishUpdates gqlState event = liftIO (readMVar gqlState) >>= traverse_ sendMes
       . snd
       ) . toList
 
-removeClientSubscription :: MonadIO m => ClientID -> SesionID -> GQLState m e -> m ()
-removeClientSubscription cid sid = updateClientByID cid stopSubscription
+endSubscription :: MonadIO m => ClientID -> SesionID -> GQLState m e -> m ()
+endSubscription cid sid = updateClientByID cid stopSubscription
  where
   stopSubscription client = client { clientSessions = delete sid (clientSessions client) }
 
-addClientSubscription
-  :: MonadIO m => ClientID -> SubEvent m e -> SesionID -> GQLState m e -> m ()
-addClientSubscription cid subscriptions sid = updateClientByID cid startSubscription
+startSubscription :: MonadIO m => ClientID -> SubEvent m e -> SesionID -> GQLState m e -> m ()
+startSubscription cid subscriptions sid = updateClientByID cid startSubscription
  where
   startSubscription client = client
     { clientSessions = insert sid subscriptions (clientSessions client) }

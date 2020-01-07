@@ -44,7 +44,7 @@ import           Data.Morpheus.Execution.Server.Introspect
                                                 )
 import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState
-                                                , publishUpdates
+                                                , publishEvent
                                                 )
 import           Data.Morpheus.Parsing.Request.Parser
                                                 ( parseGQL )
@@ -192,7 +192,7 @@ statefulResolver state streamApi requestText = do
   mapM_ execute (unpackEvents res)
   pure $ encode $ renderResponse res
  where
-  execute (Publish updates) = publishUpdates state updates
+  execute (Publish events) = publishEvent state events
   execute Subscribe{}       = pure ()
 
 fullSchema
