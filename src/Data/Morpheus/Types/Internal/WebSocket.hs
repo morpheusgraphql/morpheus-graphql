@@ -3,9 +3,9 @@
 module Data.Morpheus.Types.Internal.WebSocket
   ( GQLClient(..)
   , ClientID
-  , ClientSession(..)
   , ClientDB
   , GQLState
+  , SesionID
   )
 where
 
@@ -13,7 +13,7 @@ import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text )
 import           Data.UUID                      ( UUID )
 import           Network.WebSockets             ( Connection )
-import           Data.HashMap.Lazy              ( HashMap )
+import           Data.HashMap.Lazy              ( HashMap , keys)
 import           Control.Concurrent             ( MVar )
 
 -- MORPHEUS
@@ -29,21 +29,13 @@ type ClientDB m e = HashMap ClientID (GQLClient m e)
 
 type ClientID = UUID
 
-data ClientSession m e =
-  ClientSession
-    { sessionId           :: Text
-    , sessionSubscription :: SubEvent m e
-    }
-
-instance (Show e) => Show (ClientSession m e ) where
-  show ClientSession { sessionId } =
-    "GQLSession { id: " <> show sessionId <> ", sessions: " <> "" <> " }"
+type SesionID = Text
 
 data GQLClient m e  =
   GQLClient
     { clientID         :: ClientID
     , clientConnection :: Connection
-    , clientSessions   :: [ClientSession m e ]
+    , clientSessions   :: HashMap SesionID (SubEvent m e)
     }
 
 instance (Show e) => Show (GQLClient m e) where
@@ -51,5 +43,5 @@ instance (Show e) => Show (GQLClient m e) where
     "GQLClient {id:"
       <> show clientID
       <> ", sessions:"
-      <> show clientSessions
+      <> show (keys clientSessions)
       <> "}"
