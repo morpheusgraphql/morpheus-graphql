@@ -16,7 +16,7 @@ dependencies:
   - containers            >= 0.4.2.1   && <  0.7
   - mtl                   >= 2.0       && <= 2.3
   - websockets            >= 0.11.0    &&  <= 0.13
-  - morpheus-graphql      >= 0.9.1
+  - morpheus-graphql      >= 0.10.0
   - scotty
   - wai
   - warp
