@@ -10,10 +10,9 @@ module Data.Morpheus.Types.TypeSystemDirective
 where
 
 import           Data.Morpheus.Types.Internal.AST.Data
-                                                 ( DataType, DataField )
--- import           Data.Proxy                     ( Proxy(..) )
--- import           Data.Text                      ( Text )
-
+                                                  ( DataType, 
+                                                    DataField 
+                                                  )
 
 data TypeSystemDirectiveLocation 
   = SCHEMA
