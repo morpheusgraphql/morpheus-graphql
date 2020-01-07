@@ -429,17 +429,17 @@ rootResolver = GQLRootResolver
  where
   -- Mutation Without Event Triggering
   createDeity :: ResolveM EVENT IO Address
-  createDeity = MutResolver \$ do
-      value <- lift dbCreateDeity
-      pure (
-        [Event { channels = [ChannelA], content = ContentA 1 }],
-        value
-      )
-  newDeity = SubResolver [ChannelA] subResolver
+  createDeity = do
+      requireAuthorized
+      publish [Event { channels = [ChannelA], content = ContentA 1 }]
+      lift dbCreateDeity
+  newDeity = subscribe [ChannelA] $ do
+      requireAuthorized
+      lift deityByEvent
    where
-    subResolver (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
-    subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
-    subResolver _ = fetchDeity -- Resolve Old State
+    deityByEvent (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
+    deityByEvent (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
+    deityByEvent _ = fetchDeity -- Resolve Old State
 ```
 
 ## Morpheus `GraphQL Client` with Template haskell QuasiQuotes
@@ -545,6 +545,18 @@ defineByIntrospectionFile "./introspection.json"
 ## Morpheus CLI for Code Generating
 
 you should use [morpheus-graphql-cli](https://github.com/morpheusgraphql/morpheus-graphql-cli)
+
+## Showcase
+
+Below are the list of projects using Morpheus GraphQL. If you want to start using Morpheus GraphQL, they are
+good templates to begin with.
+
+- https://github.com/morpheusgraphql/mythology-api
+  - Serverless Mythology API
+- https://github.com/dandoh/web-haskell
+  - Modern webserver boilerplate in Haskell: Morpheus Graphql + Postgresql + Authentication + DB migration + Dotenv and more
+
+*Edit this section and send PR if you want to share your project*.
 
 # About
 
