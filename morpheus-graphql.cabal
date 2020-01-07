@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0d4240eb95d5effb0f31f87c698a24d51c363a7197319f37b50f29999209a999
+-- hash: 15332959f194bb7153a76e4e46f62307a8771fe1028e9e5c5f95ace40a865890
 
 name:           morpheus-graphql
 version:        0.9.1
@@ -341,7 +341,6 @@ library
       Data.Morpheus.Execution.Server.Interpreter
       Data.Morpheus.Execution.Server.Introspect
       Data.Morpheus.Execution.Server.Resolve
-      Data.Morpheus.Execution.Subscription.Apollo
       Data.Morpheus.Execution.Subscription.ClientRegister
       Data.Morpheus.Parsing.Document.Parser
       Data.Morpheus.Parsing.Document.TypeSystem
@@ -363,6 +362,7 @@ library
       Data.Morpheus.Types.GQLScalar
       Data.Morpheus.Types.GQLType
       Data.Morpheus.Types.ID
+      Data.Morpheus.Types.Internal.Apollo
       Data.Morpheus.Types.Internal.AST.Base
       Data.Morpheus.Types.Internal.AST.Data
       Data.Morpheus.Types.Internal.AST.Selection
@@ -391,6 +391,7 @@ library
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7
     , megaparsec >=7.0.0 && <9.0.0
+    , mtl >=2.0 && <=2.3
     , scientific >=0.3.6.2 && <0.4
     , template-haskell >=2.0 && <=2.16
     , text >=1.2.3.0 && <1.3
@@ -431,6 +432,7 @@ test-suite morpheus-test
     , containers >=0.4.2.1 && <0.7
     , megaparsec >=7.0.0 && <9.0.0
     , morpheus-graphql
+    , mtl >=2.0 && <=2.3
     , scientific >=0.3.6.2 && <0.4
     , tasty
     , tasty-hunit

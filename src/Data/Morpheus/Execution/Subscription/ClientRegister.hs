@@ -34,7 +34,7 @@ import           Data.HashMap.Lazy              ( empty
                                                 )
 
 -- MORPHEUS
-import           Data.Morpheus.Execution.Subscription.Apollo
+import           Data.Morpheus.Types.Internal.Apollo
                                                 ( toApolloResponse )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Event(..)
