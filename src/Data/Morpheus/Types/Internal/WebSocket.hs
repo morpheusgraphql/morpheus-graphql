@@ -4,6 +4,8 @@ module Data.Morpheus.Types.Internal.WebSocket
   ( GQLClient(..)
   , ClientID
   , ClientSession(..)
+  , ClientDB
+  , GQLState
   )
 where
 
@@ -11,10 +13,19 @@ import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text )
 import           Data.UUID                      ( UUID )
 import           Network.WebSockets             ( Connection )
+import           Data.HashMap.Lazy              ( HashMap )
+import           Control.Concurrent             ( MVar )
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( SubEvent )
+
+
+-- | shared GraphQL state between __websocket__ and __http__ server,
+-- stores information about subscriptions
+type GQLState m e = MVar (ClientDB m e) -- SharedState
+
+type ClientDB m e = HashMap ClientID (GQLClient m e)
 
 type ClientID = UUID
 

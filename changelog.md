@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.2 - *.*.2020
+## 0.10.0 - *.*.2020
 
 ### Breaking Changes
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns , FlexibleContexts #-}
 
 module Data.Morpheus.Execution.Subscription.ClientRegister
-  ( ClientRegister
+  ( ClientDB
   , GQLState
   , initGQLState
   , connectClient
@@ -27,6 +27,12 @@ import           Data.UUID.V4                   ( nextRandom )
 import           Network.WebSockets             ( Connection
                                                 , sendTextData
                                                 )
+import           Data.HashMap.Lazy              ( empty
+                                                , insert
+                                                , delete
+                                                , adjust
+                                                )
+
 -- MORPHEUS
 import           Data.Morpheus.Execution.Subscription.Apollo
                                                 ( toApolloResponse )
@@ -39,60 +45,42 @@ import           Data.Morpheus.Types.Internal.WebSocket
                                                 ( ClientID
                                                 , ClientSession(..)
                                                 , GQLClient(..)
+                                                , ClientDB
+                                                , GQLState
                                                 )
-
-type ClientRegister m e = [(ClientID, GQLClient m e)]
-
--- | shared GraphQL state between __websocket__ and __http__ server,
--- stores information about subscriptions
-type GQLState m e = MVar (ClientRegister m e) -- SharedState
 
 -- | initializes empty GraphQL state
 initGQLState :: IO (GQLState m e)
-initGQLState = newMVar []
-
+initGQLState = newMVar empty
+ 
 connectClient :: MonadIO m => Connection -> GQLState m e -> IO (GQLClient m e)
-connectClient clientConnection varState' = do
-  client' <- newClient
-  modifyMVar_ varState' (addClient client')
-  return (snd client')
- where
-  newClient = do
-    clientID <- nextRandom
-    return
-      (clientID, GQLClient { clientID, clientConnection, clientSessions = [] })
-  addClient client' state' = return (client' : state')
+connectClient clientConnection gqlState = do
+  clientID <- nextRandom
+  let client = GQLClient { clientID , clientConnection, clientSessions = [] }
+  modifyMVar_ gqlState (pure . insert clientID client)
+  return client
 
-disconnectClient :: GQLClient m e -> GQLState m e -> IO (ClientRegister m e)
-disconnectClient client state = modifyMVar state removeUser
+disconnectClient :: GQLClient m e -> GQLState m e -> IO (ClientDB m e)
+disconnectClient GQLClient { clientID } state = modifyMVar state removeUser
  where
-  removeUser state' = let s' = removeClient state' in return (s', s')
-  removeClient :: ClientRegister m e -> ClientRegister m e
-  removeClient = filter ((/= clientID client) . fst)
+  removeUser db = let s' = delete clientID db in return (s', s')
 
 updateClientByID
   :: MonadIO m =>
      ClientID
   -> (GQLClient m e -> GQLClient m e)
-  -> MVar (ClientRegister m e)
+  -> MVar (ClientDB m e)
   -> m ()
-updateClientByID id' updateFunc state = liftIO $ modifyMVar_
-  state
-  (return . map updateClient)
- where
-  updateClient (key, client') | key == id' = (key, updateFunc client')
-  updateClient state'                      = state'
+updateClientByID key f state = liftIO $ modifyMVar_ state (return . adjust f key)
+
 
 publishUpdates
   :: (Eq (StreamChannel e), GQLChannel e, MonadIO m) => GQLState m e -> e -> m ()
-publishUpdates state event = do
-  state' <- liftIO $ readMVar state
-  traverse_ sendMessage state'
+publishUpdates gqlState event = liftIO (readMVar gqlState) >>= traverse_ sendMessage 
  where
-  sendMessage (_, GQLClient { clientSessions = [] }             ) = return ()
-  sendMessage (_, GQLClient { clientSessions, clientConnection }) = mapM_
-    __send
-    (filterByChannels clientSessions)
+  sendMessage GQLClient { clientSessions, clientConnection } 
+    | null clientSessions  = return ()
+    | otherwise = mapM_ __send (filterByChannels clientSessions)
    where
     __send ClientSession { sessionId, sessionSubscription = Event { content = subscriptionRes } } = do
       res <- subscriptionRes event
