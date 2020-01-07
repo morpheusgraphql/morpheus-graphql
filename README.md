@@ -425,17 +425,17 @@ rootResolver = GQLRootResolver
  where
   -- Mutation Without Event Triggering
   createDeity :: ResolveM EVENT IO Address
-  createDeity = MutResolver \$ do
-      value <- lift dbCreateDeity
-      pure (
-        [Event { channels = [ChannelA], content = ContentA 1 }],
-        value
-      )
-  newDeity = SubResolver [ChannelA] subResolver
+  createDeity = do
+      requireAuthorized
+      publish [Event { channels = [ChannelA], content = ContentA 1 }]
+      lift dbCreateDeity
+  newDeity = subscribe [ChannelA] $ do
+      requireAuthorized
+      lift deityByEvent
    where
-    subResolver (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
-    subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
-    subResolver _ = fetchDeity -- Resolve Old State
+    deityByEvent (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
+    deityByEvent (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
+    deityByEvent _ = fetchDeity -- Resolve Old State
 ```
 
 ## Morpheus `GraphQL Client` with Template haskell QuasiQuotes
