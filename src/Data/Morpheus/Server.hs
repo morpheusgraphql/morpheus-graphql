@@ -30,7 +30,7 @@ import           Data.Morpheus.Execution.Server.Resolve
                                                 ( RootResCon
                                                 , coreResolver
                                                 )
-import           Data.Morpheus.Execution.Subscription.Apollo
+import           Data.Morpheus.Types.Internal.Apollo
                                                 ( SubAction(..)
                                                 , acceptApolloSubProtocol
                                                 , apolloFormat
