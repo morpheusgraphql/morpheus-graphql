@@ -50,6 +50,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupDeprecatedReason
                                                 , RAW
                                                 , Name
+                                                , DataArguments(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
@@ -109,10 +110,10 @@ operationTypes lib variables = genOperation
       , tMeta      = Nothing
       }
      where
-      fieldD :: (Text, Variable RAW) -> DataField
+      fieldD :: (Text, Variable RAW) -> DataField cat
       fieldD (key, Variable { variableType }) = DataField
         { fieldName     = key
-        , fieldArgs     = []
+        , fieldArgs     = NoArguments
         , fieldType     = variableType
         , fieldMeta     = Nothing
         }
@@ -150,7 +151,7 @@ operationTypes lib variables = genOperation
      where
       genField
         :: (Text, ValidSelection)
-        -> Validation (DataField, [ClientType], [Text])
+        -> Validation (DataField cat, [ClientType], [Text])
       genField (fName, sel@Selection { selectionAlias, selectionPosition }) =
         do
           (fieldDataType, fieldType) <- lookupFieldType lib
@@ -161,7 +162,7 @@ operationTypes lib variables = genOperation
           (subTypes, requests) <- subTypesBySelection fieldDataType sel
           pure
             ( DataField { fieldName
-                        , fieldArgs     = []
+                        , fieldArgs     = NoArguments
                         , fieldType
                         , fieldMeta     = Nothing
                         }
@@ -212,7 +213,7 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
       (name : collected)
       (map toInputTypeD fields)
      where
-      toInputTypeD :: (Text, DataField) -> LibUpdater [Key]
+      toInputTypeD :: (Text, DataField cat) -> LibUpdater [Key]
       toInputTypeD (_, DataField { fieldType = TypeRef { typeConName } }) =
         scanInputTypes lib typeConName
     scanType (DataEnum _) = pure (collected <> [typeName])
@@ -240,7 +241,7 @@ buildInputType lib name = getType lib name >>= generateTypes
             }
         ]
      where
-      toFieldD :: (Text, DataField) -> Validation DataField
+      toFieldD :: (Text, DataField cat) -> Validation (DataField cat)
       toFieldD (_, field@DataField { fieldType }) = do
         typeConName <- typeFrom [] <$> getType lib (typeConName fieldType)
         pure $ field { fieldType = fieldType { typeConName } }

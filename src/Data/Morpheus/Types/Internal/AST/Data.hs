@@ -314,7 +314,7 @@ data DataArguments (cat :: TypeCategory) where
     { argumentsTypename ::  Maybe Name
     , arguments         :: [(Key, DataArgument)] 
     }  -> DataArguments OUTPUT
-  NoArguments :: DataArguments INPUT
+  NoArguments :: DataArguments cat
 
 deriving instance Lift (DataArguments cat)
 deriving instance Show (DataArguments cat)
