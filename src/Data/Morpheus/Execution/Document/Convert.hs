@@ -35,6 +35,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , OUTPUT
                                                 , INPUT
                                                 , DataArguments(..)
+                                                , argumentsCatLift
+                                                , hasArguments
                                                 )
 
 
@@ -82,8 +84,8 @@ toTHDefinitions namespace lib = traverse renderTHType lib
               }
      where
       fieldArgsType
-        | null fieldArgs = Nothing
-        | otherwise = Just (genArgsTypeName fieldName)
+        | hasArguments fieldArgs = Just (genArgsTypeName fieldName)
+        | otherwise = Nothing
     --------------------------------------------
     generateType :: DataType -> Q GQLTypeD
     generateType dt@DataType { typeName, typeContent, typeMeta } = genType
@@ -198,7 +200,9 @@ genArguments x = genInputFields (arguments x)
 
 genInputFields :: DataObject INPUT -> [DataField OUTPUT]
 genInputFields = map (genField . snd)
- where
-  genField :: DataField INPUT -> DataField OUTPUT
-  genField field@DataField { fieldType = tyRef@TypeRef { typeConName } } =
-    field { fieldType = tyRef { typeConName = hsTypeName typeConName } }
+
+genField :: DataField INPUT -> DataField OUTPUT
+genField field@DataField { fieldType = tyRef@TypeRef { typeConName }, fieldArgs } = field 
+  { fieldType = tyRef { typeConName = hsTypeName typeConName }
+  , fieldArgs = argumentsCatLift fieldArgs
+  }

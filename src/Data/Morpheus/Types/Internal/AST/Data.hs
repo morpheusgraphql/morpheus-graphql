@@ -92,7 +92,8 @@ module Data.Morpheus.Types.Internal.AST.Data
   , TypeCategory
   , INPUT
   , OUTPUT
-  , argumentCatLift
+  , argumentsCatLift
+  , hasArguments
   )
 where
 
@@ -310,6 +311,11 @@ data TypeCategory = InputType | OutputType
 type INPUT = InputType
 type OUTPUT = OutputType
 
+
+hasArguments :: DataArguments cat -> Bool
+hasArguments NoArguments = False
+hasArguments _ = True
+
 data DataArguments (cat :: TypeCategory) where 
   DataArguments :: 
     { argumentsTypename ::  Maybe Name
@@ -317,9 +323,9 @@ data DataArguments (cat :: TypeCategory) where
     }  -> DataArguments OUTPUT
   NoArguments :: DataArguments cat
 
-argumentCatLift :: DataArguments cat -> DataArguments OUTPUT
-argumentCatLift NoArguments = NoArguments 
-argumentCatLift (DataArguments x y) = DataArguments x y
+argumentsCatLift :: DataArguments cat -> DataArguments OUTPUT
+argumentsCatLift NoArguments = NoArguments 
+argumentsCatLift (DataArguments x y) = DataArguments x y
 
 
 deriving instance Lift (DataArguments cat)
