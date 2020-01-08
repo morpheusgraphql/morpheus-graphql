@@ -113,7 +113,6 @@ operationTypes lib variables = genOperation
       fieldD (key, Variable { variableType }) = DataField
         { fieldName     = key
         , fieldArgs     = []
-        , fieldArgsType = Nothing
         , fieldType     = variableType
         , fieldMeta     = Nothing
         }
@@ -163,7 +162,6 @@ operationTypes lib variables = genOperation
           pure
             ( DataField { fieldName
                         , fieldArgs     = []
-                        , fieldArgsType = Nothing
                         , fieldType
                         , fieldMeta     = Nothing
                         }

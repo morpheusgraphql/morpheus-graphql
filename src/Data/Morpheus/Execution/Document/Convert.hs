@@ -76,7 +76,6 @@ toTHDefinitions namespace lib = traverse renderTHType lib
         typeArgs <- getTypeArgs typeConName lib 
         pure $ field { 
                 fieldType = typeRef { typeConName = hsTypeName typeConName, typeArgs }
-                , fieldArgsType
               }
      where
       fieldArgsType
@@ -161,7 +160,6 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                                                     }
                           , fieldMeta     = Nothing
                           , fieldArgs     = []
-                          , fieldArgsType = Nothing
                           }
                       ]
           }
