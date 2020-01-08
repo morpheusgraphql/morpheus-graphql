@@ -452,10 +452,11 @@ data Schema = Schema
 type TypeRegister = HashMap Key DataType
 
 initTypeLib :: (Key, DataType) -> Schema
-initTypeLib query = Schema { types        = empty
+initTypeLib query = Schema { types          = empty
                              , query        = query
                              , mutation     = Nothing
                              , subscription = Nothing
+                             , directives   = empty
                             }
 
 allDataTypes :: Schema -> [(Key, DataType)]
