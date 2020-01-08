@@ -41,6 +41,7 @@ import           Data.Morpheus.Types.Types      ( MapKind
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataFingerprint(..)
                                                 , QUERY
+                                                , Directive
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Resolver )
@@ -108,7 +109,7 @@ class IsObject (KIND a) => GQLType a where
   description _ = Nothing
   isObjectKind :: Proxy a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
-  directives :: Proxy a -> [TypeSystemDirective => a . k]
+  directives :: Proxy a -> [Directive]
   __typeName :: Proxy a -> Text
   default __typeName :: (Typeable a) =>
     Proxy a -> Text
