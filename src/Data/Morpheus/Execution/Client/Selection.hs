@@ -51,6 +51,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RAW
                                                 , Name
                                                 , DataArguments(..)
+                                                , OUTPUT
+                                                , argumentCatLift
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
@@ -241,10 +243,10 @@ buildInputType lib name = getType lib name >>= generateTypes
             }
         ]
      where
-      toFieldD :: (Text, DataField cat) -> Validation (DataField cat)
-      toFieldD (_, field@DataField { fieldType }) = do
+      toFieldD :: (Text, DataField cat) -> Validation (DataField OUTPUT)
+      toFieldD (_, field@DataField { fieldType, fieldArgs }) = do
         typeConName <- typeFrom [] <$> getType lib (typeConName fieldType)
-        pure $ field { fieldType = fieldType { typeConName } }
+        pure $ field { fieldType = fieldType { typeConName  } , fieldArgs = argumentCatLift fieldArgs }
     subTypes (DataEnum enumTags) = pure
       [ ClientType
           { clientType = TypeD { tName      = typeName
@@ -259,7 +261,6 @@ buildInputType lib name = getType lib name >>= generateTypes
       enumOption DataEnumValue { enumName } =
         ConsD { cName = enumName, cFields = [] }
     subTypes _ = pure []
-
 
 lookupFieldType
   :: Schema

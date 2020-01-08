@@ -32,6 +32,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeD(..)
                                                 , Key
                                                 , DataObject
+                                                , OUTPUT
+                                                , INPUT
+                                                , DataArguments(..)
                                                 )
 
 
@@ -70,7 +73,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                               | otherwise = argTName
       where argTName = capital fieldName <> "Args"
     ---------------------------------------------------------------------------------------------
-    genResField :: (Key, DataField) -> Q DataField
+    genResField :: (Key, DataField OUTPUT) -> Q (DataField OUTPUT)
     genResField (_, field@DataField { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } })
       = do 
         typeArgs <- getTypeArgs typeConName lib 
@@ -159,7 +162,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                                                     , typeWrappers = []
                                                     }
                           , fieldMeta     = Nothing
-                          , fieldArgs     = []
+                          , fieldArgs     = NoArguments
                           }
                       ]
           }
@@ -175,14 +178,14 @@ hsTypeName "Boolean"                   = "Bool"
 hsTypeName name | name `elem` sysTypes = "S" <> name
 hsTypeName name                        = name
 
-genArgumentType :: (Key -> Key) -> (Key, DataField) -> Q [TypeD]
-genArgumentType _ (_, DataField { fieldArgs = [] }) = pure []
+genArgumentType :: (Key -> Key) -> (Key, DataField OUTPUT) -> Q [TypeD]
+genArgumentType _ (_, DataField { fieldArgs = NoArguments }) = pure []
 genArgumentType namespaceWith (fieldName, DataField { fieldArgs }) = pure
   [ TypeD
       { tName
       , tNamespace = []
       , tCons      = [ ConsD { cName   = hsTypeName tName
-                             , cFields = genInputFields fieldArgs
+                             , cFields = genArguments fieldArgs
                              }
                      ]
       , tMeta      = Nothing
@@ -190,10 +193,12 @@ genArgumentType namespaceWith (fieldName, DataField { fieldArgs }) = pure
   ]
   where tName = namespaceWith (hsTypeName fieldName)
 
+genArguments :: DataArguments OUTPUT -> [DataField OUTPUT]
+genArguments x = genInputFields (arguments x)
 
-genInputFields :: DataObject -> [DataField]
+genInputFields :: DataObject INPUT -> [DataField OUTPUT]
 genInputFields = map (genField . snd)
  where
-  genField :: DataField -> DataField
+  genField :: DataField INPUT -> DataField OUTPUT
   genField field@DataField { fieldType = tyRef@TypeRef { typeConName } } =
     field { fieldType = tyRef { typeConName = hsTypeName typeConName } }

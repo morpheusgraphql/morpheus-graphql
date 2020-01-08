@@ -92,6 +92,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , TypeCategory
   , INPUT
   , OUTPUT
+  , argumentCatLift
   )
 where
 
@@ -315,6 +316,11 @@ data DataArguments (cat :: TypeCategory) where
     , arguments         :: [(Key, DataArgument)] 
     }  -> DataArguments OUTPUT
   NoArguments :: DataArguments cat
+
+argumentCatLift :: DataArguments cat -> DataArguments OUTPUT
+argumentCatLift NoArguments = NoArguments 
+argumentCatLift (DataArguments x y) = DataArguments x y
+
 
 deriving instance Lift (DataArguments cat)
 deriving instance Show (DataArguments cat)
