@@ -6,7 +6,6 @@ module Data.Morpheus.Parsing.Document.TypeSystem
   )
 where
 
-import           Data.Text                      ( Text )
 import           Text.Megaparsec                ( label
                                                 , sepBy1
                                                 , (<|>)
@@ -17,10 +16,10 @@ import           Data.Morpheus.Parsing.Internal.Internal
                                                 ( Parser )
 import           Data.Morpheus.Parsing.Internal.Pattern
                                                 ( fieldsDefinition
-                                                , inputValueDefinition
                                                 , optionalDirectives
                                                 , typDeclaration
                                                 , enumValueDefinition
+                                                , inputFieldsDefinition
                                                 )
 import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( keyword
@@ -32,12 +31,12 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , setOf
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField
-                                                , DataFingerprint(..)
+                                                ( DataFingerprint(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataValidator(..)
-                                                , Key
+                                                , Name
+                                                , Description
                                                 , Meta(..)
                                                 )
 
@@ -47,7 +46,7 @@ import           Data.Morpheus.Types.Internal.AST
 --  ScalarTypeDefinition:
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
-scalarTypeDefinition :: Maybe Text -> Parser (Text, DataType)
+scalarTypeDefinition :: Maybe Description -> Parser (Name, DataType)
 scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
   typeName       <- typDeclaration "scalar"
   metaDirectives <- optionalDirectives
@@ -75,7 +74,7 @@ scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-objectTypeDefinition :: Maybe Text -> Parser (Text, DataType)
+objectTypeDefinition :: Maybe Description -> Parser (Name, DataType)
 objectTypeDefinition metaDescription = label "ObjectTypeDefinition" $ do
   typeName         <- typDeclaration "type"
   objectImplements <- optionalImplementsInterfaces
@@ -92,7 +91,7 @@ objectTypeDefinition metaDescription = label "ObjectTypeDefinition" $ do
       }
     )
 
-optionalImplementsInterfaces :: Parser [Text]
+optionalImplementsInterfaces :: Parser [Name]
 optionalImplementsInterfaces = implements <|> pure []
  where
   implements =
@@ -103,7 +102,7 @@ optionalImplementsInterfaces = implements <|> pure []
 --  InterfaceTypeDefinition
 --    Description(opt) interface Name Directives(Const)(opt) FieldsDefinition(opt)
 --
-interfaceTypeDefinition :: Maybe Text -> Parser (Text, DataType)
+interfaceTypeDefinition :: Maybe Description -> Parser (Name, DataType)
 interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
   typeName  <- typDeclaration "interface"
   metaDirectives <- optionalDirectives
@@ -127,7 +126,7 @@ interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
 --    = |(opt) NamedType
 --      UnionMemberTypes | NamedType
 --
-unionTypeDefinition :: Maybe Text -> Parser (Text, DataType)
+unionTypeDefinition :: Maybe Description -> Parser (Name, DataType)
 unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
   typeName       <- typDeclaration "union"
   metaDirectives <- optionalDirectives
@@ -153,7 +152,7 @@ unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
 --  EnumValueDefinition
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
-enumTypeDefinition :: Maybe Text -> Parser (Text, DataType)
+enumTypeDefinition :: Maybe Description -> Parser (Name, DataType)
 enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
   typeName              <- typDeclaration "enum"
   metaDirectives        <- optionalDirectives
@@ -176,7 +175,7 @@ enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }
 --
-inputObjectTypeDefinition :: Maybe Text -> Parser (Text, DataType)
+inputObjectTypeDefinition :: Maybe Description -> Parser (Name, DataType)
 inputObjectTypeDefinition metaDescription =
   label "InputObjectTypeDefinition" $ do
     typeName       <- typDeclaration "input"
@@ -190,13 +189,9 @@ inputObjectTypeDefinition metaDescription =
                  , typeContent     = DataInputObject fields
                  }
       )
- where
-  inputFieldsDefinition :: Parser [(Key, DataField)]
-  inputFieldsDefinition =
-    label "InputFieldsDefinition" $ setOf inputValueDefinition
-
-
-parseFinalDataType :: Maybe Text -> Parser (Text, DataType)
+ 
+ 
+parseFinalDataType :: Maybe Description -> Parser (Name, DataType)
 parseFinalDataType description =
   label "TypeDefinition"
      $  inputObjectTypeDefinition description
@@ -206,7 +201,7 @@ parseFinalDataType description =
     <|> objectTypeDefinition description
     <|> interfaceTypeDefinition description
 
-parseDataType :: Parser (Text, DataType)
+parseDataType :: Parser (Name, DataType)
 parseDataType = label "TypeDefinition" $ do
   description <- optDescription
   parseFinalDataType description

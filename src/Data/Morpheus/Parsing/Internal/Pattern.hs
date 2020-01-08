@@ -6,6 +6,7 @@ module Data.Morpheus.Parsing.Internal.Pattern
     , typDeclaration
     , optionalDirectives
     , enumValueDefinition
+    , inputFieldsDefinition
     )
 where
 
@@ -39,6 +40,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Meta(..)
                                                 , DataEnumValue(..)
                                                 , Name
+                                                , INPUT
+                                                , OUTPUT
+                                                , DataArguments(..)
                                                 )
 
 
@@ -62,7 +66,7 @@ enumValueDefinition = label "EnumValueDefinition" $ do
 -- InputValueDefinition
 --   Description(opt) Name : Type DefaultValue(opt) Directives (Const)(opt)
 --
-inputValueDefinition :: Parser (Key, DataField)
+inputValueDefinition :: Parser (Key, DataField INPUT)
 inputValueDefinition = label "InputValueDefinition" $ do
     metaDescription <- optDescription
     fieldName       <- parseName
@@ -84,24 +88,23 @@ inputValueDefinition = label "InputValueDefinition" $ do
 -- ArgumentsDefinition:
 --   ( InputValueDefinition(list) )
 --
-argumentsDefinition :: Parser [(Key, DataField)]
+argumentsDefinition :: Parser (DataArguments OUTPUT)
 argumentsDefinition =
-    label "ArgumentsDefinition" $ parseMaybeTuple inputValueDefinition
-
+    label "ArgumentsDefinition" $ DataArguments Nothing <$> parseMaybeTuple inputValueDefinition
 
 --  FieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
 --
 --  FieldsDefinition :
 --    { FieldDefinition(list) }
 --
-fieldsDefinition :: Parser [(Key, DataField)]
+fieldsDefinition :: Parser [(Key, DataField OUTPUT)]
 fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-fieldDefinition :: Parser (Key, DataField)
+fieldDefinition :: Parser (Key, DataField OUTPUT)
 fieldDefinition = label "FieldDefinition" $ do
     metaDescription <- optDescription
     fieldName       <- parseName
@@ -113,11 +116,18 @@ fieldDefinition = label "FieldDefinition" $ do
         ( fieldName
         , DataField { fieldName
                     , fieldArgs
-                    , fieldArgsType = Nothing
                     , fieldType
                     , fieldMeta = Just Meta { metaDescription, metaDirectives }
                     }
         )
+
+
+-- InputFieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
+--   InputFieldsDefinition:
+--     { InputValueDefinition(list) }
+--
+inputFieldsDefinition :: Parser [(Key, DataField INPUT)]
+inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefinition
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --

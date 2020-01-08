@@ -43,6 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , checkForUnknownKeys
                                                 , checkNameCollision
+                                                , INPUT
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -76,12 +77,10 @@ variableByRef operationName variables Ref { refName, refPosition } = maybe
  where
   variableError = failure $ undefinedVariable operationName refPosition refName
 
-
-
 resolveArgumentVariables
   :: Name
   -> ValidVariables
-  -> DataField
+  -> DataField INPUT
   -> RawArguments
   -> Validation (Arguments RESOLVED)
 resolveArgumentVariables operationName variables DataField { fieldName, fieldArgs }

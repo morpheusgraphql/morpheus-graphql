@@ -146,6 +146,9 @@ module Data.Morpheus.Types.Internal.AST
   , checkForUnknownKeys
   , checkNameCollision
   , DataLookup(..)
+  , TypeCategory
+  , OUTPUT 
+  , INPUT
   -- LOCAL
   , GQLQuery(..)
   , Variables
