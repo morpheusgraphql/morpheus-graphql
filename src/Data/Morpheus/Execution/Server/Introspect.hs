@@ -224,7 +224,6 @@ buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
 buildField proxy fieldArgs fieldName = DataField
   { fieldName
   , fieldArgs
-  , fieldArgsType = Nothing
   , fieldType     = createAlias $ __typeName proxy
   , fieldMeta     = Nothing
   }
@@ -455,11 +454,10 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
       , typeMeta        = Nothing
       , typeContent     = wrapObject
                             [ ( "enum"
-                              , DataField { fieldName     = "enum"
-                                          , fieldArgs     = []
-                                          , fieldArgsType = Nothing
-                                          , fieldType = createAlias enumTypeName
-                                          , fieldMeta     = Nothing
+                              , DataField { fieldName  = "enum"
+                                          , fieldArgs  = []
+                                          , fieldType  = createAlias enumTypeName
+                                          , fieldMeta  = Nothing
                                           }
                               )
                             ]
