@@ -108,6 +108,7 @@ class IsObject (KIND a) => GQLType a where
   description _ = Nothing
   isObjectKind :: Proxy a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
+  directives :: Proxy a -> [TypeSystemDirective => a . k]
   __typeName :: Proxy a -> Text
   default __typeName :: (Typeable a) =>
     Proxy a -> Text
