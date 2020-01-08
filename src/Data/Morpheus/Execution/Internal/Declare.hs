@@ -6,6 +6,7 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE GADTs                 #-}
 
 module Data.Morpheus.Execution.Internal.Declare
   ( declareType
@@ -80,23 +81,23 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
   cons ConsD { cName, cFields } = RecC (genName cName)
                                        (map declareField cFields)
    where
-    declareField DataField { fieldName, fieldArgsType, fieldType } =
+    declareField DataField { fieldName, fieldArgs, fieldType } =
       (fName, defBang, fiType)
      where
       fName | namespace = mkName $ unpack (nameSpaceWith tName fieldName)
             | otherwise = mkName (unpack fieldName)
-      fiType = genFieldT fieldArgsType
+      fiType = genFieldT fieldArgs
        where
         monadVar = VarT $ mkName $ unpack m_
         ---------------------------
-        genFieldT NoArguments
-          | (isOutputObject <$> kindD) == Just True = AppT monadVar result
-          | otherwise                             = result
-        genFieldT DataArguments { argumentsTypename } = AppT
+        genFieldT DataArguments {  argumentsTypename = Just argsTypename } = AppT
           (AppT arrowType argType)
           (AppT monadVar result)
          where
-          argType   = ConT $ mkName (unpack argsTypeName)
+          argType   = ConT $ mkName (unpack argsTypename)
           arrowType = ConT ''Arrow
+        genFieldT _
+          | (isOutputObject <$> kindD) == Just True = AppT monadVar result
+          | otherwise                             = result
         ------------------------------------------------
         result = declareTypeRef (maybe False isSubscription kindD) fieldType
