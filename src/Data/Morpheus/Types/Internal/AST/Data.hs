@@ -309,6 +309,7 @@ data DataField = DataField
   , fieldMeta     :: Maybe Meta
   } deriving (Show,Lift)
 
+
 fieldVisibility :: (Key, DataField) -> Bool
 fieldVisibility ("__typename", _) = False
 fieldVisibility ("__schema"  , _) = False
@@ -445,6 +446,7 @@ data Schema = Schema
   , query        :: (Name,DataType)
   , mutation     :: Maybe (Name,DataType)
   , subscription :: Maybe (Name,DataType)
+  , directives   :: HashMap Name Directive
   } deriving (Show)
 
 type TypeRegister = HashMap Key DataType
