@@ -61,7 +61,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
-                                                , DataArguments
+                                                , DataArguments(..)
                                                 , Meta(..)
                                                 , DataField(..)
                                                 , DataTypeContent(..)
@@ -79,7 +79,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataObject
                                                 , TypeRef(..)
                                                 )
-
+import qualified Data.Morpheus.Types.Internal.AST as AST
 
 type IntroCon a = (GQLType a, IntrospectRep (CUSTOM a) a)
 
@@ -89,12 +89,12 @@ class Introspect a where
   isObject :: proxy a -> Bool
   default isObject :: GQLType a => proxy a -> Bool
   isObject _ = isObjectKind (Proxy @a)
-  field :: proxy a -> Text -> DataField
+  field :: proxy a -> Text -> DataField AST.OUTPUT
   introspect :: proxy a -> TypeUpdater
   -----------------------------------------------
   default field :: GQLType a =>
-    proxy a -> Text -> DataField
-  field _ = buildField (Proxy @a) []
+    proxy a -> Text -> DataField AST.OUTPUT
+  field _ = buildField (Proxy @a) NoArguments
 
 instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect a where
   introspect _ = introspectKind (Context :: Context (KIND a) a)
@@ -135,7 +135,7 @@ instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m
   field _ name = fieldObj { fieldArgs }
    where
     fieldObj  = field (Proxy @b) name
-    fieldArgs = fst $ introspectObjectFields
+    fieldArgs = DataArguments Nothing $ fst $ introspectObjectFields
       (Proxy :: Proxy 'False)
       (__typeName (Proxy @b), OutputType, Proxy @a)
   introspect _ typeLib = resolveUpdates typeLib
@@ -195,7 +195,7 @@ introspectObjectFields
   :: IntrospectRep custom a
   => proxy1 (custom :: Bool)
   -> (Name, TypeScope, proxy2 a)
-  -> ([(Name, DataField)], [TypeUpdater])
+  -> ([(Name, DataField cat)], [TypeUpdater])
 introspectObjectFields p1 (name, scope, proxy) = withObject
   (introspectRep p1 (proxy, scope, "", DataFingerprint "" []))
  where
@@ -220,7 +220,7 @@ instance (TypeRep (Rep a) , Generic a) => IntrospectRep 'False a where
   introspectRep _ (_, scope, name, fing) =
     derivingDataContent (Proxy @a) (name, fing) scope
 
-buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
+buildField :: GQLType a => Proxy a -> DataArguments cat -> Text -> DataField cat
 buildField proxy fieldArgs fieldName = DataField
   { fieldName
   , fieldArgs
@@ -256,38 +256,38 @@ updateLib typeBuilder stack proxy lib' =
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 
-data ConsRep =  ConsRep {
+data ConsRep cat = ConsRep {
   consName :: Key,
   consIsRecord :: Bool,
-  consFields :: [FieldRep]
+  consFields :: [FieldRep cat]
 }
 
-data FieldRep = FieldRep {
+data FieldRep cat = FieldRep {
   fieldTypeName :: Name,
-  fieldData :: (Name, DataField),
+  fieldData :: (Name, DataField cat),
   fieldTypeUpdater :: TypeUpdater,
   fieldIsObject :: Bool
 }
 
-data ResRep = ResRep {
+data ResRep cat = ResRep {
   enumCons :: [Name],
   unionRef :: [Name],
-  unionRecordRep :: [ConsRep]
+  unionRecordRep :: [ConsRep cat ]
 }
 
-isEmpty :: ConsRep -> Bool
+isEmpty :: ConsRep cat -> Bool
 isEmpty ConsRep { consFields = [] } = True
 isEmpty _                           = False
 
-isUnionRecord :: ConsRep -> Bool
+isUnionRecord :: ConsRep cat -> Bool
 isUnionRecord ConsRep { consIsRecord } = consIsRecord
 
-isUnionRef :: Name -> ConsRep -> Bool
+isUnionRef :: Name -> ConsRep cat  -> Bool
 isUnionRef baseName ConsRep { consName, consFields = [FieldRep { fieldIsObject = True, fieldTypeName }] }
   = consName == baseName <> fieldTypeName
 isUnionRef _ _ = False
 
-setFieldNames :: ConsRep -> ConsRep
+setFieldNames :: ConsRep cat -> ConsRep cat
 setFieldNames cons@ConsRep { consFields } = cons
   { consFields = zipWith setFieldName ([0 ..] :: [Int]) consFields
   }
@@ -297,7 +297,7 @@ setFieldNames cons@ConsRep { consFields } = cons
     }
     where fieldName = "_" <> pack (show i)
 
-analyseRep :: Name -> [ConsRep] -> ResRep
+analyseRep :: Name -> [ConsRep cat] -> ResRep cat
 analyseRep baseName cons = ResRep
   { enumCons       = map consName enumRep
   , unionRef       = map fieldTypeName $ concatMap consFields unionRefRep
@@ -327,7 +327,7 @@ derivingDataContent _ (baseName, baseFingerprint) scope =
 
 
 buildInputUnion
-  :: (Name, DataFingerprint) -> [ConsRep] -> (DataTypeContent, [TypeUpdater])
+  :: (Name, DataFingerprint) -> [ConsRep cat ] -> (DataTypeContent, [TypeUpdater])
 buildInputUnion (baseName, baseFingerprint) cons = datatype
   (analyseRep baseName cons)
  where
@@ -345,8 +345,8 @@ buildInputUnion (baseName, baseFingerprint) cons = datatype
 buildUnionType
   :: (Name, DataFingerprint)
   -> (DataUnion -> DataTypeContent)
-  -> (DataObject -> DataTypeContent)
-  -> [ConsRep]
+  -> (DataObject cat -> DataTypeContent)
+  -> [ConsRep cat]
   -> (DataTypeContent, [TypeUpdater])
 buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons = datatype
   (analyseRep baseName cons)
@@ -364,23 +364,23 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons = datatype
   types = map fieldTypeUpdater $ concatMap consFields cons
 
 
-buildObject :: TypeScope -> [FieldRep] -> (DataTypeContent, [TypeUpdater])
+buildObject :: TypeScope -> [FieldRep cat ] -> (DataTypeContent, [TypeUpdater])
 buildObject isOutput consFields = (wrap fields, types)
  where
   (fields, types) = buildDataObject consFields
   wrap | isOutput == OutputType = DataObject []
        | otherwise              = DataInputObject
 
-buildDataObject :: [FieldRep] -> (DataObject, [TypeUpdater])
+buildDataObject :: [FieldRep cat ] -> (DataObject cat , [TypeUpdater])
 buildDataObject consFields = (fields, types)
  where
   fields = map fieldData consFields
   types  = map fieldTypeUpdater consFields
 
 buildUnions
-  :: (DataObject -> DataTypeContent)
+  :: (DataObject cat -> DataTypeContent)
   -> DataFingerprint
-  -> [ConsRep]
+  -> [ConsRep cat]
   -> ([Name], [TypeUpdater])
 buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
  where
@@ -389,7 +389,7 @@ buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
   members = map consName cons
 
 buildUnionRecord
-  :: (DataObject -> DataTypeContent) -> DataFingerprint -> ConsRep -> DataType
+  :: (DataObject cat -> DataTypeContent) -> DataFingerprint -> ConsRep cat -> DataType
 buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } =
   DataType { typeName        = consName
            , typeFingerprint
@@ -405,7 +405,7 @@ buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } =
 
 
 buildUnionEnum
-  :: (DataObject -> DataTypeContent)
+  :: (DataObject cat -> DataTypeContent)
   -> Name
   -> DataFingerprint
   -> [Name]
@@ -440,7 +440,7 @@ buildEnum typeName typeFingerprint tags = pure . defineType
   )
 
 buildEnumObject
-  :: (DataObject -> DataTypeContent)
+  :: (DataObject cat -> DataTypeContent)
   -> Name
   -> DataFingerprint
   -> Name
@@ -455,7 +455,7 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
       , typeContent     = wrapObject
                             [ ( "enum"
                               , DataField { fieldName  = "enum"
-                                          , fieldArgs  = []
+                                          , fieldArgs  = NoArguments
                                           , fieldType  = createAlias enumTypeName
                                           , fieldMeta  = Nothing
                                           }
@@ -468,7 +468,7 @@ data TypeScope = InputType | OutputType deriving (Show,Eq,Ord)
 
 --  GENERIC UNION
 class TypeRep f where
-  typeRep :: Proxy f -> [ConsRep]
+  typeRep :: Proxy f -> [ConsRep cat]
 
 instance TypeRep f => TypeRep (M1 D d f) where
   typeRep _ = typeRep (Proxy @f)
@@ -486,7 +486,7 @@ instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
     ]
 
 class ConRep f where
-    conRep :: Proxy f -> [FieldRep]
+    conRep :: Proxy f -> [FieldRep OUTPUT]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
 instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where
