@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE GADTs                #-}
 
 module Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL(..)
@@ -35,6 +36,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , toGQLWrapper
                                                 , DataEnumValue(..)
                                                 , convertToJSONName
+                                                , DataArguments(..)
+                                                , Name
                                                 )
 
 
@@ -85,18 +88,20 @@ instance RenderGQL (Key, DataType) where
     __render (DataObject {objectFields}) = "type " <> name <> render objectFields
 
 -- OBJECT
-instance RenderGQL [(Text, DataField cat)] where
-  render = renderObject renderField . ignoreHidden
-   where
-    renderField :: (Text, DataField) -> Text
-    renderField (key, DataField { fieldType, fieldArgs }) =
-      convertToJSONName key <> renderArgs fieldArgs <> ": " <> render fieldType
-     where
-      renderArgs []   = ""
-      renderArgs list = "(" <> intercalate ", " (map renderField list) <> ")"
+instance RenderGQL [(Name, DataField cat)] where
+  render = renderObject render . ignoreHidden
+   where 
     -----------------------------------------------------------
     ignoreHidden :: [(Text, DataField cat )] -> [(Text, DataField cat )]
     ignoreHidden = filter fieldVisibility
+
+instance RenderGQL (Name, DataField cat) where 
+  render (key, DataField { fieldType, fieldArgs }) =
+    convertToJSONName key <> render fieldArgs <> ": " <> render fieldType
+
+instance RenderGQL (DataArguments cat) where 
+  render NoArguments   = ""
+  render DataArguments { arguments } = "(" <> intercalate ", " (map render arguments) <> ")"
 
 renderIndent :: Text
 renderIndent = "  "

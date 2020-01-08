@@ -312,12 +312,12 @@ type OUTPUT = OutputType
 data DataArguments (cat :: TypeCategory) where 
   DataArguments :: 
     { argumentsTypename ::  Maybe Name
-    , dataArguments     :: [(Key, DataArgument)] 
+    , arguments         :: [(Key, DataArgument)] 
     }  -> DataArguments OUTPUT
   NoArguments :: DataArguments INPUT
 
-deriving instance Show  (DataArguments cat)
-deriving instance Lift  (DataArguments cat)
+deriving instance Lift (DataArguments cat)
+deriving instance Show (DataArguments cat)
 
 --------------------------------------------------------------------------------------------------
 data DataField (cat :: TypeCategory ) = DataField
