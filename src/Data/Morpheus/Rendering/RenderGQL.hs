@@ -85,7 +85,7 @@ instance RenderGQL (Key, DataType) where
     __render (DataObject {objectFields}) = "type " <> name <> render objectFields
 
 -- OBJECT
-instance RenderGQL [(Text, DataField)] where
+instance RenderGQL [(Text, DataField cat)] where
   render = renderObject renderField . ignoreHidden
    where
     renderField :: (Text, DataField) -> Text
@@ -95,7 +95,7 @@ instance RenderGQL [(Text, DataField)] where
       renderArgs []   = ""
       renderArgs list = "(" <> intercalate ", " (map renderField list) <> ")"
     -----------------------------------------------------------
-    ignoreHidden :: [(Text, DataField)] -> [(Text, DataField)]
+    ignoreHidden :: [(Text, DataField cat )] -> [(Text, DataField cat )]
     ignoreHidden = filter fieldVisibility
 
 renderIndent :: Text

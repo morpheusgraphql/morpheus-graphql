@@ -72,8 +72,7 @@ inputValueDefinition = label "InputValueDefinition" $ do
     metaDirectives <- optionalDirectives
     pure
         ( fieldName
-        , DataField { fieldArgs     = []
-                    , fieldArgsType = Nothing
+        , DataField { fieldArgs     = NoArguments
                     , fieldName
                     , fieldType
                     , fieldMeta = Just Meta { metaDescription, metaDirectives }

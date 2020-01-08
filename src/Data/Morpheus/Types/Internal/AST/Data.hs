@@ -8,6 +8,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE StandaloneDeriving    #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
   ( DataScalar
@@ -15,7 +16,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , DataObject
   , DataArgument
   , DataUnion
-  , DataArguments
+  , DataArguments(..)
   , DataField(..)
   , DataTypeContent(..)
   , DataType(..)
@@ -88,6 +89,9 @@ module Data.Morpheus.Types.Internal.AST.Data
   , checkForUnknownKeys
   , checkNameCollision
   , DataLookup(..)
+  , TypeCategory
+  , INPUT
+  , OUTPUT
   )
 where
 
@@ -213,7 +217,7 @@ data DataTypeKind
   | KindInputUnion
   deriving (Eq, Show, Lift)
 
-isFieldNullable :: DataField -> Bool
+isFieldNullable :: DataField cat -> Bool
 isFieldNullable = isNullable . fieldType
 
 isNullable :: TypeRef -> Bool
@@ -256,11 +260,10 @@ instance Show DataValidator where
 
 type DataScalar = DataValidator
 type DataEnum = [DataEnumValue]
-type DataObject = [(Key, DataField)]
-type DataArgument = DataField
+type DataObject cat = [(Key, DataField cat)]
+type DataArgument = DataField INPUT
 type DataUnion = [Key]
 type DataInputUnion = [(Key, Bool)]
-type DataArguments = [(Key, DataArgument)]
 
 data DataTypeWrapper
   = ListType
@@ -300,35 +303,49 @@ data DataEnumValue = DataEnumValue{
     enumMeta :: Maybe Meta
 } deriving (Show, Lift)
 
+
+data TypeCategory = InputType | OutputType
+
+type INPUT = InputType
+type OUTPUT = OutputType
+
+data DataArguments (cat :: TypeCategory) where 
+  DataArguments :: 
+    { argumentsTypename ::  Maybe Name
+    , dataArguments     :: [(Key, DataArgument)] 
+    }  -> DataArguments OUTPUT
+  NoArguments :: DataArguments INPUT
+
+deriving instance Show  (DataArguments cat)
+deriving instance Lift  (DataArguments cat)
+
 --------------------------------------------------------------------------------------------------
-data DataField = DataField
+data DataField (cat :: TypeCategory ) = DataField
   { fieldName     :: Key
-  , fieldArgs     :: [(Key, DataArgument)]
-  , fieldArgsType :: Maybe Name
+  , fieldArgs     :: DataArguments cat
   , fieldType     :: TypeRef
   , fieldMeta     :: Maybe Meta
   } deriving (Show,Lift)
 
-fieldVisibility :: (Key, DataField) -> Bool
+fieldVisibility :: (Key, DataField cat) -> Bool
 fieldVisibility ("__typename", _) = False
 fieldVisibility ("__schema"  , _) = False
 fieldVisibility ("__type"    , _) = False
 fieldVisibility _                 = True
 
-createField :: DataArguments -> Key -> ([TypeWrapper], Key) -> DataField
-createField fieldArgs fieldName (typeWrappers, typeConName) = DataField
-  { fieldArgs
-  , fieldArgsType = Nothing
+createField :: DataArguments cat -> Key -> ([TypeWrapper], Key) -> DataField cat
+createField dataArguments fieldName (typeWrappers, typeConName) = DataField
+  { fieldArgs = dataArguments
   , fieldName
   , fieldType     = TypeRef { typeConName, typeWrappers, typeArgs = Nothing }
   , fieldMeta     = Nothing
   }
 
-createArgument :: Key -> ([TypeWrapper], Key) -> (Key, DataField)
-createArgument fieldName x = (fieldName, createField [] fieldName x)
+createArgument :: Key -> ([TypeWrapper], Key) -> (Key, DataArgument)
+createArgument fieldName x = (fieldName, createField NoArguments fieldName x)
 
 
-toNullableField :: DataField -> DataField
+toNullableField :: DataField cat -> DataField cat
 toNullableField dataField
   | isNullable (fieldType dataField) = dataField
   | otherwise = dataField { fieldType = nullable (fieldType dataField) }
@@ -336,7 +353,7 @@ toNullableField dataField
   nullable alias@TypeRef { typeWrappers } =
     alias { typeWrappers = TypeMaybe : typeWrappers }
 
-toListField :: DataField -> DataField
+toListField :: DataField cat -> DataField cat
 toListField dataField = dataField { fieldType = listW (fieldType dataField) }
  where
   listW alias@TypeRef { typeWrappers } =
@@ -352,8 +369,8 @@ lookupSelectionField
   => Position
   -> Name
   -> Name
-  -> DataObject
-  -> Validation DataField
+  -> DataObject cat
+  -> Validation (DataField cat)
 lookupSelectionField position fieldName typeName fields = lookupField
   fieldName
   fields
@@ -366,19 +383,19 @@ lookupSelectionField position fieldName typeName fields = lookupField
 data DataType = DataType
   { typeName        :: Key
   , typeFingerprint :: DataFingerprint
-  , typeMeta :: Maybe Meta
-  , typeContent       :: DataTypeContent
+  , typeMeta        :: Maybe Meta
+  , typeContent     :: DataTypeContent
   } deriving (Show)
 
 data DataTypeContent
   = DataScalar      { dataScalar        :: DataScalar   }
   | DataEnum        { enumMembers       :: DataEnum     }
-  | DataInputObject { inputObjectFields :: DataObject   }
+  | DataInputObject { inputObjectFields :: DataObject INPUT  }
   | DataObject      { objectImplements  :: [Name],
-                      objectFields      :: DataObject   }
+                      objectFields      :: DataObject OUTPUT  }
   | DataUnion       { unionMembers      :: DataUnion    }
   | DataInputUnion  { inputUnionMembers :: [(Key,Bool)] }
-  | DataInterface   { interfaceFields   :: DataObject   }
+  | DataInterface   { interfaceFields   :: DataObject OUTPUT   }
   deriving (Show)
 
 createType :: Key -> DataTypeContent -> DataType
@@ -419,7 +436,7 @@ isInputDataType DataType { typeContent } = __isInput typeContent
   __isInput DataInputUnion{}  = True
   __isInput _                 = False
 
-coerceDataObject :: Failure error m => error -> DataType -> m (Name,DataObject)
+coerceDataObject :: Failure error m => error -> DataType -> m (Name, DataObject OUTPUT)
 coerceDataObject _ DataType { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
 coerceDataObject gqlError _ = failure gqlError
 
@@ -477,7 +494,7 @@ instance DataLookup Schema DataType where
       Nothing -> failure err
       Just x  -> pure x
 
-instance DataLookup Schema (Name,DataObject) where 
+instance DataLookup Schema (Name, DataObject OUTPUT) where 
   lookupResult validationError name lib =
      lookupResult validationError name lib >>= coerceDataObject validationError
 
@@ -494,8 +511,8 @@ lookupUnionTypes
   => Position
   -> Key
   -> Schema
-  -> DataField
-  -> m [(Name,DataObject)]
+  -> DataField OUTPUT
+  -> m [(Name, DataObject OUTPUT)]
 lookupUnionTypes position key lib DataField { fieldType = TypeRef { typeConName = typeName } }
   = lookupDataUnion gqlError typeName lib
     >>= mapM (flip (lookupResult gqlError) lib)
@@ -506,8 +523,8 @@ lookupFieldAsSelectionSet
   => Position
   -> Key
   -> Schema
-  -> DataField
-  -> m (Name,DataObject)
+  -> DataField OUTPUT 
+  -> m (Name, DataObject OUTPUT)
 lookupFieldAsSelectionSet position key lib DataField { fieldType = TypeRef { typeConName } }
   = lookupResult gqlError typeConName lib
   where gqlError = hasNoSubfields key typeConName position
@@ -552,14 +569,13 @@ createDataTypeLib types = case popByKey "Query" types of
     pure $ (foldr defineType (initTypeLib query) lib3) {mutation, subscription}
 
 
-createInputUnionFields :: Key -> [Key] -> [(Key, DataField)]
+createInputUnionFields :: Key -> [Key] -> [(Key, DataField INPUT )]
 createInputUnionFields name members = fieldTag : map unionField members
  where
   fieldTag =
     ( "__typename"
     , DataField { fieldName     = "__typename"
-                , fieldArgs     = []
-                , fieldArgsType = Nothing
+                , fieldArgs     = NoArguments
                 , fieldType     = createAlias (name <> "Tags")
                 , fieldMeta     = Nothing
                 }
@@ -567,8 +583,7 @@ createInputUnionFields name members = fieldTag : map unionField members
   unionField memberName =
     ( memberName
     , DataField
-      { fieldArgs     = []
-      , fieldArgsType = Nothing
+      { fieldArgs     = NoArguments
       , fieldName     = memberName
       , fieldType     = TypeRef { typeConName    = memberName
                                   , typeWrappers = [TypeMaybe]
@@ -625,5 +640,5 @@ data TypeD = TypeD
 
 data ConsD = ConsD
   { cName   :: Name
-  , cFields :: [DataField]
+  , cFields :: [DataField OUTPUT]
   } deriving (Show)
