@@ -31,10 +31,12 @@ data TypeSystemDirectiveLocation
 type family ASTByLocation ( loc :: TypeSystemDirectiveLocation) :: * 
 type instance ASTByLocation 'FIELD_DEFINITION = DataField
 
+
+-- TODO: implement directive Decoder
+-- TODO: find out how to implement default resolving on Fields with directive. 
+
 -- | GraphQL TypeSystemDirective
 -- https://graphql.github.io/graphql-spec/June2018/#sec-Type-System.Directives
 -- 
 class TypeSystemDirective (loc :: TypeSystemDirectiveLocation ) directive where
   applyDSL :: proxy loc -> directive -> ASTByLocation loc -> ASTByLocation loc
-
-
