@@ -41,6 +41,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , convertToJSONName
                                                 , DataArguments(..)
                                                 , FieldsDefinition(..)
+                                                , Collectible(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
@@ -62,12 +63,12 @@ instance RenderSchema DataType S__Type where
       constRes $ createLeafType SCALAR name typeMeta Nothing
     __render (DataEnum enums) = constRes
       $ createLeafType ENUM name typeMeta (Just $ map createEnumValue enums)
-    __render (DataInputObject (FieldsDefinition fields)) = \lib ->
+    __render (DataInputObject fields) = \lib ->
       createInputObject name typeMeta
-        <$> traverse (`renderinputValue` lib) fields
-    __render (DataObject {objectFields = FieldsDefinition fields}) = \lib ->
+        <$> traverse (`renderinputValue` lib) (unwrap fields)
+    __render (DataObject {objectFields}) = \lib ->
       createObjectType name (typeMeta >>= metaDescription)
-        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility fields))
+        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility $ unwrap objectFields))
     __render (DataUnion union) =
       constRes $ typeFromUnion (name, typeMeta, union)
     __render (DataInputUnion members) =
@@ -95,7 +96,7 @@ instance RenderSchema DataField S__Field where
         , s__FieldDescription       = pure (fieldMeta >>= metaDescription)
         , s__FieldArgs              = renderArguments fieldArgs lib 
         , s__FieldType'             =
-          pure (wrap field $ createType kind typeConName Nothing $ Just [])
+          pure (applyTypeWrapper field $ createType kind typeConName Nothing $ Just [])
         , s__FieldIsDeprecated      = pure (isJust deprecated)
         , s__FieldDeprecationReason = pure
                                         (deprecated >>= lookupDeprecatedReason)
@@ -112,8 +113,8 @@ renderTypeKind KindInputObject = INPUT_OBJECT
 renderTypeKind KindList        = LIST
 renderTypeKind KindNonNull     = NON_NULL
 
-wrap :: Monad m => DataField -> S__Type m -> S__Type m
-wrap DataField { fieldType = TypeRef { typeWrappers } } typ =
+applyTypeWrapper :: Monad m => DataField -> S__Type m -> S__Type m
+applyTypeWrapper DataField { fieldType = TypeRef { typeWrappers } } typ =
   foldr wrapByTypeWrapper typ (toGQLWrapper typeWrappers)
 
 wrapByTypeWrapper :: Monad m => DataTypeWrapper -> S__Type m -> S__Type m
@@ -138,7 +139,7 @@ createInputObjectType
 createInputObjectType field@DataField { fieldType = TypeRef { typeConName } } lib
   = do
     kind <- renderTypeKind <$> lookupKind typeConName lib
-    pure $ wrap field $ createType kind typeConName Nothing $ Just []
+    pure $ applyTypeWrapper field $ createType kind typeConName Nothing $ Just []
 
 
 renderInputUnion

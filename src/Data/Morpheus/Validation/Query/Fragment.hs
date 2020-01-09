@@ -34,6 +34,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Collection(..)
                                                 , checkNameCollision
                                                 , FieldsDefinition
+                                                , Collectible(..)
                                                 , Name
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving

@@ -44,6 +44,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , isNullableWrapper
                                                 , FieldsDefinition(..)
+                                                , Collectible(..)
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving
@@ -71,8 +72,6 @@ checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable 
                                   , typeWrappers = tyWrappers
                                   , typeArgs     = Nothing
                                   }
-
-
 
 -- Validate Variable Argument or all Possible input Values
 validateInputValue
