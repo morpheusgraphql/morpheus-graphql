@@ -38,6 +38,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , convertToJSONName
                                                 , DataArguments(..)
                                                 , Name
+                                                , FieldsDefinition(..)
                                                 )
 
 
@@ -94,6 +95,9 @@ instance RenderGQL [(Name, DataField cat)] where
     -----------------------------------------------------------
     ignoreHidden :: [(Text, DataField cat )] -> [(Text, DataField cat )]
     ignoreHidden = filter fieldVisibility
+
+instance RenderGQL (FieldsDefinition cat) where
+  render = render . unFieldsDefinition
 
 instance RenderGQL (Name, DataField cat) where 
   render (key, DataField { fieldType, fieldArgs }) =

@@ -78,6 +78,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataUnion
                                                 , DataObject
                                                 , TypeRef(..)
+                                                , Message
+                                                , catLift
                                                 )
 import qualified Data.Morpheus.Types.Internal.AST as AST
 
@@ -200,17 +202,17 @@ introspectObjectFields p1 (name, scope, proxy) = withObject
   (introspectRep p1 (proxy, scope, "", DataFingerprint "" []))
  where
   withObject (DataObject     {objectFields}, ts) = (objectFields, ts)
-  withObject (DataInputObject x, ts) = (x, ts)
+  withObject (DataInputObject x, ts) = (catLift x, ts)
   withObject _ =
     ( []
-    , [ const
-          $  failure
-          $  globalErrorMessage
-          $  "invalid schema: "
-          <> name
-          <> " should have only one nonempty constructor"
-      ]
+    , [introspectFailure (name <> " should have only one nonempty constructor")]
     )
+
+-- castInputCategory :: DataField AST.OUTPUT -> DataField AST.INPUT
+-- castInputCategory 
+
+introspectFailure :: Message -> TypeUpdater
+introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <>)
 
 -- Object Fields
 class IntrospectRep (custom :: Bool) a where
@@ -369,7 +371,7 @@ buildObject isOutput consFields = (wrap fields, types)
  where
   (fields, types) = buildDataObject consFields
   wrap | isOutput == OutputType = DataObject []
-       | otherwise              = DataInputObject
+       | otherwise              = DataInputObject . catLift
 
 buildDataObject :: [FieldRep cat ] -> (DataObject cat , [TypeUpdater])
 buildDataObject consFields = (fields, types)
@@ -486,7 +488,7 @@ instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
     ]
 
 class ConRep f where
-    conRep :: Proxy f -> [FieldRep OUTPUT]
+    conRep :: Proxy f -> [FieldRep AST.OUTPUT]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
 instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where

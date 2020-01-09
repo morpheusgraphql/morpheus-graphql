@@ -43,6 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , INPUT
                                                 , OUTPUT
                                                 , DataArguments(..)
+                                                , FieldsDefinition(..)
                                                 )
 
 
@@ -97,8 +98,8 @@ argumentsDefinition =
 --  FieldsDefinition :
 --    { FieldDefinition(list) }
 --
-fieldsDefinition :: Parser [(Key, DataField OUTPUT)]
-fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
+fieldsDefinition :: Parser (FieldsDefinition OUTPUT)
+fieldsDefinition = label "FieldsDefinition" $ FieldsDefinition <$> setOf fieldDefinition
 
 
 --  FieldDefinition
@@ -126,8 +127,8 @@ fieldDefinition = label "FieldDefinition" $ do
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }
 --
-inputFieldsDefinition :: Parser [(Key, DataField INPUT)]
-inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefinition
+inputFieldsDefinition :: Parser (FieldsDefinition INPUT)
+inputFieldsDefinition = label "InputFieldsDefinition" $ FieldsDefinition <$> setOf inputValueDefinition
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --

@@ -31,11 +31,11 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
                                                 , Key
-                                                , DataObject
+                                                , FieldsDefinition(..)
                                                 , OUTPUT
                                                 , INPUT
                                                 , DataArguments(..)
-                                                , argumentsCatLift
+                                                , catLift
                                                 , hasArguments
                                                 )
 
@@ -123,9 +123,9 @@ toTHDefinitions namespace lib = traverse renderTHType lib
         , typeArgD     = []
         , typeOriginal = (typeName, dt)
         }
-      genType DataObject {objectFields} = do
-        typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) objectFields
-        cFields  <- traverse genResField objectFields
+      genType DataObject {objectFields = FieldsDefinition fields} = do
+        typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) fields
+        cFields  <- traverse genResField fields
         pure GQLTypeD
           { typeD        = TypeD
                              { tName      = hsTypeName typeName
@@ -196,13 +196,13 @@ genArgumentType namespaceWith (fieldName, DataField { fieldArgs }) = pure
   where tName = namespaceWith (hsTypeName fieldName)
 
 genArguments :: DataArguments OUTPUT -> [DataField OUTPUT]
-genArguments x = genInputFields (arguments x)
+genArguments x = genInputFields $ FieldsDefinition (arguments x)
 
-genInputFields :: DataObject INPUT -> [DataField OUTPUT]
-genInputFields = map (genField . snd)
+genInputFields :: FieldsDefinition INPUT -> [DataField OUTPUT]
+genInputFields = map (genField . snd) . unFieldsDefinition
 
 genField :: DataField INPUT -> DataField OUTPUT
 genField field@DataField { fieldType = tyRef@TypeRef { typeConName }, fieldArgs } = field 
   { fieldType = tyRef { typeConName = hsTypeName typeConName }
-  , fieldArgs = argumentsCatLift fieldArgs
+  , fieldArgs = catLift fieldArgs
   }

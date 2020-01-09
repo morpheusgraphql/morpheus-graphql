@@ -75,11 +75,11 @@ instance ParseJSONSchema Type [(Key,DataType)] where
   parse Type { name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields }
     = do
       fields <- traverse parse iFields
-      pure [(typeName, createType typeName $ DataInputObject fields)]
+      pure [(typeName, createType typeName $ DataInputObject $ FieldsDefinition fields)]
   parse Type { name = Just typeName, kind = OBJECT, fields = Just oFields } =
     do
       fields <- traverse parse oFields
-      pure [(typeName, createType typeName $ DataObject [] fields)]
+      pure [(typeName, createType typeName $ DataObject [] $ FieldsDefinition fields)]
   parse _ = pure []
 
 instance ParseJSONSchema Field (Key,DataField OUTPUT) where

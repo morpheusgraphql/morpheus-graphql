@@ -71,7 +71,7 @@ module Data.Morpheus.Types.Internal.AST
   -- DSL
   , DataScalar
   , DataEnum
-  , DataObject
+  , FieldsDefinition(..)
   , DataArgument
   , DataUnion
   , DataArguments(..)
@@ -149,7 +149,7 @@ module Data.Morpheus.Types.Internal.AST
   , TypeCategory
   , OUTPUT 
   , INPUT
-  , argumentsCatLift
+  , catLift
   , hasArguments
   -- LOCAL
   , GQLQuery(..)

@@ -52,7 +52,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , DataArguments(..)
                                                 , OUTPUT
-                                                , argumentsCatLift
+                                                , catLift
+                                                , FieldsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
@@ -211,9 +212,8 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
  where
   scanInpType DataType { typeContent, typeName } = scanType typeContent
    where
-    scanType (DataInputObject fields) = resolveUpdates
-      (name : collected)
-      (map toInputTypeD fields)
+    scanType (DataInputObject (FieldsDefinition fields)) = resolveUpdates
+      (name : collected) (map toInputTypeD fields)
      where
       toInputTypeD :: (Text, DataField cat) -> LibUpdater [Key]
       toInputTypeD (_, DataField { fieldType = TypeRef { typeConName } }) =
@@ -226,7 +226,7 @@ buildInputType lib name = getType lib name >>= generateTypes
  where
   generateTypes DataType { typeName, typeContent } = subTypes typeContent
    where
-    subTypes (DataInputObject inputFields) = do
+    subTypes (DataInputObject (FieldsDefinition inputFields)) = do
       fields <- traverse toFieldD inputFields
       pure
         [ ClientType
@@ -246,7 +246,7 @@ buildInputType lib name = getType lib name >>= generateTypes
       toFieldD :: (Text, DataField cat) -> Validation (DataField OUTPUT)
       toFieldD (_, field@DataField { fieldType, fieldArgs }) = do
         typeConName <- typeFrom [] <$> getType lib (typeConName fieldType)
-        pure $ field { fieldType = fieldType { typeConName  } , fieldArgs = argumentsCatLift fieldArgs }
+        pure $ field { fieldType = fieldType { typeConName  } , fieldArgs = catLift fieldArgs }
     subTypes (DataEnum enumTags) = pure
       [ ClientType
           { clientType = TypeD { tName      = typeName
@@ -270,7 +270,7 @@ lookupFieldType
   -> Text
   -> Validation (DataType, TypeRef)
 lookupFieldType lib path DataType { typeContent = DataObject { objectFields }, typeName } refPosition key
-  = case lookup key objectFields of
+  = case lookup key (unFieldsDefinition objectFields) of
     Just DataField { fieldType = alias@TypeRef { typeConName }, fieldMeta } ->
       checkDeprecated >> (trans <$> getType lib typeConName)
      where

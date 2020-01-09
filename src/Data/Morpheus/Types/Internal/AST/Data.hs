@@ -13,7 +13,7 @@
 module Data.Morpheus.Types.Internal.AST.Data
   ( DataScalar
   , DataEnum
-  , DataObject
+  , FieldsDefinition(..)
   , DataArgument
   , DataUnion
   , DataArguments(..)
@@ -92,7 +92,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , TypeCategory
   , INPUT
   , OUTPUT
-  , argumentsCatLift
+  , catLift
   , hasArguments
   )
 where
@@ -262,7 +262,6 @@ instance Show DataValidator where
 
 type DataScalar = DataValidator
 type DataEnum = [DataEnumValue]
-type DataObject cat = [(Key, DataField cat)]
 type DataArgument = DataField INPUT
 type DataUnion = [Key]
 type DataInputUnion = [(Key, Bool)]
@@ -323,10 +322,20 @@ data DataArguments (cat :: TypeCategory) where
     }  -> DataArguments OUTPUT
   NoArguments :: DataArguments cat
 
-argumentsCatLift :: DataArguments cat -> DataArguments OUTPUT
-argumentsCatLift NoArguments = NoArguments 
-argumentsCatLift (DataArguments x y) = DataArguments x y
 
+
+class CategoryLift a where 
+  catLift :: a (cat :: TypeCategory) -> a OUTPUT
+
+instance CategoryLift DataArguments where 
+  catLift NoArguments = NoArguments 
+  catLift (DataArguments x y) = DataArguments x y
+
+instance CategoryLift DataField where 
+  catLift DataField { fieldArgs } = DataField { fieldArgs = catLift fieldArgs } 
+
+instance CategoryLift FieldsDefinition where 
+ -- catLift DataField { fieldArgs } = DataField { fieldArgs = catLift fieldArgs } 
 
 deriving instance Lift (DataArguments cat)
 deriving instance Show (DataArguments cat)
@@ -338,6 +347,13 @@ data DataField (cat :: TypeCategory ) = DataField
   , fieldType     :: TypeRef
   , fieldMeta     :: Maybe Meta
   } deriving (Show,Lift)
+
+
+newtype FieldsDefinition (cat :: TypeCategory)  = FieldsDefinition 
+  { 
+    unFieldsDefinition :: [(Name, DataField cat)] 
+  } deriving (Show,Lift)
+
 
 fieldVisibility :: (Key, DataField cat) -> Bool
 fieldVisibility ("__typename", _) = False
@@ -381,11 +397,11 @@ lookupSelectionField
   => Position
   -> Name
   -> Name
-  -> DataObject cat
+  -> FieldsDefinition cat
   -> Validation (DataField cat)
 lookupSelectionField position fieldName typeName fields = lookupField
   fieldName
-  fields
+  (unFieldsDefinition fields)
   gqlError
   where gqlError = cannotQueryField fieldName typeName position
 
@@ -402,12 +418,12 @@ data DataType = DataType
 data DataTypeContent
   = DataScalar      { dataScalar        :: DataScalar   }
   | DataEnum        { enumMembers       :: DataEnum     }
-  | DataInputObject { inputObjectFields :: DataObject INPUT  }
+  | DataInputObject { inputObjectFields :: FieldsDefinition INPUT  }
   | DataObject      { objectImplements  :: [Name],
-                      objectFields      :: DataObject OUTPUT  }
+                      objectFields      :: FieldsDefinition OUTPUT  }
   | DataUnion       { unionMembers      :: DataUnion    }
   | DataInputUnion  { inputUnionMembers :: [(Key,Bool)] }
-  | DataInterface   { interfaceFields   :: DataObject OUTPUT   }
+  | DataInterface   { interfaceFields   :: FieldsDefinition OUTPUT   }
   deriving (Show)
 
 createType :: Key -> DataTypeContent -> DataType
@@ -448,7 +464,7 @@ isInputDataType DataType { typeContent } = __isInput typeContent
   __isInput DataInputUnion{}  = True
   __isInput _                 = False
 
-coerceDataObject :: Failure error m => error -> DataType -> m (Name, DataObject OUTPUT)
+coerceDataObject :: Failure error m => error -> DataType -> m (Name, FieldsDefinition OUTPUT)
 coerceDataObject _ DataType { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
 coerceDataObject gqlError _ = failure gqlError
 
@@ -506,7 +522,7 @@ instance DataLookup Schema DataType where
       Nothing -> failure err
       Just x  -> pure x
 
-instance DataLookup Schema (Name, DataObject OUTPUT) where 
+instance DataLookup Schema (Name, FieldsDefinition OUTPUT) where 
   lookupResult validationError name lib =
      lookupResult validationError name lib >>= coerceDataObject validationError
 
@@ -524,7 +540,7 @@ lookupUnionTypes
   -> Key
   -> Schema
   -> DataField OUTPUT
-  -> m [(Name, DataObject OUTPUT)]
+  -> m [(Name, FieldsDefinition OUTPUT)]
 lookupUnionTypes position key lib DataField { fieldType = TypeRef { typeConName = typeName } }
   = lookupDataUnion gqlError typeName lib
     >>= mapM (flip (lookupResult gqlError) lib)
@@ -536,7 +552,7 @@ lookupFieldAsSelectionSet
   -> Key
   -> Schema
   -> DataField OUTPUT 
-  -> m (Name, DataObject OUTPUT)
+  -> m (Name, FieldsDefinition OUTPUT)
 lookupFieldAsSelectionSet position key lib DataField { fieldType = TypeRef { typeConName } }
   = lookupResult gqlError typeConName lib
   where gqlError = hasNoSubfields key typeConName position
