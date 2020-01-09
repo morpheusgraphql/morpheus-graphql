@@ -166,14 +166,13 @@ getOperationObject op lib = do
         <> "\" must be an Object"
 
 getOperationDataType :: Operation a -> Schema -> Validation DataType
-getOperationDataType Operation { operationType = Query } lib =
-  pure $ snd $ query lib
+getOperationDataType Operation { operationType = Query } lib = pure (query lib)
 getOperationDataType Operation { operationType = Mutation, operationPosition } lib
   = case mutation lib of
-    Just (_, mutation') -> pure mutation'
-    Nothing             -> failure $ mutationIsNotDefined operationPosition
+    Just x -> pure x
+    Nothing       -> failure $ mutationIsNotDefined operationPosition
 getOperationDataType Operation { operationType = Subscription, operationPosition } lib
   = case subscription lib of
-    Just (_, subscription') -> pure subscription'
+    Just x -> pure x
     Nothing -> failure $ subscriptionIsNotDefined operationPosition
 
