@@ -8,7 +8,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE StandaloneDeriving , UndecidableInstances   #-}
+{-# LANGUAGE StandaloneDeriving  , TemplateHaskell  #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
   ( DataScalar
@@ -101,9 +101,8 @@ import           Data.HashMap.Lazy              ( HashMap
                                                 , union
                                                 )
 import qualified Data.HashMap.Lazy             as HM
-                                                ( lookup )
 import           Data.Semigroup                 ( (<>) )
-import           Language.Haskell.TH.Syntax     ( Lift )
+import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import           Instances.TH.Lift              ( )
 import           Data.List                      ( find , (\\))
 
@@ -321,15 +320,17 @@ data DataArguments
 
 --------------------------------------------------------------------------------------------------
 newtype FieldsDefinition = FieldsDefinition 
-  { 
-    unFieldsDefinition :: [(Name, DataField)] 
-  } deriving (Show,Lift)
+  { unFieldsDefinition :: HashMap Name DataField } deriving (Show)
+
+instance Lift FieldsDefinition where 
+  lift (FieldsDefinition  hm) = [| FieldsDefinition $ HM.fromList ls |]
+    where ls = HM.toList hm
 
 instance Semigroup FieldsDefinition where 
   FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)
 
 instance SelectBy FieldsDefinition DataField where 
-  selectBy err name (FieldsDefinition lib) = case lookup name lib of
+  selectBy err name (FieldsDefinition lib) = case HM.lookup name lib of
       Nothing -> failure err
       Just x  -> pure x
 
@@ -384,10 +385,7 @@ lookupSelectionField
   -> Name
   -> FieldsDefinition
   -> Validation (DataField)
-lookupSelectionField position fieldName typeName fields = lookupField
-  fieldName
-  (unFieldsDefinition fields)
-  gqlError
+lookupSelectionField position fieldName typeName fields = selectBy gqlError fieldName fields 
   where gqlError = cannotQueryField fieldName typeName position
 
 
