@@ -99,6 +99,7 @@ import           Data.HashMap.Lazy              ( HashMap
                                                 , insert
                                                 , toList
                                                 , union
+                                                , elems
                                                 )
 import qualified Data.HashMap.Lazy             as HM
 import           Data.Semigroup                 ( (<>) )
@@ -316,9 +317,9 @@ data DataEnumValue = DataEnumValue{
 
 data Schema = Schema
   { types        :: HashMap Name DataType
-  , query        :: (Name,DataType)
-  , mutation     :: Maybe (Name,DataType)
-  , subscription :: Maybe (Name,DataType)
+  , query        :: DataType
+  , mutation     :: Maybe DataType
+  , subscription :: Maybe DataType
   } deriving (Show)
 
 type TypeRegister = HashMap Key DataType
@@ -330,8 +331,8 @@ initTypeLib query = Schema { types        = empty
                              , subscription = Nothing
                             }
 
-allDataTypes :: Schema -> [(Key, DataType)]
-allDataTypes  = toList . typeRegister
+allDataTypes :: Schema -> [DataType]
+allDataTypes  = elems . typeRegister
 
 typeRegister :: Schema -> TypeRegister
 typeRegister Schema { types, query, mutation, subscription } =
@@ -383,27 +384,23 @@ createType typeName typeContent = DataType
   , typeContent
   }
 
-createScalarType :: Key -> (Key, DataType)
-createScalarType typeName =
-  (typeName, createType typeName $ DataScalar (DataValidator pure))
+createScalarType :: Name -> DataType
+createScalarType typeName = createType typeName $ DataScalar (DataValidator pure)
 
-createEnumType :: Key -> [Key] -> (Key, DataType)
-createEnumType typeName typeData =
-  (typeName, createType typeName $ DataEnum enumValues)
+createEnumType :: Name -> [Key] -> DataType
+createEnumType typeName typeData = createType typeName (DataEnum enumValues)
   where enumValues = map createEnumValue typeData
 
-createEnumValue :: Key -> DataEnumValue
+createEnumValue :: Name -> DataEnumValue
 createEnumValue enumName = DataEnumValue { enumName, enumMeta = Nothing }
 
-createUnionType :: Key -> [Key] -> (Key, DataType)
-createUnionType typeName typeData =
-  (typeName, createType typeName $ DataUnion typeData)
+createUnionType :: Key -> [Key] -> DataType
+createUnionType typeName typeData = createType typeName (DataUnion typeData)
 
 isEntNode :: DataTypeContent -> Bool
 isEntNode DataScalar{}  = True
 isEntNode DataEnum{} = True
 isEntNode _ = False
-
 
 isInputDataType :: DataType -> Bool
 isInputDataType DataType { typeContent } = __isInput typeContent
@@ -432,8 +429,8 @@ kindOf DataType { typeContent } = __kind typeContent
   __kind DataUnion       {} = KindUnion
   __kind DataInputUnion  {} = KindInputUnion
 
-fromOperation :: Maybe (Key, DataType) -> [(Key, DataType)]
-fromOperation (Just (key, datatype)) = [(key, datatype)]
+fromOperation :: Maybe DataType -> [(Name, DataType)]
+fromOperation (Just datatype) = [(typeName datatype,datatype)]
 fromOperation Nothing = []
 
 lookupUnionTypes
@@ -488,7 +485,7 @@ insertType nextType@(name, datatype) lib = case isTypeDefined name lib of
                      otherwise -> failure $ nameCollisionError name
 
 -- lookups and removes DataType from hashmap 
-popByKey :: Name -> [(Key, DataType)] -> (Maybe (Name,DataType), [(Key, DataType)])
+popByKey :: Name -> [(Key, DataType)] -> (Maybe DataType,[(Key, DataType)])
 popByKey key lib = case lookup key lib of
     Just dt@DataType { typeContent = DataObject {} } ->
       (Just (key, dt), filter ((/= key) . fst) lib)
