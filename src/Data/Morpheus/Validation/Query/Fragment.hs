@@ -31,7 +31,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Ref(..)
                                                 , Position
                                                 , Schema
-                                                , DataLookup(..)
+                                                , SelectBy(..)
                                                 , checkNameCollision
                                                 , FieldsDefinition
                                                 , Name
@@ -108,7 +108,7 @@ scanForSpread (_, Spread Ref { refName = name', refPosition = position' }) =
 
 validateFragment :: Schema -> (Text, Fragment) -> Validation NodeEdges
 validateFragment lib (fName, Fragment { fragmentSelection, fragmentType, fragmentPosition })
-  = (lookupResult validationError fragmentType lib :: Validation ( Name, FieldsDefinition) )>> pure
+  = (selectBy validationError fragmentType lib :: Validation ( Name, FieldsDefinition) )>> pure
     (Ref fName fragmentPosition, concatMap scanForSpread fragmentSelection)
   where validationError = unknownType fragmentType fragmentPosition
 

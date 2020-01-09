@@ -42,7 +42,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Key
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
-                                                , DataLookup(..)
+                                                , SelectBy(..)
                                                 , ConsD(..)
                                                 , ClientType(..)
                                                 , TypeD(..)
@@ -52,6 +52,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , DataArguments(..)
                                                 , FieldsDefinition(..)
+                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
@@ -268,8 +269,10 @@ lookupFieldType
   -> Text
   -> Validation (DataType, TypeRef)
 lookupFieldType lib path DataType { typeContent = DataObject { objectFields }, typeName } refPosition key
-  = case lookup key (unFieldsDefinition objectFields) of
-    Just DataField { fieldType = alias@TypeRef { typeConName }, fieldMeta } ->
+  = selectBy selError key objectFields >>= processDeprecation
+  where
+    selError = compileError $ "cant find field \"" <> pack (show objectFields) <> "\""
+    processDeprecation DataField { fieldType = alias@TypeRef { typeConName }, fieldMeta } = 
       checkDeprecated >> (trans <$> getType lib typeConName)
      where
       trans x =
@@ -283,10 +286,6 @@ lookupFieldType lib path DataType { typeContent = DataObject { objectFields }, t
                                      Ref { refName = key, refPosition }
                                      (lookupDeprecatedReason deprecation)
         Nothing -> pure ()
-    ------------------
-    Nothing ->
-      failure
-        (compileError $ "cant find field \"" <> pack (show objectFields) <> "\"")
 lookupFieldType _ _ dt _ _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 
@@ -300,7 +299,7 @@ leafType DataType { typeName, typeContent } = fromKind typeContent
   fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
 getType :: Schema -> Text -> Validation DataType
-getType lib typename = lookupResult (compileError typename) typename lib 
+getType lib typename = selectBy (compileError typename) typename lib 
 
 typeFromScalar :: Name -> Name
 typeFromScalar "Boolean" = "Bool"

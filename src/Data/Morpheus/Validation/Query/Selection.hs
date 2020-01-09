@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isEntNode
                                                 , lookupFieldAsSelectionSet
                                                 , lookupSelectionField
-                                                , DataLookup(..)
+                                                , SelectBy(..)
                                                 , lookupUnionTypes
                                                 , checkNameCollision
                                                 )
@@ -150,7 +150,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
                                      selectionPosition
                                      selectionArguments
       -- check field Type existence  -----
-      fieldDataType <- lookupResult
+      fieldDataType <- selectBy
         (unknownType (typeConName $fieldType selectionField) selectionPosition) 
         (typeConName $ fieldType selectionField)
         lib

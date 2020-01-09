@@ -88,7 +88,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , isOutputType
   , checkForUnknownKeys
   , checkNameCollision
-  , DataLookup(..)
+  , SelectBy(..)
   , hasArguments
   )
 where
@@ -136,6 +136,10 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 , ScalarValue(..)
                                                 )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
+
+
+class SelectBy l a where 
+  selectBy :: (Failure e m, Monad m) => e -> Name -> l -> m a 
 
 type QUERY = 'Query
 type MUTATION = 'Mutation
@@ -313,14 +317,9 @@ data DataArguments
   | NoArguments
   deriving (Show, Lift)
 
---------------------------------------------------------------------------------------------------
-data DataField = DataField
-  { fieldName     :: Key
-  , fieldArgs     :: DataArguments
-  , fieldType     :: TypeRef
-  , fieldMeta     :: Maybe Meta
-  } deriving (Show,Lift)
 
+
+--------------------------------------------------------------------------------------------------
 newtype FieldsDefinition = FieldsDefinition 
   { 
     unFieldsDefinition :: [(Name, DataField)] 
@@ -328,6 +327,18 @@ newtype FieldsDefinition = FieldsDefinition
 
 instance Semigroup FieldsDefinition where 
   FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)
+
+instance SelectBy FieldsDefinition DataField where 
+  selectBy err name (FieldsDefinition lib) = case lookup name lib of
+      Nothing -> failure err
+      Just x  -> pure x
+
+data DataField = DataField
+  { fieldName     :: Key
+  , fieldArgs     :: DataArguments
+  , fieldType     :: TypeRef
+  , fieldMeta     :: Maybe Meta
+  } deriving (Show,Lift)
 
 fieldVisibility :: (Key, DataField) -> Bool
 fieldVisibility ("__typename", _) = False
@@ -488,22 +499,20 @@ fromOperation (Just (key, datatype)) = [(key, datatype)]
 fromOperation Nothing = []
 
 
-class DataLookup l a where 
-  lookupResult :: (Failure e m, Monad m) => e -> Name -> l -> m a 
 
-instance DataLookup Schema DataType where 
-  lookupResult err name lib = case lookupDataType name lib of
+instance SelectBy Schema DataType where 
+  selectBy err name lib = case lookupDataType name lib of
       Nothing -> failure err
       Just x  -> pure x
 
-instance DataLookup Schema (Name, FieldsDefinition ) where 
-  lookupResult validationError name lib =
-     lookupResult validationError name lib >>= coerceDataObject validationError
+instance SelectBy Schema (Name, FieldsDefinition ) where 
+  selectBy validationError name lib =
+     selectBy validationError name lib >>= coerceDataObject validationError
 
 lookupDataUnion
   :: (Monad m, Failure e m) => e -> Key -> Schema -> m DataUnion
 lookupDataUnion validationError name lib =
-  lookupResult validationError name lib >>= coerceDataUnion validationError
+  selectBy validationError name lib >>= coerceDataUnion validationError
 
 lookupDataType :: Key -> Schema -> Maybe DataType
 lookupDataType name  = HM.lookup name . typeRegister
@@ -517,7 +526,7 @@ lookupUnionTypes
   -> m [(Name, FieldsDefinition)]
 lookupUnionTypes position key lib DataField { fieldType = TypeRef { typeConName = typeName } }
   = lookupDataUnion gqlError typeName lib
-    >>= mapM (flip (lookupResult gqlError) lib)
+    >>= mapM (flip (selectBy gqlError) lib)
   where gqlError = hasNoSubfields key typeName position
 
 lookupFieldAsSelectionSet
@@ -528,7 +537,7 @@ lookupFieldAsSelectionSet
   -> DataField  
   -> m (Name, FieldsDefinition )
 lookupFieldAsSelectionSet position key lib DataField { fieldType = TypeRef { typeConName } }
-  = lookupResult gqlError typeConName lib
+  = selectBy gqlError typeConName lib
   where gqlError = hasNoSubfields key typeConName position
 
 lookupInputType :: Failure e m => Key -> Schema -> e -> m DataType
