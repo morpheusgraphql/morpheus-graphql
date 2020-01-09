@@ -13,6 +13,7 @@ where
 
 import           Text.Megaparsec                ( label
                                                 , many
+                                                , (<|>)
                                                 )
 
 -- MORPHEUS
@@ -28,6 +29,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , parseName
                                                 , parseType
                                                 , setOf
+                                                , parseTuple
                                                 )
 import           Data.Morpheus.Parsing.Internal.Value
                                                 ( parseDefaultValue
@@ -89,7 +91,7 @@ inputValueDefinition = label "InputValueDefinition" $ do
 --
 argumentsDefinition :: Parser (DataArguments)
 argumentsDefinition =
-    label "ArgumentsDefinition" $ DataArguments Nothing <$> parseMaybeTuple inputValueDefinition
+    label "ArgumentsDefinition" $ (DataArguments Nothing <$> parseTuple inputValueDefinition) <|> pure NoArguments
 
 --  FieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
 --
