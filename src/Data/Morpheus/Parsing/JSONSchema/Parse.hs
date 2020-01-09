@@ -65,7 +65,7 @@ decodeIntrospection jsonDoc = case jsonSchema of
 class ParseJSONSchema a b where
   parse :: a -> Validation b
 
-instance ParseJSONSchema Type [(Key,DataType)] where
+instance ParseJSONSchema Type [DataType] where
   parse Type { name = Just typeName, kind = SCALAR } =
     pure [createScalarType typeName]
   parse Type { name = Just typeName, kind = ENUM, enumValues = Just enums } =
@@ -77,11 +77,11 @@ instance ParseJSONSchema Type [(Key,DataType)] where
   parse Type { name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields }
     = do
       (fields :: [(Name,FieldDefinition)]) <- traverse parse iFields
-      pure [(typeName, createType typeName $ DataInputObject $ wrap fields)]
+      pure [createType typeName $ DataInputObject $ wrap fields]
   parse Type { name = Just typeName, kind = OBJECT, fields = Just oFields } =
     do
       (fields :: [(Name,FieldDefinition)]) <- traverse parse oFields
-      pure [(typeName, createType typeName $ DataObject [] $ wrap fields)]
+      pure [createType typeName $ DataObject [] $ wrap fields]
   parse _ = pure []
 
 instance ParseJSONSchema Field (Key,FieldDefinition) where

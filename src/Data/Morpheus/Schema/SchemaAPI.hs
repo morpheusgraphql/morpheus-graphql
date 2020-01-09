@@ -51,8 +51,8 @@ convertTypes
 convertTypes lib = traverse (`render` lib) (allDataTypes lib)
 
 buildSchemaLinkType
-  :: Monad m => (Text, DataType) -> S__Type (Resolver QUERY e m)
-buildSchemaLinkType (key', _) = createObjectType key' Nothing $ Just []
+  :: Monad m => DataType -> S__Type (Resolver QUERY e m)
+buildSchemaLinkType DataType { typeName } = createObjectType typeName Nothing $ Just []
 
 findType
   :: Monad m

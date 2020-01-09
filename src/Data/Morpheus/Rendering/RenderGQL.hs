@@ -47,7 +47,7 @@ renderGraphQLDocument :: Schema -> ByteString
 renderGraphQLDocument lib =
   encodeUtf8 $ LT.fromStrict $ intercalate "\n\n" $ map render visibleTypes
  where
-  visibleTypes = filter (not . isDefaultTypeName . fst) (allDataTypes lib)
+  visibleTypes = filter (not . isDefaultTypeName . typeName) (allDataTypes lib)
 
 class RenderGQL a where
   render :: a -> Key
