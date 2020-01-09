@@ -232,7 +232,7 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
       , Proxy @(subscription (Resolver SUBSCRIPTION event m))
       )
   maybeOperator :: FieldsDefinition -> Name -> Maybe (Name, DataType)
-  maybeOperator (FieldsDefinition [])     = const Nothing
+  maybeOperator (FieldsDefinition x) | null x     = const Nothing
   maybeOperator fields = Just . operatorType fields
   -------------------------------------------------
   operatorType :: FieldsDefinition -> Name -> (Name, DataType)
