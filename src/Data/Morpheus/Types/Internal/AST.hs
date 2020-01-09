@@ -149,7 +149,7 @@ module Data.Morpheus.Types.Internal.AST
   , TypeCategory
   , OUTPUT 
   , INPUT
-  , catLift
+  , CategoryLift(..)
   , hasArguments
   -- LOCAL
   , GQLQuery(..)

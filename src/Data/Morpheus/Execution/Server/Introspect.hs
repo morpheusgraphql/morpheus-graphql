@@ -76,10 +76,11 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeUpdater
                                                 , DataFingerprint(..)
                                                 , DataUnion
-                                                , DataObject
+                                                , FieldsDefinition(..)
                                                 , TypeRef(..)
                                                 , Message
                                                 , catLift
+                                                , catUnlift
                                                 )
 import qualified Data.Morpheus.Types.Internal.AST as AST
 
@@ -91,11 +92,11 @@ class Introspect a where
   isObject :: proxy a -> Bool
   default isObject :: GQLType a => proxy a -> Bool
   isObject _ = isObjectKind (Proxy @a)
-  field :: proxy a -> Text -> DataField AST.OUTPUT
+  field :: proxy a -> Text -> DataField cat
   introspect :: proxy a -> TypeUpdater
   -----------------------------------------------
   default field :: GQLType a =>
-    proxy a -> Text -> DataField AST.OUTPUT
+    proxy a -> Text -> DataField cat
   field _ = buildField (Proxy @a) NoArguments
 
 instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect a where
@@ -137,7 +138,7 @@ instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m
   field _ name = fieldObj { fieldArgs }
    where
     fieldObj  = field (Proxy @b) name
-    fieldArgs = DataArguments Nothing $ fst $ introspectObjectFields
+    fieldArgs = DataArguments Nothing $ unFieldsDefinition $ catUnlift $ fst  $ introspectObjectFields
       (Proxy :: Proxy 'False)
       (__typeName (Proxy @b), OutputType, Proxy @a)
   introspect _ typeLib = resolveUpdates typeLib
@@ -197,14 +198,14 @@ introspectObjectFields
   :: IntrospectRep custom a
   => proxy1 (custom :: Bool)
   -> (Name, TypeScope, proxy2 a)
-  -> ([(Name, DataField cat)], [TypeUpdater])
+  -> (FieldsDefinition AST.OUTPUT, [TypeUpdater])
 introspectObjectFields p1 (name, scope, proxy) = withObject
   (introspectRep p1 (proxy, scope, "", DataFingerprint "" []))
  where
   withObject (DataObject     {objectFields}, ts) = (objectFields, ts)
   withObject (DataInputObject x, ts) = (catLift x, ts)
   withObject _ =
-    ( []
+    ( FieldsDefinition []
     , [introspectFailure (name <> " should have only one nonempty constructor")]
     )
 
@@ -347,7 +348,7 @@ buildInputUnion (baseName, baseFingerprint) cons = datatype
 buildUnionType
   :: (Name, DataFingerprint)
   -> (DataUnion -> DataTypeContent)
-  -> (DataObject cat -> DataTypeContent)
+  -> (FieldsDefinition cat -> DataTypeContent)
   -> [ConsRep cat]
   -> (DataTypeContent, [TypeUpdater])
 buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons = datatype
@@ -366,21 +367,21 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons = datatype
   types = map fieldTypeUpdater $ concatMap consFields cons
 
 
-buildObject :: TypeScope -> [FieldRep cat ] -> (DataTypeContent, [TypeUpdater])
+buildObject :: TypeScope -> [FieldRep cat] -> (DataTypeContent, [TypeUpdater])
 buildObject isOutput consFields = (wrap fields, types)
  where
   (fields, types) = buildDataObject consFields
-  wrap | isOutput == OutputType = DataObject []
-       | otherwise              = DataInputObject . catLift
+  wrap | isOutput == OutputType = DataObject [] . catLift
+       | otherwise              = DataInputObject . catUnlift
 
-buildDataObject :: [FieldRep cat ] -> (DataObject cat , [TypeUpdater])
+buildDataObject :: [FieldRep cat ] -> (FieldsDefinition cat , [TypeUpdater])
 buildDataObject consFields = (fields, types)
  where
-  fields = map fieldData consFields
+  fields = FieldsDefinition $ map fieldData consFields
   types  = map fieldTypeUpdater consFields
 
 buildUnions
-  :: (DataObject cat -> DataTypeContent)
+  :: (FieldsDefinition cat -> DataTypeContent)
   -> DataFingerprint
   -> [ConsRep cat]
   -> ([Name], [TypeUpdater])
@@ -391,12 +392,12 @@ buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
   members = map consName cons
 
 buildUnionRecord
-  :: (DataObject cat -> DataTypeContent) -> DataFingerprint -> ConsRep cat -> DataType
+  :: (FieldsDefinition cat -> DataTypeContent) -> DataFingerprint -> ConsRep cat -> DataType
 buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } =
   DataType { typeName        = consName
            , typeFingerprint
            , typeMeta        = Nothing
-           , typeContent     = wrapObject $ genFields consFields
+           , typeContent     = wrapObject $ FieldsDefinition $ genFields consFields
            }
 
  where
@@ -407,7 +408,7 @@ buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } =
 
 
 buildUnionEnum
-  :: (DataObject cat -> DataTypeContent)
+  :: (FieldsDefinition cat -> DataTypeContent)
   -> Name
   -> DataFingerprint
   -> [Name]
@@ -442,7 +443,7 @@ buildEnum typeName typeFingerprint tags = pure . defineType
   )
 
 buildEnumObject
-  :: (DataObject cat -> DataTypeContent)
+  :: (FieldsDefinition cat -> DataTypeContent)
   -> Name
   -> DataFingerprint
   -> Name
@@ -455,7 +456,8 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
       , typeFingerprint
       , typeMeta        = Nothing
       , typeContent     = wrapObject
-                            [ ( "enum"
+                            $ FieldsDefinition [ 
+                              ( "enum"
                               , DataField { fieldName  = "enum"
                                           , fieldArgs  = NoArguments
                                           , fieldType  = createAlias enumTypeName
@@ -488,7 +490,7 @@ instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
     ]
 
 class ConRep f where
-    conRep :: Proxy f -> [FieldRep AST.OUTPUT]
+    conRep :: Proxy f -> [FieldRep cat]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
 instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where

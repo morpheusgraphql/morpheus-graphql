@@ -92,7 +92,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , TypeCategory
   , INPUT
   , OUTPUT
-  , catLift
+  , CategoryLift(..)
   , hasArguments
   )
 where
@@ -325,7 +325,8 @@ data DataArguments (cat :: TypeCategory) where
 
 
 class CategoryLift a where 
-  catLift :: a (cat :: TypeCategory) -> a OUTPUT
+  catLift   :: a (cat :: TypeCategory) -> a OUTPUT
+  catUnlift :: a (cat :: TypeCategory) -> a INPUT
 
 instance CategoryLift DataArguments where 
   catLift NoArguments = NoArguments 
