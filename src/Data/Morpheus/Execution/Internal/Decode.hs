@@ -26,7 +26,7 @@ import           Data.Morpheus.Error.Internal   (
                                                 internalTypeMismatch
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( FieldDefinition(..)
                                                 , Key
                                                 , ConsD(..) 
                                                 , ValidObject
@@ -49,7 +49,7 @@ decodeObjectExpQ fieldDecoder ConsD { cName, cFields } = handleFields cFields
     applyFields [x     ] = defField x
     applyFields (x : xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
     ------------------------------------------------------------------------
-    defField DataField { fieldName } = uInfixE (varE (mkName "o"))
+    defField FieldDefinition { fieldName } = uInfixE (varE (mkName "o"))
                                                fieldDecoder
                                                [|fName|]
       where fName = unpack fieldName

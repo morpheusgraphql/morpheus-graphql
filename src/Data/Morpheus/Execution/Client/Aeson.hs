@@ -29,7 +29,7 @@ import           Data.Morpheus.Execution.Internal.Utils
 --
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( FieldDefinition(..)
                                                 , isFieldNullable
                                                 , ConsD(..)
                                                 , TypeD(..)
@@ -70,7 +70,7 @@ aesonObjectBody namespace ConsD { cName, cFields } = handleFields cFields
   handleFields fields = startExp fields
   ----------------------------------------------------------------------------------
    where
-    defField field@DataField { fieldName }
+    defField field@FieldDefinition { fieldName }
       | isFieldNullable field = [|o .:? fName|]
       | otherwise             = [|o .: fName|]
       where fName = unpack fieldName

@@ -20,7 +20,7 @@ import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
-                                                , DataField(..)
+                                                , FieldDefinition(..)
                                                 , DataType(..)
                                                 , FieldsDefinition(..)
                                                 , DataTypeContent(..)
@@ -48,10 +48,10 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
     :: FieldsDefinition -> (Name, FieldsDefinition) -> [(Name, Name, ImplementsError)]
   mustBeSubset objFields (typeName, fields) = concatMap checkField (unwrap fields)
    where
-    checkField :: (Name, DataField) -> [(Name, Name, ImplementsError)]
-    checkField (key, DataField { fieldType = interfaceT@TypeRef { typeConName = interfaceTypeName, typeWrappers = interfaceWrappers } })
+    checkField :: (Name, FieldDefinition) -> [(Name, Name, ImplementsError)]
+    checkField (key, FieldDefinition { fieldType = interfaceT@TypeRef { typeConName = interfaceTypeName, typeWrappers = interfaceWrappers } })
       = case lookup key (unwrap objFields) of
-        Just DataField { fieldType = objT@TypeRef { typeConName, typeWrappers } }
+        Just FieldDefinition { fieldType = objT@TypeRef { typeConName, typeWrappers } }
           | typeConName == interfaceTypeName && not
             (isWeaker typeWrappers interfaceWrappers)
           -> []

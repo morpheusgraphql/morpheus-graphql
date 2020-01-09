@@ -17,7 +17,7 @@ import           Data.Morpheus.Error.Input      ( InputError(..)
                                                 , Prop(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( FieldDefinition(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , Schema(..)

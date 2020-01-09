@@ -22,7 +22,7 @@ import qualified Data.HashMap.Lazy          as  HM
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( FieldDefinition(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , Schema
@@ -93,12 +93,12 @@ instance RenderGQL (Key, DataType) where
 instance RenderGQL FieldsDefinition where
   render = renderObject render . ignoreHidden . unwrap
    where 
-    ignoreHidden :: [(Text, DataField )] -> [(Text, DataField )]
+    ignoreHidden :: [(Text, FieldDefinition )] -> [(Text, FieldDefinition )]
     ignoreHidden = filter fieldVisibility
 
 
-instance RenderGQL (Name, DataField) where 
-  render (key, DataField { fieldType, fieldArgs }) =
+instance RenderGQL (Name, FieldDefinition) where 
+  render (key, FieldDefinition { fieldType, fieldArgs }) =
     convertToJSONName key <> render fieldArgs <> ": " <> render fieldType
 
 instance RenderGQL (DataArguments) where 

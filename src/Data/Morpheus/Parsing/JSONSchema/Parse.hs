@@ -25,7 +25,7 @@ import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
 import qualified Data.Morpheus.Types.Internal.AST as AST
                                                 ( Schema)
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField
+                                                ( FieldDefinition
                                                 , DataType(..)
                                                 , DataTypeContent(..)
                                                 , DataTypeWrapper(..)
@@ -76,15 +76,15 @@ instance ParseJSONSchema Type [(Key,DataType)] where
       Just uni -> pure [createUnionType typeName uni]
   parse Type { name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields }
     = do
-      (fields :: [(Name,DataField)]) <- traverse parse iFields
+      (fields :: [(Name,FieldDefinition)]) <- traverse parse iFields
       pure [(typeName, createType typeName $ DataInputObject $ wrap fields)]
   parse Type { name = Just typeName, kind = OBJECT, fields = Just oFields } =
     do
-      (fields :: [(Name,DataField)]) <- traverse parse oFields
+      (fields :: [(Name,FieldDefinition)]) <- traverse parse oFields
       pure [(typeName, createType typeName $ DataObject [] $ wrap fields)]
   parse _ = pure []
 
-instance ParseJSONSchema Field (Key,DataField) where
+instance ParseJSONSchema Field (Key,FieldDefinition) where
   parse Field { fieldName, fieldArgs, fieldType } = do
     fType <- fieldTypeFromJSON fieldType
     args  <- traverse genArg fieldArgs
@@ -93,7 +93,7 @@ instance ParseJSONSchema Field (Key,DataField) where
     genArg InputValue { inputName = argName, inputType = argType } =
       createArgument argName <$> fieldTypeFromJSON argType
 
-instance ParseJSONSchema InputValue (Key,DataField) where
+instance ParseJSONSchema InputValue (Key,FieldDefinition) where
   parse InputValue { inputName, inputType } = do
     fieldType <- fieldTypeFromJSON inputType
     pure (inputName, createField NoArguments inputName fieldType)

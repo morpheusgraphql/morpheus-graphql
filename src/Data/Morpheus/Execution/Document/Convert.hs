@@ -19,7 +19,7 @@ import           Data.Morpheus.Types.Internal.TH (infoTyVars)
 import           Data.Morpheus.Execution.Internal.Utils
                                                 ( capital )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( FieldDefinition(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeKind(..)
@@ -73,8 +73,8 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                               | otherwise = argTName
       where argTName = capital fieldName <> "Args"
     ---------------------------------------------------------------------------------------------
-    genResField :: (Key, DataField) -> Q (DataField)
-    genResField (_, field@DataField { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } })
+    genResField :: (Key, FieldDefinition) -> Q (FieldDefinition)
+    genResField (_, field@FieldDefinition { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } })
       = do 
         typeArgs <- getTypeArgs typeConName lib 
         pure $ field 
@@ -156,7 +156,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
        where
         unionCon memberName = ConsD
           { cName
-          , cFields = [ DataField
+          , cFields = [ FieldDefinition
                           { fieldName     = "un" <> cName
                           , fieldType     = TypeRef { typeConName  = utName
                                                     , typeArgs     = Just m_
@@ -179,9 +179,9 @@ hsTypeName "Boolean"                   = "Bool"
 hsTypeName name | name `elem` sysTypes = "S" <> name
 hsTypeName name                        = name
 
-genArgumentType :: (Key -> Key) -> (Key, DataField) -> Q [TypeD]
-genArgumentType _ (_, DataField { fieldArgs = NoArguments }) = pure []
-genArgumentType namespaceWith (fieldName, DataField { fieldArgs }) = pure
+genArgumentType :: (Key -> Key) -> (Key, FieldDefinition) -> Q [TypeD]
+genArgumentType _ (_, FieldDefinition { fieldArgs = NoArguments }) = pure []
+genArgumentType namespaceWith (fieldName, FieldDefinition { fieldArgs }) = pure
   [ TypeD
       { tName
       , tNamespace = []
@@ -194,12 +194,12 @@ genArgumentType namespaceWith (fieldName, DataField { fieldArgs }) = pure
   ]
   where tName = namespaceWith (hsTypeName fieldName)
 
-genArguments :: DataArguments -> [DataField]
+genArguments :: DataArguments -> [FieldDefinition]
 genArguments x = genInputFields $ wrap (arguments x)
 
-genInputFields :: FieldsDefinition -> [DataField]
+genInputFields :: FieldsDefinition -> [FieldDefinition]
 genInputFields = map (genField . snd) . unwrap
 
-genField :: DataField -> DataField
-genField field@DataField { fieldType = tyRef@TypeRef { typeConName } } = field 
+genField :: FieldDefinition -> FieldDefinition
+genField field@FieldDefinition { fieldType = tyRef@TypeRef { typeConName } } = field 
   { fieldType = tyRef { typeConName = hsTypeName typeConName } }

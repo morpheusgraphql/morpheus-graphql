@@ -75,7 +75,7 @@ module Data.Morpheus.Types.Internal.AST
   , DataArgument
   , DataUnion
   , DataArguments(..)
-  , DataField(..)
+  , FieldDefinition(..)
   , DataTypeContent(..)
   , DataType(..)
   , Schema(..)

@@ -36,7 +36,7 @@ import           Data.Morpheus.Parsing.Internal.Value
                                                 , parseValue
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( FieldDefinition(..)
                                                 , Directive(..)
                                                 , Key
                                                 , Meta(..)
@@ -68,7 +68,7 @@ enumValueDefinition = label "EnumValueDefinition" $ do
 -- InputValueDefinition
 --   Description(opt) Name : Type DefaultValue(opt) Directives (Const)(opt)
 --
-inputValueDefinition :: Parser (Key, DataField)
+inputValueDefinition :: Parser (Key, FieldDefinition)
 inputValueDefinition = label "InputValueDefinition" $ do
     metaDescription <- optDescription
     fieldName       <- parseName
@@ -78,7 +78,7 @@ inputValueDefinition = label "InputValueDefinition" $ do
     metaDirectives <- optionalDirectives
     pure
         ( fieldName
-        , DataField { fieldArgs     = NoArguments
+        , FieldDefinition { fieldArgs     = NoArguments
                     , fieldName
                     , fieldType
                     , fieldMeta = Just Meta { metaDescription, metaDirectives }
@@ -106,7 +106,7 @@ fieldsDefinition = label "FieldsDefinition" $ FieldsDefinition . HM.fromList <$>
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-fieldDefinition :: Parser (Key, DataField)
+fieldDefinition :: Parser (Key, FieldDefinition)
 fieldDefinition = label "FieldDefinition" $ do
     metaDescription <- optDescription
     fieldName       <- parseName
@@ -116,7 +116,7 @@ fieldDefinition = label "FieldDefinition" $ do
     metaDirectives <- optionalDirectives
     pure
         ( fieldName
-        , DataField { fieldName
+        , FieldDefinition { fieldName
                     , fieldArgs
                     , fieldType
                     , fieldMeta = Just Meta { metaDescription, metaDirectives }

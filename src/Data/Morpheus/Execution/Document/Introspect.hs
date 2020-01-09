@@ -24,7 +24,7 @@ import           Data.Morpheus.Types.Internal.AST           ( ConsD (..)
                                                             , DataType(..)
                                                             , DataTypeContent(..)
                                                             , DataArguments(..)
-                                                            , DataField (..)
+                                                            , FieldDefinition (..)
                                                             , insertType
                                                             , DataTypeKind(..)
                                                             , TypeRef (..)
@@ -57,7 +57,7 @@ instanceIntrospect (name, DataType {
         }) |]
 instanceIntrospect _ = pure []
 
--- [((Text, DataField), TypeUpdater)]
+-- [((Text, FieldDefinition), TypeUpdater)]
 deriveObjectRep :: (TypeD, Maybe DataTypeKind) -> Q [Dec]
 deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
   pure <$> instanceD (cxt constrains) iHead methods
@@ -76,10 +76,10 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
           | otherwise  =  [| (DataObject [] $ wrap $(buildFields cFields), concat $(buildTypes cFields))|]
 deriveObjectRep _ = pure []
     
-buildTypes :: [DataField] -> ExpQ
+buildTypes :: [FieldDefinition] -> ExpQ
 buildTypes = listE . concatMap introspectField
   where
-    introspectField DataField {fieldType, fieldArgs } =
+    introspectField FieldDefinition {fieldType, fieldArgs } =
       [|[introspect $(proxyT fieldType)]|] : inputTypes fieldArgs
       where
         inputTypes DataArguments { argumentsTypename = Just argsTypeName }
@@ -100,10 +100,10 @@ proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
     genSig (Just m) = appT (conTX typeConName) (varTX m)
     genSig _        = conTX typeConName
 
-buildFields :: [DataField] -> ExpQ
+buildFields :: [FieldDefinition] -> ExpQ
 buildFields = listE . map buildField
   where
-    buildField field@DataField {fieldName, fieldType } =
+    buildField field@FieldDefinition {fieldName, fieldType } =
       [|( fieldName
         , field { fieldType = fieldType {typeConName = __typeName $(proxyT fieldType) } }
         )

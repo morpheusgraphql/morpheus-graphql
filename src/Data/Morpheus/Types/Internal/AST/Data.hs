@@ -17,7 +17,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , DataArgument
   , DataUnion
   , DataArguments(..)
-  , DataField(..)
+  , FieldDefinition(..)
   , DataTypeContent(..)
   , DataType(..)
   , Schema(..)
@@ -221,7 +221,7 @@ data DataTypeKind
   | KindInputUnion
   deriving (Eq, Show, Lift)
 
-isFieldNullable :: DataField -> Bool
+isFieldNullable :: FieldDefinition -> Bool
 isFieldNullable = isNullable . fieldType
 
 isNullable :: TypeRef -> Bool
@@ -264,7 +264,7 @@ instance Show DataValidator where
 
 type DataScalar = DataValidator
 type DataEnum = [DataEnumValue]
-type DataArgument = DataField 
+type DataArgument = FieldDefinition 
 type DataUnion = [Key]
 type DataInputUnion = [(Key, Bool)]
 
@@ -323,7 +323,7 @@ data DataArguments
 
 --------------------------------------------------------------------------------------------------
 newtype FieldsDefinition = FieldsDefinition 
-  { unFieldsDefinition :: HashMap Name DataField } deriving (Show)
+  { unFieldsDefinition :: HashMap Name FieldDefinition } deriving (Show)
 
 instance Lift FieldsDefinition where 
   lift (FieldsDefinition  hm) = [| FieldsDefinition $ HM.fromList ls |]
@@ -332,28 +332,28 @@ instance Lift FieldsDefinition where
 instance Semigroup FieldsDefinition where 
   FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)
 
-instance Collectible FieldsDefinition DataField where
+instance Collectible FieldsDefinition FieldDefinition where
   wrap = FieldsDefinition . HM.fromList 
   unwrap = HM.toList . unFieldsDefinition
   selectBy err name (FieldsDefinition lib) = case HM.lookup name lib of
       Nothing -> failure err
       Just x  -> pure x
 
-data DataField = DataField
+data FieldDefinition = FieldDefinition
   { fieldName     :: Key
   , fieldArgs     :: DataArguments
   , fieldType     :: TypeRef
   , fieldMeta     :: Maybe Meta
   } deriving (Show,Lift)
 
-fieldVisibility :: (Key, DataField) -> Bool
+fieldVisibility :: (Key, FieldDefinition) -> Bool
 fieldVisibility ("__typename", _) = False
 fieldVisibility ("__schema"  , _) = False
 fieldVisibility ("__type"    , _) = False
 fieldVisibility _                 = True
 
-createField :: DataArguments -> Key -> ([TypeWrapper], Key) -> DataField
-createField dataArguments fieldName (typeWrappers, typeConName) = DataField
+createField :: DataArguments -> Key -> ([TypeWrapper], Key) -> FieldDefinition
+createField dataArguments fieldName (typeWrappers, typeConName) = FieldDefinition
   { fieldArgs = dataArguments
   , fieldName
   , fieldType     = TypeRef { typeConName, typeWrappers, typeArgs = Nothing }
@@ -364,7 +364,7 @@ createArgument :: Key -> ([TypeWrapper], Key) -> (Key, DataArgument)
 createArgument fieldName x = (fieldName, createField NoArguments fieldName x)
 
 
-toNullableField :: DataField -> DataField
+toNullableField :: FieldDefinition -> FieldDefinition
 toNullableField dataField
   | isNullable (fieldType dataField) = dataField
   | otherwise = dataField { fieldType = nullable (fieldType dataField) }
@@ -372,7 +372,7 @@ toNullableField dataField
   nullable alias@TypeRef { typeWrappers } =
     alias { typeWrappers = TypeMaybe : typeWrappers }
 
-toListField :: DataField -> DataField
+toListField :: FieldDefinition -> FieldDefinition
 toListField dataField = dataField { fieldType = listW (fieldType dataField) }
  where
   listW alias@TypeRef { typeWrappers } =
@@ -389,7 +389,7 @@ lookupSelectionField
   -> Name
   -> Name
   -> FieldsDefinition
-  -> Validation (DataField)
+  -> Validation (FieldDefinition)
 lookupSelectionField position fieldName typeName fields = selectBy gqlError fieldName fields 
   where gqlError = cannotQueryField fieldName typeName position
 
@@ -525,9 +525,9 @@ lookupUnionTypes
   => Position
   -> Key
   -> Schema
-  -> DataField 
+  -> FieldDefinition 
   -> m [(Name, FieldsDefinition)]
-lookupUnionTypes position key lib DataField { fieldType = TypeRef { typeConName = typeName } }
+lookupUnionTypes position key lib FieldDefinition { fieldType = TypeRef { typeConName = typeName } }
   = lookupDataUnion gqlError typeName lib
     >>= mapM (flip (selectBy gqlError) lib)
   where gqlError = hasNoSubfields key typeName position
@@ -537,9 +537,9 @@ lookupFieldAsSelectionSet
   => Position
   -> Key
   -> Schema
-  -> DataField  
+  -> FieldDefinition  
   -> m (Name, FieldsDefinition )
-lookupFieldAsSelectionSet position key lib DataField { fieldType = TypeRef { typeConName } }
+lookupFieldAsSelectionSet position key lib FieldDefinition { fieldType = TypeRef { typeConName } }
   = selectBy gqlError typeConName lib
   where gqlError = hasNoSubfields key typeConName position
 
@@ -583,12 +583,12 @@ createDataTypeLib types = case popByKey "Query" types of
     pure $ (foldr defineType (initTypeLib query) lib3) {mutation, subscription}
 
 
-createInputUnionFields :: Key -> [Key] -> [(Key, DataField)]
+createInputUnionFields :: Key -> [Key] -> [(Key, FieldDefinition)]
 createInputUnionFields name members = fieldTag : map unionField members
  where
   fieldTag =
     ( "__typename"
-    , DataField { fieldName     = "__typename"
+    , FieldDefinition { fieldName     = "__typename"
                 , fieldArgs     = NoArguments
                 , fieldType     = createAlias (name <> "Tags")
                 , fieldMeta     = Nothing
@@ -596,7 +596,7 @@ createInputUnionFields name members = fieldTag : map unionField members
     )
   unionField memberName =
     ( memberName
-    , DataField
+    , FieldDefinition
       { fieldArgs     = NoArguments
       , fieldName     = memberName
       , fieldType     = TypeRef { typeConName    = memberName
@@ -654,5 +654,5 @@ data TypeD = TypeD
 
 data ConsD = ConsD
   { cName   :: Name
-  , cFields :: [DataField]
+  , cFields :: [FieldDefinition]
   } deriving (Show)

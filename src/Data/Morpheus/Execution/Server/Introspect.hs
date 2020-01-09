@@ -63,7 +63,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
                                                 , DataArguments(..)
                                                 , Meta(..)
-                                                , DataField(..)
+                                                , FieldDefinition(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , Key
@@ -90,11 +90,11 @@ class Introspect a where
   isObject :: proxy a -> Bool
   default isObject :: GQLType a => proxy a -> Bool
   isObject _ = isObjectKind (Proxy @a)
-  field :: proxy a -> Text -> DataField
+  field :: proxy a -> Text -> FieldDefinition
   introspect :: proxy a -> TypeUpdater
   -----------------------------------------------
   default field :: GQLType a =>
-    proxy a -> Text -> DataField
+    proxy a -> Text -> FieldDefinition
   field _ = buildField (Proxy @a) NoArguments
 
 instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect a where
@@ -203,7 +203,7 @@ introspectObjectFields p1 (name, scope, proxy) = withObject
   withObject (DataObject     {objectFields}, ts) = (objectFields, ts)
   withObject (DataInputObject x, ts) = (x, ts)
   withObject _ =
-    ( wrap ([] :: [(Name, DataField)]) , [introspectFailure (name <> " should have only one nonempty constructor")])
+    ( wrap ([] :: [(Name, FieldDefinition)]) , [introspectFailure (name <> " should have only one nonempty constructor")])
 
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <>)
@@ -216,8 +216,8 @@ instance (TypeRep (Rep a) , Generic a) => IntrospectRep 'False a where
   introspectRep _ (_, scope, name, fing) =
     derivingDataContent (Proxy @a) (name, fing) scope
 
-buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
-buildField proxy fieldArgs fieldName = DataField
+buildField :: GQLType a => Proxy a -> DataArguments -> Text -> FieldDefinition
+buildField proxy fieldArgs fieldName = FieldDefinition
   { fieldName
   , fieldArgs
   , fieldType     = createAlias $ __typeName proxy
@@ -260,7 +260,7 @@ data ConsRep = ConsRep {
 
 data FieldRep = FieldRep {
   fieldTypeName :: Name,
-  fieldData :: (Name, DataField),
+  fieldData :: (Name, FieldDefinition),
   fieldTypeUpdater :: TypeUpdater,
   fieldIsObject :: Bool
 }
@@ -450,7 +450,7 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
       , typeMeta        = Nothing
       , typeContent     = wrapObject $ wrap [ 
                               ( "enum"
-                              , DataField { fieldName  = "enum"
+                              , FieldDefinition { fieldName  = "enum"
                                           , fieldArgs  = NoArguments
                                           , fieldType  = createAlias enumTypeName
                                           , fieldMeta  = Nothing

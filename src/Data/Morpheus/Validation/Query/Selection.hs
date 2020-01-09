@@ -32,7 +32,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FragmentLib
                                                 , RawSelection
                                                 , RawSelectionSet
-                                                , DataField(..)
+                                                , FieldDefinition(..)
                                                 , Ref(..)
                                                 , FieldsDefinition(..)
                                                 , DataTypeContent(..)
@@ -136,7 +136,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
     <$> mapM validateSelection selectionSet
     >>= checkDuplicatesOn typeName
    where
-    -- getValidationData :: Name -> ValidSelection -> (DataField, DataTypeContent, ValidArguments)
+    -- getValidationData :: Name -> ValidSelection -> (FieldDefinition, DataTypeContent, ValidArguments)
     getValidationData key (selectionArguments, selectionPosition) = do
       selectionField <- lookupSelectionField selectionPosition
                                              key
@@ -222,7 +222,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
             )
           ]
      where
-      isLeaf datatype DataField { fieldType = TypeRef { typeConName } }
+      isLeaf datatype FieldDefinition { fieldType = TypeRef { typeConName } }
         | isEntNode datatype = pure ()
         | otherwise = failure
         $ subfieldsNotSelected key typeConName selectionPosition

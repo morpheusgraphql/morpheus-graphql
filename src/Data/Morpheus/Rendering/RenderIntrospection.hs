@@ -20,7 +20,7 @@ import           Data.Morpheus.Schema.Schema
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataInputUnion
-                                                , DataField(..)
+                                                , FieldDefinition(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeKind(..)
@@ -87,8 +87,8 @@ renderArguments :: (Monad m, Failure Text m) => DataArguments -> Schema -> m [S_
 renderArguments DataArguments { arguments} lib = traverse (`renderinputValue` lib) arguments
 renderArguments NoArguments _ = pure []
 
-instance RenderSchema DataField S__Field where
-  render (name, field@DataField { fieldType = TypeRef { typeConName }, fieldArgs, fieldMeta }) lib
+instance RenderSchema FieldDefinition S__Field where
+  render (name, field@FieldDefinition { fieldType = TypeRef { typeConName }, fieldArgs, fieldMeta }) lib
     = do
       kind <- renderTypeKind <$> lookupKind typeConName lib
       pure S__Field
@@ -113,8 +113,8 @@ renderTypeKind KindInputObject = INPUT_OBJECT
 renderTypeKind KindList        = LIST
 renderTypeKind KindNonNull     = NON_NULL
 
-applyTypeWrapper :: Monad m => DataField -> S__Type m -> S__Type m
-applyTypeWrapper DataField { fieldType = TypeRef { typeWrappers } } typ =
+applyTypeWrapper :: Monad m => FieldDefinition -> S__Type m -> S__Type m
+applyTypeWrapper FieldDefinition { fieldType = TypeRef { typeWrappers } } typ =
   foldr wrapByTypeWrapper typ (toGQLWrapper typeWrappers)
 
 wrapByTypeWrapper :: Monad m => DataTypeWrapper -> S__Type m -> S__Type m
@@ -128,15 +128,15 @@ lookupKind name lib = case lookupDataType name lib of
 
 renderinputValue
   :: (Monad m, Failure Text m)
-  => (Text, DataField)
+  => (Text, FieldDefinition)
   -> Result m (S__InputValue m)
 renderinputValue (key, input) =
   fmap (createInputValueWith key (fieldMeta input))
     . createInputObjectType input
 
 createInputObjectType
-  :: (Monad m, Failure Text m) => DataField -> Result m (S__Type m)
-createInputObjectType field@DataField { fieldType = TypeRef { typeConName } } lib
+  :: (Monad m, Failure Text m) => FieldDefinition -> Result m (S__Type m)
+createInputObjectType field@FieldDefinition { fieldType = TypeRef { typeConName } } lib
   = do
     kind <- renderTypeKind <$> lookupKind typeConName lib
     pure $ applyTypeWrapper field $ createType kind typeConName Nothing $ Just []

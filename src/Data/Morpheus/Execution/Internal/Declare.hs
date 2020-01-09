@@ -25,7 +25,7 @@ import           Data.Morpheus.Execution.Internal.Utils
                                                 , nameSpaceWith
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( FieldDefinition(..)
                                                 , DataTypeKind(..)
                                                 , DataTypeKind(..)
                                                 , TypeRef(..)
@@ -81,7 +81,7 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
   cons ConsD { cName, cFields } = RecC (genName cName)
                                        (map declareField cFields)
    where
-    declareField DataField { fieldName, fieldArgs, fieldType } =
+    declareField FieldDefinition { fieldName, fieldArgs, fieldType } =
       (fName, defBang, fiType)
      where
       fName | namespace = mkName $ unpack (nameSpaceWith tName fieldName)
