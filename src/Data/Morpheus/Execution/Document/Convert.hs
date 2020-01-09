@@ -199,5 +199,4 @@ genInputFields :: FieldsDefinition -> [DataField]
 genInputFields = map (genField . snd) . unFieldsDefinition
 
 genField :: DataField -> DataField
-genField field@DataField { fieldType = tyRef@TypeRef { typeConName } } = field 
-  { fieldType = tyRef { typeConName = hsTypeName typeConName } }
+genField field = field { fieldType = tyRef { typeConName = hsTypeName $ typeConName $ tyRef (fieldType field) } }
