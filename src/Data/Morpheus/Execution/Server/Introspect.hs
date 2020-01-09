@@ -80,7 +80,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , Message
                                                 , catLift
-                                                , catUnlift
+                                                , CategoryLift
                                                 )
 import qualified Data.Morpheus.Types.Internal.AST as AST
 
@@ -92,11 +92,11 @@ class Introspect a where
   isObject :: proxy a -> Bool
   default isObject :: GQLType a => proxy a -> Bool
   isObject _ = isObjectKind (Proxy @a)
-  field :: proxy a -> Text -> DataField cat
+  field :: proxy a -> Text -> DataField AST.OUTPUT
   introspect :: proxy a -> TypeUpdater
   -----------------------------------------------
   default field :: GQLType a =>
-    proxy a -> Text -> DataField cat
+    proxy a -> Text -> DataField AST.OUTPUT
   field _ = buildField (Proxy @a) NoArguments
 
 instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect a where
@@ -138,7 +138,7 @@ instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m
   field _ name = fieldObj { fieldArgs }
    where
     fieldObj  = field (Proxy @b) name
-    fieldArgs = DataArguments Nothing $ unFieldsDefinition $ catUnlift $ fst  $ introspectObjectFields
+    fieldArgs = catLift $ DataArguments Nothing $ unFieldsDefinition $ catLift $ fst  $ introspectObjectFields
       (Proxy :: Proxy 'False)
       (__typeName (Proxy @b), OutputType, Proxy @a)
   introspect _ typeLib = resolveUpdates typeLib
@@ -342,7 +342,7 @@ buildInputUnion (baseName, baseFingerprint) cons = datatype
     typeMembers =
       map (, True) (unionRef <> unionMembers) <> map (, False) enumCons
     (unionMembers, unionTypes) =
-      buildUnions DataInputObject baseFingerprint unionRecordRep
+      buildUnions (DataInputObject . catLift) baseFingerprint unionRecordRep
   types = map fieldTypeUpdater $ concatMap consFields cons
 
 buildUnionType
@@ -372,7 +372,7 @@ buildObject isOutput consFields = (wrap fields, types)
  where
   (fields, types) = buildDataObject consFields
   wrap | isOutput == OutputType = DataObject [] . catLift
-       | otherwise              = DataInputObject . catUnlift
+       | otherwise              = DataInputObject . catLift
 
 buildDataObject :: [FieldRep cat ] -> (FieldsDefinition cat , [TypeUpdater])
 buildDataObject consFields = (fields, types)
@@ -472,7 +472,7 @@ data TypeScope = InputType | OutputType deriving (Show,Eq,Ord)
 
 --  GENERIC UNION
 class TypeRep f where
-  typeRep :: Proxy f -> [ConsRep cat]
+  typeRep :: Proxy f -> [ConsRep AST.OUTPUT]
 
 instance TypeRep f => TypeRep (M1 D d f) where
   typeRep _ = typeRep (Proxy @f)
@@ -490,7 +490,7 @@ instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
     ]
 
 class ConRep f where
-    conRep :: Proxy f -> [FieldRep cat]
+    conRep :: Proxy f -> [FieldRep AST.OUTPUT]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
 instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where

@@ -1,7 +1,8 @@
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE NamedFieldPuns     #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE QuasiQuotes        #-}
+{-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE GADTs              #-}
 
 module Data.Morpheus.Execution.Document.Introspect
   ( deriveObjectRep , instanceIntrospect
@@ -17,7 +18,7 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
 import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), introspectObjectFields, IntrospectRep (..),TypeScope(..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
-import           Data.Morpheus.Types.Internal.AST          (ConsD (..), TypeD (..), Key, DataType(..), DataTypeContent(..), DataField (..),insertType,DataTypeKind(..), TypeRef (..))
+import           Data.Morpheus.Types.Internal.AST          (ConsD (..),OUTPUT, TypeD (..), Key, DataType(..), DataTypeContent(..),DataArguments(..), DataField (..),insertType,DataTypeKind(..), TypeRef (..))
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
 
 
@@ -63,13 +64,13 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
           | otherwise  =  [| (DataObject [] $(buildFields cFields), concat $(buildTypes cFields))|]
 deriveObjectRep _ = pure []
     
-buildTypes :: [DataField] -> ExpQ
+buildTypes :: [DataField OUTPUT] -> ExpQ
 buildTypes = listE . concatMap introspectField
   where
-    introspectField DataField {fieldType, fieldArgsType} =
-      [|[introspect $(proxyT fieldType)]|] : inputTypes fieldArgsType
+    introspectField DataField {fieldType, fieldArgs } =
+      [|[introspect $(proxyT fieldType)]|] : inputTypes fieldArgs
       where
-        inputTypes (Just argsTypeName)
+        inputTypes DataArguments { argumentsTypename = Just argsTypeName }
           | argsTypeName /= "()" = [[|snd $ introspectObjectFields (Proxy :: Proxy TRUE) (argsTypeName, InputType,$(proxyT tAlias))|]]
           where
             tAlias = TypeRef {typeConName = argsTypeName, typeWrappers = [], typeArgs = Nothing}
@@ -87,18 +88,15 @@ proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
     genSig (Just m) = appT (conTX typeConName) (varTX m)
     genSig _        = conTX typeConName
 
-buildFields :: [DataField] -> ExpQ
+buildFields :: [DataField cat] -> ExpQ
 buildFields = listE . map buildField
   where
     buildField DataField {fieldName, fieldArgs, fieldType = alias@TypeRef {typeArgs, typeWrappers}, fieldMeta} =
       [|( fieldName
         , DataField
             { fieldName
-            , fieldArgs = fArgs
-            , fieldArgsType = Nothing
-            , fieldType = TypeRef {typeConName = __typeName $(proxyT alias), typeArgs = aArgs, typeWrappers}
+            , fieldArgs
+            , fieldType = TypeRef {typeConName = __typeName $(proxyT alias), typeArgs , typeWrappers}
             , fieldMeta
-            })|]
-      where
-        fArgs = map (\(k, v) -> (unpack k, v)) fieldArgs
-        aArgs = unpack <$> typeArgs
+            })
+      |]

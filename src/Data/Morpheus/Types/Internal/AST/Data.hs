@@ -8,7 +8,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE StandaloneDeriving , UndecidableInstances   #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
   ( DataScalar
@@ -324,18 +324,21 @@ data DataArguments (cat :: TypeCategory) where
 
 
 
-class CategoryLift a where 
-  catLift   :: a (cat :: TypeCategory) -> a OUTPUT
-  catUnlift :: a (cat :: TypeCategory) -> a INPUT
+class CategoryLift a (cat2 :: TypeCategory) where 
+  catLift   :: a (cat :: TypeCategory) -> a cat2
 
-instance CategoryLift DataArguments where 
+instance CategoryLift DataArguments OUTPUT where 
   catLift NoArguments = NoArguments 
   catLift (DataArguments x y) = DataArguments x y
 
-instance CategoryLift DataField where 
+instance CategoryLift DataArguments INPUT where 
+--  catLift NoArguments = NoArguments 
+--  catLift (DataArguments x y) = DataArguments x y
+
+instance CategoryLift DataArguments cat => CategoryLift DataField cat where 
   catLift DataField { fieldArgs } = DataField { fieldArgs = catLift fieldArgs } 
 
-instance CategoryLift FieldsDefinition where 
+instance CategoryLift FieldsDefinition cat where 
  -- catLift DataField { fieldArgs } = DataField { fieldArgs = catLift fieldArgs } 
 
 deriving instance Lift (DataArguments cat)
