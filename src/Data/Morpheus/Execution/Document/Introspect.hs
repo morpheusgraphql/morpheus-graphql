@@ -28,6 +28,7 @@ import           Data.Morpheus.Types.Internal.AST           ( ConsD (..)
                                                             , insertType
                                                             , DataTypeKind(..)
                                                             , TypeRef (..)
+                                                            , FieldsDefinition(..)
                                                             )
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
 
@@ -70,8 +71,8 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
     methods = [instanceFunD 'introspectRep ["_proxy1", "_proxy2"] body]
       where
         body 
-          | tKind == Just KindInputObject || null tKind  = [| (DataInputObject  $(buildFields cFields), concat $(buildTypes cFields))|]
-          | otherwise  =  [| (DataObject [] $(buildFields cFields), concat $(buildTypes cFields))|]
+          | tKind == Just KindInputObject || null tKind  = [| (DataInputObject $ FieldsDefinition $(buildFields cFields), concat $(buildTypes cFields))|]
+          | otherwise  =  [| (DataObject [] $ FieldsDefinition $(buildFields cFields), concat $(buildTypes cFields))|]
 deriveObjectRep _ = pure []
     
 buildTypes :: [DataField] -> ExpQ
@@ -101,12 +102,8 @@ proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
 buildFields :: [DataField] -> ExpQ
 buildFields = listE . map buildField
   where
-    buildField DataField {fieldName, fieldArgs, fieldType = alias@TypeRef {typeArgs, typeWrappers}, fieldMeta} =
+    buildField field@DataField {fieldName, fieldType } =
       [|( fieldName
-        , DataField
-            { fieldName
-            , fieldArgs
-            , fieldType = TypeRef {typeConName = __typeName $(proxyT alias), typeArgs , typeWrappers}
-            , fieldMeta
-            })
+        , field { fieldType = fieldType {typeConName = __typeName $(proxyT fieldType) } }
+        )
       |]
