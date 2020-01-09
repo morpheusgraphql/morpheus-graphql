@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , checkForUnknownKeys
                                                 , checkNameCollision
-                                                , INPUT
+                                                , DataArguments(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -87,11 +87,17 @@ resolveArgumentVariables operationName variables DataField { fieldName, fieldArg
   = mapM resolveVariable
  where
   resolveVariable :: (Text, RawArgument) -> Validation (Text, Argument RESOLVED)
-  resolveVariable (key, Argument val position) = case lookup key fieldArgs of
+  resolveVariable (key, Argument val position) = case lookup key (getArguments fieldArgs) of
     Nothing -> failure $ unknownArguments fieldName [Ref key position]
     Just _  -> do
       constValue <- resolveObject operationName variables val
       pure (key, Argument constValue position)
+
+
+-- TODO: move in Data
+getArguments :: DataArguments -> [(Name,DataField)]
+getArguments NoArguments            = []
+getArguments (DataArguments _ args) = args
 
 validateArgument
   :: Schema
@@ -143,18 +149,16 @@ validateArguments
 validateArguments typeLib operatorName variables (key, field@DataField { fieldArgs }) pos rawArgs
   = do
     args     <- resolveArgumentVariables operatorName variables field rawArgs
-    dataArgs <- checkForUnknownArguments args
-    mapM (validateArgument typeLib pos args) dataArgs
+    checkForUnknownArguments args
+    mapM (validateArgument typeLib pos args) (getArguments fieldArgs)
  where
   checkForUnknownArguments
-    :: Arguments RESOLVED -> Validation [(Text, DataField)]
+    :: Arguments RESOLVED -> Validation ()
   checkForUnknownArguments args =
-    checkForUnknownKeys enhancedKeys fieldKeys argError
-      >> checkNameCollision enhancedKeys argumentNameCollision
-      >> pure fieldArgs
+    checkForUnknownKeys enhancedKeys fieldKeys argError >> checkNameCollision enhancedKeys argumentNameCollision >> pure ()
    where
     argError     = unknownArguments key
     enhancedKeys = map argToKey args
     argToKey :: (Name, Argument RESOLVED) -> Ref
     argToKey (key', Argument { argumentPosition }) = Ref key' argumentPosition
-    fieldKeys = map fst fieldArgs
+    fieldKeys = map fst (getArguments fieldArgs)

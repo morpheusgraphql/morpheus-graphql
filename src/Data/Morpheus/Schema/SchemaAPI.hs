@@ -39,6 +39,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataType
                                                 , allDataTypes
                                                 , lookupDataType
+                                                , FieldsDefinition
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Resolver
@@ -76,7 +77,7 @@ initSchema lib = pure S__Schema
   , s__SchemaDirectives       = pure []
   }
 
-hiddenRootFields :: [(Text, DataField)]
+hiddenRootFields :: FieldsDefinition
 hiddenRootFields = fst $ introspectObjectFields
   (Proxy :: Proxy (CUSTOM (Root Maybe)))
   ("Root", OutputType, Proxy @(Root Maybe))
