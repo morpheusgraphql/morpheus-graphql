@@ -138,9 +138,10 @@ import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
 
 class Collectible c a where 
-  wrap     :: [(Name,a)] ->  c
-  unwrap   ::  c  -> [(Name,a)]
+  wrap     :: [(Name, a)] ->  c
+  unwrap   ::  c  -> [(Name, a)]
   selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a 
+  
 
 type QUERY = 'Query
 type MUTATION = 'Mutation
@@ -331,7 +332,9 @@ instance Lift FieldsDefinition where
 instance Semigroup FieldsDefinition where 
   FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)
 
-instance Collectible FieldsDefinition DataField where 
+instance Collectible FieldsDefinition DataField where
+  wrap = FieldsDefinition . HM.fromList 
+  unwrap = HM.toList . unFieldsDefinition
   selectBy err name (FieldsDefinition lib) = case HM.lookup name lib of
       Nothing -> failure err
       Just x  -> pure x
