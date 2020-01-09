@@ -101,5 +101,4 @@ endSubscription cid sid = updateClientByID cid stopSubscription
 startSubscription :: MonadIO m => ClientID -> SubEvent m e -> SesionID -> GQLState m e -> m ()
 startSubscription cid subscriptions sid = updateClientByID cid startSubscription
  where
-  startSubscription client = client
-    { clientSessions = insert sid subscriptions (clientSessions client) }
+  startSubscription client = client { clientSessions = insert sid subscriptions (clientSessions client) }
