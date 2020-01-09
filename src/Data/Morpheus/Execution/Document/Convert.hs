@@ -34,6 +34,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , DataArguments(..)
                                                 , hasArguments
+                                                , Collectible(..)
                                                 )
 
 
@@ -121,9 +122,9 @@ toTHDefinitions namespace lib = traverse renderTHType lib
         , typeArgD     = []
         , typeOriginal = (typeName, dt)
         }
-      genType DataObject {objectFields = FieldsDefinition fields} = do
-        typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) fields
-        cFields  <- traverse genResField fields
+      genType DataObject {objectFields} = do
+        typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (unwrap objectFields)
+        cFields  <- traverse genResField (unwrap objectFields)
         pure GQLTypeD
           { typeD        = TypeD
                              { tName      = hsTypeName typeName
@@ -194,10 +195,10 @@ genArgumentType namespaceWith (fieldName, DataField { fieldArgs }) = pure
   where tName = namespaceWith (hsTypeName fieldName)
 
 genArguments :: DataArguments -> [DataField]
-genArguments x = genInputFields $ FieldsDefinition (arguments x)
+genArguments x = genInputFields $ wrap (arguments x)
 
 genInputFields :: FieldsDefinition -> [DataField]
-genInputFields = map (genField . snd) . unFieldsDefinition
+genInputFields = map (genField . snd) . unwrap
 
 genField :: DataField -> DataField
 genField field@DataField { fieldType = tyRef@TypeRef { typeConName } } = field 

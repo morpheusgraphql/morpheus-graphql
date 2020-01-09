@@ -145,7 +145,7 @@ module Data.Morpheus.Types.Internal.AST
   , VariableContent(..)
   , checkForUnknownKeys
   , checkNameCollision
-  , SelectBy(..)
+  , Collectible(..)
   , hasArguments
   -- LOCAL
   , GQLQuery(..)

@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isEntNode
                                                 , lookupFieldAsSelectionSet
                                                 , lookupSelectionField
-                                                , SelectBy(..)
+                                                , Collection(..)
                                                 , lookupUnionTypes
                                                 , checkNameCollision
                                                 )

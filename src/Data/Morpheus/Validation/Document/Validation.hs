@@ -25,6 +25,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , DataTypeContent(..)
                                                 , TypeRef(..)
+                                                , Collectible(..)
                                                 , isWeaker
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
@@ -45,11 +46,11 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
   validateType (name, x) = pure $ Just (name, x)
   mustBeSubset
     :: FieldsDefinition -> (Name, FieldsDefinition) -> [(Name, Name, ImplementsError)]
-  mustBeSubset objFields (typeName, FieldsDefinition fields) = concatMap checkField fields
+  mustBeSubset objFields (typeName, fields) = concatMap checkField (unwrap fields)
    where
     checkField :: (Name, DataField) -> [(Name, Name, ImplementsError)]
     checkField (key, DataField { fieldType = interfaceT@TypeRef { typeConName = interfaceTypeName, typeWrappers = interfaceWrappers } })
-      = case lookup key (unFieldsDefinition objFields) of
+      = case lookup key (unwrap objFields) of
         Just DataField { fieldType = objT@TypeRef { typeConName, typeWrappers } }
           | typeConName == interfaceTypeName && not
             (isWeaker typeWrappers interfaceWrappers)

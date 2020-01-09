@@ -8,7 +8,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE StandaloneDeriving  , TemplateHaskell  #-}
+{-# LANGUAGE StandaloneDeriving  , TemplateHaskell   #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
   ( DataScalar
@@ -88,7 +88,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , isOutputType
   , checkForUnknownKeys
   , checkNameCollision
-  , SelectBy(..)
+  , Collectible(..)
   , hasArguments
   )
 where
@@ -137,8 +137,10 @@ import           Data.Morpheus.Types.Internal.AST.Value
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
 
-class SelectBy l a where 
-  selectBy :: (Failure e m, Monad m) => e -> Name -> l -> m a 
+class Collectible c a where 
+  wrap     :: [(Name,a)] ->  c
+  unwrap   ::  c  -> [(Name,a)]
+  selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a 
 
 type QUERY = 'Query
 type MUTATION = 'Mutation
@@ -329,7 +331,7 @@ instance Lift FieldsDefinition where
 instance Semigroup FieldsDefinition where 
   FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)
 
-instance SelectBy FieldsDefinition DataField where 
+instance Collectible FieldsDefinition DataField where 
   selectBy err name (FieldsDefinition lib) = case HM.lookup name lib of
       Nothing -> failure err
       Just x  -> pure x
@@ -498,12 +500,12 @@ fromOperation Nothing = []
 
 
 
-instance SelectBy Schema DataType where 
+instance Collectible Schema DataType where 
   selectBy err name lib = case lookupDataType name lib of
       Nothing -> failure err
       Just x  -> pure x
 
-instance SelectBy Schema (Name, FieldsDefinition ) where 
+instance Collectible Schema (Name, FieldsDefinition ) where 
   selectBy validationError name lib =
      selectBy validationError name lib >>= coerceDataObject validationError
 

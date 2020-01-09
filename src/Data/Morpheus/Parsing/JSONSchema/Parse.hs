@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 
 module Data.Morpheus.Parsing.JSONSchema.Parse
   ( decodeIntrospection
@@ -40,6 +41,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , toHSWrappers
                                                 , DataArguments(..)
                                                 , FieldsDefinition(..)
+                                                , wrap
+                                                , Name
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
@@ -73,12 +76,12 @@ instance ParseJSONSchema Type [(Key,DataType)] where
       Just uni -> pure [createUnionType typeName uni]
   parse Type { name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields }
     = do
-      fields <- traverse parse iFields
-      pure [(typeName, createType typeName $ DataInputObject $ FieldsDefinition fields)]
+      (fields :: [(Name,DataField)]) <- traverse parse iFields
+      pure [(typeName, createType typeName $ DataInputObject $ wrap fields)]
   parse Type { name = Just typeName, kind = OBJECT, fields = Just oFields } =
     do
-      fields <- traverse parse oFields
-      pure [(typeName, createType typeName $ DataObject [] $ FieldsDefinition fields)]
+      (fields :: [(Name,DataField)]) <- traverse parse oFields
+      pure [(typeName, createType typeName $ DataObject [] $ wrap fields)]
   parse _ = pure []
 
 instance ParseJSONSchema Field (Key,DataField) where

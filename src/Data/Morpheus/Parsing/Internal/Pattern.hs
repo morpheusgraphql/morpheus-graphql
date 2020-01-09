@@ -10,7 +10,7 @@ module Data.Morpheus.Parsing.Internal.Pattern
     )
 where
 
-
+import qualified Data.HashMap.Lazy          as  HM
 import           Text.Megaparsec                ( label
                                                 , many
                                                 , (<|>)
@@ -44,6 +44,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , DataArguments(..)
                                                 , FieldsDefinition(..)
+                                                , Collectible(..)
                                                 )
 
 
@@ -99,7 +100,7 @@ argumentsDefinition =
 --    { FieldDefinition(list) }
 --
 fieldsDefinition :: Parser (FieldsDefinition)
-fieldsDefinition = label "FieldsDefinition" $ FieldsDefinition <$> setOf fieldDefinition
+fieldsDefinition = label "FieldsDefinition" $ FieldsDefinition . HM.fromList <$> setOf fieldDefinition
 
 
 --  FieldDefinition
@@ -128,7 +129,7 @@ fieldDefinition = label "FieldDefinition" $ do
 --     { InputValueDefinition(list) }
 --
 inputFieldsDefinition :: Parser (FieldsDefinition)
-inputFieldsDefinition = label "InputFieldsDefinition" $ FieldsDefinition <$> setOf inputValueDefinition
+inputFieldsDefinition = label "InputFieldsDefinition" $ wrap <$> setOf inputValueDefinition
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --

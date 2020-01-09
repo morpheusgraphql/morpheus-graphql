@@ -10,6 +10,7 @@ module Data.Morpheus.Execution.Client.Selection
   )
 where
 
+import qualified Data.HashMap.Lazy          as  HM
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text
@@ -42,7 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Key
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
-                                                , SelectBy(..)
+                                                , Collection(..)
                                                 , ConsD(..)
                                                 , ClientType(..)
                                                 , TypeD(..)
@@ -52,7 +53,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , DataArguments(..)
                                                 , FieldsDefinition(..)
-                                                , selectBy
+                                                , Collectible(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
@@ -212,7 +213,7 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
   scanInpType DataType { typeContent, typeName } = scanType typeContent
    where
     scanType (DataInputObject (FieldsDefinition fields)) = resolveUpdates
-      (name : collected) (map toInputTypeD fields)
+      (name : collected) (map toInputTypeD $ HM.toList fields)
      where
       toInputTypeD :: (Text, DataField) -> LibUpdater [Key]
       toInputTypeD (_, DataField { fieldType = TypeRef { typeConName } }) =
@@ -225,8 +226,8 @@ buildInputType lib name = getType lib name >>= generateTypes
  where
   generateTypes DataType { typeName, typeContent } = subTypes typeContent
    where
-    subTypes (DataInputObject (FieldsDefinition inputFields)) = do
-      fields <- traverse toFieldD inputFields
+    subTypes (DataInputObject inputFields) = do
+      fields <- traverse toFieldD (unwrap inputFields)
       pure
         [ ClientType
             { clientType = TypeD

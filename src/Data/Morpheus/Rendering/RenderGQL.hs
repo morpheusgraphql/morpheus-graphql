@@ -18,6 +18,7 @@ import           Data.Text                      ( Text
 import qualified Data.Text.Lazy                as LT
                                                 ( fromStrict )
 import           Data.Text.Lazy.Encoding        ( encodeUtf8 )
+import qualified Data.HashMap.Lazy          as  HM
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.AST
@@ -39,8 +40,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataArguments(..)
                                                 , Name
                                                 , FieldsDefinition(..)
+                                                , Collectible(..)
                                                 )
-
 
 renderGraphQLDocument :: Schema -> ByteString
 renderGraphQLDocument lib =
@@ -84,20 +85,17 @@ instance RenderGQL (Key, DataType) where
         <> " =\n    "
         <> intercalate ("\n" <> renderIndent <> "| ") members
     __render (DataInputObject fields ) = "input " <> name <> render fields
-    __render (DataInputUnion  members) = "input " <> name <> render fields
+    __render (DataInputUnion  members) = "input " <> name <> render (wrap fields :: FieldsDefinition )
       where fields = createInputUnionFields name (map fst members)
     __render (DataObject {objectFields}) = "type " <> name <> render objectFields
 
 -- OBJECT
-instance RenderGQL [(Name, DataField)] where
-  render = renderObject render . ignoreHidden
+instance RenderGQL FieldsDefinition where
+  render = renderObject render . ignoreHidden . unwrap
    where 
-    -----------------------------------------------------------
     ignoreHidden :: [(Text, DataField )] -> [(Text, DataField )]
     ignoreHidden = filter fieldVisibility
 
-instance RenderGQL (FieldsDefinition) where
-  render = render . unFieldsDefinition
 
 instance RenderGQL (Name, DataField) where 
   render (key, DataField { fieldType, fieldArgs }) =

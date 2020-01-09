@@ -79,6 +79,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , TypeRef(..)
                                                 , Message
+                                                , Collectible(..)
                                                 )
 
 type IntroCon a = (GQLType a, IntrospectRep (CUSTOM a) a)
@@ -135,7 +136,7 @@ instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m
   field _ name = fieldObj { fieldArgs }
    where
     fieldObj  = field (Proxy @b) name
-    fieldArgs = DataArguments Nothing $ unFieldsDefinition $ fst  $ introspectObjectFields
+    fieldArgs = DataArguments Nothing $ unwrap $ fst  $ introspectObjectFields
       (Proxy :: Proxy 'False)
       (__typeName (Proxy @b), OutputType, Proxy @a)
   introspect _ typeLib = resolveUpdates typeLib
@@ -202,10 +203,7 @@ introspectObjectFields p1 (name, scope, proxy) = withObject
   withObject (DataObject     {objectFields}, ts) = (objectFields, ts)
   withObject (DataInputObject x, ts) = (x, ts)
   withObject _ =
-    ( FieldsDefinition []
-    , [introspectFailure (name <> " should have only one nonempty constructor")]
-    )
-
+    ( wrap ([] :: [(Name, DataField)]) , [introspectFailure (name <> " should have only one nonempty constructor")])
 
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <>)
@@ -372,7 +370,7 @@ buildObject isOutput consFields = (wrap fields, types)
 buildDataObject :: [FieldRep] -> (FieldsDefinition , [TypeUpdater])
 buildDataObject consFields = (fields, types)
  where
-  fields = FieldsDefinition $ map fieldData consFields
+  fields = wrap $ map fieldData consFields
   types  = map fieldTypeUpdater consFields
 
 buildUnions
@@ -392,7 +390,7 @@ buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } =
   DataType { typeName        = consName
            , typeFingerprint
            , typeMeta        = Nothing
-           , typeContent     = wrapObject $ FieldsDefinition $ genFields consFields
+           , typeContent     = wrapObject $ wrap $ genFields consFields
            }
 
  where
@@ -450,8 +448,7 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
       { typeName
       , typeFingerprint
       , typeMeta        = Nothing
-      , typeContent     = wrapObject
-                            $ FieldsDefinition [ 
+      , typeContent     = wrapObject $ wrap [ 
                               ( "enum"
                               , DataField { fieldName  = "enum"
                                           , fieldArgs  = NoArguments
