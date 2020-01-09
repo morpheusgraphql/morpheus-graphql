@@ -51,8 +51,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RAW
                                                 , Name
                                                 , DataArguments(..)
-                                                , OUTPUT
-                                                , catLift
                                                 , FieldsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
@@ -113,7 +111,7 @@ operationTypes lib variables = genOperation
       , tMeta      = Nothing
       }
      where
-      fieldD :: (Text, Variable RAW) -> DataField cat
+      fieldD :: (Text, Variable RAW) -> DataField
       fieldD (key, Variable { variableType }) = DataField
         { fieldName     = key
         , fieldArgs     = NoArguments
@@ -154,7 +152,7 @@ operationTypes lib variables = genOperation
      where
       genField
         :: (Text, ValidSelection)
-        -> Validation (DataField cat, [ClientType], [Text])
+        -> Validation (DataField, [ClientType], [Text])
       genField (fName, sel@Selection { selectionAlias, selectionPosition }) =
         do
           (fieldDataType, fieldType) <- lookupFieldType lib
@@ -215,7 +213,7 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
     scanType (DataInputObject (FieldsDefinition fields)) = resolveUpdates
       (name : collected) (map toInputTypeD fields)
      where
-      toInputTypeD :: (Text, DataField cat) -> LibUpdater [Key]
+      toInputTypeD :: (Text, DataField) -> LibUpdater [Key]
       toInputTypeD (_, DataField { fieldType = TypeRef { typeConName } }) =
         scanInputTypes lib typeConName
     scanType (DataEnum _) = pure (collected <> [typeName])
@@ -243,10 +241,10 @@ buildInputType lib name = getType lib name >>= generateTypes
             }
         ]
      where
-      toFieldD :: (Text, DataField cat) -> Validation (DataField OUTPUT)
-      toFieldD (_, field@DataField { fieldType, fieldArgs }) = do
+      toFieldD :: (Text, DataField) -> Validation (DataField)
+      toFieldD (_, field@DataField { fieldType }) = do
         typeConName <- typeFrom [] <$> getType lib (typeConName fieldType)
-        pure $ field { fieldType = fieldType { typeConName  } , fieldArgs = catLift fieldArgs }
+        pure $ field { fieldType = fieldType { typeConName  }  }
     subTypes (DataEnum enumTags) = pure
       [ ClientType
           { clientType = TypeD { tName      = typeName

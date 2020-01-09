@@ -89,10 +89,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , checkForUnknownKeys
   , checkNameCollision
   , DataLookup(..)
-  , TypeCategory
-  , INPUT
-  , OUTPUT
-  , CategoryLift(..)
   , hasArguments
   )
 where
@@ -219,7 +215,7 @@ data DataTypeKind
   | KindInputUnion
   deriving (Eq, Show, Lift)
 
-isFieldNullable :: DataField cat -> Bool
+isFieldNullable :: DataField -> Bool
 isFieldNullable = isNullable . fieldType
 
 isNullable :: TypeRef -> Bool
@@ -262,7 +258,7 @@ instance Show DataValidator where
 
 type DataScalar = DataValidator
 type DataEnum = [DataEnumValue]
-type DataArgument = DataField INPUT
+type DataArgument = DataField 
 type DataUnion = [Key]
 type DataInputUnion = [(Key, Bool)]
 
@@ -305,67 +301,38 @@ data DataEnumValue = DataEnumValue{
 } deriving (Show, Lift)
 
 
-data TypeCategory = InputType | OutputType
-
-type INPUT = InputType
-type OUTPUT = OutputType
-
-
-hasArguments :: DataArguments cat -> Bool
+hasArguments :: DataArguments -> Bool
 hasArguments NoArguments = False
 hasArguments _ = True
 
-data DataArguments (cat :: TypeCategory) where 
-  DataArguments :: 
+data DataArguments 
+  = DataArguments  
     { argumentsTypename ::  Maybe Name
     , arguments         :: [(Key, DataArgument)] 
-    }  -> DataArguments OUTPUT
-  NoArguments :: DataArguments cat
-
-
-
-class CategoryLift a (cat2 :: TypeCategory) where 
-  catLift   :: a (cat :: TypeCategory) -> a cat2
-
-instance CategoryLift DataArguments OUTPUT where 
-  catLift NoArguments = NoArguments 
-  catLift (DataArguments x y) = DataArguments x y
-
-instance CategoryLift DataArguments INPUT where 
---  catLift NoArguments = NoArguments 
---  catLift (DataArguments x y) = DataArguments x y
-
-instance CategoryLift DataArguments cat => CategoryLift DataField cat where 
-  catLift DataField { fieldArgs } = DataField { fieldArgs = catLift fieldArgs } 
-
-instance CategoryLift FieldsDefinition cat where 
- -- catLift DataField { fieldArgs } = DataField { fieldArgs = catLift fieldArgs } 
-
-deriving instance Lift (DataArguments cat)
-deriving instance Show (DataArguments cat)
+    }
+  | NoArguments
+  deriving (Show, Lift)
 
 --------------------------------------------------------------------------------------------------
-data DataField (cat :: TypeCategory ) = DataField
+data DataField = DataField
   { fieldName     :: Key
-  , fieldArgs     :: DataArguments cat
+  , fieldArgs     :: DataArguments
   , fieldType     :: TypeRef
   , fieldMeta     :: Maybe Meta
   } deriving (Show,Lift)
 
-
-newtype FieldsDefinition (cat :: TypeCategory)  = FieldsDefinition 
+newtype FieldsDefinition = FieldsDefinition 
   { 
-    unFieldsDefinition :: [(Name, DataField cat)] 
+    unFieldsDefinition :: [(Name, DataField)] 
   } deriving (Show,Lift)
 
-
-fieldVisibility :: (Key, DataField cat) -> Bool
+fieldVisibility :: (Key, DataField) -> Bool
 fieldVisibility ("__typename", _) = False
 fieldVisibility ("__schema"  , _) = False
 fieldVisibility ("__type"    , _) = False
 fieldVisibility _                 = True
 
-createField :: DataArguments cat -> Key -> ([TypeWrapper], Key) -> DataField cat
+createField :: DataArguments -> Key -> ([TypeWrapper], Key) -> DataField
 createField dataArguments fieldName (typeWrappers, typeConName) = DataField
   { fieldArgs = dataArguments
   , fieldName
@@ -377,7 +344,7 @@ createArgument :: Key -> ([TypeWrapper], Key) -> (Key, DataArgument)
 createArgument fieldName x = (fieldName, createField NoArguments fieldName x)
 
 
-toNullableField :: DataField cat -> DataField cat
+toNullableField :: DataField -> DataField
 toNullableField dataField
   | isNullable (fieldType dataField) = dataField
   | otherwise = dataField { fieldType = nullable (fieldType dataField) }
@@ -385,7 +352,7 @@ toNullableField dataField
   nullable alias@TypeRef { typeWrappers } =
     alias { typeWrappers = TypeMaybe : typeWrappers }
 
-toListField :: DataField cat -> DataField cat
+toListField :: DataField -> DataField
 toListField dataField = dataField { fieldType = listW (fieldType dataField) }
  where
   listW alias@TypeRef { typeWrappers } =
@@ -401,8 +368,8 @@ lookupSelectionField
   => Position
   -> Name
   -> Name
-  -> FieldsDefinition cat
-  -> Validation (DataField cat)
+  -> FieldsDefinition
+  -> Validation (DataField)
 lookupSelectionField position fieldName typeName fields = lookupField
   fieldName
   (unFieldsDefinition fields)
@@ -422,12 +389,12 @@ data DataType = DataType
 data DataTypeContent
   = DataScalar      { dataScalar        :: DataScalar   }
   | DataEnum        { enumMembers       :: DataEnum     }
-  | DataInputObject { inputObjectFields :: FieldsDefinition INPUT  }
+  | DataInputObject { inputObjectFields :: FieldsDefinition   }
   | DataObject      { objectImplements  :: [Name],
-                      objectFields      :: FieldsDefinition OUTPUT  }
+                      objectFields      :: FieldsDefinition   }
   | DataUnion       { unionMembers      :: DataUnion    }
   | DataInputUnion  { inputUnionMembers :: [(Key,Bool)] }
-  | DataInterface   { interfaceFields   :: FieldsDefinition OUTPUT   }
+  | DataInterface   { interfaceFields   :: FieldsDefinition    }
   deriving (Show)
 
 createType :: Key -> DataTypeContent -> DataType
@@ -468,7 +435,7 @@ isInputDataType DataType { typeContent } = __isInput typeContent
   __isInput DataInputUnion{}  = True
   __isInput _                 = False
 
-coerceDataObject :: Failure error m => error -> DataType -> m (Name, FieldsDefinition OUTPUT)
+coerceDataObject :: Failure error m => error -> DataType -> m (Name, FieldsDefinition)
 coerceDataObject _ DataType { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
 coerceDataObject gqlError _ = failure gqlError
 
@@ -526,7 +493,7 @@ instance DataLookup Schema DataType where
       Nothing -> failure err
       Just x  -> pure x
 
-instance DataLookup Schema (Name, FieldsDefinition OUTPUT) where 
+instance DataLookup Schema (Name, FieldsDefinition ) where 
   lookupResult validationError name lib =
      lookupResult validationError name lib >>= coerceDataObject validationError
 
@@ -543,8 +510,8 @@ lookupUnionTypes
   => Position
   -> Key
   -> Schema
-  -> DataField OUTPUT
-  -> m [(Name, FieldsDefinition OUTPUT)]
+  -> DataField 
+  -> m [(Name, FieldsDefinition)]
 lookupUnionTypes position key lib DataField { fieldType = TypeRef { typeConName = typeName } }
   = lookupDataUnion gqlError typeName lib
     >>= mapM (flip (lookupResult gqlError) lib)
@@ -555,8 +522,8 @@ lookupFieldAsSelectionSet
   => Position
   -> Key
   -> Schema
-  -> DataField OUTPUT 
-  -> m (Name, FieldsDefinition OUTPUT)
+  -> DataField  
+  -> m (Name, FieldsDefinition )
 lookupFieldAsSelectionSet position key lib DataField { fieldType = TypeRef { typeConName } }
   = lookupResult gqlError typeConName lib
   where gqlError = hasNoSubfields key typeConName position
@@ -601,7 +568,7 @@ createDataTypeLib types = case popByKey "Query" types of
     pure $ (foldr defineType (initTypeLib query) lib3) {mutation, subscription}
 
 
-createInputUnionFields :: Key -> [Key] -> [(Key, DataField INPUT )]
+createInputUnionFields :: Key -> [Key] -> [(Key, DataField)]
 createInputUnionFields name members = fieldTag : map unionField members
  where
   fieldTag =
@@ -672,5 +639,5 @@ data TypeD = TypeD
 
 data ConsD = ConsD
   { cName   :: Name
-  , cFields :: [DataField OUTPUT]
+  , cFields :: [DataField]
   } deriving (Show)

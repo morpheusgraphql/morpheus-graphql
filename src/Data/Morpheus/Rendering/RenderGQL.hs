@@ -89,21 +89,21 @@ instance RenderGQL (Key, DataType) where
     __render (DataObject {objectFields}) = "type " <> name <> render objectFields
 
 -- OBJECT
-instance RenderGQL [(Name, DataField cat)] where
+instance RenderGQL [(Name, DataField)] where
   render = renderObject render . ignoreHidden
    where 
     -----------------------------------------------------------
-    ignoreHidden :: [(Text, DataField cat )] -> [(Text, DataField cat )]
+    ignoreHidden :: [(Text, DataField )] -> [(Text, DataField )]
     ignoreHidden = filter fieldVisibility
 
-instance RenderGQL (FieldsDefinition cat) where
+instance RenderGQL (FieldsDefinition) where
   render = render . unFieldsDefinition
 
-instance RenderGQL (Name, DataField cat) where 
+instance RenderGQL (Name, DataField) where 
   render (key, DataField { fieldType, fieldArgs }) =
     convertToJSONName key <> render fieldArgs <> ": " <> render fieldType
 
-instance RenderGQL (DataArguments cat) where 
+instance RenderGQL (DataArguments) where 
   render NoArguments   = ""
   render DataArguments { arguments } = "(" <> intercalate ", " (map render arguments) <> ")"
 

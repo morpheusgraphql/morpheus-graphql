@@ -146,10 +146,6 @@ module Data.Morpheus.Types.Internal.AST
   , checkForUnknownKeys
   , checkNameCollision
   , DataLookup(..)
-  , TypeCategory
-  , OUTPUT 
-  , INPUT
-  , CategoryLift(..)
   , hasArguments
   -- LOCAL
   , GQLQuery(..)

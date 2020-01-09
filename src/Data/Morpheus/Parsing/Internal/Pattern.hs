@@ -40,8 +40,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Meta(..)
                                                 , DataEnumValue(..)
                                                 , Name
-                                                , INPUT
-                                                , OUTPUT
                                                 , DataArguments(..)
                                                 , FieldsDefinition(..)
                                                 )
@@ -67,7 +65,7 @@ enumValueDefinition = label "EnumValueDefinition" $ do
 -- InputValueDefinition
 --   Description(opt) Name : Type DefaultValue(opt) Directives (Const)(opt)
 --
-inputValueDefinition :: Parser (Key, DataField INPUT)
+inputValueDefinition :: Parser (Key, DataField)
 inputValueDefinition = label "InputValueDefinition" $ do
     metaDescription <- optDescription
     fieldName       <- parseName
@@ -89,7 +87,7 @@ inputValueDefinition = label "InputValueDefinition" $ do
 -- ArgumentsDefinition:
 --   ( InputValueDefinition(list) )
 --
-argumentsDefinition :: Parser (DataArguments OUTPUT)
+argumentsDefinition :: Parser (DataArguments)
 argumentsDefinition =
     label "ArgumentsDefinition" $ DataArguments Nothing <$> parseMaybeTuple inputValueDefinition
 
@@ -98,14 +96,14 @@ argumentsDefinition =
 --  FieldsDefinition :
 --    { FieldDefinition(list) }
 --
-fieldsDefinition :: Parser (FieldsDefinition OUTPUT)
+fieldsDefinition :: Parser (FieldsDefinition)
 fieldsDefinition = label "FieldsDefinition" $ FieldsDefinition <$> setOf fieldDefinition
 
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-fieldDefinition :: Parser (Key, DataField OUTPUT)
+fieldDefinition :: Parser (Key, DataField)
 fieldDefinition = label "FieldDefinition" $ do
     metaDescription <- optDescription
     fieldName       <- parseName
@@ -127,7 +125,7 @@ fieldDefinition = label "FieldDefinition" $ do
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }
 --
-inputFieldsDefinition :: Parser (FieldsDefinition INPUT)
+inputFieldsDefinition :: Parser (FieldsDefinition)
 inputFieldsDefinition = label "InputFieldsDefinition" $ FieldsDefinition <$> setOf inputValueDefinition
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives

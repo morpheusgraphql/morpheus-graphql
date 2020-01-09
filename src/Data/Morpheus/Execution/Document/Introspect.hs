@@ -64,7 +64,7 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
           | otherwise  =  [| (DataObject [] $(buildFields cFields), concat $(buildTypes cFields))|]
 deriveObjectRep _ = pure []
     
-buildTypes :: [DataField OUTPUT] -> ExpQ
+buildTypes :: [DataField] -> ExpQ
 buildTypes = listE . concatMap introspectField
   where
     introspectField DataField {fieldType, fieldArgs } =
@@ -88,7 +88,7 @@ proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
     genSig (Just m) = appT (conTX typeConName) (varTX m)
     genSig _        = conTX typeConName
 
-buildFields :: [DataField cat] -> ExpQ
+buildFields :: [DataField] -> ExpQ
 buildFields = listE . map buildField
   where
     buildField DataField {fieldName, fieldArgs, fieldType = alias@TypeRef {typeArgs, typeWrappers}, fieldMeta} =

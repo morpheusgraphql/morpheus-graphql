@@ -67,7 +67,6 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , Schema(..)
                                                 , DataType(..)
                                                 , DataTypeContent(..)
-                                                , OUTPUT
                                                 , FieldsDefinition
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
@@ -155,7 +154,7 @@ getOperationName :: Maybe Key -> Key
 getOperationName = fromMaybe "AnonymousOperation"
 
 getOperationObject
-  :: Operation a -> Schema -> Validation (Name, FieldsDefinition OUTPUT)
+  :: Operation a -> Schema -> Validation (Name, FieldsDefinition)
 getOperationObject op lib = do
   dt <- getOperationDataType op lib
   case dt of

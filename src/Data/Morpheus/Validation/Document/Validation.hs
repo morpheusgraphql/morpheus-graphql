@@ -45,7 +45,7 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
   validateType (_,DataType { typeContent = DataInterface {}}) = pure Nothing
   validateType (name, x) = pure $ Just (name, x)
   mustBeSubset
-    :: FieldsDefinition cat -> (Name, FieldsDefinition cat) -> [(Key, Key, ImplementsError)]
+    :: FieldsDefinition -> (Name, FieldsDefinition) -> [(Key, Key, ImplementsError)]
   mustBeSubset objFields (typeName, interfaceFields ) = concatMap
     checkField
     interfaceFields
@@ -67,7 +67,7 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
              ]
         Nothing -> [(typeName, key, UndefinedField)]
   -------------------------------
-  getInterfaceByKey :: Key -> Validation (Name, FieldsDefinition cat)
+  getInterfaceByKey :: Key -> Validation (Name, FieldsDefinition)
   getInterfaceByKey key = case lookup key lib of
     Just DataType { typeContent = DataInterface { interfaceFields } } -> pure (key,interfaceFields)
     _ -> failure $ unknownInterface key

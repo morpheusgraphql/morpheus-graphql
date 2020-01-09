@@ -32,10 +32,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeD(..)
                                                 , Key
                                                 , FieldsDefinition(..)
-                                                , OUTPUT
-                                                , INPUT
                                                 , DataArguments(..)
-                                                , catLift
                                                 , hasArguments
                                                 )
 
@@ -75,7 +72,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                               | otherwise = argTName
       where argTName = capital fieldName <> "Args"
     ---------------------------------------------------------------------------------------------
-    genResField :: (Key, DataField OUTPUT) -> Q (DataField OUTPUT)
+    genResField :: (Key, DataField) -> Q (DataField)
     genResField (_, field@DataField { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } })
       = do 
         typeArgs <- getTypeArgs typeConName lib 
@@ -180,7 +177,7 @@ hsTypeName "Boolean"                   = "Bool"
 hsTypeName name | name `elem` sysTypes = "S" <> name
 hsTypeName name                        = name
 
-genArgumentType :: (Key -> Key) -> (Key, DataField OUTPUT) -> Q [TypeD]
+genArgumentType :: (Key -> Key) -> (Key, DataField) -> Q [TypeD]
 genArgumentType _ (_, DataField { fieldArgs = NoArguments }) = pure []
 genArgumentType namespaceWith (fieldName, DataField { fieldArgs }) = pure
   [ TypeD
@@ -195,14 +192,12 @@ genArgumentType namespaceWith (fieldName, DataField { fieldArgs }) = pure
   ]
   where tName = namespaceWith (hsTypeName fieldName)
 
-genArguments :: DataArguments OUTPUT -> [DataField OUTPUT]
+genArguments :: DataArguments -> [DataField]
 genArguments x = genInputFields $ FieldsDefinition (arguments x)
 
-genInputFields :: FieldsDefinition INPUT -> [DataField OUTPUT]
+genInputFields :: FieldsDefinition -> [DataField]
 genInputFields = map (genField . snd) . unFieldsDefinition
 
-genField :: DataField INPUT -> DataField OUTPUT
-genField field@DataField { fieldType = tyRef@TypeRef { typeConName }, fieldArgs } = field 
-  { fieldType = tyRef { typeConName = hsTypeName typeConName }
-  , fieldArgs = catLift fieldArgs
-  }
+genField :: DataField -> DataField
+genField field@DataField { fieldType = tyRef@TypeRef { typeConName } } = field 
+  { fieldType = tyRef { typeConName = hsTypeName typeConName } }

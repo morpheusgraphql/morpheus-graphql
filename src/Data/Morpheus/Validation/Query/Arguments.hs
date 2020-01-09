@@ -80,7 +80,7 @@ variableByRef operationName variables Ref { refName, refPosition } = maybe
 resolveArgumentVariables
   :: Name
   -> ValidVariables
-  -> DataField INPUT
+  -> DataField
   -> RawArguments
   -> Validation (Arguments RESOLVED)
 resolveArgumentVariables operationName variables DataField { fieldName, fieldArgs }
