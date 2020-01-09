@@ -61,7 +61,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
-                                                , DataArguments(..)
+                                                , ArgumentsDefinition(..)
                                                 , Meta(..)
                                                 , FieldDefinition(..)
                                                 , DataTypeContent(..)
@@ -136,7 +136,7 @@ instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m
   field _ name = fieldObj { fieldArgs }
    where
     fieldObj  = field (Proxy @b) name
-    fieldArgs = DataArguments Nothing $ unwrap $ fst  $ introspectObjectFields
+    fieldArgs = ArgumentsDefinition Nothing $ unwrap $ fst  $ introspectObjectFields
       (Proxy :: Proxy 'False)
       (__typeName (Proxy @b), OutputType, Proxy @a)
   introspect _ typeLib = resolveUpdates typeLib
@@ -216,7 +216,7 @@ instance (TypeRep (Rep a) , Generic a) => IntrospectRep 'False a where
   introspectRep _ (_, scope, name, fing) =
     derivingDataContent (Proxy @a) (name, fing) scope
 
-buildField :: GQLType a => Proxy a -> DataArguments -> Text -> FieldDefinition
+buildField :: GQLType a => Proxy a -> ArgumentsDefinition -> Text -> FieldDefinition
 buildField proxy fieldArgs fieldName = FieldDefinition
   { fieldName
   , fieldArgs

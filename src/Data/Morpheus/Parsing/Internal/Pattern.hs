@@ -42,7 +42,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Meta(..)
                                                 , DataEnumValue(..)
                                                 , Name
-                                                , DataArguments(..)
+                                                , ArgumentsDefinition(..)
                                                 , FieldsDefinition(..)
                                                 , Collectible(..)
                                                 )
@@ -90,9 +90,9 @@ inputValueDefinition = label "InputValueDefinition" $ do
 -- ArgumentsDefinition:
 --   ( InputValueDefinition(list) )
 --
-argumentsDefinition :: Parser (DataArguments)
+argumentsDefinition :: Parser (ArgumentsDefinition)
 argumentsDefinition =
-    label "ArgumentsDefinition" $ (DataArguments Nothing <$> parseTuple inputValueDefinition) <|> pure NoArguments
+    label "ArgumentsDefinition" $ (ArgumentsDefinition Nothing <$> parseTuple inputValueDefinition) <|> pure NoArguments
 
 --  FieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
 --

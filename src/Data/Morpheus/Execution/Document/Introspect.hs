@@ -23,7 +23,7 @@ import           Data.Morpheus.Types.Internal.AST           ( ConsD (..)
                                                             , Key
                                                             , DataType(..)
                                                             , DataTypeContent(..)
-                                                            , DataArguments(..)
+                                                            , ArgumentsDefinition(..)
                                                             , FieldDefinition (..)
                                                             , insertType
                                                             , DataTypeKind(..)
@@ -82,7 +82,7 @@ buildTypes = listE . concatMap introspectField
     introspectField FieldDefinition {fieldType, fieldArgs } =
       [|[introspect $(proxyT fieldType)]|] : inputTypes fieldArgs
       where
-        inputTypes DataArguments { argumentsTypename = Just argsTypeName }
+        inputTypes ArgumentsDefinition { argumentsTypename = Just argsTypeName }
           | argsTypeName /= "()" = [[|snd $ introspectObjectFields (Proxy :: Proxy TRUE) (argsTypeName, InputType,$(proxyT tAlias))|]]
           where
             tAlias = TypeRef {typeConName = argsTypeName, typeWrappers = [], typeArgs = Nothing}

@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , checkForUnknownKeys
                                                 , checkNameCollision
-                                                , DataArguments(..)
+                                                , ArgumentsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -95,9 +95,9 @@ resolveArgumentVariables operationName variables FieldDefinition { fieldName, fi
 
 
 -- TODO: move in Data
-getArguments :: DataArguments -> [(Name,FieldDefinition)]
+getArguments :: ArgumentsDefinition -> [(Name,FieldDefinition)]
 getArguments NoArguments            = []
-getArguments (DataArguments _ args) = args
+getArguments (ArgumentsDefinition _ args) = args
 
 validateArgument
   :: Schema

@@ -39,7 +39,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , createType
                                                 , createUnionType
                                                 , toHSWrappers
-                                                , DataArguments(..)
+                                                , ArgumentsDefinition(..)
                                                 , FieldsDefinition(..)
                                                 , wrap
                                                 , Name
@@ -88,7 +88,7 @@ instance ParseJSONSchema Field (Key,FieldDefinition) where
   parse Field { fieldName, fieldArgs, fieldType } = do
     fType <- fieldTypeFromJSON fieldType
     args  <- traverse genArg fieldArgs
-    pure (fieldName, createField (DataArguments Nothing args) fieldName fType)
+    pure (fieldName, createField (ArgumentsDefinition Nothing args) fieldName fType)
    where
     genArg InputValue { inputName = argName, inputType = argType } =
       createArgument argName <$> fieldTypeFromJSON argType

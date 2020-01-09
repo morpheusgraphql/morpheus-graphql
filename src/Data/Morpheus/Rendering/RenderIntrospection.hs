@@ -39,7 +39,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataInputUnion
                                                 , lookupDeprecatedReason
                                                 , convertToJSONName
-                                                , DataArguments(..)
+                                                , ArgumentsDefinition(..)
                                                 , FieldsDefinition(..)
                                                 , Collectible(..)
                                                 )
@@ -83,8 +83,8 @@ createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
   }
   where deprecated = enumMeta >>= lookupDeprecated
 
-renderArguments :: (Monad m, Failure Text m) => DataArguments -> Schema -> m [S__InputValue m] 
-renderArguments DataArguments { arguments} lib = traverse (`renderinputValue` lib) arguments
+renderArguments :: (Monad m, Failure Text m) => ArgumentsDefinition -> Schema -> m [S__InputValue m] 
+renderArguments ArgumentsDefinition { arguments} lib = traverse (`renderinputValue` lib) arguments
 renderArguments NoArguments _ = pure []
 
 instance RenderSchema FieldDefinition S__Field where

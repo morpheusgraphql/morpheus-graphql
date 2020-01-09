@@ -51,7 +51,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupDeprecatedReason
                                                 , RAW
                                                 , Name
-                                                , DataArguments(..)
+                                                , ArgumentsDefinition(..)
                                                 , FieldsDefinition(..)
                                                 , Collectible(..)
                                                 )

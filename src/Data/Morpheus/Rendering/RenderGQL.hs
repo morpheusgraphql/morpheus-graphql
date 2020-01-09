@@ -37,7 +37,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , toGQLWrapper
                                                 , DataEnumValue(..)
                                                 , convertToJSONName
-                                                , DataArguments(..)
+                                                , ArgumentsDefinition(..)
                                                 , Name
                                                 , FieldsDefinition(..)
                                                 , Collectible(..)
@@ -101,9 +101,9 @@ instance RenderGQL (Name, FieldDefinition) where
   render (key, FieldDefinition { fieldType, fieldArgs }) =
     convertToJSONName key <> render fieldArgs <> ": " <> render fieldType
 
-instance RenderGQL (DataArguments) where 
+instance RenderGQL (ArgumentsDefinition) where 
   render NoArguments   = ""
-  render DataArguments { arguments } = "(" <> intercalate ", " (map render arguments) <> ")"
+  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (map render arguments) <> ")"
 
 renderIndent :: Text
 renderIndent = "  "

@@ -36,7 +36,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeD(..)
                                                 , Key
                                                 , isOutputObject
-                                                , DataArguments(..)
+                                                , ArgumentsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( UnSubResolver )
@@ -90,7 +90,7 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
        where
         monadVar = VarT $ mkName $ unpack m_
         ---------------------------
-        genFieldT DataArguments {  argumentsTypename = Just argsTypename } = AppT
+        genFieldT ArgumentsDefinition {  argumentsTypename = Just argsTypename } = AppT
           (AppT arrowType argType)
           (AppT monadVar result)
          where
