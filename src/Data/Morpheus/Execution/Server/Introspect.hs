@@ -136,7 +136,7 @@ instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m
   field _ name = fieldObj { fieldArgs }
    where
     fieldObj  = field (Proxy @b) name
-    fieldArgs = catLift $ DataArguments Nothing $ unFieldsDefinition $ catLift $ fst  $ introspectObjectFields
+    fieldArgs = DataArguments Nothing $ unFieldsDefinition $ fst  $ introspectObjectFields
       (Proxy :: Proxy 'False)
       (__typeName (Proxy @b), OutputType, Proxy @a)
   introspect _ typeLib = resolveUpdates typeLib
@@ -201,7 +201,7 @@ introspectObjectFields p1 (name, scope, proxy) = withObject
   (introspectRep p1 (proxy, scope, "", DataFingerprint "" []))
  where
   withObject (DataObject     {objectFields}, ts) = (objectFields, ts)
-  withObject (DataInputObject x, ts) = (catLift x, ts)
+  withObject (DataInputObject x, ts) = (x, ts)
   withObject _ =
     ( FieldsDefinition []
     , [introspectFailure (name <> " should have only one nonempty constructor")]
@@ -338,7 +338,7 @@ buildInputUnion (baseName, baseFingerprint) cons = datatype
     typeMembers =
       map (, True) (unionRef <> unionMembers) <> map (, False) enumCons
     (unionMembers, unionTypes) =
-      buildUnions (DataInputObject . catLift) baseFingerprint unionRecordRep
+      buildUnions DataInputObject baseFingerprint unionRecordRep
   types = map fieldTypeUpdater $ concatMap consFields cons
 
 buildUnionType
@@ -367,8 +367,8 @@ buildObject :: TypeScope -> [FieldRep] -> (DataTypeContent, [TypeUpdater])
 buildObject isOutput consFields = (wrap fields, types)
  where
   (fields, types) = buildDataObject consFields
-  wrap | isOutput == OutputType = DataObject [] . catLift
-       | otherwise              = DataInputObject . catLift
+  wrap | isOutput == OutputType = DataObject [] 
+       | otherwise              = DataInputObject 
 
 buildDataObject :: [FieldRep] -> (FieldsDefinition , [TypeUpdater])
 buildDataObject consFields = (fields, types)

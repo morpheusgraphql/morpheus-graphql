@@ -19,12 +19,11 @@ import           Data.Morpheus.Error.Document.Interface
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( Name
+                                                , DataField(..)
                                                 , DataType(..)
-                                                , DataObject
+                                                , FieldsDefinition(..)
                                                 , DataTypeContent(..)
-                                                , Name
-                                                , Key
                                                 , TypeRef(..)
                                                 , isWeaker
                                                 )
@@ -33,10 +32,10 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Failure(..)
                                                 )
 
-validatePartialDocument :: [(Key, DataType)] -> Validation [(Key, DataType)]
+validatePartialDocument :: [(Name, DataType)] -> Validation [(Name, DataType)]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib
  where
-  validateType :: (Key, DataType) -> Validation (Maybe (Key, DataType))
+  validateType :: (Name, DataType) -> Validation (Maybe (Name, DataType))
   validateType (name, dt@DataType { typeName , typeContent = DataObject { objectImplements , objectFields}  }) = do         
       interface <- traverse getInterfaceByKey objectImplements
       case concatMap (mustBeSubset objectFields) interface of
@@ -45,14 +44,12 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
   validateType (_,DataType { typeContent = DataInterface {}}) = pure Nothing
   validateType (name, x) = pure $ Just (name, x)
   mustBeSubset
-    :: FieldsDefinition -> (Name, FieldsDefinition) -> [(Key, Key, ImplementsError)]
-  mustBeSubset objFields (typeName, interfaceFields ) = concatMap
-    checkField
-    interfaceFields
+    :: FieldsDefinition -> (Name, FieldsDefinition) -> [(Name, Name, ImplementsError)]
+  mustBeSubset objFields (typeName, FieldsDefinition fields) = concatMap checkField fields
    where
-    checkField :: (Key, DataField) -> [(Key, Key, ImplementsError)]
+    checkField :: (Name, DataField) -> [(Name, Name, ImplementsError)]
     checkField (key, DataField { fieldType = interfaceT@TypeRef { typeConName = interfaceTypeName, typeWrappers = interfaceWrappers } })
-      = case lookup key objFields of
+      = case lookup key (unFieldsDefinition objFields) of
         Just DataField { fieldType = objT@TypeRef { typeConName, typeWrappers } }
           | typeConName == interfaceTypeName && not
             (isWeaker typeWrappers interfaceWrappers)
@@ -67,7 +64,7 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
              ]
         Nothing -> [(typeName, key, UndefinedField)]
   -------------------------------
-  getInterfaceByKey :: Key -> Validation (Name, FieldsDefinition)
+  getInterfaceByKey :: Name -> Validation (Name, FieldsDefinition)
   getInterfaceByKey key = case lookup key lib of
     Just DataType { typeContent = DataInterface { interfaceFields } } -> pure (key,interfaceFields)
     _ -> failure $ unknownInterface key
