@@ -76,13 +76,14 @@ toTHDefinitions namespace lib = traverse renderTHType lib
     genResField (_, field@DataField { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } })
       = do 
         typeArgs <- getTypeArgs typeConName lib 
-        pure $ field { 
-                fieldType = typeRef { typeConName = hsTypeName typeConName, typeArgs }
-              }
+        pure $ field 
+          { fieldType = typeRef { typeConName = hsTypeName typeConName, typeArgs }
+          , fieldArgs = fieldArguments
+          }
      where
-      fieldArgsType
-        | hasArguments fieldArgs = Just (genArgsTypeName fieldName)
-        | otherwise = Nothing
+      fieldArguments
+        | hasArguments fieldArgs = fieldArgs { argumentsTypename = Just $ genArgsTypeName fieldName }
+        | otherwise = fieldArgs
     --------------------------------------------
     generateType :: DataType -> Q GQLTypeD
     generateType dt@DataType { typeName, typeContent, typeMeta } = genType
