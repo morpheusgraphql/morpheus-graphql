@@ -80,7 +80,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , Message
                                                 )
-import qualified Data.Morpheus.Types.Internal.AST as AST
 
 type IntroCon a = (GQLType a, IntrospectRep (CUSTOM a) a)
 
@@ -268,7 +267,7 @@ data FieldRep = FieldRep {
   fieldIsObject :: Bool
 }
 
-data ResRep cat = ResRep {
+data ResRep = ResRep {
   enumCons :: [Name],
   unionRef :: [Name],
   unionRecordRep :: [ConsRep ]
@@ -296,7 +295,7 @@ setFieldNames cons@ConsRep { consFields } = cons
     }
     where fieldName = "_" <> pack (show i)
 
-analyseRep :: Name -> [ConsRep] -> ResRep cat
+analyseRep :: Name -> [ConsRep] -> ResRep
 analyseRep baseName cons = ResRep
   { enumCons       = map consName enumRep
   , unionRef       = map fieldTypeName $ concatMap consFields unionRefRep
