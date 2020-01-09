@@ -324,7 +324,7 @@ data Schema = Schema
 
 type TypeRegister = HashMap Key DataType
 
-initTypeLib :: (Key, DataType) -> Schema
+initTypeLib :: DataType -> Schema
 initTypeLib query = Schema { types        = empty
                              , query        = query
                              , mutation     = Nothing
@@ -488,7 +488,7 @@ insertType nextType@(name, datatype) lib = case isTypeDefined name lib of
 popByKey :: Name -> [(Key, DataType)] -> (Maybe DataType,[(Key, DataType)])
 popByKey key lib = case lookup key lib of
     Just dt@DataType { typeContent = DataObject {} } ->
-      (Just (key, dt), filter ((/= key) . fst) lib)
+      (Just dt, filter ((/= key) . fst) lib)
     _ -> (Nothing, lib)  
 
 instance Collectible Schema DataType where 
