@@ -39,6 +39,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataInputUnion
                                                 , lookupDeprecatedReason
                                                 , convertToJSONName
+                                                , DataArguments(..)
+                                                , FieldsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
@@ -60,12 +62,12 @@ instance RenderSchema DataType S__Type where
       constRes $ createLeafType SCALAR name typeMeta Nothing
     __render (DataEnum enums) = constRes
       $ createLeafType ENUM name typeMeta (Just $ map createEnumValue enums)
-    __render (DataInputObject fields) = \lib ->
+    __render (DataInputObject (FieldsDefinition fields)) = \lib ->
       createInputObject name typeMeta
         <$> traverse (`renderinputValue` lib) fields
-    __render (DataObject {objectFields}) = \lib ->
+    __render (DataObject {objectFields = FieldsDefinition fields}) = \lib ->
       createObjectType name (typeMeta >>= metaDescription)
-        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility objectFields))
+        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility fields))
     __render (DataUnion union) =
       constRes $ typeFromUnion (name, typeMeta, union)
     __render (DataInputUnion members) =
@@ -80,15 +82,18 @@ createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
   }
   where deprecated = enumMeta >>= lookupDeprecated
 
+renderArguments :: (Monad m, Failure Text m) => DataArguments -> Schema -> m [S__InputValue m] 
+renderArguments DataArguments { arguments} lib = traverse (`renderinputValue` lib) arguments
+renderArguments NoArguments _ = pure []
+
 instance RenderSchema DataField S__Field where
   render (name, field@DataField { fieldType = TypeRef { typeConName }, fieldArgs, fieldMeta }) lib
     = do
       kind <- renderTypeKind <$> lookupKind typeConName lib
-      args <- traverse (`renderinputValue` lib) fieldArgs
       pure S__Field
         { s__FieldName              = pure (convertToJSONName name)
         , s__FieldDescription       = pure (fieldMeta >>= metaDescription)
-        , s__FieldArgs              = pure args
+        , s__FieldArgs              = renderArguments fieldArgs lib 
         , s__FieldType'             =
           pure (wrap field $ createType kind typeConName Nothing $ Just [])
         , s__FieldIsDeprecated      = pure (isJust deprecated)
