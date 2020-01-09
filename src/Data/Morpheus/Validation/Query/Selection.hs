@@ -34,7 +34,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RawSelectionSet
                                                 , DataField(..)
                                                 , Ref(..)
-                                                , DataObject
+                                                , FieldsDefinition(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , Schema(..)
@@ -97,11 +97,11 @@ clusterUnionSelection fragments type' typeNames = splitFrag
       >>= packFragment
 
 categorizeTypes
-  :: [(Name, DataObject)] -> [Fragment] -> [((Name, DataObject), [Fragment])]
+  :: [(Name, FieldsDefinition)] -> [Fragment] -> [((Name, FieldsDefinition), [Fragment])]
 categorizeTypes types fragments = filter notEmpty $ map categorizeType types
  where
   notEmpty = (0 /=) . length . snd
-  categorizeType :: (Name, DataObject) -> ((Name, DataObject), [Fragment])
+  categorizeType :: (Name, FieldsDefinition) -> ((Name, FieldsDefinition), [Fragment])
   categorizeType datatype = (datatype, filter matches fragments)
     where matches fragment = fragmentType fragment == fst datatype
 
@@ -124,13 +124,13 @@ validateSelectionSet
   -> FragmentLib
   -> Text
   -> ValidVariables
-  -> (Name, DataObject)
+  -> (Name, FieldsDefinition)
   -> RawSelectionSet
   -> Validation ValidSelectionSet
 validateSelectionSet lib fragments' operatorName variables = __validate
  where
   __validate
-    :: (Name, DataObject) -> RawSelectionSet -> Validation ValidSelectionSet
+    :: (Name, FieldsDefinition) -> RawSelectionSet -> Validation ValidSelectionSet
   __validate dataType@(typeName, objectFields) selectionSet =
     concat
     <$> mapM validateSelection selectionSet
@@ -190,7 +190,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
             --    second arguments will be added to every selection cluster
             validateCluster
               :: ValidSelectionSet
-              -> ((Name, DataObject), [Fragment])
+              -> ((Name, FieldsDefinition), [Fragment])
               -> Validation (Text, ValidSelectionSet)
             validateCluster sysSelection' (type', frags') = do
               selection' <- __validate type'

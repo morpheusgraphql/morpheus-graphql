@@ -326,6 +326,9 @@ newtype FieldsDefinition = FieldsDefinition
     unFieldsDefinition :: [(Name, DataField)] 
   } deriving (Show,Lift)
 
+instance Semigroup FieldsDefinition where 
+  FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)
+
 fieldVisibility :: (Key, DataField) -> Bool
 fieldVisibility ("__typename", _) = False
 fieldVisibility ("__schema"  , _) = False
