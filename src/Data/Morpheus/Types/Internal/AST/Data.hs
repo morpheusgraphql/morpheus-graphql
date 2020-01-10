@@ -79,7 +79,7 @@ import           Data.HashMap.Lazy              ( HashMap
                                                 , elems
                                                 )
 import qualified Data.HashMap.Lazy             as HM
-import           Data.Semigroup                 ( (<>) )
+import           Data.Semigroup                 ( Semigroup(..), (<>) )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import           Instances.TH.Lift              ( )
 import           Data.List                      ( find , (\\))

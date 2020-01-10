@@ -40,7 +40,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , createUnionType
                                                 , toHSWrappers
                                                 , ArgumentsDefinition(..)
-                                                , FieldsDefinition(..)
                                                 , wrap
                                                 , Name
                                                 )
