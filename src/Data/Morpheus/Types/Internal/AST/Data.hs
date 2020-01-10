@@ -191,6 +191,16 @@ data Schema = Schema
 
 type TypeLib = HashMap Key DataType
 
+instance Collectible Schema DataType where 
+  selectBy err name lib = case lookupDataType name lib of
+      Nothing -> failure err
+      Just x  -> pure x
+
+instance Collectible Schema (Name, FieldsDefinition ) where 
+  selectBy validationError name lib =
+     selectBy validationError name lib >>= coerceDataObject validationError
+
+
 initTypeLib :: DataType -> Schema
 initTypeLib query = Schema { types        = empty
                              , query        = query
@@ -361,11 +371,6 @@ popByKey name lib = case lookupWith typeName name lib of
       (Just dt, filter ((/= name) . typeName) lib)
     _ -> (Nothing, lib) 
 
-instance Collectible Schema DataType where 
-  selectBy err name lib = case lookupDataType name lib of
-      Nothing -> failure err
-      Just x  -> pure x
-
 -- 3.6 Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 ------------------------------------------------------------------------------
 --  ObjectTypeDefinition:
@@ -438,11 +443,6 @@ toListField dataField = dataField { fieldType = listW (fieldType dataField) }
  where
   listW alias@TypeRef { typeWrappers } =
     alias { typeWrappers = TypeList : typeWrappers }
-
-
-instance Collectible Schema (Name, FieldsDefinition ) where 
-  selectBy validationError name lib =
-     selectBy validationError name lib >>= coerceDataObject validationError
 
 lookupField :: Failure error m => Key -> [(Key, field)] -> error -> m field
 lookupField key fields gqlError = case lookup key fields of
