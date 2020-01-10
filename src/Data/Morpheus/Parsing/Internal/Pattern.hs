@@ -100,8 +100,7 @@ argumentsDefinition =
 --    { FieldDefinition(list) }
 --
 fieldsDefinition :: Parser (FieldsDefinition)
-fieldsDefinition = label "FieldsDefinition" $ FieldsDefinition . HM.fromList <$> setOf fieldDefinition
-
+fieldsDefinition = label "FieldsDefinition" $ wrap <$> setOf fieldDefinition
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)

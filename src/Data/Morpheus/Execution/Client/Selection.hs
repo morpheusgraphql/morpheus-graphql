@@ -212,8 +212,8 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
  where
   scanInpType DataType { typeContent, typeName } = scanType typeContent
    where
-    scanType (DataInputObject (FieldsDefinition fields)) = resolveUpdates
-      (name : collected) (map toInputTypeD $ HM.toList fields)
+    scanType (DataInputObject fields) = resolveUpdates
+      (name : collected) (map toInputTypeD $ unwrap fields)
      where
       toInputTypeD :: (Text, FieldDefinition) -> LibUpdater [Key]
       toInputTypeD (_, FieldDefinition { fieldType = TypeRef { typeConName } }) =
