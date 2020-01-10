@@ -49,6 +49,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   )
 where
 
+import           Data.Semigroup                 ((<>))
 import           Data.Aeson                     ( FromJSON
                                                 , ToJSON
                                                 )
