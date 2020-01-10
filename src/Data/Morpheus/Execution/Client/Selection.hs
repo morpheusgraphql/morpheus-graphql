@@ -43,6 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
                                                 , Listable(..)
+                                                , Selectable(..)
                                                 , ConsD(..)
                                                 , ClientType(..)
                                                 , TypeD(..)

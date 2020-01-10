@@ -40,7 +40,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Schema(..)
                                                 , TypeRef(..)
                                                 , Name
-                                                , Listable(..)
+                                                , Selectable(..)
                                                 , isEntNode
                                                 , lookupFieldAsSelectionSet
                                                 , lookupSelectionField

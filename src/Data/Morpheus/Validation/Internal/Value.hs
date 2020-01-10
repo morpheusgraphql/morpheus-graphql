@@ -42,7 +42,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isFieldNullable
                                                 , TypeRef(..)
                                                 , isNullableWrapper
-                                                , Collectible(..)
+                                                , Listable(..)
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving

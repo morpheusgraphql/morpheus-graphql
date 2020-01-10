@@ -28,7 +28,7 @@ import           Data.Morpheus.Types.Internal.AST           ( ConsD (..)
                                                             , insertType
                                                             , DataTypeKind(..)
                                                             , TypeRef (..)
-                                                            , Collectible(..)
+                                                            , Listable(..)
                                                             )
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
 
