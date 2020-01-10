@@ -31,7 +31,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Ref(..)
                                                 , Position
                                                 , Schema
-                                                , Collection(..)
                                                 , checkNameCollision
                                                 , FieldsDefinition
                                                 , Collectible(..)

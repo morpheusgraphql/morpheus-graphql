@@ -361,11 +361,11 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons = datatype
 
 
 buildObject :: TypeScope -> [FieldRep] -> (DataTypeContent, [TypeUpdater])
-buildObject isOutput consFields = (wrap fields, types)
+buildObject isOutput consFields = (wrapWith fields, types)
  where
   (fields, types) = buildDataObject consFields
-  wrap | isOutput == OutputType = DataObject [] 
-       | otherwise              = DataInputObject 
+  wrapWith | isOutput == OutputType = DataObject [] 
+           | otherwise              = DataInputObject 
 
 buildDataObject :: [FieldRep] -> (FieldsDefinition , [TypeUpdater])
 buildDataObject consFields = (fields, types)

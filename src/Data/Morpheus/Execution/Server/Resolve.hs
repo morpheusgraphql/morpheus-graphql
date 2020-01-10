@@ -18,6 +18,7 @@ module Data.Morpheus.Execution.Server.Resolve
   )
 where
 
+import           Data.Semigroup                 ((<>))
 import           Data.Aeson                     ( encode )
 import           Data.Aeson.Internal            ( formatError
                                                 , ifromJSON

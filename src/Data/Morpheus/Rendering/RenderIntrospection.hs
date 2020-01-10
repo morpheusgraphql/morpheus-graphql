@@ -40,7 +40,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupDeprecatedReason
                                                 , convertToJSONName
                                                 , ArgumentsDefinition(..)
-                                                , FieldsDefinition(..)
                                                 , Collectible(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
