@@ -41,10 +41,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( DataFingerprint(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
-                                                , DataValidator(..)
                                                 , Name
                                                 , Description
                                                 , Meta(..)
+                                                , ScalarDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                  ( Validation
@@ -64,7 +64,7 @@ scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
     { typeName
     , typeMeta        = Just Meta { metaDescription, metaDirectives }
     , typeFingerprint = DataFingerprint typeName []
-    , typeContent     = DataScalar $ DataValidator pure
+    , typeContent     = DataScalar $ ScalarDefinition pure
     }
 
 -- Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects

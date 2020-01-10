@@ -71,13 +71,13 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Message
                                                 , Key
                                                 , Name
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( MUTATION
                                                 , OperationType
                                                 , QUERY
+                                                , MUTATION
                                                 , SUBSCRIPTION
-                                                , Schema
+                                                )
+import           Data.Morpheus.Types.Internal.AST.Data
+                                                ( Schema
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( GQLErrors

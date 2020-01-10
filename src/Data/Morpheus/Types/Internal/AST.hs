@@ -69,7 +69,7 @@ module Data.Morpheus.Types.Internal.AST
 
 
   -- DSL
-  , DataScalar
+  , ScalarDefinition(..)
   , DataEnum
   , FieldsDefinition(..)
   , DataArgument
@@ -80,7 +80,6 @@ module Data.Morpheus.Types.Internal.AST
   , DataType(..)
   , Schema(..)
   , DataTypeWrapper(..)
-  , DataValidator(..)
   , DataTypeKind(..)
   , DataFingerprint(..)
   , TypeWrapper(..)

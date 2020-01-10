@@ -11,7 +11,7 @@
 {-# LANGUAGE StandaloneDeriving  , TemplateHaskell   #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
-  ( DataScalar
+  ( ScalarDefinition(..)
   , DataEnum
   , FieldsDefinition(..)
   , DataArgument
@@ -21,12 +21,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , DataTypeContent(..)
   , DataType(..)
   , Schema(..)
-  , DataTypeWrapper(..)
-  , DataValidator(..)
-  , DataTypeKind(..)
-  , DataFingerprint(..)
-  , TypeWrapper(..)
-  , TypeRef(..)
   , DataEnumValue(..)
   , TypeLib
   , isTypeDefined
@@ -38,22 +32,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , kindOf
   , toNullableField
   , toListField
-  , isObject
-  , isInput
-  , toHSWrappers
-  , isNullable
-  , toGQLWrapper
-  , isWeaker
-  , isSubscription
-  , isOutputObject
-  , sysTypes
-  , isDefaultTypeName
-  , isSchemaTypeName
-  , isPrimitiveTypeName
-  , OperationType(..)
-  , QUERY
-  , MUTATION
-  , SUBSCRIPTION
   , isEntNode
   , lookupInputType
   , coerceDataObject
@@ -85,8 +63,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , GQLTypeD(..)
   , ClientType(..)
   , DataInputUnion
-  , isNullableWrapper
-  , isOutputType
   , checkForUnknownKeys
   , checkNameCollision
   , Collectible(..)
@@ -123,6 +99,9 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Ref(..)
                                                 , elementOfKeys
                                                 , removeDuplicates
+                                                , DataTypeKind(..)
+                                                , DataFingerprint(..)
+                                                , isNullable
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -143,134 +122,19 @@ class Collectible c a where
   wrap     :: [(Name, a)] ->  c
   unwrap   ::  c  -> [(Name, a)]
   selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a 
-  
 
-type QUERY = 'Query
-type MUTATION = 'Mutation
-type SUBSCRIPTION = 'Subscription
-
-isDefaultTypeName :: Key -> Bool
-isDefaultTypeName x = isSchemaTypeName x || isPrimitiveTypeName x
-
-isSchemaTypeName :: Key -> Bool
-isSchemaTypeName = (`elem` sysTypes)
-
-isPrimitiveTypeName :: Key -> Bool
-isPrimitiveTypeName = (`elem` ["String", "Float", "Int", "Boolean", "ID"])
-
-
-checkNameCollision :: (Failure e m, Ord a) => [a] -> ([a] -> e) -> m [a]
-checkNameCollision enhancedKeys errorGenerator =
-  case enhancedKeys \\ removeDuplicates enhancedKeys of
-    []         -> pure enhancedKeys
-    duplicates -> failure $ errorGenerator duplicates
-
-checkForUnknownKeys :: Failure e m => [Ref] -> [Name] -> ([Ref] -> e) -> m [Ref]
-checkForUnknownKeys enhancedKeys' keys' errorGenerator' =
-  case filter (not . elementOfKeys keys') enhancedKeys' of
-    []           -> pure enhancedKeys'
-    unknownKeys' -> failure $ errorGenerator' unknownKeys'  
-
-
-sysTypes :: [Key]
-sysTypes =
-  [ "__Schema"
-  , "__Type"
-  , "__Directive"
-  , "__TypeKind"
-  , "__Field"
-  , "__DirectiveLocation"
-  , "__InputValue"
-  , "__EnumValue"
-  ]
-
-data OperationType
-  = Query
-  | Subscription
-  | Mutation
-  deriving (Show, Eq, Lift)
-
-isSubscription :: DataTypeKind -> Bool
-isSubscription (KindObject (Just Subscription)) = True
-isSubscription _ = False
-
-isOutputType :: DataTypeKind -> Bool
-isOutputType (KindObject _) = True
-isOutputType KindUnion      = True
-isOutputType _              = False
-
-isOutputObject :: DataTypeKind -> Bool
-isOutputObject (KindObject _) = True
-isOutputObject _              = False
-
-isObject :: DataTypeKind -> Bool
-isObject (KindObject _)  = True
-isObject KindInputObject = True
-isObject _               = False
-
-isInput :: DataTypeKind -> Bool
-isInput KindInputObject = True
-isInput _               = False
-
-data DataTypeKind
-  = KindScalar
-  | KindObject (Maybe OperationType)
-  | KindUnion
-  | KindEnum
-  | KindInputObject
-  | KindList
-  | KindNonNull
-  | KindInputUnion
-  deriving (Eq, Show, Lift)
-
-isNullable :: TypeRef -> Bool
-isNullable TypeRef { typeWrappers = typeWrappers } = isNullableWrapper typeWrappers
-
-isNullableWrapper :: [TypeWrapper] -> Bool
-isNullableWrapper (TypeMaybe : _ ) = True
-isNullableWrapper _               = False
-
-
-isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
-isWeaker (TypeMaybe : xs1) (TypeMaybe : xs2) = isWeaker xs1 xs2
-isWeaker (TypeMaybe : _  ) _                 = True
-isWeaker (_         : xs1) (_ : xs2)         = isWeaker xs1 xs2
-isWeaker _                 _                 = False
-
-toGQLWrapper :: [TypeWrapper] -> [DataTypeWrapper]
-toGQLWrapper (TypeMaybe : (TypeMaybe : tw)) = toGQLWrapper (TypeMaybe : tw)
-toGQLWrapper (TypeMaybe : (TypeList  : tw)) = ListType : toGQLWrapper tw
-toGQLWrapper (TypeList : tw) = [NonNullType, ListType] <> toGQLWrapper tw
-toGQLWrapper [TypeMaybe                   ] = []
-toGQLWrapper []                             = [NonNullType]
-
-toHSWrappers :: [DataTypeWrapper] -> [TypeWrapper]
-toHSWrappers (NonNullType : (NonNullType : xs)) =
-  toHSWrappers (NonNullType : xs)
-toHSWrappers (NonNullType : (ListType : xs)) = TypeList : toHSWrappers xs
-toHSWrappers (ListType : xs) = [TypeMaybe, TypeList] <> toHSWrappers xs
-toHSWrappers []                              = [TypeMaybe]
-toHSWrappers [NonNullType]                   = []
-
-data DataFingerprint = DataFingerprint Name [String] deriving (Show, Eq, Ord, Lift)
-
-newtype DataValidator = DataValidator
-  { validateValue :: ValidValue -> Either Key ValidValue
-  }
-
-instance Show DataValidator where
-  show _ = "DataValidator"
-
-type DataScalar = DataValidator
 type DataEnum = [DataEnumValue]
 type DataArgument = FieldDefinition 
 type DataUnion = [Key]
 type DataInputUnion = [(Key, Bool)]
 
-data DataTypeWrapper
-  = ListType
-  | NonNullType
-  deriving (Show, Lift)
+-- SCALAR
+newtype ScalarDefinition = ScalarDefinition
+  { validateValue :: ValidValue -> Either Key ValidValue
+  }
+
+instance Show ScalarDefinition where
+  show _ = "ScalarDefinition"
 
 data Directive = Directive {
   directiveName :: Name,
@@ -364,7 +228,7 @@ data DataType = DataType
   } deriving (Show)
 
 data DataTypeContent
-  = DataScalar      { dataScalar        :: DataScalar   }
+  = DataScalar      { dataScalar        :: ScalarDefinition   }
   | DataEnum        { enumMembers       :: DataEnum     }
   | DataInputObject { inputObjectFields :: FieldsDefinition   }
   | DataObject      { objectImplements  :: [Name],
@@ -383,7 +247,7 @@ createType typeName typeContent = DataType
   }
 
 createScalarType :: Name -> DataType
-createScalarType typeName = createType typeName $ DataScalar (DataValidator pure)
+createScalarType typeName = createType typeName $ DataScalar (ScalarDefinition pure)
 
 createEnumType :: Name -> [Key] -> DataType
 createEnumType typeName typeData = createType typeName (DataEnum enumValues)
@@ -688,3 +552,18 @@ data ConsD = ConsD
   { cName   :: Name
   , cFields :: [FieldDefinition]
   } deriving (Show)
+
+
+-- Helpers
+-------------------------------------------------------------------------
+checkNameCollision :: (Failure e m, Ord a) => [a] -> ([a] -> e) -> m [a]
+checkNameCollision enhancedKeys errorGenerator =
+  case enhancedKeys \\ removeDuplicates enhancedKeys of
+    []         -> pure enhancedKeys
+    duplicates -> failure $ errorGenerator duplicates
+
+checkForUnknownKeys :: Failure e m => [Ref] -> [Name] -> ([Ref] -> e) -> m [Ref]
+checkForUnknownKeys enhancedKeys keys' errorGenerator' =
+  case filter (not . elementOfKeys keys') enhancedKeys of
+    []           -> pure enhancedKeys
+    unknownKeys -> failure $ errorGenerator' unknownKeys

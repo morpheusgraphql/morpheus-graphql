@@ -57,14 +57,14 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , VALID
                                                 , RAW
                                                 , Stage
+                                                , OperationType(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( OperationType(..)
-                                                , Schema(..)
+                                                ( Schema(..)
                                                 , DataType(..)
                                                 , DataTypeContent(..)
                                                 , FieldsDefinition

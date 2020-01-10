@@ -21,7 +21,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , Schema(..)
-                                                , DataValidator(..)
+                                                , ScalarDefinition(..)
                                                 , Key
                                                 , TypeRef(..)
                                                 , TypeWrapper(..)
@@ -33,7 +33,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Variable(..)
                                                 , Ref(..)
                                                 , isWeaker
-                                                , DataScalar
                                                 , Message
                                                 , Name
                                                 , ResolvedValue
@@ -43,7 +42,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isFieldNullable
                                                 , TypeRef(..)
                                                 , isNullableWrapper
-                                                , FieldsDefinition(..)
                                                 , Collectible(..)
                                                 )
 
@@ -174,11 +172,11 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
 
 
 validateScalar
-  :: DataScalar
+  :: ScalarDefinition
   -> ResolvedValue
   -> (ResolvedValue -> Maybe Message -> InputError)
   -> InputValidation ValidValue
-validateScalar DataValidator { validateValue } value err = do
+validateScalar ScalarDefinition { validateValue } value err = do
   scalarValue <- toScalar value
   case validateValue scalarValue of
     Right _            -> return scalarValue
