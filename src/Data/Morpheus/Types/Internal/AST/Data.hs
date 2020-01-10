@@ -508,10 +508,11 @@ instance Collectible Schema DataType where
 --  FieldsDefinition
 --    { FieldDefinition(list) }
 --
-newtype FieldsDefinition = FieldsDefinition 
- { unFieldsDefinition :: [(Name, FieldDefinition)] } deriving (Show, Lift)
 
- -- { unFieldsDefinition :: HashMap Name FieldDefinition } deriving (Show)
+-- TODO: find better solution with OrderedMap to stote Fields
+newtype FieldsDefinition = FieldsDefinition 
+-- { unFieldsDefinition :: HashMap Name FieldDefinition } deriving (Show)
+ { unFieldsDefinition :: [(Name, FieldDefinition)] } deriving (Show, Lift)
 
 -- instance Lift FieldsDefinition where 
 --   lift (FieldsDefinition  hm) = [| FieldsDefinition $ HM.fromList ls |]
