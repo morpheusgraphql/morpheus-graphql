@@ -50,7 +50,9 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
 import           Data.Morpheus.Rendering.RenderGQL
-                                                ( RenderGQL(..) )
+                                                ( RenderGQL(..) 
+                                                , renderWrapped
+                                                )
 
 checkTypeEquality
   :: (Name, [TypeWrapper])
@@ -86,7 +88,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
  where
   throwError :: [TypeWrapper] -> ResolvedValue -> InputValidation ValidValue
   throwError wrappers value =
-    Left $ UnexpectedType props (renderWrapped datatype wrappers) value Nothing
+    Left $ UnexpectedType props (renderWrapped typeName wrappers) value Nothing
   -- VALIDATION
   validateWrapped
     :: [TypeWrapper]

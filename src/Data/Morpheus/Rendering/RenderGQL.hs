@@ -7,6 +7,7 @@
 module Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL(..)
   , renderGraphQLDocument
+  , renderWrapped
   )
 where
 
@@ -49,23 +50,21 @@ renderGraphQLDocument lib =
  where
   visibleTypes = filter (not . isDefaultTypeName . typeName) (allDataTypes lib)
 
-class RenderGQL a where
-  render :: a -> Key
-  renderWrapped :: a -> [TypeWrapper] -> Key
-  default renderWrapped :: a -> [TypeWrapper] -> Key
-  renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
+renderWrapped :: RenderGQL a => a -> [TypeWrapper] -> Name
+renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
     where
       showGQLWrapper []               = render x
       showGQLWrapper (ListType:xs)    = "[" <> showGQLWrapper xs <> "]"
       showGQLWrapper (NonNullType:xs) = showGQLWrapper xs <> "!"
 
+class RenderGQL a where
+  render :: a -> Key
 
 instance RenderGQL Key where
   render = id
 
 instance RenderGQL TypeRef where
-  render TypeRef { typeConName, typeWrappers } =
-    renderWrapped typeConName typeWrappers
+  render TypeRef { typeConName, typeWrappers } = renderWrapped typeConName typeWrappers
 
 instance RenderGQL DataEnumValue where
   render DataEnumValue { enumName } = enumName
