@@ -10,7 +10,6 @@ module Data.Morpheus.Parsing.Internal.Pattern
     )
 where
 
-import qualified Data.HashMap.Lazy          as  HM
 import           Text.Megaparsec                ( label
                                                 , many
                                                 , (<|>)

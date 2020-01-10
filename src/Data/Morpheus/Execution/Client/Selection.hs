@@ -10,7 +10,6 @@ module Data.Morpheus.Execution.Client.Selection
   )
 where
 
-import qualified Data.HashMap.Lazy          as  HM
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text
@@ -43,7 +42,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Key
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
-                                                , Collection(..)
+                                                , Collectible(..)
                                                 , ConsD(..)
                                                 , ClientType(..)
                                                 , TypeD(..)
@@ -52,8 +51,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RAW
                                                 , Name
                                                 , ArgumentsDefinition(..)
-                                                , FieldsDefinition(..)
-                                                , Collectible(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors

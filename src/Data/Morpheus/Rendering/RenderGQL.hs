@@ -19,7 +19,6 @@ import           Data.Text                      ( Text
 import qualified Data.Text.Lazy                as LT
                                                 ( fromStrict )
 import           Data.Text.Lazy.Encoding        ( encodeUtf8 )
-import qualified Data.HashMap.Lazy          as  HM
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.AST
