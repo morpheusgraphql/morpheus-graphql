@@ -3,6 +3,7 @@
 {-# LANGUAGE QuasiQuotes        #-}
 {-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE GADTs              #-}
+{-# LANGUAGE RecordWildCards    #-}
 
 module Data.Morpheus.Execution.Document.Introspect
   ( deriveObjectRep , instanceIntrospect
@@ -20,7 +21,6 @@ import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), int
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
 import           Data.Morpheus.Types.Internal.AST           ( ConsD (..)
                                                             , TypeD (..)
-                                                            , Key
                                                             , DataType(..)
                                                             , DataTypeContent(..)
                                                             , ArgumentsDefinition(..)
@@ -28,33 +28,21 @@ import           Data.Morpheus.Types.Internal.AST           ( ConsD (..)
                                                             , insertType
                                                             , DataTypeKind(..)
                                                             , TypeRef (..)
-                                                            , FieldsDefinition(..)
                                                             , Collectible(..)
                                                             )
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
 
-
-instanceIntrospect :: (Key,DataType) -> Q [Dec]
--- FIXME: dirty fix for introspection
-instanceIntrospect ("__DirectiveLocation",_) = pure []
-instanceIntrospect ("__TypeKind",_) = pure []
-instanceIntrospect (name, DataType {
-      typeContent = DataEnum enumType,
-      typeName
-      , typeMeta
-      , typeFingerprint
-    }) = pure <$> instanceD (cxt []) iHead [defineIntrospect]
+instanceIntrospect :: DataType -> Q [Dec]
+instanceIntrospect DataType { typeName, typeContent = DataEnum enumType , .. } 
+    -- FIXME: dirty fix for introspection
+    | typeName `elem`  ["__DirectiveLocation","__TypeKind"] = pure []
+    | otherwise = pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
     -----------------------------------------------
-    iHead = instanceHeadT ''Introspect name []
+    iHead = instanceHeadT ''Introspect typeName []
     defineIntrospect = instanceProxyFunD ('introspect,body)
       where
-        body =[| insertType (name,DataType {
-          typeName
-          ,typeMeta
-          , typeFingerprint
-          ,typeContent = DataEnum enumType
-        }) |]
+        body =[| insertType DataType { typeContent = DataEnum enumType, .. } |]
 instanceIntrospect _ = pure []
 
 -- [((Text, FieldDefinition), TypeUpdater)]
@@ -103,8 +91,8 @@ proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
 buildFields :: [FieldDefinition] -> ExpQ
 buildFields = listE . map buildField
   where
-    buildField field@FieldDefinition {fieldName, fieldType } =
+    buildField f@FieldDefinition {fieldName, fieldType } =
       [|( fieldName
-        , field { fieldType = fieldType {typeConName = __typeName $(proxyT fieldType) } }
+        , f { fieldType = fieldType {typeConName = __typeName $(proxyT fieldType) } }
         )
       |]

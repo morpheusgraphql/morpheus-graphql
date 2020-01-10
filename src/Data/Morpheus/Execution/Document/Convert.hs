@@ -35,19 +35,20 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ArgumentsDefinition(..)
                                                 , hasArguments
                                                 , Collectible(..)
+                                                , lookupWith
                                                 )
 
 
 m_ :: Key
 m_ = "m"
 
-getTypeArgs :: Key -> [(Key, DataType)] -> Q (Maybe Key)
+getTypeArgs :: Key -> [DataType] -> Q (Maybe Key)
 getTypeArgs "__TypeKind" _ = pure Nothing
 getTypeArgs "Boolean" _ = pure Nothing
 getTypeArgs "String" _ = pure Nothing
 getTypeArgs "Int" _ = pure Nothing
 getTypeArgs "Float" _ = pure Nothing
-getTypeArgs key lib = case typeContent <$> lookup key lib of
+getTypeArgs key lib = case typeContent <$> lookupWith typeName key lib of
   Just x  -> pure (kindToTyArgs x)
   Nothing -> getTyArgs <$> reify (mkName $ unpack key)
 
@@ -62,14 +63,14 @@ kindToTyArgs DataObject{} = Just m_
 kindToTyArgs DataUnion{}  = Just m_
 kindToTyArgs _             = Nothing
 
-toTHDefinitions :: Bool -> [(Key, DataType)] -> Q [GQLTypeD]
+toTHDefinitions :: Bool -> [DataType] -> Q [GQLTypeD]
 toTHDefinitions namespace lib = traverse renderTHType lib
  where
-  renderTHType :: (Key, DataType) -> Q GQLTypeD
-  renderTHType (tyConName, x) = generateType x
+  renderTHType :: DataType -> Q GQLTypeD
+  renderTHType x = generateType x
    where
     genArgsTypeName :: Key -> Key
-    genArgsTypeName fieldName | namespace = hsTypeName tyConName <> argTName
+    genArgsTypeName fieldName | namespace = hsTypeName (typeName x) <> argTName
                               | otherwise = argTName
       where argTName = capital fieldName <> "Args"
     ---------------------------------------------------------------------------------------------
@@ -99,7 +100,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                                }
         , typeKindD    = KindEnum
         , typeArgD     = []
-        , typeOriginal = (typeName, dt)
+        , typeOriginal = dt
         }
        where
         enumOption DataEnumValue { enumName } =
@@ -120,7 +121,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
             }
         , typeKindD    = KindInputObject
         , typeArgD     = []
-        , typeOriginal = (typeName, dt)
+        , typeOriginal = dt
         }
       genType DataObject {objectFields} = do
         typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (unwrap objectFields)
@@ -139,7 +140,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                              then KindObject (Just Subscription)
                              else KindObject Nothing
           , typeArgD
-          , typeOriginal = (typeName, dt)
+          , typeOriginal = dt
           }
       genType (DataUnion members) = do
         let tCons = map unionCon members
@@ -151,7 +152,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                                  }
           , typeKindD    = KindUnion
           , typeArgD     = []
-          , typeOriginal = (typeName, dt)
+          , typeOriginal = dt
           }
        where
         unionCon memberName = ConsD

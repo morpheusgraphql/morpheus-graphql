@@ -27,23 +27,24 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , Collectible(..)
                                                 , isWeaker
+                                                , lookupWith
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
 
-validatePartialDocument :: [(Name, DataType)] -> Validation [(Name, DataType)]
+validatePartialDocument :: [DataType] -> Validation [DataType]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib
  where
-  validateType :: (Name, DataType) -> Validation (Maybe (Name, DataType))
-  validateType (name, dt@DataType { typeName , typeContent = DataObject { objectImplements , objectFields}  }) = do         
+  validateType :: DataType -> Validation (Maybe DataType)
+  validateType dt@DataType { typeName , typeContent = DataObject { objectImplements , objectFields}  } = do         
       interface <- traverse getInterfaceByKey objectImplements
       case concatMap (mustBeSubset objectFields) interface of
-        [] -> pure $ Just (name, dt) 
+        [] -> pure (Just dt) 
         errors -> failure $ partialImplements typeName errors
-  validateType (_,DataType { typeContent = DataInterface {}}) = pure Nothing
-  validateType (name, x) = pure $ Just (name, x)
+  validateType DataType { typeContent = DataInterface {}} = pure Nothing
+  validateType x = pure (Just x)
   mustBeSubset
     :: FieldsDefinition -> (Name, FieldsDefinition) -> [(Name, Name, ImplementsError)]
   mustBeSubset objFields (typeName, fields) = concatMap checkField (unwrap fields)
@@ -66,6 +67,6 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
         Nothing -> [(typeName, key, UndefinedField)]
   -------------------------------
   getInterfaceByKey :: Name -> Validation (Name, FieldsDefinition)
-  getInterfaceByKey key = case lookup key lib of
+  getInterfaceByKey key = case lookupWith typeName key lib of
     Just DataType { typeContent = DataInterface { interfaceFields } } -> pure (key,interfaceFields)
     _ -> failure $ unknownInterface key

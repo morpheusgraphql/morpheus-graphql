@@ -28,6 +28,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , TypeWrapper(..)
   , TypeRef(..)
   , DataEnumValue(..)
+  , TypeLib
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -90,6 +91,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , checkNameCollision
   , Collectible(..)
   , hasArguments
+  , lookupWith
   )
 where
 
@@ -315,13 +317,13 @@ data DataEnumValue = DataEnumValue{
 --    OperationType: NamedType
 
 data Schema = Schema
-  { types        :: HashMap Name DataType
+  { types        :: TypeLib
   , query        :: DataType
   , mutation     :: Maybe DataType
   , subscription :: Maybe DataType
   } deriving (Show)
 
-type TypeRegister = HashMap Key DataType
+type TypeLib = HashMap Key DataType
 
 initTypeLib :: DataType -> Schema
 initTypeLib query = Schema { types        = empty
@@ -333,7 +335,7 @@ initTypeLib query = Schema { types        = empty
 allDataTypes :: Schema -> [DataType]
 allDataTypes  = elems . typeRegister
 
-typeRegister :: Schema -> TypeRegister
+typeRegister :: Schema -> TypeLib
 typeRegister Schema { types, query, mutation, subscription } =
   types `union` fromList
     (concatMap fromOperation [Just query, mutation, subscription])
@@ -669,7 +671,7 @@ data GQLTypeD = GQLTypeD
   { typeD     :: TypeD
   , typeKindD :: DataTypeKind
   , typeArgD  :: [TypeD]
-  , typeOriginal:: (Name,DataType)
+  , typeOriginal:: DataType
   } deriving (Show)
 
 data TypeD = TypeD

@@ -147,6 +147,8 @@ module Data.Morpheus.Types.Internal.AST
   , checkNameCollision
   , Collectible(..)
   , hasArguments
+  , TypeLib
+  , lookupWith
   -- LOCAL
   , GQLQuery(..)
   , Variables

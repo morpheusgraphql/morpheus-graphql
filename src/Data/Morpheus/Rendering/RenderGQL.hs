@@ -67,27 +67,24 @@ instance RenderGQL TypeRef where
   render TypeRef { typeConName, typeWrappers } =
     renderWrapped typeConName typeWrappers
 
-instance RenderGQL DataType where
-  render = typeName
-
 instance RenderGQL DataEnumValue where
   render DataEnumValue { enumName } = enumName
 
-instance RenderGQL (Key, DataType) where
-  render (name, DataType { typeContent }) = __render typeContent
+instance RenderGQL DataType where
+  render DataType { typeName, typeContent } = __render typeContent
    where
-    __render DataInterface { interfaceFields } = "interface " <> name <> render interfaceFields
-    __render DataScalar{}    = "scalar " <> name
-    __render (DataEnum tags) = "enum " <> name <> renderObject render tags
+    __render DataInterface { interfaceFields } = "interface " <> typeName <> render interfaceFields
+    __render DataScalar{}    = "scalar " <> typeName
+    __render (DataEnum tags) = "enum " <> typeName <> renderObject render tags
     __render (DataUnion members) =
       "union "
-        <> name
+        <> typeName
         <> " =\n    "
         <> intercalate ("\n" <> renderIndent <> "| ") members
-    __render (DataInputObject fields ) = "input " <> name <> render fields
-    __render (DataInputUnion  members) = "input " <> name <> render (wrap fields :: FieldsDefinition )
-      where fields = createInputUnionFields name (map fst members)
-    __render (DataObject {objectFields}) = "type " <> name <> render objectFields
+    __render (DataInputObject fields ) = "input " <> typeName <> render fields
+    __render (DataInputUnion  members) = "input " <> typeName <> render (wrap fields :: FieldsDefinition )
+      where fields = createInputUnionFields typeName (map fst members)
+    __render (DataObject {objectFields}) = "type " <> typeName <> render objectFields
 
 -- OBJECT
 instance RenderGQL FieldsDefinition where
