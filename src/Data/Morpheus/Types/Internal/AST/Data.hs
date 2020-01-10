@@ -223,9 +223,6 @@ data DataTypeKind
   | KindInputUnion
   deriving (Eq, Show, Lift)
 
-isFieldNullable :: FieldDefinition -> Bool
-isFieldNullable = isNullable . fieldType
-
 isNullable :: TypeRef -> Bool
 isNullable TypeRef { typeWrappers = typeWrappers } = isNullableWrapper typeWrappers
 
@@ -512,21 +509,23 @@ instance Collectible Schema DataType where
 --    { FieldDefinition(list) }
 --
 newtype FieldsDefinition = FieldsDefinition 
-  { unFieldsDefinition :: HashMap Name FieldDefinition } deriving (Show)
+ { unFieldsDefinition :: [(Name, FieldDefinition)] } deriving (Show, Lift)
 
-instance Lift FieldsDefinition where 
-  lift (FieldsDefinition  hm) = [| FieldsDefinition $ HM.fromList ls |]
-    where ls = HM.toList hm
+ -- { unFieldsDefinition :: HashMap Name FieldDefinition } deriving (Show)
+
+-- instance Lift FieldsDefinition where 
+--   lift (FieldsDefinition  hm) = [| FieldsDefinition $ HM.fromList ls |]
+--     where ls = HM.toList hm
 
 instance Semigroup FieldsDefinition where 
   FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)
 
 instance Collectible FieldsDefinition FieldDefinition where
-  wrap = FieldsDefinition . HM.fromList 
-  unwrap = HM.toList . unFieldsDefinition
-  selectBy err name (FieldsDefinition lib) = case HM.lookup name lib of
-      Nothing -> failure err
-      Just x  -> pure x
+  wrap = FieldsDefinition -- . HM.fromList 
+  unwrap = {- HM.toList . -} unFieldsDefinition
+  selectBy err name (FieldsDefinition lib) = case {- HM. -}lookup name lib of
+       Nothing -> failure err
+       Just x  -> pure x
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -543,6 +542,9 @@ fieldVisibility ("__typename", _) = False
 fieldVisibility ("__schema"  , _) = False
 fieldVisibility ("__type"    , _) = False
 fieldVisibility _                 = True
+
+isFieldNullable :: FieldDefinition -> Bool
+isFieldNullable = isNullable . fieldType
 
 createField :: ArgumentsDefinition -> Key -> ([TypeWrapper], Key) -> FieldDefinition
 createField dataArguments fieldName (typeWrappers, typeConName) = FieldDefinition
