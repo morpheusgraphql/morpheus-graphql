@@ -74,7 +74,6 @@ where
 
 import           Data.HashMap.Lazy              ( HashMap
                                                 , empty
-                                                , fromList
                                                 , insert
                                                 , union
                                                 , elems
@@ -120,7 +119,7 @@ import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
 
 class Listable c a where 
-  wrap     :: [(Name, a)] ->  c
+  fromList     :: [(Name, a)] ->  c
   unwrap   ::  c  -> [(Name, a)]
 
 class Selectable c a where 
@@ -217,7 +216,7 @@ allDataTypes  = elems . typeRegister
 
 typeRegister :: Schema -> TypeLib
 typeRegister Schema { types, query, mutation, subscription } =
-  types `union` fromList
+  types `union` HM.fromList
     (concatMap fromOperation [Just query, mutation, subscription])
 
 createDataTypeLib :: [DataType] -> Validation Schema
@@ -400,7 +399,7 @@ instance Semigroup FieldsDefinition where
   FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)
 
 instance Listable FieldsDefinition FieldDefinition where
-  wrap = FieldsDefinition -- . HM.fromList 
+  fromList = FieldsDefinition -- . HM.fromList 
   unwrap = {- HM.toList . -} unFieldsDefinition
 
 instance Selectable FieldsDefinition FieldDefinition where

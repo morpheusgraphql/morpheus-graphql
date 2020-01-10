@@ -99,7 +99,7 @@ argumentsDefinition =
 --    { FieldDefinition(list) }
 --
 fieldsDefinition :: Parser (FieldsDefinition)
-fieldsDefinition = label "FieldsDefinition" $ wrap <$> setOf fieldDefinition
+fieldsDefinition = label "FieldsDefinition" $ fromList <$> setOf fieldDefinition
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -127,7 +127,7 @@ fieldDefinition = label "FieldDefinition" $ do
 --     { InputValueDefinition(list) }
 --
 inputFieldsDefinition :: Parser (FieldsDefinition)
-inputFieldsDefinition = label "InputFieldsDefinition" $ wrap <$> setOf inputValueDefinition
+inputFieldsDefinition = label "InputFieldsDefinition" $ fromList <$> setOf inputValueDefinition
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --

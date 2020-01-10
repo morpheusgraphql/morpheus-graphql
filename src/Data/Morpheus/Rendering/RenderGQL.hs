@@ -80,7 +80,7 @@ instance RenderGQL DataType where
         <> " =\n    "
         <> intercalate ("\n" <> renderIndent <> "| ") members
     __render (DataInputObject fields ) = "input " <> typeName <> render fields
-    __render (DataInputUnion  members) = "input " <> typeName <> render (wrap fields :: FieldsDefinition )
+    __render (DataInputUnion  members) = "input " <> typeName <> render (fromList fields :: FieldsDefinition )
       where fields = createInputUnionFields typeName (map fst members)
     __render (DataObject {objectFields}) = "type " <> typeName <> render objectFields
 

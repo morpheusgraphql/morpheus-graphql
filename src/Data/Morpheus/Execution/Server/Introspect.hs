@@ -203,7 +203,7 @@ introspectObjectFields p1 (name, scope, proxy) = withObject
   withObject (DataObject     {objectFields}, ts) = (objectFields, ts)
   withObject (DataInputObject x, ts) = (x, ts)
   withObject _ =
-    ( wrap ([] :: [(Name, FieldDefinition)]) , [introspectFailure (name <> " should have only one nonempty constructor")])
+    ( fromList ([] :: [(Name, FieldDefinition)]) , [introspectFailure (name <> " should have only one nonempty constructor")])
 
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <>)
@@ -370,7 +370,7 @@ buildObject isOutput consFields = (wrapWith fields, types)
 buildDataObject :: [FieldRep] -> (FieldsDefinition , [TypeUpdater])
 buildDataObject consFields = (fields, types)
  where
-  fields = wrap $ map fieldData consFields
+  fields = fromList $ map fieldData consFields
   types  = map fieldTypeUpdater consFields
 
 buildUnions
@@ -390,7 +390,7 @@ buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } =
   DataType { typeName        = consName
            , typeFingerprint
            , typeMeta        = Nothing
-           , typeContent     = wrapObject $ wrap $ genFields consFields
+           , typeContent     = wrapObject $ fromList $ genFields consFields
            }
 
  where
@@ -444,7 +444,7 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
       { typeName
       , typeFingerprint
       , typeMeta        = Nothing
-      , typeContent     = wrapObject $ wrap [ 
+      , typeContent     = wrapObject $ fromList [ 
                               ( "enum"
                               , FieldDefinition { fieldName  = "enum"
                                           , fieldArgs  = NoArguments

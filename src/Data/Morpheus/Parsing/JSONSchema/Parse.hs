@@ -40,7 +40,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , createUnionType
                                                 , toHSWrappers
                                                 , ArgumentsDefinition(..)
-                                                , wrap
+                                                , fromList
                                                 , Name
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
@@ -76,11 +76,11 @@ instance ParseJSONSchema Type [DataType] where
   parse Type { name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields }
     = do
       (fields :: [(Name,FieldDefinition)]) <- traverse parse iFields
-      pure [createType typeName $ DataInputObject $ wrap fields]
+      pure [createType typeName $ DataInputObject $ fromList fields]
   parse Type { name = Just typeName, kind = OBJECT, fields = Just oFields } =
     do
       (fields :: [(Name,FieldDefinition)]) <- traverse parse oFields
-      pure [createType typeName $ DataObject [] $ wrap fields]
+      pure [createType typeName $ DataObject [] $ fromList fields]
   parse _ = pure []
 
 instance ParseJSONSchema Field (Key,FieldDefinition) where

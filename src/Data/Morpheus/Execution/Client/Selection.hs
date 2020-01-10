@@ -52,6 +52,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , getOperationDataType
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
+                                                , removeDuplicates
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
@@ -62,12 +63,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , LibUpdater
                                                 , resolveUpdates
                                                 )
-import           Data.Set                       ( fromList
-                                                , toList
-                                                )
 
-removeDuplicates :: [Text] -> [Text]
-removeDuplicates = toList . fromList
 
 compileError :: Text -> GQLErrors
 compileError x =

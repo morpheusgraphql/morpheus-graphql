@@ -60,8 +60,8 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
     methods = [instanceFunD 'introspectRep ["_proxy1", "_proxy2"] body]
       where
         body 
-          | tKind == Just KindInputObject || null tKind  = [| (DataInputObject $ wrap $(buildFields cFields), concat $(buildTypes cFields))|]
-          | otherwise  =  [| (DataObject [] $ wrap $(buildFields cFields), concat $(buildTypes cFields))|]
+          | tKind == Just KindInputObject || null tKind  = [| (DataInputObject $ fromList $(buildFields cFields), concat $(buildTypes cFields))|]
+          | otherwise  =  [| (DataObject [] $ fromList $(buildFields cFields), concat $(buildTypes cFields))|]
 deriveObjectRep _ = pure []
     
 buildTypes :: [FieldDefinition] -> ExpQ

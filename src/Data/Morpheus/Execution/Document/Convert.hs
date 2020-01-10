@@ -195,7 +195,7 @@ genArgumentType namespaceWith (fieldName, FieldDefinition { fieldArgs }) = pure
   where tName = namespaceWith (hsTypeName fieldName)
 
 genArguments :: ArgumentsDefinition -> [FieldDefinition]
-genArguments x = genInputFields $ wrap (arguments x)
+genArguments x = genInputFields $ fromList (arguments x)
 
 genInputFields :: FieldsDefinition -> [FieldDefinition]
 genInputFields = map (genField . snd) . unwrap
