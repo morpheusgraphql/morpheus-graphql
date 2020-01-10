@@ -240,12 +240,12 @@ updateLib
   -> [TypeUpdater]
   -> Proxy a
   -> TypeUpdater
-updateLib typeBuilder stack proxy lib' =
-  case isTypeDefined (__typeName proxy) lib' of
+updateLib typeBuilder stack proxy lib =
+  case isTypeDefined (__typeName proxy) lib of
     Nothing -> resolveUpdates
-      (defineType (__typeName proxy, typeBuilder proxy) lib')
+      (defineType (typeBuilder proxy) lib)
       stack
-    Just fingerprint' | fingerprint' == __typeFingerprint proxy -> return lib'
+    Just fingerprint' | fingerprint' == __typeFingerprint proxy -> return lib
     -- throw error if 2 different types has same name
     Just _ -> failure $ nameCollisionError (__typeName proxy)
 
@@ -381,7 +381,7 @@ buildUnions
 buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
  where
   buildURecType consRep = pure . defineType
-    (consName consRep, buildUnionRecord wrapObject baseFingerprint consRep)
+      (buildUnionRecord wrapObject baseFingerprint consRep)
   members = map consName cons
 
 buildUnionRecord
@@ -398,7 +398,6 @@ buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } =
     [("value", fData { fieldName = "value" })]
   genFields fields = map uRecField fields
   uRecField FieldRep { fieldData = (fName, fData) } = (fName, fData)
-
 
 buildUnionEnum
   :: (FieldsDefinition -> DataTypeContent)
@@ -427,13 +426,11 @@ buildUnionEnum wrapObject baseName baseFingerprint enums = (members, updates)
 
 buildEnum :: Name -> DataFingerprint -> [Name] -> TypeUpdater
 buildEnum typeName typeFingerprint tags = pure . defineType
-  ( typeName
-  , DataType { typeName
+  DataType { typeName
              , typeFingerprint
              , typeMeta        = Nothing
              , typeContent     = DataEnum $ map createEnumValue tags
-             }
-  )
+           }
 
 buildEnumObject
   :: (FieldsDefinition -> DataTypeContent)
@@ -443,8 +440,7 @@ buildEnumObject
   -> TypeUpdater
 buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
   pure . defineType
-    ( typeName
-    , DataType
+    DataType
       { typeName
       , typeFingerprint
       , typeMeta        = Nothing
@@ -458,7 +454,6 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
                               )
                             ]
       }
-    )
 
 data TypeScope = InputType | OutputType deriving (Show,Eq,Ord)
 

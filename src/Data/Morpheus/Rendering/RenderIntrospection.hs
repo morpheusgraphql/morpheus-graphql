@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleContexts  , FlexibleInstances    #-}
 
 module Data.Morpheus.Rendering.RenderIntrospection
   ( render
@@ -52,27 +52,27 @@ constRes = const . pure
 type Result m a = Schema -> m a
 
 class RenderSchema a b where
-  render :: (Monad m, Failure Text m) => (Text, a) -> Schema -> m (b m)
+  render :: (Monad m, Failure Text m) => a -> Schema -> m (b m)
 
 instance RenderSchema DataType S__Type where
-  render (name, DataType { typeMeta, typeContent }) = __render typeContent
+  render DataType { typeName , typeMeta, typeContent } = __render typeContent
    where
     __render
       :: (Monad m, Failure Text m) => DataTypeContent -> Schema -> m (S__Type m)
     __render DataScalar{} =
-      constRes $ createLeafType SCALAR name typeMeta Nothing
+      constRes $ createLeafType SCALAR typeName typeMeta Nothing
     __render (DataEnum enums) = constRes
-      $ createLeafType ENUM name typeMeta (Just $ map createEnumValue enums)
+      $ createLeafType ENUM typeName typeMeta (Just $ map createEnumValue enums)
     __render (DataInputObject fields) = \lib ->
-      createInputObject name typeMeta
+      createInputObject typeName typeMeta
         <$> traverse (`renderinputValue` lib) (unwrap fields)
     __render (DataObject {objectFields}) = \lib ->
-      createObjectType name (typeMeta >>= metaDescription)
+      createObjectType typeName (typeMeta >>= metaDescription)
         <$> (Just <$> traverse (`render` lib) (filter fieldVisibility $ unwrap objectFields))
     __render (DataUnion union) =
-      constRes $ typeFromUnion (name, typeMeta, union)
+      constRes $ typeFromUnion (typeName, typeMeta, union)
     __render (DataInputUnion members) =
-      renderInputUnion (name, typeMeta, members)
+      renderInputUnion (typeName, typeMeta, members)
 
 createEnumValue :: Monad m => DataEnumValue -> S__EnumValue m
 createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
@@ -87,7 +87,7 @@ renderArguments :: (Monad m, Failure Text m) => ArgumentsDefinition -> Schema ->
 renderArguments ArgumentsDefinition { arguments} lib = traverse (`renderinputValue` lib) arguments
 renderArguments NoArguments _ = pure []
 
-instance RenderSchema FieldDefinition S__Field where
+instance RenderSchema (Text ,FieldDefinition) S__Field where
   render (name, field@FieldDefinition { fieldType = TypeRef { typeConName }, fieldArgs, fieldMeta }) lib
     = do
       kind <- renderTypeKind <$> lookupKind typeConName lib

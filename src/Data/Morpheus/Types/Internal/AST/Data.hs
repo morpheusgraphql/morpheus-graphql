@@ -97,7 +97,6 @@ import           Data.HashMap.Lazy              ( HashMap
                                                 , empty
                                                 , fromList
                                                 , insert
-                                                , toList
                                                 , union
                                                 , elems
                                                 )
@@ -339,7 +338,7 @@ typeRegister Schema { types, query, mutation, subscription } =
   types `union` fromList
     (concatMap fromOperation [Just query, mutation, subscription])
 
-createDataTypeLib :: [(Key, DataType)] -> Validation Schema
+createDataTypeLib :: [DataType] -> Validation Schema
 createDataTypeLib types = case popByKey "Query" types of
   (Nothing   ,_    ) -> internalError "Query Not Defined"
   (Just query, lib1) -> do
@@ -461,9 +460,9 @@ lookupInputType name lib errors = case lookupDataType name lib of
 isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
-defineType :: (Key, DataType) -> Schema -> Schema
-defineType (key, datatype@DataType { typeName, typeContent = DataInputUnion enumKeys, typeFingerprint }) lib
-  = lib { types = insert name unionTags (insert key datatype (types lib)) }
+defineType :: DataType -> Schema -> Schema
+defineType dt@DataType { typeName, typeContent = DataInputUnion enumKeys, typeFingerprint } lib
+  = lib { types = insert name unionTags (insert typeName dt (types lib)) }
  where
   name      = typeName <> "Tags"
   unionTags = DataType
@@ -472,23 +471,26 @@ defineType (key, datatype@DataType { typeName, typeContent = DataInputUnion enum
     , typeMeta        = Nothing
     , typeContent     = DataEnum $ map (createEnumValue . fst) enumKeys
     }
-defineType (key, datatype) lib =
-  lib { types = insert key datatype (types lib) }
+defineType datatype lib =
+  lib { types = insert (typeName datatype) datatype (types lib) }
 
-insertType :: (Key, DataType) -> TypeUpdater
-insertType nextType@(name, datatype) lib = case isTypeDefined name lib of
-  Nothing -> resolveUpdates (defineType nextType lib) []
+insertType :: DataType -> TypeUpdater
+insertType  datatype@DataType { typeName } lib = case isTypeDefined typeName lib of
+  Nothing -> resolveUpdates (defineType datatype lib) []
   Just fingerprint | fingerprint == typeFingerprint datatype -> return lib
                    |
       -- throw error if 2 different types has same name
-                     otherwise -> failure $ nameCollisionError name
+                     otherwise -> failure $ nameCollisionError typeName
+
+lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a  
+lookupWith f key = find ((== key) . f)  
 
 -- lookups and removes DataType from hashmap 
-popByKey :: Name -> [(Key, DataType)] -> (Maybe DataType,[(Key, DataType)])
-popByKey key lib = case lookup key lib of
+popByKey :: Name -> [DataType] -> (Maybe DataType,[DataType])
+popByKey name lib = case lookupWith typeName name lib of
     Just dt@DataType { typeContent = DataObject {} } ->
-      (Just dt, filter ((/= key) . fst) lib)
-    _ -> (Nothing, lib)  
+      (Just dt, filter ((/= name) . typeName) lib)
+    _ -> (Nothing, lib) 
 
 instance Collectible Schema DataType where 
   selectBy err name lib = case lookupDataType name lib of

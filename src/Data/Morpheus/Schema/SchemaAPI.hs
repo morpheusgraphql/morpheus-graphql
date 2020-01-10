@@ -35,7 +35,7 @@ import           Data.Morpheus.Types.ID         ( ID )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Schema(..)
                                                 , QUERY
-                                                , DataType
+                                                , DataType(..)
                                                 , allDataTypes
                                                 , lookupDataType
                                                 , FieldsDefinition
@@ -61,7 +61,7 @@ findType
   -> Resolver QUERY e m (Maybe (S__Type (Resolver QUERY e m)))
 findType name lib = renderT (lookupDataType name lib)
  where
-  renderT (Just datatype) = Just <$> render (name, datatype) lib
+  renderT (Just datatype) = Just <$> render datatype lib
   renderT Nothing         = pure Nothing
 
 initSchema

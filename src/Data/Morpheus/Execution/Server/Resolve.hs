@@ -231,16 +231,14 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
       , OutputType
       , Proxy @(subscription (Resolver SUBSCRIPTION event m))
       )
-  maybeOperator :: FieldsDefinition -> Name -> Maybe (Name, DataType)
+  maybeOperator :: FieldsDefinition -> Name -> Maybe DataType
   maybeOperator (FieldsDefinition x) | null x     = const Nothing
   maybeOperator fields = Just . operatorType fields
   -------------------------------------------------
-  operatorType :: FieldsDefinition -> Name -> (Name, DataType)
-  operatorType fields typeName =
-    ( typeName
-    , DataType { typeContent     = DataObject [] fields
-               , typeName
-               , typeFingerprint = DataFingerprint typeName []
-               , typeMeta        = Nothing
-               }
-    )
+  operatorType :: FieldsDefinition -> Name -> DataType
+  operatorType fields typeName = DataType 
+      { typeContent     = DataObject [] fields
+        , typeName
+        , typeFingerprint = DataFingerprint typeName []
+        , typeMeta        = Nothing
+      }
