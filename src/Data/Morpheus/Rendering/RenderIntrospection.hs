@@ -64,10 +64,10 @@ instance RenderSchema DataType S__Type where
       $ createLeafType ENUM typeName typeMeta (Just $ map createEnumValue enums)
     __render (DataInputObject fields) = \lib ->
       createInputObject typeName typeMeta
-        <$> traverse (`renderinputValue` lib) (unwrap fields)
+        <$> traverse (`renderinputValue` lib) (toList fields)
     __render (DataObject {objectFields}) = \lib ->
       createObjectType typeName (typeMeta >>= metaDescription)
-        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility $ unwrap objectFields))
+        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility $ toList objectFields))
     __render (DataUnion union) =
       constRes $ typeFromUnion (typeName, typeMeta, union)
     __render (DataInputUnion members) =

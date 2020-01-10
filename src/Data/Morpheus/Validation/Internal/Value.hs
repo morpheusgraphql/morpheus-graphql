@@ -114,7 +114,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
     validate
       :: DataTypeContent -> (Key, ResolvedValue) -> InputValidation ValidValue
     validate (DataInputObject parentFields) (_, Object fields) =
-      traverse requiredFieldsDefined (unwrap parentFields)
+      traverse requiredFieldsDefined (toList parentFields)
         >>  Object
         <$> traverse validateField fields
      where
@@ -141,7 +141,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
                                    lib
                                    (typeMismatch x fieldTypeName' currentProp)
           return (type', currentProp)
-        getField = lookupField _name (unwrap parentFields) (UnknownField props _name)
+        getField = lookupField _name (toList parentFields) (UnknownField props _name)
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) (_, Object rawFields) =
       case unpackInputUnion inputUnion rawFields of

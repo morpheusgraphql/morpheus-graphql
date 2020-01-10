@@ -120,7 +120,7 @@ import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
 class Listable c a where 
   fromList     :: [(Name, a)] ->  c
-  unwrap   ::  c  -> [(Name, a)]
+  toList   ::  c  -> [(Name, a)]
 
 class Selectable c a where 
   selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a 
@@ -400,7 +400,7 @@ instance Semigroup FieldsDefinition where
 
 instance Listable FieldsDefinition FieldDefinition where
   fromList = FieldsDefinition -- . HM.fromList 
-  unwrap = {- HM.toList . -} unFieldsDefinition
+  toList = {- HM.toList . -} unFieldsDefinition
 
 instance Selectable FieldsDefinition FieldDefinition where
   selectBy err name (FieldsDefinition lib) = case {- HM. -}lookup name lib of

@@ -136,7 +136,7 @@ instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m
   field _ name = fieldObj { fieldArgs }
    where
     fieldObj  = field (Proxy @b) name
-    fieldArgs = ArgumentsDefinition Nothing $ unwrap $ fst  $ introspectObjectFields
+    fieldArgs = ArgumentsDefinition Nothing $ toList $ fst  $ introspectObjectFields
       (Proxy :: Proxy 'False)
       (__typeName (Proxy @b), OutputType, Proxy @a)
   introspect _ typeLib = resolveUpdates typeLib

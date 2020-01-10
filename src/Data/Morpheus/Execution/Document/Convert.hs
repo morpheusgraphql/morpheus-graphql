@@ -123,8 +123,8 @@ toTHDefinitions namespace lib = traverse renderTHType lib
         , typeOriginal = dt
         }
       genType DataObject {objectFields} = do
-        typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (unwrap objectFields)
-        cFields  <- traverse genResField (unwrap objectFields)
+        typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (toList objectFields)
+        cFields  <- traverse genResField (toList objectFields)
         pure GQLTypeD
           { typeD        = TypeD
                              { tName      = hsTypeName typeName
@@ -198,7 +198,7 @@ genArguments :: ArgumentsDefinition -> [FieldDefinition]
 genArguments x = genInputFields $ fromList (arguments x)
 
 genInputFields :: FieldsDefinition -> [FieldDefinition]
-genInputFields = map (genField . snd) . unwrap
+genInputFields = map (genField . snd) . toList
 
 genField :: FieldDefinition -> FieldDefinition
 genField field@FieldDefinition { fieldType = tyRef@TypeRef { typeConName } } = field 
