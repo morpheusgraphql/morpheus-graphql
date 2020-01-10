@@ -79,7 +79,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , TypeRef(..)
                                                 , Message
-                                                , Collectible(..)
+                                                , Listable(..)
                                                 )
 
 type IntroCon a = (GQLType a, IntrospectRep (CUSTOM a) a)

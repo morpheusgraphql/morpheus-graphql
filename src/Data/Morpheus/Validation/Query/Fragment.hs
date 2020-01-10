@@ -33,7 +33,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Schema
                                                 , checkNameCollision
                                                 , FieldsDefinition
-                                                , Collectible(..)
+                                                , Selectable(..)
                                                 , Name
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving

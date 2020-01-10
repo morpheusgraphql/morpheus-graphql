@@ -42,7 +42,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Schema(..)
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
-                                                , Collectible(..)
+                                                , Listable(..)
                                                 , ConsD(..)
                                                 , ClientType(..)
                                                 , TypeD(..)

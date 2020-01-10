@@ -25,7 +25,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , DataTypeContent(..)
                                                 , TypeRef(..)
-                                                , Collectible(..)
+                                                , Listable(..)
                                                 , isWeaker
                                                 , lookupWith
                                                 )
